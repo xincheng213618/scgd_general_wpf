@@ -8,7 +8,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         Overview,
         Node,
-        Messages
+        Messages,
+        Comparison
     }
 
     internal readonly record struct FlowAnalysisNavigationState(

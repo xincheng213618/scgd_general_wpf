@@ -1,11 +1,9 @@
 ﻿using ColorVision.Core;
-using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using FlowEngineLib.Algorithm;
@@ -97,7 +95,6 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(0.02, node.MinimumContrast);
         Assert.Equal(GridTvFormula.Standard, node.TvFormula);
         Assert.Equal(GridPoint9Formula.OppositeEdgeMean, node.Point9Formula);
-        Assert.False(node.PublishOpticalEstimate);
         Assert.Equal(Int32Rect.Empty, node.SearchRegion);
         node.ExpectedRows = 7;
         node.ExpectedCols = 9;
@@ -109,10 +106,11 @@ public sealed class LocalGridDistortionNodeTests
         node.ResultDirectory = @"C:\results\distortion";
         node.TvFormula = GridTvFormula.Half;
         node.Point9Formula = GridPoint9Formula.LegacyThreeSpanMean;
-        node.PublishOpticalEstimate = true;
         LocalGridDistortionNode restored = new();
         restored.Create();
-        restored.OnLoadNode(ParseState(node.GetSaveData()));
+        Dictionary<string, byte[]> state = ParseState(node.GetSaveData());
+        state["PublishOpticalEstimate"] = BitConverter.GetBytes(false);
+        restored.OnLoadNode(state);
         Assert.Equal(node.ExpectedRows, restored.ExpectedRows);
         Assert.Equal(node.ExpectedCols, restored.ExpectedCols);
         Assert.False(restored.BrightTarget);
@@ -123,7 +121,7 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(node.ResultDirectory, restored.ResultDirectory);
         Assert.Equal(node.TvFormula, restored.TvFormula);
         Assert.Equal(node.Point9Formula, restored.Point9Formula);
-        Assert.Equal(node.PublishOpticalEstimate, restored.PublishOpticalEstimate);
+        Assert.False(ParseState(restored.GetSaveData()).ContainsKey("PublishOpticalEstimate"));
     }
 
     [Fact]
@@ -137,6 +135,19 @@ public sealed class LocalGridDistortionNodeTests
         restored.Create();
         restored.OnLoadNode(state);
         Assert.True(restored.BrightTarget);
+    }
+
+    [Fact]
+    public void SavedLegacySelectionRemainsWhenNewNodesUseStandardPoint9()
+    {
+        LocalGridDistortionNode original = new() { Point9Formula = GridPoint9Formula.LegacyThreeSpanMean };
+        original.Create();
+        Dictionary<string, byte[]> state = ParseState(original.GetSaveData());
+        Assert.True(state.ContainsKey(nameof(LocalGridDistortionNode.Point9Formula)));
+        LocalGridDistortionNode restored = new();
+        restored.Create();
+        restored.OnLoadNode(state);
+        Assert.Equal(GridPoint9Formula.LegacyThreeSpanMean, restored.Point9Formula);
     }
 
     [Fact]
@@ -184,7 +195,6 @@ public sealed class LocalGridDistortionNodeTests
                 node.ResultDirectory = @"C:\changed";
                 node.TvFormula = GridTvFormula.Standard;
                 node.Point9Formula = GridPoint9Formula.OppositeEdgeMean;
-                node.PublishOpticalEstimate = false;
                 return detection;
             },
             PersistHandler = request =>
@@ -205,7 +215,7 @@ public sealed class LocalGridDistortionNodeTests
         node = new(services)
         {
             ExpectedRows = 7, ExpectedCols = 7, BrightTarget = false, ImageFilePath = @"C:\missing-file.cvraw", ResultDirectory = @"C:\initial",
-            TvFormula = GridTvFormula.Half, Point9Formula = GridPoint9Formula.LegacyThreeSpanMean, PublishOpticalEstimate = true
+            TvFormula = GridTvFormula.Half, Point9Formula = GridPoint9Formula.LegacyThreeSpanMean
         };
         try
         {
@@ -226,8 +236,12 @@ public sealed class LocalGridDistortionNodeTests
             Assert.Same(result.Analysis, persisted.Analysis);
             Assert.Equal(GridTvFormula.Half, persisted.TvFormula);
             Assert.Equal(GridPoint9Formula.LegacyThreeSpanMean, persisted.Point9Formula);
-            Assert.True(persisted.PublishOpticalEstimate);
             Assert.Equal(result.Analysis.HalfTv.HorizontalPercent, action.Data["LocalGridDistortionHorizontalTvPercent"]);
+            Assert.Same(result.Analysis.Geometry, action.Data["LocalGridDistortionGeometry"]);
+            Assert.Equal(result.Analysis.Geometry.MaximumTiltDegrees, action.Data["LocalGridDistortionMaximumTiltDegrees"]);
+            Assert.Equal(result.Analysis.Geometry.MaximumEdgeLengthDifferencePercent, action.Data["LocalGridDistortionMaximumEdgeLengthDifferencePercent"]);
+            Assert.NotEqual(Math.Max(Math.Abs(result.Analysis.LegacyPoint9.KeystoneHorizontalPercent), Math.Abs(result.Analysis.LegacyPoint9.KeystoneVerticalPercent)), result.Analysis.Geometry.MaximumEdgeLengthDifferencePercent);
+            Assert.Equal(result.Analysis.Geometry.MaximumTiltDegrees, parameters["Analysis"]!["Geometry"]!.Value<double>("MaximumTiltDegrees"));
             Assert.NotNull(parameters["Analysis"]?["Optical"]);
             Assert.False(action.Data.ContainsKey("DIFF_H"));
             byte[] after = new byte[pixels.Length];
@@ -466,34 +480,55 @@ public sealed class LocalGridDistortionNodeTests
     }
 
     [Fact]
-    public void LegacyVersionTwoJsonPreservesPercentAxesAndFullGridWithoutFakeOptic()
+    public void DefaultStandardPoint9UsesLegacyJsonFieldsWithStandardValues()
     {
         GridDistortionResult result = CreateDetection(7, 7);
         GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
-        string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, false);
+        LocalGridDistortionNode node = new();
+        string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, node.TvFormula, node.Point9Formula);
         DistortionReslut legacy = JsonConvert.DeserializeObject<DistortionReslut>(json)!;
         Assert.Null(legacy.OpticDistortion);
         Assert.Equal(analysis.StandardTv.HorizontalPercent, legacy.TVDistortion.HorizontalRatio);
         Assert.Equal(analysis.StandardTv.VerticalPercent, legacy.TVDistortion.VerticalRatio);
+        Assert.Equal(analysis.ReferencePoint9.TopPercent, legacy.Point9Distortion.TopRatio);
+        Assert.Equal(analysis.ReferencePoint9.BottomPercent, legacy.Point9Distortion.BottomRatio);
+        Assert.Equal(analysis.ReferencePoint9.LeftPercent, legacy.Point9Distortion.LeftRatio);
+        Assert.Equal(analysis.ReferencePoint9.RightPercent, legacy.Point9Distortion.RightRatio);
         Assert.Equal(analysis.ReferencePoint9.KeystoneHorizontalPercent, legacy.Point9Distortion.KeyStoneHoriRatio);
         Assert.Equal(analysis.ReferencePoint9.KeystoneVerticalPercent, legacy.Point9Distortion.KeyStoneVercRatio);
+        Assert.NotEqual(analysis.LegacyPoint9.KeystoneHorizontalPercent, legacy.Point9Distortion.KeyStoneHoriRatio);
         Assert.Equal(49, legacy.TVDistortion.FinalPoints.Count);
         Assert.Equal(new[] { 0, 3, 6, 21, 24, 27, 42, 45, 48 }, legacy.Point9Distortion.FinalPoints.Select(point => point.Id));
         JObject root = JObject.Parse(json);
+        Assert.Equal("OppositeEdgeMean", root["OutputSelection"]!.Value<string>("Point9Formula"));
+        Assert.NotNull(root["Point9_distortion"]);
+        Assert.NotNull(root["TV_distortion"]);
         Assert.Equal("percent", root.Value<string>("Units"));
         Assert.NotNull(root["GridDistortion"]?["Quality"]);
         Assert.Equal(result.RawJson, root["GridDistortion"]!.Value<string>("RawJson"));
         Assert.Null(root["DIFF_H"]);
         Assert.NotNull(root["Analysis"]?["Optical"]);
-        Assert.Throws<InvalidOperationException>(() => LocalGridDistortionResultPersistence.BuildLegacyResultJson(result with { Success = false }, analysis, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, false));
+        Assert.Equal(analysis.Geometry.MaximumTiltDegrees, root["Analysis"]!["Geometry"]!.Value<double>("MaximumTiltDegrees"));
+        Assert.Equal(analysis.Geometry.MaximumEdgeLengthDifferencePercent, root["Analysis"]!["Geometry"]!.Value<double>("MaximumEdgeLengthDifferencePercent"));
+        Assert.Throws<InvalidOperationException>(() => LocalGridDistortionResultPersistence.BuildLegacyResultJson(result with { Success = false }, analysis, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean));
     }
 
     [Fact]
-    public void OutputConventionSelectsExistingAnalysisAndOpticalEstimateRequiresExplicitPublication()
+    public void OutputConventionSelectsExistingAnalysisAndAutomaticallyPublishesValidOpticalEstimate()
     {
         GridDistortionResult result = CreateDetection(7, 7);
+        // Valid independent Brown fixture: the older asymmetric TV fixture is
+        // intentionally outside the centred radial model and must not publish.
+        result = result with { Points = result.Points.Select(point =>
+        {
+            double u = (point.Col - 3) / 3.0, v = (point.Row - 3) / 3.0;
+            double factor = 1 + 0.06 * (u * u + v * v);
+            return point with { X = 29 + 22 * u * factor, Y = 23 + 22 * v * factor };
+        }).ToArray() };
         GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
-        string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, GridTvFormula.Half, GridPoint9Formula.LegacyThreeSpanMean, true);
+        Assert.True(analysis.Optical.IsAvailable);
+        Assert.InRange(Math.Abs(analysis.Optical.OpticRatioPercent!.Value - 12), 0, 1e-6);
+        string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, GridTvFormula.Half, GridPoint9Formula.LegacyThreeSpanMean);
         JObject root = JObject.Parse(json);
         DistortionReslut legacy = JsonConvert.DeserializeObject<DistortionReslut>(json)!;
         Assert.Equal(analysis.HalfTv.HorizontalPercent, legacy.TVDistortion.HorizontalRatio);
@@ -509,8 +544,13 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal("Half", root["OutputSelection"]!.Value<string>("TvFormula"));
         Assert.NotNull(root["Analysis"]?["ReferencePoint9"]);
         GridDistortionAnalysis unavailable = analysis with { Optical = analysis.Optical with { IsAvailable = false, OpticRatioPercent = null } };
-        JObject absent = JObject.Parse(LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, unavailable, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, true));
+        JObject absent = JObject.Parse(LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, unavailable, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean));
         Assert.Equal(JTokenType.Null, absent["Optic_Distortion"]!.Type);
+        GridDistortionResult incompatible = CreateDetection(7, 7);
+        GridDistortionAnalysis rejected = GridDistortionAnalysis.Calculate(incompatible);
+        Assert.False(rejected.Optical.IsAvailable);
+        JObject rejectedOutput = JObject.Parse(LocalGridDistortionResultPersistence.BuildLegacyResultJson(incompatible, rejected, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean));
+        Assert.Equal(JTokenType.Null, rejectedOutput["Optic_Distortion"]!.Type);
     }
 
     [Fact]
@@ -557,12 +597,10 @@ public sealed class LocalGridDistortionNodeTests
             ResultType = ViewResultAlgType.Distortion, Version = "2.0", ResultCode = -1, ResultDesc = "IncompleteGrid",
             ViewResults = new ObservableCollection<IViewResult>(), AlgResultMasterModel = new() { Params = "{\"MissingCount\":1}" }
         };
-        Assert.False(new ViewHandleDistortion().CanHandle1(result));
         Assert.True(new ViewHandleDistortion2().CanHandle1(result));
         Assert.Contains("IncompleteGrid", ViewHandleDistortion2.BuildResultText(result));
         Assert.Contains("MissingCount", ViewHandleDistortion2.BuildResultText(result));
         result.Version = "1.0";
-        Assert.True(new ViewHandleDistortion().CanHandle1(result));
         Assert.False(new ViewHandleDistortion2().CanHandle1(result));
     }
 

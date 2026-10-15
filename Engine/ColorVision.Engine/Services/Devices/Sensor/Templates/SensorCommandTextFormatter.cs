@@ -2,11 +2,58 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using System.Linq;
+using MQTTMessageLib.Sensor;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
     public static class SensorCommandTextFormatter
     {
+        // Use the same encodings as the service's CmdStringTool, but reject lossy conversions.
+        public static string ConvertEncoding(string? text, SensorCmdType source, SensorCmdType target)
+        {
+            text ??= string.Empty;
+            byte[] bytes;
+            if (source == SensorCmdType.Hex)
+            {
+                string hex = text.Replace("0x", string.Empty, StringComparison.OrdinalIgnoreCase);
+                foreach (char separator in new[] { ' ', '\r', '\n', '\t', '-', ':', ',', ';' })
+                    hex = hex.Replace(separator.ToString(), string.Empty);
+                bytes = Convert.FromHexString(hex);
+            }
+            else
+            {
+                Encoding encoding = GetStrictEncoding(source);
+                bytes = encoding.GetBytes(text);
+                if (encoding.GetString(bytes) != text) throw new FormatException();
+            }
+
+            if (target == SensorCmdType.Hex) return BytesToHex(bytes);
+            Encoding targetEncoding = GetStrictEncoding(target);
+            string result = targetEncoding.GetString(bytes);
+            if (!targetEncoding.GetBytes(result).SequenceEqual(bytes)) throw new FormatException();
+            return result;
+        }
+
+        private static Encoding GetStrictEncoding(SensorCmdType type)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Encoding encoding = type switch
+            {
+                SensorCmdType.Ascii => Encoding.ASCII,
+                SensorCmdType.UTF8 => Encoding.UTF8,
+                SensorCmdType.GBK => Encoding.GetEncoding("GBK"),
+#pragma warning disable SYSLIB0001
+                SensorCmdType.UTF7 => Encoding.UTF7,
+#pragma warning restore SYSLIB0001
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unsupported sensor text encoding.")
+            };
+            encoding = (Encoding)encoding.Clone();
+            encoding.EncoderFallback = EncoderFallback.ExceptionFallback;
+            encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
+            return encoding;
+        }
+
         private static readonly char[] HexSeparators = { ' ', '\r', '\n', '\t', ',', ';', '-' };
         private static readonly Dictionary<string, byte> ControlNameToByte = new(StringComparer.OrdinalIgnoreCase)
         {

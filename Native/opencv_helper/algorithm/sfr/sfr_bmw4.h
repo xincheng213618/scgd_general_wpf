@@ -63,6 +63,11 @@ struct BmwLocatedTarget {
     cv::Rect target;
     cv::Point2d center;
     std::array<cv::Rect, 4> edges{}; // Left, Top, Right, Bottom; crop coordinates
+    std::string chartType = "bmw";
+    // Optional per-branch safety regions, used by checkerboard custom ROIs.
+    std::array<cv::Rect, 4> supports{};
+    std::array<std::string, 4> edgeReasons{};
 };
 BmwLocatedTarget locateBmwTarget(const cv::Mat& crop);
+BmwLocatedTarget locateCheckerboardTarget(const cv::Mat& crop);
 }

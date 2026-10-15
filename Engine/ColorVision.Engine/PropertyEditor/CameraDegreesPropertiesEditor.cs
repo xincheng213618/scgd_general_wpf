@@ -1,7 +1,7 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -272,10 +272,10 @@ namespace ColorVision.Engine.PropertyEditor
                 Padding = new Thickness(2),
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(5, 0, 0, 0),
-                Content = "计算",
-                ToolTip = "根据传感器尺寸和镜头有效焦距计算 cameraDegrees"
+                Content = LocalizedText.Get("计算"),
+                ToolTip = LocalizedText.Get("根据传感器尺寸和镜头有效焦距计算 cameraDegrees")
             };
-            AutomationProperties.SetName(calculateButton, "计算 cameraDegrees");
+            AutomationProperties.SetName(calculateButton, LocalizedText.Get("计算 cameraDegrees"));
             DockPanel.SetDock(calculateButton, Dock.Right);
             calculateButton.Click += (_, _) => ShowCalculator(property, obj, textBox, calculateButton);
 
@@ -295,20 +295,20 @@ namespace ColorVision.Engine.PropertyEditor
                 owner = Application.Current.GetActiveWindow();
             var window = new PropertyEditorWindow(options, PropertyEditorEditMode.Transactional)
             {
-                Title = "相机视场角计算",
+                Title = LocalizedText.Get("相机视场角计算"),
                 Owner = owner,
                 WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner
             };
             if (window.FindName("ConfirmButton") is Button confirmButton)
             {
-                confirmButton.Content = "使用所选值";
-                AutomationProperties.SetName(confirmButton, "使用所选视场角");
+                confirmButton.Content = LocalizedText.Get("使用所选值");
+                AutomationProperties.SetName(confirmButton, LocalizedText.Get("使用所选视场角"));
             }
             window.Submitted += (_, _) =>
             {
                 if (!options.TryGetSelectedCameraDegrees(out double result, out string error))
                 {
-                    MessageBox.Show(owner, error, "相机视场角计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(owner, error, LocalizedText.Get("相机视场角计算"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 

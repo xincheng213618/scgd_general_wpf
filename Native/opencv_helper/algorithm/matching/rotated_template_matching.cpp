@@ -1,4 +1,5 @@
 #include "rotated_template_matching.h"
+#include <opencv2/geometry.hpp>
 
 #include <algorithm>
 #include <cmath>

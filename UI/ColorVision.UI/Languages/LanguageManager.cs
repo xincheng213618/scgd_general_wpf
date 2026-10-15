@@ -66,7 +66,7 @@ namespace ColorVision.UI.Languages
             }
             else
             {
-                keyValuePairs.TryAdd(Thread.CurrentThread.CurrentUICulture.Name, Properties.Resources.ResourceManager.GetString(Thread.CurrentThread.CurrentUICulture.Name, CultureInfo.CurrentUICulture) ?? Thread.CurrentThread.CurrentUICulture.Name);
+                keyValuePairs.TryAdd(Thread.CurrentThread.CurrentUICulture.Name, GetDisplayName(Thread.CurrentThread.CurrentUICulture.Name));
             }
 
 
@@ -79,13 +79,13 @@ namespace ColorVision.UI.Languages
                 if (files.Length > 0  && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {
                     list.Add(Name);
-                    keyValuePairs.TryAdd(Name, Properties.Resources.ResourceManager.GetString(Name, CultureInfo.CurrentUICulture) ?? "");
+                    keyValuePairs.TryAdd(Name, GetDisplayName(Name));
                 }
             }
             if (!list.Contains("zh-Hans"))
             {
                 list.Add("zh-Hans");
-                keyValuePairs.TryAdd("zh-Hans", Properties.Resources.ResourceManager.GetString("zh-Hans", CultureInfo.CurrentUICulture) ?? "");
+                keyValuePairs.TryAdd("zh-Hans", GetDisplayName("zh-Hans"));
             }
             if (!list.Contains(CultureInfo.InstalledUICulture.Name))
             {
@@ -96,6 +96,26 @@ namespace ColorVision.UI.Languages
             return list;
         }
 
+        internal static string GetDisplayName(string cultureName)
+        {
+            CultureInfo culture;
+            try
+            {
+                culture = CultureInfo.GetCultureInfo(cultureName);
+            }
+            catch (CultureNotFoundException)
+            {
+                return cultureName;
+            }
+
+            for (CultureInfo candidate = culture; !string.IsNullOrEmpty(candidate.Name); candidate = candidate.Parent)
+            {
+                string? displayName = Properties.Resources.ResourceManager.GetString(candidate.Name, CultureInfo.CurrentUICulture);
+                if (!string.IsNullOrWhiteSpace(displayName)) return displayName;
+            }
+
+            return culture.NativeName;
+        }
 
 
         public bool LanguageChange(string lang)

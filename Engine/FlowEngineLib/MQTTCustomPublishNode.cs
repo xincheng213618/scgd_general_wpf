@@ -3,7 +3,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/10 MQTT")]
+[STNode("MQTT", CategoryOrder = 1000)]
 [System.Obsolete("Deprecated MQTT flow node retained for loading existing flows.")]
 internal class MQTTCustomPublishNode : MQTTBaseNode
 {

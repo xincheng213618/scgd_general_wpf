@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from flask import Flask, jsonify, request
+from flask.wrappers import Request as FlaskRequest
 from markupsafe import Markup
 from werkzeug.exceptions import HTTPException
 
@@ -48,6 +49,16 @@ try:
     import markdown as _markdown_mod
 except ImportError:
     _markdown_mod = None
+
+
+class ColorVisionRequest(FlaskRequest):
+    @property
+    def max_content_length(self) -> int | None:
+        # Keep the global package cap while allowing large feedback attachments.
+        # This works with both Flask 3.0 and 3.1, where the request setter differs.
+        if self.method == "POST" and self.path == "/api/feedback":
+            return None
+        return super().max_content_length
 
 
 def human_size(size_bytes: int) -> str:
@@ -106,6 +117,7 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     storage = Path(override_storage) if override_storage is not None else Path(config["storage_path"])
 
     app = Flask(__name__, static_folder=None)
+    app.request_class = ColorVisionRequest
     app.secret_key = config["secret_key"]
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE_BYTES
     app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -341,10 +353,6 @@ def register_all_blueprints(app, ctx, services, helpers):
     from routes.cvws_api import register_cvws_api
     from routes.spectrum_api import register_spectrum_api
     from routes.admin_api import AdminApiContext, register_admin_api_routes
-    from routes.copilot_config_api import (
-        CopilotConfigApiContext,
-        register_copilot_config_api_routes,
-    )
     from routes.docs_site import register_docs_site
     from routes.frontend_spa import FrontendSpaContext, register_frontend_spa
     from marketplace_api_routes import MarketplaceApiRouteContext, register_marketplace_api_routes
@@ -465,11 +473,6 @@ def register_all_blueprints(app, ctx, services, helpers):
         slow_request_buffer_capacity=SLOW_REQUEST_BUFFER_CAPACITY,
         process_started_at=ctx.process_started_at,
     ))
-    register_copilot_config_api_routes(app, CopilotConfigApiContext(
-        cache=cache,
-        config_getter=lambda: ctx.active_config,
-    ))
-
     from db.repositories.operations_support import SqliteOperationsSupportStore
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes
     from services.operations_device_relay import OperationsDeviceRelayService

@@ -36,7 +36,10 @@ namespace ColorVision.Copilot
             ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingEvents, 1);
             ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingStreamCharacters, 1);
 
-            using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            using var lifetime = new CopilotNonBlockingCancellationSource();
+            using var callerCancellationRegistration = cancellationToken.Register(
+                static state => ((CopilotNonBlockingCancellationSource)state!).RequestCancellation(),
+                lifetime);
             using var cancellationDrainGuard = new CancellationTokenSource();
             var eventBuffer = new CopilotTurnEventBuffer(
                 maximumPendingEvents,
@@ -67,7 +70,9 @@ namespace ColorVision.Copilot
             }
             finally
             {
-                lifetime.Cancel();
+                // Producer callbacks belong to the same untrusted boundary as the producer.
+                // Do not let them block the consumer or prevent the bounded shutdown below.
+                lifetime.RequestCancellation();
                 eventBuffer.Abandon();
                 cancellationDrainGuard.Cancel();
                 var cancellationDrainOutcome = await cancellationDrain.ConfigureAwait(false);

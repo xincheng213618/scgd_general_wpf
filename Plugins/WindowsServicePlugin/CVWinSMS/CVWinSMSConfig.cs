@@ -1,9 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using Newtonsoft.Json;
 using System.ComponentModel;
-using System.IO;
-using System.Xml.Linq;
 
 
 namespace WindowsServicePlugin.CVWinSMS

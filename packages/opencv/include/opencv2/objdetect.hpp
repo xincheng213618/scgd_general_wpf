@@ -45,64 +45,15 @@
 #define OPENCV_OBJDETECT_HPP
 
 #include "opencv2/core.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/objdetect/aruco_detector.hpp"
 #include "opencv2/objdetect/graphical_code_detector.hpp"
+#include "opencv2/objdetect/mcc_checker_detector.hpp"
 
 /**
 @defgroup objdetect Object Detection
 
 @{
-    @defgroup objdetect_cascade_classifier Cascade Classifier for Object Detection
-
-    The object detector described below has been initially proposed by Paul Viola @cite Viola01 and
-    improved by Rainer Lienhart @cite Lienhart02 .
-
-    First, a classifier (namely a *cascade of boosted classifiers working with haar-like features*) is
-    trained with a few hundred sample views of a particular object (i.e., a face or a car), called
-    positive examples, that are scaled to the same size (say, 20x20), and negative examples - arbitrary
-    images of the same size.
-
-    After a classifier is trained, it can be applied to a region of interest (of the same size as used
-    during the training) in an input image. The classifier outputs a "1" if the region is likely to show
-    the object (i.e., face/car), and "0" otherwise. To search for the object in the whole image one can
-    move the search window across the image and check every location using the classifier. The
-    classifier is designed so that it can be easily "resized" in order to be able to find the objects of
-    interest at different sizes, which is more efficient than resizing the image itself. So, to find an
-    object of an unknown size in the image the scan procedure should be done several times at different
-    scales.
-
-    The word "cascade" in the classifier name means that the resultant classifier consists of several
-    simpler classifiers (*stages*) that are applied subsequently to a region of interest until at some
-    stage the candidate is rejected or all the stages are passed. The word "boosted" means that the
-    classifiers at every stage of the cascade are complex themselves and they are built out of basic
-    classifiers using one of four different boosting techniques (weighted voting). Currently Discrete
-    Adaboost, Real Adaboost, Gentle Adaboost and Logitboost are supported. The basic classifiers are
-    decision-tree classifiers with at least 2 leaves. Haar-like features are the input to the basic
-    classifiers, and are calculated as described below. The current algorithm uses the following
-    Haar-like features:
-
-    ![image](pics/haarfeatures.png)
-
-    The feature used in a particular classifier is specified by its shape (1a, 2b etc.), position within
-    the region of interest and the scale (this scale is not the same as the scale used at the detection
-    stage, though these two scales are multiplied). For example, in the case of the third line feature
-    (2c) the response is calculated as the difference between the sum of image pixels under the
-    rectangle covering the whole feature (including the two white stripes and the black stripe in the
-    middle) and the sum of the image pixels under the black stripe multiplied by 3 in order to
-    compensate for the differences in the size of areas. The sums of pixel values over a rectangular
-    regions are calculated rapidly using integral images (see below and the integral description).
-
-    Check @ref tutorial_cascade_classifier "the corresponding tutorial" for more details.
-
-    The following reference is for the detection part only. There is a separate application called
-    opencv_traincascade that can train a cascade of boosted classifiers from a set of samples.
-
-    @note In the new C++ interface it is also possible to use LBP (local binary pattern) features in
-    addition to Haar-like features. .. [Viola01] Paul Viola and Michael J. Jones. Rapid Object Detection
-    using a Boosted Cascade of Simple Features. IEEE CVPR, 2001. The paper is available online at
-    <https://github.com/SvHey/thesis/blob/master/Literature/ObjectDetection/violaJones_CVPR2001.pdf>
-
-    @defgroup objdetect_hog HOG (Histogram of Oriented Gradients) descriptor and object detector
     @defgroup objdetect_barcode Barcode detection and decoding
     @defgroup objdetect_qrcode QRCode detection and encoding
     @defgroup objdetect_dnn_face DNN-based face detection and recognition
@@ -123,7 +74,7 @@
 
         The implementation is based on the ArUco Library by R. Muñoz-Salinas and S. Garrido-Jurado @cite Aruco2014.
 
-        Markers can also be detected based on the AprilTag 2 @cite wang2016iros fiducial detection method.
+        Markers can also be detected based on the AprilTag 2 @cite wang2016iros fiducial marker detection method.
 
         @sa @cite Aruco2014
         This code has been originally developed by Sergio Garrido-Jurado as a project
@@ -185,585 +136,19 @@
 
         To estimate the marker pose with respect to the camera frame, we recommend you to look at the following sources of information:
           - @ref tutorial_aruco_detection for a tutorial about ArUco markers detection
-          - @ref calib3d for some theoretical background about the pinhole camera model and the @ref calib3d_solvePnP page
+          - @ref _3d for some theoretical background about the pinhole camera model and the @ref calib3d_solvePnP page
           - @ref solvePnP, @ref solvePnPGeneric, @ref solveP3P for the relevant pose estimation methods
     @}
 
 @}
  */
 
-typedef struct CvHaarClassifierCascade CvHaarClassifierCascade;
-
 namespace cv
 {
-
-//! @addtogroup objdetect_common
-//! @{
-
-///////////////////////////// Object Detection ////////////////////////////
-
-/** @brief This class is used for grouping object candidates detected by Cascade Classifier, HOG etc.
-
-instance of the class is to be passed to cv::partition
- */
-class CV_EXPORTS SimilarRects
-{
-public:
-    SimilarRects(double _eps) : eps(_eps) {}
-    inline bool operator()(const Rect& r1, const Rect& r2) const
-    {
-        double delta = eps * ((std::min)(r1.width, r2.width) + (std::min)(r1.height, r2.height)) * 0.5;
-        return std::abs(r1.x - r2.x) <= delta &&
-            std::abs(r1.y - r2.y) <= delta &&
-            std::abs(r1.x + r1.width - r2.x - r2.width) <= delta &&
-            std::abs(r1.y + r1.height - r2.y - r2.height) <= delta;
-    }
-    double eps;
-};
-
-/** @brief Groups the object candidate rectangles.
-
-@param rectList Input/output vector of rectangles. Output vector includes retained and grouped
-rectangles. (The Python list is not modified in place.)
-@param groupThreshold Minimum possible number of rectangles minus 1. The threshold is used in a
-group of rectangles to retain it.
-@param eps Relative difference between sides of the rectangles to merge them into a group.
-
-The function is a wrapper for the generic function partition . It clusters all the input rectangles
-using the rectangle equivalence criteria that combines rectangles with similar sizes and similar
-locations. The similarity is defined by eps. When eps=0 , no clustering is done at all. If
-\f$\texttt{eps}\rightarrow +\inf\f$ , all the rectangles are put in one cluster. Then, the small
-clusters containing less than or equal to groupThreshold rectangles are rejected. In each other
-cluster, the average rectangle is computed and put into the output rectangle list.
- */
-CV_EXPORTS   void groupRectangles(std::vector<Rect>& rectList, int groupThreshold, double eps = 0.2);
-/** @overload */
-CV_EXPORTS_W void groupRectangles(CV_IN_OUT std::vector<Rect>& rectList, CV_OUT std::vector<int>& weights,
-                                  int groupThreshold, double eps = 0.2);
-/** @overload */
-CV_EXPORTS   void groupRectangles(std::vector<Rect>& rectList, int groupThreshold,
-                                  double eps, std::vector<int>* weights, std::vector<double>* levelWeights );
-/** @overload */
-CV_EXPORTS   void groupRectangles(std::vector<Rect>& rectList, std::vector<int>& rejectLevels,
-                                  std::vector<double>& levelWeights, int groupThreshold, double eps = 0.2);
-/** @overload */
-CV_EXPORTS   void groupRectangles_meanshift(std::vector<Rect>& rectList, std::vector<double>& foundWeights,
-                                            std::vector<double>& foundScales,
-                                            double detectThreshold = 0.0, Size winDetSize = Size(64, 128));
-//! @}
-
-//! @addtogroup objdetect_cascade_classifier
-//! @{
-
-template<> struct DefaultDeleter<CvHaarClassifierCascade>{ CV_EXPORTS void operator ()(CvHaarClassifierCascade* obj) const; };
-
-enum { CASCADE_DO_CANNY_PRUNING    = 1,
-       CASCADE_SCALE_IMAGE         = 2,
-       CASCADE_FIND_BIGGEST_OBJECT = 4,
-       CASCADE_DO_ROUGH_SEARCH     = 8
-     };
-
-class CV_EXPORTS_W BaseCascadeClassifier : public Algorithm
-{
-public:
-    virtual ~BaseCascadeClassifier();
-    virtual bool empty() const CV_OVERRIDE = 0;
-    virtual bool load( const String& filename ) = 0;
-    virtual void detectMultiScale( InputArray image,
-                           CV_OUT std::vector<Rect>& objects,
-                           double scaleFactor,
-                           int minNeighbors, int flags,
-                           Size minSize, Size maxSize ) = 0;
-
-    virtual void detectMultiScale( InputArray image,
-                           CV_OUT std::vector<Rect>& objects,
-                           CV_OUT std::vector<int>& numDetections,
-                           double scaleFactor,
-                           int minNeighbors, int flags,
-                           Size minSize, Size maxSize ) = 0;
-
-    virtual void detectMultiScale( InputArray image,
-                                   CV_OUT std::vector<Rect>& objects,
-                                   CV_OUT std::vector<int>& rejectLevels,
-                                   CV_OUT std::vector<double>& levelWeights,
-                                   double scaleFactor,
-                                   int minNeighbors, int flags,
-                                   Size minSize, Size maxSize,
-                                   bool outputRejectLevels ) = 0;
-
-    virtual bool isOldFormatCascade() const = 0;
-    virtual Size getOriginalWindowSize() const = 0;
-    virtual int getFeatureType() const = 0;
-    virtual void* getOldCascade() = 0;
-
-    class CV_EXPORTS MaskGenerator
-    {
-    public:
-        virtual ~MaskGenerator() {}
-        virtual Mat generateMask(const Mat& src)=0;
-        virtual void initializeMask(const Mat& /*src*/) { }
-    };
-    virtual void setMaskGenerator(const Ptr<MaskGenerator>& maskGenerator) = 0;
-    virtual Ptr<MaskGenerator> getMaskGenerator() = 0;
-};
-
-/** @example samples/cpp/facedetect.cpp
-This program demonstrates usage of the Cascade classifier class
-\image html Cascade_Classifier_Tutorial_Result_Haar.jpg "Sample screenshot" width=321 height=254
-*/
-/** @brief Cascade classifier class for object detection.
- */
-class CV_EXPORTS_W CascadeClassifier
-{
-public:
-    CV_WRAP CascadeClassifier();
-    /** @brief Loads a classifier from a file.
-
-    @param filename Name of the file from which the classifier is loaded.
-     */
-    CV_WRAP CascadeClassifier(const String& filename);
-    ~CascadeClassifier();
-    /** @brief Checks whether the classifier has been loaded.
-    */
-    CV_WRAP bool empty() const;
-    /** @brief Loads a classifier from a file.
-
-    @param filename Name of the file from which the classifier is loaded. The file may contain an old
-    HAAR classifier trained by the haartraining application or a new cascade classifier trained by the
-    traincascade application.
-     */
-    CV_WRAP bool load( const String& filename );
-    /** @brief Reads a classifier from a FileStorage node.
-
-    @note The file may contain a new cascade classifier (trained by the traincascade application) only.
-     */
-    CV_WRAP bool read( const FileNode& node );
-
-    /** @brief Detects objects of different sizes in the input image. The detected objects are returned as a list
-    of rectangles.
-
-    @param image Matrix of the type CV_8U containing an image where objects are detected.
-    @param objects Vector of rectangles where each rectangle contains the detected object, the
-    rectangles may be partially outside the original image.
-    @param scaleFactor Parameter specifying how much the image size is reduced at each image scale.
-    @param minNeighbors Parameter specifying how many neighbors each candidate rectangle should have
-    to retain it.
-    @param flags Parameter with the same meaning for an old cascade as in the function
-    cvHaarDetectObjects. It is not used for a new cascade.
-    @param minSize Minimum possible object size. Objects smaller than that are ignored.
-    @param maxSize Maximum possible object size. Objects larger than that are ignored. If `maxSize == minSize` model is evaluated on single scale.
-    */
-    CV_WRAP void detectMultiScale( InputArray image,
-                          CV_OUT std::vector<Rect>& objects,
-                          double scaleFactor = 1.1,
-                          int minNeighbors = 3, int flags = 0,
-                          Size minSize = Size(),
-                          Size maxSize = Size() );
-
-    /** @overload
-    @param image Matrix of the type CV_8U containing an image where objects are detected.
-    @param objects Vector of rectangles where each rectangle contains the detected object, the
-    rectangles may be partially outside the original image.
-    @param numDetections Vector of detection numbers for the corresponding objects. An object's number
-    of detections is the number of neighboring positively classified rectangles that were joined
-    together to form the object.
-    @param scaleFactor Parameter specifying how much the image size is reduced at each image scale.
-    @param minNeighbors Parameter specifying how many neighbors each candidate rectangle should have
-    to retain it.
-    @param flags Parameter with the same meaning for an old cascade as in the function
-    cvHaarDetectObjects. It is not used for a new cascade.
-    @param minSize Minimum possible object size. Objects smaller than that are ignored.
-    @param maxSize Maximum possible object size. Objects larger than that are ignored. If `maxSize == minSize` model is evaluated on single scale.
-    */
-    CV_WRAP_AS(detectMultiScale2) void detectMultiScale( InputArray image,
-                          CV_OUT std::vector<Rect>& objects,
-                          CV_OUT std::vector<int>& numDetections,
-                          double scaleFactor=1.1,
-                          int minNeighbors=3, int flags=0,
-                          Size minSize=Size(),
-                          Size maxSize=Size() );
-
-    /** @overload
-    This function allows you to retrieve the final stage decision certainty of classification.
-    For this, one needs to set `outputRejectLevels` on true and provide the `rejectLevels` and `levelWeights` parameter.
-    For each resulting detection, `levelWeights` will then contain the certainty of classification at the final stage.
-    This value can then be used to separate strong from weaker classifications.
-
-    A code sample on how to use it efficiently can be found below:
-    @code
-    Mat img;
-    vector<double> weights;
-    vector<int> levels;
-    vector<Rect> detections;
-    CascadeClassifier model("/path/to/your/model.xml");
-    model.detectMultiScale(img, detections, levels, weights, 1.1, 3, 0, Size(), Size(), true);
-    cerr << "Detection " << detections[0] << " with weight " << weights[0] << endl;
-    @endcode
-    */
-    CV_WRAP_AS(detectMultiScale3) void detectMultiScale( InputArray image,
-                                  CV_OUT std::vector<Rect>& objects,
-                                  CV_OUT std::vector<int>& rejectLevels,
-                                  CV_OUT std::vector<double>& levelWeights,
-                                  double scaleFactor = 1.1,
-                                  int minNeighbors = 3, int flags = 0,
-                                  Size minSize = Size(),
-                                  Size maxSize = Size(),
-                                  bool outputRejectLevels = false );
-
-    CV_WRAP bool isOldFormatCascade() const;
-    CV_WRAP Size getOriginalWindowSize() const;
-    CV_WRAP int getFeatureType() const;
-    void* getOldCascade();
-
-    CV_WRAP static bool convert(const String& oldcascade, const String& newcascade);
-
-    void setMaskGenerator(const Ptr<BaseCascadeClassifier::MaskGenerator>& maskGenerator);
-    Ptr<BaseCascadeClassifier::MaskGenerator> getMaskGenerator();
-
-    Ptr<BaseCascadeClassifier> cc;
-};
-
-CV_EXPORTS Ptr<BaseCascadeClassifier::MaskGenerator> createFaceDetectionMaskGenerator();
-//! @}
-
-//! @addtogroup objdetect_hog
-//! @{
-//////////////// HOG (Histogram-of-Oriented-Gradients) Descriptor and Object Detector //////////////
-
-//! struct for detection region of interest (ROI)
-struct DetectionROI
-{
-   //! scale(size) of the bounding box
-   double scale;
-   //! set of requested locations to be evaluated
-   std::vector<cv::Point> locations;
-   //! vector that will contain confidence values for each location
-   std::vector<double> confidences;
-};
-
-/**@brief Implementation of HOG (Histogram of Oriented Gradients) descriptor and object detector.
-
-the HOG descriptor algorithm introduced by Navneet Dalal and Bill Triggs @cite Dalal2005 .
-
-useful links:
-
-https://hal.inria.fr/inria-00548512/document/
-
-https://en.wikipedia.org/wiki/Histogram_of_oriented_gradients
-
-https://software.intel.com/en-us/ipp-dev-reference-histogram-of-oriented-gradients-hog-descriptor
-
-http://www.learnopencv.com/histogram-of-oriented-gradients
-
-http://www.learnopencv.com/handwritten-digits-classification-an-opencv-c-python-tutorial
-
- */
-struct CV_EXPORTS_W HOGDescriptor
-{
-public:
-    enum HistogramNormType { L2Hys = 0 //!< Default histogramNormType
-         };
-    enum { DEFAULT_NLEVELS = 64 //!< Default nlevels value.
-         };
-    enum DescriptorStorageFormat { DESCR_FORMAT_COL_BY_COL, DESCR_FORMAT_ROW_BY_ROW };
-
-    /**@brief Creates the HOG descriptor and detector with default parameters.
-
-    aqual to HOGDescriptor(Size(64,128), Size(16,16), Size(8,8), Size(8,8), 9 )
-    */
-    CV_WRAP HOGDescriptor() : winSize(64,128), blockSize(16,16), blockStride(8,8),
-        cellSize(8,8), nbins(9), derivAperture(1), winSigma(-1),
-        histogramNormType(HOGDescriptor::L2Hys), L2HysThreshold(0.2), gammaCorrection(true),
-        free_coef(-1.f), nlevels(HOGDescriptor::DEFAULT_NLEVELS), signedGradient(false)
-    {}
-
-    /** @overload
-    @param _winSize sets winSize with given value.
-    @param _blockSize sets blockSize with given value.
-    @param _blockStride sets blockStride with given value.
-    @param _cellSize sets cellSize with given value.
-    @param _nbins sets nbins with given value.
-    @param _derivAperture sets derivAperture with given value.
-    @param _winSigma sets winSigma with given value.
-    @param _histogramNormType sets histogramNormType with given value.
-    @param _L2HysThreshold sets L2HysThreshold with given value.
-    @param _gammaCorrection sets gammaCorrection with given value.
-    @param _nlevels sets nlevels with given value.
-    @param _signedGradient sets signedGradient with given value.
-    */
-    CV_WRAP HOGDescriptor(Size _winSize, Size _blockSize, Size _blockStride,
-                  Size _cellSize, int _nbins, int _derivAperture=1, double _winSigma=-1,
-                  HOGDescriptor::HistogramNormType _histogramNormType=HOGDescriptor::L2Hys,
-                  double _L2HysThreshold=0.2, bool _gammaCorrection=false,
-                  int _nlevels=HOGDescriptor::DEFAULT_NLEVELS, bool _signedGradient=false)
-    : winSize(_winSize), blockSize(_blockSize), blockStride(_blockStride), cellSize(_cellSize),
-    nbins(_nbins), derivAperture(_derivAperture), winSigma(_winSigma),
-    histogramNormType(_histogramNormType), L2HysThreshold(_L2HysThreshold),
-    gammaCorrection(_gammaCorrection), free_coef(-1.f), nlevels(_nlevels), signedGradient(_signedGradient)
-    {}
-
-    /** @overload
-
-    Creates the HOG descriptor and detector and loads HOGDescriptor parameters and coefficients for the linear SVM classifier from a file.
-    @param filename The file name containing HOGDescriptor properties and coefficients for the linear SVM classifier.
-    */
-    CV_WRAP HOGDescriptor(const String& filename)
-    {
-        load(filename);
-    }
-
-    /** @overload
-    @param d the HOGDescriptor which cloned to create a new one.
-    */
-    HOGDescriptor(const HOGDescriptor& d)
-    {
-        d.copyTo(*this);
-    }
-
-    /**@brief Default destructor.
-    */
-    virtual ~HOGDescriptor() {}
-
-    /**@brief Returns the number of coefficients required for the classification.
-    */
-    CV_WRAP size_t getDescriptorSize() const;
-
-    /** @brief Checks if detector size equal to descriptor size.
-    */
-    CV_WRAP bool checkDetectorSize() const;
-
-    /** @brief Returns winSigma value
-    */
-    CV_WRAP double getWinSigma() const;
-
-    /**@example samples/cpp/peopledetect.cpp
-    */
-    /**@brief Sets coefficients for the linear SVM classifier.
-    @param svmdetector coefficients for the linear SVM classifier.
-    */
-    CV_WRAP virtual void setSVMDetector(InputArray svmdetector);
-
-    /** @brief Reads HOGDescriptor parameters and coefficients for the linear SVM classifier from a file node.
-    @param fn File node
-    */
-    virtual bool read(FileNode& fn);
-
-    /** @brief Stores HOGDescriptor parameters and coefficients for the linear SVM classifier in a file storage.
-    @param fs File storage
-    @param objname Object name
-    */
-    virtual void write(FileStorage& fs, const String& objname) const;
-
-    /** @brief loads HOGDescriptor parameters and coefficients for the linear SVM classifier from a file
-    @param filename Name of the file to read.
-    @param objname The optional name of the node to read (if empty, the first top-level node will be used).
-    */
-    CV_WRAP virtual bool load(const String& filename, const String& objname = String());
-
-    /** @brief saves HOGDescriptor parameters and coefficients for the linear SVM classifier to a file
-    @param filename File name
-    @param objname Object name
-    */
-    CV_WRAP virtual void save(const String& filename, const String& objname = String()) const;
-
-    /** @brief clones the HOGDescriptor
-    @param c cloned HOGDescriptor
-    */
-    virtual void copyTo(HOGDescriptor& c) const;
-
-    /**@example samples/cpp/train_HOG.cpp
-    */
-    /** @brief Computes HOG descriptors of given image.
-    @param img Matrix of the type CV_8U containing an image where HOG features will be calculated.
-    @param descriptors Matrix of the type CV_32F
-    @param winStride Window stride. It must be a multiple of block stride.
-    @param padding Padding
-    @param locations Vector of Point
-    */
-    CV_WRAP virtual void compute(InputArray img,
-                         CV_OUT std::vector<float>& descriptors,
-                         Size winStride = Size(), Size padding = Size(),
-                         const std::vector<Point>& locations = std::vector<Point>()) const;
-
-    /** @brief Performs object detection without a multi-scale window.
-    @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
-    @param foundLocations Vector of point where each point contains left-top corner point of detected object boundaries.
-    @param weights Vector that will contain confidence values for each detected object.
-    @param hitThreshold Threshold for the distance between features and SVM classifying plane.
-    Usually it is 0 and should be specified in the detector coefficients (as the last free coefficient).
-    But if the free coefficient is omitted (which is allowed), you can specify it manually here.
-    @param winStride Window stride. It must be a multiple of block stride.
-    @param padding Padding
-    @param searchLocations Vector of Point includes set of requested locations to be evaluated.
-    */
-    CV_WRAP virtual void detect(InputArray img, CV_OUT std::vector<Point>& foundLocations,
-                        CV_OUT std::vector<double>& weights,
-                        double hitThreshold = 0, Size winStride = Size(),
-                        Size padding = Size(),
-                        const std::vector<Point>& searchLocations = std::vector<Point>()) const;
-
-    /** @brief Performs object detection without a multi-scale window.
-    @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
-    @param foundLocations Vector of point where each point contains left-top corner point of detected object boundaries.
-    @param hitThreshold Threshold for the distance between features and SVM classifying plane.
-    Usually it is 0 and should be specified in the detector coefficients (as the last free coefficient).
-    But if the free coefficient is omitted (which is allowed), you can specify it manually here.
-    @param winStride Window stride. It must be a multiple of block stride.
-    @param padding Padding
-    @param searchLocations Vector of Point includes locations to search.
-    */
-    virtual void detect(InputArray img, CV_OUT std::vector<Point>& foundLocations,
-                        double hitThreshold = 0, Size winStride = Size(),
-                        Size padding = Size(),
-                        const std::vector<Point>& searchLocations=std::vector<Point>()) const;
-
-    /** @brief Detects objects of different sizes in the input image. The detected objects are returned as a list
-    of rectangles.
-    @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
-    @param foundLocations Vector of rectangles where each rectangle contains the detected object.
-    @param foundWeights Vector that will contain confidence values for each detected object.
-    @param hitThreshold Threshold for the distance between features and SVM classifying plane.
-    Usually it is 0 and should be specified in the detector coefficients (as the last free coefficient).
-    But if the free coefficient is omitted (which is allowed), you can specify it manually here.
-    @param winStride Window stride. It must be a multiple of block stride.
-    @param padding Padding
-    @param scale Coefficient of the detection window increase.
-    @param groupThreshold Coefficient to regulate the similarity threshold. When detected, some objects can be covered
-    by many rectangles. 0 means not to perform grouping.
-    @param useMeanshiftGrouping indicates grouping algorithm
-    */
-    CV_WRAP virtual void detectMultiScale(InputArray img, CV_OUT std::vector<Rect>& foundLocations,
-                                  CV_OUT std::vector<double>& foundWeights, double hitThreshold = 0,
-                                  Size winStride = Size(), Size padding = Size(), double scale = 1.05,
-                                  double groupThreshold = 2.0, bool useMeanshiftGrouping = false) const;
-
-    /** @brief Detects objects of different sizes in the input image. The detected objects are returned as a list
-    of rectangles.
-    @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
-    @param foundLocations Vector of rectangles where each rectangle contains the detected object.
-    @param hitThreshold Threshold for the distance between features and SVM classifying plane.
-    Usually it is 0 and should be specified in the detector coefficients (as the last free coefficient).
-    But if the free coefficient is omitted (which is allowed), you can specify it manually here.
-    @param winStride Window stride. It must be a multiple of block stride.
-    @param padding Padding
-    @param scale Coefficient of the detection window increase.
-    @param groupThreshold Coefficient to regulate the similarity threshold. When detected, some objects can be covered
-    by many rectangles. 0 means not to perform grouping.
-    @param useMeanshiftGrouping indicates grouping algorithm
-    */
-    virtual void detectMultiScale(InputArray img, CV_OUT std::vector<Rect>& foundLocations,
-                                  double hitThreshold = 0, Size winStride = Size(),
-                                  Size padding = Size(), double scale = 1.05,
-                                  double groupThreshold = 2.0, bool useMeanshiftGrouping = false) const;
-
-    /** @brief  Computes gradients and quantized gradient orientations.
-    @param img Matrix contains the image to be computed
-    @param grad Matrix of type CV_32FC2 contains computed gradients
-    @param angleOfs Matrix of type CV_8UC2 contains quantized gradient orientations
-    @param paddingTL Padding from top-left
-    @param paddingBR Padding from bottom-right
-    */
-    CV_WRAP virtual void computeGradient(InputArray img, InputOutputArray grad, InputOutputArray angleOfs,
-                                 Size paddingTL = Size(), Size paddingBR = Size()) const;
-
-    /** @brief Returns coefficients of the classifier trained for people detection (for 64x128 windows).
-    */
-    CV_WRAP static std::vector<float> getDefaultPeopleDetector();
-
-    /**@example samples/tapi/hog.cpp
-    */
-    /** @brief Returns coefficients of the classifier trained for people detection (for 48x96 windows).
-    */
-    CV_WRAP static std::vector<float> getDaimlerPeopleDetector();
-
-    //! Detection window size. Align to block size and block stride. Default value is Size(64,128).
-    CV_PROP Size winSize;
-
-    //! Block size in pixels. Align to cell size. Default value is Size(16,16).
-    CV_PROP Size blockSize;
-
-    //! Block stride. It must be a multiple of cell size. Default value is Size(8,8).
-    CV_PROP Size blockStride;
-
-    //! Cell size. Default value is Size(8,8).
-    CV_PROP Size cellSize;
-
-    //! Number of bins used in the calculation of histogram of gradients. Default value is 9.
-    CV_PROP int nbins;
-
-    //! not documented
-    CV_PROP int derivAperture;
-
-    //! Gaussian smoothing window parameter.
-    CV_PROP double winSigma;
-
-    //! histogramNormType
-    CV_PROP HOGDescriptor::HistogramNormType histogramNormType;
-
-    //! L2-Hys normalization method shrinkage.
-    CV_PROP double L2HysThreshold;
-
-    //! Flag to specify whether the gamma correction preprocessing is required or not.
-    CV_PROP bool gammaCorrection;
-
-    //! coefficients for the linear SVM classifier.
-    CV_PROP std::vector<float> svmDetector;
-
-    //! coefficients for the linear SVM classifier used when OpenCL is enabled
-    UMat oclSvmDetector;
-
-    //! not documented
-    float free_coef;
-
-    //! Maximum number of detection window increases. Default value is 64
-    CV_PROP int nlevels;
-
-    //! Indicates signed gradient will be used or not
-    CV_PROP bool signedGradient;
-
-    /** @brief evaluate specified ROI and return confidence value for each location
-    @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
-    @param locations Vector of Point
-    @param foundLocations Vector of Point where each Point is detected object's top-left point.
-    @param confidences confidences
-    @param hitThreshold Threshold for the distance between features and SVM classifying plane. Usually
-    it is 0 and should be specified in the detector coefficients (as the last free coefficient). But if
-    the free coefficient is omitted (which is allowed), you can specify it manually here
-    @param winStride winStride
-    @param padding padding
-    */
-    virtual void detectROI(InputArray img, const std::vector<cv::Point> &locations,
-                                   CV_OUT std::vector<cv::Point>& foundLocations, CV_OUT std::vector<double>& confidences,
-                                   double hitThreshold = 0, cv::Size winStride = Size(),
-                                   cv::Size padding = Size()) const;
-
-    /** @brief evaluate specified ROI and return confidence value for each location in multiple scales
-    @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
-    @param foundLocations Vector of rectangles where each rectangle contains the detected object.
-    @param locations Vector of DetectionROI
-    @param hitThreshold Threshold for the distance between features and SVM classifying plane. Usually it is 0 and should be specified
-    in the detector coefficients (as the last free coefficient). But if the free coefficient is omitted (which is allowed), you can specify it manually here.
-    @param groupThreshold Minimum possible number of rectangles minus 1. The threshold is used in a group of rectangles to retain it.
-    */
-    virtual void detectMultiScaleROI(InputArray img,
-                                     CV_OUT std::vector<cv::Rect>& foundLocations,
-                                     std::vector<DetectionROI>& locations,
-                                     double hitThreshold = 0,
-                                     int groupThreshold = 0) const;
-
-    /** @brief Groups the object candidate rectangles.
-    @param rectList  Input/output vector of rectangles. Output vector includes retained and grouped rectangles. (The Python list is not modified in place.)
-    @param weights Input/output vector of weights of rectangles. Output vector includes weights of retained and grouped rectangles. (The Python list is not modified in place.)
-    @param groupThreshold Minimum possible number of rectangles minus 1. The threshold is used in a group of rectangles to retain it.
-    @param eps Relative difference between sides of the rectangles to merge them into a group.
-    */
-    void groupRectangles(std::vector<cv::Rect>& rectList, std::vector<double>& weights, int groupThreshold, double eps) const;
-};
-//! @}
-
 //! @addtogroup objdetect_qrcode
 //! @{
 
+/** @brief QR code encoder. */
 class CV_EXPORTS_W QRCodeEncoder {
 protected:
     QRCodeEncoder();  // use ::create()
@@ -829,6 +214,8 @@ public:
     CV_WRAP virtual void encodeStructuredAppend(const String& encoded_info, OutputArrayOfArrays qrcodes) = 0;
 
 };
+
+/** @brief QR code detector. */
 class CV_EXPORTS_W_SIMPLE QRCodeDetector : public GraphicalCodeDetector
 {
 public:
@@ -877,6 +264,7 @@ public:
     CV_WRAP QRCodeEncoder::ECIEncodings getEncoding(int codeIdx = 0);
 };
 
+/** @brief QR code detector based on Aruco markers detection code. */
 class CV_EXPORTS_W_SIMPLE QRCodeDetectorAruco : public GraphicalCodeDetector {
 public:
     CV_WRAP QRCodeDetectorAruco();
@@ -929,10 +317,279 @@ public:
     CV_WRAP void setArucoParameters(const aruco::DetectorParameters& params);
 };
 
+enum { CALIB_CB_ADAPTIVE_THRESH = 1,
+       CALIB_CB_NORMALIZE_IMAGE = 2,
+       CALIB_CB_FILTER_QUADS    = 4,
+       CALIB_CB_FAST_CHECK      = 8,
+       CALIB_CB_EXHAUSTIVE      = 16,
+       CALIB_CB_ACCURACY        = 32,
+       CALIB_CB_LARGER          = 64,
+       CALIB_CB_MARKER          = 128,
+       CALIB_CB_PLAIN           = 256
+     };
+
+enum { CALIB_CB_SYMMETRIC_GRID  = 1,
+       CALIB_CB_ASYMMETRIC_GRID = 2,
+       CALIB_CB_CLUSTERING      = 4
+     };
+
+/** @brief Finds the positions of internal corners of the chessboard.
+
+@param image Source chessboard view. It must be an 8-bit grayscale or color image.
+@param patternSize Number of inner corners per a chessboard row and column
+( patternSize = cv::Size(points_per_row,points_per_column) = cv::Size(columns,rows) ).
+@param corners Output array of detected corners.
+@param flags Various operation flags that can be zero or a combination of the following values:
+-   @ref CALIB_CB_ADAPTIVE_THRESH Use adaptive thresholding to convert the image to black
+and white, rather than a fixed threshold level (computed from the average image brightness).
+-   @ref CALIB_CB_NORMALIZE_IMAGE Normalize the image gamma with equalizeHist before
+applying fixed or adaptive thresholding.
+-   @ref CALIB_CB_FILTER_QUADS Use additional criteria (like contour area, perimeter,
+square-like shape) to filter out false quads extracted at the contour retrieval stage.
+-   @ref CALIB_CB_FAST_CHECK Run a fast check on the image that looks for chessboard corners,
+and shortcut the call if none is found. This can drastically speed up the call in the
+degenerate condition when no chessboard is observed.
+-   @ref CALIB_CB_PLAIN All other flags are ignored. The input image is taken as is.
+No image processing is done to improve to find the checkerboard. This has the effect of speeding up the
+execution of the function but could lead to not recognizing the checkerboard if the image
+is not previously binarized in the appropriate manner.
+
+@return True if all of the corners are found and placed in a certain order (row by row,
+left to right in every row). Otherwise, if the function fails to find all the corners or reorder them,
+it returns false.
+
+The function attempts to determine whether the input image is a view of the chessboard pattern and
+locate the internal chessboard corners. For example, a regular chessboard has 8 x 8 squares and
+7 x 7 internal corners, that is, points where the black squares touch each other. The detected
+coordinates are approximate, and to determine their positions more accurately, the function
+calls #cornerSubPix. You also may use the function #cornerSubPix with different parameters if
+returned coordinates are not accurate enough.
+
+Sample usage of detecting and drawing chessboard corners: :
+@code
+    Size patternsize(8,6); //interior number of corners
+    Mat gray = ....; //source image
+    vector<Point2f> corners; //this will be filled by the detected corners
+
+    //CALIB_CB_FAST_CHECK saves a lot of time on images
+    //that do not contain any chessboard corners
+    bool patternfound = findChessboardCorners(gray, patternsize, corners,
+            CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE
+            + CALIB_CB_FAST_CHECK);
+
+    if(patternfound)
+      cornerSubPix(gray, corners, Size(11, 11), Size(-1, -1),
+        TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+
+    drawChessboardCorners(img, patternsize, Mat(corners), patternfound);
+@endcode
+@note The function requires white space (like a square-thick border, the wider the better) around
+the board to make the detection more robust in various environments. Otherwise, if there is no
+border and the background is dark, the outer black squares cannot be segmented properly and so the
+square grouping and ordering algorithm fails.
+
+Use the `generate_pattern.py` Python script (@ref tutorial_camera_calibration_pattern)
+to create the desired checkerboard pattern.
+ */
+CV_EXPORTS_W bool findChessboardCorners( InputArray image, Size patternSize, OutputArray corners,
+                                         int flags = CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE );
+
+/** @brief Checks whether the image contains chessboard of the specific size or not.
+
+@param img Source chessboard view.
+@param size Size of the chessboard.
+
+@return Whether a chessboard was found.
+*/
+CV_EXPORTS_W bool checkChessboard(InputArray img, Size size);
+
+/** @brief Finds the positions of internal corners of the chessboard using a sector based approach.
+
+@param image Source chessboard view. It must be an 8-bit grayscale or color image.
+@param patternSize Number of inner corners per a chessboard row and column
+( patternSize = cv::Size(points_per_row,points_per_column) = cv::Size(columns,rows) ).
+@param corners Output array of detected corners.
+@param flags Various operation flags that can be zero or a combination of the following values:
+-   @ref CALIB_CB_NORMALIZE_IMAGE Normalize the image gamma with equalizeHist before detection.
+-   @ref CALIB_CB_EXHAUSTIVE Run an exhaustive search to improve detection rate.
+-   @ref CALIB_CB_ACCURACY Up sample input image to improve sub-pixel accuracy due to aliasing effects.
+-   @ref CALIB_CB_LARGER The detected pattern is allowed to be larger than patternSize (see description).
+-   @ref CALIB_CB_MARKER The detected pattern must have a marker (see description).
+This should be used if an accurate camera calibration is required.
+@param meta Optional output array of detected corners (CV_8UC1 and size = cv::Size(columns,rows)).
+Each entry stands for one corner of the pattern and can have one of the following values:
+-   0 = no meta data attached
+-   1 = left-top corner of a black cell
+-   2 = left-top corner of a white cell
+-   3 = left-top corner of a black cell with a white marker dot
+-   4 = left-top corner of a white cell with a black marker dot (pattern origin in case of markers otherwise first corner)
+
+The function is analog to #findChessboardCorners but uses a localized radon
+transformation approximated by box filters being more robust to all sort of
+noise, faster on larger images and is able to directly return the sub-pixel
+position of the internal chessboard corners. The Method is based on the paper
+@cite duda2018 "Accurate Detection and Localization of Checkerboard Corners for
+Calibration" demonstrating that the returned sub-pixel positions are more
+accurate than the one returned by cornerSubPix allowing a precise camera
+calibration for demanding applications.
+
+In the case, the flags @ref CALIB_CB_LARGER or @ref CALIB_CB_MARKER are given,
+the result can be recovered from the optional meta array. Both flags are
+helpful to use calibration patterns exceeding the field of view of the camera.
+These oversized patterns allow more accurate calibrations as corners can be
+utilized, which are as close as possible to the image borders.  For a
+consistent coordinate system across all images, the optional marker (see image
+below) can be used to move the origin of the board to the location where the
+black circle is located.
+
+@note The function requires a white boarder with roughly the same width as one
+of the checkerboard fields around the whole board to improve the detection in
+various environments. In addition, because of the localized radon
+transformation it is beneficial to use round corners for the field corners
+which are located on the outside of the board. The following figure illustrates
+a sample checkerboard optimized for the detection. However, any other checkerboard
+can be used as well.
+
+Use the `generate_pattern.py` Python script (@ref tutorial_camera_calibration_pattern)
+to create the corresponding checkerboard pattern:
+\image html pics/checkerboard_radon.png width=60%
+ */
+CV_EXPORTS_AS(findChessboardCornersSBWithMeta)
+bool findChessboardCornersSB(InputArray image,Size patternSize, OutputArray corners,
+                             int flags,OutputArray meta);
+/** @overload */
+CV_EXPORTS_W inline
+bool findChessboardCornersSB(InputArray image, Size patternSize, OutputArray corners,
+                             int flags = 0)
+{
+    return findChessboardCornersSB(image, patternSize, corners, flags, noArray());
+}
+
+/** @brief Estimates the sharpness of a detected chessboard.
+
+Image sharpness, as well as brightness, are a critical parameter for accuracte
+camera calibration. For accessing these parameters for filtering out
+problematic calibraiton images, this method calculates edge profiles by traveling from
+black to white chessboard cell centers. Based on this, the number of pixels is
+calculated required to transit from black to white. This width of the
+transition area is a good indication of how sharp the chessboard is imaged
+and should be below ~3.0 pixels.
+
+@param image Gray image used to find chessboard corners
+@param patternSize Size of a found chessboard pattern
+@param corners Corners found by #findChessboardCornersSB
+@param rise_distance Rise distance 0.8 means 10% ... 90% of the final signal strength
+@param vertical By default edge responses for horizontal lines are calculated
+@param sharpness Optional output array with a sharpness value for calculated edge responses (see description)
+
+The optional sharpness array is of type CV_32FC1 and has for each calculated
+profile one row with the following five entries:
+* 0 = x coordinate of the underlying edge in the image
+* 1 = y coordinate of the underlying edge in the image
+* 2 = width of the transition area (sharpness)
+* 3 = signal strength in the black cell (min brightness)
+* 4 = signal strength in the white cell (max brightness)
+
+@return Scalar(average sharpness, average min brightness, average max brightness,0)
+*/
+CV_EXPORTS_W Scalar estimateChessboardSharpness(InputArray image, Size patternSize, InputArray corners,
+                                                float rise_distance=0.8F,bool vertical=false,
+                                                OutputArray sharpness=noArray());
+
+
+//! finds subpixel-accurate positions of the chessboard corners
+CV_EXPORTS_W bool find4QuadCornerSubpix( InputArray img, InputOutputArray corners, Size region_size );
+
+/** @brief Renders the detected chessboard corners.
+
+@param image Destination image. It must be an 8-bit color image.
+@param patternSize Number of inner corners per a chessboard row and column
+(patternSize = cv::Size(points_per_row,points_per_column)).
+@param corners Array of detected corners, the output of #findChessboardCorners.
+@param patternWasFound Parameter indicating whether the complete board was found or not. The
+return value of #findChessboardCorners should be passed here.
+
+The function draws individual chessboard corners detected either as red circles if the board was not
+found, or as colored corners connected with lines if the board was found.
+ */
+CV_EXPORTS_W void drawChessboardCorners( InputOutputArray image, Size patternSize,
+                                         InputArray corners, bool patternWasFound );
+
+struct CV_EXPORTS_W_SIMPLE CirclesGridFinderParameters
+{
+    CV_WRAP CirclesGridFinderParameters();
+    CV_PROP_RW cv::Size2f densityNeighborhoodSize;
+    CV_PROP_RW float minDensity;
+    CV_PROP_RW int kmeansAttempts;
+    CV_PROP_RW int minDistanceToAddKeypoint;
+    CV_PROP_RW int keypointScale;
+    CV_PROP_RW float minGraphConfidence;
+    CV_PROP_RW float vertexGain;
+    CV_PROP_RW float vertexPenalty;
+    CV_PROP_RW float existingVertexGain;
+    CV_PROP_RW float edgeGain;
+    CV_PROP_RW float edgePenalty;
+    CV_PROP_RW float convexHullFactor;
+    CV_PROP_RW float minRNGEdgeSwitchDist;
+
+    enum GridType
+    {
+      SYMMETRIC_GRID, ASYMMETRIC_GRID
+    };
+    CV_PROP_RW GridType gridType;
+
+    CV_PROP_RW float squareSize; //!< Distance between two adjacent points. Used by CALIB_CB_CLUSTERING.
+    CV_PROP_RW float maxRectifiedDistance; //!< Max deviation from prediction. Used by CALIB_CB_CLUSTERING.
+};
+
+/** @brief Finds centers in the grid of circles.
+
+@param image grid view of input circles; it must be an 8-bit grayscale or color image.
+@param patternSize number of circles per row and column
+( patternSize = Size(points_per_row, points_per_column) ).
+@param centers output array of detected centers.
+@param flags various operation flags that can be one of the following values:
+-   @ref CALIB_CB_SYMMETRIC_GRID uses symmetric pattern of circles.
+-   @ref CALIB_CB_ASYMMETRIC_GRID uses asymmetric pattern of circles.
+-   @ref CALIB_CB_CLUSTERING uses a special algorithm for grid detection. It is more robust to
+perspective distortions but much more sensitive to background clutter.
+@param blobDetector feature detector that finds blobs like dark circles on light background.
+                    If `blobDetector` is NULL then `image` represents Point2f array of candidates.
+@param parameters struct for finding circles in a grid pattern.
+
+return True if all of the centers have been found and they have been placed in a certain order
+(row by row, left to right in every row). Otherwise, if the function fails to find all the corners
+or reorder them, it returns false.
+
+The function attempts to determine whether the input image contains a grid of circles. If it is, the
+function locates centers of the circles.
+
+Sample usage of detecting and drawing the centers of circles: :
+@code
+    Size patternsize(7,7); //number of centers
+    Mat gray = ...; //source image
+    vector<Point2f> centers; //this will be filled by the detected centers
+
+    bool patternfound = findCirclesGrid(gray, patternsize, centers);
+
+    drawChessboardCorners(img, patternsize, Mat(centers), patternfound);
+@endcode
+@note The function requires white space (like a square-thick border, the wider the better) around
+the board to make the detection more robust in various environments.
+ */
+CV_EXPORTS_W bool findCirclesGrid( InputArray image, Size patternSize,
+                                   OutputArray centers, int flags,
+                                   const Ptr<FeatureDetector> &blobDetector,
+                                   const CirclesGridFinderParameters& parameters);
+
+/** @overload */
+CV_EXPORTS_W bool findCirclesGrid( InputArray image, Size patternSize,
+                                   OutputArray centers, int flags = CALIB_CB_SYMMETRIC_GRID,
+                                   const Ptr<FeatureDetector> &blobDetector = cv::SimpleBlobDetector::create());
+
 //! @}
 }
 
-#include "opencv2/objdetect/detection_based_tracker.hpp"
 #include "opencv2/objdetect/face.hpp"
 #include "opencv2/objdetect/charuco_detector.hpp"
 #include "opencv2/objdetect/barcode.hpp"

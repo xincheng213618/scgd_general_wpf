@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using LocalizedText = global::ColorVision.Solution.DisplayText;
+using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -103,7 +104,7 @@ namespace ColorVision.Solution
             {
                 if (string.IsNullOrEmpty(dialog.SelectedPath))
                 {
-                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    MessageBox.Show(LocalizedText.Get("文件夹路径不能为空"), LocalizedText.Get("提示"));
                     return;
                 }
                 NewCreateViewMode.DirectoryPath = dialog.SelectedPath;
@@ -127,12 +128,12 @@ namespace ColorVision.Solution
 
             if (SolutionDirectoryPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || NewCreateViewMode.Name.IndexOfAny(Path.GetInvalidFileNameChars())>=0)
             {
-                MessageBox.Show("工程名不能包含特殊字符", "ColorVision");
+                MessageBox.Show(LocalizedText.Get("工程名不能包含特殊字符"), "ColorVision");
                 return;
             }
             if (!Directory.Exists(NewCreateViewMode.DirectoryPath))
             {
-                if (MessageBox.Show("不存在父目录，是否创建", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(LocalizedText.Get("不存在父目录，是否创建"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Directory.CreateDirectory(NewCreateViewMode.DirectoryPath);
                 }
@@ -145,7 +146,7 @@ namespace ColorVision.Solution
 
             if (Directory.Exists(SolutionDirectoryPath))
             {
-                var result = MessageBox.Show("文件夹不为空，是否清空文件夹", "ColorVision", MessageBoxButton.YesNo);
+                var result = MessageBox.Show(LocalizedText.Get("文件夹不为空，是否清空文件夹"), "ColorVision", MessageBoxButton.YesNo);
                 if (result == MessageBoxResult.Yes)
                 {
                     try

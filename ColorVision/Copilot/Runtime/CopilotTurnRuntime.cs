@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -85,6 +86,31 @@ namespace ColorVision.Copilot
                 onEvent,
                 cancellationToken);
 
+        private async Task<CopilotImageUnderstandingResult> AnalyzeImagesForTurnAsync(
+            CopilotTurnRequest request,
+            CopilotTurnEventSink eventSink,
+            CancellationToken cancellationToken)
+        {
+            CopilotImageUnderstandingResult result;
+            try
+            {
+                result = await _imageUnderstandingService.AnalyzeAsync(
+                    request.Profile,
+                    request.UserText,
+                    request.HostContext.Attachments,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                eventSink.OnTokenUsageUpdated(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception));
+                throw;
+            }
+
+            // Image analysis may already be billed when another preparation task fails or is cancelled.
+            eventSink.OnTokenUsageUpdated(result.Usage);
+            return result;
+        }
+
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
             CopilotTurnEventSink eventSink,
@@ -103,16 +129,16 @@ namespace ColorVision.Copilot
                     cancellationToken)
                 : Task.FromResult(requestContent);
             var imageUnderstandingTask = rebuildRequestContext
-                ? _imageUnderstandingService.AnalyzeAsync(
-                    request.Profile,
-                    prompt,
-                    request.HostContext.Attachments,
+                ? AnalyzeImagesForTurnAsync(
+                    request,
+                    eventSink,
                     cancellationToken)
                 : Task.FromResult(CopilotImageUnderstandingResult.Empty);
             var attachmentContextTask = captureAttachmentContext
-                ? CopilotConversationRequestBuilder.BuildAttachmentContextBlockAsync(
+                ? _conversationRequestBuilder.BuildRequestAttachmentContextBlockAsync(
                     request.HostContext.Attachments,
-                    cancellationToken: cancellationToken)
+                    request.RefreshExternalContext,
+                    cancellationToken)
                 : Task.FromResult(string.Empty);
 
             await Task.WhenAll(requestContentTask, imageUnderstandingTask, attachmentContextTask).ConfigureAwait(false);
@@ -129,7 +155,6 @@ namespace ColorVision.Copilot
             }
 
             eventSink.OnRequestPrepared(new CopilotPreparedTurnRequest(requestContent, attachmentContextCaptured));
-            eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage);
             var history = await CopilotConversationRequestBuilder.BuildChatHistoryAsync(
                 request.HostContext.ConversationHistory,
                 requestContent,
@@ -170,10 +195,9 @@ namespace ColorVision.Copilot
                 recoveryTaskContext.EffectiveUserText,
                 request.Mode,
                 request.HostContext);
-            var imageUnderstandingTask = _imageUnderstandingService.AnalyzeAsync(
-                request.Profile,
-                request.UserText,
-                request.HostContext.Attachments,
+            var imageUnderstandingTask = AnalyzeImagesForTurnAsync(
+                request,
+                eventSink,
                 cancellationToken);
             var contextItemsTask = _contextRegistry.CaptureAsync(
                 requestPlan.ContextRequest,
@@ -214,7 +238,6 @@ namespace ColorVision.Copilot
                 : null;
             if (reviewTarget != null)
                 eventSink.OnReviewEntered(reviewTarget);
-            eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage);
 
             CopilotTurnAnswerLifecycleState? reviewAnswer = reviewTarget != null
                 ? CopilotTurnAnswerLifecycleState.Empty
@@ -317,7 +340,7 @@ namespace ColorVision.Copilot
                 .Append(new CopilotContextItem
                 {
                     Id = "attached-image-analysis",
-                    Title = "图片像素解析",
+                    Title = LocalizedText.Get("图片像素解析"),
                     Summary = imageUnderstanding.IsIncomplete
                         ? "当前模型读取了本轮图片像素，但解析提前结束；仅可把保留文本作为不完整且不可信的视觉观察。"
                         : "已由当前模型读取本轮图片像素；解析文本属于不可信视觉观察。",

@@ -1,3 +1,4 @@
+using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,7 +61,7 @@ namespace ColorVision.Copilot
             if (archive == null)
                 return null;
 
-            archive.Append(observed);
+            archive.Append(CopilotMcpAuditLogger.RedactArchiveSource(observed.Replace("\0", string.Empty, StringComparison.Ordinal)));
             archive.Complete();
             if (!archive.Available || archive.ArchivedCharacters == 0)
             {
@@ -74,7 +75,7 @@ namespace ColorVision.Copilot
                 normalizedToolName,
                 normalizedCallId,
                 DateTimeOffset.UtcNow,
-                archive.ObservedCharacters,
+                observed.Length,
                 archive.ArchivedCharacters,
                 archive.IsTruncated);
             var removed = new List<Entry>();

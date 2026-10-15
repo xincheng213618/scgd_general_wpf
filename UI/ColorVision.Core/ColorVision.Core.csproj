@@ -1,4 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\packages\OpenCV.Release.x64.props" />
 
 	<PropertyGroup>
 		<TargetFrameworks>net8.0-windows7.0;net10.0-windows7.0</TargetFrameworks>
@@ -41,50 +43,15 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_core4140.dll" Link="runtimes\win-x64\native\opencv_core4140.dll">
+		<Content Include="@(OpenCVRuntimeDll)" Link="runtimes\win-x64\native\%(Filename)%(Extension)">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_flann4140.dll" Link="runtimes\win-x64\native\opencv_flann4140.dll">
+		<Content Include="@(OpenCVLicenseFile)" Link="runtimes\win-x64\native\%(Filename)%(Extension)">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_features2d4140.dll" Link="runtimes\win-x64\native\opencv_features2d4140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_calib3d4140.dll" Link="runtimes\win-x64\native\opencv_calib3d4140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_highgui4140.dll" Link="runtimes\win-x64\native\opencv_highgui4140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_imgcodecs4140.dll" Link="runtimes\win-x64\native\opencv_imgcodecs4140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_imgproc4140.dll" Link="runtimes\win-x64\native\opencv_imgproc4140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_videoio4140.dll" Link="runtimes\win-x64\native\opencv_videoio4140.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</Content>
-		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_videoio_ffmpeg4140_64.dll" Link="runtimes\win-x64\native\opencv_videoio_ffmpeg4140_64.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
+			<PackagePath>licenses</PackagePath>
 		</Content>
 	</ItemGroup>
 	<ItemGroup>

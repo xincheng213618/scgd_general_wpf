@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using System.IO;
 using System.Text;
 
@@ -39,6 +38,22 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
         Assert.True(search.Success, search.ErrorMessage);
         Assert.Equal(2, Assert.Single(search.Matches).LineNumber);
         Assert.Equal(before, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task SearchPreviewKeepsSupplementaryCharacterBoundaryValid()
+    {
+        var source = new string('x', 219) + "🔬 tail";
+        var path = Path.Combine(_directory.FullName, "preview.log");
+        await File.WriteAllTextAsync(path, source, GetEncoding("utf8"));
+
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "tail", null, CancellationToken.None);
+
+        Assert.True(search.Success, search.ErrorMessage);
+        var match = Assert.Single(search.Matches);
+        Assert.Equal(source, match.LineText);
+        Assert.NotEmpty(new UTF8Encoding(false, true).GetBytes(search.Content));
+        Assert.Contains(new string('x', 219) + "...", search.Content);
     }
 
     [Theory]

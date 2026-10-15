@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
@@ -63,13 +64,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             try { input = ImageAlgorithmInputFactory.Acquire(image, expectedScope); }
             catch (Exception exception)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "亚像素边缘", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("亚像素边缘"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!long.TryParse(input.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long sourceRevision))
             {
                 input.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法确定当前图像 revision。", "亚像素边缘", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("无法确定当前图像 revision。"), LocalizedText.Get("亚像素边缘"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -89,7 +90,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             {
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "亚像素边缘", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("亚像素边缘"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -110,7 +111,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 if (!progressWindow.WasCancelled)
-                    MessageBox.Show(progressWindow.Owner, exception.Message, "亚像素边缘", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(progressWindow.Owner, exception.Message, LocalizedText.Get("亚像素边缘"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -131,7 +132,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(progressWindow.Owner, message, "亚像素边缘失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(progressWindow.Owner, message, LocalizedText.Get("亚像素边缘失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -157,7 +158,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             {
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "亚像素边缘结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("亚像素边缘结果"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -166,7 +167,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             SubpixelEdgeParameters parameters = new();
             PropertyEditorWindow window = new(parameters)
             {
-                Title = "亚像素边缘参数",
+                Title = LocalizedText.Get("亚像素边缘参数"),
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
@@ -188,7 +189,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             SubpixelEdgeEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = "AlgorithmsCall", GuidId = "SubpixelEdge", Order = 5, Header = "亚像素边缘" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Localization.Id, GuidId = "SubpixelEdge", Order = 7, Header = LocalizedText.Get("亚像素边缘") },
                 Item("SubpixelEdgeHorizontal", "水平卡尺...", 0, tool.ExecuteHorizontal),
                 Item("SubpixelEdgeVertical", "垂直卡尺...", 1, tool.ExecuteVertical),
                 Item("SubpixelEdgePolyline", "折线卡尺组...", 2, tool.ExecutePolyline),

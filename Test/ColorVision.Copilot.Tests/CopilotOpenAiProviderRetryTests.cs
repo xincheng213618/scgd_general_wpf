@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.ClientModel;
 using System.Globalization;
@@ -6,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -13,6 +13,203 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotOpenAiProviderRetryTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EmptyFirstStreamRetriesWithToolsAndAccountsForEveryAttempt(bool responsesApi)
+    {
+        var empty = CompletedResponse(responsesApi, toolCall: false);
+        empty = empty with { Body = empty.Body.Replace("Completed answer.", "", StringComparison.Ordinal) };
+        await using var server = new LoopbackProvider(call => call switch
+        {
+            1 => empty,
+            2 => CompletedResponse(responsesApi, toolCall: true),
+            _ => CompletedResponse(responsesApi, toolCall: false),
+        });
+        using var fixture = new RunFixture(server, responsesApi, requestTool: true);
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(3, server.CallCount);
+        Assert.Equal(3, result.Budget.ProviderCalls);
+        Assert.Equal(1, result.Budget.ProviderRetryCount);
+        Assert.Equal(330, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(result.Usage.EffectiveTotalTokens, result.Budget.ReportedTotalTokens);
+        Assert.Equal(1, fixture.Tool.CallCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
+        Assert.DoesNotContain(fixture.Events, item => item.Text.Contains("starting one bounded finalization", StringComparison.Ordinal));
+        using var original = JsonDocument.Parse(server.Payloads[0]);
+        using var retry = JsonDocument.Parse(server.Payloads[1]);
+        Assert.True(original.RootElement.GetProperty("tools").GetArrayLength() > 0);
+        Assert.Equal(original.RootElement.GetProperty("tools").GetRawText(), retry.RootElement.GetProperty("tools").GetRawText());
+        var inputProperty = responsesApi ? "input" : "messages";
+        Assert.Equal(original.RootElement.GetProperty(inputProperty).GetRawText(), retry.RootElement.GetProperty(inputProperty).GetRawText());
+        fixture.AssertTurnLifecycle(result);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EmptyStreamsShareTheFiniteRetryBudgetAndPreserveOnlyTheirUsage(bool noUpdates)
+    {
+        var provider = new RetryStreamProbe(_ => noUpdates ? [] : EmptyRetryUpdates(16));
+        var retries = new List<CopilotProviderRetryInfo>();
+        using var client = new CopilotProviderRetryChatClient(provider, retries.Add,
+            delayFactory: _ => TimeSpan.Zero, delayAsync: (_, _) => Task.CompletedTask);
+        var message = new ChatMessage(ChatRole.User, "retry");
+        var options = new ChatOptions { Tools = [AIFunctionFactory.Create(() => "probe", "probe")] };
+        var updates = await ReadRetryUpdatesAsync(client, [message], options);
+
+        Assert.Equal(3, provider.Calls.Count);
+        Assert.Equal([2, 3], retries.Select(item => item.NextAttempt));
+        Assert.All(provider.Calls, call =>
+        {
+            Assert.Same(message, Assert.Single(call.Messages));
+            Assert.Same(options, call.Options);
+        });
+        if (noUpdates)
+        {
+            Assert.Empty(updates);
+            return;
+        }
+        Assert.Equal(4, updates.Count);
+        Assert.All(updates.Take(2), update =>
+        {
+            Assert.Null(update.Role);
+            Assert.Null(update.ResponseId);
+            Assert.Null(update.FinishReason);
+            Assert.Null(update.RawRepresentation);
+            Assert.Equal(16, Assert.Single(update.Contents.OfType<UsageContent>()).Details.TotalTokenCount);
+        });
+        Assert.Equal(16, CopilotTokenBudgetChatClient.ExtractResponseUsage(
+            new ChatResponse(new ChatMessage(ChatRole.Assistant, updates.Skip(2).SelectMany(item => item.Contents).ToList()))).EffectiveTotalTokens);
+        Assert.Equal(ChatFinishReason.Stop, updates[^1].FinishReason);
+    }
+
+    [Theory]
+    [InlineData("length")]
+    [InlineData("content_filter")]
+    [InlineData("error")]
+    [InlineData("tool_calls")]
+    [InlineData("tool")]
+    [InlineData("reasoning")]
+    public async Task ExplicitIncompleteFinishOrRealOutputDoesNotTriggerEmptyRetry(string responseKind)
+    {
+        ChatResponseUpdate[] attempt = responseKind switch
+        {
+            "tool" => [new ChatResponseUpdate(ChatRole.Assistant,
+                [new FunctionCallContent("probe-call", "probe", new Dictionary<string, object?>())]) { FinishReason = ChatFinishReason.ToolCalls }],
+            "reasoning" => [new ChatResponseUpdate(ChatRole.Assistant, [new TextReasoningContent("reasoning")])],
+            _ => EmptyRetryUpdates(16, new ChatFinishReason(responseKind)),
+        };
+        var provider = new RetryStreamProbe(_ => attempt);
+        var retries = new List<CopilotProviderRetryInfo>();
+        using var client = new CopilotProviderRetryChatClient(provider, retries.Add,
+            delayFactory: _ => TimeSpan.Zero, delayAsync: (_, _) => Task.CompletedTask);
+
+        var updates = await ReadRetryUpdatesAsync(client, [new ChatMessage(ChatRole.User, "retry")]);
+
+        Assert.Single(provider.Calls);
+        Assert.Empty(retries);
+        Assert.Equal(attempt, updates);
+    }
+
+    [Fact]
+    public async Task CancellingEmptyRetryBackoffKeepsUsageAndDoesNotSendAnotherAttempt()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var provider = new RetryStreamProbe(_ => EmptyRetryUpdates(16));
+        using var client = new CopilotProviderRetryChatClient(provider,
+            _ => cancellation.Cancel(), delayFactory: _ => TimeSpan.FromSeconds(1));
+        var updates = new List<ChatResponseUpdate>();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var update in client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "retry")], cancellationToken: cancellation.Token))
+                updates.Add(update);
+        });
+
+        Assert.Single(provider.Calls);
+        Assert.Equal(16, Assert.Single(Assert.Single(updates).Contents.OfType<UsageContent>()).Details.TotalTokenCount);
+    }
+
+    [Fact]
+    public async Task EmptyRetryCannotSendAnotherAttemptAfterTheTokenBudgetIsExhausted()
+    {
+        var provider = new RetryStreamProbe(_ => EmptyRetryUpdates(64));
+        using var budget = new CopilotTokenBudgetChatClient(provider, new CopilotAgentTokenBudget
+        {
+            ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+            MaxOutputTokens = 128,
+            RequestTokenBudget = 64,
+        });
+        using var client = new CopilotProviderRetryChatClient(budget, budget.RecordProviderRetry,
+            delayFactory: _ => TimeSpan.Zero, delayAsync: (_, _) => Task.CompletedTask);
+        var updates = new List<ChatResponseUpdate>();
+
+        await Assert.ThrowsAsync<CopilotAgentTokenBudgetExceededException>(async () =>
+        {
+            await foreach (var update in client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "retry")]))
+                updates.Add(update);
+        });
+
+        Assert.Single(provider.Calls);
+        Assert.Equal(1, budget.Snapshot.ProviderCalls);
+        Assert.True(budget.Snapshot.BudgetExhausted);
+        Assert.Equal(64, budget.Snapshot.ReportedTotalTokens);
+        Assert.Equal(64, Assert.Single(Assert.Single(updates).Contents.OfType<UsageContent>()).Details.TotalTokenCount);
+    }
+
+    private static ChatResponseUpdate[] EmptyRetryUpdates(int tokens, ChatFinishReason? finishReason = null) =>
+    [
+        new(ChatRole.Assistant, [new UsageContent(new UsageDetails { InputTokenCount = tokens / 2, TotalTokenCount = tokens / 2 })])
+        {
+            ResponseId = "discarded-response",
+            RawRepresentation = new object(),
+        },
+        new(ChatRole.Assistant, [new UsageContent(new UsageDetails { InputTokenCount = tokens, TotalTokenCount = tokens })])
+        {
+            ResponseId = "discarded-response",
+            FinishReason = finishReason ?? ChatFinishReason.Stop,
+            RawRepresentation = new object(),
+        },
+    ];
+
+    private static async Task<List<ChatResponseUpdate>> ReadRetryUpdatesAsync(
+        IChatClient client, ChatMessage[] messages, ChatOptions? options = null)
+    {
+        var updates = new List<ChatResponseUpdate>();
+        await foreach (var update in client.GetStreamingResponseAsync(messages, options))
+            updates.Add(update);
+        return updates;
+    }
+
+    private sealed class RetryStreamProbe(Func<int, ChatResponseUpdate[]> responses) : IChatClient
+    {
+        public List<(ChatMessage[] Messages, ChatOptions? Options)> Calls { get; } = [];
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add((messages.ToArray(), options));
+            await Task.CompletedTask;
+            foreach (var update in responses(Calls.Count))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return update;
+            }
+        }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
     [Theory]
     [InlineData(true, "gpt-6-astra", true)]
     [InlineData(true, "gpt-5.5", false)]
@@ -299,7 +496,7 @@ public sealed class CopilotOpenAiProviderRetryTests
         await using var server = new LoopbackProvider(call => call switch
         {
             1 => CompletedResponse(responsesApi, toolCall: true),
-            2 => empty,
+            2 or 3 or 4 => empty,
             _ => ErrorResponse(statusCode),
         });
         using var fixture = new RunFixture(server, responsesApi, requestTool: true);
@@ -307,19 +504,20 @@ public sealed class CopilotOpenAiProviderRetryTests
         var result = await fixture.RunAsync();
 
         Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
-        Assert.Equal(2 + failedAttempts, server.CallCount);
+        Assert.Equal(4 + failedAttempts, server.CallCount);
         Assert.Equal(server.CallCount, result.Budget.ProviderCalls);
-        Assert.Equal(failedAttempts - 1, result.Budget.ProviderRetryCount);
+        Assert.Equal(2 + failedAttempts - 1, result.Budget.ProviderRetryCount);
         // This finalization prompt has no older conversation groups to compact; 413 must not resend the same input.
         Assert.Equal(0, result.Budget.ContextRecoveryCount);
-        Assert.Equal(220, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(440, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(result.Usage.EffectiveTotalTokens, result.Budget.ReportedTotalTokens);
         Assert.Equal(1, fixture.Tool.CallCount);
         Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
         var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
         Assert.Equal(statusCode switch { 413 => "provider_context_window", 503 => "provider_unavailable", _ => "provider_request_rejected" }, blocker.Code);
         Assert.Contains(statusCode == 413 ? "上下文" : $"HTTP {statusCode}", blocker.Summary);
         Assert.Contains(fixture.Events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text.Contains(blocker.Summary, StringComparison.Ordinal));
-        foreach (var payload in server.Payloads.Skip(2))
+        foreach (var payload in server.Payloads.Skip(4))
         {
             using var document = JsonDocument.Parse(payload);
             Assert.False(document.RootElement.TryGetProperty("tools", out var tools) && tools.GetArrayLength() > 0);

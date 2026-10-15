@@ -1,9 +1,10 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Rectangle;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             GridDistortionOptions options = Options.GetValue(imageContext, static _ => new());
             PropertyEditorWindow window = new(options, PropertyEditorEditMode.Transactional)
             {
-                Title = "点阵畸变分析 (V2) 参数",
+                Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_GridDistortion,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -41,7 +42,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             AlgorithmResultOverlay.ClearTagged(drawContext, AlgorithmResultOverlay.GridDistortionTag);
             if (!options.TryValidate(out string error))
             {
-                MessageBox.Show(error, "点阵畸变参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(error, LocalizedText.Get("点阵畸变参数无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             GridDistortionOptions snapshot = new()
@@ -53,7 +54,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show("请先打开待分析图像。", "点阵畸变", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("请先打开待分析图像。"), LocalizedText.Get("点阵畸变"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             long revision = lease.Revision;
@@ -93,23 +94,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             double scaleX = LuminousAreaDetector.GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
             double scaleY = LuminousAreaDetector.GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
             Point Position(GridDistortionPoint point) => new(point.X * scaleX, point.Y * scaleY);
-            double zoom = AlgorithmResultOverlay.GetZoom(drawContext);
-            Pen gridPen = new(Brushes.DeepSkyBlue, 1 / zoom);
-            Pen referencePen = new(Brushes.OrangeRed, 2 / zoom);
-            Dictionary<(int Row, int Col), GridDistortionPoint> grid = result.Points.ToDictionary(p => (p.Row, p.Col));
+            GridDistortionOverlayRenderer.AppendLines(drawContext,
+                result.Points.OrderBy(point => point.Row).ThenBy(point => point.Col).Select(Position).ToArray(),
+                result.ExpectedRows, result.ExpectedCols, AlgorithmResultOverlay.GridDistortionTag);
             foreach (GridDistortionPoint point in result.Points)
             {
-                if (grid.TryGetValue((point.Row, point.Col + 1), out GridDistortionPoint? right))
-                    AlgorithmResultOverlay.AddLine(drawContext, Position(point), Position(right), gridPen, AlgorithmResultOverlay.GridDistortionTag);
-                if (grid.TryGetValue((point.Row + 1, point.Col), out GridDistortionPoint? bottom))
-                    AlgorithmResultOverlay.AddLine(drawContext, Position(point), Position(bottom), gridPen, AlgorithmResultOverlay.GridDistortionTag);
                 bool reference = result.ReferencePointIds.Contains(point.Id);
                 AlgorithmResultOverlay.AddLabel(drawContext, Position(point), $"{(reference ? "参考 " : string.Empty)}({point.Row + 1},{point.Col + 1})",
                     reference ? Brushes.OrangeRed : Brushes.DeepSkyBlue, AlgorithmResultOverlay.GridDistortionTag);
             }
-            GridDistortionPoint[] referencePoints = result.ReferencePointIds.Select(id => result.Points.Single(p => p.Id == id)).ToArray();
-            foreach ((int start, int end) in new[] { (0, 2), (2, 8), (8, 6), (6, 0) })
-                AlgorithmResultOverlay.AddLine(drawContext, Position(referencePoints[start]), Position(referencePoints[end]), referencePen, AlgorithmResultOverlay.GridDistortionTag);
         }
     }
 
@@ -124,7 +117,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
         {
             new()
             {
-                OwnerGuid = "AlgorithmsCall", GuidId = "GridDistortionV2", Order = 3, Header = "点阵畸变分析 (V2)...",
+                OwnerGuid = AlgorithmMenuGroups.FieldGeometry.Id, GuidId = "GridDistortionV2", Order = 2, Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_GridDistortion + "...",
                 Command = new RelayCommand(_ => GridDistortionImageViewRunner.ShowOptions(_imageContext, _drawContext, new RoiRect()))
             }
         };
@@ -149,7 +142,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             if (!double.IsFinite(left) || !double.IsFinite(top) || !double.IsFinite(right) || !double.IsFinite(bottom) ||
                 left < 0 || top < 0 || right > int.MaxValue || bottom > int.MaxValue || right <= left || bottom <= top) return Array.Empty<MenuItem>();
             RoiRect roi = new((int)left, (int)top, (int)(right - left), (int)(bottom - top));
-            MenuItem item = new() { Header = "点阵畸变分析 (V2)..." };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_GridDistortion + "..." };
             item.Click += (_, _) => GridDistortionImageViewRunner.ShowOptions(_imageContext, _drawContext, roi);
             return new[] { item };
         }

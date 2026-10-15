@@ -9,18 +9,8 @@ internal static class MainWindowFactory
         configured && operatingSystemSupported;
 
     internal static MainWindow Create(bool useCompactMainWindow)
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-    {
-        bool requested = MainWindowResizeDiagnostics.SelectMode(useCompactMainWindow, out bool modeOverrideApplied);
-        bool selected = ShouldUseCompactMainWindow(requested, CompactTitleBarChrome.IsSupportedOperatingSystem);
-        MainWindow window = selected ? new CompactMainWindow() : new MainWindow();
-        MainWindowResizeDiagnostics.Register(window, useCompactMainWindow, selected, modeOverrideApplied);
-        return window;
-    }
-#else
     {
         bool selected = ShouldUseCompactMainWindow(useCompactMainWindow, CompactTitleBarChrome.IsSupportedOperatingSystem);
         return selected ? new CompactMainWindow() : new MainWindow();
     }
-#endif
 }

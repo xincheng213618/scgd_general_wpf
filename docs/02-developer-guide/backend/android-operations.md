@@ -17,6 +17,8 @@ related: ["delivery.backend"]
 
 `AndroidManifest.xml` 的 launcher 是 `MainActivity`。它按配对资料和目标页经 `AppNavigationPolicy` 路由到 `OperationsActivity`；未配对时保留安全扫码引导。当前四个一级目的地是“概览 / 问题 / 工具 / 设置”。
 
+桌面端从设置中的“局域网控制”进入，`LanRemoteControlSettingsControl` 按“连接手机 / 设备管理 / 本机确认 / 网络设置”组织操作，随应用语言显示简体中文、英文或繁体中文。先安装移动版，再启用安全通道并扫码，最后核对设备名称并在“设备管理”批准。配对码有效期两分钟且只能提交一次；页面显示有效时间，过期或已提交后提示重新生成或审核设备。网络设置保留 HTTP 监听端口与只读的安全 HTTPS 端口，二维码始终指向安全通道；切换配对地址或重启监听后重新生成二维码。设备权限、作业共签和支持会话同意仍由各自现有门禁决定。
+
 `app/build.gradle` 是 Android 构建事实来源：Java 17、compile/target SDK 36、Build Tools 36.0.0、最低 API 23，应用 ID 为 `com.colorvision.xcviewer`。Release 任务要求有效本地签名配置。Android Studio/Gradle 同步可能下载依赖，构建写产物，Run 会安装并运行手机应用；签名、安装和发布不是文档检索验证步骤。
 
 `OperationsWatchService.start` 与 `onStartCommand` 检查配对和用户守护开关；前台页面退出不等于后台守护停止。Manifest 声明 connected-device 前台服务和开机/更新接收器。`OperationsWatchPolicy` 定义健康检查 60 秒、失败退避 30 秒至 5 分钟；这与页面前台的详细观察不是同一个生命周期，也不保证 Android 系统一定持续调度。

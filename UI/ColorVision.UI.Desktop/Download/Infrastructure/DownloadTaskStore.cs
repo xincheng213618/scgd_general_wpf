@@ -28,6 +28,12 @@ namespace ColorVision.UI.Desktop.Download
         {
             using var db = CreateDbClient(_dbPath);
             db.CodeFirst.InitTables<DownloadEntry>();
+            foreach (var entry in db.Queryable<DownloadEntry>().Where(x => x.Authorization != null).ToList())
+            {
+                if (entry.Authorization!.StartsWith("dpapi:", StringComparison.Ordinal)) continue;
+                string? protectedValue = DownloadAuthorization.Encode(DownloadAuthorization.Decode(entry.Authorization));
+                db.Updateable<DownloadEntry>().SetColumns(x => x.Authorization == protectedValue).Where(x => x.Id == entry.Id).ExecuteCommand();
+            }
         }
 
         internal static bool IsPathProtectedFromCleanup(string dbPath, string filePath)
@@ -64,7 +70,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             using var db = CreateDbClient(_dbPath);
             return db.Queryable<DownloadEntry>()
-                .Where(x => x.Status == (int)DownloadStatus.Waiting || x.Status == (int)DownloadStatus.Downloading || x.Status == (int)DownloadStatus.Paused)
+                .Where(x => x.Status == (int)DownloadStatus.Waiting || x.Status == (int)DownloadStatus.Downloading)
                 .ToList();
         }
 
@@ -72,6 +78,46 @@ namespace ColorVision.UI.Desktop.Download
         {
             using var db = CreateDbClient(_dbPath);
             return db.Insertable(entry).ExecuteReturnIdentity();
+        }
+
+        public List<string> GetPendingPaths()
+        {
+            using var db = CreateDbClient(_dbPath);
+            return db.Queryable<DownloadEntry>().Where(x => x.Status == 0 || x.Status == 1 || x.Status == 3 || x.Status == 4).Select(x => x.SavePath).ToList();
+        }
+
+        public List<DownloadEntry> GetEntries(int[] ids)
+        {
+            using var db = CreateDbClient(_dbPath);
+            return db.Queryable<DownloadEntry>().Where(x => ids.Contains(x.Id)).ToList();
+        }
+
+        public List<DownloadEntry> GetAllEntries()
+        {
+            using var db = CreateDbClient(_dbPath);
+            return db.Queryable<DownloadEntry>().ToList();
+        }
+
+        public void UpdateContentHash(int id, string hash)
+        {
+            using var db = CreateDbClient(_dbPath);
+            db.Updateable<DownloadEntry>().SetColumns(x => x.ContentSha256 == hash).Where(x => x.Id == id).ExecuteCommand();
+        }
+
+        public DownloadRecordPage LoadPage(string? searchKeyword, int pageSize, int page)
+        {
+            using var db = CreateDbClient(_dbPath);
+            var query = db.Queryable<DownloadEntry>();
+            if (!string.IsNullOrWhiteSpace(searchKeyword)) query = query.Where(x => x.FileName.Contains(searchKeyword) || x.Url.Contains(searchKeyword));
+            int total = query.Count();
+            page = Math.Clamp(page, 1, Math.Max(1, (total + pageSize - 1) / pageSize));
+            return new DownloadRecordPage(query.OrderByDescending(x => x.CreateTime).OrderByDescending(x => x.Id).Skip((page - 1) * pageSize).Take(pageSize).ToList(), total, page);
+        }
+
+        public void UpdatePath(int id, string path, string fileName)
+        {
+            using var db = CreateDbClient(_dbPath);
+            db.Updateable<DownloadEntry>().SetColumns(x => x.SavePath == path).SetColumns(x => x.FileName == fileName).Where(x => x.Id == id).ExecuteCommand();
         }
 
         public List<DownloadEntry> GetCompletedEntriesByUrl(string url)
@@ -169,4 +215,6 @@ namespace ColorVision.UI.Desktop.Download
                 .ExecuteCommand();
         }
     }
+
+    internal sealed record DownloadRecordPage(List<DownloadEntry> Entries, int TotalCount, int Page);
 }

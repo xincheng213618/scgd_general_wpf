@@ -265,15 +265,37 @@ namespace ColorVision.Copilot
 
             var snapshot = result.Snapshot;
             var page = result.Page;
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = BuildPageSummary(snapshot, stream, page),
+                Content = BuildPageContent(snapshot, stream, page),
+                ShellOutputArchiveRead = result,
+            });
+        }
+
+        internal static string BuildPageSummary(
+            CopilotShellCommandOutputArchiveSnapshot snapshot,
+            CopilotShellCommandOutputStream stream,
+            CopilotRedactedOutputArchivePage page)
+        {
             var streamLabel =
                 stream == CopilotShellCommandOutputStream.StandardError
                     ? "stderr"
                     : "stdout";
-            var content = CopilotMcpAuditLogger.RedactText(page.Content);
-            var formatted = new StringBuilder()
+            return $"Read {page.ReturnedCharacters} archived {streamLabel} character(s) from shell output archive {snapshot.Id}; "
+                + (page.EndOfAvailableOutput ? "reached the archive end." : "more archived output is available.");
+        }
+
+        internal static string BuildPageContent(
+            CopilotShellCommandOutputArchiveSnapshot snapshot,
+            CopilotShellCommandOutputStream stream,
+            CopilotRedactedOutputArchivePage page) =>
+            new StringBuilder()
                 .AppendLine("[Shell Command Output Archive]")
                 .Append("archive_id: ").AppendLine(snapshot.Id)
-                .Append("stream: ").AppendLine(streamLabel)
+                .Append("stream: ").AppendLine(stream == CopilotShellCommandOutputStream.StandardError ? "stderr" : "stdout")
                 .Append("offset_characters: ")
                 .AppendLine(page.OffsetCharacters.ToString(CultureInfo.InvariantCulture))
                 .Append("returned_characters: ")
@@ -287,20 +309,8 @@ namespace ColorVision.Copilot
                 .Append("archive_truncated: ")
                 .AppendLine(page.ArchiveTruncated ? "true" : "false")
                 .AppendLine("content:")
-                .Append(content.Length == 0 ? "<empty>" : content)
+                .Append(page.Content.Length == 0 ? "<empty>" : page.Content)
                 .ToString();
-            return Task.FromResult(new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = true,
-                Summary =
-                    $"Read {page.ReturnedCharacters} archived {streamLabel} character(s) from shell output archive {snapshot.Id}; "
-                    + (page.EndOfAvailableOutput
-                        ? "reached the archive end."
-                        : "more archived output is available."),
-                Content = formatted,
-            });
-        }
 
         private static bool TryReadStream(
             CopilotAgentToolInput input,

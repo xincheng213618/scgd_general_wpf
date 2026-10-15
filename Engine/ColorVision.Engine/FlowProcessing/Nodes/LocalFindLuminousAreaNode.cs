@@ -201,7 +201,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     }
 
-    [STNode("Flow_CustomNodes", "发光区定位")]
+    [STNode("Flow_CustomNodes", "发光区定位", CategoryOrder = 9900)]
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase
     {
         internal const double DefaultMinimumConfidence = 0.25;

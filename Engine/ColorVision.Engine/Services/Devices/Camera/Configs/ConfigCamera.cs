@@ -39,12 +39,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private ImageChannel _Channel;
 
 
-        public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; OnPropertyChanged(); } }
-        private bool _UsingFileCaching;
-
-        public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; OnPropertyChanged(); } }
-        private bool _IsCVCIEFileSave = true;
-
         [JsonIgnore]
         public bool IsExpThree
         {

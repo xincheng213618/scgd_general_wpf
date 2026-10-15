@@ -1,6 +1,5 @@
 #pragma warning disable MAAI001
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -122,6 +121,7 @@ namespace ColorVision.Copilot
             catch (Exception ex) when (ex is CopilotAgentContextWindowExceededException or CopilotAgentContextWindowRecoveryExhaustedException
                 || CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
             {
+                usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                 providerFailure = ex is CopilotAgentContextWindowExceededException or CopilotAgentContextWindowRecoveryExhaustedException
                     ? CreateProviderOutputBlocker(timeBudgetExhausted: false, contextWindowExceeded: true)
                     : CreateProviderFailureBlocker(ex);
@@ -134,6 +134,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
+                usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"The bounded no-tools finalization call failed ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey)})."));
             }
 

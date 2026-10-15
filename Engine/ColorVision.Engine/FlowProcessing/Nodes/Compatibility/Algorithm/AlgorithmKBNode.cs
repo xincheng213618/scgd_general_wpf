@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_4 KB")]
+[STNode("KB", CategoryOrder = 340)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Algorithm.AlgorithmKBNode")]
 public class AlgorithmKBNode : CVBaseServerNode
 {

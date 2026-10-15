@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 #pragma warning disable CA1822,CA1859
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
@@ -149,7 +150,7 @@ namespace ColorVision.ImageEditor
                     Order = 10_000,
                     Icon = CompactInspectorIcons.CreateText("⋯"),
                     Width = 22,
-                    ToolTip = "完整编辑",
+                    ToolTip = LocalizedText.Get("完整编辑"),
                     Command = new RelayCommand(_ =>
                     {
                         new PropertyEditorWindow(drawingVisual.BaseAttribute)
@@ -547,12 +548,13 @@ namespace ColorVision.ImageEditor
 
             Window window = new Window
             {
-                Owner = Application.Current?.MainWindow,
+                Owner = Application.Current?.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Content = colorPicker,
                 Width = 250,
                 Height = 400,
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
 
             colorPicker.Confirmed += (_, __) =>
             {

@@ -4,8 +4,6 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
-using ColorVision.UI.Menus;
 using cvColorVision;
 using log4net;
 using System;

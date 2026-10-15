@@ -1,6 +1,5 @@
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps

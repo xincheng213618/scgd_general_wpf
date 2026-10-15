@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Languages;
 

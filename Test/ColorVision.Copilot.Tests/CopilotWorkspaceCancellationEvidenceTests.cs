@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.IO;
-using ColorVision.Copilot;
 
 namespace ColorVision.Copilot.Tests;
 

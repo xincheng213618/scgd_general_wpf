@@ -1,9 +1,7 @@
-using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
 using Newtonsoft.Json;
-using SqlSugar;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -66,7 +64,7 @@ namespace ColorVision.Engine.Services.Types
                 CreatedTerminal = terminalService;
 
                 if (!SysResourceDao.IsLocalId(pkId)) MqttRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), SysResourceDao.IsLocalId(pkId) ? "本地配置已创建。" : Properties.Resources.CreationSuccessRestartingService, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), SysResourceDao.IsLocalId(pkId) ? Properties.Resources.LocalConfigurationCreated : Properties.Resources.CreationSuccessRestartingService, "ColorVision");
                 Close();
             }
             else

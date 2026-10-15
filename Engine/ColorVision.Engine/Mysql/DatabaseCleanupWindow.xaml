@@ -92,9 +92,8 @@
             <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
         </Style>
-        <Style x:Key="CleanupDangerButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CleanupActionButtonStyle}">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
+        <Style x:Key="CleanupDangerOutlineButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CleanupActionButtonStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
         </Style>
         <Style x:Key="CleanupSourceItemStyle" TargetType="{x:Type ListBoxItem}">
@@ -130,41 +129,46 @@
                 </Grid.RowDefinitions>
                 <Border x:Name="SourceOverviewCard" Style="{StaticResource CleanupCardStyle}" Margin="0,0,0,12">
                     <StackPanel>
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Text="{engine:EngineLang Key='当前数据库'}" Style="{StaticResource CleanupSecondaryTextStyle}" Margin="12,0,0,0"/>
-                            <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
-                        </DockPanel>
-                        <TextBlock Text="{Binding Description}" ToolTip="{Binding Description}" Foreground="{DynamicResource SecondaryTextBrush}"
-                                   FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,5,0,0"/>
-                        <UniformGrid Columns="3" Margin="0,12,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                <TextBlock Text="{Binding Description}" ToolTip="{Binding Description}" Foreground="{DynamicResource SecondaryTextBrush}"
+                                           FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,5,0,0"/>
+                            </StackPanel>
+                            <WrapPanel Grid.Column="1" MaxWidth="360" Margin="16,0,0,-4" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button Content="{engine:EngineLang Key='刷新统计'}" Command="{Binding RefreshCommand}" Style="{StaticResource CleanupActionButtonStyle}" Margin="0,0,8,4"/>
+                                <Button x:Name="CreateBackupButton" Content="{engine:EngineLang Key='创建完整备份'}" Command="{Binding BackupCommand}" Style="{StaticResource CleanupActionButtonStyle}"
+                                        Margin="0,0,8,4" Visibility="{Binding SupportsBackup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <Button x:Name="OptimizationButton" Content="{Binding OptimizationActionName}" Command="{Binding OptimizationCommand}" Style="{StaticResource CleanupActionButtonStyle}"
+                                        Margin="0,0,8,4" Visibility="{Binding SupportsOptimization, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <Button x:Name="MigrationButton" Content="{Binding MigrationActionName}" Command="{Binding MigrationCommand}" Style="{StaticResource CleanupActionButtonStyle}"
+                                        Margin="0,0,0,4" Visibility="{Binding SupportsMigration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </WrapPanel>
+                        </Grid>
+                        <UniformGrid Columns="3" Margin="0,8,0,0">
                             <Border Style="{StaticResource CleanupMetricStyle}">
-                                <StackPanel>
+                                <DockPanel>
                                     <TextBlock Text="{engine:EngineLang Key='可用数据表'}" Style="{StaticResource CleanupSecondaryTextStyle}"/>
-                                    <TextBlock Text="{Binding ExistingTableCount, StringFormat=N0}" FontSize="20" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                </StackPanel>
+                                    <TextBlock Text="{Binding ExistingTableCount, StringFormat=N0}" FontSize="18" FontWeight="SemiBold" Margin="8,0,0,0" HorizontalAlignment="Right"/>
+                                </DockPanel>
                             </Border>
                             <Border Style="{StaticResource CleanupMetricStyle}">
-                                <StackPanel>
+                                <DockPanel>
                                     <TextBlock Text="{engine:EngineLang Key='数据行数'}" Style="{StaticResource CleanupSecondaryTextStyle}"/>
-                                    <TextBlock Text="{Binding ExistingRowCount, StringFormat=N0}" FontSize="20" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                </StackPanel>
+                                    <TextBlock Text="{Binding ExistingRowCount, StringFormat=N0}" FontSize="18" FontWeight="SemiBold" Margin="8,0,0,0" HorizontalAlignment="Right"/>
+                                </DockPanel>
                             </Border>
                             <Border Style="{StaticResource CleanupMetricStyle}" Margin="0">
-                                <StackPanel>
+                                <DockPanel>
                                     <TextBlock Text="{engine:EngineLang Key='占用空间'}" Style="{StaticResource CleanupSecondaryTextStyle}"/>
-                                    <TextBlock Text="{Binding ExistingSizeDisplay}" FontSize="20" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                </StackPanel>
+                                    <TextBlock Text="{Binding ExistingSizeDisplay}" FontSize="18" FontWeight="SemiBold" Margin="8,0,0,0" HorizontalAlignment="Right"/>
+                                </DockPanel>
                             </Border>
                         </UniformGrid>
-                        <WrapPanel Margin="0,10,0,-4">
-                            <Button Content="{engine:EngineLang Key='刷新统计'}" Command="{Binding RefreshCommand}" Style="{StaticResource CleanupActionButtonStyle}" Margin="0,0,8,4"/>
-                            <Button x:Name="CreateBackupButton" Content="{engine:EngineLang Key='创建完整备份'}" Command="{Binding BackupCommand}" Style="{StaticResource CleanupActionButtonStyle}"
-                                    Margin="0,0,8,4" Visibility="{Binding SupportsBackup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <Button x:Name="OptimizationButton" Content="{Binding OptimizationActionName}" Command="{Binding OptimizationCommand}" Style="{StaticResource CleanupActionButtonStyle}"
-                                    Margin="0,0,8,4" Visibility="{Binding SupportsOptimization, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <Button x:Name="MigrationButton" Content="{Binding MigrationActionName}" Command="{Binding MigrationCommand}" Style="{StaticResource CleanupActionButtonStyle}"
-                                    Margin="0,0,0,4" Visibility="{Binding SupportsMigration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                        </WrapPanel>
                     </StackPanel>
                 </Border>
 
@@ -172,7 +176,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="280"/>
+                        <ColumnDefinition Width="250"/>
                     </Grid.ColumnDefinitions>
                     <Border x:Name="CleanupTablesCard" Style="{StaticResource CleanupBusyAwareCardStyle}" Padding="0">
                         <Grid>
@@ -180,14 +184,13 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <TextBlock Text="{engine:EngineLang Key='可清理数据表'}" Style="{StaticResource CleanupSectionTitleStyle}" Margin="12,12,12,8"/>
                             <StackPanel x:Name="SelectionToolbar" Grid.Row="1" Margin="12,0,12,6" Visibility="{Binding SupportsTableCleanup, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <TextBlock Text="{Binding SelectionSummary}" Style="{StaticResource CleanupSecondaryTextStyle}" Margin="0,0,0,6"/>
                                 <WrapPanel>
                                     <Button Content="{engine:EngineLang Key='全选可用表'}" Command="{Binding SelectAllCommand}" Style="{StaticResource CleanupActionButtonStyle}" Padding="8,4" MinHeight="28" Margin="0,0,6,4"/>
                                     <Button Content="{engine:EngineLang Key='清除选择'}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource CleanupActionButtonStyle}" Padding="8,4" MinHeight="28" Margin="0,0,6,4"/>
-                                    <Button x:Name="CleanupSelectedButton" Content="{engine:EngineLang Key='清空选中表'}" Command="{Binding CleanupSelectedCommand}" Style="{StaticResource CleanupActionButtonStyle}" Padding="8,4" MinHeight="28" Margin="0,0,0,4"/>
                                 </WrapPanel>
                             </StackPanel>
                             <Grid Grid.Row="2">
@@ -216,12 +219,16 @@
                                             <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/></Trigger>
-                                                <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/></Trigger>
+                                                <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="{DynamicResource ButtonBackground}"/></Trigger>
+                                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                </Trigger>
                                             </Style.Triggers>
                                         </Style>
                                     </DataGrid.Resources>
                                     <DataGrid.Columns>
-                                        <DataGridTemplateColumn Header="{engine:EngineLang Key='选择'}" Width="60" CanUserSort="False">
+                                        <DataGridTemplateColumn Header="{engine:EngineLang Key='勾选'}" Width="56" CanUserSort="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <CheckBox HorizontalAlignment="Center" IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -247,6 +254,25 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                             </Grid>
+                            <Border x:Name="SelectedTablesActions" Grid.Row="3" Padding="12,10" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                    Visibility="{Binding SupportsTableCleanup, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding SelectionSummary}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{engine:EngineLang Key='清空勾选表会删除表内全部记录，不受保留月数限制。'}" Style="{StaticResource CleanupSecondaryTextStyle}" FontSize="11" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    <Button x:Name="CleanupSelectedButton" Grid.Column="1" Content="{engine:EngineLang Key='清空勾选表'}" Command="{Binding CleanupSelectedCommand}"
+                                            Style="{StaticResource CleanupDangerOutlineButtonStyle}" VerticalAlignment="Center">
+                                        <Button.ToolTip>
+                                            <TextBlock Text="{engine:EngineLang Key='按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。'}" MaxWidth="320" TextWrapping="Wrap"/>
+                                        </Button.ToolTip>
+                                    </Button>
+                                </Grid>
+                            </Border>
                         </Grid>
                     </Border>
 
@@ -255,56 +281,38 @@
                         <StackPanel>
                             <Border Style="{StaticResource CleanupBusyAwareCardStyle}" Margin="0,0,0,10">
                                 <StackPanel>
-                                    <TextBlock Text="{engine:EngineLang Key='备份策略'}" Style="{StaticResource CleanupSectionTitleStyle}"/>
-                                    <CheckBox x:Name="BackupBeforeCleanupCheckBox" IsChecked="{Binding BackupBeforeCleanup}" Margin="0,10,0,0"
-                                              Visibility="{Binding SupportsBackup, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                        <TextBlock Text="{engine:EngineLang Key='清理前创建完整备份（推荐）'}" TextWrapping="Wrap" FontSize="12"/>
-                                    </CheckBox>
-                                    <TextBlock x:Name="CleanupBackupStatusText" Margin="0,8,0,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource CleanupSecondaryTextStyle}">
-                                                <Setter Property="Text" Value="{engine:EngineLang Key='未启用清理前备份。'}"/>
-                                                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding BackupBeforeCleanup}" Value="True">
-                                                        <Setter Property="Text" Value="{engine:EngineLang Key='操作前会先创建完整备份；备份失败时不会继续。'}"/>
-                                                        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding SupportsBackup}" Value="False">
-                                                        <Setter Property="Text" Value="{engine:EngineLang Key='当前数据源不支持自动备份，请确认已有可恢复副本。'}"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource CleanupBusyAwareCardStyle}" Margin="0,0,0,10">
-                                <StackPanel>
                                     <TextBlock Text="{engine:EngineLang Key='历史数据清理'}" Style="{StaticResource CleanupSectionTitleStyle}"/>
-                                    <TextBlock Text="{engine:EngineLang Key='按保留月数清理当前数据库中的过期记录。'}" Style="{StaticResource CleanupSecondaryTextStyle}" Margin="0,6,0,12"/>
+                                    <TextBlock Text="{engine:EngineLang Key='按保留月数清理当前库，不受表格勾选影响。'}" Style="{StaticResource CleanupSecondaryTextStyle}" Margin="0,6,0,12"/>
                                     <WrapPanel VerticalAlignment="Center" Margin="0,0,0,10">
                                         <TextBlock Text="{engine:EngineLang Key='保留最近'}" Margin="0,0,8,4"/>
                                         <TextBox x:Name="KeepMonthsTextBox" Text="{Binding KeepMonthsText, UpdateSourceTrigger=PropertyChanged}" Width="56" Height="30"
                                                  TextAlignment="Center" Margin="0,0,8,4" AutomationProperties.Name="{engine:EngineLang Key='保留最近'}"/>
                                         <TextBlock Text="{engine:EngineLang Key='个月'}" Margin="0,0,0,4"/>
                                     </WrapPanel>
+                                    <TextBlock x:Name="KeepMonthsValidationText" Text="{engine:EngineLang Key='保留月数必须是大于 0 的整数。'}" Foreground="{DynamicResource DangerBrush}"
+                                               FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10">
+                                        <TextBlock.Style>
+                                            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsKeepMonthsValid}" Value="False"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                     <Button x:Name="HistoryCleanupButton" Content="{engine:EngineLang Key='清理过期数据'}" Command="{Binding CleanupHistoryCommand}" Style="{StaticResource CleanupPrimaryButtonStyle}"/>
                                     <TextBlock Text="{engine:EngineLang Key='所有清理操作都需要再次确认。'}" Style="{StaticResource CleanupSecondaryTextStyle}" FontSize="11" Margin="0,8,0,0"/>
                                 </StackPanel>
                             </Border>
-                            <Border Style="{StaticResource CleanupBusyAwareCardStyle}" BorderBrush="{DynamicResource DangerBrush}">
-                                <Expander x:Name="DangerZoneExpander" IsExpanded="False" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}">
+                            <Border Style="{StaticResource CleanupBusyAwareCardStyle}">
+                                <Expander x:Name="FullCleanupExpander" IsExpanded="True" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}">
                                     <Expander.Header>
-                                        <TextBlock Text="{engine:EngineLang Key='危险操作'}" FontWeight="SemiBold" Foreground="{DynamicResource DangerBrush}"/>
+                                        <TextBlock Text="{engine:EngineLang Key='全部数据清理'}" Style="{StaticResource CleanupSectionTitleStyle}"/>
                                     </Expander.Header>
                                     <StackPanel Margin="0,8,0,0">
                                         <TextBlock Text="{engine:EngineLang Key='清空当前库的全部可清理表，无法直接撤销。'}" Style="{StaticResource CleanupSecondaryTextStyle}"/>
-                                        <TextBlock Text="{engine:EngineLang Key='按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。'}"
-                                                   Style="{StaticResource CleanupSecondaryTextStyle}" Margin="0,8,0,0"
-                                                   Visibility="{Binding SupportsTableCleanup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                        <Button x:Name="CleanupAllButton" Command="{Binding CleanupAllCommand}" Style="{StaticResource CleanupDangerButtonStyle}" Margin="0,12,0,0">
-                                            <TextBlock Text="{engine:EngineLang Key='清空当前库全部可清理表'}" Foreground="White" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <Button x:Name="CleanupAllButton" Command="{Binding CleanupAllCommand}" Style="{StaticResource CleanupActionButtonStyle}" Margin="0,12,0,0">
+                                            <TextBlock Text="{engine:EngineLang Key='清空当前库全部可清理表'}" TextWrapping="Wrap" TextAlignment="Center"/>
                                         </Button>
                                     </StackPanel>
                                 </Expander>
@@ -331,7 +339,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Margin="0,0,0,16">
+        <Grid Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -341,7 +349,7 @@
                 <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
             </Border>
             <StackPanel Grid.Column="1">
-                <TextBlock Text="{Binding WindowTitle}" FontSize="24" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding WindowTitle}"/>
+                <TextBlock Text="{Binding WindowTitle}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding WindowTitle}"/>
                 <TextBlock Text="{Binding ScopeDescription}" Style="{StaticResource CleanupSecondaryTextStyle}" Margin="0,5,0,0"/>
             </StackPanel>
             <Border Grid.Column="2" CornerRadius="12" Background="{DynamicResource GlobalBorderBrush1}" Padding="12,6" Margin="12,0,0,0" VerticalAlignment="Center">
@@ -381,7 +389,7 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel>
-                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
                                     <TextBlock Text="{Binding TableSummary}" Style="{StaticResource CleanupSecondaryTextStyle}" FontSize="11" Margin="0,5,0,0"/>
                                 </StackPanel>
                             </DataTemplate>

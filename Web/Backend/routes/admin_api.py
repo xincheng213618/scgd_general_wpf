@@ -30,8 +30,6 @@ Per-endpoint scope requirements:
   - *    /registration-security → users:manage
   - *    /permissions         → permissions:manage
   - *    /roles/*/permissions → permissions:manage
-  - *    /copilot/profiles    → copilot:manage
-
 admin:* grants API keys access to all endpoints. Existing administrator
 sessions and Basic Auth retain full access. Registered-user sessions are
 checked against the database-backed role permission matrix.
@@ -127,10 +125,6 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "perf_summary": ["stats:read"],
     "docs_status": ["cache:read"],
     "publish_integrity": ["stats:read"],
-    "list_profiles": ["copilot:manage"],
-    "create_profile": ["copilot:manage"],
-    "update_profile": ["copilot:manage"],
-    "delete_profile": ["copilot:manage"],
     "get_retention_settings": ["settings:manage"],
     "update_retention_settings": ["settings:manage"],
     "get_account_settings": ["settings:manage"],

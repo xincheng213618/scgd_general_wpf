@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
@@ -123,7 +124,7 @@ namespace ColorVision.Solution.Explorer
             if (showConfirmation
                 && MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"确定将“{Name}”移到回收站吗？",
+                    LocalizedText.Format($"确定将“{Name}”移到回收站吗？"),
                     "ColorVision",
                     MessageBoxButton.OKCancel,
                     MessageBoxImage.Warning) != MessageBoxResult.OK)

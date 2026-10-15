@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.simulator;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
 internal class Timer : CVCommonNodeHub
 {
 	private int _Time = 2000;

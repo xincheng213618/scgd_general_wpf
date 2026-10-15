@@ -6,22 +6,25 @@
     <OpenCVRoot>$(MSBuildThisFileDirectory)opencv\</OpenCVRoot>
     <OpenCVBinDir>$(OpenCVRoot)x64\vc18\bin\</OpenCVBinDir>
     <OpenCVLibDir>$(OpenCVRoot)x64\vc18\lib\</OpenCVLibDir>
-    <OpenCVVersion>4140</OpenCVVersion>
+    <OpenCVVersion>500</OpenCVVersion>
     <OpenCVConfigSuffix>d</OpenCVConfigSuffix>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(OpenCVRoot)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <CudaCompile>
+      <AdditionalOptions>--std=c++17 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(OpenCVRoot)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </CudaCompile>
     <Link>
       <AdditionalLibraryDirectories>$(OpenCVLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_core$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_highgui$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_imgproc$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_imgcodecs$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_videoio$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_calib3d$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_features2d$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_flann$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_photo$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_video$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_xfeatures2d$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_ximgproc$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_xphoto$(OpenCVVersion)$(OpenCVConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_highgui$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_imgproc$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_imgcodecs$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_videoio$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_calib$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_geometry$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_stereo$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_features$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_flann$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_photo$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_objdetect$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_video$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_xfeatures2d$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_ximgproc$(OpenCVVersion)$(OpenCVConfigSuffix).lib;opencv_xphoto$(OpenCVVersion)$(OpenCVConfigSuffix).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <OpenCVLicenseFile Include="$(OpenCVBinDir)OpenCV-ThirdParty-Licenses.txt" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_core$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_core$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_dnn$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_dnn$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_highgui$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_highgui$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
@@ -29,9 +32,12 @@
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_imgproc$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_imgproc$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_videoio$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_videoio$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_videoio_ffmpeg$(OpenCVVersion)_64.dll" Condition="Exists('$(OpenCVBinDir)opencv_videoio_ffmpeg$(OpenCVVersion)_64.dll')" />
-    <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_calib3d$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_calib3d$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
-    <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_features2d$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_features2d$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
+    <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_calib$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_calib$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
+    <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_geometry$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_geometry$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
+    <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_stereo$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_stereo$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
+    <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_features$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_features$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_flann$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_flann$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
+    <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_objdetect$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_objdetect$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_photo$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_photo$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_video$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_video$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />
     <OpenCVRuntimeDll Include="$(OpenCVBinDir)opencv_xfeatures2d$(OpenCVVersion)$(OpenCVConfigSuffix).dll" Condition="Exists('$(OpenCVBinDir)opencv_xfeatures2d$(OpenCVVersion)$(OpenCVConfigSuffix).dll')" />

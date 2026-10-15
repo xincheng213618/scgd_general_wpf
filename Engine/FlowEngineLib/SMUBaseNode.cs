@@ -167,6 +167,17 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 			Channel = _channel
 		};
 		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", serialNumber, data, token, base.ZIndex);
+		if (FlowLocalExecution.CanExecuteLocally?.Invoke(this) == true)
+		{
+			try
+			{
+				using FlowLocalExecution execution = FlowLocalExecution.CreateForNode?.Invoke(this, cVMQTTRequest);
+				if (execution == null) throw new System.InvalidOperationException("本地源表关闭输出后端不可用。");
+				execution.Execute();
+			}
+			catch (System.Exception ex) { logger.Error("本地源表关闭输出失败", ex); }
+			return;
+		}
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
 		startNode.DoPublish(act);
@@ -329,6 +340,11 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		{
 			string serialNumber = action.SerialNumber;
 			BaseStartNode startNode = action.GetStartNode();
+			if (FlowLocalExecution.CanExecuteLocally?.Invoke(this) == true)
+			{
+				SendToCloseOutput(serialNumber, startNode);
+				return;
+			}
 			Task.Delay(500).ContinueWith(delegate
 			{
 				SendToCloseOutput(serialNumber, startNode);

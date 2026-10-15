@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1822
 using System;
 using System.Diagnostics;
@@ -180,7 +181,7 @@ namespace ColorVision.Copilot
                     ToolTip = uri.AbsoluteUri,
                 };
                 webHyperlink.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
-                AutomationProperties.SetName(webHyperlink, $"打开链接：{linkText}");
+                AutomationProperties.SetName(webHyperlink, LocalizedText.Format($"打开链接：{linkText}"));
                 webHyperlink.RequestNavigate += Hyperlink_RequestNavigate;
                 inlines.Add(webHyperlink);
                 return;
@@ -194,7 +195,7 @@ namespace ColorVision.Copilot
                     ToolTip = CopilotLocalFileLinkNavigator.BuildToolTip(fileTarget),
                 };
                 fileHyperlink.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
-                AutomationProperties.SetName(fileHyperlink, $"打开工作区文件：{linkText}");
+                AutomationProperties.SetName(fileHyperlink, LocalizedText.Format($"打开工作区文件：{linkText}"));
                 fileHyperlink.Click += LocalFileHyperlink_Click;
                 fileHyperlink.ContextMenu = CreateLocalFileContextMenu(fileTarget);
                 inlines.Add(fileHyperlink);
@@ -229,7 +230,7 @@ namespace ColorVision.Copilot
                 return;
 
             if (!CopilotLocalFileLinkNavigator.TryOpen(target, out var errorMessage))
-                hyperlink.ToolTip = "文件引用未完成：" + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
+                hyperlink.ToolTip = LocalizedText.Get("文件引用未完成：") + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
             else
                 hyperlink.ToolTip = CopilotLocalFileLinkNavigator.BuildToolTip(target);
         }
@@ -258,7 +259,7 @@ namespace ColorVision.Copilot
                 return;
 
             if (!CopilotLocalFileLinkNavigator.TryOpenContainingFolder(target, out var errorMessage))
-                menuItem.ToolTip = "无法打开文件夹：" + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
+                menuItem.ToolTip = LocalizedText.Get("无法打开文件夹：") + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
         }
 
         private static void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -274,7 +275,7 @@ namespace ColorVision.Copilot
             catch (Exception ex)
             {
                 if (sender is Hyperlink hyperlink)
-                    hyperlink.ToolTip = "无法打开链接：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                    hyperlink.ToolTip = LocalizedText.Get("无法打开链接：") + CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
             }
         }
 

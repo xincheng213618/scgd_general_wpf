@@ -1,11 +1,11 @@
----
+﻿---
 knowledge_id: "copilot.interactions"
 knowledge_type: "topic"
 status: "current"
 summary: "Copilot 命令目录、输入与引用、会话导航及消息/桌宠呈现；本地入口不等于无副作用。"
 aliases: ["Copilot 快捷键", "Copilot 输入框", "Slash 命令", "@关联", "公式显示", "桌宠活动", "CopilotLocalCommandCatalog", "CopilotPermissionCommand", "/permissions", "/context", "/queue", "/tasks", "/mention", "/multiline", "/follow-up"]
-code_paths: ["ColorVision/Copilot/CopilotChatPanel.xaml.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotLocalCommandCatalog.cs","ColorVision/Copilot/CopilotLocalCommandAvailabilityPolicy.cs","ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.PromptHistory.cs","ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs","ColorVision/Copilot/Agent/CopilotWebPageToolSupport.cs","ColorVision/Copilot/Capabilities/CopilotBoundedHttpContentReader.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs","ColorVision/Copilot/Context/CopilotImageAttachmentAdmission.cs","ColorVision/Copilot/CopilotChatPanel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Presentation","ColorVision/Copilot/State/CopilotComposerStash.cs","ColorVision/Copilot/CopilotKeyboardShortcutHelp.cs","ColorVision/Copilot/CopilotMarkdownMath.cs","ColorVision/Copilot/CopilotMarkdownView.xaml.cs","ColorVision/Copilot/CopilotMarkdownTable.cs","ColorVision/Copilot/CopilotComposerReferences.cs","ColorVision/Copilot/CopilotMarkdownView.SpecialContent.cs","ColorVision/FloatingBall/DesktopPetCopilotBridge.cs","ColorVision/FloatingBall/DesktopPetCopilotActivityTracker.cs","ColorVision/FloatingBallWindow.xaml.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationDataCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Messages.cs","ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs","ColorVision/Copilot/Context/CopilotImageInputBudget.cs","ColorVision/Copilot/Context/CopilotImageUnderstandingService.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs","ColorVision/Copilot/CopilotChatPanel.xaml","ColorVision/Copilot/CopilotChatPanel.AttachmentsAndScroll.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotConversationFindNavigationTests.cs","Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs","Test/ColorVision.Copilot.Tests/CopilotPromptHistoryProjectionTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownTableBoundaryTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentPathTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationDeletionPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotMessageEditAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageDeadlineTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerMentionCaretTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerMentionRangeTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatPanelScrollLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownRenderSchedulingTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownScrollIntegrationTests.cs","Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalFileLinkNavigationTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotWebPageBrowserRenderer.cs","ColorVision/Copilot/Agent/CopilotWebPageToolSupport.Rendering.cs","ColorVision/Copilot/CopilotChatPanel.xaml.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotLocalCommandCatalog.cs","ColorVision/Copilot/CopilotLocalCommandAvailabilityPolicy.cs","ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.PromptHistory.cs","ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs","ColorVision/Copilot/Agent/CopilotWebPageToolSupport.cs","ColorVision/Copilot/Capabilities/CopilotBoundedHttpContentReader.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs","ColorVision/Copilot/Context/CopilotImageAttachmentAdmission.cs","ColorVision/Copilot/CopilotChatPanel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Presentation","ColorVision/Copilot/State/CopilotComposerStash.cs","ColorVision/Copilot/CopilotKeyboardShortcutHelp.cs","ColorVision/Copilot/CopilotMarkdownMath.cs","ColorVision/Copilot/CopilotMarkdownView.xaml.cs","ColorVision/Copilot/CopilotMarkdownTable.cs","ColorVision/Copilot/CopilotComposerReferences.cs","ColorVision/Copilot/CopilotMarkdownView.SpecialContent.cs","ColorVision/FloatingBall/DesktopPetCopilotBridge.cs","ColorVision/FloatingBall/DesktopPetCopilotActivityTracker.cs","ColorVision/FloatingBallWindow.xaml.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationDataCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Messages.cs","ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs","ColorVision/Copilot/Context/CopilotImageInputBudget.cs","ColorVision/Copilot/Context/CopilotImageUnderstandingService.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs","ColorVision/Copilot/CopilotChatPanel.xaml","ColorVision/Copilot/CopilotChatPanel.AttachmentsAndScroll.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotWebPageRenderingTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationFindNavigationTests.cs","Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownTableBoundaryTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentPathTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationDeletionPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotMessageEditAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageDeadlineTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerMentionCaretTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerMentionRangeTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatPanelScrollLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownRenderSchedulingTests.cs","Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalFileLinkNavigationTests.cs"]
 related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "copilot.lifecycle", "copilot.session-tools", "copilot.execution", "copilot.tool-contracts", "ui.desktop-pet"]
 ---
 
@@ -14,6 +14,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 本页对应 `CopilotChatPanel`、ViewModel 的命令路由、`Presentation` 投影和桌宠桥接。完整命令名、别名、参数与运行中可执行标记以 `CopilotLocalCommandCatalog` 为准；输入 `/help [命令]` 查询同一目录，不另维护一份手册式全量清单。
 
 “本地命令”只说明由宿主解析，**不保证只读、不联网或不改变任务**。诊断、草稿、任务控制、模型请求及受保护操作必须按以下边界区分。
+
+聊天面板的设置入口位于停靠标题栏，与设备控制面板共用标题栏动作机制。输入栏保留附件、权限、模型与推理强度、语音和发送动作；模型列表与推理强度在同一个弹出面板选择。窄面板将模型与发送动作移到第二行，权限文字保持可见。点击当前窗口附件建议可附加对应上下文。
 
 ## 命令发现、补全与执行门禁
 
@@ -28,9 +30,13 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 发送或重试在异步保存图片之后重新验证捕获的 conversation：会话已删除、已归档、ViewModel 已释放或宿主已不再准入时，不创建消息、不清除 checkpoint，也不调用模型。发送路径在自动压缩返回后再次校验。单纯切换当前选中会话不会取消仍有效的原请求；请求继续使用原会话及其捕获上下文，不改写新会话的草稿。`CopilotRequestAdmissionLifetimeTests` 使用真实图片保存与受控 UI 续体验证这些边界；失效请求新生成的内容寻址图片留给已有孤儿清理，不抢删其他并发请求可能共用的文件。
 
-发送前自动压缩也使用准入时捕获的会话、模型 Profile 和配置快照：图片准备期间切换会话或修改模型设置，不会把另一会话的历史发给摘要模型，也不会把摘要或压缩用量记到另一会话。压缩成功后，原请求重新捕获同一会话的压缩历史继续发送。立即执行的 `/compact` 作用于当前选中会话；排队的 `/compact` 使用入队时的目标会话、Profile、运行配置和项目选项，执行前读取该会话最新历史，不切换当前页面或覆盖后来的模型选择。取消排队压缩后不写回摘要；等待期间普通发送和重试仍遵守自身准入，不能借用该队列任务的后继权限。`CopilotRequestAdmissionLifetimeTests` 和 `CopilotQueuedLocalCommandSnapshotTests` 核验实际摘要 HTTP 请求、预算、用量及摘要归属，显式队列上下文见[状态交接](./copilot-view-model-architecture.md#排队请求)。
+发送前自动压缩也使用准入时捕获的会话、模型 Profile 和配置快照：图片准备期间切换会话或修改模型设置，不会把另一会话的历史发给摘要模型，也不会把摘要或压缩用量记到另一会话。压缩成功后，原请求重新捕获同一会话的压缩历史继续发送。立即执行的 `/compact` 作用于当前选中会话；排队的 `/compact` 使用入队时的目标会话、Profile、运行配置和项目选项，执行前读取该会话最新历史，不切换当前页面或覆盖后来的模型选择。
+
+主按钮显示“停止上下文压缩”时，点击会取消摘要请求；对于排队压缩，还会按原任务 ID 取消对应宿主任务，不写回摘要，后续要求正常完成才派发的普通请求继续等待。压缩规划、模型调用或摘要校验报错时，同样保留这些后续请求，等待显式启动；不足一轮历史或没有足够的新历史而无需压缩时，允许照常派发。压缩失败或取消后，Provider 已经报告的输入、输出与缓存用量仍计入原会话；一次压缩内各次重试的官方用量累加后只结算一次，未报告用量时不估算账单。等待期间普通发送和重试仍遵守自身准入，不能借用该队列任务的后继权限。`CopilotChatViewModelProfileIsolationTests` 通过真实排队与主按钮入口验证取消、失败与正常空操作的派发边界、官方失败用量、队列清理和草稿保留。
 
 图片入库与像素分析共用 `CopilotImagePayloadLoader` / `CopilotImageInputBudget`：除文件签名、尺寸和字节预算外，还要求 Skia 首帧像素解码返回 `Success`。截断或损坏的像素数据在整个附件批次写入前拒绝，也不能到达分析 Provider；缩放不能把部分解码结果重新编码成看似有效的图片。未缩放且成功解码的图片保留原字节，GIF 仍保留原动画数据；这不是逐帧或严格文件尾校验，像素已完整解码的 PNG 即使缺少 IEND 仍可接受。`CopilotImagePayloadValidationTests` 覆盖小图、大图缩放、混合批次和受控 Provider 请求，不修改用户源文件。
+
+图片分析失败、取消或未返回可用正文时，Provider 已报告的图片分析用量仍计入本轮 assistant 消息与原会话。并行上下文准备被取消时，同样保留已成功分析的用量；图片分析与主回答按独立调用各计一次，未报告用量时不估算账单。`CopilotChatViewModelProfileIsolationTests` 通过真实发送入口、Runtime、有效托管图片与受控 HTTP 验证这些边界，不代表真实供应商调用验收。
 
 `/mention [查询]` 和 `+` 菜单只打开当前光标位置的 `@` 查询，不自行选择对象、建立附件或提交请求。查询限定单行、最多80字符；候选最多12项，文件索引最多5,000项并跳过依赖/构建目录，同一未闭合 mention 复用结果，新 mention 重新取样。异步结果由会话键、版本和取消状态约束；索引中 Enter/Tab 都被引用层消费；索引结束且无候选时 Tab 仍被消费，但 Enter 会继续进入正常提交链，不能保证未闭合的查询文本不会发送。
 
@@ -48,11 +54,19 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 显式附件或上下文可能含用户原始数据；发送前检查选中的内容，凭据加密和局部脱敏不等于所有附件都已净化。
 
-网页附件与 `fetch_url` 共用 `CopilotWebPageToolSupport`。一次加载使用同一个 20 秒超时，覆盖地址解析、重定向请求和完整正文读取；收到响应头不会解除正文的超时保护，跳转也不会重新计时。调用方取消仍可提前停止，失败时释放响应与传输对象。`CopilotWebPageDeadlineTests` 使用内存 HTTP handler 和受控正文流，验证默认超时、调用方取消、成功及 HTTP 错误，不访问真实站点。
+网页附件、`FetchUrl` 和搜索深读共用 `CopilotWebPageToolSupport`。URL 去重使用规范化绝对地址，保留路径和查询参数的大小写差异及首项顺序；静态 HTML 解析得到的同源资源和普通页面链接保留完整查询并去掉 fragment。先下载并提取静态 HTML 或结构化资源；HTML 正文为空、内容稀疏或短正文包含脚本时，自动调用 `CopilotWebPageBrowserRenderer`，使用现有 WebView2 Runtime 执行页面 JavaScript 后提取可见正文、标题和同源链接。普通静态网页与 JSON 等结构化内容不启动浏览器。结果标明 `static HTTP content` 或 `browser-rendered DOM`，不会把未渲染的空页面当成已成功访问。
+
+浏览器从前 100 个链接元素提取候选，在宿主按完整规范化 URL 去重后最多返回 12 条同源链接，保留首项顺序和标签；重复链接不占用最终名额。浏览器链接保留 fragment，以支持不同 hash 路由目标，不能套用静态 HTML 的去 fragment 规则。`CopilotWebPageRenderingTests` 覆盖路径、查询和 hash 路由的独立目标，以及 authority 大小写归一化。
+
+生产加载共用 40 秒总期限，覆盖 DNS、重定向、正文读取和浏览器等待；浏览器阶段最多 25 秒，导航后等待有界的正文稳定与资源空闲。静态传输独立测试入口保留 20 秒期限。取消会停止传输并释放本次浏览器控制器；WebView2 不可用、需要登录或仍无正文时报告具体阶段，已有少量静态正文则保留并明确提示不足。`CopilotWebPageDeadlineTests` 与 `CopilotWebPageRenderingTests` 覆盖超时、取消、静态与渲染路径选择、失败回退、来源标记及链接提取；受控测试不代表特定站点验收。
+
+浏览器使用独立 InPrivate profile，不复用编辑器或用户浏览器的登录态；无登录、点击、表单提交、下载、弹窗、主机对象或应用消息桥接。资源只允许 GET，每个请求与重定向仍通过原有公开地址、DNS/NAT64 和连接校验，不因完全访问而绕过网页读取边界；WebView2 未接管的网络通道使用不可用代理，Worker、子框架及 WebSocket 连接由限制策略阻止。最多 96 个资源、单资源 4 MiB、合计 24 MiB，正文仍最多 12,000 字符；部分资源失败会保留提示。此能力用于读取动态正文，不代表浏览器交互操作或视觉页面审计。
 
 刷新同来源（未指定来源时按同标题匹配）的上下文附件时，会替换草稿中的附件快照，不原地改写已被发送请求捕获的对象。图片保存等异步准入尚未结束时，新上下文仍留在草稿，当前请求继续使用提交时的旧内容；未更新的原附件正常消费，新增来源的附件也保留。`CopilotRequestAdmissionLifetimeTests` 通过真实外部上下文入口和图片保存续体验证这些边界，不因更新附件而补发第二个请求。
 
 同地址的网页附件刷新也替换草稿中的快照：较早开始的发送继续使用原网页内容，不能消费后来刷新的网页。编辑消息期间开始的网页读取绑定本次编辑，等待时取消编辑后，完成结果不会附加到恢复后的草稿；刷新时原网页已不在附件集合，也不重新回填。停止读取或关闭 ViewModel 后不附加迟到结果。`CopilotWebPageAttachmentAdmissionTests` 通过实际 ViewModel 的网页加载流程、可控加载结果和真实图片准入验证，不打开网页输入对话框或访问网络。
+
+Chat 消息的“刷新附件与网页后重新生成”和 `/retry refresh` 会按网页附件的 Source 重新加载正文，复用现有地址、重定向、下载预算与取消边界；加载失败时把明确的失败诊断交给模型，不把旧缓存伪装成刷新结果。首次发送和普通重试继续使用已捕获的网页快照，刷新也不改写来源附件对象；实际组装的请求正文仍保存到原 user 消息，供后续 Chat 历史使用。`CopilotTurnTranscriptReplayTests` 验证缓存重试、刷新失败的真实 Runtime 出站正文与回放结果一致，并用受控加载核验新正文和静态上下文隔离；`CopilotRequestPreparationCancellationTests` 覆盖刷新加载尚未返回时的取消。
 
 剪贴板图片在后台编码为托管 PNG 后，须在原会话仍存在且操作未取消时才加入附件。取消或关闭发生在编码完成与 UI 续体执行之间时，也会清理本次尚未附加的图片；后台尚未结束则在完成后清理，失败继续被观察。清理使用已有根内路径与重解析点检查，不删除先前附件，也不改变草稿。`CopilotChatViewModelProfileIsolationTests` 用冻结的合成图片和受控 STA 续体覆盖正常附加、取消与关闭，不读取系统剪贴板。
 
@@ -60,19 +74,19 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 发送按键还取决于本地偏好：标准模式 Enter 提交、Shift+Enter 换行；`/multiline` 开启后 Enter 换行、Shift+Enter 提交。运行中 `/follow-up steer|queue` 选择默认提交是调整当前任务还是排到下一轮，Tab 使用另一种行为；Ctrl+Enter 的立即接管先登记下一轮，再请求取消当前轮，等待当前轮收尾后运行；调度失败不会先取消当前任务。补全弹层优先消费按键。任务暂停、取消和工具是否真实静止仍以[任务与恢复](./copilot-agent-session-and-tools.md)为准，不由按键返回证明。
 
-运行中新增附件的普通输入整体进入下一轮：即使当前提交按键、Tab 或“调整当前任务”按钮选择 steering，也会将文本与附件一起排队，避免只发送文字而遗漏图片、文件或上下文。输入提示与按钮提示会说明这一行为；队列满或提交校验失败时保留草稿和附件，不退回只发送文本。纯文本仍可调整当前任务，本地命令沿用各自的分派规则，Ctrl+Enter 仍按立即接管流程执行。`CopilotQueuedLocalCommandSnapshotTests` 分别使用实际 WPF 输入框／按钮验证完整入队和新草稿保留，并通过 ViewModel 队列调度验证附件送达 Runtime；图片包含真实保存与准入，测试不等同于运行中桌面窗口验收。
+运行中新增附件的普通输入整体进入下一轮：即使当前提交按键、Tab 或“调整当前任务”按钮选择 steering，也会将文本与附件一起排队，避免只发送文字而遗漏图片、文件或上下文。输入提示与按钮提示会说明这一行为；队列满或提交校验失败时保留草稿和附件，不退回只发送文本。纯文本仍可调整当前任务，本地命令沿用各自的分派规则，Ctrl+Enter 仍按立即接管流程执行。图片包含真实保存与准入，测试不等同于运行中桌面窗口验收。
 
 ## 草稿编辑与历史恢复
 
 编辑最新消息后发送，会捕获本次编辑会话的身份与原 user / assistant 对象。图片保存等待期间取消编辑、重新打开同一消息、切换会话后编辑其他消息，或由较新的发送替换原轮次，都会使旧发送退出；它不能替换历史、清除 checkpoint 或结束后来开始的编辑。同一次编辑中继续输入新草稿仍允许提交已捕获的旧文本，新文本和新增附件留在草稿。`CopilotMessageEditAdmissionTests` 用真实图片保存与受控 UI 续体验证上述边界；有效编辑本身不触发自动压缩。
 
-`Ctrl+E` 打开本机 `CopilotTextInputWindow`，不启动 `$EDITOR` 或创建第二套 composer。`CopilotComposerEditorSnapshot` 限制 UTF-16 安全文本长度并夹紧光标，不 trim 首尾空白；确认才写回，取消只恢复焦点/光标。
+`Ctrl+E` 打开本机 `CopilotTextInputWindow`，不启动 `$EDITOR` 或创建第二套 composer。`CopilotComposerEditorSnapshot` 保留完整正文并按实际文本长度夹紧光标，不 trim 首尾空白；确认才写回，取消只恢复焦点/光标。恢复时合并出的草稿即使超过发送上限，打开编辑器后直接确认也不会截断。窗口的手工输入上限与发送准入仍由现有字符限制控制；`CopilotComposerSessionTests` 用真实 STA 窗口验证完整正文、Unicode 尾部、光标边界及手工输入上限。
 
-`Ctrl+S` 用 `CopilotComposerStash` 捕获当前会话文本、光标、附件与一次性请求状态：非空输入且没有 stash 才捕获并清空；空输入才恢复并消费；已有 stash 不被新非空输入覆盖。不触发发送，不保存临时授权。stash 随 chat-state 持久化，其附件计入引用与孤儿清理，不能按“当前消息为空”当成可丢弃内容。
+`Ctrl+S` 用 `CopilotComposerStash` 捕获当前会话文本、光标、附件与一次性请求状态：非空输入且没有 stash 才捕获并清空；空输入才恢复并消费；已有 stash 不被新非空输入覆盖。不触发发送，不保存临时授权。stash 随 chat-state 持久化，其附件计入引用与孤儿清理，不能按“当前消息为空”当成可丢弃内容。暂存、快照复制和重载归一化都保留完整草稿，包括多条合法排队请求恢复后合并出的超长正文；发送和单条排队恢复准入仍独立校验待提交正文的长度，不能截成合法前缀。状态文件仍受现有总字节上限约束，超限明确报保存失败，不以截断正文完成保存。`CopilotChatViewModelProfileIsolationTests` 经真实 Save／Load 和公开暂存／恢复验证完整正文、较新输入、请求状态及附件，并验证超长草稿仍不能发送。
 
 `/history` 与输入框 Ctrl+R 搜索可见 user `Content`，默认当前会话；弹层内 Ctrl+S 切换全部本地会话。当前会话以消息列表顺序判断新旧，跨会话按时间判断；搜索结果去重并限长预览，选中仍恢复完整可见请求。不读隐藏 `RequestContent`、附件正文或 trace。Enter/Tab/点击只把选中项放回草稿，Esc 恢复打开前草稿，不发送。历史搜索独占这些按键，因此弹层内 Ctrl+S 不操作 stash；侧栏搜索的 Ctrl+R 则是重命名候选，不是提示历史。
 
-搜索刷新保留正文、预览和来源说明都未变化的结果对象；筛选或追加消息时增量调整列表，并按完整正文保留选中项。跨会话来源的标题、时间或最新重复请求发生变化时，对应项会更新，不以正文相同为由保留旧来源。打开弹层先检查可见请求是否存在，再生成一次结果；当前会话没有可见请求时可回退到全部未归档会话。`CopilotPromptHistoryProjectionTests` 覆盖这些刷新以及完成、取消后的草稿归属。
+搜索刷新保留正文、预览和来源说明都未变化的结果对象；筛选或追加消息时增量调整列表，并按完整正文保留选中项。跨会话来源的标题、时间或最新重复请求发生变化时，对应项会更新，不以正文相同为由保留旧来源。打开弹层先检查可见请求是否存在，再生成一次结果；当前会话没有可见请求时可回退到全部未归档会话。
 
 候选收集先排除非 user 和空白正文，跨会话只对剩余请求作稳定时间排序；同时间仍按原会话及消息枚举顺序决定先后。正文 trim 后按大小写敏感的完整文本去重，保留最新来源。空查询直接选取最新的最多 12 条不同请求；非空查询继续按既有精确、前缀、包含、多词和子序列评分排序，仅最终结果生成预览及来源标题／时间。`CopilotPromptHistorySearchBehaviorTests` 覆盖排序、去重、可见正文和 Unicode 边界。
 
@@ -84,7 +98,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 普通草稿移除附件尚在等待保存时，如果开始编辑历史消息，失败会把附件还到该编辑会话保留的原草稿备份，而不是当前历史消息的附件列表。回补保持备份对象身份不变；取消编辑后原草稿得到附件，保存成功则不恢复已移除内容。托管图片删除检查也计入这份活动备份，删除其他共享图片的会话不能破坏取消编辑后的恢复。上述测试覆盖独立草稿/历史图片、提前取消编辑和共享引用删除；备份仍仅保存在当前 ViewModel 内存，不保证退出或重启后恢复。
 
-永久删除仍需原生确认；确认框返回后再次检查运行、后台命令和保留状态，不能依据打开确认框之前的状态继续删除。`DeleteConfirmedConversationAsync` 先保存不含目标会话的快照，等待既有持久化屏障成功，才清理输出档案并尝试删除独占托管附件；保存失败会恢复原会话、恢复记录及原选择，不报告删除成功。草稿附件移除也先等待引用变化落盘，失败时恢复附件，避免重启后旧消息或草稿指向已删除图片。清理仍检查其他会话、stash、steering 和队列引用，并保留现有根内路径／重解析点限制。`CopilotConversationDeletionPersistenceTests` 覆盖挂起保存、失败回滚、共享引用及确认后状态变化；不代表修复旧版本已经丢失的图片，也不承诺操作系统拒绝删除的文件会立即消失。
+永久删除仍需原生确认；确认框返回后再次检查运行、后台命令和保留状态，不能依据打开确认框之前的状态继续删除。`DeleteConfirmedConversationAsync` 先保存不含目标会话的快照，等待既有持久化屏障成功，才清理输出档案并尝试删除独占托管附件；保存失败会恢复原会话、恢复记录及原选择，不报告删除成功。删除保存尚未完成时，后台自动标题和已报告用量仍归属原会话；失败恢复后一起保存，成功删除后不重新加入会话列表。草稿附件移除也先等待引用变化落盘，失败时恢复附件，避免重启后旧消息或草稿指向已删除图片。清理仍检查其他会话、stash、steering 和队列引用，并保留现有根内路径／重解析点限制。`CopilotConversationDeletionPersistenceTests` 覆盖挂起保存、失败回滚、共享引用及确认后状态变化；不代表修复旧版本已经丢失的图片，也不承诺操作系统拒绝删除的文件会立即消失。
 
 | 入口 / 实现 | 当前边界 |
 | --- | --- |
@@ -96,7 +110,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 | `/clear`（`/new`） | 保留旧会话并创建干净上下文；可先命名旧会话。不删除旧记录、不继承 checkpoint 或临时授权，也不是 `/compact` |
 | `/fork`（`/branch`）、`/rewind N` | 会话快照/分支，不是文件系统回滚。`rewind` 复制目标请求之前的完整历史并恢复该请求供编辑，不自动发送；不继承可执行 checkpoint、临时授权或回滚能力 |
 | `/archive`、`/unarchive`、`/delete` | 归档隐藏与永久删除不同；删除经过状态检查与原生确认，不能把“本地会话命令”当作可无确认清理 |
-| `/copy N`、Ctrl+Shift+C | 从最近开始选择有正文、非活动、非中断且非 display-only 的回答；部分流式回答不遮住上一条稳定回答，使用既有正文剪贴板格式；不再占用打开文件的 Ctrl+O |
+| `/copy N`、Ctrl+Shift+C | 从最近开始选择有正文、非活动、非中断且非 display-only 的回答；部分流式回答不遮住上一条稳定回答，使用既有正文剪贴板格式 |
 | `/export [文件名]` | 无参数复制可见 Markdown，有文件名则预填保存对话框，由用户选目录及覆盖；使用同目录临时文件与原子替换 |
 | `/feedback [说明]` | 非模态打开 FeedbackWindow，附上有界可见会话快照；可最小化并继续操作主窗口，用户仍需选择诊断内容并显式 Send，打开窗口不等于上传 |
 
@@ -114,8 +128,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 - `/status`、`/doctor`、`/debug-config`、`/context`、`/hooks`、`/mcp [verbose]` 读取已有本地状态或健康快照并脱敏展示；`/doctor` 不替用户联网测试或自动修复，`/mcp` 不等于 Refresh Discovery。
 - `/settings` 打开配置；`/model`、`/reasoning`（`/effort`）选择现有 Profile/受支持级别，不另建一套配置。落盘与运行态发布失败要分开判断，见[配置契约](./copilot-configuration.md)。`/personality` 是当前会话后续回答的沟通风格，不修改工具权限；未设置会话覆盖时使用 ColorVision 的 Pragmatic 默认风格。
-- `/permissions` 打开同一盾牌菜单，`status` 展示范围/能力/审批策略；`ask|auto` 修改任务绑定的访问状态。`/approve` 包含原生待确认动作和自动审查拒绝后的精确重试入口，具体授权、过期和复核边界见[执行链](./copilot-agent-execution.md)。
-- 裸 `/tasks` 查看活动/队列和可恢复项；`stop N`、`resume N`、`dismiss N` 分别进入停止、恢复、放弃路径。stop/dismiss 有原生确认，resume 重新评估 checkpoint/能力兼容后才提交；Ctrl+Alt+T 只是折叠同一任务列表，不做这些操作，不再占用常见的新标签 Ctrl+T。
+- `/permissions` 打开同一盾牌菜单，`status` 展示范围/能力/审批策略；`ask` 恢复按需确认，`auto` 启用临时任务复核，`full` 启用并持久保留完全访问。`/approve` 包含原生待确认动作和自动审查拒绝后的精确重试入口，具体授权、过期和复核边界见[执行链](./copilot-agent-execution.md)。
+- 裸 `/tasks` 查看活动/队列和可恢复项；`stop N`、`resume N`、`dismiss N` 分别进入停止、恢复、放弃路径。stop/dismiss 有原生确认，resume 重新评估 checkpoint/能力兼容后才提交；Ctrl+Alt+T 只是折叠同一任务列表，不做这些操作。
 - 裸 `/queue` 查看当前会话条目，编号是当时的全局队列位置，不是稳定ID。当前实现还有 `send|edit|up|down|delete N` 和 `clear`：send 提升下一项并请求停止当前任务；edit 取消排队并恢复输入/附件但不发送；delete 取消且可能暂停绑定目标；clear 经确认只清当前会话等待项。编号在命令执行时按当前队列重新解析，稍早看到的同一编号可能已对应同会话另一项，不能把数字当稳定身份。解析到对象后才由 Host 状态复查拒绝已开始或已离队对象；清空确认期间开始执行的项会被跳过，不把清理等待项变成停止当前任务，原子取消边界见[后续队列](./copilot-agent-session-and-tools.md#任务-ui、停止原因、运行中-steering-与后续队列)。
 - `/ps` 是 Copilot 后台命令登记表入口，stop 需确认；不是系统所有进程列表。`/agents` 的只读目录与 steer/stop 等控制子命令也须区分，不可整体标成只读。
 - `/init`、`/review`、`/verify`、`/plan`、`/compact` 和 Skill 可能进入真实模型/工具流程；`/rollback N` 会创建精确文件回滚审批。它们不能因为以 Slash 开头就绕过范围、预算、确认或执行证据。项目指令见[生命周期](./copilot-agent-lifecycle.md)，技能目录、开关与调用见 [Copilot 技能](./copilot-skills.md)，文件修改见[任务与内置工具](./copilot-agent-session-and-tools.md)。
@@ -134,7 +148,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 `CopilotMarkdownTableParser` 只去掉扫描时确认的实际行首、行尾分隔符。末尾的 `\|` 属于单元格内容，不会因原始文本以竖线字符结尾而被误判为表格外边界；显式空单元格仍由列数补齐和截断规则处理。
 
-`CopilotMarkdownView` 使用 100 毫秒计时窗口合并正文更新，窗口内到达的新片段不重新推迟刷新。计时回调读取当前正文；替换文档期间再次变化的正文会安排下一次刷新。卸载停止计时，重新加载时按最新正文及宽度决定是否渲染；内容未变且宽度变化不足 24 像素时保留原 `FlowDocument`，避免重复生成文档及清除选择。宽度变化仍会重建文档，使表格列宽、窄窗口下的键值布局及公式缩放重新计算，初始零宽恢复也进入这一判断。渲染仍在 UI 线程执行，计时间隔不代表繁忙 UI 下的延迟上限或增量 Markdown 解析。`CopilotMarkdownRenderSchedulingTests` 覆盖真实加载控件的连续更新、最终正文、卸载／重载、宽度和渲染期间的正文变化；`CopilotMarkdownScrollIntegrationTests` 通过实际 Markdown 文档增高验证外层消息列表跟随与阅读位置。
+`CopilotMarkdownView` 使用 100 毫秒计时窗口合并正文更新，窗口内到达的新片段不重新推迟刷新。计时回调读取当前正文；替换文档期间再次变化的正文会安排下一次刷新。卸载停止计时，重新加载时按最新正文及宽度决定是否渲染；内容未变且宽度变化不足 24 像素时保留原 `FlowDocument`，避免重复生成文档及清除选择。宽度变化仍会重建文档，使表格列宽、窄窗口下的键值布局及公式缩放重新计算，初始零宽恢复也进入这一判断。渲染仍在 UI 线程执行，计时间隔不代表繁忙 UI 下的延迟上限或增量 Markdown 解析。`CopilotMarkdownRenderSchedulingTests` 覆盖真实加载控件的连续更新、最终正文、卸载／重载、宽度和渲染期间的正文变化；
 
 桌宠启用 `EnableCopilotIntegration` 后，`DesktopPetCopilotBridge` 从 `CopilotAgentTaskHost` 和 `CopilotMcpConfirmationStore` 投影多会话活动，Tracker 最多保留16项，优先级为 `NeedsInput → Blocked → Ready → Running`。徽标显示活动数量；单击打开最高优先级，右键活动菜单展示有界列表。打开 Ready/Blocked 项后移除其待查看状态，再展示下一项；NeedsInput 不因打开页面就消除。取消排队项不会覆盖正在运行会话的导航目标。
 

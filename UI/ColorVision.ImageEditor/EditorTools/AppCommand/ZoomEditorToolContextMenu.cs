@@ -25,7 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = Properties.Resources.Print, Command = ApplicationCommands.Print, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
 
             RelayCommand askCopilotImageCommand = new RelayCommand(a => AskCopilotAboutImage());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotAboutImage", Order = 310, Header = "问 AI 分析当前图像", Command = askCopilotImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotAboutImage", Order = 310, Header = Properties.Resources.ImageView_AskAiAboutImage, Command = askCopilotImageCommand });
 
             return MenuItemMetadatas;
         }
@@ -35,7 +35,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             var bundle = CaptureCopilotContext();
             var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(
                 bundle,
-                "请基于已附加的图像元数据、选区/ROI 和标注摘要，分析当前图像可能需要关注的质量问题、测量风险和下一步检查建议。注意：当前上下文不包含图像像素，只能基于结构化信息判断。");
+                Properties.Resources.ImageView_CopilotImagePrompt);
 
             if (!result.WasSent)
             {
@@ -89,7 +89,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             return new CopilotImageContextSnapshot
             {
                 SourceId = $"image-editor:{drawContext.Id:N}",
-                Title = "Current image editor image",
+                Title = Properties.Resources.ImageView_CurrentImageContext,
                 ImagePath = GetPropertyValue(ImageViewPropertyKeys.FilePath),
                 FileName = GetPropertyValue(ImageViewPropertyKeys.FileName),
                 FileSize = GetPropertyValue(ImageViewPropertyKeys.FileSize),
@@ -177,7 +177,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             return new List<MenuItemMetadata>
             {
                 new MenuItemMetadata() { GuidId = "RestoreOriginalImage", Order = 12, Header = Properties.Resources.RestoreOriginalImage, Command = restoreOriginalCommand, Icon = MenuItemIcon.TryFindResource("DIRedo") },
-                new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = "设置", Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
+                new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = Properties.Resources.ImageView_ContextSettings, Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
             };
         }
     }

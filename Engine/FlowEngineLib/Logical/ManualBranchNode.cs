@@ -11,7 +11,7 @@ public enum ManualBranchPath
 	B
 }
 
-[STNode("/01 运算", "在 A/B 两条执行路径之间手动切换")]
+[STNode("运算", "在 A/B 两条执行路径之间手动切换", CategoryOrder = 100)]
 public sealed class ManualBranchNode : CVDeviceNode
 {
 	private ManualBranchPath selectedPath;
@@ -120,7 +120,7 @@ public sealed class ManualBranchNode : CVDeviceNode
 	{
 		dt.SolidBrush.Color = selected ? Color.FromArgb(190, Color.ForestGreen) : Color.FromArgb(110, Color.DimGray);
 		dt.Graphics.FillRectangle(dt.SolidBrush, bounds);
-		dt.Pen.Color = selected ? Color.White : Color.Gray;
+		dt.Pen.Color = ForeColor;
 		dt.Graphics.DrawRectangle(dt.Pen, bounds);
 
 		StringAlignment alignment = m_sf.Alignment;
@@ -129,7 +129,7 @@ public sealed class ManualBranchNode : CVDeviceNode
 		{
 			m_sf.Alignment = StringAlignment.Center;
 			m_sf.LineAlignment = StringAlignment.Center;
-			dt.SolidBrush.Color = selected ? Color.White : Color.LightGray;
+			dt.SolidBrush.Color = ForeColor;
 			dt.Graphics.DrawString(text, Font, dt.SolidBrush, bounds, m_sf);
 		}
 		finally

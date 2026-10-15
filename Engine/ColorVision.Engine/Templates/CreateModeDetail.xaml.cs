@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Database;
 using ColorVision.Themes;
 using SqlSugar;
 using System;
@@ -65,7 +66,7 @@ namespace ColorVision.Engine.Templates
             }
             else
             {
-                MessageBox.Show("添加失败");
+                MessageBox.Show(LocalizedText.Get("添加失败"));
             }
         }
 

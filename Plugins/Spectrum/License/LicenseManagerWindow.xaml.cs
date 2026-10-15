@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿using LocalizedText = global::Spectrum.DisplayText;
+using ColorVision.UI.Menus;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Spectrum.Menus;
@@ -16,7 +17,7 @@ namespace Spectrum.License
         public override string OwnerGuid => MenuItemConstants.Help;
 
         public override int Order => 10003;
-        public override string Header => "许可证管理";
+        public override string Header => LocalizedText.Get("许可证管理");
 
         public override void Execute()
         {
@@ -234,11 +235,12 @@ namespace Spectrum.License
         public LicenseManagerWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            LicenseDirText.Text = $"许可证目录: {licenseDir}";
+            LicenseDirText.Text = LocalizedText.Format($"许可证目录: {licenseDir}");
             LoadLicenseFiles();
         }
 
@@ -347,7 +349,7 @@ namespace Spectrum.License
             {
                 Filter = "License Files (*.lic)|*.lic|All Files|*.*",
                 Multiselect = true,
-                Title = "选择许可证文件"
+                Title = LocalizedText.Get("选择许可证文件")
             };
             if (ofd.ShowDialog() == true)
             {
@@ -391,7 +393,7 @@ namespace Spectrum.License
 
                     var result = MessageBox.Show(
                         confirmMsg.ToString(),
-                        "导入确认",
+                        LocalizedText.Get("导入确认"),
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Question);
 
@@ -409,8 +411,8 @@ namespace Spectrum.License
             if (LicenseListView.SelectedItem is LicenseFileItem item)
             {
                 var result = MessageBox.Show(
-                    $"确认删除许可证 {item.FileName}?",
-                    "删除确认",
+                    LocalizedText.Format($"确认删除许可证 {item.FileName}?"),
+                    LocalizedText.Get("删除确认"),
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -428,7 +430,7 @@ namespace Spectrum.License
             LicenseSync.SyncLicenses();
             LicenseDatabase.Instance.SyncToLocal();
             LoadLicenseFiles();
-            MessageBox.Show("许可证同步完成", "同步", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(LocalizedText.Get("许可证同步完成"), LocalizedText.Get("同步"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

@@ -1,8 +1,6 @@
 using ColorVision.Core;
 using ColorVision.Engine.Services.Devices.Camera.Video;
-using System;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 
 namespace ColorVision.UI.Tests;

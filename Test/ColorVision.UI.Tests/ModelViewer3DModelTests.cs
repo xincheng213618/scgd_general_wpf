@@ -1,7 +1,6 @@
 using ColorVision.ImageEditor.EditorTools.ThreeD;
 using HelixToolkit.SharpDX.Assimp;
 using System.IO;
-using System.Threading;
 
 namespace ColorVision.UI.Tests;
 

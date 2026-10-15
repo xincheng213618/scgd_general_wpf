@@ -1,5 +1,4 @@
 #nullable disable
-using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -7,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/03_1 关注点")]
+[STNode("关注点", CategoryOrder = 310)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.POINode")]
 public class POINode : CVBaseServerNode
 {

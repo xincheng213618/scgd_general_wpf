@@ -142,7 +142,7 @@ namespace ColorVision.Copilot
                         Tools = Array.Empty<AITool>(),
                     },
                     cancellationToken).ConfigureAwait(false);
-                var usage = ExtractUsage(response);
+                var usage = CopilotTokenBudgetChatClient.ExtractResponseUsage(response);
                 if (response.FinishReason != ChatFinishReason.Stop)
                 {
                     return new CopilotAutomaticApprovalReviewResult(
@@ -192,7 +192,10 @@ namespace ColorVision.Copilot
                     FormatClosedOrUserReviewReason(
                         request,
                         "自动复核超时或被提供商提前取消："
-                        + CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey)));
+                        + CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey))) with
+                {
+                    Usage = CopilotProviderRetryChatClient.ExtractFailureUsage(ex),
+                };
             }
             catch (Exception ex)
             {
@@ -200,7 +203,10 @@ namespace ColorVision.Copilot
                     FormatClosedOrUserReviewReason(
                         request,
                         "自动复核失败："
-                        + CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey)));
+                        + CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey))) with
+                {
+                    Usage = CopilotProviderRetryChatClient.ExtractFailureUsage(ex),
+                };
             }
         }
 
@@ -374,27 +380,6 @@ namespace ColorVision.Copilot
             }
             selected.Reverse();
             return selected;
-        }
-
-        private static CopilotTokenUsage ExtractUsage(ChatResponse response)
-        {
-            var usage = CopilotTokenUsage.Empty;
-            foreach (var content in (response.Messages ?? [])
-                .SelectMany(message => message.Contents)
-                .OfType<UsageContent>())
-            {
-                static int ToInt(long? value) =>
-                    value.HasValue ? (int)Math.Clamp(value.Value, 0, int.MaxValue) : 0;
-
-                usage = usage.Add(new CopilotTokenUsage(
-                    ToInt(content.Details.InputTokenCount),
-                    ToInt(content.Details.OutputTokenCount),
-                    ToInt(content.Details.TotalTokenCount),
-                    content.Details.CachedInputTokenCount.HasValue
-                        ? ToInt(content.Details.CachedInputTokenCount)
-                        : null));
-            }
-            return usage;
         }
 
         private static string BoundText(string? value, int maximumLength)

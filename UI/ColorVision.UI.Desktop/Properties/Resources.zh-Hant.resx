@@ -563,6 +563,12 @@
   <data name="Uploading" xml:space="preserve">
     <value>上傳中 {0}%</value>
   </data>
+  <data name="UploadEstimatedRemaining" xml:space="preserve">
+    <value>預計剩餘 {0}</value>
+  </data>
+  <data name="UploadWaitingForConfirmation" xml:space="preserve">
+    <value>上傳完成，等待伺服器確認...</value>
+  </data>
   <data name="SendFailed" xml:space="preserve">
     <value>發送失敗: {0}</value>
   </data>
@@ -781,5 +787,166 @@
   </data>
   <data name="FeedbackNoMatchingDiagnostics" xml:space="preserve">
     <value>沒有相符的診斷項目</value>
+  </data>
+  <data name="崩溃转储" xml:space="preserve"><value>當機傾印</value></data>
+  <data name="配置 Windows Error Reporting 转储，并保存或收集当前进程的诊断文件。" xml:space="preserve"><value>設定 Windows Error Reporting 傾印，並儲存或收集目前處理序的診斷檔案。</value></data>
+  <data name="转储类型" xml:space="preserve"><value>傾印類型</value></data>
+  <data name="选择 Windows Error Reporting 在程序崩溃时保存的转储内容。" xml:space="preserve"><value>選擇 Windows Error Reporting 在程式當機時儲存的傾印內容。</value></data>
+  <data name="最多保留" xml:space="preserve"><value>最多保留</value></data>
+  <data name="最多保留的转储文件数量，允许 1 到 999。" xml:space="preserve"><value>最多保留的傾印檔案數量，允許 1 到 999。</value></data>
+  <data name="保存目录" xml:space="preserve"><value>儲存目錄</value></data>
+  <data name="转储文件的保存位置，必须使用绝对路径。" xml:space="preserve"><value>傾印檔案的儲存位置，必須使用絕對路徑。</value></data>
+  <data name="自定义标志" xml:space="preserve"><value>自訂旗標</value></data>
+  <data name="输入十进制整数或以 0x 开头的 MINIDUMP_TYPE 十六进制标志。" xml:space="preserve"><value>輸入十進位整數或以 0x 開頭的 MINIDUMP_TYPE 十六進位旗標。</value></data>
+  <data name="系统操作" xml:space="preserve"><value>系統操作</value></data>
+  <data name="普通用户模式下，应用和清除操作通过 ColorVision Service Host 写入 HKLM；管理员模式可直接写入。手动保存仅写入上方目录。" xml:space="preserve"><value>一般使用者模式下，套用和清除操作透過 ColorVision Service Host 寫入 HKLM；系統管理員模式可直接寫入。手動儲存僅寫入上方目錄。</value></data>
+  <data name="应用系统设置" xml:space="preserve"><value>套用系統設定</value></data>
+  <data name="清除系统设置" xml:space="preserve"><value>清除系統設定</value></data>
+  <data name="保存当前进程 Dump" xml:space="preserve"><value>儲存目前處理序傾印</value></data>
+  <data name="当前为管理员模式，系统设置可直接写入。" xml:space="preserve"><value>目前為系統管理員模式，系統設定可直接寫入。</value></data>
+  <data name="当前为普通用户模式，系统设置将由 ColorVision Service Host 代为写入。" xml:space="preserve"><value>目前為一般使用者模式，系統設定將由 ColorVision Service Host 代為寫入。</value></data>
+  <data name="当前目标：{0}。{1}" xml:space="preserve"><value>目前目標：{0}。{1}</value></data>
+  <data name="正在应用系统设置……" xml:space="preserve"><value>正在套用系統設定……</value></data>
+  <data name="正在通过后台特权服务应用系统设置……" xml:space="preserve"><value>正在透過背景特權服務套用系統設定……</value></data>
+  <data name="已应用 Windows Error Reporting 设置：{0}" xml:space="preserve"><value>已套用 Windows Error Reporting 設定：{0}</value></data>
+  <data name="应用失败：{0}" xml:space="preserve"><value>套用失敗：{0}</value></data>
+  <data name="确定清除 {0} 的 Windows Error Reporting 转储设置吗？" xml:space="preserve"><value>確定清除 {0} 的 Windows Error Reporting 傾印設定嗎？</value></data>
+  <data name="清除崩溃转储设置" xml:space="preserve"><value>清除當機傾印設定</value></data>
+  <data name="正在清除系统设置……" xml:space="preserve"><value>正在清除系統設定……</value></data>
+  <data name="正在通过后台特权服务清除系统设置……" xml:space="preserve"><value>正在透過背景特權服務清除系統設定……</value></data>
+  <data name="已清除当前程序的专用转储设置；界面已回到系统默认值。" xml:space="preserve"><value>已清除目前程式的專用傾印設定；介面已回到系統預設值。</value></data>
+  <data name="清除失败：{0}" xml:space="preserve"><value>清除失敗：{0}</value></data>
+  <data name="正在保存当前进程 Dump，请稍候……" xml:space="preserve"><value>正在儲存目前處理序傾印，請稍候……</value></data>
+  <data name="Dump 已保存：{0}" xml:space="preserve"><value>傾印已儲存：{0}</value></data>
+  <data name="保存失败：{0}" xml:space="preserve"><value>儲存失敗：{0}</value></data>
+  <data name="小型转储（推荐）" xml:space="preserve"><value>小型傾印（建議）</value></data>
+  <data name="完整内存转储" xml:space="preserve"><value>完整記憶體傾印</value></data>
+  <data name="自定义转储" xml:space="preserve"><value>自訂傾印</value></data>
+  <data name="无法连接 ColorVision Service Host，请先在“更新”中安装或更新后台特权服务。" xml:space="preserve"><value>無法連線至 ColorVision Service Host，請先在「更新」中安裝或更新背景特權服務。</value></data>
+  <data name="应用崩溃转储设置" xml:space="preserve"><value>套用當機傾印設定</value></data>
+  <data name="自定义标志应为十进制整数或 0x 开头的十六进制整数。" xml:space="preserve"><value>自訂旗標應為十進位整數或 0x 開頭的十六進位整數。</value></data>
+  <data name="自定义转储标志包含不支持的位。" xml:space="preserve"><value>自訂傾印旗標包含不支援的位元。</value></data>
+  <data name="保留数量必须在 1 到 999 之间。" xml:space="preserve"><value>保留數量必須在 1 到 999 之間。</value></data>
+  <data name="无效的转储类型。" xml:space="preserve"><value>無效的傾印類型。</value></data>
+  <data name="请选择转储保存目录。" xml:space="preserve"><value>請選擇傾印儲存目錄。</value></data>
+  <data name="转储保存目录必须是绝对路径。" xml:space="preserve"><value>傾印儲存目錄必須是絕對路徑。</value></data>
+  <data name="ColorVision Service Host 版本过旧，请先在“更新”中更新后台特权服务。" xml:space="preserve"><value>ColorVision Service Host 版本過舊，請先在「更新」中更新背景特權服務。</value></data>
+  <data name="{0}失败：{1}" xml:space="preserve"><value>{0}失敗：{1}</value></data>
+  <data name="写入 Windows Error Reporting 的 HKLM 设置需要管理员权限或 ColorVision Service Host。" xml:space="preserve"><value>寫入 Windows Error Reporting 的 HKLM 設定需要系統管理員權限或 ColorVision Service Host。</value></data>
+  <data name="无法创建注册表项：{0}" xml:space="preserve"><value>無法建立登錄機碼：{0}</value></data>
+  <data name="MarketplacePluginName_WindowsServicePlugin" xml:space="preserve"><value>視彩服務外掛</value></data>
+  <data name="MarketplacePluginDescription_WindowsServicePlugin" xml:space="preserve"><value>服務管理工具，提供服務記錄、服務更新及相關管理功能。</value></data>
+  <data name="局域网控制" xml:space="preserve"><value>區域網路控制</value></data>
+  <data name="启用后，手机可以扫描二维码连接到这台电脑上的 ColorVision。" xml:space="preserve"><value>啟用後，手機可以掃描 QR 碼連線至這台電腦上的 ColorVision。</value></data>
+  <data name="LanRemote_Enable" xml:space="preserve"><value>啟用</value></data>
+  <data name="LanRemote_Companion" xml:space="preserve"><value>現場維運夥伴</value></data>
+  <data name="LanRemote_Introduction" xml:space="preserve"><value>連接手機，查看狀態並處理現場維運請求。裝置權限和本機確認由你掌控。</value></data>
+  <data name="LanRemote_ConnectTab" xml:space="preserve"><value>連接手機</value></data>
+  <data name="LanRemote_DevicesTab" xml:space="preserve"><value>裝置管理</value></data>
+  <data name="LanRemote_ConfirmationsTab" xml:space="preserve"><value>本機確認</value></data>
+  <data name="LanRemote_NetworkTab" xml:space="preserve"><value>網路設定</value></data>
+  <data name="LanRemote_InstallStep" xml:space="preserve"><value>1. 安裝行動版</value></data>
+  <data name="LanRemote_InstallDescription" xml:space="preserve"><value>用手機掃描下載碼，安裝 ColorVision 行動版。已安裝可直接進行下一步。</value></data>
+  <data name="LanRemote_DownloadQr" xml:space="preserve"><value>行動版下載 QR 碼</value></data>
+  <data name="LanRemote_DownloadAddress" xml:space="preserve"><value>行動版下載位址</value></data>
+  <data name="LanRemote_OpenDownload" xml:space="preserve"><value>開啟下載頁</value></data>
+  <data name="LanRemote_CopyDownload" xml:space="preserve"><value>複製下載位址</value></data>
+  <data name="LanRemote_PairStep" xml:space="preserve"><value>2. 掃碼配對</value></data>
+  <data name="LanRemote_PairDescription" xml:space="preserve"><value>手機與電腦連接同一網路，再用行動版掃描此碼。提交後還需在電腦上核准裝置。</value></data>
+  <data name="LanRemote_PairingQr" xml:space="preserve"><value>短效安全配對 QR 碼</value></data>
+  <data name="LanRemote_SecureAddress" xml:space="preserve"><value>安全維運位址</value></data>
+  <data name="LanRemote_RefreshPairing" xml:space="preserve"><value>重新產生配對碼</value></data>
+  <data name="LanRemote_CopySecureAddress" xml:space="preserve"><value>複製安全位址</value></data>
+  <data name="LanRemote_ReviewDevices" xml:space="preserve"><value>查看裝置</value></data>
+  <data name="LanRemote_ApproveStep" xml:space="preserve"><value>3. 在電腦上核准裝置</value></data>
+  <data name="LanRemote_ApproveStepDescription" xml:space="preserve"><value>核對手機上的裝置名稱後，在「裝置管理」中核准。高風險操作仍遵循現有確認規則。</value></data>
+  <data name="LanRemote_PendingDevices" xml:space="preserve"><value>待核准裝置</value></data>
+  <data name="LanRemote_PendingDescription" xml:space="preserve"><value>核對手機顯示的裝置名稱後再核准。未核准裝置不能讀取維運資料。</value></data>
+  <data name="LanRemote_PendingEmpty" xml:space="preserve"><value>暫無待核准裝置
+用行動版掃描配對碼後，請求會顯示在這裡。</value></data>
+  <data name="LanRemote_ApproveDevice" xml:space="preserve"><value>核准維運權限</value></data>
+  <data name="LanRemote_Reject" xml:space="preserve"><value>拒絕</value></data>
+  <data name="LanRemote_PairedDevices" xml:space="preserve"><value>已配對裝置</value></data>
+  <data name="LanRemote_PairedDescription" xml:space="preserve"><value>撤銷後，該裝置的所有簽章請求會立即失效。</value></data>
+  <data name="LanRemote_PairedEmpty" xml:space="preserve"><value>尚未配對裝置</value></data>
+  <data name="LanRemote_RevokeDevice" xml:space="preserve"><value>撤銷所選裝置</value></data>
+  <data name="LanRemote_LocalJobs" xml:space="preserve"><value>等待本機確認的作業</value></data>
+  <data name="LanRemote_LocalJobsDescription" xml:space="preserve"><value>手機可確認診斷包、主視窗快照、固定 MQTT 復原或應用程式重新啟動；檢測執行中不會重新啟動。Web 中繼診斷與支援工作階段仍需本機同意。</value></data>
+  <data name="LanRemote_JobsEmpty" xml:space="preserve"><value>暫無需要本機確認的作業</value></data>
+  <data name="LanRemote_ConfirmJob" xml:space="preserve"><value>本機確認並執行</value></data>
+  <data name="LanRemote_RejectLocally" xml:space="preserve"><value>本機拒絕</value></data>
+  <data name="LanRemote_SupportRequests" xml:space="preserve"><value>遠端支援請求</value></data>
+  <data name="LanRemote_SupportDescription" xml:space="preserve"><value>僅允許診斷或引導模式，最長 30 分鐘。不開放任意遠端桌面或命令。</value></data>
+  <data name="LanRemote_SupportEmpty" xml:space="preserve"><value>暫無遠端支援請求</value></data>
+  <data name="LanRemote_ConsentSupport" xml:space="preserve"><value>本機同意支援工作階段</value></data>
+  <data name="LanRemote_SupportDiagnostics" xml:space="preserve"><value>診斷模式</value></data>
+  <data name="LanRemote_SupportGuided" xml:space="preserve"><value>引導模式</value></data>
+  <data name="LanRemote_NetworkTitle" xml:space="preserve"><value>連線與監聽</value></data>
+  <data name="LanRemote_NetworkDescription" xml:space="preserve"><value>選擇手機可存取的本機 IPv4 位址。QR 碼使用安全 HTTPS 通道。</value></data>
+  <data name="LanRemote_QrAddress" xml:space="preserve"><value>配對位址</value></data>
+  <data name="LanRemote_LegacyPort" xml:space="preserve"><value>HTTP 監聽連接埠</value></data>
+  <data name="LanRemote_LegacyPortDescription" xml:space="preserve"><value>既有區域網路控制入口；修改後重新啟動監聽。行動版配對使用下方 HTTPS 連接埠。</value></data>
+  <data name="LanRemote_Apply" xml:space="preserve"><value>套用</value></data>
+  <data name="LanRemote_SecurePort" xml:space="preserve"><value>安全 HTTPS 連接埠</value></data>
+  <data name="LanRemote_RefreshStatus" xml:space="preserve"><value>重新整理狀態</value></data>
+  <data name="LanRemote_ReadyHint" xml:space="preserve"><value>透過短效配對碼連接，裝置授權在本機完成。</value></data>
+  <data name="LanRemote_Disabled" xml:space="preserve"><value>未啟用</value></data>
+  <data name="LanRemote_Running" xml:space="preserve"><value>安全通道執行中</value></data>
+  <data name="LanRemote_StartFailed" xml:space="preserve"><value>安全通道啟動失敗，請檢查網路設定</value></data>
+  <data name="LanRemote_EnableToPair" xml:space="preserve"><value>啟用後顯示配對碼</value></data>
+  <data name="LanRemote_PairingExpired" xml:space="preserve"><value>配對碼已過期
+請重新產生配對碼</value></data>
+  <data name="LanRemote_PairingSubmitted" xml:space="preserve"><value>配對請求已提交
+請在裝置管理中審核</value></data>
+  <data name="LanRemote_PairingExpires" xml:space="preserve"><value>有效至 {0} · 僅可提交一次</value></data>
+  <data name="LanRemote_PairingLifetime" xml:space="preserve"><value>配對碼有效期 2 分鐘，僅可提交一次。</value></data>
+  <data name="LanRemote_DownloadCopied" xml:space="preserve"><value>行動版下載位址已複製。</value></data>
+  <data name="LanRemote_AddressCopied" xml:space="preserve"><value>安全連線位址已複製。</value></data>
+  <data name="LanRemote_StatusUpdated" xml:space="preserve"><value>狀態已重新整理。</value></data>
+  <data name="LanRemote_PairingUpdated" xml:space="preserve"><value>已產生新的配對碼，請在兩分鐘內掃描。</value></data>
+  <data name="LanRemote_SelectApproveDevice" xml:space="preserve"><value>請先選擇要核准的裝置。</value></data>
+  <data name="LanRemote_SelectRejectDevice" xml:space="preserve"><value>請先選擇要拒絕的裝置。</value></data>
+  <data name="LanRemote_SelectRevokeDevice" xml:space="preserve"><value>請先選擇要撤銷的裝置。</value></data>
+  <data name="LanRemote_DeviceApproved" xml:space="preserve"><value>已核准 {0} 的受控維運權限。</value></data>
+  <data name="LanRemote_DeviceRejected" xml:space="preserve"><value>已拒絕 {0}。</value></data>
+  <data name="LanRemote_DeviceRevoked" xml:space="preserve"><value>已撤銷 {0}。</value></data>
+  <data name="LanRemote_RequestUnavailable" xml:space="preserve"><value>請求已失效，請重新整理狀態後再試。</value></data>
+  <data name="LanRemote_SelectJob" xml:space="preserve"><value>請先選擇要本機確認的作業。</value></data>
+  <data name="LanRemote_EvidenceFailed" xml:space="preserve"><value>證據擷取失敗：{0}</value></data>
+  <data name="LanRemote_SnapshotConfirmationTitle" xml:space="preserve"><value>確認主視窗安全快照</value></data>
+  <data name="LanRemote_SnapshotConfirmation" xml:space="preserve"><value>將立即擷取一張 ColorVision 主視窗 JPEG。
+
+不會擷取整個桌面，但畫面可能包含目前可見的檢測或客戶資料。快照僅保留 5 分鐘，僅申請裝置可讀取一次，讀取後電腦端立即刪除。
+
+確認繼續嗎？</value></data>
+  <data name="LanRemote_NoAddresses" xml:space="preserve"><value>未偵測到可用的區域網路 IPv4 位址，請確認電腦和手機在同一個 Wi-Fi 或網段。</value></data>
+  <data name="LanRemote_AvailableAddresses" xml:space="preserve"><value>可用位址：{0}</value></data>
+  <data name="LanRemote_Automatic" xml:space="preserve"><value>自動選擇</value></data>
+  <data name="LanRemote_AutomaticAddress" xml:space="preserve"><value>自動選擇（{0}）</value></data>
+  <data name="LanRemote_TabCount" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="LanRemote_LegacyDisabled" xml:space="preserve"><value>區域網路控制已關閉。</value></data>
+  <data name="LanRemote_LegacyRunning" xml:space="preserve"><value>區域網路控制執行中：{0}</value></data>
+  <data name="LanRemote_LegacyRestarting" xml:space="preserve"><value>區域網路控制正在重新啟動。</value></data>
+  <data name="LanRemote_LegacyPortFailed" xml:space="preserve"><value>區域網路控制啟動失敗，連接埠 {0} 無法使用：{1}</value></data>
+  <data name="LanRemote_LegacyStartFailed" xml:space="preserve"><value>區域網路控制啟動失敗：{0}</value></data>
+  <data name="LanRemote_JobTitle_Snapshot" xml:space="preserve"><value>擷取 ColorVision 主視窗安全快照</value></data>
+  <data name="LanRemote_JobTitle_Diagnostics" xml:space="preserve"><value>產生去識別化安全診斷包</value></data>
+  <data name="LanRemote_JobTitle_ServiceRestart" xml:space="preserve"><value>重新啟動允許清單 MQTT 服務</value></data>
+  <data name="LanRemote_JobTitle_ApplicationRestart" xml:space="preserve"><value>重新啟動 ColorVision 應用程式</value></data>
+  <data name="LanRemote_JobTitle_Reconnect" xml:space="preserve"><value>復原 ColorVision 訊息通道</value></data>
+  <data name="LanRemote_JobTitle_CancelFlow" xml:space="preserve"><value>取消目前主檢測流程</value></data>
+  <data name="LanRemote_JobTitle_Other" xml:space="preserve"><value>現場維運作業</value></data>
+  <data name="LanRemote_JobNotice_Snapshot" xml:space="preserve"><value>僅擷取 ColorVision 主視窗；可能包含目前可見的檢測資料。手機明確確認後立即擷取，JPEG 僅保留 5 分鐘，由申請裝置讀取一次後刪除。</value></data>
+  <data name="LanRemote_JobNotice_Diagnostics" xml:space="preserve"><value>手機明確確認後產生不含影像、認證資訊、使用者名稱、機器名稱、網路位址或原始日誌的去識別化 ZIP。</value></data>
+  <data name="LanRemote_JobNotice_ServiceRestart" xml:space="preserve"><value>僅允許透過 ServiceHost 重新啟動固定的 Mosquitto 服務；手機明確確認後立即執行，無需電腦端再次共同簽核。</value></data>
+  <data name="LanRemote_JobNotice_ApplicationRestart" xml:space="preserve"><value>僅正常重新啟動目前 ColorVision 應用程式，不接受路徑、參數或其他處理程序；檢測執行中會拒絕。</value></data>
+  <data name="LanRemote_JobNotice_Reconnect" xml:space="preserve"><value>僅在 ColorVision 訊息用戶端中斷或訂閱未就緒時重建固定既有連線並復原已登記訂閱，不接受位址、Topic、認證資訊或參數。</value></data>
+  <data name="LanRemote_JobNotice_CancelFlow" xml:space="preserve"><value>僅向目前主工作區正在執行的檢測傳送取消請求，不接受流程、節點或參數。無需電腦端再次共同簽核。</value></data>
+  <data name="LanRemote_JobNotice_Other" xml:space="preserve"><value>請確認作業來源和固定能力範圍。</value></data>
+  <data name="LanRemote_SecureDisabledStatus" xml:space="preserve"><value>安全維運通道已關閉。</value></data>
+  <data name="LanRemote_SecureRunningStatus" xml:space="preserve"><value>安全維運通道執行中，HTTPS 連接埠 {0}。</value></data>
+  <data name="LanRemote_SecureFailedStatus" xml:space="preserve"><value>安全維運通道啟動失敗：{0}</value></data>
+  <data name="MarketplaceBulkUpdatePackageDownloadFailed" xml:space="preserve">
+    <value>插件包未全部下載成功，已取消本次批量更新。</value>
   </data>
 </root>

@@ -235,10 +235,8 @@ class AlgorithmPackageContractTests(unittest.TestCase):
         for name in ("Verify scoped Algorithms release", "Publish scoped Algorithms package to NuGet"):
             self.assertIn(f"if: github.event_name == 'release' && {scope}", steps[name])
             for prerequisite in (
-                "Build solution with MSBuild", "Run Python tests", "Run UI tests",
-                "Run UI performance probes in an isolated process", "Run Copilot tests",
-                "Run Spectrum tests", "Run Conoscope tests", "Run ProjectARVRPro tests",
-                "Run ProjectKB tests", "Run ProjectLUX tests",
+                "Build solution with MSBuild", "Verify host shared-file manifests",
+                "Verify native ABI and packages",
             ):
                 self.assertNotIn("if:", steps[prerequisite])
                 self.assertLess(workflow.index(f"- name: {prerequisite}"), workflow.index(f"- name: {name}"))
@@ -311,42 +309,22 @@ class AlgorithmPackageContractTests(unittest.TestCase):
         )
         self.assertIn("msbuild build.sln /p:Configuration=Release /p:Platform=x64", workflow)
 
-    def test_each_no_restore_test_has_a_matching_release_x64_restore(self) -> None:
+    def test_ci_keeps_test_suites_out_of_the_delivery_workflow(self) -> None:
         workflow = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
-        restore_commands: dict[str, str] = {}
-        test_commands: dict[str, str] = {}
-        for raw_line in workflow.splitlines():
-            line = raw_line.strip()
-            if line.startswith("run: "):
-                line = line.removeprefix("run: ")
-            restore = re.fullmatch(r"dotnet restore (?P<project>\S+\.csproj)(?P<arguments>.*)", line)
-            if restore:
-                restore_commands[restore.group("project").replace("\\", "/")] = restore.group("arguments")
-            test = re.fullmatch(r"dotnet test (?P<project>\S+\.csproj)(?P<arguments>.*)", line)
-            if test and "--no-restore" in test.group("arguments"):
-                test_commands[test.group("project").replace("\\", "/")] = test.group("arguments")
-
-        self.assertEqual(7, len(test_commands), "Keep this assertion in sync when CI test projects change.")
-        self.assertEqual(set(test_commands), set(restore_commands))
-        for project, arguments in restore_commands.items():
-            with self.subTest(project=project, command="restore"):
-                self.assertIn("-p:Configuration=Release", arguments)
-                self.assertIn("-p:Platform=x64", arguments)
-        for project, arguments in test_commands.items():
-            with self.subTest(project=project, command="test"):
-                self.assertIn("-c Release", arguments)
-                self.assertIn("-p:Platform=x64", arguments)
-                self.assertIn("--no-restore", arguments)
+        self.assertNotRegex(workflow, r"\bdotnet\s+test\b")
+        self.assertNotRegex(workflow, r"\bpython\s+-m\s+(?:unittest|pytest)\b")
+        self.assertIn("python Scripts/verify_native_contracts.py", workflow)
+        self.assertIn("python Scripts/generate_shared_files.py --check", workflow)
 
     def test_ci_prepares_visual_studio_native_build_before_package_contract(self) -> None:
         workflow = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
         setup = workflow.index("microsoft/setup-msbuild")
         native_build = workflow.index("msbuild build.sln /p:Configuration=Release /p:Platform=x64")
-        python_tests = workflow.index('python -m unittest discover -s Scripts/tests -p "test_*.py" -v')
+        native_contracts = workflow.index("python Scripts/verify_native_contracts.py")
         publish_preflight = workflow.index("python Scripts/verify_nuget_package_versions.py")
         self.assertLess(setup, native_build)
-        self.assertLess(native_build, python_tests)
-        self.assertLess(python_tests, publish_preflight)
+        self.assertLess(native_build, native_contracts)
+        self.assertLess(native_contracts, publish_preflight)
 
     def test_algorithms_and_image_editor_inherit_one_ui_package_version(self) -> None:
         versions = _values(UI_VERSION_PROPS, "VersionPrefix")

@@ -18,6 +18,7 @@ namespace Conoscope.Analysis
         public ColorGamutResultWindow(ColorGamutComputationResult result)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             this.result = result;
             rows = result.Points.Select(item => new ColorGamutRowViewModel(item)).ToList();
 

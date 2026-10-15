@@ -225,10 +225,9 @@ namespace ColorVision.Copilot
                 AgentActivity = null;
                 changed = true;
             }
-            var lastAssistantMessage = Messages.LastOrDefault(message =>
-                !message.IsUser
-                && !message.WasResponseInterrupted);
+            var lastAssistantMessage = Messages.LastOrDefault(message => !message.IsUser);
             if (lastAssistantMessage != null
+                && !lastAssistantMessage.WasResponseInterrupted
                 && !lastAssistantMessage.ReportedUsage.HasAny
                 && LastUsage.HasAny)
             {

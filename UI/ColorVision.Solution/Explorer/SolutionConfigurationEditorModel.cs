@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -102,7 +103,7 @@ namespace ColorVision.Solution.Explorer
         public string ProjectReference { get; }
         public string DisplayName => string.IsNullOrWhiteSpace(Project.LoadError)
             ? Project.Name
-            : $"{Project.Name} (加载失败)";
+            : LocalizedText.Format($"{Project.Name} (加载失败)");
         public ObservableCollection<string> AvailableConfigurations { get; } = new();
         public ObservableCollection<SolutionDependencyOption> Dependencies { get; } = new();
         public bool CanEditDependencies { get; }

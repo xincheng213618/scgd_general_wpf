@@ -5,7 +5,7 @@ status: "current"
 summary: "快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。"
 aliases: ["快捷键", "热键", "组合键", "全局热键", "窗口热键", "快捷键冲突", "快捷键保存", "快捷键搜索", "热键注销", "HotkeyService", "HotKeyConfig", "HotKeysSetting", "HotkeyEditWindow", "HotkeySettingsViewModel", "HotkeyPresentation", "HotkeyApplyResult", "HotkeyCaptureLease", "IHotkeyProvider", "IHotKey", "HotkeyDefinition", "HotKeys", "WindowHotKeyManager", "GlobalHotKeyManager", "IHotkeyRegistration", "HoyKeyControl"]
 code_paths: ["UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Menus/Base/File", "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs", "UI/ColorVision.UI/LogImp/Menus/MenuLog.cs", "UI/ColorVision.Solution/OpenSolutionWindow.xaml.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "UI/ColorVision.Solution/SolutionMenuItems.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindow.Hotkeys.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/Update/MenuCheckAndUpdateV1.cs", "ColorVision/AboutMsg.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HotkeyServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs", "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultipleBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutUpgradeTests.cs", "Test/ColorVision.UI.Tests/FileHotkeyDefaultsTests.cs", "Test/ColorVision.UI.Tests/RoutedCommandHotkeyGuardTests.cs", "Test/ColorVision.UI.Tests/ApplicationHotkeyIntegrationTests.cs", "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs", "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HotkeyServiceTests.cs","Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs","Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs","Test/ColorVision.UI.Tests/FileHotkeyDefaultsTests.cs","Test/ColorVision.UI.Tests/RoutedCommandHotkeyGuardTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"]
 related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.common"]
 ---
 
@@ -153,16 +153,16 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 
 上述相对路径均位于 `UI/ColorVision.UI/HotKey/`。`Test/ColorVision.UI.Tests/HotkeyServiceTests.cs` 通过隔离注册与持久化委托验证事前校验、最小句柄替换、注册/保存/补偿失败、未知插件配置保留、控件宿主与嵌套录入门禁；注入类型来源验证故障 provider 隔离和显式同 ID 替换的恢复。
 
-`Test/ColorVision.UI.Tests/HotkeySettingsTests.cs` 覆盖文本搜索、单项清除/恢复、失败后显示实际状态、未显示的编辑弹窗关闭不提交、输入限制，以及展示元数据不改持久化身份；另在注入独立元数据的真实设置框架中检查中英文、深浅主题、不同宽度、搜索结果和空状态。测试不加载生产配置，不执行真实业务回调。
+另在注入独立元数据的真实设置框架中检查中英文、深浅主题、不同宽度、搜索结果和空状态。测试不加载生产配置，不执行真实业务回调。
 
-`Test/ColorVision.UI.Tests/HotkeyBackendTests.cs` 在测试进程自己的不可见 HWND 上真实注册临时 `Ctrl+Alt+Shift+F23/F24`，使用无害计数回调验证占用、释放重申、捕获恢复及恢复冲突，结束时释放所有注册。只向自有隐藏 HWND 发送 `WM_HOTKEY`，不注入桌面键盘事件；窗口路由使用独立控件，尾键与真实 DispatcherTimer 检查通过隔离的内部读键委托模拟按住/释放。初始组合已被外部占用时明确失败，不抢占它。
+只向自有隐藏 HWND 发送 `WM_HOTKEY`，不注入桌面键盘事件；窗口路由使用独立控件，尾键与真实 DispatcherTimer 检查通过隔离的内部读键委托模拟按住/释放。初始组合已被外部占用时明确失败，不抢占它。
 
 `Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs` 验证稳定 ID 匹配、后加载、编辑/清除/恢复、条目替换与弱订阅回收，不注册热键或执行菜单业务。这些测试入口不等于已运行通过，也不替代真实物理键盘、各输入法/布局及真实业务操作的人工验收。
 
-`HotkeyMultipleBindingTests` 覆盖模型值隔离、JSON 往返、多组注册/失败回收与关闭释放，包括自有隐藏窗口上的真实后端测试。`HotkeyMultiBindingServiceTests` 覆盖完整列表的增删改、无配置默认值、无默认操作、明确清空后重新加载、逐组冲突与失败补偿；`HotkeySettingsTests` 补充多组编辑弹窗、删除最后一组、筛选/搜索、重置完整默认列表和未分配行的 UI 状态。
+`HotkeyMultiBindingServiceTests` 覆盖完整列表的增删改、无配置默认值、无默认操作、明确清空后重新加载、逐组冲突与失败补偿；
 
-`BuiltInShortcutDefaultsTests` / `FileHotkeyDefaultsTests` 检查默认值、说明、命令边界和菜单联动；`RoutedCommandHotkeyGuardTests` 用自有隐藏宿主验证原生命令不穿透、改键/恢复、窗口隔离及捕获尾键，也覆盖场景 Find 的原生例外和键位复用。`ApplicationHotkeyIntegrationTests` 检查功能搜索、场景查找与 Copilot 命令接线，不启动生产主窗口或设备；`ContextualFindRouterTests` / `SearchWindowHotkeyBridgeTests` 分别检查局部命令与独立搜索窗口键位桥接的隔离边界。
+`RoutedCommandHotkeyGuardTests` 用自有隐藏宿主验证原生命令不穿透、改键/恢复、窗口隔离及捕获尾键，也覆盖场景 Find 的原生例外和键位复用。
 
 按键可能执行文件、配置或设备操作，运行时验证应使用获授权的隔离宿主和无害回调。文档检索与站点检查不证明真实 provider 完整发现、操作系统注册成功或业务回调完成。
 
-`BuiltInShortcutUpgradeTests` 复制三项新默认的安全声明，使用假注册和内存 JSON 验证无覆盖时采用默认、稳定 ID/旧名称匹配、自定义及明确空绑定保留，以及单项恢复不改变其它操作。测试不读取或改写用户配置，也不调用日志、工作区或布局业务动作。
+测试不读取或改写用户配置，也不调用日志、工作区或布局业务动作。

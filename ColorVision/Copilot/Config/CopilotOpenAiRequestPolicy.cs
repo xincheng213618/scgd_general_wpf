@@ -92,10 +92,13 @@ namespace ColorVision.Copilot
         internal static bool IsOfficialOpenAiReasoningModel(
             CopilotProfileConfig profile)
         {
-            if (!UsesOfficialOpenAiApi(profile))
-                return false;
+            return UsesOfficialOpenAiApi(profile)
+                && IsOpenAiReasoningModelName(profile.Model);
+        }
 
-            var model = profile.Model?.Trim() ?? string.Empty;
+        internal static bool IsOpenAiReasoningModelName(string? modelName)
+        {
+            var model = modelName?.Trim() ?? string.Empty;
             if (model.Length == 0)
                 return false;
             if (model.Contains("codex", StringComparison.OrdinalIgnoreCase))
@@ -124,14 +127,17 @@ namespace ColorVision.Copilot
             return hasDigit && majorVersion >= 5;
         }
 
+        internal static bool IsGpt6AstraModelName(string? model) =>
+            string.Equals(
+                model?.Trim(),
+                "gpt-6-astra",
+                StringComparison.OrdinalIgnoreCase);
+
         internal static bool IsGpt6Astra(CopilotProfileConfig profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
             return UsesOfficialOpenAiApi(profile)
-                && string.Equals(
-                    profile.Model?.Trim(),
-                    "gpt-6-astra",
-                    StringComparison.OrdinalIgnoreCase);
+                && IsGpt6AstraModelName(profile.Model);
         }
     }
 }

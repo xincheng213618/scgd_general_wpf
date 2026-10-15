@@ -207,8 +207,8 @@ public:
     [[nodiscard]] std::uint64_t cacheFootprintBytes() const noexcept override
     {
         return sizeof(*this)
-            + static_cast<std::uint64_t>(mapX_.total()) * mapX_.elemSize()
-            + static_cast<std::uint64_t>(mapY_.total()) * mapY_.elemSize();
+            + static_cast<std::uint64_t>(coordinates_.total()) * coordinates_.elemSize()
+            + static_cast<std::uint64_t>(interpolation_.total()) * interpolation_.elemSize();
     }
 
     bool load(const json& root, std::string& error)
@@ -274,7 +274,7 @@ public:
         }
 
         try {
-            buildMaps(width_, height_, 0, 0, false, mapX_, mapY_);
+            buildMaps(width_, height_, 0, 0, false, coordinates_, interpolation_);
         }
         catch (const cv::Exception& exception) {
             error = "Unable to create distortion maps: " + std::string(exception.what());
@@ -315,8 +315,8 @@ public:
 
         try {
             const bool useRoi = validLegacyRoi(options, width_, height_);
-            const cv::Mat* selectedMapX = &mapX_;
-            const cv::Mat* selectedMapY = &mapY_;
+            const cv::Mat* selectedCoordinates = &coordinates_;
+            const cv::Mat* selectedInterpolation = &interpolation_;
             int offsetX = width_ / 2 - cameraCenterX_;
             int offsetY = height_ / 2 - cameraCenterY_;
 
@@ -333,15 +333,15 @@ public:
 
                 if (roiX_ != roiX || roiY_ != roiY
                     || roiWidth_ != roiWidth || roiHeight_ != roiHeight
-                    || roiMapX_.empty() || roiMapY_.empty()) {
-                    buildMaps(roiWidth, roiHeight, roiX, roiY, true, roiMapX_, roiMapY_);
+                    || roiCoordinates_.empty() || roiInterpolation_.empty()) {
+                    buildMaps(roiWidth, roiHeight, roiX, roiY, true, roiCoordinates_, roiInterpolation_);
                     roiX_ = roiX;
                     roiY_ = roiY;
                     roiWidth_ = roiWidth;
                     roiHeight_ = roiHeight;
                 }
-                selectedMapX = &roiMapX_;
-                selectedMapY = &roiMapY_;
+                selectedCoordinates = &roiCoordinates_;
+                selectedInterpolation = &roiInterpolation_;
                 offsetX = roiWidth / 2 - cameraCenterX_ + roiX;
                 offsetY = roiHeight / 2 - cameraCenterY_ + roiY;
             }
@@ -351,8 +351,8 @@ public:
                     error = "RAW dimensions do not match the distortion calibration";
                     return false;
                 }
-                if (selectedMapX->cols != static_cast<int>(raw.width)
-                    || selectedMapX->rows != static_cast<int>(raw.height)) {
+                if (selectedCoordinates->cols != static_cast<int>(raw.width)
+                    || selectedCoordinates->rows != static_cast<int>(raw.height)) {
                     error = "Distortion show size cannot be written to an in-place RAW buffer";
                     return false;
                 }
@@ -390,8 +390,8 @@ public:
             cv::remap(
                 remapSource,
                 output,
-                *selectedMapX,
-                *selectedMapY,
+                *selectedCoordinates,
+                *selectedInterpolation,
                 cv::INTER_LINEAR,
                 cv::BORDER_CONSTANT);
             return true;
@@ -414,8 +414,8 @@ private:
         , useFisheye_(source.useFisheye_)
         , cameraMatrix_(source.cameraMatrix_)
         , distortionCoefficients_(source.distortionCoefficients_)
-        , mapX_(source.mapX_)
-        , mapY_(source.mapY_)
+        , coordinates_(source.coordinates_)
+        , interpolation_(source.interpolation_)
     {
     }
 
@@ -425,9 +425,11 @@ private:
         int roiX,
         int roiY,
         bool roi,
-        cv::Mat& mapX,
-        cv::Mat& mapY) const
+        cv::Mat& coordinates,
+        cv::Mat& interpolation) const
     {
+        cv::Mat mapX;
+        cv::Mat mapY;
         std::array<float, 9> adjusted = cameraMatrix_;
         if (roi) {
             if (useFisheye_) {
@@ -498,6 +500,10 @@ private:
                 mapX,
                 mapY);
         }
+
+        // Cache remap's fixed-point coordinates and interpolation indices once.
+        // Keep the float-map construction and fisheye rebasing above unchanged.
+        cv::convertMaps(mapX, mapY, coordinates, interpolation, CV_16SC2);
     }
 
     int width_ = 0;
@@ -511,10 +517,10 @@ private:
     std::array<float, 9> cameraMatrix_{};
     std::array<float, 5> distortionCoefficients_{};
 
-    cv::Mat mapX_;
-    cv::Mat mapY_;
-    cv::Mat roiMapX_;
-    cv::Mat roiMapY_;
+    cv::Mat coordinates_;
+    cv::Mat interpolation_;
+    cv::Mat roiCoordinates_;
+    cv::Mat roiInterpolation_;
     int roiX_ = -1;
     int roiY_ = -1;
     int roiWidth_ = -1;
@@ -868,6 +874,7 @@ public:
             if (!selectMaps(raw, options, selectedGr, selectedGb, error)) {
                 return false;
             }
+            const bool flipRows = options.rawOutputFlip == 0;
 
             if (!options.interleavedBgr) {
                 if (raw.channels != 3) {
@@ -875,8 +882,8 @@ public:
                     return false;
                 }
                 return raw.bitsPerChannel == 8
-                    ? applyPlanar<std::uint8_t>(raw, destination, *selectedGr, *selectedGb)
-                    : applyPlanar<std::uint16_t>(raw, destination, *selectedGr, *selectedGb);
+                    ? applyPlanar<std::uint8_t>(raw, destination, *selectedGr, *selectedGb, flipRows)
+                    : applyPlanar<std::uint16_t>(raw, destination, *selectedGr, *selectedGb, flipRows);
             }
 
             switch (options.rgbType) {
@@ -886,8 +893,8 @@ public:
                     return false;
                 }
                 return raw.bitsPerChannel == 8
-                    ? applyInterleaved<std::uint8_t>(raw, destination, *selectedGr, *selectedGb)
-                    : applyInterleaved<std::uint16_t>(raw, destination, *selectedGr, *selectedGb);
+                    ? applyInterleaved<std::uint8_t>(raw, destination, *selectedGr, *selectedGb, flipRows)
+                    : applyInterleaved<std::uint16_t>(raw, destination, *selectedGr, *selectedGb, flipRows);
             case 1:
             case 2:
             case 3:
@@ -896,18 +903,28 @@ public:
                     return false;
                 }
                 if (options.rgbType == 2) {
-                    std::memcpy(destination.data, raw.data, imageByteCount(raw));
+                    if (!flipRows) {
+                        std::memcpy(destination.data, raw.data, imageByteCount(raw));
+                        return true;
+                    }
+                    const std::size_t rowBytes = imageByteCount(raw) / raw.height;
+                    cv::parallel_for_(cv::Range(0, raw.height), [&](const cv::Range& range) {
+                        for (int row = range.start; row < range.end; ++row) {
+                            const auto targetRow = raw.height - 1 - row;
+                            std::memcpy(destination.data + targetRow * rowBytes, raw.data + row * rowBytes, rowBytes);
+                        }
+                    });
                     return true;
                 }
                 return raw.bitsPerChannel == 8
                     ? applySingle<std::uint8_t>(
                         raw,
                         destination,
-                        options.rgbType == 1 ? *selectedGr : *selectedGb)
+                        options.rgbType == 1 ? *selectedGr : *selectedGb, flipRows)
                     : applySingle<std::uint16_t>(
                         raw,
                         destination,
-                        options.rgbType == 1 ? *selectedGr : *selectedGb);
+                        options.rgbType == 1 ? *selectedGr : *selectedGb, flipRows);
             default:
                 error = "ColorDiff rgbType must be 0 (BGR), 1 (R), 2 (G), or 3 (B)";
                 return false;
@@ -1045,7 +1062,8 @@ private:
         const ImageView& raw,
         const ImageView& output,
         const cv::Mat& mapGr,
-        const cv::Mat& mapGb)
+        const cv::Mat& mapGb,
+        bool flipRows)
     {
         const int width = static_cast<int>(raw.width);
         const int height = static_cast<int>(raw.height);
@@ -1057,10 +1075,11 @@ private:
                 const auto* gr = mapGr.ptr<MapEntry>(row);
                 const auto* gb = mapGb.ptr<MapEntry>(row);
                 const bool borderRow = row == 0 || row == height - 1;
+                const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
                     const std::size_t pixel = static_cast<std::size_t>(row) * width + column;
-                    const std::size_t destinationIndex = pixel * 3;
-                    destination[destinationIndex + 1] = source[destinationIndex + 1];
+                    const std::size_t destinationIndex = (static_cast<std::size_t>(targetRow) * width + column) * 3;
+                    destination[destinationIndex + 1] = source[pixel * 3 + 1];
                     if (borderRow || column == 0 || column == width - 1) {
                         destination[destinationIndex] = 0;
                         destination[destinationIndex + 2] = 0;
@@ -1083,7 +1102,8 @@ private:
     bool applySingle(
         const ImageView& raw,
         const ImageView& output,
-        const cv::Mat& map)
+        const cv::Mat& map,
+        bool flipRows)
     {
         const int width = static_cast<int>(raw.width);
         const int height = static_cast<int>(raw.height);
@@ -1094,9 +1114,10 @@ private:
             for (int row = range.start; row < range.end; ++row) {
                 const auto* mapRow = map.ptr<MapEntry>(row);
                 const bool borderRow = row == 0 || row == height - 1;
+                const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
                     const std::size_t destinationIndex =
-                        static_cast<std::size_t>(row) * width + column;
+                        static_cast<std::size_t>(targetRow) * width + column;
                     if (borderRow || column == 0 || column == width - 1) {
                         destination[destinationIndex] = 0;
                     }
@@ -1117,7 +1138,8 @@ private:
         const ImageView& raw,
         const ImageView& output,
         const cv::Mat& mapGr,
-        const cv::Mat& mapGb)
+        const cv::Mat& mapGb,
+        bool flipRows)
     {
         const int width = static_cast<int>(raw.width);
         const int height = static_cast<int>(raw.height);
@@ -1130,12 +1152,14 @@ private:
                 const auto* gr = mapGr.ptr<MapEntry>(row);
                 const auto* gb = mapGb.ptr<MapEntry>(row);
                 const bool borderRow = row == 0 || row == height - 1;
+                const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
                     const std::size_t pixel = static_cast<std::size_t>(row) * width + column;
-                    destination[pixels + pixel] = source[pixels + pixel];
+                    const std::size_t destinationPixel = static_cast<std::size_t>(targetRow) * width + column;
+                    destination[pixels + destinationPixel] = source[pixels + pixel];
                     if (borderRow || column == 0 || column == width - 1) {
-                        destination[pixel] = 0;
-                        destination[pixels * 2 + pixel] = 0;
+                        destination[destinationPixel] = 0;
+                        destination[pixels * 2 + destinationPixel] = 0;
                         continue;
                     }
 
@@ -1143,8 +1167,8 @@ private:
                         static_cast<std::size_t>(gr[column][1]) * width + gr[column][0];
                     const std::size_t sourceBlue =
                         static_cast<std::size_t>(gb[column][1]) * width + gb[column][0];
-                    destination[pixel] = source[sourceRed];
-                    destination[pixels * 2 + pixel] = source[pixels * 2 + sourceBlue];
+                    destination[destinationPixel] = source[sourceRed];
+                    destination[pixels * 2 + destinationPixel] = source[pixels * 2 + sourceBlue];
                 }
             }
         });

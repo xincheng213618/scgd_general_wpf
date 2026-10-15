@@ -3,6 +3,7 @@
 #endif
 
 #include "pattern_cross.h"
+#include <opencv2/geometry.hpp>
 
 #include <algorithm>
 #include <array>

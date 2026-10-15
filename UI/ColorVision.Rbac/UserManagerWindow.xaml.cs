@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CA1863
+﻿using LocalizedText = global::ColorVision.Rbac.DisplayText;
+#pragma warning disable CA1822,CA1863
 using ColorVision.Rbac.ViewModels;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
@@ -34,7 +35,7 @@ namespace ColorVision.Rbac
         private void UpdateStatusInfo()
         {
             var mode = Authorization.Instance.PermissionMode;
-            TxtStatusInfo.Text = $"当前权限: {GetPermissionModeName(mode)}";
+            TxtStatusInfo.Text = LocalizedText.Format($"当前权限: {GetPermissionModeName(mode)}");
         }
 
         private void UpdateSessionInfo()
@@ -42,7 +43,7 @@ namespace ColorVision.Rbac
             if (RbacManager.Config.LoginResult?.User != null)
             {
                 var user = RbacManager.Config.LoginResult.User;
-                TxtSessionInfo.Text = $"登录用户: {user.Username} | 会话: {(string.IsNullOrEmpty(RbacManager.Config.SessionToken) ? "无" : "有效")}";
+                TxtSessionInfo.Text = LocalizedText.Format($"登录用户: {user.Username} | 会话: {(string.IsNullOrEmpty(RbacManager.Config.SessionToken) ? LocalizedText.Get("无") : LocalizedText.Get("有效"))}");
             }
         }
 
@@ -51,11 +52,11 @@ namespace ColorVision.Rbac
             try
             {
                 var stats = RbacManager.GetPermissionCacheStatistics();
-                TxtCacheStats.Text = $"权限缓存统计: {stats}";
+                TxtCacheStats.Text = LocalizedText.Format($"权限缓存统计: {stats}");
             }
             catch
             {
-                TxtCacheStats.Text = "权限缓存统计: 不可用";
+                TxtCacheStats.Text = LocalizedText.Get("权限缓存统计: 不可用");
             }
         }
 
@@ -129,7 +130,7 @@ namespace ColorVision.Rbac
             // UI 层二次校验，防止普通用户通过窗口创建角色
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("权限不足：只有管理员可以创建角色", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("权限不足：只有管理员可以创建角色"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -139,14 +140,14 @@ namespace ColorVision.Rbac
 
             if (string.IsNullOrWhiteSpace(roleName) || string.IsNullOrWhiteSpace(roleCode))
             {
-                MessageBox.Show("角色名称和代码不能为空。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("角色名称和代码不能为空。"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             bool result = await RbacManager.CreateRoleAsync(roleName, roleCode, roleRemark);
             if (result)
             {
-                MessageBox.Show("角色创建成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(LocalizedText.Get("角色创建成功！"), LocalizedText.Get("成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                 TxtRoleName.Text = string.Empty;
                 TxtRoleCode.Text = string.Empty;
                 TxtRoleRemark.Text = string.Empty;
@@ -154,7 +155,7 @@ namespace ColorVision.Rbac
             }
             else
             {
-                MessageBox.Show("角色代码已存在或创建失败！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Get("角色代码已存在或创建失败！"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -163,7 +164,7 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("权限不足：只有管理员可以修改角色", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("权限不足：只有管理员可以修改角色"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
@@ -185,8 +186,8 @@ namespace ColorVision.Rbac
             if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
             {
                 var result = MessageBox.Show(
-                    $"确定要删除用户 '{vm.Username}' 吗？\n\n此操作将进行逻辑删除，用户数据将被保留但标记为已删除状态。",
-                    "确认删除",
+                    LocalizedText.Format($"确定要删除用户 '{vm.Username}' 吗？\n\n此操作将进行逻辑删除，用户数据将被保留但标记为已删除状态。"),
+                    LocalizedText.Get("确认删除"),
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
 
@@ -194,7 +195,7 @@ namespace ColorVision.Rbac
                 {
                     if (await RbacManager.DeleteUserAsync(vm.Id, vm.Username))
                     {
-                        MessageBox.Show("用户删除成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(LocalizedText.Get("用户删除成功！"), LocalizedText.Get("成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                         await LoadUsersAsync();
                     }
                 }
@@ -212,7 +213,7 @@ namespace ColorVision.Rbac
                     success = await RbacManager.DisableUserAsync(vm.Id, vm.Username);
                     if (success)
                     {
-                        MessageBox.Show($"用户 '{vm.Username}' 已禁用", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(LocalizedText.Format($"用户 '{vm.Username}' 已禁用"), LocalizedText.Get("成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 }
                 else
@@ -220,7 +221,7 @@ namespace ColorVision.Rbac
                     success = await RbacManager.EnableUserAsync(vm.Id, vm.Username);
                     if (success)
                     {
-                        MessageBox.Show($"用户 '{vm.Username}' 已启用", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(LocalizedText.Format($"用户 '{vm.Username}' 已启用"), LocalizedText.Get("成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 }
 
@@ -237,8 +238,8 @@ namespace ColorVision.Rbac
             if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
             {
                 var result = MessageBox.Show(
-                    $"确定要重置用户 '{vm.Username}' 的密码吗？\n\n将生成一个新的随机密码。",
-                    "确认重置",
+                    LocalizedText.Format($"确定要重置用户 '{vm.Username}' 的密码吗？\n\n将生成一个新的随机密码。"),
+                    LocalizedText.Get("确认重置"),
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
 
@@ -248,8 +249,8 @@ namespace ColorVision.Rbac
                     if (!string.IsNullOrEmpty(newPassword))
                     {
                         MessageBox.Show(
-                            $"密码重置成功！\n\n用户: {vm.Username}\n新密码: {newPassword}\n\n请妥善保管此密码。",
-                            "密码已重置",
+                            LocalizedText.Format($"密码重置成功！\n\n用户: {vm.Username}\n新密码: {newPassword}\n\n请妥善保管此密码。"),
+                            LocalizedText.Get("密码已重置"),
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }

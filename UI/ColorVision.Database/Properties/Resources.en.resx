@@ -475,4 +475,8 @@
   <data name="DB_OperationFailed" xml:space="preserve">
     <value>Operation failed: {0}</value>
   </data>
+  <data name="DB_AddCondition" xml:space="preserve"><value>+ Add condition</value></data>
+  <data name="DB_MatchAllConditions" xml:space="preserve"><value>Match all of these conditions</value></data>
+  <data name="DB_SearchFilterField" xml:space="preserve"><value>Type a field name or code, then select it from the list</value></data>
+  <data name="DB_MoreQueryActions" xml:space="preserve"><value>More query actions</value></data>
 </root>

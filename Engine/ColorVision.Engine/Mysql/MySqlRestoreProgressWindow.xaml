@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.Database.MySqlRestoreProgressWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="SQL 恢复详情" Height="560" Width="820" MinHeight="440" MinWidth="680"
+             xmlns:display="clr-namespace:ColorVision.Engine"
+        Title="{display:EngineLang Key='SQL 恢复详情'}" Height="560" Width="820" MinHeight="440" MinWidth="680"
         Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -21,13 +22,13 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="备份文件" Margin="0,0,12,6" VerticalAlignment="Center"/>
+            <TextBlock Text="{display:EngineLang Key='备份文件'}" Margin="0,0,12,6" VerticalAlignment="Center"/>
             <TextBox x:Name="BackupPathTextBox" Grid.Column="1" Margin="0,0,0,6" IsReadOnly="True"/>
-            <TextBlock Grid.Row="1" Text="目标数据库" Margin="0,0,12,6" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="1" Text="{display:EngineLang Key='目标数据库'}" Margin="0,0,12,6" VerticalAlignment="Center"/>
             <TextBox x:Name="DatabaseTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,6" IsReadOnly="True"/>
         </Grid>
 
-        <TextBlock x:Name="StatusTextBlock" Grid.Row="1" Text="准备恢复..." FontSize="15" FontWeight="SemiBold" Margin="0,8,0,8"/>
+        <TextBlock x:Name="StatusTextBlock" Grid.Row="1" Text="{display:EngineLang Key='准备恢复...'}" FontSize="15" FontWeight="SemiBold" Margin="0,8,0,8"/>
         <ProgressBar x:Name="RestoreProgressBar" Grid.Row="2" Height="8" Minimum="0" Maximum="100" Margin="0,0,0,12"/>
 
         <TextBox x:Name="DetailTextBox" Grid.Row="3" IsReadOnly="True" AcceptsReturn="True"
@@ -35,9 +36,9 @@
                  FontFamily="Consolas" TextWrapping="NoWrap"/>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="复制详情" Click="CopyDetails_Click" MinWidth="88" Margin="0,0,8,0"/>
-            <Button x:Name="RestartButton" Content="重启 ColorVision" Click="RestartButton_Click" MinWidth="120" Margin="0,0,8,0" IsEnabled="False"/>
-            <Button x:Name="CloseButton" Content="关闭" Click="CloseButton_Click" MinWidth="88" IsEnabled="False"/>
+            <Button Content="{display:EngineLang Key='复制详情'}" Click="CopyDetails_Click" MinWidth="88" Margin="0,0,8,0"/>
+            <Button x:Name="RestartButton" Content="{display:EngineLang Key='重启 ColorVision'}" Click="RestartButton_Click" MinWidth="120" Margin="0,0,8,0" IsEnabled="False"/>
+            <Button x:Name="CloseButton" Content="{display:EngineLang Key='关闭'}" Click="CloseButton_Click" MinWidth="88" IsEnabled="False"/>
         </StackPanel>
     </Grid>
 </Window>

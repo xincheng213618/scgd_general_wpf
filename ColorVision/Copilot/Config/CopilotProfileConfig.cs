@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
@@ -50,6 +51,7 @@ namespace ColorVision.Copilot
                 if (SetProperty(ref _name, NormalizeText(value)))
                 {
                     OnPropertyChanged(nameof(DisplayLabel));
+                    OnPropertyChanged(nameof(ModelDisplayLabel));
                     OnPropertyChanged(nameof(SecondaryLabel));
                 }
             }
@@ -149,6 +151,7 @@ namespace ColorVision.Copilot
                 {
                     SupportsImageInput = false;
                     OnPropertyChanged(nameof(DisplayLabel));
+                    OnPropertyChanged(nameof(ModelDisplayLabel));
                     OnPropertyChanged(nameof(IsConfigured));
                     OnPropertyChanged(nameof(SecondaryLabel));
                     OnConfigurationStateChanged();
@@ -248,46 +251,25 @@ namespace ColorVision.Copilot
         }
         private CopilotReasoningMode _reasoningMode = CopilotReasoningMode.Default;
 
-        [Browsable(false)]
-        public string SyncSource
-        {
-            get => _syncSource;
-            set
-            {
-                if (SetProperty(ref _syncSource, NormalizeText(value)))
-                {
-                    OnPropertyChanged(nameof(IsBackendSynced));
-                    OnPropertyChanged(nameof(SecondaryLabel));
-                }
-            }
-        }
-        private string _syncSource = string.Empty;
-
-        [Browsable(false)]
-        public string SyncProfileId
-        {
-            get => _syncProfileId;
-            set => SetProperty(ref _syncProfileId, NormalizeText(value));
-        }
-        private string _syncProfileId = string.Empty;
+        [JsonIgnore]
+        public bool IsLocalCodex => ProviderType == CopilotProviderType.LocalCodex;
 
         [JsonIgnore]
-        [Browsable(false)]
-        public bool IsBackendSynced => !string.IsNullOrWhiteSpace(SyncSource)
-            && !string.IsNullOrWhiteSpace(SyncProfileId);
+        public bool IsApiProfile => !IsLocalCodex;
 
         [JsonIgnore]
-        public bool IsConfigured =>
-            !string.IsNullOrWhiteSpace(ApiKey) &&
-            !string.IsNullOrWhiteSpace(BaseUrl) &&
-            !string.IsNullOrWhiteSpace(Model) &&
-            CopilotProviderEndpoint.Validate(this).IsValid;
+        public bool IsConfigured => IsLocalCodex || (
+            !string.IsNullOrWhiteSpace(ApiKey)
+            && !string.IsNullOrWhiteSpace(BaseUrl)
+            && !string.IsNullOrWhiteSpace(Model)
+            && CopilotProviderEndpoint.Validate(this).IsValid);
 
         [JsonIgnore]
         public string ConfigurationStatusText
         {
             get
             {
+                if (IsLocalCodex) return "本机 Codex";
                 if (!IsConfigured)
                     return "Incomplete";
                 return CopilotProviderEndpoint.Validate(this).IsInsecureHttp ? "Ready · Insecure HTTP" : "Ready";
@@ -299,6 +281,7 @@ namespace ColorVision.Copilot
         {
             get
             {
+                if (IsLocalCodex) return "通过本机 Codex 登录，无需填写 API Key。";
                 if (string.IsNullOrWhiteSpace(BaseUrl))
                     return "Enter an HTTPS model API base URL.";
 
@@ -318,6 +301,7 @@ namespace ColorVision.Copilot
         {
             get
             {
+                if (IsLocalCodex) return LocalizedText.Get("使用本机 Codex；发送前检查运行时与登录状态。");
                 var missing = BuildMissingConfigurationParts();
                 if (missing.Length > 0)
                     return "Missing " + string.Join(", ", missing) + ".";
@@ -335,7 +319,7 @@ namespace ColorVision.Copilot
         public string VendorLabel => CopilotVendorCatalog.GetLabel(VendorType);
 
         [JsonIgnore]
-        public string ProviderLabel => ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
+        public string ProviderLabel => IsLocalCodex ? LocalizedText.Get("本机 Codex") : ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
 
         [JsonIgnore]
         public string ReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(this));
@@ -356,8 +340,17 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string SecondaryLabel => $"{VendorLabel} · {ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? "Model not set" : Model)}"
-            + (IsBackendSynced ? " · Backend" : string.Empty);
+        public string ModelDisplayLabel
+        {
+            get
+            {
+                var modelLabel = CopilotVendorCatalog.FormatModelDisplayName(Model);
+                return modelLabel.Length > 0 ? modelLabel : DisplayLabel;
+            }
+        }
+
+        [JsonIgnore]
+        public string SecondaryLabel => IsLocalCodex ? LocalizedText.Format($"本机 Codex · {(string.IsNullOrWhiteSpace(Model) ? LocalizedText.Get("默认模型") : Model)}") : $"{VendorLabel} · {ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? LocalizedText.Get("未设置模型") : Model)}";
 
         public bool EnsureValid()
         {
@@ -426,8 +419,6 @@ namespace ColorVision.Copilot
                 FirstContentTimeoutSeconds = FirstContentTimeoutSeconds,
                 StreamingInactivityTimeoutSeconds = StreamingInactivityTimeoutSeconds,
                 ReasoningMode = ReasoningMode,
-                SyncSource = SyncSource,
-                SyncProfileId = SyncProfileId,
             };
 
             if (!string.IsNullOrWhiteSpace(_systemPromptOverride))
@@ -480,6 +471,8 @@ namespace ColorVision.Copilot
 
         private void OnConfigurationStateChanged()
         {
+            OnPropertyChanged(nameof(IsLocalCodex));
+            OnPropertyChanged(nameof(IsApiProfile));
             OnPropertyChanged(nameof(IsConfigured));
             OnPropertyChanged(nameof(ConfigurationStatusText));
             OnPropertyChanged(nameof(ConfigurationStatusToolTip));

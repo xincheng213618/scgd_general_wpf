@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectLUX.DisplayText;
 using ColorVision.Solution.Editor.AvalonEditor;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -14,6 +15,7 @@ namespace ProjectLUX
         public ObjectiveTestResultRecordWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             RecordDataGrid.ItemsSource = Records;
             LoadRecords();
         }
@@ -66,6 +68,7 @@ namespace ProjectLUX
                 Height = 650,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
             window.ShowDialog();
         }
 
@@ -76,13 +79,13 @@ namespace ProjectLUX
             var result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson);
             if (result == null)
             {
-                MessageBox.Show(this, "ObjectiveTestResult 为空，无法导出", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("ObjectiveTestResult 为空，无法导出"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             var dialog = new OpenFolderDialog
             {
-                Title = "导出 ObjectiveTestResult",
+                Title = LocalizedText.Get("导出 ObjectiveTestResult"),
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)
             };
             if (dialog.ShowDialog(this) != true) return;
@@ -92,11 +95,11 @@ namespace ProjectLUX
             try
             {
                 ObjectiveTestResultCsvExporter.ExportToCsv(result, path);
-                MessageBox.Show(this, "导出完成：" + path, "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("导出完成：") + path, "ColorVision");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "导出失败：" + ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Get("导出失败：") + ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -110,7 +113,7 @@ namespace ProjectLUX
             }
 
             record = null!;
-            MessageBox.Show(this, "请先选择一条记录", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, LocalizedText.Get("请先选择一条记录"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             return false;
         }
 

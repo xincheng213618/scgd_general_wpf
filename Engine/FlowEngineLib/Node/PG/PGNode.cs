@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.PG;
 
-[STNode("/06 PG")]
+[STNode("PG", CategoryOrder = 600)]
 public class PGNode : CVBaseServerNode
 {
 	private PGCommCmdType _PGCmd;

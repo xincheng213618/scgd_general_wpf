@@ -1,26 +1,14 @@
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
 using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;
-using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.UI.Desktop.Feedback;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -139,6 +127,7 @@ namespace ColorVision.Copilot
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
             try
             {
+                FlushActiveTurnUiUpdates();
                 PublishSelectedTaskEventJournal();
                 _statePersistenceCoordinator.SaveSynchronouslyAndStop();
             }
@@ -173,6 +162,7 @@ namespace ColorVision.Copilot
             if (Interlocked.Exchange(ref _disposeState, 1) == 1)
                 return;
 
+            FlushActiveTurnUiUpdates();
             _conversationTitleCoordinator.Dispose();
             _followUpQueue.Changed -= FollowUpQueue_Changed;
             CancelAllAuxiliaryOperations();
@@ -206,6 +196,27 @@ namespace ColorVision.Copilot
             CancelComposerReferenceRefresh(resetSession: true);
             _statePersistenceCoordinator.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void FlushActiveTurnUiUpdates()
+        {
+            var flush = Interlocked.Exchange(ref _flushActiveTurnUiUpdates, null);
+            if (flush == null)
+                return;
+
+            try
+            {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher == null || dispatcher.CheckAccess())
+                    flush();
+                else
+                    CopilotUiDispatcher.Invoke(flush);
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot UI updates could not be flushed during shutdown: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
+            }
         }
 
 

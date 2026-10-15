@@ -97,11 +97,29 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前已是最新版本。 的本地化字符串。
+        /// </summary>
+        public static string AlreadyUpToDate {
+            get {
+                return ResourceManager.GetString("AlreadyUpToDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 加载当前选择分组的标定文件 的本地化字符串。
         /// </summary>
         public static string ApplyCalibrationGroupTooltip {
             get {
                 return ResourceManager.GetString("ApplyCalibrationGroupTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自动校零方式 的本地化字符串。
+        /// </summary>
+        public static string AutoDarkControlMode {
+            get {
+                return ResourceManager.GetString("AutoDarkControlMode", resourceCulture);
             }
         }
         
@@ -142,11 +160,47 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消下载 的本地化字符串。
+        /// </summary>
+        public static string CancelDownload {
+            get {
+                return ResourceManager.GetString("CancelDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 通道A 的本地化字符串。
         /// </summary>
         public static string ChannelA {
             get {
                 return ResourceManager.GetString("ChannelA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重新检查 的本地化字符串。
+        /// </summary>
+        public static string CheckAgain {
+            get {
+                return ResourceManager.GetString("CheckAgain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 检查更新 的本地化字符串。
+        /// </summary>
+        public static string CheckForUpdates {
+            get {
+                return ResourceManager.GetString("CheckForUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在检查更新... 的本地化字符串。
+        /// </summary>
+        public static string CheckingForUpdates {
+            get {
+                return ResourceManager.GetString("CheckingForUpdates", resourceCulture);
             }
         }
         
@@ -165,6 +219,15 @@ namespace Spectrum.Properties {
         public static string ClearRecords {
             get {
                 return ResourceManager.GetString("ClearRecords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Close {
+            get {
+                return ResourceManager.GetString("Close", resourceCulture);
             }
         }
         
@@ -327,6 +390,15 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前版本 的本地化字符串。
+        /// </summary>
+        public static string CurrentVersion {
+            get {
+                return ResourceManager.GetString("CurrentVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 软件或设备资源初始化失败： 的本地化字符串。
         /// </summary>
         public static string CvCameraInitializationFailed {
@@ -408,6 +480,24 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 正在下载完整更新包... 的本地化字符串。
+        /// </summary>
+        public static string DownloadingUpdate {
+            get {
+                return ResourceManager.GetString("DownloadingUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载更新 的本地化字符串。
+        /// </summary>
+        public static string DownloadUpdate {
+            get {
+                return ResourceManager.GetString("DownloadUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 已用: 的本地化字符串。
         /// </summary>
         public static string Elapsed {
@@ -440,6 +530,15 @@ namespace Spectrum.Properties {
         public static string FilterWheel {
             get {
                 return ResourceManager.GetString("FilterWheel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 滤色轮遮光孔位 的本地化字符串。
+        /// </summary>
+        public static string FilterWheelDarkPosition {
+            get {
+                return ResourceManager.GetString("FilterWheelDarkPosition", resourceCulture);
             }
         }
         
@@ -485,6 +584,15 @@ namespace Spectrum.Properties {
         public static string IntervalMs {
             get {
                 return ResourceManager.GetString("IntervalMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最新版本 的本地化字符串。
+        /// </summary>
+        public static string LatestVersion {
+            get {
+                return ResourceManager.GetString("LatestVersion", resourceCulture);
             }
         }
         
@@ -642,6 +750,24 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 发现新版本。下载后会完成安全校验，再提示重启安装。 的本地化字符串。
+        /// </summary>
+        public static string NewVersionAvailable {
+            get {
+                return ResourceManager.GetString("NewVersionAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 此版本没有附加说明。 的本地化字符串。
+        /// </summary>
+        public static string NoReleaseNotes {
+            get {
+                return ResourceManager.GetString("NoReleaseNotes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 未配备shutter，无法自动校零 的本地化字符串。
         /// </summary>
         public static string NoShutterAutoZero {
@@ -768,6 +894,15 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更新说明 的本地化字符串。
+        /// </summary>
+        public static string ReleaseNotes {
+            get {
+                return ResourceManager.GetString("ReleaseNotes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 预计剩余: 的本地化字符串。
         /// </summary>
         public static string Remaining {
@@ -791,6 +926,33 @@ namespace Spectrum.Properties {
         public static string ResetDatabaseTooltip {
             get {
                 return ResourceManager.GetString("ResetDatabaseTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重启并安装 的本地化字符串。
+        /// </summary>
+        public static string RestartAndInstall {
+            get {
+                return ResourceManager.GetString("RestartAndInstall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Spectrum 将退出并安装已校验的更新，然后自动重新启动。是否继续？ 的本地化字符串。
+        /// </summary>
+        public static string RestartInstallConfirmation {
+            get {
+                return ResourceManager.GetString("RestartInstallConfirmation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重新下载 的本地化字符串。
+        /// </summary>
+        public static string RetryDownload {
+            get {
+                return ResourceManager.GetString("RetryDownload", resourceCulture);
             }
         }
         
@@ -930,6 +1092,24 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Spectrum 软件更新 的本地化字符串。
+        /// </summary>
+        public static string SpectrumUpdateHeading {
+            get {
+                return ResourceManager.GetString("SpectrumUpdateHeading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Spectrum 更新 的本地化字符串。
+        /// </summary>
+        public static string SpectrumUpdateTitle {
+            get {
+                return ResourceManager.GetString("SpectrumUpdateTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 光谱仪软件 的本地化字符串。
         /// </summary>
         public static string SpectrumWindowTitle {
@@ -966,11 +1146,236 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 总耗时(ms) 的本地化字符串。
+        ///   查找类似 结果就绪耗时(ms) 的本地化字符串。
         /// </summary>
         public static string TotalDurationMs {
             get {
                 return ResourceManager.GetString("TotalDurationMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新包中的 {0} 版本与清单不一致。 的本地化字符串。
+        /// </summary>
+        public static string UpdateBinaryVersionMismatch {
+            get {
+                return ResourceManager.GetString("UpdateBinaryVersionMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 检查更新超时，请稍后重试。 的本地化字符串。
+        /// </summary>
+        public static string UpdateCheckTimeout {
+            get {
+                return ResourceManager.GetString("UpdateCheckTimeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测量或设备操作正在进行，更新已安全延后。请停止测量后重试安装。 的本地化字符串。
+        /// </summary>
+        public static string UpdateDeferredMeasurementBusy {
+            get {
+                return ResourceManager.GetString("UpdateDeferredMeasurementBusy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载已取消。 的本地化字符串。
+        /// </summary>
+        public static string UpdateDownloadCancelled {
+            get {
+                return ResourceManager.GetString("UpdateDownloadCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载更新包失败 ({0})。 的本地化字符串。
+        /// </summary>
+        public static string UpdateDownloadServerError {
+            get {
+                return ResourceManager.GetString("UpdateDownloadServerError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新包 SHA-256 校验失败。 的本地化字符串。
+        /// </summary>
+        public static string UpdateHashMismatch {
+            get {
+                return ResourceManager.GetString("UpdateHashMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前目录不可写。请将 Spectrum 完整解压到当前用户可写目录后再使用自动更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdateInstallDirectoryNotWritable {
+            get {
+                return ResourceManager.GetString("UpdateInstallDirectoryNotWritable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新服务器响应无效。 的本地化字符串。
+        /// </summary>
+        public static string UpdateInvalidResponse {
+            get {
+                return ResourceManager.GetString("UpdateInvalidResponse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新签名数据格式无效。 的本地化字符串。
+        /// </summary>
+        public static string UpdateInvalidSignatureEnvelope {
+            get {
+                return ResourceManager.GetString("UpdateInvalidSignatureEnvelope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无法启动更新命令：{0} 的本地化字符串。
+        /// </summary>
+        public static string UpdateLaunchFailed {
+            get {
+                return ResourceManager.GetString("UpdateLaunchFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新包长度与已签名清单不一致。 的本地化字符串。
+        /// </summary>
+        public static string UpdateLengthMismatch {
+            get {
+                return ResourceManager.GetString("UpdateLengthMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新清单内容无效。 的本地化字符串。
+        /// </summary>
+        public static string UpdateManifestInvalid {
+            get {
+                return ResourceManager.GetString("UpdateManifestInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新清单不属于此 Spectrum 客户端。 的本地化字符串。
+        /// </summary>
+        public static string UpdateManifestProductMismatch {
+            get {
+                return ResourceManager.GetString("UpdateManifestProductMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新版本号必须是四段数字版本。 的本地化字符串。
+        /// </summary>
+        public static string UpdateManifestVersionInvalid {
+            get {
+                return ResourceManager.GetString("UpdateManifestVersionInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新包缺少关键文件：{0} 的本地化字符串。
+        /// </summary>
+        public static string UpdateMissingCriticalFiles {
+            get {
+                return ResourceManager.GetString("UpdateMissingCriticalFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务器暂未发布 Spectrum 更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdateNoPublishedVersion {
+            get {
+                return ResourceManager.GetString("UpdateNoPublishedVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载和完整性校验已完成。请保存工作后重启安装。 的本地化字符串。
+        /// </summary>
+        public static string UpdateReadyToInstall {
+            get {
+                return ResourceManager.GetString("UpdateReadyToInstall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新服务器返回错误 ({0})。 的本地化字符串。
+        /// </summary>
+        public static string UpdateServerError {
+            get {
+                return ResourceManager.GetString("UpdateServerError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新清单签名验证失败，已拒绝此更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdateSignatureInvalid {
+            get {
+                return ResourceManager.GetString("UpdateSignatureInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 安装路径包含更新命令无法安全处理的字符。 的本地化字符串。
+        /// </summary>
+        public static string UpdateUnsafeInstallPath {
+            get {
+                return ResourceManager.GetString("UpdateUnsafeInstallPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新 ZIP CRC 校验失败。 的本地化字符串。
+        /// </summary>
+        public static string UpdateZipCrcFailed {
+            get {
+                return ResourceManager.GetString("UpdateZipCrcFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新 ZIP 包含重复路径。 的本地化字符串。
+        /// </summary>
+        public static string UpdateZipDuplicatePath {
+            get {
+                return ResourceManager.GetString("UpdateZipDuplicatePath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新 ZIP 结构无效。 的本地化字符串。
+        /// </summary>
+        public static string UpdateZipInvalid {
+            get {
+                return ResourceManager.GetString("UpdateZipInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新 ZIP 解压后大小异常。 的本地化字符串。
+        /// </summary>
+        public static string UpdateZipTooLarge {
+            get {
+                return ResourceManager.GetString("UpdateZipTooLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新 ZIP 包含不安全路径。 的本地化字符串。
+        /// </summary>
+        public static string UpdateZipUnsafePath {
+            get {
+                return ResourceManager.GetString("UpdateZipUnsafePath", resourceCulture);
             }
         }
         

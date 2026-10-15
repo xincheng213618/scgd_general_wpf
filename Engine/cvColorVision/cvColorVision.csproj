@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<UseWPF>true</UseWPF>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<VersionPrefix>1.5.1.1</VersionPrefix>
+		<VersionPrefix>1.5.1.2</VersionPrefix>
 		<TargetFrameworks>net10.0-windows7.0</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -22,25 +22,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="log4net" Version="3.4.0" />
+		<PackageReference Include="log4net" Version="3.5.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp5" Version="5.0.0.20261003" />
+		<PackageReference Include="OpenCvSharp5.runtime.win" Version="5.0.0.20261003" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\..\DLL\scgd_internal_dll\cudart64_12.dll" Link="runtimes\win-x64\native\cudart64_12.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="runtimes\win-x64\native\cvCamera.dll">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cvoled.dll" Link="runtimes\win-x64\native\cvoled.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
@@ -50,26 +40,11 @@
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="runtimes\win-x64\native\opencv_world401.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>	
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="runtimes\win-x64\native\pthreadVC2.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\sqlite3.dll" Link="runtimes\win-x64\native\sqlite3.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cvCalibration.dll" Link="runtimes\win-x64\native\cvCalibration.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cvTableList.dll" Link="runtimes\win-x64\native\cvTableList.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
@@ -141,26 +116,6 @@
 			<Pack>true</Pack>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\FTD2XX.dll" Link="FTD2XX.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\FTD2XX.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg\sys.cfg" Link="cfg\sys.cfg">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\IKap\510.vlcf" Link="cfg_files\IKap\510.vlcf">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\ConfigDCF.ini" Link="cfg_files\mil-dcf\ConfigDCF.ini">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\VP101_85Mhz_10tap8bit-trigger-good.dcf" Link="cfg_files\mil-dcf\VP101_85Mhz_10tap8bit-trigger-good.dcf">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\VP101_85Mhz_4tap12bit-trigger-good.dcf" Link="cfg_files\mil-dcf\VP101_85Mhz_4tap12bit-trigger-good.dcf">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>

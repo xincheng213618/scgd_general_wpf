@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System.Text.Json;
 

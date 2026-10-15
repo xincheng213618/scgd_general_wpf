@@ -126,4 +126,429 @@
   <data name="KBDetect" xml:space="preserve">
     <value>键盘测试</value>
   </data>
+  <data name="上一页" xml:space="preserve">
+    <value>上一页</value>
+  </data>
+  <data name="上传" xml:space="preserve">
+    <value>上传</value>
+  </data>
+  <data name="下一页" xml:space="preserve">
+    <value>下一页</value>
+  </data>
+  <data name="会话" xml:space="preserve">
+    <value>会话</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="全部" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="刷新" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="取消" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="寄存器地址" xml:space="preserve">
+    <value>寄存器地址</value>
+  </data>
+  <data name="开始时间" xml:space="preserve">
+    <value>开始时间</value>
+  </data>
+  <data name="当前" xml:space="preserve">
+    <value>当前</value>
+  </data>
+  <data name="数据清理" xml:space="preserve">
+    <value>数据清理</value>
+  </data>
+  <data name="新密码" xml:space="preserve">
+    <value>新密码</value>
+  </data>
+  <data name="查询" xml:space="preserve">
+    <value>查询</value>
+  </data>
+  <data name="模板" xml:space="preserve">
+    <value>模板</value>
+  </data>
+  <data name="流程状态" xml:space="preserve">
+    <value>流程状态</value>
+  </data>
+  <data name="消息" xml:space="preserve">
+    <value>消息</value>
+  </data>
+  <data name="状态" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="目录" xml:space="preserve">
+    <value>目录</value>
+  </data>
+  <data name="目标" xml:space="preserve">
+    <value>目标</value>
+  </data>
+  <data name="确定" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="确认密码" xml:space="preserve">
+    <value>确认密码</value>
+  </data>
+  <data name="结果" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="通用查询" xml:space="preserve">
+    <value>通用查询</value>
+  </data>
+  <data name="重启服务" xml:space="preserve">
+    <value>重启服务</value>
+  </data>
+  <data name="重置" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="键盘测试" xml:space="preserve">
+    <value>键盘测试</value>
+  </data>
+  <data name="CT 范围" xml:space="preserve">
+    <value>CT 范围</value>
+  </data>
+  <data name="KB 生产统计" xml:space="preserve">
+    <value>KB 生产统计</value>
+  </data>
+  <data name="Modbus 连接" xml:space="preserve">
+    <value>Modbus 连接</value>
+  </data>
+  <data name="Modbus配置" xml:space="preserve">
+    <value>Modbus配置</value>
+  </data>
+  <data name="Recipe参数设定" xml:space="preserve">
+    <value>Recipe参数设定</value>
+  </data>
+  <data name="不良品" xml:space="preserve">
+    <value>不良品</value>
+  </data>
+  <data name="不良点" xml:space="preserve">
+    <value>不良点</value>
+  </data>
+  <data name="产量" xml:space="preserve">
+    <value>产量</value>
+  </data>
+  <data name="今天" xml:space="preserve">
+    <value>今天</value>
+  </data>
+  <data name="今日产量" xml:space="preserve">
+    <value>今日产量</value>
+  </data>
+  <data name="修改管理员密码" xml:space="preserve">
+    <value>修改管理员密码</value>
+  </data>
+  <data name="全部应用初始值" xml:space="preserve">
+    <value>全部应用初始值</value>
+  </data>
+  <data name="原始密码" xml:space="preserve">
+    <value>原始密码</value>
+  </data>
+  <data name="参数设定" xml:space="preserve">
+    <value>参数设定</value>
+  </data>
+  <data name="同一次软件运行内保留查询条件；软件重启后恢复按天查询今天。生产目标与历史数据不受影响。" xml:space="preserve">
+    <value>同一次软件运行内保留查询条件；软件重启后恢复按天查询今天。生产目标与历史数据不受影响。</value>
+  </data>
+  <data name="复制到选中" xml:space="preserve">
+    <value>复制到选中</value>
+  </data>
+  <data name="复制自" xml:space="preserve">
+    <value>复制自</value>
+  </data>
+  <data name="天产量" xml:space="preserve">
+    <value>天产量</value>
+  </data>
+  <data name="将初始值应用到全部模板" xml:space="preserve">
+    <value>将初始值应用到全部模板</value>
+  </data>
+  <data name="将初始值应用到当前选中的模板" xml:space="preserve">
+    <value>将初始值应用到当前选中的模板</value>
+  </data>
+  <data name="小时" xml:space="preserve">
+    <value>小时</value>
+  </data>
+  <data name="小时产量" xml:space="preserve">
+    <value>小时产量</value>
+  </data>
+  <data name="工号" xml:space="preserve">
+    <value>工号</value>
+  </data>
+  <data name="平均 CT" xml:space="preserve">
+    <value>平均 CT</value>
+  </data>
+  <data name="应用初始值" xml:space="preserve">
+    <value>应用初始值</value>
+  </data>
+  <data name="当前范围暂无趋势数据" xml:space="preserve">
+    <value>当前范围暂无趋势数据</value>
+  </data>
+  <data name="总执行次数" xml:space="preserve">
+    <value>总执行次数</value>
+  </data>
+  <data name="恢复初始值" xml:space="preserve">
+    <value>恢复初始值</value>
+  </data>
+  <data name="按周" xml:space="preserve">
+    <value>按周</value>
+  </data>
+  <data name="按天" xml:space="preserve">
+    <value>按天</value>
+  </data>
+  <data name="按月" xml:space="preserve">
+    <value>按月</value>
+  </data>
+  <data name="改密" xml:space="preserve">
+    <value>改密</value>
+  </data>
+  <data name="日期" xml:space="preserve">
+    <value>日期</value>
+  </data>
+  <data name="有效产量" xml:space="preserve">
+    <value>有效产量</value>
+  </data>
+  <data name="末页" xml:space="preserve">
+    <value>末页</value>
+  </data>
+  <data name="本小时产量" xml:space="preserve">
+    <value>本小时产量</value>
+  </data>
+  <data name="机种" xml:space="preserve">
+    <value>机种</value>
+  </data>
+  <data name="查看产量、良品率与检测记录；每条记录代表一次完整检测。" xml:space="preserve">
+    <value>查看产量、良品率与检测记录；每条记录代表一次完整检测。</value>
+  </data>
+  <data name="查询条件仅本次运行记忆" xml:space="preserve">
+    <value>查询条件仅本次运行记忆</value>
+  </data>
+  <data name="检测时间" xml:space="preserve">
+    <value>检测时间</value>
+  </data>
+  <data name="检测记录" xml:space="preserve">
+    <value>检测记录</value>
+  </data>
+  <data name="模板设定集" xml:space="preserve">
+    <value>模板设定集</value>
+  </data>
+  <data name="每条记录即一次完整检测" xml:space="preserve">
+    <value>每条记录即一次完整检测</value>
+  </data>
+  <data name="流程失败" xml:space="preserve">
+    <value>流程失败</value>
+  </data>
+  <data name="生产会话" xml:space="preserve">
+    <value>生产会话</value>
+  </data>
+  <data name="生产信息" xml:space="preserve">
+    <value>生产信息</value>
+  </data>
+  <data name="生产统计" xml:space="preserve">
+    <value>生产统计</value>
+  </data>
+  <data name="目标产量" xml:space="preserve">
+    <value>目标产量</value>
+  </data>
+  <data name="站别" xml:space="preserve">
+    <value>站别</value>
+  </data>
+  <data name="管理员登录" xml:space="preserve">
+    <value>管理员登录</value>
+  </data>
+  <data name="线别" xml:space="preserve">
+    <value>线别</value>
+  </data>
+  <data name="结束时间" xml:space="preserve">
+    <value>结束时间</value>
+  </data>
+  <data name="统计周期" xml:space="preserve">
+    <value>统计周期</value>
+  </data>
+  <data name="编辑初始值" xml:space="preserve">
+    <value>编辑初始值</value>
+  </data>
+  <data name="良品" xml:space="preserve">
+    <value>良品</value>
+  </data>
+  <data name="良品 / 不良品" xml:space="preserve">
+    <value>良品 / 不良品</value>
+  </data>
+  <data name="良品率" xml:space="preserve">
+    <value>良品率</value>
+  </data>
+  <data name="解锁" xml:space="preserve">
+    <value>解锁</value>
+  </data>
+  <data name="设备号" xml:space="preserve">
+    <value>设备号</value>
+  </data>
+  <data name="请输入管理员账号和密码" xml:space="preserve">
+    <value>请输入管理员账号和密码</value>
+  </data>
+  <data name="达成率" xml:space="preserve">
+    <value>达成率</value>
+  </data>
+  <data name="连接情况:" xml:space="preserve">
+    <value>连接情况:</value>
+  </data>
+  <data name="选中设为初始值" xml:space="preserve">
+    <value>选中设为初始值</value>
+  </data>
+  <data name="重新导出 LV CSV" xml:space="preserve">
+    <value>重新导出 LV CSV</value>
+  </data>
+  <data name="首页" xml:space="preserve">
+    <value>首页</value>
+  </data>
+  <data name="🔐 登录" xml:space="preserve">
+    <value>🔐 登录</value>
+  </data>
+  <data name="🟢 产线" xml:space="preserve">
+    <value>🟢 产线</value>
+  </data>
+  <data name="ProjectKB权限控制未启用。可在“设置”中开启“启用权限控制”。" xml:space="preserve">
+    <value>ProjectKB权限控制未启用。可在“设置”中开启“启用权限控制”。</value>
+  </data>
+  <data name="Recipe初始值" xml:space="preserve">
+    <value>Recipe初始值</value>
+  </data>
+  <data name="上一次上传还未完成" xml:space="preserve">
+    <value>上一次上传还未完成</value>
+  </data>
+  <data name="剩余尝试次数：{0}" xml:space="preserve">
+    <value>剩余尝试次数：{0}</value>
+  </data>
+  <data name="历史结果图像像素宽度" xml:space="preserve">
+    <value>历史结果图像像素宽度</value>
+  </data>
+  <data name="历史结果图像像素高度" xml:space="preserve">
+    <value>历史结果图像像素高度</value>
+  </data>
+  <data name="历史结果坐标空间宽度" xml:space="preserve">
+    <value>历史结果坐标空间宽度</value>
+  </data>
+  <data name="历史结果坐标空间高度" xml:space="preserve">
+    <value>历史结果坐标空间高度</value>
+  </data>
+  <data name="复制" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="失败" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="已查询 {0:N0} 条记录，有效产量 {1:N0}" xml:space="preserve">
+    <value>已查询 {0:N0} 条记录，有效产量 {1:N0}</value>
+  </data>
+  <data name="已查询 {0:N0} 条记录；第 {1:N0}/{2:N0} 页，本页 {3:N0} 条" xml:space="preserve">
+    <value>已查询 {0:N0} 条记录；第 {1:N0}/{2:N0} 页，本页 {3:N0} 条</value>
+  </data>
+  <data name="已配置" xml:space="preserve">
+    <value>已配置</value>
+  </data>
+  <data name="平均 CT（秒）" xml:space="preserve">
+    <value>平均 CT（秒）</value>
+  </data>
+  <data name="当前模板已配置Recipe判定或背光自动修正项" xml:space="preserve">
+    <value>当前模板已配置Recipe判定或背光自动修正项</value>
+  </data>
+  <data name="当前模板未配置任何Recipe判定或背光自动修正项" xml:space="preserve">
+    <value>当前模板未配置任何Recipe判定或背光自动修正项</value>
+  </data>
+  <data name="成功" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="找不到对映的按键，请检查流程配置是否计算KB模板" xml:space="preserve">
+    <value>找不到对映的按键，请检查流程配置是否计算KB模板</value>
+  </data>
+  <data name="找不到批次号，请检查流程配置" xml:space="preserve">
+    <value>找不到批次号，请检查流程配置</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="未启用" xml:space="preserve">
+    <value>未启用</value>
+  </data>
+  <data name="本周" xml:space="preserve">
+    <value>本周</value>
+  </data>
+  <data name="本月" xml:space="preserve">
+    <value>本月</value>
+  </data>
+  <data name="权限未启用" xml:space="preserve">
+    <value>权限未启用</value>
+  </data>
+  <data name="查询失败" xml:space="preserve">
+    <value>查询失败</value>
+  </data>
+  <data name="查询范围：{0}" xml:space="preserve">
+    <value>查询范围：{0}</value>
+  </data>
+  <data name="正在读取生产统计和检测记录..." xml:space="preserve">
+    <value>正在读取生产统计和检测记录...</value>
+  </data>
+  <data name="流程执行分析" xml:space="preserve">
+    <value>流程执行分析</value>
+  </data>
+  <data name="确定将当前初始值应用到全部 {0} 个模板吗？&#10;此操作会覆盖各模板当前的Recipe参数。" xml:space="preserve">
+    <value>确定将当前初始值应用到全部 {0} 个模板吗？
+此操作会覆盖各模板当前的Recipe参数。</value>
+  </data>
+  <data name="空闲超时（{0}分钟），已自动退出管理员模式。&#10;如需编辑配置请重新登录。" xml:space="preserve">
+    <value>空闲超时（{0}分钟），已自动退出管理员模式。
+如需编辑配置请重新登录。</value>
+  </data>
+  <data name="第 {0:N0} / {1:N0} 页（每页 {2:N0} 条）" xml:space="preserve">
+    <value>第 {0:N0} / {1:N0} 页（每页 {2:N0} 条）</value>
+  </data>
+  <data name="管理员密码已修改。" xml:space="preserve">
+    <value>管理员密码已修改。</value>
+  </data>
+  <data name="累计产量" xml:space="preserve">
+    <value>累计产量</value>
+  </data>
+  <data name="结果明细读取失败，无法重新导出：{0}" xml:space="preserve">
+    <value>结果明细读取失败，无法重新导出：{0}</value>
+  </data>
+  <data name="结果明细读取失败：{0}" xml:space="preserve">
+    <value>结果明细读取失败：{0}</value>
+  </data>
+  <data name="读取生产统计失败：{0}" xml:space="preserve">
+    <value>读取生产统计失败：{0}</value>
+  </data>
+  <data name="连接{0}" xml:space="preserve">
+    <value>连接{0}</value>
+  </data>
+  <data name="重启服务失败" xml:space="preserve">
+    <value>重启服务失败</value>
+  </data>
+  <data name="重启服务超时" xml:space="preserve">
+    <value>重启服务超时</value>
+  </data>
+  <data name="重启服务超过 {0:F0} 分钟未完成，请检查服务状态后重试。" xml:space="preserve">
+    <value>重启服务超过 {0:F0} 分钟未完成，请检查服务状态后重试。</value>
+  </data>
+  <data name="重新导出 LC CSV..." xml:space="preserve">
+    <value>重新导出 LC CSV...</value>
+  </data>
+  <data name="重新导出 LV CSV..." xml:space="preserve">
+    <value>重新导出 LV CSV...</value>
+  </data>
+  <data name="🔓 登出" xml:space="preserve">
+    <value>🔓 登出</value>
+  </data>
+  <data name="🔧 管理员" xml:space="preserve">
+    <value>🔧 管理员</value>
+  </data>
+  <data name="🟡 全部权限" xml:space="preserve">
+    <value>🟡 全部权限</value>
+  </data>
 </root>

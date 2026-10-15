@@ -1,6 +1,5 @@
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.UI;
 using Newtonsoft.Json;
 
 namespace ColorVision.UI.Tests;

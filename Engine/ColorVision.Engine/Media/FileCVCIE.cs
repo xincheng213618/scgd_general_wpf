@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using ColorVision.Solution.Explorer;
-using System.ComponentModel;
 using SolutionFileNode = ColorVision.Solution.Explorer.FileNode;
 
 namespace ColorVision.Engine.Impl.CVFile

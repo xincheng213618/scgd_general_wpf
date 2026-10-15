@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -216,7 +217,7 @@ namespace ColorVision.ImageEditor.Cie
                     ? "-"
                     : $"{resultRows.Min(item => item.Comparison.AreaRatioPercent):F2}% - {resultRows.Max(item => item.Comparison.AreaRatioPercent):F2}%";
                 TextBlockStatus.Foreground = Brushes.Gray;
-                TextBlockStatus.Text = $"{(CalculationPlane == CieDiagramKind.Cie1931xy ? "xy" : "u′v′")} 平面：面积比可超过 100%；覆盖率为交集 / 标准面积。选中结果行查看交集填充。";
+                TextBlockStatus.Text = LocalizedText.Format($"{(CalculationPlane == CieDiagramKind.Cie1931xy ? "xy" : "u′v′")} 平面：面积比可超过 100%；覆盖率为交集 / 标准面积。选中结果行查看交集填充。");
                 ButtonExport.IsEnabled = resultRows.Count > 0;
                 RenderDiagram(results, standards);
                 if (ResultGrid.SelectedItem == null && resultRows.Count > 0) ResultGrid.SelectedIndex = 0;

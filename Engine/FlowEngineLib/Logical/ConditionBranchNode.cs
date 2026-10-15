@@ -26,7 +26,7 @@ public enum FlowConditionOperator
 	NotContains
 }
 
-[STNode("/01 运算", "根据流程状态或 Data 字段自动选择 TRUE/FALSE 路径")]
+[STNode("运算", "根据流程状态或 Data 字段自动选择 TRUE/FALSE 路径", CategoryOrder = 100)]
 public sealed class ConditionBranchNode : CVDeviceNode
 {
 	private FlowConditionSource conditionSource;

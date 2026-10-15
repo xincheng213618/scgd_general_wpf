@@ -5,7 +5,6 @@
         xmlns:engine="clr-namespace:ColorVision.Engine"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
       mc:Ignorable="d"
       d:DesignHeight="720"
       d:DesignWidth="1280"
@@ -286,6 +285,10 @@
                                                     Click="OpenNodeButton_Click"
                                                     Padding="9,3"
                                                     Margin="0,0,5,0"/>
+                                            <Button Content="{engine:EngineLang Key='跨批次比对'}"
+                                                    Tag="{Binding Record, Mode=OneWay}"
+                                                    Click="CompareNodeButton_Click"
+                                                    Padding="9,3" Margin="0,0,5,0"/>
                                             <Button Content="{engine:EngineLang Key='定位'}"
                                                     Tag="{Binding Record, Mode=OneWay}"
                                                     Click="LocateNodeButton_Click"
@@ -338,7 +341,7 @@
                     </Grid>
 
                     <Grid Grid.Row="1">
-                        <ScottPlot:WpfPlot x:Name="TimelinePlot"/>
+                        <ContentControl x:Name="TimelineHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
                         <TextBlock x:Name="TimelineEmptyText"
                                    Text="{engine:EngineLang Key='本批次没有可显示的执行时序'}"
                                    HorizontalAlignment="Center"

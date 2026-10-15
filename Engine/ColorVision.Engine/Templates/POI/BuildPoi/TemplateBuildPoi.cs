@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
@@ -16,6 +15,5 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             TemplateParams = Params;
         }
 
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlBuildPoi();
     }
 }

@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using ColorVision.UI;
 using Spectrum.Configs;
 using System.ComponentModel;
@@ -13,7 +14,7 @@ public sealed class FilterWheelHoleMappingPropertiesEditor : IPropertyEditor
     public DockPanel GenProperties(PropertyInfo property, object obj)
     {
         var panel = new DockPanel();
-        var edit = new Button { Content = "编辑", MinWidth = 60, Margin = new Thickness(5, 0, 0, 0) };
+        var edit = new Button { Content = LocalizedText.Get("编辑"), MinWidth = 60, Margin = new Thickness(5, 0, 0, 0) };
         DockPanel.SetDock(edit, Dock.Right);
         panel.Children.Add(edit);
         panel.Children.Add(PropertyEditorHelper.CreateLabel(property, PropertyEditorHelper.GetResourceManager(obj)));

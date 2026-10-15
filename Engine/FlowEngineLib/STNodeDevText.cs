@@ -20,8 +20,10 @@ public class STNodeDevText : STNodeControl
 	{
 		base.OnPaint(dt);
 		Graphics graphics = dt.Graphics;
-		graphics.FillRectangle(Brushes.DarkBlue, base.ClientRectangle);
+		dt.SolidBrush.Color = Owner?.Owner?.VisualTheme?.Surface ?? Color.DarkBlue;
+		graphics.FillRectangle(dt.SolidBrush, base.ClientRectangle);
+		dt.SolidBrush.Color = ForeColor;
 		m_sf.Alignment = StringAlignment.Center;
-		graphics.DrawString(base.Text, base.Font, Brushes.White, base.ClientRectangle, m_sf);
+		graphics.DrawString(base.Text, base.Font, dt.SolidBrush, base.ClientRectangle, m_sf);
 	}
 }

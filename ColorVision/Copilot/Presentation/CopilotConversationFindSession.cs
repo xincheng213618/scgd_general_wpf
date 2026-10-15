@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 
@@ -20,9 +21,9 @@ namespace ColorVision.Copilot
             get
             {
                 if (!HasQuery)
-                    return "输入关键词";
+                    return LocalizedText.Get("输入关键词");
                 if (_navigator.Matches.Count == 0)
-                    return "0 项";
+                    return LocalizedText.Get("0 项");
 
                 return $"{_navigator.SelectedIndex + 1} / {_navigator.Matches.Count}";
             }

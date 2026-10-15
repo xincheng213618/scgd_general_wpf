@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.UI.DisplayText;
 using ColorVision.UI;
 using ColorVision.UI.PropertyEditor.Editor.Dictionary;
 using Newtonsoft.Json;
@@ -43,7 +44,7 @@ namespace System.ComponentModel
             };
 
             var textBox = PropertyEditorHelper.CreateSmallTextBox(binding);
-            textBox.ToolTip = "输入 JSON 对象，例如: {\"key1\": \"value1\", \"key2\": \"value2\"}";
+            textBox.ToolTip = LocalizedText.Get("输入 JSON 对象，例如: {\"key1\": \"value1\", \"key2\": \"value2\"}");
             textBox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
 
             // 添加编辑按钮

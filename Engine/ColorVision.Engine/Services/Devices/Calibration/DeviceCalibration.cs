@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
@@ -30,10 +29,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode); }
 
-        private readonly Lazy<ViewCalibration> _view;
-        internal ViewCalibration ViewShell => Application.Current.Dispatcher.CheckAccess()
-            ? _view.Value
-            : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        private readonly DockViewRegistration _view;
+        internal DockViewRegistration ViewRegistration => _view;
+        internal ViewCalibration? ExistingView => _view.Current as ViewCalibration;
+        internal ViewCalibration ViewShell => (ViewCalibration)_view.GetOrCreate();
         public ViewCalibration View
         {
             get
@@ -47,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCalibration(Config);
-            _view = new Lazy<ViewCalibration>(() => new ViewCalibration(this, deferInitialization: true));
+            _view = new DockViewRegistration(() => new ViewCalibration(this, deferInitialization: true), Config.Name);
             this.SetIconResource("DICalibrationIcon");;
 
             EditCommand = new RelayCommand(a =>
@@ -179,11 +178,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             if (DisplayLazy.IsValueCreated)
                 DisplayLazy.Value.Dispose();
 
-            if (_view.IsValueCreated)
-            {
-                DockViewManager.GetInstance().RemoveView(_view.Value);
-                _view.Value.Dispose();
-            }
+            _view.Dispose();
 
             AttachPhyCamera(null);
             DService.Dispose();

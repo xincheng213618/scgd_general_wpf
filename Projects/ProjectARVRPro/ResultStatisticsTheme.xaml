@@ -111,6 +111,35 @@
         <Setter Property="ColumnHeaderHeight" Value="32"/>
         <Setter Property="EnableRowVirtualization" Value="True"/>
         <Setter Property="EnableColumnVirtualization" Value="True"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="CanUserResizeColumns" Value="True"/>
+    </Style>
+    <Style x:Key="StatisticsCellText" TargetType="TextBlock">
+        <Setter Property="Margin" Value="2,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+    </Style>
+    <Style x:Key="StatisticsDetailGrid" TargetType="DataGrid" BasedOn="{StaticResource StatisticsDataGrid}">
+        <Setter Property="AutoGenerateColumns" Value="False"/>
+        <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="CanUserAddRows" Value="False"/>
+        <Setter Property="CanUserDeleteRows" Value="False"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+        <Setter Property="ColumnHeaderHeight" Value="26"/>
+        <Setter Property="RowHeight" Value="24"/>
+        <Setter Property="SelectionMode" Value="Extended"/>
+        <Setter Property="SelectionUnit" Value="FullRow"/>
+        <Setter Property="ClipboardCopyMode" Value="IncludeHeader"/>
+    </Style>
+    <Style x:Key="StatisticsSplitter" TargetType="GridSplitter">
+        <Setter Property="Background" Value="{DynamicResource Statistics.Border}"/>
+        <Setter Property="ShowsPreview" Value="True"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
     <Style x:Key="StatisticsSection" TargetType="GroupBox">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

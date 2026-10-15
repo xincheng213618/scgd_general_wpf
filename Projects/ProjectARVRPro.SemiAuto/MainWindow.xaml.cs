@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.SemiAuto.DisplayText;
 using ProjectARVRPro;
 using ProjectARVRPro.SemiAuto.Automation;
 using ProjectARVRPro.SemiAuto.GECS;
@@ -145,7 +146,7 @@ namespace ProjectARVRPro.SemiAuto
                 string requestParams = eventName == "GetProcessEnable" ? string.Empty : CommandParamsTextBox.Text.Trim();
                 if ((eventName == "SwitchGroup" || eventName == "SetProcessEnable") && string.IsNullOrWhiteSpace(requestParams))
                 {
-                    MessageBox.Show(this, eventName + " 需要填写 Params。", "缺少参数", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(this, eventName + LocalizedText.Get(" 需要填写 Params。"), LocalizedText.Get("缺少参数"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -154,7 +155,7 @@ namespace ProjectARVRPro.SemiAuto
             catch (Exception ex)
             {
                 AppendLog("Send command failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "发送失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("发送失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -209,7 +210,7 @@ namespace ProjectARVRPro.SemiAuto
             catch (Exception ex)
             {
                 AppendLog("Load profile failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "加载配置失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("加载配置失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -226,7 +227,7 @@ namespace ProjectARVRPro.SemiAuto
             catch (Exception ex)
             {
                 AppendLog("Save profile failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "保存配置失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("保存配置失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -286,7 +287,7 @@ namespace ProjectARVRPro.SemiAuto
             catch (Exception ex)
             {
                 AppendLog("PG manual command failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "PG 指令失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("PG 指令失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -319,7 +320,7 @@ namespace ProjectARVRPro.SemiAuto
         {
             if (_currentResult == null)
             {
-                MessageBox.Show(this, "请先加载或接收 ProjectARVRResult。", "无结果", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("请先加载或接收 ProjectARVRResult。"), LocalizedText.Get("无结果"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -405,7 +406,7 @@ namespace ProjectARVRPro.SemiAuto
             {
                 AppendLog("PG 联动启动失败: " + ex.Message);
                 await StopIntegratedRunAsync("PG 联动启动失败", false);
-                MessageBox.Show(this, ex.Message, "PG 联动启动失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("PG 联动启动失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -429,7 +430,7 @@ namespace ProjectARVRPro.SemiAuto
             catch (Exception ex)
             {
                 AppendLog("Connect failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("连接失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 Disconnect();
             }
         }
@@ -638,7 +639,7 @@ namespace ProjectARVRPro.SemiAuto
             };
 
             PendingPgActionTextBlock.Text = mapping == null
-                ? eventName + " / TestType=" + DisplayValue(testType) + " / 未找到启用映射"
+                ? eventName + " / TestType=" + DisplayValue(testType) + LocalizedText.Get(" / 未找到启用映射")
                 : eventName + " / TestType=" + DisplayValue(testType) + " / " + mapping.Name + " / " + commandText;
             return pending;
         }
@@ -728,7 +729,7 @@ namespace ProjectARVRPro.SemiAuto
             {
                 AppendLog("PG action failed; ARVR was not confirmed. " + ex.Message);
                 if (Dispatcher.CheckAccess())
-                    MessageBox.Show(this, ex.Message, "PG 联动失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, ex.Message, LocalizedText.Get("PG 联动失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             finally
@@ -778,7 +779,7 @@ namespace ProjectARVRPro.SemiAuto
                 SetPgConnectionState(false);
                 SetWorkflowStatus("PG 连接失败", false);
                 if (Dispatcher.CheckAccess())
-                    MessageBox.Show(this, ex.Message, "PG 连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, ex.Message, LocalizedText.Get("PG 连接失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
         }
@@ -1023,7 +1024,7 @@ namespace ProjectARVRPro.SemiAuto
         {
             if (ArvrStatusTextBlock == null)
                 return;
-            ArvrStatusTextBlock.Text = connected ? "已连接" : "未连接";
+            ArvrStatusTextBlock.Text = connected ? LocalizedText.Get("已连接") : LocalizedText.Get("未连接");
             ArvrStatusTextBlock.Foreground = GetStatusBrush(connected);
         }
 
@@ -1031,7 +1032,7 @@ namespace ProjectARVRPro.SemiAuto
         {
             if (PgStatusTextBlock == null)
                 return;
-            PgStatusTextBlock.Text = connected ? "已连接" : "未连接";
+            PgStatusTextBlock.Text = connected ? LocalizedText.Get("已连接") : LocalizedText.Get("未连接");
             PgStatusTextBlock.Foreground = GetStatusBrush(connected);
         }
 
@@ -1058,7 +1059,7 @@ namespace ProjectARVRPro.SemiAuto
             bool active = _integratedRunActive;
             PgIntegratedRunButton.IsEnabled = !active;
             PauseIntegratedRunButton.IsEnabled = active && !_integratedRunCancellationRequested && !_integratedRunStarting;
-            PauseIntegratedRunButton.Content = _integratedRunPaused ? "继续" : "暂停";
+            PauseIntegratedRunButton.Content = _integratedRunPaused ? LocalizedText.Get("继续") : LocalizedText.Get("暂停");
             CancelIntegratedRunButton.IsEnabled = active && !_integratedRunCancellationRequested;
             ArvrConnectButton.IsEnabled = !active;
             ArvrInitButton.IsEnabled = !active;
@@ -1080,7 +1081,7 @@ namespace ProjectARVRPro.SemiAuto
             bool manualActionsEnabled = !_integratedRunActive;
             bool canExecute = manualActionsEnabled && hasPending && pending.Mapping != null;
             if (!hasPending)
-                PendingPgActionTextBlock.Text = "无待处理请求";
+                PendingPgActionTextBlock.Text = LocalizedText.Get("无待处理请求");
             ExecutePgAndConfirmButton.IsEnabled = canExecute;
             ExecutePgOnlyButton.IsEnabled = canExecute;
             ConfirmPendingArvrButton.IsEnabled = manualActionsEnabled && hasPending;
@@ -1203,7 +1204,7 @@ namespace ProjectARVRPro.SemiAuto
             catch (Exception ex)
             {
                 AppendLog("Parse failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "解析失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("解析失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -1219,7 +1220,7 @@ namespace ProjectARVRPro.SemiAuto
             catch (Exception ex)
             {
                 AppendLog("Parse/export failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "解析或导出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("解析或导出失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

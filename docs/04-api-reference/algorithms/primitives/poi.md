@@ -5,7 +5,7 @@ status: "current"
 summary: "说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。"
 aliases: ["POI点集由谁生成和消费","POI 1x1中心点","POI 50%缩进","POI自动填充","自动适配尺寸","POI边距设置","PoiPoint","PoiParam","AlgorithmPoi","AlgorithmBuildPoi"]
 code_paths: ["Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml.cs","Engine/ColorVision.Engine/Templates/POI/PoiLayoutGeometry.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
 related: ["algorithms.index","algorithms.poi-template","flow.templates","ui.image-editor-context"]
 ---
 
@@ -113,6 +113,5 @@ Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`、`Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs`。
 
 点模型和几何测试不覆盖数据库整批保存或远端 POI 请求；旧模板、文件模式及服务侧协议需另外回放。

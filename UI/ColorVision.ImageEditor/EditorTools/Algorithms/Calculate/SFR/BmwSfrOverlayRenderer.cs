@@ -32,6 +32,8 @@ public class BmwSfrOverlaySettings
     public bool ShowEdgeNames { get; set; } = true;
     [Category("结果图层"), DisplayName("显示指标数值"), Description("显示所选通道的指标；无效通道显示 INVALID，不以其他通道代替。")]
     public bool ShowValues { get; set; } = true;
+    [Category("结果图层"), DisplayName("精简数值标注"), Description("只显示方向和数值，通道及指标名称由调用界面统一显示。")]
+    public bool CompactMetricLabels { get; set; }
     [Category("结果图层"), DisplayName("刃边拟合虚线"), Description("在小矩形内显示当前通道实际拟合的刃边；没有拟合结果时不绘制。")]
     public bool ShowFittedEdges { get; set; } = true;
     [Category("指标"), DisplayName("显示指标")]

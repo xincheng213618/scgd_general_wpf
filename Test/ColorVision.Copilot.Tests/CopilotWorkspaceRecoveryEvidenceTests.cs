@@ -1,7 +1,6 @@
 using System.Collections;
 using System.IO;
 using System.Reflection;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 
 namespace ColorVision.Copilot.Tests;

@@ -43,7 +43,7 @@
     <value>高</value>
   </data>
   <data name="Reopen" xml:space="preserve">
-    <value>重新打开</value>
+    <value>重新打開</value>
   </data>
   <data name="重置" xml:space="preserve">
     <value>重置</value>
@@ -52,7 +52,7 @@
     <value>指定</value>
   </data>
   <data name="检测" xml:space="preserve">
-    <value>检测</value>
+    <value>檢測</value>
   </data>
   <data name="其他" xml:space="preserve">
     <value>其他</value>
@@ -61,25 +61,25 @@
     <value>停止</value>
   </data>
   <data name="开始" xml:space="preserve">
-    <value>开始</value>
+    <value>開始</value>
   </data>
   <data name="值显示HUB" xml:space="preserve">
-    <value>值显示HUB</value>
+    <value>值顯示HUB</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>关闭</value>
+    <value>關閉</value>
   </data>
   <data name="Value" xml:space="preserve">
     <value>值</value>
   </data>
   <data name="Width" xml:space="preserve">
-    <value>宽</value>
+    <value>寬</value>
   </data>
   <data name="None" xml:space="preserve">
     <value>None</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>打开</value>
+    <value>打開</value>
   </data>
   <data name="LockOption" xml:space="preserve">
     <value>鎖定端口</value>

@@ -371,9 +371,9 @@ namespace ColorVision.ImageEditor.Algorithms
                 31, 0, 2, ORBScoreType.Harris, 31, parameters.FastThreshold);
             using Mat referenceDescriptors = new();
             using Mat movingDescriptors = new();
-            orb.DetectAndCompute(reference8, null, out KeyPoint[] referenceKeys, referenceDescriptors);
+            orb.DetectAndCompute(reference8, default, out KeyPoint[] referenceKeys, referenceDescriptors);
             cancellationToken.ThrowIfCancellationRequested();
-            orb.DetectAndCompute(moving8, null, out KeyPoint[] movingKeys, movingDescriptors);
+            orb.DetectAndCompute(moving8, default, out KeyPoint[] movingKeys, movingDescriptors);
             cancellationToken.ThrowIfCancellationRequested();
             if (referenceDescriptors.Empty() || movingDescriptors.Empty())
                 return RegistrationEstimate.Fail("feature_descriptors_missing", "ORB could not compute descriptors for both inputs.", "inputs");
@@ -414,7 +414,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 initialInliers.Select(match => match.Reference),
                 HomographyMethods.None,
                 0,
-                null,
+                default,
                 0,
                 0.995);
             cancellationToken.ThrowIfCancellationRequested();

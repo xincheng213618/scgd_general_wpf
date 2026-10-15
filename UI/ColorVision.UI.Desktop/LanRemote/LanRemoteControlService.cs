@@ -1,10 +1,7 @@
 using log4net;
 using ColorVision.UI.Desktop.Operations;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -12,8 +9,6 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Desktop.LanRemote
 {
@@ -43,7 +38,7 @@ namespace ColorVision.UI.Desktop.LanRemote
 
         public bool IsRunning { get; private set; }
 
-        public string LastStatusMessage { get; private set; } = "局域网控制已关闭。";
+        public string LastStatusMessage { get; private set; } = LanRemoteText.Get("LegacyDisabled");
 
         public DateTime? StartedAt { get; private set; }
 
@@ -83,13 +78,13 @@ namespace ColorVision.UI.Desktop.LanRemote
             {
                 if (!config.IsEnabled)
                 {
-                    StopNoLock("局域网控制已关闭。");
+                    StopNoLock(LanRemoteText.Get("LegacyDisabled"));
                     return;
                 }
 
                 if (IsRunning && _runningPort == config.Port && _operationsHost.RunningPort == config.SecurePort)
                 {
-                    LastStatusMessage = $"局域网控制运行中：{GetBaseUrl()}";
+                    LastStatusMessage = LanRemoteText.Format("LegacyRunning", GetBaseUrl());
                     PublishStateChanged();
                     return;
                 }
@@ -102,7 +97,7 @@ namespace ColorVision.UI.Desktop.LanRemote
         {
             lock (_syncRoot)
             {
-                StopNoLock("局域网控制已关闭。");
+                StopNoLock(LanRemoteText.Get("LegacyDisabled"));
             }
         }
 
@@ -141,7 +136,7 @@ namespace ColorVision.UI.Desktop.LanRemote
 
         private void StartNoLock(int port)
         {
-            StopNoLock("局域网控制正在重启。", publish: false);
+            StopNoLock(LanRemoteText.Get("LegacyRestarting"), publish: false);
 
             try
             {
@@ -153,19 +148,19 @@ namespace ColorVision.UI.Desktop.LanRemote
                 _runningPort = port;
                 StartedAt = DateTime.Now;
                 IsRunning = true;
-                LastStatusMessage = $"局域网控制运行中：{GetBaseUrl()}";
+                LastStatusMessage = LanRemoteText.Format("LegacyRunning", GetBaseUrl());
                 Log.Info(LastStatusMessage);
                 _acceptLoopTask = Task.Run(() => AcceptLoopAsync(_cts.Token));
                 _operationsHost.Start(LanRemoteControlConfig.Instance.SecurePort, BuildStatusPayload);
             }
             catch (SocketException ex)
             {
-                StopNoLock($"局域网控制启动失败，端口 {port} 不可用：{ex.Message}", publish: false);
+                StopNoLock(LanRemoteText.Format("LegacyPortFailed", port, ex.Message), publish: false);
                 Log.Error(LastStatusMessage, ex);
             }
             catch (Exception ex)
             {
-                StopNoLock($"局域网控制启动失败：{ex.Message}", publish: false);
+                StopNoLock(LanRemoteText.Format("LegacyStartFailed", ex.Message), publish: false);
                 Log.Error(LastStatusMessage, ex);
             }
             finally

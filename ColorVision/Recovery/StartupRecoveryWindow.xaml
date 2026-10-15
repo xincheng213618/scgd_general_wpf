@@ -1,13 +1,14 @@
 <Window x:Class="ColorVision.Recovery.StartupRecoveryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         Width="960"
         Height="690"
         MinWidth="880"
         MinHeight="620"
-        Title="ColorVision 启动恢复"
+        Title="{display:DisplayText Key='ColorVision 启动恢复'}"
         Background="{DynamicResource UpdateDialog.WindowBorder}"
         ResizeMode="CanResizeWithGrip"
         SnapsToDevicePixels="True"
@@ -77,7 +78,7 @@
                     <TextBlock FontSize="25"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                               Text="启动恢复" />
+                               Text="{display:DisplayText Key='启动恢复'}" />
                     <TextBlock Margin="0,5,0,0"
                                FontSize="13"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}"
@@ -144,7 +145,7 @@
             <TabControl Grid.Row="2"
                          Background="{DynamicResource UpdateDialog.Surface}"
                          BorderBrush="{DynamicResource UpdateDialog.WeakBorder}">
-                <TabItem Header="诊断与反馈">
+                <TabItem Header="{display:DisplayText Key='诊断与反馈'}">
                     <Grid Margin="24,22">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -161,16 +162,16 @@
                                 <TextBlock FontSize="18"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                           Text="诊断与反馈" />
+                                           Text="{display:DisplayText Key='诊断与反馈'}" />
                                 <TextBlock Margin="0,5,0,0"
                                            FontSize="12"
                                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                           Text="反馈将自动附带应用日志、更新日志和系统诊断信息。"
+                                           Text="{display:DisplayText Key='反馈将自动附带应用日志、更新日志和系统诊断信息。'}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
                             <Button Grid.Column="1"
                                     Click="SendFeedback_Click"
-                                    Content="发送反馈"
+                                    Content="{display:DisplayText Key='发送反馈'}"
                                     IsEnabled="{Binding CanOpenOtherRecovery}"
                                     Style="{StaticResource RecoveryPrimaryActionButtonStyle}" />
                         </Grid>
@@ -178,12 +179,12 @@
                         <UniformGrid Grid.Row="1" Margin="0,18,0,0" Columns="2">
                             <Button Margin="0,0,5,0"
                                     Click="OpenApplicationLog_Click"
-                                    Content="打开应用日志"
+                                    Content="{display:DisplayText Key='打开应用日志'}"
                                     IsEnabled="{Binding CanOpenOtherRecovery}"
                                     Style="{StaticResource RecoverySecondaryActionButtonStyle}" />
                             <Button Margin="5,0,0,0"
                                     Click="OpenUpdateLog_Click"
-                                    Content="打开更新日志"
+                                    Content="{display:DisplayText Key='打开更新日志'}"
                                     IsEnabled="{Binding CanOpenOtherRecovery}"
                                     Style="{StaticResource RecoverySecondaryActionButtonStyle}" />
                         </UniformGrid>
@@ -200,18 +201,18 @@
                                 <TextBlock FontSize="14"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                           Text="提交启动问题" />
+                                           Text="{display:DisplayText Key='提交启动问题'}" />
                                 <TextBlock Margin="0,5,0,0"
                                            FontSize="12"
                                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                           Text="可在反馈窗口补充现场现象并检查待发送的诊断资料。"
+                                           Text="{display:DisplayText Key='可在反馈窗口补充现场现象并检查待发送的诊断资料。'}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="应用恢复">
+                <TabItem Header="{display:DisplayText Key='应用恢复'}">
                     <Grid Margin="24,22">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -228,16 +229,16 @@
                                 <TextBlock FontSize="18"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                           Text="应用快照恢复" />
+                                           Text="{display:DisplayText Key='应用快照恢复'}" />
                                 <TextBlock Margin="0,5,0,0"
                                            FontSize="12"
                                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                           Text="从更新前或手动创建的快照恢复主程序和插件文件。"
+                                           Text="{display:DisplayText Key='从更新前或手动创建的快照恢复主程序和插件文件。'}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
                             <Button Grid.Column="1"
                                     Click="OpenApplicationSnapshots_Click"
-                                    Content="打开应用恢复"
+                                    Content="{display:DisplayText Key='打开应用恢复'}"
                                     IsEnabled="{Binding CanOpenOtherRecovery}"
                                     Style="{StaticResource RecoveryPrimaryActionButtonStyle}" />
                         </Grid>
@@ -270,11 +271,11 @@
                                     <TextBlock FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                               Text="选择应用快照进行还原" />
+                                               Text="{display:DisplayText Key='选择应用快照进行还原'}" />
                                     <TextBlock Margin="0,5,0,0"
                                                FontSize="12"
                                                Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                               Text="恢复模块会列出可用快照及其版本、创建时间和大小；确认还原后 ColorVision 将自动退出。"
+                                               Text="{display:DisplayText Key='恢复模块会列出可用快照及其版本、创建时间和大小；确认还原后 ColorVision 将自动退出。'}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
                             </Grid>
@@ -289,23 +290,23 @@
                                 <TextBlock FontSize="14"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                           Text="重新配置 ColorVision" />
+                                           Text="{display:DisplayText Key='重新配置 ColorVision'}" />
                                 <TextBlock Margin="0,4,16,0"
                                            FontSize="12"
                                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                           Text="重新检查设备、数据库和系统服务等初始化设置。"
+                                           Text="{display:DisplayText Key='重新检查设备、数据库和系统服务等初始化设置。'}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
                             <Button Grid.Column="1"
                                     Click="RunSetupWizard_Click"
-                                    Content="运行初始化向导"
+                                    Content="{display:DisplayText Key='运行初始化向导'}"
                                     IsEnabled="{Binding CanContinueStartup}"
                                     Style="{StaticResource RecoverySecondaryActionButtonStyle}" />
                         </Grid>
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="插件恢复">
+                <TabItem Header="{display:DisplayText Key='插件恢复'}">
                     <Grid Margin="16,14,16,12">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -325,7 +326,7 @@
                                        TextWrapping="Wrap" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Button Click="RefreshPlugins_Click"
-                                        Content="重新扫描"
+                                        Content="{display:DisplayText Key='重新扫描'}"
                                         IsEnabled="{Binding CanRefreshPlugins}"
                                         Style="{StaticResource RecoveryLinkButtonStyle}" />
                             </StackPanel>
@@ -348,7 +349,7 @@
                                   RowHeight="46"
                                   SelectionMode="Extended">
                             <DataGrid.Columns>
-                                <DataGridTemplateColumn Width="42" Header="选">
+                                <DataGridTemplateColumn Width="42" Header="{display:DisplayText Key='选'}">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <CheckBox HorizontalAlignment="Center"
@@ -372,7 +373,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Width="1.8*" Header="插件">
+                                <DataGridTemplateColumn Width="1.8*" Header="{display:DisplayText Key='插件'}">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Margin="8,3" VerticalAlignment="Center">
@@ -391,9 +392,9 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Width="86"
                                                     Binding="{Binding VersionText}"
-                                                    Header="版本"
+                                                    Header="{display:DisplayText Key='版本'}"
                                                     IsReadOnly="True" />
-                                <DataGridTemplateColumn Width="110" Header="状态">
+                                <DataGridTemplateColumn Width="110" Header="{display:DisplayText Key='状态'}">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Margin="6,3" VerticalAlignment="Center">
@@ -409,9 +410,9 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Width="136"
                                                     Binding="{Binding LastWriteTimeText}"
-                                                    Header="最近更新"
+                                                    Header="{display:DisplayText Key='最近更新'}"
                                                     IsReadOnly="True" />
-                                <DataGridTemplateColumn Width="70" Header="判断">
+                                <DataGridTemplateColumn Width="70" Header="{display:DisplayText Key='判断'}">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border HorizontalAlignment="Left"
@@ -419,12 +420,12 @@
                                                     Visibility="{Binding IsSuspected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                 <TextBlock FontSize="11"
                                                            Foreground="{DynamicResource UpdateDialog.TagForeground}"
-                                                           Text="疑似" />
+                                                           Text="{display:DisplayText Key='疑似'}" />
                                             </Border>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Width="124" Header="备份">
+                                <DataGridTemplateColumn Width="124" Header="{display:DisplayText Key='备份'}">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button Click="RestorePluginBackup_Click"
@@ -481,7 +482,7 @@
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="应用更新与修复">
+                <TabItem Header="{display:DisplayText Key='应用更新与修复'}">
                     <Grid Margin="24,22">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -516,7 +517,7 @@
                                     Style="{StaticResource RecoveryPrimaryActionButtonStyle}"
                                     Visibility="{Binding ApplicationUpdateActionVisibility}" />
                             <Button Click="FullApplicationRepair_Click"
-                                    Content="完整安装包修复"
+                                    Content="{display:DisplayText Key='完整安装包修复'}"
                                     IsEnabled="{Binding CanRunFullApplicationRepair}"
                                     Style="{StaticResource RecoverySecondaryActionButtonStyle}" />
                         </StackPanel>
@@ -533,11 +534,11 @@
                                 <TextBlock FontSize="14"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                           Text="完整安装包修复" />
+                                           Text="{display:DisplayText Key='完整安装包修复'}" />
                                 <TextBlock Margin="0,5,0,0"
                                            FontSize="12"
                                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                           Text="重新安装当前版本并补齐缺失文件；用户配置和数据保持不变。"
+                                           Text="{display:DisplayText Key='重新安装当前版本并补齐缺失文件；用户配置和数据保持不变。'}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>

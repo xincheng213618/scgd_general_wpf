@@ -89,7 +89,10 @@
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="ContextMenu">
+                            <Setter.Value><ContextMenu /></Setter.Value>
+                        </Setter>
+                        <EventSetter Event="ContextMenuOpening" Handler="Result_ContextMenuOpening" />
                         <Setter Property="Opacity" Value="1"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsFileExists}" Value="False">

@@ -256,6 +256,7 @@ namespace ColorVision.UI
                 }
             }
 
+            PrepareVisibilityBindings(PropertyPanel);
             ApplySearchFilter();
         }
 
@@ -374,164 +375,106 @@ namespace ColorVision.UI
             SearchBox.Focus();
         }
 
+        // Search is an additional condition, never a replacement for PropertyVisibility.
+        private static readonly DependencyProperty ConditionVisibilityProperty = DependencyProperty.RegisterAttached(
+            "ConditionVisibility", typeof(Visibility), typeof(PropertyEditorWindow),
+            new PropertyMetadata(Visibility.Visible, OnConditionVisibilityChanged));
+        private static readonly DependencyProperty SearchVisibilityProperty = DependencyProperty.RegisterAttached(
+            "SearchVisibility", typeof(Visibility), typeof(PropertyEditorWindow), new PropertyMetadata(Visibility.Visible));
+        private bool preparingVisibilityBindings;
+
+        private static void OnConditionVisibilityChanged(DependencyObject target, DependencyPropertyChangedEventArgs e)
+        {
+            if (GetWindow(target) is PropertyEditorWindow window && !window.preparingVisibilityBindings)
+                window.ApplySearchFilter();
+        }
+
+        private sealed class CombinedVisibilityConverter : IMultiValueConverter
+        {
+            public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture) =>
+                values.All(value => value is Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
+            public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) =>
+                throw new NotSupportedException();
+        }
+
+        private void PrepareVisibilityBindings(Panel panel)
+        {
+            preparingVisibilityBindings = true;
+            try { Prepare(panel); }
+            finally { preparingVisibilityBindings = false; }
+
+            static void Prepare(Panel container)
+            {
+                foreach (FrameworkElement element in container.Children.OfType<FrameworkElement>())
+                {
+                    if (element.Tag is PropertyInfo && BindingOperations.GetBindingBase(element, VisibilityProperty) is BindingBase condition)
+                    {
+                        BindingOperations.ClearBinding(element, VisibilityProperty);
+                        BindingOperations.SetBinding(element, ConditionVisibilityProperty, condition);
+                        MultiBinding combined = new() { Converter = new CombinedVisibilityConverter(), Mode = BindingMode.OneWay };
+                        combined.Bindings.Add(new Binding { Source = element, Path = new PropertyPath(ConditionVisibilityProperty) });
+                        combined.Bindings.Add(new Binding { Source = element, Path = new PropertyPath(SearchVisibilityProperty) });
+                        BindingOperations.SetBinding(element, VisibilityProperty, combined);
+                    }
+                    if (element is Border border && border.Child is Panel content) Prepare(content);
+                    else if (element is StackPanel nested) Prepare(nested);
+                }
+            }
+        }
+
+        private static bool ConditionAllows(UIElement element) => (Visibility)element.GetValue(ConditionVisibilityProperty) == Visibility.Visible;
+
+        private static void SetFilteredVisibility(UIElement element, bool visible)
+        {
+            Visibility value = visible ? Visibility.Visible : Visibility.Collapsed;
+            if (BindingOperations.IsDataBound(element, ConditionVisibilityProperty))
+                element.SetValue(SearchVisibilityProperty, value);
+            else
+                element.SetCurrentValue(VisibilityProperty, value);
+        }
+
         private void ApplySearchFilter()
         {
-            // Check if UI is initialized (avoid race condition)
-            if (PropertyPanel == null || SearchEmptyState == null)
+            if (PropertyPanel == null || SearchEmptyState == null || preparingVisibilityBindings)
                 return;
-            
-            if (string.IsNullOrWhiteSpace(searchText))
-            {
-                // Show all items when search is empty
-                ShowAllItemsRecursively(PropertyPanel);
-                
-                // Show all tree nodes
-                foreach (var node in TreeNodes)
-                {
-                    node.ShowAll();
-                }
-                
-                SearchEmptyState.Visibility = Visibility.Collapsed;
-                UpdateTreeViewVisibility();
-                return;
-            }
 
-            // Apply search filter
+            bool showAll = string.IsNullOrWhiteSpace(searchText);
             foreach (UIElement child in PropertyPanel.Children)
             {
-                if (child is Border border && border.Child is StackPanel stackPanel && border.Tag is string category)
-                {
-                    bool categoryVisible = FilterStackPanelRecursively(stackPanel, category);
-
-                    border.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
-                }
+                if (child is Border border && border.Child is StackPanel stackPanel)
+                    SetFilteredVisibility(border, FilterBorderRecursively(border, stackPanel, showAll));
             }
-            
-            // Sync tree nodes visibility from borders
-            foreach (var node in TreeNodes)
-            {
-                node.SyncVisibilityFromBorder();
-            }
-
-            SearchEmptyState.Visibility = PropertyPanel.Children.OfType<Border>().Any(border => border.Visibility == Visibility.Visible)
+            foreach (var node in TreeNodes) node.SyncVisibilityFromBorder();
+            SearchEmptyState.Visibility = showAll || PropertyPanel.Children.OfType<Border>().Any(border => border.Visibility == Visibility.Visible)
                 ? Visibility.Collapsed : Visibility.Visible;
             UpdateTreeViewVisibility();
         }
 
-        private void ShowAllItemsRecursively(Panel panel)
+        private bool FilterStackPanelRecursively(StackPanel stackPanel, string category, bool showAll)
         {
-            foreach (UIElement child in panel.Children)
-            {
-                child.Visibility = Visibility.Visible;
-                if (child is Border border && border.Child is Panel childPanel)
-                {
-                    ShowAllItemsRecursively(childPanel);
-                }
-                else if (child is Panel nestedPanel)
-                {
-                    ShowAllItemsRecursively(nestedPanel);
-                }
-            }
-        }
-
-        private bool FilterStackPanelRecursively(StackPanel stackPanel, string category)
-        {
-            bool categoryVisible = false;
-            
-            // Check if category name matches
-            if (category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            {
-                categoryVisible = true;
-                // Show all children if category matches
-                foreach (UIElement item in stackPanel.Children)
-                {
-                    item.Visibility = Visibility.Visible;
-                    if (item is Border nestedBorder && nestedBorder.Child is Panel nestedBorderPanel)
-                    {
-                        ShowAllItemsRecursively(nestedBorderPanel);
-                    }
-                    else if (item is StackPanel nestedContainer)
-                    {
-                        ShowAllItemsRecursively(nestedContainer);
-                    }
-                }
-            }
-            else
-            {
-                // Filter individual properties
-                foreach (UIElement item in stackPanel.Children)
-                {
-                    if (item is DockPanel dockPanel && dockPanel.Tag is PropertyInfo property)
-                    {
-                        bool matches = MatchesSearch(property);
-                        item.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
-                        if (matches) categoryVisible = true;
-                    }
-                    else if (item is TextBlock textBlock)
-                    {
-                        // Keep category header visible
-                        item.Visibility = Visibility.Visible;
-                    }
-                    else if (item is Border nestedBorder && nestedBorder.Child is StackPanel nestedStackPanel)
-                    {
-                        bool nestedVisible = FilterBorderRecursively(nestedBorder, nestedStackPanel);
-                        item.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
-                        if (nestedVisible) categoryVisible = true;
-                    }
-                    else if (item is StackPanel nestedContainer)
-                    {
-                        // Handle nested content - search in nested panels
-                        bool nestedVisible = FilterNestedContainerRecursively(nestedContainer);
-                        item.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
-                        if (nestedVisible) categoryVisible = true;
-                    }
-                }
-            }
-            
-            return categoryVisible;
-        }
-
-        private bool FilterNestedContainerRecursively(StackPanel container)
-        {
-            if (BorderTagMatchesSearch(container.Tag))
-            {
-                ShowAllItemsRecursively(container);
-                return true;
-            }
-
             bool anyVisible = false;
-            
-            foreach (UIElement child in container.Children)
+            bool categoryMatches = showAll || category.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+            foreach (UIElement item in stackPanel.Children)
             {
-                if (child is Border nestedBorder && nestedBorder.Child is StackPanel nestedStackPanel)
-                {
-                    bool nestedVisible = FilterBorderRecursively(nestedBorder, nestedStackPanel);
-                    child.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
-                    
-                    if (nestedVisible) anyVisible = true;
-                }
-                else if (child is StackPanel nestedPanel)
-                {
-                    bool nestedVisible = FilterNestedContainerRecursively(nestedPanel);
-                    child.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
-                    if (nestedVisible) anyVisible = true;
-                }
+                bool visible;
+                if (item is DockPanel dockPanel && dockPanel.Tag is PropertyInfo property)
+                    visible = (categoryMatches || MatchesSearch(property)) && ConditionAllows(item);
+                else if (item is Border nestedBorder && nestedBorder.Child is StackPanel nestedStackPanel)
+                    visible = FilterBorderRecursively(nestedBorder, nestedStackPanel, categoryMatches);
+                else if (item is StackPanel nestedContainer)
+                    visible = FilterStackPanelRecursively(nestedContainer, string.Empty,
+                        categoryMatches || BorderTagMatchesSearch(nestedContainer.Tag)) && ConditionAllows(item);
+                else
+                    continue; // Category headings do not make an otherwise empty category visible.
+                SetFilteredVisibility(item, visible);
+                anyVisible |= visible;
             }
-            
             return anyVisible;
         }
 
-        private bool FilterBorderRecursively(Border border, StackPanel stackPanel)
-        {
-            if (BorderTagMatchesSearch(border.Tag))
-            {
-                ShowAllItemsRecursively(stackPanel);
-                return true;
-            }
-
-            string category = border.Tag as string ?? string.Empty;
-            return FilterStackPanelRecursively(stackPanel, category);
-        }
+        private bool FilterBorderRecursively(Border border, StackPanel stackPanel, bool showAll) =>
+            FilterStackPanelRecursively(stackPanel, border.Tag as string ?? string.Empty,
+                showAll || BorderTagMatchesSearch(border.Tag)) && ConditionAllows(border);
 
         private bool BorderTagMatchesSearch(object tag)
         {

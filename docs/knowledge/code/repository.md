@@ -12,7 +12,7 @@ next: false
 
 返回[知识总入口](../index.md)。只读与当前模块有关的主题，再核对其中的源码、测试和状态；`规划`、`历史`不代表当前能力。
 
-以下是已声明源码路径的关联，不是完整调用图或完整模块清单。跨模块主题可出现在多处；根目录概览只列在根目录项，不自动覆盖所有子模块。
+以下关联用于按源码定位和变更复核，不是完整调用图或主题所有权。跨模块链接保留在地图中，网页侧栏只列地图入口。
 
 ## 仓库根文件 {#module-2e}
 
@@ -20,10 +20,10 @@ next: false
   克隆代码后的源码问答、本地构建、安装和运行分流；只问Codex不需要先启动程序。
 
 - [ColorVision 项目知识入口](../../index.md) — `governance.home`
-  ColorVision AI优先知识入口：按问题定位能力、代码、测试与维护约束。
+  ColorVision AGENTS.md 的按需知识扩展入口，网页展示同一份主题资料。
 
 - [仓库知识使用约定](../../README.md) — `governance.knowledge`
-  说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。
+  说明 AGENTS.md 的按需知识扩展、权威主题与生成资料各自的职责和入口。
 
 - [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
   按程序集装载、产物交付、插件能力比较和模块操作定位权威主题与源码。
@@ -65,7 +65,7 @@ next: false
   native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [知识维护规范](../maintenance.md) — `governance.maintenance`
-  定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。
+  定义按需知识扩展的元数据、更新流程和按变更选择的验证范围。
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
@@ -93,23 +93,23 @@ next: false
 ## docs {#module-646f6373}
 
 - [仓库知识使用约定](../../README.md) — `governance.knowledge`
-  说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。
+  说明 AGENTS.md 的按需知识扩展、权威主题与生成资料各自的职责和入口。
 
 - [知识维护规范](../maintenance.md) — `governance.maintenance`
-  定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。
+  定义按需知识扩展的元数据、更新流程和按变更选择的验证范围。
 
 ## docs/.vitepress {#module-646f63732f2e766974657072657373}
 
 - [仓库知识使用约定](../../README.md) — `governance.knowledge`
-  说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。
+  说明 AGENTS.md 的按需知识扩展、权威主题与生成资料各自的职责和入口。
 
 - [知识维护规范](../maintenance.md) — `governance.maintenance`
-  定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。
+  定义按需知识扩展的元数据、更新流程和按变更选择的验证范围。
 
 - [知识检索与问答验收](../retrieval-checks.md) — `governance.retrieval`
-  用固定检索问题和无个人记忆的源码问答抽样，验证知识入口能否定位正确模块、边界和测试。
+  定义本地知识查询的 CLI、匹配契约和独立问题抽样方法，供检索工具维护时使用。
 
 ## docs/knowledge {#module-646f63732f6b6e6f776c65646765}
 
 - [知识检索与问答验收](../retrieval-checks.md) — `governance.retrieval`
-  用固定检索问题和无个人记忆的源码问答抽样，验证知识入口能否定位正确模块、边界和测试。
+  定义本地知识查询的 CLI、匹配契约和独立问题抽样方法，供检索工具维护时使用。

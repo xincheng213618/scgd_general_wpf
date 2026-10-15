@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Solution.Mru;
 using ColorVision.Solution.Workspace;
 using ColorVision.Solution.Explorer;
-using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
 using log4net;
@@ -138,10 +136,8 @@ namespace ColorVision.Solution
         }
         private string _openingWorkspacePath = string.Empty;
         public string WorkspaceOpenStatus => IsOpeningWorkspace
-            ? $"正在打开：{Path.GetFileName(OpeningWorkspacePath)}"
-            : "就绪";
-
-        public RelayCommand SettingCommand { get; set; } 
+            ? DisplayText.Format($"正在打开：{Path.GetFileName(OpeningWorkspacePath)}")
+            : DisplayText.Get("就绪");
 
         public SolutionManager() : this(restoreLastWorkspace: true, tryCloseWorkspaceDocuments: null)
         {
@@ -165,10 +161,6 @@ namespace ColorVision.Solution
                     .Task
                     .Unwrap();
             }
-
-            SettingCommand = restoreLastWorkspace
-                ? SolutionSetting.Instance.EditCommand
-                : new RelayCommand(_ => { });
 
             if (restoreLastWorkspace)
                 WorkspaceManager.ContentIdSelected += (s, e) => CurrentSolutionExplorer?.SetSelected(e);

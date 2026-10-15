@@ -1,13 +1,6 @@
 #pragma warning disable CA1822,CA1861
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,12 +49,14 @@ namespace ColorVision.Copilot
             string message,
             string errorCode,
             bool isTransient,
-            string requestId)
+            string requestId,
+            CopilotTokenUsage reportedUsage = default)
             : base(message)
         {
             ErrorCode = errorCode ?? string.Empty;
             IsTransient = isTransient;
             RequestId = CopilotProviderRequestId.Normalize(requestId);
+            ReportedUsage = reportedUsage;
             CopilotProviderRequestId.Preserve(this, RequestId);
         }
 
@@ -70,6 +65,8 @@ namespace ColorVision.Copilot
         public bool IsTransient { get; }
 
         public string RequestId { get; }
+
+        public CopilotTokenUsage ReportedUsage { get; }
     }
 
     public sealed partial class CopilotChatService

@@ -64,6 +64,11 @@ namespace ProjectLUX
         public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
         private bool _SaveByDate;
 
+        [DisplayName("按流程模板名称命名"), Category("图像导出")]
+        [Description("适用于所有图像格式。开启后标记图使用流程模板名，原图使用流程模板名_source；同一目录内同名图片会被覆盖。关闭时保留原图文件名前缀。")]
+        public bool UseFlowNameForImageFiles { get => _UseFlowNameForImageFiles; set { _UseFlowNameForImageFiles = value; OnPropertyChanged(); } }
+        private bool _UseFlowNameForImageFiles = true;
+
         [DisplayName("保存标记图（8位）"), Category("图像导出")]
         [Description("保存8位结果图；可选择是否把点位、文字等标记混合到图中")]
         public bool IsSaveImageReuslt

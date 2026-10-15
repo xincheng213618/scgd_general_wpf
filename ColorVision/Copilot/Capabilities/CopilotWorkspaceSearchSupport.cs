@@ -353,6 +353,8 @@ namespace ColorVision.Copilot
             if (normalized.Length <= maxLength)
                 return normalized;
 
+            if (maxLength > 0 && char.IsHighSurrogate(normalized[maxLength - 1]) && char.IsLowSurrogate(normalized[maxLength]))
+                maxLength--;
             return normalized[..maxLength] + "...";
         }
 

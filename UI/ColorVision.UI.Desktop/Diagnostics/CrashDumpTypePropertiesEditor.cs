@@ -1,4 +1,5 @@
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Diagnostics;
 using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -15,9 +16,9 @@ namespace System.ComponentModel
 
             var options = new[]
             {
-                new CrashDumpTypeOption(ColorVision.UI.Desktop.Diagnostics.CrashDumpType.Mini, "小型转储（推荐）"),
-                new CrashDumpTypeOption(ColorVision.UI.Desktop.Diagnostics.CrashDumpType.Full, "完整内存转储"),
-                new CrashDumpTypeOption(ColorVision.UI.Desktop.Diagnostics.CrashDumpType.Custom, "自定义转储")
+                new CrashDumpTypeOption(CrashDumpType.Mini, CrashDumpText.Get("小型转储（推荐）")),
+                new CrashDumpTypeOption(CrashDumpType.Full, CrashDumpText.Get("完整内存转储")),
+                new CrashDumpTypeOption(CrashDumpType.Custom, CrashDumpText.Get("自定义转储"))
             };
             var comboBox = new ComboBox
             {

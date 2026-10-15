@@ -7,6 +7,7 @@ using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -93,24 +94,57 @@ namespace ColorVision.UI.Desktop.Feedback
             _progress = progress;
         }
 
-        protected override async Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context)
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context)
+            => SerializeToStreamAsync(stream, context, CancellationToken.None);
+
+        protected override async Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context, CancellationToken cancellationToken)
         {
-            var buffer = new byte[81920];
             long totalLength = _innerContent.Headers.ContentLength ?? -1;
-            long totalRead = 0;
+            await _innerContent.CopyToAsync(new ProgressWriteStream(stream, totalLength, _progress), cancellationToken);
+            _progress.Report(100);
+        }
 
-            using var innerStream = await _innerContent.ReadAsStreamAsync();
-            int bytesRead;
-            while ((bytesRead = await innerStream.ReadAsync(buffer)) > 0)
+        private sealed class ProgressWriteStream(Stream inner, long totalLength, IProgress<double> progress) : Stream
+        {
+            private long _written;
+
+            public override bool CanRead => false;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+            public override void Flush() => inner.Flush();
+            public override Task FlushAsync(CancellationToken cancellationToken) => inner.FlushAsync(cancellationToken);
+
+            public override void Write(byte[] buffer, int offset, int count)
             {
-                await stream.WriteAsync(buffer.AsMemory(0, bytesRead));
-                totalRead += bytesRead;
-
-                if (totalLength > 0)
-                    _progress.Report((double)totalRead / totalLength * 100);
+                inner.Write(buffer, offset, count);
+                Report(count);
             }
 
-            _progress.Report(100);
+            public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                await inner.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
+                Report(count);
+            }
+
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                await inner.WriteAsync(buffer, cancellationToken);
+                Report(buffer.Length);
+            }
+
+            private void Report(int count)
+            {
+                _written += count;
+                if (totalLength > 0)
+                    progress.Report(Math.Min(100, (double)_written / totalLength * 100));
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
         }
 
         protected override bool TryComputeLength(out long length)
@@ -137,6 +171,7 @@ namespace ColorVision.UI.Desktop.Feedback
 
         private readonly ObservableCollection<AttachmentItem> _attachments = new();
         private readonly ObservableCollection<CollectorItem> _collectorItems = new();
+        private CancellationTokenSource? _uploadCancellation;
         private bool _placeholderActive = true;
         private DateTimeOffset? _diagnosticsCollectedAtUtc;
 
@@ -151,6 +186,7 @@ namespace ColorVision.UI.Desktop.Feedback
         {
             InitializeComponent();
             this.ApplyCaption();
+            Closed += (_, _) => _uploadCancellation?.Cancel();
             ApplyInitialDraft(initialMessage, initialAttachmentPaths);
         }
 
@@ -578,14 +614,17 @@ namespace ColorVision.UI.Desktop.Feedback
             }
 
             UploadProgressBar.Value = 0;
-            UploadProgressBar.Visibility = Visibility.Visible;
+            UploadProgressPanel.Visibility = Visibility.Visible;
             StatusText.Text = Properties.Resources.Sending + "...";
 
+            using var uploadCancellation = new CancellationTokenSource();
+            _uploadCancellation = uploadCancellation;
+            bool uploadCompleted = false;
             try
             {
                 string baseUrl = MarketplaceConfig.ServiceBaseUrl;
 
-                using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+                using var httpClient = new HttpClient { Timeout = TimeSpan.FromHours(4) };
                 using var form = new MultipartFormDataContent();
 
                 form.Add(new StringContent(message), "message");
@@ -606,19 +645,42 @@ namespace ColorVision.UI.Desktop.Feedback
                     }
                 }
 
-                // Wrap form content with progress reporting
+                // The estimate covers transfer time only; the server may still be saving the feedback afterward.
+                var uploadWatch = Stopwatch.StartNew();
                 var progress = new Progress<double>(percent =>
                 {
-                    Dispatcher.BeginInvoke(() =>
+                    if (uploadCompleted)
+                        return;
+
+                    percent = Math.Clamp(percent, 0, 100);
+                    int wholePercent = (int)percent;
+                    UploadProgressBar.Value = wholePercent;
+                    if (percent >= 100)
                     {
-                        UploadProgressBar.Value = percent;
-                        StatusText.Text = string.Format(Properties.Resources.Uploading, (int)percent);
-                    });
+                        StatusText.Text = Properties.Resources.UploadWaitingForConfirmation;
+                        return;
+                    }
+
+                    string status = string.Format(Properties.Resources.Uploading, wholePercent);
+                    if (percent >= 1 && uploadWatch.Elapsed >= TimeSpan.FromSeconds(3))
+                    {
+                        double seconds = uploadWatch.Elapsed.TotalSeconds * (100 - percent) / percent;
+                        if (seconds < TimeSpan.FromDays(1).TotalSeconds)
+                        {
+                            var remaining = TimeSpan.FromSeconds(Math.Ceiling(seconds));
+                            string time = remaining.TotalHours >= 1
+                                ? remaining.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture)
+                                : remaining.ToString(@"m\:ss", CultureInfo.InvariantCulture);
+                            status += " · " + string.Format(Properties.Resources.UploadEstimatedRemaining, time);
+                        }
+                    }
+                    StatusText.Text = status;
                 });
 
                 var progressContent = new ProgressableStreamContent(form, progress);
 
-                var response = await httpClient.PostAsync($"{baseUrl}/api/feedback", progressContent);
+                var response = await httpClient.PostAsync($"{baseUrl}/api/feedback", progressContent, uploadCancellation.Token);
+                uploadCompleted = true;
                 if (response.IsSuccessStatusCode)
                 {
                     UploadProgressBar.Value = 100;
@@ -633,6 +695,10 @@ namespace ColorVision.UI.Desktop.Feedback
                     log.Error($"Feedback send failed: {response.StatusCode} {body}");
                 }
             }
+            catch (OperationCanceledException) when (uploadCancellation.IsCancellationRequested)
+            {
+                // Closing the window cancels the in-flight upload.
+            }
             catch (Exception ex)
             {
                 StatusText.Text = string.Format(Properties.Resources.SendFailed, ex.Message);
@@ -640,6 +706,8 @@ namespace ColorVision.UI.Desktop.Feedback
             }
             finally
             {
+                uploadCompleted = true;
+                _uploadCancellation = null;
                 SetInputEnabled(true);
             }
         }

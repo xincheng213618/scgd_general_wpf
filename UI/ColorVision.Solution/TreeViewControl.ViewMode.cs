@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.Solution.Explorer;
 using System.IO;
 using System.Windows;
@@ -83,7 +84,7 @@ namespace ColorVision.Solution
         private void UpdateExplorerViewHeader()
         {
             if (WorkspacePathText != null)
-                WorkspacePathText.Text = SolutionManager.CurrentSolutionExplorer?.DirectoryInfo.FullName ?? "未打开工作区";
+                WorkspacePathText.Text = SolutionManager.CurrentSolutionExplorer?.DirectoryInfo.FullName ?? LocalizedText.Get("未打开工作区");
             if (SolutionViewButton != null)
                 SolutionViewButton.IsChecked = !IsFileSystemView;
             if (FileSystemViewButton != null)

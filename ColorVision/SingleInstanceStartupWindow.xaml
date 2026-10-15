@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.SingleInstanceStartupWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ColorVision 启动" Width="570" SizeToContent="Height"
+             xmlns:display="clr-namespace:ColorVision"
+        Title="{display:DisplayText Key='ColorVision 启动'}" Width="570" SizeToContent="Height"
         ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
         Background="{DynamicResource UpdateDialog.Background}"
         UseLayoutRounding="True">
@@ -20,7 +21,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock x:Name="StatusText" Text="正在关闭旧程序" FontSize="20" FontWeight="SemiBold"
+        <TextBlock x:Name="StatusText" Text="{display:DisplayText Key='正在关闭旧程序'}" FontSize="20" FontWeight="SemiBold"
                    TextWrapping="Wrap" Foreground="{DynamicResource UpdateDialog.TextPrimary}" />
         <TextBlock Grid.Row="1" x:Name="ProcessesText" Margin="0,12,0,0" TextWrapping="Wrap"
                    Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
@@ -40,11 +41,11 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Button x:Name="CancelButton" Content="取消启动" IsCancel="True" Click="Cancel_Click"
+            <Button x:Name="CancelButton" Content="{display:DisplayText Key='取消启动'}" IsCancel="True" Click="Cancel_Click"
                     Style="{StaticResource UpdateDialogTextButtonStyle}" />
-            <Button Grid.Column="2" x:Name="OpenButton" Content="直接打开" IsDefault="True" Click="Open_Click"
+            <Button Grid.Column="2" x:Name="OpenButton" Content="{display:DisplayText Key='直接打开'}" IsDefault="True" Click="Open_Click"
                     Margin="0,0,10,0" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-            <Button Grid.Column="3" x:Name="ForceButton" Content="重试结束" IsEnabled="False" Click="Force_Click"
+            <Button Grid.Column="3" x:Name="ForceButton" Content="{display:DisplayText Key='重试结束'}" IsEnabled="False" Click="Force_Click"
                     Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
         </Grid>
     </Grid>

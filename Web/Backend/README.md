@@ -15,7 +15,6 @@ Authoritative documentation is split by responsibility:
 - [Built-in jobs, synchronous execution, single-flight, and recovery](../../docs/02-developer-guide/backend/jobs.md) (`delivery.backend-jobs`).
 - [Live retention settings, database snapshots, cleanup, and rotation](../../docs/02-developer-guide/backend/backup-retention.md) (`delivery.backend-retention`).
 - [Audit and NAS deployment records, queries, and evidence limits](../../docs/02-developer-guide/backend/management-records.md) (`delivery.backend-records`).
-- [Copilot profile management, version proof, and sensitive configuration sync](../../docs/02-developer-guide/backend/copilot-sync.md) (`delivery.backend-copilot-sync`).
 - [Public feedback submission, inbox state, and diagnostic attachment delivery](../../docs/02-developer-guide/backend/feedback.md) (`delivery.backend-feedback`).
 - [Operations credentials, relay tasks, receipts, and read-only overview](../../docs/02-developer-guide/backend/operations-relay.md) (`delivery.backend-operations`).
 - [CVWindowsService publication, latest pointer, package selection, and cache](../../docs/02-developer-guide/backend/cvwindowsservice.md) (`delivery.cvwindowsservice`).

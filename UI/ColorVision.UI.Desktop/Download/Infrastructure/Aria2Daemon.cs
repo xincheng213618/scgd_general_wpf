@@ -6,7 +6,16 @@ using System.Net.NetworkInformation;
 
 namespace ColorVision.UI.Desktop.Download
 {
-    internal sealed class Aria2Daemon : IDisposable
+    internal interface IAria2Daemon : IDisposable
+    {
+        bool IsRunning { get; }
+        bool IsRunningForNetworkMode(bool disableSystemProxy);
+        int PreparePort(int port);
+        void Start(int port, string rpcSecret, DownloadManagerConfig config, bool disableSystemProxy);
+        void Stop(Action forceShutdown);
+    }
+
+    internal sealed class Aria2Daemon : IAria2Daemon
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(Aria2Daemon));
         private readonly object _processLock = new();
@@ -45,11 +54,7 @@ namespace ColorVision.UI.Desktop.Download
             if (!IsPortInUse(port))
                 return port;
 
-            KillOrphanProcesses();
-            if (!IsPortInUse(port))
-                return port;
-
-            return FindAvailablePort(port + 1);
+            return FindAvailablePort(port);
         }
 
         public void Start(int port, string rpcSecret, DownloadManagerConfig config, bool disableSystemProxy)
@@ -73,13 +78,14 @@ namespace ColorVision.UI.Desktop.Download
                     ? "Starting aria2c with inherited proxy environment disabled."
                     : "Starting aria2c with inherited proxy environment enabled.");
 
+                _process?.Dispose();
                 _process = new Process { StartInfo = psi };
                 _process.Start();
                 _disableSystemProxy = disableSystemProxy;
 
                 // Discard output to prevent buffer deadlock.
-                _process.StandardOutput.ReadToEndAsync();
-                _process.StandardError.ReadToEndAsync();
+                _ = DrainOutputAsync(_process.StandardOutput);
+                _ = DrainOutputAsync(_process.StandardError);
             }
         }
 
@@ -144,7 +150,7 @@ namespace ColorVision.UI.Desktop.Download
 
         private static string BuildArguments(int port, string rpcSecret, DownloadManagerConfig config, bool disableSystemProxy)
         {
-            string args = $"--enable-rpc --rpc-listen-port={port} --rpc-secret={rpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=true --allow-overwrite=false --summary-interval=0 -j {config.MaxConcurrentTasks}" +
+            string args = $"--no-conf --enable-rpc --rpc-listen-port={port} --rpc-secret={rpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=false --summary-interval=0 --console-log-level=warn -j {config.MaxConcurrentTasks}" +
                 $" --enable-dht=true --bt-enable-lpd=true --enable-peer-exchange=true --follow-torrent=mem --seed-time=0 --bt-save-metadata=true --stop-with-process={Environment.ProcessId}";
 
             if (disableSystemProxy)
@@ -170,40 +176,16 @@ namespace ColorVision.UI.Desktop.Download
             return "aria2c";
         }
 
-        private void KillOrphanProcesses()
+        private static async Task DrainOutputAsync(StreamReader reader)
         {
             try
             {
-                string? ourAria2cDir = Path.GetDirectoryName(_aria2cPath);
-                var aria2cProcesses = Process.GetProcessesByName("aria2c");
-                foreach (var proc in aria2cProcesses)
-                {
-                    try
-                    {
-                        string? procPath = null;
-                        try { procPath = proc.MainModule?.FileName; } catch { }
-
-                        if (procPath != null && ourAria2cDir != null &&
-                            Path.GetDirectoryName(procPath)?.Equals(ourAria2cDir, StringComparison.OrdinalIgnoreCase) == true)
-                        {
-                            proc.Kill();
-                            proc.WaitForExit(2000);
-                            log.Info($"Killed orphan aria2c process (PID: {proc.Id})");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"Failed to kill aria2c process {proc.Id}: {ex.Message}");
-                    }
-                    finally
-                    {
-                        proc.Dispose();
-                    }
-                }
+                char[] buffer = new char[4096];
+                while (await reader.ReadAsync(buffer.AsMemory()).ConfigureAwait(false) > 0) { }
             }
             catch (Exception ex)
             {
-                log.Debug($"KillOrphanProcesses failed: {ex.Message}");
+                log.Debug($"aria2c output drain stopped: {ex.Message}");
             }
         }
 
@@ -224,12 +206,13 @@ namespace ColorVision.UI.Desktop.Download
 
         private static int FindAvailablePort(int startPort)
         {
-            for (int port = startPort; port < startPort + 100; port++)
+            for (int offset = 1; offset <= 100; offset++)
             {
+                int port = 1024 + (startPort - 1024 + offset) % (65536 - 1024);
                 if (!IsPortInUse(port))
                     return port;
             }
-            return startPort;
+            throw new IOException("No available aria2c RPC port was found.");
         }
     }
 }

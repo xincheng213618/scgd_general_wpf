@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -110,9 +111,9 @@ public sealed class CieAnalysisRow
     public string Name => Sample.Name;
     public string Group => Sample.Group;
     public string Source => Sample.Source;
-    public string BasisText => Sample.Basis switch { CieSampleBasis.Absolute => "绝对 Y", CieSampleBasis.Relative => "相对 Y", _ => "仅色坐标" };
+    public string BasisText => Sample.Basis switch { CieSampleBasis.Absolute => LocalizedText.Get("绝对 Y"), CieSampleBasis.Relative => LocalizedText.Get("相对 Y"), _ => LocalizedText.Get("仅色坐标") };
     public bool IsReference { get; }
-    public string Role => IsReference ? "参考" : "";
+    public string Role => IsReference ? LocalizedText.Get("参考") : "";
     public CieChromaticity Xy => Sample.Xy;
     public CieChromaticity Uv { get; }
     public CieLab? Lab { get; }
@@ -147,7 +148,7 @@ public sealed class CieAnalysisRow
             Lab = CieAnalysisMath.XyzToLab(sample.Xyz, settings.WhiteFor(sample.Basis));
             Luv = CieAnalysisMath.XyzToLuv(sample.Xyz, settings.WhiteFor(sample.Basis));
         }
-        Result = "未设参考";
+        Result = LocalizedText.Get("未设参考");
         if (reference == null) return;
         CieChromaticity refUv = CieColorConverter.XyToCie1976uv(reference.Xy);
         if (Uv.IsFinite && refUv.IsFinite)
@@ -157,12 +158,12 @@ public sealed class CieAnalysisRow
         }
         if (Lab == null || reference.Basis == CieSampleBasis.ChromaticityOnly)
         {
-            Result = "缺少亮度";
+            Result = LocalizedText.Get("缺少亮度");
             return;
         }
         if (sample.Basis != reference.Basis)
         {
-            Result = "亮度尺度不同";
+            Result = LocalizedText.Get("亮度尺度不同");
             return;
         }
         CieXyz white = settings.WhiteFor(sample.Basis);
@@ -177,10 +178,10 @@ public sealed class CieAnalysisRow
             !double.IsFinite(DeltaLuv.Value) || !double.IsFinite(Cmc11.Value) || !double.IsFinite(Cmc21.Value))
         {
             DeltaE00 = DeltaE76 = DeltaE94 = DeltaLuv = Cmc11 = Cmc21 = null;
-            Result = "数值超出计算范围";
+            Result = LocalizedText.Get("数值超出计算范围");
             return;
         }
-        Result = IsReference ? "参考" : DeltaE00 <= settings.DeltaEThreshold ? "阈值内" : "超出阈值";
+        Result = IsReference ? LocalizedText.Get("参考") : DeltaE00 <= settings.DeltaEThreshold ? LocalizedText.Get("阈值内") : LocalizedText.Get("超出阈值");
     }
 
     public static string Format(double? value, string format = "G10") => value.HasValue && double.IsFinite(value.Value)

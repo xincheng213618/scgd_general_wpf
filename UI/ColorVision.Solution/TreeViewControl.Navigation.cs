@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using AvalonDock.Layout;
 using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Workspace;
@@ -62,7 +63,7 @@ namespace ColorVision.Solution
             }
             catch (Exception ex)
             {
-                SearchStatusText.Text = $"刷新失败：{ex.Message}";
+                SearchStatusText.Text = LocalizedText.Format($"刷新失败：{ex.Message}");
                 SearchStatusText.Visibility = Visibility.Visible;
             }
         }
@@ -93,7 +94,7 @@ namespace ColorVision.Solution
                     return;
                 if (node == null)
                 {
-                    SearchStatusText.Text = "当前文档不在此资源管理器视图中";
+                    SearchStatusText.Text = LocalizedText.Get("当前文档不在此资源管理器视图中");
                     SearchStatusText.Visibility = Visibility.Visible;
                     return;
                 }
@@ -129,7 +130,7 @@ namespace ColorVision.Solution
             }
             catch (Exception ex)
             {
-                SearchStatusText.Text = $"定位失败：{ex.Message}";
+                SearchStatusText.Text = LocalizedText.Format($"定位失败：{ex.Message}");
                 SearchStatusText.Visibility = Visibility.Visible;
             }
             finally

@@ -1,8 +1,9 @@
 <Window x:Class="ProjectKB.KBProductionStatisticsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ProjectKB"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
-        Title="KB 生产统计"
+        Title="{display:DisplayText Key='KB 生产统计'}"
         Width="1280"
         Height="820"
         MinWidth="1100"
@@ -32,15 +33,15 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel>
-                <TextBlock Text="KB 生产统计" FontSize="25" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
-                <TextBlock Text="查看产量、良品率与检测记录；每条记录代表一次完整检测。" Margin="0,5,0,0" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                <TextBlock Text="{display:DisplayText Key='KB 生产统计'}" FontSize="25" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock Text="{display:DisplayText Key='查看产量、良品率与检测记录；每条记录代表一次完整检测。'}" Margin="0,5,0,0" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Border Padding="12,7" CornerRadius="8" Background="{DynamicResource Statistics.Surface}" VerticalAlignment="Center"
-                        ToolTip="同一次软件运行内保留查询条件；软件重启后恢复按天查询今天。生产目标与历史数据不受影响。">
-                    <TextBlock Text="查询条件仅本次运行记忆" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        ToolTip="{display:DisplayText Key='同一次软件运行内保留查询条件；软件重启后恢复按天查询今天。生产目标与历史数据不受影响。'}">
+                    <TextBlock Text="{display:DisplayText Key='查询条件仅本次运行记忆'}" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Border>
-                <Button Content="生产信息" Width="96" Margin="12,0,0,0" Style="{StaticResource CompactQueryButton}" Click="EditProductionSettings_Click"/>
+                <Button Content="{display:DisplayText Key='生产信息'}" Width="96" Margin="12,0,0,0" Style="{StaticResource CompactQueryButton}" Click="EditProductionSettings_Click"/>
             </StackPanel>
         </Grid>
 
@@ -52,16 +53,16 @@
                 </Grid.RowDefinitions>
                 <WrapPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
-                        <TextBlock Text="统计周期" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock Text="{display:DisplayText Key='统计周期'}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
                         <ComboBox x:Name="PeriodMode"
                                   Width="82"
                                   SelectedIndex="0"
                                   Style="{StaticResource CompactQueryComboBox}"
                                   SelectionChanged="PeriodMode_SelectionChanged">
-                            <ComboBoxItem Content="按天"/>
-                            <ComboBoxItem Content="按周"/>
-                            <ComboBoxItem Content="按月"/>
-                            <ComboBoxItem Content="全部"/>
+                            <ComboBoxItem Content="{display:DisplayText Key='按天'}"/>
+                            <ComboBoxItem Content="{display:DisplayText Key='按周'}"/>
+                            <ComboBoxItem Content="{display:DisplayText Key='按月'}"/>
+                            <ComboBoxItem Content="{display:DisplayText Key='全部'}"/>
                         </ComboBox>
                         <StackPanel x:Name="PeriodNavigation" Orientation="Horizontal">
                             <Button Content="&lt;" Width="42" MinWidth="42" Margin="8,0,6,0" Style="{StaticResource CompactQueryButton}" Click="PreviousPeriod_Click"/>
@@ -71,10 +72,10 @@
                                         SelectedDateChanged="AnchorDatePicker_SelectedDateChanged"/>
                             <Button Content="&gt;" Width="42" MinWidth="42" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="NextPeriod_Click"/>
                         </StackPanel>
-                        <Button x:Name="CurrentPeriodButton" Content="今天" MinWidth="72" Margin="8,0,0,0" Style="{StaticResource CompactQueryButton}" Click="CurrentPeriod_Click"/>
+                        <Button x:Name="CurrentPeriodButton" Content="{display:DisplayText Key='今天'}" MinWidth="72" Margin="8,0,0,0" Style="{StaticResource CompactQueryButton}" Click="CurrentPeriod_Click"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
-                        <TextBlock Text="机种" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock Text="{display:DisplayText Key='机种'}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
                         <ComboBox x:Name="ModelFilter"
                                   Width="180"
                                   IsEditable="True"
@@ -100,16 +101,16 @@
                                   SelectionChanged="SnFilter_SelectionChanged"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
-                        <TextBlock Text="结果" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock Text="{display:DisplayText Key='结果'}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
                         <ComboBox x:Name="ResultFilter" Width="82" SelectedIndex="0" Style="{StaticResource CompactQueryComboBox}">
-                            <ComboBoxItem Content="全部"/>
+                            <ComboBoxItem Content="{display:DisplayText Key='全部'}"/>
                             <ComboBoxItem Content="PASS"/>
                             <ComboBoxItem Content="FAIL"/>
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button x:Name="RefreshButton" Content="查询" Width="64" Style="{StaticResource StatisticsPrimaryButton}" Click="Refresh_Click"/>
-                        <Button Content="重置" Width="64" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="Reset_Click"/>
+                        <Button x:Name="RefreshButton" Content="{display:DisplayText Key='查询'}" Width="64" Style="{StaticResource StatisticsPrimaryButton}" Click="Refresh_Click"/>
+                        <Button Content="{display:DisplayText Key='重置'}" Width="64" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="Reset_Click"/>
                     </StackPanel>
                 </WrapPanel>
                 <WrapPanel Grid.Row="1">
@@ -121,7 +122,7 @@
         </Border>
 
         <TabControl x:Name="StatisticsTabs" Grid.Row="2" Background="Transparent" BorderThickness="0" SelectionChanged="StatisticsTabs_SelectionChanged">
-            <TabItem Header="首页">
+            <TabItem Header="{display:DisplayText Key='首页'}">
                 <Grid Margin="0,14,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -129,34 +130,34 @@
                     </Grid.RowDefinitions>
                     <UniformGrid Columns="5" Rows="2" Margin="-5,-5,-5,0">
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="目标产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TargetProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='目标产量'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TargetProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="有效产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="ProductionCountText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='有效产量'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="ProductionCountText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="良品 / 不良品" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="GoodDefectiveText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='良品 / 不良品'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="GoodDefectiveText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="良品率" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="GoodRateText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='良品率'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="GoodRateText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="流程失败" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="ExecutionFailureText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='流程失败'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="ExecutionFailureText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="平均 CT" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="AverageCtText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='平均 CT'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="AverageCtText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="CT 范围" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="CtRangeText" FontSize="17" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='CT 范围'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="CtRangeText" FontSize="17" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="本小时产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="CurrentHourProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='本小时产量'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="CurrentHourProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="今日产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TodayProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='今日产量'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TodayProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                         <Border Style="{StaticResource SummaryCard}">
-                            <StackPanel><TextBlock Text="总执行次数" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TotalRunsText" Style="{StaticResource SummaryValue}"/></StackPanel>
+                            <StackPanel><TextBlock Text="{display:DisplayText Key='总执行次数'}" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TotalRunsText" Style="{StaticResource SummaryValue}"/></StackPanel>
                         </Border>
                     </UniformGrid>
 
@@ -164,7 +165,7 @@
                         <Grid>
                             <ScottPlot:WpfPlot x:Name="HomeTrendPlot" MinHeight="100"/>
                             <TextBlock x:Name="HomeTrendEmptyText"
-                                       Text="当前范围暂无趋势数据"
+                                       Text="{display:DisplayText Key='当前范围暂无趋势数据'}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource GlobalTextBrush}"
@@ -176,72 +177,72 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="小时产量">
-                <GroupBox Header="小时产量" Margin="0,14,0,0" Style="{StaticResource StatisticsSection}">
+            <TabItem Header="{display:DisplayText Key='小时产量'}">
+                <GroupBox Header="{display:DisplayText Key='小时产量'}" Margin="0,14,0,0" Style="{StaticResource StatisticsSection}">
                     <DataGrid x:Name="HourlyGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" Style="{StaticResource StatisticsDataGrid}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="小时" Binding="{Binding HourText}" Width="170"/>
-                            <DataGridTextColumn Header="产量" Binding="{Binding ProductionCount}" Width="90"/>
-                            <DataGridTextColumn Header="良品" Binding="{Binding GoodCount}" Width="90"/>
-                            <DataGridTextColumn Header="不良品" Binding="{Binding DefectiveCount}" Width="90"/>
-                            <DataGridTextColumn Header="流程失败" Binding="{Binding ExecutionFailureCount}" Width="100"/>
-                            <DataGridTextColumn Header="良品率" Binding="{Binding GoodRateText}" Width="100"/>
-                            <DataGridTextColumn Header="平均 CT" Binding="{Binding AverageCtText}" Width="110"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='小时'}" Binding="{Binding HourText}" Width="170"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='产量'}" Binding="{Binding ProductionCount}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='良品'}" Binding="{Binding GoodCount}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='不良品'}" Binding="{Binding DefectiveCount}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='流程失败'}" Binding="{Binding ExecutionFailureCount}" Width="100"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='良品率'}" Binding="{Binding GoodRateText}" Width="100"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='平均 CT'}" Binding="{Binding AverageCtText}" Width="110"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </GroupBox>
             </TabItem>
 
-            <TabItem Header="天产量">
-                <GroupBox Header="天产量" Margin="0,14,0,0" Style="{StaticResource StatisticsSection}">
+            <TabItem Header="{display:DisplayText Key='天产量'}">
+                <GroupBox Header="{display:DisplayText Key='天产量'}" Margin="0,14,0,0" Style="{StaticResource StatisticsSection}">
                     <DataGrid x:Name="DailyGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" Style="{StaticResource StatisticsDataGrid}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="日期" Binding="{Binding DateText}" Width="130"/>
-                            <DataGridTextColumn Header="目标" Binding="{Binding TargetProduction}" Width="90"/>
-                            <DataGridTextColumn Header="产量" Binding="{Binding ProductionCount}" Width="90"/>
-                            <DataGridTextColumn Header="良品" Binding="{Binding GoodCount}" Width="90"/>
-                            <DataGridTextColumn Header="不良品" Binding="{Binding DefectiveCount}" Width="90"/>
-                            <DataGridTextColumn Header="流程失败" Binding="{Binding ExecutionFailureCount}" Width="100"/>
-                            <DataGridTextColumn Header="良品率" Binding="{Binding GoodRateText}" Width="100"/>
-                            <DataGridTextColumn Header="达成率" Binding="{Binding AchievementRateText}" Width="100"/>
-                            <DataGridTextColumn Header="平均 CT" Binding="{Binding AverageCtText}" Width="110"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='日期'}" Binding="{Binding DateText}" Width="130"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='目标'}" Binding="{Binding TargetProduction}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='产量'}" Binding="{Binding ProductionCount}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='良品'}" Binding="{Binding GoodCount}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='不良品'}" Binding="{Binding DefectiveCount}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='流程失败'}" Binding="{Binding ExecutionFailureCount}" Width="100"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='良品率'}" Binding="{Binding GoodRateText}" Width="100"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='达成率'}" Binding="{Binding AchievementRateText}" Width="100"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='平均 CT'}" Binding="{Binding AverageCtText}" Width="110"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </GroupBox>
             </TabItem>
 
-            <TabItem Header="生产会话">
-                <GroupBox Header="生产会话" Margin="0,14,0,0" Style="{StaticResource StatisticsSection}">
+            <TabItem Header="{display:DisplayText Key='生产会话'}">
+                <GroupBox Header="{display:DisplayText Key='生产会话'}" Margin="0,14,0,0" Style="{StaticResource StatisticsSection}">
                     <DataGrid x:Name="SessionGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" Style="{StaticResource StatisticsDataGrid}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="会话" Binding="{Binding SessionText}" Width="72"/>
-                            <DataGridTextColumn Header="开始时间" Binding="{Binding StartTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
-                            <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
-                            <DataGridTextColumn Header="机种" Binding="{Binding Model}" Width="120"/>
-                            <DataGridTextColumn Header="站别" Binding="{Binding Stage}" Width="90"/>
-                            <DataGridTextColumn Header="线别" Binding="{Binding LineNo}" Width="90"/>
-                            <DataGridTextColumn Header="工号" Binding="{Binding WorkerNo}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='会话'}" Binding="{Binding SessionText}" Width="72"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='开始时间'}" Binding="{Binding StartTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='结束时间'}" Binding="{Binding EndTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='机种'}" Binding="{Binding Model}" Width="120"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='站别'}" Binding="{Binding Stage}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='线别'}" Binding="{Binding LineNo}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='工号'}" Binding="{Binding WorkerNo}" Width="90"/>
                             <DataGridTextColumn Header="Opno" Binding="{Binding OpNo}" Width="80"/>
-                            <DataGridTextColumn Header="设备号" Binding="{Binding MachineNo}" Width="100"/>
-                            <DataGridTextColumn Header="目标" Binding="{Binding TargetProduction}" Width="75"/>
-                            <DataGridTextColumn Header="产量" Binding="{Binding ProductionCount}" Width="75"/>
-                            <DataGridTextColumn Header="良品" Binding="{Binding GoodCount}" Width="75"/>
-                            <DataGridTextColumn Header="不良品" Binding="{Binding DefectiveCount}" Width="75"/>
-                            <DataGridTextColumn Header="流程失败" Binding="{Binding ExecutionFailureCount}" Width="95"/>
-                            <DataGridTextColumn Header="良品率" Binding="{Binding GoodRateText}" Width="90"/>
-                            <DataGridTextColumn Header="平均 CT" Binding="{Binding AverageCtText}" Width="100"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='设备号'}" Binding="{Binding MachineNo}" Width="100"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='目标'}" Binding="{Binding TargetProduction}" Width="75"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='产量'}" Binding="{Binding ProductionCount}" Width="75"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='良品'}" Binding="{Binding GoodCount}" Width="75"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='不良品'}" Binding="{Binding DefectiveCount}" Width="75"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='流程失败'}" Binding="{Binding ExecutionFailureCount}" Width="95"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='良品率'}" Binding="{Binding GoodRateText}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='平均 CT'}" Binding="{Binding AverageCtText}" Width="100"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </GroupBox>
             </TabItem>
 
-            <TabItem Header="检测记录">
+            <TabItem Header="{display:DisplayText Key='检测记录'}">
                 <Grid Margin="0,14,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <GroupBox Header="检测记录" ToolTip="每条记录即一次完整检测" Style="{StaticResource StatisticsSection}">
+                    <GroupBox Header="{display:DisplayText Key='检测记录'}" ToolTip="{display:DisplayText Key='每条记录即一次完整检测'}" Style="{StaticResource StatisticsSection}">
                         <DataGrid x:Name="RecordGrid"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
@@ -254,13 +255,13 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="70"/>
                                 <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="190"/>
-                                <DataGridTextColumn Header="检测时间" Binding="{Binding CreateTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
-                                <DataGridTextColumn Header="机种" Binding="{Binding Model}" Width="150"/>
+                                <DataGridTextColumn Header="{display:DisplayText Key='检测时间'}" Binding="{Binding CreateTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
+                                <DataGridTextColumn Header="{display:DisplayText Key='机种'}" Binding="{Binding Model}" Width="150"/>
                                 <DataGridTextColumn Header="CT" Binding="{Binding CycleTimeText}" Width="90"/>
-                                <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="70"/>
-                                <DataGridTextColumn Header="流程状态" Binding="{Binding FlowStatus}" Width="90"/>
-                                <DataGridTextColumn Header="不良点" Binding="{Binding NbrFailPoints}" Width="75"/>
-                                <DataGridTextColumn Header="消息" Binding="{Binding Msg}" Width="*"/>
+                                <DataGridTextColumn Header="{display:DisplayText Key='结果'}" Binding="{Binding ResultText}" Width="70"/>
+                                <DataGridTextColumn Header="{display:DisplayText Key='流程状态'}" Binding="{Binding FlowStatus}" Width="90"/>
+                                <DataGridTextColumn Header="{display:DisplayText Key='不良点'}" Binding="{Binding NbrFailPoints}" Width="75"/>
+                                <DataGridTextColumn Header="{display:DisplayText Key='消息'}" Binding="{Binding Msg}" Width="*"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </GroupBox>
@@ -270,11 +271,11 @@
                                 HorizontalAlignment="Right"
                                 Margin="0,8,0,0"
                                 Visibility="Collapsed">
-                        <Button x:Name="FirstPageButton" Content="首页" Width="54" Margin="0,0,4,0" Style="{StaticResource StatisticsPageButton}" Click="FirstPage_Click"/>
-                        <Button x:Name="PreviousPageButton" Content="上一页" Width="62" Margin="0,0,8,0" Style="{StaticResource StatisticsPageButton}" Click="PreviousPage_Click"/>
+                        <Button x:Name="FirstPageButton" Content="{display:DisplayText Key='首页'}" Width="54" Margin="0,0,4,0" Style="{StaticResource StatisticsPageButton}" Click="FirstPage_Click"/>
+                        <Button x:Name="PreviousPageButton" Content="{display:DisplayText Key='上一页'}" Width="62" Margin="0,0,8,0" Style="{StaticResource StatisticsPageButton}" Click="PreviousPage_Click"/>
                         <TextBlock x:Name="PageStatusText" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource GlobalTextBrush}"/>
-                        <Button x:Name="NextPageButton" Content="下一页" Width="62" Margin="0,0,4,0" Style="{StaticResource StatisticsPageButton}" Click="NextPage_Click"/>
-                        <Button x:Name="LastPageButton" Content="末页" Width="54" Style="{StaticResource StatisticsPageButton}" Click="LastPage_Click"/>
+                        <Button x:Name="NextPageButton" Content="{display:DisplayText Key='下一页'}" Width="62" Margin="0,0,4,0" Style="{StaticResource StatisticsPageButton}" Click="NextPage_Click"/>
+                        <Button x:Name="LastPageButton" Content="{display:DisplayText Key='末页'}" Width="54" Style="{StaticResource StatisticsPageButton}" Click="LastPage_Click"/>
                     </StackPanel>
                 </Grid>
             </TabItem>

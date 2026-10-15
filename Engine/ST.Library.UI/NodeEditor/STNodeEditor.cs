@@ -98,6 +98,40 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	private STNode _HoverNode;
 
 	private Color _GridColor = Color.Black;
+	private STNodeVisualTheme _VisualTheme;
+
+	[Browsable(false)]
+	public STNodeVisualTheme VisualTheme
+	{
+		get => _VisualTheme;
+		set
+		{
+			_VisualTheme = value;
+			if (value != null)
+			{
+				BackColor = value.Canvas;
+				ForeColor = value.Text;
+				BorderHoverColor = value.Accent;
+				BorderSelectedColor = value.Accent;
+				BorderActiveColor = value.Accent;
+				SelectedRectangleColor = value.Accent;
+				HighLineColor = value.Accent;
+				LocationBackColor = value.Surface;
+				LocationForeColor = value.SecondaryText;
+				MarkBackColor = value.Surface;
+				MarkForeColor = value.Text;
+			}
+			Invalidate();
+		}
+	}
+
+	internal Color GetOptionColor(STNodeOption option)
+	{
+		Color color = option.DotColor != Color.Transparent ? option.DotColor
+			: option.DataType == typeof(object) ? _UnknownTypeColor
+			: _TypeColor.TryGetValue(option.DataType, out Color typeColor) ? typeColor : _UnknownTypeColor;
+		return _VisualTheme?.ResolveAccent(color) ?? color;
+	}
 
 	private Color _BorderColor = Color.Black;
 
@@ -594,11 +628,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	{
 		get
 		{
-			return _MarkBackColor;
+			return _MarkForeColor;
 		}
 		set
 		{
-			_MarkBackColor = value;
+			_MarkForeColor = value;
 			Invalidate();
 		}
 	}
@@ -1051,11 +1085,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected override void OnRender(DrawingContext drawingContext)
 	{
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-		bool captureResizeDiagnostic = TryBeginResizeDiagnosticSample(out STRenderDiagnosticSample resizeDiagnostic);
-		try
-		{
-#endif
 		base.OnRender(drawingContext);
 		if (m_disposed)
 		{
@@ -1073,57 +1102,24 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		WpfDpiScale dpi = WpfVisualTreeHelper.GetDpi(this);
 		int pixelWidth = Math.Max(1, (int)Math.Ceiling(width * dpi.DpiScaleX));
 		int pixelHeight = Math.Max(1, (int)Math.Ceiling(height * dpi.DpiScaleY));
-
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-		Bitmap previousRenderBitmap = captureResizeDiagnostic ? m_render_bitmap : null;
-		if (captureResizeDiagnostic)
-		{
-			resizeDiagnostic.LogicalWidth = width;
-			resizeDiagnostic.LogicalHeight = height;
-			resizeDiagnostic.PixelWidth = pixelWidth;
-			resizeDiagnostic.PixelHeight = pixelHeight;
-			resizeDiagnostic.DpiScaleX = dpi.DpiScaleX;
-			resizeDiagnostic.DpiScaleY = dpi.DpiScaleY;
-			resizeDiagnostic.EnsureStartTicks = Stopwatch.GetTimestamp();
-		}
-#endif
 		EnsureRenderTarget(pixelWidth, pixelHeight, dpi.PixelsPerInchX, dpi.PixelsPerInchY);
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-		if (captureResizeDiagnostic)
-		{
-			resizeDiagnostic.EnsureEndTicks = Stopwatch.GetTimestamp();
-			resizeDiagnostic.BufferRecreated = !ReferenceEquals(previousRenderBitmap, m_render_bitmap);
-		}
-#endif
 		RenderToGraphics(
 			m_render_graphics,
 			clientSize.Width,
 			clientSize.Height,
 			(float)dpi.DpiScaleX,
 			(float)dpi.DpiScaleY);
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-		if (captureResizeDiagnostic)
-			resizeDiagnostic.DrawEndTicks = Stopwatch.GetTimestamp();
-#endif
 		BitmapData bitmapData = m_render_bitmap.LockBits(
 			new Rectangle(0, 0, pixelWidth, pixelHeight),
 			ImageLockMode.ReadOnly,
 			PixelFormat.Format32bppPArgb);
 		try
 		{
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-			if (captureResizeDiagnostic)
-				resizeDiagnostic.CopyStartTicks = Stopwatch.GetTimestamp();
-#endif
 			m_render_target.WritePixels(
 				new System.Windows.Int32Rect(0, 0, pixelWidth, pixelHeight),
 				bitmapData.Scan0,
 				Math.Abs(bitmapData.Stride) * pixelHeight,
 				bitmapData.Stride);
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-			if (captureResizeDiagnostic)
-				resizeDiagnostic.CopyEndTicks = Stopwatch.GetTimestamp();
-#endif
 		}
 		finally
 		{
@@ -1131,16 +1127,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 
 		drawingContext.DrawImage(m_render_target, new WpfRect(0, 0, width, height));
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-		if (captureResizeDiagnostic)
-			resizeDiagnostic.Succeeded = true;
-		}
-		finally
-		{
-			if (captureResizeDiagnostic)
-				CompleteResizeDiagnosticSample(ref resizeDiagnostic);
-		}
-#endif
 	}
 
 	private void EnsureRenderTarget(int pixelWidth, int pixelHeight, double dpiX, double dpiY)
@@ -1758,8 +1744,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected virtual void OnDrawGrid(DrawingTools dt, int nWidth, int nHeight)
 	{
 		Graphics graphics = dt.Graphics;
-		using Pen pen = new Pen(Color.FromArgb(65, _GridColor));
-		using Pen pen2 = new Pen(Color.FromArgb(30, _GridColor));
+		using Pen pen = new Pen(_VisualTheme?.GridMajor ?? Color.FromArgb(65, _GridColor));
+		using Pen pen2 = new Pen(_VisualTheme?.GridMinor ?? Color.FromArgb(30, _GridColor));
 		float num = 20f * _CanvasScale;
 		int num2 = 5 - (int)(_CanvasOffsetX / num);
 		for (float num3 = _CanvasOffsetX % num; num3 < (float)nWidth; num3 += num)
@@ -1831,6 +1817,15 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected virtual void OnDrawNodeSelection(DrawingTools dt, STNode node)
 	{
 		bool isActive = _ActiveNode == node;
+		if (_VisualTheme != null)
+		{
+			float scale = Math.Max(_CanvasScale, 0.2f);
+			bool emphasized = isActive || node.IsSelected;
+			DrawNodeOutline(dt.Graphics, node.Rectangle,
+				emphasized || _HoverNode == node ? _VisualTheme.Accent : _VisualTheme.Border,
+				(emphasized ? 2f : 1f) / scale, inset: true);
+			return;
+		}
 		if (!isActive && !node.IsSelected)
 		{
 			return;
@@ -1883,7 +1878,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		Graphics graphics = dt.Graphics;
 		graphics.SmoothingMode = SmoothingMode.HighQuality;
 		m_p_line_hover.Color = Color.FromArgb(10, 0, 0, 0);
-		Type typeFromHandle = typeof(object);
 		foreach (STNode node in _Nodes)
 		{
 			foreach (STNodeOption outputOption in node.OutputOptions)
@@ -1892,25 +1886,15 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				{
 					continue;
 				}
-				if (outputOption.DotColor != Color.Transparent)
-				{
-					m_p_line.Color = outputOption.DotColor;
-				}
-				else if (outputOption.DataType == typeFromHandle)
-				{
-					m_p_line.Color = _UnknownTypeColor;
-				}
-				else
-				{
-					m_p_line.Color = (_TypeColor.ContainsKey(outputOption.DataType) ? _TypeColor[outputOption.DataType] : _UnknownTypeColor);
-				}
+				m_p_line.Color = GetOptionColor(outputOption);
 				foreach (STNodeOption item in outputOption.ConnectedOption)
 				{
 					float x1 = outputOption.DotLeft + outputOption.DotSize;
 					float y1 = outputOption.DotTop + outputOption.DotSize / 2;
 					float x2 = item.DotLeft - 1;
 					float y2 = item.DotTop + item.DotSize / 2;
-					DrawBezier(graphics, m_p_line_hover, x1, y1, x2, y2, _Curvature);
+					if (_VisualTheme == null)
+						DrawBezier(graphics, m_p_line_hover, x1, y1, x2, y2, _Curvature);
 					DrawBezier(graphics, m_p_line, x1, y1, x2, y2, _Curvature);
 					if (m_is_buildpath)
 					{
@@ -1924,7 +1908,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				}
 			}
 		}
-		m_p_line_hover.Color = _HighLineColor;
+		m_p_line_hover.Color = _VisualTheme == null ? _HighLineColor : Color.FromArgb(65, _HighLineColor);
 		if (m_gp_hover != null && m_dic_gp_info.ContainsKey(m_gp_hover))
 		{
 			graphics.DrawPath(m_p_line_hover, m_gp_hover);
@@ -3311,9 +3295,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return;
 		}
 		m_disposed = true;
-#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
-		DisposeResizeDiagnosticCapture();
-#endif
 		m_is_loaded = false;
 		DisposeEditing();
 		m_animation_timer.Stop();

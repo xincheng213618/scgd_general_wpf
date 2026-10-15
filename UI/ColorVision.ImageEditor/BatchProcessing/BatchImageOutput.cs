@@ -42,7 +42,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             if (Path.GetFullPath(outputPath).Equals(Path.GetFullPath(item.FilePath), StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("输出文件不能覆盖源文件，请设置输出后缀或输出目录。");
+                throw new InvalidOperationException(Properties.Resources.BatchCannotOverwriteSource);
             }
 
             int index = 2;
@@ -55,15 +55,19 @@ namespace ColorVision.ImageEditor.BatchProcessing
             return outputPath;
         }
 
-        public static void Save(Mat image, string filePath)
+        public static void Save(Mat image, string filePath, bool overwrite = true)
         {
-            string? directory = Path.GetDirectoryName(filePath);
+            string fullPath = Path.GetFullPath(filePath);
+            string? directory = Path.GetDirectoryName(fullPath);
             if (!string.IsNullOrWhiteSpace(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            string extension = Path.GetExtension(fullPath).ToLowerInvariant();
+            string temporaryPath = Path.Combine(
+                directory ?? Environment.CurrentDirectory,
+                $".__colorvision_{Guid.NewGuid():N}.tmp{extension}");
             bool supportsHighDepth = extension is ".png" or ".tif" or ".tiff";
             bool supportsDepth = image.Depth() == MatType.CV_8U
                 || supportsHighDepth && image.Depth() == MatType.CV_16U
@@ -88,13 +92,26 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     writable = convertedChannels;
                 }
 
-                if (!Cv2.ImWrite(filePath, writable))
+                if (!Cv2.ImWrite(temporaryPath, writable))
                 {
-                    throw new IOException($"保存图像失败：{filePath}");
+                    throw new IOException(string.Format(Properties.Resources.BatchImageSaveFailed, fullPath));
                 }
+
+                File.Move(temporaryPath, fullPath, overwrite);
             }
             finally
             {
+                try
+                {
+                    if (File.Exists(temporaryPath))
+                    {
+                        File.Delete(temporaryPath);
+                    }
+                }
+                catch
+                {
+                }
+
                 convertedChannels?.Dispose();
                 convertedDepth?.Dispose();
             }

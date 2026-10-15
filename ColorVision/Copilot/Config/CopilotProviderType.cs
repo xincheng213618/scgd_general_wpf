@@ -8,5 +8,7 @@ namespace ColorVision.Copilot
         OpenAICompatible,
         [Description("Anthropic Compatible")]
         AnthropicCompatible,
+        [Description("本机 Codex")]
+        LocalCodex,
     }
 }

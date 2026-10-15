@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace FlowEngineLib.Logical;
 
-[STNode("/01 运算", "整理长连线或交叉连线，不改变流程信号")]
+[STNode("运算", "整理长连线或交叉连线，不改变流程信号", CategoryOrder = 100)]
 public sealed class FlowRerouteNode : CVDeviceNode
 {
 	private STNodeOption output = STNodeOption.Empty;

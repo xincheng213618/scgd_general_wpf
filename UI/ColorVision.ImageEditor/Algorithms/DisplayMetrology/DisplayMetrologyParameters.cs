@@ -1,5 +1,4 @@
 using ColorVision.Algorithms;
-using System;
 using System.ComponentModel;
 
 namespace ColorVision.ImageEditor.Algorithms;
@@ -61,10 +60,10 @@ public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
     [Category("十字检测"), DisplayName("最小十字跨度比例"), Description("十字候选宽高在自动目标 ROI 中至少覆盖的比例。")]
     public double MinimumArmSpanFraction { get; set; } = 0.35;
 
-    [Category("十字检测"), DisplayName("轴带支持阈值"), Description("相对最强行/列强度投影检查唯一窄轴带；最终边缘由独立臂截面测量。")]
+    [Category("十字检测"), DisplayName("轴带支持阈值"), Description("相对最强行/列强度投影定位窄轴带；多峰保留警告，按各截面的最外侧阈值边缘测量。")]
     public double AxisBandThreshold { get; set; } = 0.5;
 
-    [Category("十字检测"), DisplayName("最小臂截面覆盖率"), Description("每条半臂有效截面至少占采样截面的比例。")]
+    [Category("十字检测"), DisplayName("最小臂截面覆盖率"), Description("每条半臂低于此覆盖率时给出警告，仍使用可测截面；横臂或竖臂完全没有可测边缘时才不输出该通道。")]
     public double MinimumArmCoverage { get; set; } = 0.5;
 
     [Category("分离判定"), DisplayName("允许的最大边缘分离 (px)"), Description("以 G 为基准，分别检查 R-G、B-G 对应边缘的最大绝对偏移；留空只测量，指定产品规格后才给出 OK/NG。")]

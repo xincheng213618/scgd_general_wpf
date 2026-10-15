@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS0168, CA1863
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CS0168, CA1863
 using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
@@ -225,7 +226,7 @@ namespace ColorVision.Engine.Archive.Dao
             log.Error($"{operation}失败。{exception.GetDiagnosticSummary()}");
             MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                $"{operation}失败，后续操作已停止。\r\n错误标识：{exception.Stage} / {exception.FailureType} ({exception.ErrorCode})。\r\n请检查日志或联系管理员。",
+                LocalizedText.Format($"{operation}失败，后续操作已停止。\r\n错误标识：{exception.Stage} / {exception.FailureType} ({exception.ErrorCode})。\r\n请检查日志或联系管理员。"),
                 "ColorVision");
         }
 

@@ -7,7 +7,6 @@ using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Runtime;
@@ -254,7 +253,14 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 if (!View.IsStandalone)
                     FlowEngineManager.BatchProgress = 100;
-                log.Info(msg);
+                log.InfoFormat("FlowExecutionCompleted SerialNumber={0} FlowName={1} BatchId={2} Status={3} ElapsedMs={4} ErrorNode={5} Message={6}",
+                    flowControlData.SerialNumber, completedFlowName, completedBatch?.Id,
+                    flowControlData.FlowStatus, _stopwatch.ElapsedMilliseconds, completedErrorNodeKey, flowControlData.Message);
+                if (flowControlData.FlowStatus is FlowStatus.Failed or FlowStatus.OverTime)
+                    log.WarnFormat("FlowExecutionFailure SerialNumber={0} BatchId={1} ErrorNode={2} Detail={3}",
+                        flowControlData.SerialNumber, completedBatch?.Id, completedErrorNodeKey, flowControlData.Params);
+                if (log.IsDebugEnabled) log.Debug(msg);
+                FlowPerformanceSampler.QueueIfDue(flowControlData.SerialNumber, completedFlowName, completedBatch?.Id, flowControlData.StartNodeName);
 
                 await WaitForTerminalNodeEndAsync(completedErrorNodeKey, completedGeneration);
                 bool telemetryFlushed = await FlushNodeTelemetryAsync();
@@ -1182,7 +1188,7 @@ namespace ColorVision.Engine.FlowProcessing
                     dataJson: System.Text.Json.JsonSerializer.Serialize(
                         new { elapsedMs = preProcessElapsedMs }));
                 if (preresult)
-                    log.Info($"流程前处理已完成，耗时 {preProcessElapsedMs}ms。");
+                    log.InfoFormat("FlowPreProcessTiming FlowName={0} SerialNumber={1} Status=Completed ElapsedMs={2}", _flowName, sn, preProcessElapsedMs);
                 else
                     log.Warn($"流程前处理失败，耗时 {preProcessElapsedMs}ms。");
                 if (!CanContinueFlowStart(sn))

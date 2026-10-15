@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
 
 namespace ColorVision.Copilot.Tests;
@@ -26,12 +25,6 @@ public sealed class CopilotHttpTransportIsolationTests
             () => CopilotMcpHttpTransport.CreateClient(TimeSpan.FromSeconds(5)));
     }
 
-    [Fact]
-    public async Task BackendSyncClientsDoNotShareResponseCookiesAcrossEndpoints()
-    {
-        await AssertCookieIsNotSharedAsync(CreateBackendSyncClient, CreateBackendSyncClient);
-    }
-
     [Theory]
     [InlineData(HttpStatusCode.TemporaryRedirect)]
     [InlineData(HttpStatusCode.PermanentRedirect)]
@@ -50,14 +43,6 @@ public sealed class CopilotHttpTransportIsolationTests
         await AssertRedirectIsNotFollowedAsync(
             () => CopilotMcpHttpTransport.CreateClient(TimeSpan.FromSeconds(5)),
             redirectStatus);
-    }
-
-    [Theory]
-    [InlineData(HttpStatusCode.TemporaryRedirect)]
-    [InlineData(HttpStatusCode.PermanentRedirect)]
-    public async Task BackendSyncClientsDoNotFollowRedirects(HttpStatusCode redirectStatus)
-    {
-        await AssertRedirectIsNotFollowedAsync(CreateBackendSyncClient, redirectStatus);
     }
 
     private static async Task AssertCookieIsNotSharedAsync(
@@ -190,19 +175,6 @@ public sealed class CopilotHttpTransportIsolationTests
         using var client = createClient();
         using var response = await client.GetAsync(endpoint, cancellationToken);
         response.EnsureSuccessStatusCode();
-    }
-
-    private static HttpClient CreateBackendSyncClient()
-    {
-        var loopbackHandlerField = typeof(CopilotBackendSyncClient).GetField(
-            "LoopbackHandler",
-            BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(loopbackHandlerField);
-        var handler = Assert.IsAssignableFrom<HttpMessageHandler>(loopbackHandlerField.GetValue(null));
-        return new HttpClient(handler, disposeHandler: false)
-        {
-            Timeout = TimeSpan.FromSeconds(5),
-        };
     }
 
     private static Uri GetListenerUri(TcpListener listener)

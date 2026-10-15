@@ -182,7 +182,6 @@ export const adminRoutePermissions: Record<string, string[]> = {
   '/admin/login-security': ['users:manage'],
   '/admin/permissions': ['permissions:manage'],
   '/admin/api-keys': ['api_keys:manage'],
-  '/admin/copilot': ['copilot:manage'],
   '/admin/audit': ['audit:read'],
   '/admin/traffic': ['stats:read'],
   '/admin/settings': ['settings:manage'],

@@ -1,12 +1,10 @@
 #pragma warning disable CA1001
-using ColorVision.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -142,6 +140,11 @@ namespace ColorVision.Copilot
             };
             AddStringProperty(_document, nameof(CopilotChatState.ActiveConversationId), state.ActiveConversationId);
             AddStringProperty(_document, nameof(CopilotChatState.ActiveProfileId), state.ActiveProfileId);
+            if (state.DefaultAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+            {
+                _document[nameof(CopilotChatState.DefaultAccessMode)] =
+                    (int)CopilotAgentAccessMode.UnrestrictedFullAccess;
+            }
             if (!state.IsAgentTaskPanelExpanded)
                 _document[nameof(CopilotChatState.IsAgentTaskPanelExpanded)] = false;
             if (!state.ShowMessageTimestamps)

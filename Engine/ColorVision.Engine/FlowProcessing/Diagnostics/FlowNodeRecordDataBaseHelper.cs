@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ColorVision.Database;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -465,6 +464,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 log.Error("查询FlowNodeRecord失败", ex);
                 return new List<FlowNodeRecord>();
             }
+        }
+
+        internal static List<FlowNodeRecord> GetNodeRecordsForRuns(string nodeId, int[] batchIds, string[] serialNumbers)
+        {
+            EnsureInitialized();
+            using var db = CreateReadDb();
+            return db.Queryable<FlowNodeRecord>()
+                .Where(item => item.NodeId == nodeId && (batchIds.Contains(item.BatchId) || serialNumbers.Contains(item.SerialNumber)))
+                .OrderByDescending(item => item.StartTime)
+                .ToList();
         }
 
         public static List<FlowNodeRecord> GetBySerialNumbers(IEnumerable<string> serialNumbers)

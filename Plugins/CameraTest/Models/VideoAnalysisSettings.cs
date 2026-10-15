@@ -7,20 +7,22 @@ public enum VideoAnalysisMode
 {
     [Description("仅预览")] Preview,
     [Description("基础清晰度")] Sharpness,
-    [Description("BMW 四边 SFR")] BmwSfr
+    [Description("四边 SFR（按图卡设置）")] BmwSfr
 }
 
 public sealed class VideoAnalysisSettings
 {
     [Category("实时分析"), DisplayName("分析项目")]
     public VideoAnalysisMode Mode { get; set; } = VideoAnalysisMode.BmwSfr;
-    [Category("基础清晰度"), DisplayName("清晰度算法"), Description("与本机相机视频模式使用同一套清晰度算法；仅基础清晰度模式生效。")]
+    [Category("基础清晰度"), DisplayName("SFR 同时计算清晰度"), Description("四边 SFR 模式同时显示基础清晰度，便于实时调焦。")]
+    public bool IncludeSharpnessWithSfr { get; set; } = true;
+    [Category("基础清晰度"), DisplayName("清晰度算法"), Description("与本机相机视频模式使用同一套清晰度算法。该值用于同一图像条件下调焦比较，不是准确率。")]
     public FocusAlgorithm Algorithm { get; set; } = FocusAlgorithm.VarianceOfLaplacian;
     [Category("基础清晰度区域"), DisplayName("X")]
     public int X { get; set; }
     [Category("基础清晰度区域"), DisplayName("Y")]
     public int Y { get; set; }
-    [Category("基础清晰度区域"), DisplayName("宽度"), Description("宽高同时为 0 表示全幅；BMW 模式使用图中各测量点。")]
+    [Category("基础清晰度区域"), DisplayName("宽度"), Description("宽高同时为 0 表示全幅；四边 SFR 使用图中各测量点。")]
     public int Width { get; set; }
     [Category("基础清晰度区域"), DisplayName("高度")]
     public int Height { get; set; }

@@ -1,25 +1,14 @@
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
 using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.UI.Desktop.Feedback;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.Copilot
@@ -103,6 +92,7 @@ namespace ColorVision.Copilot
         private int _selectedLocalCommandSuggestionIndex = -1;
         private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
         private QueuedLocalCommandExecutionContext? _queuedLocalCommandExecution;
+        private Action? _flushActiveTurnUiUpdates;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -195,7 +185,7 @@ namespace ColorVision.Copilot
                 _ = TryPersistCurrentConfig(out _);
 
             _state = _stateStore.Load();
-            var stateChanged = _state.EnsureInitializedAfterRestore(_config);
+            var stateChanged = _state.EnsureInitializedAfterRestore(_config, deferQueuedDraftRecovery: true);
             stateChanged |= CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
                 _state,
@@ -373,7 +363,7 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted += BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent += BackgroundShellCommandRegistry_OutputMonitorEvent;
-            RestoreDurableQueuedFollowUps();
+            RestoreQueuedFollowUpsAfterRestart();
             InitializeStateRecoveryNotice();
         }
 

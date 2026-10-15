@@ -3,15 +3,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
     internal sealed partial class CopilotTokenBudgetChatClient : DelegatingChatClient
     {
+        private const string SettledFailureUsageDataKey = "ColorVision.Copilot.SettledFailureUsage";
+
+        internal static void PreserveSettledFailureUsage(Exception exception, CopilotTokenUsage usage)
+        {
+            if (usage.HasAny)
+                exception.Data[SettledFailureUsageDataKey] = usage;
+        }
+
         internal static CopilotTokenUsage ExtractResponseUsage(ChatResponse response)
         {
             ArgumentNullException.ThrowIfNull(response);
@@ -21,12 +26,25 @@ namespace ColorVision.Copilot
                 : usage;
         }
 
-        private static CopilotTokenUsage ExtractUsage(IEnumerable<AIContent>? contents)
+        internal static CopilotTokenUsage ExtractUsage(IEnumerable<AIContent>? contents)
         {
             var usage = CopilotTokenUsage.Empty;
             foreach (var usageContent in contents?.OfType<UsageContent>() ?? Enumerable.Empty<UsageContent>())
                 usage = usage.MergeProgress(ToTokenUsage(usageContent.Details));
 
+            return usage;
+        }
+
+        internal static CopilotTokenUsage ExtractPayloadFailureUsage(Exception exception)
+        {
+            var usage = CopilotTokenUsage.Empty;
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                if (current is CopilotProviderPayloadException payloadFailure)
+                    usage = usage.MergeProgress(payloadFailure.ReportedUsage);
+                if (current.Data[SettledFailureUsageDataKey] is CopilotTokenUsage settledUsage)
+                    usage = usage.MergeProgress(settledUsage);
+            }
             return usage;
         }
 

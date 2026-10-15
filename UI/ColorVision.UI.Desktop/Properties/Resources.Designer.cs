@@ -2795,6 +2795,25 @@ namespace ColorVision.UI.Desktop.Properties {
                 return ResourceManager.GetString("Uploading", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 预计剩余 {0} 的本地化字符串。
+        /// </summary>
+        public static string UploadEstimatedRemaining {
+            get {
+                return ResourceManager.GetString("UploadEstimatedRemaining", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 上传完成，等待服务器确认... 的本地化字符串。
+        /// </summary>
+        public static string UploadWaitingForConfirmation {
+            get {
+                return ResourceManager.GetString("UploadWaitingForConfirmation", resourceCulture);
+            }
+        }
+
         
         /// <summary>
         ///   查找类似 支持 HTTP/HTTPS/FTP 链接、磁力链接 (magnet:)，多个链接用分号或换行分隔 的本地化字符串。

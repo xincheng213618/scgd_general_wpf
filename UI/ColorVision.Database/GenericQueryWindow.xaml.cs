@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1725,CA1863,CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Database.Properties;
 using ColorVision.Themes;
 using log4net;
 using SqlSugar;
@@ -42,7 +41,9 @@ namespace ColorVision.Database
 
     public class QueryCondition
     {
-        public PropertyInfo Property { get; set; } = null!;
+        public PropertyInfo? Property { get; set; }
+        internal string FieldInputText { get; set; } = string.Empty;
+        internal ComboBox? FieldEditor { get; set; }
         public QueryOperator Operator { get; set; } // "=", ">", "<", ">=", "<=", "LIKE"
         public object? Value { get; set; }
         public string? InputText { get; set; }
@@ -103,6 +104,7 @@ namespace ColorVision.Database
 
         public virtual FrameworkElement GetControl() => throw new NotImplementedException();
         public virtual void AddPropertyInfo(PropertyInfo propertyInfo) => throw new NotImplementedException();
+        public virtual void AddEmptyCondition() { }
         public virtual void RemoveCondition(QueryCondition condition) { }
         public virtual void ResetConditions() { }
         public virtual void AddAllPropertyInfos() { }
@@ -140,11 +142,13 @@ namespace ColorVision.Database
             AddCondition(new QueryCondition { Property = property });
         }
 
+        public override void AddEmptyCondition() => AddCondition(new QueryCondition());
+
         private void AddCondition(QueryCondition queryCondition)
         {
-            QueryStackPanel.Children.Add(GenericQueryConditionSupport.CreateConditionRow(queryCondition, RemoveCondition_Click));
+            QueryStackPanel.Children.Add(GenericQueryConditionSupport.CreateConditionRow(queryCondition, PropertyInfos, RemoveCondition_Click));
             QueryConditions.Add(queryCondition);
-            LastConditionEditor = queryCondition.ValueEditor;
+            LastConditionEditor = queryCondition.Property == null ? queryCondition.FieldEditor : queryCondition.ValueEditor;
             OnConditionsChanged(QueryConditions.Count);
         }
 
@@ -176,7 +180,7 @@ namespace ColorVision.Database
 
         public override void AddAllPropertyInfos()
         {
-            foreach (var kvp in PropertyInfos.Where(item => QueryConditions.All(condition => condition.Property.Name != item.Value.Name)))
+            foreach (var kvp in PropertyInfos.Where(item => QueryConditions.All(condition => condition.Property?.Name != item.Value.Name)))
                 AddPropertyInfo(kvp.Value);
         }
 
@@ -289,11 +293,13 @@ namespace ColorVision.Database
             AddCondition(new QueryCondition { Property = property });
         }
 
+        public override void AddEmptyCondition() => AddCondition(new QueryCondition());
+
         private void AddCondition(QueryCondition queryCondition)
         {
-            QueryStackPanel.Children.Add(GenericQueryConditionSupport.CreateConditionRow(queryCondition, RemoveCondition_Click));
+            QueryStackPanel.Children.Add(GenericQueryConditionSupport.CreateConditionRow(queryCondition, PropertyInfos, RemoveCondition_Click));
             QueryConditions.Add(queryCondition);
-            LastConditionEditor = queryCondition.ValueEditor;
+            LastConditionEditor = queryCondition.Property == null ? queryCondition.FieldEditor : queryCondition.ValueEditor;
             OnConditionsChanged(QueryConditions.Count);
         }
 
@@ -325,7 +331,7 @@ namespace ColorVision.Database
 
         public override void AddAllPropertyInfos()
         {
-            foreach (var kvp in PropertyInfos.Where(item => QueryConditions.All(condition => condition.Property.Name != item.Value.Name)))
+            foreach (var kvp in PropertyInfos.Where(item => QueryConditions.All(condition => condition.Property?.Name != item.Value.Name)))
                 AddPropertyInfo(kvp.Value);
         }
 
@@ -427,16 +433,16 @@ namespace ColorVision.Database
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = GenericQueryBase;
-            PropertyInfoCB.ItemsSource = GenericQueryBase.PropertyInfos;
-            PropertyInfoCB.SelectedIndex = -1;
             QueryGrid.Children.Add(GenericQueryBase.GetControl());
             MaxResultsTextBox.Text = GenericQueryBase.QueryConfig.Count.ToString(CultureInfo.CurrentCulture);
             SortDirectionCB.SelectedIndex = GenericQueryBase.QueryConfig.OrderByType == OrderByType.Desc ? 0 : 1;
 
-            GenericQueryBase.ConditionsChanged += (_, _) => UpdateConditionState();
+            GenericQueryBase.ConditionsChanged += GenericQueryBase_ConditionsChanged;
             GenericQueryBase.QueryCompleted += GenericQueryBase_QueryCompleted;
+            if (GenericQueryBase.ConditionCount == 0)
+                GenericQueryBase.AddEmptyCondition();
             UpdateConditionState();
-            Dispatcher.BeginInvoke(PropertyInfoCB.Focus, DispatcherPriority.Input);
+            Dispatcher.BeginInvoke(() => GenericQueryBase.LastConditionEditor?.Focus(), DispatcherPriority.Input);
         }
 
         private async void Query_Click(object sender, RoutedEventArgs e)
@@ -472,14 +478,12 @@ namespace ColorVision.Database
             }
         }
 
-        private void AddPropertyInfo_Click(object sender, RoutedEventArgs e)
+        private void AddCondition_Click(object sender, RoutedEventArgs e)
         {
-            if (PropertyInfoCB.SelectedValue is PropertyInfo property)
-            {
-                GenericQueryBase.AddPropertyInfo(property);
-                StatusText.Text = string.Empty;
-                GenericQueryBase.LastConditionEditor?.Focus();
-            }
+            GenericQueryBase.AddEmptyCondition();
+            StatusText.Text = string.Empty;
+            GenericQueryBase.LastConditionEditor?.BringIntoView();
+            GenericQueryBase.LastConditionEditor?.Focus();
         }
 
         private void AddAllPropertyInfo_Click(object sender, RoutedEventArgs e)
@@ -488,24 +492,12 @@ namespace ColorVision.Database
             StatusText.Text = string.Empty;
         }
 
-        private void PropertyInfoCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            AddConditionButton.IsEnabled = PropertyInfoCB.SelectedValue is PropertyInfo;
-        }
-
-        private void PropertyInfoCB_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key != Key.Enter || PropertyInfoCB.SelectedValue is not PropertyInfo)
-                return;
-
-            AddPropertyInfo_Click(AddConditionButton, new RoutedEventArgs());
-            e.Handled = true;
-        }
-
         private void ResetConditions_Click(object sender, RoutedEventArgs e)
         {
             GenericQueryBase.ResetConditions();
+            GenericQueryBase.AddEmptyCondition();
             StatusText.Text = string.Empty;
+            GenericQueryBase.LastConditionEditor?.Focus();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -518,10 +510,18 @@ namespace ColorVision.Database
             GenericQueryBase.SaveSessionState();
         }
 
+        protected override void OnClosed(EventArgs e)
+        {
+            GenericQueryBase.ConditionsChanged -= GenericQueryBase_ConditionsChanged;
+            GenericQueryBase.QueryCompleted -= GenericQueryBase_QueryCompleted;
+            base.OnClosed(e);
+        }
+
+        private void GenericQueryBase_ConditionsChanged(object? sender, EventArgs e) => UpdateConditionState();
+
         private void UpdateConditionState()
         {
             var hasConditions = GenericQueryBase.ConditionCount > 0;
-            EmptyStatePanel.Visibility = hasConditions ? Visibility.Collapsed : Visibility.Visible;
             ResetConditionsButton.Visibility = hasConditions ? Visibility.Visible : Visibility.Collapsed;
         }
 

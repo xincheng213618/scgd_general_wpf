@@ -1,6 +1,6 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -10,11 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Navigation;
 using System.Windows.Threading;
-using WpfMath.Controls;
-using WpfMath.Parsers;
-using XamlMath.Exceptions;
 
 namespace ColorVision.Copilot
 {
@@ -356,15 +352,15 @@ namespace ColorVision.Copilot
                 Background = Brushes.Transparent,
                 BorderBrush = Brushes.Transparent,
                 BorderThickness = new Thickness(0),
-                Content = "复制",
+                Content = LocalizedText.Get("复制"),
                 Cursor = Cursors.Hand,
                 FontSize = 11,
                 Padding = new Thickness(6, 2, 6, 2),
                 Tag = code,
-                ToolTip = "复制代码",
+                ToolTip = LocalizedText.Get("复制代码"),
             };
             copyButton.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
-            AutomationProperties.SetName(copyButton, "复制代码");
+            AutomationProperties.SetName(copyButton, LocalizedText.Get("复制代码"));
             copyButton.Click += CopyCodeButton_Click;
             DockPanel.SetDock(copyButton, Dock.Right);
             header.Children.Add(copyButton);
@@ -374,7 +370,7 @@ namespace ColorVision.Copilot
                 FontFamily = new FontFamily("Consolas"),
                 FontSize = 10,
                 Opacity = 0.58,
-                Text = string.IsNullOrWhiteSpace(language) ? "代码" : language,
+                Text = string.IsNullOrWhiteSpace(language) ? LocalizedText.Get("代码") : language,
                 VerticalAlignment = VerticalAlignment.Center,
             };
             languageLabel.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
@@ -399,7 +395,7 @@ namespace ColorVision.Copilot
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             };
             codeTextBox.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
-            AutomationProperties.SetName(codeTextBox, "代码内容");
+            AutomationProperties.SetName(codeTextBox, LocalizedText.Get("代码内容"));
 
             var content = new Grid();
             content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -521,12 +517,12 @@ namespace ColorVision.Copilot
             try
             {
                 Clipboard.SetText(code);
-                button.Content = "已复制";
-                button.ToolTip = "代码已复制到剪贴板";
+                button.Content = LocalizedText.Get("已复制");
+                button.ToolTip = LocalizedText.Get("代码已复制到剪贴板");
             }
             catch (Exception ex)
             {
-                button.Content = "复制失败";
+                button.Content = LocalizedText.Get("复制失败");
                 button.ToolTip = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
             }
         }

@@ -1,9 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.KeyedResults;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

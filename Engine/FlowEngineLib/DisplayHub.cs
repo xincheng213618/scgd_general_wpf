@@ -4,7 +4,8 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
+[System.Obsolete("Value display Hub is retained only for loading existing flows.")]
 public class DisplayHub : STNodeInHub
 {
 	public DisplayHub()

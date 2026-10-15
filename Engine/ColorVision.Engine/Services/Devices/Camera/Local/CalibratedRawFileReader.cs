@@ -9,13 +9,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
 /// <summary>
 /// Replays the saved color calibration one float channel at a time, without copying
-/// the RAW payload. The read lease keeps pixels and calibration consistent until disposed.
+/// the disk RAW payload. Cache hits take an owned pixel snapshot so releasing the
+/// shared cache never waits for this document to close.
 /// </summary>
 public sealed class CalibratedRawFileReader : IDisposable
 {
-    private readonly FileStream stream;
-    private readonly MemoryMappedFile mapping;
-    private readonly MemoryMappedViewAccessor view;
+    private readonly Stream stream;
+    private readonly string filePath;
+    private readonly byte[]? cachedPixels;
+    private readonly MemoryMappedFile? mapping;
+    private readonly MemoryMappedViewAccessor? view;
     private readonly ColorCalibrationSnapshot snapshot;
     private readonly RawColorTransformV1 transform;
     private readonly long payloadStart;
@@ -29,7 +32,8 @@ public sealed class CalibratedRawFileReader : IDisposable
 
     public CalibratedRawFileReader(string filePath)
     {
-        stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        this.filePath = filePath;
+        stream = CVFileReadCache.OpenRead(filePath, populateCache: false);
         try
         {
             int headerEnd = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile header);
@@ -54,9 +58,18 @@ public sealed class CalibratedRawFileReader : IDisposable
                 if (declaredBytes < payloadBytes || declaredBytes > stream.Length - payloadStart)
                     throw new InvalidDataException("CVRAW 像素数据不完整。");
             }
-            mapping = MemoryMappedFile.CreateFromFile(stream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
-            try { view = mapping.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read); }
-            catch { mapping.Dispose(); throw; }
+            if (stream is FileStream file)
+            {
+                mapping = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
+                try { view = mapping.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read); }
+                catch { mapping.Dispose(); throw; }
+            }
+            else
+            {
+                cachedPixels = GC.AllocateUninitializedArray<byte>(checked((int)payloadBytes));
+                stream.ReadExactly(cachedPixels);
+                stream.Dispose();
+            }
         }
         catch { stream.Dispose(); throw; }
     }
@@ -70,23 +83,26 @@ public sealed class CalibratedRawFileReader : IDisposable
             if ((uint)channel >= (uint)Channels) throw new ArgumentOutOfRangeException(nameof(channel));
             cancellationToken.ThrowIfCancellationRequested();
             byte[] data = GC.AllocateUninitializedArray<byte>(checked(Width * Height * sizeof(float)));
-            byte* raw = null;
-            view.SafeMemoryMappedViewHandle.AcquirePointer(ref raw);
-            try
+            fixed (byte* cached = cachedPixels)
             {
-                fixed (byte* output = data)
+                byte* raw = cached;
+                view?.SafeMemoryMappedViewHandle.AcquirePointer(ref raw);
+                try
                 {
-                    int status = OpenCVMediaHelper.M_TransformRawColorV1(Width, Height, snapshot.RawBpp,
-                        (IntPtr)(raw + view.PointerOffset + payloadStart), (ulong)payloadBytes,
-                        in transform, channel, (IntPtr)output, (ulong)Width * (ulong)Height);
-                    if (status != OpenCVCalibration.PoiOk) throw new InvalidOperationException($"RAW 色度计算失败：{status}。");
+                    fixed (byte* output = data)
+                    {
+                        int status = OpenCVMediaHelper.M_TransformRawColorV1(Width, Height, snapshot.RawBpp,
+                            (IntPtr)(view == null ? raw : raw + view.PointerOffset + payloadStart), (ulong)payloadBytes,
+                            in transform, channel, (IntPtr)output, (ulong)Width * (ulong)Height);
+                        if (status != OpenCVCalibration.PoiOk) throw new InvalidOperationException($"RAW 色度计算失败：{status}。");
+                    }
                 }
+                finally { view?.SafeMemoryMappedViewHandle.ReleasePointer(); }
             }
-            finally { view.SafeMemoryMappedViewHandle.ReleasePointer(); }
             cancellationToken.ThrowIfCancellationRequested();
             return new CVCIEFile
             {
-                Version = 2, FileExtType = CVType.CIE, FilePath = stream.Name,
+                Version = 2, FileExtType = CVType.CIE, FilePath = filePath,
                 Rows = Height, Cols = Width, Bpp = 32, Channels = Channels,
                 Exp = (float[])snapshot.Exposure.Clone(), Data = data,
             };
@@ -99,8 +115,8 @@ public sealed class CalibratedRawFileReader : IDisposable
         {
             if (disposed) return;
             disposed = true;
-            view.Dispose();
-            mapping.Dispose();
+            view?.Dispose();
+            mapping?.Dispose();
             stream.Dispose();
         }
     }

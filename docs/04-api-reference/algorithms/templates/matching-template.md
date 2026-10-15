@@ -25,7 +25,7 @@ related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 | 结果 | `ViewResultAlgType.AOI`、`ViewHandleMatching`、`AlgResultAoiDao` |
 | 明细表 | `t_scgd_algorithm_result_detail_aoi` |
 
-上述模板文件位于 `Engine/ColorVision.Engine/Templates/Matching/`。手动界面已使用通用配置宿主，不再有 `DisplayMatching.xaml` 或 `ExportMenuItemMatching` 入口；模板编辑见 [模板入口](./template-menu-entries.md)。
+上述模板文件位于 `Engine/ColorVision.Engine/Templates/Matching/`；模板编辑见 [模板入口](./template-menu-entries.md)。
 
 ## 持久参数与运行时输入
 

@@ -1,5 +1,4 @@
 #nullable disable
-using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -9,7 +8,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.POI;
 
-[STNode("/03_1 关注点")]
+[STNode("关注点", CategoryOrder = 310)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.POI.POIReviseNode")]
 public class POIReviseNode : CVBaseServerNodeHub
 {

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1822
 using ColorVision.Common.Utilities;
 using ColorVision.Recovery;
@@ -131,7 +132,7 @@ namespace ColorVision.Update
             await RunBusyAsync("正在加载快照...", async () =>
             {
                 await RefreshSnapshotsAsync().ConfigureAwait(true);
-                StatusText = "快照已加载";
+                StatusText = LocalizedText.Get("快照已加载");
             }).ConfigureAwait(true);
         }
 
@@ -141,7 +142,7 @@ namespace ColorVision.Update
             {
                 ApplicationSnapshotInfo snapshot = await _snapshotService.CreateUserSnapshotAsync().ConfigureAwait(true);
                 AddOrReplaceAndRevealSnapshot(snapshot);
-                StatusText = $"已创建 {snapshot.FileName}";
+                StatusText = LocalizedText.Format($"已创建 {snapshot.FileName}");
             }).ConfigureAwait(true);
         }
 
@@ -151,7 +152,7 @@ namespace ColorVision.Update
             {
                 ApplicationSnapshotInfo snapshot = await _snapshotService.CreateDefaultSnapshotAsync(force: true).ConfigureAwait(true);
                 AddOrReplaceAndRevealSnapshot(snapshot);
-                StatusText = "默认快照已重建";
+                StatusText = LocalizedText.Get("默认快照已重建");
             }).ConfigureAwait(true);
         }
 
@@ -160,7 +161,7 @@ namespace ColorVision.Update
             await RunBusyAsync("正在刷新快照...", async () =>
             {
                 await RefreshSnapshotsAsync(SelectedSnapshot?.FilePath).ConfigureAwait(true);
-                StatusText = "快照已刷新";
+                StatusText = LocalizedText.Get("快照已刷新");
             }).ConfigureAwait(true);
         }
 
@@ -181,7 +182,7 @@ namespace ColorVision.Update
             {
                 await _snapshotService.DeleteSnapshotAsync(selectedSnapshot).ConfigureAwait(true);
                 await RefreshSnapshotsAsync().ConfigureAwait(true);
-                StatusText = "快照已删除";
+                StatusText = LocalizedText.Get("快照已删除");
             }).ConfigureAwait(true);
         }
 
@@ -254,7 +255,7 @@ namespace ColorVision.Update
         {
             OpenFolderDialog dialog = new()
             {
-                Title = "选择自动存档位置",
+                Title = LocalizedText.Get("选择自动存档位置"),
                 Multiselect = false,
                 InitialDirectory = Directory.Exists(AutomaticSnapshotDirectory) ? AutomaticSnapshotDirectory : SnapshotDirectory,
             };
@@ -268,7 +269,7 @@ namespace ColorVision.Update
                 ConfigService.Instance.SaveConfigs();
                 OnPropertyChanged(nameof(AutomaticSnapshotDirectory));
                 await RefreshSnapshotsAsync().ConfigureAwait(true);
-                StatusText = "自动存档位置已更新";
+                StatusText = LocalizedText.Get("自动存档位置已更新");
             }
             catch (Exception ex)
             {
@@ -282,7 +283,7 @@ namespace ColorVision.Update
             ConfigService.Instance.SaveConfigs();
             OnPropertyChanged(nameof(AutomaticSnapshotDirectory));
             await RefreshSnapshotsAsync().ConfigureAwait(true);
-            StatusText = "已恢复默认自动存档位置";
+            StatusText = LocalizedText.Get("已恢复默认自动存档位置");
         }
 
         private void OpenAutomaticSnapshotDirectory_Click(object sender, RoutedEventArgs e)
@@ -337,7 +338,7 @@ namespace ColorVision.Update
                     return;
 
                 AddOrReplaceAndRevealSnapshot(snapshot);
-                StatusText = "自动存档已更新";
+                StatusText = LocalizedText.Get("自动存档已更新");
             }), DispatcherPriority.Background);
         }
 

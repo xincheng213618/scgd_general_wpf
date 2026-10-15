@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm;
-
 namespace ColorVision.UI.Tests;
 
 public sealed class LocalAlgorithmResultDirectoryTests

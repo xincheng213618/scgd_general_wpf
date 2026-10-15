@@ -1,13 +1,14 @@
+﻿using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Themes;
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Docking;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -17,14 +18,11 @@ using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
-    public partial class CopilotChatPanel : UserControl
+    public partial class CopilotChatPanel : UserControl, IDockPanelTitleActionProvider
     {
         private const double CompactSidebarThreshold = 960;
         private const double CompactComposerThreshold = 560;
         private const double ExpandedSidebarWidth = 232;
-        private const double ProfileSelectorPopupMainWidth = 230;
-        private const double ProfileSelectorPopupSubmenuWidth = 284;
-        private const double ProfileSelectorPopupShadowInset = 14;
         private const byte VirtualKeyLeftWindows = 0x5B;
         private const byte VirtualKeyH = 0x48;
         private const uint KeyEventKeyUp = 0x0002;
@@ -43,14 +41,24 @@ namespace ColorVision.Copilot
         private long _messageNavigationVersion;
         private DispatcherOperation? _messageNavigationOperation;
 
+        public IReadOnlyList<DockPanelTitleAction> TitleActions { get; }
+
         public CopilotChatPanel()
         {
+            TitleActions = new[]
+            {
+                new DockPanelTitleAction(new RelayCommand(
+                    _ => (DataContext as CopilotChatViewModel)?.OpenSettingsCommand.Execute(null),
+                    _ => DataContext is CopilotChatViewModel vm && vm.OpenSettingsCommand.CanExecute(null)),
+                    "\uE713", LocalizedText.Get("Copilot 设置")),
+            };
             InitializeComponent();
             BindPromptCaretToThemeResource(PromptTextBox);
             DataContextChanged += CopilotChatPanel_DataContextChanged;
             Loaded += CopilotChatPanel_Loaded;
             PreviewKeyDown += CopilotChatPanel_PreviewKeyDown;
             SizeChanged += CopilotChatPanel_SizeChanged;
+            ComposerShellBorder.SizeChanged += (_, _) => UpdateComposerLayout();
             Unloaded += CopilotChatPanel_Unloaded;
             DataObject.AddPastingHandler(PromptTextBox, PromptTextBox_Pasting);
             PromptTextBox.SelectionChanged += PromptTextBox_SelectionChanged;
@@ -431,6 +439,9 @@ namespace ColorVision.Copilot
             if (_attachedViewModel == null)
                 return;
 
+            if (e.PropertyName == nameof(CopilotChatViewModel.IsComposerFullAccess))
+                UpdateComposerLayout();
+
             if (e.PropertyName == nameof(CopilotChatViewModel.ComposerReferenceCaretIndex))
                 ApplyPromptCaret(_attachedViewModel.ComposerReferenceCaretIndex);
 
@@ -676,12 +687,24 @@ namespace ColorVision.Copilot
 
             var isCompactComposer = ActualWidth > 0 && ActualWidth < CompactComposerThreshold;
             ComposerShellBorder.Margin = isCompactComposer ? new Thickness(10, 0, 10, 10) : new Thickness(24, 0, 24, 14);
-            ComposerSelectorGrid.MaxWidth = isCompactComposer ? 132 : 180;
-            ProfileSelectorButton.MaxWidth = isCompactComposer ? 132 : 180;
-            ProfileSelectorButton.Padding = isCompactComposer ? new Thickness(2, 0, 0, 0) : new Thickness(4, 0, 2, 0);
-            AccessModeLabelTextBlock.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
+            UpdateComposerLayout();
 
             UpdateEmptyStateVisibility();
+        }
+
+        private void UpdateComposerLayout()
+        {
+            // Measure the actual composer; the conversation sidebar also consumes panel width.
+            var narrow = ComposerShellBorder.ActualWidth > 0 && ComposerShellBorder.ActualWidth < 500;
+            ComposerSelectorGrid.MaxWidth = narrow ? 230 : 260;
+            ProfileSelectorButton.MaxWidth = ComposerSelectorGrid.MaxWidth;
+            AccessModeLabelTextBlock.Visibility = Visibility.Visible;
+            Grid.SetRow(ComposerSelectorGrid, narrow ? 1 : 0);
+            Grid.SetColumn(ComposerSelectorGrid, narrow ? 0 : 4);
+            Grid.SetColumnSpan(ComposerSelectorGrid, narrow ? 5 : 1);
+            Grid.SetRow(ComposerActionStack, narrow ? 1 : 0);
+            ComposerSelectorGrid.Margin = new Thickness(8, narrow ? 8 : 0, 8, 0);
+            ComposerActionStack.Margin = new Thickness(0, narrow ? 8 : 0, 0, 0);
         }
 
         private void UpdateEmptyStateVisibility()

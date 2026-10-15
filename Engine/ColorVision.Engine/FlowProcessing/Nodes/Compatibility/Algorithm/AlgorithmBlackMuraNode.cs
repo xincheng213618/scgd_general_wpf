@@ -1,5 +1,4 @@
 #nullable disable
-using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
@@ -7,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_2 Algorithm")]
+[STNode("Algorithm", CategoryOrder = 320)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode")]
 public class AlgorithmBlackMuraNode : CVBaseServerNode
 {

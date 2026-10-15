@@ -67,6 +67,31 @@ public sealed class AlgorithmResultOverlayTests
     }
 
     [Fact]
+    public void GridRendererUsesMeasuredCoordinatesAndRejectsIncompleteOrUnorderedPoints()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using DrawCanvas canvas = new();
+            DrawEditorContext context = new(canvas, new Zoombox());
+            Point[] points =
+            [
+                new(10, 20), new(60, 15), new(110, 20),
+                new(5, 70), new(60, 70), new(115, 70),
+                new(10, 120), new(60, 125), new(110, 120)
+            ];
+            GridDistortionOverlayRenderer.AppendLines(context, points, 3, 3, AlgorithmResultOverlay.GridDistortionTag);
+            Assert.Equal(16, canvas.Visuals.OfType<DVLine>().Count());
+            Assert.Contains(canvas.Visuals.OfType<DVLine>(), line => line.Points.SequenceEqual([points[0], points[1]]));
+            AlgorithmResultOverlay.ClearTagged(context, AlgorithmResultOverlay.GridDistortionTag);
+
+            GridDistortionOverlayRenderer.AppendLines(context, points.Take(8).ToArray(), 3, 3, AlgorithmResultOverlay.GridDistortionTag);
+            (points[0], points[1]) = (points[1], points[0]);
+            GridDistortionOverlayRenderer.AppendLines(context, points, 3, 3, AlgorithmResultOverlay.GridDistortionTag);
+            Assert.Empty(canvas.Visuals.OfType<DVLine>());
+        });
+    }
+
+    [Fact]
     public void FovLabelCirclesFollowTheResultOverlayFontSize()
     {
         WpfTestHost.Invoke(() =>

@@ -2,7 +2,6 @@
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
-using ColorVision.Engine.Services;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -11,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {

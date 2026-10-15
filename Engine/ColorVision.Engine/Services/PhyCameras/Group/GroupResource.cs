@@ -1,7 +1,6 @@
 #pragma warning disable CA1863,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using Newtonsoft.Json;
@@ -186,28 +185,33 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             if (!File.Exists(srcFile))
                 return;
 
-            string desDir = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg");
-            try
-            {
-                if (!Directory.Exists(desDir))
-                    Directory.CreateDirectory(desDir);
-            }
+            try { ImportCalibrationFile(typeName, srcFile, overwrite: true); }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.CreateDirectoryFailed, ex.Message), Properties.Resources.CalibrationFileManagement);
-                return;
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+
+        /// <summary>Registers a generated or imported file and selects it in this group. Generated files never replace an existing camera file.</summary>
+        internal CalibrationResource? ImportCalibrationFile(string slotKey, string srcFile, bool overwrite = false)
+        {
+            if (!CalibrationSlotDefinitions.TryGet(slotKey, out var slot)) throw new ArgumentException("未知校正类型。", nameof(slotKey));
+            if (this.GetAncestor<PhyCamera>() is not PhyCamera phyCamera) throw new InvalidOperationException(Properties.Resources.PhysicalCameraNotFound);
+            if (!File.Exists(srcFile)) throw new FileNotFoundException("找不到生成的校正文件。", srcFile);
+            var serviceType = slot.ServiceType;
+            string desDir = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg");
+            Directory.CreateDirectory(desDir);
 
             string fileName = Path.GetFileName(srcFile);
             string desFile = Path.Combine(desDir, fileName);
-            try
+            if (!string.Equals(Path.GetFullPath(srcFile), Path.GetFullPath(desFile), StringComparison.OrdinalIgnoreCase))
             {
-                File.Copy(srcFile, desFile, true);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.CopyFileFailed, ex.Message), Properties.Resources.CalibrationFileManagement);
-                return;
+                if (!overwrite && File.Exists(desFile))
+                {
+                    fileName = Path.GetFileNameWithoutExtension(fileName) + "_" + Guid.NewGuid().ToString("N")[..8] + Path.GetExtension(fileName);
+                    desFile = Path.Combine(desDir, fileName);
+                }
+                File.Copy(srcFile, desFile, overwrite);
             }
 
             string title = Path.GetFileNameWithoutExtension(fileName);
@@ -250,7 +254,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 if (ret < 0 || sysResourceModel.Id == -1 || sysResourceModel.Id == 0)
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SaveResourceRecordFailed, Properties.Resources.CalibrationFileManagement);
-                    return;
+                    return null;
                 }
 
                 var saved = SysResourceDao.Instance.GetById(sysResourceModel.Id) ?? sysResourceModel;
@@ -266,6 +270,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             // 赋值到当前组的对应槽位
             slot.GroupSetter(this, calibrationResource);
             Save();
+            return calibrationResource;
         }
 
         public override void Delete()

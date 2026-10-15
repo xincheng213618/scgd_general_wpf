@@ -9,7 +9,7 @@ using ColorVision.Engine.Properties;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     [LocalizedDisplayName(nameof(Resources.AlgorithmViewConfig))]
-    public class ViewAlgorithmConfig : ViewConfigBase, IConfig
+    public class ViewAlgorithmConfig : ResultViewConfig, IConfig
     {
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
 

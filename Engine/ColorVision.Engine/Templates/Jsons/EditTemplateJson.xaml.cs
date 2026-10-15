@@ -1,5 +1,5 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1805,CS8601,CS8604,CS8625
-using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Utilities;
 using System;
@@ -159,7 +159,7 @@ namespace ColorVision.Engine.Templates.Jsons
                     if (!propertyEditor.CanEdit) _isInPropertyEditorMode = false;
                 }
                 EditorTitleText.Text = GetCurrentTemplateName();
-                EditorSubtitleText.Text = _schemaInfo == null ? "模板参数" : $"{_schemaInfo.Title}  ·  {_schemaInfo.Code}";
+                EditorSubtitleText.Text = _schemaInfo == null ? LocalizedText.Get("模板参数") : $"{_schemaInfo.Title}  ·  {_schemaInfo.Code}";
                 EditorSubtitleText.ToolTip = _schemaInfo?.SchemaPath;
                 UpdateEditorMode();
                 UpdateStatus();

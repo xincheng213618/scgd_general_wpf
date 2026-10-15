@@ -79,7 +79,7 @@ namespace ColorVision.FloatingBall
             if (dialog.CodexLaunchStarted)
             {
                 BeginCodexCreationWatch(codexBaselineIds);
-                StatusText.Text = "Codex 已打开并预填创建任务。发送任务后，本页会自动发现并选中新宠物。";
+                StatusText.Text = DesktopPetText.CodexOpened;
                 return;
             }
 
@@ -91,12 +91,12 @@ namespace ColorVision.FloatingBall
                 string.Equals(item.Asset.Id, dialog.CreatedAssetId, StringComparison.OrdinalIgnoreCase));
             if (createdOption == null)
             {
-                StatusText.Text = "素材已经复制，但刷新后未能读取。请打开素材目录检查 pet.json。";
+                StatusText.Text = DesktopPetText.ImportNotFound;
                 return;
             }
 
             SelectOption(createdOption);
-            StatusText.Text = $"已创建并选中“{dialog.CreatedDisplayName ?? createdOption.DisplayName}”。";
+            StatusText.Text = DesktopPetText.Format("CreatedSelected", dialog.CreatedDisplayName ?? createdOption.DisplayName);
         }
 
         private void SelectPetButton_Click(object sender, RoutedEventArgs e)
@@ -121,8 +121,8 @@ namespace ColorVision.FloatingBall
         private void UpdateWakePetButton()
         {
             WakePetButton.Content = MainWindowConfig.Instance.OpenFloatingBall
-                ? "收起宠物"
-                : "唤醒宠物";
+                ? DesktopPetText.Hide
+                : DesktopPetText.Wake;
         }
 
         private void OpenPetFolderButton_Click(object sender, RoutedEventArgs e)
@@ -148,7 +148,7 @@ namespace ColorVision.FloatingBall
 
             _isRefreshingAssets = true;
             RefreshButton.IsEnabled = false;
-            StatusText.Text = "正在查找 ColorVision、Codex 和自定义宠物素材…";
+            StatusText.Text = DesktopPetText.SearchingAll;
             try
             {
                 var catalog = DesktopPetAssetCatalog.Shared;
@@ -172,12 +172,12 @@ namespace ColorVision.FloatingBall
                 var customAssetCount = _viewModel.Assets.Count(item =>
                     item.Asset.Source is DesktopPetAssetSource.CodexCustom or DesktopPetAssetSource.ColorVisionCustom);
                 StatusText.Text = codexAssetCount > 0
-                    ? $"已加载 {_viewModel.Assets.Count} 个宠物，其中 {codexAssetCount} 个来自本机 Codex，{customAssetCount} 个来自自定义素材包。"
-                    : $"已加载 {_viewModel.Assets.Count} 个宠物。未检测到可读取的 Codex 安装素材；自定义素材仍可使用相同的 pet.json 格式。";
+                    ? DesktopPetText.Format("Loaded", _viewModel.Assets.Count, codexAssetCount, customAssetCount)
+                    : DesktopPetText.Format("LoadedWithoutCodex", _viewModel.Assets.Count);
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"素材刷新失败：{ex.Message}";
+                StatusText.Text = DesktopPetText.Format("RefreshFailed", ex.Message);
             }
             finally
             {
@@ -236,7 +236,7 @@ namespace ColorVision.FloatingBall
             if (DateTime.UtcNow >= _codexCreationWatchExpiresUtc)
             {
                 StopCodexCreationWatch(clearState: true);
-                StatusText.Text = "尚未发现新的 Codex 宠物。完成创建后可点击“刷新”加载。";
+                StatusText.Text = DesktopPetText.WatchExpired;
                 return;
             }
 
@@ -258,7 +258,7 @@ namespace ColorVision.FloatingBall
 
             StopCodexCreationWatch(clearState: true);
             SelectOption(createdOption);
-            StatusText.Text = $"Codex 已创建并自动选中“{createdOption.DisplayName}”。";
+            StatusText.Text = DesktopPetText.Format("CodexCreatedSelected", createdOption.DisplayName);
         }
 
         private void SelectOption(DesktopPetAssetOption option)
@@ -298,7 +298,7 @@ namespace ColorVision.FloatingBall
             catch (Exception ex)
             {
                 option.CanSelect = false;
-                option.Diagnostic = $"素材不可用：{ex.Message}";
+                option.Diagnostic = DesktopPetText.Format("Unavailable", ex.Message);
             }
         }
     }
@@ -319,9 +319,22 @@ namespace ColorVision.FloatingBall
 
         public DesktopPetAsset Asset { get; }
 
-        public string DisplayName => Asset.DisplayName;
+        public string DisplayName => Asset.Id == DesktopPetAssetCatalog.DefaultAssetId ? DesktopPetText.XiaocaiName : Asset.DisplayName;
 
-        public string Description => Asset.Description;
+        public string Description => Asset.Id switch
+        {
+            DesktopPetAssetCatalog.DefaultAssetId => DesktopPetText.XiaocaiDescription,
+            "codex-builtin:codex" => DesktopPetText.CodexDescription,
+            "codex-builtin:dewey" => DesktopPetText.DeweyDescription,
+            "codex-builtin:fireball" => DesktopPetText.FireballDescription,
+            "codex-builtin:hoots" => DesktopPetText.HootsDescription,
+            "codex-builtin:rocky" => DesktopPetText.RockyDescription,
+            "codex-builtin:seedy" => DesktopPetText.SeedyDescription,
+            "codex-builtin:stacky" => DesktopPetText.StackyDescription,
+            "codex-builtin:bsod" => DesktopPetText.BsodDescription,
+            "codex-builtin:null-signal" => DesktopPetText.NullSignalDescription,
+            _ => Asset.Description,
+        };
 
         public string SourceLabel => Asset.SourceLabel;
 
@@ -358,7 +371,7 @@ namespace ColorVision.FloatingBall
         }
         private bool _canSelect = true;
 
-        public string SelectButtonText => IsSelected ? "已选择" : "选择";
+        public string SelectButtonText => IsSelected ? DesktopPetText.Selected : DesktopPetText.Select;
 
         public string Diagnostic { get => _diagnostic; set { _diagnostic = value; OnPropertyChanged(); } }
         private string _diagnostic = string.Empty;

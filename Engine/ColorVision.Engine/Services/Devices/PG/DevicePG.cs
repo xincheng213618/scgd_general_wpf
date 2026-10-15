@@ -2,10 +2,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.PG.Templates;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes.Controls;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.PG

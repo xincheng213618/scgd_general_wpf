@@ -175,12 +175,14 @@ namespace ColorVision.Copilot
                     messages,
                     options,
                     timeoutCancellation.Token).ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
-                if (timeoutCancellation.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested || timeoutCancellation.IsCancellationRequested)
                 {
-                    throw new CopilotProviderInactivityException(
-                        CopilotProviderInactivityPhase.FirstResponse,
-                        _firstResponseTimeout);
+                    Exception exception = cancellationToken.IsCancellationRequested
+                        ? new OperationCanceledException(cancellationToken)
+                        : new CopilotProviderInactivityException(CopilotProviderInactivityPhase.FirstResponse, _firstResponseTimeout);
+                    CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception,
+                        CopilotTokenBudgetChatClient.ExtractResponseUsage(response));
+                    throw exception;
                 }
                 return response;
             }
@@ -192,9 +194,12 @@ namespace ColorVision.Copilot
                     && !cancellationToken.IsCancellationRequested
                     && timeoutCancellation.IsCancellationRequested)
             {
-                throw new CopilotProviderInactivityException(
+                var timeoutException = new CopilotProviderInactivityException(
                     CopilotProviderInactivityPhase.FirstResponse,
                     _firstResponseTimeout);
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(timeoutException,
+                    CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception));
+                throw timeoutException;
             }
         }
 
@@ -238,7 +243,10 @@ namespace ColorVision.Copilot
                             && !cancellationToken.IsCancellationRequested
                             && timeoutCancellation.IsCancellationRequested)
                     {
-                        throw CreateTimeout(receivedContent);
+                        var timeoutException = CreateTimeout(receivedContent);
+                        CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(timeoutException,
+                            CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception));
+                        throw timeoutException;
                     }
                     finally
                     {
@@ -246,14 +254,23 @@ namespace ColorVision.Copilot
                             timeoutCancellation.CancelAfter(Timeout.InfiniteTimeSpan);
                     }
 
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (timeoutCancellation.IsCancellationRequested)
-                        throw CreateTimeout(receivedContent);
+                    var update = hasNext ? enumerator.Current : null;
+                    if (cancellationToken.IsCancellationRequested || timeoutCancellation.IsCancellationRequested)
+                    {
+                        Exception exception = cancellationToken.IsCancellationRequested
+                            ? new OperationCanceledException(cancellationToken)
+                            : CreateTimeout(receivedContent);
+                        if (update?.FinishReason != null)
+                        {
+                            CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception,
+                                CopilotTokenBudgetChatClient.ExtractUsage(update.Contents));
+                        }
+                        throw exception;
+                    }
                     if (!hasNext)
                         yield break;
 
-                    var update = enumerator.Current;
-                    if (CopilotProviderResponseContent.HasProgress(update))
+                    if (CopilotProviderResponseContent.HasProgress(update!))
                     {
                         receivedContent = true;
                         remaining = _streamingUpdateTimeout;
@@ -264,7 +281,7 @@ namespace ColorVision.Copilot
                             ? remaining - stopwatch.Elapsed
                             : TimeSpan.Zero;
                     }
-                    yield return update;
+                    yield return update!;
                 }
             }
         }

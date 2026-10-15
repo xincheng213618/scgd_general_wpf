@@ -35,6 +35,36 @@ public sealed class ServiceHostProcessTerminationTests : IDisposable
         Assert.False(other.HasExited);
     }
 
+    [Fact]
+    public void ForceCloseEarlierApplicationTerminatesOnlyOlderProcessesFromTheCallersInstallation()
+    {
+        Process earlier = StartProbe(Path.Combine("InstallationA", "ColorVision.exe"));
+        Process otherInstallation = StartProbe(Path.Combine("InstallationB", "ColorVision.exe"));
+        Thread.Sleep(100);
+        Process caller = StartProbe(Path.Combine("InstallationA", "ColorVision.exe"));
+        Thread.Sleep(100);
+        Process newer = StartProbe(Path.Combine("InstallationA", "ColorVision.exe"));
+        var callerContext = new ServiceHostRequestContext
+        {
+            ProcessId = caller.Id,
+            ProcessPath = caller.StartInfo.FileName,
+            UserSid = "test-caller",
+            ProcessSha256 = "test-hash"
+        };
+
+        ServiceHostResponse response = SendAuthorized(new ServiceHostRequest
+        {
+            Command = "process-terminate-earlier-application"
+        }, callerContext);
+
+        Assert.True(response.Success, response.ToDisplayText());
+        Assert.Equal(1, response.Data?["terminatedCount"]?.Value<int>());
+        Assert.True(earlier.HasExited);
+        Assert.False(caller.HasExited);
+        Assert.False(newer.HasExited);
+        Assert.False(otherInstallation.HasExited);
+    }
+
     [Theory]
     [InlineData("birth", "process_identity_mismatch")]
     [InlineData("path", "process_identity_mismatch")]
@@ -205,17 +235,19 @@ public sealed class ServiceHostProcessTerminationTests : IDisposable
         }),
     };
 
-    private ServiceHostResponse SendAuthorized(ServiceHostRequest request)
+    private ServiceHostResponse SendAuthorized(ServiceHostRequest request) => SendAuthorized(request, _context);
+
+    private ServiceHostResponse SendAuthorized(ServiceHostRequest request, ServiceHostRequestContext context)
     {
         ServiceHostResponse ticket = _handler.Handle(new ServiceHostRequest
         {
             Command = "issue-broker-ticket",
             OperationId = request.OperationId,
             Data = JObject.FromObject(new { command = request.Command }),
-        }, _context);
+        }, context);
         Assert.True(ticket.Success, ticket.ToDisplayText());
         request.BrokerTicket = ticket.Data!["ticket"]!.Value<string>();
-        return _handler.Handle(request, _context);
+        return _handler.Handle(request, context);
     }
 
     private Process StartProbe(string fileName)

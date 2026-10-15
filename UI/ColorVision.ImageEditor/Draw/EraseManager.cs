@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS0414,CS8625
+﻿using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+#pragma warning disable CS0414,CS8625
 using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
@@ -144,7 +145,7 @@ namespace ColorVision.ImageEditor.Draw
                         DrawCanvas.RemoveVisual(visual);
                 })
             {
-                Header = "移除",
+                Header = LocalizedText.Get("移除"),
             });
         }
 

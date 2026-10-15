@@ -35,8 +35,8 @@
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}"  HorizontalAlignment="Left" />
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,2">
-                        <ComboBox x:Name="CB_AlgorithmTypes" Width="130" Margin="0,0,5,0" Style="{StaticResource ComboBox.Small}" />
-                        <ComboBox x:Name="CB_Algorithms" DisplayMemberPath="Name" Style="{StaticResource ComboBox.Small}" />
+                        <ComboBox x:Name="CB_AlgorithmTypes" Width="100" Margin="0,0,5,0" DisplayMemberPath="Value" SelectedValuePath="Key" ToolTip="{Binding SelectedItem.Value, RelativeSource={RelativeSource Self}}" Style="{StaticResource ComboBox.Small}" />
+                        <ComboBox x:Name="CB_Algorithms" DisplayMemberPath="DisplayName" ToolTip="{Binding SelectedItem.DisplayName, RelativeSource={RelativeSource Self}}" Style="{StaticResource ComboBox.Small}" />
                     </DockPanel>
                     <StackPanel x:Name="CB_StackPanel" />
                 </StackPanel>

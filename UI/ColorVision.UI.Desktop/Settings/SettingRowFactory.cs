@@ -1,7 +1,5 @@
 using ColorVision.Common.MVVM;
-using ColorVision.UI.Properties;
 using log4net;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Windows;

@@ -27,6 +27,7 @@ namespace ImageProjector
     /// </summary>
     public class ImageProjectorItem : ViewModelBase
     {
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); OnPropertyChanged(nameof(FileName)); } }
         private string _FilePath = string.Empty;
 

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.UI.DisplayText;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
@@ -53,7 +54,7 @@ public partial class JsonPropertyEditorControl : UserControl
             _groups.Clear();
             PropertyPanel.Children.Clear();
             GroupSelector.Items.Clear();
-            GroupSelector.Items.Add(new ComboBoxItem { Content = "全部分组" });
+            GroupSelector.Items.Add(new ComboBoxItem { Content = LocalizedText.Get("全部分组") });
             GroupSelector.SelectedIndex = 0;
             _document = ParseToken(json) as JObject;
             if (_document == null)
@@ -68,13 +69,13 @@ public partial class JsonPropertyEditorControl : UserControl
                 GroupSelector.Items.Add(new ComboBoxItem { Content = $"{grouping.First().GroupName}  ·  {grouping.Count()}", Tag = grouping.Key });
             if (hadNavigation && GroupSelector.Items.OfType<ComboBoxItem>().FirstOrDefault(item => Equals(item.Tag, previousGroup)) is { } previousSelection)
                 GroupSelector.SelectedItem = previousSelection;
-            DetailPathText.Text = _schema?.Title ?? "参数说明";
+            DetailPathText.Text = _schema?.Title ?? LocalizedText.Get("参数说明");
             DetailText.Text = _schema == null
-                ? "选择参数查看路径。未提供字段说明时，仍可编辑现有参数。"
-                : "选择参数查看完整说明、范围和示例。";
+                ? LocalizedText.Get("选择参数查看路径。未提供字段说明时，仍可编辑现有参数。")
+                : LocalizedText.Get("选择参数查看完整说明、范围和示例。");
             DetailPathText.ToolTip = _schema?.SourceSummary;
             if (_document.Count == 0)
-                PropertyPanel.Children.Add(new TextBlock { Text = "对象中还没有参数，请在 JSON 视图添加。", Margin = new Thickness(0, 16, 0, 16) });
+                PropertyPanel.Children.Add(new TextBlock { Text = LocalizedText.Get("对象中还没有参数，请在 JSON 视图添加。"), Margin = new Thickness(0, 16, 0, 16) });
         }
         catch (JsonException ex)
         {
@@ -138,7 +139,7 @@ public partial class JsonPropertyEditorControl : UserControl
         editor.GotKeyboardFocus += (_, _) =>
         {
             DetailPathText.Text = path;
-            DetailText.Text = schema?.BuildHint(path) ?? $"JSON 路径：{path}";
+            DetailText.Text = schema?.BuildHint(path) ?? LocalizedText.Format($"JSON 路径：{path}");
         };
         editorHost.Children.Add(editor);
         editorHost.Children.Add(errorText);
@@ -166,7 +167,7 @@ public partial class JsonPropertyEditorControl : UserControl
             }
             if (!found)
             {
-                var current = new ComboBoxItem { Content = $"{token}（当前值）", IsEnabled = false };
+                var current = new ComboBoxItem { Content = LocalizedText.Format($"{token}（当前值）"), IsEnabled = false };
                 combo.Items.Insert(0, current);
                 combo.SelectedItem = current;
             }
@@ -179,9 +180,9 @@ public partial class JsonPropertyEditorControl : UserControl
         }
         if (token.Type == JTokenType.Boolean)
         {
-            var check = new CheckBox { IsChecked = token.Value<bool>(), Content = token.Value<bool>() ? "已启用" : "已关闭", MinHeight = 30, VerticalContentAlignment = VerticalAlignment.Center };
-            check.Checked += (_, _) => { check.Content = "已启用"; UpdateValue(path, new JValue(true)); };
-            check.Unchecked += (_, _) => { check.Content = "已关闭"; UpdateValue(path, new JValue(false)); };
+            var check = new CheckBox { IsChecked = token.Value<bool>(), Content = token.Value<bool>() ? LocalizedText.Get("已启用") : LocalizedText.Get("已关闭"), MinHeight = 30, VerticalContentAlignment = VerticalAlignment.Center };
+            check.Checked += (_, _) => { check.Content = LocalizedText.Get("已启用"); UpdateValue(path, new JValue(true)); };
+            check.Unchecked += (_, _) => { check.Content = LocalizedText.Get("已关闭"); UpdateValue(path, new JValue(false)); };
             return check;
         }
         if (token is JArray booleans && booleans.Count > 0 && booleans.All(item => item.Type == JTokenType.Boolean))
@@ -203,7 +204,7 @@ public partial class JsonPropertyEditorControl : UserControl
             Text = token.Type == JTokenType.String ? token.Value<string>() ?? "" : token.ToString(Formatting.None),
             MinHeight = 30, Padding = new Thickness(8, 4, 8, 4), VerticalContentAlignment = VerticalAlignment.Center,
             TextAlignment = token.Type is JTokenType.Integer or JTokenType.Float ? TextAlignment.Right : TextAlignment.Left,
-            TextWrapping = TextWrapping.Wrap, ToolTip = token is JArray ? "使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。" : schema?.BuildHint(path)
+            TextWrapping = TextWrapping.Wrap, ToolTip = token is JArray ? LocalizedText.Get("使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。") : schema?.BuildHint(path)
         };
         box.SetResourceReference(StyleProperty, "TextBox.Small");
         if (token.Type is JTokenType.Integer or JTokenType.Float)
@@ -333,8 +334,8 @@ public partial class JsonPropertyEditorControl : UserControl
             PropertyPanel.Children.Add(expander);
         }
         if (entries.Count == 0 && CanEdit)
-            PropertyPanel.Children.Add(new TextBlock { Text = _entries.Count == 0 ? "对象中还没有参数，请在 JSON 视图添加。" : "没有找到匹配参数，试试字段名、说明或值。", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 20, 0, 20), Opacity = .65 });
-        ResultCountText.Text = $"{entries.Count} / {_entries.Count} 项";
+            PropertyPanel.Children.Add(new TextBlock { Text = _entries.Count == 0 ? LocalizedText.Get("对象中还没有参数，请在 JSON 视图添加。") : LocalizedText.Get("没有找到匹配参数，试试字段名、说明或值。"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 20, 0, 20), Opacity = .65 });
+        ResultCountText.Text = LocalizedText.Format($"{entries.Count} / {_entries.Count} 项");
         GroupSelector.IsEnabled = query.Length == 0;
     }
 
@@ -349,7 +350,7 @@ public partial class JsonPropertyEditorControl : UserControl
         if (!string.IsNullOrWhiteSpace(description))
             labels.Children.Add(new TextBlock { Text = description, FontSize = 12, Opacity = .65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 10, 0) });
         header.Children.Add(labels);
-        var counter = new TextBlock { Text = $"{count} 项", Opacity = .55, VerticalAlignment = VerticalAlignment.Center };
+        var counter = new TextBlock { Text = LocalizedText.Format($"{count} 项"), Opacity = .55, VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(counter, 1);
         header.Children.Add(counter);
         return header;

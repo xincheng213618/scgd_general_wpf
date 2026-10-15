@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8604
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
@@ -8,6 +9,7 @@ using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
+using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -305,7 +307,7 @@ namespace ColorVision.Engine.Templates.Jsons
             }
             catch (JsonException ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板文件时出错: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"解析模板文件时出错: {ex.Message}"), "ColorVision");
                 return false;
             }
         }
@@ -321,7 +323,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (dictemplate == null)
                 {
                     log.Warn("模板字典未找到，ID=" + TemplateDicId);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"模板字典未找到，ID={TemplateDicId}", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"模板字典未找到，ID={TemplateDicId}"), "ColorVision");
                     return;
                 }
 
@@ -357,102 +359,20 @@ namespace ColorVision.Engine.Templates.Jsons
                     string msg = $"数据库创建{typeof(T)}模板失败";
                     MessageBox.Show(Application.Current.GetActiveWindow(), msg, "ColorVision");
                     log.Error(msg);
-
-                    if (GetMysqlCommand() is IMysqlCommand mysqlCommand)
-                    {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                        {
-                            BatchSqlConsumer.ExecuteAfterCommit(mysqlCommand.GetRecover(), () => log.Warn($"数据库{typeof(T)}相关项已重置"));
-                        }
-                    }
                 }
-            }
-            catch (BatchExecuteNonQueryException ex)
-            {
-                BatchSqlConsumer.ReportUiFailure(log, $"重置数据库{typeof(T)}相关项", ex);
             }
             catch (Exception ex)
             {
                 log.Error("模板创建异常：" + ex.Message, ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), "模板创建发生异常：" + ex.Message, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("模板创建发生异常：") + ex.Message, "ColorVision");
             }
         }
 
         public override bool SwapTemplateOrder(int index1, int index2)
-        {
-            if (index1 < 0 || index1 >= TemplateParams.Count || index2 < 0 || index2 >= TemplateParams.Count)
-                return false;
+            => TemplateOrderSwap.SwapAsync(this, TemplateParams, index1, index2, false).GetAwaiter().GetResult();
 
-            if (index1 == index2)
-                return true;
-
-            try
-            {
-                var template1 = TemplateParams[index1];
-                var template2 = TemplateParams[index2];
-
-                // Get the IDs from database
-                int id1 = template1.Value.Id;
-                int id2 = template2.Value.Id;
-
-                // Swap the IDs in the database using a three-step process to avoid constraint violations
-                // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk
-                int tempId = int.MinValue + Math.Abs((id1 ^ id2).GetHashCode());
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                // Step 1: Move template1 to temporary ID
-                var modMaster1 = Db.Queryable<ModMasterModel>().InSingle(id1);
-                if (modMaster1 != null)
-                {
-                    modMaster1.Id = tempId;
-                    Db.Updateable(modMaster1).ExecuteCommand();
-                }
-
-                var details1 = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id1).ToList();
-                foreach (var detail in details1)
-                {
-                    detail.Pid = tempId;
-                }
-                if (details1.Count > 0)
-                    Db.Updateable(details1).ExecuteCommand();
-
-                // Step 2: Move template2 to id1
-                var modMaster2 = Db.Queryable<ModMasterModel>().InSingle(id2);
-                if (modMaster2 != null)
-                {
-                    modMaster2.Id = id1;
-                    Db.Updateable(modMaster2).ExecuteCommand();
-                }
-
-
-                // Step 3: Move template1 from temporary to id2
-                modMaster1 = Db.Queryable<ModMasterModel>().InSingle(tempId);
-                if (modMaster1 != null)
-                {
-                    modMaster1.Id = id2;
-                    Db.Updateable(modMaster1).ExecuteCommand();
-                }
-
-
-                // Update the in-memory values
-                template1.Value.Id = id2;
-                template1.Value.TemplateJsonModel.Id = id2;
-                template2.Value.Id = id1;
-                template2.Value.TemplateJsonModel.Id = id1;
-
-                // Swap the items in the ObservableCollection using proper swap
-                var temp = TemplateParams[index1];
-                TemplateParams[index1] = TemplateParams[index2];
-                TemplateParams[index2] = temp;
-
-                return true;
-            }
-            catch (Exception)
-            {
-                // Let the caller handle the error display
-                return false;
-            }
-        }
+        public override Task<bool> SwapTemplateOrderAsync(int index1, int index2)
+            => TemplateOrderSwap.SwapAsync(this, TemplateParams, index1, index2, true);
     }
 
 

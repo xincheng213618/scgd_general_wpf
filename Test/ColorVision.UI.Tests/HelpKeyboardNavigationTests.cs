@@ -41,7 +41,7 @@ public sealed class HelpKeyboardNavigationTests
                     Assert.Equal("网络通信(_C)", entries[6].Header);
                 else if (cultureName == "en")
                 {
-                    Assert.Equal(["Service _manager", "Ser_vice logs", "Product _tour", "ColorVision _Service Host",
+                    Assert.Equal(["Service _manager", "Ser_vice logs", "Interface _tour", "ColorVision _Service Host",
                         "Send _feedback...", "Market_place", "Network _communication", "Check for _updates",
                         "_Log", "_Native logs", "_About ColorVision"], entries.Select(entry => entry.Header));
                     Assert.Equal("_Tools", ColorVision.UI.Properties.Resources.MenuTool);

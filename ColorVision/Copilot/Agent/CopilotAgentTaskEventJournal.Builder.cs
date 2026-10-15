@@ -2,9 +2,6 @@ using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 
 namespace ColorVision.Copilot
 {
@@ -13,11 +10,15 @@ namespace ColorVision.Copilot
         private readonly object _syncRoot = new();
         private readonly List<CopilotAgentTaskEvent> _events = new();
         private long _nextSequence;
+        private CopilotAgentSessionResumeRestriction _trimmedSessionResumeRestriction;
 
         public CopilotAgentTaskEventJournalBuilder(CopilotAgentTaskEventJournalSnapshot? previous = null, string? runId = null)
         {
             if (CopilotAgentTaskEventJournal.TryCreateSnapshot(previous, out var previousSnapshot))
+            {
                 _events.AddRange(previousSnapshot.Events.TakeLast(CopilotAgentTaskEventJournal.MaxEvents));
+                _trimmedSessionResumeRestriction = previousSnapshot.TrimmedSessionResumeRestriction;
+            }
             _nextSequence = _events.Count == 0 ? 1 : _events.Max(item => item.Sequence) + 1;
             RunId = CopilotAgentTaskEventIds.IsKey(runId, "run", 32) ? runId! : CopilotAgentTaskEventIds.CreateRunId();
         }
@@ -50,6 +51,7 @@ namespace ColorVision.Copilot
                         $"Agent run {RunId} already started with different background command evidence.");
                 }
 
+                _trimmedSessionResumeRestriction = CopilotAgentSessionResumeRestriction.None;
                 Append(
                     CopilotAgentTaskEventType.RunStarted,
                     RunId,
@@ -222,7 +224,8 @@ namespace ColorVision.Copilot
 
             var implicitApproval = decisionSourceKind is
                 CopilotFrameworkApprovalDecisionSource.ExecutionPolicy
-                or CopilotFrameworkApprovalDecisionSource.TemporaryGrant;
+                or CopilotFrameworkApprovalDecisionSource.TemporaryGrant
+                or CopilotFrameworkApprovalDecisionSource.ConversationFullAccess;
             if (implicitApproval && !approved)
             {
                 throw new ArgumentException(
@@ -261,7 +264,9 @@ namespace ColorVision.Copilot
                         ? source.Length == 0 ? "approved" : "approved:" + source
                         : "denied",
                     approved
-                        ? decisionSourceKind == CopilotFrameworkApprovalDecisionSource.AutomaticReview
+                        ? decisionSourceKind == CopilotFrameworkApprovalDecisionSource.ConversationFullAccess
+                            ? "Protected tool call was approved by the conversation's full access setting."
+                            : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.AutomaticReview
                             ? "Protected tool call was approved by automatic permission review."
                             : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.TemporaryGrant
                                 ? "Protected tool call was approved by the temporary task grant."
@@ -599,6 +604,7 @@ namespace ColorVision.Copilot
                 var candidate = new CopilotAgentTaskEventJournalSnapshot
                 {
                     Events = _events.ToArray(),
+                    TrimmedSessionResumeRestriction = _trimmedSessionResumeRestriction,
                 };
                 if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(candidate, out var snapshot))
                     throw new InvalidOperationException("Agent task event journal could not be frozen safely.");
@@ -918,7 +924,16 @@ namespace ColorVision.Copilot
                         == CopilotAgentTaskEventType.BackgroundCommandOutputObserved);
                 if (index < 0)
                     index = FindOldestNonAuditSpineEvent();
-                _events.RemoveAt(index < 0 ? 0 : index);
+                index = index < 0 ? 0 : index;
+                var removed = _events[index];
+                if (string.Equals(removed.RunId, RunId, StringComparison.Ordinal))
+                {
+                    // Losing the pairing evidence cannot establish that an operation settled.
+                    _trimmedSessionResumeRestriction = CopilotAgentTaskEventJournal.MergeSessionResumeRestrictions(
+                        _trimmedSessionResumeRestriction,
+                        CopilotAgentTaskEventJournal.GetToolResumeRestriction(_events, removed));
+                }
+                _events.RemoveAt(index);
             }
         }
 

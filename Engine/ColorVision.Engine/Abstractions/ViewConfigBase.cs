@@ -16,6 +16,7 @@ namespace ColorVision.Engine
         /// <summary>
          /// 获取用于编辑属性的命令
          /// </summary>
+        [Browsable(false)]
         public RelayCommand EditCommand { get; set; }
 
         public ViewConfigBase()

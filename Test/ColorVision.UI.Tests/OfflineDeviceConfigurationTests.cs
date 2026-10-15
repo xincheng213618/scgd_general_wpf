@@ -1,14 +1,88 @@
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Services.Terminal;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhySpectrums;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class OfflineDeviceConfigurationTests
 {
+    [Fact]
+    public void TerminalRenamePersistsOnlyNameAndPreservesUnknownConfiguration()
+    {
+        WithStore(store =>
+        {
+            var previousResources = SysResourceDao.Instance;
+            try
+            {
+                SysResourceDao.Instance = new SysResourceDao(store, () => false);
+                const string originalJson = """{"Name":"Original","Code":"SVR.Camera.Default","ServiceType":1,"SendTopic":"camera/CMD","SubscribeTopic":"camera/STATUS","ServiceToken":"token","Future":{"Timestamp":"2026-10-02T12:34:56.1234567+08:00","Enabled":true}}""";
+                var resource = new SysResourceModel { Name = "Original", Code = "SVR.Camera.Default", Type = 1, Pid = -42, Value = originalJson, Remark = "keep", TenantId = 7 };
+                SysResourceDao.Instance.Save(resource);
+                var terminal = (TerminalService)RuntimeHelpers.GetUninitializedObject(typeof(TerminalService));
+                terminal.SysResourceModel = resource;
+                terminal.Config = new TerminalServiceConfig { Name = "Original", Code = resource.Code, ServiceType = ServiceTypes.Camera, SendTopic = "camera/CMD", SubscribeTopic = "camera/STATUS", ServiceToken = "token" };
+                var changed = new List<string?>();
+                terminal.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+                terminal.Rename("重命名服务");
+
+                var saved = new SysResourceDao(new LocalTemplateStore(store.DatabasePath), () => false).GetById(resource.Id)!;
+                Assert.Equal("重命名服务", saved.Name);
+                Assert.Equal(saved.Name, terminal.Name);
+                Assert.Equal(saved.Name, terminal.Config.Name);
+                Assert.Contains(nameof(TerminalService.Name), changed);
+                Assert.Equal(resource.Code, saved.Code);
+                Assert.Equal(1, saved.Type);
+                Assert.Equal(-42, saved.Pid);
+                Assert.Equal("keep", saved.Remark);
+                Assert.Equal(7, saved.TenantId);
+                var expected = JObject.Parse(originalJson);
+                expected["Name"] = saved.Name;
+                Assert.True(JToken.DeepEquals(expected, JObject.Parse(saved.Value!)));
+                Assert.Contains("2026-10-02T12:34:56.1234567+08:00", saved.Value);
+                Assert.Equal("camera/CMD", terminal.Config.SendTopic);
+                Assert.Equal("camera/STATUS", terminal.Config.SubscribeTopic);
+                Assert.Equal("token", terminal.Config.ServiceToken);
+                Assert.Equal(ServiceTypes.Camera, terminal.Config.ServiceType);
+            }
+            finally { SysResourceDao.Instance = previousResources; }
+        });
+    }
+
+    [Fact]
+    public void FailedTerminalRenameKeepsTheOriginalNamesAndConfiguration()
+    {
+        WithStore(store =>
+        {
+            var previousResources = SysResourceDao.Instance;
+            try
+            {
+                SysResourceDao.Instance = new SysResourceDao(store, () => false);
+                var resource = new SysResourceModel { Name = "Original", Code = "SVR.Camera.Default", Type = 1, Value = "{\"Name\":\"Original\",\"Future\":42}" };
+                SysResourceDao.Instance.Save(resource);
+                SysResourceDao.Instance.DeleteById(resource.Id);
+                var terminal = (TerminalService)RuntimeHelpers.GetUninitializedObject(typeof(TerminalService));
+                terminal.SysResourceModel = resource;
+                terminal.Config = new TerminalServiceConfig { Name = "Original", Code = resource.Code };
+                string? originalValue = resource.Value;
+
+                Assert.Throws<InvalidDataException>(() => terminal.Rename("Changed"));
+
+                Assert.Equal("Original", terminal.Name);
+                Assert.Equal("Original", terminal.Config.Name);
+                Assert.Equal(originalValue, resource.Value);
+                Assert.Null(SysResourceDao.Instance.GetById(resource.Id));
+            }
+            finally { SysResourceDao.Instance = previousResources; }
+        });
+    }
+
     [Fact]
     public void PhysicalSpectrumRegistrationAndLicenseRenewalUseLocalConfiguration()
     {

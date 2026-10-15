@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Rbac.DisplayText;
 using ColorVision.Database;
 using System.Globalization;
 
@@ -116,7 +117,7 @@ namespace ColorVision.Rbac.Services
         public required double Intensity { get; init; }
         public string ToolTip => string.Format(
             CultureInfo.CurrentCulture,
-            "{0:yyyy-MM-dd} · {1:N0} 次流程",
+            LocalizedText.Get("{0:yyyy-MM-dd} · {1:N0} 次流程"),
             Date,
             ExecutionCount);
     }

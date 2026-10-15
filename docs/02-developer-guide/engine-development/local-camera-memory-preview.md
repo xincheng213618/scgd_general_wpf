@@ -4,8 +4,8 @@ knowledge_type: "decision"
 status: "planned"
 summary: "设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。"
 aliases: ["本地相机内存预览设计", "不保存文件能在设备视图预览吗", "相机内存预览怎样验收", "内存预览租约何时释放", "设备级Preview Publisher", "LocalFrameImagePresenter", "latest-wins", "FullCie", "RAW预览行步长", "预览与校正并发", "内存帧过期"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs", "Engine/FlowEngineLib/Base/CVStartCFC.cs", "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "Engine/cvColorVision/Color/ConvertXYZ.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs", "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs", "Engine/FlowEngineLib/Base/CVStartCFC.cs", "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs","Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.index", "operations.camera"]
 ---
 
@@ -90,9 +90,9 @@ RAW 与 CIE 可能处于不同翻转状态：只翻转最终 CIE 的流程，原
 
 ### CIE 使用当前测量与图层契约
 
-`CVRawOpen.AttachLiveCvcie` 当前接收 byte[]，由 PoiMeasurementBuffer 保留托管平面 CIE，测量时短暂固定数组；图层控制器也保留该 CIE 数据，并克隆一份原显示位图。它不在这条挂载链中调用 ConvertXYZ.CM_SetBufferXYZ。
+`CVRawOpen.AttachLiveCvcie` 当前接收 byte[]，由 PoiMeasurementBuffer 保留托管平面 CIE，测量时短暂固定数组并交给本地 `opencv_helper.dll`；图层控制器也保留该 CIE 数据，并克隆一份原显示位图。
 
-因此 FullCie 的指针优化需要覆盖 PoiMeasurementBuffer、测量调用与图层读取的共同所有权。ConvertXYZ 虽保留 IntPtr P/Invoke 声明，仅增加或调用该声明不能替代当前挂载链，也不能证明零拷贝或 native 已接管数据。
+因此 FullCie 的指针优化需要覆盖 PoiMeasurementBuffer、测量调用与图层读取的共同所有权；仅把测量接口换成 IntPtr 不能替代当前挂载链，也不能证明零拷贝或 native 已接管数据。
 
 替换为新内存图、文件图或清空时，应整体更新 opener、属性、工具和图层，释放旧测量 owner、取消旧图层任务，再允许新的取点/伪彩读取。图层和数组还有其它引用时不会因单个租约释放立刻消失，验收须覆盖切换后的实际资源寿命。
 
@@ -135,4 +135,4 @@ RAW 与 CIE 可能处于不同翻转状态：只翻转最终 CIE 的流程，原
 | 预览转换失败 | 流程业务结果不被改判，状态可诊断，不留下半更新视图 |
 | 生产分辨率、多设备与长期运行 | 峰值内存、保留资源和延迟满足预先指定预算，而非只看短时平均帧率 |
 
-现有 LocalFlowNodePortTests 检查节点副本共享帧及流程结束；LocalFrameMirrorTests 检查方向和校正准备；PoiMeasurementServiceTests 检查托管 CIE 测量及 Dispose 后拒绝访问。它们只是实现基础，不覆盖本方案的 Publisher、合并队列、模式切换、异步并发和现场性能，也不证明 RAW 转换 helper 正确。实施后再登记对应自动化用例与设备条件，验证记录留在测试产物或 Git/任务报告，不逐轮追加到正文。
+LocalFrameMirrorTests 检查方向和校正准备；PoiMeasurementServiceTests 检查托管 CIE 测量及 Dispose 后拒绝访问。它们只是实现基础，不覆盖本方案的 Publisher、合并队列、模式切换、异步并发和现场性能，也不证明 RAW 转换 helper 正确。实施后再登记对应自动化用例与设备条件，验证记录留在测试产物或 Git/任务报告，不逐轮追加到正文。

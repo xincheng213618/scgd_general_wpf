@@ -1,15 +1,44 @@
 using ColorVision.ImageEditor;
 using ColorVision.Engine;
+using ColorVision.FileIO;
 using ProjectARVRPro.ImageExport;
 using ProjectARVRPro.Process;
 using System.IO;
 using System.Windows.Media;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 
 public sealed class ResultImagePresentationTests
 {
+    [Fact]
+    public void CachedOriginalRemainsAvailableBeforeDiskSaveAndFallsBackAfterEviction()
+    {
+        bool enabled = CVFileReadCache.IsEnabled;
+        int maximum = CVFileReadCache.MaximumEntries;
+        string rawPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".cvraw");
+        string resultPath = Path.GetTempFileName();
+        try
+        {
+            CVFileReadCache.Release();
+            CVFileReadCache.IsEnabled = true;
+            CVFileReadCache.MaximumEntries = 1;
+            using CVCIEFile raw = new() { Version = 1, Cols = 2, Rows = 1, Bpp = 8, Channels = 1, Exp = [10], Data = [1, 2] };
+            Assert.True(CVFileUtil.WriteCVRaw(rawPath, raw, CVFileSaveMode.MemoryOnly));
+            ProjectARVRReuslt result = new() { FileName = rawPath, SavedResultImageFileName = resultPath };
+            Assert.False(File.Exists(rawPath));
+            Assert.Equal(ResultImageFileKind.Original, ResultImageFileCandidates.GetExisting(result)[0].Kind);
+            Assert.True(CVFileUtil.WriteCVRaw(rawPath + ".next.cvraw", raw, CVFileSaveMode.MemoryOnly));
+            Assert.Equal(ResultImageFileKind.SavedResult, Assert.Single(ResultImageFileCandidates.GetExisting(result)).Kind);
+        }
+        finally
+        {
+            CVFileReadCache.Release();
+            CVFileReadCache.MaximumEntries = maximum;
+            CVFileReadCache.IsEnabled = enabled;
+            File.Delete(resultPath);
+        }
+    }
+
     [Fact]
     public async Task CandidateOpenContinuesAfterExistingFirstFileCannotBeOpened()
     {

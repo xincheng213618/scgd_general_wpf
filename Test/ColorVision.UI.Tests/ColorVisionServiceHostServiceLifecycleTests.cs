@@ -1,5 +1,4 @@
 using ColorVisionServiceHost;
-using System.ServiceProcess;
 
 namespace ColorVision.UI.Tests;
 

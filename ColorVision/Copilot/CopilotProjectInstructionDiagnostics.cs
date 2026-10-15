@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -173,20 +174,20 @@ namespace ColorVision.Copilot
             if (!string.IsNullOrWhiteSpace(globalInstructionRootPath)
                 && CopilotWorkspaceSearchSupport.IsPathWithinRoots(path, [globalInstructionRootPath]))
             {
-                return "Codex 全局指令";
+                return LocalizedText.Get("Codex 全局指令");
             }
             var fileName = Path.GetFileName(normalized);
             if (string.Equals(fileName, "AGENTS.override.md", StringComparison.OrdinalIgnoreCase))
-                return "共享覆盖";
+                return LocalizedText.Get("共享覆盖");
             if (string.Equals(fileName, "AGENTS.md", StringComparison.OrdinalIgnoreCase))
-                return "共享指令";
+                return LocalizedText.Get("共享指令");
             if (string.Equals(fileName, "CLAUDE.local.md", StringComparison.OrdinalIgnoreCase))
-                return "私有局部覆盖";
+                return LocalizedText.Get("私有局部覆盖");
             if (normalized.Contains(@"\.claude\rules\", StringComparison.OrdinalIgnoreCase))
-                return "Claude 路径规则";
+                return LocalizedText.Get("Claude 路径规则");
             if (string.Equals(fileName, "CLAUDE.md", StringComparison.OrdinalIgnoreCase))
-                return "Claude 兼容指令";
-            return "项目指令";
+                return LocalizedText.Get("Claude 兼容指令");
+            return LocalizedText.Get("项目指令");
         }
 
         private static string FormatPath(string? path, string? workspacePath)

@@ -3,9 +3,9 @@ knowledge_id: "operations.calibration"
 knowledge_type: "topic"
 status: "current"
 summary: "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。"
-aliases: ["用户校正", "导入最新图像", "最近拍摄图像", "校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
+aliases: ["用户校正", "导入最新图像", "最近拍摄图像", "校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration", "校正文件编辑", "校正文件创建", "CalibrationJsonDocument", "CalibrationBinaryDocument", "CalibrationMapCreation", "CalibrationColorCreation"]
+code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Editing", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Creation", "Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CalibrationDocumentEditorTests.cs", "Test/ColorVision.UI.Tests/CalibrationBinaryDocumentTests.cs", "Test/ColorVision.UI.Tests/CalibrationMapCreationTests.cs", "Test/ColorVision.UI.Tests/CalibrationColorCreationTests.cs", "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","flow.session"]
 ---
 
@@ -13,7 +13,7 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 `DeviceCalibration` 绑定物理相机和校准模板；`DisplayCalibration` 的文件校正默认选择 `UseLocalCalibration=true`。本地后端直接处理输入文件，MQTT 后端请求外部服务处理，两者不是同一个成功判据，也没有失败后自动切换后端的保证。
 
-本页描述已有文件的校正与结果呈现，不把“校准服务”泛化为自动采集或生成所有标定资源。切换真实相机、标定文件和设备参数需确认资源归属及现场验证；问答或文档维护不授权取图、硬件动作、数据库写入、文件删除或缓存清理。
+本页描述校正资源的编辑、离线生成、已有文件校正与结果呈现；离线生成支持的类型和数据前提见下文，不能从“校准服务”名称推断全部标定算法可用。切换真实相机、标定文件和设备参数需确认资源归属及现场验证；问答或文档维护不授权取图、硬件动作、数据库写入、文件删除或缓存清理。
 
 ## 相机绑定、模板与配置归属
 
@@ -23,16 +23,42 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 模板中的“模板校正配置”仅显示文件引用非空的校正项（未启用但已配置的项仍显示），可从当前相机同类型资源中选择或手工输入文件引用，只修改当前模板的文件名和资源 ID，不改写校正组。切换模板保留已保存引用；切换校正组时使用该组的默认文件。顶部“校正组管理”可修改组资源，返回后刷新本机状态。参数区展示当前组增益及曝光、ND、光圈、焦距和对焦距离，后五项不参与模板校正逻辑。
 
-模板行将文件状态和定位/编辑操作共用同一位置：文件缺失时显示“本机缺失”，存在时显示定位与适用的编辑图标，不再额外展示存在状态。悬停文件引用可查看完整文本。空引用项在加载或切换时隐藏；新增组资源仍从“校正组管理”进入。文件状态与启用选择相互独立：“未配置”表示引用为空，“本机缺失”表示当前引用未匹配到本机可访问的资源文件，“本机存在”仅证明文件存在，不证明内容有效或远端服务能访问。状态检查不会取消已保存的勾选；缺失时仍可更换引用、开启或关闭校正项。定位只对本机存在的资源可用；均匀场、DSNU、缺陷点和线性度采用二进制格式，不显示文本编辑入口，`CalibrationResource.Edit` 同样禁止这四类及未知类型。暗噪声、色偏、畸变、ColorDiff、角度偏移及亮度/单色/四色/多色为文本校正类型，可在文件存在时编辑，不按 `.txt` 后缀判断。本地取图和四色窗口带入文件按模板保存的文件引用、校正类型查找资源，不退回校正组默认文件；引用缺失时提示失败。执行前需要核对所启用文件的实际可用性，模板修改仍需点击模板列表下方“保存”。
+模板行将文件状态和定位/编辑操作共用同一位置：文件缺失时显示“本机缺失”，存在时显示定位与适用的编辑图标，不再额外展示存在状态。悬停文件引用可查看完整文本。空引用项在加载或切换时隐藏；新增组资源仍从“校正组管理”进入。文件状态与启用选择相互独立：“未配置”表示引用为空，“本机缺失”表示当前引用未匹配到本机可访问的资源文件，“本机存在”仅证明文件存在，不证明内容有效或远端服务能访问。状态检查不会取消已保存的勾选；缺失时仍可更换引用、开启或关闭校正项。定位只对本机存在的资源可用；均匀场、DSNU、缺陷点和线性度采用专门的二进制查看/编辑入口；未知类型不显示编辑入口。暗噪声、色偏、畸变、ColorDiff、角度偏移及亮度/单色/四色/多色为文本校正类型，可在文件存在时编辑，不按 `.txt` 后缀判断。本地取图和四色窗口带入文件按模板保存的文件引用、校正类型查找资源，不退回校正组默认文件；引用缺失时提示失败。执行前需要核对所启用文件的实际可用性，模板修改仍需点击模板列表下方“保存”。
 
 成像校正的显示、分组保存与 Native 加载共用 `CalibrationSlotDefinitions.NormalSlots`，顺序表示实际执行链而不是 `CalibrationType` 枚举编号：`DarkNoise → DefectPoint → DSNU → Uniformity → ColorShift → Distortion → LineArity → ColorDiff → AngleShift`。Native `CalibrationContext` 按加载顺序执行非色度项，并把互斥的亮度/色度转换延迟到最后；亮度与四色优先显示，单色和多色弱化显示但仍可选择。
+
+## 校正参数编辑与离线生成
+
+在校正组管理中先选择目标组，再点击顶部“创建校正”或对应行的“+”，选择离线生成或手工参数入口。创建完成后，资源登记并选入当前组；相机 `cfg` 中已有同名文件时使用新名称，不覆盖原文件。组资源更新与模板保存的显式文件引用仍是两件事，已有模板须单独核对并保存引用。
+
+暗噪声、色偏、畸变、ColorDiff、角度偏移、亮度、单色、四色和多色使用按校正类型组织的参数与系数表，并保留高级 JSON 编辑入口。色偏是通道空间位移，ColorDiff 是 GR/GB 径向空间对齐；角度偏移使用 RGB 径向多项式，不能把字段当成图像旋转角度。四色 `a…i` 与多色 `pa` 使用各自文件结构，不互相转换。
+
+空间网格预览显示输出网格对应的连续源采样位置；色偏按 B/G/R 通道顺序，ColorDiff 与角度偏移展示各通道径向位移。角度偏移以文件的目标行列作为源图布局，与 Native 的尺寸要求一致。普通畸变使用内参与前五项畸变系数；鱼眼使用前四项，包含主点重定位、`s_w/s_h` 输出尺寸及裁剪源视图的坐标说明。预览不模拟实际像素取整、边界填充、插值或翻转，不代表实际图像已校正；参数曲线与预览用于核对字段和变化趋势。
+
+编辑已存在文件时保留未知字段、数组附加项和有限负系数；编辑器拒绝重复 JSON 键、非有限值、错误结构以及该类型不能执行的尺寸、距离或有效归一化增益。旧文件中 Native 实际忽略的字段仍保留，不以通用正数规则修改历史数据。校验通过只证明结构可保存，不能证明设备匹配或标定准确。
+
+保存前核对加载时的源文件内容指纹，源文件被其他程序修改时须重新加载。保存当前文件使用同目录临时文件和原子替换，并保留原始字节备份；编码及 BOM 随原文件保留。另存为只创建新文件，拒绝覆盖已有路径；保存和另存为均不自动重启服务、上传资源或更改模板引用。
+
+二进制编辑器按页显示数据：缺陷点支持行列坐标增删改并保留文件尾部附加字节，线性度支持有限浮点系数编辑；DSNU 与均匀场提供尺寸、通道、最小/最大值和映射查看。线性度文件按像素位置保存乘数，曲线横轴为像素索引，并非按输入 DN 查表的响应曲线；不能拿通用亮度响应表直接替代。读取兼容 Native V0/V1 格式，保存沿用源文件指纹、临时文件、备份及原子替换边界。
+
+从原始图像离线生成支持 DSNU、均匀场和阈值缺陷点。输入为同一相机、曝光、增益、尺寸、位深和通道顺序的未校正 CVRAW：DSNU 使用遮光暗场平均；均匀场用各通道中心方形区域平均亮度除以每个像素；缺陷点按任一通道大于或小于阈值选出唯一行列坐标。均匀场零像素或无效增益会阻止生成。文件含颜色校正元数据时拒绝导入；没有元数据也不能证明像素从未执行基础校正，仍须核对采集配置。
+
+亮度/单色/四色/多色创建使用原始通道中心区域均值除以文件头实际曝光，再结合逐图参考值拟合。亮度只需要参考 Y，拟合比例；单色/四色/多色使用 Y/x/y 参考，单色沿用 X=aR+dB、Y=bG、Z=cB 的限定式，四色和多色拟合完整 RGB→XYZ 矩阵。通道近似线性相关或无效参考会阻止生成；拟合误差用于检查样本一致性，不能代替独立参考验收。
+
+畸变创建使用普通棋盘图像，至少五张同尺寸、不同姿态且覆盖画面各区域的图像；输入棋盘内角点行列与实际格距，经亚像素角点和相机标定生成普通相机内参与畸变系数。找不到完整棋盘、尺寸不一致或拟合无效时失败，不跳过坏图生成默认结果；鱼眼模型仍需已有标定参数。重投影 RMS 只衡量本次图像拟合，不能替代实际设备畸变验收。
+
+色偏创建使用至少三张独立拍摄的三通道棋盘 CVRAW，保持同一相机、曝光、增益和光学设置，覆盖不同画面区域。输入内角点列数、行数和允许的最大残差（像素），例如 `9,6,1`；行列须一奇一偶，残差上限由实际用途决定，示例值不代表验收标准。文件列表最后一张仅用于独立验证，其余拟合 R/B 到 G 的整数平移；输出 offset 按 B/G/R 排列，G 为零，边缘填黑。通道位移须小于棋盘最小点距的一半；完整棋盘检测失败、重复文件、输入参数不一致、任意拟合或验证点超过残差上限、验证 RMS 变差时拒绝生成，不静默丢弃异常点或改用其他变换。保存结果显示验证前后 RMS 和最大残差，JSON 的附加生成记录保留输入文件名、SHA-256、布局、棋盘参数和误差；这些只证明所提供棋盘点的拟合结果，不能证明真实设备精度、完整视场覆盖或边缘效果。实现入口为 `CalibrationColorShiftCreation`，回归为 `CalibrationColorShiftCreationTests`；旋转、尺度变化和径向色差不属于此整数平移模型。
+
+输入布局必须明确选择本地交错 BGR 或旧式平面 RGB；扩展名无法判断布局。DSNU/均匀场输出采用 Native V1 校正图格式，三通道负载按交错 BGR 保存。生成支持取消，最终文件只在生成完成后保存；离线结果仍需已知参考与实际相机验证。
+
+暗噪声的目标比例、线性度逐像素参考，以及 ColorDiff/角度偏移的自动拟合尚没有可信的统一生成契约。相应类型可编辑已有参数或手工参数草稿，草稿须确认来源和适用条件，不能把默认值当成实测标定结果。
 
 ## 用户校正 {#四色校正采集}
 
 相机属性的“校准与校正”分组提供“用户校正”，打开时带入当前相机；也可从校正文件管理或“应用与工具”进入。“用户校正”默认使用较大的窗口（1600×1060，受屏幕工作区限制），图像与光谱参考并排显示，相机测量值放在侧栏，为 9566×6548 等横向图像保留显示空间。图像等比缩放，横向色块列出两侧状态。计算模式为“单点”和“RGBW 四色”，单点只需一组；默认 RGBW 需要 R/G/B/W 四组，W 必须有有效数据，采集顺序不限。两种模式都基于原校正矩阵生成完整校正系数。
 
 1. 选择相机和校正模板时，模板中配置的四色校正文件会自动填入原文件栏；模板启用多色校正时带入对应的多色文件。也可点击“选择文件”手动指定。文件不存在或无法读取会提示，不能静默使用之前模板带入的文件。多设备时不默认选择第一台，模板需显式选择；真机取图要求模板启用与文件格式匹配的四色或多色校正。
-2. 选中色块，点击“相机取图”或“图像导入”。“导入最新图像”直接读取当前相机最新一条拍摄记录；“最近图像”点击“刷新”后可从列表选择并“导入”。列表来自与 POI 编辑器相同的拍摄结果表，按时间和 ID 倒序显示当前相机最近 100 条记录，不默认选中。最新记录缺文件、拍摄失败或没有 CVCIE XYZ 数据时提示失败，不自动换成旧图。文件夹导入继续保留。图像使用 `ImageView`，默认圆形 POI，可切换矩形；拖动绘制后自动读取原始 XYZ/x/y。选中区域后可拖动位置、调整尺寸，通过右键“编辑”设置位置和尺寸，或使用图像内的尺寸面板。“绘制 POI”保留手动画点，每个色块只保留一个区域。选择“POI 模板”并点击“应用”可带入模板的第一个点；后续取图也使用已选模板，仍可手动调整，不修改原模板。模板明确记录的图像尺寸必须匹配，第一个点须为圆形或矩形，不自动跳过无效点。形状及绘图默认尺寸通过 `LumFourColorPoiOptions` 保存；区域超出图像或尺寸无效时清除旧测量并提示调整。
+2. 选中色块，点击“相机取图”或“图像导入”。“导入最新图像”直接读取当前相机最新一条拍摄记录；“最近图像”点击“刷新”后可从列表选择并“导入”。列表来自与 POI 编辑器相同的拍摄结果表，按时间和 ID 倒序显示当前相机最近 100 条记录，不默认选中。最新记录缺文件、拍摄失败或没有可用的 XYZ 数据时提示失败，不自动换成旧图。文件夹导入继续保留。图像使用 `ImageView`，默认圆形 POI，可切换矩形；拖动绘制后自动读取原始 XYZ/x/y。选中区域后可拖动位置、调整尺寸，通过右键“编辑”设置位置和尺寸，或使用图像内的尺寸面板。“绘制 POI”保留手动画点，每个色块只保留一个区域。选择“POI 模板”并点击“应用”可带入模板的第一个点；后续取图也使用已选模板，仍可手动调整，不修改原模板。模板明确记录的图像尺寸必须匹配，第一个点须为圆形或矩形，不自动跳过无效点。形状及绘图默认尺寸通过 `LumFourColorPoiOptions` 保存；区域超出图像或尺寸无效时清除旧测量并提示调整。
 3. “测量数据”中相机、光谱各有 Y、CIE x、CIE y，共六个可编辑值，可直接录入或修改已有测量值。光谱也可点击“采集光谱”，或在“选择已有…”中选择当前光谱仪最近 100 条亮度测量中的一条。历史列表按时间、ID、Y/x/y、IP 和 ND 展示，不默认选中记录；导入前后都限定设备归属，光通量 / EQE 数据不能作为亮度 Y。
 4. 当前模式的数据齐全后点击右侧测量面板底部的“计算校正”（位于保存按钮上方）。通过核对或明确确认待复核项后，可在底部“另存为”，或点击“替换当前文件并重启服务”。
 
@@ -44,7 +70,7 @@ RGBW 使用四组参考色度和 W 的参考亮度确定新矩阵；文件格式
 
 主界面保留输入、采集按钮、简短状态和完成数量；“测量详情”默认折叠，内含图像来源、POI、曝光、原始光谱结果 ID、时间、IP 与波形。原始记录仅供核对，不能证明手动修改后的值已通过质量验证。
 
-光谱 IP 使用原始峰值 AD / 65535 × 100%，工艺范围为 **30%～95%，含端点**。低于范围提示增加积分时间或调整 ND，高于范围提示降低积分时间或调整 ND；缺失 IP 标为无法判断，不补 0 或视为合格。真实取图记录所用四色校正文件的内容指纹，计算时与原文件核对；文件夹及最近记录导入的 CVCIE 不含校正模板身份，显示“模板待核对”。最近记录还保留设备、结果 ID、拍摄时间和路径供核对；有记录不表示校正来源已验证。RAW、普通预览图、非三通道浮点图像不能作为 XYZ 测量输入。范围异常、缺失 IP / 采集时间和模板未核实 / 不一致在计算前集中确认一次，默认取消；选择继续仅表示操作员接受本次风险，不表示程序已验证数据正确。自动亮度预览不能判断相机过曝，仍须核对原图曝光、当前色块、测量位置和 ND。
+光谱 IP 使用原始峰值 AD / 65535 × 100%，工艺范围为 **30%～95%，含端点**。低于范围提示增加积分时间或调整 ND，高于范围提示降低积分时间或调整 ND；缺失 IP 标为无法判断，不补 0 或视为合格。真实取图记录所用四色校正文件的内容指纹，计算时与原文件核对；文件夹及最近记录支持旧 CVCIE 和带可重放三通道校正参数的 CVRAW；它们不能证明当前校正文件的内容指纹，仍显示“模板待核对”。最近记录还保留设备、结果 ID、拍摄时间和路径供核对；有记录不表示校正来源已验证。无可重放参数的 RAW、普通预览图及非三通道测量图像不能作为 XYZ 测量输入。范围异常、缺失 IP / 采集时间和模板未核实 / 不一致在计算前集中确认一次，默认取消；选择继续仅表示操作员接受本次风险，不表示程序已验证数据正确。自动亮度预览不能判断相机过曝，仍须核对原图曝光、当前色块、测量位置和 ND。
 
 NaN/Infinity、零 CIE y、XYZ 换算溢出、采集/导入中的非法峰值 AD、空光谱、波长重复 / 倒序，以及多组未修改参考值重复使用同一设备同一结果 ID 会阻止完成或计算。有限负 XYZ、Y/x/y、光谱和矩阵系数原样保留。重采 / 重选一侧会先撤销该侧旧值；失败后不能回用。重画开始即清除旧 POI 读数。更换原文件、相机或相机模板清空相机侧；更换光谱仪清空光谱侧；另一侧保留。切换任一计算模式都会清空测量值、重建会话。任一输入改变或计算失败都会使旧结果失效。
 
@@ -73,7 +99,7 @@ MQTT 请求传的是文件名/路径，不是上传文件内容；“本机存�
 
 ## 结果显示与历史落库不是同一件事
 
-本地校正调用 `LocalFrameFileService.SaveCapture`，按 `Config.FileServerCfg.DataBasePath` 和校准设备 Code 保存输出，优先选择 CVCIE，其次 CVRAW；没有生成可用文件会抛错。随后创建 `MeasureResultImgModel`，记录源文件、模板、曝光和 `Backend` 等信息。
+本地校正调用 `LocalFrameFileService.SaveCapture`，按 `Config.FileServerCfg.DataBasePath` 和校准设备 Code 保存 CVRAW，色度校正参数随文件保存；没有生成可用文件会抛错。随后创建 `MeasureResultImgModel`，文件类型与位深对应保存的 RAW，并记录源文件、模板、曝光和 `Backend` 等信息。
 
 `TryPersist` 在 MySQL 未连接时直接跳过；连接后尝试关联/创建批次并保存图像结果，失败会记日志，但已生成文件仍可用。`RunLocalCalibrationAsync` 可直接 `View.ShowResult(model)`，因此“本地操作完成并显示图像”不证明历史批次和结果记录已写入数据库。需要历史重开能力时必须另核对持久化记录及文件存续。
 
@@ -85,7 +111,7 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 | 入口 | 实际作用与安全边界 |
 | --- | --- |
-| `ReleaseLocalCalibrationCacheCommand` / 本地校正缓存管理 | 面向所有相机的本地校正上下文与进程级共享文件内存缓存，不是删除磁盘标定文件；等待正在执行的校正结束，仍被其它活动上下文引用的内存不强制释放 |
+| `ReleaseLocalCalibrationCacheCommand` / 本地缓存管理 | 按模块查看校正缓存、图像文件缓存与相机取图缓冲，支持“释放选中”和“释放全部”。图像文件缓存与全局选项共用启用开关及数量上限，默认保留 1 个 CVRAW 文件；相机取图缓冲仅释放空闲 RAW 工作内存，在用图像不受影响。释放保留磁盘标定和图像文件，但仅缓存图像会丢失；仍被活动校正上下文引用的内存不强制释放。详见[缓存管理契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) |
 | `InfoCalibration.ServiceCache_Click` → `MQTTCalibration.CacheClear` | 界面先提示永久删除，再发远端 `Event_Delete_Data`；必须按远端删除操作授权，不能当作无副作用的排障动作 |
 | `ViewCalibration` 清空列表/删除结果项 | 从当前 `ViewResults` 移除，不代表删除数据库结果、输出文件或校准缓存 |
 
@@ -96,6 +122,14 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 ## Flow 本地校正是独立入口
 
 `Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs` 消费流程当前内存帧，或从输入结果/文件路径加载帧；不会读取手动显示的 `UseLocalCalibration` 来决定后端。可复用的 CIE 帧可以直接沿流程传递，RAW 帧按模板校正，所以手动文件入口“不含 RAW 的 CVCIE 报错”不能扩展为整个 Flow 都不支持 CIE。
+
+仅“校正+实时 POI”节点的“允许加速”默认开启，普通“校正”和本地“相机取图”节点仍默认关闭。新建节点以及旧流程中未保存 `AllowAcceleration` 字段的节点采用各自默认值；已经明确保存的开启或关闭值仍按原配置恢复。开启后仍按原顺序执行基础/空间校正，从同一次加载的色度资源提取系数和曝光，只保留校正后的 RAW 与参数，不分配整幅 CIE/XYZ 缓冲。POI 按点、圆或矩形覆盖的像素计算，保留逐像素浮点转换及现有色度公式，不固定为九点，也不会因重复测量转为整幅 XYZ 缓存。需要完整 CIE 指针的其它下游须关闭加速；仅有 CIE、没有可回放 RAW 的旧版输入保持原 CIE 内存，不转换为加速帧。
+
+两个本地校正节点自动更新已有 CVRAW 的色度参数尾块，先更新缓存，继承取图节点的同步、异步或仅缓存策略；缓存命中不要求磁盘文件存在；若没有 RAW 文件则参数随内存帧传递，并不会为写参数而创建新文件。本地相机的“保存文件”控制 CVRAW 落盘，包含已执行的色度参数。本地链路只生成 CVRAW，CVCIE 用于兼容读取旧服务结果；旧流程里校正节点的 `SaveFiles` 字段加载时被忽略，相机节点的同名字段继续有效。基础校正改变了源像素而没有保存校正后 RAW 时，原文件的参数标记 `CanReplay=false`，不能把原始像素当成校正后数据回放。
+
+本地“POI”和“实时 POI”优先使用当前帧，无帧时读取上游图像结果文件；同时接受完整 CIE 与包含 `colorvision.calibration.color` JSON 尾块的 CVRAW。RAW 输入必须具备与图像布局匹配、可回放的参数，并已完成所需翻转；参数缺失、损坏或不可回放时明确报错，不自动用未校正 RAW 计算。此能力不要求外置 JSON 文件。`LocalDeferredColorCalibrationTests` 覆盖完整/加速路径对照、翻转、基础校正组合、旧后端及保存重读；真机取图与长时间现场内存趋势仍需独立验证。
+
+“实时 POI”和“校正+实时 POI”的 `IN_POI` 必须连接上游布点结果，沿用结果中的点位、类型、宽度和高度（原 `None` 语义），不再选择备用 POI 模板或覆盖点位类型、尺寸。输入数据可来自数据库明细或上游布点文件；缺少有效结果时明确提示连接上游布点节点。旧流程保存的 POI 模板、类型、尺寸及过滤/修正字段按未知属性规则忽略，重新保存后不再写出；节点类型与输入端口保持兼容。
 
 只有“校正+实时 POI”节点兼容外部 CVRAW 把文件头曝光写成全 0 的情况：它按 `IN_IMG` 的结果 ID 读取 `MeasureResultImgModel.Params`，从根级 `ExpTime`（旧相机结果）或 `Exposure`（本地校正结果）恢复全部为有限正数的曝光值。有效文件头始终优先；文件头不是全 0、数据库记录不存在、JSON 无效或记录曝光仍非正时继续按原校正校验报错。普通“校正”节点及手动文件校正不启用该回退，避免把不匹配记录的曝光套到其他输入。
 

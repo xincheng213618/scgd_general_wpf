@@ -1,4 +1,4 @@
-using System;
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
@@ -18,7 +18,7 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override IEnumerable<CompactInspectorItem> BuildCompactInspectorItems()
         {
-            yield return new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(CloseOnComplete), Label = "闭合", ShowLabel = true, Order = 0, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "完成时闭合区域；Enter 完成，Esc 取消" };
+            yield return new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(CloseOnComplete), Label = LocalizedText.Get("闭合"), ShowLabel = true, Order = 0, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = LocalizedText.Get("完成时闭合区域；Enter 完成，Esc 取消") };
             foreach (var item in base.BuildCompactInspectorItems()) yield return item;
         }
 

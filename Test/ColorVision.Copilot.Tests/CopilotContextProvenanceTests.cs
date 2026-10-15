@@ -1,6 +1,3 @@
-using ColorVision.Copilot;
-using System.Collections.Generic;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotContextProvenanceTests

@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using System.Globalization;
 using System.IO;
 

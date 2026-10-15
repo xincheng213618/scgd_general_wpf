@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Themes;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             InitializeComponent();
             this.ApplyCaption();
-            TargetText.Text = $"{deviceName} → {target} 光谱参考";
+            TargetText.Text = LocalizedText.Format($"{deviceName} → {target} 光谱参考");
             ResultsGrid.ItemsSource = results;
         }
 

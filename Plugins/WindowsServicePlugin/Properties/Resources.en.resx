@@ -358,7 +358,7 @@
     <value>Reset Database</value>
   </data>
   <data name="ResetDatabaseTooltip" xml:space="preserve">
-    <value>Run SQL\color_vision_all.sql from the service install folder as root.</value>
+    <value>Clear the target database, then run SQL\color_vision_all.sql as root without restoring old data.</value>
   </data>
   <data name="MqttServiceInfo" xml:space="preserve">
     <value>MQTT Service Info</value>
@@ -510,4 +510,28 @@
   <data name="ClearAllServiceLogsToolTip" xml:space="preserve">
     <value>Clear all CVWindowsService logs; running services are briefly stopped and restored</value>
   </data>
+  <data name="MySqlPrerequisiteTitle" xml:space="preserve">
+    <value>MySQL prerequisites</value>
+  </data>
+  <data name="MySqlVc2013Required" xml:space="preserve">
+    <value>MySQL {0} requires Microsoft Visual C++ 2013 x64, which was not detected on this computer.
+Download or select and install the VC++ 2013 x64 runtime in the service installation window, then retry. The x86 runtime alone is not sufficient.</value>
+  </data>
+  <data name="MySqlVersionUnreadable" xml:space="preserve">
+    <value>The selected MySQL version could not be read. The operation has stopped. Select bin\mysqld.exe in the existing installation, or a valid MySQL ZIP package containing it.</value>
+  </data>
+  <data name="检查旧服务管理工具更新" xml:space="preserve"><value>Check for legacy service tool updates</value></data>
+  <data name="未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。" xml:space="preserve"><value>Legacy service tool not found. Use the service tool menu to select its path or download it.</value></data>
+  <data name="未发现更新，当前服务管理工具可继续使用。" xml:space="preserve"><value>No update found. You can continue using the current service tool.</value></data>
+  <data name="无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。" xml:space="preserve"><value>Cannot check for service tool updates. Check the local tool, network and update URL, then try again.</value></data>
+  <data name="检查服务管理工具更新失败：{0}" xml:space="preserve"><value>Service tool update check failed: {0}</value></data>
+  <data name="无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。" xml:space="preserve"><value>Cannot obtain a valid service tool version. Check the network or update URL, then try again.</value></data>
+  <data name="服务管理工具:找到新版本，是否更新" xml:space="preserve"><value>A new service tool version is available. Update now?</value></data>
+  <data name="更新失败， 找不到更新所在的文件夹" xml:space="preserve"><value>Update failed: the update folder was not found.</value></data>
+  <data name="更新失败，" xml:space="preserve"><value>Update failed: </value></data>
+  <data name="请选择解压缩目录" xml:space="preserve"><value>Select an extraction folder</value></data>
+  <data name="找不到管理工具，是否下载" xml:space="preserve"><value>Service tool not found. Download it?</value></data>
+  <data name="打开或下载服务管理工具失败：{0}" xml:space="preserve"><value>Failed to open or download the service tool: {0}</value></data>
+  <data name="I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?" xml:space="preserve"><value>CVWinSMS (CVWinSMS.exe) was not found. Select its location?</value></data>
+  <data name="Open in CVWinSMS" xml:space="preserve"><value>Open in CVWinSMS</value></data>
 </root>

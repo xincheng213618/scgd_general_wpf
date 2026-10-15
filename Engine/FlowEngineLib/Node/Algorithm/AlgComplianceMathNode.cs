@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/09 合规验证")]
+[STNode("合规验证", CategoryOrder = 900)]
 [System.Obsolete("Deprecated compliance flow node retained for loading existing flows.")]
 public class AlgComplianceMathNode : CVBaseServerNode
 {

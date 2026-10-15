@@ -37,7 +37,8 @@ namespace ColorVision.Copilot
                 chatClient = new CopilotStatelessResponsesHistoryChatClient(
                     client.AsIChatClientWithStoredOutputDisabled(
                         profile.Model,
-                        includeReasoningEncryptedContent: CopilotOpenAiRequestPolicy.UsesOfficialOpenAiApi(profile)));
+                        includeReasoningEncryptedContent: CopilotOpenAiRequestPolicy.UsesOfficialOpenAiApi(profile)),
+                    apiKey);
             }
             else
             {

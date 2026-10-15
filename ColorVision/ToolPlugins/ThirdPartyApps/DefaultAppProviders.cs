@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.ThirdPartyApps;
+﻿using LocalizedText = global::ColorVision.DisplayText;
+using ColorVision.Common.ThirdPartyApps;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -89,7 +90,7 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
 
             winRar.ContextActions.Add(new ThirdPartyAppContextAction
             {
-                Header = "覆盖安装",
+                Header = LocalizedText.Get("覆盖安装"),
                 Execute = winRar.RunInstaller,
                 CanExecute = winRar.CanRunInstaller,
             });

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.UI;
 using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Workspace;
@@ -126,7 +127,7 @@ namespace ColorVision.Solution
             MessageBox.Show(
                 Application.Current?.GetActiveWindow(),
                 errorMessage,
-                undo ? "撤销解决方案操作失败" : "重做解决方案操作失败",
+                undo ? LocalizedText.Get("撤销解决方案操作失败") : LocalizedText.Get("重做解决方案操作失败"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }

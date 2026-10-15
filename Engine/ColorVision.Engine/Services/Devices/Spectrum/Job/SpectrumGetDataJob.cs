@@ -1,9 +1,7 @@
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices;
 using ColorVision.Scheduler;
 using Quartz;
 using System;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;

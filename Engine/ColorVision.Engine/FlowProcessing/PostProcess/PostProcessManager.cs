@@ -22,7 +22,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
     public class PostProcessConfig : ViewModelBase, IConfig
     {
         public static PostProcessConfig Instance => ConfigService.Instance.GetRequiredService<PostProcessConfig>();
-        [JsonIgnore]
+        [JsonIgnore, Browsable(false)]
         public RelayCommand EditCommand { get; set; }
         public PostProcessConfig()
         {

@@ -1,11 +1,10 @@
-using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
+using ColorVision.Solution;
+using ColorVision.Solution.Explorer;
 using Microsoft.Extensions.AI;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -291,6 +290,122 @@ public sealed class CopilotCodexApprovalsReviewerTests
         }
     }
 
+    [Theory]
+    [InlineData("deny", 1, CopilotAgentControlIntent.None)]
+    [InlineData("quota", 1, CopilotAgentControlIntent.None)]
+    [InlineData("provider_canceled", 3, CopilotAgentControlIntent.None)]
+    [InlineData("provider_canceled", 1, CopilotAgentControlIntent.Pause)]
+    [InlineData("provider_canceled", 1, CopilotAgentControlIntent.Cancel)]
+    public async Task RuntimeAutomaticReviewPreservesOfficialBillingWithoutExecutingClosedAction(
+        string outcome, int reviewAttempts, CopilotAgentControlIntent controlIntent)
+    {
+        var controlled = controlIntent != CopilotAgentControlIntent.None;
+        using var workspace = new ReviewerWorkspaceScope();
+        using var provider = new BilledApprovalChatClient(outcome);
+        var tool = new ApprovalBillingProbe();
+        var catalog = new CopilotCapabilityCatalog();
+        catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "approval-billing-tests", "Approval billing tests", [tool]);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(), new CopilotToolExecutor(), _ => provider,
+            new NoReviewExternalTools(), catalog, new CopilotAgentSkillUsageStore(workspace.Root),
+            new CopilotAutomaticApprovalReviewer(), new CopilotAutomaticApprovalOverrideStore());
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "approval-billing-conversation", TaskId = "approval-billing-task", WorkspacePath = workspace.Root,
+            Profile = new CopilotProfileConfig
+            {
+                ProviderType = CopilotProviderType.OpenAICompatible, VendorType = CopilotVendorType.Custom,
+                BaseUrl = "https://example.test/v1", ApiKey = "test-key", Model = "approval-billing-model",
+            },
+            UserText = "Review the requested protected operation and report whether it can proceed.",
+            TaskIntentText = "Review the requested protected operation and report whether it can proceed.",
+            Mode = CopilotAgentMode.Code, HarnessFeatures = CopilotAgentHarnessFeatures.None,
+            CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
+            CodexApprovalsReviewer = CopilotCodexApprovalsReviewer.AutoReview, CodexGuardianApprovalEnabled = true,
+            RunControl = controlled ? new CopilotAgentRunControl() : null,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride
+            {
+                RequestTokenBudget = 32_768, MaxToolCalls = 2, MaxAgentPasses = 1, TotalDuration = TimeSpan.FromSeconds(10),
+            },
+        };
+        Assert.False(request.Profile.IsLocalCodex);
+        Assert.True(CopilotAgentAccessPolicy.CanAutoReview(request, tool, workspace.Root));
+        var events = new List<CopilotAgentEvent>();
+        ConfirmableAction? action = null;
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        try
+        {
+            var result = await runtime.RunAsync(request, item =>
+            {
+                events.Add(item);
+                if (item.ToolExecution?.State == CopilotToolExecutionState.AwaitingApproval)
+                    action = Assert.Single(CopilotMcpConfirmationStore.Instance.GetPendingActions(), pending =>
+                        pending.ActionId == item.ToolResult?.Approval?.ActionId);
+                if (controlled && item.ProviderRetry != null)
+                {
+                    Assert.Equal(1, item.ProviderRetry.FailedAttempt);
+                    Assert.Equal(40, events.Last(item => item.Budget != null).Budget!.ReportedTotalTokens);
+                    Assert.Equal(1, provider.ReviewCalls);
+                    Assert.Equal(1, provider.StreamingCalls);
+                    Assert.Equal(0, tool.ExecutionCount);
+                    Assert.True(controlIntent == CopilotAgentControlIntent.Pause
+                        ? request.RunControl!.RequestPause()
+                        : request.RunControl!.RequestCancel());
+                    cancellation.Cancel();
+                }
+            }, cancellation.Token);
+
+            var expectedTotal = (controlled ? 20 : 35) + reviewAttempts * 20;
+            Assert.Equal(expectedTotal, result.Budget.ReportedTotalTokens);
+            Assert.Equal((controlled ? 12 : 22) + reviewAttempts * 12, result.Budget.ReportedInputTokens);
+            Assert.Equal((controlled ? 8 : 13) + reviewAttempts * 8, result.Budget.ReportedOutputTokens);
+            Assert.Equal((controlled ? 3 : 5) + reviewAttempts * 3, result.Budget.ReportedCachedInputTokens);
+            Assert.Equal(expectedTotal, result.Budget.ConsumedTokens);
+            Assert.False(result.Budget.UsedEstimatedUsage);
+            Assert.Equal(reviewAttempts + (controlled ? 1 : 2), result.Budget.ProviderCalls);
+            Assert.Equal(reviewAttempts, provider.ReviewCalls);
+            Assert.Equal(controlled ? 1 : 2, provider.StreamingCalls);
+            Assert.Equal(controlled ? 1 : reviewAttempts - 1, events.Count(item => item.ProviderRetry != null));
+            Assert.Equal(controlled, cancellation.IsCancellationRequested);
+            Assert.Equal(0, tool.ExecutionCount);
+            var closed = Assert.Single(result.StepRecords);
+            Assert.Equal(controlled ? CopilotToolExecutionState.Cancelled : CopilotToolExecutionState.Denied, closed.Execution.State);
+            Assert.Equal(controlled ? "approval_cancelled" : outcome == "deny" ? "automatic_review_denied" : "automatic_review_unavailable", closed.Observation.FailureCode);
+            Assert.NotNull(action);
+            Assert.Equal(controlled ? ConfirmableActionStatus.Cancelled : ConfirmableActionStatus.Rejected, action.Status);
+            if (!controlled)
+                Assert.Equal(outcome == "deny" ? "automatic-review" : "automatic-review-unavailable", action.ApprovalDecisionSource);
+            Assert.DoesNotContain(action, CopilotMcpConfirmationStore.Instance.GetPendingActions());
+            Assert.Equal(!controlled, provider.ReceivedClosedToolResult);
+            if (controlled)
+            {
+                var expectedStopReason = controlIntent == CopilotAgentControlIntent.Pause
+                    ? CopilotAgentStopReason.Paused : CopilotAgentStopReason.Cancelled;
+                Assert.Equal(expectedStopReason, result.StopReason);
+                Assert.Contains(result.TaskEventJournal.Events, item =>
+                    item.Type == CopilotAgentTaskEventType.RunStopped && item.State == expectedStopReason.ToString());
+                if (controlIntent == CopilotAgentControlIntent.Cancel)
+                    Assert.Null(result.SessionCheckpoint);
+                else
+                {
+                    Assert.NotNull(result.SessionCheckpoint);
+                    Assert.False(string.IsNullOrWhiteSpace(result.SessionCheckpoint.SerializedSessionJson));
+                    Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+                        item.Type == CopilotAgentTaskEventType.RunStopped && item.State == CopilotAgentStopReason.Paused.ToString());
+                }
+            }
+            Assert.Equal(expectedTotal, result.Usage.TotalTokens);
+            Assert.Equal(result.Budget.ReportedInputTokens, result.Usage.InputTokens);
+            Assert.Equal(result.Budget.ReportedOutputTokens, result.Usage.OutputTokens);
+            Assert.Equal(result.Budget.ReportedCachedInputTokens, result.Usage.CachedInputTokens);
+        }
+        finally
+        {
+            if (action != null)
+                new CopilotFrameworkApprovalCoordinator().Cancel(action.ActionId, "Approval billing test cleanup.");
+        }
+    }
+
     [Fact]
     public void ReviewerDiagnosticsAndInstructionsExposeFrozenRouting()
     {
@@ -527,6 +642,124 @@ public sealed class CopilotCodexApprovalsReviewerTests
             $"copilot-approvals-reviewer-{Guid.NewGuid():N}");
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private sealed class ReviewerWorkspaceScope : IDisposable
+    {
+        private static readonly FieldInfo Instance = typeof(SolutionManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        private readonly object? _previous = Instance.GetValue(null);
+        public string Root { get; } = Directory.CreateTempSubdirectory("CopilotReviewerBilling-").FullName;
+
+        public ReviewerWorkspaceScope()
+        {
+            var manager = (SolutionManager)RuntimeHelpers.GetUninitializedObject(typeof(SolutionManager));
+            var explorer = (SolutionExplorer)RuntimeHelpers.GetUninitializedObject(typeof(SolutionExplorer));
+            typeof(SolutionExplorer).GetProperty(nameof(SolutionExplorer.DirectoryInfo))!.SetValue(explorer, new DirectoryInfo(Root));
+            typeof(SolutionManager).GetField("_CurrentSolutionExplorer", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(manager, explorer);
+            Instance.SetValue(null, manager);
+        }
+
+        public void Dispose()
+        {
+            Instance.SetValue(null, _previous);
+            var resolved = Path.GetFullPath(Root);
+            Assert.Equal(Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())), Path.GetDirectoryName(resolved), ignoreCase: true);
+            Assert.StartsWith("CopilotReviewerBilling-", Path.GetFileName(resolved), StringComparison.Ordinal);
+            Directory.Delete(resolved, recursive: true);
+        }
+    }
+
+    private sealed class NoReviewExternalTools : ICopilotExternalToolProvider
+    {
+        public Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(new CopilotExternalToolLease());
+    }
+
+    private sealed class ApprovalBillingProbe : ICopilotAgentDrivenTool, ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation
+    {
+        public string Name => "ApprovalBillingProbe";
+        public string Description => "A protected deterministic operation used to verify the approval boundary.";
+        public CopilotToolCapabilityDescriptor Capability => CopilotToolCapabilityDescriptor.ProtectedWrite(CopilotToolIdempotency.NonIdempotent);
+        public int ExecutionCount { get; private set; }
+        public bool CanHandle(CopilotAgentRequest request) => true;
+        public bool IsAvailable(CopilotAgentRequest request) => true;
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput input)
+            => new("Review the protected operation", "The operation must remain closed when automatic review denies it or fails.")
+            {
+                ReviewDetails = "Complete operation: run the deterministic ApprovalBillingProbe once, with no arguments.",
+            };
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput input, CancellationToken token)
+            => throw new InvalidOperationException("Protected execution must use the approved entry point.");
+        public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput input, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            ExecutionCount++;
+            return Task.FromResult(new CopilotToolResult { ToolName = Name, Success = true, Summary = "Protected operation executed." });
+        }
+    }
+
+    private sealed class BilledApprovalChatClient(string outcome) : IChatClient
+    {
+        public int ReviewCalls { get; private set; }
+        public int StreamingCalls { get; private set; }
+        public bool ReceivedClosedToolResult { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            Assert.False(cancellationToken.IsCancellationRequested);
+            Assert.Empty(options!.Tools!);
+            Assert.Contains("Complete operation:", string.Concat(messages.Select(message => message.Text)), StringComparison.Ordinal);
+            ReviewCalls++;
+            if (outcome == "deny")
+                return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant,
+                    "VERDICT: DENY\nRISK: LOW\nREASON: Keep the controlled protected operation closed."))
+                {
+                    FinishReason = ChatFinishReason.Stop, Usage = CreateUsage(12, 8, 3),
+                });
+            Exception failure = outcome == "quota"
+                ? new CopilotProviderPayloadException("The reviewer quota is exhausted.", "insufficient_quota", false, string.Empty, new CopilotTokenUsage(12, 8, 20, 3))
+                : new OperationCanceledException("The reviewer provider canceled its own request.");
+            CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(failure, new CopilotTokenUsage(12, 8, 20, 3));
+            return Task.FromException<ChatResponse>(failure);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.CompletedTask;
+            cancellationToken.ThrowIfCancellationRequested();
+            StreamingCalls++;
+            if (StreamingCalls == 1)
+            {
+                var function = Assert.Single(options!.Tools!.OfType<AIFunction>(), item => item.Name ==
+                    CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.ToFunctionName("ApprovalBillingProbe"));
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("approval-billing-call", function.Name, new Dictionary<string, object?>()), new UsageContent(CreateUsage(12, 8, 3))])
+                {
+                    FinishReason = ChatFinishReason.ToolCalls,
+                };
+            }
+            else
+            {
+                Assert.Equal(2, StreamingCalls);
+                ReceivedClosedToolResult = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+                    .Any(result => result.CallId == "approval-billing-call");
+                Assert.True(ReceivedClosedToolResult);
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new TextContent("The protected operation stayed closed."), new UsageContent(CreateUsage(10, 5, 2))])
+                {
+                    FinishReason = ChatFinishReason.Stop,
+                };
+            }
+        }
+
+        private static UsageDetails CreateUsage(int input, int output, int cached) => new()
+        {
+            InputTokenCount = input, OutputTokenCount = output, TotalTokenCount = input + output, CachedInputTokenCount = cached,
+        };
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class ProviderTimeoutChatClient : IChatClient

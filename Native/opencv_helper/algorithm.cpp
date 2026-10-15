@@ -1,5 +1,6 @@
 
 #include "pch.h"
+#include <opencv2/geometry.hpp>
 #include "algorithm.h"
 #include <opencv2/core/core.hpp>  
 #include <opencv2/highgui/highgui.hpp>

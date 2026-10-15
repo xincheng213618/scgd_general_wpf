@@ -77,6 +77,7 @@ namespace ColorVision.Copilot
                 || result.LocalFileReadScopes.Any(scope => scope == null)
                 || result.LocalObservationScopePaths.Any(path => string.IsNullOrWhiteSpace(path))
                 || result.WorkspaceRecheckPaths.Any(path => string.IsNullOrWhiteSpace(path))
+                || result.WebEvidenceSourceUrls?.Any(url => string.IsNullOrWhiteSpace(url)) == true
                 || result.BackgroundShellCommands.Any(command => !command.IsStructurallyValid()))
             {
                 return Fail("a result collection contains an invalid item", out violation);
@@ -235,6 +236,7 @@ namespace ColorVision.Copilot
                 Summary = CopilotMcpAuditLogger.RedactText(result.Summary),
                 PartialResultMessage = CopilotMcpAuditLogger.RedactText(result.PartialResultMessage),
                 Content = result.Content ?? string.Empty,
+                WebEvidenceSourceUrls = result.WebEvidenceSourceUrls == null ? null : Freeze(result.WebEvidenceSourceUrls),
                 ErrorMessage = CopilotMcpAuditLogger.RedactText(result.ErrorMessage),
                 FailureKind = result.FailureKind,
                 FailureCode = canonicalizeFailureCode
@@ -259,6 +261,9 @@ namespace ColorVision.Copilot
                 WorkspaceMutation = Snapshot(result.WorkspaceMutation),
                 BackgroundShellCommands = Freeze(result.BackgroundShellCommands),
                 SuppressModelOutput = result.SuppressModelOutput,
+                ToolOutputArchiveRead = result.ToolOutputArchiveRead,
+                ShellOutputArchiveRead = result.ShellOutputArchiveRead,
+                BackgroundShellOutputArchiveRead = result.BackgroundShellOutputArchiveRead,
             };
         }
 

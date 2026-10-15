@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -166,11 +167,12 @@ namespace ColorVision.Copilot
             [
                 new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
             ]) { Aliases = ["/instructions"] },
-            new("/permissions", "选择按需确认/临时自动复核，或查看权限状态", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/permissions [status|ask|auto]", Arguments:
+            new("/permissions", "选择按需确认、自动复核或完全访问", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotPermissionCommand.Usage, Arguments:
             [
                 new("status", "显示当前文件范围、能力与审批策略"),
                 new("ask", "恢复受保护操作逐次确认"),
                 new("auto", "为下一任务或当前任务临时启用自动复核"),
+                new("full", "启用并保留完全访问，直到手动切回按需确认"),
             ]),
             new("/add-dir", "管理当前会话后续 Agent 请求可读取的附加目录", CopilotLocalCommandKind.AdditionalDirectories, AcceptsArguments: true, Usage: CopilotAdditionalDirectoryCommand.Usage, Arguments:
             [
@@ -179,13 +181,12 @@ namespace ColorVision.Copilot
                 new("remove", "按编号移除附加目录", AcceptsArguments: true),
                 new("clear", "清空全部附加目录"),
             ]),
-            new("/settings", "打开模型、Agent、公网 Web、MCP 或后端同步设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/settings [models|agent|web|mcp|sync]", Arguments:
+            new("/settings", "打开模型、Agent、公网 Web 或 MCP 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/settings [models|agent|web|mcp]", Arguments:
             [
                 new("models", "模型 Profile、Endpoint 与推理设置"),
                 new("agent", "Agent 默认行为与上下文预算"),
                 new("web", "公网 Web 与 NAT64 Pref64 安全后备"),
                 new("mcp", "MCP 服务与控制能力"),
-                new("sync", "后端配置同步"),
             ]) { Aliases = ["/config", "/preferences", "/prefs"] },
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),
@@ -396,9 +397,9 @@ namespace ColorVision.Copilot
         private static string BuildSkillSourceLabel(CopilotAgentSkillCatalogItem skill)
         {
             if (skill.SourceKind == CopilotAgentSkillSourceKind.User)
-                return "用户";
+                return LocalizedText.Get("用户");
             if (skill.SourceKind == CopilotAgentSkillSourceKind.BuiltIn)
-                return "内置";
+                return LocalizedText.Get("内置");
 
             try
             {
@@ -409,11 +410,11 @@ namespace ColorVision.Copilot
                 var directoryName = string.IsNullOrWhiteSpace(projectDirectory)
                     ? string.Empty
                     : Path.GetFileName(projectDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                return string.IsNullOrWhiteSpace(directoryName) ? "项目" : "项目:" + directoryName;
+                return string.IsNullOrWhiteSpace(directoryName) ? LocalizedText.Get("项目") : LocalizedText.Get("项目:") + directoryName;
             }
             catch
             {
-                return "项目";
+                return LocalizedText.Get("项目");
             }
         }
 

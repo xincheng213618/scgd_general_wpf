@@ -5,7 +5,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor
 {
@@ -55,16 +54,66 @@ namespace ColorVision.ImageEditor
                 (d, e) =>
                 {
                     var zb = (Zoombox)d;
+                    zb.CancelPendingZoom();
                     ((MatrixTransform)zb.InternalVisual.Transform).SetCurrentValue(MatrixTransform.MatrixProperty, (Matrix)e.NewValue);
-                    zb.InvalidateVisual();
+                    var previous = (Matrix)e.OldValue;
+                    var current = (Matrix)e.NewValue;
+                    if (previous.M11 != current.M11 || previous.M22 != current.M22)
+                        CommandManager.InvalidateRequerySuggested();
+                    zb.ContentMatrixChanged?.Invoke(zb, EventArgs.Empty);
                 }));
 
         private const double MinScaleDelta = 1E-6;
-        private static readonly ScaleTransform ScaleTransform = new();
-        private static readonly TranslateTransform TranslateTransform = new();
 
         private ContainerVisual? internalVisual;
         private Point position;
+        private Action? pendingZoom;
+
+        public Zoombox()
+        {
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            if (pendingZoom == null) return;
+            LayoutUpdated += OnPendingZoomLayoutUpdated;
+            OnPendingZoomLayoutUpdated(this, EventArgs.Empty);
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) => CancelPendingZoom();
+
+        internal void CancelPendingZoom()
+        {
+            pendingZoom = null;
+            LayoutUpdated -= OnPendingZoomLayoutUpdated;
+        }
+
+        private bool IsZoomLayoutReady => IsArrangeValid && InternalChild?.IsArrangeValid == true
+            && ActualWidth > MinScaleDelta && ActualHeight > MinScaleDelta;
+
+        private bool WaitForZoomLayout(Action zoom)
+        {
+            CancelPendingZoom();
+            UIElement? child = InternalChild;
+            if (child == null) return true;
+            if (IsZoomLayoutReady) return false;
+
+            // A detached child may never be arranged again. Wait for real layout
+            // instead of keeping its entire window alive through Dispatcher retries.
+            pendingZoom = zoom;
+            if (IsLoaded) LayoutUpdated += OnPendingZoomLayoutUpdated;
+            return true;
+        }
+
+        private void OnPendingZoomLayoutUpdated(object? sender, EventArgs e)
+        {
+            if (!IsLoaded || !IsZoomLayoutReady) return;
+            Action? zoom = pendingZoom;
+            CancelPendingZoom();
+            zoom?.Invoke();
+        }
 
         static Zoombox()
         {
@@ -126,6 +175,7 @@ namespace ColorVision.ImageEditor
             get => (Matrix)this.GetValue(ContentMatrixProperty);
             set
             {
+                 CancelPendingZoom();
                  this.SetValue(ContentMatrixProperty, value);
             }
         }
@@ -143,6 +193,7 @@ namespace ColorVision.ImageEditor
 
                 if (!ReferenceEquals(old, value))
                 {
+                    CancelPendingZoom();
                     // need to remove old element from logical tree
                     this.RemoveLogicalChild(old);
 
@@ -235,12 +286,25 @@ namespace ColorVision.ImageEditor
         public void Zoom(Point center, Vector scale)
         {
             scale = this.CoerceScale(scale);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterXProperty, center.X);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterYProperty, center.Y);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleXProperty, scale.X);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleYProperty, scale.Y);
-            this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, ScaleTransform.Value));
-            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+            Matrix matrix = ContentMatrix;
+            matrix.ScaleAt(scale.X, scale.Y, center.X, center.Y);
+            ApplyMatrix(matrix);
+        }
+
+        /// <summary>Move the content by a distance in viewport coordinates.</summary>
+        public void Pan(Vector translation)
+        {
+            Matrix matrix = ContentMatrix;
+            matrix.Translate(translation.X, translation.Y);
+            ApplyMatrix(matrix);
+        }
+
+        private void ApplyMatrix(Matrix matrix)
+        {
+            // Explicit navigation supersedes a deferred fit even when the matrix is unchanged.
+            CancelPendingZoom();
+            if (ContentMatrix == matrix) return;
+            SetCurrentValue(ContentMatrixProperty, matrix);
         }
 
         /// <summary>
@@ -248,18 +312,9 @@ namespace ColorVision.ImageEditor
         /// </summary>
         public void ZoomUniform()
         {
-            if (this.InternalChild is null)
-            {
-                return;
-            }
+            if (WaitForZoomLayout(ZoomUniform)) return;
 
-            if (!this.InternalChild.IsArrangeValid)
-            {
-                _ = this.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => this.ZoomUniform()));
-                return;
-            }
-
-            var size = this.InternalChild.DesiredSize;
+            var size = this.InternalChild!.DesiredSize;
             if (Math.Abs(size.Width) < MinScaleDelta ||
                 Math.Abs(size.Height) < MinScaleDelta)
             {
@@ -269,14 +324,8 @@ namespace ColorVision.ImageEditor
             var scaleX = this.ActualWidth / size.Width;
             var scaleY = this.ActualHeight / size.Height;
             var scale = Math.Min(scaleX, scaleY);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterXProperty, 0.0);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterYProperty, 0.0);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleXProperty, scale);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleYProperty, scale);
-            TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * size.Width)) / 2);
-            TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * size.Height)) / 2);
-            this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
-            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+            ApplyMatrix(new Matrix(scale, 0, 0, scale,
+                (ActualWidth - scale * size.Width) / 2, (ActualHeight - scale * size.Height) / 2));
         }
 
         /// <summary>
@@ -285,18 +334,9 @@ namespace ColorVision.ImageEditor
         /// </summary>
         public void ZoomUniformToFill()
         {
-            if (this.InternalChild is null)
-            {
-                return;
-            }
+            if (WaitForZoomLayout(ZoomUniformToFill)) return;
 
-            if (!this.InternalChild.IsArrangeValid)
-            {
-                _ = this.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => this.ZoomUniformToFill()));
-                return;
-            }
-
-            var size = this.InternalChild.DesiredSize;
+            var size = this.InternalChild!.DesiredSize;
             if (Math.Abs(size.Width) < MinScaleDelta ||
                 Math.Abs(size.Height) < MinScaleDelta)
             {
@@ -306,30 +346,16 @@ namespace ColorVision.ImageEditor
             var scaleX = this.ActualWidth / size.Width;
             var scaleY = this.ActualHeight / size.Height;
             var scale = Math.Max(scaleX, scaleY);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterXProperty, 0.0);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterYProperty, 0.0);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleXProperty, scale);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleYProperty, scale);
-            TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * size.Width)) / 2);
-            TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * size.Height)) / 2);
-            this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
-            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+            ApplyMatrix(new Matrix(scale, 0, 0, scale,
+                (ActualWidth - scale * size.Width) / 2, (ActualHeight - scale * size.Height) / 2));
         }
 
         public void ZoomToContentRect(Rect contentRect)
         {
-            if (this.InternalChild is null || contentRect.IsEmpty)
-            {
-                return;
-            }
+            if (contentRect.IsEmpty) return;
+            if (WaitForZoomLayout(() => ZoomToContentRect(contentRect))) return;
 
-            if (!this.InternalChild.IsArrangeValid)
-            {
-                _ = this.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => this.ZoomToContentRect(contentRect)));
-                return;
-            }
-
-            var size = this.InternalChild.DesiredSize;
+            var size = this.InternalChild!.DesiredSize;
             if (Math.Abs(size.Width) < MinScaleDelta ||
                 Math.Abs(size.Height) < MinScaleDelta ||
                 Math.Abs(this.ActualWidth) < MinScaleDelta ||
@@ -352,14 +378,9 @@ namespace ColorVision.ImageEditor
             var scaleX = this.ActualWidth / width;
             var scaleY = this.ActualHeight / height;
             var scale = Math.Min(scaleX, scaleY);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterXProperty, 0.0);
-            ScaleTransform.SetCurrentValue(ScaleTransform.CenterYProperty, 0.0);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleXProperty, scale);
-            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleYProperty, scale);
-            TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * width)) / 2 - (scale * x));
-            TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * height)) / 2 - (scale * y));
-            this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
-            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+            ApplyMatrix(new Matrix(scale, 0, 0, scale,
+                (ActualWidth - scale * width) / 2 - scale * x,
+                (ActualHeight - scale * height) / 2 - scale * y));
         }
 
         /// <summary>
@@ -367,15 +388,13 @@ namespace ColorVision.ImageEditor
         /// </summary>
         public void ZoomNone()
         {
-            this.SetCurrentValue(ContentMatrixProperty, Matrix.Identity);
-            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+            ApplyMatrix(Matrix.Identity);
         }
 
         /// <summary>Restore a saved viewport and refresh tools and drawing-scale dependents.</summary>
         public void RestoreView(Matrix matrix)
         {
-            SetCurrentValue(ContentMatrixProperty, matrix);
-            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+            ApplyMatrix(matrix);
         }
 
         /// <inheritdoc />
@@ -426,22 +445,20 @@ namespace ColorVision.ImageEditor
             }
 
             var delta = e.DeltaManipulation;
+            Matrix matrix = ContentMatrix;
             if (Math.Abs(delta.Scale.LengthSquared - 2) > MinScaleDelta)
             {
                 var p = ((FrameworkElement)e.ManipulationContainer).TranslatePoint(e.ManipulationOrigin, this);
-                this.Zoom(p, delta.Scale);
+                Vector scale = CoerceScale(delta.Scale);
+                matrix.ScaleAt(scale.X, scale.Y, p.X, p.Y);
             }
 
             if (delta.Translation.LengthSquared > 0)
             {
-                TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, delta.Translation.X);
-                TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, delta.Translation.Y);
-                this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, TranslateTransform.Value));
-                ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+                matrix.Translate(delta.Translation.X, delta.Translation.Y);
             }
 
-            // Calling InvalidateRequerySuggested as we are using RoutedCommands
-            CommandManager.InvalidateRequerySuggested();
+            ApplyMatrix(matrix);
             base.OnManipulationDelta(e);
         }
 
@@ -465,7 +482,6 @@ namespace ColorVision.ImageEditor
                 this.Zoom(p, new Vector(scale, scale));
             }
 
-            CommandManager.InvalidateRequerySuggested();
             base.OnMouseWheel(e);
         }
 
@@ -477,7 +493,7 @@ namespace ColorVision.ImageEditor
             {
 
                 this.position = e.GetPosition(this);
-                _ = this.CaptureMouse();
+                if (CaptureMouse()) CancelPendingZoom();
             }
 
 
@@ -503,11 +519,8 @@ namespace ColorVision.ImageEditor
             {
                 var newPos = e.GetPosition(this);
                 var delta = newPos - this.position;
-                TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, delta.X);
-                TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, delta.Y);
-                this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, TranslateTransform.Value));
+                if (delta != default) Pan(delta);
                 this.position = newPos;
-                ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
             }
 
             base.OnMouseMove(e);
@@ -582,7 +595,7 @@ namespace ColorVision.ImageEditor
             var zoom = this.CurrentZoom;
             return new Vector(
                 Clamp(this.MinZoom / zoom.X, scale.X, this.MaxZoom / zoom.X),
-                Clamp(this.MinZoom / zoom.Y, scale.Y, this.MaxZoom / zoom.X));
+                Clamp(this.MinZoom / zoom.Y, scale.Y, this.MaxZoom / zoom.Y));
         }
     }
 

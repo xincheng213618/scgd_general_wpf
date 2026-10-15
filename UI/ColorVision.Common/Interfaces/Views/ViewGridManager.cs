@@ -300,7 +300,8 @@ namespace ColorVision.UI.Views
 
             if (control is IView view)
             {
-                Window window = new() { Owner = Application.Current.MainWindow};
+                Window window = new() { Owner = Application.Current.GetActiveWindow()};
+                ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                 Binding binding = new("Title") { Source = view.View };
                 window.SetBinding(Window.TitleProperty, binding);
                 Binding binding1 = new("Icon") { Source = view.View };

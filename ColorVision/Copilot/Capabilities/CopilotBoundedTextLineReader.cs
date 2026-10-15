@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
     internal sealed class CopilotBoundedTextLineReader : IDisposable
     {
         private const int CharacterBufferSize = 4096;
-        private readonly StreamReader _reader;
+        private readonly TextReader _reader;
         private readonly char[] _characterBuffer = new char[CharacterBufferSize];
         private readonly int _maximumLineCharacters;
         private readonly string _contentLabel;
@@ -39,8 +39,22 @@ namespace ColorVision.Copilot
                 leaveOpen: false);
         }
 
+        public CopilotBoundedTextLineReader(
+            TextReader reader,
+            int maximumLineCharacters,
+            string contentLabel)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumLineCharacters);
+
+            _reader = reader;
+            _maximumLineCharacters = maximumLineCharacters;
+            _contentLabel = string.IsNullOrWhiteSpace(contentLabel) ? "Text stream" : contentLabel.Trim();
+        }
+
         public async Task<string?> ReadLineAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var line = new StringBuilder(Math.Min(1024, _maximumLineCharacters));
             var skipLineFeed = _skipLineFeed;
             _skipLineFeed = false;

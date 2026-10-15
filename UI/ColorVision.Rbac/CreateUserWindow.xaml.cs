@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using LocalizedText = global::ColorVision.Rbac.DisplayText;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Rbac
@@ -67,7 +68,7 @@ namespace ColorVision.Rbac
 
             // Disable button and show loading
             BtnCreate.IsEnabled = false;
-            BtnCreate.Content = "创建中...";
+            BtnCreate.Content = LocalizedText.Get("创建中...");
 
             try
             {
@@ -76,7 +77,7 @@ namespace ColorVision.Rbac
 
                 if (result)
                 {
-                    MessageBox.Show($"用户 '{username}' 创建成功！", "成功", 
+                    MessageBox.Show(LocalizedText.Format($"用户 '{username}' 创建成功！"), LocalizedText.Get("成功"),
                         MessageBoxButton.OK, MessageBoxImage.Information);
                     DialogResult = true;
                 }
@@ -84,14 +85,14 @@ namespace ColorVision.Rbac
                 {
                     ShowStatus("用户名已存在或创建失败", true);
                     BtnCreate.IsEnabled = true;
-                    BtnCreate.Content = "创建用户";
+                    BtnCreate.Content = LocalizedText.Get("创建用户");
                 }
             }
             catch (Exception ex)
             {
                 ShowStatus($"创建失败: {ex.Message}", true);
                 BtnCreate.IsEnabled = true;
-                BtnCreate.Content = "创建用户";
+                BtnCreate.Content = LocalizedText.Get("创建用户");
             }
         }
 

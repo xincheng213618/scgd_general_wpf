@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
                 }
                 else
                 {
-                    MessageBox1.Show(Application.Current.MainWindow,Properties.Resources.CommandSentPleaseWait,"ColorVision");
+                    MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.CommandSentPleaseWait,"ColorVision");
                 }
             }
         }

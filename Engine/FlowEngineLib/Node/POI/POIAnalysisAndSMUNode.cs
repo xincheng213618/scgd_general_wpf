@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.POI;
 
-[STNode("/03_1 关注点")]
+[STNode("关注点", CategoryOrder = 310)]
 public class POIAnalysisAndSMUNode : CVBaseServerNodeHub
 {
 	[STNodeProperty("参数模板", "参数模板", true)]

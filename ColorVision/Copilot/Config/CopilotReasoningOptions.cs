@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,9 +42,9 @@ namespace ColorVision.Copilot
         {
             var selected = GetEffectiveMode(profile);
             CopilotReasoningMode[] modes;
-            if (profile != null && CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
+            if (profile != null && SupportsOpenAiReasoningModes(profile))
             {
-                modes = CopilotOpenAiRequestPolicy.IsGpt6Astra(profile)
+                modes = IsGpt6Astra(profile)
                     ? new[]
                     {
                         CopilotReasoningMode.Default,
@@ -103,12 +104,12 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(profile);
             var normalized = Normalize(profile.VendorType, mode);
-            if (!CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
+            if (!SupportsOpenAiReasoningModes(profile))
                 return profile.VendorType == CopilotVendorType.OpenAI
                     ? CopilotReasoningMode.Default
                     : normalized;
 
-            if (CopilotOpenAiRequestPolicy.IsGpt6Astra(profile))
+            if (IsGpt6Astra(profile))
             {
                 return normalized switch
                 {
@@ -162,30 +163,45 @@ namespace ColorVision.Copilot
         {
             return mode switch
             {
-                CopilotReasoningMode.Disabled => "关闭",
-                CopilotReasoningMode.Enabled => "开启",
-                CopilotReasoningMode.Low => "低",
-                CopilotReasoningMode.Medium => "中",
-                CopilotReasoningMode.High => "高",
-                CopilotReasoningMode.XHigh => "极高",
-                CopilotReasoningMode.Max => "最高",
-                _ => "默认",
+                CopilotReasoningMode.Disabled => LocalizedText.Get("关闭"),
+                CopilotReasoningMode.Enabled => LocalizedText.Get("开启"),
+                CopilotReasoningMode.Low => LocalizedText.Get("低"),
+                CopilotReasoningMode.Medium => LocalizedText.Get("中"),
+                CopilotReasoningMode.High => LocalizedText.Get("高"),
+                CopilotReasoningMode.XHigh => LocalizedText.Get("极高"),
+                CopilotReasoningMode.Max => LocalizedText.Get("最高"),
+                _ => LocalizedText.Get("默认"),
             };
         }
 
         public static string GetToolTip(CopilotProfileConfig? profile)
         {
             if (profile == null)
-                return "没有选中的模型配置。";
+                return LocalizedText.Get("没有选中的模型配置。");
 
             var mode = GetEffectiveMode(profile);
-            return $"{profile.DisplayLabel} · 推理{GetLabel(mode)}\n{GetDescription(profile.VendorType, mode)}";
+            return LocalizedText.Format($"{profile.DisplayLabel} · 推理{GetLabel(mode)}\n{GetDescription(profile.VendorType, mode)}");
         }
 
         public static bool HasConfigurableReasoning(CopilotProfileConfig? profile)
         {
             return profile?.VendorType is CopilotVendorType.DeepSeek or CopilotVendorType.Xiaomi
-                || profile != null && CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile);
+                || profile != null && SupportsOpenAiReasoningModes(profile);
+        }
+
+        private static bool SupportsOpenAiReasoningModes(CopilotProfileConfig profile)
+        {
+            return CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile)
+                || profile.ProviderType == CopilotProviderType.LocalCodex
+                && profile.VendorType == CopilotVendorType.OpenAI
+                && CopilotOpenAiRequestPolicy.IsOpenAiReasoningModelName(profile.Model);
+        }
+
+        private static bool IsGpt6Astra(CopilotProfileConfig profile)
+        {
+            return CopilotOpenAiRequestPolicy.IsGpt6Astra(profile)
+                || profile.ProviderType == CopilotProviderType.LocalCodex
+                && CopilotOpenAiRequestPolicy.IsGpt6AstraModelName(profile.Model);
         }
 
         public static CopilotReasoningOption? FindCommandOption(

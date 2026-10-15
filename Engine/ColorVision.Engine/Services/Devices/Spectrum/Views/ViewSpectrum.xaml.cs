@@ -87,6 +87,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            // Establish the view context before bindings can inherit the dock host's configuration.
+            DataContext = this;
             InitializeComponent();
             UserControl_Initialized(this, EventArgs.Empty);
             log4net.LogManager.GetLogger(typeof(ViewSpectrum)).Info($"Device view initialized. View={nameof(ViewSpectrum)}, Duration={stopwatch.ElapsedMilliseconds}ms.");
@@ -96,8 +98,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             if (_isInitialized) return;
             _isInitialized = true;
-            this.DataContext = this;
-
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);

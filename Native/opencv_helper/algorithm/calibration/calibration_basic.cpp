@@ -506,6 +506,11 @@ public:
             + static_cast<std::uint64_t>(correction_.capacity()) * sizeof(TCorrection);
     }
 
+    bool tryApplyWithNext(
+        const CalibrationItem& next,
+        const ImageView& raw,
+        const ExecutionOptions& options) const override;
+
     bool apply(
         const ImageView& raw,
         float*,
@@ -579,6 +584,8 @@ public:
     }
 
 private:
+    template <typename, typename> friend class MapCalibration;
+
     template <typename TPixel>
     bool applyTyped(
         const TPixel* sourcePixels,
@@ -760,6 +767,54 @@ private:
     MapHeader header_;
     std::vector<TCorrection> correction_;
 };
+
+template <typename TCorrection, typename TOperation>
+bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
+    const CalibrationItem& next,
+    const ImageView& raw,
+    const ExecutionOptions& options) const
+{
+    if constexpr (!std::is_same_v<TOperation, DsnuOperation>) {
+        return false;
+    }
+    else {
+        const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
+        if (uniformity == nullptr || raw.bitsPerChannel != 16 || raw.channels != 3
+            || !options.interleavedBgr || options.rgbType != 0
+            || std::any_of(options.roi.begin(), options.roi.end(), [](auto value) { return value != 0; })) {
+            return false;
+        }
+        const auto matches = [&](const MapHeader& header) {
+            return header.version == 1 && header.sourceBitsPerChannel == 16
+                && header.channels == raw.channels
+                && header.width == raw.width && header.height == raw.height;
+        };
+        if (!matches(header_) || !matches(uniformity->header_)) return false;
+
+        const std::size_t rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+        auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
+        const auto* offsets = correction_.data();
+        const auto* factors = uniformity->correction_.data();
+        // Keep DSNU's zero clamp and Uniformity's float multiply, saturation,
+        // and truncation in order, without storing/reloading the intermediate RAW.
+        parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+            for (auto row = first; row < end; ++row) {
+                const auto base = static_cast<std::size_t>(row) * rowSamples;
+                for (std::size_t column = 0; column < rowSamples; ++column) {
+                    const auto index = base + column;
+                    const auto source = pixels[index];
+                    const auto offset = offsets[index];
+                    const std::uint16_t darkCorrected = source < offset
+                        ? 0 : static_cast<std::uint16_t>(source - offset);
+                    const float corrected = factors[index] * darkCorrected;
+                    pixels[index] = corrected > 65535.0F
+                        ? 65535 : static_cast<std::uint16_t>(corrected);
+                }
+            }
+        });
+        return true;
+    }
+}
 
 class DarkNoiseCalibration final : public CalibrationItem {
 public:

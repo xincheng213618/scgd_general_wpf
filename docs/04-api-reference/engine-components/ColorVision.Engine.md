@@ -31,7 +31,7 @@ related: ["engine.index", "engine.native-integration", "algorithms.json-template
 
 选择条件检查的是项目文件是否存在，不是“源码编译失败后自动换成包”。因此删除 `UI/` 目录不能保证只依赖 NuGet 就能构建；DLL 回退也要求实际文件及兼容依赖存在。`UIProjectPackageVersion` 当前默认 `*`，若需可重现的包输入，应核验最终解析结果，不能仅凭这个属性宣称版本已锁定。
 
-本工程还显式引用 `OpenCvSharp4.runtime.win`。native helper 的首次构建、ABI 和运行 DLL 前提见 [OpenCV/native 集成](../../02-developer-guide/engine-development/opencv-integration.md)，不要把一次托管构建等同于完整的 native 运行验证。
+本工程还显式引用 `OpenCvSharp5.runtime.win`。native helper 的首次构建、ABI 和运行 DLL 前提见 [OpenCV/native 集成](../../02-developer-guide/engine-development/opencv-integration.md)，不要把一次托管构建等同于完整的 native 运行验证。
 
 ## 资源不是同一种输出文件
 

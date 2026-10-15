@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Media
             config = CVRawManualCieConfig.CreateFactoryDefaults();
             errorMessage = null;
 
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(filePath) || !(CVFileReadCache.GetCachedLength(filePath).HasValue || File.Exists(filePath)))
             {
                 return false;
             }

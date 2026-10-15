@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -37,8 +38,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             _roi = roi;
 
             RoiInfoText.Text = BuildRoiText();
-            HeaderSummaryText.Text = "未检测";
-            StatusText.Text = "调整参数后点击检测；结果会以临时 overlay 画在当前图上。";
+            HeaderSummaryText.Text = LocalizedText.Get("未检测");
+            StatusText.Text = LocalizedText.Get("调整参数后点击检测；结果会以临时 overlay 画在当前图上。");
             Closed += (_, _) =>
             {
                 _closed = true;
@@ -51,7 +52,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             ImageFrameLease? lease = _imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show(this, "当前没有可检测的图像。", "表面缺陷/Mura 检测", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("当前没有可检测的图像。"), LocalizedText.Get("表面缺陷/Mura 检测"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -65,12 +66,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             catch (Exception ex)
             {
                 lease.Dispose();
-                MessageBox.Show(this, ex.Message, "参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("参数无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             DetectButton.IsEnabled = false;
-            StatusText.Text = "检测中...";
+            StatusText.Text = LocalizedText.Get("检测中...");
             try
             {
                 SurfaceDefectNativeResult result = await Task.Run(() => RunNative(lease.Image, roi, configJson));
@@ -83,7 +84,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
                 if (_closed || !_imageContext.IsCurrentImageRevision(revision)) return;
 
                 StatusText.Text = ex.Message;
-                MessageBox.Show(this, ex.Message, "表面缺陷/Mura 检测", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("表面缺陷/Mura 检测"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -102,11 +103,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             try
             {
                 Clipboard.SetText(JsonConvert.SerializeObject(ReadConfig(), Formatting.Indented));
-                StatusText.Text = "配置 JSON 已复制。";
+                StatusText.Text = LocalizedText.Get("配置 JSON 已复制。");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("参数无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -118,7 +119,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             }
 
             Clipboard.SetText(_rawJson);
-            StatusText.Text = "检测结果 JSON 已复制。";
+            StatusText.Text = LocalizedText.Get("检测结果 JSON 已复制。");
         }
 
         private SurfaceDefectConfig ReadConfig()
@@ -282,7 +283,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             }
 
             _overlayVisuals.Clear();
-            StatusText.Text = _result == null ? "Overlay 已清除。" : $"{BuildStatusText(_result)}    Overlay 已清除。";
+            StatusText.Text = _result == null ? LocalizedText.Get("Overlay 已清除。") : LocalizedText.Format($"{BuildStatusText(_result)}    Overlay 已清除。");
         }
 
         private string BuildRoiText()

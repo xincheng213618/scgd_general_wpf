@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
@@ -91,7 +92,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             OpenFileDialog dialog = new()
             {
-                Title = "选择原色度校正文件",
+                Title = LocalizedText.Get("选择原色度校正文件"),
                 Filter = "四色 / 多色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
@@ -169,7 +170,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             MeasurementsGrid.CommitEdit(DataGridEditingUnit.Row, true);
             LumFourColorMeasurementClipboard.Paste(rows, text, row, column);
             ResetResult();
-            StatusText.Text = "已粘贴，请核对色块顺序与测量来源。";
+            StatusText.Text = LocalizedText.Get("已粘贴，请核对色块顺序与测量来源。");
         }
 
         private void Paste_Click(object sender, RoutedEventArgs e)
@@ -185,7 +186,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 MeasurementsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
                 MeasurementsGrid.CommitEdit(DataGridEditingUnit.Row, true);
                 Clipboard.SetText(LumFourColorMeasurementClipboard.CopyAll(rows));
-                StatusText.Text = "已复制表头及全部测量数据，可直接粘贴到 Excel。";
+                StatusText.Text = LocalizedText.Get("已复制表头及全部测量数据，可直接粘贴到 Excel。");
             }
             catch (Exception ex) { StatusText.Text = ex.Message; }
         }
@@ -221,7 +222,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 }
 
                 ResultPreview.Text = FormatMatrix(correctedConfig);
-                StatusText.Text = "计算完成";
+                StatusText.Text = LocalizedText.Get("计算完成");
                 SaveButton.IsEnabled = true;
                 ReplaceButton.IsEnabled = true;
             }
@@ -245,7 +246,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             SaveFileDialog dialog = new()
             {
-                Title = "保存修正后的校正文件（保持原格式）",
+                Title = LocalizedText.Get("保存修正后的校正文件（保持原格式）"),
                 Filter = "校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
                 InitialDirectory = Directory.Exists(sourceDirectory) ? sourceDirectory : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
                 FileName = $"{sourceName}_Corrected{extension}",
@@ -258,7 +259,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             try
             {
                 sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig);
-                StatusText.Text = $"已保存：{dialog.FileName}";
+                StatusText.Text = LocalizedText.Format($"已保存：{dialog.FileName}");
             }
             catch (Exception ex)
             {
@@ -272,14 +273,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             if (busy || correctedConfig == null || sourceSnapshot == null) return;
             SetBusy(true);
-            StatusText.Text = "正在替换文件并重启服务…";
+            StatusText.Text = LocalizedText.Get("正在替换文件并重启服务…");
             try
             {
                 var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, restartServices);
                 // Reusing the same manual data against the replaced matrix would apply the correction twice.
                 ShowMeasurementRows();
                 ResetResult();
-                BackupPathText.Text = $"备份：{result.BackupPath}";
+                BackupPathText.Text = LocalizedText.Format($"备份：{result.BackupPath}");
                 BackupPathText.Visibility = Visibility.Visible;
                 StatusText.Text = result.Message;
             }

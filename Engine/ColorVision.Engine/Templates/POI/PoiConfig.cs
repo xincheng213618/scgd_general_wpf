@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1822,CS8603
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services;

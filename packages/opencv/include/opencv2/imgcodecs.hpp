@@ -404,22 +404,23 @@ embedded in the file (such as EXIF, XMP, etc.), depending on file format support
 @param filename Name of the file to be loaded.
 @param metadataTypes Output vector with types of metadata chunks returned in metadata, see ImageMetadataType.
 @param metadata Output vector of vectors or vector of matrices to store the retrieved metadata.
-@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_ANYCOLOR.
+@param flags Flag that can take values of cv::ImreadModes.
 
 @return The loaded image as a cv::Mat object. If the image cannot be read, the function returns an empty matrix.
 */
 CV_EXPORTS_W Mat imreadWithMetadata( const String& filename, CV_OUT std::vector<int>& metadataTypes,
-                                     OutputArrayOfArrays metadata, int flags = IMREAD_ANYCOLOR);
+                                     OutputArrayOfArrays metadata, int flags);
 
 /** @brief Loads a multi-page image from a file.
 
 The function imreadmulti loads a multi-page image from the specified file into a vector of Mat objects.
 @param filename Name of file to be loaded.
 @param mats A vector of Mat objects holding each page.
-@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_ANYCOLOR.
+@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_COLOR_BGR.
+@note The default flags value was changed from cv::IMREAD_ANYCOLOR to cv::IMREAD_COLOR_BGR for unification.
 @sa cv::imread
 */
-CV_EXPORTS_W bool imreadmulti(const String& filename, CV_OUT std::vector<Mat>& mats, int flags = IMREAD_ANYCOLOR);
+CV_EXPORTS_W bool imreadmulti(const String& filename, CV_OUT std::vector<Mat>& mats, int flags = IMREAD_COLOR_BGR);
 
 /** @brief Loads images of a multi-page image from a file.
 
@@ -503,10 +504,11 @@ CV_EXPORTS_W bool imencodeanimation(const String& ext, const Animation& animatio
 The function imcount returns the number of pages in a multi-page image (e.g. TIFF), the number of frames in an animation (e.g. AVIF), and 1 otherwise.
 If the image cannot be decoded, 0 is returned.
 @param filename Name of file to be loaded.
-@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_ANYCOLOR.
+@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_COLOR_BGR.
+@note The default flags value was changed from cv::IMREAD_ANYCOLOR to cv::IMREAD_COLOR_BGR for unification.
 @todo when cv::IMREAD_LOAD_GDAL flag used the return value will be 0 or 1 because OpenCV's GDAL decoder doesn't support multi-page reading yet.
 */
-CV_EXPORTS_W size_t imcount(const String& filename, int flags = IMREAD_ANYCOLOR);
+CV_EXPORTS_W size_t imcount(const String& filename, int flags = IMREAD_COLOR_BGR);
 
 /** @brief Saves an image to a specified file.
 
@@ -537,7 +539,8 @@ can be saved using this function, with these exceptions:
 - With PGM/PPM encoder, 8-bit unsigned (CV_8U) and 16-bit unsigned (CV_16U) images can be saved.
 - With TIFF encoder, 8-bit unsigned (CV_8U), 8-bit signed (CV_8S),
                      16-bit unsigned (CV_16U), 16-bit signed (CV_16S),
-                     32-bit signed (CV_32S),
+                     32-bit unsigned (CV_32U), 32-bit signed (CV_32S),
+                     64-bit unsigned (CV_64U), 64-bit signed (CV_64S),
                      32-bit float (CV_32F) and 64-bit float (CV_64F) images can be saved.
   - Multiple images (vector of Mat) can be saved in TIFF format (see the code sample below).
   - 32-bit float 3-channel (CV_32FC3) TIFF images can be saved
@@ -619,12 +622,12 @@ See cv::imread for the list of supported formats and flags description.
 @param buf Input array or vector of bytes containing the encoded image data.
 @param metadataTypes Output vector with types of metadata chucks returned in metadata, see cv::ImageMetadataType
 @param metadata Output vector of vectors or vector of matrices to store the retrieved metadata
-@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_ANYCOLOR.
+@param flags Flag that can take values of cv::ImreadModes.
 
 @return The decoded image as a cv::Mat object. If decoding fails, the function returns an empty matrix.
 */
 CV_EXPORTS_W Mat imdecodeWithMetadata( InputArray buf, CV_OUT std::vector<int>& metadataTypes,
-                                       OutputArrayOfArrays metadata, int flags = IMREAD_ANYCOLOR );
+                                       OutputArrayOfArrays metadata, int flags );
 
 /** @overload
 @param buf Input array or vector of bytes.

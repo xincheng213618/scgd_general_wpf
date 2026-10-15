@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8625
+﻿using LocalizedText = global::ProjectKB.DisplayText;
+#pragma warning disable CS8625
 using ColorVision.UI;
 using System.Windows;
 
@@ -7,7 +8,7 @@ namespace ProjectKB.PluginConfig
 
     public class KBProjectPlugin : IFeatureLauncherBase
     {
-        public override string? Header => "键盘测试";
+        public override string? Header => LocalizedText.Get("键盘测试");
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB";
 
         public override void Execute()

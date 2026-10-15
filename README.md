@@ -6,7 +6,7 @@
 
 ColorVision 是一个 Windows WPF 视觉检测平台，包含设备集成、可视化流程、图像分析、插件扩展和客户项目交付。
 
-项目知识与代码一起维护，优先供 AI 按需检索、核对实现；网页展示同一份 Markdown，不另维护面向不同人群的手册。
+`docs/` 是 [AGENTS.md](AGENTS.md) 的按需知识扩展，与代码一起维护。AI 按任务读取相关契约、理由和验证入口；网页展示同一份 Markdown。
 
 ## 用 AI 理解和维护仓库
 
@@ -45,7 +45,7 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 
 - [本地知识地图](docs/knowledge/index.md)：生成的源码与能力检索入口。
 - [知识使用约定](docs/README.md)：按需阅读、源码核对及标准资料的职责。
-- [共同维护规范](docs/knowledge/maintenance.md)：正文、元数据、生成与验证命令。
+- [知识维护规范](docs/knowledge/maintenance.md)：修改知识时查阅的字段、生成与验证规则。
 - [在线知识库](https://xincheng213618.github.io/scgd_general_wpf/)：同一份资料的网页展示。
 
 主题正文以简体中文为主；英文 `AGENTS.md` 与有用的原生英文模块说明保留，不维护中英重复镜像。网页构建不是本地知识查询的前提；知识和网站的本地生成不等于发布。

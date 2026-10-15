@@ -55,7 +55,7 @@ namespace ColorVision.FloatingBall
             {
                 return new DesktopPetCodexAvailability(
                     true,
-                    "已就绪：Codex 与 Hatch Pet 技能可用。",
+                    DesktopPetText.CodexReady,
                     null,
                     destination);
             }
@@ -64,7 +64,7 @@ namespace ColorVision.FloatingBall
             {
                 return new DesktopPetCodexAvailability(
                     false,
-                    "Codex 的 hatch-pet 技能目录不完整。请先在 Codex 的技能页修复或移除该目录。",
+                    DesktopPetText.CodexSkillIncomplete,
                     null,
                     destination);
             }
@@ -73,12 +73,12 @@ namespace ColorVision.FloatingBall
             return source == null
                 ? new DesktopPetCodexAvailability(
                     false,
-                    "未检测到包含 Hatch Pet 的 Codex Desktop。仍可切换到“导入精灵表”手动创建。",
+                    DesktopPetText.CodexNotFound,
                     null,
                     destination)
                 : new DesktopPetCodexAvailability(
                     true,
-                    "已检测到 Codex Desktop；首次启动会安装它随附的 Hatch Pet 技能。",
+                    DesktopPetText.CodexDetected,
                     source,
                     destination);
         }
@@ -153,16 +153,16 @@ namespace ColorVision.FloatingBall
             if (File.Exists(Path.Combine(destination, "SKILL.md")))
                 return destination;
             if (Directory.Exists(destination))
-                throw new InvalidDataException("Codex 的 hatch-pet 技能目录已经存在，但缺少 SKILL.md。");
+                throw new InvalidDataException(DesktopPetText.SkillMissingManifest);
             if (string.IsNullOrWhiteSpace(sourceDirectory))
-                throw new DirectoryNotFoundException("未找到 Codex Desktop 随附的 Hatch Pet 技能。");
+                throw new DirectoryNotFoundException(DesktopPetText.BundledSkillNotFound);
 
             var source = Path.GetFullPath(sourceDirectory);
             if (!File.Exists(Path.Combine(source, "SKILL.md")))
-                throw new InvalidDataException("Codex Desktop 随附的 Hatch Pet 技能不完整。");
+                throw new InvalidDataException(DesktopPetText.BundledSkillIncomplete);
 
             var destinationRoot = Path.GetDirectoryName(destination)
-                ?? throw new InvalidDataException("Codex 技能安装目录无效。");
+                ?? throw new InvalidDataException(DesktopPetText.InvalidSkillDirectory);
             Directory.CreateDirectory(destinationRoot);
             var stagingDirectory = Path.Combine(destinationRoot, $".{SkillName}-install-{Guid.NewGuid():N}");
             try
@@ -172,14 +172,14 @@ namespace ColorVision.FloatingBall
                     cancellationToken).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!File.Exists(Path.Combine(stagingDirectory, "SKILL.md")))
-                    throw new InvalidDataException("Hatch Pet 技能复制后未通过完整性检查。");
+                    throw new InvalidDataException(DesktopPetText.SkillCopyIncomplete);
 
                 if (Directory.Exists(destination))
                 {
                     if (File.Exists(Path.Combine(destination, "SKILL.md")))
                         return destination;
 
-                    throw new InvalidDataException("Codex 的 hatch-pet 技能目录已经存在，但缺少 SKILL.md。");
+                    throw new InvalidDataException(DesktopPetText.SkillMissingManifest);
                 }
 
                 Directory.Move(stagingDirectory, destination);
@@ -198,7 +198,7 @@ namespace ColorVision.FloatingBall
                 (concept ?? string.Empty)
                     .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
             if (normalized.Length > MaximumConceptLength)
-                throw new ArgumentException($"宠物想法不能超过 {MaximumConceptLength} 个字符。", nameof(concept));
+                throw new ArgumentException(DesktopPetText.Format("ConceptTooLong", MaximumConceptLength), nameof(concept));
 
             return normalized;
         }
@@ -206,7 +206,7 @@ namespace ColorVision.FloatingBall
         private static string GetSkillDestinationDirectory()
         {
             var codexHome = CodexHomeDirectory
-                ?? throw new DirectoryNotFoundException("无法确定当前用户的 Codex 数据目录。");
+                ?? throw new DirectoryNotFoundException(DesktopPetText.CodexHomeNotFound);
             return Path.Combine(codexHome, "skills", SkillName);
         }
 
@@ -320,11 +320,11 @@ namespace ColorVision.FloatingBall
                     cancellationToken.ThrowIfCancellationRequested();
                     var fileInfo = new FileInfo(filePath);
                     if ((fileInfo.Attributes & FileAttributes.ReparsePoint) != 0)
-                        throw new InvalidDataException("Hatch Pet 技能包含不支持的链接文件。");
+                        throw new InvalidDataException(DesktopPetText.SkillLinkedFile);
 
                     var normalizedFilePath = Path.GetFullPath(filePath);
                     if (!normalizedFilePath.StartsWith(sourceRoot, StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidDataException("Hatch Pet 技能文件超出了预期目录。");
+                        throw new InvalidDataException(DesktopPetText.SkillOutsideDirectory);
 
                     File.Copy(filePath, Path.Combine(targetDirectory, fileInfo.Name), overwrite: false);
                 }
@@ -333,7 +333,7 @@ namespace ColorVision.FloatingBall
                 {
                     var directoryInfo = new DirectoryInfo(childDirectory);
                     if ((directoryInfo.Attributes & FileAttributes.ReparsePoint) != 0)
-                        throw new InvalidDataException("Hatch Pet 技能包含不支持的链接目录。");
+                        throw new InvalidDataException(DesktopPetText.SkillLinkedDirectory);
                     pendingDirectories.Push(childDirectory);
                 }
             }

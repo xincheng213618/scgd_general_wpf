@@ -4,6 +4,7 @@ using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Globalization;
 using System.Windows;
 
 
@@ -30,6 +31,8 @@ namespace WindowsServicePlugin.CVWinSMS
         public override int Order => 1;
 
         public override string Header => Properties.Resources.ManagementService;
+
+        internal static string GetText(string key) => Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
 
         public string Description => GetDescription();
 
@@ -72,7 +75,7 @@ namespace WindowsServicePlugin.CVWinSMS
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), "服务管理工具:找到新版本，是否更新", "CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        if (MessageBox.Show(Application.Current.GetActiveWindow(), GetText("服务管理工具:找到新版本，是否更新"), "CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
                             string downloadDir = Environments.DirToolPackageCache;
                             string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[{version}].zip";
@@ -119,12 +122,12 @@ namespace WindowsServicePlugin.CVWinSMS
                                             }
                                             else
                                             {
-                                                MessageBox.Show("更新失败， 找不到更新所在的文件夹");
+                                                MessageBox.Show(GetText("更新失败， 找不到更新所在的文件夹"));
                                             }
                                         }
                                         catch (Exception ex)
                                         {
-                                            MessageBox.Show("更新失败，" + ex.Message);
+                                            MessageBox.Show(GetText("更新失败，") + ex.Message);
                                         }
 
                                         ProcessStartInfo startInfo = new()
@@ -204,7 +207,7 @@ namespace WindowsServicePlugin.CVWinSMS
         {
             Version version = await getLatestVersion();
             if (version == null || version <= new Version(0, 0, 0, 0))
-                throw new InvalidOperationException("无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。");
+                throw new InvalidOperationException(GetText("无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。"));
             return version;
         }
 
@@ -212,12 +215,12 @@ namespace WindowsServicePlugin.CVWinSMS
         {
             string message = status switch
             {
-                InstallToolUpdateCheckStatus.ToolMissing => "未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。",
-                InstallToolUpdateCheckStatus.UpToDate => "未发现更新，当前服务管理工具可继续使用。",
-                _ => "无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。",
+                InstallToolUpdateCheckStatus.ToolMissing => GetText("未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。"),
+                InstallToolUpdateCheckStatus.UpToDate => GetText("未发现更新，当前服务管理工具可继续使用。"),
+                _ => GetText("无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。"),
             };
             Application.Current.Dispatcher.Invoke(() => MessageBox.Show(
-                Application.Current.GetActiveWindow(), message, "检查旧服务管理工具更新",
+                Application.Current.GetActiveWindow(), message, GetText("检查旧服务管理工具更新"),
                 MessageBoxButton.OK,
                 status == InstallToolUpdateCheckStatus.Unavailable ? MessageBoxImage.Warning : MessageBoxImage.Information));
         }
@@ -226,8 +229,8 @@ namespace WindowsServicePlugin.CVWinSMS
         {
             log.Error("检查服务管理工具更新失败。", ex);
             Application.Current.Dispatcher.Invoke(() => MessageBox.Show(
-                Application.Current.GetActiveWindow(), $"检查服务管理工具更新失败：{ex.Message}",
-                "检查旧服务管理工具更新", MessageBoxButton.OK, MessageBoxImage.Error));
+                Application.Current.GetActiveWindow(), string.Format(GetText("检查服务管理工具更新失败：{0}"), ex.Message),
+                GetText("检查旧服务管理工具更新"), MessageBoxButton.OK, MessageBoxImage.Error));
         }
 
         public async Task Download()
@@ -251,7 +254,7 @@ namespace WindowsServicePlugin.CVWinSMS
                         Process.GetProcessesByName("CVWinSMS").ToList().ForEach(p => p.Kill());
                         using (System.Windows.Forms.FolderBrowserDialog folderBrowser = new System.Windows.Forms.FolderBrowserDialog())
                         {
-                            folderBrowser.Description = "请选择解压缩目录";
+                            folderBrowser.Description = GetText("请选择解压缩目录");
                             folderBrowser.ShowNewFolderButton = true;
                             folderBrowser.RootFolder = Environment.SpecialFolder.Desktop;
                             if (folderBrowser.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
@@ -313,7 +316,7 @@ namespace WindowsServicePlugin.CVWinSMS
             log.Error("打开或下载服务管理工具失败。", ex);
             MessageBox.Show(
                 Application.Current?.GetActiveWindow(),
-                $"打开或下载服务管理工具失败：{ex.Message}",
+                string.Format(GetText("打开或下载服务管理工具失败：{0}"), ex.Message),
                 "ColorVision",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -345,13 +348,13 @@ namespace WindowsServicePlugin.CVWinSMS
                         }
                     }
                 }
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "找不到管理工具，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), GetText("找不到管理工具，是否下载"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     await Download();
                     return;
                 }
 
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?", "Open in CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), GetText("I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?"), GetText("Open in CVWinSMS"), MessageBoxButton.YesNo) == MessageBoxResult.No) return;
                 using (System.Windows.Forms.OpenFileDialog openFileDialog = new())
                 {
                     openFileDialog.Title = "Select CVWinSMS.exe";

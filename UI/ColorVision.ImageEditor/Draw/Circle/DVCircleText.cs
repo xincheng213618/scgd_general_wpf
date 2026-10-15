@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -207,7 +208,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.RadiusX), Label = "Rx", ShowLabel = true, Width = 65, Order = 40, EditorKind = CompactInspectorEditorKind.Number },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.RadiusY), Label = "Ry", ShowLabel = true, Width = 65, Order = 41, EditorKind = CompactInspectorEditorKind.Number },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Rotation), Label = "θ°", ShowLabel = true, Width = 65, Order = 45, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "旋转角度" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Rotation), Label = "θ°", ShowLabel = true, Width = 65, Order = 45, EditorKind = CompactInspectorEditorKind.Number, ToolTip = LocalizedText.Get("旋转角度") },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Fill },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Text },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FontSize },

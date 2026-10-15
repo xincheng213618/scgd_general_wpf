@@ -9,7 +9,6 @@ using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
 using System.ComponentModel;
 using System.Reflection;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

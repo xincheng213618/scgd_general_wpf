@@ -82,6 +82,8 @@ public sealed class LvCameraNodeMigrationTests
         Assert.Equal("filter-legacy", first.POIFilterTempName);
         Assert.Equal("revise-legacy", first.POIReviseTempName);
         Assert.Equal(CVImageFlipMode.Y, first.FlipMode);
+        Assert.True(first.SaveFiles);
+        Assert.Equal(ColorVision.FileIO.CVFileSaveMode.Synchronous, first.SaveMode);
         Assert.Equal(80, first.Left);
         Assert.Equal(100, first.Top);
         Assert.Equal("legacy-bv-second", second.NodeName);
@@ -89,6 +91,36 @@ public sealed class LvCameraNodeMigrationTests
         Assert.Equal(420, second.Left);
         Assert.Same(second.GetAllInputOptions()[0], Assert.Single(first.GetAllOutputOptions()[0].ConnectedOption));
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SaveOptionsRoundTripThroughCanvasIgnoringRetiredAsyncFlag(bool saveFiles) => StaTest.Run(() =>
+    {
+        using var container = new CVNodeContainer();
+        container.LoadCanvas(ReadLegacyCanvas(null));
+        var node = Assert.IsType<LVCameraNode>(container.Nodes[0]);
+        node.SaveFiles = saveFiles;
+        var canvas = ReadRawCanvas(Convert.ToBase64String(container.GetCanvasData()));
+        using var legacyNode = new MemoryStream();
+        legacyNode.Write(canvas.Nodes[0]);
+        using (var writer = new BinaryWriter(legacyNode, Encoding.UTF8, leaveOpen: true))
+        {
+            byte[] key = Encoding.UTF8.GetBytes("SaveAsynchronously");
+            byte[] value = Encoding.UTF8.GetBytes("True");
+            writer.Write(key.Length); writer.Write(key);
+            writer.Write(value.Length); writer.Write(value);
+        }
+        canvas.Nodes[0] = legacyNode.ToArray();
+        using var legacyCanvas = new MemoryStream();
+        STNodeCanvasWriter.WriteRaw(legacyCanvas, canvas.Nodes, canvas.Connections, canvas.View[0], canvas.View[1], canvas.View[2]);
+        container.LoadCanvas(legacyCanvas.ToArray());
+        var restored = Assert.IsType<LVCameraNode>(container.Nodes[0]);
+        Assert.Equal(saveFiles, restored.SaveFiles);
+        Assert.Equal(saveFiles ? ColorVision.FileIO.CVFileSaveMode.Synchronous : ColorVision.FileIO.CVFileSaveMode.MemoryOnly, restored.SaveMode);
+        var saved = ReadRawCanvas(Convert.ToBase64String(container.GetCanvasData()));
+        Assert.DoesNotContain("SaveAsynchronously", Encoding.UTF8.GetString(saved.Nodes[0]));
+    });
 
     [Fact]
     public void NameFallbackRequiresOneTypeAndPrefersTheFullName() => StaTest.Run(() =>

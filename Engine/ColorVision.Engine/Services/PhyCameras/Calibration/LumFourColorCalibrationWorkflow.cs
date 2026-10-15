@@ -543,13 +543,28 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
     {
         public static LumFourColorCieCapture Load(string filePath)
         {
-            if (!string.Equals(System.IO.Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase) || !CVFileUtil.IsCIEFile(filePath))
-                throw new InvalidOperationException("请选择含 XYZ 数据的 CVCIE 图像，RAW 或普通预览图不能用于用户校正。");
+            bool isRaw = string.Equals(System.IO.Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase);
+            if ((!isRaw && !string.Equals(System.IO.Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase)) || !CVFileUtil.IsCIEFile(filePath))
+                throw new InvalidOperationException("请选择含 XYZ 数据的 CVCIE 或带可重放校正参数的 CVRAW 图像。");
 
             if (!CVFileUtil.Read(filePath, out CVCIEFile file))
                 throw new InvalidOperationException("无法读取 CVCIE 文件。");
             using (file)
             {
+                if (isRaw)
+                {
+                    file.FileExtType = CVType.Raw;
+                    ColorCalibrationSnapshot? snapshot = ColorCalibrationSnapshot.Read(filePath, file);
+                    if (snapshot?.CanReplay != true || snapshot.Channels != 3)
+                        throw new InvalidOperationException("请选择含 XYZ 数据的 CVCIE 或带可重放校正参数的 CVRAW 图像。");
+                    using RawColorMeasurementSource source = new(file, snapshot);
+                    int channelBytes = checked(file.Cols * file.Rows * sizeof(float));
+                    byte[] xyz = new byte[checked(channelBytes * 3)];
+                    for (int channel = 0; channel < 3; channel++)
+                        Buffer.BlockCopy(source.CreateChannel(channel), 0, xyz, channel * channelBytes, channelBytes);
+                    return new LumFourColorCieCapture(xyz, file.Cols, file.Rows, 32, 3, file.Gain, snapshot.Exposure.ToArray())
+                        { Source = System.IO.Path.GetFullPath(filePath) };
+                }
                 if (!CvcieSrgbRenderer.Supports(file.Channels, file.Bpp))
                     throw new InvalidOperationException("用户校正需要三通道浮点 XYZ 图像。");
                 byte[] data = file.Data?.ToArray() ?? throw new InvalidOperationException("CVCIE 文件没有图像数据。");

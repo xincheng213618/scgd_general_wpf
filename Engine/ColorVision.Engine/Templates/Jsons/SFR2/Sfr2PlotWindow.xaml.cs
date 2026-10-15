@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
         public Sfr2PlotWindow(string path)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             LoadFromFile(path);
         }
 

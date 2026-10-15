@@ -30,11 +30,11 @@
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5" >
                                 <TextBlock Text="SN" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
+                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel >
                                 <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Width="120"/>
-                                <CheckBox Content="{x:Static properties:Resources.IsEnable}" IsChecked="{Binding IsAutoOpen}"/>
+                                <CheckBox Content="{x:Static properties:Resources.IsEnable}" IsChecked="{Binding IsAutoOpen}" ToolTip="服务模式自动连接。本地模式需要明确打开，不因执行或关闭操作自动打开。"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -43,7 +43,7 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="{x:Static properties:Resources.CategoryModel}" Width="120"/>
-                                <hc:ComboBox x:Name="ComboBoxSensor" AutoComplete ="True" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Category}"/>
+                                <hc:ComboBox x:Name="ComboBoxSensor" IsEditable="True" AutoComplete ="True" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Value" Text="{Binding Category}"/>
                             </DockPanel>
                             <DockPanel Margin="0,10" >
                                 <TextBlock Text="{x:Static properties:Resources.CommunicationType}" Width="120"/>
@@ -67,7 +67,7 @@
                                 </DockPanel>
                                 <DockPanel Margin="0,2" >
                                     <TextBlock Text="{x:Static properties:Resources.BaudRate}" Width="120"/>
-                                    <hc:ComboBox  x:Name="ComboBoxPort" IsEditable="True" SelectedIndex="0" Text="{Binding Port}" hc:InfoElement.ShowClearButton="True"  />
+                                    <hc:ComboBox  x:Name="ComboBoxPort" IsEditable="True" Text="{Binding Port}" hc:InfoElement.ShowClearButton="True"  />
                                 </DockPanel>
                             </StackPanel>
 

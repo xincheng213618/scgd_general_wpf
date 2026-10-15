@@ -4,6 +4,8 @@ using ColorVision.Database;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
@@ -67,6 +69,43 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
     {
         public PhyLicenseDao(LocalTemplateStore? store = null, Func<bool>? isConnected = null) : base("device-license", store, isConnected) { }
         public static PhyLicenseDao Instance { get; set; } = new PhyLicenseDao();
+
+        internal static LicenseModel? FindUsableCameraLicense(IEnumerable<LicenseModel> licenses, DateTimeOffset now)
+        {
+            LicenseModel? best = null;
+            DateTimeOffset bestExpiry = DateTimeOffset.MinValue;
+            foreach (LicenseModel license in licenses)
+            {
+                if (!TryGetUsableCameraLicenseExpiry(license, now, out DateTimeOffset expiry)) continue;
+                if (best == null || expiry > bestExpiry
+                    || (expiry == bestExpiry && StringComparer.OrdinalIgnoreCase.Compare(license.MacAddress, best.MacAddress) < 0))
+                {
+                    best = license;
+                    bestExpiry = expiry;
+                }
+            }
+            return best;
+        }
+
+        private static bool TryGetUsableCameraLicenseExpiry(LicenseModel license, DateTimeOffset now, out DateTimeOffset expiry)
+        {
+            expiry = default;
+            if (license.LiceType != 0 || string.IsNullOrWhiteSpace(license.MacAddress) || string.IsNullOrWhiteSpace(license.LicenseValue)) return false;
+            try
+            {
+                // Use the actual license payload; the database expiry column can be stale.
+                // The native driver remains responsible for signature and hardware authorization checks.
+                ColorVisionLicense payload = license.ColorVisionLicense;
+                if (string.IsNullOrWhiteSpace(payload.DeviceMode)
+                    || !long.TryParse(payload.ExpiryDate, NumberStyles.Integer, CultureInfo.InvariantCulture, out long seconds)) return false;
+                expiry = DateTimeOffset.FromUnixTimeSeconds(seconds);
+                return expiry > now;
+            }
+            catch (Exception ex) when (ex is FormatException or JsonException or ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
 
         public async Task<int> DeleteExpiredAsync(int[] licenseIds, DateTime cutoff)
         {

@@ -11,10 +11,12 @@ const pct = (a,b) => b ? (a/b*100).toFixed(1) + "%" : "—";
 const sum = (rows, key) => rows.reduce((n,r) => n + Number(r[key] || 0), 0);
 const parseDay = day => new Date(day + "T00:00:00Z");
 const shiftDay = (day, delta) => new Date(parseDay(day).getTime() + delta*86400000).toISOString().slice(0,10);
+const dayCount = (start, end) => Math.round((parseDay(end)-parseDay(start))/86400000)+1;
 const weekdays = ["周一","周二","周三","周四","周五","周六","周日"];
 const palette = ["#6377e7","#42a995","#8f80cd","#dea259","#dc8293","#74a6cc","#abb3c7"];
 const S = {view:"overview", project:"", directory:null, area:"", query:"", sort:"code", page:0,
-  start:shiftDay(H.last,-89), end:H.last, preset:"90", grain:"周", day:"", commitQuery:"", commitPage:0};
+  start:shiftDay(H.last,-89), end:H.last, preset:"90", grain:"周", day:"", commitQuery:"", commitPage:0,
+  scaleStart:H.first, scaleEnd:H.last, scalePreset:"all"};
 if (S.start < H.first) S.start = H.first;
 let exported = [];
 
@@ -50,22 +52,24 @@ function bars(rows, key="code", limit=8) {
 function legend(series) {
   return `<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join("")}</div>`;
 }
-function lineChart(rows, xKey, series, {height=220, area=false}={}) {
+function lineChart(rows, xKey, series, {height=220, area=false, zeroBaseline=true}={}) {
   if (!rows.length) return empty();
-  const width=840, left=62, right=20, top=15, bottom=34;
+  const width=840, left=zeroBaseline?62:88, right=20, top=15, bottom=34;
   const dates=rows.map(r=>parseDay(r[xKey]).getTime());
   const first=Math.min(...dates), last=Math.max(...dates);
   const vals=rows.flatMap(r=>series.map(s=>Number(r[s.key] || 0)));
-  const low=Math.min(0,...vals), high=Math.max(1,...vals), span=high-low;
+  const min=Math.min(...vals), max=Math.max(...vals), padding=Math.max(1,(max-min)*.05);
+  const low=zeroBaseline?Math.min(0,min):min-padding, high=zeroBaseline?Math.max(1,max):max+padding, span=high-low;
+  const baseline=Math.max(low,Math.min(high,0));
   const x=i=>left+(dates[i]-first)/(last-first || 1)*(width-left-right);
   const y=v=>top+(high-v)/span*(height-top-bottom);
   let svg=`<svg class="chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(series.map(s=>s.label).join('、'))}趋势">`;
-  for(let i=0;i<5;i++) {const v=low+span*i/4;svg+=`<line class="gridline" x1="${left}" x2="${width-right}" y1="${y(v)}" y2="${y(v)}"/><text x="${left-10}" y="${y(v)+4}" text-anchor="end">${compact(v)}</text>`;}
+  for(let i=0;i<5;i++) {const v=low+span*i/4;svg+=`<line class="gridline" x1="${left}" x2="${width-right}" y1="${y(v)}" y2="${y(v)}"/><text x="${left-10}" y="${y(v)+4}" text-anchor="end">${zeroBaseline?compact(v):num(v)}</text>`;}
   const marks=[...new Set(Array.from({length:Math.min(5,rows.length)},(_,i)=>Math.round(i*(rows.length-1)/Math.max(1,Math.min(5,rows.length)-1))))];
   marks.forEach(i=>svg+=`<text x="${x(i)}" y="${height-7}" text-anchor="${i===0?'start':i===rows.length-1?'end':'middle'}">${esc(rows[i][xKey])}</text>`);
   series.forEach((s,si)=>{
     const points=rows.map((r,i)=>`${x(i)},${y(r[s.key]||0)}`).join(" ");
-    if(area && si===0) svg+=`<polygon points="${x(0)},${y(0)} ${points} ${x(rows.length-1)},${y(0)}" fill="${s.color}" opacity=".09"/>`;
+    if(area && si===0) svg+=`<polygon points="${x(0)},${y(baseline)} ${points} ${x(rows.length-1)},${y(baseline)}" fill="${s.color}" opacity=".09"/>`;
     svg+=`<polyline points="${points}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round"/>`;
     rows.forEach((r,i)=>svg+=`<circle cx="${x(i)}" cy="${y(r[s.key]||0)}" r="${rows.length>150?2:3}" fill="${s.color}" tabindex="0"><title>${esc(r[xKey])} · ${esc(s.label)} ${num(r[s.key])}</title></circle>`);
   });
@@ -78,19 +82,36 @@ function columnChart(values, labels, color=palette[0]) {
   values.forEach((v,i)=>{const h=v/max*(height-top-bottom),x=left+cw*i+cw*.18;out+=`<rect x="${x}" y="${height-bottom-h}" width="${cw*.64}" height="${h}" rx="3" fill="${color}" tabindex="0"><title>${esc(labels[i])} · ${num(v)} 次提交</title></rect><text x="${x+cw*.32}" y="${height-6}" text-anchor="middle">${labels.length>12&&i%3?'':esc(labels[i])}</text>`;});
   return '<div class="chart-scroll">'+out+"</svg></div>";
 }
+function scaleRows() { return H.days.filter(row=>row.date>=S.scaleStart&&row.date<=S.scaleEnd); }
+function setScaleWindow(start, days) {
+  days=Math.max(1,Math.min(dayCount(H.first,H.last),Math.round(days)));
+  const latestStart=shiftDay(H.last,1-days);
+  S.scaleStart=start<H.first?H.first:start>latestStart?latestStart:start;
+  S.scaleEnd=shiftDay(S.scaleStart,days-1);
+  S.scalePreset="";
+}
+function zoomScale(factor) {
+  const days=Math.max(1,Math.round(dayCount(S.scaleStart,S.scaleEnd)*factor));
+  setScaleWindow(shiftDay(S.scaleEnd,1-days),days);
+}
+function scaleControls() {
+  const days=dayCount(S.scaleStart,S.scaleEnd),full=dayCount(H.first,H.last);
+  return `<div class="toolbar"><div class="segment">${[['30','近 30 天'],['90','近 90 天'],['all','全部历史']].map(([k,v])=>`<button data-scale-range="${k}" class="${S.scalePreset===k?'active':''}">${v}</button>`).join('')}</div><div class="segment"><button data-scale-zoom="0.5" ${days<=1?'disabled':''}>放大 ＋</button><button data-scale-zoom="2" ${days>=full?'disabled':''}>缩小 −</button></div><div class="segment"><button data-scale-move="-1" aria-label="查看更早日期" ${S.scaleStart<=H.first?'disabled':''}>←</button><button data-scale-move="1" aria-label="查看更晚日期" ${S.scaleEnd>=H.last?'disabled':''}>→</button></div><label>从<input id="scale-start" aria-label="规模开始日期" type="date" min="${H.first}" max="${S.scaleEnd}" value="${S.scaleStart}"></label><label>至<input id="scale-end" aria-label="规模结束日期" type="date" min="${S.scaleStart}" max="${H.last}" value="${S.scaleEnd}"></label></div>`;
+}
 function overview() {
   const r=H.recent_week,p=H.previous_week, total=W.total;
   const recent=r.available, comparison=p.available && recent;
-  const sizes=H.weeks, changes=sizes.slice(-16);
+  const sizes=scaleRows(), changes=H.weeks.slice(-16);
   const weekTitle=recent?`${r.start} — ${r.end}`:"历史不足一个完整自然周";
   const avg=D.summary.latest_weekly_churn;
   exported=H.weeks;
   let out=`<div class="metrics">${metric("工作区代码 / 内容",num(total.code),"行",`${num(total.files)} 个文件 · 含未提交修改`,"当前磁盘")}${metric("工程目录",num(W.project_count),"个",`${num(W.project_definition_count)} 个工程定义 · 可逐层查看`)}${metric("最近完整周净增长",recent?signed(r.net):"—","行",recent?compare(r.net,p.net,comparison):weekTitle)}${metric("最近完整周提交",recent?num(r.commits):"—","次",recent?`${r.active_days} 个活跃日 · ${compare(r.commits,p.commits,comparison)}`:weekTitle)}</div>`;
-  const scale=lineChart(sizes,"week_start",[{key:"code_lines",label:"代码 / 内容行",color:palette[0]}],{area:true});
+  const scale=scaleControls()+lineChart(sizes,"date",[{key:"code_lines",label:"代码 / 内容行",color:palette[0]}],
+    {area:true,zeroBaseline:S.scaleStart===H.first&&S.scaleEnd===H.last});
   const max=Math.max(1,r.churn,p.churn,avg);
   const comparisonRows=[{name:"最近完整周",value:r.churn,available:recent,color:palette[0]},{name:"上一完整周",value:p.churn,available:p.available,color:palette[2]},{name:`近 ${D.summary.latest_complete_weeks} 周均值`,value:avg,available:D.summary.latest_complete_weeks>0,color:palette[5]}];
   const weekly=`<div class="comparison">${comparisonRows.map(v=>`<div class="compare-row"><span class="compare-label">${v.name}</span><div class="track"><div class="fill" style="width:${v.available?v.value/max*100:0}%;background:${v.color}"></div></div><span class="compare-value">${v.available?compact(v.value):"—"}</span></div>`).join("")}</div><div class="stat-list"><div><span>新增行</span><b class="positive">${recent?num(r.added):"—"}</b></div><div><span>删除行</span><b class="negative">${recent?num(r.deleted):"—"}</b></div><div><span>净增长</span><b>${recent?signed(r.net):"—"}</b></div><div><span>自然日均变更</span><b>${recent?num(r.churn/7):"—"}</b></div></div>${recent&&avg?`<div class="callout">最近完整周总变更为近 ${D.summary.latest_complete_weeks} 周均值的 <strong>${pct(r.churn,avg)}</strong>。总变更衡量文本改动，净增长衡量规模变化。</div>`:""}`;
-  out+=`<div class="grid">${panel("代码规模的演进","Git 精确周快照 · 不含未提交修改",scale,`<span class="tag">${num(D.summary.commits)} 个提交节点</span>`)}${panel("最近一周，变化有多大？",weekTitle,weekly)}</div>`;
+  out+=`<div class="grid">${panel("代码规模的演进","Git 精确日快照 · 每天一个点 · 不含未提交修改",scale,`<span class="tag">${num(sizes.length)} 个日快照</span>`)}${panel("最近一周，变化有多大？",weekTitle,weekly)}</div>`;
   out+=`<div class="grid equal">${panel("近期新增与删除","最近 16 个自然周 · 最后一期可能尚未结束",lineChart(changes,"week_start",[{key:"added_lines",label:"新增",color:palette[1]},{key:"deleted_lines",label:"删除",color:palette[4]}]))}${panel("近期净增长","新增 − 删除 · 负值表示文本规模收缩",lineChart(changes,"week_start",[{key:"net_growth",label:"净增长",color:palette[0]}]))}</div>`;
   out+=`<div class="grid equal">${panel("当前目录规模","工作区代码 / 内容行 · 前 8 个目录",bars(aggregate(W.files,"area")))}${panel("当前语言构成","工作区代码 / 内容行 · 前 8 种语言",bars(W.languages.map(x=>({...x,name:x.language}))))}</div>`;
   out+=panel("历史周期明细","导出按钮可导出全部周快照",`<details><summary>展开最近 16 周的精确数据</summary><div class="table-wrap"><table><thead><tr><th>自然周</th><th>状态</th><th class="num">代码 / 内容行</th><th class="num">新增</th><th class="num">删除</th><th class="num">净增长</th><th class="num">提交</th></tr></thead><tbody>${[...changes].reverse().map(w=>`<tr><td>${esc(w.week_start)}</td><td>${esc(w.week_status)}</td><td class="num">${num(w.code_lines)}</td><td class="num positive">${num(w.added_lines)}</td><td class="num negative">${num(w.deleted_lines)}</td><td class="num">${signed(w.net_growth)}</td><td class="num">${num(w.commits)}</td></tr>`).join("")}</tbody></table></div></details>`);
@@ -218,7 +239,7 @@ function activity() {
 
 function methods() {
   exported=[];
-  return `<div class="methods">${panel("两种数据来源，各回答不同问题","",`<table><thead><tr><th>范围</th><th>来源</th><th>包含未提交修改</th></tr></thead><tbody><tr><td>当前项目与文件规模</td><td>本次扫描磁盘上的工作区文件</td><td>是，包括未被忽略的未跟踪文件</td></tr><tr><td>历史规模、变更与提交时间</td><td>${esc(H.ref)} 的 Git 第一父链，合并按第一父差异计一次</td><td>否</td></tr></tbody></table><h3>工作区统计</h3><p>工程定义识别 .csproj、.vcxproj、.fsproj、.vbproj、.shproj。同一目录的多个定义合并为一组；每个文件归属最近的祖先工程目录。没有工程定义的文件按顶层目录归组，嵌套工程归自己。此处统计物理文件，不执行 MSBuild，不展开链接文件，也不等同于某个配置实际编译的文件列表。</p><p>已识别 ${num(W.total.files)} 个文本文件，${num(W.project_count)} 个工程目录，${num(W.project_definition_count)} 个工程定义。未识别、二进制、缺失或越界文件跳过 ${num(W.skipped)} 个。bin、obj、node_modules 等固定目录排除；${W.exclude_generated?'已开启已知生成文件后缀排除':'未开启生成文件排除，Designer 等已跟踪内容可能计入'}。</p><h3>“代码 / 内容行”是什么</h3><p>非空且不只含注释的行。包含 Markdown、JSON、XAML、工程配置等文本内容，不全部是可执行代码。纯注释和空行另列；三者之和等于物理行。采用与 count_code_lines.py 相同的字符级分类器，不是语言编译器。</p><h3>时间和比较</h3><p>提交时间使用 Git 提交者时间（%cI），保留每条记录自带的日期和 UTC 偏移；可能不同于作者原始编写时间。小时分布反映提交出现的时段，不能反推工作时长。历史范围为 ${H.first} 至 ${H.last}；近 30 / 90 / 365 天均以所选历史最后一天为终点。</p><p>“最近完整周”是历史最后日期所在周之前的周一至周日，与再前一个完整周比较。历史没有覆盖整周时显示不可比较；基数为 0 时不计算百分比。日历最多显示所选范围尾部 365 天，图表与区间指标覆盖完整选择范围。</p><h3>变更与规模</h3><p>总变更＝新增＋删除；净增长＝新增−删除。重命名按删除加新增计量。注释和空行也在 Git diff 中；每周代码 / 内容规模则重新读取周末提交快照分类。文本变更不等同于功能质量或个人产出。工作区值和 ${esc(H.ref)} 历史值来自不同快照。</p><h3>刷新和使用</h3><p>在仓库根目录运行 <code>py Scripts/generate_code_history_dashboard.py</code> 重新生成此页面。页面数据内嵌，可离线查看；主题选择保存在当前浏览器。图表点可悬停或键盘聚焦查看数值，表格和导出提供精确数据。文件路径与提交标题仅作为文本显示。</p><h3>参考</h3><p><a href="https://docs.github.com/en/repositories/viewing-activity-and-data-for-your-repository/analyzing-changes-to-a-repositorys-content" target="_blank" rel="noreferrer">GitHub：提交频率与代码变更</a> · <a href="https://git-scm.com/docs/git-log" target="_blank" rel="noreferrer">Git：历史遍历与提交时间</a></p>`)}${panel("扫描信息","",`<p>工作区：<code>${esc(W.root)}</code></p><p>Git 提交：<code>${esc(H.head)}</code></p><p>历史生成时间：${esc(H.generatedAt)}</p><p>工作区扫描完成：${esc(W.scannedAt)}</p><p>若扫描期间其它任务正在改文件，这份报告可能跨越数个写入时点。需要严格一致快照时，请在相关修改完成后重新运行。</p>`)}</div>`;
+  return `<div class="methods">${panel("两种数据来源，各回答不同问题","",`<table><thead><tr><th>范围</th><th>来源</th><th>包含未提交修改</th></tr></thead><tbody><tr><td>当前项目与文件规模</td><td>本次扫描磁盘上的工作区文件</td><td>是，包括未被忽略的未跟踪文件</td></tr><tr><td>历史规模、变更与提交时间</td><td>${esc(H.ref)} 的 Git 第一父链，合并按第一父差异计一次</td><td>否</td></tr></tbody></table><h3>工作区统计</h3><p>工程定义识别 .csproj、.vcxproj、.fsproj、.vbproj、.shproj。同一目录的多个定义合并为一组；每个文件归属最近的祖先工程目录。没有工程定义的文件按顶层目录归组，嵌套工程归自己。此处统计物理文件，不执行 MSBuild，不展开链接文件，也不等同于某个配置实际编译的文件列表。</p><p>已识别 ${num(W.total.files)} 个文本文件，${num(W.project_count)} 个工程目录，${num(W.project_definition_count)} 个工程定义。未识别、二进制、缺失或越界文件跳过 ${num(W.skipped)} 个。bin、obj、node_modules 等固定目录排除；${W.exclude_generated?'已开启已知生成文件后缀排除':'未开启生成文件排除，Designer 等已跟踪内容可能计入'}。</p><h3>“代码 / 内容行”是什么</h3><p>非空且不只含注释的行。包含 Markdown、JSON、XAML、工程配置等文本内容，不全部是可执行代码。纯注释和空行另列；三者之和等于物理行。采用与 count_code_lines.py 相同的字符级分类器，不是语言编译器。</p><h3>时间和比较</h3><p>提交时间使用 Git 提交者时间（%cI），保留每条记录自带的日期和 UTC 偏移；可能不同于作者原始编写时间。小时分布反映提交出现的时段，不能反推工作时长。历史范围为 ${H.first} 至 ${H.last}；近 30 / 90 / 365 天均以所选历史最后一天为终点。</p><p>“最近完整周”是历史最后日期所在周之前的周一至周日，与再前一个完整周比较。历史没有覆盖整周时显示不可比较；基数为 0 时不计算百分比。日历最多显示所选范围尾部 365 天，图表与区间指标覆盖完整选择范围。</p><h3>变更与规模</h3><p>总变更＝新增＋删除；净增长＝新增−删除。重命名按删除加新增计量。注释和空行也在 Git diff 中；每日 / 每周代码 / 内容规模则重新读取当天 / 当周最后一次提交快照分类，无提交日 / 周沿用前值。文本变更不等同于功能质量或个人产出。工作区值和 ${esc(H.ref)} 历史值来自不同快照。</p><h3>刷新和使用</h3><p>在仓库根目录运行 <code>py Scripts/generate_code_history_dashboard.py</code> 重新生成此页面。页面数据内嵌，可离线查看；主题选择保存在当前浏览器。图表点可悬停或键盘聚焦查看数值，表格和导出提供精确数据。文件路径与提交标题仅作为文本显示。</p><h3>参考</h3><p><a href="https://docs.github.com/en/repositories/viewing-activity-and-data-for-your-repository/analyzing-changes-to-a-repositorys-content" target="_blank" rel="noreferrer">GitHub：提交频率与代码变更</a> · <a href="https://git-scm.com/docs/git-log" target="_blank" rel="noreferrer">Git：历史遍历与提交时间</a></p>`)}${panel("扫描信息","",`<p>工作区：<code>${esc(W.root)}</code></p><p>Git 提交：<code>${esc(H.head)}</code></p><p>历史生成时间：${esc(H.generatedAt)}</p><p>工作区扫描完成：${esc(W.scannedAt)}</p><p>若扫描期间其它任务正在改文件，这份报告可能跨越数个写入时点。需要严格一致快照时，请在相关修改完成后重新运行。</p>`)}</div>`;
 }
 function render() {
   const labels={overview:['代码概览','当前规模、历史演进与最近完整周的变化'],projects:['项目规模','从工程到目录，再到每一个文件'],activity:['提交节奏','观察提交时间、活跃程度与文本变更'],methods:['统计口径','数据来源、计数规则与比较边界']};
@@ -253,6 +274,9 @@ function exportCsv() {
 document.addEventListener('click',event=>{
   const b=event.target.closest('button');if(!b||b.disabled)return;
   if(b.dataset.view){S.view=b.dataset.view;render();window.scrollTo(0,0);}
+  else if(b.dataset.scaleRange){const days=b.dataset.scaleRange==='all'?dayCount(H.first,H.last):Number(b.dataset.scaleRange);setScaleWindow(shiftDay(H.last,1-days),days);S.scalePreset=b.dataset.scaleRange;render();}
+  else if(b.dataset.scaleZoom){zoomScale(Number(b.dataset.scaleZoom));render();}
+  else if(b.dataset.scaleMove){const days=dayCount(S.scaleStart,S.scaleEnd);setScaleWindow(shiftDay(S.scaleStart,Number(b.dataset.scaleMove)*Math.max(1,Math.round(days/2))),days);render();}
   else if(b.dataset.project){S.project=b.dataset.project;S.directory=null;S.page=0;render();window.scrollTo(0,0);}
   else if(b.hasAttribute('data-back-projects')){S.project='';S.directory=null;S.page=0;render();}
   else if(b.hasAttribute('data-directory')){S.directory=b.dataset.directory;S.page=0;render();}
@@ -265,7 +289,12 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('change',event=>{
   const el=event.target;
-  if(el.id==='area-filter'){S.area=el.value;S.page=0;}
+  if(el.id==='scale-start'||el.id==='scale-end'){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(el.value)||el.value<H.first||el.value>H.last){render();return;}
+    if(el.id==='scale-start'){S.scaleStart=el.value;if(S.scaleStart>S.scaleEnd)S.scaleEnd=S.scaleStart;}
+    else{S.scaleEnd=el.value;if(S.scaleEnd<S.scaleStart)S.scaleStart=S.scaleEnd;}
+    S.scalePreset='';
+  }else if(el.id==='area-filter'){S.area=el.value;S.page=0;}
   else if(el.id==='project-sort'){S.sort=el.value;S.page=0;}
   else if(el.id==='date-start'||el.id==='date-end'){
     if(!el.value||el.value<H.first||el.value>H.last){render();return;}

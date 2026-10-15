@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/04 源表")]
+[STNode("源表", CategoryOrder = 400)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.SMUNode")]
 public class SMUNode : SMUBaseNode
 {

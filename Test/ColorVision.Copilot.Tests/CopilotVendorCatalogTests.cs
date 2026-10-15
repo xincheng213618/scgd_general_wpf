@@ -1,5 +1,3 @@
-using ColorVision.Copilot;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotVendorCatalogTests
@@ -46,5 +44,14 @@ public sealed class CopilotVendorCatalogTests
         Assert.DoesNotContain("glm-4.5", CopilotVendorCatalog.GetModelPresets(CopilotVendorType.GLM));
         Assert.DoesNotContain("MiniMax-M1", CopilotVendorCatalog.GetModelPresets(CopilotVendorType.MiniMax));
         Assert.DoesNotContain("MiniMax-Text-01", CopilotVendorCatalog.GetModelPresets(CopilotVendorType.MiniMax));
+    }
+
+    [Theory]
+    [InlineData("gpt-5.6-sol", "GPT-5.6 Sol")]
+    [InlineData("GPT-6-ASTRA", "GPT-6 Astra")]
+    [InlineData("deepseek-flash", "deepseek-flash")]
+    public void ModelDisplayNameUsesReadableOpenAiCasing(string model, string expected)
+    {
+        Assert.Equal(expected, CopilotVendorCatalog.FormatModelDisplayName(model));
     }
 }

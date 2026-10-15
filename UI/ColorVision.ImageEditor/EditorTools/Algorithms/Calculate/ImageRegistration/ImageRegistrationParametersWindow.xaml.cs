@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -38,7 +39,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
             PropertyEditorWindow editor = new(Parameters, PropertyEditorEditMode.Transactional)
             {
                 Owner = this,
-                Title = "图像配准参数",
+                Title = LocalizedText.Get("图像配准参数"),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             editor.Submitted += (_, _) => submitted = true;
@@ -110,8 +111,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
         private void UpdateSummary()
         {
             SummaryText.Text = string.Format(CultureInfo.InvariantCulture,
-                "Preset: {0}\n方法: {1}    插值: {2}    边界: {3}\n相位最小响应: {4:G6}    最大平移: {5:G8}px\nORB 特征上限: {6:N0}    最少匹配/内点: {7}/{8}    重投影阈值: {9:G6}px",
-                PresetId ?? "(未命名)", Parameters.Method, Parameters.Interpolation, Parameters.Border,
+                LocalizedText.Get("Preset: {0}\n方法: {1}    插值: {2}    边界: {3}\n相位最小响应: {4:G6}    最大平移: {5:G8}px\nORB 特征上限: {6:N0}    最少匹配/内点: {7}/{8}    重投影阈值: {9:G6}px"),
+                PresetId ?? LocalizedText.Get("(未命名)"), Parameters.Method, Parameters.Interpolation, Parameters.Border,
                 Parameters.MinimumPhaseResponse, Parameters.MaximumTranslationPixels, Parameters.MaximumFeatures,
                 Parameters.MinimumMatchCount, Parameters.MinimumInlierCount, Parameters.ConsensusReprojectionThresholdPixels);
         }

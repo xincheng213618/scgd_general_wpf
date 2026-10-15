@@ -11,22 +11,22 @@ related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.s
 
 # CVRAW / CVCIE 图像导出
 
-原生导出将 CVRAW 原图或 CVCIE 的选定通道写为普通图像，由 `CVRawFileExporter`、`ExportCVCIE` 和 `VExportCIE` 实现。它与 [Copilot 批量图像工具](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#copilot-批量图像工具)使用不同的输出路径；批量工具的一源一图和同名编号规则不能套用到这里。专有文件解码与关联源图的读取边界见 [FileIO](./ColorVision.FileIO.md)。
+原生导出将 CVRAW 原图、可重放校正参数生成的 XYZ，或旧服务 CVCIE 的选定通道写为普通图像，由 `CVRawFileExporter`、`ExportCVCIE` 和 `VExportCIE` 实现。它与 [Copilot 批量图像工具](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#copilot-批量图像工具)使用不同的输出路径；批量工具的一源一图和同名编号规则不能套用到这里。专有文件解码与关联源图的读取边界见 [FileIO](./ColorVision.FileIO.md)。
 
 ## 使用导出窗口
 
-在解决方案中选中存在的 `.cvraw` 或 `.cvcie` 文件，使用右键“导出”；已打开的 CV 图像也提供“导出”入口。窗口用于处理单个文件：
+在解决方案中选中存在的 `.cvraw` 或 `.cvcie` 文件，使用右键“导出”；已打开的 CV 图像也提供“导出”入口，CVRAW 命中进程内缓存即可导出，异步尚未落盘和仅缓存模式不要求源磁盘文件存在。缓存淘汰后的读取按普通缺失文件处理。窗口用于处理单个文件：
 
 1. 核对源文件、尺寸、位深与通道数。
-2. CVCIE 可选择 Y；三通道文件另可选择 X、Z，关联原图可读取时才显示“原图”。CVRAW 直接导出原图。
-3. 设置名称、输出目录和格式。CVRAW 提供 TIFF、PNG、JPEG，CVCIE 窗口提供 TIFF；TIFF 可选 LZW 或 ZIP。PNG 使用自动压缩，JPEG 使用质量 100。
+2. CVCIE 可选择 Y；三通道文件另可选择 X、Z，关联原图可读取时才显示“原图”。带有效且 `CanReplay=true` 校正参数的 CVRAW 同样提供 CIE 通道选择，原图来自自身；单通道亮度校正只有 Y。无可重放参数的 CVRAW 只导出原图。
+3. 设置名称、输出目录和格式。普通 CVRAW 提供 TIFF、PNG、JPEG；具备 CIE 通道的 CVRAW 与 CVCIE 窗口提供 TIFF。TIFF 可选 LZW 或 ZIP。PNG 使用自动压缩，JPEG 使用质量 100。
 4. 点击导出。工作在后台执行，期间表单和按钮禁用；成功提示后关闭窗口，异常提示后保留窗口。进度条不表示通道完成比例。
 
 名称默认取源文件主干，可在窗口中修改。目录可新建，最近导出位置通过 `recent-image-export-locations.json` 保存。导出会直接写目标文件，没有同名覆盖确认或整组回滚；需要保留已有文件时选择新的空目录。
 
 ## TIFF 中的 ColorVision 参数
 
-TIFF 输出在标准 `ImageDescription`（Tag 270）中保存 `ColorVision.CVImage/1` JSON，不重新编码已经由 OpenCV 写出的像素。参数包含源类型、实际导出的 `Src` / `X` / `Y` / `Z` 通道、输入及关联文件名、CV 文件版本、行列数、位深、源通道数、NDPort、增益和各源通道曝光值；文件名只保存末级名称，不写本机完整路径。CVCIE 的 `Src` 图使用关联 CVRAW 自己的文件头参数，X/Y/Z 使用 CVCIE 文件头参数。
+TIFF 输出在标准 `ImageDescription`（Tag 270）中保存 `ColorVision.CVImage/1` JSON，不重新编码已经由 OpenCV 写出的像素。参数包含源类型、实际导出的 `Src` / `X` / `Y` / `Z` 通道、输入及关联文件名、CV 文件版本、行列数、位深、源通道数、NDPort、增益和各源通道曝光值；文件名只保存末级名称，不写本机完整路径。CVCIE 的 `Src` 图使用关联 CVRAW 自己的文件头参数，X/Y/Z 使用 CVCIE 文件头参数。校正 CVRAW 的 X/Y/Z 按参数逐通道生成 32 位浮点 TIFF，保留负值，不做显示归一化；元数据源类型仍为 CVRAW，位深为输出的 32 位。导出不生成中间 CVCIE，也不改写源图。
 
 再次用 ColorVision 打开这类 TIFF 时，解析成功的字段显示在图像信息的“图像元数据”分组中，键名以 `ColorVision.` 开头。普通第三方 TIFF、旧版 ColorVision TIFF、缺少 Tag 270、schema 不匹配或 JSON 损坏时只跳过 ColorVision 参数，不影响像素打开。PNG/JPEG 导出不包含这组 TIFF 参数；当前文件头也不包含算法模板或设备配置，因此这些上层参数不会被推断写入。
 
@@ -59,11 +59,12 @@ $colorVisionExe = 'C:\Program Files\ColorVision Inc\ColorVision\ColorVision.exe'
 
 ## 通道与输出名称
 
-CLI 不提供自定义名称或通道选择参数。默认名称为源文件主干，默认导出原图；CVCIE 另默认选中 X、Y、Z，但只写文件实际具有的通道。一次只导出一张图时直接使用 `Name`；一次导出多张图时，输出器将 `Name` 与下列通道后缀组合，再追加格式后缀。名称中即使包含点，也会保留 `_Src`、`_X`、`_Y`、`_Z`，不会让多个通道落到同一路径。
+CLI 不提供自定义名称或通道选择参数。默认名称为源文件主干，默认导出原图；CVCIE 和带可重放校正参数的 CVRAW 另默认选中可用的 X、Y、Z。一次只导出一张图时直接使用 `Name`；一次导出多张图时，输出器将 `Name` 与下列通道后缀组合，再追加格式后缀。名称中即使包含点，也会保留 `_Src`、`_X`、`_Y`、`_Z`，不会让多个通道落到同一路径。
 
 | 源内容 | 文件名示例，默认名称为 `sample` |
 | --- | --- |
 | CVRAW 原图 | `sample.tiff` |
+| 三通道校正 CVRAW 原图和 XYZ | `sample_Src.tiff`、`sample_X.tiff`、`sample_Y.tiff`、`sample_Z.tiff` |
 | CVCIE 三通道 | `sample_X.tiff`、`sample_Y.tiff`、`sample_Z.tiff` |
 | CVCIE 只导出一个通道或只导出关联原图 | `sample.tiff` |
 | CVCIE 多图并包含关联原图 | 原图另写 `sample_Src.tiff` |
@@ -88,4 +89,4 @@ CVCIE 关联原图不存在或不能读取时可跳过原图，继续导出可�
 
 `FileProcessorCVRaw.cs` 负责 CLI 参数和静默退出；`VExportCIE` 负责名称、通道、编码与路径；`ExportCVCIE.xaml.cs` 负责窗口状态和提示；`FileProcessorFactory.TryExportFile` 与 `App.Application_Startup` 决定分派和上层失败语义。随包的 `colorvision-batch-image-conversion` 技能保留脚本执行所需的最小参数与失败规则，不能只依赖未随包交付的仓库文档。
 
-`ExportCieTests` 覆盖目录创建、16 位 RAW 的 TIFF/PNG 像素、单图无后缀、带点名称下原图与 XYZ 多图的独立后缀、相对关联原图、JPEG 转换及窗口选项策略。这些测试入口不证明进程退出码、启动弹窗、超时或整组输出的实机行为已通过验证；文档核对不需要启动导出、覆盖文件或读取现场样本。
+`ExportCieTests` 覆盖目录创建、16 位 RAW 的 TIFF/PNG 像素、校正 RAW 的浮点 XYZ/Y 数值与负值、不可重放参数的原图回退、单图无后缀、带点名称下原图与 XYZ 多图的独立后缀、相对关联原图、JPEG 转换及窗口选项策略。这些测试入口不证明进程退出码、启动弹窗、超时或整组输出的实机行为已通过验证；文档核对不需要启动导出、覆盖文件或读取现场样本。

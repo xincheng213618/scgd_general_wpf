@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CS0618
+﻿using LocalizedText = global::Spectrum.DisplayText;
+#pragma warning disable CA1822,CS0618
 using ColorVision.UI.Menus;
 using cvColorVision;
 using ScottPlot;
@@ -11,7 +12,7 @@ namespace Spectrum.Calibration
     {
 
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "生成幅值标定文件";
+        public override string Header => LocalizedText.Get("生成幅值标定文件");
         public override int Order => 1;
         public override void Execute()
         {
@@ -31,6 +32,7 @@ namespace Spectrum.Calibration
         public GenerateAmplitudeWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -78,7 +80,7 @@ namespace Spectrum.Calibration
             if (hasDark)
             {
                 var darkPlot = AmplitudePlot.Plot.Add.Scatter(_cachedXs, darkYs);
-                darkPlot.Label = "暗数据";
+                darkPlot.Label = LocalizedText.Get("暗数据");
                 darkPlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.DodgerBlue);
                 darkPlot.LineWidth = 1;
                 darkPlot.MarkerSize = 0;
@@ -95,7 +97,7 @@ namespace Spectrum.Calibration
             if (hasLight)
             {
                 var lightPlot = AmplitudePlot.Plot.Add.Scatter(_cachedXs, lightYs);
-                lightPlot.Label = "亮数据";
+                lightPlot.Label = LocalizedText.Get("亮数据");
                 lightPlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.OrangeRed);
                 lightPlot.LineWidth = 1;
                 lightPlot.MarkerSize = 0;
@@ -108,7 +110,7 @@ namespace Spectrum.Calibration
             // Update status
             string darkStatus = hasDark ? "✓" : "✗";
             string lightStatus = hasLight ? "✓" : "✗";
-            StatusText.Text = $"暗数据: {darkStatus}  |  亮数据: {lightStatus}";
+            StatusText.Text = LocalizedText.Format($"暗数据: {darkStatus}  |  亮数据: {lightStatus}");
         }
 
         private void OnDataAcquired(object? sender, EventArgs e)
@@ -145,7 +147,7 @@ namespace Spectrum.Calibration
             {
                 FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat",
                 Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*",
-                Title = "选择幅值标定文件保存路径",
+                Title = LocalizedText.Get("选择幅值标定文件保存路径"),
                 RestoreDirectory = true
             };
             return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.FileName : null;
@@ -161,7 +163,7 @@ namespace Spectrum.Calibration
         {
             if (button != null)
                 button.IsEnabled = false;
-            StatusText.Text = captureDark ? "正在获取暗数据…" : "正在获取亮数据…";
+            StatusText.Text = captureDark ? LocalizedText.Get("正在获取暗数据…") : LocalizedText.Get("正在获取亮数据…");
             try
             {
                 int result = captureDark
@@ -173,14 +175,14 @@ namespace Spectrum.Calibration
                 string operation = captureDark ? "暗数据" : "亮数据";
                 if (result == 1)
                 {
-                    StatusText.Text = $"{operation}获取成功";
-                    MessageBox.Show(this, $"{operation}获取成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    StatusText.Text = LocalizedText.Format($"{operation}获取成功");
+                    MessageBox.Show(this, LocalizedText.Format($"{operation}获取成功"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
                     string error = Spectrometer.GetErrorMessage(result);
-                    StatusText.Text = $"{operation}获取失败：{error}";
-                    MessageBox.Show(this, StatusText.Text, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    StatusText.Text = LocalizedText.Format($"{operation}获取失败：{error}");
+                    MessageBox.Show(this, StatusText.Text, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (OperationCanceledException) when (windowLifetimeCancellation.IsCancellationRequested)
@@ -188,8 +190,8 @@ namespace Spectrum.Calibration
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"操作失败：{ex.GetBaseException().Message}";
-                MessageBox.Show(this, StatusText.Text, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusText.Text = LocalizedText.Format($"操作失败：{ex.GetBaseException().Message}");
+                MessageBox.Show(this, StatusText.Text, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
             {
@@ -213,7 +215,7 @@ namespace Spectrum.Calibration
             System.Windows.Controls.Button? button = sender as System.Windows.Controls.Button;
             if (button != null)
                 button.IsEnabled = false;
-            StatusText.Text = "正在采集并生成幅值标定文件…";
+            StatusText.Text = LocalizedText.Get("正在采集并生成幅值标定文件…");
             try
             {
                 (int captureResult, int generateResult) = await Manager
@@ -224,22 +226,22 @@ namespace Spectrum.Calibration
                 if (captureResult != 1)
                 {
                     string error = Spectrometer.GetErrorMessage(captureResult);
-                    StatusText.Text = $"获取亮数据失败：{error}";
-                    MessageBox.Show(this, StatusText.Text, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    StatusText.Text = LocalizedText.Format($"获取亮数据失败：{error}");
+                    MessageBox.Show(this, StatusText.Text, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 if (generateResult == 1)
                 {
-                    StatusText.Text = $"生成成功：{outputPath}";
-                    MessageBox.Show(this, $"生成成功\n文件：{outputPath}", "提示",
+                    StatusText.Text = LocalizedText.Format($"生成成功：{outputPath}");
+                    MessageBox.Show(this, LocalizedText.Format($"生成成功\n文件：{outputPath}"), LocalizedText.Get("提示"),
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
                     string error = Spectrometer.GetErrorMessage(generateResult);
-                    StatusText.Text = $"生成失败：{error}";
-                    MessageBox.Show(this, StatusText.Text, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    StatusText.Text = LocalizedText.Format($"生成失败：{error}");
+                    MessageBox.Show(this, StatusText.Text, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (OperationCanceledException) when (windowLifetimeCancellation.IsCancellationRequested)
@@ -247,8 +249,8 @@ namespace Spectrum.Calibration
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"生成失败：{ex.GetBaseException().Message}";
-                MessageBox.Show(this, StatusText.Text, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusText.Text = LocalizedText.Format($"生成失败：{ex.GetBaseException().Message}");
+                MessageBox.Show(this, StatusText.Text, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
             {

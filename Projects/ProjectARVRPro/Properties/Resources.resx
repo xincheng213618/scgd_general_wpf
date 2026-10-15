@@ -96,4 +96,1163 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>  </root>
+  </resheader>    <data name="上一步" xml:space="preserve">
+    <value>上一步</value>
+  </data>
+  <data name="上一页" xml:space="preserve">
+    <value>上一页</value>
+  </data>
+  <data name="上移" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="下一页" xml:space="preserve">
+    <value>下一页</value>
+  </data>
+  <data name="下移" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="串口" xml:space="preserve">
+    <value>串口</value>
+  </data>
+  <data name="串口连接" xml:space="preserve">
+    <value>串口连接</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="全部" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="内容" xml:space="preserve">
+    <value>内容</value>
+  </data>
+  <data name="切图" xml:space="preserve">
+    <value>切图</value>
+  </data>
+  <data name="删除" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="删除组" xml:space="preserve">
+    <value>删除组</value>
+  </data>
+  <data name="刷新" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="取消" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="名称" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="启用" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="处理配置" xml:space="preserve">
+    <value>处理配置</value>
+  </data>
+  <data name="复制" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="复制下载链接" xml:space="preserve">
+    <value>复制下载链接</value>
+  </data>
+  <data name="导入配置" xml:space="preserve">
+    <value>导入配置</value>
+  </data>
+  <data name="导出 CSV" xml:space="preserve">
+    <value>导出 CSV</value>
+  </data>
+  <data name="执行" xml:space="preserve">
+    <value>执行</value>
+  </data>
+  <data name="数据清理" xml:space="preserve">
+    <value>数据清理</value>
+  </data>
+  <data name="新增" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="方向" xml:space="preserve">
+    <value>方向</value>
+  </data>
+  <data name="时间" xml:space="preserve">
+    <value>时间</value>
+  </data>
+  <data name="未知" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  <data name="查询" xml:space="preserve">
+    <value>查询</value>
+  </data>
+  <data name="波特率" xml:space="preserve">
+    <value>波特率</value>
+  </data>
+  <data name="流程模板" xml:space="preserve">
+    <value>流程模板</value>
+  </data>
+  <data name="测试" xml:space="preserve">
+    <value>测试</value>
+  </data>
+  <data name="测试次数" xml:space="preserve">
+    <value>测试次数</value>
+  </data>
+  <data name="添加组" xml:space="preserve">
+    <value>添加组</value>
+  </data>
+  <data name="清空搜索" xml:space="preserve">
+    <value>清空搜索</value>
+  </data>
+  <data name="状态" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="端口" xml:space="preserve">
+    <value>端口</value>
+  </data>
+  <data name="结果" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="缓存管理" xml:space="preserve">
+    <value>缓存管理</value>
+  </data>
+  <data name="编辑" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="耗时(ms)" xml:space="preserve">
+    <value>耗时(ms)</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="输入模板名称筛选" xml:space="preserve">
+    <value>输入模板名称筛选</value>
+  </data>
+  <data name="运行时间" xml:space="preserve">
+    <value>运行时间</value>
+  </data>
+  <data name="连接" xml:space="preserve">
+    <value>连接</value>
+  </data>
+  <data name="通用查询" xml:space="preserve">
+    <value>通用查询</value>
+  </data>
+  <data name="重命名" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="重置" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="重试" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="预处理管理" xml:space="preserve">
+    <value>预处理管理</value>
+  </data>
+  <data name="+ 加" xml:space="preserve">
+    <value>+ 加</value>
+  </data>
+  <data name="- 减" xml:space="preserve">
+    <value>- 减</value>
+  </data>
+  <data name="1.0 / 默认端口 6666" xml:space="preserve">
+    <value>1.0 / 默认端口 6666</value>
+  </data>
+  <data name="L/R 全批次" xml:space="preserve">
+    <value>L/R 全批次</value>
+  </data>
+  <data name="L/R 全批次记录" xml:space="preserve">
+    <value>L/R 全批次记录</value>
+  </data>
+  <data name="L/R 流程 CT 明细" xml:space="preserve">
+    <value>L/R 流程 CT 明细</value>
+  </data>
+  <data name="L→R 等待" xml:space="preserve">
+    <value>L→R 等待</value>
+  </data>
+  <data name="L→R等待" xml:space="preserve">
+    <value>L→R等待</value>
+  </data>
+  <data name="PG应答/切图" xml:space="preserve">
+    <value>PG应答/切图</value>
+  </data>
+  <data name="R 完成时间" xml:space="preserve">
+    <value>R 完成时间</value>
+  </data>
+  <data name="Socket 协议：" xml:space="preserve">
+    <value>Socket 协议：</value>
+  </data>
+  <data name="TV畸变" xml:space="preserve">
+    <value>TV畸变</value>
+  </data>
+  <data name="▲ 向上切图" xml:space="preserve">
+    <value>▲ 向上切图</value>
+  </data>
+  <data name="▶ 一键执行" xml:space="preserve">
+    <value>▶ 一键执行</value>
+  </data>
+  <data name="▼ 向下切图" xml:space="preserve">
+    <value>▼ 向下切图</value>
+  </data>
+  <data name="● 未连接" xml:space="preserve">
+    <value>● 未连接</value>
+  </data>
+  <data name="一键关闭全部刷新" xml:space="preserve">
+    <value>一键关闭全部刷新</value>
+  </data>
+  <data name="一键执行流程组" xml:space="preserve">
+    <value>一键执行流程组</value>
+  </data>
+  <data name="一键执行示例" xml:space="preserve">
+    <value>一键执行示例</value>
+  </data>
+  <data name="一键执行顺序" xml:space="preserve">
+    <value>一键执行顺序</value>
+  </data>
+  <data name="下载可直接运行并包含 C# 源码的 ProjectARVRPro 对接 Demo，用于 TCP 调用、结果 JSON 解析和 CSV 导出。" xml:space="preserve">
+    <value>下载可直接运行并包含 C# 源码的 ProjectARVRPro 对接 Demo，用于 TCP 调用、结果 JSON 解析和 CSV 导出。</value>
+  </data>
+  <data name="下载最新版" xml:space="preserve">
+    <value>下载最新版</value>
+  </data>
+  <data name="下载服务：" xml:space="preserve">
+    <value>下载服务：</value>
+  </data>
+  <data name="主体 SN" xml:space="preserve">
+    <value>主体 SN</value>
+  </data>
+  <data name="事件/主题" xml:space="preserve">
+    <value>事件/主题</value>
+  </data>
+  <data name="产量与 CT 趋势" xml:space="preserve">
+    <value>产量与 CT 趋势</value>
+  </data>
+  <data name="亮度和亮度均一性" xml:space="preserve">
+    <value>亮度和亮度均一性</value>
+  </data>
+  <data name="亮度控制 (PWM 0x20~0x30, 共17档)" xml:space="preserve">
+    <value>亮度控制 (PWM 0x20~0x30, 共17档)</value>
+  </data>
+  <data name="仅保存参数，不连接设备、不切图" xml:space="preserve">
+    <value>仅保存参数，不连接设备、不切图</value>
+  </data>
+  <data name="今天" xml:space="preserve">
+    <value>今天</value>
+  </data>
+  <data name="今日" xml:space="preserve">
+    <value>今日</value>
+  </data>
+  <data name="今日全批次" xml:space="preserve">
+    <value>今日全批次</value>
+  </data>
+  <data name="从旧版 ARVRRecipe.json 导入上下限和修正参数" xml:space="preserve">
+    <value>从旧版 ARVRRecipe.json 导入上下限和修正参数</value>
+  </data>
+  <data name="侧别 SN" xml:space="preserve">
+    <value>侧别 SN</value>
+  </data>
+  <data name="保存连接设置" xml:space="preserve">
+    <value>保存连接设置</value>
+  </data>
+  <data name="修改名称" xml:space="preserve">
+    <value>修改名称</value>
+  </data>
+  <data name="修改在确定后统一写入配置文件" xml:space="preserve">
+    <value>修改在确定后统一写入配置文件</value>
+  </data>
+  <data name="修改处理类型" xml:space="preserve">
+    <value>修改处理类型</value>
+  </data>
+  <data name="全批次 CT" xml:space="preserve">
+    <value>全批次 CT</value>
+  </data>
+  <data name="全批次数" xml:space="preserve">
+    <value>全批次数</value>
+  </data>
+  <data name="全批次记录" xml:space="preserve">
+    <value>全批次记录</value>
+  </data>
+  <data name="准备" xml:space="preserve">
+    <value>准备</value>
+  </data>
+  <data name="切图操作" xml:space="preserve">
+    <value>切图操作</value>
+  </data>
+  <data name="切图时自动连接" xml:space="preserve">
+    <value>切图时自动连接</value>
+  </data>
+  <data name="切换到本页后检查发布版本。" xml:space="preserve">
+    <value>切换到本页后检查发布版本。</value>
+  </data>
+  <data name="切换流程模板" xml:space="preserve">
+    <value>切换流程模板</value>
+  </data>
+  <data name="切换结果解析、判定和展示方式" xml:space="preserve">
+    <value>切换结果解析、判定和展示方式</value>
+  </data>
+  <data name="切换这个流程项实际执行的流程" xml:space="preserve">
+    <value>切换这个流程项实际执行的流程</value>
+  </data>
+  <data name="刷新版本" xml:space="preserve">
+    <value>刷新版本</value>
+  </data>
+  <data name="十字对位图" xml:space="preserve">
+    <value>十字对位图</value>
+  </data>
+  <data name="协议版本：" xml:space="preserve">
+    <value>协议版本：</value>
+  </data>
+  <data name="单侧批次" xml:space="preserve">
+    <value>单侧批次</value>
+  </data>
+  <data name="双击查看测试项，右键查看更多操作" xml:space="preserve">
+    <value>双击查看测试项，右键查看更多操作</value>
+  </data>
+  <data name="只合并全局相邻、L→R 且主体 SN 相同的两条完成记录" xml:space="preserve">
+    <value>只合并全局相邻、L→R 且主体 SN 相同的两条完成记录</value>
+  </data>
+  <data name="可选中复制，双击全选" xml:space="preserve">
+    <value>可选中复制，双击全选</value>
+  </data>
+  <data name="名称用于流程组列表显示，后续可以单独修改。" xml:space="preserve">
+    <value>名称用于流程组列表显示，后续可以单独修改。</value>
+  </data>
+  <data name="启用 L/R 联合统计" xml:space="preserve">
+    <value>启用 L/R 联合统计</value>
+  </data>
+  <data name="处理模板" xml:space="preserve">
+    <value>处理模板</value>
+  </data>
+  <data name="处理类: " xml:space="preserve">
+    <value>处理类: </value>
+  </data>
+  <data name="处理类型" xml:space="preserve">
+    <value>处理类型</value>
+  </data>
+  <data name="处理类型：" xml:space="preserve">
+    <value>处理类型：</value>
+  </data>
+  <data name="复制组" xml:space="preserve">
+    <value>复制组</value>
+  </data>
+  <data name="外部对接" xml:space="preserve">
+    <value>外部对接</value>
+  </data>
+  <data name="外部系统对接" xml:space="preserve">
+    <value>外部系统对接</value>
+  </data>
+  <data name="对接 Demo" xml:space="preserve">
+    <value>对接 Demo</value>
+  </data>
+  <data name="导入旧版Recipe" xml:space="preserve">
+    <value>导入旧版Recipe</value>
+  </data>
+  <data name="导出单条 CSV" xml:space="preserve">
+    <value>导出单条 CSV</value>
+  </data>
+  <data name="导出配置" xml:space="preserve">
+    <value>导出配置</value>
+  </data>
+  <data name="尚未检查" xml:space="preserve">
+    <value>尚未检查</value>
+  </data>
+  <data name="已验证插件版本：" xml:space="preserve">
+    <value>已验证插件版本：</value>
+  </data>
+  <data name="平均 L→R 等待" xml:space="preserve">
+    <value>平均 L→R 等待</value>
+  </data>
+  <data name="平均全批次 CT" xml:space="preserve">
+    <value>平均全批次 CT</value>
+  </data>
+  <data name="平均单侧 CT" xml:space="preserve">
+    <value>平均单侧 CT</value>
+  </data>
+  <data name="开启或关闭这类视图的自动刷新" xml:space="preserve">
+    <value>开启或关闭这类视图的自动刷新</value>
+  </data>
+  <data name="当前亮度:" xml:space="preserve">
+    <value>当前亮度:</value>
+  </data>
+  <data name="当前插件版本：" xml:space="preserve">
+    <value>当前插件版本：</value>
+  </data>
+  <data name="当前组:" xml:space="preserve">
+    <value>当前组:</value>
+  </data>
+  <data name="当前范围暂无趋势数据" xml:space="preserve">
+    <value>当前范围暂无趋势数据</value>
+  </data>
+  <data name="快速调用与解析" xml:space="preserve">
+    <value>快速调用与解析</value>
+  </data>
+  <data name="恢复默认设置…" xml:space="preserve">
+    <value>恢复默认设置…</value>
+  </data>
+  <data name="成功率" xml:space="preserve">
+    <value>成功率</value>
+  </data>
+  <data name="打开下载目录" xml:space="preserve">
+    <value>打开下载目录</value>
+  </data>
+  <data name="打开反馈 ZIP 或 ProjectARVRPro.db，自动加载配套数据库" xml:space="preserve">
+    <value>打开反馈 ZIP 或 ProjectARVRPro.db，自动加载配套数据库</value>
+  </data>
+  <data name="打开现场数据" xml:space="preserve">
+    <value>打开现场数据</value>
+  </data>
+  <data name="打开资料文件夹" xml:space="preserve">
+    <value>打开资料文件夹</value>
+  </data>
+  <data name="执行后" xml:space="preserve">
+    <value>执行后</value>
+  </data>
+  <data name="执行时间" xml:space="preserve">
+    <value>执行时间</value>
+  </data>
+  <data name="批次记录" xml:space="preserve">
+    <value>批次记录</value>
+  </data>
+  <data name="批量导出 CSV" xml:space="preserve">
+    <value>批量导出 CSV</value>
+  </data>
+  <data name="拖动调整批次记录与详情宽度" xml:space="preserve">
+    <value>拖动调整批次记录与详情宽度</value>
+  </data>
+  <data name="拖动调整明细与时间轴高度" xml:space="preserve">
+    <value>拖动调整明细与时间轴高度</value>
+  </data>
+  <data name="指定切图" xml:space="preserve">
+    <value>指定切图</value>
+  </data>
+  <data name="指定档位:" xml:space="preserve">
+    <value>指定档位:</value>
+  </data>
+  <data name="按周" xml:space="preserve">
+    <value>按周</value>
+  </data>
+  <data name="按天" xml:space="preserve">
+    <value>按天</value>
+  </data>
+  <data name="按月" xml:space="preserve">
+    <value>按月</value>
+  </data>
+  <data name="按相邻 L→R 且主体 SN 相同自动配对；不完整记录不会计入全批次。" xml:space="preserve">
+    <value>按相邻 L→R 且主体 SN 相同自动配对；不完整记录不会计入全批次。</value>
+  </data>
+  <data name="搜索全部设置" xml:space="preserve">
+    <value>搜索全部设置</value>
+  </data>
+  <data name="搜索全部设置（Ctrl+F）" xml:space="preserve">
+    <value>搜索全部设置（Ctrl+F）</value>
+  </data>
+  <data name="搜索设置…" xml:space="preserve">
+    <value>搜索设置…</value>
+  </data>
+  <data name="操作状态: " xml:space="preserve">
+    <value>操作状态: </value>
+  </data>
+  <data name="整组 CT" xml:space="preserve">
+    <value>整组 CT</value>
+  </data>
+  <data name="最大 0x30" xml:space="preserve">
+    <value>最大 0x30</value>
+  </data>
+  <data name="最小 0x20" xml:space="preserve">
+    <value>最小 0x20</value>
+  </data>
+  <data name="最新版本：" xml:space="preserve">
+    <value>最新版本：</value>
+  </data>
+  <data name="未归因" xml:space="preserve">
+    <value>未归因</value>
+  </data>
+  <data name="末页" xml:space="preserve">
+    <value>末页</value>
+  </data>
+  <data name="本小时" xml:space="preserve">
+    <value>本小时</value>
+  </data>
+  <data name="本机运行数据" xml:space="preserve">
+    <value>本机运行数据</value>
+  </data>
+  <data name="本轮相关消息" xml:space="preserve">
+    <value>本轮相关消息</value>
+  </data>
+  <data name="查看 JSON" xml:space="preserve">
+    <value>查看 JSON</value>
+  </data>
+  <data name="查看Json" xml:space="preserve">
+    <value>查看Json</value>
+  </data>
+  <data name="查看并管理所有读图与结果视图的自动刷新" xml:space="preserve">
+    <value>查看并管理所有读图与结果视图的自动刷新</value>
+  </data>
+  <data name="查看测试结果" xml:space="preserve">
+    <value>查看测试结果</value>
+  </data>
+  <data name="查看测试项" xml:space="preserve">
+    <value>查看测试项</value>
+  </data>
+  <data name="查询亮度" xml:space="preserve">
+    <value>查询亮度</value>
+  </data>
+  <data name="标准结果使用现代嵌套契约；启用 Legacy 输出时请按现场旧版扁平字段解析。" xml:space="preserve">
+    <value>标准结果使用现代嵌套契约；启用 Legacy 输出时请按现场旧版扁平字段解析。</value>
+  </data>
+  <data name="档位 0 (0x20)" xml:space="preserve">
+    <value>档位 0 (0x20)</value>
+  </data>
+  <data name="模组检测" xml:space="preserve">
+    <value>模组检测</value>
+  </data>
+  <data name="模组检测设置" xml:space="preserve">
+    <value>模组检测设置</value>
+  </data>
+  <data name="没有找到匹配的设置" xml:space="preserve">
+    <value>没有找到匹配的设置</value>
+  </data>
+  <data name="流程 CT 明细" xml:space="preserve">
+    <value>流程 CT 明细</value>
+  </data>
+  <data name="流程名" xml:space="preserve">
+    <value>流程名</value>
+  </data>
+  <data name="流程处理配置" xml:space="preserve">
+    <value>流程处理配置</value>
+  </data>
+  <data name="流程执行记录" xml:space="preserve">
+    <value>流程执行记录</value>
+  </data>
+  <data name="流程数" xml:space="preserve">
+    <value>流程数</value>
+  </data>
+  <data name="流程查询" xml:space="preserve">
+    <value>流程查询</value>
+  </data>
+  <data name="流程模板：" xml:space="preserve">
+    <value>流程模板：</value>
+  </data>
+  <data name="流程组管理" xml:space="preserve">
+    <value>流程组管理</value>
+  </data>
+  <data name="流程耗时" xml:space="preserve">
+    <value>流程耗时</value>
+  </data>
+  <data name="流程解析映射" xml:space="preserve">
+    <value>流程解析映射</value>
+  </data>
+  <data name="流程项" xml:space="preserve">
+    <value>流程项</value>
+  </data>
+  <data name="清除日志" xml:space="preserve">
+    <value>清除日志</value>
+  </data>
+  <data name="版本说明：" xml:space="preserve">
+    <value>版本说明：</value>
+  </data>
+  <data name="独立解析映射" xml:space="preserve">
+    <value>独立解析映射</value>
+  </data>
+  <data name="现场相关消息 · 只读" xml:space="preserve">
+    <value>现场相关消息 · 只读</value>
+  </data>
+  <data name="用于手动切换测试和历史结果解析，不参与一键执行顺序。" xml:space="preserve">
+    <value>用于手动切换测试和历史结果解析，不参与一键执行顺序。</value>
+  </data>
+  <data name="确定并保存" xml:space="preserve">
+    <value>确定并保存</value>
+  </data>
+  <data name="离线解析示例" xml:space="preserve">
+    <value>离线解析示例</value>
+  </data>
+  <data name="管理当前进程的校正缓存和图像文件缓存槽位" xml:space="preserve">
+    <value>管理当前进程的校正缓存和图像文件缓存槽位</value>
+  </data>
+  <data name="结束时间" xml:space="preserve">
+    <value>结束时间</value>
+  </data>
+  <data name="结果与导出设置" xml:space="preserve">
+    <value>结果与导出设置</value>
+  </data>
+  <data name="结果统计" xml:space="preserve">
+    <value>结果统计</value>
+  </data>
+  <data name="结果输出模式：" xml:space="preserve">
+    <value>结果输出模式：</value>
+  </data>
+  <data name="统一管理所有读图与结果视图的自动刷新；多组设备会显示实际影响的视图数量。" xml:space="preserve">
+    <value>统一管理所有读图与结果视图的自动刷新；多组设备会显示实际影响的视图数量。</value>
+  </data>
+  <data name="统计周期" xml:space="preserve">
+    <value>统计周期</value>
+  </data>
+  <data name="统计设置" xml:space="preserve">
+    <value>统计设置</value>
+  </data>
+  <data name="编辑当前流程模板" xml:space="preserve">
+    <value>编辑当前流程模板</value>
+  </data>
+  <data name="编辑映射" xml:space="preserve">
+    <value>编辑映射</value>
+  </data>
+  <data name="自动启动" xml:space="preserve">
+    <value>自动启动</value>
+  </data>
+  <data name="覆盖相机参数" xml:space="preserve">
+    <value>覆盖相机参数</value>
+  </data>
+  <data name="视图刷新管理" xml:space="preserve">
+    <value>视图刷新管理</value>
+  </data>
+  <data name="记录数" xml:space="preserve">
+    <value>记录数</value>
+  </data>
+  <data name="设置亮度" xml:space="preserve">
+    <value>设置亮度</value>
+  </data>
+  <data name="设置定位目录" xml:space="preserve">
+    <value>设置定位目录</value>
+  </data>
+  <data name="设置雷鸟串口连接、自动连接，并手动调试切图" xml:space="preserve">
+    <value>设置雷鸟串口连接、自动连接，并手动调试切图</value>
+  </data>
+  <data name="说明：" xml:space="preserve">
+    <value>说明：</value>
+  </data>
+  <data name="请先连接串口" xml:space="preserve">
+    <value>请先连接串口</value>
+  </data>
+  <data name="请选择一个处理项" xml:space="preserve">
+    <value>请选择一个处理项</value>
+  </data>
+  <data name="请选择一个解析映射" xml:space="preserve">
+    <value>请选择一个解析映射</value>
+  </data>
+  <data name="超时(ms):" xml:space="preserve">
+    <value>超时(ms):</value>
+  </data>
+  <data name="运行消息" xml:space="preserve">
+    <value>运行消息</value>
+  </data>
+  <data name="运行环境：" xml:space="preserve">
+    <value>运行环境：</value>
+  </data>
+  <data name="选择本次要修改的内容" xml:space="preserve">
+    <value>选择本次要修改的内容</value>
+  </data>
+  <data name="通信日志" xml:space="preserve">
+    <value>通信日志</value>
+  </data>
+  <data name="配置流程执行前的预处理动作" xml:space="preserve">
+    <value>配置流程执行前的预处理动作</value>
+  </data>
+  <data name="释放截图缓存" xml:space="preserve">
+    <value>释放截图缓存</value>
+  </data>
+  <data name="雷鸟连接与切图" xml:space="preserve">
+    <value>雷鸟连接与切图</value>
+  </data>
+  <data name="雷鸟连接与切图…" xml:space="preserve">
+    <value>雷鸟连接与切图…</value>
+  </data>
+  <data name="首页" xml:space="preserve">
+    <value>首页</value>
+  </data>
+  <data name="Demo {0} 下载并校验完成：{1}" xml:space="preserve">
+    <value>Demo {0} 下载并校验完成：{1}</value>
+  </data>
+  <data name="Demo 下载失败，请检查下载窗口和网络状态后重试。" xml:space="preserve">
+    <value>Demo 下载失败，请检查下载窗口和网络状态后重试。</value>
+  </data>
+  <data name="Demo 下载链接已复制。" xml:space="preserve">
+    <value>Demo 下载链接已复制。</value>
+  </data>
+  <data name="Demo 文件校验失败：" xml:space="preserve">
+    <value>Demo 文件校验失败：</value>
+  </data>
+  <data name="L/R 全批次产量与 CT 趋势" xml:space="preserve">
+    <value>L/R 全批次产量与 CT 趋势</value>
+  </data>
+  <data name="Legacy 扁平结果" xml:space="preserve">
+    <value>Legacy 扁平结果</value>
+  </data>
+  <data name="ObjectiveTestResult 为空。" xml:space="preserve">
+    <value>ObjectiveTestResult 为空。</value>
+  </data>
+  <data name="ObjectiveTestResult 为空，无法导出旧版 CSV。" xml:space="preserve">
+    <value>ObjectiveTestResult 为空，无法导出旧版 CSV。</value>
+  </data>
+  <data name="Recipe 已修改，但保存 {0} 失败。请检查磁盘空间和文件权限后重试。" xml:space="preserve">
+    <value>Recipe 已修改，但保存 {0} 失败。请检查磁盘空间和文件权限后重试。</value>
+  </data>
+  <data name="ViewResultJson为空" xml:space="preserve">
+    <value>ViewResultJson为空</value>
+  </data>
+  <data name="{0:yyyy-MM-dd HH:mm:ss.fff} — {1:HH:mm:ss.fff}&#10;按本轮前后各 1 秒筛选的候选消息；请结合 SN、MsgID 与连接地址核对关联。" xml:space="preserve">
+    <value>{0:yyyy-MM-dd HH:mm:ss.fff} — {1:HH:mm:ss.fff}
+按本轮前后各 1 秒筛选的候选消息；请结合 SN、MsgID 与连接地址核对关联。</value>
+  </data>
+  <data name="{0} - L/R 流程 CT 明细读取失败" xml:space="preserve">
+    <value>{0} - L/R 流程 CT 明细读取失败</value>
+  </data>
+  <data name="{0} - 正在读取 L/R 流程 CT 明细..." xml:space="preserve">
+    <value>{0} - 正在读取 L/R 流程 CT 明细...</value>
+  </data>
+  <data name="{0} - 正在读取流程 CT 明细..." xml:space="preserve">
+    <value>{0} - 正在读取流程 CT 明细...</value>
+  </data>
+  <data name="{0} - 流程 CT 明细读取失败" xml:space="preserve">
+    <value>{0} - 流程 CT 明细读取失败</value>
+  </data>
+  <data name="{0} · CT {1} · 运行 {2} · {3:N0} 个流程" xml:space="preserve">
+    <value>{0} · CT {1} · 运行 {2} · {3:N0} 个流程</value>
+  </data>
+  <data name="{0} · SN {1} · 只读" xml:space="preserve">
+    <value>{0} · SN {1} · 只读</value>
+  </data>
+  <data name="{0} · 全批次 CT {1} · L→R 等待 {2} · {3:N0} 个流程" xml:space="preserve">
+    <value>{0} · 全批次 CT {1} · L→R 等待 {2} · {3:N0} 个流程</value>
+  </data>
+  <data name="● 已连接 {0}" xml:space="preserve">
+    <value>● 已连接 {0}</value>
+  </data>
+  <data name="上限：结果需小于或等于此值" xml:space="preserve">
+    <value>上限：结果需小于或等于此值；0 表示不限</value>
+  </data>
+  <data name="下载完成，正在校验文件…" xml:space="preserve">
+    <value>下载完成，正在校验文件…</value>
+  </data>
+  <data name="下载服务不可用，请复制下载链接后在浏览器中打开。" xml:space="preserve">
+    <value>下载服务不可用，请复制下载链接后在浏览器中打开。</value>
+  </data>
+  <data name="下限：结果需大于或等于此值" xml:space="preserve">
+    <value>下限：结果需大于或等于此值；0 表示不限</value>
+  </data>
+  <data name="x 表示应用 K/B 修正后的判定值" xml:space="preserve">
+    <value>x 表示应用 K/B 修正后的判定值</value>
+  </data>
+  <data name="仍有已加载的读图或结果视图在自动刷新，点击查看" xml:space="preserve">
+    <value>仍有已加载的读图或结果视图在自动刷新，点击查看</value>
+  </data>
+  <data name="保存视图刷新配置失败，本次修改未应用：{0}" xml:space="preserve">
+    <value>保存视图刷新配置失败，本次修改未应用：{0}</value>
+  </data>
+  <data name="修正偏移 B：修正后 = 原值 * K + B" xml:space="preserve">
+    <value>修正偏移 B：修正后 = 原值 * K + B</value>
+  </data>
+  <data name="修正系数 K：修正后 = 原值 * K + B" xml:space="preserve">
+    <value>修正系数 K：修正后 = 原值 * K + B</value>
+  </data>
+  <data name="共 {0} 条 · 第 {1} 页 · 每页 200 条；所选时间范围内无记录时，可能未采集或不在导出范围内。" xml:space="preserve">
+    <value>共 {0} 条 · 第 {1} 页 · 每页 200 条；所选时间范围内无记录时，可能未采集或不在导出范围内。</value>
+  </data>
+  <data name="准备导入旧版 Recipe 失败:&#10;{0}" xml:space="preserve">
+    <value>准备导入旧版 Recipe 失败:
+{0}</value>
+  </data>
+  <data name="单侧批次产量与 CT 趋势" xml:space="preserve">
+    <value>单侧批次产量与 CT 趋势</value>
+  </data>
+  <data name="历史结果图像像素宽度" xml:space="preserve">
+    <value>历史结果图像像素宽度</value>
+  </data>
+  <data name="历史结果图像像素高度" xml:space="preserve">
+    <value>历史结果图像像素高度</value>
+  </data>
+  <data name="历史结果坐标空间宽度" xml:space="preserve">
+    <value>历史结果坐标空间宽度</value>
+  </data>
+  <data name="历史结果坐标空间高度" xml:space="preserve">
+    <value>历史结果坐标空间高度</value>
+  </data>
+  <data name="可下载 {0}（{1}），下载后将自动校验 SHA-256。" xml:space="preserve">
+    <value>可下载 {0}（{1}），下载后将自动校验 SHA-256。</value>
+  </data>
+  <data name="名称不能为空" xml:space="preserve">
+    <value>名称不能为空</value>
+  </data>
+  <data name="名称重复" xml:space="preserve">
+    <value>名称重复</value>
+  </data>
+  <data name="启动 Demo 下载失败：" xml:space="preserve">
+    <value>启动 Demo 下载失败：</value>
+  </data>
+  <data name="命令已复制。" xml:space="preserve">
+    <value>命令已复制。</value>
+  </data>
+  <data name="图像保存在“结果保存”指定的目录。" xml:space="preserve">
+    <value>图像保存在“结果保存”指定的目录。</value>
+  </data>
+  <data name="处理 Demo 下载文件失败：" xml:space="preserve">
+    <value>处理 Demo 下载文件失败：</value>
+  </data>
+  <data name="导入后将替换当前流程组和解析映射，共 {0} 个组、{1} 条解析映射。是否继续？" xml:space="preserve">
+    <value>导入后将替换当前流程组和解析映射，共 {0} 个组、{1} 条解析映射。是否继续？</value>
+  </data>
+  <data name="导入旧版 Recipe 失败:&#10;{0}" xml:space="preserve">
+    <value>导入旧版 Recipe 失败:
+{0}</value>
+  </data>
+  <data name="导入旧版 Recipe 清单" xml:space="preserve">
+    <value>导入旧版 Recipe 清单</value>
+  </data>
+  <data name="导入流程配置" xml:space="preserve">
+    <value>导入流程配置</value>
+  </data>
+  <data name="导入流程配置失败:&#10;{0}" xml:space="preserve">
+    <value>导入流程配置失败:
+{0}</value>
+  </data>
+  <data name="导出CSV失败: {0}" xml:space="preserve">
+    <value>导出CSV失败: {0}</value>
+  </data>
+  <data name="导出单条 ObjectiveTestResult" xml:space="preserve">
+    <value>导出单条 ObjectiveTestResult</value>
+  </data>
+  <data name="导出失败：{0}" xml:space="preserve">
+    <value>导出失败：{0}</value>
+  </data>
+  <data name="导出完成：{0}" xml:space="preserve">
+    <value>导出完成：{0}</value>
+  </data>
+  <data name="导出流程配置" xml:space="preserve">
+    <value>导出流程配置</value>
+  </data>
+  <data name="导出流程配置失败:&#10;{0}" xml:space="preserve">
+    <value>导出流程配置失败:
+{0}</value>
+  </data>
+  <data name="将本窗口所有设置恢复为默认值并立即保存？" xml:space="preserve">
+    <value>将本窗口所有设置恢复为默认值并立即保存？</value>
+  </data>
+  <data name="已关闭" xml:space="preserve">
+    <value>已关闭</value>
+  </data>
+  <data name="已导出 {0:N0} 条记录：{1}" xml:space="preserve">
+    <value>已导出 {0:N0} 条记录：{1}</value>
+  </data>
+  <data name="平均 CT（秒）" xml:space="preserve">
+    <value>平均 CT（秒）</value>
+  </data>
+  <data name="应用导入流程配置失败:&#10;{0}" xml:space="preserve">
+    <value>应用导入流程配置失败:
+{0}</value>
+  </data>
+  <data name="应用旧版 Recipe 失败:&#10;{0}{1}" xml:space="preserve">
+    <value>应用旧版 Recipe 失败:
+{0}{1}</value>
+  </data>
+  <data name="当前没有可导出的记录。" xml:space="preserve">
+    <value>当前没有可导出的记录。</value>
+  </data>
+  <data name="当前测试尚未结束，请在测试完成后再打开历史批次。" xml:space="preserve">
+    <value>当前测试尚未结束，请在测试完成后再打开历史批次。</value>
+  </data>
+  <data name="恢复默认设置" xml:space="preserve">
+    <value>恢复默认设置</value>
+  </data>
+  <data name="成功" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="所有已加载的读图与结果视图均已关闭自动刷新" xml:space="preserve">
+    <value>所有已加载的读图与结果视图均已关闭自动刷新</value>
+  </data>
+  <data name="打开现场数据失败：{0}" xml:space="preserve">
+    <value>打开现场数据失败：{0}</value>
+  </data>
+  <data name="批量导出失败：{0}" xml:space="preserve">
+    <value>批量导出失败：{0}</value>
+  </data>
+  <data name="批量导出结果记录" xml:space="preserve">
+    <value>批量导出结果记录</value>
+  </data>
+  <data name="找不到批次号，请检查流程配置" xml:space="preserve">
+    <value>找不到批次号，请检查流程配置</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="数据已成功导出到:&#10;{0}" xml:space="preserve">
+    <value>数据已成功导出到:
+{0}</value>
+  </data>
+  <data name="断开" xml:space="preserve">
+    <value>断开</value>
+  </data>
+  <data name="是否删除 {0} 测试结果？" xml:space="preserve">
+    <value>是否删除 {0} 测试结果？</value>
+  </data>
+  <data name="暂不可用" xml:space="preserve">
+    <value>暂不可用</value>
+  </data>
+  <data name="未加载" xml:space="preserve">
+    <value>未加载</value>
+  </data>
+  <data name="未找到流程模板 &quot;{0}&quot;。" xml:space="preserve">
+    <value>未找到流程模板 "{0}"。</value>
+  </data>
+  <data name="未注明" xml:space="preserve">
+    <value>未注明</value>
+  </data>
+  <data name="未能获取 Demo 发布信息。可能尚未发布，或当前无法连接下载服务。" xml:space="preserve">
+    <value>未能获取 Demo 发布信息。可能尚未发布，或当前无法连接下载服务。</value>
+  </data>
+  <data name="本版本未提供更新说明。" xml:space="preserve">
+    <value>本版本未提供更新说明。</value>
+  </data>
+  <data name="来源：{0}&#10;读取副本：{1}&#10;各数据库是独立快照；图片未随记录自动导入。" xml:space="preserve">
+    <value>来源：{0}
+读取副本：{1}
+各数据库是独立快照；图片未随记录自动导入。</value>
+  </data>
+  <data name="查询范围：{0}" xml:space="preserve">
+    <value>查询范围：{0}</value>
+  </data>
+  <data name="标准嵌套结果" xml:space="preserve">
+    <value>标准嵌套结果</value>
+  </data>
+  <data name="标红的输入未保存，请修正；其他设置已自动保存。" xml:space="preserve">
+    <value>标红的输入未保存，请修正；其他设置已自动保存。</value>
+  </data>
+  <data name="档位 {0} (0x{1:X2})" xml:space="preserve">
+    <value>档位 {0} (0x{1:X2})</value>
+  </data>
+  <data name="正在下载 {0}…" xml:space="preserve">
+    <value>正在下载 {0}…</value>
+  </data>
+  <data name="正在准备现场只读副本…" xml:space="preserve">
+    <value>正在准备现场只读副本…</value>
+  </data>
+  <data name="正在刷新" xml:space="preserve">
+    <value>正在刷新</value>
+  </data>
+  <data name="正在检查 Demo 最新版本…" xml:space="preserve">
+    <value>正在检查 Demo 最新版本…</value>
+  </data>
+  <data name="正在读取…" xml:space="preserve">
+    <value>正在读取…</value>
+  </data>
+  <data name="正在读取正文…" xml:space="preserve">
+    <value>正在读取正文…</value>
+  </data>
+  <data name="正文读取失败：{0}" xml:space="preserve">
+    <value>正文读取失败：{0}</value>
+  </data>
+  <data name="此处理类型无需额外配置" xml:space="preserve">
+    <value>此处理类型无需额外配置</value>
+  </data>
+  <data name="此范围内没有消息正文可显示。" xml:space="preserve">
+    <value>此范围内没有消息正文可显示。</value>
+  </data>
+  <data name="没有可导出的数据" xml:space="preserve">
+    <value>没有可导出的数据</value>
+  </data>
+  <data name="流程执行分析" xml:space="preserve">
+    <value>流程执行分析</value>
+  </data>
+  <data name="流程结果查询" xml:space="preserve">
+    <value>流程结果查询</value>
+  </data>
+  <data name="流程配置已导出到:&#10;{0}" xml:space="preserve">
+    <value>流程配置已导出到:
+{0}</value>
+  </data>
+  <data name="现场消息" xml:space="preserve">
+    <value>现场消息</value>
+  </data>
+  <data name="现场节点分析" xml:space="preserve">
+    <value>现场节点分析</value>
+  </data>
+  <data name="确定要删除组 &quot;{0}&quot; 吗？" xml:space="preserve">
+    <value>确定要删除组 "{0}" 吗？</value>
+  </data>
+  <data name="第 {0:N0} / {1:N0} 页（每页 {2:N0} 条）" xml:space="preserve">
+    <value>第 {0:N0} / {1:N0} 页（每页 {2:N0} 条）</value>
+  </data>
+  <data name="累计产量（组）" xml:space="preserve">
+    <value>累计产量（组）</value>
+  </data>
+  <data name="组名重复" xml:space="preserve">
+    <value>组名重复</value>
+  </data>
+  <data name="结果统计 · {0} · 只读" xml:space="preserve">
+    <value>结果统计 · {0} · 只读</value>
+  </data>
+  <data name="结果编号规则" xml:space="preserve">
+    <value>结果编号规则</value>
+  </data>
+  <data name="统计设置 · L/R 已开启" xml:space="preserve">
+    <value>统计设置 · L/R 已开启</value>
+  </data>
+  <data name="至少保留一个组" xml:space="preserve">
+    <value>至少保留一个组</value>
+  </data>
+  <data name="视图刷新（{0}项开启）" xml:space="preserve">
+    <value>视图刷新（{0}项开启）</value>
+  </data>
+  <data name="视图刷新（已关闭）" xml:space="preserve">
+    <value>视图刷新（已关闭）</value>
+  </data>
+  <data name="记录 {0} · {1}&#10;&#10;{2}" xml:space="preserve">
+    <value>记录 {0} · {1}
+
+{2}</value>
+  </data>
+  <data name="设置未保存" xml:space="preserve">
+    <value>设置未保存</value>
+  </data>
+  <data name="该流程模板已经配置了解析映射" xml:space="preserve">
+    <value>该流程模板已经配置了解析映射</value>
+  </data>
+  <data name="该流程没有可查看的测试结果。" xml:space="preserve">
+    <value>该流程没有可查看的测试结果。</value>
+  </data>
+  <data name="该记录已不存在。" xml:space="preserve">
+    <value>该记录已不存在。</value>
+  </data>
+  <data name="请先在测试记录中选择一轮测试。" xml:space="preserve">
+    <value>请先在测试记录中选择一轮测试。</value>
+  </data>
+  <data name="请先选择一条流程记录。" xml:space="preserve">
+    <value>请先选择一条流程记录。</value>
+  </data>
+  <data name="请先选择一条记录。" xml:space="preserve">
+    <value>请先选择一条记录。</value>
+  </data>
+  <data name="请选择处理类型" xml:space="preserve">
+    <value>请选择处理类型</value>
+  </data>
+  <data name="请选择流程模板" xml:space="preserve">
+    <value>请选择流程模板</value>
+  </data>
+  <data name="读取 L/R 全批次记录失败：{0}" xml:space="preserve">
+    <value>读取 L/R 全批次记录失败：{0}</value>
+  </data>
+  <data name="读取 L/R 流程 CT 明细失败：{0}" xml:space="preserve">
+    <value>读取 L/R 流程 CT 明细失败：{0}</value>
+  </data>
+  <data name="读取失败：{0}" xml:space="preserve">
+    <value>读取失败：{0}</value>
+  </data>
+  <data name="读取批次记录失败：{0}" xml:space="preserve">
+    <value>读取批次记录失败：{0}</value>
+  </data>
+  <data name="读取流程 CT 明细失败：{0}" xml:space="preserve">
+    <value>读取流程 CT 明细失败：{0}</value>
+  </data>
+  <data name="读取流程执行记录失败：{0}" xml:space="preserve">
+    <value>读取流程执行记录失败：{0}</value>
+  </data>
+  <data name="读取流程测试结果失败：{0}" xml:space="preserve">
+    <value>读取流程测试结果失败：{0}</value>
+  </data>
+  <data name="读取首页统计失败：{0}" xml:space="preserve">
+    <value>读取首页统计失败：{0}</value>
+  </data>
+  <data name="这份资料未提供所选消息库。" xml:space="preserve">
+    <value>这份资料未提供所选消息库。</value>
+  </data>
+  <data name="选择包含 ProjectARVRPro.db 或 Database 子目录的资料文件夹" xml:space="preserve">
+    <value>选择包含 ProjectARVRPro.db 或 Database 子目录的资料文件夹</value>
+  </data>
+  <data name="选择处理类型后显示配置" xml:space="preserve">
+    <value>选择处理类型后显示配置</value>
+  </data>
+  <data name="部分修改未保存，仍要关闭吗？&#10;已自动保存的设置不会撤销。" xml:space="preserve">
+    <value>部分修改未保存，仍要关闭吗？
+已自动保存的设置不会撤销。</value>
+  </data>
+  <data name="错误" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="当前：{0}" xml:space="preserve">
+    <value>当前：{0}</value>
+  </data>
+  <data name="当前：空处理" xml:space="preserve">
+    <value>当前：空处理</value>
+  </data>
+  <data name="支持：{0}" xml:space="preserve">
+    <value>支持：{0}</value>
+  </data>
+  <data name="未选择" xml:space="preserve">
+    <value>未选择</value>
+  </data>
+  <data name="未选择流程" xml:space="preserve">
+    <value>未选择流程</value>
+  </data>
+  <data name="未选择解析映射" xml:space="preserve">
+    <value>未选择解析映射</value>
+  </data>
+  <data name="请选择一个处理类型。" xml:space="preserve">
+    <value>请选择一个处理类型。</value>
+  </data>
+  <data name="选择处理类型后显示" xml:space="preserve">
+    <value>选择处理类型后显示</value>
+  </data>
+  <data name="平均单侧运行时间（不含 PG）" xml:space="preserve">
+    <value>平均单侧运行时间（不含 PG）</value>
+  </data>
+  <data name="平均全批次运行时间（不含 PG）" xml:space="preserve">
+    <value>平均全批次运行时间（不含 PG）</value>
+  </data>
+  <data name="按所选统计周期，汇总各批次流程运行时间后取平均；不含 PG 应答、切图准备和执行后处理。缺少流程记录的批次不计入运行时间平均值。" xml:space="preserve">
+    <value>按所选统计周期，汇总各批次流程运行时间后取平均；不含 PG 应答、切图准备和执行后处理。缺少流程记录的批次不计入运行时间平均值。</value>
+  </data>
+  <data name="按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。" xml:space="preserve">
+    <value>按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。</value>
+  </data>
+  <data name="ExternalSwitch_Title" xml:space="preserve">
+    <value>外部切图</value>
+  </data>
+  <data name="ExternalSwitch_TimeoutLabel" xml:space="preserve">
+    <value>等待超时(ms)</value>
+  </data>
+  <data name="ExternalSwitch_TimeoutDescription" xml:space="preserve">
+    <value>发送切图请求并等待完成回执的最长时间，必须大于零。</value>
+  </data>
+  <data name="ExternalSwitch_DelayLabel" xml:space="preserve">
+    <value>完成后延时(ms)</value>
+  </data>
+  <data name="ExternalSwitch_DelayDescription" xml:space="preserve">
+    <value>收到完成回执后等待画面稳定，再继续下游；零表示不额外等待。</value>
+  </data>
+  <data name="ExternalSwitch_MatchLabel" xml:space="preserve">
+    <value>严格匹配 MsgID</value>
+  </data>
+  <data name="ExternalSwitch_MatchDescription" xml:space="preserve">
+    <value>开启后外部程序必须回显请求 MsgID；关闭兼容旧程序，一次只允许一个等待，无法区分迟到的旧回执。</value>
+  </data>
+  <data name="ExternalSwitch_InvalidTimeout" xml:space="preserve">
+    <value>切图等待超时必须大于零。</value>
+  </data>
+  <data name="ExternalSwitch_InvalidDelay" xml:space="preserve">
+    <value>切图完成后延时不能为负数。</value>
+  </data>
+  <data name="ExternalSwitch_Busy" xml:space="preserve">
+    <value>已有外部切图正在等待完成，请串行连接切图节点。</value>
+  </data>
+  <data name="ExternalSwitch_NotConnected" xml:space="preserve">
+    <value>外部控制客户端未连接或连接已关闭。</value>
+  </data>
+  <data name="ExternalSwitch_ConnectionChanged" xml:space="preserve">
+    <value>外部控制连接已断开或切换，切图等待终止。</value>
+  </data>
+  <data name="ExternalSwitch_Timeout: {0}" xml:space="preserve">
+    <value>等待外部切图完成超时（{0} ms）。</value>
+  </data>
+  <data name="ExternalSwitch_Summary: {0}" xml:space="preserve">
+    <value>等待完成 · {0} ms</value>
+  </data>
+  <data name="ExternalSwitch_Completed" xml:space="preserve">
+    <value>外部切图完成</value>
+  </data>
+  <data name="累计产量" xml:space="preserve"><value>累计产量</value></data>
+  <data name="每小时产量" xml:space="preserve"><value>每小时产量</value></data>
+  <data name="每小时产量（组）" xml:space="preserve"><value>每小时产量（组）</value></data>
+  <data name="每小时平均 CT" xml:space="preserve"><value>每小时平均 CT</value></data>
+  <data name="每小时{0}产量与平均 CT" xml:space="preserve"><value>每小时{0}产量与平均 CT</value></data>
+  <data name="月度汇总" xml:space="preserve"><value>月度汇总</value></data>
+  <data name="图表统计方式" xml:space="preserve"><value>图表统计方式</value></data>
+  <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。</value></data>
+</root>

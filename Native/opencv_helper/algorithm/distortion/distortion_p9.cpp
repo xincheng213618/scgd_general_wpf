@@ -1,4 +1,5 @@
 #include "distortion_p9.h"
+#include "grid_distortion_v2.h"
 
 #include <algorithm>
 #include <array>
@@ -331,6 +332,58 @@ DistortionP9Metric calculateMetrics(const std::vector<DistortionP9Point>& points
     return metrics;
 }
 
+bool recoverAutoThresholdGrid(const cv::Mat& image, const DistortionP9Config& config, DistortionP9Result& result)
+{
+    if (config.threshold >= 0.0 || config.expectedRows != 3 || config.expectedCols != 3
+        || config.minRectSize != 40 || config.maxRectSize != 400
+        || config.minArea != 0 || config.maxArea != 0
+        || config.erodeKernel != 3 || config.erodeIterations != 0
+        || config.dilateIterations != 0 || config.maxCandidates != 64
+        || !config.sortWithPca) {
+        return false;
+    }
+
+    const nlohmann::json gridConfig = {
+        { "expectedRows", 3 }, { "expectedCols", 3 }, { "brightTarget", config.brightTarget }
+    };
+    const nlohmann::json gridResult = calculateGridDistortionV2(image, gridConfig);
+    if (!gridResult.value("success", false) || !gridResult.contains("points")
+        || !gridResult["points"].is_array() || gridResult["points"].size() != 9) {
+        return false;
+    }
+
+    std::vector<DistortionP9Point> recovered;
+    recovered.reserve(9);
+    for (const auto& measured : gridResult["points"]) {
+        DistortionP9Point point;
+        point.id = measured.value("id", -1);
+        point.row = measured.value("row", -1);
+        point.col = measured.value("col", -1);
+        point.name = measured.value("name", "");
+        point.center = cv::Point2d(measured.value("x", 0.0), measured.value("y", 0.0));
+        point.area = cv::saturate_cast<int>(measured.value("area", 0.0));
+        if (point.id != static_cast<int>(recovered.size()) || point.row != point.id / 3
+            || point.col != point.id % 3 || !std::isfinite(point.center.x)
+            || !std::isfinite(point.center.y)) {
+            return false;
+        }
+        recovered.push_back(std::move(point));
+    }
+
+    result.points = std::move(recovered);
+    result.candidatePoints.clear();
+    result.candidateCount = gridResult.value("candidateCount", 9);
+    result.metrics = calculateMetrics(result.points, config.tvCalcWay);
+    result.success = true;
+    result.statusCode = "ok_with_warnings";
+    result.message = "ok";
+    result.warnings.push_back("The complete 3x3 grid was recovered with adaptive localization.");
+    for (const auto& warning : gridResult["warnings"]) {
+        result.warnings.push_back(warning.get<std::string>());
+    }
+    return true;
+}
+
 } // namespace
 
 DistortionP9Result calculateDistortionP9(const cv::Mat& img, const DistortionP9Config& config)
@@ -362,12 +415,18 @@ DistortionP9Result calculateDistortionP9(const cv::Mat& img, const DistortionP9C
     }
 
     if (result.candidateCount == 0) {
+        if (recoverAutoThresholdGrid(img, effectiveConfig, result)) {
+            return result;
+        }
         result.statusCode = "no_candidates";
         result.message = "No valid point candidates were detected. Check ROI, threshold, target polarity, or point size limits.";
         return result;
     }
 
     if (result.candidateCount < expectedCount) {
+        if (recoverAutoThresholdGrid(img, effectiveConfig, result)) {
+            return result;
+        }
         result.statusCode = "too_few_candidates";
         result.message = "Detected fewer candidates than the expected point grid. Some points may be too dim, missing, outside ROI, or filtered by size.";
         return result;

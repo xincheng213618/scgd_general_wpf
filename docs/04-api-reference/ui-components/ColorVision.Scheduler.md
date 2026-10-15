@@ -5,7 +5,7 @@ status: "current"
 summary: "任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。"
 aliases: ["任务计划程序","创建任务","间隔/重复","执行历史","定时任务为什么不执行","任务暂停后仍然执行","重启后一次性任务又执行","ColorVision.Scheduler","QuartzSchedulerManager","InitializationTask","scheduler_tasks.json","SchedulerHistory.db","SchedulerInfo","TaskExecutionListener","TimeoutSeconds","DisallowConcurrentExecution"]
 code_paths: ["UI/ColorVision.Scheduler/README.md","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.Scheduler/QuartzSchedulerManager.cs","UI/ColorVision.Scheduler/MenuTaskViewer.cs","UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs","UI/ColorVision.Scheduler/SchedulerInfo.cs","UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs","UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs","UI/ColorVision.Scheduler/TaskExecutionListener.cs","UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs","UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml","UI/ColorVision.Scheduler/TaskViewerWindow.xaml","UI/ColorVision.Scheduler/Properties/Resources.resx","UI/ColorVision.Scheduler/Presentation/SchedulerPresentation.cs","UI/ColorVision.Scheduler/Presentation/SchedulerStyles.xaml","UI/ColorVision.Scheduler/Presentation/SchedulerTaskExporter.cs","UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SchedulerWindowTests.cs","Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs","Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs","Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs","Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs","Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs","Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs","Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"]
 related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.headless"]
 ---
 
@@ -121,7 +121,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 ## 验证范围与缺口
 
-- `SchedulerWindowTests` 在 WPF 宿主中注入替代服务，检查卡片操作对象、任务类型切换与手填名称、计划预览、非法输入阻止提交、编辑身份、失败提示和初始化未完成时关闭；不加载保存任务、不启动 Quartz 或操作真实设备。
+- 不加载保存任务、不启动 Quartz 或操作真实设备。
 - `SchedulerTriggerFactoryTests` 检查触发器类型、追加次数、日历间隔、Cron、延迟及非法值；其中 Quartz RAM scheduler 用例只验证替换行为，不启动真实 Job，也不覆盖 `QuartzSchedulerManager` 的 JSON 失败补偿链。
 - `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本与替换备份；不验证管理器启动时的旧 Interval/Forever 暂停迁移或坏主文件恢复。
 - `SchedulerHistoryQueryTests` 使用隔离临时 SQLite，验证筛选/分页统计、稳定排序与显式失败；不覆盖真实历史库初始化失败、执行监听写入或清理。

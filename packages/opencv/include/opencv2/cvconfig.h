@@ -53,9 +53,6 @@
 /* Geospatial Data Abstraction Library */
 /* #undef HAVE_GDAL */
 
-/* Halide support */
-/* #undef HAVE_HALIDE */
-
 /* Vulkan support */
 /* #undef HAVE_VULKAN */
 
@@ -143,13 +140,10 @@
 /* Library was compiled with functions instrumentation */
 /* #undef ENABLE_INSTRUMENTATION */
 
-/* OpenVX */
-/* #undef HAVE_OPENVX */
-
 /* OpenCV trace utilities */
 #define OPENCV_TRACE
 
-/* Library QR-code decoding */
-/* #undef HAVE_QUIRC */
+/* The font "uni" (WQY MicroHei) is available */
+#define HAVE_UNIFONT
 
 #endif // OPENCV_CVCONFIG_H_INCLUDED

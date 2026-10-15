@@ -1,10 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.EditorTools.Algorithms;
-using System;
-using System.Threading;
 using System.Windows;
-using Xunit;
 
 namespace ColorVision.UI.Tests;
 

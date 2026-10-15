@@ -1,6 +1,6 @@
 using AvalonDock;
 using AvalonDock.Layout;
-using AvalonDock.Layout.Serialization;
+using AvalonDock.Serializer.Xml;
 using ColorVision.UI;
 using ColorVision.UI.Docking;
 using log4net;

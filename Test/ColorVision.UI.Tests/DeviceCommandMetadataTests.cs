@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -20,7 +19,7 @@ public sealed class DeviceCommandMetadataTests
     public static TheoryData<Type> DeviceTypes => new()
     {
         typeof(DeviceCamera), typeof(DevicePG), typeof(DeviceSMU), typeof(DeviceSpectrum), typeof(DeviceCalibration),
-        typeof(DeviceAlgorithm), typeof(DeviceCfwPort), typeof(DeviceSensor), typeof(DeviceLightingController), typeof(DeviceThirdPartyAlgorithms)
+        typeof(DeviceAlgorithm), typeof(DeviceCfwPort), typeof(DeviceSensor), typeof(DeviceLightingController)
     };
 
     [Theory]

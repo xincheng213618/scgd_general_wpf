@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Draw.Line;
 using System;
 using System.Collections.Generic;
@@ -33,7 +34,7 @@ namespace ColorVision.ImageEditor.Draw.Polygon
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DVPolygon dvPolygon)
             {
-                MenuItem close = new() { Header = "闭合区域", IsCheckable = true, IsChecked = dvPolygon.IsComple, IsEnabled = dvPolygon.Points.Count >= 3 };
+                MenuItem close = new() { Header = LocalizedText.Get("闭合区域"), IsCheckable = true, IsChecked = dvPolygon.IsComple, IsEnabled = dvPolygon.Points.Count >= 3 };
                 close.Click += (_, _) =>
                 {
                     bool before = dvPolygon.IsComple;

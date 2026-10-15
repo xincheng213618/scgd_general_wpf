@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.POIGenCali
@@ -34,9 +33,5 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
         }
         public override UserControl CreateUserControl() => new EditPoiGenCali();
 
-        public override IMysqlCommand? GetMysqlCommand()
-        {
-            return new MysqlPOIFilter();
-        }
     }
 }

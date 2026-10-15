@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;

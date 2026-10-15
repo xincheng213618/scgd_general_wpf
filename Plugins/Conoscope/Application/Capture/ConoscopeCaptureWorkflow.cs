@@ -1,3 +1,4 @@
+using ColorVision.FileIO;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Messages;
@@ -194,7 +195,7 @@ namespace Conoscope.ApplicationServices.Capture
 
             foreach (string? candidate in new[] { result.FileUrl, result.RawFile })
             {
-                if (string.IsNullOrWhiteSpace(candidate) || !File.Exists(candidate))
+                if (string.IsNullOrWhiteSpace(candidate) || !(CVFileReadCache.GetCachedLength(candidate).HasValue || File.Exists(candidate)))
                 {
                     continue;
                 }

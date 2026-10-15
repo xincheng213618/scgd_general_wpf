@@ -14,7 +14,22 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
         [JsonProperty("TV_distortion")]
         public TVDistortion TVDistortion { get; set; }
+
+        [JsonProperty("Analysis", NullValueHandling = NullValueHandling.Ignore)]
+        public DistortionAnalysis? Analysis { get; set; }
         public override string ToString() => JsonConvert.SerializeObject(this);
+    }
+
+    public class DistortionAnalysis
+    {
+        public DistortionGeometry? Geometry { get; set; }
+    }
+
+    public class DistortionGeometry
+    {
+        // Nullable fields distinguish old/partial results from measured zero.
+        public double? MaximumTiltDegrees { get; set; }
+        public double? MaximumEdgeLengthDifferencePercent { get; set; }
     }
 
     public class OpticDistortion

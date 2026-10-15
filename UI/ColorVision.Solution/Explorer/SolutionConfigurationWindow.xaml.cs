@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using System.Windows;
 
 namespace ColorVision.Solution.Explorer
@@ -10,6 +11,7 @@ namespace ColorVision.Solution.Explorer
         public SolutionConfigurationWindow(SolutionExplorer solutionExplorer)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _solutionExplorer = solutionExplorer;
             _model = new SolutionConfigurationEditorModel(
                 solutionExplorer.DirectoryInfo.FullName,
@@ -31,7 +33,7 @@ namespace ColorVision.Solution.Explorer
                 UpdateSaveState();
                 MessageBox.Show(
                     this,
-                    "请先修复验证结果中的错误。",
+                    LocalizedText.Get("请先修复验证结果中的错误。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

@@ -1,5 +1,4 @@
 using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
-using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib;

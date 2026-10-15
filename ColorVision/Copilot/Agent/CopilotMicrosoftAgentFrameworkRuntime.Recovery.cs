@@ -1,22 +1,11 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
-using Anthropic;
-using Anthropic.Core;
-using ColorVision.Copilot.Mcp;
-using ColorVision.Solution;
-using Microsoft.Agents.AI;
-using Microsoft.Agents.AI.Compaction;
-using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
 {
@@ -120,8 +109,9 @@ namespace ColorVision.Copilot
                 else if (outputFinishReasonIncomplete)
                     emit(CopilotAgentEvent.RuntimeDiagnostic("Final-answer-only recovery ended with an explicit non-success finish reason; partial text was retained and the checkpoint remains recoverable."));
             }
-            catch (OperationCanceledException) when (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException ex) when (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested)
             {
+                usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                 timeBudgetExhausted = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery exhausted its total-time budget after {FormatDuration(stopwatch.Elapsed)}."));
             }
@@ -131,12 +121,14 @@ namespace ColorVision.Copilot
             }
             catch (CopilotAgentContextWindowExceededException ex)
             {
+                usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                 contextWindowExceeded = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Final-answer-only recovery was rejected locally because its estimated input ({ex.EstimatedInputTokens:N0} tokens) exceeded the configured input window ({ex.InputBudgetTokens:N0} tokens)."));
             }
             catch (CopilotAgentContextWindowRecoveryExhaustedException ex)
             {
+                usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                 contextWindowExceeded = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Final-answer-only context recovery stopped after one bounded compaction attempt"
@@ -146,11 +138,13 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
             {
+                usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                 providerFailure = CreateProviderFailureBlocker(ex);
                 emit(CopilotAgentEvent.RuntimeDiagnostic("Final-answer-only recovery failed: " + providerFailure.Summary));
             }
             catch (Exception ex)
             {
+                usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery failed ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey)})."));
             }
 

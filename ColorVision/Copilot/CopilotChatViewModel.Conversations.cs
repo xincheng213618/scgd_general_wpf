@@ -1,26 +1,13 @@
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
-using ColorVision.Solution.Workspace;
-using ColorVision.Copilot.Mcp;
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.Desktop.Feedback;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -445,6 +432,7 @@ namespace ColorVision.Copilot
             _composerSession.Load(selectedConversation);
             SynchronizeSelectedConversationComposerDraft();
             _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
+            EnsurePersistentFullAccess(selectedConversation);
             NotifyComposerTextChanged(synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));
@@ -716,7 +704,7 @@ namespace ColorVision.Copilot
         private bool CanApplyAuxiliaryConversationResult(CopilotConversationRecord? conversation) =>
             Volatile.Read(ref _disposeState) == 0
             && conversation != null
-            && Conversations.Contains(conversation);
+            && (Conversations.Contains(conversation) || ReferenceEquals(_conversationPendingDeletion, conversation));
 
         private CopilotNonBlockingCancellationSource BeginAuxiliaryOperation()
         {

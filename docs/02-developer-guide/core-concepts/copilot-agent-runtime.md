@@ -13,6 +13,8 @@ related: ["copilot.configuration","copilot.execution","copilot.lifecycle","copil
 
 ColorVision Copilot 使用 Microsoft Agent Framework 作为唯一 Agent 执行层。模型、工具、审批、任务账本、恢复和会话状态都沿同一条运行路径处理；框架不可用时本轮明确失败，不切换到另一套规划器重放请求。
 
+模型来源可选择 API Profile 或本机 Codex。后者由 `CopilotCodexChatClient` 适配 App Server：动态工具请求先返回宿主，再沿相同的 Agent Framework 执行与审批链处理；外部 Codex 的独立工具与权限申请不能代替宿主策略。安装探测、登录、临时会话及兼容限制见[本机 Codex 接入](./copilot-configuration.md#使用本机-codex)。
+
 项目指令、按需 Skill、子 Agent、外部 MCP 与 Hook 分别拥有发现、上下文、执行和权限边界；不要因为界面入口相近就把它们合成同一种配置。按下表定位各执行阶段的权威主题。
 
 ## 架构边界

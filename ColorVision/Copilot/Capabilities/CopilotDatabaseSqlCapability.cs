@@ -37,6 +37,14 @@ namespace ColorVision.Copilot
 
     public sealed record CopilotDatabaseMutationResult(int AffectedRows, bool Transactional);
 
+    internal sealed class CopilotDatabaseMutationOutcomeUnknownException : Exception
+    {
+        public CopilotDatabaseMutationOutcomeUnknownException(Exception innerException)
+            : base("The database mutation may have completed, but its final state could not be confirmed.", innerException)
+        {
+        }
+    }
+
     public interface ICopilotDatabaseSqlExecutor
     {
         bool IsAvailable { get; }
@@ -547,29 +555,60 @@ namespace ColorVision.Copilot
             await using var connection = new MySqlConnection(MySqlControl.GetConnectionString());
             await connection.OpenAsync(cancellationToken);
             MySqlTransaction? transaction = null;
+            var commandStarted = false;
+            var commitStarted = false;
             try
             {
                 if (analysis.IsTransactional)
                     transaction = await connection.BeginTransactionAsync(cancellationToken);
                 await using var command = new MySqlCommand(sql, connection, transaction) { CommandTimeout = timeoutSeconds };
+                commandStarted = true;
                 var affectedRows = await command.ExecuteNonQueryAsync(cancellationToken);
                 if (transaction != null)
+                {
+                    commitStarted = true;
                     await transaction.CommitAsync(cancellationToken);
+                }
                 return new CopilotDatabaseMutationResult(affectedRows, transaction != null);
             }
-            catch
+            catch (OperationCanceledException ex)
             {
-                if (transaction != null)
+                var rollbackConfirmed = false;
+                if (transaction != null && !commitStarted)
                 {
                     try
                     {
                         await transaction.RollbackAsync(CancellationToken.None);
+                        rollbackConfirmed = true;
                     }
                     catch
                     {
-                        // Preserve the original database failure.
+                        // The transaction outcome cannot be proven after rollback also fails.
                     }
                 }
+
+                if (commandStarted && (!analysis.IsTransactional || commitStarted || !rollbackConfirmed))
+                    throw new CopilotDatabaseMutationOutcomeUnknownException(ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                var rollbackConfirmed = false;
+                if (transaction != null && !commitStarted)
+                {
+                    try
+                    {
+                        await transaction.RollbackAsync(CancellationToken.None);
+                        rollbackConfirmed = true;
+                    }
+                    catch
+                    {
+                        // The transaction outcome cannot be proven after rollback also fails.
+                    }
+                }
+
+                if (commandStarted && (!analysis.IsTransactional || commitStarted || !rollbackConfirmed))
+                    throw new CopilotDatabaseMutationOutcomeUnknownException(ex);
                 throw;
             }
             finally
@@ -689,6 +728,16 @@ namespace ColorVision.Copilot
             {
                 throw;
             }
+            catch (CopilotDatabaseMutationOutcomeUnknownException ex)
+            {
+                Log.Error("Copilot database change outcome is unknown: " + ex.InnerException?.GetType().Name);
+                return Failure(
+                    "ExecuteDatabaseSql",
+                    CopilotToolFailureKind.OutcomeUnknown,
+                    $"Approved {analysis!.RootKeyword} SQL {analysis.Fingerprint} may have completed, but its final database state is unknown.",
+                    $"Do not retry SQL {analysis.Fingerprint} until the target database state has been verified.",
+                    CopilotToolFailureCode.OutcomeUnknown);
+            }
             catch (Exception ex)
             {
                 Log.Error("Copilot database change failed: " + ex.GetType().Name);
@@ -800,13 +849,19 @@ namespace ColorVision.Copilot
                 : CopilotToolFailureKind.Transient;
         }
 
-        private static CopilotToolResult Failure(string toolName, CopilotToolFailureKind kind, string summary, string error)
+        private static CopilotToolResult Failure(
+            string toolName,
+            CopilotToolFailureKind kind,
+            string summary,
+            string error,
+            string failureCode = "")
         {
             return new CopilotToolResult
             {
                 ToolName = toolName,
                 Success = false,
                 FailureKind = kind,
+                FailureCode = failureCode,
                 Summary = summary,
                 ErrorMessage = error,
             };

@@ -1,14 +1,87 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using ProjectARVRPro;
 using System.Collections.Concurrent;
-using Xunit;
+using System.IO;
 
 namespace ProjectARVRPro.Tests;
 
 public class FlowNodeExecutionRecorderTests
 {
+    [Fact]
+    public async Task CompletesOwnedRecordingWithoutCurrentResultAndAllowsNextRun()
+    {
+        var records = new ConcurrentBag<FlowNodeRecord>();
+        int nextRecordId = 0;
+        using var recorder = new FlowNodeExecutionRecorder(
+            record =>
+            {
+                record.Id = Interlocked.Increment(ref nextRecordId);
+                records.Add(record);
+                return record.Id;
+            },
+            _ => { },
+            _ => 1,
+            _ => { },
+            _ => true,
+            _ => { });
+        var node = new CVDeviceNode("Camera", "CameraType", "CameraNode", "Device");
+        recorder.AttachNodes([node]);
+        recorder.StartRun(100, "previous-run");
+        node.nodeRunEvent.Invoke(node, new FlowEngineNodeRunEventArgs { SerialNumber = "previous-run" });
+
+        // An exception can clear the host's current result and its serial number.
+        // Cleanup must still finish the recording owned by that host.
+        Assert.True(await recorder.CompleteRunAsync());
+        Assert.False(recorder.IsRecording());
+        Assert.NotNull(Assert.Single(records).EndTime);
+
+        recorder.StartRun(101, "next-run");
+        node.nodeRunEvent.Invoke(node, new FlowEngineNodeRunEventArgs { SerialNumber = "previous-run" });
+        node.nodeEndEvent.Invoke(node, new FlowEngineNodeEndEventArgs { SerialNumber = "previous-run" });
+        Assert.True(recorder.IsRecording("next-run"));
+        node.nodeRunEvent.Invoke(node, new FlowEngineNodeRunEventArgs { SerialNumber = "next-run" });
+        Assert.True(await recorder.CompleteRunAsync("next-run"));
+
+        Assert.Equal(2, records.Count);
+        FlowNodeRecord nextRecord = Assert.Single(records, record => record.BatchId == 101);
+        Assert.Equal("next-run", nextRecord.SerialNumber);
+        Assert.NotNull(nextRecord.EndTime);
+    }
+
+    [Fact]
+    public async Task CompletionForDifferentRunDoesNotStopActiveRecording()
+    {
+        using var recorder = new FlowNodeExecutionRecorder(_ => 1, _ => { }, _ => 1, _ => { }, _ => true, _ => { });
+        recorder.StartRun(100, "active-run");
+
+        Assert.False(await recorder.CompleteRunAsync("previous-run"));
+        Assert.True(recorder.IsRecording("active-run"));
+        Assert.Throws<InvalidOperationException>(() => recorder.StartRun(101, "next-run"));
+        Assert.True(await recorder.CompleteRunAsync());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedDiagnosticsFlushDoesNotBlockNextExecution(bool throwOnFlush)
+    {
+        using var recorder = new FlowNodeExecutionRecorder(
+            _ => 1, _ => { }, _ => 1, _ => { },
+            _ => throwOnFlush ? throw new IOException("Synthetic diagnostics storage failure") : false,
+            _ => { });
+        recorder.StartRun(100, "previous-run");
+
+        if (throwOnFlush)
+            await Assert.ThrowsAsync<IOException>(() => recorder.CompleteRunAsync());
+        else
+            Assert.False(await recorder.CompleteRunAsync());
+
+        Assert.False(recorder.IsRecording());
+        recorder.StartRun(101, "next-run");
+        Assert.True(recorder.IsRecording("next-run"));
+    }
+
     [Fact]
     public async Task RecordsNodeTimingAndMessageAgainstActiveBatch()
     {

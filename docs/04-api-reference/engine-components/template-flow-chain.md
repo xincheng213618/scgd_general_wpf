@@ -3,9 +3,9 @@ knowledge_id: "flow.templates"
 knowledge_type: "topic"
 status: "current"
 summary: "Flow 本地 SQLite 与 MySQL 配置存储、保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
-aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项","StnV1NeutralCodec","动态端口索引","逻辑与索引警告","本地流程","离线流程模板","LocalFlowTemplateStorage"]
-code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
+aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项","StnV1NeutralCodec","动态端口索引","逻辑与索引警告","本地流程","离线流程模板","LocalFlowTemplateStorage","流程封面","流程平铺","FlowTemplateManagerWindow"]
+code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateCover.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateCoverService.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupFlowTemplateLoadingTests.cs","Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs","Test/ColorVision.UI.Tests/FlowTemplateCoverTests.cs","Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"]
 related: ["flow.architecture","flow.workspace","flow.session","flow.headless","engine.template-design","engine.results"]
 ---
 
@@ -21,9 +21,15 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 
 MySQL 未连接时，启动仍加载本地流程；MySQL 流程列表查询失败也会回退到本地。`LocalFlowTemplateStorage` 使用当前用户 `ApplicationData/ColorVision/Config/ColorVision.Local.db` 的 `local_templates` 表，`kind=flow`，每条记录直接保存名称、稳定 `local-flow:<guid>` 身份和完整 Base64 STN，不创建 MySQL 的主表、明细或资源关系，不保存执行结果。管理器标题标识“本地”或“MySQL”；两库独立，不缓存或同步服务器流程，首次使用本地空库需新建或导入 `.stn`。
 
+启动通过可选的 `IAsyncTemplateLoad.LoadAsync` 读取 Flow：数据库、本地存储和版本查询在后台运行，尚未绑定的参数准备完成后回到 UI 线程更新共享集合。旧模板加载器继续调用同步 `Load()`，按约 32 ms 时间片在加载器之间让出 Dispatcher；运行期间的 MySQL 重连仍按原有同步顺序先发布模板、再更新服务资源。启动尚未完成时收到重载请求会合并并补做一轮，避免两个批次同时发布。
+
 本地支持新建、编辑保存、重命名、复制、删除、排序及 `.stn` 导入导出；多选导出仍为多个 STN 的 ZIP。当前本地管理入口不导入带关联模板的 `.cvflow` 包，也不保证服务节点或其他 MySQL 模板可离线执行。本地 ID 小于 -1，复制生成新 FlowKey，排序保留身份。已经打开的本地流程在重新联网后仍保存到原本地库；服务器流程断线保存会报错，不自动变成本地流程。格式版本不支持或内容损坏时拒绝读取，不能覆盖为空流程。
 
 流程下拉框为空时，齿轮仍打开模板管理，新建按钮可创建并选中第一个流程。主画布尚未关联任何模板时，首次保存要求填写名称，将当前画布写入当前配置存储并关联新模板；取消保留画布、不创建记录。若已有模板选择仍在加载，不能把旧画布作为该模板的新内容保存。
+
+工作流程齿轮（包括共用命令的画布入口）、“模板 → 流程”菜单、ProjectARVRPro、ProjectKB、ProjectLUX 和 Conoscope 的流程模板管理使用专用 `FlowTemplateManagerWindow`；窗口与 POI 图标浏览器共用 `TemplateBrowserWindow` 的浏览交互，封面仍由流程专用组件提供。旧 `TemplateEditorWindow` 保留，可从新窗口右上角“更多 → 旧版管理”打开。新窗口默认显示上方封面、下方居中的单行名称的平铺，也可切回列表；长名称悬停查看，双击仍打开 `FlowEngineToolWindow`。切换复用同一窗口内的集合视图，保留顺序、筛选、高亮、勾选和两种模式各自的滚动位置，不重新加载模板、不筛选主窗口下拉框。切换视图不改变窗口尺寸。搜索与新建、导入/导出位于顶部；底部显示选择数量、删除、保存名称修改和关闭操作。拖拽以目标卡片标记提示交换位置，只交换源项和目标项，中间流程不动。新旧管理窗口都保存数据库顺序，并在提交成功后同步共享模板集合与主窗口下拉框，保留当前选中对象。MySQL 按现有序号约定，在事务内交换主记录 ID 和全部明细 Pid，流程名称、保存内容和资源标识跟随原模板；本地流程交换 SQLite sort_order，ID 不变。保存异步执行，失败在窗口内提示重新打开核对。再次打开直接采用数据库顺序，旧 flow_template_browser_order 本机偏好不再参与排序；封面缓存仍独立保留。事务与身份边界见[模板持久化与排序](../../03-architecture/components/templates/design.md)。搜索后的编辑、复制、删除和导出按源对象定位；删除确认显示实际勾选范围，包括被搜索隐藏的勾选。
+
+平铺封面由已保存 STN 的节点位置、标题和连线生成结构缩略图，不显示运行状态或全部节点参数。仅请求可见区域的封面，后台串行生成固定 640×360 PNG，以包含布局的完整内容 hash 和渲染版本校验缓存；保存后重新激活管理窗口或再次显示该项时按新内容取图。`FlowTemplateCoverService` 使用 `ColorVision.Local.db` 中独立的 `flow_template_covers` 表保存 PNG BLOB，最多保留最近生成的 1000 份可重建封面。同一内容可共享封面，重命名不需重新生成；缓存读写失败仍尝试显示内存预览，损坏流程或缺失节点类型显示“预览不可用”，不阻止打开编辑器。生成复用目录投影：可能为端口结构创建默认节点，但不恢复节点属性、不连接运行节点、不调用 `OnEditorLoadCompleted`。封面缓存不改变流程的 MySQL/本地归属，也不代表服务器流程或依赖参数已经离线可用。
 
 本地保存沿用窗口内容 hash 基线检查，并使用条件更新防止读取后发生的并发覆盖；删除后的旧窗口不能重新创建同号记录。版本历史和搜索继续使用独立的 `FlowCatalog.db`，其失败不改变配置保存结果。下表的主表、明细和资源关系仅适用于 MySQL 存储。
 
@@ -109,10 +115,10 @@ MySQL 删除直接修改主表、明细和对应资源，没有 `Save2DB` 的事
 | 图正常但属性缺选择器 | [工作区](../../01-user-guide/workflow/design.md)及[PropertyGrid 契约](../ui-components/property-grid.md)，不是包格式问题 |
 | 引擎结束但业务结果未完成 | [执行会话](../../01-user-guide/workflow/execution.md)的最终化判据，不在模板保存层补等待 |
 
-`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；`FlowCanvasCatalogBuilderTests` / `FlowCatalogServiceTests` 覆盖投影与版本目录，包括新建逻辑与节点多路接线、同类型不同端口数量、汇聚/分发节点往返、索引不执行加载/连线回调及非法数量拒绝。这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
+`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
 
 `Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs` 使用临时 SQLite 验证本地模板操作、STN 画布编辑后的节点/连线恢复、身份与 POI 隔离、并发保存、删除后旧窗口保存及损坏内容拒绝；MySQL 读取失败用抛错的 client factory 模拟，不代表真实服务器或设备执行验收。
 
-`Test/ColorVision.UI.Tests/OfflineConfigurationEntryTests.cs` 使用临时配置和 WPF 窗口验证空列表管理入口、工具栏命令绑定、首个流程创建与选中、未绑定画布首次保存和取消。它不操作用户的本地库或真实相机。
+它不操作用户的本地库或真实相机。
 
 授权验证至少核对：新增节点/参数保存后重开、并发窗口保存冲突、单流程包重导入不重复创建模板、冲突模板及二级引用正确、多选 zip 不被误认为完整迁移包。结果模型的历史 handler / 中立 overlay / 项目输出分流由[结果契约](./result-handoff-chain.md)维护。

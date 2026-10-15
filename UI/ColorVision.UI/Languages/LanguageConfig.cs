@@ -23,7 +23,7 @@ namespace ColorVision.UI.Languages
                 DisplayMemberPath = "Value",
                 SelectedValuePath = "Key",
                 ItemsSource = from e1 in LanguageManager.Current.Languages
-                              select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1)
+                              select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) && !string.IsNullOrWhiteSpace(value) ? value : LanguageManager.GetDisplayName(e1))
             };
 
             var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);

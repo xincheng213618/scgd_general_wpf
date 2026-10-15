@@ -1,26 +1,12 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
-using ColorVision.Solution.Workspace;
-using ColorVision.Copilot.Mcp;
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.Desktop.Feedback;
-using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -70,7 +56,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "无法打开代码审查详情：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
+                    LocalizedText.Get("无法打开代码审查详情：") + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -211,7 +197,7 @@ namespace ColorVision.Copilot
             {
                 var replaceAttachments = MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "回溯会用所选历史请求的附件快照替换当前待发送附件；源会话和文件不会改变。是否继续？",
+                    LocalizedText.Get("回溯会用所选历史请求的附件快照替换当前待发送附件；源会话和文件不会改变。是否继续？"),
                     "ColorVision",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
@@ -267,7 +253,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"无法创建会话分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    LocalizedText.Format($"无法创建会话分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -320,7 +306,7 @@ namespace ColorVision.Copilot
             {
                 var replaceDraft = MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "编辑上一条请求会暂时替换当前草稿和待发送附件；取消编辑时会恢复。是否继续？",
+                    LocalizedText.Get("编辑上一条请求会暂时替换当前草稿和待发送附件；取消编辑时会恢复。是否继续？"),
                     "ColorVision",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
@@ -389,7 +375,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"无法创建历史编辑分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    LocalizedText.Format($"无法创建历史编辑分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -527,6 +513,8 @@ namespace ColorVision.Copilot
                         ? userMessage.Attachments
                         : queuedFollowUp.SubmissionContext.Attachments)
                     .WithConversationHistory(CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation, userMessage));
+            if (queuedFollowUp == null && userMessage.AttachmentSnapshotCaptured && !refreshExternalContext)
+                turnSnapshot = turnSnapshot.WithAttachments(userMessage.Attachments);
             if (!TryPrepareExplicitSkillMcpDependencies(
                 prompt,
                 userMessage.AgentSkillReference,

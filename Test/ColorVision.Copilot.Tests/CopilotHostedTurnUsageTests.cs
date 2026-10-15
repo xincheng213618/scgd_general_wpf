@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -15,19 +14,25 @@ public sealed class CopilotHostedTurnUsageTests
     private static readonly CopilotTokenUsage CurrentUsage = new(120, 30, 150, 80);
 
     [Theory]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    public async Task HostedChatInterruptionSettlesTheUsageReceivedThroughTurnEvents(bool cancelled, bool reportUsage)
+    [InlineData(false, true, true)]
+    [InlineData(true, true, true)]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    public async Task HostedChatInterruptionSettlesTheUsageReceivedThroughTurnEvents(
+        bool cancelled, bool reportUsage, bool previousUsageReported)
     {
-        await using var fixture = new UsageFixture(reportUsage);
+        await using var fixture = new UsageFixture(reportUsage, previousUsageReported);
         fixture.ViewModel.QueueExternalPrompt("Reply to this test request", startNewConversation: false, sendNow: true, mode: CopilotAgentMode.Chat);
         await fixture.Runtime.UsageProcessed.WaitAsync(TestTimeout);
         var assistant = fixture.Conversation.Messages.Last(message => !message.IsUser);
         var expectedUsage = reportUsage ? CurrentUsage : CopilotTokenUsage.Empty;
+        var expectedPreviousUsage = previousUsageReported ? PreviousUsage : CopilotTokenUsage.Empty;
         Assert.Equal(expectedUsage, assistant.ReportedUsage);
-        Assert.Equal(PreviousUsage, fixture.Conversation.LastUsage);
+        Assert.Equal(expectedPreviousUsage, fixture.Conversation.LastUsage);
         var run = Assert.IsType<CopilotHostedAgentRun>(fixture.Host.ActiveRun);
 
         if (cancelled)
@@ -46,7 +51,52 @@ public sealed class CopilotHostedTurnUsageTests
         Assert.Contains("Partial provider answer", assistant.Content, StringComparison.Ordinal);
         Assert.Equal(expectedUsage, assistant.ReportedUsage);
         Assert.Equal(expectedUsage, fixture.Conversation.LastUsage);
-        Assert.Equal(PreviousUsage, fixture.PreviousAssistant.ReportedUsage);
+        Assert.Equal(expectedPreviousUsage, fixture.PreviousAssistant.ReportedUsage);
+
+        var state = fixture.State;
+        for (var roundTrip = 0; roundTrip < 2; roundTrip++)
+        {
+            fixture.DiskStore.Save(state);
+            state = fixture.DiskStore.Load();
+            var restored = Assert.Single(state.Conversations);
+            restored.EnsureValid();
+            Assert.Equal(fixture.Conversation.Messages.Select(message => message.Id), restored.Messages.Select(message => message.Id));
+            var previous = Assert.Single(restored.Messages, message => message.Id == fixture.PreviousAssistant.Id);
+            var interrupted = Assert.Single(restored.Messages, message => message.Id == assistant.Id);
+            Assert.False(previous.WasResponseInterrupted);
+            Assert.True(interrupted.WasResponseInterrupted);
+            Assert.Equal(expectedPreviousUsage, previous.ReportedUsage);
+            Assert.Equal(expectedUsage, interrupted.ReportedUsage);
+            Assert.Equal(expectedUsage, restored.LastUsage);
+            var diagnostics = CopilotConversationUsageDiagnostics.Capture(restored);
+            var expectedTrackedResponses = (previousUsageReported ? 1 : 0) + (reportUsage ? 1 : 0);
+            Assert.Equal(expectedPreviousUsage.Add(expectedUsage), diagnostics.TotalUsage);
+            Assert.Equal(reportUsage ? expectedUsage : expectedPreviousUsage, diagnostics.LastUsage);
+            Assert.Equal(expectedTrackedResponses, diagnostics.TrackedResponses);
+            Assert.Equal(2 - expectedTrackedResponses, diagnostics.UnreportedResponses);
+            Assert.Equal(1, diagnostics.InterruptedResponses);
+            Assert.Equal(0, diagnostics.ActiveResponses);
+        }
+    }
+
+    [Fact]
+    public void LegacyLastUsageStillBackfillsTheLatestCompletedAssistant()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("legacy-profile", "Legacy profile");
+        var previous = new CopilotChatMessage(CopilotChatRole.Assistant, "Earlier unreported answer");
+        var latest = new CopilotChatMessage(CopilotChatRole.Assistant, "Latest completed answer");
+        conversation.Messages =
+        [
+            new CopilotChatMessage(CopilotChatRole.User, "Earlier request"), previous,
+            new CopilotChatMessage(CopilotChatRole.User, "Latest request"), latest,
+        ];
+        conversation.SetLastUsage(CurrentUsage);
+
+        Assert.True(conversation.EnsureValid());
+        Assert.Equal(CopilotTokenUsage.Empty, previous.ReportedUsage);
+        Assert.Equal(CurrentUsage, latest.ReportedUsage);
+        Assert.Equal(CurrentUsage, CopilotConversationUsageDiagnostics.Capture(conversation).TotalUsage);
+        Assert.False(conversation.EnsureValid());
     }
 
     private sealed class UsageFixture : IAsyncDisposable
@@ -59,14 +109,17 @@ public sealed class CopilotHostedTurnUsageTests
 
         public CopilotConversationRecord Conversation { get; }
         public CopilotChatMessage PreviousAssistant { get; }
+        public CopilotChatState State { get; }
+        public CopilotChatStateStore DiskStore { get; }
         public CopilotChatViewModel ViewModel { get; }
         public CopilotAgentTaskHost Host { get; } = new();
         public UsageThenFailureRuntime Runtime { get; }
 
-        public UsageFixture(bool reportUsage)
+        public UsageFixture(bool reportUsage, bool previousUsageReported)
         {
             SolutionInstanceField.SetValue(null, _testSolutionInstance);
             Directory.CreateDirectory(_root);
+            DiskStore = new CopilotChatStateStore(_root);
             var profile = new CopilotProfileConfig
             {
                 Id = "hosted-usage-profile",
@@ -80,10 +133,12 @@ public sealed class CopilotHostedTurnUsageTests
             Conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
             Conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Earlier request"));
             PreviousAssistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Earlier answer");
-            PreviousAssistant.SetReportedUsage(PreviousUsage);
+            if (previousUsageReported)
+                PreviousAssistant.SetReportedUsage(PreviousUsage);
             Conversation.Messages.Add(PreviousAssistant);
-            Conversation.SetLastUsage(PreviousUsage);
-            var state = new CopilotChatState
+            if (previousUsageReported)
+                Conversation.SetLastUsage(PreviousUsage);
+            State = new CopilotChatState
             {
                 ActiveConversationId = Conversation.Id,
                 ActiveProfileId = profile.Id,
@@ -96,7 +151,7 @@ public sealed class CopilotHostedTurnUsageTests
                 Profiles = [profile],
             };
             Runtime = new UsageThenFailureRuntime(reportUsage);
-            ViewModel = new CopilotChatViewModel(new CopilotChatService(), new MemoryStateStore(state, _root), config, Runtime, Host);
+            ViewModel = new CopilotChatViewModel(new CopilotChatService(), new MemoryStateStore(State, _root), config, Runtime, Host);
         }
 
         public async ValueTask DisposeAsync()

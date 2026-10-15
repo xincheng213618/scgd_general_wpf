@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
@@ -100,8 +101,8 @@ namespace ColorVision.Solution.Workspace
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"保存文件失败。\n\n{ex.Message}",
-                    "保存失败",
+                    LocalizedText.Format($"保存文件失败。\n\n{ex.Message}"),
+                    LocalizedText.Get("保存失败"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return false;
@@ -442,7 +443,7 @@ namespace ColorVision.Solution.Workspace
 
                 MessageBoxResult result = MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"是否保存对“{_title}”的更改？",
+                    LocalizedText.Format($"是否保存对“{_title}”的更改？"),
                     "ColorVision",
                     MessageBoxButton.YesNoCancel,
                     MessageBoxImage.Warning);
@@ -505,7 +506,7 @@ namespace ColorVision.Solution.Workspace
             private void UpdateTitle()
             {
                 string title = FormatTitle(_title, Content?.IsDirty == true);
-                Document.Title = _resourceMissing ? $"{title} [已删除]" : title;
+                Document.Title = _resourceMissing ? LocalizedText.Format($"{title} [已删除]") : title;
             }
 
             private void InitializeResourceWatcher()
@@ -689,7 +690,7 @@ namespace ColorVision.Solution.Workspace
                 string detail = exception == null ? string.Empty : $"{Environment.NewLine}{exception.Message}";
                 MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"无法保存“{_title}”。{detail}",
+                    LocalizedText.Format($"无法保存“{_title}”。{detail}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -700,7 +701,7 @@ namespace ColorVision.Solution.Workspace
                 string detail = exception == null ? string.Empty : $"{Environment.NewLine}{exception.Message}";
                 MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"无法重新加载“{_title}”。{detail}",
+                    LocalizedText.Format($"无法重新加载“{_title}”。{detail}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

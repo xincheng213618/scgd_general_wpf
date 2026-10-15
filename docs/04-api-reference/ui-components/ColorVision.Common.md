@@ -5,7 +5,7 @@ status: "current"
 summary: "共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。"
 aliases: ["共享接口应该放在哪里", "属性相同仍然通知", "按钮禁用仍被调用", "方法权限特性与自动鉴权", "ColorVision.Common", "ViewModelBase", "SetProperty", "RelayCommand", "CanExecute", "RaiseCanExecuteChanged", "ActionCommand", "IConfig", "IAssemblyService", "ModuleCatalog", "Authorization", "AccessControl", "ExecuteWithPermissionCheck", "PermissionMode", "RequiresPermissionAttribute", "ThirdPartyAppManager", "ThirdPartyAppInfo", "IThirdPartyAppProvider", "WindowConfig", "窗口恢复DPI", "GetDipScreens", "GetPrimaryDipScreen"]
 code_paths: ["UI/ColorVision.Common/ColorVision.Common.csproj", "UI/ColorVision.Common/README.md", "UI/ColorVision.Common/MVVM/ViewModelBase.cs", "UI/ColorVision.Common/MVVM/RelayCommand.cs", "UI/ColorVision.Common/MVVM/ActionCommand.cs", "UI/ColorVision.Common/Interfaces", "UI/ColorVision.Common/Authorizations", "UI/ColorVision.Common/ThirdPartyApps", "UI/ColorVision.Common/NativeMethods", "UI/ColorVision.Common/Utilities", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Rbac/RbacManager.cs", "UI/ColorVision.Rbac/Services/PermissionChecker.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/WindowFullScreenTests.cs","Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs", "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs", "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs", "Test/ColorVision.UI.Tests/WindowConfigDpiLifecycleTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs","Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs"]
 related: ["ui.index", "ui.framework", "ui.configuration", "ui.menus", "platform.extensibility", "plugins.model", "platform.security"]
 ---
 
@@ -62,7 +62,7 @@ Common 中的 `AssemblyService`、`ConfigService`、`MenuService` 是可由宿�
 
 屏幕像素到 DIP 的转换优先读取视觉树的 `PresentationSource.CompositionTarget`。调用方提前创建 HWND 时，`SourceInitialized` 可能发生在窗口根视觉尚未挂接的阶段；此时复用 `WindowInteropHelper.Handle` 对应 `HwndSource` 的转换矩阵。两者均不可用才回退单位矩阵，读取几何不会调用 `EnsureHandle`、创建窗口句柄或显示窗口。`GetDipScreens` 和主屏回退共用这条规则。当前仍以窗口源的矩阵换算屏幕集合，不承诺分别处理多屏混合缩放或显示配置热切换。
 
-`WindowConfigDpiLifecycleTests` 使用独立窗口和内存配置，检查无 HWND 的读取无副作用、`SourceInitialized` / `EnsureHandle` / `Show` 三阶段屏幕换算一致，以及直接 Show 和预建 HWND 两条路径中，正常/最大化窗口在有无保存边界时的恢复范围。还检查已有 HWND 的登记不补恢复、后续位置变化回写，以及创建句柄前关闭保留保存值；测试不更改显示缩放。非单位缩放环境才能区分已有 HWND 转换与单位矩阵回退，100% 缩放下通过不能单独证明该分支修复。
+还检查已有 HWND 的登记不补恢复、后续位置变化回写，以及创建句柄前关闭保留保存值；测试不更改显示缩放。非单位缩放环境才能区分已有 HWND 转换与单位矩阵回退，100% 缩放下通过不能单独证明该分支修复。
 
 ## 可恢复的全屏会话
 

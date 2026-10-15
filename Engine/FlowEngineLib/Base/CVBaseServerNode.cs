@@ -445,7 +445,8 @@ public class CVBaseServerNode : CVDeviceNode
 			trans.trans_action = new CVStartCFC(trans.trans_action);
 			if (publishNodeRun) PublishNodeRun(CreateNodeRunEventArgs(trans, act));
 			trans.ResetStartTime();
-			ObserveBackgroundTask(WaitingOverTimeAsync(cmd), "local timeout monitor");
+			if (localExecution == null || localExecution.UseNodeTimeout)
+				ObserveBackgroundTask(WaitingOverTimeAsync(cmd), "local timeout monitor");
 			ObserveBackgroundTask(ExecuteLocalAsync(trans, cmd, localExecution, localSelectionError), "local execution");
 			return;
 		}
@@ -488,7 +489,11 @@ public class CVBaseServerNode : CVDeviceNode
 			if (trans.IsCanceled || trans.trans_action.RuntimeResources.IsDisposed) return;
 			try
 			{
-				if (failure == null) await Task.Run(execution.Execute).ConfigureAwait(false);
+				if (failure == null)
+				{
+					execution.Bind(trans.trans_action);
+					await Task.Run(execution.Execute).ConfigureAwait(false);
+				}
 			}
 			catch (Exception ex) { failure = ex; }
 			CVMQTTRequest request = cmd.cmd;
@@ -914,7 +919,7 @@ public class CVBaseServerNode : CVDeviceNode
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
 			trans.NodeFailed(statusMessage, GetFullNodeName(), NodeID);
-			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
+			logger.WarnFormat("[{0}]CVTransAction Failed => SerialNumber={1}, NodeId={2}, Message={3}", ToShortString(), trans.trans_action.SerialNumber, NodeID, statusMessage);
 		}
 
 		if (resp.Status != ActionStatusEnum.Failed)
@@ -922,9 +927,9 @@ public class CVBaseServerNode : CVDeviceNode
 			trans.AddTTL();
 		}
         TimeSpan timeSpan = DateTime.Now - trans.startTime;
-		if (logger.IsInfoEnabled)
+		if (logger.IsDebugEnabled)
 		{
-			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
+			logger.DebugFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
 		m_op_end.TransferData(trans.trans_action);
 		PublishNodeEnd(new FlowEngineNodeEndEventArgs

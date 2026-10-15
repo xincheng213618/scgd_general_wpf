@@ -15,7 +15,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 
 ## 项目定位
 
-这是一个不依赖 ColorVision 内部项目的 .NET Framework 4.8 WPF + CLI 示例，Demo 产品版本为独立的 `1.0.0`。每次交付应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取并单独记录插件 `VersionPrefix`，不要从 Demo 版本推断兼容性。
+这是一个不依赖 ColorVision 内部项目的 .NET Framework 4.8 WPF + CLI 示例，Demo 产品版本为独立的 `1.0.2`。每次交付应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取并单独记录插件 `VersionPrefix`，不要从 Demo 版本推断兼容性。
 
 ## 主要能力
 
@@ -34,10 +34,10 @@ related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 | 结果类别 | 顶层字段 | 维护要点 |
 | --- | --- | --- |
 | 键化结果 | `FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults` | 第一层 Key 来自流程配置，应枚举实际返回值，不能写死为 `White`。 |
-| 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults` | 分别承载动态测试项、POI 光色数据和屏幕缺陷汇总/缺陷框。 |
+| 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`、`DynamicRgbCrossResults` | 分别承载动态测试项、POI 光色数据、屏幕缺陷汇总/缺陷框和十字 RGB 分离结果。 |
 | 固定/兼容结果 | W51、W255、Black、Chessboard、MTF、Distortion、OpticCenter 等结果 | Key 为 `White` 的视场角和亮色度流程还会写入 W51/W255 兼容字段。 |
 
-`ChessboardTestResult` 同时包含 `ChessboardContrast` 与 `AverageBlackLuminance`。随 Demo 提供的标准样例包含键化结果、YW 双 POI 组、动态测试项、动态 POI、屏幕缺陷和棋盘格字段；字段名与结构以样例 JSON 和 `Contracts/` 为准。
+`W255TestResult.ColorCenterRmsToD65` 是有效 POI 相对 D65 的均方根色度距离，与 `ColorUniformity` 独立。当前服务端为兼容历史数据，`ColorUniformity.Name` 可能保留 `Conlor_Uniformity(Δu'v'max)` 拼写；客户程序应按 JSON 属性取值，不要把 `Name` 当固定键。`ChessboardTestResult` 同时包含 `ChessboardContrast` 与 `AverageBlackLuminance`。随 Demo 提供的标准样例包含键化结果、YW 双 POI 组、动态测试项、动态 POI、屏幕缺陷、十字 RGB 结果、W255 D65 RMS 和棋盘格字段；字段名与结构以样例 JSON 和 `Contracts/` 为准。
 
 ### Legacy 输出边界
 
@@ -53,7 +53,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 | 初始化 | 发送 `ProjectARVRInit`，带 `SerialNumber` | 宿主建立当前 SN 和流程上下文 | SN 必须和客户 MES/上位机一致，后续结果靠它追溯 |
 | 全流程 | 发送 `RunAll` | 宿主按当前流程组执行所有步骤 | 只适合已配置好流程组、Recipe、切图方式的现场 |
 | 普通切图确认 | 收到 `SwitchPG` 后发送 `SwitchPGCompleted` | 宿主继续下一个流程节点 | 自动确认按事件与MsgID去重，缺MsgID时回退SN和ARVRTestType；不核验实际切图完成 |
-| AOI 切图确认 | 收到 `AoiSwitchPG` 后发送 `AOITestSwitchImageComplete` | 宿主继续 AOI Relay 链路 | 如果现场没有 AOI Relay，不应强行发送该确认 |
+| AOI 切图确认 | 收到 `AoiSwitchPG` 后发送 `AOITestSwitchImageComplete` | 宿主完成外部切图节点的等待 | 仅在收到请求且实际切图完成后确认；Demo 自建确认 MsgID，节点需使用默认兼容模式 |
 | 切换流程组 | 同步发送 `SwitchGroup` | 宿主按名称切换活动组并返回 `{GroupName, MetaCount}` | `Params` 是非空组名字符串 |
 | 查询流程启用状态 | 同步发送 `GetProcessEnable` | 宿主返回 `{ActiveGroupName, Count, Items}` | `Params` 留空，后续设置应复用返回的 `Index` |
 | 设置流程启用状态 | 同步发送 `SetProcessEnable` | 宿主返回 `{ActiveGroupName, Applied, NotFound}` | `Params` 是 JSON 字符串，推荐 `{"Items":[{"Index":0,"IsEnabled":true}]}` |

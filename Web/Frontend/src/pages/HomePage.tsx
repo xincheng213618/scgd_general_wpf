@@ -12,6 +12,8 @@ import {
 } from '@ant-design/icons'
 import { Alert, Button, Col, Row, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
+import { WindowsDownloadMenu } from '../components/WindowsDownloadMenu'
+import { usePhoneLayout } from '../hooks/usePhoneLayout'
 import { getHome } from '../services/site'
 import type { AuthSession, HomePayload } from '../types/site'
 import { downloadPath, humanSize, shortDate } from '../utils/format'
@@ -62,6 +64,7 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const decorativeVideoSource = useDecorativeVideoSource()
+  const isPhoneLayout = usePhoneLayout()
 
   useEffect(() => {
     let mounted = true
@@ -87,7 +90,7 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
   if (!data) return null
 
   const latest = data.app_info.current_preview?.[0] ?? data.app_info.latest_release
-  const latestAndroid = data.app_info.latest_android_release
+  const latestAndroid = isPhoneLayout ? data.app_info.latest_android_release : undefined
   const latestVersion = data.app_info.latest_version || latest?.version || '未检测'
   const currentCount = data.app_info.current_count ?? 0
   const androidCount = data.app_info.android_count ?? 0
@@ -115,7 +118,7 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
       className: 'windows',
       eyebrow: 'Windows 桌面端',
       title: `ColorVision ${latestVersion}`,
-      desc: '完整桌面端软件，适合工作站、检测电脑和正式生产环境。',
+      desc: '通过下载助手获取最新版，也可直接下载完整安装包。',
       meta: `${latest?.filename || 'ColorVision 安装包'}${latest?.size ? ` · ${humanSize(latest.size)}` : ''}`,
       action: '下载 Windows 版',
       href: downloadPath(latest?.relative_path),
@@ -136,12 +139,12 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
       icon: <MobileOutlined />,
       available: Boolean(latestAndroid?.relative_path),
     },
-  ]
+  ].filter((item) => item.key !== 'android' || isPhoneLayout)
 
   const featureCards = [
     {
       title: '版本中心',
-      desc: '桌面端、Android 与版本详情。',
+      desc: isPhoneLayout ? '桌面端、Android 与版本详情。' : '桌面端安装包与版本详情。',
       href: '/releases',
       icon: <FileDoneOutlined />,
       meta: `${currentCount} 个桌面端制品`,
@@ -205,9 +208,7 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
                 下载 Android APK
               </Button>
             )}
-            <Button className="hero-action-windows" type="primary" size="large" shape="round" icon={<CloudDownloadOutlined />} href={downloadPath(latest?.relative_path)}>
-              下载 Windows 桌面端
-            </Button>
+            <WindowsDownloadMenu className="hero-action-windows" size="large" assistant={data.download_assistant} installer={latest} />
             <Button className="hero-action-plugins" size="large" shape="round" icon={<AppstoreOutlined />} href="/plugins">
               插件市场
             </Button>
@@ -240,14 +241,18 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
               </span>
               <span className="platform-card-desc">{item.desc}</span>
               <span className="platform-card-meta">{item.meta}</span>
-              <span className="platform-card-action">
-                {item.action}
-                <CloudDownloadOutlined />
-              </span>
+              {item.key === 'windows' ? (
+                <WindowsDownloadMenu className="platform-windows-download" assistant={data.download_assistant} installer={latest} />
+              ) : (
+                <span className="platform-card-action">
+                  {item.action}
+                  <CloudDownloadOutlined />
+                </span>
+              )}
             </>
           )
-          const className = `home-platform-card ${item.className}${item.available ? '' : ' disabled'}`
-          return item.available ? (
+          const className = `home-platform-card ${item.className}${item.available || item.key === 'windows' ? '' : ' disabled'}`
+          return item.available && item.key !== 'windows' ? (
             <a href={item.href} className={className} key={item.key}>
               {body}
             </a>

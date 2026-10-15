@@ -29,10 +29,6 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <WrapPanel Margin="0,0,0,5">
-                    <CheckBox Content="启用本地" IsChecked="{Binding DisplayConfig.UseLocalSpectrum}" Margin="0,0,8,0" ToolTip="下次打开时使用本机 SDK；已打开连接需先关闭再切换。"/>
-                    <Button Content="本地光谱仪" Command="{Binding OpenLocalSpectrumManagerCommand}"/>
-                </WrapPanel>
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
                 <Button x:Name="TextBlockOffLine"  HorizontalAlignment="Left" Margin="0,0,0,3" Click="Button_Click_Open" Content="OffLine" />
                 <Button x:Name="ButtonUnauthorized"  HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
@@ -142,9 +138,9 @@
                             </DockPanel>
 
                             <DockPanel Margin="0,2" Visibility="{Binding DisplayConfig.IsWithND, Converter={StaticResource bool2VisibilityConverter}}">
-                                <Button Click="GetNDport_Click" Content="Get" DockPanel.Dock="Right" />
+                                <Button Click="GetNDport_Click" Content="{x:Static properties:Resources.FilterWheelReadPosition}" DockPanel.Dock="Right" />
                                 <Button Click="NDport_Click" Content="{x:Static properties:Resources.ChangeNDPort}" DockPanel.Dock="Right" />
-                                <TextBlock Text="NDPort" />
+                                <TextBlock Text="{x:Static properties:Resources.NDFilterPosition}" />
                                 <ComboBox x:Name="ComboBoxNDPort"
                                           MinWidth="96"
                                           Margin="5,0"
@@ -155,8 +151,8 @@
                             </DockPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable, Converter={StaticResource bool2VisibilityConverter}}">
-                            <Button Click="Button_Click_Shutter_Doopen" Content="Open Shutter" />
-                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="Close Shutter" />
+                            <Button Click="Button_Click_Shutter_Doopen" Content="{x:Static properties:Resources.OpenShutter}" />
+                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="{x:Static properties:Resources.CloseShutter}" />
                         </StackPanel>
 
                     </StackPanel>

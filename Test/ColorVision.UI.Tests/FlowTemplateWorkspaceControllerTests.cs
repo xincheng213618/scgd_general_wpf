@@ -1,10 +1,42 @@
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class FlowTemplateWorkspaceControllerTests
 {
+    [Fact]
+    public void EmptyAndStaleSelectionsNeverResolveAnotherFlow()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var previous = TemplateFlow.Params;
+            try
+            {
+                TemplateFlow.Params = new ObservableCollection<TemplateModel<FlowParam>>();
+                Assert.Null(TemplateFlow.GetParamOrDefault(0));
+                var first = new FlowParam { Name = "first" };
+                var second = new FlowParam { Name = "second" };
+                TemplateFlow.Params.Add(new TemplateModel<FlowParam>(first.Name, first));
+                TemplateFlow.Params.Add(new TemplateModel<FlowParam>(second.Name, second));
+                Assert.Null(TemplateFlow.GetParamOrDefault(-1));
+                Assert.Null(TemplateFlow.GetParamOrDefault(int.MaxValue));
+                Assert.Same(first, TemplateFlow.GetParamOrDefault(0));
+                Assert.Same(second, TemplateFlow.GetParamOrDefault(1));
+                TemplateFlow.Params.RemoveAt(1);
+                Assert.Null(TemplateFlow.GetParamOrDefault(1));
+                TemplateFlow.Params.Clear();
+                Assert.Null(TemplateFlow.GetParamOrDefault(0));
+            }
+            finally
+            {
+                TemplateFlow.Params = previous;
+            }
+        });
+    }
+
     [Fact]
     public void TemplateSelectionResolvesExactIdOrReturnsMissing()
     {

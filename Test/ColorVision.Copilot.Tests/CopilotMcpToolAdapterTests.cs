@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ModelContextProtocol.Protocol;
 
 namespace ColorVision.Copilot.Tests;

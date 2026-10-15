@@ -2,13 +2,9 @@
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Marketplace;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Tests
 {
@@ -76,6 +72,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal(stalePath, result);
             Assert.Single(downloader.Invocations);
             Assert.Equal(2, client.VerifyFileHashCalls);
+            Assert.Equal("expected-hash", downloader.ExpectedSha256);
         }
 
         [Fact]
@@ -420,6 +417,13 @@ namespace ColorVision.UI.Tests
             public List<DownloadTask> CancelledTasks { get; } = new();
             public Func<DownloadInvocation, DownloadTask>? DownloadFactory { get; set; }
             public bool CompleteImmediately { get; set; } = true;
+            public string? ExpectedSha256 { get; private set; }
+
+            public DownloadTask AddVerifiedDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName, string? expectedSha256)
+            {
+                ExpectedSha256 = expectedSha256;
+                return AddDownload(url, downloadDirectory, authorization, onCompleted, fileName);
+            }
 
             public DownloadTask AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName)
             {

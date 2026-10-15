@@ -28,7 +28,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int TotalTime { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "关注点布点(Re)")]
+    [STNode("Flow_CustomNodes", "关注点布点(Re)", CategoryOrder = 9900)]
     public sealed class LocalBuildPoiNode : LocalFlowNodeBase
     {
         private string layoutRoiTemplateName = "POI_W_AUTO";
@@ -198,7 +198,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "关注点布点(参数)")]
+    [STNode("Flow_CustomNodes", "关注点布点(参数)", CategoryOrder = 9900)]
+    [Obsolete("Parameter-based local POI layout is retained only for loading existing flows. Use the legacy POI layout node when needed.")]
     public sealed class LocalBuildPoiByTemplateNode : LocalFlowNodeBase
     {
         private string parameterTemplateName = string.Empty;

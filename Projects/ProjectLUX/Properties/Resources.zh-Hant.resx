@@ -116,4 +116,302 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>  </root>
+  </resheader>    <data name="上一页" xml:space="preserve">
+    <value>上一頁</value>
+  </data>
+  <data name="上移" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="下一页" xml:space="preserve">
+    <value>下一頁</value>
+  </data>
+  <data name="下移" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="全部" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="删除组" xml:space="preserve">
+    <value>刪除組</value>
+  </data>
+  <data name="删除选中" xml:space="preserve">
+    <value>刪除選中</value>
+  </data>
+  <data name="名称" xml:space="preserve">
+    <value>名稱</value>
+  </data>
+  <data name="名称:" xml:space="preserve">
+    <value>名稱:</value>
+  </data>
+  <data name="启用" xml:space="preserve">
+    <value>啓用</value>
+  </data>
+  <data name="处理类" xml:space="preserve">
+    <value>處理類</value>
+  </data>
+  <data name="处理类:" xml:space="preserve">
+    <value>處理類:</value>
+  </data>
+  <data name="导出 CSV" xml:space="preserve">
+    <value>導出 CSV</value>
+  </data>
+  <data name="导出CSV" xml:space="preserve">
+    <value>導出CSV</value>
+  </data>
+  <data name="数量" xml:space="preserve">
+    <value>數量</value>
+  </data>
+  <data name="时间" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="更新" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="更新时间" xml:space="preserve">
+    <value>更新時間</value>
+  </data>
+  <data name="查询" xml:space="preserve">
+    <value>查詢</value>
+  </data>
+  <data name="次数" xml:space="preserve">
+    <value>次數</value>
+  </data>
+  <data name="流程模板" xml:space="preserve">
+    <value>流程模板</value>
+  </data>
+  <data name="流程模板:" xml:space="preserve">
+    <value>流程模板:</value>
+  </data>
+  <data name="测试" xml:space="preserve">
+    <value>測試</value>
+  </data>
+  <data name="添加" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="添加组" xml:space="preserve">
+    <value>添加組</value>
+  </data>
+  <data name="结果" xml:space="preserve">
+    <value>結果</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>設置</value>
+  </data>
+  <data name="通用查询" xml:space="preserve">
+    <value>通用查詢</value>
+  </data>
+  <data name="重命名" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="重置" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="(双击重命名)" xml:space="preserve">
+    <value>(雙擊重命名)</value>
+  </data>
+  <data name="ARVR检测 LUX" xml:space="preserve">
+    <value>ARVR檢測 LUX</value>
+  </data>
+  <data name="CT 趋势" xml:space="preserve">
+    <value>CT 趨勢</value>
+  </data>
+  <data name="Fix 配置" xml:space="preserve">
+    <value>Fix 配置</value>
+  </data>
+  <data name="LUX 结果统计" xml:space="preserve">
+    <value>LUX 結果統計</value>
+  </data>
+  <data name="ObjectiveTestResult 记录" xml:space="preserve">
+    <value>ObjectiveTestResult 記錄</value>
+  </data>
+  <data name="Process 配置" xml:space="preserve">
+    <value>Process 配置</value>
+  </data>
+  <data name="Recipe 配置" xml:space="preserve">
+    <value>Recipe 配置</value>
+  </data>
+  <data name="全部结果" xml:space="preserve">
+    <value>全部結果</value>
+  </data>
+  <data name="创建/更新 ProcessMeta" xml:space="preserve">
+    <value>創建/更新 ProcessMeta</value>
+  </data>
+  <data name="周" xml:space="preserve">
+    <value>周</value>
+  </data>
+  <data name="在独立窗口编辑Fix配置" xml:space="preserve">
+    <value>在獨立窗口編輯Fix配置</value>
+  </data>
+  <data name="在独立窗口编辑Process配置" xml:space="preserve">
+    <value>在獨立窗口編輯Process配置</value>
+  </data>
+  <data name="在独立窗口编辑Recipe配置" xml:space="preserve">
+    <value>在獨立窗口編輯Recipe配置</value>
+  </data>
+  <data name="复制组" xml:space="preserve">
+    <value>複製組</value>
+  </data>
+  <data name="导出结果" xml:space="preserve">
+    <value>導出結果</value>
+  </data>
+  <data name="平均 CT" xml:space="preserve">
+    <value>平均 CT</value>
+  </data>
+  <data name="平均 CT (ms)" xml:space="preserve">
+    <value>平均 CT (ms)</value>
+  </data>
+  <data name="当前组:" xml:space="preserve">
+    <value>當前組:</value>
+  </data>
+  <data name="按现有聚合结果记录统计；CT 为首次保存至最后更新的间隔，运行中的记录也会计入。" xml:space="preserve">
+    <value>按現有聚合結果記錄統計；CT 爲首次保存至最後更新的間隔，運行中的記錄也會計入。</value>
+  </data>
+  <data name="数据库维护" xml:space="preserve">
+    <value>數據庫維護</value>
+  </data>
+  <data name="日" xml:space="preserve">
+    <value>日</value>
+  </data>
+  <data name="更新选中项" xml:space="preserve">
+    <value>更新選中項</value>
+  </data>
+  <data name="最后流程" xml:space="preserve">
+    <value>最後流程</value>
+  </data>
+  <data name="月" xml:space="preserve">
+    <value>月</value>
+  </data>
+  <data name="查看Json" xml:space="preserve">
+    <value>查看Json</value>
+  </data>
+  <data name="查看测试结果" xml:space="preserve">
+    <value>查看測試結果</value>
+  </data>
+  <data name="查看测试项" xml:space="preserve">
+    <value>查看測試項</value>
+  </data>
+  <data name="流程处理配置" xml:space="preserve">
+    <value>流程處理配置</value>
+  </data>
+  <data name="流程组管理" xml:space="preserve">
+    <value>流程組管理</value>
+  </data>
+  <data name="结果统计" xml:space="preserve">
+    <value>結果統計</value>
+  </data>
+  <data name="结果记录" xml:space="preserve">
+    <value>結果記錄</value>
+  </data>
+  <data name="记录数" xml:space="preserve">
+    <value>記錄數</value>
+  </data>
+  <data name="请选择一个处理项" xml:space="preserve">
+    <value>請選擇一個處理項</value>
+  </data>
+  <data name="通过率" xml:space="preserve">
+    <value>通過率</value>
+  </data>
+  <data name="ObjectiveTestResult 为空，无法导出" xml:space="preserve">
+    <value>ObjectiveTestResult 爲空，無法導出</value>
+  </data>
+  <data name="ViewResultJson为空" xml:space="preserve">
+    <value>ViewResultJson爲空</value>
+  </data>
+  <data name="{0} / {1} 页 · 共 {2:N0} 条" xml:space="preserve">
+    <value>{0} / {1} 頁 · 共 {2:N0} 條</value>
+  </data>
+  <data name="{0} · 最短 CT {1} · 最长 CT {2}" xml:space="preserve">
+    <value>{0} · 最短 CT {1} · 最長 CT {2}</value>
+  </data>
+  <data name="历史结果图像像素宽度" xml:space="preserve">
+    <value>歷史結果圖像像素寬度</value>
+  </data>
+  <data name="历史结果图像像素高度" xml:space="preserve">
+    <value>歷史結果圖像像素高度</value>
+  </data>
+  <data name="历史结果坐标空间宽度" xml:space="preserve">
+    <value>歷史結果座標空間寬度</value>
+  </data>
+  <data name="历史结果坐标空间高度" xml:space="preserve">
+    <value>歷史結果座標空間高度</value>
+  </data>
+  <data name="名称重复" xml:space="preserve">
+    <value>名稱重複</value>
+  </data>
+  <data name="复制" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="导出 ObjectiveTestResult" xml:space="preserve">
+    <value>導出 ObjectiveTestResult</value>
+  </data>
+  <data name="导出CSV失败: {0}" xml:space="preserve">
+    <value>導出CSV失敗: {0}</value>
+  </data>
+  <data name="导出失败：" xml:space="preserve">
+    <value>導出失敗：</value>
+  </data>
+  <data name="导出完成：" xml:space="preserve">
+    <value>導出完成：</value>
+  </data>
+  <data name="当前组: {0}" xml:space="preserve">
+    <value>當前組: {0}</value>
+  </data>
+  <data name="当前组: 未设置" xml:space="preserve">
+    <value>當前組: 未設置</value>
+  </data>
+  <data name="成功" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="找不到批次号，请检查流程配置" xml:space="preserve">
+    <value>找不到批次號，請檢查流程配置</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="数据已成功导出到:&#10;{0}" xml:space="preserve">
+    <value>數據已成功導出到:
+{0}</value>
+  </data>
+  <data name="是否删除 {0} 测试结果？" xml:space="preserve">
+    <value>是否刪除 {0} 測試結果？</value>
+  </data>
+  <data name="正在读取统计..." xml:space="preserve">
+    <value>正在讀取統計...</value>
+  </data>
+  <data name="没有可导出的数据" xml:space="preserve">
+    <value>沒有可導出的數據</value>
+  </data>
+  <data name="流程结果查询" xml:space="preserve">
+    <value>流程結果查詢</value>
+  </data>
+  <data name="确定要删除组 &quot;{0}&quot; 吗？" xml:space="preserve">
+    <value>確定要刪除組 "{0}" 嗎？</value>
+  </data>
+  <data name="组名重复" xml:space="preserve">
+    <value>組名重複</value>
+  </data>
+  <data name="至少保留一个组" xml:space="preserve">
+    <value>至少保留一個組</value>
+  </data>
+  <data name="该记录没有可查看的测试结果。" xml:space="preserve">
+    <value>該記錄沒有可查看的測試結果。</value>
+  </data>
+  <data name="请先选择一条记录" xml:space="preserve">
+    <value>請先選擇一條記錄</value>
+  </data>
+  <data name="读取结果失败：{0}" xml:space="preserve">
+    <value>讀取結果失敗：{0}</value>
+  </data>
+  <data name="读取统计失败：{0}" xml:space="preserve">
+    <value>讀取統計失敗：{0}</value>
+  </data>
+  <data name="错误" xml:space="preserve">
+    <value>錯誤</value>
+  </data>
+</root>

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -57,7 +58,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
             PropertyEditorWindow editor = new(Parameters, PropertyEditorEditMode.Transactional)
             {
                 Owner = this,
-                Title = "成像校正高级参数",
+                Title = LocalizedText.Get("成像校正高级参数"),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             editor.Submitted += (_, _) => submitted = true;
@@ -124,6 +125,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
         }
 
         private void UpdateSummary()
-            => SummaryText.Text = $"Preset: {PresetId ?? "(未命名)"}\n无效参考: {Parameters.InvalidReferencePolicy}；增益 {Parameters.MinimumGain:G5}..{Parameters.MaximumGain:G5}；输出 {Parameters.OutputRangePolicy}\n校正来源: {Parameters.CalibrationSource}；版本: {Parameters.CalibrationVersion}";
+            => SummaryText.Text = LocalizedText.Format($"Preset: {PresetId ?? LocalizedText.Get("(未命名)")}\n无效参考: {Parameters.InvalidReferencePolicy}；增益 {Parameters.MinimumGain:G5}..{Parameters.MaximumGain:G5}；输出 {Parameters.OutputRangePolicy}\n校正来源: {Parameters.CalibrationSource}；版本: {Parameters.CalibrationVersion}");
     }
 }

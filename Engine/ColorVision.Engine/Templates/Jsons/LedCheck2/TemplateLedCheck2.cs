@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
@@ -32,8 +31,6 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
 
-
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlLedCheck2();
 
     }
 

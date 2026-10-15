@@ -21,7 +21,7 @@ namespace ColorVision.Copilot
         public void EnsureSummaryShrinks(string summary)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(summary);
-            var summaryWeight = CopilotConversationCompactionContext.EstimateSummaryWeight(summary);
+            var summaryWeight = CopilotConversationCompactionContext.EstimateSummaryWeight(summary, TerminalEvidence);
             if (summaryWeight >= SourceEstimatedWeight)
             {
                 throw new InvalidOperationException(

@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.POIFilters
@@ -16,8 +15,6 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
             TemplateParams = Params;
             IsUserControl = true;
         }
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlPOIFilter();
-
         public override void SetUserControlDataContext(int index)
         {
             EditPOIFilters.SetParam(TemplateParams[index].Value);

@@ -20,7 +20,7 @@ public sealed class CloudDriveManager : ViewModelBase
     public bool IsIdle => !IsBusy;
     private string _status = "选择文件或文件夹，也可以拖放到这里。文件夹将打包为 ZIP。";
     public string Status { get => _status; private set => SetProperty(ref _status, value); }
-    private string _limitText = "免账号分享 · 正常完成后保留 24 小时 · 正在读取服务器限制…";
+    private string _limitText = "免账号分享 · 分享有效期 24 小时 · 正在读取服务器限制…";
     public string LimitText { get => _limitText; private set => SetProperty(ref _limitText, value); }
 
     private CloudDriveManager() : this(
@@ -59,7 +59,7 @@ public sealed class CloudDriveManager : ViewModelBase
     private void SetCapabilities(TransferCapabilities capabilities)
     {
         LimitText = capabilities.AnonymousTransferUploadEnabled
-            ? $"无需账号 · 单文件 / 压缩包上限 {CloudDriveItem.FormatSize(capabilities.AnonymousTransferMaxBytes)} · 上传完成后保留 24 小时"
+            ? $"无需账号 · 单文件 / 压缩包上限 {CloudDriveItem.FormatSize(capabilities.AnonymousTransferMaxBytes)} · 分享有效期 24 小时"
             : "服务器尚未开放免账号上传，需启用匿名文件中转。";
     }
 

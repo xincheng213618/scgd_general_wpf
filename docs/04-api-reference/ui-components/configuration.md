@@ -134,7 +134,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 默认回退不会保证已修复损坏的主文件；若坏文件仍在，后续保存仍可能被“拒绝覆盖无效 JSON”的保护拦下。`ReloadFromDisk` 不使用这套自动恢复，它在读文件失败时拒绝重载。
 
-设置窗口不提供 `.cvsettings` 导入/导出或通用的备份恢复按钮。“配置恢复点”使用独立的 `MaintenanceBackups` 完整文件备份，不参与上述 `Backup` 滚动备份选择；不要混用两种目录及恢复假设。配置文件加载也不恢复数据库、插件和全部资源，具体范围见[设置导入导出契约](../../01-user-guide/data-management/export-import.md)。单文件提交不构成跨文件迁移或整个运行状态的回滚保证。
+“配置恢复点”使用独立的 `MaintenanceBackups` 完整文件备份，不参与上述 `Backup` 滚动备份选择；不要混用两种目录及恢复假设。配置文件加载也不恢复数据库、插件和全部资源，具体范围见[设置导入导出契约](../../01-user-guide/data-management/export-import.md)。单文件提交不构成跨文件迁移或整个运行状态的回滚保证。
 
 ## 验证入口与缺口
 

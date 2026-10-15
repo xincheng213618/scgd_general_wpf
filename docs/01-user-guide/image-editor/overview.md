@@ -14,4 +14,4 @@ onMounted(() => {
 
 # 内容已合并
 
-图像打开、绘图与撤销、视频、叠加层及保存边界统一维护在 [ColorVision.ImageEditor](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)。本页仅保留旧网址，不再区分使用与实现两份正文。
+图像打开、绘图与撤销、视频、叠加层及保存边界见 [ColorVision.ImageEditor](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)。

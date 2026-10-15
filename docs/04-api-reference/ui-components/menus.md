@@ -5,7 +5,7 @@ status: "current"
 summary: "菜单管理器的可见性（Visible）、位置、排序和全目标重置（Reset）；插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，Apply 成功提示不保证配置落盘，菜单入口不构成统一鉴权。"
 aliases: ["菜单", "菜单管理", "菜单管理器", "菜单排序", "菜单恢复默认", "Restore Default Position", "Restore Default Order", "OrderOverride", "OwnerGuidOverride", "菜单发现", "菜单隐藏", "菜单父子关系", "菜单重建", "菜单权限", "快捷键提示", "MenuManager", "IMenuItem", "IMenuItemProvider", "MenuItemBase", "MenuItemAttribute", "MenuItemMetadata", "MenuItemScopeKey", "OwnerGuid", "GuidId", "InputGestureText", "HotkeyMenuGestureBinding", "MenuService", "MenuItemManagerService", "MenuItemManagerWindow", "MenuSearchProvider"]
 code_paths: ["UI/ColorVision.UI/Menus", "UI/ColorVision.Common/Interfaces/Menus", "UI/ColorVision.UI.Desktop/MenuItemManager", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Common/MVVM/RelayCommand.cs", "UI/ColorVision.UI/Serach/MenuSearchProvider.cs", "UI/ColorVision.UI/Serach/SearchControl.xaml.cs", "UI/ColorVision.UI/HotKey/HotkeyService.cs", "ColorVision/MainWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs", "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs", "Test/ColorVision.UI.Tests/SearchManagerTests.cs", "Test/ColorVision.UI.Tests/SearchPaletteTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs","Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs","Test/ColorVision.UI.Tests/SearchManagerTests.cs"]
 related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.settings", "ui.configuration", "ui.hotkeys", "ui.search", "platform.security", "algorithms.template-menus"]
 ---
 
@@ -149,12 +149,12 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 ## 验证入口与缺口
 
-`MenuItemManagerServiceTests` 覆盖草稿不暴露原覆盖对象、稀疏覆盖生成与 JSON 序列化、旧快照迁移、作用域区分/展开、父级循环与跨窗口限制、退役条目清理和暂缺插件覆盖保留。测试使用合成菜单，**没有调用 CommitEditingSnapshot，也没有验收真实窗口 Apply、保存失败或快捷键行为**。
+测试使用合成菜单，**没有调用 CommitEditingSnapshot，也没有验收真实窗口 Apply、保存失败或快捷键行为**。
 
-`MenuDiscoveryExclusionTests` 断言特定已删除类型不存在，以及两个保留类型能通过候选判定、MySQL 工具的 Owner/Order；不是完整 `LoadMenuForWindow` 集成测试。当前未发现类型晚加载、重复 ID 树、局部刷新、懒命令执行和菜单注册生命周期的直接专项覆盖。
+`MenuDiscoveryExclusionTests` 检查数据库工具和布局重置菜单能通过候选判定，以及 MySQL 工具的 Owner/Order；不是完整 `LoadMenuForWindow` 集成测试。当前未发现类型晚加载、重复 ID 树、局部刷新、懒命令执行和菜单注册生命周期的直接专项覆盖。
 
 `HotkeyMenuBindingTests` 使用隔离的运行时集合、合成菜单和内置菜单的只读声明，覆盖原默认键保留、显式/旧类型 ID、先建菜单后加载热键、名称不参与匹配、清除/恢复、定义替换、普通菜单提示保留、重复附加、不可读声明、多动作 ID 要求与丢弃控件的弱引用生命周期。它不调用生产热键注册、配置保存或业务命令，不代表已验收真实 Win32 输入或完整菜单发现。
 
-`SearchManagerTests` 的隔离菜单用例覆盖搜索元数据的稳定 ActionId、说明、保留 RoutedCommand、`MenuClose` 的明确文档路由，以及排除其它目标和 Collapsed 条目；`SearchPaletteTests` 用无害命令验证拒绝执行、原始路由目标、文档切换与关闭后的可执行性复核。它们不等于真实角色/设备权限验收，不执行生产菜单业务，也不证明所有插件的 CanExecute 实现正确。测试引用不是已运行通过的声明。
+`SearchManagerTests` 的隔离菜单用例覆盖搜索元数据的稳定 ActionId、说明、保留 RoutedCommand、`MenuClose` 的明确文档路由，以及排除其它目标和 Collapsed 条目；它们不等于真实角色/设备权限验收，不执行生产菜单业务，也不证明所有插件的 CanExecute 实现正确。测试引用不是已运行通过的声明。
 
 修改发现/树构建看 `UI/ColorVision.UI/Menus/MenuManager.cs`；修改管理提交看 `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerService.cs` 和窗口 Apply/Cancel；修改声明/命令看 `UI/ColorVision.Common/Interfaces/Menus/`。验证时分别证明候选进入、树显示、命令实际检查、运行时应用和文件保存，不通过执行真实业务菜单来默认“验收文档”。

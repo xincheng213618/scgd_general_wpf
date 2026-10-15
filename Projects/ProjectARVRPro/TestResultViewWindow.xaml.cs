@@ -1,5 +1,5 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 #pragma warning disable CA1822
-using ColorVision.UI;
 using ColorVision.Solution.Editor.AvalonEditor;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
@@ -56,6 +56,7 @@ namespace ProjectARVRPro
         {
             ViewResultJson = viewResultJson;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             ParseAndDisplayTestResult(viewResultJson);
             dataGrid.ItemsSource = TestItems;
         }
@@ -70,6 +71,7 @@ namespace ProjectARVRPro
                 Width = 800,
                 Height = 600
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
             window.Show();
         }
         private void ParseAndDisplayTestResult(string viewResultJson)
@@ -91,7 +93,7 @@ namespace ProjectARVRPro
         {
             if (TestItems.Count == 0)
             {
-                MessageBox.Show("没有可导出的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("没有可导出的数据"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -108,11 +110,11 @@ namespace ProjectARVRPro
                 try
                 {
                     ExportToCsv(saveFileDialog.FileName);
-                    MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(LocalizedText.Format($"数据已成功导出到:\n{saveFileDialog.FileName}"), LocalizedText.Get("成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"导出CSV失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(LocalizedText.Format($"导出CSV失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

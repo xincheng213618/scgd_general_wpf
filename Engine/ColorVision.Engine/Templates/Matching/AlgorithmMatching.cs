@@ -1,14 +1,9 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.Matching
 {

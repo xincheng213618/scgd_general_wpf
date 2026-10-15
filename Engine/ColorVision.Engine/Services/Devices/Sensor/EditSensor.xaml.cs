@@ -4,6 +4,9 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.IO.Ports;
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Input;
 
@@ -37,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            var list1 = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } });
+            var list1 = MySqlSetting.IsConnect ? SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } }) : new List<SysDictionaryModModel>();
 
             var liss = new Dictionary<string, string>() {  };
 
@@ -46,11 +49,12 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 if (item.Name !=null && item.Code !=null)
                     liss.Add(item.Name, item.Code);
             }
+            liss.TryAdd(Device.Config.Category, Device.Config.Category);
             ComboBoxSensor.ItemsSource = liss;
 
 
             List<int> BaudRates = new() { 115200, 38400, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
-            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
+            var Serials = SerialPort.GetPortNames().Append(Device.Config.Addr).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToArray();
             ComboBoxPort.ItemsSource = BaudRates;
             ComboBoxSerial.ItemsSource = Serials;
 
@@ -59,7 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
 
-            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            if (MySqlSetting.IsConnect) CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.DisplayMemberPath = "Code";
         }
 

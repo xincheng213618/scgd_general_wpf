@@ -1,12 +1,49 @@
 #pragma warning disable CA1707
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.UI;
 using System.Windows;
 
 namespace ColorVision.UI.Tests;
 
 public class ViewFlowDocumentBehaviorTests
 {
+    [Fact]
+    public void MissingTemplateOpensAnEmptyDocumentWithoutTemplateOperations()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var previous = ConfigService.Instance;
+            ConfigService.SetInstance(new ConfigHandler());
+            var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
+            Application.Current.Resources.MergedDictionaries.Add(theme);
+            FlowEngineToolWindow? window = null;
+            try
+            {
+                window = new FlowEngineToolWindow(TemplateFlow.GetParamOrDefault(-1))
+                {
+                    ShowActivated = false,
+                    Left = -10000,
+                    Top = -10000,
+                };
+                window.Show();
+                Assert.True(window.View.IsStandalone);
+                Assert.Equal(0, window.View.STNodeEditorMain.Nodes.Count);
+                Assert.Null(window.View.GetStandaloneExecutionTemplate());
+                Assert.False(window.View.DeleteFlowCommand.CanExecute(null));
+                Assert.False(window.View.VersionHistoryCommand.CanExecute(null));
+                Assert.False(window.View.ExportFlowCommand.CanExecute(null));
+            }
+            finally
+            {
+                window?.Close();
+                Application.Current.Resources.MergedDictionaries.Remove(theme);
+                ConfigService.SetInstance(previous);
+            }
+        });
+    }
+
     [Fact]
     public void DisplayFlowDoesNotExposeExecutionCommands()
     {

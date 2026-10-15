@@ -256,6 +256,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
                 else
                     ctx.ObjectiveTestResult.DynamicMTFHV058TestResults[outputName] = objectiveResult;
                 return true;
+
             }
             catch (Exception ex)
             {

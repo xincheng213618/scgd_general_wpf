@@ -4,12 +4,10 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Results;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using MQTTMessageLib.Calibration;
@@ -90,6 +88,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
+                // A deferred dock shell must own its context before loading child bindings.
+                DataContext = Config;
                 InitializeComponent();
                 // A deferred shell may already have raised WPF Initialized before its XAML was loaded.
                 UserControl_Initialized(this, EventArgs.Empty);
@@ -112,7 +112,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             _isInitialized = true;
-            this.DataContext = Config;
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)
@@ -315,6 +314,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
             if (listView1 != null)
             {
                 listView1.SelectionChanged -= listView1_SelectionChanged;
@@ -331,7 +333,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox1.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "您需要先选择数据", "ColorVision");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();

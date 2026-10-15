@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
-using FlowEngineLib.Runtime;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
@@ -90,11 +89,13 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 		topicServerProxy = new Dictionary<string, List<CVServiceProxy>>();
 		startActions = new Dictionary<string, CVStartCFC>();
 		base.AutoSize = false;
-		base.Width = StandardNodeWidth;
-		base.Height = Math.Max(90, base.TitleHeight + (LoopNum + 1) * OptionItemHeight + 10);
+		base.Width = CompactTerminalNodeWidth;
+		base.Height = base.TitleHeight + (LoopNum + 1) * base.ItemHeight;
 		Ready = false;
 		Running = false;
 	}
+
+	protected override int MinimumNodeWidth => CompactTerminalNodeWidth;
 
 	protected override void OnCreate()
 	{

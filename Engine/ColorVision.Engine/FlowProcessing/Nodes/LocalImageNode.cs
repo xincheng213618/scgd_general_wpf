@@ -58,6 +58,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string GetCompactSummaryValue() => CompactValueOrDash(Path.GetFileName(ImageFileUrl));
 
+        public override string OnGetDrawTitle() => Title is "加载图片" or "Load Image" or "載入圖片"
+            ? Properties.Resources.Engine_PG_LocalImage
+            : base.OnGetDrawTitle();
+
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
             string fileUrl = ResolveFileUrl();
@@ -239,7 +243,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "Engine_PG_LocalImage")]
+    [STNode("Flow_CustomNodes/Flow_OtherNodes", "Engine_PG_LocalImage", CategoryOrder = 9900)]
     public class LocalImageNode : TestMessageBoxNode
     {
     }

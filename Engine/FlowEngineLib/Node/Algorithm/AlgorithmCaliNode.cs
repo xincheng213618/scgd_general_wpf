@@ -3,7 +3,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_3 校正")]
+[STNode("校正", CategoryOrder = 331)]
 [System.Obsolete("Deprecated calibration flow node retained for loading existing flows.")]
 public class AlgorithmCaliNode : CVBaseServerNode
 {

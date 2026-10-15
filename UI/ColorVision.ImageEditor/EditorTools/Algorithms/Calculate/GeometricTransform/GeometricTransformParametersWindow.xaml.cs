@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -38,7 +39,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GeometricTran
             PropertyEditorWindow editor = new(Parameters, PropertyEditorEditMode.Transactional)
             {
                 Owner = this,
-                Title = "几何变换参数",
+                Title = LocalizedText.Get("几何变换参数"),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             editor.Submitted += (_, _) => submitted = true;
@@ -111,8 +112,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GeometricTran
         {
             double[] matrix = Parameters.Matrix;
             SummaryText.Text = string.Format(CultureInfo.InvariantCulture,
-                "Preset: {0}\n类型: {1}    画布: {2}    插值: {3}    边界: {4}\n[{5:G8}, {6:G8}, {7:G8}]\n[{8:G8}, {9:G8}, {10:G8}]\n[{11:G8}, {12:G8}, {13:G8}]\n显式尺寸: {14} × {15}    自动留白: {16}px\n最大输出: {17:N0} pixels",
-                PresetId ?? "(未命名)", Parameters.Kind, Parameters.Canvas, Parameters.Interpolation, Parameters.Border,
+                LocalizedText.Get("Preset: {0}\n类型: {1}    画布: {2}    插值: {3}    边界: {4}\n[{5:G8}, {6:G8}, {7:G8}]\n[{8:G8}, {9:G8}, {10:G8}]\n[{11:G8}, {12:G8}, {13:G8}]\n显式尺寸: {14} × {15}    自动留白: {16}px\n最大输出: {17:N0} pixels"),
+                PresetId ?? LocalizedText.Get("(未命名)"), Parameters.Kind, Parameters.Canvas, Parameters.Interpolation, Parameters.Border,
                 matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5], matrix[6], matrix[7], matrix[8],
                 Parameters.OutputWidth, Parameters.OutputHeight, Parameters.FitPaddingPixels, Parameters.MaximumOutputPixels);
         }

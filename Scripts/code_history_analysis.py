@@ -80,7 +80,7 @@ def collect_worktree(repo: Path, exclude_generated: bool, excluded_paths=()) -> 
             "skipped": skipped, "exclude_generated": exclude_generated}
 
 
-def history_analysis(nodes, weekly_rows, ref, generated_at, branch):
+def history_analysis(nodes, daily_rows, weekly_rows, ref, generated_at, branch):
     # Original offset and date are retained: this matches existing history buckets.
     commits = [{"commit": node.commit, "date": node.timestamp.date().isoformat(),
                 "timestamp": node.timestamp.isoformat(), "hour": node.timestamp.hour,
@@ -104,7 +104,7 @@ def history_analysis(nodes, weekly_rows, ref, generated_at, branch):
                 **{key: sum(row[key] for row in rows) for key in ("added", "deleted", "net", "churn")}}
     return {"ref": ref, "branch": branch, "head": nodes[-1].commit,
             "generatedAt": generated_at, "first": first_day.isoformat(), "last": last_day.isoformat(),
-            "commits": commits, "weeks": weekly_rows,
+            "commits": commits, "days": daily_rows, "weeks": weekly_rows,
             "recent_week": window(start, end),
             "previous_week": window(start - timedelta(days=7), end - timedelta(days=7))}
 

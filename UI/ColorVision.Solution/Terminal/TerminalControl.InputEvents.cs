@@ -1,9 +1,4 @@
 #pragma warning disable CA1822,CA1834
-using log4net;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

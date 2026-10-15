@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -61,8 +62,8 @@ namespace ColorVision.Copilot
         public string RecoveryToolTip => Message.AgentRecoveryToolTip;
 
         public string DismissToolTip => Message.HasRecoverableFinalAnswer
-            ? "放弃重试最终回答并清除恢复 checkpoint；原任务终态和审计证据仍保留"
-            : "放弃任务恢复并清除 checkpoint；原停止原因和审计证据仍保留";
+            ? LocalizedText.Get("放弃重试最终回答并清除恢复 checkpoint；原任务终态和审计证据仍保留")
+            : LocalizedText.Get("放弃任务恢复并清除 checkpoint；原停止原因和审计证据仍保留");
 
         public string DismissConfirmationText => Message.HasRecoverableFinalAnswer
             ? $"放弃“{Title}”的最终回答恢复项？保存的恢复 checkpoint 会被清除，但已完成任务的终态和审计证据仍会保留。"
@@ -70,15 +71,15 @@ namespace ColorVision.Copilot
 
         public string StatusLabel => AttentionKind switch
         {
-            CopilotAgentTaskAttentionKind.Paused => "已暂停",
-            CopilotAgentTaskAttentionKind.AwaitingUser => "等待回复",
-            CopilotAgentTaskAttentionKind.ApprovalDenied => "审批未通过",
-            CopilotAgentTaskAttentionKind.Blocked => "任务受阻",
-            CopilotAgentTaskAttentionKind.BudgetExhausted => "预算耗尽",
-            CopilotAgentTaskAttentionKind.TaskPassLimit => "达到轮次上限",
-            CopilotAgentTaskAttentionKind.IncompleteOutput => "等待最终回答",
-            CopilotAgentTaskAttentionKind.ProviderFailure => "模型服务异常",
-            CopilotAgentTaskAttentionKind.Interrupted => "应用中断，可继续",
+            CopilotAgentTaskAttentionKind.Paused => LocalizedText.Get("已暂停"),
+            CopilotAgentTaskAttentionKind.AwaitingUser => LocalizedText.Get("等待回复"),
+            CopilotAgentTaskAttentionKind.ApprovalDenied => LocalizedText.Get("审批未通过"),
+            CopilotAgentTaskAttentionKind.Blocked => LocalizedText.Get("任务受阻"),
+            CopilotAgentTaskAttentionKind.BudgetExhausted => LocalizedText.Get("预算耗尽"),
+            CopilotAgentTaskAttentionKind.TaskPassLimit => LocalizedText.Get("达到轮次上限"),
+            CopilotAgentTaskAttentionKind.IncompleteOutput => LocalizedText.Get("等待最终回答"),
+            CopilotAgentTaskAttentionKind.ProviderFailure => LocalizedText.Get("模型服务异常"),
+            CopilotAgentTaskAttentionKind.Interrupted => LocalizedText.Get("应用中断，可继续"),
             _ => string.Empty,
         };
 
@@ -91,18 +92,18 @@ namespace ColorVision.Copilot
                     return blocker.Code switch
                     {
                         "provider_interrupted" => Conversation.AgentSessionCheckpoint == null
-                            ? "恢复点未能保存，请重新发送请求"
-                            : "已保存当前进度，可安全恢复",
+                            ? LocalizedText.Get("恢复点未能保存，请重新发送请求")
+                            : LocalizedText.Get("已保存当前进度，可安全恢复"),
                         "provider_request_rejected" or "provider_unavailable" => blocker.Summary,
-                        "provider_output_length" => "最终回答达到输出上限，已保留部分内容",
-                        "provider_content_filtered" => "最终回答被内容策略提前停止",
-                        "provider_output_finish_reason" => "最终回答以未确认完成的状态结束",
-                        _ => "模型未返回最终回答",
+                        "provider_output_length" => LocalizedText.Get("最终回答达到输出上限，已保留部分内容"),
+                        "provider_content_filtered" => LocalizedText.Get("最终回答被内容策略提前停止"),
+                        "provider_output_finish_reason" => LocalizedText.Get("最终回答以未确认完成的状态结束"),
+                        _ => LocalizedText.Get("模型未返回最终回答"),
                     };
                 if (blocker != null && !string.IsNullOrWhiteSpace(blocker.Summary))
                     return blocker.Summary;
 
-                return RemainingCount > 0 ? $"剩余 {RemainingCount} 项" : StatusLabel;
+                return RemainingCount > 0 ? LocalizedText.Format($"剩余 {RemainingCount} 项") : StatusLabel;
             }
         }
     }

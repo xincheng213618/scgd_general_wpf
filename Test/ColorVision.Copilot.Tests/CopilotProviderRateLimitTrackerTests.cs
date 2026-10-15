@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http;
-using ColorVision.Copilot;
 
 namespace ColorVision.Copilot.Tests;
 

@@ -157,6 +157,7 @@ namespace Conoscope
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
 
+                ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(previewWindow);
                 previewWindow.Show();
             }
             catch (Exception ex)

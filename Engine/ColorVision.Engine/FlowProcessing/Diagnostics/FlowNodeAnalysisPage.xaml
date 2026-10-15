@@ -112,6 +112,10 @@
                         Padding="10,5"
                         Margin="0,0,12,0"
                         Click="NextNodeButton_Click"/>
+                <Button x:Name="CompareNodeButton"
+                        Content="{engine:EngineLang Key='跨批次比对'}"
+                        Padding="10,5" Margin="0,0,6,0"
+                        Click="CompareNodeButton_Click"/>
                 <Button x:Name="LocateFlowNodeButton"
                         Content="{engine:EngineLang Key='定位到流程图'}"
                         Padding="10,5"

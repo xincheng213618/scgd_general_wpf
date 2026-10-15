@@ -8,7 +8,7 @@ using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using System.IO;
-using System.Threading;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -99,8 +99,8 @@ namespace ColorVision.UI.Desktop.Marketplace
         public PluginInfoVM(PluginInfo pluginInfo, bool skipIndividualCheck = false)
         {
             PluginInfo = pluginInfo;
-            Name = pluginInfo.Name;
-            Description =pluginInfo.Description;
+            Name = Resources.ResourceManager.GetString($"MarketplacePluginName_{pluginInfo.Manifest.Id}", CultureInfo.CurrentUICulture) ?? pluginInfo.Name;
+            Description = Resources.ResourceManager.GetString($"MarketplacePluginDescription_{pluginInfo.Manifest.Id}", CultureInfo.CurrentUICulture) ?? pluginInfo.Description;
             PackageName = pluginInfo.Manifest.Id;
             AssemblyVersion = pluginInfo.AssemblyVersion;
             AssemblyBuildDate = pluginInfo.AssemblyBuildDate;

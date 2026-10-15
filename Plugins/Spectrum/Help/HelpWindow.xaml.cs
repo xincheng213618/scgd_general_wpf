@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using ColorVision.UI.Menus;
 using Spectrum.Menus;
 using System.Windows;
@@ -12,7 +13,7 @@ namespace Spectrum.Help
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 1;
-        public override string Header => "帮助文档";
+        public override string Header => LocalizedText.Get("帮助文档");
 
         public override void Execute()
         {
@@ -35,6 +36,7 @@ namespace Spectrum.Help
         public HelpWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _allEntries = HelpData.GetAllEntries();
             _filteredEntries = new List<HelpEntry>(_allEntries);
             HelpList.ItemsSource = _filteredEntries;
@@ -96,7 +98,7 @@ namespace Spectrum.Help
         {
             if (ItemCountText != null)
             {
-                ItemCountText.Text = $"共 {_filteredEntries.Count} / {_allEntries.Count} 条";
+                ItemCountText.Text = LocalizedText.Format($"共 {_filteredEntries.Count} / {_allEntries.Count} 条");
             }
         }
 

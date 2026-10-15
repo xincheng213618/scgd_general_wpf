@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.POI;
@@ -526,65 +527,6 @@ public sealed class LumFourColorWorkflowSafetyTests
         });
     }
 
-    [Fact]
-    public void ImageViewRemeasuresGeometryClearsDeletedPoiAndRestoresPerColor()
-    {
-        WithTheme(() =>
-        {
-            var options = new LumFourColorPoiOptions();
-            var window = new LumFourColorCalibrationWorkflowWindow(Array.Empty<DeviceCamera>(), Array.Empty<DeviceSpectrum>(), options: options);
-            try
-            {
-                Assert.Equal(0, Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex);
-                Render(window, 1556, 976, "workflow-landscape-empty");
-                var view = Control<ImageView>(window, "CieImageView");
-                var list = Control<ListBox>(window, "SampleList");
-                var first = Assert.IsType<LumFourColorCalibrationSample>(list.Items[0]);
-                var frame = SyntheticFrame(956, 654);
-                first.SetFrame(frame, LumFourColorCieService.Render(frame));
-                Invoke(window, "RefreshSelectedSample");
-                Click(window, "DrawPoiButton");
-                Assert.IsType<CircleManager>(view.EditorContext.DrawEditorManager.Current);
-                Assert.True(((FrameworkElement)view.FindName("CompactInspectorOverlay")).IsVisible);
-                var circle = new DVCircleText(new CircleTextProperties { Center = new Point(478, 327), Radius = 80, Text = "POI" });
-                view.ImageShow.AddVisual(circle);
-                Drain();
-                Assert.True(first.HasCameraMeasurement);
-                double originalY = first.CameraY!.Value;
-                circle.Attribute.Center = new Point(200, 200);
-                Assert.False(first.HasCameraMeasurement);
-                Drain();
-                Assert.True(first.HasCameraMeasurement);
-                Assert.NotEqual(originalY, first.CameraY);
-                Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex = 1;
-                Assert.IsType<RectangleManager>(view.EditorContext.DrawEditorManager.Current);
-                var rectangle = new DVRectangleText(new RectangleTextProperties { Rect = new Rect(320, 220, 160, 120), Text = "POI" });
-                view.ImageShow.AddVisual(rectangle);
-                Drain();
-                Assert.Single(view.EditorContext.DrawingVisualLists);
-                Assert.Equal(PoiMeasurementShape.Rect, first.Poi!.Value.Shape);
-                list.SelectedIndex = 1;
-                Assert.Empty(view.EditorContext.DrawingVisualLists);
-                list.SelectedIndex = 0;
-                Assert.IsType<DVRectangleText>(Assert.Single(view.EditorContext.DrawingVisualLists));
-                view.ImageShow.RemoveVisual((Visual)view.EditorContext.DrawingVisualLists[0]);
-                Assert.False(first.HasCameraMeasurement);
-                Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex = 0;
-                var previewCircle = new DVCircleText(new CircleTextProperties { Center = new Point(478, 327), Radius = 90, Text = "POI" });
-                view.ImageShow.AddVisual(previewCircle);
-                Drain();
-                view.EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                view.EditorContext.SelectionVisual.SetRender(previewCircle);
-                first.SetSpectrumMeasurement(Spectrum(42));
-                Invoke(window, "RefreshSelectedSample");
-                Assert.True(((FrameworkElement)view.FindName("CompactInspectorOverlay")).IsVisible);
-                Render(window, 1556, 976, "workflow-landscape-circle");
-                Assert.True(view.ImageShow.ActualWidth > 0);
-            }
-            finally { window.Close(); }
-        });
-    }
-
     private static void Drain() => Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle, System.Threading.CancellationToken.None, TimeSpan.FromSeconds(5));
 
     [Fact]
@@ -871,16 +813,30 @@ public sealed class LumFourColorWorkflowSafetyTests
     }
 
     [Fact]
-    public void RecentImagesRejectOtherCamerasFailedCapturesAndRawPreviewData()
+    public void RecentImagesRequireSuccessfulOwnedCapturesAndReplayableXyz()
     {
         string rawPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cvraw");
         try
         {
-            using var raw = new CVCIEFile { Version = 1, Cols = 1, Rows = 1, Bpp = 32, Channels = 3, Exp = [1, 1, 1], Data = new byte[12] };
-            Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+            using var raw = new CVCIEFile { Version = 1, FileExtType = CVType.Raw, Cols = 1, Rows = 1, Bpp = 16, Channels = 3, Exp = [1, 1, 1], Data = [1, 0, 2, 0, 3, 0] };
+            Assert.True(CVFileUtil.WriteCVRaw(rawPath, raw));
             var row = new LumFourColorRecentImage(1, "A", DateTime.Now, rawPath, 0);
             Assert.Contains("当前相机", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "B")).Message);
             Assert.Contains("拍摄失败", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row with { ResultCode = 1 }, "A")).Message);
+            Assert.Contains("XYZ", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "A")).Message);
+            var snapshot = new ColorCalibrationSnapshot
+            {
+                Width = 1, Height = 1, RawBpp = 16, Channels = 3,
+                Coefficients = [2, 0, 0, 0, -3, 0, 0, 0, 4], Exposure = [1, 1, 1]
+            };
+            snapshot.Save(rawPath, canReplay: true);
+            byte[] original = File.ReadAllBytes(rawPath);
+            var calibrated = LumFourColorRecentImages.Load(row, "A");
+            Assert.Equal(32, calibrated.BitsPerChannel);
+            Assert.Equal(new[] { 6f, -6f, 4f }, Enumerable.Range(0, 3).Select(channel => BitConverter.ToSingle(calibrated.Data, channel * sizeof(float))));
+            Assert.Null(calibrated.CalibrationHash);
+            Assert.Equal(original, File.ReadAllBytes(rawPath));
+            snapshot.Save(rawPath, canReplay: false);
             Assert.Contains("XYZ", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "A")).Message);
             var items = LumFourColorRecentImages.CreateList([new MeasureResultImgModel { Id = 1, DeviceCode = "A", FileUrl = "preview.png", RawFile = "result.cvcie" }], "A");
             Assert.Equal("result.cvcie", Assert.Single(items).FilePath);

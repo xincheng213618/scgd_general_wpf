@@ -4,6 +4,7 @@
 #include "../../Native/include/opencv_media_export.h"
 #include <nlohmann/json.hpp>
 #include <opencv2/opencv.hpp>
+#include <opencv2/geometry.hpp>
 #include <array>
 #include <cmath>
 #include <iostream>

@@ -338,6 +338,11 @@ public class STNodePropertyGrid : UserControl, IDisposable
 	{
 		return node.GetType().GetProperties().Any(property =>
 		{
+			if (property.GetCustomAttribute<BrowsableAttribute>()?.Browsable == false)
+			{
+				return false;
+			}
+
 			var attribute = property.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true)
 				.OfType<STNodePropertyAttribute>()
 				.FirstOrDefault();
@@ -355,6 +360,11 @@ public class STNodePropertyGrid : UserControl, IDisposable
 
 		foreach (PropertyInfo property in _node.GetType().GetProperties())
 		{
+			if (property.GetCustomAttribute<BrowsableAttribute>()?.Browsable == false)
+			{
+				continue;
+			}
+
 			var attribute = property.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true)
 				.OfType<STNodePropertyAttribute>()
 				.FirstOrDefault();

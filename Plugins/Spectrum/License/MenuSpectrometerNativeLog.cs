@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
 using Spectrum.Menus;
@@ -16,7 +17,7 @@ namespace Spectrum.License
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 10004;
-        public override string Header => "光谱仪原生日志(独立窗口)";
+        public override string Header => LocalizedText.Get("光谱仪原生日志(独立窗口)");
 
         public override void Execute()
         {
@@ -28,7 +29,7 @@ namespace Spectrum.License
 
             if (string.IsNullOrEmpty(logPath))
             {
-                MessageBox.Show("未找到光谱仪原生日志文件", "日志", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(LocalizedText.Get("未找到光谱仪原生日志文件"), LocalizedText.Get("日志"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -87,7 +88,7 @@ namespace Spectrum.License
     {
         public override string OwnerGuid => "MenuView";
         public override int Order => 3;
-        public override string Header => "光谱仪原生日志面板";
+        public override string Header => LocalizedText.Get("光谱仪原生日志面板");
 
         public override void Execute()
         {

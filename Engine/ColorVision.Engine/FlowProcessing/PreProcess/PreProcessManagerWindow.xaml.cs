@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using Properties = ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.FlowProcessing.PreProcess
 {

@@ -1,6 +1,5 @@
 #pragma warning disable CA1822,CA1852,CS8601,CS8603,CS8604,CS8621,CS8625,CS8714
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.UI;
 using FlowEngineLib.Base;
 using log4net;
@@ -16,7 +15,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using Properties = ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.FlowProcessing.PreProcess
 {
@@ -538,7 +536,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                     return true;
                 }
 
-                log.Info($"匹配到 {matchingActions.Count} 个已启用的预处理动作 {flowName}");
+                log.Debug($"匹配到 {matchingActions.Count} 个已启用的预处理动作 {flowName}");
                 var ctx = new PreProcessContext
                 {
                     FlowName = flowName,
@@ -548,19 +546,31 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                 foreach (var action in matchingActions)
                 {
-                    log.Info($"执行预处理动作 {action.DisplayName}");
+                    log.Debug($"执行预处理动作 {action.DisplayName}");
+                    var actionTiming = System.Diagnostics.Stopwatch.StartNew();
                     try
                     {
                         bool success = await action.Process.PreProcess(ctx);
                         if (!success)
                         {
-                            log.Warn($"预处理动作 {action.DisplayName} 执行返回失败");
+                            log.Warn($"预处理动作 {action.DisplayName} 执行返回失败，Flow={flowName}，SN={serialNumber}，耗时 {actionTiming.Elapsed.TotalMilliseconds:F3}ms");
                             return false;
+                        }
+                        if (actionTiming.ElapsedMilliseconds >= 100 || log.IsDebugEnabled)
+                        {
+                            string timingJson = JsonConvert.SerializeObject(new
+                            {
+                                Event = "PreProcessTiming", FlowName = flowName, SerialNumber = serialNumber,
+                                Action = action.DisplayName, ProcessType = action.Process.GetType().FullName,
+                                ElapsedMs = Math.Round(actionTiming.Elapsed.TotalMilliseconds, 3), Status = "Completed",
+                            });
+                            if (actionTiming.ElapsedMilliseconds >= 100) log.Info(timingJson);
+                            else log.Debug(timingJson);
                         }
                     }
                     catch (Exception ex)
                     {
-                        log.Error($"预处理动作 {action.DisplayName} 执行异常", ex);
+                        log.Error($"预处理动作 {action.DisplayName} 执行异常，Flow={flowName}，SN={serialNumber}，耗时 {actionTiming.Elapsed.TotalMilliseconds:F3}ms", ex);
                         return false;
                     }
                 }

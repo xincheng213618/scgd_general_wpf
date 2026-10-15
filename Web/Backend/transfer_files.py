@@ -331,8 +331,7 @@ def get_transfer_share(root: Path, token: str, *, now: float | None = None) -> T
     share = _load_transfer_share(metadata_path)
     current_time = time.time() if now is None else now
     if share.expires_at > 0 and current_time >= share.expires_at:
-        cleanup_expired_transfer_files(root, now=current_time)
-        raise TransferFileError("临时文件已过期", 410)
+        raise TransferFileError("分享已过期", 410)
     return _share_record(root, share)
 
 
@@ -351,38 +350,13 @@ def _remove_transfer_shares(root: Path, filename: str) -> None:
                 metadata_path.unlink(missing_ok=True)
 
 
-def cleanup_expired_transfer_files(root: Path, *, now: float | None = None) -> int:
-    share_root = _share_root(root)
-    if not share_root.is_dir():
-        return 0
-    current_time = time.time() if now is None else now
-    deleted = 0
-    with _share_lock:
-        for metadata_path in share_root.glob("*.json"):
-            try:
-                share = _load_transfer_share(metadata_path)
-            except TransferFileError:
-                continue
-            if share.expires_at <= 0 or current_time < share.expires_at:
-                continue
-            target = resolve_transfer_file(root, share.filename)
-            try:
-                if target.is_file():
-                    target.unlink()
-                    deleted += 1
-                metadata_path.unlink(missing_ok=True)
-            except OSError:
-                continue
-    return deleted
-
-
 def list_transfer_files(root: Path) -> list[TransferFileRecord]:
-    cleanup_expired_transfer_files(root)
     if not root.exists():
         return []
     if not root.is_dir():
         raise TransferFileError("Transfer path is not a directory", 500)
 
+    current_time = time.time()
     records: list[TransferFileRecord] = []
     for entry in sorted(root.iterdir(), key=lambda item: item.name.lower()):
         if not entry.is_file() or entry.name.startswith(".") or entry.name.endswith(".uploading"):
@@ -393,6 +367,9 @@ def list_transfer_files(root: Path) -> list[TransferFileRecord]:
             continue
         modified, modified_display = _format_timestamp(stat.st_mtime)
         share = get_or_create_transfer_share(root, entry.name)
+        # Keep expiry metadata so a later listing cannot recreate a permanent share.
+        if share.expires_at > 0 and current_time >= share.expires_at:
+            continue
         expires_at = _format_timestamp(share.expires_at)[0] if share.expires_at > 0 else None
         records.append(
             TransferFileRecord(
@@ -621,8 +598,7 @@ def get_transfer_upload_session(
         raise TransferFileError("Upload session not found", 404)
     session = _reconcile_upload_session(root, metadata_path, session)
     if session.expires_at > 0 and time.time() >= session.expires_at:
-        cleanup_expired_transfer_files(root)
-        raise TransferFileError("临时文件已过期", 410)
+        raise TransferFileError("分享已过期", 410)
     return session
 
 
@@ -641,7 +617,6 @@ def create_or_resume_transfer_upload(
     effective_owner_type = owner_type or "system"
     effective_owner_id = owner_id or "system"
     root.mkdir(parents=True, exist_ok=True)
-    cleanup_expired_transfer_files(root)
     target = resolve_transfer_file(root, name)
     anonymous_upload = effective_owner_type == ANONYMOUS_TRANSFER_OWNER_TYPE
     if anonymous_upload and target.exists():

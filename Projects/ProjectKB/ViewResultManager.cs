@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8625
+﻿using LocalizedText = global::ProjectKB.DisplayText;
+#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
@@ -156,7 +157,7 @@ namespace ProjectKB
                     {
                         MessageBox.Show(
                             Application.Current.GetActiveWindow(),
-                            $"结果明细读取失败，无法重新导出：{ex.Message}",
+                            LocalizedText.Format($"结果明细读取失败，无法重新导出：{ex.Message}"),
                             "ProjectKB");
                         return;
                     }

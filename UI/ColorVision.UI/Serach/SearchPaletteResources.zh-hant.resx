@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>搜索應用</value></data>
+  <data name="Placeholder" xml:space="preserve"><value>搜索功能、設置和模板…</value></data>
+  <data name="Close" xml:space="preserve"><value>關閉搜索</value></data>
+  <data name="Clear" xml:space="preserve"><value>清空搜索</value></data>
+  <data name="Filter" xml:space="preserve"><value>篩選搜索類型</value></data>
+  <data name="AllCategories" xml:space="preserve"><value>全部類型</value></data>
+  <data name="KeyboardHint" xml:space="preserve"><value>↑ ↓ 選擇    Enter 打開    Esc 返回</value></data>
+  <data name="Settings" xml:space="preserve"><value>搜索設置</value></data>
+  <data name="NoResults" xml:space="preserve"><value>沒有匹配的結果</value></data>
+  <data name="NoResultsHelp" xml:space="preserve"><value>試試功能名稱、說明中的關鍵詞，或切換搜索類型。</value></data>
+  <data name="Searching" xml:space="preserve"><value>正在搜索…</value></data>
+  <data name="RecentAndCommon" xml:space="preserve"><value>最近使用與功能入口</value></data>
+  <data name="ResultCount" xml:space="preserve"><value>找到 {0} 項</value></data>
+  <data name="TruncatedCount" xml:space="preserve"><value>顯示前 {0} 項，請縮小範圍</value></data>
+  <data name="PartialFailure" xml:space="preserve"><value>部分搜索來源暫不可用，已顯示其餘結果。</value></data>
+  <data name="SearchFailed" xml:space="preserve"><value>搜索暫時不可用，請重新輸入或稍後重試。</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>當前不可用，請檢查活動文檔、權限或功能狀態。</value></data>
+  <data name="TargetUnavailable" xml:space="preserve"><value>原來的操作目標已關閉或改變，請返回文檔後重新搜索。</value></data>
+  <data name="ExecutionFailed" xml:space="preserve"><value>無法打開此結果：{0}</value></data>
+  <data name="CategoryCommands" xml:space="preserve"><value>功能</value></data>
+  <data name="CategorySettings" xml:space="preserve"><value>設置</value></data>
+  <data name="CategoryTemplates" xml:space="preserve"><value>模板</value></data>
+  <data name="CategoryFlowNodes" xml:space="preserve"><value>流程節點</value></data>
+  <data name="CategoryTools" xml:space="preserve"><value>工具</value></data>
+  <data name="CategoryExternal" xml:space="preserve"><value>外部搜索</value></data>
+  <data name="DescriptionCommand" xml:space="preserve"><value>打開此功能入口</value></data>
+  <data name="DescriptionTemplate" xml:space="preserve"><value>打開模板</value></data>
+  <data name="DescriptionTool" xml:space="preserve"><value>打開外部工具</value></data>
+  <data name="DescriptionExternalSearch" xml:space="preserve"><value>選中後使用外部應用搜索，可能聯網</value></data>
+  <data name="SearchWithFormat" xml:space="preserve"><value>使用 {0} 搜索</value></data>
+</root>

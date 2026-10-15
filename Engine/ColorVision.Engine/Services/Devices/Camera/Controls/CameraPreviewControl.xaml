@@ -1,0 +1,83 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:displayUi="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:engine="clr-namespace:ColorVision.Engine"
+             xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+             x:Class="ColorVision.Engine.Services.Devices.Camera.Controls.CameraPreviewControl" MinWidth="240" mc:Ignorable="d">
+    <StackPanel>
+        <DockPanel Margin="0,2,0,0">
+            <Button Width="22" Height="22" DockPanel.Dock="Right" Padding="1" Command="{Binding EditRealtimeCameraConfigCommand}" ToolTip="{engine:EngineLang CameraPanel_PreviewSettings}">
+                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE713;"/>
+            </Button>
+            <ToggleButton x:Name="RegionToggle" DockPanel.Dock="Right" Content="{engine:EngineLang CameraPanel_Region}" Padding="5,1" Margin="3,0"/>
+            <CheckBox Content="{x:Static properties:Resources.Camera_CrossGuide}" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}"/>
+        </DockPanel>
+        <StackPanel Margin="0,2,0,0" Visibility="{Binding ElementName=RegionToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
+            <StackPanel>
+                <Grid Margin="0,0,0,3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" MinWidth="76"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" MinWidth="76"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" MinWidth="18" Margin="0,0,4,3" VerticalAlignment="Center" Text="X"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" MinWidth="76" Margin="0,0,8,3" Text="{Binding DisplayConfig.LocalVideoRoiX}"/>
+                    <TextBlock Grid.Row="0" Grid.Column="2" MinWidth="18" Margin="0,0,4,3" VerticalAlignment="Center" Text="Y"/>
+                    <TextBox Grid.Row="0" Grid.Column="3" MinWidth="76" Margin="0,0,0,3" Text="{Binding DisplayConfig.LocalVideoRoiY}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" MinWidth="18" Margin="0,0,4,0" VerticalAlignment="Center" Text="W"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" MinWidth="76" Margin="0,0,8,0" Text="{Binding DisplayConfig.LocalVideoRoiWidth}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="2" MinWidth="18" Margin="0,0,4,0" VerticalAlignment="Center" Text="H"/>
+                    <TextBox Grid.Row="1" Grid.Column="3" MinWidth="76" Text="{Binding DisplayConfig.LocalVideoRoiHeight}"/>
+                </Grid>
+                <UniformGrid Margin="0,0,0,3" Columns="2">
+                    <Button Margin="0,0,3,0" Content="{x:Static properties:Resources.Camera_DefaultRegion}" x:Name="DefaultRegionButton"/>
+                    <Button Margin="3,0,0,0" Content="{x:Static properties:Resources.FullFrame}" x:Name="FullFrameButton"/>
+                </UniformGrid>
+            </StackPanel>
+            <StackPanel Margin="0,0,0,3">
+                <StackPanel Visibility="{Binding DisplayConfig.IsCrossGuideEnabled, Converter={StaticResource bool2VisibilityConverter}}">
+                    <UniformGrid Margin="0,0,0,3" Columns="2">
+                        <DockPanel Margin="0,0,3,0">
+                            <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CenterlX}"/>
+                            <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterX}"/>
+                        </DockPanel>
+                        <DockPanel Margin="3,0,0,0">
+                            <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CentralY}"/>
+                            <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterY}"/>
+                        </DockPanel>
+                    </UniformGrid>
+                    <UniformGrid Margin="0,0,0,3" Columns="2">
+                        <DockPanel Margin="0,0,3,0">
+                            <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Threshold}"/>
+                            <TextBox Text="{Binding DisplayConfig.CrossGuideTolerancePx}"/>
+                        </DockPanel>
+                        <DockPanel Margin="3,0,0,0">
+                            <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Interval}"/>
+                            <TextBox Text="{Binding DisplayConfig.CrossGuideIntervalMs}"/>
+                        </DockPanel>
+                    </UniformGrid>
+                    <UniformGrid Margin="0,0,0,3" Columns="2">
+                        <DockPanel Margin="0,0,3,0">
+                            <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Brightness}"/>
+                            <TextBox Text="{Binding DisplayConfig.CrossGuideThresholdRatio}"/>
+                        </DockPanel>
+                        <DockPanel Margin="3,0,0,0">
+                            <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Coverage}"/>
+                            <TextBox Text="{Binding DisplayConfig.CrossGuideMinCoverageRatio}"/>
+                        </DockPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

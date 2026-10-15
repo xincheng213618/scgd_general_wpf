@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.Devices.SMU.Local;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
@@ -47,6 +46,10 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
     public class DisplaySMUConfig : IDisplayConfigBase
     {
+        [Category("AcquisitionDisplay"), DisplayName("使用本地源表"), Description("直接连接本机 SDK；关闭当前连接后切换生效。")]
+        public bool UseLocalSmu { get => _useLocalSmu; set => SetProperty(ref _useLocalSmu, value); }
+        private bool _useLocalSmu;
+
         public bool IsUseLimitSigned { get => _IsUseLimitSigned; set { _IsUseLimitSigned = value; OnPropertyChanged(); } }
         private bool _IsUseLimitSigned = true;
 
@@ -90,20 +93,26 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
     }
 
-    public class DeviceSMU : DeviceService<ConfigSMU>
+    public partial class DeviceSMU : DeviceService<ConfigSMU>
     {
         public MQTTSMU DService { get; set; }
 
         private readonly Lazy<ViewSMU> _view;
         public ViewSMU View => _view.Value;
-        public DisplaySMUConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySMUConfig>(Config.Code);
+        public DisplaySMUConfig DisplayConfig { get; }
 
-        public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSMU(SysResourceModel sysResourceModel) : this(sysResourceModel, new LocalSmuSession()) { }
+
+        internal DeviceSMU(SysResourceModel sysResourceModel, LocalSmuSession session) : base(sysResourceModel)
         {
-            DService = new MQTTSMU(this);
+            LocalSession = session;
+            DisplayConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplaySMUConfig>(Config.Code);
             _view = new Lazy<ViewSMU>(() => Application.Current.Dispatcher.CheckAccess()
                 ? new ViewSMU()
                 : Application.Current.Dispatcher.Invoke(() => new ViewSMU()));
+            InitializeLocalSmu();
+            DService = new MQTTSMU(this);
+            DService.RefreshBackendStatus();
             this.SetIconResource("SMUDrawingImage");
 
             EditCommand = new RelayCommand(a =>
@@ -125,6 +134,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public void EditDisplayConfig()
         {
             new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
 

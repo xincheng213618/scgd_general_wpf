@@ -64,7 +64,7 @@
     <value>工具(_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>帮助(_H)</value>
+    <value>幫助(_H)</value>
   </data>
   <data name="GlobalMode" xml:space="preserve">
     <value>全局</value>
@@ -132,7 +132,7 @@
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
   </data>  <data name="MenuOpen" xml:space="preserve">
-    <value>打开(_O)</value>
+    <value>打開(_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
     <value>儲存(_S)</value>
@@ -492,4 +492,327 @@
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟隨軟體主題</value></data>
   <data name="DisplayPin" xml:space="preserve"><value>置頂</value></data>
   <data name="DisplayUnpin" xml:space="preserve"><value>取消置頂</value></data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve"><value>沒有符合的設定</value></data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve"><value>此設定暫時無法編輯</value></data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve"><value>設定編輯器載入失敗</value></data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve"><value>設定頁面類型無效</value></data>
+  <data name="SettingsPageUnavailable" xml:space="preserve"><value>設定頁面無法使用</value></data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve"><value>設定頁面載入失敗</value></data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve"><value>啟動時檢查更新</value></data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve"><value>啟動軟體時檢查程式和外掛更新</value></data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve"><value>啟動 檢查更新 自動更新 外掛更新</value></data>
+  <data name="SettingsSectionBasic" xml:space="preserve"><value>基礎</value></data>
+  <data name="SettingsSectionSearch" xml:space="preserve"><value>搜尋</value></data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve"><value>檔案儲存</value></data>
+  <data name="SettingsSectionServices" xml:space="preserve"><value>進階服務</value></data>
+  <data name="SettingsSectionPaths" xml:space="preserve"><value>系統路徑</value></data>
+  <data name="SettingsSectionExtensions" xml:space="preserve"><value>擴充頁面</value></data>
+  <data name="SettingsSectionOther" xml:space="preserve"><value>其他</value></data>
+  <data name="DisplayControlManagerTitle" xml:space="preserve">
+    <value>設備控制管理</value>
+  </data>
+  <data name="DisplayControlsTitle" xml:space="preserve">
+    <value>設備控制</value>
+  </data>
+  <data name="DisplayControlsDescription" xml:space="preserve">
+    <value>管理分組與控制項的顯示方式</value>
+  </data>
+  <data name="DisplayControlGroups" xml:space="preserve">
+    <value>分組</value>
+  </data>
+  <data name="DisplayControlAllItems" xml:space="preserve">
+    <value>全部控制項</value>
+  </data>
+  <data name="DisplayControlName" xml:space="preserve">
+    <value>名稱</value>
+  </data>
+  <data name="DisplayControlGroup" xml:space="preserve">
+    <value>分組</value>
+  </data>
+  <data name="DisplayControlVisible" xml:space="preserve">
+    <value>顯示</value>
+  </data>
+  <data name="DisplayControlPinned" xml:space="preserve">
+    <value>置頂</value>
+  </data>
+  <data name="DisplayControlExpanded" xml:space="preserve">
+    <value>展開</value>
+  </data>
+  <data name="DisplayControlOrder" xml:space="preserve">
+    <value>順序</value>
+  </data>
+  <data name="DisplayControlEmpty" xml:space="preserve">
+    <value>暫無控制項</value>
+  </data>
+  <data name="DisplayControlVisibilityHint" xml:space="preserve">
+    <value>隱藏僅影響設備控制欄，設備和流程仍可正常運行。</value>
+  </data>
+  <data name="DisplayControlCreateGroup" xml:space="preserve">
+    <value>新建分組</value>
+  </data>
+  <data name="DisplayControlRenameGroup" xml:space="preserve">
+    <value>重命名分組</value>
+  </data>
+  <data name="DisplayControlDeleteGroup" xml:space="preserve">
+    <value>刪除分組</value>
+  </data>
+  <data name="DisplayControlGroupName" xml:space="preserve">
+    <value>分組名稱</value>
+  </data>
+  <data name="DisplayControlDefaultGroup" xml:space="preserve">
+    <value>默認</value>
+  </data>
+  <data name="DisplayControlUnnamedGroup" xml:space="preserve">
+    <value>未命名分組</value>
+  </data>
+  <data name="DisplayControlNewGroupName" xml:space="preserve">
+    <value>分組 {0}</value>
+  </data>
+  <data name="DisplayControlDeleteGroupPrompt" xml:space="preserve">
+    <value>刪除分組“{0}”？分組內控件會移回默認分組。</value>
+  </data>
+  <data name="DisplayControlGroupActions" xml:space="preserve">
+    <value>分組操作</value>
+  </data>
+  <data name="DisplayControlExpandGroupHint" xml:space="preserve">
+    <value>在設備控制欄中展開或收起分組</value>
+  </data>
+  <data name="DisplayControlMoveToGroupHint" xml:space="preserve">
+    <value>移動到分組</value>
+  </data>
+  <data name="DisplayControlVisibilityTooltip" xml:space="preserve">
+    <value>在設備控制欄中顯示或隱藏</value>
+  </data>
+  <data name="DisplayControlPinTooltip" xml:space="preserve">
+    <value>在所屬分組內置頂或取消置頂</value>
+  </data>
+  <data name="DisplayControlExpandTooltip" xml:space="preserve">
+    <value>展開或收起控制項</value>
+  </data>
+  <data name="DisplayControlMoveUp" xml:space="preserve">
+    <value>在分組內上移</value>
+  </data>
+  <data name="DisplayControlMoveDown" xml:space="preserve">
+    <value>在分組內下移</value>
+  </data>
+  <data name="DisplayControlExpandGroupAccessible" xml:space="preserve">
+    <value>展開或收起分組 {0}</value>
+  </data>
+  <data name="DisplayControlGroupAccessible" xml:space="preserve">
+    <value>{0} 所屬分組</value>
+  </data>
+  <data name="DisplayControlShowAccessible" xml:space="preserve">
+    <value>顯示 {0}</value>
+  </data>
+  <data name="DisplayControlPinAccessible" xml:space="preserve">
+    <value>置頂 {0}</value>
+  </data>
+  <data name="DisplayControlExpandAccessible" xml:space="preserve">
+    <value>展開或收起 {0}</value>
+  </data>
+  <data name="DisplayControlItemCount" xml:space="preserve">
+    <value>{0} 項</value>
+  </data>
+  <data name="FlowStatusIdle" xml:space="preserve">
+    <value>待執行</value>
+  </data>
+  <data name="FlowStatusWaiting" xml:space="preserve">
+    <value>等待開始測試</value>
+  </data>
+  <data name="FlowStatusNotStarted" xml:space="preserve">
+    <value>尚未開始測試。</value>
+  </data>
+  <data name="FlowStatusFailed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="FlowStatusNotice" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="FlowStatusPreparing" xml:space="preserve">
+    <value>準備中</value>
+  </data>
+  <data name="FlowStatusPreparingMessage" xml:space="preserve">
+    <value>正在準備流程</value>
+  </data>
+  <data name="FlowStatusPreparingDetails" xml:space="preserve">
+    <value>流程：{0}
+正在準備流程與預處理。</value>
+  </data>
+  <data name="FlowStatusRunning" xml:space="preserve">
+    <value>運行中</value>
+  </data>
+  <data name="FlowStatusRunningMessage" xml:space="preserve">
+    <value>正在執行流程</value>
+  </data>
+  <data name="FlowStatusExecutingNode" xml:space="preserve">
+    <value>正在執行：{0}</value>
+  </data>
+  <data name="FlowStatusRunningDetails" xml:space="preserve">
+    <value>流程：{0}
+當前節點：{1}
+已用時間：{2:N0} ms</value>
+  </data>
+  <data name="FlowStatusLastExecution" xml:space="preserve">
+    <value>
+上次執行：{0:N0} ms</value>
+  </data>
+  <data name="FlowStatusRemaining" xml:space="preserve">
+    <value>
+預計剩餘：{0:N0} ms（參考上次執行）</value>
+  </data>
+  <data name="FlowStatusCompleted" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="FlowStatusCompletedMessage" xml:space="preserve">
+    <value>流程執行完成</value>
+  </data>
+  <data name="FlowStatusTimedOut" xml:space="preserve">
+    <value>超時</value>
+  </data>
+  <data name="FlowStatusTimedOutMessage" xml:space="preserve">
+    <value>流程執行超時</value>
+  </data>
+  <data name="FlowStatusCanceled" xml:space="preserve">
+    <value>已取消</value>
+  </data>
+  <data name="FlowStatusCanceledMessage" xml:space="preserve">
+    <value>測試已取消</value>
+  </data>
+  <data name="FlowStatusFailedMessage" xml:space="preserve">
+    <value>流程執行失敗</value>
+  </data>
+  <data name="FlowStatusPictureSwitchFailed" xml:space="preserve">
+    <value>切圖失敗</value>
+  </data>
+  <data name="FlowStatusPreprocessFailed" xml:space="preserve">
+    <value>預處理失敗</value>
+  </data>
+  <data name="FlowStatusStartRejected" xml:space="preserve">
+    <value>流程未能啟動</value>
+  </data>
+  <data name="FlowStatusFinishedDetails" xml:space="preserve">
+    <value>流程：{0}
+狀態：{1}（{2}）
+提示：{3}</value>
+  </data>
+  <data name="FlowStatusOriginalMessage" xml:space="preserve">
+    <value>
+原始提示：{0}</value>
+  </data>
+  <data name="FlowStatusElapsed" xml:space="preserve">
+    <value>
+執行耗時：{0:N0} ms</value>
+  </data>
+  <data name="FlowStatusAdditionalMessage" xml:space="preserve">
+    <value>{0} · {1}：{2}</value>
+  </data>
+  <data name="FlowStatusAdditionalDetails" xml:space="preserve">
+    <value>{0}
+{1}：{2}</value>
+  </data>
+  <data name="FlowStatusViewDetails" xml:space="preserve">
+    <value>查看完整執行信息</value>
+  </data>
+  <data name="FlowStatusDetails" xml:space="preserve">
+    <value>執行詳情</value>
+  </data>
+  <data name="FlowStatusCopy" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="FlowStatusCopied" xml:space="preserve">
+    <value>已複製</value>
+  </data>
+  <data name="FlowStatusRetryCopy" xml:space="preserve">
+    <value>重試複製</value>
+  </data>
+  <data name="DisplayControlGroupMoveUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="DisplayControlGroupMoveDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="参数分组" xml:space="preserve">
+    <value>參數分組</value>
+  </data>
+  <data name="定位错误输入" xml:space="preserve">
+    <value>定位錯誤輸入</value>
+  </data>
+  <data name="展开全部分组" xml:space="preserve">
+    <value>展開全部分組</value>
+  </data>
+  <data name="展开当前参数的完整说明、范围与示例" xml:space="preserve">
+    <value>展開當前參數的完整說明、範圍與示例</value>
+  </data>
+  <data name="展开或收起全部分组" xml:space="preserve">
+    <value>展開或收起全部分組</value>
+  </data>
+  <data name="折叠选项" xml:space="preserve">
+    <value>摺疊選項</value>
+  </data>
+  <data name="按 Tab 切换参数，修改后使用窗口的“保存”。" xml:space="preserve">
+    <value>按 Tab 切換參數，修改後使用窗口的“保存”。</value>
+  </data>
+  <data name="搜索全部参数：名称、说明或值…" xml:space="preserve">
+    <value>搜索全部參數：名稱、說明或值…</value>
+  </data>
+  <data name="搜索参数" xml:space="preserve">
+    <value>搜索參數</value>
+  </data>
+  <data name="收起全部分组" xml:space="preserve">
+    <value>收起全部分組</value>
+  </data>
+  <data name="清除搜索" xml:space="preserve">
+    <value>清除搜索</value>
+  </data>
+  <data name="说明" xml:space="preserve">
+    <value>說明</value>
+  </data>
+  <data name="选择参数查看完整说明" xml:space="preserve">
+    <value>選擇參數查看完整說明</value>
+  </data>
+  <data name="JSON 路径：{0}" xml:space="preserve">
+    <value>JSON 路徑：{0}</value>
+  </data>
+  <data name="{0} / {1} 项" xml:space="preserve">
+    <value>{0} / {1} 項</value>
+  </data>
+  <data name="{0} 项" xml:space="preserve">
+    <value>{0} 項</value>
+  </data>
+  <data name="{0}（当前值）" xml:space="preserve">
+    <value>{0}（當前值）</value>
+  </data>
+  <data name="使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。" xml:space="preserve">
+    <value>使用 JSON 數組格式，例如 [60, 40]。字符串需要雙引號。</value>
+  </data>
+  <data name="全部分组" xml:space="preserve">
+    <value>全部分組</value>
+  </data>
+  <data name="参数说明" xml:space="preserve">
+    <value>參數說明</value>
+  </data>
+  <data name="对象中还没有参数，请在 JSON 视图添加。" xml:space="preserve">
+    <value>對象中還沒有參數，請在 JSON 視圖添加。</value>
+  </data>
+  <data name="已关闭" xml:space="preserve">
+    <value>已關閉</value>
+  </data>
+  <data name="已启用" xml:space="preserve">
+    <value>已啓用</value>
+  </data>
+  <data name="没有找到匹配参数，试试字段名、说明或值。" xml:space="preserve">
+    <value>沒有找到匹配參數，試試字段名、說明或值。</value>
+  </data>
+  <data name="输入 JSON 对象，例如: {&quot;key1&quot;: &quot;value1&quot;, &quot;key2&quot;: &quot;value2&quot;}" xml:space="preserve">
+    <value>輸入 JSON 對象，例如: {"key1": "value1", "key2": "value2"}</value>
+  </data>
+  <data name="输入 JSON 数组，例如: [1, 2, 3]" xml:space="preserve">
+    <value>輸入 JSON 數組，例如: [1, 2, 3]</value>
+  </data>
+  <data name="选择参数查看完整说明、范围和示例。" xml:space="preserve">
+    <value>選擇參數查看完整說明、範圍和示例。</value>
+  </data>
+  <data name="选择参数查看路径。未提供字段说明时，仍可编辑现有参数。" xml:space="preserve">
+    <value>選擇參數查看路徑。未提供字段說明時，仍可編輯現有參數。</value>
+  </data>
 </root>

@@ -95,17 +95,18 @@ internal static class StartupMaintenanceController
         try
         {
             ThrowIfOpeningBlocked(app);
+            Window owner = app.GetActiveWindow() ?? app.MainWindow;
             if (mode == StartupMaintenanceMode.SetupWizard)
             {
-                ShowOwnedWindow(app.MainWindow, new WizardWindow(runInitializers: false));
+                ShowOwnedWindow(owner, new WizardWindow(runInitializers: false));
                 return;
             }
 
             using StartupRecoveryWindow recovery = new(null, true, true, () => ThrowIfBlocked(app), app.PrepareRuntimeRecovery);
-            ShowOwnedWindow(app.MainWindow, recovery);
+            ShowOwnedWindow(owner, recovery);
             if (recovery.Result.Action == StartupRecoveryAction.RunSetupWizard)
             {
-                ShowOwnedWindow(app.MainWindow, new WizardWindow(runInitializers: false));
+                ShowOwnedWindow(owner, new WizardWindow(runInitializers: false));
                 return;
             }
 
@@ -113,7 +114,7 @@ internal static class StartupMaintenanceController
             if (restartMode != null)
                 RunRequest(
                     () => ThrowIfBlocked(app),
-                    () => MessageBox.Show(app.MainWindow, StartupMaintenanceText.Get("ConfirmPluginRestart"),
+                    () => MessageBox.Show(owner, StartupMaintenanceText.Get("ConfirmPluginRestart"),
                         title, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes,
                     () => app.TryRestartForMaintenance(restartMode.Value, recovery.Result.SelectedPluginKeys));
         }
@@ -123,7 +124,7 @@ internal static class StartupMaintenanceController
                 {
                     string message = string.Format(StartupMaintenanceText.Get(app.Windows.Count == 0
                         ? "RestartFailedAfterClose" : "RestartFailed"), failure.Message);
-                    if (app.MainWindow is { IsLoaded: true, IsVisible: true } owner)
+                    if (app.GetActiveWindow() is { IsLoaded: true, IsVisible: true } owner)
                         MessageBox.Show(owner, message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
                     else
                         MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);

@@ -1,9 +1,6 @@
-using ColorVision.Common.MVVM;
-using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
-using System;
 using System.ComponentModel;
 using System.Windows;
 
@@ -50,9 +47,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             };
         }
 
-        public FlowEngineToolWindow(FlowParam flowParam) : this()
+        public FlowEngineToolWindow(FlowParam? flowParam) : this()
         {
-            View.OpenStandaloneFlowParam(flowParam, true);
+            if (flowParam != null) View.OpenStandaloneFlowParam(flowParam, true);
         }
 
         public void OpenFlow(string filePath)

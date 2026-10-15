@@ -14,6 +14,7 @@ dotnet test .\Test\ColorVision.Copilot.Tests\ColorVision.Copilot.Tests.csproj -p
 
 ## 测试维护边界
 
+- 允许通过临时测试辅助业务迭代；新增长期回归需说明持续保护的契约与现有覆盖缺口。
 - 以当前产品契约为准。功能被明确移除时，同步删除依赖旧行为的测试；测试失败本身不能成为恢复已删除功能的依据。
 - Copilot 不加载全局或项目 `config.toml`，模型、供应商、工具与审批设置由 ColorVision 管理。不要恢复配置加载、TOML 层合并或项目配置信任测试。
 - 保留 `AGENTS.md` / `CLAUDE.md` 指令发现，以及实际请求、审批、工具执行、隔离、恢复和诊断脱敏覆盖。测试这些行为时直接构造 profile、request 或 options，不借用已停用的配置加载器搭建前置条件。

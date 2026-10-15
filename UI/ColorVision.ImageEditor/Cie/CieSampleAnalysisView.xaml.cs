@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -41,15 +42,15 @@ public partial class CieSampleAnalysisView : UserControl
             GamutOptions.Children.Add(check);
             _gamutOptions.Add(check);
         }
-        AnalysisDiagram.CursorTextChanged += (_, text) => CursorText.Text = string.IsNullOrEmpty(text) ? "双击样品点可选中；双击空白色度位置可填入 xy。" : text;
+        AnalysisDiagram.CursorTextChanged += (_, text) => CursorText.Text = string.IsNullOrEmpty(text) ? LocalizedText.Get("双击样品点可选中；双击空白色度位置可填入 xy。") : text;
         AnalysisDiagram.PointPicked += Diagram_PointPicked;
         _ready = true;
         ApplySettingsToControls();
-        System.Windows.Automation.AutomationProperties.SetName(WhiteX, "参考白 x");
-        System.Windows.Automation.AutomationProperties.SetName(WhiteY, "参考白 y");
-        System.Windows.Automation.AutomationProperties.SetName(WhiteLuminance, "绝对参考白亮度 cd/m²");
-        System.Windows.Automation.AutomationProperties.SetName(Threshold, "Delta E 00 阈值");
-        System.Windows.Automation.AutomationProperties.SetName(JncdStep, "JNCD 步长");
+        System.Windows.Automation.AutomationProperties.SetName(WhiteX, LocalizedText.Get("参考白 x"));
+        System.Windows.Automation.AutomationProperties.SetName(WhiteY, LocalizedText.Get("参考白 y"));
+        System.Windows.Automation.AutomationProperties.SetName(WhiteLuminance, LocalizedText.Get("绝对参考白亮度 cd/m²"));
+        System.Windows.Automation.AutomationProperties.SetName(Threshold, LocalizedText.Get("Delta E 00 阈值"));
+        System.Windows.Automation.AutomationProperties.SetName(JncdStep, LocalizedText.Get("JNCD 步长"));
         RefreshRows();
     }
 
@@ -80,7 +81,7 @@ public partial class CieSampleAnalysisView : UserControl
         _ready = true;
         MarkChanged();
         RefreshRows();
-        Status("CIE 计算参考白已更新；样品 XYZ 原值保持不变。");
+        Status(LocalizedText.Get("CIE 计算参考白已更新；样品 XYZ 原值保持不变。"));
     }
 
     public void LoadSession(CieAnalysisSession session)
@@ -100,10 +101,10 @@ public partial class CieSampleAnalysisView : UserControl
     {
         var batch = samples.ToList();
         if (_samples.Count + batch.Count > CieAnalysisSession.MaximumSamples)
-            throw new ArgumentException($"最多支持 {CieAnalysisSession.MaximumSamples} 个样品，请分批建立会话。");
+            throw new ArgumentException(LocalizedText.Format($"最多支持 {CieAnalysisSession.MaximumSamples} 个样品，请分批建立会话。"));
         foreach (CieAnalysisSample sample in batch) sample.Validate();
         if (_samples.Concat(batch).Select(s => s.Id).Distinct().Count() != _samples.Count + batch.Count)
-            throw new ArgumentException("样品 ID 重复。");
+            throw new ArgumentException(LocalizedText.Get("样品 ID 重复。"));
         _samples.AddRange(batch);
         MarkChanged();
         RefreshRows(batch.LastOrDefault()?.Id);
@@ -111,7 +112,7 @@ public partial class CieSampleAnalysisView : UserControl
 
     public void SetReference(Guid? id)
     {
-        if (id.HasValue && !_samples.Any(s => s.Id == id)) throw new ArgumentException("参考样品不存在。");
+        if (id.HasValue && !_samples.Any(s => s.Id == id)) throw new ArgumentException(LocalizedText.Get("参考样品不存在。"));
         _referenceId = id;
         MarkChanged();
         RefreshRows();
@@ -121,7 +122,7 @@ public partial class CieSampleAnalysisView : UserControl
     {
         _sourceSample = sample;
         CaptureSourceButton.IsEnabled = sample != null;
-        CaptureSourceButton.ToolTip = sample == null ? "色度图暂无有效当前点" : $"{sample.Name} · {sample.Source}";
+        CaptureSourceButton.ToolTip = sample == null ? LocalizedText.Get("色度图暂无有效当前点") : $"{sample.Name} · {sample.Source}";
     }
 
     private CieAnalysisRow? Selected => SamplesGrid.SelectedItem as CieAnalysisRow;
@@ -129,7 +130,7 @@ public partial class CieSampleAnalysisView : UserControl
     private static double Number(TextBox box)
     {
         if (!double.TryParse(box.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
-            throw new ArgumentException($"“{box.Text}”不是有效数字，请使用小数点 .。");
+            throw new ArgumentException(LocalizedText.Format($"“{box.Text}”不是有效数字，请使用小数点 .。"));
         return value;
     }
 
@@ -157,23 +158,23 @@ public partial class CieSampleAnalysisView : UserControl
     {
         CieAnalysisSample sample = ReadInput();
         AddSamples(new[] { sample });
-        SampleName.Text = $"样品 {_samples.Count + 1}";
-        Status($"已添加 {sample.Name}。可在下方设定参考样品。");
+        SampleName.Text = LocalizedText.Format($"样品 {_samples.Count + 1}");
+        Status(LocalizedText.Format($"已添加 {sample.Name}。可在下方设定参考样品。"));
     });
 
     private void UpdateSample_Click(object sender, RoutedEventArgs e) => Execute(() =>
     {
-        if (Selected is not { } row) throw new ArgumentException("请先选择要更新的样品。");
+        if (Selected is not { } row) throw new ArgumentException(LocalizedText.Get("请先选择要更新的样品。"));
         CieAnalysisSample replacement = ReadInput() with { Id = row.Sample.Id };
         _samples[_samples.FindIndex(s => s.Id == row.Sample.Id)] = replacement;
         MarkChanged();
         RefreshRows(replacement.Id);
-        Status($"已更新 {replacement.Name}。");
+        Status(LocalizedText.Format($"已更新 {replacement.Name}。"));
     });
 
     private void LoadSelected_Click(object sender, RoutedEventArgs e)
     {
-        if (Selected is not { } row) { Status("请先选中一个样品。"); return; }
+        if (Selected is not { } row) { Status(LocalizedText.Get("请先选中一个样品。")); return; }
         SampleName.Text = row.Name;
         SampleGroup.Text = row.Group;
         InputSpaceCombo.SelectedIndex = row.Sample.Basis == CieSampleBasis.ChromaticityOnly ? 6 : 1;
@@ -200,10 +201,10 @@ public partial class CieSampleAnalysisView : UserControl
         BasisCombo.IsEnabled = InputSpace != CieInputSpace.Xy && InputSpace != CieInputSpace.SRgb;
         InputHint.Text = InputSpace switch
         {
-            CieInputSpace.SRgb => "sRGB / D65 推算，相对 Y；不是仪器测量值。",
-            CieInputSpace.Xy => "仅色坐标，不假定实际亮度；可比较 Δu′v′。",
-            CieInputSpace.Lab or CieInputSpace.Luv => "输入以当前参考白解释，再保存为 XYZ；切换白点不会重解释原始输入。",
-            _ => "相对样品使用参考白 Y=100；绝对样品使用配置的参考白亮度。"
+            CieInputSpace.SRgb => LocalizedText.Get("sRGB / D65 推算，相对 Y；不是仪器测量值。"),
+            CieInputSpace.Xy => LocalizedText.Get("仅色坐标，不假定实际亮度；可比较 Δu′v′。"),
+            CieInputSpace.Lab or CieInputSpace.Luv => LocalizedText.Get("输入以当前参考白解释，再保存为 XYZ；切换白点不会重解释原始输入。"),
+            _ => LocalizedText.Get("相对样品使用参考白 Y=100；绝对样品使用配置的参考白亮度。")
         };
     }
 
@@ -212,7 +213,7 @@ public partial class CieSampleAnalysisView : UserControl
         if (_sourceSample == null) return;
         string name = _sourceSample.Name[..Math.Min(_sourceSample.Name.Length, 180)];
         AddSamples(new[] { _sourceSample with { Id = Guid.NewGuid(), Name = $"{name} {_samples.Count + 1}" } });
-        Status("已加入色度图当前点快照；后续取点不会修改已加入的样品。");
+        Status(LocalizedText.Get("已加入色度图当前点快照；后续取点不会修改已加入的样品。"));
     });
 
     private void RefreshRows(Guid? selectedId = null)
@@ -223,8 +224,8 @@ public partial class CieSampleAnalysisView : UserControl
         RefreshFilter(selectedId);
         EmptyHint.Visibility = _samples.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         double[] differences = _rows.Where(r => !r.IsReference && r.DeltaE00.HasValue).Select(r => r.DeltaE00!.Value).ToArray();
-        BatchSummary.Text = $"共 {_samples.Count} 个样品 · 参考：{reference?.Name ?? "未设置"}" + (differences.Length == 0 ? " · 尚无可比较的完整色差" :
-            $" · 可比较 {differences.Length} 个 · ΔE00 平均 {differences.Average():F3} / 最大 {differences.Max():F3} · 超阈值 {differences.Count(v => v > _settings.DeltaEThreshold)} 个");
+        BatchSummary.Text = LocalizedText.Format($"共 {_samples.Count} 个样品 · 参考：{reference?.Name ?? LocalizedText.Get("未设置")}") + (differences.Length == 0 ? LocalizedText.Get(" · 尚无可比较的完整色差") :
+            LocalizedText.Format($" · 可比较 {differences.Length} 个 · ΔE00 平均 {differences.Average():F3} / 最大 {differences.Max():F3} · 超阈值 {differences.Count(v => v > _settings.DeltaEThreshold)} 个"));
     }
 
     private void RefreshFilter(Guid? selectedId)
@@ -259,7 +260,7 @@ public partial class CieSampleAnalysisView : UserControl
         AnalysisDiagram.ShowDaylightReference = _settings.ShowDaylight;
         AnalysisDiagram.SetGamuts(CieGamuts.Defaults.Where(g => _settings.Gamuts.Contains(g.Name)));
         bool referenceAtWhite = _samples.Any(s => s.Id == _referenceId && CieAnalysisMath.Distance(s.Xy, _settings.White) < 1e-6);
-        AnalysisDiagram.SetReferenceMarkers(referenceAtWhite ? Array.Empty<CieMarker>() : new[] { new CieMarker("参考白", _settings.White, Colors.DimGray) });
+        AnalysisDiagram.SetReferenceMarkers(referenceAtWhite ? Array.Empty<CieMarker>() : new[] { new CieMarker(LocalizedText.Get("参考白"), _settings.White, Colors.DimGray) });
         var visible = SamplesGrid.Items.Cast<CieAnalysisRow>().ToList();
         AnalysisDiagram.SetMarkers(visible.Where(r => r.Xy.IsFinite).Select(r => new CieMarker(visible.Count <= 40 ? r.Name : "", r.Xy, ColorFor(r.Sample))));
     }
@@ -273,10 +274,10 @@ public partial class CieSampleAnalysisView : UserControl
         if (row == null)
         {
             AnalysisDiagram.ClearSelection();
-            SelectedTitle.Text = "尚未选中样品";
+            SelectedTitle.Text = LocalizedText.Get("尚未选中样品");
             SelectedCoordinates.Text = SelectedSpectrum.Text = DifferenceDetails.Text = "";
             DifferenceHeadline.Text = "ΔE00 —";
-            DifferenceNote.Text = "在样品表中设置参考点，查看色差与批量统计。";
+            DifferenceNote.Text = LocalizedText.Get("在样品表中设置参考点，查看色差与批量统计。");
             return;
         }
         string F(double? number, string format = "F5") => CieAnalysisRow.Format(number, format);
@@ -284,7 +285,7 @@ public partial class CieSampleAnalysisView : UserControl
         SelectedCoordinates.Text = $"xy  {row.XText}  {row.YText}\nu′v′  {F(row.Uv.X)}  {F(row.Uv.Y)}";
         if (row.Lab.HasValue)
             SelectedCoordinates.Text += $"\nXYZ  {F(row.Sample.Xyz.X, "F3")}  {F(row.Sample.Xyz.Y, "F3")}  {F(row.Sample.Xyz.Z, "F3")}\nLab  {F(row.Lab.Value.L, "F3")}  {F(row.Lab.Value.A, "F3")}  {F(row.Lab.Value.B, "F3")}\nLuv  {F(row.Luv!.Value.L, "F3")}  {F(row.Luv.Value.U, "F3")}  {F(row.Luv.Value.V, "F3")}\nC*ab {F(CieAnalysisMath.Chroma(row.Lab.Value), "F3")}  hab {F(CieAnalysisMath.Hue(row.Lab.Value), "F2")}°";
-        SelectedSpectrum.Text = row.Cct.IsFinite ? $"CCT≈{row.CctText} K  Duv {row.DuvText}" : "CCT / Duv：不适用或超出近似范围";
+        SelectedSpectrum.Text = row.Cct.IsFinite ? $"CCT≈{row.CctText} K  Duv {row.DuvText}" : LocalizedText.Get("CCT / Duv：不适用或超出近似范围");
         var segments = new List<CieDiagramSegment>();
         CieWavelengthResult? wave = CieGamutGeometry.Wavelength(row.Xy, _settings.White, CieSpectrumLocus.Points);
         if (wave.HasValue)
@@ -296,14 +297,14 @@ public partial class CieSampleAnalysisView : UserControl
                 if (wave.Value.IsComplementary) segments.Add(new(_settings.White, wave.Value.SpectralPoint, Colors.Purple, true));
             }
         }
-        else SelectedSpectrum.Text += "\n波长 / 纯度：不适用";
+        else SelectedSpectrum.Text += LocalizedText.Get("\n波长 / 纯度：不适用");
         CieAnalysisSample? reference = _samples.FirstOrDefault(s => s.Id == _referenceId);
         if (reference != null && reference.Id != row.Sample.Id) segments.Add(new(reference.Xy, row.Xy, Colors.DarkSlateBlue));
         AnalysisDiagram.SetSegments(segments);
         AnalysisDiagram.SetSelectedXy(row.Xy, ColorFor(row.Sample), row.Name);
         DifferenceHeadline.Text = $"ΔE00 {row.DeltaEText}";
         DifferenceDetails.Text = $"ΔE76 {F(row.DeltaE76, "F4")}   ΔE94 {F(row.DeltaE94, "F4")}\nΔEuv {F(row.DeltaLuv, "F4")}\nCMC 1:1 {F(row.Cmc11, "F4")}   2:1 {F(row.Cmc21, "F4")}\nΔu′v′ {row.DeltaUvText}   JNCD {row.JncdText}";
-        DifferenceNote.Text = $"{row.Result} · 参考：{reference?.Name ?? "未设置"}\nΔE00 阈值 {_settings.DeltaEThreshold:G}；JNCD 步长 {_settings.JncdStep:G}。";
+        DifferenceNote.Text = LocalizedText.Format($"{row.Result} · 参考：{reference?.Name ?? LocalizedText.Get("未设置")}\nΔE00 阈值 {_settings.DeltaEThreshold:G}；JNCD 步长 {_settings.JncdStep:G}。");
     }
 
     private void Diagram_PointPicked(object? sender, CieChromaticity xy)
@@ -319,12 +320,12 @@ public partial class CieSampleAnalysisView : UserControl
         InputSpaceCombo.SelectedIndex = 6;
         Value1.Text = xy.X.ToString("F6", CultureInfo.InvariantCulture);
         Value2.Text = xy.Y.ToString("F6", CultureInfo.InvariantCulture);
-        Status("已填入双击位置的 xy；点击“添加样品”锁定。该位置不是仪器测量数据。");
+        Status(LocalizedText.Get("已填入双击位置的 xy；点击“添加样品”锁定。该位置不是仪器测量数据。"));
     }
 
     private void SetReference_Click(object sender, RoutedEventArgs e)
     {
-        if (Selected is { } row) { SetReference(row.Sample.Id); Status($"已设 {row.Name} 为参考样品。"); }
+        if (Selected is { } row) { SetReference(row.Sample.Id); Status(LocalizedText.Format($"已设 {row.Name} 为参考样品。")); }
     }
     private void ClearReference_Click(object sender, RoutedEventArgs e) => SetReference(null);
     private void Delete_Click(object sender, RoutedEventArgs e)
@@ -335,7 +336,7 @@ public partial class CieSampleAnalysisView : UserControl
         if (_referenceId.HasValue && ids.Contains(_referenceId.Value)) _referenceId = null;
         MarkChanged();
         RefreshRows();
-        Status($"已删除 {ids.Count} 个样品。");
+        Status(LocalizedText.Format($"已删除 {ids.Count} 个样品。"));
     }
 
     private void WhitePreset_Changed(object sender, SelectionChangedEventArgs e)
@@ -353,7 +354,7 @@ public partial class CieSampleAnalysisView : UserControl
         _settings = settings;
         MarkChanged();
         RefreshRows();
-        Status("计算条件已应用；样品 XYZ 原值保持不变。");
+        Status(LocalizedText.Get("计算条件已应用；样品 XYZ 原值保持不变。"));
     });
 
     private void ApplySettingsToControls()
@@ -398,30 +399,30 @@ public partial class CieSampleAnalysisView : UserControl
         AddSamples(samples);
         if (!_referenceId.HasValue) SetReference(samples[0].Id);
         SamplesGrid.SelectedItem = _rows.First(r => r.Sample.Id == samples[1].Id);
-        Status("已添加标记为“示例”的两组数据；可更改参考白、阈值或继续添加样品。");
+        Status(LocalizedText.Get("已添加标记为“示例”的两组数据；可更改参考白、阈值或继续添加样品。"));
     });
 
     private static string ReadSmallFile(string path)
     {
-        if (new FileInfo(path).Length > 16 * 1024 * 1024) throw new ArgumentException("文件超过 16 MiB，请分批导入。");
+        if (new FileInfo(path).Length > 16 * 1024 * 1024) throw new ArgumentException(LocalizedText.Get("文件超过 16 MiB，请分批导入。"));
         return File.ReadAllText(path, Encoding.UTF8);
     }
 
     private void Import_Click(object sender, RoutedEventArgs e) => Execute(() =>
     {
-        var dialog = new OpenFileDialog { Filter = "CSV / TSV|*.csv;*.tsv|文本|*.txt" };
+        var dialog = new OpenFileDialog { Filter = LocalizedText.Get("CSV / TSV|*.csv;*.tsv|文本|*.txt") };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         var samples = CieAnalysisIO.ImportSamples(ReadSmallFile(dialog.FileName), _settings);
         AddSamples(samples);
-        Status($"已导入 {samples.Count} 个样品。");
+        Status(LocalizedText.Format($"已导入 {samples.Count} 个样品。"));
     });
 
     private void Paste_Click(object sender, RoutedEventArgs e) => Execute(() =>
     {
-        if (!Clipboard.ContainsText()) throw new ArgumentException("剪贴板中没有文本。请复制包含表头的 Excel 区域。");
+        if (!Clipboard.ContainsText()) throw new ArgumentException(LocalizedText.Get("剪贴板中没有文本。请复制包含表头的 Excel 区域。"));
         var samples = CieAnalysisIO.ImportSamples(Clipboard.GetText(), _settings);
         AddSamples(samples);
-        Status($"已从剪贴板加入 {samples.Count} 个样品。");
+        Status(LocalizedText.Format($"已从剪贴板加入 {samples.Count} 个样品。"));
     });
 
     private void SaveText(string filter, string fileName, string content)
@@ -429,7 +430,7 @@ public partial class CieSampleAnalysisView : UserControl
         var dialog = new SaveFileDialog { Filter = filter, FileName = fileName, AddExtension = true };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         File.WriteAllText(dialog.FileName, content, new UTF8Encoding(true));
-        Status($"已保存：{dialog.FileName}");
+        Status(LocalizedText.Format($"已保存：{dialog.FileName}"));
     }
     private void Template_Click(object sender, RoutedEventArgs e) => Execute(() => SaveText("CSV|*.csv", "CieSamplesTemplate.csv", CieAnalysisIO.CsvTemplate));
     private void OpenActionMenu_Click(object sender, RoutedEventArgs e)
@@ -441,7 +442,7 @@ public partial class CieSampleAnalysisView : UserControl
     }
     private void ExportCsv_Click(object sender, RoutedEventArgs e) => Execute(() =>
     {
-        if (_rows.Count == 0) throw new ArgumentException("暂无样品可导出。");
+        if (_rows.Count == 0) throw new ArgumentException(LocalizedText.Get("暂无样品可导出。"));
         SaveText("CSV|*.csv", $"CieSamples_{DateTime.Now:yyyyMMdd_HHmmss}.csv", CieAnalysisIO.ExportSamples(_rows));
     });
 
@@ -449,7 +450,7 @@ public partial class CieSampleAnalysisView : UserControl
     {
         AnalysisDiagram.UpdateLayout();
         int width = (int)Math.Ceiling(AnalysisDiagram.ActualWidth), height = (int)Math.Ceiling(AnalysisDiagram.ActualHeight);
-        if (width <= 0 || height <= 0) throw new InvalidOperationException("请先显示色度分析页面。");
+        if (width <= 0 || height <= 0) throw new InvalidOperationException(LocalizedText.Get("请先显示色度分析页面。"));
         var visual = new DrawingVisual();
         using (DrawingContext dc = visual.RenderOpen())
         {
@@ -470,24 +471,24 @@ public partial class CieSampleAnalysisView : UserControl
         var dialog = new SaveFileDialog { Filter = "PNG|*.png", FileName = $"CieDiagram_{DateTime.Now:yyyyMMdd_HHmmss}.png" };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         File.WriteAllBytes(dialog.FileName, CaptureDiagramPng());
-        Status($"已保存当前图表视图：{dialog.FileName}");
+        Status(LocalizedText.Format($"已保存当前图表视图：{dialog.FileName}"));
     });
     private void ExportReport_Click(object sender, RoutedEventArgs e) => Execute(() =>
     {
-        if (_rows.Count == 0) throw new ArgumentException("暂无样品可导出。");
-        SaveText("HTML 离线报告|*.html", $"CieReport_{DateTime.Now:yyyyMMdd_HHmmss}.html",
+        if (_rows.Count == 0) throw new ArgumentException(LocalizedText.Get("暂无样品可导出。"));
+        SaveText(LocalizedText.Get("HTML 离线报告|*.html"), $"CieReport_{DateTime.Now:yyyyMMdd_HHmmss}.html",
             CieAnalysisIO.ExportReport(GetSession(), _rows, CaptureDiagramPng()));
     });
 
     private bool SaveSession()
     {
-        var dialog = new SaveFileDialog { Filter = "色度分析会话|*.cie-session.json", FileName = _sessionPath ?? "Analysis.cie-session.json" };
+        var dialog = new SaveFileDialog { Filter = LocalizedText.Get("色度分析会话|*.cie-session.json"), FileName = _sessionPath ?? "Analysis.cie-session.json" };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return false;
         string json = CieAnalysisIO.SaveSession(GetSession());
         File.WriteAllText(dialog.FileName, json, new UTF8Encoding(false));
         _sessionPath = dialog.FileName;
         _dirty = false;
-        Status($"已保存会话：{dialog.FileName}");
+        Status(LocalizedText.Format($"已保存会话：{dialog.FileName}"));
         return true;
     }
     private void SaveSession_Click(object sender, RoutedEventArgs e) => Execute(() => SaveSession());
@@ -495,25 +496,25 @@ public partial class CieSampleAnalysisView : UserControl
     private bool ConfirmReplace()
     {
         if (!_dirty) return true;
-        MessageBoxResult choice = MessageBox.Show(Window.GetWindow(this), "当前分析尚未保存。是否先保存会话？", "色度分析", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        MessageBoxResult choice = MessageBox.Show(Window.GetWindow(this), LocalizedText.Get("当前分析尚未保存。是否先保存会话？"), LocalizedText.Get("色度分析"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
         return choice == MessageBoxResult.No || choice == MessageBoxResult.Yes && SaveSession();
     }
     private void OpenSession_Click(object sender, RoutedEventArgs e) => Execute(() =>
     {
-        var dialog = new OpenFileDialog { Filter = "色度分析会话|*.cie-session.json;*.json" };
+        var dialog = new OpenFileDialog { Filter = LocalizedText.Get("色度分析会话|*.cie-session.json;*.json") };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         CieAnalysisSession session = CieAnalysisIO.LoadSession(ReadSmallFile(dialog.FileName));
         if (!ConfirmReplace()) return;
         LoadSession(session);
         _sessionPath = dialog.FileName;
-        Status($"已恢复会话，共 {_samples.Count} 个样品。");
+        Status(LocalizedText.Format($"已恢复会话，共 {_samples.Count} 个样品。"));
     });
     private void New_Click(object sender, RoutedEventArgs e) => Execute(() =>
     {
         if (!ConfirmReplace()) return;
         LoadSession(new());
         _sessionPath = null;
-        Status("已创建空白分析会话。");
+        Status(LocalizedText.Get("已创建空白分析会话。"));
     });
     public bool ConfirmClose()
     {
@@ -525,7 +526,7 @@ public partial class CieSampleAnalysisView : UserControl
     {
         if (Selected is not { Xy.IsFinite: true } row) return;
         PrimarySelected?.Invoke((string)((MenuItem)sender).Tag, row.Xy);
-        Status($"已将 {row.Name} 用作色域 {((MenuItem)sender).Tag} 原色。其他原色保持不变。");
+        Status(LocalizedText.Format($"已将 {row.Name} 用作色域 {((MenuItem)sender).Tag} 原色。其他原色保持不变。"));
     }
     private void ReferenceLink_Click(object sender, RequestNavigateEventArgs e)
     {

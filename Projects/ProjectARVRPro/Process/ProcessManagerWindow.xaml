@@ -1,13 +1,15 @@
 <Window x:Class="ProjectARVRPro.Process.ProcessManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ProjectARVRPro"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ProjectARVRPro.Process"
+        xmlns:project="clr-namespace:ProjectARVRPro"
         xmlns:integration="clr-namespace:ProjectARVRPro.Integration"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProcessManager}"
-        Title="流程处理配置" Height="760" Width="1320" MinHeight="660" MinWidth="1080"
+        Title="{display:DisplayText Key='流程处理配置'}" Height="760" Width="1320" MinHeight="660" MinWidth="1080"
         Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -33,13 +35,13 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="Cursor" Value="IBeam"/>
-            <Setter Property="ToolTip" Value="可选中复制，双击全选"/>
+            <Setter Property="ToolTip" Value="{display:DisplayText Key='可选中复制，双击全选'}"/>
             <EventSetter Event="PreviewMouseDoubleClick" Handler="CopyableTextBox_PreviewMouseDoubleClick"/>
         </Style>
     </Window.Resources>
 
     <TabControl x:Name="MainTabControl" Margin="8" SelectionChanged="MainTabControl_SelectionChanged">
-        <TabItem Header="一键执行流程组">
+        <TabItem Header="{display:DisplayText Key='一键执行流程组'}">
             <Grid Margin="4 8 4 4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -49,25 +51,28 @@
                 <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="4" Margin="0 0 0 8" Padding="8">
                     <WrapPanel>
-                        <TextBlock Text="流程组管理" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0 0 12 0"/>
-                        <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="0 0 5 0"/>
+                        <TextBlock Text="{display:DisplayText Key='流程组管理'}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0 0 12 0"/>
+                        <TextBlock Text="{display:DisplayText Key='当前组:'}" VerticalAlignment="Center" Margin="0 0 5 0"/>
                         <ComboBox ItemsSource="{Binding ProcessGroups}" DisplayMemberPath="Name"
                                   SelectedIndex="{Binding ActiveGroupIndex}" Width="150" VerticalAlignment="Center" Margin="0 0 12 0"
                                   x:Name="GroupComboBox" SelectionChanged="GroupComboBox_SelectionChanged"/>
                         <TextBox Text="{Binding NewGroupName, UpdateSourceTrigger=PropertyChanged}" Width="120"
                                  VerticalAlignment="Center" Margin="0 0 5 0"/>
-                        <Button Content="添加组" Padding="8 3" Margin="0 0 5 0" Command="{Binding AddGroupCommand}"/>
-                        <Button Content="重命名" Padding="8 3" Margin="0 0 5 0" Command="{Binding RenameGroupCommand}"/>
-                        <Button Content="复制组" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
-                        <Button Content="删除组" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
-                        <Button Content="导入配置" Padding="8 3" Margin="12 0 5 0" Command="{Binding ImportConfigCommand}"/>
-                        <Button Content="导入旧版Recipe" Padding="8 3" Margin="0 0 5 0"
+                        <Button Content="{display:DisplayText Key='添加组'}" Padding="8 3" Margin="0 0 5 0" Command="{Binding AddGroupCommand}"/>
+                        <Button Content="{display:DisplayText Key='重命名'}" Padding="8 3" Margin="0 0 5 0" Command="{Binding RenameGroupCommand}"/>
+                        <Button Content="{display:DisplayText Key='复制组'}" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
+                        <Button Content="{display:DisplayText Key='删除组'}" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
+                        <Button Content="{display:DisplayText Key='导入配置'}" Padding="8 3" Margin="12 0 5 0" Command="{Binding ImportConfigCommand}"/>
+                        <Button Content="{display:DisplayText Key='导入旧版Recipe'}" Padding="8 3" Margin="0 0 5 0"
                                 Command="{Binding ImportLegacyRecipeCommand}"
-                                ToolTip="从旧版 ARVRRecipe.json 导入上下限和修正参数"/>
-                        <Button Content="导出配置" Padding="8 3" Margin="0 0 5 0" Command="{Binding ExportConfigCommand}"/>
-                        <Button Content="预处理管理" Padding="8 3" Margin="12 0 5 0"
-                                ToolTip="配置流程执行前的预处理动作"
+                                ToolTip="{display:DisplayText Key='从旧版 ARVRRecipe.json 导入上下限和修正参数'}"/>
+                        <Button Content="{display:DisplayText Key='导出配置'}" Padding="8 3" Margin="0 0 5 0" Command="{Binding ExportConfigCommand}"/>
+                        <Button Content="{display:DisplayText Key='预处理管理'}" Padding="8 3" Margin="12 0 5 0"
+                                ToolTip="{display:DisplayText Key='配置流程执行前的预处理动作'}"
                                 Click="PreProcessManager_Click"/>
+                        <Button x:Name="ThunderbirdSettingsButton" Content="{display:DisplayText Key='雷鸟连接与切图…'}" Padding="8 3" Margin="0 0 5 0"
+                                ToolTip="{display:DisplayText Key='设置雷鸟串口连接、自动连接，并手动调试切图'}"
+                                Command="{Binding EditCommand, Source={x:Static project:ProjectARVRProConfig.ThunderbirdSerialManager}}"/>
                     </WrapPanel>
                 </Border>
 
@@ -86,13 +91,13 @@
                             </Grid.RowDefinitions>
 
                             <DockPanel Grid.Row="0" Margin="0 0 0 8">
-                                <TextBlock Text="一键执行顺序" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock Text="{display:DisplayText Key='一键执行顺序'}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Button Content="新增" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddMetaCommand}"/>
-                                    <Button Content="复制" Padding="10 4" Margin="4 0 0 0" Command="{Binding DuplicateMetaCommand}"/>
-                                    <Button Content="删除" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveMetaCommand}"/>
-                                    <Button Content="上移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveUpCommand}"/>
-                                    <Button Content="下移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveDownCommand}"/>
+                                    <Button Content="{display:DisplayText Key='新增'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddMetaCommand}"/>
+                                    <Button Content="{display:DisplayText Key='复制'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding DuplicateMetaCommand}"/>
+                                    <Button Content="{display:DisplayText Key='删除'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveMetaCommand}"/>
+                                    <Button Content="{display:DisplayText Key='上移'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveUpCommand}"/>
+                                    <Button Content="{display:DisplayText Key='下移'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveDownCommand}"/>
                                 </StackPanel>
                             </DockPanel>
 
@@ -115,16 +120,16 @@
                                                 <Setter Property="Background" Value="Transparent"/>
                                             </Style>
                                         </GridView.ColumnHeaderContainerStyle>
-                                        <GridViewColumn Header="启用" Width="50">
+                                        <GridViewColumn Header="{display:DisplayText Key='启用'}" Width="50">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <CheckBox IsChecked="{Binding IsEnabled}" HorizontalAlignment="Center"/>
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="名称" Width="175" DisplayMemberBinding="{Binding Name}"/>
-                                        <GridViewColumn Header="流程模板" Width="205" DisplayMemberBinding="{Binding FlowTemplate}"/>
-                                        <GridViewColumn Header="处理类型" Width="215"
+                                        <GridViewColumn Header="{display:DisplayText Key='名称'}" Width="175" DisplayMemberBinding="{Binding Name}"/>
+                                        <GridViewColumn Header="{display:DisplayText Key='流程模板'}" Width="205" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                                        <GridViewColumn Header="{display:DisplayText Key='处理类型'}" Width="215"
                                                         DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
                                     </GridView>
                                 </ListView.View>
@@ -168,10 +173,10 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Text="{Binding SelectedProcessMeta.Name, Mode=OneWay, TargetNullValue=未选择流程}"
+                                        <TextBox Text="{Binding SelectedProcessMeta.Name, Mode=OneWay, TargetNullValue={display:DisplayText Key='未选择流程'}}"
                                                  Style="{StaticResource CopyableTextBoxStyle}"
                                                  FontWeight="Bold" FontSize="16"/>
-                                        <Button Grid.Column="1" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改名称"
+                                        <Button Grid.Column="1" Style="{StaticResource SideEditButtonStyle}" ToolTip="{display:DisplayText Key='修改名称'}"
                                                 Command="{Binding EditMetaNameCommand}"
                                                 CommandParameter="{Binding SelectedProcessMeta}">
                                             <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
@@ -198,9 +203,9 @@
                                                  Text="{Binding SelectedMetaNameDraft, UpdateSourceTrigger=PropertyChanged}"
                                                  IsVisibleChanged="MetaNameEditTextBox_IsVisibleChanged"
                                                  VerticalContentAlignment="Center"/>
-                                        <Button Grid.Column="1" Content="保存" Padding="11 3" Margin="8 0 0 0"
+                                        <Button Grid.Column="1" Content="{display:DisplayText Key='保存'}" Padding="11 3" Margin="8 0 0 0"
                                                 Command="{Binding SaveMetaNameCommand}"/>
-                                        <Button Grid.Column="2" Content="取消" Padding="11 3" Margin="6 0 0 0"
+                                        <Button Grid.Column="2" Content="{display:DisplayText Key='取消'}" Padding="11 3" Margin="6 0 0 0"
                                                 Command="{Binding CancelMetaNameCommand}"/>
                                     </Grid>
                                 </Grid>
@@ -211,12 +216,12 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="处理类型：" Foreground="{DynamicResource SecondaryTextBrush}"
+                                    <TextBlock Text="{display:DisplayText Key='处理类型：'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                VerticalAlignment="Center"/>
                                     <TextBox Grid.Column="1"
                                              Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay, TargetNullValue=—}"
                                              Style="{StaticResource CopyableTextBoxStyle}"/>
-                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改处理类型"
+                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="{display:DisplayText Key='修改处理类型'}"
                                             Command="{Binding EditMetaProcessCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
                                         <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
@@ -230,17 +235,17 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="流程模板：" Foreground="{DynamicResource SecondaryTextBrush}"
+                                    <TextBlock Text="{display:DisplayText Key='流程模板：'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                VerticalAlignment="Center"/>
                                     <TextBox Grid.Column="1"
                                              Text="{Binding SelectedProcessMeta.FlowTemplate, Mode=OneWay, TargetNullValue=—}"
                                              Style="{StaticResource CopyableTextBoxStyle}"/>
-                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="编辑当前流程模板"
+                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="{display:DisplayText Key='编辑当前流程模板'}"
                                             Command="{Binding OpenFlowTemplateEditorCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
                                         <Image Source="{DynamicResource DrawingImageFlow}" Width="13"/>
                                     </Button>
-                                    <Button Grid.Column="3" Style="{StaticResource SideEditButtonStyle}" ToolTip="切换流程模板"
+                                    <Button Grid.Column="3" Style="{StaticResource SideEditButtonStyle}" ToolTip="{display:DisplayText Key='切换流程模板'}"
                                             Command="{Binding EditMetaTemplateCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
                                         <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
@@ -248,7 +253,7 @@
                                 </Grid>
 
                                 <CheckBox x:Name="CameraOverrideCheckBox" Grid.Row="3"
-                                          Content="覆盖相机参数" Margin="0 7 0 0"
+                                          Content="{display:DisplayText Key='覆盖相机参数'}" Margin="0 7 0 0"
                                           Click="CameraOverrideCheckBox_Click"/>
 
                                 <StackPanel x:Name="CameraOverridePanel" Grid.Row="4"
@@ -265,7 +270,7 @@
                             <TabItem Header="Recipe">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="RecipePanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
+                                        <TextBlock Text="{display:DisplayText Key='请选择一个处理项'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -273,15 +278,15 @@
                             <TabItem Header="Process">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="ProcessPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
+                                        <TextBlock Text="{display:DisplayText Key='请选择一个处理项'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
                             </TabItem>
-                            <TabItem Header="切图">
+                            <TabItem Header="{display:DisplayText Key='切图'}">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="PictureSwitchPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
+                                        <TextBlock Text="{display:DisplayText Key='请选择一个处理项'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -292,7 +297,7 @@
             </Grid>
         </TabItem>
 
-        <TabItem Header="流程解析映射">
+        <TabItem Header="{display:DisplayText Key='流程解析映射'}">
             <Grid Margin="4 8 4 4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="520" MinWidth="420"/>
@@ -309,15 +314,15 @@
                         </Grid.RowDefinitions>
 
                         <DockPanel Grid.Row="0" Margin="0 0 0 6">
-                            <TextBlock Text="独立解析映射" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="{display:DisplayText Key='独立解析映射'}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="新增" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddResultParserCommand}"/>
-                                <Button Content="编辑" Padding="10 4" Margin="4 0 0 0" Command="{Binding UpdateResultParserCommand}"/>
-                                <Button Content="删除" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveResultParserCommand}"/>
+                                <Button Content="{display:DisplayText Key='新增'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddResultParserCommand}"/>
+                                <Button Content="{display:DisplayText Key='编辑'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding UpdateResultParserCommand}"/>
+                                <Button Content="{display:DisplayText Key='删除'}" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveResultParserCommand}"/>
                             </StackPanel>
                         </DockPanel>
 
-                        <TextBlock Grid.Row="1" Text="用于手动切换测试和历史结果解析，不参与一键执行顺序。"
+                        <TextBlock Grid.Row="1" Text="{display:DisplayText Key='用于手动切换测试和历史结果解析，不参与一键执行顺序。'}"
                                    Foreground="{DynamicResource SecondaryTextBrush}" Margin="0 0 0 8"/>
 
                         <ListView Grid.Row="2" ItemsSource="{Binding ResultParserMetas}"
@@ -335,8 +340,8 @@
                                             <Setter Property="Background" Value="Transparent"/>
                                         </Style>
                                     </GridView.ColumnHeaderContainerStyle>
-                                    <GridViewColumn Header="流程模板" Width="240" DisplayMemberBinding="{Binding FlowTemplate}"/>
-                                    <GridViewColumn Header="处理模板" Width="240" DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
+                                    <GridViewColumn Header="{display:DisplayText Key='流程模板'}" Width="240" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                                    <GridViewColumn Header="{display:DisplayText Key='处理模板'}" Width="240" DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
                                 </GridView>
                             </ListView.View>
                         </ListView>
@@ -360,13 +365,13 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="{Binding SelectedResultParserMeta.FlowTemplate, TargetNullValue=未选择解析映射}"
+                                <TextBlock Text="{Binding SelectedResultParserMeta.FlowTemplate, TargetNullValue={display:DisplayText Key='未选择解析映射'}}"
                                            FontWeight="Bold" FontSize="16"/>
                                 <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" Margin="0 4 0 0">
-                                    <Run Text="处理类: "/><Run Text="{Binding SelectedResultParserMeta.ProcessTypeName, Mode=OneWay}"/>
+                                    <Run Text="{display:DisplayText Key='处理类: '}"/><Run Text="{Binding SelectedResultParserMeta.ProcessTypeName, Mode=OneWay}"/>
                                 </TextBlock>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="编辑映射" Padding="12 4"
+                            <Button Grid.Column="1" Content="{display:DisplayText Key='编辑映射'}" Padding="12 4"
                                     VerticalAlignment="Center" Command="{Binding UpdateResultParserCommand}"/>
                         </Grid>
                     </Border>
@@ -375,7 +380,7 @@
                         <TabItem Header="Recipe">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                 <StackPanel x:Name="ResultRecipePanel">
-                                    <TextBlock Text="请选择一个解析映射" Foreground="{DynamicResource SecondaryTextBrush}"
+                                    <TextBlock Text="{display:DisplayText Key='请选择一个解析映射'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>
                             </ScrollViewer>
@@ -383,7 +388,7 @@
                         <TabItem Header="Process">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                 <StackPanel x:Name="ResultProcessPanel">
-                                    <TextBlock Text="请选择一个解析映射" Foreground="{DynamicResource SecondaryTextBrush}"
+                                    <TextBlock Text="{display:DisplayText Key='请选择一个解析映射'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>
                             </ScrollViewer>
@@ -393,7 +398,7 @@
             </Grid>
         </TabItem>
 
-        <TabItem Header="外部对接">
+        <TabItem Header="{display:DisplayText Key='外部对接'}">
             <integration:IntegrationDemoPanel/>
         </TabItem>
     </TabControl>

@@ -58,6 +58,7 @@ public sealed class CvRawProfileTests
                 }
             }
             Assert.Equal(original, File.ReadAllBytes(path));
+            CVFileReadCache.Release(); // Exercise the disk-backed profile's file identity check.
             var choices = CvRawProfileSource.CreateOptions(path);
             File.SetLastWriteTimeUtc(path, File.GetLastWriteTimeUtc(path).AddMinutes(1));
             Assert.Throws<IOException>(() => choices[0].Open(default));
@@ -71,6 +72,32 @@ public sealed class CvRawProfileTests
             Assert.Throws<InvalidDataException>(() => new CvRawProfileSource(path, true));
         }
         finally { input.Free(); output.Free(); File.Delete(path); }
+    }
+
+    [Fact]
+    public void CacheOnlyCalibratedRawSupportsChannelsAndProfileAfterCacheRelease()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-profile-memory-{Guid.NewGuid():N}.cvraw");
+        bool enabled = CVFileReadCache.IsEnabled;
+        CVFileReadCache.IsEnabled = true;
+        try
+        {
+            using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 2, 16, 3);
+            var transform = RawColorTransformV1.Create();
+            transform.Kind = 0; transform.Channels = 3; transform.InterleavedBgr = 1;
+            transform.Coefficients = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, CVFileSaveMode.MemoryOnly));
+            ColorCalibrationSnapshot.Create(transform, 3, 2, 16, raw.Exp, "memory").Save(path, true);
+            using var channelReader = new CalibratedRawFileReader(path);
+            using var profile = new CvRawProfileSource(path, true);
+            CVFileReadCache.Release();
+            using CVCIEFile y = channelReader.ReadChannel(1);
+            float[] values = new float[6];
+            Buffer.BlockCopy(y.Data, 0, values, 0, y.Data.Length);
+            for (int x = 0; x < 3; x++) Assert.Equal(values[x], profile.Read(x, 0, 4));
+            Assert.False(File.Exists(path));
+        }
+        finally { CVFileReadCache.Release(); CVFileReadCache.IsEnabled = enabled; }
     }
 
     internal static AlgorithmResult Run(IImageProfileMeasurementSource source)

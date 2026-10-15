@@ -1,3 +1,4 @@
+﻿using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
@@ -5,17 +6,12 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Copilot
@@ -117,7 +113,7 @@ namespace ColorVision.Copilot
                 {
                     GroupName = "其他",
                     IconText = "+",
-                    Label = "自定义",
+                    Label = LocalizedText.Get("自定义"),
                     Description = "手动配置兼容接口",
                     SearchKeywords = "custom 自定义",
                     VendorType = CopilotVendorType.Custom,
@@ -125,7 +121,6 @@ namespace ColorVision.Copilot
             });
 
         private readonly CopilotModelConnectionDiagnostic _modelConnectionDiagnostic;
-        private readonly CopilotBackendSyncClient _backendSyncClient;
         private readonly ConfigHandler _configHandler;
         private readonly CopilotConfig _config;
         private readonly CancellationTokenSource _lifetimeCancellation = new();
@@ -141,21 +136,18 @@ namespace ColorVision.Copilot
         public CopilotSettingsViewModel()
             : this(
                 ConfigHandler.GetInstance(),
-                new CopilotBackendSyncClient(),
                 initialState: null)
         {
         }
 
         internal CopilotSettingsViewModel(
             ConfigHandler configHandler,
-            CopilotBackendSyncClient backendSyncClient,
             CopilotChatState? initialState,
             CopilotModelConnectionDiagnostic? modelConnectionDiagnostic = null,
             CopilotMcpToolProvider? externalMcpToolProvider = null,
             HttpClient? mcpHttpClient = null)
         {
             _configHandler = configHandler ?? throw new ArgumentNullException(nameof(configHandler));
-            _backendSyncClient = backendSyncClient ?? throw new ArgumentNullException(nameof(backendSyncClient));
             _modelConnectionDiagnostic = modelConnectionDiagnostic ?? new CopilotModelConnectionDiagnostic();
             _externalMcpToolProvider = externalMcpToolProvider ?? new CopilotMcpToolProvider();
             _mcpConnectionHttpClient = mcpHttpClient ?? McpHttpClient;
@@ -166,12 +158,12 @@ namespace ColorVision.Copilot
 
             ProviderOptions = new ReadOnlyCollection<CopilotProviderOption>(new[]
             {
-                new CopilotProviderOption { Label = "OpenAI Compatible", Value = CopilotProviderType.OpenAICompatible },
-                new CopilotProviderOption { Label = "Anthropic Compatible", Value = CopilotProviderType.AnthropicCompatible },
+                new CopilotProviderOption { Label = LocalizedText.Get("OpenAI 兼容（Chat / Responses）"), Value = CopilotProviderType.OpenAICompatible },
+                new CopilotProviderOption { Label = "Anthropic Messages", Value = CopilotProviderType.AnthropicCompatible },
             });
             ShellOptions = new ReadOnlyCollection<CopilotShellOption>(new[]
             {
-                new CopilotShellOption { Label = "自动（PowerShell）", Value = CopilotShellKind.Auto },
+                new CopilotShellOption { Label = LocalizedText.Get("自动（PowerShell）"), Value = CopilotShellKind.Auto },
                 new CopilotShellOption { Label = "PowerShell", Value = CopilotShellKind.PowerShell },
                 new CopilotShellOption { Label = "CMD", Value = CopilotShellKind.CommandPrompt },
             });
@@ -226,12 +218,10 @@ namespace ColorVision.Copilot
             UseSelectedProfileInChatCommand = new RelayCommand(_ => UseSelectedProfileInChat(), _ => CanUseSelectedProfileInChat);
             ToggleNewProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsNewProfileApiKeyVisible = !IsNewProfileApiKeyVisible);
             ToggleSelectedProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsSelectedProfileApiKeyVisible = !IsSelectedProfileApiKeyVisible);
-            SyncBackendConfigCommand = new RelayCommand(
-                _ => RunUiOperation(SyncBackendConfigAsync, "同步后台 Copilot 配置"),
-                _ => CanSyncBackendConfig);
             SelectConnectProviderCommand = new RelayCommand(parameter => SelectConnectProvider(parameter as CopilotConnectProviderOption));
             BackToConnectProviderPickerCommand = new RelayCommand(_ => IsConnectProviderPickerVisible = true);
             ClearConnectProviderSearchCommand = new RelayCommand(_ => ConnectProviderSearchText = string.Empty);
+            InitializeLocalCodexCommands();
             AddAgentSkillOverrideCommand = new RelayCommand(_ => AddAgentSkillOverride(), _ => CanAddAgentSkillOverride);
             RemoveAgentSkillOverrideCommand = new RelayCommand<CopilotAgentSkillSetting>(RemoveAgentSkillOverride, setting => setting != null);
 
@@ -252,7 +242,6 @@ namespace ColorVision.Copilot
             McpBearerToken = config.McpBearerToken;
             ExternalMcpServersText = CopilotMcpClientConfigurationText.Format(config.ExternalMcpServers);
             WebPagePref64PrefixesText = config.WebPagePref64Prefixes;
-            BackendSyncUrl = config.BackendSyncUrl;
             RefreshMcpStatusText();
             RefreshMcpDiagnostics();
             RefreshAgentSkillDiagnostics();
@@ -279,69 +268,6 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotConnectProviderOption> VisibleConnectProviderOptions =>
             ConnectProviderOptions.Where(option => option.Matches(ConnectProviderSearchText)).ToArray();
-
-        public string BackendSyncUrl
-        {
-            get => _backendSyncUrl;
-            set
-            {
-                if (SetProperty(ref _backendSyncUrl, value ?? string.Empty))
-                {
-                    OnPropertyChanged(nameof(IsBackendSyncEndpointValid));
-                    OnPropertyChanged(nameof(BackendSyncEndpointStatusText));
-                    OnPropertyChanged(nameof(CanSyncBackendConfig));
-                    CommandManager.InvalidateRequerySuggested();
-                    MarkSettingsPending("Backend sync settings changed. Click Apply or Save to keep them.");
-                }
-            }
-        }
-        private string _backendSyncUrl = CopilotConfig.DefaultBackendSyncUrl;
-
-        public bool IsBackendSyncEndpointValid =>
-            CopilotBackendSyncClient.TryBuildEndpoint(BackendSyncUrl, out _, out _);
-
-        public string BackendSyncEndpointStatusText
-        {
-            get
-            {
-                if (!CopilotBackendSyncClient.TryBuildEndpoint(
-                        BackendSyncUrl,
-                        out var endpoint,
-                        out var errorMessage))
-                {
-                    return errorMessage;
-                }
-
-                return string.Equals(endpoint!.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
-                    ? "HTTPS protects managed API keys and profile settings in transit."
-                    : "Loopback HTTP is allowed only for a backend service on this computer.";
-            }
-        }
-
-        public bool IsSyncingBackendConfig
-        {
-            get => _isSyncingBackendConfig;
-            private set
-            {
-                if (SetProperty(ref _isSyncingBackendConfig, value))
-                {
-                    OnPropertyChanged(nameof(CanSyncBackendConfig));
-                    CommandManager.InvalidateRequerySuggested();
-                }
-            }
-        }
-        private bool _isSyncingBackendConfig;
-
-        public bool CanSyncBackendConfig => !_disposed
-            && !IsSyncingBackendConfig
-            && IsBackendSyncEndpointValid;
-
-        public string BackendSyncStatusText
-        {
-            get => _backendSyncStatusText;
-            private set => SetProperty(ref _backendSyncStatusText, value ?? string.Empty);
-        }
-        private string _backendSyncStatusText = "Enter an HTTPS backend URL, then click Download and sync.";
 
         public RelayCommand AddProfileCommand { get; }
 
@@ -381,8 +307,6 @@ namespace ColorVision.Copilot
 
         public RelayCommand ToggleSelectedProfileApiKeyVisibilityCommand { get; }
 
-        public RelayCommand SyncBackendConfigCommand { get; }
-
         public RelayCommand SelectConnectProviderCommand { get; }
 
         public RelayCommand BackToConnectProviderPickerCommand { get; }
@@ -401,7 +325,7 @@ namespace ColorVision.Copilot
             get => _selectedProfileConnectionTestText;
             private set => SetProperty(ref _selectedProfileConnectionTestText, value ?? string.Empty);
         }
-        private string _selectedProfileConnectionTestText = "Test sends one short request using the selected profile.";
+        private string _selectedProfileConnectionTestText = "测试会发送一条简短请求，使用此模型的额度。";
 
         public bool IsTestingSelectedProfileConnection
         {
@@ -422,7 +346,7 @@ namespace ColorVision.Copilot
             && (IsTestingSelectedProfileConnection || SelectedProfile?.IsConfigured == true);
 
         public string SelectedProfileConnectionTestActionText =>
-            IsTestingSelectedProfileConnection ? "Cancel Test" : "Test Model";
+            IsTestingSelectedProfileConnection ? "取消测试" : "测试连接";
 
         public bool IsSelectedProfileActiveInChat => SelectedProfile != null
             && string.Equals(SelectedProfile.Id, _activeProfileId, StringComparison.Ordinal);
@@ -461,11 +385,11 @@ namespace ColorVision.Copilot
                 if (IsSelectedProfileActiveInChat)
                 {
                     return HasUnsavedSettings
-                        ? "This is the current chat profile. Unsaved edits will apply after Apply, Save, or Apply to Chat."
-                        : "This is the current chat profile.";
+                        ? "当前聊天正在使用此模型；修改后点击应用或保存生效。"
+                        : "当前聊天正在使用此模型。";
                 }
 
-                return "This profile is not used by chat yet. Use it now, or Apply/Save to make the selected profile active.";
+                return "点击应用或保存，将所选模型用于聊天。";
             }
         }
 
@@ -484,16 +408,16 @@ namespace ColorVision.Copilot
         }
         private bool _hasUnsavedSettings;
 
-        public bool CanApplySettings => HasUnsavedSettings
+        public bool CanApplySettings => !IsAddingModel && HasUnsavedSettings
             && IsMcpPortValid
             && IsExternalMcpServersValid
             && IsWebPagePref64PrefixesValid;
 
-        public bool CanSaveSettings => IsMcpPortValid
+        public bool CanSaveSettings => !IsAddingModel && IsMcpPortValid
             && IsExternalMcpServersValid
             && IsWebPagePref64PrefixesValid;
 
-        public string SettingsCancelButtonText => HasUnsavedSettings ? "Cancel" : "Close";
+        public string SettingsCancelButtonText => HasUnsavedSettings ? "取消" : "关闭";
 
 
 
@@ -514,6 +438,7 @@ namespace ColorVision.Copilot
             if (_disposed)
                 return;
 
+            ClearQuickAddModelDraft();
             _disposed = true;
             try
             {
@@ -525,7 +450,6 @@ namespace ColorVision.Copilot
             _lifetimeCancellation.Dispose();
             OnPropertyChanged(nameof(CanTestMcpConnection));
             OnPropertyChanged(nameof(CanTestSelectedProfile));
-            OnPropertyChanged(nameof(CanSyncBackendConfig));
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -547,9 +471,10 @@ namespace ColorVision.Copilot
 
         private static string FormatProviderLabel(CopilotProviderType providerType)
         {
+            if (providerType == CopilotProviderType.LocalCodex) return LocalizedText.Get("本机 Codex");
             return providerType == CopilotProviderType.AnthropicCompatible
-                ? "Anthropic Compatible"
-                : "OpenAI Compatible";
+                ? "Anthropic Messages"
+                : LocalizedText.Get("OpenAI 兼容（Chat / Responses）");
         }
 
         private void ClearQuickAddFeedback()
@@ -579,7 +504,7 @@ namespace ColorVision.Copilot
         {
             HasUnsavedSettings = false;
             HasAppliedChanges = true;
-            SettingsStatusText = $"Settings saved at {DateTime.Now:HH:mm:ss}. The chat panel will use the selected profile list.";
+            SettingsStatusText = $"已于 {DateTime.Now:HH:mm:ss} 保存，所选模型已应用。";
         }
 
         private void SetSettingsNotice(string message)

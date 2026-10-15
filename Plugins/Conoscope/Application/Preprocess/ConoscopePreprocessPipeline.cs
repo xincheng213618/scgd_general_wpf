@@ -3,7 +3,6 @@ using Conoscope.Core;
 using Conoscope.Processing.Preprocess;
 using log4net;
 using OpenCvSharp;
-using System;
 
 namespace Conoscope.ApplicationServices.Preprocess
 {

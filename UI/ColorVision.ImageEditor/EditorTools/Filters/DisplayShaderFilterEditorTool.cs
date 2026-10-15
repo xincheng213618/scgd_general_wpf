@@ -7,7 +7,7 @@ using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.Filters
 {
-    public sealed class DisplayShaderFilterEditorTool : IEditorCustomControlTool, IDisposable
+    public sealed class DisplayShaderFilterEditorTool : ViewModelBase, IEditorCustomControlTool, IDisposable
     {
         private static bool s_environmentNoticeShown;
         private readonly EditorContext _context;

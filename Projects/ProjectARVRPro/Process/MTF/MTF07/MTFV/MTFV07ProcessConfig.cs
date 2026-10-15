@@ -1,6 +1,5 @@
 #pragma warning disable CA1707
 using ProjectARVRPro.Process.KeyedResults;
-using ProjectARVRPro.Process.MTF.MTF07;
 using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.MTF.MTF07.MTFV

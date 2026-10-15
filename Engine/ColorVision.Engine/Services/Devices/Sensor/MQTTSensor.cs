@@ -13,6 +13,42 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
     public class MQTTSensor : MQTTDeviceService<ConfigSensor>
     {
+        internal DeviceSensor? Device { get; set; }
+        public override DeviceStatusType DeviceStatus
+        {
+            get => Device?.SensorBackend.Status ?? base.DeviceStatus;
+            set { if (Device == null) base.DeviceStatus = value; else Device.SensorBackend.ObserveService(value); }
+        }
+        internal void RefreshBackendStatus() => base.DeviceStatus = Device?.SensorBackend.Status ?? base.DeviceStatus;
+
+        internal override MsgRecord PublishAsyncClient(MsgSend message, double timeout = 30000)
+        {
+            if (Device == null) return base.PublishAsyncClient(message, timeout);
+            lock (Device.SensorBackend.Sync)
+            {
+                if (Device.SensorBackend.OpensLocally) return Device.RunLocalSensorCommand(message);
+                Device.EnsureOtherSensorBackends(false, Local.LocalSensorSession.EndpointKey(Config));
+                Device.SensorBackend.BeginServiceCommand(message.EventName);
+            }
+            try
+            {
+                MsgRecord record = base.PublishAsyncClient(message, timeout);
+                int completed = 0;
+                void Complete(object? sender, MsgRecordState state)
+                {
+                    if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)
+                        || System.Threading.Interlocked.Exchange(ref completed, 1) != 0) return;
+                    record.MsgRecordStateChanged -= Complete;
+                    Device.SensorBackend.EndServiceCommand();
+                    if (state == MsgRecordState.Success && message.EventName is "Open" or "Close" or "Reopen")
+                        DeviceStatus = message.EventName == "Close" ? DeviceStatusType.Closed : DeviceStatusType.Opened;
+                }
+                record.MsgRecordStateChanged += Complete;
+                Complete(record, record.MsgRecordState);
+                return record;
+            }
+            catch { Device.SensorBackend.EndServiceCommand(); throw; }
+        }
 
         public MQTTSensor(ConfigSensor sensorConfig) : base(sensorConfig)
         {

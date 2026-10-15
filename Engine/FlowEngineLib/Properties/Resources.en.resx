@@ -55,54 +55,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="00 全局" xml:space="preserve">
-    <value>00 Global</value>
-  </data>
-  <data name="01 运算" xml:space="preserve">
-    <value>01 Operation</value>
-  </data>
-  <data name="02 相机" xml:space="preserve">
-    <value>02 Camera</value>
-  </data>
-  <data name="03_1 关注点" xml:space="preserve">
-    <value>03_1 POI</value>
-  </data>
-  <data name="03_2 Algorithm" xml:space="preserve">
-    <value>03_2 Algorithm</value>
-  </data>
-  <data name="03_3 Image" xml:space="preserve">
-    <value>03_3 Image</value>
-  </data>
-  <data name="03_3 校正" xml:space="preserve">
-    <value>03_3 Calibration</value>
-  </data>
-  <data name="03_4 KB" xml:space="preserve">
-    <value>03_4 KB</value>
-  </data>
-  <data name="03_5 OLED" xml:space="preserve">
-    <value>03_5 OLED</value>
-  </data>
-  <data name="04 源表" xml:space="preserve">
-    <value>04 Source Table</value>
-  </data>
-  <data name="05 光谱仪" xml:space="preserve">
-    <value>05 Spectrometer</value>
-  </data>
-  <data name="07 传感器" xml:space="preserve">
-    <value>07 Sensor</value>
-  </data>
-  <data name="09 合规验证" xml:space="preserve">
-    <value>09 ComplianceVerification</value>
-  </data>
-  <data name="10 MQTT" xml:space="preserve">
-    <value>10 MQTT</value>
-  </data>
-  <data name="11 ROI" xml:space="preserve">
-    <value>11 ROI</value>
-  </data>
-  <data name="12 第三方算法" xml:space="preserve">
-    <value>12 Third-Party Algorithms</value>
-  </data>
+  <data name="全局" xml:space="preserve"><value>Global</value></data>
+  <data name="运算" xml:space="preserve"><value>Operation</value></data>
+  <data name="关注点" xml:space="preserve"><value>POI</value></data>
+  <data name="Algorithm" xml:space="preserve"><value>Algorithm</value></data>
+  <data name="Image" xml:space="preserve"><value>Image</value></data>
+  <data name="KB" xml:space="preserve"><value>KB</value></data>
+  <data name="OLED" xml:space="preserve"><value>OLED</value></data>
+  <data name="传感器" xml:space="preserve"><value>Sensor</value></data>
+  <data name="合规验证" xml:space="preserve"><value>Compliance Verification</value></data>
+  <data name="MQTT" xml:space="preserve"><value>MQTT</value></data>
+  <data name="ROI" xml:space="preserve"><value>ROI</value></data>
   <data name="FlowEngineLib" xml:space="preserve">
     <value>FlowEngineLib</value>
   </data>
@@ -906,6 +869,45 @@
   </data>
   <data name="单步值" xml:space="preserve">
     <value>StepValue</value>
+  </data>
+  <data name="循环名称" xml:space="preserve">
+    <value>Loop Name</value>
+  </data>
+  <data name="循环名称说明" xml:space="preserve">
+    <value>Must exactly match the corresponding Loop Next node to identify the same loop.</value>
+  </data>
+  <data name="循环起始值说明" xml:space="preserve">
+    <value>Value used for the first iteration.</value>
+  </data>
+  <data name="循环结束值说明" xml:space="preserve">
+    <value>End condition for an ascending loop; the loop exits before the next value would exceed it.</value>
+  </data>
+  <data name="循环步长说明" xml:space="preserve">
+    <value>Value added after each iteration. It must be greater than 0; descending loops are not supported.</value>
+  </data>
+  <data name="循环节点说明" xml:space="preserve">
+    <value>Repeats a section of the flow using a start value, end value, and step.</value>
+  </data>
+  <data name="循环节点用法" xml:space="preserve">
+    <value>1. Enter exactly the same loop name on the Loop and corresponding Loop Next nodes.&#xA;2. Set the start value, end value, and step.&#xA;3. Connect the Loop OUT port to the loop body, the end of the loop body to Loop Next, and Loop Next OUT_LP_NEXT back to Loop IN_LP_NEXT.&#xA;4. Connect Loop Next OUT to the flow that should run after the loop.</value>
+  </data>
+  <data name="循环节点处理顺序" xml:space="preserve">
+    <value>The Loop node creates the current iteration state and executes the body through OUT. Loop Next reads the state with the same name and returns through OUT_LP_NEXT when another iteration remains; otherwise it continues through OUT.</value>
+  </data>
+  <data name="循环节点注意事项" xml:space="preserve">
+    <value>Use different names for separate loops on the same execution path. The step must be greater than 0, or the loop may not terminate.</value>
+  </data>
+  <data name="循环下一节点说明" xml:space="preserve">
+    <value>Marks the end of a loop body and decides whether to start the next iteration or exit the loop.</value>
+  </data>
+  <data name="循环下一节点用法" xml:space="preserve">
+    <value>The loop name must exactly match the corresponding Loop node. Connect the loop body to IN, OUT_LP_NEXT back to Loop IN_LP_NEXT, and OUT to the flow that follows the loop.</value>
+  </data>
+  <data name="循环下一节点处理顺序" xml:space="preserve">
+    <value>Reads the loop state with the same name. It returns through OUT_LP_NEXT when another iteration remains and continues through OUT when the loop is complete.</value>
+  </data>
+  <data name="循环下一节点注意事项" xml:space="preserve">
+    <value>If the loop names do not match, the corresponding state cannot be found and the loop route will not work correctly.</value>
   </data>
   <data name="当前值" xml:space="preserve">
     <value>Cur-Val</value>

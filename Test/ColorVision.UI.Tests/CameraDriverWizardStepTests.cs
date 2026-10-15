@@ -1,7 +1,6 @@
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Wizards;
 using ColorVision.ToolPlugins.CameraDriver;
-using ColorVision.UI;
 using System.ComponentModel;
 using System.IO;
 

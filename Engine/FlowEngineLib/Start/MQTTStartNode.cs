@@ -11,7 +11,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Start;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
 public class MQTTStartNode : BaseStartNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(MQTTStartNode));

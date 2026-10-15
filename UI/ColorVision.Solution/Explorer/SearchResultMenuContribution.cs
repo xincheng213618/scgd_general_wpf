@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.Explorer
@@ -22,7 +23,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionNavigationCommands.RevealInTreeId,
                     Order = 6,
-                    Header = "在解决方案资源管理器中定位(_L)",
+                    Header = LocalizedText.Get("在解决方案资源管理器中定位(_L)"),
                     Command = SolutionNavigationCommands.RevealInTree,
                 },
             ];

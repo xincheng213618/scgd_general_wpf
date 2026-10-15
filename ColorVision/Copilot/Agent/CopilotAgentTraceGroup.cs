@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,25 +69,25 @@ namespace ColorVision.Copilot
                 if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Pending))
                     return BuildWaitingActivityLabel(running);
                 if (Entries.Any(entry => entry.State == CopilotToolExecutionState.AwaitingApproval))
-                    return completed + " · 等待批准";
+                    return completed + LocalizedText.Get(" · 等待批准");
 
                 var hardFailureCount = Entries.Count(entry => entry.State
                     is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut);
                 if (hardFailureCount == 0)
                 {
                     if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Denied))
-                        return completed + " · 未批准";
+                        return completed + LocalizedText.Get(" · 未批准");
                     if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Cancelled))
-                        return completed + " · 已取消";
+                        return completed + LocalizedText.Get(" · 已取消");
                     if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Interrupted))
-                        return completed + " · 已中断";
+                        return completed + LocalizedText.Get(" · 已中断");
                 }
 
                 return hardFailureCount switch
                 {
-                    0 => HasPartialResult ? completed + " · 结果不完整" : completed,
-                    _ when hardFailureCount == Entries.Count => completed + " · 失败",
-                    _ => completed + " · 部分失败",
+                    0 => HasPartialResult ? completed + LocalizedText.Get(" · 结果不完整") : completed,
+                    _ when hardFailureCount == Entries.Count => completed + LocalizedText.Get(" · 失败"),
+                    _ => completed + LocalizedText.Get(" · 部分失败"),
                 };
             }
         }
@@ -132,8 +133,8 @@ namespace ColorVision.Copilot
         {
             const string runningPrefix = "正在";
             return runningLabel.StartsWith(runningPrefix, StringComparison.Ordinal)
-                ? "等待" + runningLabel[runningPrefix.Length..]
-                : "等待运行";
+                ? LocalizedText.Get("等待") + runningLabel[runningPrefix.Length..]
+                : LocalizedText.Get("等待运行");
         }
 
         private static string GetCategory(string toolName)

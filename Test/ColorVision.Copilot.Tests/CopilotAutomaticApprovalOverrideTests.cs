@@ -1,8 +1,5 @@
-using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
-using System;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.Copilot.Tests;
 

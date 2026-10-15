@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 
 namespace ColorVision.Copilot
@@ -94,14 +95,14 @@ namespace ColorVision.Copilot
             return policy.Mode switch
             {
                 CopilotCodexApprovalPolicyMode.Untrusted =>
-                    "只读工具可直接运行；所有写工具和原生受保护工具均升级为逐调用审批",
+                    LocalizedText.Get("只读工具可直接运行；所有写工具和原生受保护工具均升级为逐调用审批"),
                 CopilotCodexApprovalPolicyMode.OnRequest =>
-                    "保留 ColorVision 原生逐调用审批、临时授权与自动审查边界",
+                    LocalizedText.Get("保留 ColorVision 原生逐调用审批、临时授权与自动审查边界"),
                 CopilotCodexApprovalPolicyMode.Never =>
-                    "不创建新审批提示；需要新审批的调用会自动拒绝，现有沙箱与本机权限不会扩大",
+                    LocalizedText.Get("不创建新审批提示；需要新审批的调用会自动拒绝，现有沙箱与本机权限不会扩大"),
                 CopilotCodexApprovalPolicyMode.Granular =>
-                    $"按工具能力类别执行 granular 审批；交互类别：{GetGranularCategoryList(policy, enabled: true)}；自动拒绝：{GetGranularCategoryList(policy, enabled: false)}",
-                _ => "未配置；保留 ColorVision 原生审批策略",
+                    LocalizedText.Format($"按工具能力类别执行 granular 审批；交互类别：{GetGranularCategoryList(policy, enabled: true)}；自动拒绝：{GetGranularCategoryList(policy, enabled: false)}"),
+                _ => LocalizedText.Get("未配置；保留 ColorVision 原生审批策略"),
             };
         }
 

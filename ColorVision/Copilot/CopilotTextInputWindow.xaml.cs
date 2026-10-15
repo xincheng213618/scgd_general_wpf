@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Themes;
 using System;
 using System.Windows;
@@ -39,7 +40,7 @@ namespace ColorVision.Copilot
             if (isReadOnly)
             {
                 CancelButton.Visibility = Visibility.Collapsed;
-                OkButton.Content = "关闭";
+                OkButton.Content = LocalizedText.Get("关闭");
             }
             else if (_maximumLength > 0)
             {

@@ -1,20 +1,9 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CS4014,CS8602,CS8604
-using ColorVision.Common.MVVM;
-using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
-using ColorVision.UI;
-using ColorVision.UI.Extension;
-using ColorVision.UI.Menus;
-using log4net;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Threading;
 
 namespace ColorVision.Solution.Explorer
 {
@@ -46,7 +35,7 @@ namespace ColorVision.Solution.Explorer
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
                         SolutionPhysicalItemOperations.BuildFailureMessage(createResult),
-                        "新建项失败",
+                        LocalizedText.Get("新建项失败"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     return;
@@ -65,7 +54,7 @@ namespace ColorVision.Solution.Explorer
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
                         $"{errorMessage}{Environment.NewLine}{Environment.NewLine}{rollbackMessage}",
-                        "添加解决方案项失败",
+                        LocalizedText.Get("添加解决方案项失败"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     foreach (string path in createResult.SuccessfulPaths)
@@ -97,7 +86,7 @@ namespace ColorVision.Solution.Explorer
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = "添加现有项",
+                Title = LocalizedText.Get("添加现有项"),
                 Filter = "所有文件 (*.*)|*.*",
                 Multiselect = true
             };
@@ -135,7 +124,7 @@ namespace ColorVision.Solution.Explorer
                     MessageBox.Show(
                         Application.Current?.GetActiveWindow(),
                         errorMessage,
-                        "创建项目失败",
+                        LocalizedText.Get("创建项目失败"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     return;
@@ -145,8 +134,8 @@ namespace ColorVision.Solution.Explorer
                 {
                     MessageBox.Show(
                         Application.Current?.GetActiveWindow(),
-                        $"项目已创建在“{projectDirectory.FullName}”，但未能添加到当前解决方案。",
-                        "添加项目失败",
+                        LocalizedText.Format($"项目已创建在“{projectDirectory.FullName}”，但未能添加到当前解决方案。"),
+                        LocalizedText.Get("添加项目失败"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                 }
@@ -158,7 +147,7 @@ namespace ColorVision.Solution.Explorer
             string projectPatterns = ProjectProviderRegistry.GetProjectFileDialogPattern();
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = "添加现有项目",
+                Title = LocalizedText.Get("添加现有项目"),
                 Filter = $"项目文件 ({projectPatterns})|{projectPatterns}|所有文件 (*.*)|*.*"
             };
             if (dialog.ShowDialog() == true)
@@ -292,7 +281,7 @@ namespace ColorVision.Solution.Explorer
 
             MessageBox.Show(
                 Application.Current?.GetActiveWindow(),
-                "启动项目无法执行该命令，请检查启动项目和项目命令配置。",
+                LocalizedText.Get("启动项目无法执行该命令，请检查启动项目和项目命令配置。"),
                 "ColorVision",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);

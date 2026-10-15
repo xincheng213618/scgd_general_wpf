@@ -12,6 +12,9 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Database
@@ -114,54 +117,34 @@ namespace ColorVision.Database
             return string.IsNullOrWhiteSpace(sugarColumn?.ColumnName) ? property.Name : sugarColumn.ColumnName;
         }
 
-        public static FrameworkElement CreateConditionRow(QueryCondition condition, RoutedEventHandler removeHandler)
+        public static FrameworkElement CreateConditionRow(QueryCondition condition,
+            IEnumerable<KeyValuePair<string, PropertyInfo>> properties, RoutedEventHandler removeHandler)
         {
-            var displayName = GetDisplayName(condition.Property);
-            var columnName = GetColumnName(condition.Property);
-
             var rowBorder = new Border
             {
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(10, 8, 10, 8),
-                Margin = new Thickness(0, 0, 0, 8)
+                Padding = new Thickness(8),
+                Margin = new Thickness(0, 0, 0, 6)
             };
             rowBorder.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
             rowBorder.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
 
             var rowGrid = new Grid();
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(170) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(210) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(115) });
             rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
             rowGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             rowGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            var fieldLabel = new TextBlock
-            {
-                Text = displayName,
-                VerticalAlignment = VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(0, 0, 12, 0),
-                ToolTip = string.Equals(displayName, columnName, StringComparison.Ordinal) ? null : columnName
-            };
-            fieldLabel.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-            Grid.SetColumn(fieldLabel, 0);
-            rowGrid.Children.Add(fieldLabel);
-
-            var operators = GetOperatorOptions(condition.Property.PropertyType);
-            if (!condition.HasSavedState || !operators.Any(option => option.Value == condition.Operator))
-                condition.Operator = operators[0].Value;
             var operatorComboBox = new ComboBox
             {
-                ItemsSource = operators,
                 DisplayMemberPath = nameof(QueryOperatorOption.DisplayName),
                 SelectedValuePath = nameof(QueryOperatorOption.Value),
-                SelectedValue = condition.Operator,
                 MinHeight = 30,
-                Margin = new Thickness(0, 0, 10, 0)
+                Margin = new Thickness(0, 0, 8, 0)
             };
-            AutomationProperties.SetName(operatorComboBox, string.Format(Resources.DB_FilterOperatorAutomationName, displayName));
             operatorComboBox.SelectionChanged += (_, _) =>
             {
                 if (operatorComboBox.SelectedValue is QueryOperator selectedOperator)
@@ -170,10 +153,9 @@ namespace ColorVision.Database
             Grid.SetColumn(operatorComboBox, 1);
             rowGrid.Children.Add(operatorComboBox);
 
-            var valueEditor = CreateValueEditor(condition, displayName);
-            condition.ValueEditor = valueEditor;
-            Grid.SetColumn(valueEditor, 2);
-            rowGrid.Children.Add(valueEditor);
+            var valueHost = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch, IsTabStop = false };
+            Grid.SetColumn(valueHost, 2);
+            rowGrid.Children.Add(valueHost);
 
             var removeButton = new Button
             {
@@ -185,7 +167,6 @@ namespace ColorVision.Database
                 ToolTip = Resources.DB_RemoveCondition,
                 Tag = condition
             };
-            AutomationProperties.SetName(removeButton, string.Format(Resources.DB_RemoveNamedCondition, displayName));
             removeButton.Click += removeHandler;
             Grid.SetColumn(removeButton, 3);
             rowGrid.Children.Add(removeButton);
@@ -200,13 +181,158 @@ namespace ColorVision.Database
             AutomationProperties.SetLiveSetting(errorText, AutomationLiveSetting.Assertive);
             condition.ErrorText = errorText;
             Grid.SetRow(errorText, 1);
-            Grid.SetColumn(errorText, 2);
-            Grid.SetColumnSpan(errorText, 2);
+            Grid.SetColumnSpan(errorText, 4);
             rowGrid.Children.Add(errorText);
+
+            void RefreshEditors()
+            {
+                string displayName = condition.Property == null ? Resources.DB_SelectFilterField : GetDisplayName(condition.Property);
+                var operators = condition.Property == null ? [] : GetOperatorOptions(condition.Property.PropertyType);
+                // Capture the operator before replacing ItemsSource, which raises SelectionChanged.
+                QueryOperator selectedOperator = condition.HasSavedState && operators.Any(option => option.Value == condition.Operator)
+                    ? condition.Operator : operators.FirstOrDefault()?.Value ?? QueryOperator.Equal;
+                operatorComboBox.ItemsSource = operators;
+                operatorComboBox.SelectedValue = selectedOperator;
+                operatorComboBox.IsEnabled = condition.Property != null;
+                AutomationProperties.SetName(operatorComboBox, string.Format(Resources.DB_FilterOperatorAutomationName, displayName));
+                AutomationProperties.SetName(removeButton, string.Format(Resources.DB_RemoveNamedCondition, displayName));
+                condition.ValueEditor = condition.Property == null ? new TextBox { MinHeight = 30, IsEnabled = false } : CreateValueEditor(condition, displayName);
+                valueHost.Content = condition.ValueEditor;
+            }
+
+            RefreshEditors();
+            var fieldEditor = CreateFieldEditor(condition, properties, () =>
+            {
+                ClearError(condition);
+                RefreshEditors();
+            });
+            condition.FieldEditor = fieldEditor;
+            var fieldHost = new Grid();
+            fieldHost.Children.Add(fieldEditor);
+            var fieldHint = new TextBlock
+            {
+                Text = Resources.DB_SelectFilterField,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 0, 30, 0),
+                Opacity = 0.6,
+                IsHitTestVisible = false,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Visibility = string.IsNullOrEmpty(fieldEditor.Text) ? Visibility.Visible : Visibility.Collapsed
+            };
+            fieldHint.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            fieldEditor.AddHandler(TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, _) =>
+                fieldHint.Visibility = string.IsNullOrEmpty(fieldEditor.Text) ? Visibility.Visible : Visibility.Collapsed));
+            fieldHost.Children.Add(fieldHint);
+            rowGrid.Children.Insert(0, fieldHost);
 
             rowBorder.Child = rowGrid;
             condition.UiRow = rowBorder;
             return rowBorder;
+        }
+
+        private static ComboBox CreateFieldEditor(QueryCondition condition,
+            IEnumerable<KeyValuePair<string, PropertyInfo>> properties, Action fieldChanged)
+        {
+            // Each row owns its view: searching one row must not filter other rows.
+            var options = properties.Select(item => new KeyValuePair<string, PropertyInfo>(
+                item.Key == item.Value.Name ? item.Key : $"{item.Key} ({item.Value.Name})", item.Value)).ToList();
+            var view = new ListCollectionView(options);
+            var comboBox = new ComboBox
+            {
+                ItemsSource = view,
+                DisplayMemberPath = "Key",
+                SelectedValuePath = "Value",
+                SelectedValue = condition.Property,
+                IsSynchronizedWithCurrentItem = false,
+                IsEditable = true,
+                IsTextSearchEnabled = false,
+                StaysOpenOnEdit = true,
+                MinHeight = 30,
+                MaxDropDownHeight = 300,
+                Margin = new Thickness(0, 0, 8, 0),
+                ToolTip = Resources.DB_SearchFilterField
+            };
+            AutomationProperties.SetName(comboBox, Resources.DB_SelectFilterField);
+            AutomationProperties.SetHelpText(comboBox, Resources.DB_SearchFilterField);
+            bool updating = false;
+
+            void ChangeField(PropertyInfo? property)
+            {
+                if (condition.Property == property)
+                    return;
+                condition.Property = property;
+                condition.InputText = null;
+                condition.Value = null;
+                condition.HasSavedState = false;
+                fieldChanged();
+            }
+
+            comboBox.SelectionChanged += (_, _) =>
+            {
+                if (updating || comboBox.SelectedValue is not PropertyInfo property)
+                    return;
+                condition.FieldInputText = string.Empty;
+                ChangeField(property);
+                comboBox.ToolTip = GetColumnName(property);
+            };
+            comboBox.AddHandler(TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, e) =>
+            {
+                if (updating || e.OriginalSource is not TextBox textBox)
+                    return;
+                string search = textBox.Text;
+                if (comboBox.SelectedItem is KeyValuePair<string, PropertyInfo> selected && search == selected.Key)
+                    return;
+
+                updating = true;
+                try
+                {
+                    int caret = textBox.CaretIndex;
+                    comboBox.SelectedIndex = -1;
+                    ChangeField(null);
+                    condition.FieldInputText = search;
+                    view.Filter = item => item is KeyValuePair<string, PropertyInfo> option
+                        && MatchesField(option, search);
+                    comboBox.Text = search;
+                    textBox.CaretIndex = Math.Min(caret, search.Length);
+                    if (comboBox.IsLoaded && comboBox.IsKeyboardFocusWithin)
+                        comboBox.IsDropDownOpen = true;
+                }
+                finally { updating = false; }
+            }));
+            comboBox.DropDownOpened += (_, _) =>
+            {
+                if (condition.Property != null)
+                    view.Filter = null;
+            };
+            comboBox.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    if (condition.Property == null && view.Count == 1)
+                        comboBox.SelectedIndex = 0;
+                    if (condition.Property != null)
+                    {
+                        comboBox.IsDropDownOpen = false;
+                        condition.ValueEditor?.Focus();
+                    }
+                    // Field selection must not also trigger the window's default Query button.
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape && comboBox.IsDropDownOpen)
+                {
+                    comboBox.IsDropDownOpen = false;
+                    e.Handled = true;
+                }
+            };
+            return comboBox;
+        }
+
+        internal static bool MatchesField(KeyValuePair<string, PropertyInfo> field, string search)
+        {
+            search = search.Trim();
+            return field.Key.Contains(search, StringComparison.CurrentCultureIgnoreCase)
+                || field.Value.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || GetColumnName(field.Value).Contains(search, StringComparison.OrdinalIgnoreCase);
         }
 
         public static ISugarQueryable<T> ApplyConditions<T>(ISugarQueryable<T> query, IEnumerable<QueryCondition> conditions)
@@ -215,6 +341,13 @@ namespace ColorVision.Database
             foreach (var condition in conditions)
             {
                 ClearError(condition);
+                if (condition.Property == null)
+                {
+                    if (string.IsNullOrWhiteSpace(condition.FieldInputText))
+                        continue;
+                    SetError(condition, Resources.DB_SelectFilterField);
+                    throw new FormatException(Resources.DB_SelectFilterField);
+                }
                 if (!HasConditionValue(condition))
                     continue;
 
@@ -240,6 +373,8 @@ namespace ColorVision.Database
 
         internal static bool HasConditionValue(QueryCondition condition)
         {
+            if (condition.Property == null)
+                return false;
             var propertyType = Nullable.GetUnderlyingType(condition.Property.PropertyType) ?? condition.Property.PropertyType;
             return propertyType.IsEnum || propertyType == typeof(bool) || propertyType == typeof(DateTime)
                 ? condition.Value != null
@@ -248,6 +383,12 @@ namespace ColorVision.Database
 
         internal static bool TryGetConditionValue(QueryCondition condition, out object? value, out string error)
         {
+            if (condition.Property == null)
+            {
+                value = null;
+                error = Resources.DB_SelectFilterField;
+                return false;
+            }
             var propertyType = Nullable.GetUnderlyingType(condition.Property.PropertyType) ?? condition.Property.PropertyType;
             var displayName = GetDisplayName(condition.Property);
 
@@ -302,7 +443,7 @@ namespace ColorVision.Database
 
         private static Control CreateValueEditor(QueryCondition condition, string displayName)
         {
-            var propertyType = Nullable.GetUnderlyingType(condition.Property.PropertyType) ?? condition.Property.PropertyType;
+            var propertyType = Nullable.GetUnderlyingType(condition.Property!.PropertyType) ?? condition.Property.PropertyType;
             if (propertyType.IsEnum)
             {
                 var values = Enum.GetValues(propertyType)
@@ -446,7 +587,7 @@ namespace ColorVision.Database
                 condition.ErrorText.Visibility = Visibility.Visible;
             }
 
-            condition.ValueEditor?.Focus();
+            (condition.Property == null ? condition.FieldEditor : condition.ValueEditor)?.Focus();
         }
 
         private static void ClearError(QueryCondition condition)

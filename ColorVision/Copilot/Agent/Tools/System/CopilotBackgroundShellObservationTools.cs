@@ -1,10 +1,8 @@
 using ColorVision.Copilot.Mcp;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -278,15 +276,45 @@ namespace ColorVision.Copilot
 
             var snapshot = result.Snapshot;
             var page = result.Page;
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = BuildPageSummary(snapshot, stream, page),
+                Content = BuildPageContent(snapshot, stream, page),
+                BackgroundShellOutputArchiveRead = result,
+                BackgroundShellCommands =
+                [
+                    CopilotBackgroundShellCommandEvidence.FromSnapshot(snapshot),
+                ],
+            });
+        }
+
+        internal static string BuildPageSummary(
+            CopilotBackgroundShellCommandSnapshot snapshot,
+            CopilotBackgroundShellOutputStream stream,
+            CopilotRedactedOutputArchivePage page)
+        {
             var streamLabel =
                 stream == CopilotBackgroundShellOutputStream.StandardError
                     ? "stderr"
                     : "stdout";
-            var content = CopilotMcpAuditLogger.RedactText(page.Content);
-            var formatted = new StringBuilder()
+            return $"Read {page.ReturnedCharacters} archived {streamLabel} character(s) from background command {snapshot.Id}; "
+                + (page.EndOfAvailableOutput
+                    ? snapshot.IsActive
+                        ? "reached the currently available end while the command remains active."
+                        : "reached the archive end."
+                    : "more archived output is available.");
+        }
+
+        internal static string BuildPageContent(
+            CopilotBackgroundShellCommandSnapshot snapshot,
+            CopilotBackgroundShellOutputStream stream,
+            CopilotRedactedOutputArchivePage page) =>
+            new StringBuilder()
                 .AppendLine("[Background Shell Output Archive]")
                 .Append("background_id: ").AppendLine(snapshot.Id)
-                .Append("stream: ").AppendLine(streamLabel)
+                .Append("stream: ").AppendLine(stream == CopilotBackgroundShellOutputStream.StandardError ? "stderr" : "stdout")
                 .Append("state: ")
                 .AppendLine(snapshot.State.ToString().ToLowerInvariant())
                 .Append("offset_characters: ")
@@ -304,26 +332,8 @@ namespace ColorVision.Copilot
                 .Append("command_active: ")
                 .AppendLine(snapshot.IsActive ? "true" : "false")
                 .AppendLine("content:")
-                .Append(content.Length == 0 ? "<empty>" : content)
+                .Append(page.Content.Length == 0 ? "<empty>" : page.Content)
                 .ToString();
-            return Task.FromResult(new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = true,
-                Summary =
-                    $"Read {page.ReturnedCharacters} archived {streamLabel} character(s) from background command {snapshot.Id}; "
-                    + (page.EndOfAvailableOutput
-                        ? snapshot.IsActive
-                            ? "reached the currently available end while the command remains active."
-                            : "reached the archive end."
-                        : "more archived output is available."),
-                Content = formatted,
-                BackgroundShellCommands =
-                [
-                    CopilotBackgroundShellCommandEvidence.FromSnapshot(snapshot),
-                ],
-            });
-        }
 
         private static bool TryReadStream(
             CopilotAgentToolInput input,

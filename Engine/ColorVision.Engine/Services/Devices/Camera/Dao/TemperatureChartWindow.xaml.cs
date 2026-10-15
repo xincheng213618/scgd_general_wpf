@@ -25,6 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
         {
             this.data = data;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
         public List<CameraTempModel> data { get; set; } = new List<CameraTempModel>();
         private Scatter? _temperatureScatter;

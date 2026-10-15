@@ -16,18 +16,24 @@ namespace ColorVision.Engine.Templates
         public virtual void Load() { }
     }
 
+    public interface IAsyncTemplateLoad : IITemplateLoad
+    {
+        Task LoadAsync();
+    }
+
     /// <summary>
     /// 对模板进行初始化
     /// </summary>
-    public class TemplateInitializer : InitializerBase
+    public class TemplateInitializer : InitializerBase, IInitializerDependencies
     {
         public override int Order => 4;
 
         public override string Name => nameof(TemplateInitializer);
+        public IReadOnlyCollection<string> Dependencies => [nameof(MySqlInitializer), "SolutionManagerInitializer", nameof(Services.RC.RCInitializer)];
 
         public override async Task InitializeAsync()
         {
-            Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
+            await Application.Current.Dispatcher.InvokeAsync(TemplateControl.InitializeForStartupAsync).Task.Unwrap();
         }
     }
 
@@ -44,19 +50,67 @@ namespace ColorVision.Engine.Templates
         private static readonly object _locker = new();
         public static TemplateControl GetInstance() { lock (_locker) { return _instance ??= new TemplateControl(); } }
 
-        public TemplateControl()
+        private Task? reloadTask;
+        private bool reloadRequested;
+
+        public TemplateControl() : this(initialize: true) { }
+
+        private TemplateControl(bool initialize)
         {
-            Init();
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
-                Application.Current.Dispatcher.Invoke(Init);
+            if (initialize)
+                InitializeTemplatesAsync(cooperative: false).GetAwaiter().GetResult();
+            MySqlControl.GetInstance().MySqlConnectChanged += (_, _) =>
+            {
+                // Runtime reconnect consumers depend on template publication completing
+                // before the subsequent service-hierarchy event handlers run.
+                if (reloadTask is { IsCompleted: false }) reloadRequested = true;
+                else InitializeTemplatesAsync(cooperative: false).GetAwaiter().GetResult();
+            };
         }
 
-        private static void Init()
+        internal static Task InitializeForStartupAsync()
+        {
+            Application.Current.Dispatcher.VerifyAccess();
+            lock (_locker)
+            {
+                if (_instance != null)
+                    return _instance.reloadTask ?? Task.CompletedTask;
+                _instance = new TemplateControl(initialize: false);
+            }
+            return _instance.ReloadAsync();
+        }
+
+        private Task ReloadAsync()
+        {
+            Application.Current.Dispatcher.VerifyAccess();
+            if (reloadTask is { IsCompleted: false })
+            {
+                reloadRequested = true;
+                return reloadTask;
+            }
+            return reloadTask = ReloadCoreAsync();
+        }
+
+        private async Task ReloadCoreAsync()
+        {
+            do
+            {
+                reloadRequested = false;
+                await InitializeTemplatesAsync(cooperative: true);
+            } while (reloadRequested);
+        }
+
+        private static async Task InitializeTemplatesAsync(bool cooperative)
         {
             if (!MySqlControl.GetInstance().IsConnect)
             {
                 // Only initialize owners with local persistence; legacy template loaders still require MySQL.
-                try { new Flow.TemplateFlow().Load(); }
+                try
+                {
+                    var flow = new Flow.TemplateFlow();
+                    if (cooperative) await flow.LoadAsync();
+                    else flow.Load();
+                }
                 catch (Exception ex) { log.Error("Local flow template initialization failed.", ex); }
                 return;
             }
@@ -65,12 +119,21 @@ namespace ColorVision.Engine.Templates
             List<IITemplateLoad> templateLoaders = AssemblyHandler.GetInstance().LoadImplementations<IITemplateLoad>();
             long discoveryMilliseconds = phaseStopwatch.ElapsedMilliseconds;
             List<(string Name, long Milliseconds)> loaderTimings = new(templateLoaders.Count);
+            Stopwatch sliceStopwatch = Stopwatch.StartNew();
             foreach (var templateLoader in templateLoaders)
             {
+                if (cooperative && sliceStopwatch.ElapsedMilliseconds >= 32)
+                {
+                    await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+                    sliceStopwatch.Restart();
+                }
                 phaseStopwatch.Restart();
                 try
                 {
-                    templateLoader.Load();
+                    if (cooperative && templateLoader is IAsyncTemplateLoad asyncLoader)
+                        await asyncLoader.LoadAsync();
+                    else
+                        templateLoader.Load();
                 }
                 catch (Exception ex)
                 {

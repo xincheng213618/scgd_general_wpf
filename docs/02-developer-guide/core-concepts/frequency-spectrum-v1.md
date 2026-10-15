@@ -5,7 +5,7 @@ status: "current"
 summary: "FrequencySpectrum 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["如何读取 FFT 频谱、为什么 FFT 默认不可执行","FrequencySpectrum","FrequencySpectrumAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/FrequencySpectrumAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FrequencySpectrumV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -71,7 +71,6 @@ Runner 在成功、结构化失败、异常和取消后释放 `Transferred` 输�
 
 ## 验证与性能预算
 
-`FrequencySpectrumV1Tests` 覆盖 Catalog/alias/schema/default/JSON、参数验证、常量定量 golden、中心化、固定正弦主频/周期/方向、四窗逆变换容差、九种格式只读、NaN/像素上限/ROI 结构化失败、成功/失败/取消所有权、Batch/Flow 一致性、WPF 结果窗口释放和不覆盖导出。
 
 可选 `FrequencySpectrumPipelineProbe` 在 4K Gray16、4K Bgra32 与 8K Gray16 上记录延迟、managed allocation、private-memory delta 和两张显示图的 retained bytes。实现只保留两张 Gray8 显示图；单通道 float spatial、双通道 complex spectrum 与 inverse Mat 都是执行期 native 工作集，结果中不复制整幅 float magnitude/power。管理分配预算是两张结果图加 64 MiB，private 工作集预算是 32 bytes/pixel 加 256 MiB，单次上限 120 秒。该预算是回归门禁，不是所有硬件的实时承诺。
 

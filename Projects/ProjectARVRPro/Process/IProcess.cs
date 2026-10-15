@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
 using System.Windows.Documents;
 using System.Windows.Media;
 

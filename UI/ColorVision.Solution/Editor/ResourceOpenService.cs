@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using System.IO;
 using System.Windows;
 using ColorVision.UI;
@@ -403,7 +404,7 @@ namespace ColorVision.Solution.Editor
             {
                 MessageBox.Show(
                     result.ErrorMessage,
-                    "无法打开资源",
+                    LocalizedText.Get("无法打开资源"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -412,7 +413,7 @@ namespace ColorVision.Solution.Editor
             MessageBox.Show(
                 actualOwner,
                 result.ErrorMessage,
-                "无法打开资源",
+                LocalizedText.Get("无法打开资源"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -449,8 +450,8 @@ namespace ColorVision.Solution.Editor
 
             MessageBox.Show(
                 owner ?? Application.Current?.GetActiveWindow(),
-                $"已打开 {result.SuccessfulPaths.Count}/{result.RequestedCount} 项。{Environment.NewLine}{Environment.NewLine}{details}",
-                "部分文件未能打开",
+                LocalizedText.Format($"已打开 {result.SuccessfulPaths.Count}/{result.RequestedCount} 项。{Environment.NewLine}{Environment.NewLine}{details}"),
+                LocalizedText.Get("部分文件未能打开"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }

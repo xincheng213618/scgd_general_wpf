@@ -12,12 +12,17 @@ namespace ColorVision.UI.Desktop.Diagnostics
         public CrashDumpSettingsControl()
         {
             InitializeComponent();
+            OperationsTitle.Text = CrashDumpText.Get("系统操作");
+            OperationsDescription.Text = CrashDumpText.Get("普通用户模式下，应用和清除操作通过 ColorVision Service Host 写入 HKLM；管理员模式可直接写入。手动保存仅写入上方目录。");
+            ApplyButton.Content = CrashDumpText.Get("应用系统设置");
+            ClearButton.Content = CrashDumpText.Get("清除系统设置");
+            SaveDumpButton.Content = CrashDumpText.Get("保存当前进程 Dump");
             _configuration.Reload();
 
             string privilege = Tool.IsAdministrator()
-                ? "当前为管理员模式，系统设置可直接写入。"
-                : "当前为普通用户模式，系统设置将由 ColorVision Service Host 代为写入。";
-            SetStatus($"当前目标：{_configuration.ProcessExecutableName}。{privilege}");
+                ? CrashDumpText.Get("当前为管理员模式，系统设置可直接写入。")
+                : CrashDumpText.Get("当前为普通用户模式，系统设置将由 ColorVision Service Host 代为写入。");
+            SetStatus(CrashDumpText.Format("当前目标：{0}。{1}", _configuration.ProcessExecutableName, privilege));
         }
 
         private async void ApplyButton_Click(object sender, RoutedEventArgs e)
@@ -25,13 +30,13 @@ namespace ColorVision.UI.Desktop.Diagnostics
             SetBusy(true);
             try
             {
-                SetStatus(Tool.IsAdministrator() ? "正在应用系统设置……" : "正在通过后台特权服务应用系统设置……");
+                SetStatus(Tool.IsAdministrator() ? CrashDumpText.Get("正在应用系统设置……") : CrashDumpText.Get("正在通过后台特权服务应用系统设置……"));
                 await _configuration.ApplyAsync();
-                SetStatus($"已应用 Windows Error Reporting 设置：{_configuration.RegistryKeyPath}", isSuccess: true);
+                SetStatus(CrashDumpText.Format("已应用 Windows Error Reporting 设置：{0}", _configuration.RegistryKeyPath), isSuccess: true);
             }
             catch (Exception ex)
             {
-                SetStatus($"应用失败：{ex.Message}", isError: true);
+                SetStatus(CrashDumpText.Format("应用失败：{0}", ex.Message), isError: true);
             }
             finally
             {
@@ -43,8 +48,8 @@ namespace ColorVision.UI.Desktop.Diagnostics
         {
             MessageBoxResult result = MessageBox.Show(
                 Window.GetWindow(this),
-                $"确定清除 {_configuration.ProcessExecutableName} 的 Windows Error Reporting 转储设置吗？",
-                "清除崩溃转储设置",
+                CrashDumpText.Format("确定清除 {0} 的 Windows Error Reporting 转储设置吗？", _configuration.ProcessExecutableName),
+                CrashDumpText.Get("清除崩溃转储设置"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes) return;
@@ -52,13 +57,13 @@ namespace ColorVision.UI.Desktop.Diagnostics
             SetBusy(true);
             try
             {
-                SetStatus(Tool.IsAdministrator() ? "正在清除系统设置……" : "正在通过后台特权服务清除系统设置……");
+                SetStatus(Tool.IsAdministrator() ? CrashDumpText.Get("正在清除系统设置……") : CrashDumpText.Get("正在通过后台特权服务清除系统设置……"));
                 await _configuration.ClearAsync();
-                SetStatus("已清除当前程序的专用转储设置；界面已回到系统默认值。", isSuccess: true);
+                SetStatus(CrashDumpText.Get("已清除当前程序的专用转储设置；界面已回到系统默认值。"), isSuccess: true);
             }
             catch (Exception ex)
             {
-                SetStatus($"清除失败：{ex.Message}", isError: true);
+                SetStatus(CrashDumpText.Format("清除失败：{0}", ex.Message), isError: true);
             }
             finally
             {
@@ -71,13 +76,13 @@ namespace ColorVision.UI.Desktop.Diagnostics
             SetBusy(true);
             try
             {
-                SetStatus("正在保存当前进程 Dump，请稍候……");
+                SetStatus(CrashDumpText.Get("正在保存当前进程 Dump，请稍候……"));
                 string filePath = await Task.Run(_configuration.SaveCurrentProcessDump);
-                SetStatus($"Dump 已保存：{filePath}", isSuccess: true);
+                SetStatus(CrashDumpText.Format("Dump 已保存：{0}", filePath), isSuccess: true);
             }
             catch (Exception ex)
             {
-                SetStatus($"保存失败：{ex.Message}", isError: true);
+                SetStatus(CrashDumpText.Format("保存失败：{0}", ex.Message), isError: true);
             }
             finally
             {

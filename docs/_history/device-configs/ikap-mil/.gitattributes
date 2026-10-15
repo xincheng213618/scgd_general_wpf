@@ -1,0 +1,4 @@
+# Preserve archived device profiles byte-for-byte across checkouts.
+*.vlcf binary
+*.dcf binary
+*.ini binary

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -195,11 +196,6 @@ namespace ColorVision.UI
 
             _progressHost.Show();
             _progressHost.UpdateProgress(0, _runningText);
-            if (_progressHost.IsHosted)
-            {
-                _button.Visibility = Visibility.Hidden;
-            }
-
             _stopwatch.Restart();
             _timer.Start();
             return new TimedButtonOperationScope(this);
@@ -214,7 +210,6 @@ namespace ColorVision.UI
 
             _timer.Stop();
             _stopwatch.Stop();
-            _button.Visibility = Visibility.Visible;
             _progressHost.Remove();
 
             if (_options.DisableButtonWhileRunning)
@@ -1089,7 +1084,7 @@ namespace ColorVision.UI
             {
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(2),
-                Opacity = 0.98,
+                Opacity = 1,
                 SnapsToDevicePixels = true,
                 UseLayoutRounding = true
             };
@@ -1206,6 +1201,8 @@ namespace ColorVision.UI
             }
 
             CopyLayoutProperties(_button, _host);
+            // Visibility belongs to the screen, including changes during an operation.
+            _host.SetBinding(UIElement.VisibilityProperty, new Binding(nameof(UIElement.Visibility)) { Source = _button, Mode = BindingMode.OneWay });
             PrepareButtonForHost(_button);
 
             switch (_button.Parent)

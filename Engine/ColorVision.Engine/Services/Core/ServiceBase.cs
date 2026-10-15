@@ -1,6 +1,3 @@
-using ColorVision.Database;
-using SqlSugar;
-
 namespace ColorVision.Engine.Services
 {
     public class ServiceFileBase : ServiceBase

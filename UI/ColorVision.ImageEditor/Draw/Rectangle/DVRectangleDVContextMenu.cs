@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 #pragma warning disable CS8625,CS8602,CS8604,CS8600,CS0103,CS0067
 using Microsoft.Win32;
 using System;
@@ -27,12 +28,12 @@ namespace ColorVision.ImageEditor.Draw
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            var cropSave = new MenuItem { Header = "裁剪并另存..." };
+            var cropSave = new MenuItem { Header = LocalizedText.Get("裁剪并另存...") };
             cropSave.Click += (s, e) =>
             {
                 if (!TryGetCropBitmap(_drawCanvas, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
-                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -46,42 +47,42 @@ namespace ColorVision.ImageEditor.Draw
                     try
                     {
                         EncodeAndSave(cropped, dlg.FileName);
-                        MessageBox.Show("保存成功", "裁剪", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(LocalizedText.Get("保存成功"), LocalizedText.Get("裁剪"), MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"保存失败: {ex.Message}", "裁剪", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(LocalizedText.Format($"保存失败: {ex.Message}"), LocalizedText.Get("裁剪"), MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             };
             menuItems.Add(cropSave);
 
-            var cropClipboard = new MenuItem { Header = "裁剪复制到剪贴板" };
+            var cropClipboard = new MenuItem { Header = LocalizedText.Get("裁剪复制到剪贴板") };
             cropClipboard.Click += (s, e) =>
             {
                 if (!TryGetCropBitmap(_drawCanvas, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
-                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
                 try
                 {
                     Clipboard.SetImage(cropped);
-                    MessageBox.Show("已复制到剪贴板", "裁剪", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(LocalizedText.Get("已复制到剪贴板"), LocalizedText.Get("裁剪"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"复制失败: {ex.Message}", "裁剪", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(LocalizedText.Format($"复制失败: {ex.Message}"), LocalizedText.Get("裁剪"), MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             };
             menuItems.Add(cropClipboard);
 
-            var cropReplace = new MenuItem { Header = "裁剪并替换当前图像" };
+            var cropReplace = new MenuItem { Header = LocalizedText.Get("裁剪并替换当前图像") };
             cropReplace.Click += (s, e) =>
             {
                 if (!TryGetCropBitmap(_drawCanvas, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
-                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 - 2026-09-22
+
+- 同步 W255 `ColorCenterRmsToD65` 公开结果字段、样例和参数说明。
+
 ## 1.0.1 - 2026-09-18
 
 - 同步最新十字 RGB 分离公开结果模型，补充 `DynamicRgbCrossResults`、G 基准 `R-G` / `B-G` 对比及样例。

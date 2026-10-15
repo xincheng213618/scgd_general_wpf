@@ -1806,7 +1806,7 @@ samples are considered given in amount of A, where A = height, n = width * chann
 width = 1, height = A, where A is samples amount, or width = bestLabels.width,
 height = bestLabels.height if bestLabels given;
      - the cluster centers are returned as 1-channel GMat with sizes
- width = n, height = K, where n is samples' dimensionality and K is clusters' amount.
+width = n, height = K, where n is samples' dimensionality and K is clusters' amount.
  - As one of possible usages, if you want to control the initial labels for each attempt
 by yourself, you can utilize just the core of the function. To do that, set the number
 of attempts to 1, initialize labels each time using a custom algorithm, pass them with the

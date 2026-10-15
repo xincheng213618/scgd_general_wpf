@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
@@ -56,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons
             }
             else
             {
-                MessageBox.Show("无法重置，请检查数据库相关配置");
+                MessageBox.Show(LocalizedText.Get("无法重置，请检查数据库相关配置"));
             }
         }
 

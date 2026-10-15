@@ -12,6 +12,6 @@ public sealed class MenuNewUserGuide : MenuItemBase
     public override void Execute()
     {
         if (Application.Current?.MainWindow is MainWindow mainWindow)
-            mainWindow.ShowNewUserGuide();
+            mainWindow.ShowNewUserGuide(showWelcome: false);
     }
 }

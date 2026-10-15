@@ -40,7 +40,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string? StandardError { get; set; }
     }
 
-    [STNode("Flow_CustomNodes", "CommandLineScript_NodeName")]
+    [STNode("Flow_CustomNodes/Flow_OtherNodes", "CommandLineScript_NodeName", CategoryOrder = 9900)]
     public class CommandLineScriptNode : CVBaseServerNode
     {
         private const string LocalTopic = "LOCAL";

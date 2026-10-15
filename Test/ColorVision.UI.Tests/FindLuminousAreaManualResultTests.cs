@@ -1,5 +1,4 @@
 using ColorVision.Core;
-using ColorVision.ImageEditor;
 using ManualFindLuminousArea = ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousArea.FindLuminousArea;
 
 namespace ColorVision.UI.Tests;

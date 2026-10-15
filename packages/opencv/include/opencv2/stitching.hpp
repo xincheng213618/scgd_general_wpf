@@ -44,7 +44,7 @@
 #define OPENCV_STITCHING_STITCHER_HPP
 
 #include "opencv2/core.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/stitching/warpers.hpp"
 #include "opencv2/stitching/detail/matchers.hpp"
 #include "opencv2/stitching/detail/motion_estimators.hpp"
@@ -109,11 +109,11 @@ namespace cv {
 //! @addtogroup stitching
 //! @{
 
-/** @example samples/cpp/stitching.cpp
+/** @example samples/cpp/snippets/stitching.cpp
 A basic example on image stitching
 */
 
-/** @example samples/python/stitching.py
+/** @example samples/python/snippets/stitching.py
 A basic example on image stitching in Python.
 */
 
@@ -142,12 +142,7 @@ public:
      * When setting a resolution for stitching, this values is a placeholder
      * for preserving the original resolution.
      */
-#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900/*MSVS 2015*/)
     static constexpr double ORIG_RESOL = -1.0;
-#else
-    // support MSVS 2013
-    static const double ORIG_RESOL; // Initialized in stitcher.cpp
-#endif
 
     enum Status
     {

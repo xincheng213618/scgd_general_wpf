@@ -204,37 +204,25 @@ public sealed class GridDistortionTests
     }
 
     [Fact]
-    public void ResultWindowUsesAttachmentKeystoneAxesAndDoesNotDisplayFailureAsZero()
-    {
-        Assert.True(GridDistortionResultParser.TryParse(ValidJson().ToJsonString(), 1000, 800, out GridDistortionResult result, out _));
-        GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
-        IReadOnlyList<GridDistortionMetricRow> rows = GridDistortionResultWindow.BuildMetricRows(result, analysis);
-        Assert.Contains("左高 − 右高", rows.Single(row => row.Method == "对边均值 9 点" && row.Name == "Keystone Horizontal").Description);
-        Assert.Contains("上宽 − 下宽", rows.Single(row => row.Method == "对边均值 9 点" && row.Name == "Keystone Vertical").Description);
-        Assert.Contains("上宽 − 下宽", rows.Single(row => row.Method == "旧 P9 三跨度" && row.Name == "Keystone Horizontal").Description);
-        Assert.Contains("左高 − 右高", rows.Single(row => row.Method == "旧 P9 三跨度" && row.Name == "Keystone Vertical").Description);
-        Assert.Equal(2, rows.Count(row => row.Method == "标准 TV"));
-        Assert.Equal(2, rows.Count(row => row.Method == "半值 TV"));
-        Assert.Contains(rows, row => row.Description.Contains("非已标定镜头畸变"));
-        GridDistortionMetricRow failure = Assert.Single(GridDistortionResultWindow.BuildMetricRows(GridDistortionResult.CreateFailure("MissingPoints", "缺点"), null));
-        Assert.Equal("无有效指标", failure.Value);
-        Assert.DoesNotContain(rows, row => row.Name is "DIFF_H" or "DIFF_V");
-    }
-
-    [Fact]
     public void AnalysisExportIncludesAllConventionsAndPreservesNativeEnvelope()
     {
         Assert.True(GridDistortionResultParser.TryParse(ValidJson(7).ToJsonString(), 1000, 800, out GridDistortionResult result, out _));
         GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
         using JsonDocument document = JsonDocument.Parse(GridDistortionResultWindow.CreateAnalysisJson(result, analysis));
         JsonElement root = document.RootElement;
-        Assert.Equal("point-grid-metrics/1", root.GetProperty("formulaVersion").GetString());
+        Assert.Equal("point-grid-metrics/2", root.GetProperty("formulaVersion").GetString());
         Assert.Equal(49, root.GetProperty("nativeResult").GetProperty("selectedCount").GetInt32());
         JsonElement derived = root.GetProperty("analysis");
         Assert.True(derived.TryGetProperty("standardTv", out _));
         Assert.True(derived.TryGetProperty("halfTv", out _));
         Assert.True(derived.TryGetProperty("referencePoint9", out _));
         Assert.True(derived.TryGetProperty("legacyPoint9", out _));
+        JsonElement geometry = derived.GetProperty("geometry");
+        Assert.Equal(analysis.Geometry.MaximumTiltDegrees, geometry.GetProperty("maximumTiltDegrees").GetDouble());
+        Assert.Equal(analysis.Geometry.MaximumEdgeLengthDifferencePercent, geometry.GetProperty("maximumEdgeLengthDifferencePercent").GetDouble());
+        IReadOnlyList<GridDistortionMetricRow> rows = GridDistortionResultWindow.BuildMetricRows(result, analysis);
+        Assert.Equal("°", Assert.Single(rows, row => row.Name == "最大倾斜角").Unit);
+        Assert.Equal("%", Assert.Single(rows, row => row.Name == "最大边长差比例").Unit);
         Assert.False(derived.GetProperty("optical").GetProperty("isCalibrated").GetBoolean());
         Assert.Equal(48, derived.GetProperty("optical").GetProperty("samples").GetArrayLength());
         using JsonDocument nativeDocument = JsonDocument.Parse(result.RawJson);
@@ -247,6 +235,7 @@ public sealed class GridDistortionTests
         GridDistortionResult failure = GridDistortionResult.CreateFailure("ResultParseFailed", "bad JSON", rawJson: "malformed");
         using JsonDocument document = JsonDocument.Parse(GridDistortionResultWindow.CreateAnalysisJson(failure, null));
         Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("analysis").ValueKind);
+        Assert.Equal("无有效指标", Assert.Single(GridDistortionResultWindow.BuildMetricRows(failure, null)).Value);
         Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("nativeResult").ValueKind);
         Assert.Equal("malformed", document.RootElement.GetProperty("rawNativeJson").GetString());
         Assert.False(document.RootElement.GetProperty("invocation").GetProperty("success").GetBoolean());

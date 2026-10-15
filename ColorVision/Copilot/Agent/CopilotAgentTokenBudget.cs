@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -325,13 +324,17 @@ namespace ColorVision.Copilot
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                var reportedUsage = ExtractPayloadFailureUsage(exception);
+                if (reportedUsage.HasAny)
+                    CommitUsage(reportedUsage, estimatedInputTokens);
                 throw;
             }
             catch (Exception exception)
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 RecordProviderInactivity(exception);
-                CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
+                var reportedUsage = ExtractPayloadFailureUsage(exception);
+                CommitUsage(reportedUsage, estimatedInputTokens, requireEstimatedFloor: !reportedUsage.HasAny);
                 throw;
             }
             var providerDurationMs = ToMilliseconds(providerStopwatch.Elapsed);
@@ -360,6 +363,8 @@ namespace ColorVision.Copilot
             long providerInterChunkLatencyTicks = 0;
             var providerResponseStarted = false;
             var completed = false;
+            var hasAuthoritativeFailureUsage = false;
+            var contextRejectedBeforeContent = false;
             IAsyncEnumerator<ChatResponseUpdate>? enumerator;
             var providerStopwatch = Stopwatch.StartNew();
             try
@@ -374,13 +379,17 @@ namespace ColorVision.Copilot
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                var reportedUsage = ExtractPayloadFailureUsage(exception);
+                if (reportedUsage.HasAny)
+                    CommitUsage(reportedUsage, estimatedInputTokens);
                 throw;
             }
             catch (Exception exception)
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 RecordProviderInactivity(exception);
-                CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
+                var reportedUsage = ExtractPayloadFailureUsage(exception);
+                CommitUsage(reportedUsage, estimatedInputTokens, requireEstimatedFloor: !reportedUsage.HasAny);
                 throw;
             }
             providerCallDurationTicks = Math.Max(0, providerStopwatch.ElapsedTicks);
@@ -428,6 +437,11 @@ namespace ColorVision.Copilot
                         catch (Exception exception)
                         {
                             RecordProviderInactivity(exception);
+                            var reportedUsage = ExtractPayloadFailureUsage(exception);
+                            usage = usage.MergeProgress(reportedUsage);
+                            hasAuthoritativeFailureUsage = reportedUsage.HasAny;
+                            contextRejectedBeforeContent = !providerResponseStarted
+                                && CopilotContextWindowFailureClassifier.TryClassify(exception, out _);
                             throw;
                         }
                         finally
@@ -450,10 +464,13 @@ namespace ColorVision.Copilot
                 finally
                 {
                     RecordProviderCallDuration(ToMilliseconds(providerCallDurationTicks));
-                    CommitUsage(
-                        usage,
-                        EstimateTokens(materializedMessages, options, responseWeight),
-                        requireEstimatedFloor: !completed);
+                    if (!contextRejectedBeforeContent || usage.HasAny)
+                    {
+                        CommitUsage(
+                            usage,
+                            EstimateTokens(materializedMessages, options, responseWeight),
+                            requireEstimatedFloor: !completed && !hasAuthoritativeFailureUsage && !contextRejectedBeforeContent);
+                    }
                 }
             }
         }

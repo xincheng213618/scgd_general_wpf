@@ -1,9 +1,10 @@
 <Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.MorphologyWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.ImageEditor"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
-        Title="形态学操作" Height="300" Width="420"
+        Title="{display:DisplayText Key='形态学操作'}" Height="300" Width="420"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
     <Grid Margin="15">
@@ -16,18 +17,18 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="形态学操作" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Grid.Row="0" Text="{display:DisplayText Key='形态学操作'}" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
 
         <DockPanel Grid.Row="1" Margin="0,0,0,8">
-            <TextBlock Text="操作" VerticalAlignment="Center" MinWidth="70" Margin="0,0,10,0"/>
+            <TextBlock Text="{display:DisplayText Key='操作'}" VerticalAlignment="Center" MinWidth="70" Margin="0,0,10,0"/>
             <ComboBox x:Name="OperationCombo" SelectedIndex="0" SelectionChanged="Param_Changed">
-                <ComboBoxItem Content="腐蚀"/>
-                <ComboBoxItem Content="膨胀"/>
-                <ComboBoxItem Content="开运算"/>
-                <ComboBoxItem Content="闭运算"/>
-                <ComboBoxItem Content="梯度"/>
-                <ComboBoxItem Content="顶帽"/>
-                <ComboBoxItem Content="黑帽"/>
+                <ComboBoxItem Content="{display:DisplayText Key='腐蚀'}"/>
+                <ComboBoxItem Content="{display:DisplayText Key='膨胀'}"/>
+                <ComboBoxItem Content="{display:DisplayText Key='开运算'}"/>
+                <ComboBoxItem Content="{display:DisplayText Key='闭运算'}"/>
+                <ComboBoxItem Content="{display:DisplayText Key='梯度'}"/>
+                <ComboBoxItem Content="{display:DisplayText Key='顶帽'}"/>
+                <ComboBoxItem Content="{display:DisplayText Key='黑帽'}"/>
             </ComboBox>
         </DockPanel>
 
@@ -42,7 +43,7 @@
         </DockPanel>
 
         <DockPanel Grid.Row="3" Margin="0,0,0,8">
-            <TextBlock Text="次数" VerticalAlignment="Center" MinWidth="70" Margin="0,0,10,0"/>
+            <TextBlock Text="{display:DisplayText Key='次数'}" VerticalAlignment="Center" MinWidth="70" Margin="0,0,10,0"/>
             <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=IterSlider, Path=Value, StringFormat=F0}" Width="50" Margin="5,0,0,0"/>
             <hc:PreviewSlider x:Name="IterSlider"
                               Minimum="1" Maximum="10" Value="1"

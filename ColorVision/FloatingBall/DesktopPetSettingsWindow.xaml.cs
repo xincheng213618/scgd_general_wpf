@@ -7,6 +7,7 @@ namespace ColorVision.FloatingBall
         public DesktopPetSettingsWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
     }
 }

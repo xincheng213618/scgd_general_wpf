@@ -18,13 +18,24 @@ namespace ColorVision.Engine.Services
 {
     public class ViewResultImage : ViewModelBase
     {
-        public ContextMenu ContextMenu { get; set; }
-        public RelayCommand ExportCVCIECommand { get; set; }
-        public RelayCommand OpenCVCIECommand { get; set; }
-        public RelayCommand CopyToCommand { get; set; }
+        private ContextMenu? _contextMenu;
+        private RelayCommand? _exportCVCIECommand, _openCVCIECommand, _copyToCommand, _openContainingFolderCommand, _createToPoiCommand;
+        public ContextMenu ContextMenu { get => _contextMenu ??= CreateContextMenu(); set => _contextMenu = value; }
+        public RelayCommand ExportCVCIECommand { get => _exportCVCIECommand ??= new RelayCommand(a => Export(), a => File.Exists(FileUrl)); set => _exportCVCIECommand = value; }
+        public RelayCommand OpenCVCIECommand { get => _openCVCIECommand ??= new RelayCommand(a => Open(), a => File.Exists(FileUrl)); set => _openCVCIECommand = value; }
+        public RelayCommand CopyToCommand { get => _copyToCommand ??= new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl)); set => _copyToCommand = value; }
+        public RelayCommand OpenContainingFolderCommand { get => _openContainingFolderCommand ??= new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileUrl}"), a => File.Exists(FileUrl)); set => _openContainingFolderCommand = value; }
+        public RelayCommand CreateToPoiCommand { get => _createToPoiCommand ??= new RelayCommand(a => CreateToPoi(), a => File.Exists(FileUrl)); set => _createToPoiCommand = value; }
 
-        public RelayCommand OpenContainingFolderCommand { get; set; }
-        public RelayCommand CreateToPoiCommand { get; set; }
+        private ContextMenu CreateContextMenu()
+        {
+            ContextMenu menu = new();
+            menu.Items.Add(new MenuItem { Header = Properties.Resources.SelectFileInFolder, Command = OpenContainingFolderCommand });
+            menu.Items.Add(new MenuItem { Header = Properties.Resources.Export, Command = ExportCVCIECommand });
+            menu.Items.Add(new MenuItem { Header = Properties.Resources.CreatePoiAsBaseImage, Command = CreateToPoiCommand });
+            menu.Closed += static (sender, _) => ((ContextMenu)sender).ClearValue(ContextMenu.PlacementTargetProperty);
+            return menu;
+        }
 
         public ViewResultImage()
         {
@@ -44,16 +55,6 @@ namespace ColorVision.Engine.Services
             ResultDesc = measureImgResultModel.Result ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
             DeviceCode = measureImgResultModel.DeviceCode;
-            ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl));
-            OpenCVCIECommand = new RelayCommand(a => Open(), a => File.Exists(FileUrl));
-            CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl));
-            CreateToPoiCommand = new RelayCommand(a => CreateToPoi(), a => File.Exists(FileUrl));
-
-            ContextMenu = new ContextMenu();
-            OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileUrl}"), a => File.Exists(FileUrl));
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.SelectFileInFolder, Command = OpenContainingFolderCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Export, Command = ExportCVCIECommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.CreatePoiAsBaseImage, Command = CreateToPoiCommand });
 
             Task.Run(() =>
             {
@@ -151,13 +152,11 @@ namespace ColorVision.Engine.Services
             {
                 ImageView imageView = new();
                 Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                 window.Content = imageView;
+                window.Closed += (_, _) => imageView.Dispose();
                 imageView.OpenImage(FileUrl);
                 window.Show();
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
-                {
-                    imageView.Clear();
-                }));
             }
             else
             {

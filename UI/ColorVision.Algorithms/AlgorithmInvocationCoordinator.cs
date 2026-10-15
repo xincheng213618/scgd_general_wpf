@@ -1,4 +1,3 @@
-using System.Threading;
 using System.Runtime.ExceptionServices;
 
 namespace ColorVision.Algorithms;

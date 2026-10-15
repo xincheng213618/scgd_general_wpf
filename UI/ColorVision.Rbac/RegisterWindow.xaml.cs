@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using LocalizedText = global::ColorVision.Rbac.DisplayText;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Rbac
@@ -37,17 +38,17 @@ namespace ColorVision.Rbac
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(pwd1))
             {
-                TxtStatus.Text = "用户名和密码不能为空";
+                TxtStatus.Text = LocalizedText.Get("用户名和密码不能为空");
                 return;
             }
             if (pwd1.Length < 6)
             {
-                TxtStatus.Text = "密码长度至少 6 位";
+                TxtStatus.Text = LocalizedText.Get("密码长度至少 6 位");
                 return;
             }
             if (pwd1 != pwd2)
             {
-                TxtStatus.Text = "两次输入的密码不一致";
+                TxtStatus.Text = LocalizedText.Get("两次输入的密码不一致");
                 return;
             }
 
@@ -55,12 +56,12 @@ namespace ColorVision.Rbac
             {
                 _isSubmitting = true;
                 BtnRegister.IsEnabled = false;
-                BtnRegister.Content = "正在创建...";
-                TxtStatus.Text = "正在创建新用户，请稍候...";
+                BtnRegister.Content = LocalizedText.Get("正在创建...");
+                TxtStatus.Text = LocalizedText.Get("正在创建新用户，请稍候...");
                 bool created = await RbacManager.GetInstance().UserService.CreateUserAsync(username, pwd1);
                 if (!created)
                 {
-                    TxtStatus.Text = "用户名已存在或创建失败";
+                    TxtStatus.Text = LocalizedText.Get("用户名已存在或创建失败");
                     return;
                 }
                 // 审计日志
@@ -70,18 +71,18 @@ namespace ColorVision.Rbac
                         null, username, "user.register", $"新用户注册:{username}");
                 }
                 catch { }
-                MessageBox.Show(this, "注册成功，请使用新账户登录", "注册成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("注册成功，请使用新账户登录"), LocalizedText.Get("注册成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                 DialogResult = true;
             }
             catch (Exception ex)
             {
-                TxtStatus.Text = $"发生错误: {ex.Message}";
+                TxtStatus.Text = LocalizedText.Format($"发生错误: {ex.Message}");
             }
             finally
             {
                 _isSubmitting = false;
                 BtnRegister.IsEnabled = true;
-                BtnRegister.Content = "注册";
+                BtnRegister.Content = LocalizedText.Get("注册");
             }
         }
 

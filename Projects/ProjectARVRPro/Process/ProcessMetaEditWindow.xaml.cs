@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 #pragma warning disable CA1852
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
@@ -32,6 +33,7 @@ namespace ProjectARVRPro.Process
             ProcessMetaEditTarget editTarget = ProcessMetaEditTarget.Choice)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Title = title;
             _viewModel = new ProcessMetaEditViewModel(
                 templates,
@@ -74,7 +76,7 @@ namespace ProjectARVRPro.Process
 
             if (_viewModel.IsProcessPage && SelectedProcess == null)
             {
-                MessageBox.Show(this, "请选择处理类型", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("请选择处理类型"), "ColorVision");
                 return;
             }
 
@@ -87,7 +89,7 @@ namespace ProjectARVRPro.Process
         {
             if (_viewModel.ShowMetaFields && string.IsNullOrWhiteSpace(MetaName))
             {
-                MessageBox.Show(this, "名称不能为空", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("名称不能为空"), "ColorVision");
                 return false;
             }
 
@@ -98,7 +100,7 @@ namespace ProjectARVRPro.Process
         {
             if (SelectedTemplate == null)
             {
-                MessageBox.Show(this, "请选择流程模板", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("请选择流程模板"), "ColorVision");
                 return false;
             }
 
@@ -137,7 +139,7 @@ namespace ProjectARVRPro.Process
             {
                 var placeholder = new TextBlock
                 {
-                    Text = SelectedProcess == null ? "选择处理类型后显示配置" : "此处理类型无需额外配置",
+                    Text = SelectedProcess == null ? LocalizedText.Get("选择处理类型后显示配置") : LocalizedText.Get("此处理类型无需额外配置"),
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 10, 0, 0)
                 };

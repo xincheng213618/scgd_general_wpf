@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using Newtonsoft.Json;
@@ -36,7 +37,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             Title = title;
             InputDescriptionText.Text = inputDescription;
             ConfigText.Text = P2NativeJson.Format(defaultConfig);
-            StatusText.Text = "调整 JSON 参数后点击运行；Overlay 仅用于当前调试窗口。";
+            StatusText.Text = LocalizedText.Get("调整 JSON 参数后点击运行；Overlay 仅用于当前调试窗口。");
             _imageContext = imageContext;
             _execute = execute;
             _summary = summary;
@@ -61,12 +62,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException)
             {
-                MessageBox.Show(this, ex.Message, "配置无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("配置无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             RunButton.IsEnabled = false;
-            StatusText.Text = "计算中...";
+            StatusText.Text = LocalizedText.Get("计算中...");
             long revision = _imageContext.ImageRevision;
             try
             {
@@ -103,20 +104,20 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
         private void ClearOverlay_Click(object sender, RoutedEventArgs e)
         {
             ClearOverlay();
-            StatusText.Text = "Overlay 已清除。";
+            StatusText.Text = LocalizedText.Get("Overlay 已清除。");
         }
 
         private void CopyConfig_Click(object sender, RoutedEventArgs e)
         {
             Clipboard.SetText(P2NativeJson.Format(ConfigText.Text));
-            StatusText.Text = "配置 JSON 已复制。";
+            StatusText.Text = LocalizedText.Get("配置 JSON 已复制。");
         }
 
         private void CopyResult_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_rawResult)) return;
             Clipboard.SetText(_rawResult);
-            StatusText.Text = "结果 JSON 已复制。";
+            StatusText.Text = LocalizedText.Get("结果 JSON 已复制。");
         }
 
         private void ClearOverlay()

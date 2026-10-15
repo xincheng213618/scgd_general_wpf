@@ -239,6 +239,18 @@ namespace ColorVision.Core
             in CalibrationExecutionOptionsV1 options);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalibrationExecuteRawWithFlipV1(
+            IntPtr context,
+            uint width,
+            uint height,
+            uint bitsPerChannel,
+            uint channels,
+            IntPtr rawData,
+            ulong rawByteLength,
+            in CalibrationExecutionOptionsV1 options,
+            int flipMode);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalibrationExecuteToV1(
             IntPtr context,
             uint width,

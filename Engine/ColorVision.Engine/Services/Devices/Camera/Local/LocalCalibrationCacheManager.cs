@@ -1,6 +1,7 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private SemaphoreSlim NativeGate => useLegacyCalibration ? LegacyNativeGate : openCvGate;
 
         public string BackendName => useLegacyCalibration ? "cvCamera" : "opencv_helper";
+        public bool SupportsRawOutputFlip => !useLegacyCalibration;
 
         /// <summary>
         /// Returns a coherent snapshot of the process-wide immutable native
@@ -81,7 +83,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IntPtr rawPointer,
             IntPtr ciePointer,
             float[] exposure,
-            LocalCalibrationRoi calibrationRoi)
+            LocalCalibrationRoi calibrationRoi,
+            bool allowAcceleration = false,
+            CVImageFlipMode rawOutputFlip = CVImageFlipMode.None)
         {
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ArgumentNullException.ThrowIfNull(exposure);
@@ -93,15 +97,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ObjectDisposedException.ThrowIf(disposed, this);
                 if (!useLegacyCalibration)
                 {
-                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi);
+                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
                 }
+                if (rawOutputFlip != CVImageFlipMode.None) throw new NotSupportedException("旧版校正后端不支持合并 RAW 翻转。");
                 CachedCalibrationFile[] files = calibrationFiles.Select(CreateCachedFile).ToArray();
                 DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
                 if (colorFiles.Length > 1)
                 {
                     throw new InvalidOperationException("本地校正一次只能选择一个亮度/颜色校正文件。");
                 }
-                if (colorFiles.Length == 1 && ciePointer == IntPtr.Zero)
+                if (colorFiles.Length == 1 && ciePointer == IntPtr.Zero && !allowAcceleration)
                 {
                     throw new ArgumentException("选择亮度/颜色校正后，CIE 输出指针不能为空。", nameof(ciePointer));
                 }
@@ -142,7 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     EnsureV1Context();
                     ClearSelection();
                     Select(colorFile);
-                    if (cvCameraCSLib.CM_TransformV1(
+                    if (!allowAcceleration && cvCameraCSLib.CM_TransformV1(
                         contextToken,
                         checked((uint)layout.Width),
                         checked((uint)layout.Height),
@@ -340,15 +345,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 throw new InvalidOperationException("线性校正缓存尚未加载。");
             }
-            if (!cvCameraCSLib.CM_SCGD_SDP_LineArity(
+            int result = cvCameraCSLib.CM_SCGD_SDP_LineArity(
                 lineArityHandle,
                 layout.Width,
                 layout.Height,
                 layout.Bpp,
                 checked((uint)layout.Channels),
-                rawPointer))
+                rawPointer);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS)
             {
-                throw new InvalidOperationException($"执行本地校正失败：{loadedLineArity.Value.DisplayName}。");
+                throw LocalCameraCaptureService.CreateNativeException($"执行本地校正失败：{loadedLineArity.Value.DisplayName}", result);
             }
         }
 
@@ -415,7 +421,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             if (lineArityHandle != IntPtr.Zero)
             {
-                if (cvCameraCSLib.ReleaseCalibrationManage(lineArityHandle))
+                if (cvCameraCSLib.ReleaseCalibrationManage(lineArityHandle) == cvErrorDefine.CV_ERR_SUCCESS)
                 {
                     lineArityHandle = IntPtr.Zero;
                     if (loadedLineArity.HasValue) releasedItems++;

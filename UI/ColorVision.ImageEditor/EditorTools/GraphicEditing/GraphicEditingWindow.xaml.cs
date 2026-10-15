@@ -1,4 +1,5 @@
-﻿#pragma warning disable 
+﻿using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+#pragma warning disable
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
@@ -486,7 +487,7 @@ namespace ColorVision.ImageEditor
 
                         if (!detectionResult.HasValidCorners)
                         {
-                            MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), LocalizedText.Get("发光区定位"), MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
 
@@ -517,14 +518,14 @@ namespace ColorVision.ImageEditor
                         string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
                         if (!string.IsNullOrEmpty(warningMessage))
                         {
-                            MessageBox.Show(this, warningMessage, "发光区定位（需复核）", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(this, warningMessage, LocalizedText.Get("发光区定位（需复核）"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     });
                 });
             }
             else
             {
-                MessageBox.Show(this, "请先加载实际图像", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("请先加载实际图像"), "ColorVision");
             }
         }
 

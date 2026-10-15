@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
@@ -28,10 +29,10 @@ namespace ColorVision.FloatingBall
 
         public string StatusLabel => Kind switch
         {
-            DesktopPetCopilotActivityKind.NeedsInput => "需要输入",
-            DesktopPetCopilotActivityKind.Blocked => "任务受阻",
-            DesktopPetCopilotActivityKind.Ready => "待查看",
-            _ => "运行中",
+            DesktopPetCopilotActivityKind.NeedsInput => LocalizedText.Get("需要输入"),
+            DesktopPetCopilotActivityKind.Blocked => LocalizedText.Get("任务受阻"),
+            DesktopPetCopilotActivityKind.Ready => LocalizedText.Get("待查看"),
+            _ => LocalizedText.Get("运行中"),
         };
 
         public string ConversationLabel

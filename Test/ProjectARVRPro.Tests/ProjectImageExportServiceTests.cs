@@ -1,6 +1,5 @@
 using ColorVision.ImageEditor;
 using ProjectARVRPro.ImageExport;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

@@ -1,7 +1,7 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1001
 using ColorVision.Engine.Media;
 using ColorVision.Engine.FlowProcessing;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -108,7 +108,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             OpenFileDialog dialog = new()
             {
-                Title = "选择原色度校正文件",
+                Title = LocalizedText.Get("选择原色度校正文件"),
                 Filter = "四色 / 多色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
@@ -141,7 +141,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 else
                 {
                     sourceSnapshot = LumFourColorSourceSnapshot.Load(SourcePathBox.Text.Trim());
-                    SourceStateText.Text = $"已读取{sourceSnapshot.CalibrationFile.FormatDescription}";
+                    SourceStateText.Text = LocalizedText.Format($"已读取{sourceSnapshot.CalibrationFile.FormatDescription}");
                 }
             }
             catch (Exception ex)
@@ -205,7 +205,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 {
                     if (sourceFromTemplate) SourcePathBox.Text = string.Empty;
                     sourceFromTemplate = false;
-                    StatusText.Text = "该模板未配置四色 / 多色校正文件，可手动选择原文件。";
+                    StatusText.Text = LocalizedText.Get("该模板未配置四色 / 多色校正文件，可手动选择原文件。");
                 }
             }
             catch (Exception ex)
@@ -260,14 +260,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             if (busy || SelectedSample?.CanRestoreReference != true) return;
             SelectedSample.RestoreReference();
-            StatusText.Text = "已恢复光谱原值";
+            StatusText.Text = LocalizedText.Get("已恢复光谱原值");
         }
 
         private void RestoreCamera_Click(object sender, RoutedEventArgs e)
         {
             if (busy || SelectedSample?.CanRestoreCamera != true) return;
             SelectedSample.RestoreCamera();
-            StatusText.Text = "已恢复相机原值";
+            StatusText.Text = LocalizedText.Get("已恢复相机原值");
         }
 
         private void OpenPoiTemplates()
@@ -306,7 +306,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             PoiParam snapshot = new() { Width = source.Width, Height = source.Height };
             if (points.Count > 0) snapshot.PoiPoints.Add(points[0]);
             poiEditor.ApplyTemplate(snapshot);
-            StatusText.Text = $"{selected.Key} · 第一个 POI";
+            StatusText.Text = LocalizedText.Format($"{selected.Key} · 第一个 POI");
         }
 
         private void SampleList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -354,8 +354,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             OpenFileDialog dialog = new()
             {
-                Title = $"加载 {sample.Name} 的 CVCIE 图像",
-                Filter = "CVCIE 文件 (*.cvcie)|*.cvcie|所有文件 (*.*)|*.*",
+                Title = LocalizedText.Format($"加载 {sample.Name} 的 CVRAW / CVCIE 图像"),
+                Filter = "CVRAW / CVCIE (*.cvraw;*.cvcie)|*.cvraw;*.cvcie|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
             };
@@ -403,7 +403,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 if (closed) return;
                 RecentImagesCombo.ItemsSource = images.Where(image => string.Equals(image.DeviceCode, camera.Config.Code, StringComparison.Ordinal)).ToArray();
                 RecentImagesCombo.SelectedIndex = -1;
-                StatusText.Text = RecentImagesCombo.Items.Count == 0 ? "当前相机暂无拍摄记录" : "";
+                StatusText.Text = RecentImagesCombo.Items.Count == 0 ? LocalizedText.Get("当前相机暂无拍摄记录") : "";
             }
             catch (Exception ex) { if (!closed) StatusText.Text = ex.Message; }
             finally { if (!closed) SetBusy(false, null); }
@@ -473,7 +473,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 token.ThrowIfCancellationRequested();
                 sample.SetSpectrumMeasurement(result);
                 InvalidateCalculation();
-                StatusText.Text = "采集完成";
+                StatusText.Text = LocalizedText.Get("采集完成");
                 RefreshSelectedSample();
             });
         }
@@ -493,7 +493,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             }
             catch (OperationCanceledException)
             {
-                if (!closed) StatusText.Text = "操作已取消。";
+                if (!closed) StatusText.Text = LocalizedText.Get("操作已取消。");
             }
             catch (Exception ex)
             {
@@ -518,16 +518,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                     throw new InvalidOperationException("请先完成全部色块的相机 POI 和光谱数据。");
                 string[] warnings = session.Samples.SelectMany(sample => sample.GetWarnings(sourceSnapshot.Hash)).ToArray();
                 if (warnings.Length > 0 && MessageBox.Show(this,
-                    string.Join(Environment.NewLine + Environment.NewLine, warnings) + "\n\n这些数据可能导致错误的校正结果。建议取消并重新采集。仍要使用本次数据继续计算吗？",
-                    "校正数据待复核", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+                    string.Join(Environment.NewLine + Environment.NewLine, warnings) + LocalizedText.Get("\n\n这些数据可能导致错误的校正结果。建议取消并重新采集。仍要使用本次数据继续计算吗？"),
+                    LocalizedText.Get("校正数据待复核"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
                 {
-                    StatusText.Text = "已取消计算，请处理待复核的数据。";
+                    StatusText.Text = LocalizedText.Get("已取消计算，请处理待复核的数据。");
                     return;
                 }
                 sourceSnapshot.EnsureUnchanged();
                 correctedConfig = session.Calculate(sourceSnapshot.Config);
                 RefreshActions();
-                StatusText.Text = "计算完成";
+                StatusText.Text = LocalizedText.Get("计算完成");
             }
             catch (Exception ex)
             {
@@ -549,7 +549,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             SaveFileDialog dialog = new()
             {
-                Title = "保存修正后的校正文件（保持原格式）",
+                Title = LocalizedText.Get("保存修正后的校正文件（保持原格式）"),
                 Filter = "校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
                 InitialDirectory = Directory.Exists(sourceDirectory) ? sourceDirectory : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
                 FileName = $"{sourceName}_Corrected{extension}",
@@ -562,7 +562,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             try
             {
                 sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig);
-                StatusText.Text = $"已保存：{dialog.FileName}";
+                StatusText.Text = LocalizedText.Format($"已保存：{dialog.FileName}");
             }
             catch (Exception ex)
             {
@@ -583,7 +583,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, restartServices);
                 // The old camera values were measured against the previous matrix, even if restarting failed.
                 ReloadSource();
-                BackupPathText.Text = $"备份：{result.BackupPath}";
+                BackupPathText.Text = LocalizedText.Format($"备份：{result.BackupPath}");
                 BackupPathText.Visibility = Visibility.Visible;
                 StatusText.Text = result.Message;
             }
@@ -602,13 +602,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             LumFourColorCalibrationSample? sample = SelectedSample;
             MeasurementPanel.DataContext = sample;
             poiEditor?.ShowSample(sample);
-            CurrentTargetText.Text = sample == null ? "相机图像" : $"{sample.Name} · 相机图像与 POI";
+            CurrentTargetText.Text = sample == null ? LocalizedText.Get("相机图像") : LocalizedText.Format($"{sample.Name} · 相机图像与 POI");
             CameraQualityText.Text = sample?.Frame == null ? "" :
-                sample.Frame.CalibrationHash == null ? "模板待核对：CVCIE 未记录所用校正文件。" :
-                sample.Frame.CalibrationHash == sourceSnapshot?.Hash ? "图像所用色度校正文件与原文件一致。" : "模板不一致：当前图像使用了另一份色度校正文件。";
+                sample.Frame.CalibrationHash == null ? LocalizedText.Get("模板待核对：导入图像未记录所用校正文件的内容指纹。") :
+                sample.Frame.CalibrationHash == sourceSnapshot?.Hash ? LocalizedText.Get("图像所用色度校正文件与原文件一致。") : LocalizedText.Get("模板不一致：当前图像使用了另一份色度校正文件。");
             EmptyImagePanel.Visibility = sample?.HasImage == true ? Visibility.Collapsed : Visibility.Visible;
             SpectrumGrid.ItemsSource = sample?.Spectrum;
-            SpectrumCountText.Text = sample == null ? string.Empty : $"{sample.Spectrum.Count} 点";
+            SpectrumCountText.Text = sample == null ? string.Empty : LocalizedText.Format($"{sample.Spectrum.Count} 点");
             RefreshActions();
         }
 
@@ -636,7 +636,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             SaveButton.IsEnabled = !busy && correctedConfig != null;
             ReplaceButton.IsEnabled = !busy && correctedConfig != null;
             int complete = session.Samples.Count(item => item.IsComplete);
-            ProgressText.Text = $"已完成 {complete} / {session.Samples.Count}";
+            ProgressText.Text = LocalizedText.Format($"已完成 {complete} / {session.Samples.Count}");
         }
 
         private void SetBusy(bool value, string? message)
@@ -669,7 +669,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             correctedConfig = null;
             if (SaveButton != null) SaveButton.IsEnabled = false;
             if (ReplaceButton != null) ReplaceButton.IsEnabled = false;
-            if (hadResult && StatusText != null) StatusText.Text = "数据已变化，请重新计算。";
+            if (hadResult && StatusText != null) StatusText.Text = LocalizedText.Get("数据已变化，请重新计算。");
         }
 
         private void OpenManual_Click(object sender, RoutedEventArgs e) => LumFourColorCorrectionWindow.ShowWindow(SourcePathBox.Text.Trim(), session.Mode);
@@ -703,7 +703,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 var result = await device.LoadColorMeasurementAsync(dialog.SelectedResult.ResultId);
                 if (closed) return;
                 sample.SetSpectrumMeasurement(LumFourColorSpectrumCapture.FromMeasurement(result));
-                StatusText.Text = "已选择光谱";
+                StatusText.Text = LocalizedText.Get("已选择光谱");
                 RefreshSelectedSample();
             }
             catch (Exception ex)

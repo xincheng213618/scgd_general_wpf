@@ -10,6 +10,7 @@ using ColorVision.Themes;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -39,12 +40,29 @@ public sealed class OfflineDataSourceTests
             var window = new CycleTimeStatisticsWindow(source);
             try
             {
+                RunUiTask(window, "RefreshHomeAsync");
+                ResultStatistics homeSummary = source.Statistics.QueryDashboard(new()
+                {
+                    From = source.LatestDate, ToExclusive = source.LatestDate.AddDays(1),
+                }, ResultStatisticsPeriodMode.Day, source.LatestDate).Summary;
+                Assert.Equal(homeSummary.AverageFlowRunTimeText, ((TextBlock)window.FindName("AverageFlowRunTimeText")).Text);
+                ((CheckBox)window.FindName("EnableCombinedStatisticsCheckBox")).IsChecked = true;
+                RunUiTask(window, "RefreshHomeAsync");
+                ResultStatistics combinedSummary = source.Statistics.QueryCombinedDashboard(new()
+                {
+                    From = source.LatestDate, ToExclusive = source.LatestDate.AddDays(1),
+                }, ResultStatisticsPeriodMode.Day, source.LatestDate).Summary;
+                Assert.Equal(combinedSummary.AverageFlowRunTimeText, ((TextBlock)window.FindName("CombinedAverageFlowRunTimeText")).Text);
+                var tabs = (TabControl)window.FindName("StatisticsTabs");
+                tabs.SelectedIndex = 0;
+                SavePreview(window, dark, "statistics-home", 1100, 640);
+                tabs.SelectedIndex = 1;
                 RunUiTask(window, "RefreshRecordsAsync", 1);
                 var grid = (DataGrid)window.FindName("RecordDataGrid");
                 Assert.NotEmpty(grid.Items.Cast<object>());
                 var record = Assert.IsType<ResultStatisticsRecordRow>(grid.SelectedItem);
                 RunUiTask(window, "LoadFlowDetailsAsync", record);
-                var details = (ListView)window.FindName("DetailList");
+                var details = (DataGrid)window.FindName("DetailList");
                 Assert.NotEmpty(details.Items.Cast<object>());
                 Assert.Contains("现场只读", ((TextBlock)window.FindName("DataSourceText")).Text);
                 Assert.Equal(source.LatestDate, ((DatePicker)window.FindName("RecordAnchorDatePicker")).SelectedDate);
@@ -84,6 +102,64 @@ public sealed class OfflineDataSourceTests
                 finally { analysis.Close(); }
             }
             finally { window.Close(); ThemeManager.Current.ApplyTheme(Application.Current, previousTheme); }
+        });
+    }
+
+    [Fact]
+    public void BothFlowDetailMenusUseTheirOwnSelectionAndRightClickSelectsTheTargetRow()
+    {
+        using var fixture = new Files();
+        fixture.CreateProject("{}");
+        var source = ArvrOfflineDataSource.Open(fixture.Root, fixture.Cache);
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            var window = new CycleTimeStatisticsWindow(source);
+            try
+            {
+                var detailGrid = (DataGrid)window.FindName("DetailList");
+                var combinedGrid = (DataGrid)window.FindName("CombinedDetailList");
+                ProjectARVRReuslt valid = new() { Id = 2, BatchId = 20, SN = "RIGHT", Model = "right-flow" };
+                ProjectARVRReuslt unavailable = new() { SN = "LEFT", Model = "no-details" };
+                ProjectARVRReuslt[] flows = [valid, unavailable];
+                detailGrid.ItemsSource = flows;
+                combinedGrid.ItemsSource = flows;
+                ContextMenu singleMenu = Assert.IsType<ContextMenu>(detailGrid.ContextMenu);
+                ContextMenu combinedMenu = Assert.IsType<ContextMenu>(combinedGrid.ContextMenu);
+                Assert.NotSame(singleMenu, combinedMenu);
+                Assert.Equal(singleMenu.Items.OfType<MenuItem>().Select(item => item.Header), combinedMenu.Items.OfType<MenuItem>().Select(item => item.Header));
+
+                foreach (DataGrid target in new[] { detailGrid, combinedGrid })
+                {
+                    DataGrid other = target == detailGrid ? combinedGrid : detailGrid;
+                    MenuItem[] menu = target.ContextMenu.Items.OfType<MenuItem>().ToArray();
+                    Assert.Equal(5, menu.Length);
+                    Assert.Same(target, menu[0].CommandTarget);
+                    target.SelectedItem = valid;
+                    other.SelectedItem = unavailable;
+                    Assert.False(menu[1].Command.CanExecute(null)); // Offline file location.
+                    Assert.False(menu[2].Command.CanExecute(null)); // Offline MySQL history.
+                    Assert.True(menu[3].Command.CanExecute(null));
+                    Assert.True(menu[4].Command.CanExecute(null));
+                    target.SelectedItem = unavailable;
+                    other.SelectedItem = valid;
+                    Assert.False(menu[3].Command.CanExecute(null));
+                    Assert.False(menu[4].Command.CanExecute(null));
+
+                    // Materialize the detail row without opening a real application window.
+                    target.Measure(new Size(900, 300));
+                    target.Arrange(new Rect(0, 0, 900, 300));
+                    target.UpdateLayout();
+                    DataGridRow row = Assert.IsType<DataGridRow>(target.ItemContainerGenerator.ContainerFromItem(valid));
+                    row.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Right)
+                    {
+                        RoutedEvent = Mouse.PreviewMouseDownEvent,
+                    });
+                    Assert.Same(valid, target.SelectedItem);
+                    Assert.True(menu[3].Command.CanExecute(null));
+                    Assert.True(menu[4].Command.CanExecute(null));
+                }
+            }
+            finally { window.Close(); }
         });
     }
 

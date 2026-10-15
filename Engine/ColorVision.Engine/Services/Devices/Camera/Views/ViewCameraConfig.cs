@@ -8,7 +8,7 @@ using ColorVision.Engine.Properties;
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     [LocalizedDisplayName(nameof(Resources.CameraViewConfig))]
-    public class ViewCameraConfig : ViewConfigBase, IConfig
+    public class ViewCameraConfig : ResultViewConfig, IConfig
     {
         public static ViewCameraConfig Instance => ConfigService.Instance.GetRequiredService<ViewCameraConfig>();
 

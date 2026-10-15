@@ -3,9 +3,9 @@ knowledge_id: "ui.desktop"
 knowledge_type: "reference"
 status: "current"
 summary: "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。"
-aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService"]
+aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService","下载管理器","断点续传","Aria2cDownloadManager"]
 code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md"]
-test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/DownloadManagerLifecycleTests.cs","Test/ColorVision.UI.Tests/DownloadInfrastructureTests.cs","Test/ColorVision.UI.Tests/DownloadAria2IntegrationTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
 related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.configuration","ui.database","plugins.getting-started","platform.runtime"]
 ---
 
@@ -21,7 +21,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 自定义设置 View 不显示 | [页面生命周期](./settings.md)：`ViewType`、无参构造、失败内容缓存与绑定 |
 | 向导步骤不出现 | [向导发现](./wizards.md)：`IWizardStep`、程序集视图、反射/构造失败和排序 |
 | 插件市场 README/CHANGELOG 空白 | WebView2 初始化、Markdown CSS、内容是否为空 |
-| 下载失败或卡住 | `Assets/Tool/aria2c.exe`、RPC 端口、旧 aria2c 进程 |
+| 下载失败或卡住 | `Assets/Tool/aria2c.exe`、当前 RPC 端口、任务错误及目标目录权限；端口被占用时选择其他端口，只停止本管理器启动的进程 |
 | DLL 版本窗口缺少条目 | 目标程序集是否已加载到当前进程 |
 | 第三方应用打不开 | `SystemAppProvider` / 自定义应用路径、权限和系统工具是否存在 |
 | Dump 设置失败 | `ColorVisionServiceHost` 是否已安装且为当前版本、`Diagnostics/CrashDumpConfiguration.cs` 的 HKLM 目标项和保存目录 |
@@ -43,6 +43,18 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 应用与工具窗口使用与更新、恢复窗口一致的主题资源，顶部提供搜索、添加应用、添加快捷脚本和刷新入口；分类以可换行的标签展示，应用以图标与名称组成的紧凑卡片展示。双击启动、右键操作、分类过滤与权限过滤沿用原入口；深浅主题同时覆盖窗口背景、文字和选择状态。
 
+## 下载任务与文件保护
+
+`Aria2cDownloadManager` 按任务串行处理启动、暂停、恢复和删除。取消或删除会立即使旧操作失效；即使 `addUri` 响应晚到，也会清除已提交的 GID，避免记录删除后后台下载继续运行。暂停任务保持同一模型和 GID，分页不会丢失恢复状态；重启只自动恢复等待或下载中的记录，明确暂停的记录由用户恢复。GID 已失效时重新提交并保留断点文件，RPC 错误作为错误处理，不能把文件打开失败当作缓存损坏而删除文件。
+
+新建普通下载写入任务独有的 `.cvdownload-<GUID>.part`，完成后检查实际路径、大小和 SHA-256，再移动到预留的最终路径；已有最终文件不会被覆盖。旧记录仍沿用原路径及 `.aria2` 断点文件。取消和失败保留下载文件；清空记录只删除操作开始时的记录集合并停止对应任务，保留文件。删除记录时仅在用户选择删除文件后清理相应普通文件及断点文件，目录不会递归删除。完成回调异常单独记录，不触发重新下载或删除已成功的文件。
+
+`AddDownload` 保持原有调用契约；调用方可通过 `AddVerifiedDownload` 提供预期 SHA-256，市场下载会传入包元数据的哈希并继续执行市场自己的包校验。复用本地文件必须与调用方提供的哈希或服务器 `Digest` / `Content-Digest` 中的 SHA-256 匹配，复制过程也校验内容；文件大小相同、同 URL 历史完成记录或 ETag 本身不足以证明内容可复用。缺少可信摘要时正常联网下载。
+
+同名任务在提交前预留不同路径；URL 和磁力链接的文件名被规范化为单一文件名。磁力任务使用独立目录，跟随 aria2 的 `followedBy` 子任务，并在完成后保存实际文件或目录路径。下载认证以 Windows 当前用户的 DPAPI 保护，旧的 Base64／明文记录在初始化时迁移；迁移保留任务 ID、路径与状态。受保护凭据不能直接由另一 Windows 用户解密，迁移数据时需要重新提供认证。
+
+RPC 只连接回环地址，后台进程使用随机的实例密钥；启动等待 RPC 就绪，不会为了回收端口而终止其他 aria2 进程。活动任务每批最多 64 个 GID 查询状态，历史完成记录不参与轮询；本地校验／复制受 `MaxConcurrentTasks` 限制。分页查询和文件检查在后台执行，取消旧分页请求可避免过期结果覆盖当前页；这些限制减少请求和 UI 阻塞，不构成吞吐量指标承诺。
+
 ## 运行链路
 
 帮助菜单的插件市场与反馈入口支持菜单访问键，见[帮助菜单键盘入口](./menus.md#帮助菜单的键盘入口)。插件市场进入后聚焦列表，Esc 优先收起详情并回到列表，再次按下关闭窗口。反馈窗口初始聚焦正文输入框，保留多行 Enter 换行及原有默认发送、Esc 取消行为；Tab / Shift+Tab 在窗口内循环。
@@ -62,11 +74,11 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
 
-桌面反馈窗口不再要求输入 Web 账号密码，点击“发送反馈”后直接匿名提交。本地 RBAC、Windows 用户名和机器名仅用于诊断信息，不构成 Web 账号归属。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。
+点击“发送反馈”后匿名提交。本地 RBAC、Windows 用户名和机器名仅用于诊断信息，不构成 Web 账号归属。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。
 
 默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。“流程前后处理配置”同时收集 `PreProcessConfig.json`、`PostProcessConfig.json`；加载 ProjectARVRPro 后，“ARVRPro 流程配置”按项目实际配置目录收集 `ProjectARVRProProcessGroups.json`，保留流程组、切图等待、相机覆盖参数与 Recipe。配置始终采集当前已保存文件，不受日志天数或文件修改时间限制，也不扫描历史备份、其他项目、认证文件或整个配置目录。
 
-配置收集统一使用 `FeedbackConfigurationSnapshot`，支持对象、数组和 `ConfigJson` 等嵌套 JSON 字符串；只解析 JSON 数据，不实例化 `$type` 指定的类型。它保留诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；嵌套 JSON 字段无法解析时遮盖该字段，整份文件无效时仅附不含原始内容的 `.collection-error.txt`，其他文件继续收集。可选文件不存在时跳过，原始文件不直接进入反馈包。回归入口为 `Test/ColorVision.UI.Tests/FeedbackConfigurationSnapshotTests.cs` 和项目反馈收集器测试。
+配置收集统一使用 `FeedbackConfigurationSnapshot`，支持对象、数组和 `ConfigJson` 等嵌套 JSON 字符串；只解析 JSON 数据，不实例化 `$type` 指定的类型。它保留诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；嵌套 JSON 字段无法解析时遮盖该字段，整份文件无效时仅附不含原始内容的 `.collection-error.txt`，其他文件继续收集。可选文件不存在时跳过，原始文件不直接进入反馈包。
 
 本地运行数据库通过同一 `IFeedbackLogCollector` 发现链加入诊断项，默认勾选、最近 7 天，在主窗口统一选择 1／3／7／14／30 天。“流程与节点耗时记录”导出 `FlowNodeRecords.db`，“Socket 通信记录”导出 `SocketMessages.db`，“MQTT 服务通信记录”导出 `MsgRecords.db` 中按发送、接收、创建或更新时间命中的请求、响应和超时状态，保留完整正文；加载 ProjectARVRPro 后还会出现“ARVRPro 测试与阶段耗时记录”，导出 `ProjectARVRPro.db`。路径来自各模块当前配置，不依赖固定安装目录；收集器不会初始化业务管理器或迁移源数据库。
 
@@ -125,6 +137,5 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs`、`Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs`、`Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs`、`Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs`。
 
-自动化测试只覆盖各自受测服务；联网下载、HKLM 写入、DNS 修改和反馈上传都需明确授权，不能作为默认文档验证步骤。
+下载生命周期测试使用临时 SQLite 与模拟 RPC，覆盖迟到响应、暂停恢复、同名任务、文件保护、内容校验、分页和磁力子任务。`DownloadAria2IntegrationTests` 使用随包的真实 aria2 与临时本地 HTTP 服务，验证下载、暂停续传及完成文件提升；它不访问外部站点，不能替代真实 P2P、代理环境、大文件吞吐量或窗口交互验收。其他自动化测试只覆盖各自受测服务；外部联网下载、HKLM 写入、DNS 修改和反馈上传都需明确授权，不能作为默认文档验证步骤。

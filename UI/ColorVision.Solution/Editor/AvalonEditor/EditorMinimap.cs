@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ICSharpCode.AvalonEdit.Highlighting;
 using System.Diagnostics;
 using System.Globalization;
@@ -53,7 +54,7 @@ public sealed class EditorMinimap : FrameworkElement, IDisposable
         ClipToBounds = true;
         Focusable = false;
         Cursor = Cursors.Arrow;
-        System.Windows.Automation.AutomationProperties.SetName(this, "代码地图");
+        System.Windows.Automation.AutomationProperties.SetName(this, LocalizedText.Get("代码地图"));
         _hoverTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(350) };
         _hoverTimer.Tick += HoverTimer_Tick;
         Loaded += (_, _) => Attach();
@@ -324,7 +325,7 @@ public sealed class EditorMinimap : FrameworkElement, IDisposable
         _previewTheme!.BoldKeywords = BoldKeywords;
         _previewTheme.SetHighlighting(_getHighlighting?.Invoke());
         _previewTheme.RefreshTheme();
-        _previewTitle!.Text = $"行 {line:N0} / {_editor.Document.LineCount:N0}";
+        _previewTitle!.Text = LocalizedText.Format($"行 {line:N0} / {_editor.Document.LineCount:N0}");
         if (_preview.Child is FrameworkElement child) child.Width = Math.Clamp(_editor.ActualWidth - 24, 280, 650);
         _preview.VerticalOffset = Math.Clamp(y - 100, 0, Math.Max(0, ActualHeight - 206));
         _preview.IsOpen = true;

@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Algorithm;
 
-[STNode("/03_2 Algorithm")]
+[STNode("Algorithm", CategoryOrder = 320)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Algorithm.AlgorithmARVRNode")]
 public class AlgorithmARVRNode : CVBaseServerNode
 {

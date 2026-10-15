@@ -4,21 +4,12 @@
 #pragma warning disable SCME0001
 using Anthropic;
 using Anthropic.Core;
-using ColorVision.Copilot.Mcp;
-using ColorVision.Solution;
 using Microsoft.Agents.AI;
-using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
 using OpenAI.Responses;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
@@ -27,6 +18,9 @@ namespace ColorVision.Copilot
     {
         internal static IChatClient CreateChatClient(CopilotProfileConfig profile)
         {
+            if (profile.IsLocalCodex)
+                return new CopilotCodexChatClient(profile);
+
             if (profile.ProviderType == CopilotProviderType.AnthropicCompatible)
             {
                 var anthropicClient = new AnthropicClient(new ClientOptions
@@ -91,7 +85,7 @@ namespace ColorVision.Copilot
                 .Select(content => content.Text));
         }
 
-        private static ReasoningOptions? BuildReasoningOptions(CopilotProfileConfig profile)
+        internal static ReasoningOptions? BuildReasoningOptions(CopilotProfileConfig profile)
         {
             return CopilotReasoningCapabilities.GetEffectiveMode(profile) switch
             {

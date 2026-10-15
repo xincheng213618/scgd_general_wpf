@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 namespace Spectrum.Help
 {
     /// <summary>
@@ -58,7 +59,7 @@ namespace Spectrum.Help
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "显色性指数 Ra (Color Rendering Index)",
+                Title = LocalizedText.Get("显色性指数 Ra (Color Rendering Index)"),
                 Summary = "衡量光源对物体颜色还原能力的指标",
                 Keywords = "Ra,CRI,显色性,色彩还原,显色指数,R1-R15",
                 Detail = @"显色性指数 Ra（Color Rendering Index, CRI）
@@ -88,7 +89,7 @@ R9–R15 为补充色样的特殊显色指数：
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "外量子效率 EQE (External Quantum Efficiency)",
+                Title = LocalizedText.Get("外量子效率 EQE (External Quantum Efficiency)"),
                 Summary = "LED 将电子转换为光子的效率",
                 Keywords = "EQE,量子效率,external quantum efficiency,光子,电子",
                 Detail = @"外量子效率 EQE（External Quantum Efficiency）
@@ -128,7 +129,7 @@ EQE 的公式只使用电流 I，不使用电压 V。电流用于计算每秒注
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "主波长 Ld (Dominant Wavelength)",
+                Title = LocalizedText.Get("主波长 Ld (Dominant Wavelength)"),
                 Summary = "表征光源颜色感知的单色波长",
                 Keywords = "主波长,Ld,dominant wavelength,色度坐标",
                 Detail = @"主波长 Ld（Dominant Wavelength）
@@ -153,7 +154,7 @@ EQE 的公式只使用电流 I，不使用电压 V。电流用于计算每秒注
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "峰值波长 Lp (Peak Wavelength)",
+                Title = LocalizedText.Get("峰值波长 Lp (Peak Wavelength)"),
                 Summary = "光谱功率分布最大值对应的波长",
                 Keywords = "峰值波长,Lp,peak wavelength,光谱峰值",
                 Detail = @"峰值波长 Lp（Peak Wavelength）
@@ -175,7 +176,7 @@ EQE 的公式只使用电流 I，不使用电压 V。电流用于计算每秒注
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "半波宽 FWHM (Full Width at Half Maximum)",
+                Title = LocalizedText.Get("半波宽 FWHM (Full Width at Half Maximum)"),
                 Summary = "光谱峰值一半处的波长宽度",
                 Keywords = "半波宽,FWHM,半高全宽,带宽,spectral width",
                 Detail = @"半波宽 FWHM（Full Width at Half Maximum）
@@ -200,7 +201,7 @@ EQE 的公式只使用电流 I，不使用电压 V。电流用于计算每秒注
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "相关色温 CCT (Correlated Color Temperature)",
+                Title = LocalizedText.Get("相关色温 CCT (Correlated Color Temperature)"),
                 Summary = "描述光源色觉冷暖感的温度值",
                 Keywords = "色温,CCT,correlated color temperature,开尔文,暖白,冷白",
                 Detail = @"相关色温 CCT（Correlated Color Temperature）
@@ -233,7 +234,7 @@ EQE 的公式只使用电流 I，不使用电压 V。电流用于计算每秒注
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "色度坐标 CIE 1931 (x, y)",
+                Title = LocalizedText.Get("色度坐标 CIE 1931 (x, y)"),
                 Summary = "CIE 1931 色度空间中的颜色坐标",
                 Keywords = "色度坐标,CIE1931,xy,色品坐标,chromaticity,三刺激值,XYZ",
                 Detail = @"色度坐标 CIE 1931 (x, y)
@@ -267,7 +268,7 @@ CIE 1931 色度坐标是从三刺激值 (X, Y, Z) 归一化得到的二维坐标
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "色度坐标 CIE 1976 (u', v')",
+                Title = LocalizedText.Get("色度坐标 CIE 1976 (u', v')"),
                 Summary = "CIE 1976 均匀色度空间中的颜色坐标",
                 Keywords = "色度坐标,CIE1976,u'v',UCS,均匀色度",
                 Detail = @"色度坐标 CIE 1976 (u', v')
@@ -291,7 +292,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "色纯度 (Color Purity)",
+                Title = LocalizedText.Get("色纯度 (Color Purity)"),
                 Summary = "表征颜色接近光谱色的程度",
                 Keywords = "色纯度,color purity,纯度,fPur",
                 Detail = @"色纯度（Color Purity）
@@ -318,7 +319,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "兴奋纯度 pe (Excitation Purity)",
+                Title = LocalizedText.Get("兴奋纯度 pe (Excitation Purity)"),
                 Summary = "CIE 色度图上基于几何距离的颜色纯度",
                 Keywords = "兴奋纯度,excitation purity,pe,纯度",
                 Detail = @"兴奋纯度 pe（Excitation Purity）
@@ -344,7 +345,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "光通量 Φv (Luminous Flux)",
+                Title = LocalizedText.Get("光通量 Φv (Luminous Flux)"),
                 Summary = "光源在所有方向上发出的总光能量（视觉加权）",
                 Keywords = "光通量,luminous flux,流明,lm,Φv,fPh",
                 Detail = @"光通量 Φv（Luminous Flux）
@@ -370,7 +371,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "辐射通量 Φe (Radiant Flux)",
+                Title = LocalizedText.Get("辐射通量 Φe (Radiant Flux)"),
                 Summary = "光源发出的总辐射功率",
                 Keywords = "辐射通量,radiant flux,辐射功率,瓦特,W,Φe",
                 Detail = @"辐射通量 Φe（Radiant Flux）
@@ -401,7 +402,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "光效 (Luminous Efficacy)",
+                Title = LocalizedText.Get("光效 (Luminous Efficacy)"),
                 Summary = "光通量与电功率之比",
                 Keywords = "光效,luminous efficacy,lm/W,发光效率",
                 Detail = @"光效（Luminous Efficacy）
@@ -432,7 +433,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "亮度 Lv (Luminance)",
+                Title = LocalizedText.Get("亮度 Lv (Luminance)"),
                 Summary = "单位面积、单位立体角的光通量",
                 Keywords = "亮度,luminance,Lv,cd/m2,坎德拉",
                 Detail = @"亮度 Lv（Luminance）
@@ -455,7 +456,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "色差 dC",
+                Title = LocalizedText.Get("色差 dC"),
                 Summary = "被测光源色度点偏离普朗克轨迹的距离",
                 Keywords = "色差,dC,Duv,偏差",
                 Detail = @"色差 dC (Duv)
@@ -476,7 +477,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "三刺激值 CIE XYZ",
+                Title = LocalizedText.Get("三刺激值 CIE XYZ"),
                 Summary = "CIE 标准色度系统的基本色度量",
                 Keywords = "三刺激值,XYZ,CIE,tristimulus,标准观察者",
                 Detail = @"三刺激值 CIE XYZ (Tristimulus Values)
@@ -499,7 +500,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "蓝光比 (Blue Light Ratio)",
+                Title = LocalizedText.Get("蓝光比 (Blue Light Ratio)"),
                 Summary = "蓝光波段能量占总可见光能量的比例",
                 Keywords = "蓝光,blue light,蓝光危害,蓝光比",
                 Detail = @"蓝光比（Blue Light Ratio）
@@ -522,7 +523,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "绝对光谱系数 fPlambda",
+                Title = LocalizedText.Get("绝对光谱系数 fPlambda"),
                 Summary = "将相对光谱转换为绝对光谱功率的系数",
                 Keywords = "fPlambda,绝对光谱,标定系数,绝对校准",
                 Detail = @"绝对光谱系数 fPlambda
@@ -545,7 +546,7 @@ CIE 1976 UCS（Uniform Chromaticity Scale）色度坐标是对 CIE 1931 xy 坐�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Terminology,
-                Title = "IP (积分峰值比)",
+                Title = LocalizedText.Get("IP (积分峰值比)"),
                 Summary = "光谱峰值AD值与满量程的比例",
                 Keywords = "IP,积分峰值,峰值AD,信号强度,fIp",
                 Detail = @"IP（积分峰值比）
@@ -570,7 +571,7 @@ IP 是光谱仪采集到的峰值 AD 值（fIp）与满量程（65535）的比�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "同步频率测量",
+                Title = LocalizedText.Get("同步频率测量"),
                 Summary = "消除因 PWM 驱动导致的光谱闪烁误差",
                 Keywords = "同步频率,sync frequency,PWM,闪烁,syncfreq",
                 Detail = @"同步频率测量
@@ -601,7 +602,7 @@ IP 是光谱仪采集到的峰值 AD 值（fIp）与满量程（65535）的比�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "自动校零（暗电流校正）",
+                Title = LocalizedText.Get("自动校零（暗电流校正）"),
                 Summary = "校正光谱仪的暗电流和背景噪声",
                 Keywords = "校零,dark,暗电流,暗噪声,校正,dark storage,shutter",
                 Detail = @"自动校零（暗电流校正）
@@ -634,7 +635,7 @@ IP 是光谱仪采集到的峰值 AD 值（fIp）与满量程（65535）的比�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "自适应校零",
+                Title = LocalizedText.Get("自适应校零"),
                 Summary = "在不同积分时间下自动生成匹配的暗电流数据",
                 Keywords = "自适应校零,adaptive dark,自适应暗电流,adaptive auto dark",
                 Detail = @"自适应校零（Adaptive Auto Dark）
@@ -665,7 +666,7 @@ IP 是光谱仪采集到的峰值 AD 值（fIp）与满量程（65535）的比�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "光通量模式 (EQE 模式)",
+                Title = LocalizedText.Get("光通量模式 (EQE 模式)"),
                 Summary = "测量 LED 的光电参数：EQE、光通量、辐射通量、光效",
                 Keywords = "光通量模式,EQE模式,LED测量,源表,SMU,电流,电压",
                 Detail = @"光通量模式（EQE 模式）
@@ -705,7 +706,7 @@ EQE 模式下导出的 CSV 包含 EQE(%)、光通量、辐射通量、光效、�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "自动积分时间",
+                Title = LocalizedText.Get("自动积分时间"),
                 Summary = "自动调整积分时间以获得最佳信噪比",
                 Keywords = "自动积分,auto integration,积分时间,信噪比,auto time",
                 Detail = @"自动积分时间
@@ -735,7 +736,7 @@ EQE 模式下导出的 CSV 包含 EQE(%)、光通量、辐射通量、光效、�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "连续测量",
+                Title = LocalizedText.Get("连续测量"),
                 Summary = "自动执行多次测量，用于稳定性和一致性评估",
                 Keywords = "连续测量,continuous,loop,batch,批量",
                 Detail = @"连续测量
@@ -765,7 +766,7 @@ EQE 模式下导出的 CSV 包含 EQE(%)、光通量、辐射通量、光效、�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "标定文件管理",
+                Title = LocalizedText.Get("标定文件管理"),
                 Summary = "波长标定文件和幅值标定文件的用途和管理",
                 Keywords = "标定,calibration,波长文件,幅值文件,WavaLength,Magiude",
                 Detail = @"标定文件管理
@@ -792,7 +793,7 @@ EQE 模式下导出的 CSV 包含 EQE(%)、光通量、辐射通量、光效、�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "SP100 参数设置",
+                Title = LocalizedText.Get("SP100 参数设置"),
                 Summary = "高级光谱处理参数配置",
                 Keywords = "SP100,emission,参数设置,nStartPos,nEndPos,dMeanThreshold",
                 Detail = @"SP100 参数设置
@@ -817,7 +818,7 @@ SP100 是光谱仪内部的高级光谱处理参数，用于控制光谱数据�
             entries.Add(new HelpEntry
             {
                 Category = HelpCategory.Usage,
-                Title = "数据导出",
+                Title = LocalizedText.Get("数据导出"),
                 Summary = "将测量数据导出为 CSV 文件",
                 Keywords = "导出,export,CSV,Excel,数据",
                 Detail = @"数据导出

@@ -189,4 +189,7 @@
   <data name="Upload_NoFileSelected" xml:space="preserve">
     <value>您未选择文件</value>
   </data>
+  <data name="操作" xml:space="preserve">
+    <value>操作</value>
+  </data>
 </root>

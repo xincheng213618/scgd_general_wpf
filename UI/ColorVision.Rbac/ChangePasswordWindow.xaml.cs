@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Rbac.DisplayText;
 using System.Windows;
 using System.Windows.Input;
 
@@ -34,9 +35,9 @@ namespace ColorVision.Rbac
         {
             if (IsForceChange)
             {
-                TxtTitle.Text = "首次登录 - 请修改默认密码";
+                TxtTitle.Text = LocalizedText.Get("首次登录 - 请修改默认密码");
                 BdrHint.Visibility = Visibility.Visible;
-                TxtHint.Text = "您正在使用默认密码登录，为了账户安全，请立即修改密码。";
+                TxtHint.Text = LocalizedText.Get("您正在使用默认密码登录，为了账户安全，请立即修改密码。");
                 BtnCancel.Visibility = Visibility.Collapsed;
             }
 
@@ -82,7 +83,7 @@ namespace ColorVision.Rbac
             }
 
             BtnSave.IsEnabled = false;
-            BtnSave.Content = "保存中...";
+            BtnSave.Content = LocalizedText.Get("保存中...");
 
             try
             {
@@ -103,7 +104,7 @@ namespace ColorVision.Rbac
                     }
                     catch { }
 
-                    MessageBox.Show("密码修改成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(LocalizedText.Get("密码修改成功！"), LocalizedText.Get("成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                     DialogResult = true;
                 }
                 else
@@ -118,7 +119,7 @@ namespace ColorVision.Rbac
             finally
             {
                 BtnSave.IsEnabled = true;
-                BtnSave.Content = "保存";
+                BtnSave.Content = LocalizedText.Get("保存");
             }
         }
 

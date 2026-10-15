@@ -170,76 +170,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public CalibrationBase LumMultiColor { get; set; }
     }
 
-
-    public class MysqlCalibrationParam : IMysqlCommand
-    {
-        public string GetMysqlCommandName() => "校正恢复";
-
-        public string GetRecover()
-        {
-            string sql = @"
-INSERT INTO `t_scgd_sys_dictionary_mod_item`
-(`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`)
-VALUES
-(206, 'Luminance', 206, '亮度', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(207, 'LuminanceIsSelected', 207, 'LuminanceIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:48', 1, 0, NULL),
-(208, 'LumOneColor', 208, '单色', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(209, 'LumOneColorIsSelected', 209, 'LumOneColorIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:46', 1, 0, NULL),
-(210, 'LumFourColor', 210, '四色', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(211, 'LumFourColorIsSelected', 211, 'LumFourColorIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:45', 1, 0, NULL),
-(212, 'LumMultiColor', 212, '多色', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(213, 'LumMultiColorIsSelected', 213, 'LumMultiColorIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:44', 1, 0, NULL),
-(214, 'Uniformity', 214, '均匀场', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(215, 'UniformityIsSelected', 215, 'UniformityIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:42', 1, 0, NULL),
-(216, 'Distortion', 216, '畸变', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(217, 'DistortionIsSelected', 217, 'DistortionIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:41', 1, 0, NULL),
-(218, 'ColorShift', 218, '色偏', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(219, 'ColorShiftIsSelected', 219, 'ColorShiftIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:39', 1, 0, NULL),
-(220, 'DarkNoise', 220, 'DarkNoise', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(221, 'DarkNoiseIsSelected', 221, 'DarkNoiseIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:38', 1, 0, NULL),
-(222, 'DefectPoint', 222, 'DefectPoint', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(223, 'DefectPointIsSelected', 223, 'DefectPointIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:37', 1, 0, NULL),
-(224, 'DSNU', 224, 'DSNU', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(225, 'DSNUIsSelected', 225, 'DSNUIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:34', 1, 0, NULL),
-(227, 'LuminanceId', 227, '亮度', 1, NULL, '-1', 2, '2024-01-31 17:57:18', 1, 0, NULL),
-(228, 'LumOneColorId', 228, '单色', 1, NULL, '-1', 2, '2024-01-31 17:57:18', 1, 0, NULL),
-(229, 'LumFourColorId', 229, '四色', 1, NULL, '-1', 2, '2024-01-31 17:57:17', 1, 0, NULL),
-(230, 'LumMultiColorId', 230, '多色', 1, NULL, '-1', 2, '2024-01-31 17:57:16', 1, 0, NULL),
-(231, 'UniformityId', 231, '均匀场', 1, NULL, '-1', 2, '2024-01-31 17:57:16', 1, 0, NULL),
-(232, 'DistortionId', 232, '畸变', 1, NULL, '-1', 2, '2024-01-31 17:57:15', 1, 0, NULL),
-(233, 'ColorShiftId', 233, '色偏', 1, NULL, '-1', 2, '2024-01-31 17:57:15', 1, 0, NULL),
-(234, 'DarkNoiseId', 234, 'DarkNoise', 1, NULL, '-1', 2, '2024-01-31 17:57:14', 1, 0, NULL),
-(235, 'DefectPointId', 235, 'DefectPoint', 1, NULL, '-1', 2, '2024-01-31 17:57:13', 1, 0, NULL),
-(236, 'DSNUId', 236, 'DSNU', 1, NULL, '-1', 2, '2024-01-31 17:59:14', 1, 0, NULL),
-(237, 'CalibrationMode', 237, 'CalibrationMode', 3, NULL, '', 2, '2024-03-12 17:30:14', 1, 0, NULL),
-(238, 'LineArityId', 238, '线性Id', 1, NULL, '-1', 2, '2024-01-31 17:59:14', 1, 0, NULL),
-(239, 'LineArity', 239, '线性', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(240, 'LineArityIsSelected', 240, '线性选中', 2, NULL, NULL, 2, '2023-12-08 15:22:34', 1, 0, NULL),
-
-(241, 'ColorDiffId', 241, '色差Id', 1, NULL, '-1', 2, '2024-01-31 17:59:14', 1, 0, NULL),
-(242, 'ColorDiff', 242, '色差', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(243, 'ColorDiffIsSelected', 243, '色差选中', 2, NULL, NULL, 2, '2023-12-08 15:22:34', 1, 0, NULL),
-
-(244, 'AngleShiftId', 244, 'AngleShiftId', 1, NULL, '-1', 2, '2024-01-31 17:59:14', 1, 0, NULL),
-(245, 'AngleShift', 245, 'AngleShift', 3, NULL, NULL, 2, '2023-12-08 15:12:16', 1, 0, NULL),
-(246, 'AngleShiftIsSelected', 246, 'AngleShiftIsSelected', 2, NULL, NULL, 2, '2023-12-08 15:22:34', 1, 0, NULL)
-ON DUPLICATE KEY UPDATE
-    `symbol` = VALUES(`symbol`),
-    `address_code` = VALUES(`address_code`),
-    `name` = VALUES(`name`),
-    `val_type` = VALUES(`val_type`),
-    `value_range` = VALUES(`value_range`),
-    `default_val` = VALUES(`default_val`),
-    `pid` = VALUES(`pid`),
-    `create_date` = VALUES(`create_date`),
-    `is_enable` = VALUES(`is_enable`),
-    `is_delete` = VALUES(`is_delete`),
-    `remark` = VALUES(`remark`);
-";
-            return sql;
-        }
-    }
-
     public class TemplateCalibrationParam : ITemplate<CalibrationParam>
     {
         public TemplateCalibrationParam(PhyCamera device)
@@ -271,8 +201,6 @@ ON DUPLICATE KEY UPDATE
         }
 
         public PhyCamera Device { get; set; }
-
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlCalibrationParam();
 
         public override void Load()
         {

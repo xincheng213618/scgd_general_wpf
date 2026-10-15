@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 
 namespace Spectrum.Configs
@@ -14,9 +15,11 @@ namespace Spectrum.Configs
         public string GroupName { get => _GroupName; set { _GroupName = value; OnPropertyChanged(); } }
         private string _GroupName = "Default";
 
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
         private string _WavelengthFile = "WavaLength.dat";
 
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile = "Magiude.dat";
 

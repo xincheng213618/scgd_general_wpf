@@ -5,7 +5,7 @@ status: "current"
 summary: "公共站点首页、发行归档、日志、工具、Android更新和目录浏览的读模型；compact路径不同，GET可写缓存或修复旧更新目录。"
 aliases: ["公共站点读模型", "首页汇总", "发行归档分页", "changelog分页", "Android更新清单", "文件浏览", "api/site/home", "api/site/releases", "api/site/changelog", "api/site/browse", "get_compact_releases_from_index", "get_compact_home_releases_from_index", "build_index_page_context", "paginate_changelog_markdown", "build_android_update_manifest", "select_latest_android_release", "is_public_storage_path", "available_count"]
 code_paths: ["Web/Backend/routes/pages.py", "Web/Backend/marketplace_services.py", "Web/Backend/page_contexts.py", "Web/Backend/services/artifact_index.py", "Web/Backend/services/storage_events.py", "Web/Backend/app_releases.py", "Web/Backend/app_changelog.py", "Web/Backend/storage_browser.py", "Web/Backend/services/public_storage.py", "Web/Backend/services/android_update.py", "Web/Backend/services/app_latest_version_cache.py", "Web/Backend/update_retention.py", "Web/Backend/services/spectrum_release.py", "Web/Backend/services/docs_site.py"]
-test_paths: ["Web/Backend/test_app.py", "Web/Backend/test_artifact_index.py", "Web/Backend/test_page_contexts.py", "Web/Backend/test_app_releases.py"]
+test_paths: ["Web/Backend/test_app.py", "Web/Backend/test_artifact_index.py", "Web/Backend/test_page_contexts.py", "Web/Backend/test_app_releases.py", "Web/Backend/test_setup_download.py"]
 related: ["delivery.backend", "delivery.plugin-catalog", "delivery.artifact-delivery", "delivery.file-transfer", "delivery.backend-auth"]
 ---
 
@@ -14,6 +14,10 @@ related: ["delivery.backend", "delivery.plugin-catalog", "delivery.artifact-deli
 `routes/pages.py` 提供JSON和下载入口，`MarketplaceDataService` 位于 `marketplace_services.py`，`page_contexts.py` 组织展示数据；React页面不是这些数据的事实源。本页负责非插件的公共查询和文件选择；[插件目录](./plugin-catalog.md)、[HTTP文件响应](./artifact-delivery.md)、[文件中转](./file-transfer.md)各有独立契约。[CVWindowsService服务包](./cvwindowsservice.md)的latest指针、独立releases缓存和按版本选包不属于通用tools列表。
 
 查询存在不表示无副作用：回退可以写SQLite缓存，home/updates回退还可能修复旧更新目录。启动、配置和数据库隔离前提见[Backend组成](./README.md)，不要为验证文档随意启动服务或向实际存储发“只读探针”。
+
+首页与版本中心的 Windows 下载菜单分别提供“下载助手”和“完整安装包”，指定版本列表仍直接下载对应完整包。两种首页/发行读模型都额外返回顶层 `download_assistant`：由 `services/setup_download.py` 检查存储根下 `Tool/ColorVisionSetup/ColorVisionSetup.exe`，存在非空普通文件时提供 `relative_path` 和真实 `size`，缺失、空文件或符号链接时为 `null`。前端据此启用助手菜单项；助手未提供时完整包仍可独立下载。该字段逐次检查文件，不改写主程序 `LATEST_RELEASE`，也不依赖发行索引重建。正式签名后的助手通过既有工具文件发布流程放入上述位置，下载沿用公共 `/download/` 入口；构建官网不会自动发布本地助手。
+
+首页与版本中心使用 `usePhoneLayout` 按视口宽度不超过 768 CSS 像素显示 Android 按钮、卡片、统计与历史包；较宽布局只展示 Windows 下载。窗口尺寸变化会即时更新。这是响应式展示规则，窄桌面窗口也会进入手机布局，Android 公共 API 与文件下载权限保持原契约。
 
 ## 同名compact在不同入口含义不同
 

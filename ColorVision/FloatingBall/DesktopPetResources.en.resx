@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Desktop Pet</value></data>
+  <data name="ChooseCompanion" xml:space="preserve"><value>Choose your desktop companion</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>A companion for inspection work, Copilot activity and timely reminders.</value></data>
+  <data name="Create" xml:space="preserve"><value>Create pet</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Wake" xml:space="preserve"><value>Show pet</value></data>
+  <data name="Hide" xml:space="preserve"><value>Hide pet</value></data>
+  <data name="AvailablePets" xml:space="preserve"><value>Available pets</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Searching" xml:space="preserve"><value>Looking for available pets…</value></data>
+  <data name="SearchingAll" xml:space="preserve"><value>Looking for ColorVision, Codex and custom pets…</value></data>
+  <data name="Loaded" xml:space="preserve"><value>{0} pets loaded · {1} from local Codex · {2} custom</value></data>
+  <data name="LoadedWithoutCodex" xml:space="preserve"><value>{0} pets loaded. Local Codex assets were not found; you can still create or import a pet.</value></data>
+  <data name="RefreshFailed" xml:space="preserve"><value>Could not refresh pets: {0}</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Pet unavailable: {0}</value></data>
+  <data name="CodexOpened" xml:space="preserve"><value>Codex opened with a creation prompt. Send it in Codex; this page will discover and select the new pet.</value></data>
+  <data name="ImportNotFound" xml:space="preserve"><value>The files were copied, but the pet could not be loaded. Open the pet folder and check pet.json.</value></data>
+  <data name="CreatedSelected" xml:space="preserve"><value>Created and selected “{0}”.</value></data>
+  <data name="WatchExpired" xml:space="preserve"><value>No new Codex pet found yet. Refresh this page after creation finishes.</value></data>
+  <data name="CodexCreatedSelected" xml:space="preserve"><value>Codex created “{0}” and it was selected automatically.</value></data>
+  <data name="Preferences" xml:space="preserve"><value>Appearance and reminders</value></data>
+  <data name="Appearance" xml:space="preserve"><value>Pet size</value></data>
+  <data name="FollowCopilot" xml:space="preserve"><value>Follow Copilot activity</value></data>
+  <data name="CopilotNotifications" xml:space="preserve"><value>Notify when approval is needed, work completes or fails</value></data>
+  <data name="Advanced" xml:space="preserve"><value>Advanced settings</value></data>
+  <data name="CustomPets" xml:space="preserve"><value>Custom pets</value></data>
+  <data name="CustomSubtitle" xml:space="preserve"><value>Manage local pet assets, or use Create pet to import an animated companion.</value></data>
+  <data name="OpenFolder" xml:space="preserve"><value>Open folder</value></data>
+  <data name="SourceColorVisionBuiltIn" xml:space="preserve"><value>ColorVision built-in</value></data>
+  <data name="SourceColorVisionCustom" xml:space="preserve"><value>ColorVision custom</value></data>
+  <data name="SourceCodexBuiltIn" xml:space="preserve"><value>Local Codex</value></data>
+  <data name="SourceCodexCustom" xml:space="preserve"><value>Codex custom</value></data>
+  <data name="XiaocaiName" xml:space="preserve"><value>Xiaocai</value></data>
+  <data name="XiaocaiDescription" xml:space="preserve"><value>The default ColorVision companion for your inspection work.</value></data>
+  <data name="CodexDescription" xml:space="preserve"><value>The original Codex companion.</value></data>
+  <data name="DeweyDescription" xml:space="preserve"><value>A calm companion for focused workspace days.</value></data>
+  <data name="FireballDescription" xml:space="preserve"><value>Hot path energy for fast iteration.</value></data>
+  <data name="HootsDescription" xml:space="preserve"><value>A sharp-eyed owl for polished work in a blink.</value></data>
+  <data name="RockyDescription" xml:space="preserve"><value>A steady rock when the diff gets large.</value></data>
+  <data name="SeedyDescription" xml:space="preserve"><value>Small green shoots for new ideas.</value></data>
+  <data name="StackyDescription" xml:space="preserve"><value>A balanced stack for deep work.</value></data>
+  <data name="BsodDescription" xml:space="preserve"><value>A tiny blue-screen gremlin.</value></data>
+  <data name="NullSignalDescription" xml:space="preserve"><value>Quiet signal from the void.</value></data>
+  <data name="DefaultPackageDescription" xml:space="preserve"><value>Compatible Codex desktop pet pack.</value></data>
+  <data name="CreateTitle" xml:space="preserve"><value>Create a desktop pet</value></data>
+  <data name="CreateSubtitle" xml:space="preserve"><value>Generate an animated companion with Codex, or import a sprite sheet.</value></data>
+  <data name="CreateWithCodex" xml:space="preserve"><value>Create with Codex</value></data>
+  <data name="ImportSpriteSheet" xml:space="preserve"><value>Import sprite sheet</value></data>
+  <data name="GenerateWithCodex" xml:space="preserve"><value>Let Codex create it</value></data>
+  <data name="CodexGenerationDescription" xml:space="preserve"><value>Use Codex Hatch Pet to generate an 8 × 11 animated sprite sheet. The finished pet will appear in your pet list.</value></data>
+  <data name="CodexStatus" xml:space="preserve"><value>Codex status</value></data>
+  <data name="DetectingCodex" xml:space="preserve"><value>Checking local Codex and Hatch Pet…</value></data>
+  <data name="Concept" xml:space="preserve"><value>Pet idea (optional)</value></data>
+  <data name="ConceptHint" xml:space="preserve"><value>Describe an animal, colors, personality or workspace. Leave blank to let Codex use its existing context.</value></data>
+  <data name="NextSteps" xml:space="preserve"><value>What happens next</value></data>
+  <data name="NextStepsDescription" xml:space="preserve"><value>ColorVision installs the bundled Hatch Pet skill if needed and opens a prefilled task in Codex. Review and send it there; keep this settings page open to discover and select the new pet.</value></data>
+  <data name="PetName" xml:space="preserve"><value>Pet name</value></data>
+  <data name="OptionalDescription" xml:space="preserve"><value>Description (optional)</value></data>
+  <data name="SpriteSheetFile" xml:space="preserve"><value>Sprite sheet file</value></data>
+  <data name="Browse" xml:space="preserve"><value>Browse…</value></data>
+  <data name="SpriteSheetFormat" xml:space="preserve"><value>Sprite sheet format</value></data>
+  <data name="FormatV2" xml:space="preserve"><value>Codex v2 · 8 columns × 11 rows (recommended)</value></data>
+  <data name="FormatV1" xml:space="preserve"><value>Codex v1 · 8 columns × 9 rows</value></data>
+  <data name="ImportHint" xml:space="preserve"><value>PNG or WebP, up to 4096 × 4096 and 20 MiB. Width must divide evenly into 8 columns; height into the selected number of rows.</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Detecting" xml:space="preserve"><value>Checking…</value></data>
+  <data name="CreateInCodex" xml:space="preserve"><value>Create in Codex</value></data>
+  <data name="ImportAndSelect" xml:space="preserve"><value>Import and select</value></data>
+  <data name="SelectSpriteSheet" xml:space="preserve"><value>Choose a desktop pet sprite sheet</value></data>
+  <data name="SpriteSheetFilter" xml:space="preserve"><value>Pet sprite sheets (*.webp;*.png)|*.webp;*.png|WebP images (*.webp)|*.webp|PNG images (*.png)|*.png</value></data>
+  <data name="CodexCheckFailed" xml:space="preserve"><value>Could not check Codex: {0}</value></data>
+  <data name="PreparingCodex" xml:space="preserve"><value>Preparing Hatch Pet and opening Codex…</value></data>
+  <data name="CodexOpenFailed" xml:space="preserve"><value>Could not open Codex: {0}</value></data>
+  <data name="Importing" xml:space="preserve"><value>Validating and importing the pet…</value></data>
+  <data name="CodexReady" xml:space="preserve"><value>Ready: Codex and the Hatch Pet skill are available.</value></data>
+  <data name="CodexSkillIncomplete" xml:space="preserve"><value>The Codex hatch-pet skill folder is incomplete. Repair or remove it in Codex Skills first.</value></data>
+  <data name="CodexNotFound" xml:space="preserve"><value>Codex Desktop with Hatch Pet was not found. You can still import a sprite sheet.</value></data>
+  <data name="CodexDetected" xml:space="preserve"><value>Codex Desktop found. Its bundled Hatch Pet skill will be installed on first use.</value></data>
+  <data name="SkillMissingManifest" xml:space="preserve"><value>The Codex hatch-pet skill folder already exists, but SKILL.md is missing.</value></data>
+  <data name="BundledSkillNotFound" xml:space="preserve"><value>The bundled Codex Desktop Hatch Pet skill was not found.</value></data>
+  <data name="BundledSkillIncomplete" xml:space="preserve"><value>The bundled Codex Desktop Hatch Pet skill is incomplete.</value></data>
+  <data name="InvalidSkillDirectory" xml:space="preserve"><value>The Codex skill installation folder is invalid.</value></data>
+  <data name="SkillCopyIncomplete" xml:space="preserve"><value>The copied Hatch Pet skill failed its completeness check.</value></data>
+  <data name="ConceptTooLong" xml:space="preserve"><value>The pet idea cannot exceed {0} characters.</value></data>
+  <data name="CodexHomeNotFound" xml:space="preserve"><value>Could not determine the current user's Codex data folder.</value></data>
+  <data name="SkillLinkedFile" xml:space="preserve"><value>The Hatch Pet skill contains an unsupported linked file.</value></data>
+  <data name="SkillOutsideDirectory" xml:space="preserve"><value>A Hatch Pet skill file is outside the expected folder.</value></data>
+  <data name="SkillLinkedDirectory" xml:space="preserve"><value>The Hatch Pet skill contains an unsupported linked folder.</value></data>
+  <data name="NameRequired" xml:space="preserve"><value>Enter a pet name of up to 80 characters.</value></data>
+  <data name="DescriptionTooLong" xml:space="preserve"><value>The pet description cannot exceed 240 characters.</value></data>
+  <data name="InvalidSpriteVersion" xml:space="preserve"><value>The sprite sheet version must be 1 or 2.</value></data>
+  <data name="ChooseSpriteFile" xml:space="preserve"><value>Choose a sprite sheet file.</value></data>
+  <data name="SpriteFileNotFound" xml:space="preserve"><value>Choose an existing sprite sheet file.</value></data>
+  <data name="UnsupportedSpriteFormat" xml:space="preserve"><value>Pet sprite sheets must be WebP or PNG.</value></data>
+  <data name="SpriteTooLarge" xml:space="preserve"><value>The sprite sheet is empty or exceeds 20 MiB.</value></data>
+  <data name="SpriteDecodeFailed" xml:space="preserve"><value>The pet sprite sheet could not be decoded.</value></data>
+  <data name="SpriteGridInvalid" xml:space="preserve"><value>The sprite sheet must use a {0} × {1} frame grid and be no larger than 4096 × 4096.</value></data>
+</root>
+

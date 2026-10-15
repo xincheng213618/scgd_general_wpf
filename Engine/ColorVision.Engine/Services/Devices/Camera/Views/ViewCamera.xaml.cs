@@ -7,14 +7,13 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using MQTTMessageLib.Camera;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
-using System.IO;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -47,12 +46,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
-        public ObservableCollection<ViewResultImage> ViewResults { get; } = new ObservableCollection<ViewResultImage>();
+        private readonly ViewCameraConfig _historyConfig;
+        private readonly ResultHistoryCollection<ViewResultImage> _viewResults;
+        public ObservableCollection<ViewResultImage> ViewResults => _viewResults;
 
         public ViewCamera(DeviceCamera device) : this(device, false) { }
 
         internal ViewCamera(DeviceCamera device, bool deferInitialization)
         {
+            _historyConfig = Config;
+            _viewResults = new ResultHistoryCollection<ViewResultImage>(result => result.Id, _historyConfig.MaxHistoryCount);
+            _historyConfig.PropertyChanged += HistoryConfig_PropertyChanged;
             Device = device;
             Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
             _messageSubscribed = true;
@@ -66,6 +70,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void View_Loaded(object sender, RoutedEventArgs e)
         {
             if (IsVisible) EnsureInitialized();
+        }
+
+        private void HistoryConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (IsDisposed || e.PropertyName != nameof(ResultViewConfig.MaxHistoryCount)) return;
+            void ApplyLimit()
+            {
+                if (!IsDisposed) _viewResults.MaxCount = _historyConfig.MaxHistoryCount;
+            }
+            if (Dispatcher.CheckAccess()) ApplyLimit();
+            else Dispatcher.BeginInvoke(ApplyLimit);
+        }
+
+        private void Result_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (sender is ListViewItem { DataContext: ViewResultImage result } item)
+            {
+                result.ContextMenu.PlacementTarget = item;
+                result.ContextMenu.IsOpen = true;
+                e.Handled = true;
+            }
         }
 
         private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -85,6 +110,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            // A deferred dock shell already inherits its host's context when XAML bindings are created.
+            DataContext = Config;
             InitializeComponent();
             // A registered shell may already have raised FrameworkElement.Initialized.
             UserControl_Initialized(this, EventArgs.Empty);
@@ -96,7 +123,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed || _isInitialized) return;
             _isInitialized = true;
 
-            this.DataContext = Config;
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);
@@ -187,7 +213,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.SelectDataFirst, "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.SelectDataFirst, "ColorVision");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
@@ -269,7 +295,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 {
                     ShowResult(model);
                     if (forceDisplay || Config.AutoRefreshView)
-                        listView1.SelectedItem = ViewResults.First(item => item.Id == model.Id);
+                        listView1.SelectedItem = ViewResults.FirstOrDefault(item => item.Id == model.Id);
                 }
             }
             finally { updatingLocalSelection = false; }
@@ -285,7 +311,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed) return;
             EnsureInitialized();
 
-            if (ViewResults.Any(item => item.Id == model.Id)) return;
+            if (_viewResults.ContainsId(model.Id)) return;
             ViewResultImage result = new(model);
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, result);
@@ -294,10 +320,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
 
             // A delayed persisted notification for an older capture must not replace the latest snapshot.
-            if (Config.AutoRefreshView && model.Id >= localPreviewResultId)
+            if (Config.AutoRefreshView && model.Id >= localPreviewResultId && _viewResults.ContainsId(model.Id))
             {
-                if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
-                listView1.ScrollIntoView(listView1.SelectedItem);
+                listView1.SelectedItem = result;
+                listView1.ScrollIntoView(result);
             }
         }
         private void Search_Click(object sender, RoutedEventArgs e)
@@ -316,7 +342,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             foreach (var item in dbList)
             {
                 ViewResultImage ViewResultAlg = new(item);
-                ViewResults.Add(ViewResultAlg);
+                _viewResults.QueryResults.Add(ViewResultAlg);
             }
         }
 
@@ -326,7 +352,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, ViewResults, t => new ViewResultImage(t));
+            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, _viewResults.QueryResults, t => new ViewResultImage(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             Db.Dispose();
@@ -362,6 +388,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DisposeCore()
         {
+            _historyConfig.PropertyChanged -= HistoryConfig_PropertyChanged;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             if (_messageSubscribed)
@@ -372,8 +399,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
             if (listView1 != null)
                 DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
+            ViewResults.Clear();
             localPreview = null;
             ImageView?.Dispose();
             DataContext = null;

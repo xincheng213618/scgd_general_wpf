@@ -1,17 +1,8 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -381,6 +372,8 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeUsesResponseTimeline() => UsesResponseTimeline;
 
+        // Deserialize a new ledger before the setter freezes it; the existing snapshot is immutable.
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public CopilotAgentTaskLedgerSnapshot AgentTaskLedger
         {
             get => _agentTaskLedger;

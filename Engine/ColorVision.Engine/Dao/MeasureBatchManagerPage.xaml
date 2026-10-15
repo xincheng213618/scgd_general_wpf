@@ -47,7 +47,7 @@
         </Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,12">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="{x:Static properties:Resources.ArchiveAll}" Click="Save_Click" Padding="12,6" Margin="0,0,8,0"/>
+                <Button Content="{local:EngineLang 数据库清理}" Click="OpenCleanupWindow_Click" Padding="12,6" Margin="0,0,8,0"/>
                 <Button Content="{local:EngineLang 查询设置}" Command="{Binding Config.EditCommand}" Padding="12,6"/>
             </StackPanel>
             <StackPanel>

@@ -17,7 +17,7 @@ related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","project
 
 | 项目 | 业务定位 | 入口与协议 | 完成确认 |
 | --- | --- | --- | --- |
-| [ProjectARVRPro](./project-arvr-pro.md) | AR/VR 流程组、Recipe、切图与光学测试 | Socket JSON：`ProjectARVRInit`、`RunAll`、`SwitchGroup`；另有雷鸟串口切图、AOI Relay 对接 | `RunAll Code=0` 只表示接受启动；等待最终 `ProjectARVRResult` 并检查业务判定。详细时序见[ARVRPro 对接契约](./project-arvr-pro-integration-demo.md) |
+| [ProjectARVRPro](./project-arvr-pro.md) | AR/VR 流程组、Recipe、切图与光学测试 | Socket JSON：`ProjectARVRInit`、`RunAll`、`SwitchGroup`；另有雷鸟串口切图、AOI 外部切图节点 | `RunAll Code=0` 只表示接受启动；等待最终 `ProjectARVRResult` 并检查业务判定。详细时序见[ARVRPro 对接契约](./project-arvr-pro-integration-demo.md) |
 | [ProjectKB](./project-kb.md) | 键盘背光亮度、均匀性、局部对比度及背光修正 | Modbus TCP 触发检测；MES DLL 用于 SN 检查与结果回传 | 寄存器回 `0` 也可能是忽略空 SN 触发；需分别核对检测结果、PLC 读回和已启用的 MES 输出 |
 | [ProjectLUX](./project-lux.md) | 亮度、色彩、MTF、畸变、VID、光通量等测试 | 文本 Socket `T00XX,SN;`；普通 Flow 按活动组的 `SocketCode` 分派，VID/光通量有专用路径 | `T0000` 仅握手；命令响应不能单独证明 Flow 执行或 Recipe 判定通过。字段与异常响应见[LUX 协议](./project-lux-protocol.md) |
 | [IntegrationDemo](./project-arvr-pro-integration-demo.md) | 独立 ARVRPro TCP/JSON 对接客户端 | 主动连接服务端，默认端口 `6666`；支持离线解析样例、联机命令及切图确认 | 联机测试等待最终结果；离线解析成功只说明样例可读取，不证明宿主、设备或协议联调通过 |

@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.MQTT;
 
-[STNode("/10 MQTT")]
+[STNode("MQTT", CategoryOrder = 1000)]
 [Obsolete("Deprecated MQTT flow node retained for loading existing flows.")]
 public class MQTTSubscribeHub : STNodeOutHub
 {

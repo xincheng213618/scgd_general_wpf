@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -103,9 +104,9 @@ namespace ColorVision.Engine.Templates
                 _templateSources.Add(new TemplateCreateSource
                 {
                     Kind = TemplateCreateSourceKind.Prepared,
-                    Title = string.IsNullOrWhiteSpace(_template.ImportName) ? "已准备来源" : _template.ImportName,
+                    Title = string.IsNullOrWhiteSpace(_template.ImportName) ? LocalizedText.Get("已准备来源") : _template.ImportName,
                     Description = "使用刚复制或导入的模板内容",
-                    SourceLabel = "当前"
+                    SourceLabel = LocalizedText.Get("当前")
                 });
             }
 
@@ -114,7 +115,7 @@ namespace ColorVision.Engine.Templates
                 Kind = TemplateCreateSourceKind.Default,
                 Title = Properties.Resources.DefaultTemplate,
                 Description = Properties.Resources.UseSystemDefaultTemplate,
-                SourceLabel = "默认"
+                SourceLabel = LocalizedText.Get("默认")
             });
 
             bool supportsCopy = _template.GetType().GetMethod(nameof(ITemplate.CopyTo), [typeof(int)])?.DeclaringType != typeof(ITemplate);
@@ -138,7 +139,7 @@ namespace ColorVision.Engine.Templates
                         TemplateIndex = index,
                         Title = templateName,
                         Description = "从现有模板创建独立副本",
-                        SourceLabel = "现有"
+                        SourceLabel = LocalizedText.Get("现有")
                     });
                 }
             }
@@ -149,9 +150,9 @@ namespace ColorVision.Engine.Templates
                 _templateSources.Add(new TemplateCreateSource
                 {
                     Kind = TemplateCreateSourceKind.File,
-                    Title = "导入文件",
+                    Title = LocalizedText.Get("导入文件"),
                     Description = "从 JSON 或模板文件创建",
-                    SourceLabel = "文件"
+                    SourceLabel = LocalizedText.Get("文件")
                 });
             }
         }
@@ -249,7 +250,7 @@ namespace ColorVision.Engine.Templates
                         applied = _template.Import();
                         if (applied)
                         {
-                            source.Title = string.IsNullOrWhiteSpace(_template.ImportName) ? "已导入文件" : _template.ImportName;
+                            source.Title = string.IsNullOrWhiteSpace(_template.ImportName) ? LocalizedText.Get("已导入文件") : _template.ImportName;
                             source.Description = "使用已选择的模板文件创建";
                             SourceListBox.Items.Refresh();
                         }

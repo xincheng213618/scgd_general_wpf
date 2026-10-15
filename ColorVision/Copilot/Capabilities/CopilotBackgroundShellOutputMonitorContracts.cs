@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using System;
 
 namespace ColorVision.Copilot

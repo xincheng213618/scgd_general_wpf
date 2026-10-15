@@ -1,5 +1,3 @@
-using ColorVision.Copilot;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotTurnEventStreamTests
@@ -153,6 +151,127 @@ public sealed class CopilotTurnEventStreamTests
         }
 
         await producerCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BlockingProducerCancellationCallbackCannotBlockStreamShutdown(bool cancelCaller)
+    {
+        var testTimeout = TimeSpan.FromSeconds(5);
+        using var cancellation = new CancellationTokenSource();
+        using var releaseCallback = new ManualResetEventSlim();
+        var producerReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callbackStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callbackFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseProducer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var producerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stream = RunTurnAsync(
+            async (_, token) =>
+            {
+                try
+                {
+                    using var registration = token.Register(() =>
+                    {
+                        callbackStarted.TrySetResult();
+                        releaseCallback.Wait(CancellationToken.None);
+                        callbackFinished.TrySetResult();
+                    });
+                    producerReady.TrySetResult();
+                    await releaseProducer.Task;
+                    return CreateResult();
+                }
+                finally
+                {
+                    producerFinished.TrySetResult();
+                }
+            },
+            cancellation.Token,
+            TimeSpan.FromMilliseconds(50));
+        var enumerator = stream.GetAsyncEnumerator();
+        Task? stopTask = null;
+
+        try
+        {
+            Assert.True(await enumerator.MoveNextAsync());
+            Assert.IsType<CopilotTurnStartedEvent>(enumerator.Current);
+            await producerReady.Task.WaitAsync(testTimeout);
+            stopTask = cancelCaller
+                ? Task.Factory.StartNew(
+                    cancellation.Cancel,
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default)
+                : Task.Factory.StartNew(
+                    () => enumerator.DisposeAsync().AsTask(),
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default).Unwrap();
+
+            await callbackStarted.Task.WaitAsync(testTimeout);
+            await stopTask.WaitAsync(testTimeout);
+            Assert.False(releaseCallback.IsSet);
+            Assert.False(producerFinished.Task.IsCompleted);
+            if (cancelCaller)
+            {
+                Assert.True(await enumerator.MoveNextAsync().AsTask().WaitAsync(testTimeout));
+                Assert.Equal(
+                    CopilotTurnStatus.Interrupted,
+                    Assert.IsType<CopilotTurnCompletedEvent>(enumerator.Current).Status);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                    () => enumerator.MoveNextAsync().AsTask().WaitAsync(testTimeout));
+            }
+        }
+        finally
+        {
+            releaseCallback.Set();
+            releaseProducer.TrySetResult();
+            if (stopTask != null)
+                await stopTask.WaitAsync(testTimeout);
+            await callbackFinished.Task.WaitAsync(testTimeout);
+            await producerFinished.Task.WaitAsync(testTimeout);
+            await enumerator.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ProducerCancellationCallbackFailureDoesNotReplaceTheTurnFailure()
+    {
+        var producerFailure = new InvalidOperationException("original provider failure");
+        var callbackFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        var events = new List<CopilotTurnEvent>();
+
+        try
+        {
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await foreach (var turnEvent in RunTurnAsync(
+                    (_, token) =>
+                    {
+                        registration = token.Register(() =>
+                        {
+                            callbackFinished.TrySetResult();
+                            throw new InvalidOperationException("cancellation callback failure");
+                        });
+                        throw producerFailure;
+                    },
+                    CancellationToken.None))
+                {
+                    events.Add(turnEvent);
+                }
+            });
+
+            Assert.Same(producerFailure, exception);
+            Assert.Equal(
+                CopilotTurnStatus.Failed,
+                Assert.Single(events.OfType<CopilotTurnCompletedEvent>()).Status);
+            await callbackFinished.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            registration.Dispose();
+        }
     }
 
     [Fact]

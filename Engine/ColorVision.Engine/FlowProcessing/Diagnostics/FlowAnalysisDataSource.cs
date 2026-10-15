@@ -70,6 +70,40 @@ internal sealed class FlowAnalysisDataSource
         ? FlowNodeRecordDataBaseHelper.GetMessagePayloads(id)
         : new(_database.ReadPayload("FlowNodeMessage", "id", id, "send_payload", "send_payload_gzip"),
             _database.ReadPayload("FlowNodeMessage", "id", id, "recv_payload", "recv_payload_gzip"));
+    internal FlowNodeComparisonHistory GetNodeComparisonHistory(FlowExecutionAnalysisSession session, FlowNodeRecord record)
+    {
+        FlowRunRecord? run = session.Run;
+        if (run == null && !string.IsNullOrWhiteSpace(record.SerialNumber))
+        {
+            List<FlowRunRecord> legacyRuns = Read<FlowRunRecord>(
+                q => q.Where(item => item.BatchId == null && item.SerialNumber == record.SerialNumber)
+                    .OrderByDescending(item => item.CompletedTime).Take(2),
+                () => FlowNodeRecordDataBaseHelper.GetSameFlowRuns(record.SerialNumber)
+                    .Where(item => !item.BatchId.HasValue && item.SerialNumber == record.SerialNumber).Take(2).ToList());
+            if (legacyRuns.Count == 1) run = legacyRuns[0];
+        }
+        bool isCurrentRun = run != null && (!run.BatchId.HasValue || run.BatchId == record.BatchId)
+            && string.Equals(run.SerialNumber ?? string.Empty, record.SerialNumber ?? string.Empty, StringComparison.Ordinal);
+        var identity = !isCurrentRun ? default : new FlowIdentity(run!.TemplateId, run.FlowKey, run.FlowName);
+        if (identity.IsEmpty || string.IsNullOrWhiteSpace(record.NodeId))
+            return new([record], session.GetMessages(record), false);
+
+        // Keep Batch + SN together: batch numbers and SNs can each be reused.
+        List<FlowRunRecord> runs = GetFlowRuns(identity);
+        runs.Add(run!); // Include the opened run even when it is outside the recent-history limit.
+        int[] batchIds = runs.Where(item => item.BatchId.HasValue).Select(item => item.BatchId!.Value).Distinct().ToArray();
+        string[] legacySerials = runs.Where(item => !item.BatchId.HasValue && !string.IsNullOrWhiteSpace(item.SerialNumber))
+            .Select(item => item.SerialNumber!).Distinct(StringComparer.Ordinal).ToArray();
+        List<FlowNodeRecord> records = Read<FlowNodeRecord>(
+            q => q.Where(item => item.NodeId == record.NodeId && (batchIds.Contains(item.BatchId) || legacySerials.Contains(item.SerialNumber)))
+                .OrderByDescending(item => item.StartTime),
+            () => FlowNodeRecordDataBaseHelper.GetNodeRecordsForRuns(record.NodeId, batchIds, legacySerials));
+        records.AddRange(session.Records.Where(item => item.NodeId == record.NodeId));
+        FlowNodeComparisonHistory filtered = FlowNodeComparisonHistory.ForRuns(record.NodeId, runs, records, []);
+        List<FlowNodeMessage> messages = GetHistoryMessagesByNodeId(record.NodeId, filtered.Records.Select(item => item.BatchId));
+        messages.AddRange(session.Messages.Where(item => item.NodeId == record.NodeId));
+        return FlowNodeComparisonHistory.ForRuns(record.NodeId, runs, records, messages);
+    }
     internal FlowRunRecord? GetFlowRun(int batchId, string? serialNumber) => Read<FlowRunRecord>(
         q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderByDescending(x => x.StartedTimeUtc).Take(1),
         () => One(FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber))).FirstOrDefault();

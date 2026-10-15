@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.UI;
@@ -23,7 +24,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.MoireAnalysis
             bool submitted = false;
             PropertyEditorWindow editor = new(parameters, PropertyEditorEditMode.Transactional)
             {
-                Owner = Application.Current.GetActiveWindow(), Title = "摩尔纹分析参数",
+                Owner = Application.Current.GetActiveWindow(), Title = LocalizedText.Get("摩尔纹分析参数"),
             };
             editor.Submitted += (_, _) => submitted = true;
             editor.ShowDialog();
@@ -124,6 +125,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.MoireAnalysis
             window.Show();
         }
 
-        private static void Error(string message) => MessageBox.Show(Application.Current.GetActiveWindow(), message, "摩尔纹分析", MessageBoxButton.OK, MessageBoxImage.Error);
+        private static void Error(string message) => MessageBox.Show(Application.Current.GetActiveWindow(), message, LocalizedText.Get("摩尔纹分析"), MessageBoxButton.OK, MessageBoxImage.Error);
     }
 }

@@ -327,6 +327,14 @@ namespace ColorVision.Copilot.Mcp
 
         private static string Redact(string? value)
         {
+            var text = RedactArchiveSource(value);
+            return SensitiveInlineRegex.Replace(text, match => $"{match.Groups["name"].Value}<redacted>");
+        }
+
+        // Archive streaming redaction owns generic assignments, including quoted
+        // values. Apply whole-text header/key rules without removing those quotes.
+        internal static string RedactArchiveSource(string? value)
+        {
             var text = value ?? string.Empty;
             text = AuthorizationHeaderLineRegex.Replace(
                 text,
@@ -343,7 +351,7 @@ namespace ColorVision.Copilot.Mcp
             text = BearerRegex.Replace(text, "Bearer <redacted>");
             text = OpenAiApiKeyRegex.Replace(text, "<redacted>");
             text = AwsAccessKeyIdRegex.Replace(text, "<redacted>");
-            return SensitiveInlineRegex.Replace(text, match => $"{match.Groups["name"].Value}<redacted>");
+            return text;
         }
 
         private static bool IsSensitiveKey(string? key)

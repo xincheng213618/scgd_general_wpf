@@ -61,146 +61,101 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 00 全局 的本地化字符串。
+        ///   查找类似 算法 的本地化字符串。
         /// </summary>
-        internal static string _00_全局 {
+        internal static string Algorithm {
             get {
-                return ResourceManager.GetString("00 全局", resourceCulture);
+                return ResourceManager.GetString("Algorithm", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 01 运算 的本地化字符串。
+        ///   查找类似 图像 的本地化字符串。
         /// </summary>
-        internal static string _01_运算 {
+        internal static string Image {
             get {
-                return ResourceManager.GetString("01 运算", resourceCulture);
+                return ResourceManager.GetString("Image", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 02 相机 的本地化字符串。
+        ///   查找类似 KB 的本地化字符串。
         /// </summary>
-        internal static string _02_相机 {
+        internal static string KB {
             get {
-                return ResourceManager.GetString("02 相机", resourceCulture);
+                return ResourceManager.GetString("KB", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 03_1 关注点 的本地化字符串。
+        ///   查找类似 MQTT 的本地化字符串。
         /// </summary>
-        internal static string _03_1_关注点 {
+        internal static string MQTT {
             get {
-                return ResourceManager.GetString("03_1 关注点", resourceCulture);
+                return ResourceManager.GetString("MQTT", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 03_2 算法 的本地化字符串。
+        ///   查找类似 OLED 的本地化字符串。
         /// </summary>
-        internal static string _03_2_Algorithm {
+        internal static string OLED {
             get {
-                return ResourceManager.GetString("03_2 Algorithm", resourceCulture);
+                return ResourceManager.GetString("OLED", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 03_3 图像 的本地化字符串。
+        ///   查找类似 ROI 的本地化字符串。
         /// </summary>
-        internal static string _03_3_Image {
+        internal static string ROI {
             get {
-                return ResourceManager.GetString("03_3 Image", resourceCulture);
+                return ResourceManager.GetString("ROI", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 03_3 校正 的本地化字符串。
+        ///   查找类似 传感器 的本地化字符串。
         /// </summary>
-        internal static string _03_3_校正 {
+        internal static string 传感器 {
             get {
-                return ResourceManager.GetString("03_3 校正", resourceCulture);
+                return ResourceManager.GetString("传感器", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 03_4 KB 的本地化字符串。
+        ///   查找类似 全局 的本地化字符串。
         /// </summary>
-        internal static string _03_4_KB {
+        internal static string 全局 {
             get {
-                return ResourceManager.GetString("03_4 KB", resourceCulture);
+                return ResourceManager.GetString("全局", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 03_5 OLED 的本地化字符串。
+        ///   查找类似 关注点 的本地化字符串。
         /// </summary>
-        internal static string _03_5_OLED {
+        internal static string 关注点 {
             get {
-                return ResourceManager.GetString("03_5 OLED", resourceCulture);
+                return ResourceManager.GetString("关注点", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 04 源表 的本地化字符串。
+        ///   查找类似 合规验证 的本地化字符串。
         /// </summary>
-        internal static string _04_源表 {
+        internal static string 合规验证 {
             get {
-                return ResourceManager.GetString("04 源表", resourceCulture);
+                return ResourceManager.GetString("合规验证", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 05 光谱仪 的本地化字符串。
+        ///   查找类似 运算 的本地化字符串。
         /// </summary>
-        internal static string _05_光谱仪 {
+        internal static string 运算 {
             get {
-                return ResourceManager.GetString("05 光谱仪", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 07 传感器 的本地化字符串。
-        /// </summary>
-        internal static string _07_传感器 {
-            get {
-                return ResourceManager.GetString("07 传感器", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 09 合规验证 的本地化字符串。
-        /// </summary>
-        internal static string _09_合规验证 {
-            get {
-                return ResourceManager.GetString("09 合规验证", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 10 MQTT 的本地化字符串。
-        /// </summary>
-        internal static string _10_MQTT {
-            get {
-                return ResourceManager.GetString("10 MQTT", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 11 ROI 的本地化字符串。
-        /// </summary>
-        internal static string _11_ROI {
-            get {
-                return ResourceManager.GetString("11 ROI", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 12 第三方算法 的本地化字符串。
-        /// </summary>
-        internal static string _12_第三方算法 {
-            get {
-                return ResourceManager.GetString("12 第三方算法", resourceCulture);
+                return ResourceManager.GetString("运算", resourceCulture);
             }
         }
         

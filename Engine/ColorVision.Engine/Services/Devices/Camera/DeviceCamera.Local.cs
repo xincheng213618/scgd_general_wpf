@@ -16,13 +16,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         internal CameraBackendState CameraBackend { get; }
         private readonly object previewSync = new();
-        private (MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;
+        private (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;
         private bool previewQueued;
         private long previewVersion;
 
         internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay)
         {
-            if (IsDisposed || Application.Current == null) return;
+            ViewCamera? view = ExistingView;
+            if (IsDisposed || Application.Current == null || view == null) return;
             // Skip the full RAW/CIE snapshot for automatic captures while refresh is disabled.
             if (!forceDisplay && !ViewCameraConfig.Instance.AutoRefreshView) return;
             long version = Interlocked.Increment(ref previewVersion);
@@ -31,22 +32,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 LocalCameraPreview preview = LocalCameraPreview.Create(frame);
                 lock (previewSync)
                 {
-                    if (IsDisposed || version != Volatile.Read(ref previewVersion)) return;
-                    pendingPreview = (model, preview, forceDisplay);
+                    if (IsDisposed || !ReferenceEquals(ExistingView, view) || version != Volatile.Read(ref previewVersion)) return;
+                    pendingPreview = (view, model, preview, forceDisplay);
                     if (previewQueued) return;
                     previewQueued = true;
                 }
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    (MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pending;
+                    (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pending;
                     lock (previewSync)
                     {
                         pending = pendingPreview;
                         pendingPreview = null;
                         previewQueued = false;
                     }
-                    if (IsDisposed || pending == null) return;
-                    try { ViewShell.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
+                    if (IsDisposed || pending == null || !ReferenceEquals(ExistingView, pending.Value.View)) return;
+                    try { pending.Value.View.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
                     catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览显示失败。", ex); }
                 });
             }
@@ -55,8 +56,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void DisplayConfig_BackendPreferenceChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (IsDisposed || e.PropertyName != nameof(DisplayCameraConfig.UseLocalCamera)) return;
-            CameraBackend.SetPreference(DisplayConfig.UseLocalCamera);
+            if (IsDisposed) return;
+            if (e.PropertyName == nameof(DisplayCameraConfig.UseLocalCamera))
+                CameraBackend.SetPreference(DisplayConfig.UseLocalCamera);
+            else if (e.PropertyName != nameof(DisplayCameraConfig.UseHikMvs) && e.PropertyName != nameof(DisplayCameraConfig.HikBayerQuality) && e.PropertyName != nameof(DisplayCameraConfig.HikOutputBgr)) return;
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
@@ -77,7 +80,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal void EnsureLocalCameraAvailable()
+        internal void EnsureLocalCameraAvailable(string? cameraId = null)
         {
             CameraBackend.EnsureLocalAvailable();
             if (CameraBackend.LocalOwned) return;
@@ -85,7 +88,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (ReferenceEquals(other, this)) continue;
                 bool samePhysical = (!string.IsNullOrEmpty(Config.CameraCode) && Config.CameraCode == other.Config.CameraCode)
-                    || (!string.IsNullOrEmpty(Config.CameraID) && Config.CameraID == other.Config.CameraID);
+                    || (!string.IsNullOrEmpty(cameraId ?? Config.CameraID) && string.Equals(cameraId ?? Config.CameraID, other.Config.CameraID, StringComparison.OrdinalIgnoreCase));
                 if (samePhysical && (other.CameraBackend.LocalOwned || other.CameraBackend.VideoOwned || other.CameraBackend.ServiceMayOwnCamera))
                     throw new InvalidOperationException($"同一物理相机已由设备 {other.Code} 占用，请先关闭该设备。");
             }
@@ -106,18 +109,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal void EnsureLocalMeasurementConnected(bool autoConnect)
         {
             EnsureLocalCameraAvailable();
-            if (LocalCameraSession.IsOpen)
-            {
-                if (LocalCameraSession.OpenedMode == TakeImageMode.Live)
-                    throw new InvalidOperationException("本地测量不能复用 Live 会话，请先关闭并以测量模式连接。");
-                return;
-            }
-            if (!autoConnect) throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
-            if (Config.TakeImageMode == TakeImageMode.Live)
-                throw new InvalidOperationException("本地取图不能使用 Live 模式，请将设备切换为测量模式。");
-            int result = LocalCameraSession.Open(Config.CameraID?.Trim() ?? string.Empty, Config.TakeImageMode, (int)Config.ImageBpp);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS)
-                throw LocalCameraCaptureService.CreateNativeException("本地相机打开失败", result);
+            LocalCameraSession.EnsureMeasurement(autoConnect);
         }
 
         internal CameraRunParam BuildLocalCameraParameters(double[]? exposure = null, CalibrationParam? calibration = null)
@@ -128,8 +120,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 AvgCount = DisplayConfig.AvgCount,
                 ExpTime = (float)(exposure?[0] ?? DisplayConfig.ExpTime),
                 ExpTimeR = (float)(exposure?[0] ?? DisplayConfig.ExpTimeR),
-                ExpTimeG = (float)(exposure?.ElementAtOrDefault(1) ?? DisplayConfig.ExpTimeG),
-                ExpTimeB = (float)(exposure?.ElementAtOrDefault(2) ?? DisplayConfig.ExpTimeB)
+                ExpTimeG = (float)(exposure is { Length: > 1 } ? exposure[1] : DisplayConfig.ExpTimeG),
+                ExpTimeB = (float)(exposure is { Length: > 2 } ? exposure[2] : DisplayConfig.ExpTimeB)
             };
             if (CalibrationGroupGainResolver.TryResolve(calibration, PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float gain, out _))
                 parameters.Gain = gain;

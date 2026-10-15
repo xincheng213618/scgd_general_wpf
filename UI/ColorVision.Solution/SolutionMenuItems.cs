@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Explorer;
 using ColorVision.UI.Menus;
@@ -27,7 +28,7 @@ namespace ColorVision.Solution
     public sealed class MenuCloseSolution : MenuItemFileBase
     {
         public override string GuidId => nameof(MenuCloseSolution);
-        public override string Header => "关闭解决方案(_L)";
+        public override string Header => LocalizedText.Get("关闭解决方案(_L)");
         public override int Order => 21;
         public override ICommand Command => SolutionWorkspaceCommands.CloseSolution;
     }
@@ -43,7 +44,7 @@ namespace ColorVision.Solution
     public sealed class MenuSolutionBuild : GlobalMenuBase
     {
         public override string GuidId => SolutionMenuIds.Build;
-        public override string Header => "生成(_B)";
+        public override string Header => LocalizedText.Get("生成(_B)");
         public override int Order => 4;
         public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
@@ -52,7 +53,7 @@ namespace ColorVision.Solution
     {
         public override string TargetName => MenuItemConstants.GlobalTarget;
         public override string OwnerGuid => SolutionMenuIds.Build;
-        public override string Header => "生成解决方案(_B)";
+        public override string Header => LocalizedText.Get("生成解决方案(_B)");
         public override string InputGestureText => "Ctrl+Shift+B";
         public override int Order => 10;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.BuildSolution;
@@ -64,7 +65,7 @@ namespace ColorVision.Solution
         public override string TargetName => MenuItemConstants.GlobalTarget;
         public override string OwnerGuid => SolutionMenuIds.Build;
         public override string GuidId => SolutionMenuIds.Configuration;
-        public override string Header => "活动解决方案配置(_C)";
+        public override string Header => LocalizedText.Get("活动解决方案配置(_C)");
         public override int Order => 20;
         public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
@@ -73,7 +74,7 @@ namespace ColorVision.Solution
     {
         public override string TargetName => MenuItemConstants.GlobalTarget;
         public override string OwnerGuid => SolutionMenuIds.Build;
-        public override string Header => "配置管理器(_M)...";
+        public override string Header => LocalizedText.Get("配置管理器(_M)...");
         public override int Order => 30;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.ConfigurationManager;
         public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
@@ -84,7 +85,7 @@ namespace ColorVision.Solution
         public override string TargetName => MenuItemConstants.GlobalTarget;
         public override string OwnerGuid => SolutionMenuIds.Build;
         public override string GuidId => SolutionMenuIds.Platform;
-        public override string Header => "活动解决方案平台(_P)";
+        public override string Header => LocalizedText.Get("活动解决方案平台(_P)");
         public override int Order => 21;
         public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
@@ -158,7 +159,7 @@ namespace ColorVision.Solution
     public sealed class MenuSolutionDebug : GlobalMenuBase
     {
         public override string GuidId => SolutionMenuIds.Debug;
-        public override string Header => "调试(_D)";
+        public override string Header => LocalizedText.Get("调试(_D)");
         public override int Order => 4;
         public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
@@ -167,7 +168,7 @@ namespace ColorVision.Solution
     {
         public override string TargetName => MenuItemConstants.GlobalTarget;
         public override string OwnerGuid => SolutionMenuIds.Debug;
-        public override string Header => "开始调试(_S)";
+        public override string Header => LocalizedText.Get("开始调试(_S)");
         public override string InputGestureText => "F5";
         public override int Order => 10;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.Debug;
@@ -178,7 +179,7 @@ namespace ColorVision.Solution
     {
         public override string TargetName => MenuItemConstants.GlobalTarget;
         public override string OwnerGuid => SolutionMenuIds.Debug;
-        public override string Header => "开始执行(不调试)(_H)";
+        public override string Header => LocalizedText.Get("开始执行(不调试)(_H)");
         public override string InputGestureText => "Ctrl+F5";
         public override int Order => 20;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.Run;

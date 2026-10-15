@@ -38,7 +38,8 @@ public class STNodeSelectEnumBox : STNodeControl
 		dt.SolidBrush.Color = Color.FromArgb(80, 0, 0, 0);
 		graphics.FillRectangle(dt.SolidBrush, base.ClientRectangle);
 		m_sf.Alignment = StringAlignment.Near;
-		graphics.DrawString(Enum.ToString(), base.Font, Brushes.White, base.ClientRectangle, m_sf);
+		dt.SolidBrush.Color = ForeColor;
+		graphics.DrawString(Enum.ToString(), base.Font, dt.SolidBrush, base.ClientRectangle, m_sf);
 		graphics.FillPolygon(Brushes.Gray, new Point[3]
 		{
 			new Point(base.Right - 25, 7),

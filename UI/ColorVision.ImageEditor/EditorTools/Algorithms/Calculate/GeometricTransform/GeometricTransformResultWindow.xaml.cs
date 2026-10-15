@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -41,7 +42,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GeometricTran
             double valid = Value(measurements, "transform.valid_fraction");
             double condition = Value(measurements, "transform.condition_number");
             double residual = Value(measurements, "transform.inverse_residual");
-            SummaryText.Text = $"输出 {width:G0} × {height:G0}；有效像素 {valid:P2}；条件数 {condition:G8}；正逆矩阵残差 {residual:G6}。结果已通过 ImageView session 提交，mask 与矩阵可分别查看/导出。";
+            SummaryText.Text = LocalizedText.Format($"输出 {width:G0} × {height:G0}；有效像素 {valid:P2}；条件数 {condition:G8}；正逆矩阵残差 {residual:G6}。结果已通过 ImageView session 提交，mask 与矩阵可分别查看/导出。");
             Closed += (_, _) => DisposeOwnedState();
         }
 

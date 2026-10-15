@@ -32,14 +32,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         {
             DataContext = Device;
 
-            void Update()
-            {
-                var list = new TemplateSensor(Device.Config.Category);
-                list.Load();
-                ComboxSensorTemplate.ItemsSource = list.TemplateParams;
-            }
-            Device.ConfigChanged += (s, e) => Update();
-            Update();
+            Device.ConfigChanged += UpdateTemplates;
+            UpdateTemplates(this, EventArgs.Empty);
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
             DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
@@ -84,11 +78,16 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                     break;
                 case DeviceStatusType.LiveOpened:
                 case DeviceStatusType.Opened:
+                case DeviceStatusType.Busy:
+                case DeviceStatusType.Free:
                     SetVisibility(StackPanelContent, Visibility.Visible);
                     SetVisibility(ButtonClose, Visibility.Visible);
                     break;
                 case DeviceStatusType.Closing:
                 case DeviceStatusType.Opening:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    break;
                 default:
                     SetVisibility(StackPanelContent, Visibility.Visible);
                     SetVisibility(ButtonOpen, Visibility.Visible);
@@ -105,7 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
-            if (!DeviceService.Config.IsNet)
+            if (!Device.SensorBackend.OpensLocally && !DeviceService.Config.IsNet)
             {
                 string portName = DeviceService.Config.Addr;
                 int baudRate = DeviceService.Config.Port;
@@ -224,12 +223,21 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            new TemplateEditorWindow(new TemplateSensor(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplateSensor(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            UpdateTemplates(this, EventArgs.Empty);
+        }
+
+        private void UpdateTemplates(object? sender, EventArgs args)
+        {
+            var templates = new TemplateSensor(Device.Config.Category);
+            templates.Load();
+            ComboxSensorTemplate.ItemsSource = templates.TemplateParams;
         }
 
         public void Dispose()
         {
             Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            Device.ConfigChanged -= UpdateTemplates;
         }
     }
 }

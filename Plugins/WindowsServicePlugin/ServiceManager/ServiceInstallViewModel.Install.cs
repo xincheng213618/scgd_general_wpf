@@ -46,6 +46,23 @@ namespace WindowsServicePlugin.ServiceManager
                         var serviceManager = ServiceManagerViewModel.Instance;
                         bool hasServiceWork = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked;
 
+                        bool vc2013Installed = MySqlRuntimePrerequisite.IsVc2013Installed();
+                        Version? mysqlVersion = null;
+                        if (InstallMySqlChecked)
+                        {
+                            mysqlVersion = MySqlRuntimePrerequisite.ReadVersion(MySqlPackagePath);
+                            if (mysqlVersion == null)
+                                throw new InvalidOperationException(Properties.Resources.MySqlVersionUnreadable);
+                        }
+                        bool needsVc2013Runtime = !vc2013Installed
+                            && (InstallVc2013Checked || (InstallMySqlChecked && MySqlRuntimePrerequisite.RequiresVc2013(mysqlVersion!)));
+                        if (needsVc2013Runtime && (string.IsNullOrWhiteSpace(Vc2013InstallerPath) || !File.Exists(Vc2013InstallerPath)))
+                        {
+                            throw new InvalidOperationException(InstallMySqlChecked && MySqlRuntimePrerequisite.RequiresVc2013(mysqlVersion!)
+                                ? MySqlRuntimePrerequisite.GetValidationMessage(mysqlVersion, vc2013Installed: false)
+                                : "请先选择或下载 VC++ 2013 x64 运行库安装程序");
+                        }
+
                         Version? sourceServiceVersion = null;
                         if (ServicePackageVersionResolver.TryGetInstalledVersion(basePath, out Version installedServiceVersion))
                         {
@@ -89,6 +106,14 @@ namespace WindowsServicePlugin.ServiceManager
                                 $"CVWindowsService 将跨数据库版本更新（{sourceDatabase} -> {targetDatabase}），请勾选“更新数据库到最近版本”后重试");
                         }
 
+                        // 在调用 MySQL 客户端或停止已有服务前安装所需运行库。
+                        if (needsVc2013Runtime)
+                        {
+                            SetProgress(progress += 10, "安装 VC++ 2013 运行库...");
+                            if (!InstallVc2013Runtime())
+                                throw new InvalidOperationException("VC++ 2013 运行库安装失败");
+                        }
+
                         // 1. 备份数据库
                         if (BackupBeforeInstall)
                         {
@@ -107,14 +132,6 @@ namespace WindowsServicePlugin.ServiceManager
                             servicesStoppedForInstall = true;
                             DoBackupServiceArchiveOnly();
 
-                        }
-
-                        bool needsVc2013Runtime = !IsVc2013RuntimeInstalled() && (InstallVc2013Checked || InstallMySqlChecked);
-                        if (needsVc2013Runtime)
-                        {
-                            SetProgress(progress += 10, "安装 VC++ 2013 运行库...");
-                            if (!InstallVc2013Runtime())
-                                throw new InvalidOperationException("VC++ 2013 运行库安装失败");
                         }
 
                         // 3. 安装 MySQL
@@ -670,12 +687,6 @@ namespace WindowsServicePlugin.ServiceManager
         {
             Uri root = BuildServerRoot(updateServerUrl);
             return new Uri(root, $"/download/{relativePath.Replace("+", "%2B", StringComparison.Ordinal)}").ToString();
-        }
-
-        private static bool IsVc2013RuntimeInstalled()
-        {
-            return File.Exists(Path.Combine(Environment.SystemDirectory, "msvcr120.dll"))
-                && File.Exists(Path.Combine(Environment.SystemDirectory, "msvcp120.dll"));
         }
 
         private static bool IsValidLatestVersion(Version version)
@@ -1422,7 +1433,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             try
             {
-                if (IsVc2013RuntimeInstalled())
+                if (MySqlRuntimePrerequisite.IsVc2013Installed())
                     return true;
                 if (string.IsNullOrWhiteSpace(Vc2013InstallerPath) || !File.Exists(Vc2013InstallerPath))
                     throw new InvalidOperationException("请先选择或下载 VC++ 2013 x64 运行库安装程序");
@@ -1448,7 +1459,7 @@ namespace WindowsServicePlugin.ServiceManager
 
                 bool success = process.ExitCode is 0 or 3010 or 1638;
                 log.Info(success ? $"VC++ 2013 x64 运行库安装完成，退出码: {process.ExitCode}" : $"VC++ 2013 x64 运行库安装失败，退出码: {process.ExitCode}");
-                return success && IsVc2013RuntimeInstalled();
+                return success && MySqlRuntimePrerequisite.IsVc2013Installed();
             }
             catch (Exception ex)
             {

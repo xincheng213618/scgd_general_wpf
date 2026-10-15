@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,7 +27,7 @@ namespace ColorVision.Copilot
         {
             return $"Provider context recovery ({FailureKind}) · compacted {OriginalMessageCount} message(s) to {CompactedMessageCount}"
                 + $" · estimated input {EstimatedInputTokensBefore:N0} → {EstimatedInputTokensAfter:N0} tokens toward {TargetInputTokens:N0}"
-                + " · resubmitted once before the first response update; tool-call/result groups remained atomic and no tool execution was replayed.";
+                + " · resubmitted once before the first content or tool call; tool-call/result groups remained atomic and no tool execution was replayed.";
         }
     }
 
@@ -154,22 +155,53 @@ namespace ColorVision.Copilot
         {
             var requestMessages = Materialize(messages);
             CopilotContextWindowRecoveryInfo? recovery = null;
-            while (true)
+            var discardedUsage = CopilotTokenUsage.Empty;
+            try
             {
-                try
+                while (true)
                 {
-                    return await base.GetResponseAsync(requestMessages, options, cancellationToken);
-                }
-                catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (recovery != null)
-                        throw CreateExhaustedException(recovery, exception);
+                    try
+                    {
+                        var response = await base.GetResponseAsync(requestMessages, options, cancellationToken);
+                        if (discardedUsage.HasAny)
+                        {
+                            var combinedUsage = CopilotTokenBudgetChatClient.ExtractResponseUsage(response).Add(discardedUsage);
+                            response.Usage ??= new UsageDetails();
+                            response.Usage.InputTokenCount = combinedUsage.InputTokens;
+                            response.Usage.OutputTokenCount = combinedUsage.OutputTokens;
+                            response.Usage.TotalTokenCount = combinedUsage.EffectiveTotalTokens;
+                            response.Usage.CachedInputTokenCount = combinedUsage.CachedInputTokens;
+                        }
+                        return response;
+                    }
+                    catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
+                    {
+                        try
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            if (recovery != null)
+                                throw CreateExhaustedException(recovery, exception);
 
-                    var attempt = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
-                    requestMessages = attempt.Messages;
-                    recovery = attempt.Recovery;
+                            var attempt = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
+                            discardedUsage = discardedUsage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(exception));
+                            requestMessages = attempt.Messages;
+                            recovery = attempt.Recovery;
+                        }
+                        catch (Exception preparationFailure)
+                        {
+                            // A cancellation can replace the settled rejection. Wrapped context
+                            // failures already retain that attempt's billing through their inner exception.
+                            if (!ContainsException(preparationFailure, exception))
+                                PreserveDiscardedUsage(preparationFailure, CopilotProviderRetryChatClient.ExtractFailureUsage(exception));
+                            throw;
+                        }
+                    }
                 }
+            }
+            catch (Exception failure)
+            {
+                PreserveDiscardedUsage(failure, discardedUsage);
+                throw;
             }
         }
 
@@ -182,62 +214,127 @@ namespace ColorVision.Copilot
             CopilotContextWindowRecoveryInfo? recovery = null;
             while (true)
             {
-                IAsyncEnumerator<ChatResponseUpdate>? enumerator;
-                try
+                var attempt = await OpenStreamingAttemptAsync(requestMessages, options, cancellationToken);
+                if (attempt.Failure != null)
                 {
-                    enumerator = await OpenStreamingAttemptAsync(requestMessages, options, cancellationToken);
-                }
-                catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
-                {
+                    var exception = attempt.Failure.SourceException;
+                    var bufferedUsage = attempt.BufferedUpdates.Aggregate(CopilotTokenUsage.Empty,
+                        (usage, update) => usage.Add(CopilotTokenBudgetChatClient.ExtractUsage(update.Contents)));
+                    var usageUpdate = CopilotProviderRetryChatClient.CreateUsageUpdate(
+                        bufferedUsage.MergeProgress(CopilotProviderRetryChatClient.ExtractFailureUsage(exception)));
+                    if (usageUpdate != null)
+                        yield return usageUpdate;
+                    if (!CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
+                        attempt.Failure.Throw();
                     cancellationToken.ThrowIfCancellationRequested();
                     if (recovery != null)
                         throw CreateExhaustedException(recovery, exception);
 
-                    var attempt = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
-                    requestMessages = attempt.Messages;
-                    recovery = attempt.Recovery;
+                    var prepared = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
+                    requestMessages = prepared.Messages;
+                    recovery = prepared.Recovery;
                     continue;
                 }
 
+                var enumerator = attempt.Enumerator;
                 if (enumerator == null)
-                    yield break;
-
-                await using (enumerator)
                 {
-                    yield return enumerator.Current;
-                    while (await enumerator.MoveNextAsync())
+                    foreach (var update in attempt.BufferedUpdates)
+                        yield return update;
+                    yield break;
+                }
+
+                ExceptionDispatchInfo? streamFailure = null;
+                try
+                {
+                    foreach (var update in attempt.BufferedUpdates)
+                        yield return update;
+                    while (true)
+                    {
+                        bool hasNext;
+                        try
+                        {
+                            hasNext = await enumerator.MoveNextAsync();
+                        }
+                        catch (Exception exception)
+                        {
+                            streamFailure = ExceptionDispatchInfo.Capture(exception);
+                            throw;
+                        }
+                        if (!hasNext)
+                            break;
                         yield return enumerator.Current;
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        await enumerator.DisposeAsync();
+                    }
+                    catch when (streamFailure != null)
+                    {
+                        // Cleanup must not replace the failure after content or tool progress.
+                    }
                 }
                 yield break;
             }
         }
 
-        private async Task<IAsyncEnumerator<ChatResponseUpdate>?> OpenStreamingAttemptAsync(
+        private async Task<(IAsyncEnumerator<ChatResponseUpdate>? Enumerator,
+            IReadOnlyList<ChatResponseUpdate> BufferedUpdates, ExceptionDispatchInfo? Failure)> OpenStreamingAttemptAsync(
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options,
             CancellationToken cancellationToken)
         {
-            var enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            IAsyncEnumerator<ChatResponseUpdate>? enumerator = null;
+            var bufferedUpdates = new List<ChatResponseUpdate>();
             try
             {
-                if (await enumerator.MoveNextAsync())
-                    return enumerator;
+                enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
+                while (await enumerator.MoveNextAsync())
+                {
+                    var update = enumerator.Current;
+                    bufferedUpdates.Add(update);
+                    if (CopilotProviderResponseContent.HasProgress(update))
+                        return (enumerator, bufferedUpdates, null);
+                }
 
                 await enumerator.DisposeAsync();
-                return null;
+                return (null, bufferedUpdates, null);
             }
-            catch
+            catch (Exception exception)
             {
-                try
+                if (enumerator != null)
                 {
-                    await enumerator.DisposeAsync();
+                    try
+                    {
+                        await enumerator.DisposeAsync();
+                    }
+                    catch
+                    {
+                        // Preserve the context-window failure from the provider.
+                    }
                 }
-                catch
-                {
-                    // Preserve the context-window failure from the provider.
-                }
-                throw;
+                return (null, bufferedUpdates, ExceptionDispatchInfo.Capture(exception));
             }
+        }
+
+        private static bool ContainsException(Exception exception, Exception original)
+        {
+            for (var current = exception; current != null; current = current.InnerException)
+                if (ReferenceEquals(current, original))
+                    return true;
+            return false;
+        }
+
+        private static void PreserveDiscardedUsage(Exception exception, CopilotTokenUsage usage)
+        {
+            if (!usage.HasAny)
+                return;
+            var previous = exception.Data[CopilotProviderRetryChatClient.DiscardedAttemptsUsageDataKey] is CopilotTokenUsage existing
+                ? existing : CopilotTokenUsage.Empty;
+            exception.Data[CopilotProviderRetryChatClient.DiscardedAttemptsUsageDataKey] = previous.Add(usage);
         }
 
         private async Task<(

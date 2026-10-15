@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8604
+﻿using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
@@ -191,6 +192,20 @@ namespace ColorVision.ImageEditor
 
         protected override Visual GetVisualChild(int index) => index == 0 ? imageVisual : visuals[index - 1];
         protected override int VisualChildrenCount => visuals.Count + 1;
+
+        protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+            if (e.Property == SourceProperty && !ReferenceEquals(e.OldValue, e.NewValue))
+                ClearImageDrawing();
+        }
+
+        private void ClearImageDrawing()
+        {
+            // Unloaded controls do not render again, so invalidating Source alone
+            // leaves the old bitmap referenced by this separate drawing surface.
+            using DrawingContext imageContext = imageVisual.RenderOpen();
+        }
 
         protected override void OnRender(DrawingContext drawingContext)
         {
@@ -435,7 +450,7 @@ namespace ColorVision.ImageEditor
         {
             Action undoaction = () => RemoveVisual(visual);
             Action redoaction = () => AddVisual(visual);
-            ActionCommand command = new(undoaction, redoaction) { Header = "添加" };
+            ActionCommand command = new(undoaction, redoaction) { Header = LocalizedText.Get("添加") };
             AddActionCommand(command);
             return command;
         }
@@ -461,7 +476,7 @@ namespace ColorVision.ImageEditor
 
             Action undoaction = () => InsertVisual(index, visual);
             Action redoaction = () => RemoveVisual(visual);
-            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
+            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = LocalizedText.Get("移除") });
         }
 
         public void AddOverlayVisual(Visual visual)
@@ -581,6 +596,8 @@ namespace ColorVision.ImageEditor
         public void Dispose()
         {
             Clear();
+            SetCurrentValue(SourceProperty, null);
+            ClearImageDrawing();
             MouseLeftButtonDown -= OnMouseLeftButtonDown;
             this.CommandBindings.Clear();
             GC.SuppressFinalize(this);

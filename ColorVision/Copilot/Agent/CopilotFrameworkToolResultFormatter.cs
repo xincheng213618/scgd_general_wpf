@@ -61,8 +61,10 @@ namespace ColorVision.Copilot
             var result = outcome.EffectiveModelResult;
             if (result.SuppressModelOutput)
                 return CreateResult(outcome, string.Empty, contentTruncated: false);
-            var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
-            var content = SanitizeMultiline(result.Content);
+            var archivePage = GetArchivePage(result);
+            var content = archivePage != null
+                ? BuildArchivePageContent(result, archivePage)
+                : SanitizeMultiline(result.Content);
             var budget = ResolveBudget(toolOutputTokenLimit);
             if (budget.MaximumSerializedWeight == 0)
                 return CreateResult(
@@ -70,15 +72,15 @@ namespace ColorVision.Copilot
                     string.Empty,
                     contentTruncated: content.Length > 0);
             var maximumContentBudget = Math.Min(budget.MaximumContentCharacters, content.Length);
-            var maximumContent = CompactContent(execution.ToolName, content, maximumContentBudget);
-            var maximumContentTruncated = maximumContent.Length < content.Length;
+            var maximumContent = CompactModelContent(outcome, content, maximumContentBudget);
             var maximumSerialized = Serialize(
                 outcome,
-                maximumContent,
+                maximumContent.Content,
                 content.Length,
-                maximumContentTruncated);
+                maximumContent.Truncated,
+                maximumContent.Summary);
             if (budget.Fits(maximumSerialized))
-                return CreateResult(outcome, maximumSerialized, maximumContentTruncated);
+                return CreateResult(outcome, maximumSerialized, maximumContent.Truncated);
 
             var lowerBound = 0;
             var upperBound = maximumContentBudget - 1;
@@ -87,13 +89,12 @@ namespace ColorVision.Copilot
             while (lowerBound <= upperBound)
             {
                 var contentBudget = lowerBound + ((upperBound - lowerBound) / 2);
-                var compactedContent = CompactContent(execution.ToolName, content, contentBudget);
-                var contentTruncated = compactedContent.Length < content.Length;
-                var serialized = Serialize(outcome, compactedContent, content.Length, contentTruncated);
+                var compactedContent = CompactModelContent(outcome, content, contentBudget);
+                var serialized = Serialize(outcome, compactedContent.Content, content.Length, compactedContent.Truncated, compactedContent.Summary);
                 if (budget.Fits(serialized))
                 {
                     best = serialized;
-                    bestContentTruncated = contentTruncated;
+                    bestContentTruncated = compactedContent.Truncated;
                     lowerBound = contentBudget + 1;
                 }
                 else
@@ -183,7 +184,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutionOutcome outcome,
             string content,
             int originalContentCharacters,
-            bool contentTruncated)
+            bool contentTruncated,
+            string? summaryOverride = null)
         {
             var result = outcome.EffectiveModelResult;
             var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
@@ -216,8 +218,9 @@ namespace ColorVision.Copilot
                 };
             }
 
-            if (!string.IsNullOrWhiteSpace(result.Summary))
-                payload["summary"] = SanitizeInline(result.Summary, MaxSummaryCharacters);
+            var summary = summaryOverride ?? result.Summary;
+            if (!string.IsNullOrWhiteSpace(summary))
+                payload["summary"] = SanitizeInline(summary, MaxSummaryCharacters);
             if (originalContentCharacters > 0)
             {
                 payload["content"] = content;
@@ -404,6 +407,97 @@ namespace ColorVision.Copilot
                 Math.Min(MaximumConfiguredContentCharacters, (int)Math.Min(int.MaxValue, maximumWeight)),
                 Math.Min(MaximumConfiguredSerializedCharacters, (int)Math.Min(int.MaxValue, maximumWeight)),
                 maximumWeight);
+        }
+
+        private static (string Content, bool Truncated, string? Summary) CompactModelContent(
+            CopilotToolExecutionOutcome outcome, string content, int maximumCharacters)
+        {
+            var result = outcome.EffectiveModelResult;
+            var page = GetArchivePage(result);
+            if (page == null)
+            {
+                var compacted = CompactContent(outcome.Execution?.ToolName ?? string.Empty, content, maximumCharacters);
+                return (compacted, compacted.Length < content.Length, null);
+            }
+
+            // Archive cursors refer to a contiguous prefix of the stored page.
+            // Never compact a middle segment while keeping the original cursor.
+            var maximumBodyCharacters = Math.Min(page.Content.Length, maximumCharacters);
+            while (maximumBodyCharacters >= 0)
+            {
+                var body = TakePrefixWithoutSplittingSurrogatePair(page.Content, maximumBodyCharacters);
+                if (body.Length == 0 && page.Content.Length > 0)
+                    break;
+                var nextOffset = page.OffsetCharacters + body.Length;
+                var modelPage = page with
+                {
+                    Content = body,
+                    ReturnedCharacters = body.Length,
+                    NextOffsetCharacters = nextOffset,
+                    EndOfAvailableOutput = page.EndOfAvailableOutput && body.Length == page.Content.Length,
+                };
+                var formatted = BuildArchivePageContent(result, modelPage);
+                if (formatted.Length <= maximumCharacters)
+                    return (formatted, body.Length < page.Content.Length, BuildArchivePageSummary(result, modelPage));
+                if (body.Length == 0)
+                    break;
+                maximumBodyCharacters = Math.Max(0, body.Length - (formatted.Length - maximumCharacters));
+            }
+
+            // A budget that cannot hold the page header exposes no advancing cursor.
+            return (string.Empty, true, string.Empty);
+        }
+
+        private static CopilotRedactedOutputArchivePage? GetArchivePage(CopilotToolResult result)
+        {
+            if (result.ToolOutputArchiveRead?.Success == true)
+                return result.ToolOutputArchiveRead.Page;
+            if (result.ShellOutputArchiveRead?.Success == true)
+                return result.ShellOutputArchiveRead.Page;
+            if (result.BackgroundShellOutputArchiveRead?.Success == true)
+                return result.BackgroundShellOutputArchiveRead.Page;
+            return null;
+        }
+
+        private static string BuildArchivePageContent(CopilotToolResult result, CopilotRedactedOutputArchivePage page)
+        {
+            if (result.ToolOutputArchiveRead?.Success == true)
+            {
+                var snapshot = result.ToolOutputArchiveRead.Snapshot!;
+                return CopilotReadToolOutputTool.BuildPageContent(snapshot with
+                {
+                    ToolName = SanitizeInline(snapshot.ToolName, 120),
+                    CallId = SanitizeInline(snapshot.CallId, 128),
+                }, page);
+            }
+            if (result.ShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.ShellOutputArchiveRead;
+                return CopilotReadShellCommandOutputTool.BuildPageContent(read.Snapshot!, read.Stream, page);
+            }
+            if (result.BackgroundShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.BackgroundShellOutputArchiveRead;
+                return CopilotReadBackgroundShellCommandOutputTool.BuildPageContent(read.Snapshot!, read.Stream, page);
+            }
+            return string.Empty;
+        }
+
+        private static string BuildArchivePageSummary(CopilotToolResult result, CopilotRedactedOutputArchivePage page)
+        {
+            if (result.ToolOutputArchiveRead?.Success == true)
+                return CopilotReadToolOutputTool.BuildPageSummary(result.ToolOutputArchiveRead.Snapshot!, page);
+            if (result.ShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.ShellOutputArchiveRead;
+                return CopilotReadShellCommandOutputTool.BuildPageSummary(read.Snapshot!, read.Stream, page);
+            }
+            if (result.BackgroundShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.BackgroundShellOutputArchiveRead;
+                return CopilotReadBackgroundShellCommandOutputTool.BuildPageSummary(read.Snapshot!, read.Stream, page);
+            }
+            return string.Empty;
         }
 
         private static string CompactContent(string toolName, string content, int maximumCharacters)

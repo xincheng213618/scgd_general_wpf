@@ -1,5 +1,4 @@
 #nullable disable
-using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
 using System.Drawing;
 using FlowEngineLib.Base;
@@ -9,7 +8,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/04 源表")]
+[STNode("源表", CategoryOrder = 400)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.SMUModelNode")]
 public class SMUModelNode : SMUBaseNode
 {
@@ -89,7 +88,6 @@ public class SMUModelNode : SMUBaseNode
 		svrRecvResp = resp;
 		if (resp != null && resp.Status == ActionStatusEnum.Finish)
 		{
-			AddIVDataMy(resp, startCFC);
 			if (resp.EventName == "ModelGetData" && resp.Data != null && resp.Data.ScanRequestParam != null)
 			{
 				_channel = (SMUChannelType)resp.Data.ScanRequestParam.Channel;
@@ -102,6 +100,7 @@ public class SMUModelNode : SMUBaseNode
 				BuildValueData();
 				updateUI();
 			}
+			AddIVDataMy(resp, startCFC);
 		}
 	}
 

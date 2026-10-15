@@ -23,6 +23,11 @@ namespace ColorVision.SocketProtocol
     [SugarTable("SocketMessage")]
     public class SocketMessage : ViewEntity
     {
+        /// <summary>进程内入队序号，用于关联落库前的协议派发与后台提交计时。</summary>
+        [Browsable(false)]
+        [SugarColumn(IsIgnore = true)]
+        public long RecordSequence { get; internal set; }
+
         /// <summary>
         /// 客户端地址
         /// </summary>
@@ -57,6 +62,13 @@ namespace ColorVision.SocketProtocol
             }
         }
         private string? _content;
+
+        // Called after commit, before publishing the row to the UI.
+        internal void UnloadContent()
+        {
+            _content = null;
+            IsContentLoaded = false;
+        }
 
         /// <summary>
         /// 列表使用的短预览，避免查询或解压完整正文。

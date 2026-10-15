@@ -457,19 +457,19 @@ namespace Pattern
                     SaveBitmapUsingEncoder(CreateBmpBitmapSource(source, format), fileName, new BmpBitmapEncoder());
                     break;
                 case PatternFormat.bmp24:
-                    source.SaveImage(fileName);
+                    Cv2.ImWrite(fileName, source);
                     break;
                 case PatternFormat.png:
-                    source.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, 3));
+                    Cv2.ImWrite(fileName, source, [new ImageEncodingParam(ImwriteFlags.PngCompression, 3)]);
                     break;
                 case PatternFormat.jpg:
-                    source.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, 95));
+                    Cv2.ImWrite(fileName, source, [new ImageEncodingParam(ImwriteFlags.JpegQuality, 95)]);
                     break;
                 case PatternFormat.tif:
-                    source.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+                    Cv2.ImWrite(fileName, source, [new ImageEncodingParam(ImwriteFlags.TiffCompression, 1)]);
                     break;
                 default:
-                    source.SaveImage(fileName);
+                    Cv2.ImWrite(fileName, source);
                     break;
             }
         }

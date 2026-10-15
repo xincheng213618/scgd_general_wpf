@@ -1,11 +1,9 @@
-﻿using ColorVision.Database;
-#pragma warning disable CS8601
+﻿#pragma warning disable CS8601
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
@@ -18,7 +16,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
@@ -87,7 +84,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             UpdateCalibrationTemplates();
             Device.ConfigChanged += Device_ConfigChanged;
             PhyCameraManager.GetInstance().Loaded += PhyCameraManager_Loaded;
-            this.AddViewConfig(Device.ViewShell, DisPlayName);
+            this.AddViewConfig(Device.ViewRegistration, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
             ImageFile.TextChanged += ImageFile_TextChanged;
@@ -260,7 +257,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     exposure));
                 if (_isDisposed) return;
 
-                Device.View.ShowResult(result);
+                Device.ExistingView?.ShowResult(result);
                 succeeded = true;
             }
             catch (Exception ex)
@@ -375,7 +372,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             if (string.IsNullOrWhiteSpace(sn) && string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
                 return false;
             }
             if (Path.GetExtension(imgFileName).Contains("cvraw"))

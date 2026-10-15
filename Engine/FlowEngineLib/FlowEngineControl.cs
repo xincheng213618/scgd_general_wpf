@@ -57,7 +57,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
     // Keep transport readiness on the MQTT node itself, so external MQTT triggers still reconnect normally.
     private bool CanDispatchLocally(BaseStartNode startNode) =>
         !isDisposed && attachedStartNodes.Contains(startNode)
-        && startNode is MQTTStartNode or MQTTStartV5Node
+        && startNode is MQTTStartNode
         && !attachedDeviceNodes.Keys.Any(node => node.RequiresRemoteService);
 
     private bool IsStartReady(BaseStartNode startNode) => startNode.IsExecutionReady || CanDispatchLocally(startNode);

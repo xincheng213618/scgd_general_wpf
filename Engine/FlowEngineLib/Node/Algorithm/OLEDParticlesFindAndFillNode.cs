@@ -3,7 +3,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_5 OLED")]
+[STNode("OLED", CategoryOrder = 350)]
 public class OLEDParticlesFindAndFillNode : CVBaseServerNode
 {
 	private ParticlesMode _ParticlesType;

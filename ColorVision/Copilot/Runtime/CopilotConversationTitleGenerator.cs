@@ -85,10 +85,22 @@ namespace ColorVision.Copilot
             profile.MaxTokens = Math.Min(profile.MaxTokens, MaximumOutputTokens);
             profile.Temperature = 0.2;
 
-            var completion = await _completeReplyAsync(
-                profile,
-                [new CopilotRequestMessage("user", request.Prompt)],
-                cancellationToken).ConfigureAwait(false);
+            CopilotCompletedReplyResult completion;
+            try
+            {
+                completion = await _completeReplyAsync(
+                    profile,
+                    [new CopilotRequestMessage("user", request.Prompt)],
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                var usage = CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception);
+                if (!usage.HasAny)
+                    throw;
+
+                return new CopilotConversationTitleGenerationResult(null, usage, DateTimeOffset.UtcNow);
+            }
             var completedAtUtc = DateTimeOffset.UtcNow;
             if (completion.IsIncomplete)
                 return new CopilotConversationTitleGenerationResult(null, completion.Usage, completedAtUtc);

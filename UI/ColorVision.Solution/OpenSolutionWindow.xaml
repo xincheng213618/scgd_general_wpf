@@ -1,6 +1,7 @@
 ﻿<base:BaseWindow x:Class="ColorVision.Solution.OpenSolutionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.Solution"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Solution"
@@ -36,10 +37,10 @@
                             <ContextMenu>
                                 <MenuItem Header="{x:Static properties:Resources.Open}" Click="OpenRecentSolution_Click" />
                                 <MenuItem Header="{x:Static properties:Resources.CopyPath}" Click="CopyRecentPath_Click" />
-                                <MenuItem x:Name="TogglePinMenuItem" Header="固定到最近列表" Click="TogglePinRecentSolution_Click" />
+                                <MenuItem x:Name="TogglePinMenuItem" Header="{display:DisplayText Key='固定到最近列表'}" Click="TogglePinRecentSolution_Click" />
                                 <Separator />
-                                <MenuItem Header="从最近列表中移除" Click="RemoveRecentSolution_Click" />
-                                <MenuItem Header="清空最近列表" Click="ClearRecentSolutions_Click" />
+                                <MenuItem Header="{display:DisplayText Key='从最近列表中移除'}" Click="RemoveRecentSolution_Click" />
+                                <MenuItem Header="{display:DisplayText Key='清空最近列表'}" Click="ClearRecentSolutions_Click" />
                             </ContextMenu>
                         </ListView.ContextMenu>
                         <ListView.ItemContainerStyle>
@@ -186,7 +187,7 @@
                     CornerRadius="6"
                     Background="{DynamicResource GlobalBackground}">
                 <StackPanel>
-                    <TextBlock Text="正在打开工作区…"
+                    <TextBlock Text="{display:DisplayText Key='正在打开工作区…'}"
                                FontSize="16"
                                FontWeight="Bold"
                                HorizontalAlignment="Center" />
@@ -199,7 +200,7 @@
                     <Button Margin="0,16,0,0"
                             Padding="18,5"
                             HorizontalAlignment="Center"
-                            Content="取消"
+                            Content="{display:DisplayText Key='取消'}"
                             Click="CancelOpen_Click" />
                 </StackPanel>
             </Border>

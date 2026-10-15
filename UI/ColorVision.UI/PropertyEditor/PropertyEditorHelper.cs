@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1707,CA1852,CS8601
 using ColorVision.Themes;
-using ColorVision.UI.Extension;
 using log4net;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -9,7 +8,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -703,11 +701,8 @@ namespace ColorVision.UI
 
                     if (propertyEditorCount > 0 || addAdvancedToggle)
                     {
-                        if (useIntegratedLayout)
-                        {
-                            propertyPanel.Children.Add(stackPanel);
-                        }
-                        else
+                        FrameworkElement categoryContainer = stackPanel;
+                        if (!useIntegratedLayout)
                         {
                             var border = new Border
                             {
@@ -719,8 +714,18 @@ namespace ColorVision.UI
                             };
                             border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
                             border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-                            propertyPanel.Children.Add(border);
+                            categoryContainer = border;
                         }
+
+                        var propertyRows = stackPanel.Children.OfType<DockPanel>().Where(row => row.Tag is PropertyInfo).ToArray();
+                        if (!addAdvancedToggle && propertyRows.Any(row => BindingOperations.IsDataBound(row, UIElement.VisibilityProperty)))
+                        {
+                            var visibility = new MultiBinding { Converter = AnyVisiblePropertyConverter.Instance };
+                            foreach (var row in propertyRows)
+                                visibility.Bindings.Add(new Binding { Source = row, Path = new PropertyPath(UIElement.VisibilityProperty), Mode = BindingMode.OneWay });
+                            categoryContainer.SetBinding(UIElement.VisibilityProperty, visibility);
+                        }
+                        propertyPanel.Children.Add(categoryContainer);
                     }
                 }
 
@@ -731,6 +736,14 @@ namespace ColorVision.UI
             {
                 visited.Remove(obj);
             }
+        }
+
+        private sealed class AnyVisiblePropertyConverter : IMultiValueConverter
+        {
+            public static AnyVisiblePropertyConverter Instance { get; } = new();
+            public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture) =>
+                values.Any(value => value is Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
+            public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) => throw new NotSupportedException();
         }
 
         private static DockPanel CreateCategoryHeader(string title, PropertyEditorAdvancedOptions? advancedOptions, Action? advancedChanged)

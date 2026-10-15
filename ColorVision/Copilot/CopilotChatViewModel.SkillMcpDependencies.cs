@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -43,7 +44,7 @@ namespace ColorVision.Copilot
             var decision = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
                 FormatSkillMcpDependencyInstallPrompt(skills, promptPlan),
-                "ColorVision · Skill MCP 依赖",
+                LocalizedText.Get("ColorVision · Skill MCP 依赖"),
                 MessageBoxButton.YesNoCancel,
                 MessageBoxImage.Question);
             if (decision == MessageBoxResult.Cancel || decision == MessageBoxResult.None)
@@ -70,9 +71,9 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "MCP 配置保存失败；本次发送已取消。" + Environment.NewLine
+                    LocalizedText.Get("MCP 配置保存失败；本次发送已取消。") + Environment.NewLine
                     + CopilotUserFacingErrorFormatter.Sanitize(error),
-                    "ColorVision · MCP 配置未保存",
+                    LocalizedText.Get("ColorVision · MCP 配置未保存"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return false;
@@ -81,9 +82,9 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "MCP 配置已写入磁盘，但当前聊天运行时未能刷新；本次发送已取消。" + Environment.NewLine
+                    LocalizedText.Get("MCP 配置已写入磁盘，但当前聊天运行时未能刷新；本次发送已取消。") + Environment.NewLine
                     + CopilotUserFacingErrorFormatter.Sanitize(error),
-                    "ColorVision · MCP 运行时未刷新",
+                    LocalizedText.Get("ColorVision · MCP 运行时未刷新"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return false;
@@ -106,7 +107,7 @@ namespace ColorVision.Copilot
             var decision = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
                 FormatUnresolvedSkillMcpDependencyPrompt(skills, promptPlan.Issues),
-                "ColorVision · Skill MCP 依赖不可用",
+                LocalizedText.Get("ColorVision · Skill MCP 依赖不可用"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (decision != MessageBoxResult.Yes)

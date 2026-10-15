@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+		Microsoft ResX Schema
+
+		Version 1.3
+
+		The primary goals of this format is to allow a simple XML format
+		that is mostly human readable. The generation and parsing of the
+		various data types are done through the TypeConverter classes
+		associated with the data types.
+
+		Example:
+
+		... ado.net/XML headers & schema ...
+		<resheader name="resmimetype">text/microsoft-resx</resheader>
+		<resheader name="version">1.3</resheader>
+		<resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+		<resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+		<data name="Name1">this is my long string</data>
+		<data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+		<data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+			[base64 mime encoded serialized .NET Framework object]
+		</data>
+		<data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+			[base64 mime encoded string representing a byte array form of the .NET Framework object]
+		</data>
+
+		There are any number of "resheader" rows that contain simple
+		name/value pairs.
+
+		Each data row contains a name, and value. The row also contains a
+		type or mimetype. Type corresponds to a .NET class that support
+		text/value conversion through the TypeConverter architecture.
+		Classes that don't support this are serialized and stored with the
+		mimetype set.
+
+		The mimetype is used for serialized objects, and tells the
+		ResXResourceReader how to depersist the object. This is currently not
+		extensible. For a given mimetype the value must be set accordingly:
+
+		Note - application/x-microsoft.net.object.binary.base64 is the format
+		that the ResXResourceWriter will generate, however the reader can
+		read any of the formats listed below.
+
+		mimetype: application/x-microsoft.net.object.binary.base64
+		value   : The object must be serialized with
+			: System.Serialization.Formatters.Binary.BinaryFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.soap.base64
+		value   : The object must be serialized with
+			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.bytearray.base64
+		value   : The object must be serialized into a byte array
+			: using a System.ComponentModel.TypeConverter
+			: and then encoded with base64 encoding.
+	-->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="保存" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="删除" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="加载" xml:space="preserve">
+    <value>加载</value>
+  </data>
+  <data name="原始 JSON" xml:space="preserve">
+    <value>原始 JSON</value>
+  </data>
+  <data name="发送" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="取消" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="名称" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="启用" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="字段" xml:space="preserve">
+    <value>字段</value>
+  </data>
+  <data name="导出 CSV" xml:space="preserve">
+    <value>导出 CSV</value>
+  </data>
+  <data name="断开" xml:space="preserve">
+    <value>断开</value>
+  </data>
+  <data name="新增" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="暂停" xml:space="preserve">
+    <value>暂停</value>
+  </data>
+  <data name="未连接" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="清除" xml:space="preserve">
+    <value>清除</value>
+  </data>
+  <data name="结果" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="输出目录" xml:space="preserve">
+    <value>输出目录</value>
+  </data>
+  <data name="运行" xml:space="preserve">
+    <value>运行</value>
+  </data>
+  <data name="连接" xml:space="preserve">
+    <value>连接</value>
+  </data>
+  <data name="配置" xml:space="preserve">
+    <value>配置</value>
+  </data>
+  <data name="AOI 完成" xml:space="preserve">
+    <value>AOI 完成</value>
+  </data>
+  <data name="ARVR 调试" xml:space="preserve">
+    <value>ARVR 调试</value>
+  </data>
+  <data name="ARVR 连接" xml:space="preserve">
+    <value>ARVR 连接</value>
+  </data>
+  <data name="GECS PG 连接" xml:space="preserve">
+    <value>GECS PG 连接</value>
+  </data>
+  <data name="GECS 调试" xml:space="preserve">
+    <value>GECS 调试</value>
+  </data>
+  <data name="PG 联动运行" xml:space="preserve">
+    <value>PG 联动运行</value>
+  </data>
+  <data name="SwitchPG 完成" xml:space="preserve">
+    <value>SwitchPG 完成</value>
+  </data>
+  <data name="仅执行 PG" xml:space="preserve">
+    <value>仅执行 PG</value>
+  </data>
+  <data name="仅确认 ARVR" xml:space="preserve">
+    <value>仅确认 ARVR</value>
+  </data>
+  <data name="内部运行全部" xml:space="preserve">
+    <value>内部运行全部</value>
+  </data>
+  <data name="初始化" xml:space="preserve">
+    <value>初始化</value>
+  </data>
+  <data name="加载样例" xml:space="preserve">
+    <value>加载样例</value>
+  </data>
+  <data name="发送并解析" xml:space="preserve">
+    <value>发送并解析</value>
+  </data>
+  <data name="响应超时 (s)" xml:space="preserve">
+    <value>响应超时 (s)</value>
+  </data>
+  <data name="契约" xml:space="preserve">
+    <value>契约</value>
+  </data>
+  <data name="当前任务" xml:space="preserve">
+    <value>当前任务</value>
+  </data>
+  <data name="待机" xml:space="preserve">
+    <value>待机</value>
+  </data>
+  <data name="心跳 (s)" xml:space="preserve">
+    <value>心跳 (s)</value>
+  </data>
+  <data name="成功匹配" xml:space="preserve">
+    <value>成功匹配</value>
+  </data>
+  <data name="成功后确认" xml:space="preserve">
+    <value>成功后确认</value>
+  </data>
+  <data name="打开 JSON" xml:space="preserve">
+    <value>打开 JSON</value>
+  </data>
+  <data name="执行并确认" xml:space="preserve">
+    <value>执行并确认</value>
+  </data>
+  <data name="指令映射" xml:space="preserve">
+    <value>指令映射</value>
+  </data>
+  <data name="无待处理请求" xml:space="preserve">
+    <value>无待处理请求</value>
+  </data>
+  <data name="测试项" xml:space="preserve">
+    <value>测试项</value>
+  </data>
+  <data name="消息上限" xml:space="preserve">
+    <value>消息上限</value>
+  </data>
+  <data name="直接确认 AOI" xml:space="preserve">
+    <value>直接确认 AOI</value>
+  </data>
+  <data name="直接确认 SwitchPG" xml:space="preserve">
+    <value>直接确认 SwitchPG</value>
+  </data>
+  <data name="结果摘要" xml:space="preserve">
+    <value>结果摘要</value>
+  </data>
+  <data name="自动执行" xml:space="preserve">
+    <value>自动执行</value>
+  </data>
+  <data name="自动电源" xml:space="preserve">
+    <value>自动电源</value>
+  </data>
+  <data name="超时 (s)" xml:space="preserve">
+    <value>超时 (s)</value>
+  </data>
+  <data name="连接 PG" xml:space="preserve">
+    <value>连接 PG</value>
+  </data>
+  <data name="通信日志" xml:space="preserve">
+    <value>通信日志</value>
+  </data>
+  <data name="配置文件" xml:space="preserve">
+    <value>配置文件</value>
+  </data>
+  <data name="高级" xml:space="preserve">
+    <value>高级</value>
+  </data>
+  <data name=" / 未找到启用映射" xml:space="preserve">
+    <value> / 未找到启用映射</value>
+  </data>
+  <data name=" 需要填写 Params。" xml:space="preserve">
+    <value> 需要填写 Params。</value>
+  </data>
+  <data name="PG 指令失败" xml:space="preserve">
+    <value>PG 指令失败</value>
+  </data>
+  <data name="PG 联动启动失败" xml:space="preserve">
+    <value>PG 联动启动失败</value>
+  </data>
+  <data name="PG 联动失败" xml:space="preserve">
+    <value>PG 联动失败</value>
+  </data>
+  <data name="PG 连接失败" xml:space="preserve">
+    <value>PG 连接失败</value>
+  </data>
+  <data name="保存配置失败" xml:space="preserve">
+    <value>保存配置失败</value>
+  </data>
+  <data name="加载配置失败" xml:space="preserve">
+    <value>加载配置失败</value>
+  </data>
+  <data name="发送失败" xml:space="preserve">
+    <value>发送失败</value>
+  </data>
+  <data name="已连接" xml:space="preserve">
+    <value>已连接</value>
+  </data>
+  <data name="无结果" xml:space="preserve">
+    <value>无结果</value>
+  </data>
+  <data name="继续" xml:space="preserve">
+    <value>继续</value>
+  </data>
+  <data name="缺少参数" xml:space="preserve">
+    <value>缺少参数</value>
+  </data>
+  <data name="解析失败" xml:space="preserve">
+    <value>解析失败</value>
+  </data>
+  <data name="解析或导出失败" xml:space="preserve">
+    <value>解析或导出失败</value>
+  </data>
+  <data name="请先加载或接收 ProjectARVRResult。" xml:space="preserve">
+    <value>请先加载或接收 ProjectARVRResult。</value>
+  </data>
+  <data name="连接失败" xml:space="preserve">
+    <value>连接失败</value>
+  </data>
+</root>

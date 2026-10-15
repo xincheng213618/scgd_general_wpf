@@ -22,7 +22,7 @@ public sealed record FrameAnalysis(Guid FrameId, string Source, DateTimeOffset C
     public static FrameAnalysis Run(TestFrame frame, TestProfile profile)
     {
         profile.Validate();
-        if (profile.Regions.Count == 0) throw new InvalidOperationException("请先框选至少一个 BMW 搜索区域。");
+        if (profile.Regions.Count == 0) throw new InvalidOperationException("请先框选至少一个 SFR 搜索区域。");
         if (profile.ImageWidth != frame.Data.Width || profile.ImageHeight != frame.Data.Height)
             throw new InvalidOperationException("当前图像尺寸与搜索区域参考尺寸不一致，请重新框选或加载匹配配置。");
         var regions = profile.Regions.Select(r => new BmwSearchRegion(r.Id, r.Roi)).ToArray();
@@ -50,8 +50,8 @@ public sealed record FrameAnalysis(Guid FrameId, string Source, DateTimeOffset C
         ? result.Channels.Select(channel => new MetricRow(target.Id, edge.Id.ToString(), channel.Channel == "L" ? "Y (L)" : channel.Channel,
             channel.Valid ? (channel.Warnings.Length == 0 ? "有效" : string.Join("; ", channel.Warnings)) : channel.Reason,
             channel.Valid ? channel.Mtf50 : null, channel.Valid ? channel.Mtf10 : null,
-            channel.Valid ? SfrCurveQueries.AtFrequency(channel.Frequencies, channel.Mtf, Frequency) : null, result))
-        : new[] { new MetricRow(target.Id, edge.Id.ToString(), "—", edge.Reason, null, null, null, null) })).ToArray();
+            channel.Valid ? SfrCurveQueries.AtFrequency(channel.Frequencies, channel.Mtf, Frequency) : null, result) { Options = Options })
+        : new[] { new MetricRow(target.Id, edge.Id.ToString(), "—", edge.Reason, null, null, null, null) { Options = Options } })).ToArray();
 
     public void Export(string path)
     {
@@ -86,7 +86,13 @@ public sealed record FrameAnalysis(Guid FrameId, string Source, DateTimeOffset C
     private static string Number(double? value) => value?.ToString("G17", CultureInfo.InvariantCulture) ?? string.Empty;
 }
 
-public sealed record MetricRow(string Target, string Edge, string Channel, string Status, double? Mtf50, double? Mtf10, double? Response, SfrAnalysisResult? Analysis);
+public sealed record MetricRow(string Target, string Edge, string Channel, string Status, double? Mtf50, double? Mtf10, double? Response, SfrAnalysisResult? Analysis)
+{
+    public SfrAnalysisOptions Options { get; init; } = new();
+    public SfrChannelAnalysis? ChannelAnalysis => Analysis?.Channels.FirstOrDefault(c => c.Channel == (Channel == "Y (L)" ? "L" : Channel));
+    public string StatusText => MeasurementOverview.Explain(Status);
+    public string DiagnosticText => MeasurementOverview.Diagnostic(this);
+}
 public sealed record EdgeColorAnalysis(string Target, string Edge, SfrChromaticAberrationResult Analysis);
 public sealed record ColorShiftRow(string Target, string Edge, string Pair, string Axis, double? Shift, string Status, SfrChromaticAberrationResult Analysis)
 {

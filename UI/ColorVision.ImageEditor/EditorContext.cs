@@ -99,7 +99,7 @@ namespace ColorVision.ImageEditor
 
         public CompactInspectorPresenter CompactInspectorPresenter { get; set; }
 
-        public Window? OwnerWindow => Window.GetWindow(ImageView) ?? Application.Current?.MainWindow;
+        public Window? OwnerWindow => Window.GetWindow(ImageView) ?? Application.Current?.GetActiveWindow();
 
         public ImageSource FunctionImage
         {

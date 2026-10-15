@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Messages
                     }; 
                     string text = JsonConvert.SerializeObject(msgReturn, settings);
                     Common.Clipboard.SetText(text);
-                    MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), text, "ColorVision");
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
                 {
@@ -96,7 +96,7 @@ namespace ColorVision.Engine.Messages
                     };
                     string text = JsonConvert.SerializeObject(msgSend, settings);
                     Common.Clipboard.SetText(text);
-                    MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), text, "ColorVision");
 
                 }
             }
@@ -130,7 +130,7 @@ namespace ColorVision.Engine.Messages
                 };
                 string text = JsonConvert.SerializeObject(msgRecord.MsgSend, settings);
                 Common.Clipboard.SetText(text);
-                MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), text, "ColorVision");
             }
 
         }
@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Messages
                 };
                 string text = JsonConvert.SerializeObject(msgRecord.MsgReturn, settings);
                 Common.Clipboard.SetText(text);
-                MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), text, "ColorVision");
             }
         }
 
@@ -228,6 +228,7 @@ namespace ColorVision.Engine.Messages
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Background = FindResource("GlobalBackground") as System.Windows.Media.Brush
             };
+            window.ApplyCaption();
 
             TextBox textBox = new()
             {

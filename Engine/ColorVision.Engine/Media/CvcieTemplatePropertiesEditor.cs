@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.UI;
 using System;
 using System.ComponentModel;
@@ -15,7 +16,7 @@ public sealed class CvcieTemplatePropertiesEditor : IPropertyEditor
     {
         var panel = new DockPanel();
         panel.Children.Add(PropertyEditorHelper.CreateLabel(property, PropertyEditorHelper.GetResourceManager(obj)));
-        var button = new Button { Content = "选择字段…", Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(8, 0, 0, 0) };
+        var button = new Button { Content = LocalizedText.Get("选择字段…"), Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(8, 0, 0, 0) };
         DockPanel.SetDock(button, Dock.Right);
         panel.Children.Add(button);
         var summary = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };

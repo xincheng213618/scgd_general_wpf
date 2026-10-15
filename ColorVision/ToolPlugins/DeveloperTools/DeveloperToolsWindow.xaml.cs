@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Engine.Services.DeveloperTools;
 using ColorVision.Themes;
@@ -92,10 +93,10 @@ namespace ColorVision.ToolPlugins.DeveloperTools
                 if (_closed) return;
                 Python.Apply(snapshots.Item1);
                 NodeJs.Apply(snapshots.Item2);
-                LastChecked.Text = $"最近检测：{DateTime.Now:HH:mm:ss} · 每 15 秒自动刷新";
+                LastChecked.Text = LocalizedText.Format($"最近检测：{DateTime.Now:HH:mm:ss} · 每 15 秒自动刷新");
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { if (!_closed) OperationStatus.Text = "检测失败：" + ex.Message; }
+            catch (Exception ex) { if (!_closed) OperationStatus.Text = LocalizedText.Get("检测失败：") + ex.Message; }
             finally { _refreshing = false; }
         }
 
@@ -113,7 +114,7 @@ namespace ColorVision.ToolPlugins.DeveloperTools
                 foreach (var release in releases) page.Releases.Add(release);
                 page.SelectedRelease = page.Releases.FirstOrDefault(release => release.Version == previousVersion) ?? page.Releases.FirstOrDefault();
                 page.CatalogStatus = releases.Count == 0 ? "官网没有返回稳定版本，请稍后重试。" : "已获取 Windows x64 稳定版本。";
-                OperationStatus.Text = $"已更新 {page.Title} 可安装版本。尚未下载或安装。";
+                OperationStatus.Text = LocalizedText.Format($"已更新 {page.Title} 可安装版本。尚未下载或安装。");
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -130,7 +131,7 @@ namespace ColorVision.ToolPlugins.DeveloperTools
             var download = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
             if (download == null)
             {
-                OperationStatus.Text = "下载服务不可用，未开始安装。";
+                OperationStatus.Text = LocalizedText.Get("下载服务不可用，未开始安装。");
                 return;
             }
             SetBusy(true);
@@ -138,13 +139,13 @@ namespace ColorVision.ToolPlugins.DeveloperTools
             {
                 CancellationToken cancellationToken = _lifetime.Token;
                 DeveloperToolDownloadSource source = page.SelectedSourceIndex == 1 ? DeveloperToolDownloadSource.Official : DeveloperToolDownloadSource.DomesticMirror;
-                OperationStatus.Text = $"正在获取 {release.DisplayName} 的官网 SHA256…";
+                OperationStatus.Text = LocalizedText.Format($"正在获取 {release.DisplayName} 的官网 SHA256…");
                 string expectedHash = await _catalog.GetOfficialSha256Async(release, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 string directory = Path.Combine(Environments.DirToolPackageCache, "DeveloperTools", Guid.NewGuid().ToString("N"));
                 Directory.CreateDirectory(directory);
                 var completion = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
-                OperationStatus.Text = $"正在下载 {release.FileName}，进度可在下载管理器查看。关闭本窗口会取消后续自动安装。";
+                OperationStatus.Text = LocalizedText.Format($"正在下载 {release.FileName}，进度可在下载管理器查看。关闭本窗口会取消后续自动安装。");
                 download.ShowDownloadWindow();
                 // Public mirrors must never receive the application's backend credentials.
                 download.Download(release.GetDownloadUri(source).AbsoluteUri, directory, authorization: null,
@@ -155,10 +156,10 @@ namespace ColorVision.ToolPlugins.DeveloperTools
                 string expectedPath = Path.GetFullPath(Path.Combine(directory, release.FileName));
                 if (!string.Equals(Path.GetFullPath(filePath), expectedPath, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("下载服务返回了意外的文件路径，已阻止安装。");
-                OperationStatus.Text = "正在校验 SHA256 和发布者数字签名…";
+                OperationStatus.Text = LocalizedText.Get("正在校验 SHA256 和发布者数字签名…");
                 using var verified = await Task.Run(() => DeveloperToolInstallerService.PrepareInstaller(expectedPath, release, expectedHash), cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
-                OperationStatus.Text = "校验通过，正在启动官方安装向导。安装位置和系统更改由向导确认。";
+                OperationStatus.Text = LocalizedText.Get("校验通过，正在启动官方安装向导。安装位置和系统更改由向导确认。");
                 // Verification runs off the UI thread. The file remains locked until the installer exits.
                 // Launch happens on the UI thread after the lifetime check; closing never kills an installer.
                 using Process installer = verified.Start();
@@ -167,13 +168,13 @@ namespace ColorVision.ToolPlugins.DeveloperTools
                 if (_closed) return;
                 bool detected = page.Installations.Any(item => string.Equals(item.Version, release.Version.ToString(), StringComparison.Ordinal));
                 OperationStatus.Text = installer.ExitCode == 3010
-                    ? "安装向导提示需要重启 Windows。请保存工作后自行重启，并重新检测。"
-                    : $"安装向导已退出（代码 {installer.ExitCode}）。{(detected ? "已检测到所选版本。" : "尚未检测到所选版本，请检查向导结果并刷新。")} 新终端或重启应用后再核对默认命令。";
+                    ? LocalizedText.Get("安装向导提示需要重启 Windows。请保存工作后自行重启，并重新检测。")
+                    : LocalizedText.Format($"安装向导已退出（代码 {installer.ExitCode}）。{(detected ? LocalizedText.Get("已检测到所选版本。") : LocalizedText.Get("尚未检测到所选版本，请检查向导结果并刷新。"))} 新终端或重启应用后再核对默认命令。");
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                if (!_closed) OperationStatus.Text = "安装未完成：" + ex.Message;
+                if (!_closed) OperationStatus.Text = LocalizedText.Get("安装未完成：") + ex.Message;
             }
             finally { SetBusy(false); }
         }

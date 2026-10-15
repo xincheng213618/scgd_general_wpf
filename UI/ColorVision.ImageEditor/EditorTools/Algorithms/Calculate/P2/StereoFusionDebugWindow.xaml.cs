@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
@@ -42,11 +43,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             if (lease != null)
             {
                 HImage image = lease.Image;
-                LeftInfoText.Text = $"左图：当前编辑器图像 ({image.cols} x {image.rows})";
+                LeftInfoText.Text = LocalizedText.Format($"左图：当前编辑器图像 ({image.cols} x {image.rows})");
                 ConfigText.Text = CreateDefaultConfig(image.cols, image.rows, image.cols, image.rows);
             }
             LeftPreview.Source = _imageContext.ImageShow.Source;
-            StatusText.Text = "请选择右图并加载真实标定参数。当前 JSON 中的焦距和基线仅为界面调试示例，不能用于测量。";
+            StatusText.Text = LocalizedText.Get("请选择右图并加载真实标定参数。当前 JSON 中的焦距和基线仅为界面调试示例，不能用于测量。");
             Closed += (_, _) =>
             {
                 _closed = true;
@@ -58,7 +59,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
         {
             OpenFileDialog dialog = new()
             {
-                Title = "选择双目右图",
+                Title = LocalizedText.Get("选择双目右图"),
                 Filter = "图像文件|*.bmp;*.png;*.jpg;*.jpeg;*.tif;*.tiff;*.webp|所有文件|*.*"
             };
             if (dialog.ShowDialog(this) != true) return;
@@ -68,18 +69,18 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 _rightImage = P2BitmapLoader.Load(dialog.FileName);
                 ClearOverlay();
                 RightPreview.Source = _rightImage;
-                RightInfoText.Text = $"右图：{Path.GetFileName(dialog.FileName)} ({_rightImage.PixelWidth} x {_rightImage.PixelHeight})";
+                RightInfoText.Text = LocalizedText.Format($"右图：{Path.GetFileName(dialog.FileName)} ({_rightImage.PixelWidth} x {_rightImage.PixelHeight})");
                 using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
                 if (!_hasExternalCalibration && lease != null)
                 {
                     HImage left = lease.Image;
                     ConfigText.Text = CreateDefaultConfig(left.cols, left.rows, _rightImage.PixelWidth, _rightImage.PixelHeight);
                 }
-                StatusText.Text = "右图已加载；请确认标定矩阵、畸变、旋转和平移均与这对图像一致。";
+                StatusText.Text = LocalizedText.Get("右图已加载；请确认标定矩阵、畸变、旋转和平移均与这对图像一致。");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "加载右图失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("加载右图失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -87,7 +88,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
         {
             OpenFileDialog dialog = new()
             {
-                Title = "加载双目标定 JSON",
+                Title = LocalizedText.Get("加载双目标定 JSON"),
                 Filter = "JSON 文件|*.json|所有文件|*.*"
             };
             if (dialog.ShowDialog(this) != true) return;
@@ -110,11 +111,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                     ConfigText.Text = root.ToString(Formatting.Indented);
                 }
                 _hasExternalCalibration = true;
-                StatusText.Text = $"已加载标定配置：{Path.GetFileName(dialog.FileName)}";
+                StatusText.Text = LocalizedText.Format($"已加载标定配置：{Path.GetFileName(dialog.FileName)}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "加载标定失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("加载标定失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -122,7 +123,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
         {
             if (_rightImage == null)
             {
-                MessageBox.Show(this, "请先选择右图。", "双目标定融合", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("请先选择右图。"), LocalizedText.Get("双目标定融合"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             try
@@ -134,12 +135,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException)
             {
-                MessageBox.Show(this, ex.Message, "配置无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("配置无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             RunButton.IsEnabled = false;
-            StatusText.Text = "双目检测与三角化计算中...";
+            StatusText.Text = LocalizedText.Get("双目检测与三角化计算中...");
             long revision = _imageContext.ImageRevision;
             try
             {
@@ -152,7 +153,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             {
                 if (_closed || !_imageContext.IsCurrentImageRevision(revision)) return;
                 StatusText.Text = ex.Message;
-                MessageBox.Show(this, ex.Message, "双目标定融合", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("双目标定融合"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -195,7 +196,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             PointsGrid.ItemsSource = BuildPointRows(result.Json);
             SummaryText.Text = string.Format(
                 CultureInfo.InvariantCulture,
-                "有效点: {0}/5    深度: {1:F2} mm    重投影: {2:F3} px    Confidence: {3:F3}",
+                LocalizedText.Get("有效点: {0}/5    深度: {1:F2} mm    重投影: {2:F3} px    Confidence: {3:F3}"),
                 result.Json.Value<int?>("validPointCount") ?? 0,
                 result.Json.Value<double?>("meanDepthMm") ?? 0.0,
                 result.Json.Value<double?>("meanReprojectionErrorPixels") ?? 0.0,
@@ -291,20 +292,20 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
         private void ClearOverlay_Click(object sender, RoutedEventArgs e)
         {
             ClearOverlay();
-            StatusText.Text = "Overlay 已清除。";
+            StatusText.Text = LocalizedText.Get("Overlay 已清除。");
         }
 
         private void CopyConfig_Click(object sender, RoutedEventArgs e)
         {
             Clipboard.SetText(P2NativeJson.Format(ConfigText.Text));
-            StatusText.Text = "配置 JSON 已复制。";
+            StatusText.Text = LocalizedText.Get("配置 JSON 已复制。");
         }
 
         private void CopyResult_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_rawResult)) return;
             Clipboard.SetText(_rawResult);
-            StatusText.Text = "结果 JSON 已复制。";
+            StatusText.Text = LocalizedText.Get("结果 JSON 已复制。");
         }
 
         private void ClearOverlay()

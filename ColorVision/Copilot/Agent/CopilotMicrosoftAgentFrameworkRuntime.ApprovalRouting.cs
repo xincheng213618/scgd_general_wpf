@@ -1,5 +1,4 @@
 #pragma warning disable MAAI001
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ namespace ColorVision.Copilot
             CopilotAutomaticApprovalDenialCircuitBreaker automaticReviewCircuitBreaker,
             CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
             Action<CopilotAgentEvent> emit,
-            CopilotTokenUsage usage,
+            Action<CopilotTokenUsage> addReviewUsage,
             CancellationToken cancellationToken)
         {
             BeginFrameworkApprovalRouting();
@@ -68,6 +67,7 @@ namespace ColorVision.Copilot
                             $"{reservation.Tool.Name} was approved by the submitted turn's frozen Codex exec policy."));
                     }
                     else if (!requiresExecPolicyPrompt
+                        && request.AccessContext.Mode != CopilotAgentAccessMode.UnrestrictedFullAccess
                         && CopilotAgentAccessPolicy.CanAutoApprove(
                             request,
                             reservation.Tool,
@@ -99,6 +99,14 @@ namespace ColorVision.Copilot
                                 permissionOutcome.Decision.Reason,
                                 permissionOutcome.Decision.FailureCode);
                             bridge.Reject(reservation, decision);
+                        }
+                        else if (request.AccessContext.Mode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                            && CopilotAgentAccessPolicy.CanAutoApprove(request, reservation.Tool, GetCurrentWorkspacePath()))
+                        {
+                            decision = CopilotFrameworkApprovalDecision.ApprovedByConversationFullAccess();
+                            reservation.ApprovedByFullAccess = true;
+                            bridge.Approve(reservation);
+                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved by this conversation's full access setting."));
                         }
                         else
                         {
@@ -145,7 +153,8 @@ namespace ColorVision.Copilot
                                         handle.Action,
                                         permissionOutcome.Decision.Reason,
                                         cancellationToken);
-                                    usage = usage.Add(automaticReview.Usage);
+                                    // Keep settled review billing even if a later approval wait is cancelled.
+                                    addReviewUsage(automaticReview.Usage);
                                     circuitBreakerSnapshot = isExplicitAutoReview
                                         ? automaticReviewCircuitBreaker.Observe(automaticReview.Verdict)
                                         : default;
@@ -219,8 +228,9 @@ namespace ColorVision.Copilot
                                 decision = await handle.Decision;
                                 cancellationToken.ThrowIfCancellationRequested();
                             }
-                            catch (OperationCanceledException)
+                            catch (OperationCanceledException ex)
                             {
+                                addReviewUsage(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                                 bridge.CancelApproval(
                                     reservation,
                                     "The approval request was cancelled with the Agent run.");
@@ -253,13 +263,12 @@ namespace ColorVision.Copilot
                         approvalRoutingCompleted = true;
                         return new CopilotFrameworkApprovalRoutingResult(
                             responses,
-                            usage,
                             circuitBreakerSnapshot);
                     }
                 }
 
                 approvalRoutingCompleted = true;
-                return new CopilotFrameworkApprovalRoutingResult(responses, usage, null);
+                return new CopilotFrameworkApprovalRoutingResult(responses, null);
             }
             finally
             {
@@ -270,7 +279,6 @@ namespace ColorVision.Copilot
 
         private sealed record CopilotFrameworkApprovalRoutingResult(
             List<AIContent> Responses,
-            CopilotTokenUsage Usage,
             CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? CircuitBreakerSnapshot);
     }
 }

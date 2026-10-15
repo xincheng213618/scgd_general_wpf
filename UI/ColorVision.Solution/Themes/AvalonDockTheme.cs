@@ -13,10 +13,8 @@ public class AvalonDockTheme : DictionaryTheme
     private static ResourceDictionary CreateResources(bool isDark)
     {
         var resources = new ResourceDictionary();
-        resources.MergedDictionaries.Add(new ResourceDictionary
-        {
-            Source = (isDark ? (Theme)new Vs2013DarkTheme() : new Vs2013LightTheme()).GetResourceUri()
-        });
+        DictionaryTheme baseTheme = isDark ? new Vs2013DarkTheme() : new Vs2013LightTheme();
+        resources.MergedDictionaries.Add(baseTheme.ThemeResourceDictionary);
         resources.MergedDictionaries.Add(new ResourceDictionary
         {
             Source = new Uri($"/ColorVision.Solution;component/Themes/AvalonDockModern{(isDark ? "Dark" : "Light")}.xaml", UriKind.Relative)

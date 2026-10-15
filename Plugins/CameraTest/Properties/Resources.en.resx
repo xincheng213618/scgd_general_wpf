@@ -1,0 +1,800 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+		Microsoft ResX Schema
+
+		Version 1.3
+
+		The primary goals of this format is to allow a simple XML format
+		that is mostly human readable. The generation and parsing of the
+		various data types are done through the TypeConverter classes
+		associated with the data types.
+
+		Example:
+
+		... ado.net/XML headers & schema ...
+		<resheader name="resmimetype">text/microsoft-resx</resheader>
+		<resheader name="version">1.3</resheader>
+		<resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+		<resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+		<data name="Name1">this is my long string</data>
+		<data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+		<data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+			[base64 mime encoded serialized .NET Framework object]
+		</data>
+		<data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+			[base64 mime encoded string representing a byte array form of the .NET Framework object]
+		</data>
+
+		There are any number of "resheader" rows that contain simple
+		name/value pairs.
+
+		Each data row contains a name, and value. The row also contains a
+		type or mimetype. Type corresponds to a .NET class that support
+		text/value conversion through the TypeConverter architecture.
+		Classes that don't support this are serialized and stored with the
+		mimetype set.
+
+		The mimetype is used for serialized objects, and tells the
+		ResXResourceReader how to depersist the object. This is currently not
+		extensible. For a given mimetype the value must be set accordingly:
+
+		Note - application/x-microsoft.net.object.binary.base64 is the format
+		that the ResXResourceWriter will generate, however the reader can
+		read any of the formats listed below.
+
+		mimetype: application/x-microsoft.net.object.binary.base64
+		value   : The object must be serialized with
+			: System.Serialization.Formatters.Binary.BinaryFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.soap.base64
+		value   : The object must be serialized with
+			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.bytearray.base64
+		value   : The object must be serialized into a byte array
+			: using a System.ComponentModel.TypeConverter
+			: and then encoded with base64 encoding.
+	-->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MTF50 / MTF10 为阈值交点频率。ESF 为边缘过渡，LSF 为计算使用的加窗导数。质量有效不等于产品合格。" xml:space="preserve">
+    <value>MTF50 / MTF10 are threshold-crossing frequencies. ESF is the edge transition; LSF is the windowed derivative used in calculation. Valid measurement quality does not imply product acceptance.</value>
+  </data>
+  <data name="RGB 50% 边缘位移，单位 px。包括镜头、传感器和图像处理的综合偏移，不等同于 ΔE 或纯镜头径向色差。" xml:space="preserve">
+    <value>RGB edge displacement at 50%, in px. Includes combined lens, sensor, and image processing offsets; it is not ΔE or pure lens radial chromatic aberration.</value>
+  </data>
+  <data name="SFR · MTF50 / MTF10 单位为 cycles/pixel。Y 为相对亮度组合信号，曲线中记为 L。" xml:space="preserve">
+    <value>SFR · MTF50 / MTF10 use cycles/pixel. Y is the combined relative luminance signal, labeled L in curves.</value>
+  </data>
+  <data name="SFR 测量与显示…" xml:space="preserve">
+    <value>SFR Measurement and Display…</value>
+  </data>
+  <data name="SFR 结果详情" xml:space="preserve">
+    <value>SFR Result Details</value>
+  </data>
+  <data name="上边" xml:space="preserve">
+    <value>Top Edge</value>
+  </data>
+  <data name="下边" xml:space="preserve">
+    <value>Bottom Edge</value>
+  </data>
+  <data name="专注当前点" xml:space="preserve">
+    <value>Focus on Current Point</value>
+  </data>
+  <data name="仅预览" xml:space="preserve">
+    <value>Preview Only</value>
+  </data>
+  <data name="从一张图开始" xml:space="preserve">
+    <value>Start with an Image</value>
+  </data>
+  <data name="位深" xml:space="preserve">
+    <value>Bit depth</value>
+  </data>
+  <data name="位移 (px)" xml:space="preserve">
+    <value>Displacement (px)</value>
+  </data>
+  <data name="位置…" xml:space="preserve">
+    <value>Location…</value>
+  </data>
+  <data name="保存位置" xml:space="preserve">
+    <value>Save Location</value>
+  </data>
+  <data name="保存原图…" xml:space="preserve">
+    <value>Save Original Image…</value>
+  </data>
+  <data name="保存检测配置…" xml:space="preserve">
+    <value>Save Inspection Configuration…</value>
+  </data>
+  <data name="保留本轮最近 300 帧；缺测处断开。峰值仅供调焦参考，不代表已到最佳焦点。" xml:space="preserve">
+    <value>Keeps the latest 300 frames from this run, with gaps for missing measurements. Peaks are focus references and do not confirm optimal focus.</value>
+  </data>
+  <data name="信噪比" xml:space="preserve">
+    <value>Signal-to-noise Ratio</value>
+  </data>
+  <data name="值" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="倾角 (°)" xml:space="preserve">
+    <value>Slant Angle (°)</value>
+  </data>
+  <data name="停止" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="停止实时分析并冻结当前画面" xml:space="preserve">
+    <value>Stop live analysis and freeze the current frame</value>
+  </data>
+  <data name="停止并冻结" xml:space="preserve">
+    <value>Stop and Freeze</value>
+  </data>
+  <data name="先框选完整靶标，再开始分析。" xml:space="preserve">
+    <value>Select a rectangle containing the entire target before starting analysis.</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="分析(_A)" xml:space="preserve">
+    <value>Analysis (_A)</value>
+  </data>
+  <data name="分析后，点击结果或图上的刃边查看曲线" xml:space="preserve">
+    <value>After analysis, click a result or an edge in the image to view curves</value>
+  </data>
+  <data name="分析图像后显示 R−G、R−B、G−B 的刃边位移。" xml:space="preserve">
+    <value>Displays R−G, R−B, and G−B edge displacements after image analysis.</value>
+  </data>
+  <data name="分析指标…" xml:space="preserve">
+    <value>Analysis Metrics…</value>
+  </data>
+  <data name="判定" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="判定为可选功能。未设标准、未知编码、缺通道或无效测量不会显示为合格。" xml:space="preserve">
+    <value>Acceptance evaluation is optional. Missing criteria, unknown codes, missing channels, or invalid measurements are never shown as accepted.</value>
+  </data>
+  <data name="判定标准…" xml:space="preserve">
+    <value>Acceptance Criteria…</value>
+  </data>
+  <data name="刷新后选择相机" xml:space="preserve">
+    <value>Refresh, Then Select a Camera</value>
+  </data>
+  <data name="刷新相机 ID" xml:space="preserve">
+    <value>Refresh Camera IDs</value>
+  </data>
+  <data name="加载检测配置…" xml:space="preserve">
+    <value>Load Inspection Configuration…</value>
+  </data>
+  <data name="原因" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="双击或 Enter 查看本次结果详情，不重新计算。" xml:space="preserve">
+    <value>Double-click or press Enter to view this result's details without recalculating.</value>
+  </data>
+  <data name="取图" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="取图后保存" xml:space="preserve">
+    <value>Save After Capture</value>
+  </data>
+  <data name="右边" xml:space="preserve">
+    <value>Right Edge</value>
+  </data>
+  <data name="四边 SFR" xml:space="preserve">
+    <value>Four-edge SFR</value>
+  </data>
+  <data name="图上标注、四边读数与概览使用同一指标；显示频率可在测量设置中修改，只查询已有曲线。" xml:space="preserve">
+    <value>Image annotations, four-edge readings, and overview use the same metric. Change the display frequency in Measurement Settings; only existing curves are queried.</value>
+  </data>
+  <data name="图卡" xml:space="preserve">
+    <value>Test Target</value>
+  </data>
+  <data name="型号" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="基础清晰度" xml:space="preserve">
+    <value>Basic Sharpness</value>
+  </data>
+  <data name="增益" xml:space="preserve">
+    <value>Gain</value>
+  </data>
+  <data name="处理未定位" xml:space="preserve">
+    <value>Resolve Unlocated Points</value>
+  </data>
+  <data name="存档(_R)" xml:space="preserve">
+    <value>Archive (_R)</value>
+  </data>
+  <data name="存档信息…" xml:space="preserve">
+    <value>Archive Information…</value>
+  </data>
+  <data name="定位最低值" xml:space="preserve">
+    <value>Locate Minimum</value>
+  </data>
+  <data name="定位本帧当前筛选范围内、当前指标的最低可用数值；不代表判定不合格。" xml:space="preserve">
+    <value>Locate the lowest available value for the current metric within this frame's active filter. This does not indicate product rejection.</value>
+  </data>
+  <data name="实时分析" xml:space="preserve">
+    <value>Live Analysis</value>
+  </data>
+  <data name="实际显示帧率，包含分析和绘图开销。" xml:space="preserve">
+    <value>Actual display frame rate, including analysis and drawing overhead.</value>
+  </data>
+  <data name="导出分析结果…" xml:space="preserve">
+    <value>Export Analysis Results…</value>
+  </data>
+  <data name="导出调焦记录…" xml:space="preserve">
+    <value>Export Focus Records…</value>
+  </data>
+  <data name="尚未加载图像" xml:space="preserve">
+    <value>No Image Loaded</value>
+  </data>
+  <data name="左边" xml:space="preserve">
+    <value>Left Edge</value>
+  </data>
+  <data name="开始分析" xml:space="preserve">
+    <value>Start Analysis</value>
+  </data>
+  <data name="开始实时分析后记录调焦趋势。" xml:space="preserve">
+    <value>Focus trends are recorded after live analysis starts.</value>
+  </data>
+  <data name="开始视频" xml:space="preserve">
+    <value>Start Video</value>
+  </data>
+  <data name="当前点用简短标签显示四边数值；其他点保留名称和测量框。取消后显示完整标注。" xml:space="preserve">
+    <value>The current point uses short labels for four-edge values. Other points retain names and measurement rectangles. Clear this option to show complete annotations.</value>
+  </data>
+  <data name="打开保存目录" xml:space="preserve">
+    <value>Open Save Folder</value>
+  </data>
+  <data name="打开图像" xml:space="preserve">
+    <value>Open Image</value>
+  </data>
+  <data name="打开图像…" xml:space="preserve">
+    <value>Open Image…</value>
+  </data>
+  <data name="打开图像，或连接相机取图" xml:space="preserve">
+    <value>Open an image or connect a camera to capture one</value>
+  </data>
+  <data name="打开图像，或连接相机开始。" xml:space="preserve">
+    <value>Open an image or connect a camera to begin.</value>
+  </data>
+  <data name="打开存档目录" xml:space="preserve">
+    <value>Open Archive Folder</value>
+  </data>
+  <data name="扩大选框重试" xml:space="preserve">
+    <value>Expand Rectangle and Retry</value>
+  </data>
+  <data name="拖动调整增益" xml:space="preserve">
+    <value>Drag to Adjust Gain</value>
+  </data>
+  <data name="拖动调整曝光" xml:space="preserve">
+    <value>Drag to Adjust Exposure</value>
+  </data>
+  <data name="拟合残差 (px)" xml:space="preserve">
+    <value>Fit Residual (px)</value>
+  </data>
+  <data name="指定频率 MTF" xml:space="preserve">
+    <value>MTF at Specified Frequency</value>
+  </data>
+  <data name="指标" xml:space="preserve">
+    <value>Metrics</value>
+  </data>
+  <data name="按当前点位、通道和指标筛选，逐项定位缺值及原因；测量质量检查与产品合格判定不同。" xml:space="preserve">
+    <value>Filter by the current point, channel, and metric to locate each missing value and its reason. Measurement quality checks differ from product acceptance decisions.</value>
+  </data>
+  <data name="按点位筛选" xml:space="preserve">
+    <value>Filter by Point</value>
+  </data>
+  <data name="收起相机" xml:space="preserve">
+    <value>Collapse Camera Panel</value>
+  </data>
+  <data name="文件(_F)" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="断开" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="方向" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+  <data name="明细" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="显示 — FPS" xml:space="preserve">
+    <value>Display — FPS</value>
+  </data>
+  <data name="曝光 (ms)" xml:space="preserve">
+    <value>Exposure (ms)</value>
+  </data>
+  <data name="未分析" xml:space="preserve">
+    <value>Not Analyzed</value>
+  </data>
+  <data name="本次结果快照 · 切换通道只查看已有结果" xml:space="preserve">
+    <value>Current Result Snapshot · Switching Channels Displays Existing Results Only</value>
+  </data>
+  <data name="查找相机" xml:space="preserve">
+    <value>Find Cameras</value>
+  </data>
+  <data name="查看缺值" xml:space="preserve">
+    <value>View Missing Values</value>
+  </data>
+  <data name="查看通道" xml:space="preserve">
+    <value>View Channel</value>
+  </data>
+  <data name="检查信号" xml:space="preserve">
+    <value>Check Signal</value>
+  </data>
+  <data name="模式" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="每条边一行，通道横向对比" xml:space="preserve">
+    <value>One Row per Edge, Channels Compared Horizontally</value>
+  </data>
+  <data name="测量设置" xml:space="preserve">
+    <value>Measurement Settings</value>
+  </data>
+  <data name="测量设置…" xml:space="preserve">
+    <value>Measurement Settings…</value>
+  </data>
+  <data name="测量质量与计算条件" xml:space="preserve">
+    <value>Measurement Quality and Calculation Conditions</value>
+  </data>
+  <data name="添加测量点" xml:space="preserve">
+    <value>Add Measurement Point</value>
+  </data>
+  <data name="清晰度" xml:space="preserve">
+    <value>Sharpness</value>
+  </data>
+  <data name="清晰度 —" xml:space="preserve">
+    <value>Sharpness —</value>
+  </data>
+  <data name="清空本轮" xml:space="preserve">
+    <value>Clear Current Run</value>
+  </data>
+  <data name="点位" xml:space="preserve">
+    <value>Point</value>
+  </data>
+  <data name="点位 / 边" xml:space="preserve">
+    <value>Point / Edge</value>
+  </data>
+  <data name="点击一行切换刃边，点击通道数值切换图上标注；方向键切换结果，双击或 Enter 查看原图、曲线与测量诊断。" xml:space="preserve">
+    <value>Click a row to switch edges, or a channel value to switch image annotations. Use arrow keys to browse results; double-click or press Enter for the original image, curves, and measurement diagnostics.</value>
+  </data>
+  <data name="状态" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="目录" xml:space="preserve">
+    <value>Directory</value>
+  </data>
+  <data name="相机(_C)" xml:space="preserve">
+    <value>Camera (_C)</value>
+  </data>
+  <data name="相机参数" xml:space="preserve">
+    <value>Camera Parameters</value>
+  </data>
+  <data name="相机生产调试" xml:space="preserve">
+    <value>Camera Production Diagnostics</value>
+  </data>
+  <data name="移除所选测量点" xml:space="preserve">
+    <value>Remove Selected Measurement Point</value>
+  </data>
+  <data name="移除此测量点" xml:space="preserve">
+    <value>Remove This Measurement Point</value>
+  </data>
+  <data name="端点像素" xml:space="preserve">
+    <value>Endpoint Pixels</value>
+  </data>
+  <data name="等待分析" xml:space="preserve">
+    <value>Awaiting Analysis</value>
+  </data>
+  <data name="自动保存无损 PNG 原图及相机参数 JSON；视频帧不自动写入磁盘。" xml:space="preserve">
+    <value>Automatically save the original lossless PNG and camera parameter JSON. Video frames are not automatically written to disk.</value>
+  </data>
+  <data name="色差" xml:space="preserve">
+    <value>Color Diff</value>
+  </data>
+  <data name="视图(_V)" xml:space="preserve">
+    <value>_View</value>
+  </data>
+  <data name="视频分析" xml:space="preserve">
+    <value>Video Analysis</value>
+  </data>
+  <data name="视频分析设置…" xml:space="preserve">
+    <value>Video Analysis Settings…</value>
+  </data>
+  <data name="记录并存档" xml:space="preserve">
+    <value>Record and Archive</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="调焦趋势" xml:space="preserve">
+    <value>Focus Trend</value>
+  </data>
+  <data name="跨度" xml:space="preserve">
+    <value>Span</value>
+  </data>
+  <data name="输入信号与质量…" xml:space="preserve">
+    <value>Input Signal and Quality…</value>
+  </data>
+  <data name="边" xml:space="preserve">
+    <value>Edge</value>
+  </data>
+  <data name="连接" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="退出" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="适合窗口" xml:space="preserve">
+    <value>Fit to Window</value>
+  </data>
+  <data name="选择 BMW 靶标、棋盘格交叉点或自动识别" xml:space="preserve">
+    <value>Choose a BMW target, checkerboard intersection, or automatic detection</value>
+  </data>
+  <data name="选择图卡类型并添加测量点" xml:space="preserve">
+    <value>Choose a target type and add measurement points</value>
+  </data>
+  <data name="选框宽高各增加 50%，限制在原图内并重新分析。可用 Ctrl+Z 撤销。" xml:space="preserve">
+    <value>Increase the rectangle's width and height by 50%, keep it within the original image, and reanalyze. Ctrl+Z can undo this change.</value>
+  </data>
+  <data name="通道" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="通道差" xml:space="preserve">
+    <value>Channel Pair</value>
+  </data>
+  <data name="采样覆盖率" xml:space="preserve">
+    <value>Sampling Coverage</value>
+  </data>
+  <data name="采集参数" xml:space="preserve">
+    <value>Acquisition settings</value>
+  </data>
+  <data name="阈值" xml:space="preserve">
+    <value>Threshold</value>
+  </data>
+  <data name="查看此边的曲线与数值" xml:space="preserve">
+    <value>View curves and values for this edge</value>
+  </data>
+  <data name="该通道没有可用曲线&#10;原因见上方诊断，可展开查看测量质量" xml:space="preserve">
+    <value>No curve is available for this channel
+See the diagnostic above; expand for measurement quality</value>
+  </data>
+  <data name="&#10;MTF10：曲线在 0–0.5 cy/pixel 内未穿过 10%，不填零。" xml:space="preserve">
+    <value>
+MTF10: the curve does not cross 10% within 0–0.5 cy/pixel; no zero is substituted.</value>
+  </data>
+  <data name="SFR · 未设置测量点" xml:space="preserve">
+    <value>SFR · No Measurement Points</value>
+  </data>
+  <data name="SFR 测量与显示" xml:space="preserve">
+    <value>SFR Measurement and Display</value>
+  </data>
+  <data name="{0} / {1}边" xml:space="preserve">
+    <value>{0} / {1} Edges</value>
+  </data>
+  <data name="{0} Esc 取消。" xml:space="preserve">
+    <value>{0} Esc to cancel.</value>
+  </data>
+  <data name="{0} · {1} · {2}边；右键可独立分析此矩形。" xml:space="preserve">
+    <value>{0} · {1} · {2} Edge; right-click to analyze this rectangle independently.</value>
+  </data>
+  <data name="{0} · {1}边" xml:space="preserve">
+    <value>{0} · {1} Edge</value>
+  </data>
+  <data name="{0} × {1} · {2} bit · {3} 通道 · {4}" xml:space="preserve">
+    <value>{0} × {1} · {2} bit · {3} Channels · {4}</value>
+  </data>
+  <data name="{0}/{1} 点已定位 · {2} 条边" xml:space="preserve">
+    <value>{0}/{1} Points Located · {2} Edges</value>
+  </data>
+  <data name="不合格" xml:space="preserve">
+    <value>Fail</value>
+  </data>
+  <data name="使用当前小矩形打开单边 SFR 窗口，无需重新框选。" xml:space="preserve">
+    <value>Open a single-edge SFR window using the current small rectangle; no need to draw it again.</value>
+  </data>
+  <data name="保存失败" xml:space="preserve">
+    <value>Save Failed</value>
+  </data>
+  <data name="停止实时分析后可独立测量此矩形。" xml:space="preserve">
+    <value>Stop live analysis to measure this rectangle independently.</value>
+  </data>
+  <data name="像素存在削顶风险，请检查曝光。" xml:space="preserve">
+    <value>Pixel clipping risk; check exposure.</value>
+  </data>
+  <data name="分析结果已导出。" xml:space="preserve">
+    <value>Analysis results exported.</value>
+  </data>
+  <data name="勾选至少一个通道，查看曲线与结果。" xml:space="preserve">
+    <value>Select at least one channel to view curves and results.</value>
+  </data>
+  <data name="原图 {0} × {1} · {2} bit · {3} 通道&#10;区域 ({4}, {5}) · {6} × {7} px&#10;输入：{8}&#10;黑电平 {9:G} · 白电平 {10}&#10;采集 {11:yyyy-MM-dd HH:mm:ss.fff}&#10;算法 {12}" xml:space="preserve">
+    <value>Original {0} × {1} · {2} bit · {3} Channels
+Region ({4}, {5}) · {6} × {7} px
+Input: {8}
+Black level {9:G} · White level {10}
+Acquired {11:yyyy-MM-dd HH:mm:ss.fff}
+Algorithm {12}</value>
+  </data>
+  <data name="原始测量框 · 暂无可用拟合线" xml:space="preserve">
+    <value>Original Measurement Region · No Fitted Line Available</value>
+  </data>
+  <data name="原始测量框 · 橙线为当前通道拟合边" xml:space="preserve">
+    <value>Original Measurement Region · Orange Line: Fitted Edge of Current Channel</value>
+  </data>
+  <data name="原文件已在磁盘" xml:space="preserve">
+    <value>Original file is already on disk</value>
+  </data>
+  <data name="参数已保存：{0}" xml:space="preserve">
+    <value>Parameters saved: {0}</value>
+  </data>
+  <data name="参数未保存：{0}" xml:space="preserve">
+    <value>Parameters not saved: {0}</value>
+  </data>
+  <data name="发现 {0} 台相机。" xml:space="preserve">
+    <value>Found {0} cameras.</value>
+  </data>
+  <data name="取图 {0:F0} ms · 总计 {1:F0} ms" xml:space="preserve">
+    <value>Acquisition {0:F0} ms · Total {1:F0} ms</value>
+  </data>
+  <data name="取图 {0:F0} ms{1}{2} · 总计 {3:F0} ms&#10;取图为 SDK 等待和数据读取耗时；总计包含连接、显示、分析和保存。" xml:space="preserve">
+    <value>Acquisition {0:F0} ms{1}{2} · Total {3:F0} ms
+Acquisition includes SDK waiting and data reading; total includes connection, display, analysis, and saving.</value>
+  </data>
+  <data name="取图 {0:HH:mm:ss.fff}" xml:space="preserve">
+    <value>Acquired {0:HH:mm:ss.fff}</value>
+  </data>
+  <data name="取图保存目录" xml:space="preserve">
+    <value>Acquisition Save Directory</value>
+  </data>
+  <data name="取图可勾选自动保存；视频停止后通过“文件 → 保存原图”保存当前帧。" xml:space="preserve">
+    <value>Enable automatic saving for acquired images; after stopping video, use File → Save Original to save the current frame.</value>
+  </data>
+  <data name="取图失败 · 已等待 {0:F0} ms" xml:space="preserve">
+    <value>Acquisition Failed · Waited {0:F0} ms</value>
+  </data>
+  <data name="取图成功，但自动保存失败：{0}" xml:space="preserve">
+    <value>Acquisition succeeded, but automatic saving failed: {0}</value>
+  </data>
+  <data name="合格" xml:space="preserve">
+    <value>Pass</value>
+  </data>
+  <data name="图像已加载。{0}" xml:space="preserve">
+    <value>Image loaded. {0}</value>
+  </data>
+  <data name="图像已在编辑器中改变。请通过打开图像或取图分析重新加载测量源。" xml:space="preserve">
+    <value>The image has changed in the editor. Reopen it or acquire and analyze again to reload the measurement source.</value>
+  </data>
+  <data name="图像已更改" xml:space="preserve">
+    <value>Image Changed</value>
+  </data>
+  <data name="增益必须大于或等于 0。" xml:space="preserve">
+    <value>Gain must be at least 0.</value>
+  </data>
+  <data name="处理未定位 ({0})" xml:space="preserve">
+    <value>Handle Unlocated Points ({0})</value>
+  </data>
+  <data name="定位 {0}/{1} 个测量点 {2} · 有效通道结果 {3}/{4}{5} · {6}" xml:space="preserve">
+    <value>Located {0}/{1} Measurement Points {2} · Valid Channel Results {3}/{4}{5} · {6}</value>
+  </data>
+  <data name="尚未选择通道" xml:space="preserve">
+    <value>No Channel Selected</value>
+  </data>
+  <data name="已保存" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="已添加 {0} 个测量点，可开始分析。" xml:space="preserve">
+    <value>Added {0} measurement points; ready to analyze.</value>
+  </data>
+  <data name="已连接" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="当前原始像素已保存为 PNG（不包含叠图或显示滤镜）。" xml:space="preserve">
+    <value>Current original pixels saved as PNG (without overlays or display filters).</value>
+  </data>
+  <data name="当前宿主仅支持 BMW；棋盘格需要更新 ColorVision 宿主及原生组件。" xml:space="preserve">
+    <value>This host supports only BMW; checkerboard requires updated ColorVision host and native components.</value>
+  </data>
+  <data name="当前帧未保存" xml:space="preserve">
+    <value>Current Frame Not Saved</value>
+  </data>
+  <data name="当前显示帧的分析耗时" xml:space="preserve">
+    <value>Analysis duration for the currently displayed frame</value>
+  </data>
+  <data name="当前筛选范围有 {0} 项缺值，点击“查看缺值”逐项检查，或点击对应通道单元格。" xml:space="preserve">
+    <value>{0} values are missing in the current filter range. Click View Missing Values to review each one, or click its channel cell.</value>
+  </data>
+  <data name="当前范围没有结果。" xml:space="preserve">
+    <value>No results in the selected range.</value>
+  </data>
+  <data name="当前：{0}    窗口峰值：{1}&#10;有效 {2}/{3} 帧 · 调焦参考" xml:space="preserve">
+    <value>Current: {0}    Window Peak: {1}
+Valid {2}/{3} Frames · Focus Reference</value>
+  </data>
+  <data name="所选结果没有可用曲线" xml:space="preserve">
+    <value>No curve is available for the selected result</value>
+  </data>
+  <data name="打开图像或连接相机取图。" xml:space="preserve">
+    <value>Open an image or connect a camera to acquire one.</value>
+  </data>
+  <data name="扩大靶标选框" xml:space="preserve">
+    <value>Expand Target Selection</value>
+  </data>
+  <data name="无法判定" xml:space="preserve">
+    <value>Undetermined</value>
+  </data>
+  <data name="显示 0.0 FPS · 等待帧" xml:space="preserve">
+    <value>Display 0.0 FPS · Waiting for Frames</value>
+  </data>
+  <data name="显示 {0:F1} FPS" xml:space="preserve">
+    <value>Display {0:F1} FPS</value>
+  </data>
+  <data name="曝光 / 增益已应用。" xml:space="preserve">
+    <value>Exposure / gain applied.</value>
+  </data>
+  <data name="曝光时间必须大于 0。" xml:space="preserve">
+    <value>Exposure time must be greater than 0.</value>
+  </data>
+  <data name="未发现相机，请核对驱动和连接。" xml:space="preserve">
+    <value>No cameras found; check drivers and connections.</value>
+  </data>
+  <data name="未生成单边框 · 显示搜索范围" xml:space="preserve">
+    <value>No Single-edge Region Generated · Showing Search Region</value>
+  </data>
+  <data name="未设置标准" xml:space="preserve">
+    <value>No Standard Configured</value>
+  </data>
+  <data name="未连接" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="本地参数保存失败：{0}" xml:space="preserve">
+    <value>Failed to save local parameters: {0}</value>
+  </data>
+  <data name="本地设置读取失败，使用默认参数：{0}" xml:space="preserve">
+    <value>Failed to read local settings; using defaults: {0}</value>
+  </data>
+  <data name="本帧当前范围最低值：{0} · {1} · {2}；仅用于调焦比较。" xml:space="preserve">
+    <value>Lowest value in this frame's current range: {0} · {1} · {2}; for focus comparison only.</value>
+  </data>
+  <data name="本条刃边没有可用曲线&#10;请按下方提示调整选框或测量参数" xml:space="preserve">
+    <value>No curve is available for this edge
+Adjust the selection or measurement parameters as described below</value>
+  </data>
+  <data name="本次质量门限：跨度 ≥ {0:P1}，信噪比 ≥ {1:G}，拟合残差 ≤ {2:G} px。MTF50 / MTF10 在 0–0.5 cy/pixel 内查询；未穿过阈值时保留空值。" xml:space="preserve">
+    <value>Quality thresholds: Span ≥ {0:P1}, SNR ≥ {1:G}, Fit residual ≤ {2:G} px. MTF50 / MTF10 are queried within 0–0.5 cy/pixel; values remain empty if no threshold crossing occurs.</value>
+  </data>
+  <data name="查看缺值 ({0})" xml:space="preserve">
+    <value>View Missing Values ({0})</value>
+  </data>
+  <data name="检测配置已加载；分析前将检查图像尺寸。" xml:space="preserve">
+    <value>Inspection configuration loaded; image dimensions will be checked before analysis.</value>
+  </data>
+  <data name="正在保存原图…" xml:space="preserve">
+    <value>Saving Original Image…</value>
+  </data>
+  <data name="正在取图…" xml:space="preserve">
+    <value>Capturing…</value>
+  </data>
+  <data name="正在定位并计算四边 SFR…" xml:space="preserve">
+    <value>Locating and calculating four-edge SFR…</value>
+  </data>
+  <data name="正在应用参数…" xml:space="preserve">
+    <value>Applying Parameters…</value>
+  </data>
+  <data name="测量点已就绪，点击“开始分析”。" xml:space="preserve">
+    <value>Measurement points ready; click Start Analysis.</value>
+  </data>
+  <data name="清晰度 {0:G6}" xml:space="preserve">
+    <value>Sharpness {0:G6}</value>
+  </data>
+  <data name="点击数值切换通道，点击图上刃边可定位结果。" xml:space="preserve">
+    <value>Click values to switch channels; click an edge on the image to locate its result.</value>
+  </data>
+  <data name="生产调试存档信息" xml:space="preserve">
+    <value>Production Debug Archive Information</value>
+  </data>
+  <data name="相机图像" xml:space="preserve">
+    <value>Camera Image</value>
+  </data>
+  <data name="相机已断开，当前图像保留。" xml:space="preserve">
+    <value>Camera disconnected; the current image is retained.</value>
+  </data>
+  <data name="相机已断开，画面已冻结。" xml:space="preserve">
+    <value>Camera disconnected; the view is frozen.</value>
+  </data>
+  <data name="相机已连接，可以取图分析。" xml:space="preserve">
+    <value>Camera connected; ready to acquire and analyze.</value>
+  </data>
+  <data name="相机面板" xml:space="preserve">
+    <value>Camera Panel</value>
+  </data>
+  <data name="等待相机帧，请检查连接与曝光时间。" xml:space="preserve">
+    <value>Waiting for camera frames; check connection and exposure time.</value>
+  </data>
+  <data name="等待选择" xml:space="preserve">
+    <value>Awaiting Selection</value>
+  </data>
+  <data name="视频分析已停止：{0}" xml:space="preserve">
+    <value>Video analysis stopped: {0}</value>
+  </data>
+  <data name="视频已停止" xml:space="preserve">
+    <value>Video stopped</value>
+  </data>
+  <data name="视频已启动，等待相机帧。" xml:space="preserve">
+    <value>Video started; waiting for camera frames.</value>
+  </data>
+  <data name="视频运行中" xml:space="preserve">
+    <value>Video Running</value>
+  </data>
+  <data name="计算 {0:F0} ms" xml:space="preserve">
+    <value>Calculation {0:F0} ms</value>
+  </data>
+  <data name="设备 {0} 已存档：{1}" xml:space="preserve">
+    <value>Device {0} archived: {1}</value>
+  </data>
+  <data name="请先选择测量点。" xml:space="preserve">
+    <value>Select a measurement point first.</value>
+  </data>
+  <data name="请添加测量点。" xml:space="preserve">
+    <value>Add measurement points.</value>
+  </data>
+  <data name="调焦记录已导出。" xml:space="preserve">
+    <value>Focus records exported.</value>
+  </data>
+  <data name="输入编码待确认 · 像素存在削顶风险" xml:space="preserve">
+    <value>Input Encoding Unconfirmed · Pixel Clipping Risk</value>
+  </data>
+  <data name="输入编码待确认 · 当前数值仅供调试" xml:space="preserve">
+    <value>Input Encoding Unconfirmed · Values for Debugging Only</value>
+  </data>
+  <data name="配置已保存。" xml:space="preserve">
+    <value>Configuration saved.</value>
+  </data>
+  <data name="重新分析" xml:space="preserve">
+    <value>Reanalyze</value>
+  </data>
+  <data name="类型满量程" xml:space="preserve">
+    <value>Type Full Scale</value>
+  </data>
+  <data name="未计算" xml:space="preserve">
+    <value>Not Calculated</value>
+  </data>
+</root>

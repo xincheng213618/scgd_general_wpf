@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -57,7 +58,7 @@ namespace ColorVision.Copilot
         public bool HasBranchOrigin => BranchOrigin?.IsStructurallyValid(Id) == true;
 
         [JsonIgnore]
-        public string BranchLabel => HasBranchOrigin ? "分支" : string.Empty;
+        public string BranchLabel => HasBranchOrigin ? LocalizedText.Get("分支") : string.Empty;
 
         [JsonIgnore]
         public bool HasGoal => Goal?.IsStructurallyValid() == true;
@@ -73,16 +74,16 @@ namespace ColorVision.Copilot
         public string GoalToolTip => Goal == null
             ? string.Empty
             : (IsGoalContinuationDeferred
-                    ? "活动目标已从源会话带入分支；下一条显式 Agent 任务将接管目标生命周期，完成后恢复正常自动续作。"
+                    ? LocalizedText.Get("活动目标已从源会话带入分支；下一条显式 Agent 任务将接管目标生命周期，完成后恢复正常自动续作。")
                     : CopilotConversationGoalStateText.FormatDescription(Goal.State))
                 + Environment.NewLine
                 + Goal.Objective
                 + Environment.NewLine
-                + $"{Goal.TurnCount:N0} 轮 · {Goal.EvaluationCount:N0} 次独立评估 · "
+                + LocalizedText.Format($"{Goal.TurnCount:N0} 轮 · {Goal.EvaluationCount:N0} 次独立评估 · ")
                 + (Goal.HasTokenBudget
                     ? $"{Goal.TokensUsed:N0} / {Goal.TokenBudget:N0} Token"
                     : $"{Goal.TokensUsed:N0} Token")
-                + " · 累计 "
+                + LocalizedText.Get(" · 累计 ")
                 + CopilotConversationGoalUsageText.FormatElapsed(Goal.TimeUsedSeconds)
                 + CopilotConversationGoalScoreText.FormatLine(Goal)
                 + (Goal.LastProgressReport == null
@@ -91,9 +92,9 @@ namespace ColorVision.Copilot
                         + CopilotConversationGoalProgressReportText.Format(Goal.LastProgressReport))
                 + (string.IsNullOrWhiteSpace(Goal.LastEvaluationReason)
                     ? string.Empty
-                    : Environment.NewLine + "最近判断：" + Goal.LastEvaluationReason)
+                    : Environment.NewLine + LocalizedText.Get("最近判断：") + Goal.LastEvaluationReason)
                 + Environment.NewLine
-                + "目标约束完成判定，但不授权写入、工具调用、审批复用或外部副作用。";
+                + LocalizedText.Get("目标约束完成判定，但不授权写入、工具调用、审批复用或外部副作用。");
 
         [JsonIgnore]
         public string GoalProgressText => Goal == null

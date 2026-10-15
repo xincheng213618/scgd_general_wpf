@@ -353,4 +353,7 @@
   <data name="PatternWindowConfig" xml:space="preserve"><value>Pattern Output Size</value></data>
   <data name="Width" xml:space="preserve"><value>Width</value></data>
   <data name="Height" xml:space="preserve"><value>Height</value></data>
+  <data name="操作" xml:space="preserve">
+    <value>Action</value>
+  </data>
 </root>

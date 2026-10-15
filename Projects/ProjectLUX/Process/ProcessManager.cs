@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8601,CS8603,CS8625
+﻿using LocalizedText = global::ProjectLUX.DisplayText;
+#pragma warning disable CS8601,CS8603,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -146,7 +147,7 @@ namespace ProjectLUX.Process
             if (string.IsNullOrWhiteSpace(NewGroupName)) return;
             if (ProcessGroups.Any(g => g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "组名重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("组名重复"), "ColorVision");
                 return;
             }
             var group = new ProcessGroup { Name = NewGroupName };
@@ -160,11 +161,11 @@ namespace ProjectLUX.Process
         {
             if (ProcessGroups.Count <= 1)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "至少保留一个组", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("至少保留一个组"), "ColorVision");
                 return;
             }
             if (ActiveGroup == null) return;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"确定要删除组 \"{ActiveGroup.Name}\" 吗？", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"确定要删除组 \"{ActiveGroup.Name}\" 吗？"), "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
 
             UnhookProcessMetasEvents();
@@ -184,7 +185,7 @@ namespace ProjectLUX.Process
             if (ActiveGroup == null || string.IsNullOrWhiteSpace(NewGroupName)) return;
             if (ProcessGroups.Any(g => g != ActiveGroup && g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "组名重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("组名重复"), "ColorVision");
                 return;
             }
             ActiveGroup.Name = NewGroupName;
@@ -327,7 +328,7 @@ namespace ProjectLUX.Process
             if (!CanAddMeta()) return;
             if (ProcessMetas.Any(m => m.Name.Equals(NewMetaName, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("名称重复"), "ColorVision");
                 return;
             }
             // Create a new instance of the process to ensure independent config

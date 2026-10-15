@@ -1,15 +1,16 @@
-﻿#pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -35,6 +36,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private bool _messageSubscribed;
         private IDisposable? _localResultSubscription;
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
+        private readonly ViewAlgorithmConfig _historyConfig;
+        private readonly ResultHistoryCollection<ViewResultAlg> _viewResults;
 
         private DeviceAlgorithm? Device { get; }
 
@@ -54,6 +57,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         internal AlgorithmView(DeviceAlgorithm? device, bool deferInitialization)
         {
+            _historyConfig = Config;
+            _viewResults = new ResultHistoryCollection<ViewResultAlg>(result => result.Id, _historyConfig.MaxHistoryCount);
+            _historyConfig.PropertyChanged += HistoryConfig_PropertyChanged;
             Device = device;
             if (Device != null)
             {
@@ -98,6 +104,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
+                // A deferred dock shell must own its context before loading child bindings.
+                DataContext = Config;
                 InitializeComponent();
                 // A deferred shell may already have raised WPF Initialized before its XAML was loaded.
                 UserControl_Initialized(this, EventArgs.Empty);
@@ -122,7 +130,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isInitialized = true;
-            this.DataContext = Config;
             ImageView = new ImageView();
             ListView = listViewSide;
             SideTextBox = TextBoxside;
@@ -172,7 +179,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<ViewResultAlg> ViewResults { get; } = new ObservableCollection<ViewResultAlg>();
+        public ObservableCollection<ViewResultAlg> ViewResults => _viewResults;
+
+        private void HistoryConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_isDisposed || e.PropertyName != nameof(ResultViewConfig.MaxHistoryCount)) return;
+            void ApplyLimit()
+            {
+                if (!_isDisposed) _viewResults.MaxCount = _historyConfig.MaxHistoryCount;
+            }
+            if (Dispatcher.CheckAccess()) ApplyLimit();
+            else Dispatcher.BeginInvoke(ApplyLimit);
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -181,7 +199,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
   
             if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not ViewResultAlg result)
             {
-                MessageBox.Show(Application.Current.MainWindow, Properties.Resources.SelectDataFirst, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SelectDataFirst, "ColorVision");
                 return;
             }
             else
@@ -225,6 +243,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (!_isDisposed && result != null)
             {
+                if (_viewResults.ContainsId(result.Id)) return;
                 EnsureInitialized();
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
@@ -233,8 +252,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 else
                     ViewResults.Add(ViewResultAlg);
 
-                if (Config.AutoRefreshView)
-                    RefreshResultListView();
+                if (Config.AutoRefreshView && _viewResults.ContainsId(result.Id))
+                {
+                    listView1.SelectedItem = ViewResultAlg;
+                    listView1.ScrollIntoView(ViewResultAlg);
+                }
                 if (Config.AutoSaveSideData)
                     SideSave(ViewResultAlg, Config.SaveSideDataDirPath);
             }
@@ -345,10 +367,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             ImageView.Clear();
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(AlgorithmView), "历史算法结果坐标空间宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(AlgorithmView), "历史算法结果坐标空间高度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(AlgorithmView), "历史算法结果图像像素宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(AlgorithmView), "历史算法结果图像像素高度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(AlgorithmView), LocalizedText.Get("历史算法结果坐标空间宽度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(AlgorithmView), LocalizedText.Get("历史算法结果坐标空间高度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(AlgorithmView), LocalizedText.Get("历史算法结果图像像素宽度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(AlgorithmView), LocalizedText.Get("历史算法结果图像像素高度"));
             ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
             ImageView.UpdateZoomAndScale();
         }
@@ -368,6 +390,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var listView = IsExchange ? listView1 : listViewSide;
 
             listView.Width = ListCol2.ActualWidth;
+            SideTextBox.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
         }
@@ -452,8 +475,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void AlgorithmResult_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (sender is ListViewItem { DataContext: ViewResultAlg result })
+            if (sender is ListViewItem { DataContext: ViewResultAlg result } item)
+            {
                 AlgorithmResultDataSaver.EnsureContextMenu(result);
+                result.ContextMenu.PlacementTarget = item;
+                result.ContextMenu.IsOpen = true;
+                e.Handled = true;
+            }
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -467,6 +495,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isDisposed = true;
+            _historyConfig.PropertyChanged -= HistoryConfig_PropertyChanged;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
 
@@ -478,6 +507,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
             if (listView1 != null)
             {
                 listView1.SelectionChanged -= listView1_SelectionChanged;
@@ -487,6 +519,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
             if (listViewSide != null)
                 listViewSide.ItemsSource = null;
+            ViewResults.Clear();
             if (ImageView != null)
             {
                 ImageView.Dispose();
@@ -507,7 +540,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             foreach (var item in dbList)
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
-                ViewResults.Add(ViewResultAlg);
+                _viewResults.QueryResults.Add(ViewResultAlg);
             }
         }
 
@@ -515,7 +548,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(Db, ViewResults, t => new ViewResultAlg(t));
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(Db, _viewResults.QueryResults, t => new ViewResultAlg(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             Db.Dispose();

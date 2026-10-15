@@ -86,7 +86,8 @@ public sealed class SmuRangePropertiesEditor : IPropertyEditor
 
 public sealed class SensorTemplatePropertiesEditor : IPropertyEditor
 {
-    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, FlowNodePropertyEditorRegistration.CreateSensorTemplate(obj));
+    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj,
+        () => FlowNodePropertyEditorRegistration.CreateSensorTemplate(obj), nameof(IFlowDeviceNode.DeviceCode), false);
 }
 
 public sealed class DataLoadTemplatePropertiesEditor : IPropertyEditor

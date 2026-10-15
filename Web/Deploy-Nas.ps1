@@ -616,7 +616,6 @@ try {
             'test_admin_data_retention',
             'test_deployment_history',
             'test_page_contexts',
-            'test_copilot_config_api',
             'test_spectrum_api',
             'test_csrf_protection',
             'test_browser_auth',
@@ -702,10 +701,6 @@ try {
     $trafficAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'TrafficPage-*.js' -File)
     if ($trafficAssets.Count -eq 0) {
         throw 'TrafficPage frontend asset is missing from the live build.'
-    }
-    $copilotAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'CopilotConfigPage-*.js' -File)
-    if ($copilotAssets.Count -eq 0) {
-        throw 'CopilotConfigPage frontend asset is missing from the live build.'
     }
     $deploymentHistoryAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'DeploymentHistoryPage-*.js' -File)
     if ($deploymentHistoryAssets.Count -eq 0) {

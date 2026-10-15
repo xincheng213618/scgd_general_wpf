@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ICSharpCode.AvalonEdit.Rendering;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -116,7 +117,7 @@ public partial class EditorSearchBar : UserControl, IDisposable, IBackgroundRend
 
     private void UpdateStatus()
     {
-        ResultText.Text = _error ?? (QueryBox.Text.Length == 0 ? "Enter 下一个 · Shift+Enter 上一个 · Esc 关闭" : _matches.Count == 0 ? "未找到匹配项" : $"{(_index >= 0 ? $"{_index + 1:N0} / " : "")}{_matches.Count:N0} 个匹配");
+        ResultText.Text = _error ?? (QueryBox.Text.Length == 0 ? LocalizedText.Get("Enter 下一个 · Shift+Enter 上一个 · Esc 关闭") : _matches.Count == 0 ? LocalizedText.Get("未找到匹配项") : LocalizedText.Format($"{(_index >= 0 ? $"{_index + 1:N0} / " : "")}{_matches.Count:N0} 个匹配"));
         ReplaceButton.IsEnabled = ReplaceAllButton.IsEnabled = _error == null && _matches.Count > 0 && _editor?.IsReadOnly == false;
     }
 
@@ -161,7 +162,7 @@ public partial class EditorSearchBar : UserControl, IDisposable, IBackgroundRend
             _stale = true;
             RefreshMatches();
             if (!all) FindNext();
-            else ResultText.Text = $"已替换 {replacements.Length:N0} 处 · Ctrl+Z 撤销";
+            else ResultText.Text = LocalizedText.Format($"已替换 {replacements.Length:N0} 处 · Ctrl+Z 撤销");
         }
         catch (ArgumentException) { _error = "替换表达式无效。"; UpdateStatus(); }
         finally { _replacing = false; }

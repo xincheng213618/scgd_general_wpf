@@ -5,7 +5,6 @@ Provides periodic background jobs for:
   - plugin_index_check: verify Plugins directory signature
   - cache_cleanup: delete expired cache_entry rows
   - password_recovery_cleanup: bound transient account-security state
-  - transfer_file_cleanup: delete expired anonymous transfer files and links
   - job_history_retention: bound completed scheduler history
   - admin_data_retention: bound audit rows and recognized database snapshots
   - database_backup: create a daily privacy-cleaned database snapshot
@@ -71,13 +70,6 @@ DEFAULT_JOBS = [
         "id": "password_recovery_cleanup",
         "name": "Account Security Cleanup",
         "job_type": "security_cleanup",
-        "interval_seconds": 3600,
-        "config": "{}",
-    },
-    {
-        "id": "transfer_file_cleanup",
-        "name": "Temporary Transfer Cleanup",
-        "job_type": "transfer_cleanup",
         "interval_seconds": 3600,
         "config": "{}",
     },
@@ -169,7 +161,8 @@ def run_job_now(
         elif job_id == "password_recovery_cleanup":
             summary = _run_password_recovery_cleanup(cache)
         elif job_id == "transfer_file_cleanup":
-            summary = _run_transfer_file_cleanup(storage, config_getter)
+            # Existing databases can still contain the retired cleanup job.
+            summary = "Transfer files are retained; expired shares are hidden and unavailable"
         elif job_id == "access_analytics_retention":
             summary = _run_access_analytics_retention(cache, get_db, config_getter)
         elif job_id == "job_history_retention":
@@ -307,17 +300,6 @@ def _run_password_recovery_cleanup(cache: CacheManager) -> str:
         f"{result['password_recovery_limits_deleted']} recovery limits, and "
         f"{result['password_recovery_deleted']} resolved recovery requests"
     )
-
-
-def _run_transfer_file_cleanup(
-    storage: Path,
-    config_getter: Callable[[], dict[str, Any]],
-) -> str:
-    from transfer_files import cleanup_expired_transfer_files, transfer_root
-
-    config = config_getter()
-    deleted = cleanup_expired_transfer_files(transfer_root(storage, config))
-    return f"Deleted {deleted} expired temporary transfer files"
 
 
 def _run_access_analytics_retention(

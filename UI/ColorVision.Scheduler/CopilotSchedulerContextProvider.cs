@@ -1,8 +1,4 @@
 using ColorVision.UI;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.Scheduler
 {

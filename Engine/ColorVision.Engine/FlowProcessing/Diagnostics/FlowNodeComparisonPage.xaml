@@ -1,0 +1,107 @@
+<Page x:Class="ColorVision.Engine.FlowProcessing.Diagnostics.FlowNodeComparisonPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:engine="clr-namespace:ColorVision.Engine"
+      x:ClassModifier="internal" Background="Transparent" Loaded="Page_Loaded" Unloaded="Page_Unloaded">
+    <Page.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+        <Style x:Key="PayloadStyle" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+    </Page.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*" MinHeight="130"/>
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="3*" MinHeight="200"/>
+        </Grid.RowDefinitions>
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="{engine:EngineLang Key='返回节点分析'}"
+                    Click="BackButton_Click" Padding="12,5"/>
+            <StackPanel>
+                <TextBlock x:Name="TitleText" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock x:Name="HintText" Margin="0,6,0,8" TextWrapping="Wrap"
+                           Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </StackPanel>
+        </DockPanel>
+        <DockPanel Grid.Row="1" Margin="0,0,0,8">
+            <Button x:Name="BaselineButton" DockPanel.Dock="Right" Content="{engine:EngineLang Key='设为比对基准'}"
+                    IsEnabled="False" Click="BaselineButton_Click" Padding="12,5" Margin="12,0,0,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="{engine:EngineLang Key='筛选批次 / SN / 消息'}"
+                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBox x:Name="SearchTextBox" TextChanged="SearchTextBox_TextChanged"
+                     VerticalContentAlignment="Center" Padding="8,5"/>
+        </DockPanel>
+        <ListView x:Name="HistoryListView" Grid.Row="2" SelectionMode="Single"
+                  SelectionChanged="HistoryListView_SelectionChanged"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Batch" DisplayMemberBinding="{Binding BatchId}" Width="85"/>
+                    <GridViewColumn Header="{engine:EngineLang Key='执行时间'}" DisplayMemberBinding="{Binding TimeText}" Width="185"/>
+                    <GridViewColumn Header="{engine:EngineLang Key='节点耗时'}" DisplayMemberBinding="{Binding DurationText}" Width="90"/>
+                    <GridViewColumn Header="{engine:EngineLang Key='事件'}" DisplayMemberBinding="{Binding EventName}" Width="100"/>
+                    <GridViewColumn Header="{engine:EngineLang Key='状态'}" DisplayMemberBinding="{Binding StateText}" Width="90"/>
+                    <GridViewColumn Header="SN" DisplayMemberBinding="{Binding SerialNumber}" Width="300"/>
+                    <GridViewColumn Header="{engine:EngineLang Key='消息 ID'}" DisplayMemberBinding="{Binding MessageId}" Width="200"/>
+                    <GridViewColumn Header="{engine:EngineLang Key='状态消息'}" DisplayMemberBinding="{Binding StatusText}" Width="240"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <GridSplitter Grid.Row="3" Height="4" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+        <Grid Grid.Row="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{engine:EngineLang Key='比对基准'}" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="BaselineLabelText" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="{engine:EngineLang Key='当前选择'}" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="SelectedLabelText" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </StackPanel>
+            </Grid>
+            <TabControl Grid.Row="1">
+                <TabItem Header="{engine:EngineLang Key='响应消息'}">
+                    <Grid Margin="6">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="BaselineReceiveTopicText" Margin="0,0,0,6" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="SelectedReceiveTopicText" Grid.Column="2" Margin="0,0,0,6" TextWrapping="Wrap"/>
+                        <TextBox x:Name="BaselineReceiveTextBox" Grid.Row="1" Style="{StaticResource PayloadStyle}"/>
+                        <TextBox x:Name="SelectedReceiveTextBox" Grid.Row="1" Grid.Column="2" Style="{StaticResource PayloadStyle}"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="{engine:EngineLang Key='发送消息'}">
+                    <Grid Margin="6">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="BaselineSendTopicText" Margin="0,0,0,6" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="SelectedSendTopicText" Grid.Column="2" Margin="0,0,0,6" TextWrapping="Wrap"/>
+                        <TextBox x:Name="BaselineSendTextBox" Grid.Row="1" Style="{StaticResource PayloadStyle}"/>
+                        <TextBox x:Name="SelectedSendTextBox" Grid.Row="1" Grid.Column="2" Style="{StaticResource PayloadStyle}"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Grid>
+</Page>

@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.Windows;
 using Conoscope.Core;
@@ -13,6 +12,7 @@ namespace Conoscope
         public CurrentCurveExportDialog(ConoscopeCrossSectionExportOptions? exportOptions = null)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             ExportOptions = exportOptions ?? ExportOptions;
             txtStepDegrees.Text = ExportOptions.StepDegrees.ToString(CultureInfo.InvariantCulture);
             txtDecimalPlaces.Text = ExportOptions.DecimalPlaces.ToString(CultureInfo.InvariantCulture);

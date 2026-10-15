@@ -17,7 +17,6 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -1111,6 +1110,7 @@ namespace ColorVision.Update
             sb.AppendLine("call :skip_shell_extension_files");
             sb.AppendLine("if errorlevel 1 goto fail");
             sb.AppendLine();
+            ApplicationUpdateFilePreparation.AppendToBatch(sb);
             sb.AppendLine("call :copy_application_files");
             sb.AppendLine("if errorlevel 1 goto fail");
             PluginUpdater.AppendPreparedManifestDirectoryTransaction(

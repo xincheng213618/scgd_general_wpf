@@ -1,6 +1,7 @@
 <Window x:Class="ColorVision.Update.ApplicationSnapshotsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
@@ -101,7 +102,7 @@
                                ToolTip="{Binding ProgramDirectory}" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="0,4,0,0" VerticalAlignment="Top">
-                    <TextBlock HorizontalAlignment="Right" FontSize="12" Text="当前版本"
+                    <TextBlock HorizontalAlignment="Right" FontSize="12" Text="{display:DisplayText Key='当前版本'}"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}" Opacity="0.6" />
                     <TextBlock Margin="0,6,0,0" HorizontalAlignment="Right" FontSize="18"
                                Foreground="{DynamicResource UpdateDialog.TextPrimary}" Text="{Binding CurrentVersion}" />
@@ -123,7 +124,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <CheckBox FontSize="14" Content="正常启动后自动存档"
+                    <CheckBox FontSize="14" Content="{display:DisplayText Key='正常启动后自动存档'}"
                               Foreground="{DynamicResource UpdateDialog.TextPrimary}"
                               IsChecked="{Binding CreateAutomaticSnapshotAfterHealthyStartup, Mode=TwoWay}" />
                     <CheckBox Grid.Column="1" Margin="20,0,0,0" FontSize="12"
@@ -133,17 +134,17 @@
                               ToolTip="{x:Static properties:Resources.CreateSnapshotBeforeUpdateDescription}" />
                     <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="24,7,0,0" FontSize="12"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}" Opacity="0.6"
-                               Text="新版本正常启动后在后台保存，自动保留一份最新存档。" TextWrapping="Wrap" />
+                               Text="{display:DisplayText Key='新版本正常启动后在后台保存，自动保留一份最新存档。'}" TextWrapping="Wrap" />
                     <TextBlock Grid.Row="2" Margin="24,12,20,0" VerticalAlignment="Center" FontSize="12"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}" Opacity="0.6"
                                Text="{Binding AutomaticSnapshotDirectory}" TextTrimming="CharacterEllipsis"
                                ToolTip="{Binding AutomaticSnapshotDirectory}" />
                     <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,10,0,0" Orientation="Horizontal">
-                        <Button Click="ChooseAutomaticSnapshotDirectory_Click" Content="更改位置"
+                        <Button Click="ChooseAutomaticSnapshotDirectory_Click" Content="{display:DisplayText Key='更改位置'}"
                                 Style="{StaticResource UpdateDialogTextButtonStyle}" />
-                        <Button Margin="18,0,0,0" Click="ResetAutomaticSnapshotDirectory_Click" Content="默认位置"
+                        <Button Margin="18,0,0,0" Click="ResetAutomaticSnapshotDirectory_Click" Content="{display:DisplayText Key='默认位置'}"
                                 Style="{StaticResource UpdateDialogTextButtonStyle}" />
-                        <Button Margin="18,0,0,0" Click="OpenAutomaticSnapshotDirectory_Click" Content="打开位置"
+                        <Button Margin="18,0,0,0" Click="OpenAutomaticSnapshotDirectory_Click" Content="{display:DisplayText Key='打开位置'}"
                                 Style="{StaticResource UpdateDialogTextButtonStyle}" />
                     </StackPanel>
                 </Grid>
@@ -155,18 +156,18 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="备份记录"
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="{display:DisplayText Key='备份记录'}"
                                Foreground="{DynamicResource UpdateDialog.TextPrimary}" />
                     <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="12" Opacity="0.6"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                               Text="{Binding Snapshots.Count, StringFormat=共 {0} 份}" />
+                               Text="{Binding Snapshots.Count, StringFormat={display:DisplayText Key='共 {0} 份'}}" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Click="Refresh_Click" Content="刷新" IsEnabled="{Binding CanRunCommand}"
+                    <Button Click="Refresh_Click" Content="{display:DisplayText Key='刷新'}" IsEnabled="{Binding CanRunCommand}"
                             Style="{StaticResource UpdateDialogTextButtonStyle}" />
-                    <Button Margin="20,0,0,0" Click="OpenFolder_Click" Content="打开目录"
+                    <Button Margin="20,0,0,0" Click="OpenFolder_Click" Content="{display:DisplayText Key='打开目录'}"
                             ToolTip="{Binding SnapshotDirectory}" Style="{StaticResource UpdateDialogTextButtonStyle}" />
-                    <Button Margin="20,0,0,0" Click="RebuildDefault_Click" Content="重建默认"
+                    <Button Margin="20,0,0,0" Click="RebuildDefault_Click" Content="{display:DisplayText Key='重建默认'}"
                             IsEnabled="{Binding CanRunCommand}" Style="{StaticResource UpdateDialogTextButtonStyle}" />
                 </StackPanel>
             </Grid>
@@ -184,15 +185,15 @@
                           ItemsSource="{Binding Snapshots}" SelectedItem="{Binding SelectedSnapshot, Mode=TwoWay}"
                           SelectionMode="Single" SelectionUnit="FullRow">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Width="115" Header="类型" Binding="{Binding SnapshotTypeText}"
+                        <DataGridTextColumn Width="115" Header="{display:DisplayText Key='类型'}" Binding="{Binding SnapshotTypeText}"
                                             ElementStyle="{StaticResource SnapshotCellTextStyle}" />
-                        <DataGridTextColumn Width="170" Header="时间" Binding="{Binding CreatedAtText}"
+                        <DataGridTextColumn Width="170" Header="{display:DisplayText Key='时间'}" Binding="{Binding CreatedAtText}"
                                             ElementStyle="{StaticResource SnapshotCellTextStyle}" />
-                        <DataGridTextColumn Width="145" Header="版本" Binding="{Binding VersionText}"
+                        <DataGridTextColumn Width="145" Header="{display:DisplayText Key='版本'}" Binding="{Binding VersionText}"
                                             ElementStyle="{StaticResource SnapshotCellTextStyle}" />
-                        <DataGridTextColumn Width="100" Header="大小" Binding="{Binding SizeText}"
+                        <DataGridTextColumn Width="100" Header="{display:DisplayText Key='大小'}" Binding="{Binding SizeText}"
                                             ElementStyle="{StaticResource SnapshotCellTextStyle}" />
-                        <DataGridTextColumn Width="*" Header="文件" Binding="{Binding FileName}"
+                        <DataGridTextColumn Width="*" Header="{display:DisplayText Key='文件'}" Binding="{Binding FileName}"
                                             ElementStyle="{StaticResource SnapshotCellTextStyle}" />
                     </DataGrid.Columns>
                 </DataGrid>
@@ -211,9 +212,9 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
-                    <TextBlock HorizontalAlignment="Center" FontSize="18" Text="暂无程序备份"
+                    <TextBlock HorizontalAlignment="Center" FontSize="18" Text="{display:DisplayText Key='暂无程序备份'}"
                                Foreground="{DynamicResource UpdateDialog.TextPrimary}" />
-                    <TextBlock Margin="0,8,0,0" FontSize="13" Text="创建快照，保存当前可用的程序版本。" Opacity="0.6"
+                    <TextBlock Margin="0,8,0,0" FontSize="13" Text="{display:DisplayText Key='创建快照，保存当前可用的程序版本。'}" Opacity="0.6"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
                 </StackPanel>
             </Grid>
@@ -228,11 +229,11 @@
                            Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                            Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Margin="0,0,24,0" Click="DeleteSnapshot_Click" Content="删除" IsEnabled="{Binding CanUseSelected}"
+                    <Button Margin="0,0,24,0" Click="DeleteSnapshot_Click" Content="{display:DisplayText Key='删除'}" IsEnabled="{Binding CanUseSelected}"
                             Style="{StaticResource UpdateDialogTextButtonStyle}" />
-                    <Button Margin="0,0,12,0" Click="CreateSnapshot_Click" Content="创建快照" IsEnabled="{Binding CanRunCommand}"
+                    <Button Margin="0,0,12,0" Click="CreateSnapshot_Click" Content="{display:DisplayText Key='创建快照'}" IsEnabled="{Binding CanRunCommand}"
                             Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-                    <Button Click="RestoreSnapshot_Click" Content="还原所选" IsEnabled="{Binding CanUseSelected}"
+                    <Button Click="RestoreSnapshot_Click" Content="{display:DisplayText Key='还原所选'}" IsEnabled="{Binding CanUseSelected}"
                             Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
                 </StackPanel>
             </Grid>

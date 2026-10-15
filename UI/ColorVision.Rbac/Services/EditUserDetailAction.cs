@@ -1,4 +1,5 @@
-﻿using ColorVision.Rbac.Dtos;
+﻿using LocalizedText = global::ColorVision.Rbac.DisplayText;
+using ColorVision.Rbac.Dtos;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 
@@ -19,7 +20,7 @@ namespace ColorVision.Rbac.Services
             var config = RbacManagerConfig.Instance;
             if (config.LoginResult == null || config.LoginResult.UserDetail == null)
             {
-                MessageBox.Show("请先登录后再编辑用户信息。", "未登录", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("请先登录后再编辑用户信息。"), LocalizedText.Get("未登录"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -73,11 +74,11 @@ namespace ColorVision.Rbac.Services
             }
             catch (InvalidOperationException ex)
             {
-                MessageBox.Show(ex.Message, "保存失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(ex.Message, LocalizedText.Get("保存失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("保存用户详情时出现异常：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Get("保存用户详情时出现异常：") + ex.Message, LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

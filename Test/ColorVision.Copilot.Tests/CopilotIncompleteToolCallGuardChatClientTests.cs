@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 
 namespace ColorVision.Copilot.Tests;
@@ -121,6 +120,67 @@ public sealed class CopilotIncompleteToolCallGuardChatClientTests
         Assert.Empty(diagnostics);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequestCopiesExcludeUnpairedInformationalCallsAndPreserveReplayMetadata(bool streaming)
+    {
+        var suppressedCall = new FunctionCallContent("legacy-suppressed", "write_tool")
+        {
+            InformationalOnly = true,
+        };
+        var evidence = new ChatMessage(ChatRole.Assistant, [new TextContent("Partial evidence."), suppressedCall])
+        {
+            AuthorName = "assistant-author",
+            CreatedAt = new DateTimeOffset(2026, 10, 4, 0, 0, 0, TimeSpan.Zero),
+            MessageId = "evidence-message",
+            AdditionalProperties = new() { ["provider-history"] = "preserved" },
+            RawRepresentation = new object(),
+        };
+        var pairedCall = new FunctionCallContent("paired", "write_tool") { InformationalOnly = true };
+        var pendingCall = new FunctionCallContent("pending", "write_tool");
+        var nativeCall = new ToolCallContent("native");
+        var completedAndPending = new ChatMessage(ChatRole.Assistant, [pairedCall, pendingCall, nativeCall]);
+        var result = new ChatMessage(ChatRole.Tool, [new FunctionResultContent("paired", "completed")]);
+        var suppressedOnly = new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("legacy-empty", "write_tool") { InformationalOnly = true }]);
+        var user = new ChatMessage(ChatRole.User, "Continue.");
+        ChatMessage[] history = [evidence, completedAndPending, result, suppressedOnly, user];
+        var provider = new ScriptedToolCallChatClient(ChatFinishReason.Stop);
+        using var client = new CopilotIncompleteToolCallGuardChatClient(provider);
+
+        if (streaming)
+        {
+            await foreach (var _ in client.GetStreamingResponseAsync(history))
+            {
+            }
+        }
+        else
+        {
+            await client.GetResponseAsync(history);
+        }
+
+        Assert.Equal(4, provider.RequestMessages.Count);
+        var copiedEvidence = provider.RequestMessages[0];
+        Assert.NotSame(evidence, copiedEvidence);
+        Assert.Equal("Partial evidence.", copiedEvidence.Text);
+        Assert.Empty(copiedEvidence.Contents.OfType<FunctionCallContent>());
+        Assert.Null(copiedEvidence.RawRepresentation);
+        Assert.Equal(evidence.Role, copiedEvidence.Role);
+        Assert.Equal(evidence.AuthorName, copiedEvidence.AuthorName);
+        Assert.Equal(evidence.CreatedAt, copiedEvidence.CreatedAt);
+        Assert.Equal(evidence.MessageId, copiedEvidence.MessageId);
+        Assert.Equal("preserved", copiedEvidence.AdditionalProperties!["provider-history"]);
+        Assert.Same(completedAndPending, provider.RequestMessages[1]);
+        Assert.Equal([pairedCall, pendingCall, nativeCall], provider.RequestMessages[1].Contents);
+        Assert.Same(result, provider.RequestMessages[2]);
+        Assert.Same(user, provider.RequestMessages[3]);
+        Assert.Contains(suppressedCall, evidence.Contents);
+        Assert.NotNull(evidence.RawRepresentation);
+        Assert.Single(suppressedOnly.Contents);
+        Assert.Equal(5, history.Length);
+    }
+
     private static FunctionInvokingChatClient CreateFunctionInvokingClient(
         IChatClient provider,
         List<(int Count, ChatFinishReason FinishReason)> diagnostics) =>
@@ -154,12 +214,15 @@ public sealed class CopilotIncompleteToolCallGuardChatClientTests
 
         public IReadOnlyList<string> ResultCallIds { get; private set; } = [];
 
+        public IReadOnlyList<ChatMessage> RequestMessages { get; private set; } = [];
+
         public Task<ChatResponse> GetResponseAsync(
             IEnumerable<ChatMessage> messages,
             ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            RequestMessages = messages.ToArray();
             var call = Interlocked.Increment(ref _callCount);
             if (call == 1)
             {
@@ -185,6 +248,7 @@ public sealed class CopilotIncompleteToolCallGuardChatClientTests
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            RequestMessages = messages.ToArray();
             var call = Interlocked.Increment(ref _callCount);
             await Task.CompletedTask;
             if (call == 1)

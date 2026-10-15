@@ -19,12 +19,13 @@ namespace ColorVision.Engine.Impl.SolutionImpl
 
         public FileOpenRouteResult OpenFile(string filePath)
         {
+            ImageView? imageView = null;
             try
             {
                 Application application = Application.Current
                     ?? throw new InvalidOperationException("The WPF application is not initialized.");
                 Window? owner = application.GetActiveWindow();
-                ImageView imageView = new();
+                imageView = new();
                 Window window = new() { Title = filePath, Content = imageView };
                 if (owner != null && !ReferenceEquals(owner, window))
                     window.Owner = owner;
@@ -34,13 +35,14 @@ namespace ColorVision.Engine.Impl.SolutionImpl
                 {
                     window.Title = $"{imageView.Config.FilePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height} {imageView.Config.GetProperties<int>("Channel")}";
                 };
-                window.DelayClearImage(() => application.Dispatcher.Invoke(imageView.Clear));
+                window.Closed += (_, _) => imageView.Dispose();
                 window.ApplyCaption();
                 window.Show();
                 return new FileOpenRouteResult(true, true);
             }
             catch (Exception ex)
             {
+                imageView?.Dispose();
                 return new FileOpenRouteResult(true, false, $"打开图像文件失败：{ex.Message}");
             }
         }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="CustomAction" xml:space="preserve"><value>自定義操作</value></data>
+  <data name="DescriptionUnavailable" xml:space="preserve"><value>此操作尚未提供詳細說明。</value></data>
+  <data name="OtherCategory" xml:space="preserve"><value>其他操作</value></data>
+  <data name="UnknownSource" xml:space="preserve"><value>未提供來源</value></data>
+  <data name="OpenSettings" xml:space="preserve"><value>打開設置窗口，調整應用選項。</value></data>
+  <data name="OpenLog" xml:space="preserve"><value>打開日誌窗口，查看和篩選應用日誌。</value></data>
+  <data name="CheckUpdates" xml:space="preserve"><value>打開更新檢查窗口，檢查主程序與兼容插件更新。</value></data>
+  <data name="ToggleStatusBar" xml:space="preserve"><value>顯示或隱藏主窗口底部狀態欄。</value></data>
+  <data name="OpenAbout" xml:space="preserve"><value>打開關於窗口，查看應用版本和系統信息。</value></data>
+  <data name="ResetLayout" xml:space="preserve"><value>確認後恢復默認停靠佈局，可能移除已打開的文件標籤；請先保存文檔。</value></data>
+  <data name="ResetLayoutConfirmation" xml:space="preserve"><value>重置窗口布局可能關閉已打開的文件標籤，未保存的修改可能丟失。請先保存文檔。是否繼續重置？</value></data>
+  <data name="SearchCommandsName" xml:space="preserve"><value>搜索命令與功能</value></data>
+  <data name="SearchCommands" xml:space="preserve"><value>搜索應用中的菜單、工具和模板，不查找文檔正文。</value></data>
+  <data name="SearchEntryPlaceholder" xml:space="preserve"><value>搜索功能…</value></data>
+  <data name="ContextualFindName" xml:space="preserve"><value>查找當前內容或應用功能</value></data>
+  <data name="ContextualFind" xml:space="preserve"><value>優先查找當前編輯器、會話或日誌；沒有局部查找的普通頁面打開應用搜索。改鍵不移除編輯器原有的 Ctrl+F。</value></data>
+</root>

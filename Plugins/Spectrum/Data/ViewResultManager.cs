@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822
+﻿using LocalizedText = global::Spectrum.DisplayText;
+#pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
@@ -210,15 +211,15 @@ namespace Spectrum.Data
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             DeleteAllCommand = new RelayCommand(a =>
             {
-                if (MessageBox.Show("确定要删除数据库中所有记录吗？此操作不可恢复。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                if (MessageBox.Show(LocalizedText.Get("确定要删除数据库中所有记录吗？此操作不可恢复。"), LocalizedText.Get("确认删除"), MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                     DeleteAllRecords();
             });
             ResetDatabaseCommand = new RelayCommand(a =>
             {
-                if (MessageBox.Show("确定要重置数据库吗？将删除数据库文件并重新创建。此操作不可恢复。", "确认重置", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                if (MessageBox.Show(LocalizedText.Get("确定要重置数据库吗？将删除数据库文件并重新创建。此操作不可恢复。"), LocalizedText.Get("确认重置"), MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                 {
                     if (!ResetDatabase())
-                        MessageBox.Show("通用查询窗口正在使用数据库，请先关闭查询窗口再重置。", "无法重置", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(LocalizedText.Get("通用查询窗口正在使用数据库，请先关闭查询窗口再重置。"), LocalizedText.Get("无法重置"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             });
             EnsureDatabaseInitialized();

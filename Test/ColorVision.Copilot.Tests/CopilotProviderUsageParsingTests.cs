@@ -1,6 +1,4 @@
-using System;
 using System.Text.Json;
-using ColorVision.Copilot;
 
 namespace ColorVision.Copilot.Tests;
 

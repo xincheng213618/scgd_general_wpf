@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ModelContextProtocol.Protocol;
 using Newtonsoft.Json;
 using System.Text.Json;

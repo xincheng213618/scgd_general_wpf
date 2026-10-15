@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.Explorer
@@ -22,7 +23,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = "ShowUnavailableProjectError",
                     Order = 2,
-                    Header = "查看加载错误(_E)...",
+                    Header = LocalizedText.Get("查看加载错误(_E)..."),
                     Command = projectNode.ShowLoadErrorCommand,
                 },
             ];

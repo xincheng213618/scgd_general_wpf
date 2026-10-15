@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822
+﻿using LocalizedText = global::Spectrum.DisplayText;
+#pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.UI;
@@ -39,7 +40,7 @@ namespace Spectrum.PropertyEditor
 
             Button btnRefresh = new Button
             {
-                Content = "刷新",
+                Content = LocalizedText.Get("刷新"),
                 Margin = new Thickness(5, 0, 0, 0),
                 MinWidth = 50,
             };

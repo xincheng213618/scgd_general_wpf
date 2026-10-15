@@ -6,7 +6,6 @@ using ColorVision.FileIO;
 using Newtonsoft.Json;
 using OpenCvSharp;
 using SqlSugar;
-using SqlSugar.Extensions;
 using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -314,7 +313,7 @@ namespace ProjectARVRPro.Process.AOI
             {
                 string destFile = Path.Combine(exportDir, Path.GetFileNameWithoutExtension(fileUrl) + ".tif");
                 log.Info("正在输出TIF原图 " + destFile);
-                src.SaveImage(destFile, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+                Cv2.ImWrite(destFile, src, [new ImageEncodingParam(ImwriteFlags.TiffCompression, 1)]);
             }
         }
 

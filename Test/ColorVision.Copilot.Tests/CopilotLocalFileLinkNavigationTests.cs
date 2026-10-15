@@ -1,10 +1,8 @@
 using AvalonDock.Layout;
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Workspace;
-using ColorVision.UI;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;

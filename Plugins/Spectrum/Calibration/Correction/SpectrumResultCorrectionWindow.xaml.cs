@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using Microsoft.Win32;
 using ScottPlot;
 using Spectrum.Menus;
@@ -15,7 +16,7 @@ namespace Spectrum.Calibration.Correction;
 public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
 {
     public override string OwnerGuid => ColorVision.UI.Menus.MenuItemConstants.Tool;
-    public override string Header => "光谱校正";
+    public override string Header => LocalizedText.Get("光谱校正");
     public override int Order => 2;
 
     public override void Execute()
@@ -23,13 +24,14 @@ public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
         MainWindow? mainWindow = MainWindow.Instance;
         if (mainWindow == null || !mainWindow.IsLoaded)
         {
-            MessageBox.Show("请先打开 Spectrum 主窗口。", "光谱校正", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(LocalizedText.Get("请先打开 Spectrum 主窗口。"), LocalizedText.Get("光谱校正"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
+        Window? owner = Application.Current?.GetActiveWindow();
         if (!mainWindow.TryGetCorrectionResult(out ViewResultSpectrum? result, out string reason))
         {
-            MessageBox.Show(mainWindow, reason, "光谱校正", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(owner, reason, LocalizedText.Get("光谱校正"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -37,13 +39,13 @@ public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
         {
             new SpectrumResultCorrectionWindow(result!, SpectrometerManager.Instance)
             {
-                Owner = mainWindow,
+                Owner = owner,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             }.ShowDialog();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(mainWindow, ex.GetBaseException().Message, "无法打开光谱校正",
+            MessageBox.Show(owner, ex.GetBaseException().Message, LocalizedText.Get("无法打开光谱校正"),
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -68,6 +70,7 @@ public partial class SpectrumResultCorrectionWindow : Window
         _sourceFile = MagnitudeCalibrationFile.Load(manager.MaguideFile);
 
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = this;
         InitializeResult();
         InitializePlot();
@@ -84,7 +87,7 @@ public partial class SpectrumResultCorrectionWindow : Window
         SourceFileText.Text = _manager.MaguideFile;
         MeasuredBrightnessTextBox.Text = _result.fPh.ToString("G10", CultureInfo.CurrentCulture);
         UpdateBrightnessRatio();
-        StatusText.Text = $"已载入当前选中的校正后光谱：{absolute.Length} 点。";
+        StatusText.Text = LocalizedText.Format($"已载入当前选中的校正后光谱：{absolute.Length} 点。");
     }
 
     private void InitializePlot()
@@ -112,7 +115,7 @@ public partial class SpectrumResultCorrectionWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = "导入标准绝对光谱",
+            Title = LocalizedText.Get("导入标准绝对光谱"),
             Filter = "光谱数据 (*.csv;*.txt;*.dat)|*.csv;*.txt;*.dat|所有文件 (*.*)|*.*",
             CheckFileExists = true,
         };
@@ -120,7 +123,7 @@ public partial class SpectrumResultCorrectionWindow : Window
         try
         {
             SetStandardRows(ParseSpectrumText(File.ReadAllText(dialog.FileName)));
-            StatusText.Text = $"已导入 {StandardRows.Count} 个标准谱点。";
+            StatusText.Text = LocalizedText.Format($"已导入 {StandardRows.Count} 个标准谱点。");
         }
         catch (Exception ex)
         {
@@ -135,7 +138,7 @@ public partial class SpectrumResultCorrectionWindow : Window
         try
         {
             SetStandardRows(ParseSpectrumText(Clipboard.GetText()));
-            StatusText.Text = $"已粘贴 {StandardRows.Count} 个标准谱点。";
+            StatusText.Text = LocalizedText.Format($"已粘贴 {StandardRows.Count} 个标准谱点。");
         }
         catch (Exception ex)
         {
@@ -165,7 +168,7 @@ public partial class SpectrumResultCorrectionWindow : Window
                 AddLine(CreateWavelengths(), measured, "当前校正后光谱", System.Drawing.Color.DodgerBlue);
                 AddLine(CreateWavelengths(), measured.Select(value => value * factor).ToArray(), "校正预测", System.Drawing.Color.OrangeRed);
                 FinishPlot();
-                StatusText.Text = $"亮度校正比例：{factor:G8}。";
+                StatusText.Text = LocalizedText.Format($"亮度校正比例：{factor:G8}。");
                 _preview = null;
             }
             else
@@ -173,8 +176,8 @@ public partial class SpectrumResultCorrectionWindow : Window
                 _preview = CalculateFullSpectrum();
                 PlotFullPreview(_preview);
                 StatusText.Text = _preview.FilledFactorCount == 0
-                    ? "完整光谱校正预览完成。"
-                    : $"完整光谱校正预览完成；{_preview.FilledFactorCount} 个低信号点使用相邻校正倍率填补。";
+                    ? LocalizedText.Get("完整光谱校正预览完成。")
+                    : LocalizedText.Format($"完整光谱校正预览完成；{_preview.FilledFactorCount} 个低信号点使用相邻校正倍率填补。");
             }
         }
         catch (Exception ex)
@@ -209,7 +212,7 @@ public partial class SpectrumResultCorrectionWindow : Window
             string sourceName = Path.GetFileNameWithoutExtension(_manager.MaguideFile);
             var dialog = new SaveFileDialog
             {
-                Title = "保存新的幅值标定文件",
+                Title = LocalizedText.Get("保存新的幅值标定文件"),
                 Filter = "幅值标定文件 (*.dat)|*.dat",
                 InitialDirectory = sourceDirectory,
                 FileName = $"{sourceName}_{suffix}_{DateTime.Now:yyyyMMdd_HHmmss}.dat",
@@ -219,8 +222,8 @@ public partial class SpectrumResultCorrectionWindow : Window
             };
             if (dialog.ShowDialog(this) != true) return;
             string saved = corrected.SaveNew(dialog.FileName);
-            GeneratedFileText.Text = $"已生成：{saved}";
-            StatusText.Text = "新 DAT 已生成；当前标定组和连接状态未改变。";
+            GeneratedFileText.Text = LocalizedText.Format($"已生成：{saved}");
+            StatusText.Text = LocalizedText.Get("新 DAT 已生成；当前标定组和连接状态未改变。");
         }
         catch (Exception ex)
         {

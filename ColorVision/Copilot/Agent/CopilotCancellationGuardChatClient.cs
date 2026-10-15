@@ -57,7 +57,8 @@ namespace ColorVision.Copilot
                 .GetAsyncEnumerator(cancellationToken);
             await using var lease = new CancellationGuardEnumerator(
                 enumerator,
-                _enumeratorDisposalTimeout);
+                _enumeratorDisposalTimeout,
+                cancellationToken);
             while (await lease.MoveNextAsync(cancellationToken).ConfigureAwait(false))
                 yield return lease.Current;
         }
@@ -65,16 +66,19 @@ namespace ColorVision.Copilot
         private sealed class CancellationGuardEnumerator : IAsyncDisposable
         {
             private readonly TimeSpan _disposalTimeout;
+            private readonly CancellationToken _cancellationToken;
             private IAsyncEnumerator<ChatResponseUpdate>? _enumerator;
             private Task<bool>? _pendingMove;
             private bool _moveFailed;
 
             public CancellationGuardEnumerator(
                 IAsyncEnumerator<ChatResponseUpdate> enumerator,
-                TimeSpan disposalTimeout)
+                TimeSpan disposalTimeout,
+                CancellationToken cancellationToken)
             {
                 _enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
                 _disposalTimeout = disposalTimeout;
+                _cancellationToken = cancellationToken;
             }
 
             public ChatResponseUpdate Current =>
@@ -125,7 +129,7 @@ namespace ColorVision.Copilot
                 return new ValueTask(DisposeBoundedAsync(
                     enumerator,
                     _disposalTimeout,
-                    suppressFailure: _moveFailed));
+                    suppressFailure: _moveFailed || _cancellationToken.IsCancellationRequested));
             }
 
             private static async Task DisposeAfterMoveCompletesAsync(

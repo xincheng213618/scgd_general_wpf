@@ -34,7 +34,7 @@ public sealed class CopilotExternalMcpDiagnosticDraftTests
             _ => throw new InvalidOperationException("Unknown draft kind."),
         };
         viewModel.ExternalMcpServersText = draftText;
-        viewModel.BackendSyncUrl = "https://changed.example.test/configuration";
+        viewModel.AgentTimeoutSeconds++;
         var expectedNotice = viewModel.SettingsStatusText;
         var expectedStatus = viewModel.ExternalMcpClientsStatusText;
         var expectedValidation = viewModel.ExternalMcpServersValidationText;
@@ -149,7 +149,7 @@ public sealed class CopilotExternalMcpDiagnosticDraftTests
                 _externalClientCount++;
                 return new HttpClient(_handler, disposeHandler: false);
             });
-            ViewModel = new CopilotSettingsViewModel(configHandler, new CopilotBackendSyncClient(_client),
+            ViewModel = new CopilotSettingsViewModel(configHandler,
                 new CopilotChatState { ActiveProfileId = _config.Profiles[0].Id }, externalMcpToolProvider: provider, mcpHttpClient: _client);
         }
 

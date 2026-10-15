@@ -7,7 +7,7 @@ ColorVision 桌面端 TCP 服务模块，负责监听、JSON/Text 分发、SQLit
 - 宿主需要 `ColorVision.UI`、`ColorVision.Database` 及项目声明的运行时依赖。
 - `SocketConfig.IsServerEnabled` 默认关闭；启用后按启动时的地址、端口、缓冲区和解析模式建立服务。修改配置后需要重新启动服务才能应用。
 - 默认地址为 `0.0.0.0`、端口为 `6666`，监听可能对其他设备开放；此模块不提供通用鉴权、TLS 或 TCP 分帧协议。
-- 消息保存在 `%AppData%/ColorVision/Config/SocketMessages.db`；管理器初始化和收发会写入本地数据库。重发可能选择首个可写客户端并触发业务动作，必须确认目标与授权。
+- 消息保存在 `%AppData%/ColorVision/Config/SocketMessages.db`；收发只将快照入队，后台顺序提交，业务处理不等待落库。队列在内存中，正常退出会在 Socket 关闭期限内等待排空，强制退出或超时可能留下未提交记录。重发可能选择首个可写客户端并触发业务动作，必须确认目标与授权。
 
 ## 配置与扩展入口
 

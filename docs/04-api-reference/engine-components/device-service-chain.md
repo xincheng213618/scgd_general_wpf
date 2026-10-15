@@ -5,7 +5,7 @@ status: "current"
 summary: "设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。"
 aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","设备资源重载","设备资源过滤","设备类型字典","组关联资源","空设备树","管理员服务配置","进入采集窗口","切换列表","LastSelectIndex","运行对象生命周期","显示集合","ServiceManager","t_scgd_sys_resource","t_scgd_sys_resource_group","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices","LastGenControl","设备控制分组","CreateGroupCommand","设备行置顶","取消置顶","DisplayPinButton","设备详情按需初始化","ViewShell","EnsureInitialized","ViewCamera","ViewSpectrum","AlgorithmView","ViewCalibration"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs","Engine/ColorVision.Engine/Dao/VSysResourceDao.cs","UI/ColorVision.Database/BaseTableDao.cs","Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/WindowService.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DeviceSpectrum.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DisplaySpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/Views/ViewSpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DeviceAlgorithm.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithm.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","UI/ColorVision.UI/DisPlayManager.cs","UI/ColorVision.UI/DisplayPinButton.xaml","UI/ColorVision.UI/DisplayPinButton.xaml.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Views/DockViewManager.cs","UI/ColorVision.Solution/Workspace/DockViewManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs","Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs","Test/ColorVision.UI.Tests/DockViewManagerTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs"]
 related: ["engine.index","platform.runtime","operations.device-configuration","engine.mqtt","engine.rc-registration","engine.results","engine.spectrum-device","operations.camera","operations.motor","operations.smu","operations.calibration","operations.file-server","operations.flow-device","flow.session","ui.property-grid","ui.database"]
 ---
 
@@ -17,7 +17,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ## 初始化与资源树
 
-`ServiceInitializer.Order=5`；无论 MySQL 是否连接，都会初始化物理相机管理器、设备集合和显示控件（包括流程面板）。连接时沿用 MySQL 资源树与原有原生资源初始化；未连接时读取本地配置，以 `ServiceTypes` 建立类型列表。`ServiceManager` 构造器通过 UI Dispatcher 调用 `LoadServices()`，并订阅后续连接变化；创建单例不是无副作用的只读查询。
+`ServiceInitializer.Order=5`；启动时物理相机、服务层级、待应用服务更新分别调度到 UI；设备卡片在同一次 UI 操作内创建，全部完成后一次性替换显示集合；启动与手工刷新共用同步入口，避免卡片构造之间的重复调度增加等待。详情按需初始化契约见下文。无论 MySQL 是否连接，都会初始化物理相机管理器、设备集合和显示控件（包括流程面板）。连接时沿用 MySQL 资源树与原有原生资源初始化；未连接时读取本地配置，以 `ServiceTypes` 建立类型列表。`ServiceManager` 构造器通过 UI Dispatcher 调用 `LoadServices()`，并订阅后续连接变化；创建单例不是无副作用的只读查询。
 
 本地资源和许可证复用现有字段及窗口，写入 `%APPDATA%/ColorVision/Config/ColorVision.Local.db` 的配置文档。资源 ID 使用小于等于 -2 的本地身份，父子及组引用也使用本地 ID；已打开的本地对象恢复联网后仍保存到本地。MySQL 与本地配置独立，不复制服务器资源、不自动同步，也不修改服务端表结构。结果、图像、运行记录不写入这个配置库。
 
@@ -47,15 +47,19 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 字典查询与资源查询的失败行为不同：`GetAllByPid(1)` 在连接标志为 false 或捕获查询异常时返回空列表；若后续资源查询成功，仍会重建空类型/设备集合并发布 `ServiceChanged`。所以“完成加载”日志或没有抛出异常不能证明字典查询成功，应同时查 DAO 错误日志。通用 DAO 语义见[数据库访问](../ui-components/ColorVision.Database.md)。
 
-`LoadServiceResourceSnapshot` 则直接执行数据库查询，没有本地捕获；此处抛出时，旧对象可能已被 Dispose，设备集合可能因共享引用已被清空，但旧类型树或显示项仍在；更晚失败也可能留下部分新集合。不能把“加载失败”解释为旧运行状态完整保留。具体设备是否释放全部句柄和事件取决于其 Dispose 实现；删除时的清理限制集中在[设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出、重置与删除)。
+`LoadServiceResourceSnapshot` 则直接执行数据库查询，没有本地捕获；此处抛出时，旧对象可能已被 Dispose，设备集合可能因共享引用已被清空，但旧类型树或显示项仍在；更晚失败也可能留下部分新集合。不能把“加载失败”解释为旧运行状态完整保留。具体设备是否释放全部句柄和事件取决于其 Dispose 实现；删除时的清理限制集中在[设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出与删除)。
 
 构造器始终首次重载，离线时从本地配置装配；`MySqlConnectChanged` 订阅同样调用 `LoadServices()`。断开会切换到本地资源，不能认为断开通知天然是无操作，也不要在只读诊断中用切换数据库连接或重载来试探；这些动作可能影响运行设备和旧窗口。
 
 ## 工厂存在不等于默认可见
 
-`DeviceServiceFactoryRegistry.RegisterDefaults()` 是内置注册的来源，不是扫描所有 `Device*` 类自动发现。它注册 Camera、PG、Spectrum、SMU、Sensor、FileServer、Algorithm、FilterWheel、Calibration、Motor、ThirdPartyAlgorithms、Flow 和 LightingControl。
+`DeviceServiceFactoryRegistry.RegisterDefaults()` 是内置注册的来源，不是扫描所有 `Device*` 类自动发现。它注册 Camera、PG、Spectrum、SMU、Sensor、Algorithm、FilterWheel、Calibration、Motor 和 LightingControl。
 
-默认类型树明确过滤 **FileServer、FocusRing、Flow、ThirdPartyAlgorithms、ThirdPartyAlgorithms32、PowerControl**。因此 FileServer/Flow 有工厂仍不会生成它们自己的默认类型分支；LightingControl（值 16）没有被该过滤排除。过滤发生在类型节点层，装配可见终端的子资源时仍按子资源自己的 Type 查工厂，并未再次排除这些类型。因此遗留或错误层级数据仍可能经其它类型终端构造它们，不能将类型过滤说成全局禁止实例化。不要仅凭有实现类或菜单文字承诺可创建、可见或可运行。
+默认类型树明确过滤 **FileServer、FocusRing、Flow、ThirdPartyAlgorithms、ThirdPartyAlgorithms32、PowerControl**；LightingControl（值 16）没有被该过滤排除。过滤发生在类型节点层，装配可见终端的子资源时仍按子资源自己的 Type 查工厂，不能将类型过滤说成全局禁止实例化。
+
+遗留子资源的 Type 为 6 时，没有对应的内置工厂，默认返回 null，跳过创建而不删除资源记录。`ServiceTypes.FileServer = 6`、RC 对应协议值和设备文件保存配置的用途见[旧 FileServer 资源与文件保存配置](../../01-user-guide/devices/file-server.md)。
+
+遗留子资源的 Type 为 12、13 或 14 时，没有对应的内置工厂，默认返回 null，跳过创建而不删除资源记录。协议值与旧流程节点读取的兼容用途见[旧 Flow 与第三方算法资源兼容](../../01-user-guide/devices/flow-device.md)。
 
 `CreateService(resource)` 在工厂未注册时返回 `null`，该资源不会进入运行集合；工厂构造抛异常则会向外传播，不是同一种“跳过”行为。重复注册默认抛错，明确 `replace=true` 才替换既有工厂，不能无意覆盖其它模块的类型所有者。
 
@@ -64,6 +68,8 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 1. 打开 **工具 → 管理员服务配置**（`WindowService`）。列表模式由 `ShowType2` 配置决定，初始值为设备；**切换列表** 按设备 → 类型 → 终端循环。
 2. 选择设备查看 `GetDeviceInfo()`；选择终端或类型节点查看 `GenDeviceControl()`。这里是信息/配置页，不是主界面的设备控制页。
 3. 此窗口是纯配置页，不提供采集入口或独立设置齿轮。关闭时比较打开时与当前资源树的设备/终端配置、实例身份和顺序；有变化才重新生成主显示区，无变化直接关闭。切换列表、选择节点和在线心跳不属于配置变更。各配置编辑器保留原有保存语义，窗口关闭不会统一保存或重启所有设备；显示更新失败时保留窗口并显示错误。
+
+选择设备时，窗口发布该设备的 Copilot 业务上下文；窗口重新激活时会再次发布仍选中的设备，避免用户从其他业务页面返回后继续使用后一个页面的 Live Context。重新激活时没有设备选择则清除本窗口此前发布的来源；关闭窗口后清理设备来源，并重新发布主显示区当前上下文。此刷新只改变 Copilot 上下文，不连接、重启或操作设备。
 
 设备卡片或上下文菜单中的 **属性** 同样复用 `GetDeviceInfo()`，但由 `DevicePropertyWindow` 提供独立窗口外壳：窗口显示设备名称与 Code，并在带边框、圆角和内边距的内容区承载设备页。这个外壳只属于独立窗口；管理员服务配置和终端详情继续使用各自已有的面板边界，不把窗口留白重复写进设备控件。
 
@@ -93,7 +99,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 `DisPlayManagerConfig.PinnedControls` 按稳定 `PersistenceKey` 独立保存置顶状态；旧配置缺少该字段时全部未置顶。`StoreIndex` 保留基础顺序，置顶和取消置顶不重写它；重建显示集合时也按基础顺序规范化索引，避免把置顶顺序固化。拖动按同一置顶状态的相邻项转换回基础顺序，所以取消置顶后回到基础顺序（包含用户主动拖动的调整）。置顶或拖动重排现有集合时保持当前选中对象，并同步索引和稳定选择键。
 
-`DockViewManagerTests` 覆盖置顶/取消、JSON 配置往返和显示集合重建、稳定键迁移、开合恢复、隐藏/重新显示、选择保持、组内与跨组拖动及图钉输入隔离；真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
+真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
 
 ### 设备详情视图按需初始化
 
@@ -116,13 +122,14 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 | 问题 | 所属实现 | 主题 |
 | --- | --- | --- |
+| 通用传感器、本地 TCP/串口和指令模板 | `Services/Devices/Sensor/` | [本地通用传感器](./generic-sensor.md) |
 | 相机服务、取图与运行参数 | `Services/Devices/Camera/` | [相机服务](../../01-user-guide/devices/camera.md) |
 | 物理相机、许可、校准配置 | `Services/PhyCameras/` | [物理相机](../../01-user-guide/devices/camera-management.md)、[相机配置](../../01-user-guide/devices/camera-configuration.md) |
 | 运动及位置状态 | `Services/Devices/Motor/` | [电机](../../01-user-guide/devices/motor.md) |
 | 电压/电流与扫描输出 | `Services/Devices/SMU/` | [SMU](../../01-user-guide/devices/smu.md) |
 | 本地校正与服务校准 | `Services/Devices/Calibration/` | [校准](../../01-user-guide/devices/calibration.md) |
-| 文件服务资源与实际文件输出 | `Services/Devices/FileServer/` | [文件服务](../../01-user-guide/devices/file-server.md) |
-| 远端 Flow 服务与本地图的区别 | `Services/Devices/FlowDevice/` | [流程设备](../../01-user-guide/devices/flow-device.md) |
+| 旧 FileServer 资源装配与设备文件保存配置 | `Services/Devices/DeviceServiceFactory.cs`、`Services/Cache/FileServerCfg.cs` | [旧资源与文件配置](../../01-user-guide/devices/file-server.md) |
+| 旧 Flow / 第三方算法资源的装配与读取兼容 | `Services/Devices/DeviceServiceFactory.cs` | [旧资源兼容](../../01-user-guide/devices/flow-device.md) |
 
 PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命令和显示实现；插件同名不等于同一个设备对象。MQTT 关联、返回与超时由[消息契约](../../02-developer-guide/engine-development/mqtt.md)维护，Flow 业务完成由[执行会话](../../01-user-guide/workflow/execution.md)维护。
 
@@ -146,7 +153,7 @@ PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命�
 | 手动成功但 Flow 失败 | 节点引用的设备 Code、模板版本和输入，再查共享会话完成条件 |
 | 保存后异常或重启未生效 | 配置持久化和 RC 重启是不同阶段，进入[配置契约](../../01-user-guide/devices/configuration.md) |
 
-`DeferredDeviceViewTests` 使用合成设备和 MQTT 对象、内存配置及真实 WPF/XAML，检查四类详情的登记身份、隐藏加载与首次可见初始化、WPF Initialized 已发生后的公开 View 访问；另检查相机、算法、校准未初始化详情的释放，以及相机和校准内存结果模型的首次显示。它不构造真实设备连接、不执行 DAO 结果回查，也不覆盖 Spectrum 完整释放。`DockViewManagerTests` 检查晚登记文档、标题更新、双击激活和显示集合替换后的选择恢复。测试引用不表示已执行或通过。
+另检查相机、算法、校准未初始化详情的释放，以及相机和校准内存结果模型的首次显示。它不构造真实设备连接、不执行 DAO 结果回查，也不覆盖 Spectrum 完整释放。测试引用不表示已执行或通过。
 
 本页未声明资源树、工厂与真实 MySQL 的自动化集成覆盖。`ServiceConfigTests` 只验证注册中心服务信息属性通知，不证明此装配链；具体设备测试从对应主题进入。验证应记录同一设备的资源 ID/Code、版本、父终端、配置来源和实际失败阶段，敏感配置须脱敏。
 

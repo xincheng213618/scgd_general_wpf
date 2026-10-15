@@ -13,6 +13,10 @@ namespace ST.Library.UI.NodeEditor;
 
 public abstract class STNode : INotifyPropertyChanged
 {
+	private const int DefaultTitleHeight = 26;
+	private const int TitleHorizontalPadding = 40;
+	private const int TitleVerticalOffset = 2;
+
 	public event PropertyChangedEventHandler PropertyChanged;
 
 	private STNodeEditor _Owner;
@@ -53,7 +57,7 @@ public abstract class STNode : INotifyPropertyChanged
 
 	private Rectangle _MarkRectangle;
 
-	private int _TitleHeight = 22;
+	private int _TitleHeight = DefaultTitleHeight;
 
 	private STNodeOptionCollection _InputOptions;
 
@@ -221,7 +225,7 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 		get
 		{
-			return _ForeColor;
+			return _Owner?.VisualTheme?.ResolveText(_ForeColor) ?? _ForeColor;
 		}
 		protected set
 		{
@@ -234,7 +238,8 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 		get
 		{
-			return _BackColor;
+			return _Owner?.VisualTheme != null && _BackColor.ToArgb() == Color.FromArgb(200, 64, 64, 64).ToArgb()
+				? _Owner.VisualTheme.Surface : _BackColor;
 		}
 		protected set
 		{
@@ -815,7 +820,7 @@ public abstract class STNode : INotifyPropertyChanged
 		int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
 		if (_BackColor.A != 0)
 		{
-			dt.SolidBrush.Color = _BackColor;
+			dt.SolidBrush.Color = BackColor;
 			if (cornerRadius > 0)
 			{
 				graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -848,7 +853,7 @@ public abstract class STNode : INotifyPropertyChanged
 		SolidBrush solidBrush = dt.SolidBrush;
 		if (_TitleColor.A != 0)
 		{
-			solidBrush.Color = _TitleColor;
+			solidBrush.Color = _Owner?.VisualTheme?.TitleSurface(_TitleColor) ?? _TitleColor;
 			int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
 			if (cornerRadius > 0)
 			{
@@ -870,7 +875,7 @@ public abstract class STNode : INotifyPropertyChanged
 			progressRectangle.Width = (int)Math.Round(progressRectangle.Width * _TitleProgress);
 			if (progressRectangle.Width > 0)
 			{
-				solidBrush.Color = _TitleProgressColor;
+				solidBrush.Color = _Owner?.VisualTheme?.TitleProgress(_TitleProgressColor) ?? _TitleProgressColor;
 				int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
 				if (cornerRadius > 0)
 				{
@@ -916,7 +921,7 @@ public abstract class STNode : INotifyPropertyChanged
 	protected virtual Rectangle GetTitleTextRectangle()
 	{
 		Rectangle rectangle = TitleRectangle;
-		rectangle.Offset(0, 2);
+		rectangle.Offset(0, TitleVerticalOffset);
 		return rectangle;
 	}
 
@@ -995,7 +1000,7 @@ public abstract class STNode : INotifyPropertyChanged
 			SolidBrush solidBrush = dt.SolidBrush;
 			m_sf.LineAlignment = StringAlignment.Center;
 			graphics.SmoothingMode = SmoothingMode.None;
-			solidBrush.Color = _MarkColor;
+			solidBrush.Color = _Owner?.VisualTheme?.TitleSurface(_MarkColor) ?? _MarkColor;
 			graphics.FillRectangle(solidBrush, _MarkRectangle);
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
 			SizeF sizeF = graphics.MeasureString(Mark, Font, _MarkRectangle.Width);
@@ -1027,18 +1032,8 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			return;
 		}
-		if (op.DotColor != Color.Transparent)
-		{
-			solidBrush.Color = op.DotColor;
-		}
-		else if (op.DataType == typeFromHandle)
-		{
-			pen.Color = Owner.UnknownTypeColor;
-		}
-		else
-		{
-			solidBrush.Color = (Owner.TypeColor.ContainsKey(op.DataType) ? Owner.TypeColor[op.DataType] : Owner.UnknownTypeColor);
-		}
+		solidBrush.Color = Owner.GetOptionColor(op);
+		pen.Color = solidBrush.Color;
 		if (op.IsSingle)
 		{
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
@@ -1082,7 +1077,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			m_sf.Alignment = StringAlignment.Far;
 		}
-		solidBrush.Color = op.TextColor;
+		solidBrush.Color = _Owner?.VisualTheme?.ResolveText(op.TextColor) ?? op.TextColor;
 		graphics.DrawString(op.Text, Font, solidBrush, op.TextRectangle, m_sf);
 	}
 
@@ -1156,9 +1151,9 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			sizeF = g.MeasureString(Title, Font);
 		}
-		if (sizeF.Width + 30f > (float)num3)
+		if (sizeF.Width + TitleHorizontalPadding > (float)num3)
 		{
-			num3 = (int)sizeF.Width + 30;
+			num3 = (int)sizeF.Width + TitleHorizontalPadding;
 		}
 		return new Size(num3, height);
 	}

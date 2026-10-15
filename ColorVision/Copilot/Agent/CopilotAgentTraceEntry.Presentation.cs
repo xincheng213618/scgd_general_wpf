@@ -1,11 +1,7 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Text;
 
 namespace ColorVision.Copilot
 {
@@ -63,54 +59,54 @@ namespace ColorVision.Copilot
                 ? (sharedCapability.Presentation.RunningLabel, sharedCapability.Presentation.CompletedLabel)
                 : ToolName switch
             {
-                "FetchUrl" => ("正在读取网页", "读取了网页"),
-                "WebSearch" => ("正在搜索网页", "搜索了网页"),
-                "ReadAttachedFile" => ("正在读取文件", "读取了文件"),
-                "DelegateExplore" => ("正在委派代码探索", "委派了代码探索"),
-                "DelegateScout" => ("正在查阅外部资料", "查阅了外部资料"),
-                _ when ToolName.StartsWith("Delegate", StringComparison.Ordinal) => ("正在委派子任务", "委派了子任务"),
-                "QueryFlowExecutionStats" or "QueryDatabaseSql" => ("正在查询数据库", "查询了数据库"),
-                "ExecuteDatabaseSql" => ("正在执行数据库 SQL", "执行了数据库 SQL"),
-                "InspectWindowsSystem" => ("正在检查系统", "检查了系统"),
-                "InspectWindowsProcesses" => ("正在检查进程", "检查了进程"),
-                "InspectWindowsServices" => ("正在检查服务", "检查了服务"),
-                "InspectTcpPort" => ("正在检查端口", "检查了端口"),
-                "InspectGitWorkingTree" => ("正在检查工作树", "检查了工作树"),
-                "InspectGitDiff" => ("正在读取 Git 差异", "读取了 Git 差异"),
-                "RunShellCommand" => ("正在运行命令", "运行了命令"),
-                "ReadShellCommandOutput" => ("正在读取命令输出", "读取了命令输出"),
-                "StartBackgroundShellCommand" => ("正在启动后台命令", "启动了后台命令"),
-                "InspectBackgroundShellCommands" => ("正在检查后台命令", "检查了后台命令"),
-                "ReadBackgroundShellCommandOutput" => ("正在读取后台输出", "读取了后台输出"),
-                "MonitorBackgroundShellCommandOutput" => ("正在监控后台输出", "监控了后台输出"),
-                "StopBackgroundShellCommandOutputMonitor" => ("正在停止后台输出监控", "停止了后台输出监控"),
-                "WaitForBackgroundShellCommand" => ("正在等待后台命令", "等待了后台命令"),
-                "WaitForBackgroundShellCommands" => ("正在等待多个后台命令", "等待了多个后台命令"),
-                "StopBackgroundShellCommand" => ("正在停止后台命令", "停止了后台命令"),
-                "ConvertBatchImages" => ("正在转换图像", "转换了图像"),
-                "PreviewWorkspacePatchEnvelope" => ("正在准备修改", "准备了修改"),
-                "ApplyWorkspacePatchEnvelope" => ("正在修改文件", "修改了文件"),
-                "RollbackWorkspacePatchEnvelope" => ("正在回滚修改", "回滚了修改"),
-                _ => ($"正在运行 {ToolName}", $"运行了 {ToolName}"),
+                "FetchUrl" => (LocalizedText.Get("正在读取网页"), LocalizedText.Get("读取了网页")),
+                "WebSearch" => (LocalizedText.Get("正在搜索网页"), LocalizedText.Get("搜索了网页")),
+                "ReadAttachedFile" => (LocalizedText.Get("正在读取文件"), LocalizedText.Get("读取了文件")),
+                "DelegateExplore" => (LocalizedText.Get("正在委派代码探索"), LocalizedText.Get("委派了代码探索")),
+                "DelegateScout" => (LocalizedText.Get("正在查阅外部资料"), LocalizedText.Get("查阅了外部资料")),
+                _ when ToolName.StartsWith("Delegate", StringComparison.Ordinal) => (LocalizedText.Get("正在委派子任务"), LocalizedText.Get("委派了子任务")),
+                "QueryFlowExecutionStats" or "QueryDatabaseSql" => (LocalizedText.Get("正在查询数据库"), LocalizedText.Get("查询了数据库")),
+                "ExecuteDatabaseSql" => (LocalizedText.Get("正在执行数据库 SQL"), LocalizedText.Get("执行了数据库 SQL")),
+                "InspectWindowsSystem" => (LocalizedText.Get("正在检查系统"), LocalizedText.Get("检查了系统")),
+                "InspectWindowsProcesses" => (LocalizedText.Get("正在检查进程"), LocalizedText.Get("检查了进程")),
+                "InspectWindowsServices" => (LocalizedText.Get("正在检查服务"), LocalizedText.Get("检查了服务")),
+                "InspectTcpPort" => (LocalizedText.Get("正在检查端口"), LocalizedText.Get("检查了端口")),
+                "InspectGitWorkingTree" => (LocalizedText.Get("正在检查工作树"), LocalizedText.Get("检查了工作树")),
+                "InspectGitDiff" => (LocalizedText.Get("正在读取 Git 差异"), LocalizedText.Get("读取了 Git 差异")),
+                "RunShellCommand" => (LocalizedText.Get("正在运行命令"), LocalizedText.Get("运行了命令")),
+                "ReadShellCommandOutput" => (LocalizedText.Get("正在读取命令输出"), LocalizedText.Get("读取了命令输出")),
+                "StartBackgroundShellCommand" => (LocalizedText.Get("正在启动后台命令"), LocalizedText.Get("启动了后台命令")),
+                "InspectBackgroundShellCommands" => (LocalizedText.Get("正在检查后台命令"), LocalizedText.Get("检查了后台命令")),
+                "ReadBackgroundShellCommandOutput" => (LocalizedText.Get("正在读取后台输出"), LocalizedText.Get("读取了后台输出")),
+                "MonitorBackgroundShellCommandOutput" => (LocalizedText.Get("正在监控后台输出"), LocalizedText.Get("监控了后台输出")),
+                "StopBackgroundShellCommandOutputMonitor" => (LocalizedText.Get("正在停止后台输出监控"), LocalizedText.Get("停止了后台输出监控")),
+                "WaitForBackgroundShellCommand" => (LocalizedText.Get("正在等待后台命令"), LocalizedText.Get("等待了后台命令")),
+                "WaitForBackgroundShellCommands" => (LocalizedText.Get("正在等待多个后台命令"), LocalizedText.Get("等待了多个后台命令")),
+                "StopBackgroundShellCommand" => (LocalizedText.Get("正在停止后台命令"), LocalizedText.Get("停止了后台命令")),
+                "ConvertBatchImages" => (LocalizedText.Get("正在转换图像"), LocalizedText.Get("转换了图像")),
+                "PreviewWorkspacePatchEnvelope" => (LocalizedText.Get("正在准备修改"), LocalizedText.Get("准备了修改")),
+                "ApplyWorkspacePatchEnvelope" => (LocalizedText.Get("正在修改文件"), LocalizedText.Get("修改了文件")),
+                "RollbackWorkspacePatchEnvelope" => (LocalizedText.Get("正在回滚修改"), LocalizedText.Get("回滚了修改")),
+                _ => (LocalizedText.Format($"正在运行 {ToolName}"), LocalizedText.Format($"运行了 {ToolName}")),
             };
 
             if (State == CopilotToolExecutionState.Completed
                 && WorkspaceChangeSetRolledBack
                 && string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal))
             {
-                return completed + " · 已撤销";
+                return completed + LocalizedText.Get(" · 已撤销");
             }
 
             return State switch
             {
                 CopilotToolExecutionState.Pending => BuildWaitingActivityLabel(running),
                 CopilotToolExecutionState.Running => running,
-                CopilotToolExecutionState.AwaitingApproval => completed + " · 等待批准",
-                CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut => completed + " · 失败",
-                CopilotToolExecutionState.Denied => completed + " · 未批准",
-                CopilotToolExecutionState.Cancelled => completed + " · 已取消",
-                CopilotToolExecutionState.Interrupted => completed + " · 已中断",
-                CopilotToolExecutionState.Completed when HasPartialResult => completed + " · 结果不完整",
+                CopilotToolExecutionState.AwaitingApproval => completed + LocalizedText.Get(" · 等待批准"),
+                CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut => completed + LocalizedText.Get(" · 失败"),
+                CopilotToolExecutionState.Denied => completed + LocalizedText.Get(" · 未批准"),
+                CopilotToolExecutionState.Cancelled => completed + LocalizedText.Get(" · 已取消"),
+                CopilotToolExecutionState.Interrupted => completed + LocalizedText.Get(" · 已中断"),
+                CopilotToolExecutionState.Completed when HasPartialResult => completed + LocalizedText.Get(" · 结果不完整"),
                 _ => completed,
             };
         }
@@ -119,8 +115,8 @@ namespace ColorVision.Copilot
         {
             const string runningPrefix = "正在";
             return runningLabel.StartsWith(runningPrefix, StringComparison.Ordinal)
-                ? "等待" + runningLabel[runningPrefix.Length..]
-                : "等待运行";
+                ? LocalizedText.Get("等待") + runningLabel[runningPrefix.Length..]
+                : LocalizedText.Get("等待运行");
         }
 
         private bool IsFailedSearchAttempt()

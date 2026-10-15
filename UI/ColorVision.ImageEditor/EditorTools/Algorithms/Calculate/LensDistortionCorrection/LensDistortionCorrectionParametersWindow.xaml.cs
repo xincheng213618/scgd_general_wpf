@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -38,7 +39,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
             PropertyEditorWindow editor = new(Parameters, PropertyEditorEditMode.Transactional)
             {
                 Owner = this,
-                Title = "镜头畸变校正参数",
+                Title = LocalizedText.Get("镜头畸变校正参数"),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             editor.Submitted += (_, _) => submitted = true;
@@ -110,13 +111,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
         private void UpdateSummary()
         {
             SummaryText.Text = string.Format(CultureInfo.InvariantCulture,
-                "Preset: {0}\n内参: Fx={1:G10}px  Fy={2:G10}px  主点={3} ({4:G10}, {5:G10})px\n畸变: K1={6:G8}  K2={7:G8}  P1={8:G8}  P2={9:G8}  K3={10:G8}  K4={11:G8}  K5={12:G8}  K6={13:G8}\n输出: {14}  Alpha={15:G5}  插值={16}  边界={17}\n标定: source={18}  version={19}  checksum={20}",
-                PresetId ?? "(未命名)", Parameters.FxPixels, Parameters.FyPixels, Parameters.PrincipalPointMode,
+                LocalizedText.Get("Preset: {0}\n内参: Fx={1:G10}px  Fy={2:G10}px  主点={3} ({4:G10}, {5:G10})px\n畸变: K1={6:G8}  K2={7:G8}  P1={8:G8}  P2={9:G8}  K3={10:G8}  K4={11:G8}  K5={12:G8}  K6={13:G8}\n输出: {14}  Alpha={15:G5}  插值={16}  边界={17}\n标定: source={18}  version={19}  checksum={20}"),
+                PresetId ?? LocalizedText.Get("(未命名)"), Parameters.FxPixels, Parameters.FyPixels, Parameters.PrincipalPointMode,
                 Parameters.PrincipalPointX, Parameters.PrincipalPointY,
                 Parameters.K1, Parameters.K2, Parameters.P1, Parameters.P2, Parameters.K3, Parameters.K4, Parameters.K5, Parameters.K6,
                 Parameters.OutputCameraMode, Parameters.OptimalAlpha, Parameters.Interpolation, Parameters.Border,
                 Parameters.CalibrationSource, Parameters.CalibrationVersion,
-                string.IsNullOrWhiteSpace(Parameters.CalibrationChecksum) ? "(未提供)" : Parameters.CalibrationChecksum);
+                string.IsNullOrWhiteSpace(Parameters.CalibrationChecksum) ? LocalizedText.Get("(未提供)") : Parameters.CalibrationChecksum);
         }
     }
 }

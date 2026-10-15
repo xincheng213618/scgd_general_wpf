@@ -6,14 +6,18 @@
         xmlns:local="clr-namespace:ColorVision.Themes.Controls.Uploads"
         xmlns:properties="clr-namespace:ColorVision.Themes.Properties"
         mc:Ignorable="d"
-        Title="UploadMsg" Height="450" Width="800" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="UploadMsg" Height="450" Width="800"
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}"
+        Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="1" Text="{Binding Msg}"  Margin="5" FontSize="17" HorizontalAlignment="Center"/>
-        <ListView Grid.Row="0" ItemsSource="{Binding UploadList}" Background="Transparent" Padding="0">
+        <TextBlock Grid.Row="1" Text="{Binding Msg}" Margin="5" FontSize="17" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource GlobalTextBrush}"/>
+        <ListView Grid.Row="0" ItemsSource="{Binding UploadList}" Background="Transparent" Padding="0"
+                  Foreground="{DynamicResource GlobalTextBrush}">
             <ListView.Resources >
                 <ContextMenu x:Key="ContextMenuItem">
                 </ContextMenu>
@@ -21,6 +25,7 @@
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
                     <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.View >
@@ -29,27 +34,28 @@
                         <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
                             <Setter Property="Visibility" Value="Visible"/>
                             <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                             <Setter Property="BorderThickness" Value="0"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn  Header="{x:Static properties:Resources.Upload_File}" Width="400">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type local:FileUploadInfo}">
-                                <TextBlock Text="{Binding FileName}"/>
+                                <TextBlock Text="{Binding FileName}" Foreground="{DynamicResource GlobalTextBrush}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="{x:Static properties:Resources.Upload_FileSize}" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type local:FileUploadInfo}">
-                                <TextBlock Text="{Binding FileSize}"/>
+                                <TextBlock Text="{Binding FileSize}" Foreground="{DynamicResource GlobalTextBrush}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn  Header="{x:Static properties:Resources.Upload_Result}" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type local:FileUploadInfo}">
-                                <TextBlock Text="{Binding UploadStatus}"/>
+                                <TextBlock Text="{Binding UploadStatus}" Foreground="{DynamicResource GlobalTextBrush}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

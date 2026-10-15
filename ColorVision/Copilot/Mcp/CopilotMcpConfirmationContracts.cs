@@ -1,5 +1,5 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ColorVision.Copilot.Mcp
@@ -36,12 +36,12 @@ namespace ColorVision.Copilot.Mcp
 
         public string RequesterLabel => CopilotApprovalReviewTextEncoder.Encode(SourceKind switch
             {
-                CopilotApprovalSourceKind.InAppAgent => "ColorVision Copilot 任务",
+                CopilotApprovalSourceKind.InAppAgent => LocalizedText.Get("ColorVision Copilot 任务"),
                 CopilotApprovalSourceKind.ExternalMcp => string.IsNullOrWhiteSpace(RequestSource)
-                    ? "外部 MCP 客户端"
-                    : $"外部 MCP 客户端 · {RequestSource}",
-                CopilotApprovalSourceKind.ColorVisionUi => "ColorVision 本地界面",
-                _ => "来源未标记的本地操作",
+                    ? LocalizedText.Get("外部 MCP 客户端")
+                    : LocalizedText.Format($"外部 MCP 客户端 · {RequestSource}"),
+                CopilotApprovalSourceKind.ColorVisionUi => LocalizedText.Get("ColorVision 本地界面"),
+                _ => LocalizedText.Get("来源未标记的本地操作"),
             });
 
         public string TaskScopeLabel
@@ -51,21 +51,21 @@ namespace ColorVision.Copilot.Mcp
                 if (!string.IsNullOrWhiteSpace(TaskLabel))
                     return CopilotApprovalReviewTextEncoder.Encode(TaskLabel);
                 if (!string.IsNullOrWhiteSpace(TaskId))
-                    return CopilotApprovalReviewTextEncoder.Encode($"任务 {ShortId(TaskId)}");
+                    return CopilotApprovalReviewTextEncoder.Encode(LocalizedText.Format($"任务 {ShortId(TaskId)}"));
                 if (!string.IsNullOrWhiteSpace(ConversationId))
-                    return CopilotApprovalReviewTextEncoder.Encode($"会话 {ShortId(ConversationId)}");
+                    return CopilotApprovalReviewTextEncoder.Encode(LocalizedText.Format($"会话 {ShortId(ConversationId)}"));
                 return SourceKind == CopilotApprovalSourceKind.ExternalMcp
-                    ? "外部 MCP 请求"
-                    : "当前应用操作";
+                    ? LocalizedText.Get("外部 MCP 请求")
+                    : LocalizedText.Get("当前应用操作");
             }
         }
 
         public string WorkspaceLabel => string.IsNullOrWhiteSpace(WorkspacePath)
-            ? "当前 ColorVision 应用"
+            ? LocalizedText.Get("当前 ColorVision 应用")
             : CopilotApprovalReviewTextEncoder.Encode(WorkspacePath);
 
         public string ImpactLabel => string.IsNullOrWhiteSpace(ImpactSummary)
-            ? "请根据操作说明和参数确认影响范围。"
+            ? LocalizedText.Get("请根据操作说明和参数确认影响范围。")
             : CopilotApprovalReviewTextEncoder.Encode(ImpactSummary);
 
         public string ReversibilityLabel
@@ -76,10 +76,10 @@ namespace ColorVision.Copilot.Mcp
                     return CopilotApprovalReviewTextEncoder.Encode(ReversibilitySummary);
                 return Reversibility switch
                 {
-                    CopilotApprovalReversibility.AutomaticUntilExpiry => "支持在有效期内自动撤销。",
-                    CopilotApprovalReversibility.ManualOnly => "只能通过后续手动操作恢复。",
-                    CopilotApprovalReversibility.NotReversible => "此操作无法由 Copilot 自动撤销。",
-                    _ => "此工具未声明自动撤销能力；请在批准前核对影响。",
+                    CopilotApprovalReversibility.AutomaticUntilExpiry => LocalizedText.Get("支持在有效期内自动撤销。"),
+                    CopilotApprovalReversibility.ManualOnly => LocalizedText.Get("只能通过后续手动操作恢复。"),
+                    CopilotApprovalReversibility.NotReversible => LocalizedText.Get("此操作无法由 Copilot 自动撤销。"),
+                    _ => LocalizedText.Get("此工具未声明自动撤销能力；请在批准前核对影响。"),
                 };
             }
         }

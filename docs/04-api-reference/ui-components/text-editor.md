@@ -5,7 +5,7 @@ status: "current"
 summary: "AvalonEdit 编辑器的代码地图、字体、查找替换、自动配对、文档内补全与符号导航，以及后台分析和 JSON 诊断边界。"
 aliases: ["文本编辑器", "代码地图", "代码缩略图", "Minimap", "Map Mode", "悬停代码预览", "AvalonEditControll", "EditorMinimap", "EditorPreferences", "EditorSearchBar", "EditorFoldingStrategy", "EditorCodeAnalysis", "EditorTypingAssistance", "字体缩放", "Python折叠", "查找替换", "跳转到行", "自动配对", "代码补全", "代码片段", "符号导航", "JSON诊断"]
 code_paths: ["UI/ColorVision.Solution/Editor/AvalonEditor", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Themes/Themes/Integrations/Editor.Dark.xaml", "UI/ColorVision.Themes/Themes/Integrations/Editor.Light.xaml"]
-test_paths: ["Test/ColorVision.UI.Tests/ProfessionalEditorTests.cs", "Test/ColorVision.UI.Tests/AvalonEditorSupportTests.cs"]
+test_paths: []
 related: ["ui.documents", "ui.themes", "ui.configuration", "operations.terminal"]
 ---
 
@@ -80,6 +80,6 @@ Python 使用缩进块折叠，处理多行函数头，并避开字符串、注�
 
 ## 验证
 
-`ProfessionalEditorTests` 覆盖 Python 多行头/文档字符串和括号折叠、注释选区边界、整行移动及复制的换行与撤销、搜索模式和替换上限、JSON 原文与撤销清脏、真实 WPF 地图滚动/换行定位、预览不改变选区、隐藏后恢复及查找栏全部替换。输入用例覆盖自动配对、成对删除、三引号、换行缩进、片段占位符、实际补全窗口的插入与撤销；集成用例通过共享控件的符号列表和 JSON 错误提示验证定位。长文件用例覆盖 10,000 行与 100,000 行文档的地图定位、编辑刷新和撤销。`AvalonEditorSupportTests` 覆盖已有语法颜色、编码保存、撤销重做和脚本命令契约。
+输入用例覆盖自动配对、成对删除、三引号、换行缩进、片段占位符、实际补全窗口的插入与撤销；集成用例通过共享控件的符号列表和 JSON 错误提示验证定位。长文件用例覆盖 10,000 行与 100,000 行文档的地图定位、编辑刷新和撤销。
 
 在真实窗口补充检查明暗主题、字体、缩放、地图拖动、悬停预览、查找与跳转输入焦点，以及长文件输入响应。局部测试或编译不等于完整主程序、真实 Python 环境或所有语言语义已验证。

@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Compilation;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib.Base;
@@ -18,6 +19,39 @@ public sealed class CompatibilityNodeMigrationTests
     // They contain synthetic template names/ranges and a chain of 30 nodes, never user data.
     private static byte[] ReadCanvas() => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "Flow", "EditorNodes.before.stn"));
     private static JArray ReadContracts() => JArray.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "Flow", "EditorNodes.before.json")));
+
+    [Theory]
+    [InlineData(typeof(LocalRealPoiNode), "IN_CIE")]
+    [InlineData(typeof(LocalCalibrationRealPoiNode), "IN_IMG")]
+    public void LocalRealtimePoiLoadsLegacyOverridesWithoutRestoringOrResavingThem(Type type, string imageInput) => StaTest.Run(() =>
+    {
+        var node = (STNode)Activator.CreateInstance(type)!;
+        node.Create();
+        var legacy = new Dictionary<string, byte[]>
+        {
+            ["Title"] = Encoding.UTF8.GetBytes("自定义测量"),
+            ["POITempName"] = Encoding.UTF8.GetBytes("旧备用模板"),
+            ["POIType"] = Encoding.UTF8.GetBytes("Circle"),
+            ["POIWidth"] = Encoding.UTF8.GetBytes("40"),
+            ["POIHeight"] = Encoding.UTF8.GetBytes("20"),
+            ["POIFilterTempName"] = Encoding.UTF8.GetBytes("旧过滤模板"),
+            ["POIReviseTempName"] = Encoding.UTF8.GetBytes("旧修正模板")
+        };
+        node.OnLoadNode(legacy);
+        Assert.Equal("自定义测量", node.Title);
+        Assert.Equal(new[] { imageInput, "IN_POI" }, node.GetAllInputOptions().Select(input => input.Text));
+        using var reader = new BinaryReader(new MemoryStream(node.GetSaveData()));
+        Assert.EndsWith("|" + type.FullName, Encoding.UTF8.GetString(reader.ReadBytes(reader.ReadByte())));
+        reader.ReadBytes(reader.ReadByte());
+        var saved = ReadProperties(reader);
+        Assert.Equal(legacy["Title"], saved["Title"]);
+        foreach (string key in legacy.Keys.Where(key => key != "Title"))
+            Assert.DoesNotContain(key, saved.Keys);
+        InvalidOperationException missingInput = Assert.Throws<InvalidOperationException>(() => LocalRealPoiInputResolver.Resolve(-1, -1, imageInput));
+        Assert.Contains("连接上游关注点布点节点", missingInput.Message);
+        InvalidOperationException swappedInput = Assert.Throws<InvalidOperationException>(() => LocalRealPoiInputResolver.Resolve(1, (int)CVCommCore.CVResultType.Camera_Img, imageInput));
+        Assert.Contains($"图像应连接 {imageInput}", swappedInput.Message);
+    });
 
     [Fact]
     public void MigratedEditorNodesPreservePersistedPropertiesConnectionsAndServiceRequests() => StaTest.Run(() =>
@@ -63,7 +97,18 @@ public sealed class CompatibilityNodeMigrationTests
         for (int i = 0; i < container.Nodes.Count; i++)
         {
             Type type = container.Nodes[i].GetType();
-            Assert.Equal((string?)contracts[i]["menu"], type.GetCustomAttribute<STNodeAttribute>()?.Path);
+            string? legacyMenuPath = (string?)contracts[i]["menu"];
+            STNodeAttribute? nodeAttribute = type.GetCustomAttribute<STNodeAttribute>();
+            if (legacyMenuPath == null)
+            {
+                Assert.Null(nodeAttribute);
+            }
+            else
+            {
+                Assert.NotNull(nodeAttribute);
+                Assert.Equal(RemoveLegacyMenuSortPrefix(legacyMenuPath), nodeAttribute.Path);
+                Assert.Equal(GetExpectedCategoryOrder(legacyMenuPath), nodeAttribute.CategoryOrder);
+            }
             PropertyInfo[] edited = type.GetProperties().Where(p => p.DeclaringType == type && p.GetCustomAttribute<PropertyEditorTypeAttribute>() != null).ToArray();
             Assert.Contains(edited, p => p.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType?.Assembly == typeof(DeviceCamera).Assembly);
             Assert.All(edited, p => Assert.DoesNotContain("FlowEngineLib.PropertyEditor", p.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType!.FullName!));
@@ -75,6 +120,38 @@ public sealed class CompatibilityNodeMigrationTests
         Assert.Same(typeof(CVBaseServerNode).Assembly, typeof(FlowEngineLib.Node.Algorithm.AlgDataLoadNode2).Assembly);
         Assert.Same(typeof(CVBaseServerNode).Assembly, typeof(FlowEngineLib.Node.Algorithm.AlgDataConvertNode).Assembly);
     });
+
+    private static string RemoveLegacyMenuSortPrefix(string path)
+    {
+        int separator = path.IndexOf(' ');
+        return separator >= 0 ? path[(separator + 1)..] : path;
+    }
+
+    private static int GetExpectedCategoryOrder(string legacyPath)
+    {
+        string prefix = legacyPath.Split(' ', 2)[0];
+        return prefix switch
+        {
+            "00" => 0,
+            "01" => 100,
+            "02" => 200,
+            "03_1" => 310,
+            "03_2" => 320,
+            "03_3" when legacyPath.EndsWith("Image", StringComparison.Ordinal) => 330,
+            "03_3" => 331,
+            "03_4" => 340,
+            "03_5" => 350,
+            "04" => 400,
+            "05" => 500,
+            "06" => 600,
+            "07" => 700,
+            "09" => 900,
+            "10" => 1000,
+            "11" => 1100,
+            "12" => 1200,
+            _ => int.MaxValue,
+        };
+    }
 
     private static void AssertPropertiesAndConnections(byte[] before, byte[] after, bool editorLayout = false)
     {

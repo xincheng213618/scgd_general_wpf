@@ -278,34 +278,51 @@ namespace ColorVision.Engine.Media
             }
         }
 
+        /// <summary>Copies display pixels straight into WPF's back buffer, including 16-bit BGR/RGB conversion.</summary>
+        public static WriteableBitmap CreateDisplayBitmap(this Mat srcMat)
+        {
+            if (!TryGetDisplayPixelFormat(srcMat.Type(), out PixelFormat format))
+                return srcMat.ToWriteableBitmap();
+
+            WriteableBitmap bitmap = new(srcMat.Cols, srcMat.Rows, 96, 96, format, null);
+            if (!srcMat.MatUpdateWriteableBitmap(bitmap))
+                throw new InvalidOperationException("Failed to copy display pixels into WriteableBitmap.");
+            return bitmap;
+        }
+
+        private static bool TryGetDisplayPixelFormat(MatType type, out PixelFormat format)
+        {
+            if (type == MatType.CV_8UC1)
+                format = PixelFormats.Gray8;
+            else if (type == MatType.CV_16UC1)
+                format = PixelFormats.Gray16;
+            else if (type == MatType.CV_32FC1)
+                format = PixelFormats.Gray32Float;
+            else if (type == MatType.CV_8UC3)
+                format = PixelFormats.Bgr24;
+            else if (type == MatType.CV_8UC4)
+                format = PixelFormats.Bgra32;
+            else if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3)
+                format = PixelFormats.Rgb48;
+            else if (type == MatType.CV_16UC4 || type == MatType.CV_16SC4)
+                format = PixelFormats.Rgba64;
+            else
+            {
+                format = default;
+                return false;
+            }
+            return true;
+        }
+
         public static bool MatUpdateWriteableBitmap(this Mat srcMat, WriteableBitmap writeableBitmap)
         {
             if (writeableBitmap.IsFrozen) return false;
             if (writeableBitmap.PixelWidth != srcMat.Cols || writeableBitmap.PixelHeight != srcMat.Rows)
                 return false;
 
-            // 相同的每像素字节数不代表格式兼容，例如 CV_32FC1 和 BGRA32 都是 4 字节。
-            // 这里只复用 OpenCvSharp 转换器会为该 MatType 创建的精确 WPF 格式。
+            // Equal byte counts do not imply compatible formats (for example float gray and BGRA32).
             MatType type = srcMat.Type();
-            PixelFormat expectedFormat;
-            if (type == MatType.CV_8UC1)
-                expectedFormat = PixelFormats.Gray8;
-            else if (type == MatType.CV_16UC1)
-                expectedFormat = PixelFormats.Gray16;
-            else if (type == MatType.CV_32FC1)
-                expectedFormat = PixelFormats.Gray32Float;
-            else if (type == MatType.CV_8UC3)
-                expectedFormat = PixelFormats.Bgr24;
-            else if (type == MatType.CV_8UC4)
-                expectedFormat = PixelFormats.Bgra32;
-            else if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3)
-                expectedFormat = PixelFormats.Rgb48;
-            else if (type == MatType.CV_16UC4 || type == MatType.CV_16SC4)
-                expectedFormat = PixelFormats.Rgba64;
-            else
-                return false;
-
-            if (writeableBitmap.Format != expectedFormat)
+            if (!TryGetDisplayPixelFormat(type, out PixelFormat format) || writeableBitmap.Format != format)
                 return false;
 
             writeableBitmap.Lock();
@@ -353,7 +370,7 @@ namespace ColorVision.Engine.Media
                 WriteableBitmap writeableBitmap = null;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    writeableBitmap = src.ToWriteableBitmap();
+                    writeableBitmap = src.CreateDisplayBitmap();
                 });
                 return writeableBitmap;
             }

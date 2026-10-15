@@ -46,7 +46,7 @@ namespace ColorVision.Database
             SelectAllCommand = new RelayCommand(_ => SetAllExistingTablesSelected(true), _ => !IsBusy && SupportsTableCleanup && ExistingTableCount > 0);
             ClearSelectionCommand = new RelayCommand(_ => SetAllExistingTablesSelected(false), _ => !IsBusy && SelectedTableCount > 0);
             CleanupSelectedCommand = new RelayCommand(_ => ExecuteCleanupSelected(), _ => !IsBusy && SupportsTableCleanup && SelectedTableCount > 0);
-            CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy && ExistingTableCount > 0);
+            CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy && ExistingTableCount > 0 && IsKeepMonthsValid);
             CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => !IsBusy && ExistingTableCount > 0);
             MigrationCommand = new RelayCommand(_ => ExecuteMigration(), _ => !IsBusy && SupportsMigration && HasPendingMigration && ExistingTableCount > 0);
             OptimizationCommand = new RelayCommand(_ => ExecuteOptimization(), _ => !IsBusy && SupportsOptimization && ExistingTableCount > 0);
@@ -101,10 +101,17 @@ namespace ColorVision.Database
             get => _keepMonthsText;
             set
             {
+                if (_keepMonthsText == value)
+                    return;
+
                 _keepMonthsText = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(IsKeepMonthsValid));
+                CommandManager.InvalidateRequerySuggested();
             }
         }
+
+        public bool IsKeepMonthsValid => TryGetKeepMonths(out _);
 
         public string Status
         {
@@ -148,10 +155,10 @@ namespace ColorVision.Database
         public int SelectedTableCount => Tables.Count(item => item.Exists && item.IsSelected);
         public long ExistingRowCount => Tables.Where(item => item.Exists).Sum(item => item.RowCount);
         public string ExistingSizeDisplay => FormatSize(Tables.Where(item => item.Exists).Sum(item => item.SizeBytes));
-        public string TableSummary => EngineLocalization.Format($"{ExistingTableCount:N0} 张表 · {ExistingRowCount:N0} 行 · {ExistingSizeDisplay}");
+        public string TableSummary => EngineLocalization.Format($"{ExistingTableCount:N0} 张表 · {ExistingRowCount:N0} 行") + Environment.NewLine + ExistingSizeDisplay;
         public string SelectionSummary => SelectedTableCount > 0
-            ? EngineLocalization.Format($"已选择 {SelectedTableCount:N0} 张表")
-            : EngineLocalization.Get("尚未选择数据表");
+            ? EngineLocalization.Format($"已勾选 {SelectedTableCount:N0} 张表 · {Tables.Where(item => item.Exists && item.IsSelected).Sum(item => item.RowCount):N0} 行")
+            : EngineLocalization.Get("尚未勾选数据表");
 
         public async Task RefreshAsync()
         {
@@ -261,7 +268,7 @@ namespace ColorVision.Database
         {
             var existingTableNames = GetExistingTableNames();
             string confirmMessage =
-                EngineLocalization.Format($"危险操作：将清空 {DisplayName} 中全部 {existingTableNames.Count:N0} 张可用数据表。") + Environment.NewLine + Environment.NewLine +
+                EngineLocalization.Format($"将清空 {DisplayName} 中全部 {existingTableNames.Count:N0} 张可用数据表。") + Environment.NewLine + Environment.NewLine +
                 BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
                 EngineLocalization.Get("全部数据清理后无法撤销，是否确定继续？");
 

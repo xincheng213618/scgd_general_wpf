@@ -106,7 +106,7 @@ namespace ColorVision.Copilot
                 if (markCompleted)
                     _completed = true;
                 else
-                    ThrowIfUnavailableNoLock();
+                    ThrowIfFailedNoLock();
             }
 
             if (_targetContext == null || IsOnTargetThread())
@@ -177,16 +177,18 @@ namespace ColorVision.Copilot
         private void ThrowIfFailed()
         {
             lock (_syncRoot)
-            {
-                if (_failure != null)
-                    throw new InvalidOperationException("Applying buffered Copilot UI updates failed.", _failure);
-            }
+                ThrowIfFailedNoLock();
+        }
+
+        private void ThrowIfFailedNoLock()
+        {
+            if (_failure != null)
+                throw new InvalidOperationException("Applying buffered Copilot UI updates failed.", _failure);
         }
 
         private void ThrowIfUnavailableNoLock()
         {
-            if (_failure != null)
-                throw new InvalidOperationException("Applying buffered Copilot UI updates failed.", _failure);
+            ThrowIfFailedNoLock();
             if (_completed)
                 throw new InvalidOperationException("The Copilot UI update buffer is already complete.");
         }

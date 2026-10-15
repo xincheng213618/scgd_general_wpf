@@ -201,7 +201,7 @@ namespace ColorVision.Copilot
                     ? "以上显示当前配置与会话值，不是正在运行任务的冻结值。当前运行已在请求启动时固定模型 Profile、Agent 预算、Skill 覆盖和外部 MCP 列表；设置修改只影响后续请求。临时权限仍受当前任务与到期时间约束。"
                     : "下一次请求会从上述当前值创建独立请求快照；临时权限仍按会话、工作区、任务与到期时间单独约束。")
                 .AppendLine("来源说明：文件状态按执行命令时重新探测；应用未保留每个键的启动期来源，因此文件在启动后被修改、删除或损坏时只报告“当前文件来源未证实”。")
-                .Append("脱敏：主配置文件仅探测节、schema、属性存在性与 Profile ID 元数据；运行期仅展示上述诊断字段，不输出 API Key、MCP Bearer、系统提示或自动复核策略正文、Shell 环境变量值、后端同步地址、Pref64 前缀或外部 MCP 地址；模型端点仅显示 origin。");
+                .Append("脱敏：主配置文件仅探测节、schema、属性存在性与 Profile ID 元数据；运行期仅展示上述诊断字段，不输出 API Key、MCP Bearer、系统提示或自动复核策略正文、Shell 环境变量值、Pref64 前缀或外部 MCP 地址；模型端点仅显示 origin。");
             return builder.ToString();
         }
 
@@ -225,13 +225,11 @@ namespace ColorVision.Copilot
                 : string.Equals(state.ActiveProfileId, profile.Id, StringComparison.Ordinal)
                     ? "ChatState ActiveProfileId"
                     : "应用首选 Profile";
-            var definitionSource = profile.IsBackendSynced
-                ? "后端同步快照"
-                : configProbe.PersistedProfileIds.Contains(profile.Id)
-                    ? "应用配置 CopilotConfig.Profiles"
-                    : configProbe.State == CopilotConfigFileProbeState.Loaded
-                        ? "运行时默认或迁移"
-                        : "已加载运行时 Profile（当前文件来源未证实）";
+            var definitionSource = configProbe.PersistedProfileIds.Contains(profile.Id)
+                ? "应用配置 CopilotConfig.Profiles"
+                : configProbe.State == CopilotConfigFileProbeState.Loaded
+                    ? "运行时默认或迁移"
+                    : "已加载运行时 Profile（当前文件来源未证实）";
             var credential = profile.CredentialNeedsReentry
                 ? "需重新输入"
                 : string.IsNullOrWhiteSpace(profile.ApiKey)

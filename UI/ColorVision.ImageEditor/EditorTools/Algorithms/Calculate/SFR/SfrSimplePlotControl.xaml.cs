@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Core;
 using ScottPlot;
 using System;
@@ -84,14 +85,14 @@ public partial class SfrSimplePlotControl : UserControl
             plot.Add.HorizontalLine(0.5, 1, ScottPlot.Colors.Gray, LinePattern.Dashed);
             plot.Add.HorizontalLine(0.1, 1, ScottPlot.Colors.Gray, LinePattern.Dotted);
             plot.Add.VerticalLine(0.5, 1, ScottPlot.Colors.Gray, LinePattern.Dashed);
-            plot.Axes.Bottom.Label.Text = "空间频率 (cycles/pixel)";
-            plot.Axes.Left.Label.Text = "MTF · 相对响应";
+            plot.Axes.Bottom.Label.Text = LocalizedText.Get("空间频率 (cycles/pixel)");
+            plot.Axes.Left.Label.Text = LocalizedText.Get("MTF · 相对响应");
             plot.Axes.SetLimits(0, extended ? 1 : 0.5, 0, Math.Max(1.05, allY.DefaultIfEmpty(1).Max() * 1.08));
         }
         else
         {
-            plot.Axes.Bottom.Label.Text = "边缘法线方向位置 (pixel)";
-            plot.Axes.Left.Label.Text = view == 1 ? "ESF · 归一化边缘信号" : "LSF · 响应 / pixel";
+            plot.Axes.Bottom.Label.Text = LocalizedText.Get("边缘法线方向位置 (pixel)");
+            plot.Axes.Left.Label.Text = view == 1 ? LocalizedText.Get("ESF · 归一化边缘信号") : LocalizedText.Get("LSF · 响应 / pixel");
             double low = Math.Min(0, allY.DefaultIfEmpty(0).Min());
             double high = Math.Max(view == 1 ? 1 : 0.1, allY.DefaultIfEmpty(1).Max());
             plot.Axes.SetLimits(-12, 12, low - (high - low) * 0.05, high + (high - low) * 0.08);

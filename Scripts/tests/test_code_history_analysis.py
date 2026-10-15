@@ -12,6 +12,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from code_history_analysis import collect_worktree, history_analysis, write_dashboard
 from count_code_lines import collect_counts, total_count
+from generate_code_history_dashboard import aggregate_periods, daily_snapshot_rows
 
 
 class WorktreeTests(unittest.TestCase):
@@ -74,7 +75,7 @@ class HistoryTests(unittest.TestCase):
     def test_complete_calendar_week_and_original_offset(self):
         nodes = [node("2026-08-31T01:00:00+08:00"), node("2026-09-07T23:00:00-05:00", 30, 8),
                  node("2026-09-13T12:00:00+08:00", 4, 10), node("2026-09-18T11:00:00+08:00")]
-        result = history_analysis(nodes, [], "HEAD", "now", "develop")
+        result = history_analysis(nodes, [], [], "HEAD", "now", "develop")
         self.assertEqual(result["recent_week"]["start"], "2026-09-07")
         self.assertEqual(result["recent_week"]["end"], "2026-09-13")
         self.assertEqual(result["recent_week"]["net"], 16)
@@ -85,9 +86,26 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(result["commits"][1]["weekday"], 0)
 
     def test_short_history_does_not_invent_complete_week(self):
-        result = history_analysis([node("2026-09-18T11:00:00+08:00")], [], "HEAD", "now", "test")
+        result = history_analysis([node("2026-09-18T11:00:00+08:00")], [], [], "HEAD", "now", "test")
         self.assertFalse(result["recent_week"]["available"])
         self.assertFalse(result["previous_week"]["available"])
+
+    def test_daily_snapshots_use_last_commit_and_carry_empty_days(self):
+        nodes = [node("2026-09-16T09:00:00+08:00"), node("2026-09-16T22:00:00+08:00"),
+                 node("2026-09-18T01:00:00+08:00")]
+        counts = {}
+        for index, item in enumerate(nodes):
+            counts[item.commit] = {"files": 1, "code": 10 + index, "comments": 2, "blanks": 3}
+            item.total_lines = 15 + index
+        days = daily_snapshot_rows(aggregate_periods(nodes, 0), counts)
+        self.assertEqual([row["date"] for row in days], ["2026-09-16", "2026-09-17", "2026-09-18"])
+        self.assertEqual([row["end_commit"] for row in days], [nodes[1].commit, nodes[1].commit, nodes[2].commit])
+        self.assertEqual([row["commits"] for row in days], [2, 0, 1])
+        self.assertEqual([row["code_lines"] for row in days], [11, 11, 12])
+        self.assertTrue(all(row["physical_lines"] == row["code_lines"] + row["comment_lines"] + row["blank_lines"]
+                            for row in days))
+        result = history_analysis(nodes, days, [], "HEAD", "now", "develop")
+        self.assertEqual(result["days"][-1]["date"], result["last"])
 
     def test_new_html_needs_no_existing_template_or_external_builder(self):
         with tempfile.TemporaryDirectory() as directory:

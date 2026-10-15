@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Cie;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
@@ -100,7 +101,7 @@ namespace ColorVision.ImageEditor
 
             CieChromaticity xy = CieColorConverter.RgbToCie1931xy(pixelSample.PreviewColor.R, pixelSample.PreviewColor.G, pixelSample.PreviewColor.B);
             SetSelectedXy(xy, pixelSample.PreviewColor, "RGB");
-            _analysisSample = CieAnalysisSample.Create("RGB", "", "sRGB 推算 / D65", CieInputSpace.SRgb,
+            _analysisSample = CieAnalysisSample.Create("RGB", "", LocalizedText.Get("sRGB 推算 / D65"), CieInputSpace.SRgb,
                 pixelSample.PreviewColor.R, pixelSample.PreviewColor.G, pixelSample.PreviewColor.B, CieSampleBasis.Relative, new());
             SampleAnalysis.SetSourceSample(_analysisSample);
             UpdateSelectedReadout();
@@ -460,7 +461,7 @@ namespace ColorVision.ImageEditor
             _selectedXy = xy.IsFinite ? xy : null;
             _analysisSample = null;
             if (xy.IsFinite && xy.X >= 0 && xy.Y > 0 && xy.X + xy.Y <= 1)
-                _analysisSample = CieAnalysisSample.Create(string.IsNullOrWhiteSpace(name) ? "当前点" : name[..Math.Min(name.Length, 200)], "", "CIE 当前色坐标", CieInputSpace.Xy, xy.X, xy.Y, 0, CieSampleBasis.ChromaticityOnly, new());
+                _analysisSample = CieAnalysisSample.Create(string.IsNullOrWhiteSpace(name) ? LocalizedText.Get("当前点") : name[..Math.Min(name.Length, 200)], "", LocalizedText.Get("CIE 当前色坐标"), CieInputSpace.Xy, xy.X, xy.Y, 0, CieSampleBasis.ChromaticityOnly, new());
             SampleAnalysis.SetSourceSample(_analysisSample);
             if (_selectedXy.HasValue)
             {
@@ -482,10 +483,10 @@ namespace ColorVision.ImageEditor
                 TextBlockSelectedXy.Text = "xy: --";
                 TextBlockSelectedUv1960.Text = "uv: --";
                 TextBlockSelectedUv1976.Text = "CIE 1976 u′v′: --";
-                TextBlockSelectedCct.Text = "相关色温 CCT: --";
-                TextBlockSelectedWavelength.Text = "主 / 补波长: —";
-                TextBlockSelectedPurity.Text = "激发纯度: —";
-                TextBlockSelectedWhiteDistance.Text = $"距 {CiePointReadout.GetWhiteName(_referenceSettings.White)} Δu′v′: —";
+                TextBlockSelectedCct.Text = LocalizedText.Get("相关色温 CCT: --");
+                TextBlockSelectedWavelength.Text = LocalizedText.Get("主 / 补波长: —");
+                TextBlockSelectedPurity.Text = LocalizedText.Get("激发纯度: —");
+                TextBlockSelectedWhiteDistance.Text = LocalizedText.Format($"距 {CiePointReadout.GetWhiteName(_referenceSettings.White)} Δu′v′: —");
                 return;
             }
 
@@ -504,14 +505,14 @@ namespace ColorVision.ImageEditor
             TextBlockSelectedCct.Text = details.CctText;
             TextBlockSelectedWavelength.Text = details.WavelengthText;
             TextBlockSelectedPurity.Text = details.PurityText;
-            TextBlockSelectedWhiteDistance.Text = $"距 {details.WhiteName} Δu′v′: {CieAnalysisRow.Format(details.DistanceToWhite, "F6")}";
+            TextBlockSelectedWhiteDistance.Text = LocalizedText.Format($"距 {details.WhiteName} Δu′v′: {CieAnalysisRow.Format(details.DistanceToWhite, "F6")}");
         }
 
         private void UpdateSelectedColorValues()
         {
             SelectedColorValues.Visibility = Visibility.Collapsed;
             string whiteName = CiePointReadout.GetWhiteName(_referenceSettings.White);
-            TextBlockSelectedConditions.Text = $"计算参考白：{whiteName} (x={_referenceSettings.WhiteX:F5}, y={_referenceSettings.WhiteY:F5})。白点与光谱边界外不定义波长；CCT 为近似值。";
+            TextBlockSelectedConditions.Text = LocalizedText.Format($"计算参考白：{whiteName} (x={_referenceSettings.WhiteX:F5}, y={_referenceSettings.WhiteY:F5})。白点与光谱边界外不定义波长；CCT 为近似值。");
             if (_analysisSample is not { Basis: not CieSampleBasis.ChromaticityOnly } sample) return;
             CieXyz white = _referenceSettings.WhiteFor(sample.Basis);
             CieLab lab = CieAnalysisMath.XyzToLab(sample.Xyz, white);
@@ -521,10 +522,10 @@ namespace ColorVision.ImageEditor
             TextBlockSelectedXyz.Text = $"XYZ: {F(sample.Xyz.X)}  {F(sample.Xyz.Y)}  {F(sample.Xyz.Z)}\nY: {F(sample.Xyz.Y)} {(sample.Basis == CieSampleBasis.Absolute ? "cd/m²" : "（sRGB 推算，相对值）")}";
             TextBlockSelectedLab.Text = $"Lab: {F(lab.L)}  {F(lab.A)}  {F(lab.B)}";
             TextBlockSelectedLuv.Text = $"Luv: {F(luv.L)}  {F(luv.U)}  {F(luv.V)}";
-            TextBlockSelectedChroma.Text = $"彩度 C*ab: {F(CieAnalysisMath.Chroma(lab))}  色相 hab: {F(CieAnalysisMath.Hue(lab))}°";
+            TextBlockSelectedChroma.Text = LocalizedText.Format($"彩度 C*ab: {F(CieAnalysisMath.Chroma(lab))}  色相 hab: {F(CieAnalysisMath.Hue(lab))}°");
             TextBlockSelectedConditions.Text += sample.Basis == CieSampleBasis.Absolute
-                ? $" Lab/Luv 参考白亮度 Yn={F(_referenceSettings.AbsoluteWhiteLuminance)} cd/m²。"
-                : " Lab/Luv 使用相对参考白 Y=100；sRGB 推算值不是仪器测量。";
+                ? LocalizedText.Format($" Lab/Luv 参考白亮度 Yn={F(_referenceSettings.AbsoluteWhiteLuminance)} cd/m²。")
+                : LocalizedText.Get(" Lab/Luv 使用相对参考白 Y=100；sRGB 推算值不是仪器测量。");
         }
     }
 }

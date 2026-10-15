@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Core;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -46,8 +47,8 @@ public partial class SfrSimplePlotWindow : Window
         this.ApplyCaption();
         Width = Math.Min(Width, Math.Max(MinWidth, SystemParameters.WorkArea.Width - 24));
         Height = Math.Min(Height, Math.Max(MinHeight, SystemParameters.WorkArea.Height - 24));
-        SourceText.Text = $"ROI ({roi.X}, {roi.Y}) · {roi.Width} × {roi.Height} px · 输入 {image.depth} bit · 快照 {_capturedAt:HH:mm:ss}";
-        RoiText.Text = "一条完整斜边，两侧保留均匀平台。橙色线为 L 通道拟合位置。";
+        SourceText.Text = LocalizedText.Format($"ROI ({roi.X}, {roi.Y}) · {roi.Width} × {roi.Height} px · 输入 {image.depth} bit · 快照 {_capturedAt:HH:mm:ss}");
+        RoiText.Text = LocalizedText.Get("一条完整斜边，两侧保留均匀平台。橙色线为 L 通道拟合位置。");
         RoiImage.Source = CreatePreview(image, roi, _options);
         RoiCanvas.Width = RoiImage.Width = roi.Width;
         RoiCanvas.Height = RoiImage.Height = roi.Height;
@@ -73,7 +74,7 @@ public partial class SfrSimplePlotWindow : Window
         SamplesGrid.ItemsSource = null;
         FitLine.Visibility = Visibility.Collapsed;
         AnalyzeButton.IsEnabled = SettingsButton.IsEnabled = ExportCsvButton.IsEnabled = ExportJsonButton.IsEnabled = false;
-        StatusText.Text = "正在分析固定图像快照...";
+        StatusText.Text = LocalizedText.Get("正在分析固定图像快照...");
         try
         {
             SfrAnalysisOptions options = _options with { };
@@ -82,7 +83,7 @@ public partial class SfrSimplePlotWindow : Window
             _measuredOptions = options;
             int valid = _result.Channels.Count(c => c.Valid);
             var warnings = _result.Channels.SelectMany(c => c.Warnings).Distinct().Select(Explain);
-            StatusText.Text = $"可计算通道 {valid}/{_result.Channels.Count}；{(valid == 0 ? "当前 ROI 不适合单斜边测量，请查看状态与质量诊断。" : "质量检查通过不等于产品达标。")}";
+            StatusText.Text = LocalizedText.Format($"可计算通道 {valid}/{_result.Channels.Count}；{(valid == 0 ? LocalizedText.Get("当前 ROI 不适合单斜边测量，请查看状态与质量诊断。") : LocalizedText.Get("质量检查通过不等于产品达标。"))}");
             string warningText = string.Join("；", warnings);
             if (warningText.Length > 0) StatusText.Text += "\n" + warningText;
             ShowR.Visibility = ShowG.Visibility = ShowB.Visibility = _result.Channels.Count == 1 ? Visibility.Collapsed : Visibility.Visible;
@@ -122,7 +123,7 @@ public partial class SfrSimplePlotWindow : Window
         }
         else { FitLine.X1 = x0; FitLine.Y1 = 0; FitLine.X2 = x1; FitLine.Y2 = height - 1; }
         FitLine.Visibility = Visibility.Visible;
-        RoiText.Text = $"测量方向：{(c.Rotated ? "垂直" : "水平")}；边缘偏离{(c.Rotated ? "水平" : "竖直")} {c.AngleDegrees:F2}°。\n输入编码：{_measuredOptions?.InputEncoding}；未自动平滑或重采样测量像素。";
+        RoiText.Text = LocalizedText.Format($"测量方向：{(c.Rotated ? LocalizedText.Get("垂直") : LocalizedText.Get("水平"))}；边缘偏离{(c.Rotated ? LocalizedText.Get("水平") : LocalizedText.Get("竖直"))} {c.AngleDegrees:F2}°。\n输入编码：{_measuredOptions?.InputEncoding}；未自动平滑或重采样测量像素。");
     }
 
     private void RenderMetrics()
@@ -134,7 +135,7 @@ public partial class SfrSimplePlotWindow : Window
             Format(c.Valid ? SfrCurveQueries.AtFrequency(c.Frequencies, c.Mtf, 0.5) : null, true),
             Format(c.Valid ? SfrCurveQueries.Crossing(c.Frequencies, c.Mtf, _threshold) : null), ChannelState(c))).ToArray();
         AtFrequencyColumn.Header = $"MTF @ {_frequency:G3}";
-        AtThresholdColumn.Header = $"频率 @ {_threshold:P0}";
+        AtThresholdColumn.Header = LocalizedText.Format($"频率 @ {_threshold:P0}");
     }
 
     private void RenderPlot()
@@ -148,9 +149,9 @@ public partial class SfrSimplePlotWindow : Window
         Plot.ShowResult(_result, ViewSelector.SelectedIndex, channels, ShowExtended.IsChecked == true);
         PlotHelp.Text = ViewSelector.SelectedIndex switch
         {
-            1 => "ESF：沿边缘法线的亮暗过渡。平台起伏可能来自像素纹理、噪声或光照不均。",
-            2 => "LSF：本图为用于傅里叶变换的加窗导数。多峰、拖尾和振铃可用于诊断。",
-            _ => "圆点为 MTF50/10 交点；虚线标示 Nyquist 0.5 cy/pixel。展开后的右半区仅供诊断。"
+            1 => LocalizedText.Get("ESF：沿边缘法线的亮暗过渡。平台起伏可能来自像素纹理、噪声或光照不均。"),
+            2 => LocalizedText.Get("LSF：本图为用于傅里叶变换的加窗导数。多峰、拖尾和振铃可用于诊断。"),
+            _ => LocalizedText.Get("圆点为 MTF50/10 交点；虚线标示 Nyquist 0.5 cy/pixel。展开后的右半区仅供诊断。")
         };
     }
 
@@ -160,12 +161,12 @@ public partial class SfrSimplePlotWindow : Window
     {
         var next = _options with { };
         bool submitted = false;
-        var editor = new PropertyEditorWindow(next, PropertyEditorEditMode.Transactional) { Owner = this, Title = "斜边测量参数" };
+        var editor = new PropertyEditorWindow(next, PropertyEditorEditMode.Transactional) { Owner = this, Title = LocalizedText.Get("斜边测量参数") };
         editor.Submitted += (_, _) => submitted = true;
         editor.ShowDialog();
         if (!submitted) return;
         try { next.Validate(); }
-        catch (ArgumentException ex) { MessageBox.Show(this, ex.Message, "参数无效"); return; }
+        catch (ArgumentException ex) { MessageBox.Show(this, ex.Message, LocalizedText.Get("参数无效")); return; }
         _options = next;
         RoiImage.Source = CreatePreview(_lease.Image, _roi, _options);
         await AnalyzeAsync();
@@ -176,7 +177,7 @@ public partial class SfrSimplePlotWindow : Window
         if (!double.TryParse(FrequencyInput.Text, out double frequency) || !double.IsFinite(frequency) || frequency < 0 || frequency > 0.5
             || !double.TryParse(ThresholdInput.Text, out double threshold) || !double.IsFinite(threshold) || threshold <= 0 || threshold >= 1)
         {
-            QueryError.Text = "频率应为 0..0.5；响应应大于 0、小于 1。";
+            QueryError.Text = LocalizedText.Get("频率应为 0..0.5；响应应大于 0、小于 1。");
             return;
         }
         QueryError.Text = string.Empty;
@@ -203,7 +204,7 @@ public partial class SfrSimplePlotWindow : Window
             };
             File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(measurement, new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
         }
-        catch (Exception ex) { MessageBox.Show(this, ex.Message, "保存失败"); }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, LocalizedText.Get("保存失败")); }
     }
 
     private void ExportCsv_Click(object sender, RoutedEventArgs e)
@@ -233,7 +234,7 @@ public partial class SfrSimplePlotWindow : Window
                 WriteSeries(writer, c.Channel, "LSF_pixel", c.LsfPositions, c.Lsf);
             }
         }
-        catch (Exception ex) { MessageBox.Show(this, ex.Message, "导出失败"); }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, LocalizedText.Get("导出失败")); }
     }
 
     private static void WriteSeries(StreamWriter writer, string channel, string series, double[] x, double[] y)

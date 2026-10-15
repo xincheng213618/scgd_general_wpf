@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using LocalizedText = global::ProjectKB.DisplayText;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
@@ -23,6 +24,7 @@ namespace ProjectKB
         public EditRecipeWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -87,8 +89,8 @@ namespace ProjectKB
 
             MessageBoxResult result = MessageBox.Show(
                 this,
-                $"确定将当前初始值应用到全部 {_recipeRows.Count} 个模板吗？\n此操作会覆盖各模板当前的Recipe参数。",
-                "全部应用初始值",
+                LocalizedText.Format($"确定将当前初始值应用到全部 {_recipeRows.Count} 个模板吗？\n此操作会覆盖各模板当前的Recipe参数。"),
+                LocalizedText.Get("全部应用初始值"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
@@ -110,7 +112,7 @@ namespace ProjectKB
         {
             PropertyEditorWindow propertyEditorWindow = new(_recipeManager.DefaultRecipeConfig, false)
             {
-                Title = "Recipe初始值",
+                Title = LocalizedText.Get("Recipe初始值"),
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -224,7 +226,7 @@ namespace ProjectKB
             RecipeDataGrid.Items.Refresh();
 
             SelectedTemplateTextBlock.Text = _selectedRecipeRow.TemplateName;
-            RecipeStatusTextBlock.Text = _selectedRecipeRow.HasLimit ? "当前模板已配置Recipe判定或背光自动修正项" : "当前模板未配置任何Recipe判定或背光自动修正项";
+            RecipeStatusTextBlock.Text = _selectedRecipeRow.HasLimit ? LocalizedText.Get("当前模板已配置Recipe判定或背光自动修正项") : LocalizedText.Get("当前模板未配置任何Recipe判定或背光自动修正项");
             if (_selectedRecipeRow.HasLimit)
                 RecipeStatusTextBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             else

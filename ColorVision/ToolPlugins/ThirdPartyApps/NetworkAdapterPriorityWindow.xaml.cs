@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -36,8 +37,8 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
 
             MessageBoxResult result = MessageBox.Show(
                 this,
-                $"将“{adapter.InterfaceAlias}”的 IPv4 自动 Metric 关闭并设为 {NetworkAdapterPriorityService.PreferredMetric}。\n\n此操作只修改所选网卡，是否继续？",
-                "设置首选上网网卡",
+                LocalizedText.Format($"将“{adapter.InterfaceAlias}”的 IPv4 自动 Metric 关闭并设为 {NetworkAdapterPriorityService.PreferredMetric}。\n\n此操作只修改所选网卡，是否继续？"),
+                LocalizedText.Get("设置首选上网网卡"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes)
@@ -56,8 +57,8 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
 
             MessageBoxResult result = MessageBox.Show(
                 this,
-                $"恢复“{adapter.InterfaceAlias}”的 IPv4 自动 Metric？",
-                "恢复自动 Metric",
+                LocalizedText.Format($"恢复“{adapter.InterfaceAlias}”的 IPv4 自动 Metric？"),
+                LocalizedText.Get("恢复自动 Metric"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes)
@@ -76,8 +77,8 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
 
             MessageBoxResult result = MessageBox.Show(
                 this,
-                $"将“{adapter.InterfaceAlias}”的 IPv4 DNS 设置为 {NetworkAdapterPriorityService.PreferredDnsServer}，然后刷新 Windows DNS 缓存。\n\n此操作会替换该网卡现有的手动 DNS 列表，是否继续？",
-                "设置 DNS 并刷新缓存",
+                LocalizedText.Format($"将“{adapter.InterfaceAlias}”的 IPv4 DNS 设置为 {NetworkAdapterPriorityService.PreferredDnsServer}，然后刷新 Windows DNS 缓存。\n\n此操作会替换该网卡现有的手动 DNS 列表，是否继续？"),
+                LocalizedText.Get("设置 DNS 并刷新缓存"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (result != MessageBoxResult.Yes)
@@ -113,12 +114,12 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
                         : adapters[0];
                 }
 
-                StatusText.Text = successMessage ?? $"已读取 {adapters.Count} 个 IPv4 接口。Metric 数值越小，优先级通常越高。";
+                StatusText.Text = successMessage ?? LocalizedText.Format($"已读取 {adapters.Count} 个 IPv4 接口。Metric 数值越小，优先级通常越高。");
             }
             catch (Exception ex)
             {
                 StatusText.Text = ex.Message;
-                MessageBox.Show(this, ex.Message, "读取网卡失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("读取网卡失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -141,7 +142,7 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
             catch (Exception ex)
             {
                 StatusText.Text = ex.Message;
-                MessageBox.Show(this, ex.Message, "修改网卡失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("修改网卡失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

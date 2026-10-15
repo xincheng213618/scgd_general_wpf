@@ -74,6 +74,7 @@ namespace ColorVision.Copilot
         public bool HasContinuationForGoal(string conversationId, string goalId) =>
             _itemsByRunId.Values.Any(item =>
                 string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal)
+                && !item.IsLocalCommand
                 && (!item.IsAutomaticGoalContinuation
                     || string.Equals(item.GoalId, goalId, StringComparison.Ordinal)));
 
@@ -112,11 +113,8 @@ namespace ColorVision.Copilot
         public bool TryGet(string runId, out CopilotQueuedFollowUp? item) =>
             _itemsByRunId.TryGetValue(runId, out item);
 
-        public IReadOnlyList<CopilotQueuedFollowUpRecoveryRecord> GetResumableRecoveries() =>
-            _state.QueuedFollowUpRecoveries
-                .Where(record => record?.ResumeAfterRestart == true)
-                .Take(MaxQueuedRuns)
-                .ToArray();
+        public IReadOnlyList<CopilotQueuedFollowUpRecoveryRecord> GetStartupRecoveries() =>
+            _state.QueuedFollowUpRecoveries.ToArray();
 
         public IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments() =>
             _state.QueuedFollowUpRecoveries
@@ -348,6 +346,14 @@ namespace ColorVision.Copilot
         public bool RestoreRecoveryToDraft(string runId) =>
             CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(_state, runId);
 
+        public int RestoreRecoveriesToDraft(IReadOnlyList<CopilotQueuedFollowUpRecoveryRecord> records)
+        {
+            var restoredCount = CopilotQueuedFollowUpRecovery.RestoreRecordsToDrafts(_state, records);
+            foreach (var record in records)
+                RemoveRecovery(record.RunId);
+            return restoredCount;
+        }
+
         public bool RemoveRecovery(string runId)
         {
             var changed = false;
@@ -381,6 +387,17 @@ namespace ColorVision.Copilot
 
                 recovery.ResumeAfterRestart = false;
                 changed = true;
+            }
+            return changed;
+        }
+
+        public bool SuppressRestartDispatchForConversation(string conversationId)
+        {
+            var changed = false;
+            foreach (var run in _taskHost.QueuedRuns)
+            {
+                if (string.Equals(run.ConversationId, conversationId, StringComparison.Ordinal))
+                    changed |= MarkRecoveryDispatching(run.Id);
             }
             return changed;
         }
@@ -504,6 +521,7 @@ namespace ColorVision.Copilot
                 Prompt = item.Prompt,
                 ComposerState = item.CreateComposerState(),
                 ProfileId = item.Profile.Id,
+                HostContext = CopilotQueuedFollowUpHostContext.Capture(item.SubmissionContext),
                 QueuedAtUtc = item.QueuedAtUtc,
                 ResumeAfterRestart = !item.IsAutomaticGoalContinuation,
             });

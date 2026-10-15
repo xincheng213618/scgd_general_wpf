@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -78,7 +79,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     this,
-                    $"无法复制{label}：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    LocalizedText.Format($"无法复制{label}：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -154,15 +155,15 @@ namespace ColorVision.Copilot
                 RepositoryRoot = snapshot.RepositoryRoot,
                 TargetLabel = FormatTarget(snapshot),
                 ScopeLabel = FormatScope(snapshot),
-                EvidenceLabel = (snapshot.HasChanges ? "包含变更" : "未发现变更")
-                    + (snapshot.ToolOutputComplete ? " · 工具输出完整" : " · 工具输出有界")
+                EvidenceLabel = (snapshot.HasChanges ? LocalizedText.Get("包含变更") : LocalizedText.Get("未发现变更"))
+                    + (snapshot.ToolOutputComplete ? LocalizedText.Get(" · 工具输出完整") : LocalizedText.Get(" · 工具输出有界"))
                     + (modelObservationTruncated
-                        ? " · 模型证据已裁剪"
+                        ? LocalizedText.Get(" · 模型证据已裁剪")
                         : hasStructuredModelDiff
-                            ? " · 模型 Diff 完整"
-                            : " · 模型结果已替换"),
+                            ? LocalizedText.Get(" · 模型 Diff 完整")
+                            : LocalizedText.Get(" · 模型结果已替换")),
                 PathLabel = string.IsNullOrWhiteSpace(snapshot.PathFilter)
-                    ? "整个仓库"
+                    ? LocalizedText.Get("整个仓库")
                     : snapshot.PathFilter,
                 HasEvidenceWarning = snapshot.ToolPatchTruncated
                     || modelObservationTruncated

@@ -19,7 +19,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 获取用于编辑属性的命令
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore, Browsable(false)]
         public RelayCommand EditCommand { get; set; }
 
         /// <summary>

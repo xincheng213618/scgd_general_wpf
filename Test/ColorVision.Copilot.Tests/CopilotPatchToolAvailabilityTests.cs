@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using System.IO;
 
 namespace ColorVision.Copilot.Tests;

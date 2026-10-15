@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SqlSugarCore" Version="5.1.4.220" />
+    <PackageReference Include="SqlSugarCore" Version="5.1.4.221" />
     <PackageReference Include="QRCoder.Xaml" Version="1.8.0" />
   </ItemGroup>
 

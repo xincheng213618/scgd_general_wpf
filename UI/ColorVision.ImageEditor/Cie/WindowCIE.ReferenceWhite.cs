@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Cie;
 using System;
 using System.Globalization;
@@ -12,7 +13,7 @@ public partial class WindowCIE
 {
     private CieAnalysisSettings _referenceSettings = new();
     private bool _updatingReference;
-    private readonly CieMarker _customWhite = new("自定义", CieChromaticity.Empty, Colors.Gray);
+    private readonly CieMarker _customWhite = new(LocalizedText.Get("自定义"), CieChromaticity.Empty, Colors.Gray);
 
     private void InitializeReferenceWhite()
     {
@@ -32,7 +33,7 @@ public partial class WindowCIE
         ReferenceWhiteY.Text = settings.WhiteY.ToString("G", CultureInfo.InvariantCulture);
         ReferenceWhiteLuminance.Text = settings.AbsoluteWhiteLuminance.ToString("G", CultureInfo.InvariantCulture);
         _updatingReference = false;
-        ReferenceWhiteStatus.Text = $"已应用：{CiePointReadout.GetWhiteName(settings.White)} · Yn={settings.AbsoluteWhiteLuminance:G} cd/m²";
+        ReferenceWhiteStatus.Text = LocalizedText.Format($"已应用：{CiePointReadout.GetWhiteName(settings.White)} · Yn={settings.AbsoluteWhiteLuminance:G} cd/m²");
         CieView.SetReferenceWhite(settings.White);
         UpdateSelectedReadout();
     }
@@ -59,7 +60,7 @@ public partial class WindowCIE
             !double.TryParse(ReferenceWhiteLuminance.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double luminance) ||
             !double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(luminance) || x <= 0 || y <= 0 || x + y >= 1 || luminance <= 0)
         {
-            ReferenceWhiteStatus.Text = "未应用：请输入有效数字，要求 x>0、y>0、x+y<1、Yn>0。";
+            ReferenceWhiteStatus.Text = LocalizedText.Get("未应用：请输入有效数字，要求 x>0、y>0、x+y<1、Yn>0。");
             return;
         }
         ApplyCalculationWhite(new(x, y), luminance);
@@ -75,7 +76,7 @@ public partial class WindowCIE
         catch (ArgumentException ex)
         {
             SyncReferenceWhite(true);
-            ReferenceWhiteStatus.Text = $"未应用：{ex.Message}";
+            ReferenceWhiteStatus.Text = LocalizedText.Format($"未应用：{ex.Message}");
         }
     }
 }

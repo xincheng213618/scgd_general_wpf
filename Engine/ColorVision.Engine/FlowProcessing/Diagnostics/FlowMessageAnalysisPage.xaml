@@ -2,6 +2,7 @@
       x:ClassModifier="internal"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.Engine"
         xmlns:engine="clr-namespace:ColorVision.Engine"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -331,22 +332,22 @@
                                                             <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding State}" Value="Initial">
-                                                                    <Setter Property="Text" Value="初始"/>
+                                                                    <Setter Property="Text" Value="{display:EngineLang Key='初始'}"/>
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding State}" Value="Success">
-                                                                    <Setter Property="Text" Value="成功"/>
+                                                                    <Setter Property="Text" Value="{display:EngineLang Key='成功'}"/>
                                                                     <Setter Property="Foreground" Value="{StaticResource MessageSuccessBrush}"/>
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding State}" Value="Fail">
-                                                                    <Setter Property="Text" Value="失败"/>
+                                                                    <Setter Property="Text" Value="{display:EngineLang Key='失败'}"/>
                                                                     <Setter Property="Foreground" Value="{StaticResource MessageFailureBrush}"/>
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding State}" Value="Timeout">
-                                                                    <Setter Property="Text" Value="超时"/>
+                                                                    <Setter Property="Text" Value="{display:EngineLang Key='超时'}"/>
                                                                     <Setter Property="Foreground" Value="{StaticResource MessageFailureBrush}"/>
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding State}" Value="Sent">
-                                                                    <Setter Property="Text" Value="已发送"/>
+                                                                    <Setter Property="Text" Value="{display:EngineLang Key='已发送'}"/>
                                                                     <Setter Property="Foreground" Value="{StaticResource MessagePendingBrush}"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>

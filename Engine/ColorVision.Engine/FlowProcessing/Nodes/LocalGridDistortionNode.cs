@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -7,11 +7,9 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -47,7 +45,6 @@ internal sealed record LocalGridDistortionPersistenceRequest
     public GridDistortionAnalysis? Analysis { get; init; }
     public GridTvFormula TvFormula { get; init; }
     public GridPoint9Formula Point9Formula { get; init; }
-    public bool PublishOpticalEstimate { get; init; }
     public string ResultDirectory { get; init; } = string.Empty;
 }
 
@@ -105,7 +102,7 @@ internal static class LocalGridDistortionResultPersistence
 
         GridDistortionResult result = request.Result ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少明细。");
         GridDistortionAnalysis analysis = request.Analysis ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少指标分析。");
-        string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result, analysis, request.TvFormula, request.Point9Formula, request.PublishOpticalEstimate));
+        string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result, analysis, request.TvFormula, request.Point9Formula));
         try
         {
             int masterId = SaveDatabaseCore(master, resultFilePath, static () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>());
@@ -123,7 +120,7 @@ internal static class LocalGridDistortionResultPersistence
     }
 
     internal static string BuildLegacyResultJson(GridDistortionResult result, GridDistortionAnalysis analysis,
-        GridTvFormula tvFormula, GridPoint9Formula point9Formula, bool publishOpticalEstimate)
+        GridTvFormula tvFormula, GridPoint9Formula point9Formula)
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(analysis);
@@ -141,7 +138,7 @@ internal static class LocalGridDistortionResultPersistence
         }).ToArray();
         object? opticalResult = null;
         var optical = analysis.Optical;
-        if (publishOpticalEstimate && optical.IsAvailable && optical.OpticRatioPercent is double opticRatio
+        if (optical.IsAvailable && optical.OpticRatioPercent is double opticRatio
             && double.IsFinite(opticRatio) && optical.MaxErrorPointId is int worstId && pointsById.TryGetValue(worstId, out var worstPoint))
         {
             opticalResult = new
@@ -149,7 +146,7 @@ internal static class LocalGridDistortionResultPersistence
                 opticRatio,
                 finalPoints = points,
                 maxErrPoint = new { id = worstPoint.Id, x = worstPoint.X, y = worstPoint.Y },
-                message = $"{optical.Method}；中央节距相对畸变估计，未标定，不保证与供应商光学畸变等价；t 未定义，未输出。",
+                message = $"{optical.Method}；居中一阶径向模型估计，未标定；假设光学中心位于中心点，不拟合偏心、切向或高阶畸变；t 未定义，未输出。",
                 isCalibrated = false,
                 method = optical.Method
             };
@@ -160,7 +157,7 @@ internal static class LocalGridDistortionResultPersistence
             MetricDefinition,
             analysis.FormulaVersion,
             Units = "percent",
-            OutputSelection = new { TvFormula = tvFormula.ToString(), Point9Formula = point9Formula.ToString(), PublishOpticalEstimate = publishOpticalEstimate },
+            OutputSelection = new { TvFormula = tvFormula.ToString(), Point9Formula = point9Formula.ToString() },
             PointOrder = "row-major, top-to-bottom, left-to-right",
             ReferencePointOrder = "TL,TC,TR,ML,C,MR,BL,BC,BR",
             KeystoneAxes = point9Formula == GridPoint9Formula.OppositeEdgeMean
@@ -258,7 +255,7 @@ internal static class LocalGridDistortionResultPersistence
     }
 }
 
-[STNode("Flow_CustomNodes", "点阵畸变")]
+[STNode("Flow_CustomNodes", "点阵畸变", CategoryOrder = 9900)]
 public sealed class LocalGridDistortionNode : LocalFlowNodeBase
 {
     internal const int DetectionFailureResultCode = -1;
@@ -272,8 +269,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     private bool brightTarget = true;
     private double minimumContrast = 0.02;
     private GridTvFormula tvFormula;
-    private GridPoint9Formula point9Formula;
-    private bool publishOpticalEstimate;
+    private GridPoint9Formula point9Formula = GridPoint9Formula.OppositeEdgeMean;
 
     [Category("本地点阵畸变")]
     [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
@@ -316,12 +312,8 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     public GridTvFormula TvFormula { get => tvFormula; set { tvFormula = value; OnPropertyChanged(); } }
 
     [Category("畸变输出")]
-    [STNodeProperty("九点输出口径", "对边平均参考使用附件 H/V 定义；旧 P9 保留三跨度分母及旧 H/V 命名。全部方案都会保存在分析结果中。", true)]
+    [STNodeProperty("九点输出口径", "新建节点默认对边平均九点；结果 JSON 沿用 Point9_distortion 字段结构。旧 P9 三跨度可选，全部方案都会保存在分析结果中。", true)]
     public GridPoint9Formula Point9Formula { get => point9Formula; set { point9Formula = value; OnPropertyChanged(); } }
-
-    [Category("畸变输出")]
-    [STNodeProperty("输出相对光学估计", "默认关闭。启用后将中央节距相对估计写入 ARVR 光学畸变项；此值未标定，不保证与原供应商光学畸变等价。", true)]
-    public bool PublishOpticalEstimate { get => publishOpticalEstimate; set { publishOpticalEstimate = value; OnPropertyChanged(); } }
 
     [Category("本地点阵畸变")]
     [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
@@ -352,7 +344,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         string configuredDirectory = ResultDirectory;
         GridTvFormula selectedTvFormula = TvFormula;
         GridPoint9Formula selectedPoint9Formula = Point9Formula;
-        bool selectedPublishOptical = PublishOpticalEstimate;
         if (!Enum.IsDefined(selectedTvFormula) || !Enum.IsDefined(selectedPoint9Formula)) throw new InvalidOperationException("畸变输出口径无效。");
         int zIndex = ZIndex;
         string nodeId = NodeID;
@@ -381,7 +372,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
                 SearchRegionPoiTemplate = configuredTemplate,
                 SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                 Options = options,
-                OutputSelection = new { TvFormula = selectedTvFormula.ToString(), Point9Formula = selectedPoint9Formula.ToString(), PublishOpticalEstimate = selectedPublishOptical },
+                OutputSelection = new { TvFormula = selectedTvFormula.ToString(), Point9Formula = selectedPoint9Formula.ToString() },
                 Detection = detection,
                 PrimaryBufferKind = lease.Metadata.PrimaryBufferKind.ToString(),
                 SourceFilePath = lease.Metadata.SourceFilePath,
@@ -397,7 +388,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             {
                 Action = action, ImageFilePath = imageFile, ZIndex = zIndex,
                 TotalTime = totalTime, Parameters = parameters, ResultDirectory = configuredDirectory,
-                TvFormula = selectedTvFormula, Point9Formula = selectedPoint9Formula, PublishOpticalEstimate = selectedPublishOptical
+                TvFormula = selectedTvFormula, Point9Formula = selectedPoint9Formula
             };
             GridDistortionAnalysis analysis;
             try
@@ -429,7 +420,8 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             action.Data["LocalGridDistortionAnalysis"] = analysis;
             var selectedTv = selectedTvFormula == GridTvFormula.Standard ? analysis.StandardTv : analysis.HalfTv;
             var selectedPoint9 = selectedPoint9Formula == GridPoint9Formula.OppositeEdgeMean ? analysis.ReferencePoint9 : analysis.LegacyPoint9;
-            action.Data["LocalGridDistortionMetrics"] = new { TV = selectedTv, Point9 = selectedPoint9 };
+            action.Data["LocalGridDistortionMetrics"] = new { TV = selectedTv, Point9 = selectedPoint9, Geometry = analysis.Geometry };
+            action.Data["LocalGridDistortionGeometry"] = analysis.Geometry;
             action.Data["LocalGridDistortionQuality"] = detection.Quality;
             action.Data["LocalGridDistortionPoints"] = detection.Points;
             action.Data["LocalGridDistortionReferencePointIds"] = detection.ReferencePointIds;
@@ -438,6 +430,8 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             action.Data["LocalGridDistortionVerticalTvPercent"] = selectedTv.VerticalPercent;
             action.Data["LocalGridDistortionKeystoneHorizontalPercent"] = selectedPoint9.KeystoneHorizontalPercent;
             action.Data["LocalGridDistortionKeystoneVerticalPercent"] = selectedPoint9.KeystoneVerticalPercent;
+            action.Data["LocalGridDistortionMaximumTiltDegrees"] = analysis.Geometry.MaximumTiltDegrees;
+            action.Data["LocalGridDistortionMaximumEdgeLengthDifferencePercent"] = analysis.Geometry.MaximumEdgeLengthDifferencePercent;
             action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.Distortion);
             FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId }));
             return new()
@@ -453,7 +447,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     {
         ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber,
         ImageFilePath, SearchRegion, SearchRegionPoiTemplate, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
-        TvFormula, Point9Formula, PublishOpticalEstimate, Algorithm = "GridDistortionV2"
+        TvFormula, Point9Formula, Algorithm = "GridDistortionV2"
     });
 
     internal static void ValidateDetection(GridDistortionResult result, GridDistortionOptions options, int width, int height)
@@ -498,8 +492,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
         {
             FlowNodeTiming.Skip("OpenImage");
-            string file = currentFrame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie ? currentFrame.CvCieFilePath : currentFrame.CvRawFilePath;
-            imageFile = string.IsNullOrWhiteSpace(file) ? null : file;
+            imageFile = currentFrame.ResolveResultImageFilePath();
             return currentFrame;
         }
         int sourceMasterId = -1;

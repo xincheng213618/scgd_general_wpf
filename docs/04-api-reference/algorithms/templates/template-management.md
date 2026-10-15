@@ -3,8 +3,8 @@ knowledge_id: "algorithms.template-management"
 knowledge_type: "topic"
 status: "current"
 summary: "TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。"
-aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplateSettingEdit","TemplatesExtension","放弃修改","放弃更改","模板未保存","关闭模板窗口","创建副本"]
-code_paths: ["Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml","Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateCreateView.xaml.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Templates/TemplateSettingEdit.xaml.cs","Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"]
+aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplatesExtension","放弃修改","放弃更改","模板未保存","关闭模板窗口","创建副本"]
+code_paths: ["Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml","Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateCreateView.xaml.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"]
 test_paths: []
 related: ["engine.template-design","algorithms.template-menus","algorithms.json-templates","flow.workspace","ui.property-grid","ui.configuration"]
 ---
@@ -77,7 +77,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 
 这是现有实现风险，不是推荐行为：筛选后的第零行未必是源集合第零项。再加上具体 `Delete/Export` 可能优先使用集合的 `IsSelected` 勾选项，不能宣称操作一定只作用于当前可见选中项。执行写入或删除前，应清空筛选、重新选择，并核对记录 ID 与全部勾选项。搜索框的 Enter 入口也先清空筛选再读取 `SelectedIndex`，没有保持原对象的索引映射；需要打开已筛选条目时，鼠标双击会按对象找源索引。
 
-列头排序改变的是源集合顺序；拖动则逐步调用 `SwapTemplateOrder`，可能已经完成前面的交换后才失败。具体模板的排序可能写数据库甚至改变身份，不能把“整理列表”当作无副作用显示操作；普通基类边界见持久化主题。
+列头排序改变源集合顺序。拖动按源对象找到两个目标，一次异步交换这两个模板的数据库顺序，中间项不动；不会逐项交换拖动经过的记录。保存期间禁用窗口交互并阻止关闭，提交成功后共享集合和下拉列表同步，失败提示重新打开核对。MySQL 的主记录 ID 与明细 `Pid` 在同一事务中交换，本地模板则交换 SQLite `sort_order`，具体约束见[模板持久化与排序](../../../03-architecture/components/templates/design.md)。
 
 `TemplatesExtension.CreateEmpty` 是下拉列表适配：新增 Empty 项，并复用源集合中的包装对象；监听 Add/Remove/Reset，不是完整的 Move/Replace 同步或独立深复制。使用这种列表的调用方要处理空项与索引偏移，不直接拿显示索引写入模板源集合。
 
@@ -86,8 +86,6 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 应用搜索按注册键与条目名称标识候选，执行时重新解析当前注册并查找索引；打开普通编辑器或专用入口的规则统一见[模板入口](./template-menu-entries.md)。搜索目录与窗口加载属于不同阶段，候选可见不代表数据库内容已经刷新。
 
 `TemplateSetting` 由 `ConfigService` 解析，是共享窗口配置，例如列表列可见性；取得配置对象不等于已保存文件，它也不同于数据库模板参数。该配置的保存与重载见[软件配置契约](../../ui-components/configuration.md)。
-
-`TemplateSettingEdit` 的数据库重置入口调用具体模板的 `GetMysqlCommand().GetRecover()`；确认后通过 `BatchSqlConsumer.ExecuteAfterCommit` 执行，提交后重载 `SymbolCache`。它不是普通模板列表刷新，可能改变字典/数据库内容；必须单独具备授权与可用恢复依据，不能为了排查“模板没出现”就执行。
 
 ## 验证入口与缺口
 

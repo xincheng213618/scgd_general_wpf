@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.IO;
 using System.Net;
@@ -122,14 +121,17 @@ public sealed class CopilotNonStreamingUsageTests
 
             var result = await runtime.RunAsync(request, events.Add, CancellationToken.None);
 
-            var expectedUsage = finalAnswerOnly ? 5_000 : 5_110;
+            // Ordinary runs exhaust bounded empty-stream retries before the no-tools answer.
+            var expectedStreamingCalls = finalAnswerOnly ? 0 : CopilotProviderRetryChatClient.DefaultMaximumAttempts;
+            var expectedUsage = 5_000 + expectedStreamingCalls * 110;
             Assert.Equal(expectedUsage, result.Usage.EffectiveTotalTokens);
             Assert.Equal(expectedUsage, result.Budget.ReportedTotalTokens);
             Assert.Equal(expectedUsage, result.Budget.ConsumedTokens);
             Assert.Equal(2_000, result.Usage.CachedInputTokens);
             Assert.False(result.Budget.UsedEstimatedUsage);
-            Assert.Equal(finalAnswerOnly ? 1 : 2, result.Budget.ProviderCalls);
-            Assert.Equal(finalAnswerOnly ? 0 : 1, provider.StreamingCalls);
+            Assert.Equal(expectedStreamingCalls + 1, result.Budget.ProviderCalls);
+            Assert.Equal(Math.Max(0, expectedStreamingCalls - 1), result.Budget.ProviderRetryCount);
+            Assert.Equal(expectedStreamingCalls, provider.StreamingCalls);
             Assert.Equal(finalAnswerOnly ? 0 : 1, externalProvider.DiscoveryCalls);
             Assert.Empty(result.StepRecords);
             var payload = Assert.Single(handler.Payloads);

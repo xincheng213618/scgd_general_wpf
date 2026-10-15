@@ -1,21 +1,10 @@
 #pragma warning disable CA1822,CA1826,CA1859,CA1861
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.Solution.Workspace;
-using ColorVision.Themes;
-using ColorVision.UI;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.Copilot.Mcp
 {

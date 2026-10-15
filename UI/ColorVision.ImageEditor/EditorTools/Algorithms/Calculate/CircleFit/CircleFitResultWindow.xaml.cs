@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -31,8 +32,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.CircleFit
             PointsGrid.ItemsSource = ToTable(points).DefaultView;
             bool accepted = Measurement("circle_fit.accepted") == 1;
             SummaryText.Text = accepted
-                ? $"圆心：({Measurement("circle_fit.center_x"):G8}, {Measurement("circle_fit.center_y"):G8})px；半径：{Measurement("circle_fit.radius"):G8}px；有效点：{Measurement("circle_fit.inlier_count"):N0}/{Measurement("circle_fit.point_count"):N0}；RMS：{Measurement("circle_fit.rms_residual"):G8}px；角覆盖：{Measurement("circle_fit.angular_coverage"):G6}°；质量：{Measurement("circle_fit.confidence"):G6}。质量不是统计概率。"
-                : "拟合被结构化拒绝；请查看各点 RejectionReason。";
+                ? LocalizedText.Format($"圆心：({Measurement("circle_fit.center_x"):G8}, {Measurement("circle_fit.center_y"):G8})px；半径：{Measurement("circle_fit.radius"):G8}px；有效点：{Measurement("circle_fit.inlier_count"):N0}/{Measurement("circle_fit.point_count"):N0}；RMS：{Measurement("circle_fit.rms_residual"):G8}px；角覆盖：{Measurement("circle_fit.angular_coverage"):G6}°；质量：{Measurement("circle_fit.confidence"):G6}。质量不是统计概率。")
+                : LocalizedText.Get("拟合被结构化拒绝；请查看各点 RejectionReason。");
             Closed += (_, _) => DisposeOwnedState();
         }
 
@@ -70,11 +71,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.CircleFit
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -85,11 +86,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.CircleFit
             try
             {
                 AlgorithmResultExporter.ExportJson(_result, dialog.FileName);
-                MessageBox.Show(this, "导出完成。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("导出完成。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

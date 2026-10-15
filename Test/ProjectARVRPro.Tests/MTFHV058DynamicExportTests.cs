@@ -4,7 +4,6 @@ using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.MTF.MTFH;
 using ProjectARVRPro.Process.MTF.MTFV;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

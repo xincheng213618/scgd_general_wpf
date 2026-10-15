@@ -31,12 +31,13 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-retenti
 | `release_index_check` / `update_index_check` / `tool_index_check` | 各600秒 | 对应制品索引的签名/ready状态检查；相同签名且ready才跳过刷新 |
 | `cache_cleanup` | 3600秒 | 删除 `cache_entry.expires_at <= 当前时间` 的记录 |
 | `password_recovery_cleanup` | 3600秒 | 在线账号安全历史清理，不是清空在线账号或全部会话；见[账号生命周期](./accounts.md) |
-| `transfer_file_cleanup` | 3600秒 | 到期临时Transfer文件/链接清理；期限与身份边界见[Transfer](./file-transfer.md) |
 | `access_analytics_retention` | 86400秒 | 在线与快照访问数据保留，见[备份与保留](./backup-retention.md)及[观测数据](./observability.md) |
 | `job_history_retention` | 86400秒 | 按开始时间清执行历史，同时保留每任务最新记录和所有running记录 |
 | `admin_data_retention` | 86400秒 | 在线/快照审计、快照安全状态和旧快照轮换；见[备份与保留](./backup-retention.md) |
 | `database_backup` | 86400秒 | 创建数据库快照并执行隐私清理、检查及轮换；不是仅复制文件 |
 | `startup_index_check` | 0 | 线程启动先执行一次；后续tick的条件见下节，不是永久只运行一次 |
+
+旧数据库可能仍保存 `transfer_file_cleanup` 定义。为兼容这些定义，分派器接受该 ID 并只返回文件保留的说明，不删除文件或分享元数据；新数据库不注册它。到期隐藏及分享有效期见[Transfer](./file-transfer.md)。
 
 `artifact_index.py` 的签名检查不是递归内容校验：release记录存储根文件及符合发行bucket规则的 `History/{major}/{branch}/` 直接子项；update仅记录Update顶层文件，tool仅记录Tool顶层子项。签名依赖这些项的大小/修改时间，不遍历任意深层内容；不能保证子目录内任意变化都会触发周期刷新。
 

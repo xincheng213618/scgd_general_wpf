@@ -63,10 +63,10 @@ namespace ColorVision.FloatingBall
 
         public string SourceLabel => Source switch
         {
-            DesktopPetAssetSource.ColorVisionBuiltIn => "ColorVision 内置",
-            DesktopPetAssetSource.ColorVisionCustom => "ColorVision 自定义",
-            DesktopPetAssetSource.CodexBuiltIn => "Codex 本机素材",
-            DesktopPetAssetSource.CodexCustom => "Codex 自定义",
+            DesktopPetAssetSource.ColorVisionBuiltIn => DesktopPetText.SourceColorVisionBuiltIn,
+            DesktopPetAssetSource.ColorVisionCustom => DesktopPetText.SourceColorVisionCustom,
+            DesktopPetAssetSource.CodexBuiltIn => DesktopPetText.SourceCodexBuiltIn,
+            DesktopPetAssetSource.CodexCustom => DesktopPetText.SourceCodexCustom,
             _ => string.Empty,
         };
 
@@ -291,7 +291,7 @@ namespace ColorVision.FloatingBall
                     var displayName = GetOptionalString(root, "displayName")
                         ?? GetOptionalString(root, "id")
                         ?? folderName;
-                    var description = GetOptionalString(root, "description") ?? "Compatible Codex desktop pet pack.";
+                    var description = GetOptionalString(root, "description") ?? DesktopPetText.DefaultPackageDescription;
                     var spriteVersion = GetOptionalInt32(root, "spriteVersionNumber") is 2 ? 2 : 1;
                     var spritesheetPath = GetOptionalString(root, "spritesheetPath") ?? "spritesheet.webp";
                     var resolvedSpritePath = ResolveContainedPath(petDirectory, spritesheetPath);

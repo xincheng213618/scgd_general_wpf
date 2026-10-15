@@ -21,6 +21,8 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 
 `DatabaseCleanupWindow` 虽使用同一命名空间，源码实际属于 Engine，是独立的[多数据源维护宿主](../engine-components/database-maintenance.md)。
 
+`BaseTableDao` 的同步保存及 ARVR 批次创建/回写通过 `DatabaseCommandTiming` 区分连接取得与命令执行。仅失败或总耗时达到 100 ms 时输出同名 INFO 事件：`OpenConnectionMs` 包含打开连接或连接池等待，`ExecuteMs` 包含客户端 SQL 调用、服务端自动提交及命令自身的连接处理，`TotalMs` 为两阶段总耗时。它不拆分 MySQL 服务端执行与刷盘，不额外执行 SQL，也不新增事务。`Operation` 标识调用，插入成功时 `Result` 是返回的记录 ID，ARVR 额外携带流程 Code 作为 `CorrelationId`；失败保留阶段并继续向原调用方抛出。日志不记录 SQL、参数或连接字符串。
+
 设备资源、分组关联及相机/光谱仪许可证通过 `LocalConfigurationDao<T>` 的显式接入使用本地存储，见[设备配置](../../01-user-guide/devices/configuration.md)。这不是把 `BaseTableDao<T>` 全部切到 SQLite：普通算法、JSON、校正及第三方模板仍有 MySQL 依赖，见[模板存储边界](../../03-architecture/components/templates/design.md)。历史结果查询、服务端图像、SQL 维护和远程服务初始化的连接检查仍然有效，不应为了开放配置按钮一并删除。
 
 ## 已发布插件的注册兼容

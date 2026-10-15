@@ -2,7 +2,6 @@
 using System;
 using System.Windows;
 using System.Windows.Input;
-using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Presentation;
 using ColorVision.ImageEditor.Presentation.PseudoColor;
 

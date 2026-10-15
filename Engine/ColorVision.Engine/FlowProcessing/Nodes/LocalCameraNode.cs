@@ -1,5 +1,7 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.FileIO;
+using System.Diagnostics;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -7,9 +9,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
-using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
-using cvColorVision;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string? CvCieFilePath { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "相机取图")]
+    [STNode("Flow_CustomNodes", "相机取图", CategoryOrder = 9900)]
     [FlowNodeDocumentation(
         "Flow_LocalCamera_Summary",
         Usage = "Flow_LocalCamera_Usage",
@@ -57,7 +57,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private int _AvgCount = 1;
         private bool _AutoConnect = true;
         private bool _IsAutoExp;
-        private bool _SaveFiles;
+        private bool _SaveFiles = true;
+        private bool _AllowAcceleration;
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
         [Category("本地相机")]
@@ -86,8 +87,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public bool IsAutoExp { get => _IsAutoExp; set { _IsAutoExp = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
-        [STNodeProperty("保存文件", "按本地相机规则保存 CVRAW，并在有校正数据时保存 CVCIE", true)]
+        [STNodeProperty("保存文件", "启用时保存 CVRAW，写入完成后继续；关闭时仅保留缓存。数据库记录始终先写入，后续色度参数沿用此设置。", true)]
         public bool SaveFiles { get => _SaveFiles; set { _SaveFiles = value; OnPropertyChanged(); } }
+
+        [Category("本地相机")]
+        [STNodeProperty("允许加速", "默认关闭；保留 RAW 和色度校正参数，不生成 CIE 指针或 CVCIE 文件。本地 POI 按关注点区域计算。", true)]
+        public bool AllowAcceleration { get => _AllowAcceleration; set { _AllowAcceleration = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
         [STNodeProperty("图像翻转", "X=上下翻转，Y=左右镜像，XY=180°（不支持 90°/270°旋转）。空间/普通校正始终先执行；有色度校正时翻转最终 CIE，否则翻转校正后的 RAW。未选择校正模板时保留方向配置，等待下游本地校正后应用；POI 使用最终方向的坐标。", true)]
@@ -99,8 +104,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public RelayCommand OpenLocalCameraManagerCommand { get; }
 
         [JsonIgnore]
-        [CommandDisplay("校正缓存", Order = -90)]
-        [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
+        [CommandDisplay("缓存管理", Order = -90)]
+        [Description("查看校正文件与图像文件缓存，并统一释放内存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
         public LocalCameraNode() : base("相机取图", "Camera", "GetData")
@@ -142,13 +147,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Calibration = calibration,
                 FlipMode = FlipMode,
                 IsAutoExposure = IsAutoExp,
-                SaveFiles = SaveFiles
+                SaveFiles = false,
+                AllowAcceleration = AllowAcceleration
             });
 
             LocalFlowFrame frame = capture.Frame;
             try
             {
+                frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code);
                 MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp));
+                Stopwatch saveTimer = Stopwatch.StartNew();
+                LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, SaveMode);
+                int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
@@ -160,13 +170,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalCameraNodeResultData result = new()
                 {
                     FrameId = currentFrame.FrameId.ToString("N"),
-                    TotalTime = capture.TotalTimeMs,
+                    TotalTime = checked(capture.TotalTimeMs + saveTime),
                     CaptureTime = capture.CaptureTimeMs,
                     CalibrationTime = capture.CalibrationTimeMs,
                     FlipMode = currentFrame.Metadata.FlipMode.ToString(),
                     FlipApplied = currentFrame.IsFlipApplied,
                     FlipDeferred = currentFrame.Metadata.FlipMode != CVImageFlipMode.None && !currentFrame.Metadata.IsMirrorReady,
-                    SaveTime = capture.SaveTimeMs,
+                    SaveTime = saveTime,
                     CalibrationBackend = capture.CalibrationBackend,
                     MasterId = masterId,
                     HasRaw = currentFrame.HasRaw,
@@ -184,8 +194,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string BuildRunPayload(CVStartCFC action)
         {
-            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles });
+            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles, AllowAcceleration });
         }
+
+        internal CVFileSaveMode SaveMode => SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly;
 
         internal CameraRunParam BuildCameraParameters()
         {

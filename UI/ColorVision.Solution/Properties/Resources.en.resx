@@ -785,4 +785,599 @@
   <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>More</value></data>
   <data name="Sol_DocumentTabPin" xml:space="preserve"><value>Pin tab</value></data>
   <data name="Sol_DocumentTabUnpin" xml:space="preserve"><value>Unpin tab</value></data>
+  <data name="Sol_View_More" xml:space="preserve"><value>More</value></data>
+  <data name="Sol_Terminal_Title" xml:space="preserve"><value>Terminal</value></data>
+  <data name="Sol_Terminal_Run" xml:space="preserve"><value>Run</value></data>
+  <data name="Enter 跳转 · Esc 取消" xml:space="preserve">
+    <value>Enter: Go · Esc: Cancel</value>
+  </data>
+  <data name="上一个 (Shift+Enter / Shift+F3)" xml:space="preserve">
+    <value>Previous (Shift+Enter / Shift+F3)</value>
+  </data>
+  <data name="上一个匹配" xml:space="preserve">
+    <value>Previous Match</value>
+  </data>
+  <data name="下一个 (Enter / F3)" xml:space="preserve">
+    <value>Next (Enter / F3)</value>
+  </data>
+  <data name="下一个匹配" xml:space="preserve">
+    <value>Next Match</value>
+  </data>
+  <data name="与活动文档同步" xml:space="preserve">
+    <value>Sync with Active Document</value>
+  </data>
+  <data name="从最近列表中移除" xml:space="preserve">
+    <value>Remove from Recent List</value>
+  </data>
+  <data name="代码地图" xml:space="preserve">
+    <value>Code Map</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="保存 (Ctrl+S)" xml:space="preserve">
+    <value>Save (Ctrl+S)</value>
+  </data>
+  <data name="全字匹配" xml:space="preserve">
+    <value>Match Whole Word</value>
+  </data>
+  <data name="全部折叠" xml:space="preserve">
+    <value>Collapse All</value>
+  </data>
+  <data name="全部替换" xml:space="preserve">
+    <value>Replace All</value>
+  </data>
+  <data name="关闭 (Esc)" xml:space="preserve">
+    <value>Close (Esc)</value>
+  </data>
+  <data name="关闭查找" xml:space="preserve">
+    <value>Close Find</value>
+  </data>
+  <data name="刷新" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="区分大小写" xml:space="preserve">
+    <value>Match Case</value>
+  </data>
+  <data name="取消" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="启动项目" xml:space="preserve">
+    <value>Startup Project</value>
+  </data>
+  <data name="固定到最近列表" xml:space="preserve">
+    <value>Pin to Recent List</value>
+  </data>
+  <data name="始终使用此编辑器打开此类文件" xml:space="preserve">
+    <value>Always Use This Editor for This File Type</value>
+  </data>
+  <data name="定位 JSON 语法问题" xml:space="preserve">
+    <value>Locate JSON Syntax Issues</value>
+  </data>
+  <data name="属性" xml:space="preserve">
+    <value>Property</value>
+  </data>
+  <data name="当前项目 Provider 不支持修改依赖。" xml:space="preserve">
+    <value>The current project provider does not support editing dependencies.</value>
+  </data>
+  <data name="打开文件" xml:space="preserve">
+    <value>Open File</value>
+  </data>
+  <data name="换行格式" xml:space="preserve">
+    <value>Line Ending Format</value>
+  </data>
+  <data name="搜索工程文件" xml:space="preserve">
+    <value>Search project files</value>
+  </data>
+  <data name="撤销" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="撤销 (Ctrl+Z)" xml:space="preserve">
+    <value>Undo (Ctrl+Z)</value>
+  </data>
+  <data name="文件系统" xml:space="preserve">
+    <value>File System</value>
+  </data>
+  <data name="文件系统视图" xml:space="preserve">
+    <value>File System View</value>
+  </data>
+  <data name="文件编码" xml:space="preserve">
+    <value>File Encoding</value>
+  </data>
+  <data name="文档声明" xml:space="preserve">
+    <value>Document Declarations</value>
+  </data>
+  <data name="文档符号" xml:space="preserve">
+    <value>Document Symbols</value>
+  </data>
+  <data name="文档符号 (Ctrl+F12 / Ctrl+Shift+O)" xml:space="preserve">
+    <value>Document Symbols (Ctrl+F12 / Ctrl+Shift+O)</value>
+  </data>
+  <data name="显示代码地图" xml:space="preserve">
+    <value>Show Code Map</value>
+  </data>
+  <data name="显示空白字符" xml:space="preserve">
+    <value>Show Whitespace</value>
+  </data>
+  <data name="显示行号" xml:space="preserve">
+    <value>Show Line Numbers</value>
+  </data>
+  <data name="替换" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="替换内容" xml:space="preserve">
+    <value>Replacement Text</value>
+  </data>
+  <data name="替换内容；正则模式支持 $1 等分组引用" xml:space="preserve">
+    <value>Replacement text; regex mode supports group references such as $1</value>
+  </data>
+  <data name="未发现配置或依赖错误。" xml:space="preserve">
+    <value>No Configuration or Dependency Errors Found.</value>
+  </data>
+  <data name="查找" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="查找 (Ctrl+F)" xml:space="preserve">
+    <value>Find (Ctrl+F)</value>
+  </data>
+  <data name="查找 / 替换 (Ctrl+F / Ctrl+H)" xml:space="preserve">
+    <value>Find / Replace (Ctrl+F / Ctrl+H)</value>
+  </data>
+  <data name="查找内容" xml:space="preserve">
+    <value>Search Text</value>
+  </data>
+  <data name="正则表达式" xml:space="preserve">
+    <value>Regular Expression</value>
+  </data>
+  <data name="正在打开工作区…" xml:space="preserve">
+    <value>Opening Workspace…</value>
+  </data>
+  <data name="活动平台" xml:space="preserve">
+    <value>Active Platform</value>
+  </data>
+  <data name="活动配置" xml:space="preserve">
+    <value>Active Configuration</value>
+  </data>
+  <data name="清空最近列表" xml:space="preserve">
+    <value>Clear Recent List</value>
+  </data>
+  <data name="筛选文档符号" xml:space="preserve">
+    <value>Filter Document Symbols</value>
+  </data>
+  <data name="编辑" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="编辑器缩放" xml:space="preserve">
+    <value>Editor Zoom</value>
+  </data>
+  <data name="编辑器设置" xml:space="preserve">
+    <value>Editor Settings</value>
+  </data>
+  <data name="缩放；Ctrl+滚轮，Ctrl+0 重置" xml:space="preserve">
+    <value>Zoom; Ctrl+Wheel, Ctrl+0 to Reset</value>
+  </data>
+  <data name="自动换行" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
+  <data name="行:1 列:1" xml:space="preserve">
+    <value>Ln:1 Col:1</value>
+  </data>
+  <data name="解决方案" xml:space="preserve">
+    <value>Solution</value>
+  </data>
+  <data name="解决方案视图" xml:space="preserve">
+    <value>Solution View</value>
+  </data>
+  <data name="解决方案配置管理" xml:space="preserve">
+    <value>Solution Configuration Manager</value>
+  </data>
+  <data name="词" xml:space="preserve">
+    <value>Word</value>
+  </data>
+  <data name="语法高亮模式" xml:space="preserve">
+    <value>Syntax Highlighting Mode</value>
+  </data>
+  <data name="跳转到行" xml:space="preserve">
+    <value>Go to Line</value>
+  </data>
+  <data name="跳转到行 : 列" xml:space="preserve">
+    <value>Go to Line : Column</value>
+  </data>
+  <data name="运行 Python" xml:space="preserve">
+    <value>Run Python</value>
+  </data>
+  <data name="运行 Python (F5)" xml:space="preserve">
+    <value>Run Python (F5)</value>
+  </data>
+  <data name="重做" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="重做 (Ctrl+Y)" xml:space="preserve">
+    <value>Redo (Ctrl+Y)</value>
+  </data>
+  <data name="重新加载" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="项目" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="项目依赖" xml:space="preserve">
+    <value>Project Dependencies</value>
+  </data>
+  <data name="项目文件" xml:space="preserve">
+    <value>Project File</value>
+  </data>
+  <data name="项目配置" xml:space="preserve">
+    <value>Project Configuration</value>
+  </data>
+  <data name="验证结果" xml:space="preserve">
+    <value>Validation Results</value>
+  </data>
+  <data name="1–{0:N0} 行 · 可输入 行:列" xml:space="preserve">
+    <value>Lines 1–{0:N0} · Enter line:column</value>
+  </data>
+  <data name="Enter 下一个 · Shift+Enter 上一个 · Esc 关闭" xml:space="preserve">
+    <value>Enter Next · Shift+Enter Previous · Esc Close</value>
+  </data>
+  <data name="JSON 格式错误" xml:space="preserve">
+    <value>Invalid JSON Format</value>
+  </data>
+  <data name="JSON 语法问题 · {0}:{1}" xml:space="preserve">
+    <value>JSON Syntax Issue · {0}:{1}</value>
+  </data>
+  <data name="{0} (加载失败)" xml:space="preserve">
+    <value>{0} (Load failed)</value>
+  </data>
+  <data name="{0} - 编辑" xml:space="preserve">
+    <value>{0} - Edit</value>
+  </data>
+  <data name="{0} [已删除]" xml:space="preserve">
+    <value>{0} [Deleted]</value>
+  </data>
+  <data name="{0} 个声明 · Enter 跳转 · Esc 关闭" xml:space="preserve">
+    <value>{0} Declarations · Enter to Jump · Esc to Close</value>
+  </data>
+  <data name="{0}{1:N0} 个匹配" xml:space="preserve">
+    <value>{0}{1:N0} Matches</value>
+  </data>
+  <data name="不存在父目录，是否创建" xml:space="preserve">
+    <value>The parent directory does not exist. Create it?</value>
+  </data>
+  <data name="从解决方案中移除“{0}”吗？磁盘文件不会被删除。" xml:space="preserve">
+    <value>Remove “{0}” from the solution? Files on disk will remain.</value>
+  </data>
+  <data name="从解决方案中移除文件夹“{0}”吗？其中的项目和子文件夹将移动到上一级。" xml:space="preserve">
+    <value>Remove solution folder “{0}”? Its projects and subfolders will move to the parent folder.</value>
+  </data>
+  <data name="从解决方案中移除项目“{0}”吗？项目文件和目录不会被删除。" xml:space="preserve">
+    <value>Remove project “{0}” from the solution? Project files and directories will remain.</value>
+  </data>
+  <data name="从解决方案中移除项目引用“{0}”吗？" xml:space="preserve">
+    <value>Remove project reference “{0}” from the solution?</value>
+  </data>
+  <data name="从项目中排除(_J)" xml:space="preserve">
+    <value>Exclude from Project (_J)</value>
+  </data>
+  <data name="保存失败" xml:space="preserve">
+    <value>Save Failed</value>
+  </data>
+  <data name="保存文件失败。&#10;&#10;{0}" xml:space="preserve">
+    <value>Failed to save file.
+
+{0}</value>
+  </data>
+  <data name="保存更改" xml:space="preserve">
+    <value>Save changes</value>
+  </data>
+  <data name="保存解决方案失败" xml:space="preserve">
+    <value>Failed to Save Solution</value>
+  </data>
+  <data name="关闭解决方案(_L)" xml:space="preserve">
+    <value>Close Solution (_L)</value>
+  </data>
+  <data name="创建项目失败" xml:space="preserve">
+    <value>Failed to Create Project</value>
+  </data>
+  <data name="刷新失败：{0}" xml:space="preserve">
+    <value>Refresh failed: {0}</value>
+  </data>
+  <data name="包括在项目中(_J)" xml:space="preserve">
+    <value>Include in Project (_J)</value>
+  </data>
+  <data name="取消固定" xml:space="preserve">
+    <value>Unpin</value>
+  </data>
+  <data name="取消打开" xml:space="preserve">
+    <value>Cancel Open</value>
+  </data>
+  <data name="同一级已存在名为“{0}”的解决方案文件夹。" xml:space="preserve">
+    <value>A solution folder named “{0}” already exists at this level.</value>
+  </data>
+  <data name="同名文件夹 &quot;{0}&quot; 已存在" xml:space="preserve">
+    <value>A folder named "{0}" already exists</value>
+  </data>
+  <data name="启动项目无法执行该命令，请检查启动项目和项目命令配置。" xml:space="preserve">
+    <value>The startup project cannot execute this command. Check the startup project and its command configuration.</value>
+  </data>
+  <data name="在终端中打开" xml:space="preserve">
+    <value>Open in Terminal</value>
+  </data>
+  <data name="在解决方案资源管理器中定位(_L)" xml:space="preserve">
+    <value>Locate in Solution Explorer (_L)</value>
+  </data>
+  <data name="始终使用此编辑器打开文件夹" xml:space="preserve">
+    <value>Always Open Folders with This Editor</value>
+  </data>
+  <data name="定位失败：{0}" xml:space="preserve">
+    <value>Location failed: {0}</value>
+  </data>
+  <data name="工程名不能包含特殊字符" xml:space="preserve">
+    <value>Project names cannot contain special characters</value>
+  </data>
+  <data name="已打开 {0}/{1} 项。{2}{3}{4}" xml:space="preserve">
+    <value>Opened {0}/{1} items. {2}{3}{4}</value>
+  </data>
+  <data name="已替换 {0:N0} 处 · Ctrl+Z 撤销" xml:space="preserve">
+    <value>Replaced {0:N0} occurrences · Ctrl+Z to Undo</value>
+  </data>
+  <data name="开始执行(不调试)(_H)" xml:space="preserve">
+    <value>Start Without Debugging (_H)</value>
+  </data>
+  <data name="开始调试(_S)" xml:space="preserve">
+    <value>Start Debugging (_S)</value>
+  </data>
+  <data name="当前文档不在此资源管理器视图中" xml:space="preserve">
+    <value>The current document is outside this explorer view</value>
+  </data>
+  <data name="当前没有正在打开的工作区" xml:space="preserve">
+    <value>No workspace is currently open</value>
+  </data>
+  <data name="找到 {0} 项" xml:space="preserve">
+    <value>{0} results</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>Hint</value>
+  </data>
+  <data name="搜索失败：{0}" xml:space="preserve">
+    <value>Search failed: {0}</value>
+  </data>
+  <data name="撤销解决方案操作失败" xml:space="preserve">
+    <value>Failed to Undo Solution Operation</value>
+  </data>
+  <data name="文件 &quot;{0}&quot; 已存在，是否覆盖？" xml:space="preserve">
+    <value>File "{0}" already exists. Overwrite it?</value>
+  </data>
+  <data name="文件名包含无效字符" xml:space="preserve">
+    <value>The filename contains invalid characters</value>
+  </data>
+  <data name="文件夹不为空，是否清空文件夹" xml:space="preserve">
+    <value>The folder is not empty. Clear it?</value>
+  </data>
+  <data name="文件夹路径不能为空" xml:space="preserve">
+    <value>The folder path cannot be empty.</value>
+  </data>
+  <data name="文件已经写入磁盘，但未能包括到项目中：{0}" xml:space="preserve">
+    <value>The file was written to disk but could not be included in the project: {0}</value>
+  </data>
+  <data name="文件有未保存的更改，是否在关闭前保存？" xml:space="preserve">
+    <value>The file has unsaved changes. Save before closing?</value>
+  </data>
+  <data name="新建项失败" xml:space="preserve">
+    <value>Failed to Create Item</value>
+  </data>
+  <data name="无法保存“{0}”。{1}" xml:space="preserve">
+    <value>Cannot save “{0}”. {1}</value>
+  </data>
+  <data name="无法保存解决方案配置。&#10;&#10;{0}" xml:space="preserve">
+    <value>Cannot save solution configuration.
+
+{0}</value>
+  </data>
+  <data name="无法在当前视图中定位该项" xml:space="preserve">
+    <value>Cannot locate this item in the current view</value>
+  </data>
+  <data name="无法打开资源" xml:space="preserve">
+    <value>Cannot Open Resource</value>
+  </data>
+  <data name="无法重新加载“{0}”。{1}" xml:space="preserve">
+    <value>Cannot reload “{0}”. {1}</value>
+  </data>
+  <data name="是否保存对“{0}”的更改？" xml:space="preserve">
+    <value>Save changes to “{0}”?</value>
+  </data>
+  <data name="显示前 {0} 项，请继续输入以缩小范围" xml:space="preserve">
+    <value>Showing the first {0} items; keep typing to narrow results</value>
+  </data>
+  <data name="显示所有文件(_S)" xml:space="preserve">
+    <value>Show All Files (_S)</value>
+  </data>
+  <data name="更新项目失败" xml:space="preserve">
+    <value>Failed to Update Project</value>
+  </data>
+  <data name="有 {0} 项未能删除或移除，请查看前面的错误信息。" xml:space="preserve">
+    <value>{0} items could not be deleted or removed; see the preceding errors.</value>
+  </data>
+  <data name="未打开工作区" xml:space="preserve">
+    <value>No Workspace Open</value>
+  </data>
+  <data name="未打开解决方案" xml:space="preserve">
+    <value>No Solution Open</value>
+  </data>
+  <data name="未找到匹配项" xml:space="preserve">
+    <value>No matches found</value>
+  </data>
+  <data name="未找到文档内定义；可搜索其他声明" xml:space="preserve">
+    <value>No definition found in this document; search other declarations</value>
+  </data>
+  <data name="查看加载错误(_E)..." xml:space="preserve">
+    <value>View Load Errors (_E)...</value>
+  </data>
+  <data name="正在搜索…" xml:space="preserve">
+    <value>Searching…</value>
+  </data>
+  <data name="正在更新文档声明…" xml:space="preserve">
+    <value>Updating Document Declarations…</value>
+  </data>
+  <data name="没有匹配的文档声明" xml:space="preserve">
+    <value>No matching document declarations</value>
+  </data>
+  <data name="活动平台: {0}" xml:space="preserve">
+    <value>Active Platform: {0}</value>
+  </data>
+  <data name="活动解决方案平台" xml:space="preserve">
+    <value>Active Solution Platform</value>
+  </data>
+  <data name="活动解决方案平台(_P)" xml:space="preserve">
+    <value>Active Solution Platform (_P)</value>
+  </data>
+  <data name="活动解决方案配置" xml:space="preserve">
+    <value>Active Solution Configuration</value>
+  </data>
+  <data name="活动解决方案配置(_C)" xml:space="preserve">
+    <value>Active Solution Configuration (_C)</value>
+  </data>
+  <data name="活动配置: {0}" xml:space="preserve">
+    <value>Active Configuration: {0}</value>
+  </data>
+  <data name="添加新建项" xml:space="preserve">
+    <value>Add New Item</value>
+  </data>
+  <data name="添加新项目" xml:space="preserve">
+    <value>Add New Project</value>
+  </data>
+  <data name="添加现有项" xml:space="preserve">
+    <value>Add Existing Item</value>
+  </data>
+  <data name="添加现有项目" xml:space="preserve">
+    <value>Add Existing Project</value>
+  </data>
+  <data name="添加解决方案项失败" xml:space="preserve">
+    <value>Failed to Add Solution Item</value>
+  </data>
+  <data name="添加项目失败" xml:space="preserve">
+    <value>Failed to Add Project</value>
+  </data>
+  <data name="生成(_B)" xml:space="preserve">
+    <value>Build (_B)</value>
+  </data>
+  <data name="生成解决方案(_B)" xml:space="preserve">
+    <value>Build Solution (_B)</value>
+  </data>
+  <data name="目标文件夹中已有 {0} 个同名文件。是否覆盖这些文件？" xml:space="preserve">
+    <value>The target folder contains {0} files with the same names. Overwrite them?</value>
+  </data>
+  <data name="确定删除或从解决方案移除选中的 {0} 项吗？{1}{2}{3}" xml:space="preserve">
+    <value>Delete or remove the selected {0} items from the solution? {1}{2}{3}</value>
+  </data>
+  <data name="确定将“{0}”移到回收站吗？" xml:space="preserve">
+    <value>Move “{0}” to the Recycle Bin?</value>
+  </data>
+  <data name="确定要清空最近工作区列表吗？" xml:space="preserve">
+    <value>Clear the recent workspace list?</value>
+  </data>
+  <data name="移动到解决方案文件夹(_M)" xml:space="preserve">
+    <value>Move to Solution Folder (_M)</value>
+  </data>
+  <data name="纯文本" xml:space="preserve">
+    <value>Plain Text</value>
+  </data>
+  <data name="编辑器设置保存失败" xml:space="preserve">
+    <value>Failed to Save Editor Settings</value>
+  </data>
+  <data name="编辑项目文件(_E)" xml:space="preserve">
+    <value>Edit Project File (_E)</value>
+  </data>
+  <data name="行 {0:N0} / {1:N0}" xml:space="preserve">
+    <value>Line {0:N0} / {1:N0}</value>
+  </data>
+  <data name="设为启动项目(_A)" xml:space="preserve">
+    <value>Set as Startup Project (_A)</value>
+  </data>
+  <data name="请先修复验证结果中的错误。" xml:space="preserve">
+    <value>Fix the validation errors first.</value>
+  </data>
+  <data name="请输入 1–{0:N0} 范围内的行号" xml:space="preserve">
+    <value>Enter a line number between 1 and {0:N0}</value>
+  </data>
+  <data name="请输入文件名" xml:space="preserve">
+    <value>Enter a filename</value>
+  </data>
+  <data name="请输入项目名称" xml:space="preserve">
+    <value>Enter a project name</value>
+  </data>
+  <data name="请选择一个模板" xml:space="preserve">
+    <value>Select a template</value>
+  </data>
+  <data name="请选择一个项目模板" xml:space="preserve">
+    <value>Select a project template</value>
+  </data>
+  <data name="读取模板失败" xml:space="preserve">
+    <value>Failed to Read Template</value>
+  </data>
+  <data name="调试(_D)" xml:space="preserve">
+    <value>Debug (_D)</value>
+  </data>
+  <data name="调试启动项目(_D)" xml:space="preserve">
+    <value>Debug Startup Project (_D)</value>
+  </data>
+  <data name="运行启动项目(_R)" xml:space="preserve">
+    <value>Run Startup Project (_R)</value>
+  </data>
+  <data name="运行脚本" xml:space="preserve">
+    <value>Run Script</value>
+  </data>
+  <data name="部分文件未能打开" xml:space="preserve">
+    <value>Some Files Could Not Be Opened</value>
+  </data>
+  <data name="配置管理器(_C)..." xml:space="preserve">
+    <value>Configuration Manager (_C)...</value>
+  </data>
+  <data name="配置管理器(_M)..." xml:space="preserve">
+    <value>Configuration Manager (_M)...</value>
+  </data>
+  <data name="重做解决方案操作失败" xml:space="preserve">
+    <value>Failed to Redo Solution Operation</value>
+  </data>
+  <data name="重新加载将放弃当前未保存的更改，是否继续？" xml:space="preserve">
+    <value>Reloading discards unsaved changes. Continue?</value>
+  </data>
+  <data name="错误" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="问 AI 总结此文件夹" xml:space="preserve">
+    <value>Ask AI to Summarize This Folder</value>
+  </data>
+  <data name="问 AI 解释此文件" xml:space="preserve">
+    <value>Ask AI to Explain This File</value>
+  </data>
+  <data name="问 AI 诊断此文件/日志" xml:space="preserve">
+    <value>Ask AI to Diagnose This File / Log</value>
+  </data>
+  <data name="项目 &quot;{0}&quot; 已存在" xml:space="preserve">
+    <value>Project "{0}" already exists</value>
+  </data>
+  <data name="项目加载错误" xml:space="preserve">
+    <value>Project Load Error</value>
+  </data>
+  <data name="项目名称包含无效字符" xml:space="preserve">
+    <value>The project name contains invalid characters</value>
+  </data>
+  <data name="项目已创建在“{0}”，但未能添加到当前解决方案。" xml:space="preserve">
+    <value>Project created at “{0}”, but could not be added to the current solution.</value>
+  </data>
+  <data name="默认打开方式未保存" xml:space="preserve">
+    <value>Default Open Method Not Saved</value>
+  </data>
+  <data name="操作" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="请选择一个项目" xml:space="preserve">
+    <value>Select a project</value>
+  </data>
+  <data name="就绪" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="正在打开：{0}" xml:space="preserve">
+    <value>Opening: {0}</value>
+  </data>
 </root>

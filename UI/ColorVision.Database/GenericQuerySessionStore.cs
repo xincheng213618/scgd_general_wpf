@@ -41,9 +41,9 @@ namespace ColorVision.Database
             {
                 Count = config.Count,
                 OrderByType = config.OrderByType,
-                Conditions = conditions.Select(condition => new GenericQueryConditionState
+                Conditions = conditions.Where(condition => condition.Property != null).Select(condition => new GenericQueryConditionState
                 {
-                    PropertyName = condition.Property.Name,
+                    PropertyName = condition.Property!.Name,
                     Operator = condition.Operator,
                     InputText = condition.InputText,
                     Value = condition.Value

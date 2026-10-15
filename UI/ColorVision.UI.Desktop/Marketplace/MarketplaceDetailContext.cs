@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;

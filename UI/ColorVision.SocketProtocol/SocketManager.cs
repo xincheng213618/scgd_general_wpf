@@ -9,7 +9,6 @@ using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Windows;
 
 namespace ColorVision.SocketProtocol
@@ -30,7 +29,13 @@ namespace ColorVision.SocketProtocol
         /// <returns>SocketManager实例</returns>
         public static SocketManager GetInstance() => ApplicationLifetime.GetOrCreate(static () => new SocketManager());
 
-        public static bool ShutdownExisting(TimeSpan timeout) => ApplicationLifetime.ShutdownExisting(timeout);
+        public static bool ShutdownExisting(TimeSpan timeout)
+        {
+            var deadline = SocketShutdownDeadline.Start(timeout);
+            bool serverCompleted = ApplicationLifetime.ShutdownExisting(deadline.Remaining);
+            bool messagesCompleted = SocketMessageManager.ShutdownExisting(deadline.Remaining);
+            return serverCompleted && messagesCompleted;
+        }
 
         private readonly SocketWorkerTracker _workerTracker;
         private readonly SocketServerLifecycle _serverLifecycle;
@@ -679,13 +684,14 @@ namespace ColorVision.SocketProtocol
                                 log.Info(JsonConvert.SerializeObject(new
                                 {
                                     Event = "SocketReceiveDispatchTiming",
-                                    MessageId = receivedMsg.Id,
+                                    receivedMsg.RecordSequence,
                                     receivedMsg.EventName,
                                     receivedMsg.MsgID,
                                     ReceivedAt = receivedMsg.MessageTime,
                                     DispatchRequestedAt = DateTime.Now,
                                     DecodeAndDeserializeMs = Math.Round(deserializeCompletedAt, 3),
                                     RecordMessageMs = Math.Round(recordCompletedAt - deserializeCompletedAt, 3),
+                                    PersistenceAwaited = false,
                                     ReceiveToDispatchMs = Math.Round(recordCompletedAt, 3),
                                 }));
 
