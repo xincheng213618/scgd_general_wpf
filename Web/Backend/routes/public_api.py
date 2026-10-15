@@ -7,7 +7,7 @@ This module handles /api/stats, /api/feedback, and legacy file serving.
 
 from __future__ import annotations
 
-from flask import Blueprint, abort, current_app, jsonify, request, send_file, session
+from flask import Blueprint, abort, current_app, jsonify, request, session
 
 from context import MarketplaceContext
 from routes.artifact_delivery import deliver_artifact
@@ -225,8 +225,15 @@ def api_feedback_attachment(feedback_id: str, filename: str):
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
-    return send_file(
+    return deliver_artifact(
+        ctx.artifact_delivery,
         target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="feedback",
+            artifact_id=feedback_id,
+            relative_path=target.relative_to(ctx.storage).as_posix(),
+        ),
         as_attachment=True,
         download_name=f"{feedback_id}__{target.name}",
     )
