@@ -223,12 +223,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             BeginExecution(input.Action, new[] { input });
         }
 
-        protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex, string imageFilePath)
+        protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex)
         {
-            if (!string.IsNullOrWhiteSpace(imageFilePath))
-            {
-                return Path.GetFullPath(imageFilePath.Trim());
-            }
             if (!TryGetInputMasterResult(action, inputIndex, out int masterId, out int masterResultType, out _) || masterId <= 0)
             {
                 return string.Empty;

@@ -154,7 +154,7 @@ public sealed class LocalTemplateMatchingTests
                 return Detection();
             }
         };
-        node = new(services) { ParameterJson = CreateDocument().ToJson(), ImageFilePath = @"C:\does-not-exist.cvraw", SearchRegion = new(5, 5, 85, 65) };
+        node = new(services) { ParameterJson = CreateDocument().ToJson(), SearchRegion = new(5, 5, 85, 65) };
         try
         {
             LocalTemplateMatchingNodeResult result = node.ExecuteSynchronously(action);
@@ -202,26 +202,27 @@ public sealed class LocalTemplateMatchingTests
         {
             InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
                 new LocalTemplateMatchingNode() { ParameterJson = CreateDocument().ToJson() }.ExecuteSynchronously(action));
-            Assert.Contains("本地内存帧", error.Message);
+            Assert.Contains("加载图片", error.Message);
         }
         finally { action.RuntimeResources.Dispose(); }
     }
 
     [Fact]
-    public void InvalidRoiStopsBeforeNativeAndOwnedFallbackFrameSurvivesSuccess()
+    public void InvalidRoiStopsBeforeNativeAndPreservesUpstreamFrame()
     {
-        using Recipe recipe = new();
-        CVStartCFC action = new("template-test");
-        LocalFlowFrame fallback = Frame();
-        FakeServices services = new() { LoadFrameHandler = _ => fallback };
-        LocalTemplateMatchingNode node = new(services) { ParameterJson = TemplateMatchingFile.Load(recipe.Path).ToJson(), ImageFilePath = recipe.Path, SearchRegion = new(99, 0, 10, 10) };
-        Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
-        Assert.Throws<ObjectDisposedException>(() => fallback.Acquire());
-        Assert.Equal(0, services.Detected);
-        LocalFlowFrame successFrame = Frame();
-        services = new() { LoadFrameHandler = _ => successFrame };
-        node = new(services) { ParameterJson = TemplateMatchingFile.Load(recipe.Path).ToJson(), ImageFilePath = recipe.Path };
-        try { node.ExecuteSynchronously(action); action.TryGetCurrentFrame(out LocalFlowFrame? current); Assert.Same(successFrame, current); }
+        CVStartCFC action = CreateAction();
+        action.TryGetCurrentFrame(out LocalFlowFrame? frame);
+        FakeServices services = new();
+        LocalTemplateMatchingNode node = new(services) { ParameterJson = CreateDocument().ToJson(), SearchRegion = new(99, 0, 10, 10) };
+        try
+        {
+            Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
+            Assert.Equal(0, services.Detected);
+            Assert.True(action.TryGetCurrentFrame(out LocalFlowFrame? current));
+            Assert.Same(frame, current);
+            using LocalFlowFrameLease lease = frame!.Acquire();
+            Assert.Equal(100, lease.Metadata.Width);
+        }
         finally { action.RuntimeResources.Dispose(); }
     }
 
@@ -229,7 +230,7 @@ public sealed class LocalTemplateMatchingTests
     public void NodeStateAndWindowUseSavedTemplate()
     {
         using Recipe recipe = new();
-        LocalTemplateMatchingNode node = new() { ParameterJson = TemplateMatchingFile.Load(recipe.Path).ToJson(), ImageFilePath = "source.cvraw", SearchRegion = new(1, 2, 30, 40) };
+        LocalTemplateMatchingNode node = new() { ParameterJson = TemplateMatchingFile.Load(recipe.Path).ToJson(), SearchRegion = new(1, 2, 30, 40) };
         node.Create();
         Assert.Equal("LocalTemplateMatching", node.NodeType);
         Assert.Equal(new[] { "IN" }, node.GetAllInputOptions().Select(option => option.Text));
@@ -237,7 +238,6 @@ public sealed class LocalTemplateMatchingTests
         restored.Create();
         restored.OnLoadNode(ParseState(node.GetSaveData()));
         Assert.Equal(node.ParameterJson, restored.ParameterJson);
-        Assert.Equal(node.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(node.SearchRegion, restored.SearchRegion);
         WpfTestHost.Invoke(() =>
         {
@@ -386,9 +386,7 @@ public sealed class LocalTemplateMatchingTests
     private sealed class FakeServices : ILocalTemplateMatchingServices
     {
         public int Detected { get; private set; }
-        public Func<string, LocalFlowFrame> LoadFrameHandler { get; init; } = _ => throw new Exception("Unexpected file load");
         public Func<HImage, TemplateMatchingDocument, RoiRect, TemplateMatchingResult> DetectHandler { get; init; } = (_, _, _) => Detection();
-        public LocalFlowFrame LoadFrame(string path) => LoadFrameHandler(path);
         public TemplateMatchingResult Detect(HImage image, TemplateMatchingDocument document, RoiRect roi) { Detected++; return DetectHandler(image, document, roi); }
     }
     private static Dictionary<string, byte[]> ParseState(byte[] data)

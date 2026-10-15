@@ -260,7 +260,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
 {
     internal const int DetectionFailureResultCode = -1;
     private readonly ILocalGridDistortionNodeServices services;
-    private string imageFilePath = string.Empty;
     private string resultDirectory = string.Empty;
     private Int32Rect searchRegion = Int32Rect.Empty;
     private string searchRegionPoiTemplate = string.Empty;
@@ -270,11 +269,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     private double minimumContrast = 0.02;
     private GridTvFormula tvFormula;
     private GridPoint9Formula point9Formula = GridPoint9Formula.OppositeEdgeMean;
-
-    [Category("本地点阵畸变")]
-    [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-    [STNodeProperty("图像文件", "可选后备输入；优先使用上游内存帧，没有内存帧时先读该文件，再回退到 IN 图像结果。历史底图需要上游保存实际帧文件。", true)]
-    public string ImageFilePath { get => imageFilePath; set { imageFilePath = value ?? string.Empty; OnPropertyChanged(); } }
 
     [Category("本地点阵畸变")]
     [STNodeProperty("图卡行数", "点阵行数，支持 3 到 15 的奇数；7×7 图卡填 7。缺失点不补点。", true)]
@@ -340,7 +334,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         if (!options.TryValidate(out string optionsError)) throw new InvalidOperationException(optionsError);
         Int32Rect configuredRegion = SearchRegion;
         string configuredTemplate = SearchRegionPoiTemplate.Trim();
-        string configuredImageFile = ImageFilePath;
         string configuredDirectory = ResultDirectory;
         GridTvFormula selectedTvFormula = TvFormula;
         GridPoint9Formula selectedPoint9Formula = Point9Formula;
@@ -348,7 +341,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         int zIndex = ZIndex;
         string nodeId = NodeID;
         LocalFlowFrame? ownedFrame = null;
-        LocalFlowFrame frame = ResolveFrame(action, configuredImageFile, out ownedFrame, out string? imageFile);
+        LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
         bool loadedFromFile = ownedFrame != null;
         try
         {
@@ -446,7 +439,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new
     {
         ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber,
-        ImageFilePath, SearchRegion, SearchRegionPoiTemplate, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
+        SearchRegion, SearchRegionPoiTemplate, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
         TvFormula, Point9Formula, Algorithm = "GridDistortionV2"
     });
 
@@ -485,7 +478,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             throw new InvalidOperationException("点阵畸变质量证据无效或未达到配置要求。");
     }
 
-    private LocalFlowFrame ResolveFrame(CVStartCFC action, string configuredFile, out LocalFlowFrame? ownedFrame, out string? imageFile)
+    private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
     {
         ownedFrame = null;
         imageFile = null;
@@ -495,32 +488,25 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             imageFile = currentFrame.ResolveResultImageFilePath();
             return currentFrame;
         }
-        int sourceMasterId = -1;
-        string? fallbackFile;
-        if (!string.IsNullOrWhiteSpace(configuredFile)) fallbackFile = Path.GetFullPath(configuredFile.Trim());
-        else
+        if (!TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _))
         {
-            if (!TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _))
-            {
-                masterId = ReadActionInt(action, "MasterId");
-                masterResultType = ReadActionInt(action, "MasterResultType");
-            }
-            if (masterId <= 0) throw new InvalidOperationException("流程中没有可用内存帧或图像结果；请连接本地取图/校正节点，或配置图像文件。");
-            if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
-                throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
-            MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
-            sourceMasterId = masterId;
-            string[] candidates = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => Path.GetFullPath(value.Trim())).ToArray();
-            fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();
+            masterId = ReadActionInt(action, "MasterId");
+            masterResultType = ReadActionInt(action, "MasterResultType");
         }
+        if (masterId <= 0) throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
+        if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
+            throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
+        MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
+        string[] candidates = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => Path.GetFullPath(value.Trim())).ToArray();
+        string? fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();
         ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
         {
             if (string.IsNullOrWhiteSpace(fallbackFile) || !File.Exists(fallbackFile))
                 throw new FileNotFoundException("点阵畸变图像文件不存在。", fallbackFile);
             return services.LoadFrame(fallbackFile);
         });
-        if (sourceMasterId > 0) ownedFrame.MasterId = sourceMasterId;
+        ownedFrame.MasterId = masterId;
         imageFile = fallbackFile;
         return ownedFrame;
     }

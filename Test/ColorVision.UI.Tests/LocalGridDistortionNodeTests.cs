@@ -100,7 +100,6 @@ public sealed class LocalGridDistortionNodeTests
         node.ExpectedCols = 9;
         node.BrightTarget = false;
         node.MinimumContrast = 0.04;
-        node.ImageFilePath = @"C:\images\dots.cvraw";
         node.SearchRegionPoiTemplate = "发光区";
         node.SearchRegion = new Int32Rect(10, 20, 400, 300);
         node.ResultDirectory = @"C:\results\distortion";
@@ -115,7 +114,6 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(node.ExpectedCols, restored.ExpectedCols);
         Assert.False(restored.BrightTarget);
         Assert.Equal(node.MinimumContrast, restored.MinimumContrast);
-        Assert.Equal(node.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(node.SearchRegion, restored.SearchRegion);
         Assert.Equal(node.SearchRegionPoiTemplate, restored.SearchRegionPoiTemplate);
         Assert.Equal(node.ResultDirectory, restored.ResultDirectory);
@@ -214,7 +212,7 @@ public sealed class LocalGridDistortionNodeTests
         };
         node = new(services)
         {
-            ExpectedRows = 7, ExpectedCols = 7, BrightTarget = false, ImageFilePath = @"C:\missing-file.cvraw", ResultDirectory = @"C:\initial",
+            ExpectedRows = 7, ExpectedCols = 7, BrightTarget = false, ResultDirectory = @"C:\initial",
             TvFormula = GridTvFormula.Half, Point9Formula = GridPoint9Formula.LegacyThreeSpanMean
         };
         try
@@ -277,10 +275,8 @@ public sealed class LocalGridDistortionNodeTests
         finally { action.RuntimeResources.Dispose(); }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FileSourcesTransferLoadedFrameOnlyAfterSuccessfulPersistence(bool useImageResult)
+    [Fact]
+    public void UpstreamImageResultTransfersLoadedFrameOnlyAfterSuccessfulPersistence()
     {
         string path = Path.GetTempFileName();
         CVStartCFC action = new("grid-file");
@@ -297,33 +293,36 @@ public sealed class LocalGridDistortionNodeTests
                 return new() { MasterId = 303, ResultFilePath = @"C:\grid.json" };
             }
         };
-        if (useImageResult)
-        {
-            action.Data["MasterId"] = 41;
-            action.Data["MasterResultType"] = (int)CVCommCore.CVResultType.Camera_Img;
-        }
-        LocalGridDistortionNode node = new(services) { ImageFilePath = useImageResult ? string.Empty : path };
+        action.Data["MasterId"] = 41;
+        action.Data["MasterResultType"] = (int)CVCommCore.CVResultType.Camera_Img;
+        LocalGridDistortionNode node = new(services);
+        node.OnLoadNode(new() { ["ImageFilePath"] = Encoding.UTF8.GetBytes(@"C:\missing-legacy-input.cvraw") });
         try
         {
             LocalGridDistortionNodeResultData result = node.ExecuteSynchronously(action);
             Assert.True(action.TryGetCurrentFrame(out LocalFlowFrame? current));
             Assert.Same(loaded, current);
-            Assert.Equal(useImageResult ? 41 : -1, result.SourceMasterId);
+            Assert.Equal(41, result.SourceMasterId);
         }
         finally { action.RuntimeResources.Dispose(); File.Delete(path); }
     }
 
     [Fact]
-    public void InvalidConfiguredFileDoesNotFallBackToInputResult()
+    public void MissingUpstreamDoesNotUseLegacyConfiguredFile()
     {
+        string path = Path.GetTempFileName();
         CVStartCFC action = new("grid-missing");
-        action.Data["MasterId"] = 41;
-        action.Data["MasterResultType"] = (int)CVCommCore.CVResultType.Camera_Img;
         FakeServices services = new();
-        LocalGridDistortionNode node = new(services) { ImageFilePath = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.cvraw") };
-        Assert.Throws<FileNotFoundException>(() => node.ExecuteSynchronously(action));
-        Assert.Equal(0, services.DetectCount);
-        Assert.Equal(0, services.PersistCount);
+        LocalGridDistortionNode node = new(services);
+        node.OnLoadNode(new() { ["ImageFilePath"] = Encoding.UTF8.GetBytes(path) });
+        try
+        {
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
+            Assert.Contains("加载图片", error.Message);
+            Assert.Equal(0, services.DetectCount);
+            Assert.Equal(0, services.PersistCount);
+        }
+        finally { action.RuntimeResources.Dispose(); File.Delete(path); }
     }
 
     [Fact]
@@ -449,15 +448,18 @@ public sealed class LocalGridDistortionNodeTests
     {
         string path = Path.GetTempFileName();
         CVStartCFC action = new("grid-file-failed");
+        action.Data["MasterId"] = 41;
+        action.Data["MasterResultType"] = (int)CVCommCore.CVResultType.Camera_Img;
         LocalFlowFrame loaded = CreateFrame();
         FakeServices services = new()
         {
+            GetImageResultHandler = _ => new MeasureResultImgModel { FileUrl = path },
             LoadFrameHandler = _ => loaded,
             PersistHandler = _ => throw new InvalidOperationException("save failed")
         };
         try
         {
-            Assert.Throws<InvalidOperationException>(() => new LocalGridDistortionNode(services) { ImageFilePath = path }.ExecuteSynchronously(action));
+            Assert.Throws<InvalidOperationException>(() => new LocalGridDistortionNode(services).ExecuteSynchronously(action));
             Assert.False(action.TryGetCurrentFrame(out _));
             Assert.Throws<ObjectDisposedException>(() => loaded.Acquire());
             Assert.Equal(0, services.PublishCount);

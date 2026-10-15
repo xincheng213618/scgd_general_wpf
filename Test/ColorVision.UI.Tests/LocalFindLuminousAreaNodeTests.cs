@@ -31,7 +31,6 @@ public sealed class LocalFindLuminousAreaNodeTests
         Assert.Equal("发光区定位", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
-        Assert.Equal(string.Empty, node.ImageFilePath);
         Assert.Equal(string.Empty, node.SavePOITempName);
         Assert.Equal(Int32Rect.Empty, node.SearchRegion);
         Assert.Equal(LocalFindLuminousAreaNode.DefaultMinimumConfidence, node.MinimumConfidence);
@@ -51,7 +50,6 @@ public sealed class LocalFindLuminousAreaNodeTests
     {
         LocalFindLuminousAreaNode original = new();
         original.Create();
-        original.ImageFilePath = @"C:\images\white.cvraw";
         original.SavePOITempName = "POI_W_AUTO";
         original.SearchRegion = new Int32Rect(12, 34, 560, 780);
         original.MinimumConfidence = 0.72;
@@ -61,7 +59,6 @@ public sealed class LocalFindLuminousAreaNodeTests
         restored.Create();
         restored.OnLoadNode(state);
 
-        Assert.Equal(original.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(original.SavePOITempName, restored.SavePOITempName);
         Assert.Equal(original.SearchRegion, restored.SearchRegion);
         Assert.Equal(original.MinimumConfidence, restored.MinimumConfidence);
@@ -462,7 +459,7 @@ public sealed class LocalFindLuminousAreaNodeTests
     }
 
     [Fact]
-    public void FileExecutionLoadsRawDetectsPersistsPublishesAndOutputsMaster()
+    public void LoadedUpstreamImageDetectsPersistsPublishesAndOutputsMaster()
     {
         string filePath = Path.Combine(Path.GetTempPath(), $"ColorVision-LuminousArea-{Guid.NewGuid():N}.png");
         CVStartCFC? action = null;
@@ -496,12 +493,13 @@ public sealed class LocalFindLuminousAreaNodeTests
                 },
                 PublishHandler = request => published = request
             };
-            LocalFindLuminousAreaNode node = new(services) { ImageFilePath = filePath };
+            LocalFindLuminousAreaNode node = new(services);
             action = new CVStartCFC("file-execution");
+            action.SetCurrentFrame(LocalFrameFileService.Load(filePath));
 
             LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
 
-            Assert.Equal(1, services.LoadCount);
+            Assert.Equal(0, services.LoadCount);
             Assert.Equal(1, services.DetectCount);
             Assert.Equal(1, services.PersistCount);
             Assert.Equal(1, services.PublishCount);
@@ -654,7 +652,7 @@ public sealed class LocalFindLuminousAreaNodeTests
     }
 
     [Fact]
-    public void UpstreamFrameTakesPriorityOverConfiguredFallbackFile()
+    public void UpstreamFrameIsReusedWithoutOpeningAnImage()
     {
         var timing = new FlowNodeTiming();
         using var activation = timing.Activate();
@@ -665,10 +663,7 @@ public sealed class LocalFindLuminousAreaNodeTests
             DetectHandler = (_, _, _) => CreateSuccessfulDetection(),
             PersistHandler = _ => 79
         };
-        LocalFindLuminousAreaNode node = new(services)
-        {
-            ImageFilePath = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.cvraw")
-        };
+        LocalFindLuminousAreaNode node = new(services);
         try
         {
             LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);

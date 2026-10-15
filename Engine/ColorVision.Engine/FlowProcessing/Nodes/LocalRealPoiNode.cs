@@ -120,7 +120,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             bool loadedFromFile = !action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) || currentFrame == null;
             if (loadedFromFile)
             {
-                string path = ResolveInputImageFilePath(action, 0, string.Empty);
+                string path = ResolveInputImageFilePath(action, 0);
                 if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("图像输入端没有 CIE、带校正参数的 RAW 或图像结果文件。");
                 currentFrame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(path));
                 _ = TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _);

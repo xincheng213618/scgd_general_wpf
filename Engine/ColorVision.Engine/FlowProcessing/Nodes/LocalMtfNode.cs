@@ -155,7 +155,7 @@ public sealed class LocalMtfNode : LocalFlowNodeBase
         {
             if (!action.TryGetCurrentFrame(out LocalFlowFrame? frame) || frame == null)
             {
-                string path = ResolveInputImageFilePath(action, 0, string.Empty);
+                string path = ResolveInputImageFilePath(action, 0);
                 if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("IN_IMG 没有本地图像帧或已保存的图像结果。");
                 frame = ownedFrame = FlowNodeTiming.Run("OpenImage", () => services.LoadFrame(path));
                 _ = TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _);

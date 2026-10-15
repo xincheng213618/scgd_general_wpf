@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.POI;
+using FlowEngineLib;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
@@ -206,30 +207,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "发光区定位", CategoryOrder = 9900)]
+    [FlowNodeDocumentation("使用上游图像定位发光区，输出四角点。",
+        Usage = "将相机取图、校正或加载图片节点连接到 IN。本地图片请通过“加载图片”节点输入。")]
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase
     {
         internal const double DefaultMinimumConfidence = 0.25;
         internal const int DetectionFailureResultCode = -1;
         private static readonly string[] CornerNames = ["LT", "RT", "RB", "LB"];
 
-        private string imageFilePath = string.Empty;
         private string savePoiTempName = string.Empty;
         private Int32Rect searchRegion = Int32Rect.Empty;
         private double minimumConfidence = DefaultMinimumConfidence;
         private readonly ILocalFindLuminousAreaNodeServices services;
-
-        [Category("本地发光区定位")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-        [STNodeProperty("图像文件", "可选后备输入；优先使用上游本地内存帧，没有内存帧时先读该文件，再回退到 IN 图像结果", true)]
-        public string ImageFilePath
-        {
-            get => imageFilePath;
-            set
-            {
-                imageFilePath = value ?? string.Empty;
-                OnPropertyChanged();
-            }
-        }
 
         [Category("本地发光区定位")]
         [STNodeProperty("POI保存模板", "可选；定位成功后按旧发光区服务契约更新一个 Rect/LTRect 或四个 PolygonFour 模板明细", true)]
@@ -449,7 +438,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ServiceName = NodeName,
                 EventName = OperatorCode,
                 action.SerialNumber,
-                ImageFilePath,
                 SearchRegion,
                 MinimumConfidence,
                 SavePOITempName,
@@ -600,15 +588,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return ownedFrame;
             }
 
-            throw new InvalidOperationException("流程中没有可用的本地图像内存帧或图像结果；请连接本地取图/校正节点，或配置图像文件。");
+            throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
         }
 
         private string? ResolveFallbackFile(CVStartCFC action, out int sourceMasterId)
         {
             sourceMasterId = -1;
-            if (!string.IsNullOrWhiteSpace(ImageFilePath))
-                return NormalizeImagePath(ImageFilePath, "配置的图像文件");
-
             bool hasInput = TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _);
             if (!hasInput)
             {

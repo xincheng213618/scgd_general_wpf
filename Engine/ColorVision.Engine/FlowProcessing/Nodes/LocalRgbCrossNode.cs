@@ -85,7 +85,7 @@ internal static class LocalRgbCrossResultPersistence
 public sealed class LocalRgbCrossNode : LocalFlowNodeBase
 {
     private readonly ILocalRgbCrossNodeServices services;
-    private string searchTemplate = "", imageFilePath = "", resultDirectory = "";
+    private string searchTemplate = "", resultDirectory = "";
     private string parameterJson = "{}";
     private Int32Rect searchRegion = Int32Rect.Empty;
 
@@ -101,9 +101,6 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
     [Category("搜索区域")]
     [STNodeProperty("搜索区域", "固定像素 ROI；0,0,0,0 使用整图。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
     public Int32Rect SearchRegion { get => searchRegion; set { searchRegion = value; OnPropertyChanged(); } }
-    [Category("十字"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-    [STNodeProperty("图像文件", "可选后备输入；优先上游内存帧，其次此文件，再从 IN 图像结果读取。", true)]
-    public string ImageFilePath { get => imageFilePath; set { imageFilePath = value ?? ""; OnPropertyChanged(); } }
     [Category("十字"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
     [STNodeProperty("结果目录", "留空使用算法服务的数据基础路径/服务标识/Data/当天日期；填写则覆盖默认目录。", true)]
     public string ResultDirectory { get => resultDirectory; set { resultDirectory = value ?? ""; OnPropertyChanged(); } }
@@ -115,10 +112,10 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
     {
         if (!RgbCrossConfigurationDraft.TryCreate(ParameterJson, out var configuration, out string error)
             || !configuration!.TryGetParameters(out var parameters, out error)) throw new InvalidOperationException(error);
-        string poiTemplate = SearchRegionPoiTemplate.Trim(), directory = services.ResolveResultDirectory(ResultDirectory), file = ImageFilePath, nodeId = NodeID;
+        string poiTemplate = SearchRegionPoiTemplate.Trim(), directory = services.ResolveResultDirectory(ResultDirectory), nodeId = NodeID;
         Int32Rect region = SearchRegion; int zIndex = ZIndex;
         LocalFlowFrame? ownedFrame = null;
-        LocalFlowFrame frame = ResolveFrame(action, file, out ownedFrame, out string? imageFile);
+        LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
         try
         {
             using var lease = frame.Acquire();
@@ -145,8 +142,8 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
         }
         finally { ownedFrame?.Dispose(); }
     }
-    protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = "FindCross", action.SerialNumber, ParameterJson, SearchRegionPoiTemplate, SearchRegion, ImageFilePath, ResultDirectory });
-    private LocalFlowFrame ResolveFrame(CVStartCFC action, string configuredFile, out LocalFlowFrame? ownedFrame, out string? imageFile)
+    protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = "FindCross", action.SerialNumber, ParameterJson, SearchRegionPoiTemplate, SearchRegion, ResultDirectory });
+    private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
     {
         ownedFrame = null;
         imageFile = null;
@@ -156,32 +153,25 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
             imageFile = currentFrame.ResolveResultImageFilePath();
             return currentFrame;
         }
-        int sourceMasterId = -1;
-        string? fallbackFile;
-        if (!string.IsNullOrWhiteSpace(configuredFile)) fallbackFile = Path.GetFullPath(configuredFile.Trim());
-        else
+        if (!TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _))
         {
-            if (!TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _))
-            {
-                masterId = ReadActionInt(action, "MasterId");
-                masterResultType = ReadActionInt(action, "MasterResultType");
-            }
-            if (masterId <= 0) throw new InvalidOperationException("流程中没有可用内存帧或图像结果；请连接本地取图/校正节点，或配置图像文件。");
-            if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
-                throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
-            MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
-            sourceMasterId = masterId;
-            string[] candidates = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => Path.GetFullPath(value.Trim())).ToArray();
-            fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();
+            masterId = ReadActionInt(action, "MasterId");
+            masterResultType = ReadActionInt(action, "MasterResultType");
         }
+        if (masterId <= 0) throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
+        if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
+            throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
+        MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
+        string[] candidates = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => Path.GetFullPath(value.Trim())).ToArray();
+        string? fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();
         ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
         {
             if (string.IsNullOrWhiteSpace(fallbackFile) || !File.Exists(fallbackFile))
                 throw new FileNotFoundException("十字图像文件不存在。", fallbackFile);
             return services.LoadFrame(fallbackFile);
         });
-        if (sourceMasterId > 0) ownedFrame.MasterId = sourceMasterId;
+        ownedFrame.MasterId = masterId;
         imageFile = fallbackFile;
         return ownedFrame;
     }

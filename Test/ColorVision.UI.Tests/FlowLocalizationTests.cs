@@ -167,9 +167,13 @@ public class FlowLocalizationTests
                 Assert.Equal(expectedCategory, metadata.GetCategory(imageTitle));
 
                 PropertyInfo distortionTitle = typeof(LocalGridDistortionNode).GetProperty(nameof(ST.Library.UI.NodeEditor.STNode.Title))!;
-                PropertyInfo distortionImage = typeof(LocalGridDistortionNode).GetProperty(nameof(LocalGridDistortionNode.ImageFilePath))!;
-                Assert.Equal(metadata.GetCategory(distortionImage), metadata.GetCategory(distortionTitle));
+                PropertyInfo distortionRows = typeof(LocalGridDistortionNode).GetProperty(nameof(LocalGridDistortionNode.ExpectedRows))!;
+                Assert.Equal(metadata.GetCategory(distortionRows), metadata.GetCategory(distortionTitle));
                 Assert.NotEqual(nameof(LocalGridDistortionNode), metadata.GetCategory(distortionTitle));
+
+                PropertyInfo calibrationTitle = typeof(LocalCalibrationRealPoiNode).GetProperty(nameof(ST.Library.UI.NodeEditor.STNode.Title))!;
+                PropertyInfo calibrationTemplate = typeof(LocalCalibrationRealPoiNode).GetProperty(nameof(LocalCalibrationRealPoiNode.CalibTempName))!;
+                Assert.Equal(metadata.GetCategory(calibrationTemplate), metadata.GetCategory(calibrationTitle));
             }
             finally
             {
@@ -372,6 +376,27 @@ public class FlowLocalizationTests
             CultureInfo.CurrentCulture = originalCulture;
             CultureInfo.CurrentUICulture = originalUiCulture;
         }
+    }
+
+    [Theory]
+    [InlineData(typeof(LocalFindLuminousAreaNode))]
+    [InlineData(typeof(LocalFindCrossNode))]
+    [InlineData(typeof(LocalGridDistortionNode))]
+    [InlineData(typeof(LocalRgbCrossNode))]
+    [InlineData(typeof(LocalRingGhostNode))]
+    [InlineData(typeof(LocalTemplateMatchingNode))]
+    [InlineData(typeof(LocalCalibrationRealPoiNode))]
+    public void LocalImageConsumersIgnoreLegacyFileConfiguration(Type nodeType)
+    {
+        LocalFlowNodeBase node = (LocalFlowNodeBase)Activator.CreateInstance(nodeType)!;
+        node.Create();
+        Dictionary<string, byte[]> state = ParseState(node.GetSaveData());
+        state["ImageFilePath"] = Encoding.UTF8.GetBytes(@"C:\images\legacy-input.cvraw");
+        node.OnLoadNode(state);
+
+        Assert.Null(nodeType.GetProperty("ImageFilePath"));
+        Assert.DoesNotContain("ImageFilePath", ParseState(node.GetSaveData()).Keys);
+        Assert.Equal(state["NodeID"], ParseState(node.GetSaveData())["NodeID"]);
     }
 
     private static void EnsurePropertyEditorResources()
