@@ -223,7 +223,8 @@ namespace ColorVision.Copilot
 
             CopilotAgentEventProtocol.Validate(agent.Event);
             var hookLifecycle = state.HookLifecycle.Observe(agent.Event);
-            var answerLifecycle = state.AnswerLifecycle.Observe(agent.Event);
+            var answerLifecycle = state.Mode == CopilotAgentMode.Review
+                ? state.AnswerLifecycle.Observe(agent.Event) : state.AnswerLifecycle;
             var budgetLifecycle = state.BudgetLifecycle.Observe(agent.Event);
             var checkpointLifecycle = state.CheckpointLifecycle.Observe(agent.Event);
             var userQuestionLifecycle = state.UserQuestionLifecycle.Observe(

@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor;
 
 public sealed class DisplaySensorConfig : IDisplayConfigBase
 {
-    [Category("AcquisitionDisplay"), DisplayName("使用本地通用传感器")]
+    [Category("AcquisitionDisplay"), DisplayName("使用本地传感器")]
     [Description("下次打开时直接连接 TCP 或串口。已打开的连接在关闭前保持当前模式。")]
     public bool UseLocalSensor { get => useLocal; set { if (useLocal == value) return; useLocal = value; OnPropertyChanged(); } }
     private bool useLocal;
@@ -43,23 +43,15 @@ public partial class DeviceSensor
     private bool localDisposed;
     public string LastLocalResponse { get => lastLocalResponse; private set { lastLocalResponse = value; OnPropertyChanged(); } }
     private string lastLocalResponse = string.Empty;
-    [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
-    [Category("AcquisitionDisplay"), Description("CommandDisplayConfigHint")]
-    public RelayCommand EditDisplayConfigCommand { get; private set; } = null!;
 
     private void InitializeLocalSensor()
     {
+        LocalSession.Diagnostics.DeviceCode = Config.Code;
         if (SysResourceDao.IsLocalId(SysResourceModel.Id)) DisplayConfig.UseLocalSensor = true;
         SensorBackend = new SensorBackendState(DisplayConfig.UseLocalSensor);
         SensorBackend.Changed += RefreshLocalSensorStatus;
         LocalSession.StatusChanged += LocalSensorStatusChanged;
         DisplayConfig.PropertyChanged += LocalSensorPreferenceChanged;
-        EditDisplayConfigCommand = new RelayCommand(_ =>
-        {
-            new PropertyEditorWindow(DisplayConfig)
-            { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-        });
         LocalSensorFlowExecution.Register();
     }
 
@@ -73,6 +65,7 @@ public partial class DeviceSensor
     protected override void OnConfigChanged()
     {
         base.OnConfigChanged();
+        LocalSession.Diagnostics.DeviceCode = Config.Code;
         DisplayConfigManager.Instance.Configs[Config.Code] = DisplayConfig;
     }
 
@@ -101,7 +94,7 @@ public partial class DeviceSensor
         return SensorTemplateRepository.ReadCommands(config.Category, id, template.Value<string>("Name"));
     }
 
-    internal async Task<object?> ExecuteLocalSensorAsync(string operation, IReadOnlyList<LocalSensorCommand>? commands, LocalSensorConnectionConfig config, CancellationToken token)
+    internal async Task<object?> ExecuteLocalSensorAsync(string operation, IReadOnlyList<LocalSensorCommand>? commands, LocalSensorConnectionConfig config, CancellationToken token, bool autoConnect = false)
     {
         ObjectDisposedException.ThrowIf(localDisposed, this);
         lock (SensorBackend.Sync)
@@ -117,7 +110,10 @@ public partial class DeviceSensor
                 case "Open": await LocalSession.OpenAsync(config, token).ConfigureAwait(false); return null;
                 case "Close": await LocalSession.CloseAsync().ConfigureAwait(false); return null;
                 case "Reopen": await LocalSession.ReopenAsync(config, token).ConfigureAwait(false); return null;
-                case "ExecCmd": return await LocalSession.ExecuteAsync(commands ?? throw new ArgumentException("缺少传感器指令。"), token).ConfigureAwait(false);
+                case "ExecCmd":
+                    if (commands == null) throw new ArgumentException("缺少传感器指令。");
+                    if (autoConnect && !LocalSession.IsOpen) await LocalSession.OpenAsync(config, token).ConfigureAwait(false);
+                    return await LocalSession.ExecuteAsync(commands, token).ConfigureAwait(false);
                 default: throw new NotSupportedException($"本地传感器不支持 {operation}。");
             }
         }
@@ -173,6 +169,7 @@ public partial class DeviceSensor
 
     internal void PublishLocalSensorResult(object? result, Exception? failure = null)
     {
+        if (failure != null) LocalSession.Diagnostics.AddLog(LocalSession.EndpointIdentity ?? LocalSensorSession.EndpointKey(Config), "执行失败", failure.Message, true);
         void Update() => LastLocalResponse = failure?.Message ?? (result is IReadOnlyList<LocalSensorCommandResult> commands
             ? string.Join(Environment.NewLine, commands.Select(command => $"{command.Name}: {command.ResponseText} ({command.ElapsedMilliseconds} ms)")) : Properties.Resources.Success);
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Update);
@@ -183,6 +180,11 @@ public partial class DeviceSensor
     {
         if (localDisposed) return;
         localDisposed = true;
+        if (sensorDiagnosticsWindow is { } window)
+        {
+            if (window.Dispatcher.CheckAccess()) window.Close();
+            else window.Dispatcher.BeginInvoke(window.Close);
+        }
         try { LocalSession.Dispose(); }
         finally
         {

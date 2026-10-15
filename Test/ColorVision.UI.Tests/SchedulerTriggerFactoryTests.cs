@@ -259,6 +259,60 @@ namespace ColorVision.UI.Tests
             }).Build();
         }
 
+        [Theory]
+        [InlineData(JobExecutionMode.Simple, JobRepeatMode.Once, true)]
+        [InlineData(JobExecutionMode.Simple, JobRepeatMode.Multiple, true)]
+        [InlineData(JobExecutionMode.Interval, JobRepeatMode.Multiple, true)]
+        [InlineData(JobExecutionMode.Simple, JobRepeatMode.Forever, false)]
+        [InlineData(JobExecutionMode.Cron, JobRepeatMode.Once, false)]
+        public void LegacyRestore_UsesExhaustedTimestampInsteadOfLifetimeCount(JobExecutionMode mode, JobRepeatMode repeat, bool completed)
+        {
+            SchedulerInfo info = CreateInfo();
+            info.Mode = mode;
+            info.RepeatMode = repeat;
+            info.RunCount = 24657;
+            info.PreviousFireTime = "2026/10/11 16:22:39";
+            info.NextFireTime = "N/A";
+
+            SchedulerScheduleState.Restore(info);
+
+            Assert.Equal(completed, info.ScheduleCompleted);
+            Assert.Equal(completed ? Scheduler.SchedulerStatus.Completed : Scheduler.SchedulerStatus.Paused, info.Status);
+            Assert.Equal(0, info.ScheduledFireCount);
+        }
+
+        [Theory]
+        [InlineData(60)]
+        [InlineData(-3600)]
+        public void Resume_PreservesRemainingCountAndDoesNotReplayOverdueFirings(int savedOffsetSeconds)
+        {
+            SchedulerInfo info = CreateInfo();
+            info.RepeatMode = JobRepeatMode.Multiple;
+            info.RepeatCount = 4;
+            info.Interval = TimeSpan.FromSeconds(3);
+            info.HasScheduleCheckpoint = true;
+            info.ScheduledFireCount = 2;
+            info.NextScheduledFireTimeUtc = ScheduleBaseUtc.AddSeconds(savedOffsetSeconds);
+            info.RunCount = 24657;
+
+            SchedulerTriggerBuildResult result = SchedulerScheduleState.BuildRemaining(info, ScheduleBaseUtc);
+
+            Assert.True(result.Success, result.ErrorMessage);
+            ISimpleTrigger trigger = Assert.IsAssignableFrom<ISimpleTrigger>(result.Trigger);
+            Assert.Equal(2, trigger.RepeatCount); // Three of the five firings remain.
+            Assert.Equal(ScheduleBaseUtc.AddSeconds(savedOffsetSeconds > 0 ? savedOffsetSeconds : 3), trigger.StartTimeUtc);
+        }
+
+        [Fact]
+        public void ResumeOnce_AllowsUnusedZeroInterval()
+        {
+            SchedulerInfo info = CreateInfo();
+            info.Interval = TimeSpan.Zero;
+            SchedulerTriggerBuildResult result = SchedulerScheduleState.BuildRemaining(info, ScheduleBaseUtc);
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(0, Assert.IsAssignableFrom<ISimpleTrigger>(result.Trigger).RepeatCount);
+        }
+
         private static SchedulerInfo CreateInfo()
         {
             return new SchedulerInfo

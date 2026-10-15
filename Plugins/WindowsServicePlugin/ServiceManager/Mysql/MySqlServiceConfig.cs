@@ -7,13 +7,12 @@ namespace WindowsServicePlugin.ServiceManager
 {
     public class MySqlServiceConfig : ViewModelBase, IConfigSecure
     {
-        public const string RootProfileName = "RootPath";
-        public const string BusinessProfileName = "CVPath";
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "ColorVision";
 
         public static MySqlServiceConfig Instance => ConfigService.Instance.GetRequiredService<MySqlServiceConfig>();
 
+        [System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.NetworkAddressPropertiesEditor))]
         public string Host { get => _host; set { _host = NormalizeHost(value); OnPropertyChanged(); } }
         private string _host = "127.0.0.1";
 

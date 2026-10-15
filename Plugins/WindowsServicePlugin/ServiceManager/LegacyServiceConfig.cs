@@ -1,5 +1,4 @@
 using ColorVision.Database;
-using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using Microsoft.Win32;
 using System.IO;
@@ -75,7 +74,6 @@ namespace WindowsServicePlugin.ServiceManager
 
                 ApplyServiceManagerConfig(settings);
                 ApplyMySqlConfig(settings);
-                ApplyMqttConfig(settings);
                 SaveImportedConfigs();
 
                 ServiceManagerViewModel.Instance.RefreshAll();
@@ -154,62 +152,6 @@ namespace WindowsServicePlugin.ServiceManager
             databaseSetting.MySqlConfig.UserPwd = appPassword;
             databaseSetting.MySqlConfig.Database = database;
 
-            if (!string.IsNullOrWhiteSpace(rootPassword))
-            {
-                MySqlConfig rootConfig = new()
-                {
-                    Name = MySqlServiceConfig.RootProfileName,
-                    Host = host,
-                    Port = port,
-                    UserName = "root",
-                    UserPwd = rootPassword,
-                    Database = database
-                };
-
-                MySqlConfig? oldRootConfig = databaseSetting.MySqlConfigs.FirstOrDefault(item =>
-                    string.Equals(item.Name, MySqlServiceConfig.RootProfileName, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(item.UserName, "root", StringComparison.OrdinalIgnoreCase));
-
-                if (oldRootConfig != null)
-                {
-                    databaseSetting.MySqlConfigs.Remove(oldRootConfig);
-                }
-
-                databaseSetting.MySqlConfigs.Add(rootConfig);
-            }
-        }
-
-        private static void ApplyMqttConfig(IReadOnlyDictionary<string, string> settings)
-        {
-            MqttServiceConfig serviceConfig = MqttServiceConfig.Instance;
-            MQTTConfig mqttConfig = MQTTSetting.Instance.MQTTConfig;
-
-            string? host = GetSetting(settings, "MqttHost", "MQTTHost", "MQTT.Host");
-            if (!string.IsNullOrWhiteSpace(host))
-            {
-                serviceConfig.Host = host;
-                mqttConfig.Host = host;
-            }
-
-            if (TryGetPort(settings, out int port, "MqttPort", "MQTTPort", "MQTT.Port"))
-            {
-                serviceConfig.Port = port;
-                mqttConfig.Port = port;
-            }
-
-            string? user = GetSetting(settings, "MqttUser", "MQTTUser", "MqttUserName", "MQTTUserName", "MQTT.User");
-            if (user != null)
-            {
-                serviceConfig.UserName = user;
-                mqttConfig.UserName = user;
-            }
-
-            string? password = GetSetting(settings, "MqttPwd", "MQTTPwd", "MqttPassword", "MQTTPassword", "MQTT.Password");
-            if (password != null)
-            {
-                serviceConfig.Password = password;
-                mqttConfig.UserPwd = password;
-            }
         }
 
         private static void SaveImportedConfigs()
@@ -218,9 +160,7 @@ namespace WindowsServicePlugin.ServiceManager
             configHandler.Save<CVWinSMSConfig>();
             configHandler.Save<ServiceManagerConfig>();
             configHandler.Save<MySqlServiceConfig>();
-            configHandler.Save<MqttServiceConfig>();
             configHandler.Save<MySqlSetting>();
-            configHandler.Save<MQTTSetting>();
         }
 
         private static string? GetSetting(IReadOnlyDictionary<string, string> settings, params string[] keys)

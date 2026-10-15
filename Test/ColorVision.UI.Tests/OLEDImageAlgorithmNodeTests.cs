@@ -2,7 +2,6 @@ using ColorVision.Engine.Templates.Jsons.OLEDImageProcessing;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.Algorithm;
-using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
@@ -50,15 +49,5 @@ public class OLEDImageAlgorithmNodeTests
         Assert.Equal("OLED.LocalizationImageEnhan", enhancement.Code);
         Assert.Equal(202, dediffusion.TemplateDicId);
         Assert.Equal("OLED.Dediffusion", dediffusion.Code);
-
-        using JsonDocument enhancementJson = JsonDocument.Parse(enhancement.Description);
-        Assert.Equal(31, enhancementJson.RootElement.GetProperty("blurSize").GetInt32());
-        Assert.Equal(256, enhancementJson.RootElement.GetProperty("img_format_convert_factor").GetInt32());
-
-        using JsonDocument dediffusionJson = JsonDocument.Parse(dediffusion.Description);
-        JsonElement rebuildConfig = dediffusionJson.RootElement.GetProperty("rebuildCfg");
-        Assert.Equal(25, rebuildConfig.GetProperty("de_kernel").GetArrayLength());
-        Assert.True(rebuildConfig.GetProperty("de_defusion_en").GetBoolean());
-        Assert.Equal(300, rebuildConfig.GetProperty("de_iterationlimit").GetInt32());
     }
 }

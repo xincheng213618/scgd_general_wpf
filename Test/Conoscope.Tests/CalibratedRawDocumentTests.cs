@@ -205,6 +205,35 @@ public sealed class CalibratedRawDocumentTests
         finally { File.Delete(firstPath); File.Delete(secondPath); }
     }
 
+    [Fact]
+    public async Task ReopeningLatestRawUsesReplacedMatrixForAllXyzChannels()
+    {
+        string path = TemporaryFile("cvraw");
+        try
+        {
+            using CVCIEFile raw = WriteRaw(path);
+            var transform = Transform(0, true);
+            SaveCalibration(path, raw, transform);
+            using var document = NewDocument();
+            await document.OpenAsync(path, null, NoPreprocess, false);
+            Assert.Null(document.LoadError);
+            float[] before = [document.X!.At<float>(10, 10), document.Y!.At<float>(10, 10), document.Z!.At<float>(10, 10)];
+            double[] factors = [1.25, .75, 1.5];
+            for (int i = 0; i < 9; i++) transform.Coefficients[i] *= factors[i / 3];
+            SaveCalibration(path, raw, transform);
+            string? selected = Conoscope.ApplicationServices.Capture.ConoscopeCaptureWorkflow.FindCvcieFile([
+                new ColorVision.Engine.MeasureResultImgModel { Id = 2, FileUrl = path, ResultCode = 0 }]);
+            Assert.Equal(path, selected);
+            await document.OpenAsync(selected!, null, NoPreprocess, false);
+            Assert.Null(document.LoadError);
+            float[] after = [document.X!.At<float>(10, 10), document.Y!.At<float>(10, 10), document.Z!.At<float>(10, 10)];
+            for (int c = 0; c < 3; c++)
+                Assert.InRange(Math.Abs(after[c] - before[c] * factors[c]), 0, Math.Abs(before[c] * factors[c]) * 2e-7);
+            Assert.False(File.Exists(Path.ChangeExtension(path, ".cvcie")));
+        }
+        finally { File.Delete(path); }
+    }
+
     private static ConoscopeDocument NewDocument() => new(LogManager.GetLogger(typeof(CalibratedRawDocumentTests)));
     private static string TemporaryFile(string extension) => Path.Combine(Path.GetTempPath(), $"conoscope-raw-{Guid.NewGuid():N}.{extension}");
 

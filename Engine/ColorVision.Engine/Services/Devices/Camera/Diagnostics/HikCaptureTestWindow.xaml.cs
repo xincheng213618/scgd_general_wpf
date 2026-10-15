@@ -1,4 +1,5 @@
 using ColorVision.Themes;
+using cvColorVision;
 using Microsoft.Win32;
 using System;
 using System.Collections.Concurrent;
@@ -22,11 +23,13 @@ public partial class HikCaptureTestWindow : Window
     private bool busy, connected, closeWhenFinished;
     private int run;
     private readonly string logPath;
+    private readonly CameraModel cameraModel;
 
     internal HikCaptureTestWindow(HikCaptureTestSettings settings)
     {
         InitializeComponent();
         this.ApplyCaption();
+        cameraModel = settings.CameraModel;
         CameraBox.Text = settings.CameraId;
         ExposureBox.Text = settings.ExposureMs.ToString(CultureInfo.CurrentCulture);
         GainBox.Text = settings.Gain.ToString(CultureInfo.CurrentCulture);
@@ -45,7 +48,8 @@ public partial class HikCaptureTestWindow : Window
         string selected = CameraBox.SelectedItem is HikTestDevice device ? device.Serial : CameraBox.Text.Trim();
         try
         {
-            var devices = await Task.Run(HikCaptureBenchmark.Discover);
+            var log = new Progress<string>(AppendLog);
+            var devices = await Task.Run(() => HikCaptureBenchmark.Discover(cameraModel, log));
             CameraBox.ItemsSource = devices;
             CameraBox.SelectedItem = devices.FirstOrDefault(d => d.Serial.Equals(selected, StringComparison.OrdinalIgnoreCase))
                 ?? (devices.Count == 1 ? devices[0] : null);
@@ -66,6 +70,7 @@ public partial class HikCaptureTestWindow : Window
             var settings = new HikCaptureTestSettings
             {
                 CameraId = CameraBox.SelectedItem is HikTestDevice device ? device.Serial : CameraBox.Text.Trim(),
+                CameraModel = cameraModel,
                 ExposureMs = exposure, Gain = gain, BayerQuality = (uint)QualityBox.SelectedIndex
             };
             cancellation = new CancellationTokenSource();
@@ -86,7 +91,7 @@ public partial class HikCaptureTestWindow : Window
             {
                 samples.Add(sample);
                 UpdateSummary(currentRun);
-                AppendLog(FormattableString.Invariant($"[CameraCaptureCompare] Path=MVS Run={sample.Run} Index={sample.Index} FirstFrame={sample.FirstFrame} Serial={settings.CameraId} RequestedExposureMs={settings.ExposureMs} ActualExposureUs={sample.ActualExposureUs} RequestedGain={settings.Gain} ActualGain={sample.ActualGain} Width={sample.Width} Height={sample.Height} Bits=16 Channels=3 BayerQuality={settings.BayerQuality} SetupMs={sample.SetupMs:F3} CaptureMs={sample.CaptureMs:F3} TriggerWaitMs={sample.WaitMs:F3} ConvertMs={sample.ConvertMs:F3} ThreadCpuMs={sample.ThreadCpuMs:F3} CycleMs={sample.CycleMs:F3} FrameId={sample.FrameId} RawExport={sample.RawExportPath != null}"));
+                AppendLog(FormattableString.Invariant($"[CameraCaptureCompare] Path=MVS Run={sample.Run} Index={sample.Index} FirstFrame={sample.FirstFrame} Serial={settings.CameraId} RequestedExposureMs={settings.ExposureMs} ActualExposureUs={sample.ActualExposureUs} RequestedGain={settings.Gain} ActualGain={sample.ActualGain} Width={sample.Width} Height={sample.Height} Bits=16 Channels={sample.Channels} Format={sample.OutputFormat} BayerQuality={(sample.Channels == 3 ? settings.BayerQuality.ToString() : "N/A")} SetupMs={sample.SetupMs:F3} CaptureMs={sample.CaptureMs:F3} TriggerWaitMs={sample.WaitMs:F3} ConvertMs={sample.ConvertMs:F3} ThreadCpuMs={sample.ThreadCpuMs:F3} CycleMs={sample.CycleMs:F3} FrameId={sample.FrameId} RawExport={sample.RawExportPath != null}"));
                 if (cancellation?.IsCancellationRequested == false)
                 {
                     SetBusy(false);
@@ -123,8 +128,8 @@ public partial class HikCaptureTestWindow : Window
         var dialog = new SaveFileDialog
         {
             Title = EngineLocalization.Get("HikTest_SaveRaw"),
-            Filter = "Bayer16 + JSON (*.zip)|*.zip", DefaultExt = ".zip", AddExtension = true,
-            FileName = $"HikBayer_{DateTime.Now:yyyyMMdd_HHmmss_fff}.zip"
+            Filter = "16-bit RAW + JSON (*.zip)|*.zip", DefaultExt = ".zip", AddExtension = true,
+            FileName = $"HikRaw_{DateTime.Now:yyyyMMdd_HHmmss_fff}.zip"
         };
         if (dialog.ShowDialog(this) == true) QueueCapture(new HikCaptureRequest(dialog.FileName));
     }
@@ -195,7 +200,7 @@ public partial class HikCaptureTestWindow : Window
         var report = new StringBuilder(DetailsBox.Text);
         report.AppendLine().AppendLine("run,index,first_frame,actual_exposure_us,actual_gain,cycle_ms,setup_ms,capture_ms,trigger_wait_ms,convert_ms,thread_cpu_ms,frame_id,width,height,format,raw_export");
         foreach (var sample in samples)
-            report.AppendLine(FormattableString.Invariant($"{sample.Run},{sample.Index},{sample.FirstFrame},{sample.ActualExposureUs},{sample.ActualGain},{sample.CycleMs:F3},{sample.SetupMs:F3},{sample.CaptureMs:F3},{sample.WaitMs:F3},{sample.ConvertMs:F3},{sample.ThreadCpuMs:F3},{sample.FrameId},{sample.Width},{sample.Height},RGB48,{sample.RawExportPath != null}"));
+            report.AppendLine(FormattableString.Invariant($"{sample.Run},{sample.Index},{sample.FirstFrame},{sample.ActualExposureUs},{sample.ActualGain},{sample.CycleMs:F3},{sample.SetupMs:F3},{sample.CaptureMs:F3},{sample.WaitMs:F3},{sample.ConvertMs:F3},{sample.ThreadCpuMs:F3},{sample.FrameId},{sample.Width},{sample.Height},{sample.OutputFormat},{sample.RawExportPath != null}"));
         try { Clipboard.SetText(report.ToString()); StatusText.Text = EngineLocalization.Get("HikTest_Copied"); }
         catch (Exception ex) { ReportFailure(ex); }
     }

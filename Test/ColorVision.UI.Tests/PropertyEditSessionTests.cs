@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -28,6 +29,28 @@ public class PropertyEditSessionTests
     private sealed class GridColumnConfig
     {
         public ObservableCollection<GridViewColumnVisibility> Columns { get; set; } = new();
+    }
+
+    private sealed class HiddenPropertyConfig
+    {
+        public string Name { get; set; } = "Original";
+        [Browsable(false)]
+        public string PersistentId { get; set; } = "Default";
+    }
+
+    [Fact]
+    public void TransactionalSession_ContinuesToExcludeHiddenPropertiesFromCommit()
+    {
+        var source = new HiddenPropertyConfig { PersistentId = "saved-id" };
+        PropertyEditSession session = PropertyEditSession.Create(source, PropertyEditorEditMode.Transactional);
+        var editable = Assert.IsType<HiddenPropertyConfig>(session.EditableObject);
+        editable.Name = "Changed";
+        editable.PersistentId = "Changed hidden value";
+
+        session.Commit();
+
+        Assert.Equal("Changed", source.Name);
+        Assert.Equal("saved-id", source.PersistentId);
     }
 
     [Fact]

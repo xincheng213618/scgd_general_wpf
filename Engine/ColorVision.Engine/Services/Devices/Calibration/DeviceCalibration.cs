@@ -122,6 +122,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             if (_subscribedPhyCamera != null)
             {
                 _subscribedPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                _subscribedPhyCamera.Config.PropertyChanged -= PhysicalCameraIdentityChanged;
                 if (ReferenceEquals(_subscribedPhyCamera.DeviceCalibration, this))
                     _subscribedPhyCamera.DeviceCalibration = null;
             }
@@ -129,9 +130,18 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             _subscribedPhyCamera = phyCamera;
             if (_subscribedPhyCamera != null)
             {
+                PhysicalCameraIdentity.RecoverFromLogical(_subscribedPhyCamera, Config.CameraCode, Config.CameraID);
                 _subscribedPhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                _subscribedPhyCamera.Config.PropertyChanged += PhysicalCameraIdentityChanged;
                 _subscribedPhyCamera.DeviceCalibration = this;
+                Config.CameraID = _subscribedPhyCamera.Config.CameraID?.Trim() ?? string.Empty;
             }
+        }
+
+        private void PhysicalCameraIdentityChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!_isDisposed && ReferenceEquals(sender, _subscribedPhyCamera?.Config) && e.PropertyName == nameof(ConfigCalibration.CameraID))
+                Config.CameraID = _subscribedPhyCamera.Config.CameraID?.Trim() ?? string.Empty;
         }
 
         [CommandDisplay("ManagePhysicalCamera", CategoryOrder = 0)]
@@ -150,8 +160,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             if (_isDisposed)
                 return;
 
-            base.Save();
             AttachPhyCamera(PhyCamera);
+            if (_subscribedPhyCamera != null) Config.CameraID = _subscribedPhyCamera.Config.CameraID?.Trim() ?? string.Empty;
+            base.Save();
             _subscribedPhyCamera?.SetCalibration(this);
         }
 

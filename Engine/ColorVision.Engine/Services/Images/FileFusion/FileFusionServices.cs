@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Images.FileFusion;
 internal interface IFileFusionServices
 {
     int ResolveBatchId(string serialNumber);
-    FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken);
+    FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken, FileFusionOptions options);
     int SaveResult(MeasureResultImgModel model);
     void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model);
 }
@@ -26,8 +26,8 @@ internal sealed class FileFusionServices : IFileFusionServices
         return batch?.Id > 0 ? batch.Id : throw new InvalidOperationException($"找不到流程批次：{serialNumber}");
     }
 
-    public FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken)
-        => Core.FileFusion.Default.Execute(files, mode, cancellationToken);
+    public FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken, FileFusionOptions options)
+        => Core.FileFusion.Default.Execute(files, mode, cancellationToken, options);
 
     public int SaveResult(MeasureResultImgModel model) => MeasureImgResultDao.Instance.SaveAndReturnId(model);
 

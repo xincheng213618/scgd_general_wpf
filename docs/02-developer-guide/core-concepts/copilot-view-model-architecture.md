@@ -80,7 +80,7 @@ ViewModel 对选择分两条路径处理：
 | `TaskHost.TrySchedule` | 成功表示宿主接受任务，不表示 Provider 已执行或状态已保存 |
 | `ComposerSession.CommitScheduled(token)` | 只在会话 ID 和版本都匹配时清空文本、恢复 Auto 模式并清除审查/Skill 引用；成功后推进版本，同一 token 不能再次消费 |
 | 成功提交后的附件处理 | 只移除捕获时的原对象；不能在 `await` 后对当前附件集合 `Clear()`。token 已失效时保留新的输入与附件 |
-| 显式 `directPrompt` | 不读取或消费界面 Composer、待发送附件、Skill、审查目标或待恢复请求 |
+| 显式 `directPrompt` | 不读取或消费界面 Composer、待发送附件、Skill、审查目标或待恢复请求；恢复入口可以显式传入本次 recovery，不从界面待恢复状态补取 |
 
 `CopilotPreparedHostedTurn` 本身不对所有参数深拷贝：它保留传入对象的引用，尤其是原 conversation 与 user/assistant 消息。`ValidateHostedRun` 检查会话 ID 和模式是否匹配；消息角色在构造时校验。配置隔离由准备阶段和 `CopilotTurnRuntimeConfigSnapshot` 等快照类型承担，不能把 prepared 对象误当成任意可变对象的冻结器。执行开始时仍从原会话获取恢复 checkpoint、journal baseline 等执行状态，而不是从后来选中的会话取值。
 
@@ -97,6 +97,8 @@ TaskHost 在同一调度锁内提交取消状态、复核本地命令的后继�
 执行前建立 prepared turn 和消息后会等待保存：Flush 失败时回滚未保存消息并恢复输入；成功后才移除该恢复记录并继续执行。Runtime 在进入 Provider / Agent 执行前还通过 `StatePersistenceBarrierEvent` 请求保存屏障。这样调度、输入消费、保存完成和模型执行分别有明确的交接点。
 
 Chat 与 Agent 的流式 UI 更新通过现有同步上下文合并相邻片段；在 UI 线程收到片段时也只安排一次待处理提交，达到缓冲上限时同步刷新。正文重置和保存屏障先 Flush，正常结束、取消或失败在应用终态前 Complete，保留片段顺序及尾部文本。没有同步上下文时仍直接应用。ViewModel 在目标 UI 线程释放接线，以及应用退出同步保存前，会先刷新当前轮次已接受的 UI 更新；这不表示等待 Provider 结束或确认外部操作结果。缓冲已开始 Complete、仍有提交待处理时，目标线程仍可 Flush，后续 Enqueue 继续被拒绝。
+
+独立的空格、换行和制表符也是正文或思考片段，必须原样保留；它们不刷新 Chat 的既有首响应或流式更新超时，整份回答只有空白时仍报告没有可显示文本。Chat 已转交片段后即使随后断流也不自动重放，包括仅转交了空白的情况，避免把两次响应拼接。`CopilotStreamDeltaBufferTests` 和 `CopilotChatConnectionRecoveryTests` 覆盖分批呈现、受控 HTTP 流及失败边界。
 
 ## 检查点与任务事件的所有权
 

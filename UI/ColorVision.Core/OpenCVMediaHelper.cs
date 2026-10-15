@@ -359,7 +359,7 @@ namespace ColorVision.Core
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_Fusion(string fusionjson, out HImage hImage);
+        public static extern int M_Fusion([MarshalAs(UnmanagedType.LPUTF8Str)] string fusionjson, out HImage hImage);
 
         /// <summary>
         /// 高斯模糊

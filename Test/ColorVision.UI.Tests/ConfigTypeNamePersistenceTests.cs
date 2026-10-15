@@ -58,16 +58,17 @@ public sealed class ConfigTypeNamePersistenceTests : IDisposable
     }
 
     [Fact]
-    public void LegacyDatabaseSettingsAndEncryptedPasswordsSurviveQualifiedSaveAndReload()
+    public void LegacyDatabaseSettingsKeepCurrentCredentialsAndDropSavedProfilesOnQualifiedSave()
     {
         // Synthetic values only. Constructing this configuration does not open a database connection.
         var legacy = new MySqlSetting
         {
-            MySqlConfig = new MySqlConfig { Host = "db.example.test", Port = 3310, Database = "field_db", UserName = "test-user", UserPwd = "test-password" },
-            MySqlConfigs = [new MySqlConfig { Name = "saved", Host = "backup.example.test", UserPwd = "saved-password" }]
+            MySqlConfig = new MySqlConfig { Host = "db.example.test", Port = 3310, Database = "field_db", UserName = "test-user", UserPwd = "test-password" }
         };
         legacy.Encryption();
         JObject legacyJson = JObject.FromObject(legacy);
+        // Retired profiles are ignored, including passwords that cannot be decrypted.
+        legacyJson["MySqlConfigs"] = new JArray(new JObject { ["Host"] = "retired.example.test", ["UserPwd"] = "invalid-retired-ciphertext" });
         string path = Path.Combine(_root, "legacy.json");
         var original = new JObject
         {
@@ -83,7 +84,6 @@ public sealed class ConfigTypeNamePersistenceTests : IDisposable
         Assert.Equal("field_db", loaded.MySqlConfig.Database);
         Assert.Equal("test-user", loaded.MySqlConfig.UserName);
         Assert.Equal("test-password", loaded.MySqlConfig.UserPwd);
-        Assert.Equal("saved-password", loaded.MySqlConfigs[0].UserPwd);
 
         loaded.MySqlConfig.Port = 3311;
         Assert.True(handler.TrySave(loaded, out string error), error);
@@ -91,6 +91,7 @@ public sealed class ConfigTypeNamePersistenceTests : IDisposable
         Assert.True(JToken.DeepEquals(legacyJson, saved[nameof(MySqlSetting)]));
         Assert.True(JToken.DeepEquals(original["UnloadedPluginConfig"], saved["UnloadedPluginConfig"]));
         Assert.NotEqual("test-password", (string?)saved[typeof(MySqlSetting).FullName!]!["MySqlConfig"]!["UserPwd"]);
+        Assert.Null(saved[typeof(MySqlSetting).FullName!]!["MySqlConfigs"]);
         Assert.Equal("test-password", loaded.MySqlConfig.UserPwd);
 
         var reloaded = new ConfigHandler { ConfigFilePath = path };
@@ -100,7 +101,7 @@ public sealed class ConfigTypeNamePersistenceTests : IDisposable
         Assert.Equal("db.example.test", current.MySqlConfig.Host);
         Assert.Equal("field_db", current.MySqlConfig.Database);
         Assert.Equal("test-password", current.MySqlConfig.UserPwd);
-        Assert.Equal("saved-password", current.MySqlConfigs[0].UserPwd);
+        Assert.Equal("test-user", current.MySqlConfig.UserName);
     }
 
     [Fact]

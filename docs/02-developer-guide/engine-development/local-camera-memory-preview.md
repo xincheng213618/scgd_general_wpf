@@ -13,9 +13,9 @@ related: ["engine.index", "operations.camera"]
 
 本方案的目标是：本地相机流程节点在 `SaveFiles=false` 时，也能把当前帧显示到所绑定设备的 `ViewCamera`，不借助临时 CVRAW/CVCIE 文件，不永久保留每帧，也不承诺重新打开无文件历史结果。
 
-**基础无文件预览已接入，本文仍保留后续优化设计。** 相机结果视图的 `AutoRefreshView` 开启时，`LocalCameraPreview` 在本地节点交接下游前复制 RAW/CIE，生成冻结位图；关闭时直接跳过快照创建，不执行这份 RAW/CIE 复制或位图转换。主面板手动取图的显式显示请求仍创建快照并立即显示。`ViewCamera` 只保存最新本地快照；快照不持有流程帧租约，RAW 显示方向只作用于副本，CIE 沿现有 `AttachLiveCvcie` 接口挂载。没有保存文件也没有生成快照的结果不能在流程结束后重开。
+**本地流程取图已有统一 CVRAW 显示链，本文保留无文件手动预览及后续优化设计。** `LocalCameraNode` 先完成校正、CVRAW 像素和色度参数写入，再创建或保存结果模型，通过现有 `ResultMessageBus` 一次通知相机视图。视图使用消息附带的模型进入 `ShowResult`，按 `FileUrl` 读取缓存或磁盘；不再同时提交独立预览请求。直接刷新与切换结果使用同一色度测量和图层初始化，本地相机节点不额外复制预览 RAW/CIE。L/BV 本地转发、主面板手动取图和独立自动曝光仍由 `LocalCameraPreview` 生成独立冻结位图和可选 CIE 快照，沿 `AttachLiveCvcie` 挂载。自动刷新关闭时只登记结果，显式手动取图仍显示；仅缓存结果被淘汰后不能重新打开。
 
-下文的独立 Preview Publisher、Off/Raw/FullCie 模式、可取消的后台转换调度和零拷贝优化仍未实现，不能视为现有功能。当前同步复制/位图转换仍增加节点耗时，Dispatcher 按设备仅保留一个最新待显示快照；高分辨率连续流程的内存和延迟仍需硬件验收。
+下文的独立 Preview Publisher、Off/Raw/FullCie 模式、可取消的后台转换调度和零拷贝优化仍未实现，不能视为现有功能。无文件手动预览的同步复制/位图转换仍增加取图耗时，Dispatcher 按设备仅保留一个最新待显示请求；高分辨率连续流程的内存和延迟仍需硬件验收。
 
 ## 现有入口与设计缺口
 
@@ -23,7 +23,7 @@ related: ["engine.index", "operations.camera"]
 | --- | --- |
 | `CameraLocalWindow` 手动测量 | 能直接显示内存 RAW，并在有 CIE 时挂载数据；不需要保存文件 |
 | `LocalCameraNode` 流程取图 | 可向下游交接内存帧；SaveFiles=false 仍写测量主记录、设置 MasterId 并发布持久化结果通知 |
-| `ViewCamera` 设备结果视图 | 收到本地快照后显示内存图；持久化通知用于结果身份，同一记录去重；其它历史记录仍依赖 FileUrl |
+| `ViewCamera` 设备结果视图 | 本地相机节点经结果消息按 CVRAW 路径打开；其它本地取图入口保留独立快照；结果按 ID 和路径去重 |
 | 本地 Live 视频 | 有独立实时帧处理与伪彩链，不是本地测量流程帧的设备视图路由 |
 
 操作、文件与数据库完成判据由[相机服务](../../01-user-guide/devices/camera.md)维护。本方案继续优化设备视图的当前帧显示，不改变文件保存和历史重开的责任。

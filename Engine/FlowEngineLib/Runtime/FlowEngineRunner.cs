@@ -94,6 +94,7 @@ public sealed class FlowEngineRunner
                         readinessTimeout,
                         cancellationToken)
                     .ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
             }
             catch (OperationCanceledException)
                 when (cancellationToken.IsCancellationRequested)

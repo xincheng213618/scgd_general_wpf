@@ -19,7 +19,7 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 ## 绑定与交付前提
 
-当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL 及配置，不在本工程编译这些 native 实现。部分输入显式指定 `runtimes/win-x64/native` 包路径，其他设备 DLL 和配置按各自的 Pack/Copy 元数据处理，不能假设所有资产都位于同一目录。除 `cvCamera.dll` 外，CommLibrary、OpenCV 和设备 SDK 相关 DLL 也在清单中；具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，校正运行库为 `opencv_helper.dll` 和兼容后端 `cvCamera.dll`。
+当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL 及配置，不在本工程编译这些 native 实现。部分输入显式指定 `runtimes/win-x64/native` 包路径，其他设备 DLL 和配置按各自的 Pack/Copy 元数据处理，不能假设所有资产都位于同一目录。除 `cvCamera.dll` 外，CommLibrary、OpenCV 和设备 SDK 相关 DLL 也在清单中；具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
 
 当前内部版不包含本地 OLED/CUDA 链路：`cvCamera.dll` 不再导入 `cvOled.dll`，默认交付不含 `cvoled.dll`、`cudart64_12.dll`，C# 的 `CvOledDLL` 及其专用枚举也不再提供。原生导出 `CM_LedCalInit`、`CM_LedCalFind`、`CM_LedCalComBine`、`CM_LedCalFindHighDensity`、`CM_FindHighIndensityLed` 已删除；需要这些入口的旧插件不能直接使用此版本，按序号导入的外部二进制也需要重新核对。本地普通 LED 检测、远端 CVOLED 服务消息和流程节点不属于这条 DLL 依赖链。
 
@@ -35,9 +35,9 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 
 默认交付也不捆绑 `cfg_files` 中的 IKap `510.vlcf` 和 MIL 的位深映射/DCF 采集配置。HK 的 MVS、GenTL、MVFG 驱动分支不使用这组默认配置；相机驱动仍须按实际设备安装。IKap/MIL 设备需要另行提供与设备匹配的采集配置，这不代表移除了这些相机 SDK 或改变了相机类型枚举。
 
-内部版 `cvCamera.dll` 对 `HK_USB` 的 BV/LV/LVTOBV 普通测量及视频采集默认直接调用已安装的 MVS x64 SDK；WPF 继续使用原有 `CM_*` 接口，不另设 HK 会话或兼容分支。旧后端预览的回调注销同时停止该回调启动的采集，重复注销及随后关闭不重复停止；重新注册先清理旧预览，再注册并启动。`CM_SetCallBack`/`CM_SetCallBackEx` 启动失败返回 `CV_ERR_CAM_BEGIN_LIVE`，注销时停止失败返回 `CV_ERR_CAM_STOP_LIVE`，回调设置失败返回 `CV_ERR_CAM_SET_PARAM`，原生 SDK 返回值和具体步骤写入 `CameraPreview` 日志；MVS 错误保留原始错误码。打开前通过 `CM_UpdateCfgJson(Cfg_Camera)` 顶层布尔字段 `useHikMvs` 选择后端：`true` 使用 MVS，`false` 使用旧 SCGDCamLayer。同一 JSON 的顶层整数 `hikBayerQuality` 可选 0 快速、1 均衡、2 最优、3 最优+，仅用于 MVS 彩色拍照；视频固定使用 2（最优）。顶层布尔字段 `hikOutputBgr` 选择彩色输出顺序：`true` 输出 BGR，与旧后端及现有校正契约一致；`false` 保留 RGB，仅供对照。新管理器默认后端 `true`、质量 3、BGR 输出 `true`；后续配置缺少字段时保留已设置值。只传后端、质量或通道顺序字段不重置物理相机参数；非布尔后端/通道顺序、非整数或超出 0–3 的质量、已打开时改变任一偏好均失败，已有连接及输出设置保持不变。WPF 的本机偏好允许随时编辑，仅下次实际打开时下发。彩色 MVS 拍照默认使用 Bayer 插值质量 3（最优+），视频固定使用 2（最优）；打开及切换模式时调用 SDK 设置对应质量，切回拍照恢复本次连接保存的拍照质量，失败回滚同时恢复原模式的质量，先转换为 RGB24/RGB48，再按 `hikOutputBgr` 原地交换红蓝通道，默认交付 BGR24/BGR48；旧 SCGDCamLayer 的 HK 16 位转换也包含这一步，不能从 RGB16 中间格式推断最终输出顺序。LV 为 Mono8/Mono16，忽略通道顺序偏好。平均取图与自动曝光仍使用原生相机层的既有逻辑，本地校正、翻转、缓存和保存仍由现有上层链路处理。CV 滤轮模式、采集卡型号及其它相机继续走原接口；MVS 后端不支持 HK 的 QHY 专用 Fast/FastEx 模式。
+内部版 `cvCamera.dll` 对 `HK_USB` 和 `HK_CARD` 的 BV/LV/LVTOBV 普通测量及视频采集默认直接调用已安装的 MVS x64 SDK；WPF 继续使用原有 `CM_*` 接口，不另设 HK 会话或兼容分支。旧后端预览的回调注销同时停止该回调启动的采集，重复注销及随后关闭不重复停止；重新注册先清理旧预览，再注册并启动。`CM_SetCallBack`/`CM_SetCallBackEx` 启动失败返回 `CV_ERR_CAM_BEGIN_LIVE`，注销时停止失败返回 `CV_ERR_CAM_STOP_LIVE`，回调设置失败返回 `CV_ERR_CAM_SET_PARAM`，原生 SDK 返回值和具体步骤写入 `CameraPreview` 日志；MVS 错误保留原始错误码。打开前通过 `CM_UpdateCfgJson(Cfg_Camera)` 顶层布尔字段 `useHikMvs` 选择后端：`true` 使用 MVS，`false` 使用旧 SCGDCamLayer。同一 JSON 的顶层整数 `hikBayerQuality` 可选 0 快速、1 均衡、2 最优、3 最优+，仅用于 MVS 彩色拍照；视频固定使用 2（最优）。顶层布尔字段 `hikOutputBgr` 选择彩色输出顺序：`true` 输出 BGR，与旧后端及现有校正契约一致；`false` 保留 RGB，仅供对照。新管理器默认后端 `true`、质量 3、BGR 输出 `true`；后续配置缺少字段时保留已设置值。只传后端、质量或通道顺序字段不重置物理相机参数；非布尔后端/通道顺序、非整数或超出 0–3 的质量、已打开时改变任一偏好均失败，已有连接及输出设置保持不变。WPF 的本机偏好允许随时编辑，仅下次实际打开时下发。彩色 MVS 拍照默认使用 Bayer 插值质量 3（最优+），视频固定使用 2（最优）；打开及切换模式时调用 SDK 设置对应质量，切回拍照恢复本次连接保存的拍照质量，失败回滚同时恢复原模式的质量，先转换为 RGB24/RGB48，再按 `hikOutputBgr` 原地交换红蓝通道，默认交付 BGR24/BGR48；旧 SCGDCamLayer 的 HK 16 位转换也包含这一步，不能从 RGB16 中间格式推断最终输出顺序。LV 为 Mono8/Mono16，忽略通道顺序偏好。平均取图与自动曝光仍使用原生相机层的既有逻辑，本地校正、翻转、缓存和保存仍由现有上层链路处理。CV 滤轮模式、其它采集卡型号及其它相机继续走原接口；MVS 后端不支持 HK 的 QHY 专用 Fast/FastEx 模式。
 
-MVS 开始采集前自动配置触发参数，无需用户先在海康客户端设置：保留设备当前支持的 FrameStart 或 FrameBurstStart 选择，当前选择不适用时优先选择支持的 FrameStart，否则选择 FrameBurstStart；先关闭所有触发选择器，设置 AcquisitionMode=Continuous、TriggerSource=Software；设备提供 AcquisitionBurstFrameCount 时设为 1，使用 FrameBurstStart 时该节点必须可用。测量启用所选触发器，每次清理旧帧后发送一次软件触发；视频保持 TriggerMode=Off，由相机连续曝光，不逐帧清缓存或触发，允许采集与转换重叠。参数在打开及模式切换时读回确认，不增加每帧设参。关闭或打开中途失败时，停止采集后按相反顺序恢复原参数，不调用 UserSetSave。参数设置或读回失败仍明确报错，原生日志记录参数名与 SDK 错误码；不能把通用 -10009 打开失败一概认定为相机离线。相机独占打开，SDK 不支持所选质量、像素格式或必要接口时明确失败，不静默降低质量或切回旧采集。`HikMvsSDK`、`HikMvsOpen`、`HikMvsCapture` 原生日志记录 SDK 版本、相机序列号、像素格式、质量、曝光/增益、帧号、连续/软件触发模式及等待/转换耗时。模拟接口验证覆盖缓冲释放和关闭重开，不代表实机验收；质量 3 与质量 2 的像素结果可能不同，启用前须对现场亮度、色度、均匀性和 MTF 等业务指标及连续采集耗时做对照。
+MVS 开始采集前自动配置触发参数，无需用户先在海康客户端设置：保留设备当前支持的 FrameStart 或 FrameBurstStart 选择，当前选择不适用时优先选择支持的 FrameStart，否则选择 FrameBurstStart；先关闭所有触发选择器，设置 AcquisitionMode=Continuous、TriggerSource=Software；设备提供 AcquisitionBurstFrameCount 时设为 1，使用 FrameBurstStart 时该节点必须可用。测量启用所选触发器，每次清理旧帧后发送一次软件触发；视频保持 TriggerMode=Off，由相机连续曝光，不逐帧清缓存或触发，允许采集与转换重叠。参数在打开及模式切换时读回确认，不增加每帧设参。关闭或打开中途失败时，停止采集后按相反顺序恢复原参数，不调用 UserSetSave。参数设置或读回失败仍明确报错，原生日志记录参数名与 SDK 错误码；不能把通用 -10009 打开失败一概认定为相机离线。调用 `MV_CC_OpenDevice` 打开设备，GigE 使用独占权限，CameraLink 按 SDK 规则使用控制权限；SDK 不支持所选质量、像素格式或必要接口时明确失败，不静默降低质量或切回旧采集。`HikMvsSDK`、`HikMvsOpen`、`HikMvsCapture` 原生日志记录 SDK 版本、相机序列号、像素格式、质量、曝光/增益、帧号、连续/软件触发模式及等待/转换耗时。模拟接口验证覆盖缓冲释放和关闭重开，不代表实机验收；质量 3 与质量 2 的像素结果可能不同，启用前须对现场亮度、色度、均匀性和 MTF 等业务指标及连续采集耗时做对照。
 
 原始配置在仓库 `docs/_history/device-configs/ikap-mil/` 归档，不参与运行输出和默认安装包。该目录的 `manifest.json` 记录原始路径、字节数和 SHA-256，`README.txt` 说明按设备恢复工程复制项、安装器和共享清单的方法。恢复前应核对设备型号与位深，并在真实采集卡上验收，不能直接将历史配置当作所有 IKap/MIL 设备的通用默认值。
 
@@ -55,7 +55,7 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 `cvCameraCSLib` 的原生操作返回值统一保留 `int`，包括曝光/增益、配置更新、回调、取源图、滤轮、自动对焦、图像处理及校正操作；原先只有 `0/1` 的操作也预留整数错误码，不再按非零 `bool` 判断成功。当前这些操作成功值为 `CV_ERR_SUCCESS=1`，失败保留原始 `0`、平台错误码或 SDK 错误码。`CM_GetErrorMessage` 和 `GetAllCameraIDV1` 的字符串便捷入口同样返回原始整数结果；取源图便捷入口先检查尺寸查询的失败码，失败时不分配图像缓冲。由旧 `bool` 或 `void` 声明编译的调用方需要重新编译，原生导出名称与 32 位返回 ABI 保持不变。
 
-当前相机托管层已清理无调用且交付 DLL 不提供的 38 个旧导入及其便捷包装，并移除未使用的 `AoiParam.cs`、`C_AoiParam`、`PartiCle` 和旧角点/布点类型；这不改变服务端 AOI 流程。保留的 `CM_Reset` 必须传入原生的 `delayTimeMs`，`CM_SCGD_SDP_DarkNoise` 必须传入曝光数组，`LedCheckYaQi` 返回 `int`。C++ `bool` 参数显式使用一字节封送，Windows `BOOL` 状态返回仍使用四字节封送。
+当前相机托管层已清理无调用且交付 DLL 不提供的 38 个旧导入及其便捷包装，并移除未使用的 `AoiParam.cs`、`C_AoiParam`、`PartiCle` 和旧角点/布点类型；这不改变服务端 AOI 流程。保留的 `CM_Reset` 必须传入原生的 `delayTimeMs`，`LedCheckYaQi` 返回 `int`。C++ `bool` 参数显式使用一字节封送，Windows `BOOL` 状态返回仍使用四字节封送。
 
 跨 DLL 的 `CVImage`（对应原生 `HImage`）、`CRECT`/`IRECT`、`AutoFocusCfg`、`ChromaInfo` 使用按声明顺序的字段及 `Pack=8`；Release/x64 大小分别为 24、16、48、44 字节，对焦配置最后一个 `double` 位于偏移 40。修改字段类型、顺序或对齐时须同步原生定义。连续帧和对焦回调的返回值为 32 位 `int`，调用约定为 `StdCall`。配置、SN 和设备模式字符串便捷入口检查原生返回码后才返回字符串；原生文本复制在容量不足时返回平台错误，避免 CRT 的无效参数处理及错误成功。
 
@@ -68,6 +68,12 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 `CM_GetAutoExpFrame` 为测量模式下的独立自动曝光返回达标帧，参数包含调用方持有的图像指针及 `uint64_t` 字节容量、图像尺寸/位深/通道数，以及各有三个 `float` 的曝光（ms）和饱和度数组。它保留既有曝光搜索算法；成功为 `1`，按既有目标饱和度及偏差检查最终图像，未达标返回 `CV_ERR_CAM_AUTO_EXP_NOT_CONVERGED=-10075`，SDK 失败保留原始整数码。Live 模式拒绝此帧返回入口，避免把改变曝光前排队的回调图像作为最终帧；视频窗口继续使用既有自动曝光及实时显示。曝光与图像来自同一次最终采集；MVS 曝光采用设置时的 SDK 读回值，旧 burst 取图保留该合成帧的有效曝光。单次彩色/灰度采集将曝光和饱和度复制到三个槽位；CV 三通道的数组按 X/Y/Z（R/G/B）排列，图像保持现有 BGR 布局。容量不足或失败时不修改调用方图像及结果输出。Engine 在持有帧期间复制独立预览，随后释放帧；独立自动曝光不写 CVRAW、缓存文件或数据库记录。既有 `CM_GetAutoExpTime` 和正常测量保存链保持原语义。
 
 直接 MVS 后端的 SDK 调用失败保留 SDK 原始 32 位错误码，通过 `int` 返回，例如 `MV_E_NETER=0x80000206` 的有符号值为 `-2147483130`；MVS 的成功值 `0` 在相机公共入口仍转换为平台成功值 `1`。参数校验、输出校验和非 MVS 后端保留原有平台错误码。`CM_GetErrorMessage` 识别 MVS 错误范围，按构建时从 SDK `MvErrorDefine.h` 自动生成的名称/英文说明返回解释；未知码仍输出原始十六进制值，不手工维护第二套数值定义。同线程立即查询时还可附带 SDK 操作名和相机 SN，按线程隔离且每次 MVS 操作重新清理上下文；跨线程查询仍能解释返回码本身，不承诺取到原调用的操作上下文。原生与托管日志仍沿用现有机制。
+
+`HK_USB` 和 `HK_CARD` 搜索使用直接 MVS 枚举，不受搜索入口占位 `CV_MODE` 影响。`HK_USB` 枚举 GigE/USB；`HK_CARD` 包含多种海康采集卡，不能统一当作 CameraLink。逐一查找已安装的 `MvFGProducerCML.cti`、`MvFGProducerCXP.cti`、`MvFGProducerGEV.cti` 和 `MvFGProducerXoF.cti`，每类优先使用实际加载 SDK 的目录，再查已安装 MVS x64 runtime；分别调用 `MV_CC_EnumInterfacesByGenTL` 和 `MV_CC_EnumDevicesByGenTL`，从 `MV_GENTL_DEV_INFO` 复制序列号、型号及 CTI 索引，跨传输类型匹配配置的序列号，再调用 `MV_CC_CreateHandleByGenTL` 创建对应句柄。未安装的 CTI 或接口为空不终止其它类型搜索；单类枚举 SDK 错误写入日志并继续搜索其它类型，最终无设备且存在 SDK 错误时返回首个原始错误。两类枚举共用进程锁，复制 SDK 所有的接口及设备信息后再离开锁；CTI 保持加载，避免影响其它句柄使用的索引。GenTL 接口仅为 `HK_CARD` 必需，不影响 USB/GigE 的运行依赖。`HikMvsGenTL` 日志记录各 CTI 路径、接口数、各接口设备数与设备身份及 CTI 索引。创建句柄后，打开、普通测量、视频及模式切换共用 `HikMvsCamera`。现场需要已安装与采集卡匹配的 MVS/GenTL 驱动；新后端失败时保留 SDK 错误，不自动切回旧后端；CV 滤轮的实际采集后端保持原规则。`CM_GetCameraID` / `CM_GetCameraIDV1` 仅将 `1` 视为成功，SDK 负数错误原样返回；无设备返回 `CV_ERR_CAM_SCAN=-10005`，不再将失败包装为空列表成功。
+
+`HikMvsSDK` 同时记录实际加载的 SDK 文件路径与宿主程序路径；默认 DLL 搜索失败后，依次尝试 `CommonProgramFiles(x86)` 和 `CommonProgramFiles` 下的 MVS x64 runtime。`GetImageBuffer` 超时保留 `MV_E_NODATA` 和操作名；`HikMvsTimeout` 记录触发参数读回，GigE 另记录本次取流的累计接收字节/帧数、丢帧、重发统计及流目标地址/端口节点。诊断接口或节点不可用时记录各自返回码，不覆盖原始采集错误。独立取图测试运行于 `ColorVision.Engine.exe`，主程序运行于 `ColorVision.exe`；测试成功只证明该次测试链路有效，不能据此认定主程序加载的 SDK、会话或程序防火墙规则一致。
+
+平台错误 `CV_ERR_CAM_ID_MATCH=-10007` 明确表示 ID 与枚举设备不匹配；`CV_ERR_CAM_OPEN=-10009` 仅表示设备打开失败。旧 SCGDCamLayer 普通打开日志记录请求 ID、枚举 ID、型号、模式和失败步骤，其指针接口未提供底层 SDK 错误码时明确标记不可用，不推断为 ID 错误。MVS 打开日志记录序列号、传输类型、失败操作及 SDK 错误。
 
 `Test/ColorVision.UI.Tests/NativeCameraErrorTests.cs` 不连接设备，保护操作接口整数返回与状态查询的边界，验证所有相机导入对应交付 DLL 的真实导出、跨 DLL 结构体大小/字段偏移、SDK 码跨线程解释、未知码回退、多个操作的无效句柄错误、取源图失败前不分配缓冲及消息缓冲边界；原生 SDK 替身验证覆盖实际失败透传与后续成功调用，不代替现场 MVS 采集验收。
 
@@ -144,7 +150,7 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 | 任务 | 先看 |
 | --- | --- |
-| 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`Calibration.cs`、`ImageProcessing.cs` |
+| 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`ImageProcessing.cs` |
 | 图卡 | `Devices/PatternGenerator/PG.cs` |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` |
 | 光谱仪 | `Devices/Spectrometer/` |

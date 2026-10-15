@@ -73,7 +73,11 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 设备卡片或上下文菜单中的 **属性** 同样复用 `GetDeviceInfo()`，但由 `DevicePropertyWindow` 提供独立窗口外壳：窗口显示设备名称与 Code，并在带边框、圆角和内边距的内容区承载设备页。这个外壳只属于独立窗口；管理员服务配置和终端详情继续使用各自已有的面板边界，不把窗口留白重复写进设备控件。
 
+滤色轮和光谱仪的主界面设备卡片在连接/状态行提供与 SMU 相同的配置齿轮。展开的卡片在未连接、离线或未授权时仍显示入口，点击直接执行该设备的 `EditCommand`，进入原有配置窗口；可执行性仍由原命令的管理员权限判断控制，确认后的保存沿用原设备逻辑。
+
 内置设备卡片标题与 Flow 设备选择器的属性入口统一使用主题 `ButtonProperty` 样式：24 DIP 点击区域、单色信息图标和属性工具提示。按钮不显示边框或默认焦点虚线框，悬停与键盘焦点通过图标主题强调色反馈。图标随深浅主题更新，只表示打开属性窗口，不承担在线状态显示；不叠加常亮的绿色状态灯。它仍绑定原设备的 `PropertyCommand`，与相邻的置顶按钮各自独立。设备与工作流程内容区未选中时使用 `CV.Border.Weak` 的低对比度主题描边，选中时保留深浅主题各自的紫色高亮。
+
+设备配置窗口顶部的“归档”按钮直接展开“归档服务器配置”“归档配置”“服务注册中心配置”三个操作。配置动作由 `Engine/ColorVision.Engine/Archive/ArchiveConfigurationActions.cs` 承载，使用事务式属性编辑器，只在提交时保存。归档配置先补齐所需字段，再按当前 `RCSetting.Config.RCName` 查询注册中心记录及其 `ArchivedId`，不使用固定归档配置 ID；检查或迁移失败时停止打开编辑器并报告诊断信息。菜单展开本身不连接归档数据库或执行配置修改。
 
 `GenDeviceDisplayControl()` 沿当前类型树生成主显示区；`GenControl(collection)` 使用指定设备集合。两者都先加入共享 `DisplayFlow`，只有设备 `GetDisplayControl()` 返回 `IDisPlayControl` 才追加该页，最后通过 `DisPlayManager.ReplaceControls` 替换显示集合。
 
@@ -103,7 +107,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ### 设备详情视图按需初始化
 
-相机、光谱、算法和校准设备保留完整的真实设备卡片；设备区仍能同时显示多个展开面板，`IsSelected` 继续表示选择和上下文。按需初始化只作用于对应的 `ViewCamera`、`ViewSpectrum`、`AlgorithmView`、`ViewCalibration` 详情内容，不减少 `IDisPlayControls`，也不延迟设备服务或硬件初始化。
+相机、光谱、算法、校准和 SMU 设备保留完整的真实设备卡片；设备区仍能同时显示多个展开面板，`IsSelected` 继续表示选择和上下文。按需初始化只作用于对应的 `ViewCamera`、`ViewSpectrum`、`AlgorithmView`、`ViewCalibration`、`ViewSMU` 详情内容，不减少 `IDisPlayControls`，也不延迟设备服务或硬件初始化。SMU 的设备卡片登记空详情壳，首次可见或结果入口显式访问 `DeviceSMU.View` 后才创建列表及两幅图表。
 
 | 入口 | 详情初始化与兼容契约 |
 | --- | --- |
@@ -132,6 +136,10 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 | 旧 Flow / 第三方算法资源的装配与读取兼容 | `Services/Devices/DeviceServiceFactory.cs` | [旧资源兼容](../../01-user-guide/devices/flow-device.md) |
 
 PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命令和显示实现；插件同名不等于同一个设备对象。MQTT 关联、返回与超时由[消息契约](../../02-developer-guide/engine-development/mqtt.md)维护，Flow 业务完成由[执行会话](../../01-user-guide/workflow/execution.md)维护。
+
+PG 的“修改配置”打开独立单页 `EditPG`，分为设备、连接和按类型显示的设备参数。`PGConfigurationDraft` 编辑 `ConfigPG` 的副本，并分别保留网口地址/端口、服务电脑串口名/波特率以及 `CH431.I2C` 设备索引/地址的临时输入；切换连接方式或类型不覆盖其它模式输入，打开已有 I²C 配置不重置其索引或地址。网口支持 IP 与主机名，串口允许手填服务电脑的名称，不枚举维护电脑端口。I²C 显示寄存器地址与通信速率，`GECS.V2.4` 将 `RegisterAddress` 显示为通道，其他类型隐藏这两项。
+
+确定前验证当前可见输入的数字格式和所选连接参数：网口端口为 1～65535，串口波特率大于 0，I²C 索引为非负整数、设备地址为 0～255。失败或取消不修改当前设备配置；成功才把所选连接写回原有 `Addr` / `Port`，保留配置对象、订阅者及其余协议字段，由 `DevicePG.EditCommand` 沿设备原 `Save()` 链路保存。各模式的临时输入不进入资源数据库；打开窗口、切换模式和校验不操作真实设备，确定保存后服务器资源仍沿原链路发送服务重载请求，本地资源跳过该请求。`PGConfigurationDraftTests` 保护取消隔离、失败不写回、模式输入保留和既有序列化边界；真实服务与设备连通仍需现场验证。
 
 ## 扩展一个设备类型
 

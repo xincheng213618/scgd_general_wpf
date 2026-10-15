@@ -100,7 +100,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `RefreshToolBars` 委托 `EditorToolbarComposer` 移除自己生成的 UI 元素，并从现有工具集合重新装配；它不重扫程序集、重建打开器或发现新加载插件。composer 只拥有 UI 附着，工具实例仍由工厂管理。初始化时工厂早于 `Crosshair` 创建，随后才执行 `IImageComponent.Execute` 等步骤；扩展构造不能假定所有视图服务都已就绪。
 
-打开器通过 `IImageOpenEditorToolProvider` 贡献当前工具。`GetEffectiveEditorTools` 先放打开器工具，再加入未被其非空 `GuidId` 覆盖的全局工具；比较区分大小写，空 ID 不参与覆盖，也不会自动去重打开器内部的重复 ID。`ApplyImageOpenTools` 先通知旧 lifecycle 停用、替换集合和刷新工具栏，再通知新 lifecycle 启用；停用不等于所有旧工具已 `Dispose`。
+打开器通过 `IImageOpenEditorToolProvider` 贡献当前工具。`GetEffectiveEditorTools` 先放打开器工具，再加入未被其非空 `GuidId` 覆盖的全局工具；比较区分大小写，空 ID 不参与覆盖，也不会自动去重打开器内部的重复 ID。`ApplyImageOpenTools` 先通知旧 lifecycle 停用并替换集合，将退出有效集合的 `IEditorToggleTool.IsChecked` 设为 `false`，再刷新工具栏并通知新 lifecycle 启用。被覆盖的鼠标读数等工具必须停止事件监听和 overlay，避免按钮消失后仍与 CIE 探针同时绘制；重新成为有效工具时保持关闭，用户可再次启用。单纯 `RefreshToolBars` 不停用仍有效的工具；停用不等于所有旧工具已 `Dispose`。
 
 工厂 `Dispose` 停用当前打开器 lifecycle，并对全局及当前打开器工具中的 `IDisposable` 去重释放，不承诺释放每个 opener/component。`ImageEditorSession.Dispose` 依次释放连续帧、显示能力、算法 overlay 和文档。`ImageView.Unloaded` 仅解绑窗口快捷键，不是 `Dispose`；宿主仍需负责真正释放。工具栏重建、控件卸载和文档资源释放不能混用。
 

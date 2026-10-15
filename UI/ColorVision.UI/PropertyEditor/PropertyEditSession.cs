@@ -65,10 +65,10 @@ namespace ColorVision.UI
 
     internal static class PropertyGraphCopy
     {
-        public static object Clone(object source)
+        public static object Clone(object source, bool includeNonBrowsableProperties = false)
         {
             ArgumentNullException.ThrowIfNull(source);
-            return CloneValue(source, source.GetType(), new Dictionary<object, object>(ReferenceEqualityComparer.Instance))!;
+            return CloneValue(source, source.GetType(), new Dictionary<object, object>(ReferenceEqualityComparer.Instance), includeNonBrowsableProperties)!;
         }
 
         public static void Copy(object source, object target)
@@ -84,7 +84,7 @@ namespace ColorVision.UI
             {
                 [source] = target
             };
-            CopyProperties(source, target, sourceType, visited);
+            CopyProperties(source, target, sourceType, visited, includeNonBrowsableProperties: false);
         }
 
         public static object CreateObject(Type type)
@@ -101,7 +101,7 @@ namespace ColorVision.UI
             }
         }
 
-        private static object? CloneValue(object? value, Type declaredType, Dictionary<object, object> visited)
+        private static object? CloneValue(object? value, Type declaredType, Dictionary<object, object> visited, bool includeNonBrowsableProperties)
         {
             if (value == null)
                 return null;
@@ -124,13 +124,13 @@ namespace ColorVision.UI
                 return value;
 
             if (value is Array array)
-                return CloneArray(array, visited);
+                return CloneArray(array, visited, includeNonBrowsableProperties);
 
             if (value is IDictionary dictionary)
-                return CloneDictionary(dictionary, runtimeType, declaredType, visited);
+                return CloneDictionary(dictionary, runtimeType, declaredType, visited, includeNonBrowsableProperties);
 
             if (value is IList list)
-                return CloneList(list, runtimeType, declaredType, visited);
+                return CloneList(list, runtimeType, declaredType, visited, includeNonBrowsableProperties);
 
             if (runtimeType.IsValueType)
                 return value;
@@ -154,11 +154,11 @@ namespace ColorVision.UI
             }
 
             visited[value] = clone;
-            CopyProperties(value, clone, runtimeType, visited);
+            CopyProperties(value, clone, runtimeType, visited, includeNonBrowsableProperties);
             return clone;
         }
 
-        private static Array CloneArray(Array source, Dictionary<object, object> visited)
+        private static Array CloneArray(Array source, Dictionary<object, object> visited, bool includeNonBrowsableProperties)
         {
             if (source.Rank != 1)
                 throw new NotSupportedException($"Transactional property editing does not support {source.Rank}-dimensional arrays.");
@@ -167,11 +167,11 @@ namespace ColorVision.UI
             var clone = Array.CreateInstance(elementType, source.Length);
             visited[source] = clone;
             for (int index = 0; index < source.Length; index++)
-                clone.SetValue(CloneValue(source.GetValue(index), elementType, visited), index);
+                clone.SetValue(CloneValue(source.GetValue(index), elementType, visited, includeNonBrowsableProperties), index);
             return clone;
         }
 
-        private static object CloneDictionary(IDictionary source, Type runtimeType, Type declaredType, Dictionary<object, object> visited)
+        private static object CloneDictionary(IDictionary source, Type runtimeType, Type declaredType, Dictionary<object, object> visited, bool includeNonBrowsableProperties)
         {
             object cloneObject = TryCreateCollection(runtimeType)
                 ?? CreateDictionaryFallback(runtimeType, declaredType);
@@ -184,14 +184,14 @@ namespace ColorVision.UI
             Type valueType = genericArguments[1];
             foreach (DictionaryEntry entry in source)
             {
-                object clonedKey = CloneValue(entry.Key, keyType, visited)
+                object clonedKey = CloneValue(entry.Key, keyType, visited, includeNonBrowsableProperties)
                     ?? throw new NotSupportedException($"Dictionary type '{runtimeType.FullName}' produced a null key while cloning.");
-                clone.Add(clonedKey, CloneValue(entry.Value, valueType, visited));
+                clone.Add(clonedKey, CloneValue(entry.Value, valueType, visited, includeNonBrowsableProperties));
             }
             return clone;
         }
 
-        private static object CloneList(IList source, Type runtimeType, Type declaredType, Dictionary<object, object> visited)
+        private static object CloneList(IList source, Type runtimeType, Type declaredType, Dictionary<object, object> visited, bool includeNonBrowsableProperties)
         {
             object cloneObject = TryCreateCollection(runtimeType)
                 ?? CreateListFallback(runtimeType, declaredType);
@@ -201,13 +201,13 @@ namespace ColorVision.UI
             visited[source] = clone;
             Type elementType = GetCollectionElementType(runtimeType, declaredType) ?? typeof(object);
             foreach (object? item in source)
-                clone.Add(CloneValue(item, elementType, visited));
+                clone.Add(CloneValue(item, elementType, visited, includeNonBrowsableProperties));
             return clone;
         }
 
-        private static void CopyProperties(object source, object target, Type type, Dictionary<object, object> visited)
+        private static void CopyProperties(object source, object target, Type type, Dictionary<object, object> visited, bool includeNonBrowsableProperties)
         {
-            foreach (PropertyInfo property in GetCopyableProperties(type))
+            foreach (PropertyInfo property in GetCopyableProperties(type, includeNonBrowsableProperties))
             {
                 object? sourceValue;
                 try
@@ -219,7 +219,7 @@ namespace ColorVision.UI
                     throw new InvalidOperationException($"Could not read property '{type.FullName}.{property.Name}' while creating a property edit session.", ex);
                 }
 
-                object? clonedValue = CloneValue(sourceValue, property.PropertyType, visited);
+                object? clonedValue = CloneValue(sourceValue, property.PropertyType, visited, includeNonBrowsableProperties);
                 try
                 {
                     property.SetValue(target, clonedValue);
@@ -231,13 +231,13 @@ namespace ColorVision.UI
             }
         }
 
-        private static IEnumerable<PropertyInfo> GetCopyableProperties(Type type)
+        private static IEnumerable<PropertyInfo> GetCopyableProperties(Type type, bool includeNonBrowsableProperties)
         {
             return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(property => property.CanRead
                     && property.CanWrite
                     && property.GetIndexParameters().Length == 0
-                    && (property.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true)
+                    && (includeNonBrowsableProperties || (property.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true))
                     && !typeof(ICommand).IsAssignableFrom(property.PropertyType));
         }
 

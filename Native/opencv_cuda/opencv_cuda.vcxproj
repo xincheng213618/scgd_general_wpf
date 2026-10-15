@@ -178,6 +178,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\cuda_export.h" />
+    <ClInclude Include="..\include\fusion_options.h" />
+    <ClInclude Include="..\include\fusion_request.h" />
     <ClInclude Include="..\include\custom_structs.h" />
     <ClInclude Include="cudamath.h" />
     <ClInclude Include="framework.h" />

@@ -3,9 +3,9 @@ knowledge_id: "ui.property-grid"
 knowledge_type: "topic"
 status: "current"
 summary: "属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。"
-aliases: ["属性面板", "属性编辑器窗口", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "自定义编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowTemplatePropertiesEditors", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor", "命令自动生成", "GenCommand", "CommandDisplay", "按钮分类"]
-code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs", "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs","Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs","Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"]
+aliases: ["属性面板", "属性编辑器窗口", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "自定义编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowTemplatePropertiesEditors", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor", "命令自动生成", "GenCommand", "CommandDisplay", "按钮分类", "IP地址编辑器", "四段IP输入", "IPAddressBox", "NetworkAddressPropertiesEditor"]
+code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs", "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml", "UI/ColorVision.Themes/Controls/IPAddressBox.xaml", "UI/ColorVision.Themes/Controls/IPAddressBox.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/IPAddressPropertiesEditor.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs","Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs","Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs", "Test/ColorVision.UI.Tests/IPAddressBoxTests.cs"]
 related: ["ui.index", "ui.configuration", "ui.discovery", "flow.templates", "algorithms.template-management"]
 ---
 
@@ -56,6 +56,10 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 该呈现器只负责布局，不负责配置保存或作用范围。当前用于[图像设置](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)；Desktop 设置仍使用自己的呈现逻辑。
 
+`IPAddressBox` 位于共享 `ColorVision.Themes.Controls` 层，可直接用于 XAML；PropertyGrid 在 `ColorVision.UI` 层用 `[PropertyEditorType(typeof(IPAddressPropertiesEditor))]` 选择 IPv4 编辑器。四段分别输入 0～255，输入点号或三位数字可进入下一段，左右箭头/退格支持跨段移动，支持粘贴完整 IPv4 或单段数字。无效输入不截断、不钳位；清空某段会将不完整草稿传入双向绑定，由宿主负责提交校验。`IsReadOnly` 禁止输入与粘贴，元数据编辑器也遵守 `ReadOnly`。
+
+接受主机名、IPv6 或串口混合地址的字段选择 `NetworkAddressPropertiesEditor`（直接控件使用 `AllowTextMode=true`），已有非 IPv4 值自动显示文本输入；右侧“⋯”可切换 IPv4 与文本模式。已有字段及序列化格式保持原样，不增加 DHCP、DNS 或操作系统网卡配置。当前接入源表、传感器、MQTT/MySQL 连接、Socket 协议、视频连接、Windows 服务插件及 ProjectKB 的相关地址项；网卡地址列表仍使用原有选择控件，独立 .NET Framework 示例保持自身输入方式。通用属性面板中的 PG `Addr` / `Port` 使用 `PGConnectionPropertiesEditor`，按 `IsNet` 和 `CH431.I2C` 类型切换网络、串口和设备索引的编辑器与标签，不改写存储值；独立 PG 配置窗口按类型显示单套字段，草稿隔离与保存规则见[设备服务链](../engine-components/device-service-chain.md)。`IPAddressBoxTests` 保护输入边界、双向绑定、只读和兼容文本模式。
+
 ## 接口与注册
 
 `UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs` 在 `System.ComponentModel` 命名空间定义唯一入口：
@@ -69,7 +73,9 @@ public interface IPropertyEditor
 
 属性级选择使用 `[PropertyEditorType(typeof(MyEditor))]`；`MyEditor` 在此只是占位类型名，实际实现应从现有编辑器复制必要模式。可参考 `Editor/TextSelectFilePropertiesEditor.cs`：每次调用创建新面板，使用 `CreateLabel`、`CreateTwoWayBinding(obj, property)` 和共享小控件样式。
 
-集合元素的编辑方式在集合属性上用 `CollectionEditorTypeAttribute` 声明。字符串列表在“编辑列表”窗口中直接逐行编辑，普通文本默认使用文本框；目录列表标注 `[CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]`，文件列表标注 `TextSelectFilePropertiesEditor`，行内复用相应的选择和打开位置按钮，使用者无需再选择编辑器类型。缓存大小预处理的 `FolderPaths` 使用目录标记。添加后自动选中新行并聚焦文本框；修改、增删和排序只作用于工作列表，确定后才写回原字符串集合，取消或关闭丢弃本次修改。非字符串元素继续使用项编辑窗口。普通列表不显示索引列，字典仍按 Key/Value 编辑。
+集合元素的编辑方式在集合属性上用 `CollectionEditorTypeAttribute` 声明。字符串列表在“编辑列表”窗口中直接逐行编辑，普通文本默认使用文本框；目录列表标注 `[CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]`，文件列表标注 `TextSelectFilePropertiesEditor`，行内复用相应的选择和打开位置按钮，使用者无需再选择编辑器类型。缓存大小预处理的 `FolderPaths` 使用目录标记。添加后自动选中新行并聚焦文本框；修改、增删和排序只作用于工作列表，确定后才写回原集合，取消或关闭丢弃本次修改。非字符串元素继续使用项编辑窗口，对象项和嵌套列表在列表窗口与项窗口分别使用配置工作副本，并保留对象中 `Browsable(false)` 的可写配置属性；项窗口确定只更新外层工作列表，外层列表确定才提交原属性，因此内层取消或内层确定后再取消外层都不修改原配置。普通列表不显示索引列，字典仍按 Key/Value 编辑。
+
+算法、相机、校正、源表、光谱、POI、传感器模板和旧模板管理的列显示偏好，以及 Spectrum 插件的同类配置，使用 `Browsable(false)` 从属性面板隐藏。已有表格的列显示右键菜单和表头排序入口保持原样，集合继续序列化保存；隐藏不清空已有偏好。算法和光谱视图的“显示列表”与“显示侧边栏”统一放在 `View` 分类。“编辑列表”的列表与内容容器使用动态主题文字色，普通值及对象摘要在深浅色主题下保持可读。
 
 路径语义由属性所属业务声明，不根据字符串内容或属性名猜测：文件融合与四图合成的输入文件集合使用文件项编辑器；图片投影列表项、光谱插件校准组的文件字段以及 POI 的 CAD/二次修正文件使用文件属性编辑器；文件服务根目录、自动快照目录使用目录属性编辑器。Everything 可执行文件也是文件。输出文件名、扩展名、URL、普通标定分组名称保持文本；解决方案项目引用同时接受文件、目录和相对路径，保留其原有项目管理入口与文本语义，不能直接替换成仅选择本机文件或目录的控件。
 
@@ -142,6 +148,8 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 需要 Engine 模板或量程编辑器的兼容节点位于 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/`，属性直接声明 `PropertyEditorType`。类级属性名映射、Selector 和模板代理不再作为扩展入口。`Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs` 仅保留公共基类设备字段使用的 `FlowDeviceNameEditor`、代理基类及注册表；Engine 注册设备选择器，让公共执行层不引用业务 UI。
 
 `FlowTemplatePropertiesEditors.cs` 提供相机、校准、POI、SMU、传感器和算法模板及量程的无状态编辑器，控件构建共用原有模板选择逻辑。校正模板切换设备时仍刷新；增益联动通过校正属性上的具体编辑器声明识别。普通字符串、数值和枚举字段沿用通用编辑器，不因此迁移节点。
+
+Flow 的单模板、多模板族下拉框及算法补充面板在已保存名称不属于当前模板列表时显示“找不到模板：原模板名”，提示置于名称前，避免窄字段隐藏错误状态；悬停可查看完整提示，真正未配置时仍为空白。提示仅是当前控件的占位选项，不添加到模板集合、不改写节点配置；重新选择或清除才修改该字段。校正模板在用户切换设备后仍按原规则清除新设备不可用的引用。找不到模板时禁用直接打开该模板的按钮，齿轮仍可管理当前可用的模板列表；运行时继续按保存的原名称查找和报错，不忽略失效引用。
 
 只有多模板族或随节点算法类型变化的补充面板才使用 `FlowProcessing/Editor/NodeConfiguration/`。未注册的 `FlowPropertyEditorProxy` 有自己的文本编辑器回退；它与上面的通用 PropertyGrid 失败规则不是同一个契约。代理内部不一定复用实例，不能把通用缓存规则直接套给所有宿主。
 

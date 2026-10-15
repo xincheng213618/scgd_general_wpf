@@ -447,25 +447,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             """;
 
-        private string imageFilePath = string.Empty;
         private string parameterJson = DefaultParameterJson;
         private string resultDirectory = string.Empty;
         private Int32Rect searchRegion = Int32Rect.Empty;
         private string searchRegionPoiTemplate = string.Empty;
         private readonly ILocalFindCrossNodeServices services;
-
-        [Category("本地十字定位")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-        [STNodeProperty("图像文件", "可选后备输入；优先使用上游本地内存帧，没有内存帧时先读该文件，再回退到 IN 图像结果。需要历史结果底图时，请让上游本地相机/校正节点保存实际帧文件。", true)]
-        public string ImageFilePath
-        {
-            get => imageFilePath;
-            set
-            {
-                imageFilePath = value ?? string.Empty;
-                OnPropertyChanged();
-            }
-        }
 
         [Category("本地十字定位")]
         [PropertyEditorType(typeof(LocalFindCrossConfigurationEditor))]
@@ -698,7 +684,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ServiceName = NodeName,
                 EventName = OperatorCode,
                 action.SerialNumber,
-                ImageFilePath,
                 SearchRegion,
                 SearchRegionPoiTemplate,
                 ParameterJson,
@@ -769,15 +754,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return ownedFrame;
             }
 
-            throw new InvalidOperationException("流程中没有可用的本地图像内存帧或图像结果；请连接本地取图/校正节点，或配置图像文件。");
+            throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
         }
 
         private string? ResolveFallbackFile(CVStartCFC action, out int sourceMasterId)
         {
             sourceMasterId = -1;
-            if (!string.IsNullOrWhiteSpace(ImageFilePath))
-                return NormalizeImagePath(ImageFilePath, "配置的图像文件");
-
             bool hasInput = TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _);
             if (!hasInput)
             {

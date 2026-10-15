@@ -1,8 +1,9 @@
-#include "Windows.h"
+﻿#include "Windows.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
 #include "pch.h"
+#include "fusion_request.h"
 #include "cuda_export.h"
 #include <opencv2/opencv.hpp>
 #include <nlohmann\json.hpp>
@@ -91,15 +92,6 @@ struct ImageLoadResult {
 };
 
 /**
- * @brief GPU upload task
- */
-struct GPUUploadTask {
-    int index;
-    cv::Mat image;
-    double* d_buffer;  // Pre-allocated GPU memory
-};
-
-/**
  * @brief Asynchronous image loader with thread pool
  */
 class AsyncImageLoader {
@@ -116,8 +108,11 @@ private:
             ImageLoadResult result;
             result.index = task.first;
             auto start = std::chrono::steady_clock::now();
-            result.image = cv::imread(task.second, cv::IMREAD_UNCHANGED);
-            result.success = !result.image.empty();
+            try {
+                result.image = ReadFusionImage(task.second);
+                result.success = !result.image.empty();
+            }
+            catch (...) { result.success = false; }
             result.load_time = start;
             result_queue_.push(std::move(result));
             pending_count_--;
@@ -125,6 +120,8 @@ private:
     }
 
 public:
+    ~AsyncImageLoader() { stop(); }
+
     void start(int num_threads = 4) {
         running_ = true;
         for (int i = 0; i < num_threads; ++i) {
@@ -152,68 +149,8 @@ public:
     size_t pending() const { return pending_count_.load(); }
 };
 
-/**
- * @brief CUDA Stream Pool for parallel GPU operations
- */
-class CUDAStreamPool {
-private:
-    std::vector<cudaStream_t> streams_;
-    std::queue<size_t> available_;
-    std::mutex mutex_;
-
-public:
-    void initialize(size_t count) {
-        streams_.resize(count);
-        for (size_t i = 0; i < count; ++i) {
-            cudaStreamCreate(&streams_[i]);
-            available_.push(i);
-        }
-    }
-
-    void destroy() {
-        for (auto& stream : streams_) {
-            if (stream) cudaStreamDestroy(stream);
-        }
-        streams_.clear();
-    }
-
-    cudaStream_t acquire() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (available_.empty()) return nullptr;
-        size_t idx = available_.front();
-        available_.pop();
-        return streams_[idx];
-    }
-
-    void release(cudaStream_t stream) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        for (size_t i = 0; i < streams_.size(); ++i) {
-            if (streams_[i] == stream) {
-                available_.push(i);
-                break;
-            }
-        }
-    }
-
-    size_t available_count() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return available_.size();
-    }
-};
-
-// ============================================================================
-// Optimized Fusion with Async Pipeline
-// ============================================================================
-
-/**
- * @brief Fusion with asynchronous image loading and GPU upload
- *
- * Pipeline stages:
- * 1. Async image loading (CPU, multi-threaded)
- * 2. Async GPU upload (overlapped with loading)
- * 3. GPU processing ( Fusion algorithm )
- */
-cv::Mat FusionAsyncPipeline(const std::vector<std::string>& files, int STEP, int num_loader_threads = 4) {
+// Parallel decoding completes before GPU fusion; this export returns synchronously.
+cv::Mat FusionAsyncPipeline(const std::vector<std::string>& files, const FusionOptions& options, int num_loader_threads = 4) {
     if (files.empty()) return cv::Mat();
 
     auto total_start = std::chrono::steady_clock::now();
@@ -247,62 +184,7 @@ cv::Mat FusionAsyncPipeline(const std::vector<std::string>& files, int STEP, int
               << " ms" << std::endl;
 
     // Phase 2: GPU fusion
-    cv::Mat out = Fusion(imgs, STEP);
-
-    return out;
-}
-
-/**
- * @brief Advanced pipeline with overlapped load-upload-process
- *
- * This version overlaps image loading, GPU upload, and processing
- * for maximum throughput with large image sets.
- */
-cv::Mat FusionAdvancedPipeline(const std::vector<std::string>& files, int STEP) {
-    if (files.empty()) return cv::Mat();
-
-    const int BATCH_SIZE = 4;  // Process in batches for memory efficiency
-    const int NUM_STREAMS = 2;
-
-    auto total_start = std::chrono::steady_clock::now();
-
-    // Initialize CUDA streams
-    CUDAStreamPool stream_pool;
-    stream_pool.initialize(NUM_STREAMS);
-
-    std::vector<cv::Mat> all_imgs;
-    all_imgs.reserve(files.size());
-
-    // Process in batches
-    for (size_t batch_start = 0; batch_start < files.size(); batch_start += BATCH_SIZE) {
-        size_t batch_end = std::min(batch_start + BATCH_SIZE, files.size());
-
-        // Load batch asynchronously
-        std::vector<std::future<cv::Mat>> futures;
-        for (size_t i = batch_start; i < batch_end; ++i) {
-            futures.push_back(std::async(std::launch::async, [&files, i]() {
-                return cv::imread(files[i], cv::IMREAD_UNCHANGED);
-            }));
-        }
-
-        // Collect results
-        for (auto& f : futures) {
-            cv::Mat img = f.get();
-            if (!img.empty()) {
-                all_imgs.push_back(std::move(img));
-            }
-        }
-    }
-
-    auto load_end = std::chrono::steady_clock::now();
-    std::cout << "Batch loading time: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(load_end - total_start).count()
-              << " ms" << std::endl;
-
-    stream_pool.destroy();
-
-    // Perform fusion
-    cv::Mat out = Fusion(all_imgs, STEP);
+    cv::Mat out = Fusion(imgs, options);
 
     return out;
 }
@@ -312,27 +194,6 @@ cv::Mat FusionAdvancedPipeline(const std::vector<std::string>& files, int STEP) 
 // ============================================================================
 
 namespace {
-
-int ParseFusionFiles(const char* fusionjson, std::vector<std::string>& files)
-{
-    if (fusionjson == nullptr) {
-        return -1;
-    }
-
-    json j = json::parse(fusionjson, nullptr, false);
-    if (j.is_discarded() || !j.is_array()) {
-        return -2;
-    }
-
-    try {
-        files = j.get<std::vector<std::string>>();
-    }
-    catch (const json::exception&) {
-        return -3;
-    }
-
-    return files.empty() ? -4 : 0;
-}
 
 int LoadImagesParallel(const std::vector<std::string>& files, std::vector<cv::Mat>& imgs)
 {
@@ -345,7 +206,9 @@ int LoadImagesParallel(const std::vector<std::string>& files, std::vector<cv::Ma
     try {
         for (size_t i = 0; i < files.size(); ++i) {
             threads.emplace_back([i, &files, &imgs, &read_success, &imgs_mutex]() {
-                cv::Mat img = cv::imread(files[i], cv::IMREAD_UNCHANGED);
+                cv::Mat img;
+                try { img = ReadFusionImage(files[i]); }
+                catch (...) { return; }
                 if (!img.empty()) {
                     std::lock_guard<std::mutex> lock(imgs_mutex);
                     imgs[i] = std::move(img);
@@ -431,10 +294,8 @@ extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* out
     start = std::chrono::high_resolution_clock::now();
 
     std::vector<std::string> files;
-    int parseResult = ParseFusionFiles(fusionjson, files);
-    if (parseResult != 0) {
-        return parseResult;
-    }
+    FusionOptions options;
+    if (!ParseFusionRequest(fusionjson, files, options)) return -2;
 
     // Use async pipeline for loading
     auto load_start = std::chrono::steady_clock::now();
@@ -449,7 +310,7 @@ extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* out
     }
 
     auto fusion_start = std::chrono::steady_clock::now();
-    cv::Mat out = Fusion(imgs, 2);
+    cv::Mat out = Fusion(imgs, options);
     auto fusion_end = std::chrono::steady_clock::now();
 
     std::cout << "Fusion time: "
@@ -500,13 +361,11 @@ extern "C" COLORVISIONCORE_API int CM_Fusion_Async(const char* fusionjson, HImag
     start = std::chrono::high_resolution_clock::now();
 
     std::vector<std::string> files;
-    int parseResult = ParseFusionFiles(fusionjson, files);
-    if (parseResult != 0) {
-        return parseResult;
-    }
+    FusionOptions options;
+    if (!ParseFusionRequest(fusionjson, files, options)) return -2;
 
     // Use optimized async pipeline
-    cv::Mat out = FusionAsyncPipeline(files, 2);
+    cv::Mat out = FusionAsyncPipeline(files, options);
 
     if (out.empty()) {
         std::cerr << "Error: Fusion failed" << std::endl;

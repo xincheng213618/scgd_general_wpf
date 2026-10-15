@@ -52,21 +52,22 @@ namespace ColorVision.Copilot
 
             bool ProcessPendingEvent()
             {
-                var emittedContent = false;
+                var emittedDisplayableText = false;
                 var completed = ProcessStreamingEventData(
                     config,
                     eventData,
                     providerRequestId,
                     delta =>
                     {
-                        emittedContent = true;
+                        emittedDisplayableText = !string.IsNullOrWhiteSpace(delta.ReasoningContent)
+                            || !string.IsNullOrWhiteSpace(delta.Content);
                         onDelta(delta);
                     },
                     onUsageChanged,
                     ref usage,
                     ref receivedDisplayableText,
                     ref finishReason);
-                if (emittedContent)
+                if (emittedDisplayableText)
                     remainingInactivityTimeout =
                         inactivityTimeouts.StreamingUpdateTimeout;
                 return completed;
@@ -197,7 +198,8 @@ namespace ColorVision.Copilot
             if (!reply.Delta.HasAny)
                 return terminalEvent;
 
-            receivedDisplayableText = true;
+            receivedDisplayableText |= !string.IsNullOrWhiteSpace(reply.Delta.ReasoningContent)
+                || !string.IsNullOrWhiteSpace(reply.Delta.Content);
             onDelta(reply.Delta);
             return terminalEvent;
         }

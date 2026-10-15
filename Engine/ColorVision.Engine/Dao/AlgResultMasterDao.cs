@@ -18,7 +18,7 @@ namespace ColorVision.Engine
         [SugarColumn(ColumnName = "img_file", IsNullable = true)]
         public string? ImgFile { get; set; }
 
-        [SugarColumn(ColumnName = "img_file_type", ColumnDataType = "int", Length = 11, ColumnDescription = "0-关注点;1-色度;2-亮度;3-FOV;4-SFR;5-MTF;6-Ghost;7-LedCheck;8-LightArea;9-Distortion;10-Calibration;11-BuildPOI")]
+        [SugarColumn(ColumnName = "img_file_type", ColumnDataType = "int", Length = 11, ColumnDescription = "算法结果类型编号")]
         public ViewResultAlgType ImgFileType { get; set; }
 
         [SugarColumn(ColumnName = "version", Length = 16, IsNullable = true, ColumnDescription = "版本号")]

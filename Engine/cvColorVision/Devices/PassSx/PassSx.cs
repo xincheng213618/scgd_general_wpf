@@ -25,6 +25,9 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_OpenNetDevice", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int OpenNetDevice([MarshalAs(UnmanagedType.Bool)] bool bNet, [MarshalAs(UnmanagedType.LPStr)] string devName, Pss_Type nType);
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_OpenNetDeviceEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int OpenNetDeviceEx([MarshalAs(UnmanagedType.Bool)] bool bNet, [MarshalAs(UnmanagedType.LPStr)] string devName, Pss_Type nType, int baudRate);
+
         // 关闭
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_CloseDevice", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CloseDevice(int nDevID);

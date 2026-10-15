@@ -5,14 +5,21 @@ using System;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Local;
 
-internal sealed record LocalSmuConnection(bool IsNet, string DeviceName, Pss_Type DeviceType, double DelayTime, bool Is4Wire, bool IsFront)
+internal sealed record LocalSmuConnection(bool IsNet, string DeviceName, Pss_Type DeviceType, double DelayTime, bool Is4Wire, bool IsFront, int BaudRate = 9600)
 {
-    internal static LocalSmuConnection From(ConfigSMU config) => new(config.IsNet, config.DevName?.Trim() ?? string.Empty, config.DevType, config.DelayTime, config.Is4Wire, config.IsFront);
+    internal static LocalSmuConnection From(ConfigSMU config, int baudRate = 9600) => new(config.IsNet, config.DevName?.Trim() ?? string.Empty, config.DevType, config.DelayTime, config.Is4Wire, config.IsFront, config.IsNet ? 9600 : baudRate);
     internal string Endpoint => $"{(IsNet ? "NET" : "COM")}:{DeviceName.ToUpperInvariant()}";
     internal void Validate()
     {
         if (string.IsNullOrWhiteSpace(DeviceName) || !Enum.IsDefined(DeviceType)) throw new ArgumentException("请设置有效的源表设备名和类型。");
         if (!double.IsFinite(DelayTime) || DelayTime < 0) throw new ArgumentException("源表延时必须是非负有限值。");
+        if (!IsNet)
+        {
+            if (!Enum.IsDefined((SMUSerialBaudRate)BaudRate)) throw new ArgumentException("请选择有效的源表串口波特率。");
+            if (DeviceType == Pss_Type.Keithley_2400 && BaudRate > 57600) throw new ArgumentException("Keithley 2400 串口波特率最高支持 57600。");
+            if (DeviceType is not (Pss_Type.Keithley_2400 or Pss_Type.Keithley_2600) && BaudRate != 9600)
+                throw new ArgumentException("当前源表类型不支持自定义串口波特率，请使用 9600。");
+        }
     }
 }
 

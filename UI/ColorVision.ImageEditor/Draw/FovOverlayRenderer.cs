@@ -17,31 +17,36 @@ namespace ColorVision.ImageEditor.Draw
             ArgumentNullException.ThrowIfNull(imageContext);
             ArgumentNullException.ThrowIfNull(drawContext);
             ArgumentNullException.ThrowIfNull(measurement);
-            if (!LuminousAreaResultParser.TryValidateOrderedCorners(measurement.Corners, out string geometryError))
+            FovBoundaryGeometry? boundary = measurement.Boundary;
+            if (boundary == null && !LuminousAreaResultParser.TryValidateOrderedCorners(measurement.Corners, out string geometryError))
                 throw new ArgumentException($"FOV overlay corners are invalid: {geometryError}", nameof(measurement));
+            if (boundary != null && (boundary.Contour.Count < 3 || boundary.DiagonalPoints.Count != 4))
+                throw new ArgumentException("FOV contour geometry is incomplete.", nameof(measurement));
 
             AlgorithmResultOverlay.ClearTagged(drawContext, AlgorithmResultOverlay.FovTag);
             double scaleX = GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
             double scaleY = GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
             Point Position(LuminousAreaPoint point) => new(point.X * scaleX, point.Y * scaleY);
             Point[] corners = measurement.Corners.Select(Position).ToArray();
-            Point left = Midpoint(corners[0], corners[3]);
-            Point right = Midpoint(corners[1], corners[2]);
-            Point up = Midpoint(corners[0], corners[1]);
-            Point down = Midpoint(corners[3], corners[2]);
-            Point center = new(corners.Average(point => point.X), corners.Average(point => point.Y));
+            Point left = boundary == null ? Midpoint(corners[0], corners[3]) : Position(boundary.Left);
+            Point right = boundary == null ? Midpoint(corners[1], corners[2]) : Position(boundary.Right);
+            Point up = boundary == null ? Midpoint(corners[0], corners[1]) : Position(boundary.Top);
+            Point down = boundary == null ? Midpoint(corners[3], corners[2]) : Position(boundary.Bottom);
+            Point center = boundary == null
+                ? new(corners.Average(point => point.X), corners.Average(point => point.Y)) : Position(boundary.Center);
             double zoom = AlgorithmResultOverlay.GetZoom(drawContext);
 
             AlgorithmResultOverlay.AddPolygon(
                 drawContext,
-                corners,
+                boundary == null ? corners : boundary.Contour.Select(Position).ToArray(),
                 new Pen(Brushes.DeepSkyBlue, 2 / zoom),
                 AlgorithmResultOverlay.FovTag);
             AlgorithmResultOverlay.AddLine(drawContext, left, right, new Pen(Brushes.Orange, 1.5 / zoom), AlgorithmResultOverlay.FovTag);
             AlgorithmResultOverlay.AddLine(drawContext, up, down, new Pen(Brushes.LimeGreen, 1.5 / zoom), AlgorithmResultOverlay.FovTag);
             Pen diagonalPen = new(Brushes.MediumPurple, 1 / zoom) { DashStyle = DashStyles.Dash };
-            AlgorithmResultOverlay.AddLine(drawContext, corners[3], corners[1], diagonalPen, AlgorithmResultOverlay.FovTag);
-            AlgorithmResultOverlay.AddLine(drawContext, corners[0], corners[2], diagonalPen.CloneCurrentValue(), AlgorithmResultOverlay.FovTag);
+            Point[] diagonalPoints = boundary == null ? corners : boundary.DiagonalPoints.Select(Position).ToArray();
+            AlgorithmResultOverlay.AddLine(drawContext, diagonalPoints[3], diagonalPoints[1], diagonalPen, AlgorithmResultOverlay.FovTag);
+            AlgorithmResultOverlay.AddLine(drawContext, diagonalPoints[0], diagonalPoints[2], diagonalPen.CloneCurrentValue(), AlgorithmResultOverlay.FovTag);
 
             string[] names = ["LT", "RT", "RB", "LB"];
             for (int index = 0; index < corners.Length; index++)

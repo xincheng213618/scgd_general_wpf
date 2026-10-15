@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             RawColorTransformV1? colorTransform;
             using (LocalFlowFrameLease lease = frame.Acquire())
             {
-                CVImageFlipMode rawOutputFlip = cacheManager.SupportsRawOutputFlip && plan.HasBasicCalibration
+                CVImageFlipMode rawOutputFlip = plan.HasBasicCalibration
                     && lease.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw && !lease.IsRawFlipApplied
                     ? lease.Metadata.FlipMode : CVImageFlipMode.None;
                 colorTransform = cacheManager.Execute(

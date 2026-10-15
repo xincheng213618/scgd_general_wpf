@@ -371,11 +371,75 @@ public sealed class ProcessManagerPersistenceTests
             Assert.Empty(manager.ProcessMetas);
             Assert.False(File.Exists(Path.Combine(ViewResultManager.DirectoryPath, ProcessManager.GroupPersistFileName)));
 
-            manager.NewGroupName = "ARVR";
-            manager.AddGroupCommand.Execute(null);
+            Assert.True(manager.TryAddGroup("ARVR", out string error), error);
 
             Assert.True(File.Exists(Path.Combine(ViewResultManager.DirectoryPath, ProcessManager.GroupPersistFileName)));
             Assert.Equal(sharedJson, File.ReadAllText(sharedFilePath));
+        });
+    }
+
+    [Fact]
+    public void GroupNameChangesPreserveStepsAndRejectDuplicateOrInvalidNames()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            ProcessGroup original = Assert.Single(manager.ProcessGroups);
+            var process = new BlackProcess();
+            process.Config.RecipeConfig.FOFOContrast.Min = 123;
+            var meta = CreateMeta("Step", process);
+            original.ProcessMetas.Add(meta);
+            Assert.True(manager.TryAddGroup("  Product A  ", out string error), error);
+            Assert.Equal("Product A", manager.ActiveGroup!.Name);
+            Assert.True(manager.AddGroupCommand.CanExecute(null));
+            Assert.True(manager.RenameGroupCommand.CanExecute(null));
+
+            string filePath = ProcessManager.GroupPersistFilePath;
+            string jsonBeforeInvalidNames = File.ReadAllText(filePath);
+            Assert.False(manager.TryAddGroup(" product a ", out error));
+            Assert.False(manager.TryAddGroup("   ", out error));
+            Assert.False(manager.TryRenameGroup(original, "PRODUCT A", out error));
+            Assert.False(manager.TryRenameGroup(original, "Product\nB", out error));
+            Assert.Equal(jsonBeforeInvalidNames, File.ReadAllText(filePath));
+            Assert.Equal(2, manager.ProcessGroups.Count);
+            Assert.Equal("Default", original.Name);
+
+            Assert.True(manager.TryRenameGroup(original, "  Product B  ", out error), error);
+            Assert.Same(meta, Assert.Single(original.ProcessMetas));
+            Assert.Same(process, meta.Process);
+            Assert.Equal("Product A", manager.ActiveGroup.Name);
+            var reloaded = new ProcessManager();
+            Assert.Equal("Product B", reloaded.ProcessGroups[0].Name);
+            Assert.Equal("Product A", reloaded.ActiveGroup!.Name);
+            var reloadedProcess = Assert.IsType<BlackProcess>(Assert.Single(reloaded.ProcessGroups[0].ProcessMetas).Process);
+            Assert.Equal(123, reloadedProcess.Config.RecipeConfig.FOFOContrast.Min);
+        });
+    }
+
+    [Fact]
+    public void GroupNameSaveFailureKeepsMemoryAndDiskAndAllowsRetry()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            ProcessGroup original = Assert.Single(manager.ProcessGroups);
+            Assert.True(manager.TrySaveProcessGroups());
+            string filePath = ProcessManager.GroupPersistFilePath;
+            string originalJson = File.ReadAllText(filePath);
+            using (new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                Assert.False(manager.TryAddGroup("Product A", out string addError));
+                Assert.NotEmpty(addError);
+                Assert.False(manager.TryRenameGroup(original, "Product B", out string renameError));
+                Assert.NotEmpty(renameError);
+                Assert.Same(original, Assert.Single(manager.ProcessGroups));
+                Assert.Same(original, manager.ActiveGroup);
+                Assert.Equal("Default", original.Name);
+            }
+            Assert.Equal(originalJson, File.ReadAllText(filePath));
+            Assert.True(manager.TryAddGroup("Product A", out string error), error);
+            Assert.True(manager.TryRenameGroup(original, "Product B", out error), error);
+            Assert.Equal("Product B", new ProcessManager().ProcessGroups[0].Name);
         });
     }
 

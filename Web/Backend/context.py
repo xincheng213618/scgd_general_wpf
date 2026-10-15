@@ -15,8 +15,9 @@ from typing import Any, Callable
 
 from db_cache import CacheManager
 from services.auth_policy import AuthPolicy
-from services.performance_observability import DEFAULT_SLOW_REQUEST_THRESHOLD_MS
+from services.performance_observability import DEFAULT_SLOW_REQUEST_THRESHOLD_MS, RequestDiagnostics
 from services.request_context import RequestContext
+from services.feedback_admin import FeedbackInventoryIndex
 
 
 @dataclass
@@ -72,6 +73,8 @@ class MarketplaceContext:
 
     # Slow request tracking
     slow_requests: list = field(default_factory=list)
+    request_diagnostics: RequestDiagnostics = field(default_factory=RequestDiagnostics)
+    feedback_inventory: FeedbackInventoryIndex = field(default_factory=FeedbackInventoryIndex)
     slow_request_threshold_ms: int = DEFAULT_SLOW_REQUEST_THRESHOLD_MS
     process_started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 

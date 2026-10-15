@@ -201,18 +201,9 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		STNode node = m_nodes[nIndex];
 		var nodeState = m_owner.CaptureNodeStateForRemoval(node);
 		var connectionOperations = m_owner.CaptureNodeConnectionsForRemoval(node);
-		bool lockOption = node.LockOption;
-		node.LockOption = false;
-		try
+		using (m_owner.SuspendHistoryRecording())
 		{
-			using (m_owner.SuspendHistoryRecording())
-			{
-				node.Owner = null;
-			}
-		}
-		finally
-		{
-			node.LockOption = lockOption;
+			node.Owner = null;
 		}
 		m_owner.InternalRemoveSelectedNode(node);
 		if (m_owner.ActiveNode == node)
@@ -221,7 +212,6 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		}
 		m_owner.RecordNodeConnectionsRemoved(connectionOperations);
 		m_owner.RecordNodeRemoved(node, nIndex, nodeState);
-		m_owner.OnNodeRemoved(new STNodeEditorEventArgs(node));
 		_Count--;
 		int i = nIndex;
 		for (int count = _Count; i < count; i++)
@@ -229,6 +219,7 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 			m_nodes[i] = m_nodes[i + 1];
 		}
 		m_nodes[_Count] = null;
+		m_owner.OnNodeRemoved(new STNodeEditorEventArgs(node));
 		if (_Count == 0)
 		{
 			m_owner.ScaleCanvas(1f, 0f, 0f);

@@ -524,4 +524,49 @@
   <data name="Sched_PauseHint" xml:space="preserve">
     <value>Pausing prevents future triggers; running tasks continue</value>
   </data>
+  <data name="Sched_Completed" xml:space="preserve">
+    <value>Schedule completed</value>
+  </data>
+  <data name="Sched_ScheduleFinished" xml:space="preserve">
+    <value>This schedule has completed. Run the task again or re-enable its schedule.</value>
+  </data>
+  <data name="Sched_ExecuteTask" xml:space="preserve">
+    <value>Run task</value>
+  </data>
+  <data name="Sched_RerunTask" xml:space="preserve">
+    <value>Run again</value>
+  </data>
+  <data name="Sched_ContinueExecution" xml:space="preserve">
+    <value>Continue task</value>
+  </data>
+  <data name="Sched_EnablePlan" xml:space="preserve">
+    <value>Enable schedule</value>
+  </data>
+  <data name="Sched_ReenablePlan" xml:space="preserve">
+    <value>Enable again</value>
+  </data>
+  <data name="Sched_PlanEnabled" xml:space="preserve">
+    <value>Schedule enabled</value>
+  </data>
+  <data name="Sched_WaitingExecution" xml:space="preserve">
+    <value>Waiting to run</value>
+  </data>
+  <data name="Sched_OnlyRunOnce" xml:space="preserve">
+    <value>Run once only</value>
+  </data>
+  <data name="Sched_ExecuteTaskHint" xml:space="preserve">
+    <value>Run the configured repetitions, interval and start delay; resume remaining runs after a pause.</value>
+  </data>
+  <data name="Sched_EnablePlanHint" xml:space="preserve">
+    <value>Run at the configured dates, times and recurrence.</value>
+  </data>
+  <data name="Sched_OnlyRunOnceHint" xml:space="preserve">
+    <value>Run one extra time while preserving schedule progress and pause state.</value>
+  </data>
+  <data name="Sched_AlreadyActive" xml:space="preserve">
+    <value>The task is already active. Pause it or wait for this round to finish.</value>
+  </data>
+  <data name="Sched_TaskNotFound" xml:space="preserve">
+    <value>The task was not found. Refresh the task list.</value>
+  </data>
 </root>

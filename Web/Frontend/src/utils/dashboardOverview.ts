@@ -1,7 +1,7 @@
 import type {
   DeploymentHistoryEntry,
   IndexStatusResponse,
-  TrafficStatsResponse,
+  TrafficHealth,
   UserAccountSummary,
   ScheduledJob,
   DatabaseBackupInventory,
@@ -149,30 +149,22 @@ export function summarizeDashboardIndexes(
 }
 
 export function summarizeDashboardTraffic(
-  traffic?: TrafficStatsResponse | null,
+  traffic?: TrafficHealth | null,
 ): DashboardHealthSummary {
   if (!traffic) {
     return { level: 'unknown', label: '待加载', detail: '尚未取得今日访问统计' }
   }
-  if (traffic.today.serverErrorResponses > 0 || traffic.recorder.lastError) {
-    return {
-      level: 'error',
-      label: '需要排查',
-      detail: traffic.recorder.lastError
-        ? '访问统计记录器存在错误'
-        : `今日出现 ${traffic.today.serverErrorResponses} 次服务端 5xx`,
-    }
-  }
-  if (traffic.today.clientErrorResponses > 0 || traffic.recorder.dropped > 0) {
-    return {
-      level: 'warning',
-      label: '有请求异常',
-      detail: traffic.recorder.dropped > 0
-        ? `统计记录器丢弃 ${traffic.recorder.dropped} 条记录`
-        : `今日有 ${traffic.today.clientErrorResponses} 次请求侧 4xx`,
-    }
-  }
-  return { level: 'ok', label: '访问正常', detail: '今日未记录 4xx 或 5xx' }
+  if (traffic.recorder.lastError) return { level: 'error', label: '统计记录异常', detail: '最近一次统计写入失败，请进入访问统计检查' }
+  if (!traffic.recent) return { level: 'unknown', label: '近期状态未知', detail: '只有今日累计数据，不能确认当前是否正常' }
+  const groups = Object.values(traffic.recent.groups)
+  const requests = groups.reduce((sum, group) => sum + group.requests, 0)
+  const serverErrors = groups.reduce((sum, group) => sum + group.server_errors, 0)
+  const clientErrors = groups.reduce((sum, group) => sum + group.client_errors, 0)
+  const window = `最近 ${traffic.recent.window_seconds / 60} 分钟`
+  if (!requests) return { level: 'unknown', label: '近期无请求样本', detail: '暂无近期请求，不能据此确认业务正常' }
+  if (serverErrors) return { level: 'error', label: '近期出现 5xx', detail: `${window} ${serverErrors}/${requests} 次请求返回 5xx（${(serverErrors / requests * 100).toFixed(1)}%）` }
+  if (clientErrors) return { level: 'warning', label: '近期有请求侧错误', detail: `${window} ${clientErrors}/${requests} 次 4xx，需结合权限、路径和限流原因判断` }
+  return { level: 'ok', label: '近期未见 HTTP 错误', detail: `${window}已观测 ${requests} 次请求；今日历史错误保留在下方` }
 }
 
 export function summarizeDashboardDeployment(

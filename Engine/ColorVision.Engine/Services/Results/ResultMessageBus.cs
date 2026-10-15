@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Results
 
     /// <summary>
     /// Versioned process-local result message. The persisted reference is transport-neutral;
-    /// Attachment is reserved for optional process-local data such as a future image-frame handle.
+    /// Attachment can carry a completed local camera result model, including cache-only results.
     /// </summary>
     public sealed class ResultMessage
     {
@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Services.Results
         public ResultReference Data { get; }
 
         /// <summary>
-        /// Optional process-local extension point. Persisted-result messages currently leave this null.
+        /// Optional process-local data. PublishPersisted leaves this null; local camera nodes attach their result model.
         /// </summary>
         public object? Attachment { get; }
     }

@@ -24,7 +24,7 @@ namespace ColorVision.Copilot.Mcp
         private static readonly Lazy<CopilotMcpServer> LazyInstance = new(() => new CopilotMcpServer());
 
         private readonly object _syncRoot = new();
-        private readonly CopilotMcpRequestHandler _requestHandler;
+        private readonly Lazy<CopilotMcpRequestHandler> _requestHandler;
         private readonly SemaphoreSlim _clientSlots = new(MaximumConcurrentClients, MaximumConcurrentClients);
         private CancellationTokenSource? _cts;
         private TcpListener? _listener;
@@ -35,7 +35,7 @@ namespace ColorVision.Copilot.Mcp
 
         internal CopilotMcpServer()
         {
-            _requestHandler = new CopilotMcpRequestHandler(() => _settings);
+            _requestHandler = new Lazy<CopilotMcpRequestHandler>(() => new CopilotMcpRequestHandler(() => _settings));
         }
 
         public static CopilotMcpServer Instance => LazyInstance.Value;
@@ -89,8 +89,9 @@ namespace ColorVision.Copilot.Mcp
 
                 if (IsRunning && _listener != null && previousPort == _settings.Port)
                 {
-                    if (!string.Equals(previousBearerToken, _settings.BearerToken, StringComparison.Ordinal))
-                        _requestHandler.ClearSessions();
+                    if (!string.Equals(previousBearerToken, _settings.BearerToken, StringComparison.Ordinal)
+                        && _requestHandler.IsValueCreated)
+                        _requestHandler.Value.ClearSessions();
                     LastStatusMessage = $"ColorVision MCP server is running at {_settings.Endpoint}.";
                     return;
                 }
@@ -127,6 +128,7 @@ namespace ColorVision.Copilot.Mcp
 
             try
             {
+                _ = _requestHandler.Value;
                 _cts = new CancellationTokenSource();
                 _listener = new TcpListener(IPAddress.Loopback, _settings.Port);
                 _listener.Start();
@@ -171,7 +173,8 @@ namespace ColorVision.Copilot.Mcp
             }
             finally
             {
-                _requestHandler.ClearSessions();
+                if (_requestHandler.IsValueCreated)
+                    _requestHandler.Value.ClearSessions();
                 _listener = null;
                 _cts?.Dispose();
                 _cts = null;
@@ -289,7 +292,7 @@ namespace ColorVision.Copilot.Mcp
                 var request = await ReadRequestAsync(stream, callerSource, linkedCts.Token);
                 var response = request == null
                     ? new CopilotMcpHttpResponse { StatusCode = 400, Body = "{\"error\":\"Invalid HTTP request.\"}" }
-                    : await _requestHandler.HandleAsync(request, linkedCts.Token);
+                    : await _requestHandler.Value.HandleAsync(request, linkedCts.Token);
                 await WriteResponseAsync(stream, response, linkedCts.Token);
             }
             catch (OperationCanceledException)

@@ -16,7 +16,7 @@ namespace ColorVision.Engine
         MTF = 5,
         Ghost = 6,
         LedCheck = 7,
-        LightArea = 8,
+        // Result ID 8 retired on 2026-10-11; do not reuse it for another algorithm.
         Distortion = 9,
         BuildPOI = 10,
         Compliance_Math = 11,
@@ -27,7 +27,6 @@ namespace ColorVision.Engine
         Compliance_Contrast_CIE_Y = 16,
         LEDStripDetection = 17,
         RealPOI = 18,
-        DataLoad = 19,
         POI_Y_V2 = 20,
         OLED_FindDotsArrayMem = 21,
         OLED_FindDotsArrayMem_File = 22,

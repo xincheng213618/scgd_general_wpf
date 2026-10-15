@@ -504,4 +504,49 @@
   <data name="Sched_PauseHint" xml:space="preserve">
     <value>暂停只影响后续触发，正在执行的任务会继续运行</value>
   </data>
+  <data name="Sched_Completed" xml:space="preserve">
+    <value>计划已完成</value>
+  </data>
+  <data name="Sched_ScheduleFinished" xml:space="preserve">
+    <value>本轮计划已完成，可重新执行任务或重新启用计划。</value>
+  </data>
+  <data name="Sched_ExecuteTask" xml:space="preserve">
+    <value>执行任务</value>
+  </data>
+  <data name="Sched_RerunTask" xml:space="preserve">
+    <value>重新执行</value>
+  </data>
+  <data name="Sched_ContinueExecution" xml:space="preserve">
+    <value>继续执行</value>
+  </data>
+  <data name="Sched_EnablePlan" xml:space="preserve">
+    <value>启用计划</value>
+  </data>
+  <data name="Sched_ReenablePlan" xml:space="preserve">
+    <value>重新启用</value>
+  </data>
+  <data name="Sched_PlanEnabled" xml:space="preserve">
+    <value>计划已启用</value>
+  </data>
+  <data name="Sched_WaitingExecution" xml:space="preserve">
+    <value>等待执行</value>
+  </data>
+  <data name="Sched_OnlyRunOnce" xml:space="preserve">
+    <value>仅执行一次</value>
+  </data>
+  <data name="Sched_ExecuteTaskHint" xml:space="preserve">
+    <value>按设置的次数、间隔和延迟执行；暂停后继续剩余次数。</value>
+  </data>
+  <data name="Sched_EnablePlanHint" xml:space="preserve">
+    <value>按设定的日期、时间和周期运行。</value>
+  </data>
+  <data name="Sched_OnlyRunOnceHint" xml:space="preserve">
+    <value>额外运行一次，保留计划进度及暂停状态。</value>
+  </data>
+  <data name="Sched_AlreadyActive" xml:space="preserve">
+    <value>任务已启动，请先暂停或等待本轮完成。</value>
+  </data>
+  <data name="Sched_TaskNotFound" xml:space="preserve">
+    <value>找不到该任务，请刷新任务列表。</value>
+  </data>
 </root>

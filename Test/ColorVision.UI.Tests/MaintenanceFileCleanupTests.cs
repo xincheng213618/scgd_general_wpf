@@ -8,6 +8,47 @@ public sealed class MaintenanceFileCleanupTests : IDisposable
     private readonly string _root = Directory.CreateTempSubdirectory("ColorVisionMaintenanceTests-").FullName;
 
     [Fact]
+    public void IncrementalScanReusesUnchangedEntriesAndReconcilesChangedNewAndRemovedFiles()
+    {
+        string unchanged = CreateFile("unchanged.log");
+        string changed = CreateFile("changed.log");
+        string removed = CreateFile("removed.log");
+        var first = MaintenanceFileCleanup.Scan([Rule()]);
+        File.AppendAllText(changed, "new bytes");
+        File.SetLastWriteTimeUtc(changed, DateTime.UtcNow.AddDays(-60));
+        File.Delete(removed);
+        string added = CreateFile("added.log");
+
+        var second = MaintenanceFileCleanup.Scan([Rule()], previous: first);
+
+        Assert.Equal(1, second.ReusedFileCount);
+        Assert.Equal(new[] { unchanged, changed, added }.OrderBy(path => path), second.Files.Select(file => file.FullPath).OrderBy(path => path));
+        Assert.Equal(new FileInfo(changed).Length, second.Files.Single(file => file.FullPath == changed).Length);
+        Assert.Equal(second.Files.Sum(file => new FileInfo(file.FullPath).Length), second.TotalBytes);
+    }
+
+    [Fact]
+    public void IncrementalMetadataReuseNeverAuthorizesDeletingAReplacedFile()
+    {
+        string original = CreateFile("replacement.log");
+        var first = MaintenanceFileCleanup.Scan([Rule()]);
+        DateTime created = File.GetCreationTimeUtc(original), modified = File.GetLastWriteTimeUtc(original);
+        string content = File.ReadAllText(original);
+        File.Move(original, Path.Combine(_root, "original.saved"));
+        File.WriteAllText(original, content);
+        File.SetCreationTimeUtc(original, created);
+        File.SetLastWriteTimeUtc(original, modified);
+
+        var second = MaintenanceFileCleanup.Scan([Rule()], previous: first);
+        Assert.Equal(1, second.ReusedFileCount);
+        var result = MaintenanceFileCleanup.Cleanup(second);
+
+        Assert.Equal(0, result.DeletedFileCount);
+        Assert.Equal(1, result.SkippedFileCount);
+        Assert.True(File.Exists(original));
+    }
+
+    [Fact]
     public void ScanAndCleanupOnlyConfirmedOldAllowlistedFiles()
     {
         string old = CreateFile("old.log");

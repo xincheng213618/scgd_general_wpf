@@ -1,76 +1,67 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO.Ports;
 using ColorVision.UI;
+using System.Collections.Generic;
+using System.IO.Ports;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
+namespace ColorVision.Engine.Services.Devices.Sensor;
 
-namespace ColorVision.Engine.Services.Devices.Sensor
+public partial class EditSensor : Window
 {
-    /// <summary>
-    /// EditSensor.xaml 的交互逻辑
-    /// </summary>
-    public partial class EditSensor : Window
+    public DeviceSensor Device { get; }
+    public SensorConfigurationDraft Draft { get; }
+    public ConfigSensor EditConfig => Draft.Config;
+
+    public EditSensor(DeviceSensor device)
     {
-        public DeviceSensor Device { get; set; }
+        Device = device;
+        Draft = new SensorConfigurationDraft(device.Config, device.DisplayConfig);
+        InitializeComponent();
+        this.ApplyCaption();
+        DataContext = this;
+        AddFields(DeviceFields, EditConfig, nameof(ConfigSensor.Name), nameof(ConfigSensor.IsAutoOpen));
+        AddFields(LocalFields, Draft.DisplayConfig, nameof(DisplaySensorConfig.UseLocalSensor));
+        AddFields(LocalConnectionFields, Draft.DisplayConfig, nameof(DisplaySensorConfig.ConnectTimeout));
+        AddFields(SerialOptionsFields, Draft.DisplayConfig, nameof(DisplaySensorConfig.DataBits), nameof(DisplaySensorConfig.Parity), nameof(DisplaySensorConfig.StopBits));
+        AddFields(SerialSignalFields, Draft.DisplayConfig, nameof(DisplaySensorConfig.DtrEnable), nameof(DisplaySensorConfig.RtsEnable));
+        var dictionary = MySqlSetting.IsConnect
+            ? SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object> { { "mod_type", 5 } })
+            : new List<SysDictionaryModModel>();
+        var categories = dictionary.Where(item => item.Name != null && item.Code != null).ToDictionary(item => item.Name!, item => item.Code!);
+        categories.TryAdd(EditConfig.Category, EditConfig.Category);
+        ComboBoxSensor.ItemsSource = categories;
+        ComboBoxPort.ItemsSource = new[] { 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200 };
+        ComboBoxSerial.ItemsSource = SerialPort.GetPortNames().Append(EditConfig.Addr).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToArray();
+        if (MySqlSetting.IsConnect) CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+    }
 
-        public ConfigSensor EditConfig { get; set; }
-
-        public EditSensor(DeviceSensor device)
+    private static void AddFields(Panel panel, object config, params string[] names)
+    {
+        foreach (string name in names)
         {
-            Device = device;
-            InitializeComponent();
-            this.ApplyCaption();
+            var field = PropertyEditorHelper.GenProperties(config, name, Properties.Resources.ResourceManager);
+            field.Margin = new Thickness(0, 3, 0, 3);
+            field.MinHeight = 28;
+            if (panel.Name is "SerialOptionsFields" or "SerialSignalFields")
+                foreach (UIElement child in field.Children)
+                    if (child is Control control) control.MinWidth = 100;
+            panel.Children.Add(field);
         }
+    }
 
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    private void Ok_Click(object sender, RoutedEventArgs e)
+    {
+        Keyboard.ClearFocus();
+        if (!Draft.TryApply(Device.Config, Device.DisplayConfig, out string error))
         {
-            if (e.Key == Key.Enter)
-            {
-                Common.NativeMethods.Keyboard.PressKey(0x09);
-                e.Handled = true;
-            }
+            StatusText.Text = error;
+            return;
         }
-
-        private void UserControl_Initialized(object sender, EventArgs e)
-        {
-            var list1 = MySqlSetting.IsConnect ? SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } }) : new List<SysDictionaryModModel>();
-
-            var liss = new Dictionary<string, string>() {  };
-
-            foreach (var item in list1)
-            {
-                if (item.Name !=null && item.Code !=null)
-                    liss.Add(item.Name, item.Code);
-            }
-            liss.TryAdd(Device.Config.Category, Device.Config.Category);
-            ComboBoxSensor.ItemsSource = liss;
-
-
-            List<int> BaudRates = new() { 115200, 38400, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
-            var Serials = SerialPort.GetPortNames().Append(Device.Config.Addr).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToArray();
-            ComboBoxPort.ItemsSource = BaudRates;
-            ComboBoxSerial.ItemsSource = Serials;
-
-
-            DataContext = Device;
-            EditConfig = Device.Config.Clone();
-            EditContent.DataContext = EditConfig;
-
-            if (MySqlSetting.IsConnect) CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            CameraPhyID.DisplayMemberPath = "Code";
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            EditConfig.CopyTo(Device.Config);
-            Close();
-        }
+        DialogResult = true;
     }
 }

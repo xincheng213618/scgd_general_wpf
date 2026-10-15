@@ -1,137 +1,95 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using ColorVision.UI;
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
+namespace ColorVision.Engine.Services.Devices.PG;
 
-namespace ColorVision.Engine.Services.Devices.PG
+public partial class EditPG : Window
 {
-    /// <summary>
-    /// EditPG.xaml 的交互逻辑
-    /// </summary>
-    public partial class EditPG : Window
+    private readonly ConfigPG target;
+    public PGConfigurationDraft Draft { get; }
+    public ConfigPG EditConfig => Draft.Config;
+
+    public EditPG(DevicePG device) : this(device.Config, GetCategories(device))
     {
-        private const string GecsV24Category = "GECS.V2.4";
-
-        public DevicePG Device { get; set; }
-
-        public ConfigPG EditConfig { get; set; }
-
-        public EditPG(DevicePG devicePG)
+        Icon = device.Icon;
+        if (MySqlSetting.IsConnect)
         {
-            Device = devicePG;
-            InitializeComponent();
-            this.ApplyCaption();
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.ItemTemplate = TextSNPropertiesEditor.CreateCameraSnItemTemplate();
         }
+    }
 
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    internal EditPG(ConfigPG source, IEnumerable<string> categories)
+    {
+        target = source;
+        Draft = new PGConfigurationDraft(source);
+        InitializeComponent();
+        this.ApplyCaption();
+        DataContext = this;
+        foreach (string name in new[] { nameof(ConfigPG.Name), nameof(ConfigPG.IsAutoOpen) })
         {
-            if (e.Key == Key.Enter)
-            {
-                Common.NativeMethods.Keyboard.PressKey(0x09);
-                e.Handled = true;
-            }
+            var field = PropertyEditorHelper.GenProperties(EditConfig, name, Properties.Resources.ResourceManager);
+            field.Margin = new Thickness(0, 3, 0, 3);
+            field.MinHeight = 28;
+            DeviceFields.Children.Add(field);
         }
-
-        private void UserControl_Initialized(object sender, EventArgs e)
+        PgCategory.ItemsSource = categories.Append(EditConfig.Category).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToArray();
+        SerialBaudRate.ItemsSource = new[] { 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200, 230400, 460800, 921600 };
+        I2CSpeed.ItemsSource = new Dictionary<CH341_Stream_Speed, string>
         {
-            DataContext = Device;
+            [CH341_Stream_Speed.CH341_20KHZ] = "20 kHz",
+            [CH341_Stream_Speed.CH341_100KHZ] = "100 kHz",
+            [CH341_Stream_Speed.CH341_400KHZ] = "400 kHz",
+            [CH341_Stream_Speed.CH341_750KHZ] = "750 kHz"
+        };
+    }
 
-            EditConfig = Device.Config.Clone();
-            EditContent.DataContext = EditConfig;
+    private static IEnumerable<string> GetCategories(DevicePG device)
+    {
+        device.DService.ReLoadCategoryLib();
+        return device.DService.PGCategoryLib.Keys;
+    }
 
-            Device.DService.ReLoadCategoryLib();
-
-            CH341_Stream_SpeedComboBox.ItemsSource = Enum.GetValues<CH341_Stream_Speed>();
-
-            pgCategory.SelectionChanged += (s, e) =>
-            {
-                if (pgCategory.SelectedItem is not KeyValuePair<string, Dictionary<string, string>> selectedCategory)
-                    return;
-
-                EditConfig.Category = selectedCategory.Key;
-                if (selectedCategory.Key == "CH431.I2C")
-                {
-                    EditConfig.Addr = "0";
-                    EditConfig.Port = 0x08;
-                    RegisterAddressDockPanel.Visibility = Visibility.Visible;
-
-                    TextBlockPGIP.Text = Properties.Resources.SzComName;
-                    TextBlockPGPort.Text = Properties.Resources.DeviceAddr;
-
-                    CH341_Stream_SpeedDock.Visibility = Visibility.Visible;
-
-                }
-                else
-                {
-                    CH341_Stream_SpeedDock.Visibility = Visibility.Collapsed;
-                    RegisterAddressDockPanel.Visibility = Visibility.Collapsed;
-                    TextBlockPGIP.Text = Properties.Resources.IPAddress;
-                    TextBlockPGPort.Text = Properties.Resources.Port;
-                }
-
-                RefreshGeneratedPropertyEditor();
-            };
-
-            pgCategory.ItemsSource = Device.DService.PGCategoryLib;
-
-            foreach (var item in Device.DService.PGCategoryLib)
-            {
-                if (item.Key.Equals(Device.Config.Category, StringComparison.Ordinal))
-                {
-                    pgCategory.SelectedItem = item;
-                    break;
-                }
-            }
-
-            if (EditConfig.Category == "CH431.I2C")
-            {
-                TextBlockPGIP.Text = Properties.Resources.SzComName;
-                TextBlockPGPort.Text = Properties.Resources.DeviceAddr;
-            }
-
-
-            RefreshGeneratedPropertyEditor();
-        }
-
-        private void RefreshGeneratedPropertyEditor()
+    internal bool TryApply(out string error)
+    {
+        Keyboard.ClearFocus();
+        if (HasInvalidInput(EditorContent))
         {
-            GeneratedPropertyEditorHost.Children.Clear();
-            GeneratedPropertyEditorHost.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
-                EditConfig,
-                metadataProvider: new ConfigPGMetadataProvider(EditConfig)));
+            error = "请修正输入框中的无效数值。";
+            return false;
         }
+        return Draft.TryApply(target, out error);
+    }
 
-        private sealed class ConfigPGMetadataProvider(ConfigPG config) : IPropertyEditorMetadataProvider
+    private static bool HasInvalidInput(DependencyObject root)
+    {
+        if (root is UIElement element && element.Visibility != Visibility.Visible) return false;
+        if (Validation.GetHasError(root)) return true;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            if (HasInvalidInput(VisualTreeHelper.GetChild(root, i))) return true;
+        return false;
+    }
+
+    private void Ok_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryApply(out string error))
         {
-            public bool IsPropertyManaged(PropertyInfo propertyInfo) => true;
-
-            public bool IsBrowsable(PropertyInfo propertyInfo) => propertyInfo.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true;
-
-            public Type? GetEditorType(PropertyInfo propertyInfo) => null;
-
-            public string? GetDisplayName(PropertyInfo propertyInfo)
-            {
-                return propertyInfo.Name == nameof(ConfigPG.RegisterAddress)
-                    && string.Equals(config.Category, GecsV24Category, StringComparison.Ordinal)
-                    ? nameof(Properties.Resources.Channel)
-                    : null;
-            }
-
-            public string? GetDescription(PropertyInfo propertyInfo) => null;
-
-            public string? GetCategory(PropertyInfo propertyInfo) => null;
+            StatusText.Text = error;
+            return;
         }
+        DialogResult = true;
+    }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            EditConfig.CopyTo(Device.Config);
-            Close();
-        }
+    private void EditSn_Click(object sender, RoutedEventArgs e)
+    {
+        new PhyCameraManagerWindow { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
     }
 }

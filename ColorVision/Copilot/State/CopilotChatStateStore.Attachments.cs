@@ -131,8 +131,7 @@ namespace ColorVision.Copilot
                 if (ContainsReparsePoint(attachmentRoot, candidatePath))
                     return false;
 
-                File.Delete(candidatePath);
-                return true;
+                return CopilotManagedImageAttachmentLease.TryDeleteUnprotectedFile(candidatePath);
             }
             catch
             {

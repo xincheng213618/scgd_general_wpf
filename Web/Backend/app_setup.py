@@ -288,15 +288,21 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
         start = getattr(request, "_start_time", None)
         if start is not None:
             duration_ms = int((_time.monotonic() - start) * 1000)
+            from services.performance_observability import request_category
+            category = request_category(request.path, method=request.method,
+                                        attachment=response.headers.get("Content-Disposition", "").startswith("attachment")
+                                        or request.mimetype == "multipart/form-data")
+            slow_sample = None
             if duration_ms >= ctx.slow_request_threshold_ms:
                 print(f"[slow] {request.method} {request.path} → {response.status_code} ({duration_ms}ms)")
-                record_slow_request(
+                slow_sample = record_slow_request(
                     ctx.slow_requests,
                     method=request.method,
                     path=request.path,
                     status=response.status_code,
                     duration_ms=duration_ms,
                 )
+            ctx.request_diagnostics.record(category=category, status=response.status_code, duration_ms=duration_ms, slow_sample=slow_sample)
             if access_recorder is not None:
                 try:
                     from services.access_analytics import (
@@ -468,6 +474,8 @@ def register_all_blueprints(app, ctx, services, helpers):
         get_plugin_catalog_from_index=lambda c, dc: __import__("services.plugin_index", fromlist=["get_plugin_catalog_from_index"]).get_plugin_catalog_from_index(c, dc),
         human_size=human_size,
         get_slow_requests=lambda: ctx.slow_requests,
+        get_request_diagnostics=ctx.request_diagnostics.summary,
+        feedback_inventory=ctx.feedback_inventory,
         get_access_recorder_status=helpers["access_recorder"].status,
         slow_request_threshold_ms=ctx.slow_request_threshold_ms,
         slow_request_buffer_capacity=SLOW_REQUEST_BUFFER_CAPACITY,

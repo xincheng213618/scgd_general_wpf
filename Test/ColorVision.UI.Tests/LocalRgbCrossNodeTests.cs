@@ -45,7 +45,7 @@ public sealed class LocalRgbCrossNodeTests
     public void LegacyTemplateSelectionIsIgnoredAndRemainingSettingsRoundTrip()
     {
         var node = new LocalRgbCrossNode { SearchRegionPoiTemplate = "发光区", SearchRegion = new(10,20,300,300),
-            ParameterJson = "{\"MinimumArmCoverage\":0.75}", ImageFilePath = @"C:\images\input.cvraw", ResultDirectory = @"C:\results\FindCross" };
+            ParameterJson = "{\"MinimumArmCoverage\":0.75}", ResultDirectory = @"C:\results\FindCross" };
         node.Create();
         node.Title = "九点十字 RGB 分离";
         var state = ParseState(node.GetSaveData());
@@ -54,7 +54,6 @@ public sealed class LocalRgbCrossNodeTests
         var restored = new LocalRgbCrossNode(); restored.Create(); restored.OnLoadNode(state);
         Assert.Equal(node.SearchRegionPoiTemplate, restored.SearchRegionPoiTemplate);
         Assert.Equal(node.SearchRegion, restored.SearchRegion);
-        Assert.Equal(node.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(node.ResultDirectory, restored.ResultDirectory);
         Assert.Equal(node.ParameterJson, restored.ParameterJson);
         state.Remove("ParameterJson");

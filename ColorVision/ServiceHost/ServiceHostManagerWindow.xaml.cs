@@ -316,11 +316,10 @@ namespace ColorVision.ServiceHost
 
             if (!string.IsNullOrWhiteSpace(failureMessage))
             {
-                if (name.Contains("Install", StringComparison.OrdinalIgnoreCase))
-                    LogTabs.SelectedItem = InstallLogTab;
+                LogTabs.SelectedItem = OperationLogTab;
                 MessageBox.Show(
                     this,
-                    LocalizedText.Format($"{name} 失败。{Environment.NewLine}{failureMessage}{Environment.NewLine}{Environment.NewLine}已保留安装记录和服务日志供诊断。"),
+                    LocalizedText.Format($"{name} 失败。") + Environment.NewLine + failureMessage + Environment.NewLine + Environment.NewLine + LocalizedText.Get("详细错误已写入操作记录。"),
                     LocalizedText.Get("ColorVision 服务主机"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -501,7 +500,7 @@ namespace ColorVision.ServiceHost
 
                 _lastInstallationFailure = ServiceHostLogReader.GetLatestInstallationFailure(installLog.Text);
                 if (_lastStatus != null)
-                    UpdateHealthView(_lastStatus);
+                    UpdateHealthView(_lastStatus, ColorVisionServiceHostManager.LastDeploymentFailure);
             }
             finally
             {
@@ -662,7 +661,7 @@ namespace ColorVision.ServiceHost
                 ? LocalizedText.Get("连接正常")
                 : status.State == ServiceHostInstallState.Running ? LocalizedText.Get("服务无响应") : LocalizedText.Get("未连接");
             UpdateIntegrityView(status.RuntimeIntegrity);
-            UpdateHealthView(status);
+            UpdateHealthView(status, ColorVisionServiceHostManager.LastDeploymentFailure);
             UpdateStateBadge(status.State);
         }
 
@@ -696,7 +695,7 @@ namespace ColorVision.ServiceHost
             return LocalizedText.Get("建议操作：刷新并检查日志");
         }
 
-        private void UpdateHealthView(ServiceHostStatus status)
+        internal void UpdateHealthView(ServiceHostStatus status, string deploymentFailure)
         {
             string title;
             string description;
@@ -706,7 +705,17 @@ namespace ColorVision.ServiceHost
             string installButtonText;
             string installButtonStyle;
 
-            if (status.HasIncompletePackage)
+            if (!string.IsNullOrWhiteSpace(deploymentFailure))
+            {
+                title = LocalizedText.Get("服务维护操作失败");
+                description = deploymentFailure;
+                icon = "\uE783";
+                foregroundKey = "ServiceHost.Error";
+                backgroundKey = "ServiceHost.ErrorBackground";
+                installButtonText = LocalizedText.Get("重试安装或修复");
+                installButtonStyle = "PrimaryActionButtonStyle";
+            }
+            else if (status.HasIncompletePackage)
             {
                 title = LocalizedText.Get("服务程序包不完整");
                 description = LocalizedText.Format($"当前 ColorVision 程序包缺少 {status.RuntimeIntegrity.MissingPackageFiles.Count} 个服务文件：{BuildFileIssuePreview(status.RuntimeIntegrity.MissingPackageFiles)}。请使用完整安装包修复。");
@@ -778,7 +787,9 @@ namespace ColorVision.ServiceHost
             HealthIconBorder.Background = (Brush)FindResource(backgroundKey);
             InstallButton.Content = installButtonText;
             InstallButton.Style = (Style)FindResource(installButtonStyle);
-            ActionHintText.Text = GetActionHint(status);
+            ActionHintText.Text = string.IsNullOrWhiteSpace(deploymentFailure)
+                ? GetActionHint(status)
+                : LocalizedText.Get("建议操作：查看操作记录并处理错误后重试");
         }
 
         private void UpdateIntegrityView(ServiceHostRuntimeIntegrity integrity)
@@ -936,6 +947,7 @@ namespace ColorVision.ServiceHost
             builder.AppendLine($"MissingPackageFiles: {string.Join(", ", status.RuntimeIntegrity.MissingPackageFiles)}");
             builder.AppendLine($"MissingInstalledFiles: {string.Join(", ", status.RuntimeIntegrity.MissingInstalledFiles)}");
             builder.AppendLine($"MismatchedInstalledFiles: {string.Join(", ", status.RuntimeIntegrity.MismatchedInstalledFiles)}");
+            builder.AppendLine($"LastDeploymentFailure: {ColorVisionServiceHostManager.LastDeploymentFailure}");
             builder.AppendLine($"LogPath: {ServiceHostLogPath}");
             builder.AppendLine($"InstallLogPath: {InstallLogPath}");
             builder.AppendLine($"RawOutput: {status.RawOutput}");

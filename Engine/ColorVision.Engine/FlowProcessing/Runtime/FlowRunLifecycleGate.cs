@@ -24,6 +24,15 @@ internal sealed class FlowRunLifecycleGate
         }
     }
 
+    public bool IsStopRequested
+    {
+        get
+        {
+            lock (_sync)
+                return _serialNumber != null && _cancelRequested;
+        }
+    }
+
     public bool TryBegin(
         string serialNumber,
         CancellationTokenSource cancellation,

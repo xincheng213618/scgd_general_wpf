@@ -11,6 +11,15 @@ namespace cvColorVision
         // Only state/availability predicates use a bool return declaration.
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreatCameraManagerEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreatCameraManagerEx(CameraType eType, string cfgFilename);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreatCameraManager", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern IntPtr CreatCameraManager(CameraType eType, string CameraID, string cfgFilename);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseCameraManager", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int ReleaseCameraManager(IntPtr handle);
+
         public static string GetCfgToJson(IntPtr handle, ConfigType eType, bool bDefault)
         {
             StringBuilder builder = new StringBuilder(10240);

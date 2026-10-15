@@ -182,7 +182,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request)
         {
             var configuredEffort = request.CodexReasoningEffort;
-            if (CopilotOpenAiRequestPolicy.IsGpt6Astra(request.Profile))
+            if (CopilotOpenAiRequestPolicy.HasMandatoryReasoning(request.Profile))
             {
                 configuredEffort = configuredEffort switch
                 {

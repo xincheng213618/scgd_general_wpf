@@ -43,14 +43,16 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             var p = (DisplayMetrologyParameters)context.Parameters;
             if (!p.Validate().IsValid) throw new MeasurementException("invalid_parameters", "参数未通过校验。");
             var first = context.Inputs[0].Image;
+            if (context.Inputs.Any(i => i.Image.Width < 32 || i.Image.Height < 32))
+                throw new MeasurementException("image_budget_exceeded", "图像最小为 32×32。");
             int frameBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
                 : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumFramePixels;
             long totalBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
                 : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumTotalPixels;
-            if (context.Inputs.Any(i => i.Image.Width < 32 || i.Image.Height < 32
-                || (long)i.Image.Width * i.Image.Height > frameBudget)
+            if (context.Descriptor.Id != DisplayMetrologyIds.RingGhost
+                && (context.Inputs.Any(i => (long)i.Image.Width * i.Image.Height > frameBudget)
                 || context.Inputs.Sum(i => (long)i.Image.Width * i.Image.Height) > totalBudget
-                || context.Inputs.Sum(i => (long)i.Image.Stride * i.Image.Height) > 512L * 1024 * 1024)
+                || context.Inputs.Sum(i => (long)i.Image.Stride * i.Image.Height) > 512L * 1024 * 1024))
                 throw new MeasurementException("image_budget_exceeded", $"图像最小为 32×32，单帧最多 {frameBudget} 像素，总计最多 {totalBudget} 像素 / 512 MiB。");
             if (context.Invocation.Roi != null && context.Descriptor.Id != DisplayMetrologyIds.RgbCrossRegistration) throw new MeasurementException("roi_unsupported", "请先裁到完整测试图案；本算法不隐式裁剪 ROI。");
             if (context.Inputs.Any(i => i.Image.Width != first.Width || i.Image.Height != first.Height || i.Image.Format != first.Format))
@@ -68,6 +70,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             {
                 float[] signal = ReadSignal(first, p.Channel, p.DecodeExponent, cancellationToken);
                 if (context.Descriptor.Id == DisplayMetrologyIds.Ghost) MeasureGhost(signal, first.Width, first.Height, (GhostMeasurementParameters)p, artifacts, cancellationToken);
+                else if (context.Descriptor.Id == DisplayMetrologyIds.RingGhost) MeasureRingGhost(signal, first, (RingGhostMeasurementParameters)p, artifacts, cancellationToken);
                 else if (context.Descriptor.Id == DisplayMetrologyIds.Defects) MeasureDefects(signal, first.Width, first.Height, (DisplayDefectParameters)p, artifacts, cancellationToken);
                 else if (context.Descriptor.Id == DisplayMetrologyIds.FieldSfr) MeasureFieldSfr(signal, first.Width, first.Height, (FieldSfrParameters)p, artifacts, cancellationToken);
                 else throw new MeasurementException("unsupported_algorithm", "不支持的显示计量算法。");

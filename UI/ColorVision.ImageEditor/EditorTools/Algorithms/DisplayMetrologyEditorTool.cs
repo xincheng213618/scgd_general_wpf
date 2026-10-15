@@ -188,6 +188,17 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
             _presentation = DefaultAlgorithmAnalysisResultPresenter.CreatePresentation(result, title);
             var content = (DockPanel)DefaultAlgorithmAnalysisResultPresenter.CreateContent(_presentation);
             content.Background = SystemColors.WindowBrush;
+            if (result.AlgorithmId == DisplayMetrologyIds.RingGhost)
+            {
+                var details = result.GetArtifact<AlgorithmStructuredDataArtifact>("ring-ghost-measurement")!.Data;
+                string note = details.GetProperty("status").GetString() == "two_candidates_resolved"
+                    ? "已分离两个环状候选。" : "未可靠分离出两个鬼影环；未检出不代表 0 或合格。";
+                note += details.GetProperty("physicalOrderConfirmed").GetBoolean()
+                    ? "阶次按已选择的对应关系标注。" : "候选 A/B 按半径从外到内编号，物理阶次尚未确认。";
+                note += "百分比为区域平均信号比；输入须为经校正的线性亮度信号才能作为 GMR。";
+                var notice = new TextBlock { Text = LocalizedText.Get(note), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12) };
+                DockPanel.SetDock(notice, Dock.Top); content.Children.Insert(0, notice);
+            }
             if (result.AlgorithmId == DisplayMetrologyIds.RgbCrossRegistration)
             {
                 var export = new Button { Content = LocalizedText.Get("导出十字 JSON"), Margin = new Thickness(8), HorizontalAlignment = HorizontalAlignment.Left };
@@ -269,6 +280,13 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
         "maximum_field_mtf50" => LocalizedText.Get("视场最大 MTF50"), "RGB-displacement" => LocalizedText.Get("RGB 位移明细"), "RGB-cross-separation" => LocalizedText.Get("十字 RGB 分离明细"),
         "binocular-field" => LocalizedText.Get("左右眼分区明细"), "binocular-channel-consistency" => LocalizedText.Get("左右眼颜色通道"),
         "defect-candidates" => LocalizedText.Get("缺陷候选明细"), "stray-light-candidates" => LocalizedText.Get("杂散光候选明细"),
+        "ring-ghost-candidates" => LocalizedText.Get("圆环鬼影测量"), "ring-ghost-quality" => LocalizedText.Get("有效性与测量口径"),
+        "ring-radial-profile" => LocalizedText.Get("径向亮度曲线数据"), "ring_candidate_count" => LocalizedText.Get("可靠分离的环状候选数"),
+        "ring_primary_radius" => LocalizedText.Get("主像环半径"), "ring_primary_mean" => LocalizedText.Get("主像环区平均信号"),
+        "ring_detection_prominence" => LocalizedText.Get("本图弱环检测对比门槛（非合格阈值）"),
+        "ring_candidate_A_percent" => LocalizedText.Get("候选 A / 主像（平均信号比）"),
+        "ring_candidate_B_percent" => LocalizedText.Get("候选 B / 主像（平均信号比）"),
+        "GMR1_percent" => LocalizedText.Get("一阶 / 主像（按所选阶次对应）"), "GMR2_percent" => LocalizedText.Get("二阶 / 主像（按所选阶次对应）"),
         "eyebox-scan" => LocalizedText.Get("Eyebox 采样点"), "field-sfr" => LocalizedText.Get("视场清晰度"), "sfr-curves" => LocalizedText.Get("SFR 曲线数据"),
         _ => name,
     };

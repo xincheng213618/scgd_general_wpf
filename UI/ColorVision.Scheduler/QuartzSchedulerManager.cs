@@ -24,6 +24,7 @@ namespace ColorVision.Scheduler
         Task StopJob(string jobName, string groupName);
         Task RemoveJob(string jobName, string groupName);
         Task ResumeJob(string jobName, string groupName);
+        Task ExecuteJob(string jobName, string groupName);
         Task<SchedulerOperationResult> CreateJob(SchedulerInfo schedulerInfo);
         Task<SchedulerOperationResult> UpdateJob(SchedulerInfo schedulerInfo);
         Task<SchedulerOperationResult> UpdateJob(SchedulerInfo schedulerInfo, string originalJobName, string originalGroupName);
@@ -46,7 +47,7 @@ namespace ColorVision.Scheduler
         private readonly SemaphoreSlim _mutationGate = new(1, 1);
         private StandaloneSchedulerFactory? _schedulerFactory;
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
-        private static readonly string ConfigFile = Path.Combine(Environments.DirStateScheduler, "scheduler_tasks.json");
+        private readonly string ConfigFile;
        
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
@@ -61,10 +62,20 @@ namespace ColorVision.Scheduler
 
         public QuartzSchedulerManager()
         {
+            ConfigFile = Path.Combine(Environments.DirStateScheduler, "scheduler_tasks.json");
             Load();
             RestoreStatsFromDb();
             EnsureCopilotContextRegistered();
             InitializationTask = Start();
+        }
+
+        internal QuartzSchedulerManager(IScheduler scheduler, string configFile)
+        {
+            ConfigFile = configFile;
+            Scheduler = scheduler;
+            Listener = new TaskExecutionListener(this);
+            Jobs = new Dictionary<string, Type>();
+            InitializationTask = Task.CompletedTask;
         }
 
         internal CopilotSchedulerContextSnapshot CaptureCopilotSchedulerSnapshot(
@@ -263,9 +274,7 @@ namespace ColorVision.Scheduler
                                 pausedLegacyIntervalTasks.Add($"{item.JobName} ({item.GroupName})");
                             }
 
-                            item.Status = item.Status == SchedulerStatus.Paused
-                                ? SchedulerStatus.Paused
-                                : SchedulerStatus.Ready;
+                            SchedulerScheduleState.Restore(item);
                             if (isLegacyDefinition)
                             {
                                 item.ScheduleDefinitionVersion = SchedulerInfo.CurrentScheduleDefinitionVersion;
@@ -335,56 +344,18 @@ namespace ColorVision.Scheduler
 
         public async Task PauseAll()
         {
-            using IDisposable mutation = await EnterMutationAsync();
-            await using SchedulerStandbyLease standbyScope =
-                await SchedulerStandbyLease.AcquireAsync(Scheduler);
-            var previousStates = TaskInfos
-                .Select(info => (Info: info, Status: info.Status))
-                .ToList();
-            await Scheduler.PauseAll();
-            foreach (var item in TaskInfos)
-            {
-                item.Status = SchedulerStatus.Paused;
-            }
-
-            if (!TryPersistTasks(out string persistenceError))
-            {
-                await Scheduler.ResumeAll();
-                foreach (var previous in previousStates)
-                {
-                    previous.Info.Status = previous.Status;
-                    if (previous.Status == SchedulerStatus.Paused)
-                        await Scheduler.PauseJob(new JobKey(previous.Info.JobName, previous.Info.GroupName));
-                }
-                throw new InvalidOperationException(persistenceError);
-            }
+            foreach (var item in TaskInfos.ToArray())
+                if (item.Status is not SchedulerStatus.Paused and not SchedulerStatus.Completed)
+                    await StopJob(item.JobName, item.GroupName);
         }
 
         public async Task ResumeAll()
         {
-            using IDisposable mutation = await EnterMutationAsync();
-            var previousStates = TaskInfos
-                .Select(info => (Info: info, Status: info.Status))
-                .ToList();
-            await using SchedulerStandbyLease standbyScope =
-                await SchedulerStandbyLease.AcquireAsync(Scheduler);
-            await Scheduler.ResumeAll();
-            foreach (var item in TaskInfos)
-            {
-                item.Status = SchedulerStatus.Ready;
-            }
-
-            if (!TryPersistTasks(out string persistenceError))
-            {
-                await Scheduler.PauseAll();
-                foreach (var previous in previousStates)
-                {
-                    previous.Info.Status = previous.Status;
-                    if (previous.Status != SchedulerStatus.Paused)
-                        await Scheduler.ResumeJob(new JobKey(previous.Info.JobName, previous.Info.GroupName));
-                }
-                throw new InvalidOperationException(persistenceError);
-            }
+            // Each task uses the same checked resume path and persistence
+            // compensation as the individual button. Never rearm running jobs.
+            foreach (var item in TaskInfos.ToArray())
+                if (item.Status == SchedulerStatus.Paused && !item.ScheduleCompleted)
+                    await ResumeJob(item.JobName, item.GroupName);
         }
 
         public async Task Start()
@@ -452,17 +423,8 @@ namespace ColorVision.Scheduler
                     {
                         if (item.JobType != null)
                         {
-                            SchedulerOperationResult result = await CreateJob(item);
-                            if (result.Success)
-                            {
-                                _logger.Debug($"Recovered task: {item.JobName}({item.GroupName})");
-                            }
-                            else
-                            {
-                                string errorMsg = $"{item.JobName}({item.GroupName}): {result.Message}";
-                                failedJobs.Add(errorMsg);
-                                _logger.Warn($"Failed to recover task: {errorMsg}");
-                            }
+                            await RestoreJob(item);
+                            _logger.Debug($"Recovered paused task: {item.JobName}({item.GroupName})");
                         }
                         else
                         {
@@ -483,8 +445,8 @@ namespace ColorVision.Scheduler
                     _logger.Warn($"{failedJobs.Count} tasks failed to recover");
                     MessageBox.Show(string.Format(Properties.Resources.Sched_RestoreWarning, string.Join("\n", failedJobs)), Properties.Resources.Sched_RestoreWarningTitle);
                 }
-                // Restore definitions (including paused intent) before allowing
-                // immediate triggers to fire.
+                // Startup registers durable jobs only. Resume explicitly arms
+                // their remaining schedules; completed schedules stay unarmed.
                 await Scheduler.Start();
                 _logger.Info($"Scheduler initialization completed. Tasks={TaskInfos.Count}, JobTypes={Jobs.Count}, RecoveryFailures={failedJobs.Count}.");
             }
@@ -505,6 +467,8 @@ namespace ColorVision.Scheduler
                 if (await Scheduler.Exists(jobKey))
                 {
                     SchedulerInfo? info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
+                    if (info?.Status == SchedulerStatus.Completed)
+                        return;
                     SchedulerStatus previousStatus = info?.Status ?? SchedulerStatus.Ready;
                     await Scheduler.PauseJob(jobKey);
                     if (info != null)
@@ -588,6 +552,38 @@ namespace ColorVision.Scheduler
         public async Task ResumeJob(string jobName, string groupName)
         {
             using IDisposable mutation = await EnterMutationAsync();
+            await ResumeJobCore(jobName, groupName);
+        }
+
+        public async Task ExecuteJob(string jobName, string groupName)
+        {
+            using IDisposable mutation = await EnterMutationAsync();
+            SchedulerInfo info = TaskInfos.FirstOrDefault(task => task.JobName == jobName && task.GroupName == groupName)
+                ?? throw new InvalidOperationException(Properties.Resources.Sched_TaskNotFound);
+            if (info.Status is SchedulerStatus.Ready or SchedulerStatus.Running)
+                throw new InvalidOperationException(Properties.Resources.Sched_AlreadyActive);
+
+            PagedResult<FireInstance> runningJobs = await Scheduler.QueryFireInstances(
+                new FireInstanceQuery { Job = new JobKey(jobName, groupName) });
+            if (runningJobs.Items.Count > 0)
+                throw new InvalidOperationException(Properties.Resources.Sched_AlreadyActive);
+
+            if (!info.ScheduleCompleted)
+            {
+                await ResumeJobCore(jobName, groupName);
+                return;
+            }
+
+            // Starting another round uses the same validated replacement and
+            // rollback path as editing, without modifying the saved settings.
+            SchedulerInfo nextRound = SchedulerTaskSerializer.Deserialize(SchedulerTaskSerializer.Serialize([info])).Single();
+            SchedulerOperationResult result = await UpdateJobCore(nextRound, jobName, groupName);
+            if (!result.Success)
+                throw new InvalidOperationException(result.Message);
+        }
+
+        private async Task ResumeJobCore(string jobName, string groupName)
+        {
             try
             {
                 _logger.Info($"Resuming job: {jobName}({groupName})");
@@ -595,20 +591,41 @@ namespace ColorVision.Scheduler
                 if (await Scheduler.Exists(jobKey))
                 {
                     SchedulerInfo? info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
-                    SchedulerStatus previousStatus = info?.Status ?? SchedulerStatus.Ready;
+                    if (info?.ScheduleCompleted == true)
+                        throw new InvalidOperationException(Properties.Resources.Sched_ScheduleFinished);
+                    if (info == null || info.Status != SchedulerStatus.Paused)
+                        return;
+                    SchedulerTriggerBuildResult triggerResult = SchedulerScheduleState.BuildRemaining(info);
+                    if (!triggerResult.Success)
+                        throw new InvalidOperationException(triggerResult.ErrorMessage);
+                    SchedulerStatus previousStatus = info.Status;
                     await using SchedulerStandbyLease standbyScope =
                         await SchedulerStandbyLease.AcquireAsync(Scheduler);
-                    await Scheduler.ResumeJob(jobKey);
-                    if (info != null)
+                    IJobDetail? originalJob = await Scheduler.GetJobDetail(jobKey);
+                    IReadOnlyCollection<ITrigger> originalTriggers = await Scheduler.GetTriggersOfJob(jobKey);
+                    bool previousCheckpoint = info.HasScheduleCheckpoint;
+                    DateTimeOffset? previousNext = info.NextScheduledFireTimeUtc;
+                    string previousNextDisplay = info.NextFireTime;
+                    try
                     {
+                        ITrigger trigger = triggerResult.Trigger!;
+                        await Scheduler.ScheduleJob(BuildJobDetail(info), [trigger], ScheduleJobOptions.Replacing);
+                        await Scheduler.ResumeJob(jobKey);
+                        info.HasScheduleCheckpoint = true;
+                        info.NextScheduledFireTimeUtc = trigger.NextFireTimeUtc;
+                        UpdateNextFireTime(info, trigger);
                         info.Status = SchedulerStatus.Ready;
                         if (!TryPersistTasks(out string persistenceError))
-                        {
-                            info.Status = previousStatus;
-                            if (previousStatus == SchedulerStatus.Paused)
-                                await Scheduler.PauseJob(jobKey);
                             throw new InvalidOperationException(persistenceError);
-                        }
+                    }
+                    catch
+                    {
+                        info.Status = previousStatus;
+                        info.HasScheduleCheckpoint = previousCheckpoint;
+                        info.NextScheduledFireTimeUtc = previousNext;
+                        info.NextFireTime = previousNextDisplay;
+                        await TryRestorePreviousJob(Scheduler, jobKey, originalJob, originalTriggers, true);
+                        throw;
                     }
                     _logger.Info($"Job resumed: {jobName}({groupName})");
                 }
@@ -679,6 +696,7 @@ namespace ColorVision.Scheduler
                 if (schedulerInfo.Status == SchedulerStatus.Paused)
                     await scheduler.PauseJob(job.Key);
                 UpdateNextFireTime(schedulerInfo, trigger);
+                SchedulerScheduleState.Reset(schedulerInfo, trigger);
                 if (!TaskInfos.Contains(schedulerInfo))
                 {
                     TaskInfos.Add(schedulerInfo);
@@ -723,6 +741,12 @@ namespace ColorVision.Scheduler
         {
             ArgumentNullException.ThrowIfNull(schedulerInfo);
             using IDisposable mutation = await EnterMutationAsync();
+            return await UpdateJobCore(schedulerInfo, originalJobName, originalGroupName);
+        }
+
+        private async Task<SchedulerOperationResult> UpdateJobCore(
+            SchedulerInfo schedulerInfo, string originalJobName, string originalGroupName)
+        {
             if (string.IsNullOrWhiteSpace(originalJobName) || string.IsNullOrWhiteSpace(originalGroupName))
                 return SchedulerOperationResult.Failed(SchedulerOperationError.Validation, Properties.Resources.Sched_NameEmpty);
 
@@ -874,6 +898,7 @@ namespace ColorVision.Scheduler
                 if (originalIndex >= 0)
                     TaskInfos[originalIndex] = schedulerInfo;
                 UpdateNextFireTime(schedulerInfo, trigger);
+                SchedulerScheduleState.Reset(schedulerInfo, trigger);
                 if (!TryPersistTasks(out string persistenceError))
                 {
                     if (originalIndex >= 0)
@@ -925,9 +950,40 @@ namespace ColorVision.Scheduler
             IJobDetail job = JobBuilder.Create()
                 .OfType(schedulerInfo.JobType!)
                 .WithIdentity(schedulerInfo.JobName, schedulerInfo.GroupName)
+                .StoreDurably()
                 .Build();
             job.JobDataMap["SchedulerInfo"] = schedulerInfo;
             return job;
+        }
+
+        internal async Task RestoreJob(SchedulerInfo info)
+        {
+            using IDisposable mutation = await EnterMutationAsync();
+            string? error = SchedulerTriggerFactory.Validate(info);
+            if (error != null)
+                throw new InvalidOperationException(error);
+            SchedulerScheduleState.Restore(info);
+            await Scheduler.AddJob(BuildJobDetail(info), AddJobOptions.Replacing);
+        }
+
+        internal async Task RecordExecutionAsync(IJobExecutionContext context, Action<SchedulerInfo> update)
+        {
+            using IDisposable mutation = await EnterMutationAsync();
+            void Apply()
+            {
+                SchedulerInfo? info = TaskInfos.FirstOrDefault(task =>
+                    task.JobName == context.JobDetail.Key.Name && task.GroupName == context.JobDetail.Key.Group);
+                // A removed/replaced definition must not inherit an older fire's checkpoint.
+                if (info == null || !ReferenceEquals(context.JobDetail.JobDataMap["SchedulerInfo"], info))
+                    return;
+                update(info);
+                if (!TryPersistTasks(out string error))
+                    throw new InvalidOperationException(error);
+            }
+            if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+                await dispatcher.InvokeAsync(Apply);
+            else
+                Apply();
         }
 
         private static void UpdateNextFireTime(SchedulerInfo schedulerInfo, ITrigger trigger)
@@ -1017,6 +1073,8 @@ namespace ColorVision.Scheduler
                 }
                 else
                 {
+                    foreach (ITrigger trigger in await scheduler.GetTriggersOfJob(originalJob.Key))
+                        await scheduler.UnscheduleJob(trigger.Key);
                     await scheduler.AddJob(originalJob, AddJobOptions.ReplacingAndStoringNonDurable);
                 }
 

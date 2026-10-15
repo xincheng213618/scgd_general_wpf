@@ -20,8 +20,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private readonly ILocalCameraNative native;
         private readonly CameraBackendState backend;
         private readonly Action<string?> ensureAvailable;
+        private readonly Action ensureLicenseAvailable;
         private readonly Func<ConfigCamera> getConfig;
         private readonly Action saveConfig;
+        private readonly Func<string, string> resolveCameraId;
         private readonly Func<bool> getUseHikMvs;
         private readonly Func<int> getHikBayerQuality;
         private readonly Func<bool> getHikOutputBgr;
@@ -36,27 +38,32 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private string? loadedCalibrationJson;
         private Action? stopPreview;
         private bool disposed;
+        private bool identitySavePending;
 
         public LocalCameraSession(DeviceCamera device)
         {
             native = new LocalCameraNative(device);
             backend = device.CameraBackend;
             ensureAvailable = device.EnsureLocalCameraAvailable;
+            ensureLicenseAvailable = device.EnsureLocalCameraLicense;
             getConfig = () => device.Config;
-            saveConfig = device.SaveConfig;
+            saveConfig = () => device.SaveResolvedCameraId(device.Config.CameraID);
+            resolveCameraId = id => device.ResolveCameraId(id);
             getUseHikMvs = () => device.DisplayConfig.UseHikMvs;
             getHikBayerQuality = () => (int)device.DisplayConfig.HikBayerQuality;
             getHikOutputBgr = () => device.DisplayConfig.HikOutputBgr;
         }
 
-        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null)
+        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null, Action? ensureLicenseAvailable = null, Func<string, string>? resolveCameraId = null)
         {
             this.native = native;
             this.backend = backend;
             this.ensureAvailable = ensureAvailable ?? (_ => backend.EnsureLocalAvailable());
+            this.ensureLicenseAvailable = ensureLicenseAvailable ?? (() => { });
             ConfigCamera cameraConfig = config ?? new ConfigCamera();
             getConfig = () => cameraConfig;
             this.saveConfig = saveConfig ?? (() => { });
+            this.resolveCameraId = resolveCameraId ?? (id => id);
             this.getUseHikMvs = getUseHikMvs ?? (() => true);
             this.getHikBayerQuality = getHikBayerQuality ?? (() => 3);
             this.getHikOutputBgr = getHikOutputBgr ?? (() => true);
@@ -105,16 +112,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
                 ensureAvailable(null);
+                ConfigCamera config = getConfig();
+                string? configuredCameraId = config.CameraID;
+                cameraId = resolveCameraId(string.IsNullOrWhiteSpace(cameraId) ? configuredCameraId ?? string.Empty : cameraId).Trim();
                 if (IsOpen)
                 {
-                    cameraId = string.IsNullOrWhiteSpace(cameraId) ? openedCameraId! : cameraId.Trim();
+                    if (cameraId.Length == 0 && !string.IsNullOrWhiteSpace(config.CameraCode))
+                    {
+                        EnsureOpenedCameraIdentity();
+                        cameraId = openedCameraId!;
+                    }
                     if (openedCameraId != cameraId || OpenedMode != takeImageMode || openedBpp != imageBpp)
                         throw new InvalidOperationException("本地会话已使用其它打开参数连接，请先关闭相机再修改 Camera ID、模式或位深。");
                     return cvErrorDefine.CV_ERR_SUCCESS;
                 }
-                ConfigCamera config = getConfig();
-                string? configuredCameraId = config.CameraID;
-                cameraId = string.IsNullOrWhiteSpace(cameraId) ? config.CameraID?.Trim() ?? string.Empty : cameraId.Trim();
                 if (cameraId.Length == 0)
                 {
                     IReadOnlyList<string> cameraIds = native.GetCameraIds();
@@ -153,10 +164,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         OpenedHikOutputBgr = hikOutputBgr;
                         openedBpp = imageBpp;
                         loadedCalibrationJson = null;
+                        EnsureLicenseAvailable();
                     }
-                    if (result == cvErrorDefine.CV_ERR_SUCCESS && !string.Equals(configuredCameraId, cameraId, StringComparison.Ordinal))
+                    if (result == cvErrorDefine.CV_ERR_SUCCESS && (identitySavePending || !string.IsNullOrWhiteSpace(config.CameraCode)
+                        || !string.Equals(configuredCameraId, cameraId, StringComparison.Ordinal)))
                     {
-                        try { saveConfig(); }
+                        // A logical mirror can already contain the right ID while the physical record is still unsaved.
+                        identitySavePending = true;
+                        try { saveConfig(); identitySavePending = false; }
                         catch (Exception ex) { log.Error("保存本地相机 CameraID 失败；当前已打开的会话仍可使用。", ex); }
                     }
                     return result;
@@ -169,16 +184,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
+        private void EnsureLicenseAvailable()
+        {
+            try { ensureLicenseAvailable(); }
+            catch (LocalCameraLicenseException)
+            {
+                Close(unregisterCallback: true);
+                throw;
+            }
+        }
+
         internal static string SelectCameraId(IReadOnlyList<string> cameraIds, string? configuredCameraId, string? cameraCode)
         {
             string[] ids = cameraIds.Select(id => id.Trim()).Where(id => id.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-            string? configured = ids.FirstOrDefault(id => id.Equals(configuredCameraId?.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (configured != null) return configured;
             if (!string.IsNullOrWhiteSpace(cameraCode))
             {
-                string[] matches = ids.Where(id => ColorVision.Common.Utilities.Tool.GetMD5(id).Contains(cameraCode.Trim(), StringComparison.OrdinalIgnoreCase)).ToArray();
+                string[] matches = ids.Where(id => ColorVision.Common.Utilities.Tool.GetMD5(id).Equals(cameraCode.Trim(), StringComparison.OrdinalIgnoreCase)).ToArray();
                 return matches.Length == 1 ? matches[0] : string.Empty;
             }
+            string? configured = ids.FirstOrDefault(id => id.Equals(configuredCameraId?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (configured != null) return configured;
             return ids.Length == 1 ? ids[0] : string.Empty;
         }
 
@@ -192,6 +217,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 int result;
                 if (IsOpen)
                 {
+                    EnsureOpenedCameraIdentity();
                     if (OpenedMode != TakeImageMode.Live) return;
                     result = SwitchMode(mode, (int)config.ImageBpp);
                 }
@@ -217,6 +243,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (imageBpp is not (8 or 16)) throw new ArgumentOutOfRangeException(nameof(imageBpp));
                 if (!IsOpen) throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
                 ensureAvailable(openedCameraId);
+                EnsureOpenedCameraIdentity();
                 if (OpenedMode == mode && openedBpp == imageBpp) return cvErrorDefine.CV_ERR_SUCCESS;
                 try
                 {
@@ -378,9 +405,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
                 }
                 ensureAvailable(openedCameraId);
+                EnsureOpenedCameraIdentity();
                 try { return operation(handle); }
                 finally { RefreshStatus(); }
             }
+        }
+
+        private void EnsureOpenedCameraIdentity()
+        {
+            string currentId = resolveCameraId(openedCameraId!);
+            if (string.Equals(openedCameraId, currentId, StringComparison.OrdinalIgnoreCase)) return;
+            // A failed identity save must not invalidate a connection already verified by the fixed physical Code.
+            string? code = getConfig().CameraCode;
+            if (currentId.Length == 0 && !string.IsNullOrWhiteSpace(code)
+                && string.Equals(ColorVision.Common.Utilities.Tool.GetMD5(openedCameraId!), code, StringComparison.OrdinalIgnoreCase)) return;
+            throw new InvalidOperationException("物理相机 ID 已更新，请先关闭当前相机后重新连接。");
         }
 
         private void RefreshStatus()

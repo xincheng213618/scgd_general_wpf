@@ -47,7 +47,7 @@ public class STNodeOption
 			{
 				if (_Owner != null)
 				{
-					DisConnectionAll();
+					DisconnectAllDetached();
 				}
 				_Owner = value;
 			}
@@ -279,6 +279,7 @@ public class STNodeOption
 
 	protected internal virtual void OnDataTransfer(STNodeOptionEventArgs e)
 	{
+		if (_IsInput && _Owner?.OnInputDataTransfer(this, e) == false) return;
 		if (this.DataTransfer != null)
 		{
 			this.DataTransfer(this, e);
@@ -420,7 +421,7 @@ public class STNodeOption
 		{
 			return ConnectionStatus.NoOwner;
 		}
-		if (op.Owner.LockOption && _Owner.LockOption)
+		if (op.Owner.LockOption || _Owner.LockOption)
 		{
 			STNodeEidtorDisConnected(new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Locked));
 			return ConnectionStatus.Locked;
@@ -453,8 +454,11 @@ public class STNodeOption
 		}
 		foreach (STNodeOption option in m_hs_connected.ToArray())
 		{
+			STNodeEditor editor = _Owner?.Owner;
+			editor?.PrepareConnectionChange(this, option);
 			option.RemoveConnection(this, bSponsor: false);
 			RemoveConnection(option, bSponsor: true);
+			editor?.OnOptionDisConnected(new STNodeEditorOptionEventArgs(option, this, ConnectionStatus.DisConnected));
 		}
 		ControlBuildLinePath();
 	}
@@ -482,9 +486,9 @@ public class STNodeOption
 		for (int i = 0; i < connectionInfo.Length; i++)
 		{
 			ConnectionInfo connectionInfo2 = connectionInfo[i];
-			if (connectionInfo2.Output == this)
+			if (connectionInfo2.Input == this)
 			{
-				list.Add(connectionInfo2.Input);
+				list.Add(connectionInfo2.Output);
 			}
 		}
 		return list;
@@ -496,6 +500,7 @@ public class STNodeOption
 		{
 			return;
 		}
+		if (!_IsInput && _Owner?.OnOutputDataTransfer(this) == false) return;
 		foreach (STNodeOption item in m_hs_connected)
 		{
 			item.OnDataTransfer(new STNodeOptionEventArgs(isSponsor: true, this, ConnectionStatus.Connected));
@@ -509,10 +514,15 @@ public class STNodeOption
 			return;
 		}
 		Data = data;
-		foreach (STNodeOption item in m_hs_connected)
-		{
-			item.OnDataTransfer(new STNodeOptionEventArgs(isSponsor: true, this, ConnectionStatus.Connected));
-		}
+		TransferData();
+	}
+
+	/// <summary>Delivers a runtime value to one input without changing graph connections.</summary>
+	public void ReceiveData(object data)
+	{
+		if (!_IsInput) throw new InvalidOperationException("Only an input can receive a runtime value.");
+		var source = new STNodeOption(string.Empty, _DataType, false) { Data = data };
+		OnDataTransfer(new STNodeOptionEventArgs(true, source, ConnectionStatus.Connected));
 	}
 
 	public void TransferData(object data, bool bDisposeOld)
@@ -557,7 +567,7 @@ public class STNodeOption
 			{
 				OnDataTransfer(new STNodeOptionEventArgs(bSponsor, op, ConnectionStatus.DisConnected));
 			}
-			OnDisConnected(new STNodeOptionEventArgs(bSponsor, op, ConnectionStatus.Connected));
+			OnDisConnected(new STNodeOptionEventArgs(bSponsor, op, ConnectionStatus.DisConnected));
 		}
 		return result;
 	}

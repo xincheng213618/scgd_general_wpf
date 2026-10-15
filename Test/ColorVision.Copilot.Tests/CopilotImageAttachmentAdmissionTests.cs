@@ -8,6 +8,52 @@ public sealed class CopilotImageAttachmentAdmissionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task SharedManagedImagesRemainProtectedUntilEveryPreparationReleasesThem(bool orphanCleanup)
+    {
+        var root = CreateTemporaryDirectory();
+        var store = new CopilotChatStateStore(root);
+        var sourcePath = Path.Combine(root, "source.png");
+        await File.WriteAllBytesAsync(sourcePath, CreatePng());
+        using var firstLease = new CopilotManagedImageAttachmentLease();
+        using var secondLease = new CopilotManagedImageAttachmentLease();
+        try
+        {
+            var first = await CopilotImageAttachmentAdmission.PersistAsync(
+                [CopilotAttachmentItem.CreateImage(sourcePath)], store.AttachmentDirectoryPath,
+                CancellationToken.None, firstLease);
+            var second = await CopilotImageAttachmentAdmission.PersistAsync(
+                [CopilotAttachmentItem.CreateImage(sourcePath)], store.AttachmentDirectoryPath,
+                CancellationToken.None, secondLease);
+            var storedPath = Assert.Single(first).Value;
+            Assert.Equal(storedPath, Assert.Single(second).Value);
+            int Cleanup() => orphanCleanup
+                ? store.CleanupOrphanedAttachments(new CopilotChatState())
+                : CopilotChatStateStore.TryDeleteManagedAttachmentFile(store.AttachmentDirectoryPath, storedPath) ? 1 : 0;
+
+            Assert.Equal(0, Cleanup());
+            firstLease.Dispose();
+            firstLease.Dispose();
+            Assert.Equal(0, Cleanup());
+            Assert.True(File.Exists(storedPath));
+            secondLease.Dispose();
+            Assert.Equal(1, Cleanup());
+            Assert.False(File.Exists(storedPath));
+        }
+        finally
+        {
+            firstLease.Dispose();
+            secondLease.Dispose();
+            var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+            var expectedParent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(
+                Path.Combine(Path.GetTempPath(), nameof(CopilotImageAttachmentAdmissionTests))));
+            Assert.Equal(expectedParent, Path.GetDirectoryName(fullRoot), ignoreCase: true);
+            Directory.Delete(fullRoot, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task LinkedStorageDirectoryIsRejectedBeforeCreatingFiles(bool linkedAncestor)
     {
         var root = CreateTemporaryDirectory();

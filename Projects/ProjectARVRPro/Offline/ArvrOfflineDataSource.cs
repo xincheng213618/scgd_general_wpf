@@ -50,7 +50,7 @@ public sealed class ArvrOfflineDataSource
             var candidates = archive.Entries.Where(entry => entry.Name.Equals(DatabaseNames[0], StringComparison.OrdinalIgnoreCase)).ToList();
             if (candidates.Count != 1) throw new InvalidDataException("反馈包需包含一份 ProjectARVRPro.db。请确认现场项目已更新并勾选 ARVRPro 测试记录。");
             string prefix = candidates[0].FullName[..^candidates[0].Name.Length];
-            System.IO.Directory.CreateDirectory(directory);
+            OfflineFileMaintenanceProvider.CreateImportDirectory(directory);
             foreach (string name in DatabaseNames)
             {
                 var matching = archive.Entries.Where(entry => entry.FullName.Equals(prefix + name, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -70,7 +70,7 @@ public sealed class ArvrOfflineDataSource
                 sourceDirectory = Path.Combine(sourceDirectory, "Database");
             string projectSource = isDirectory ? Path.Combine(sourceDirectory, DatabaseNames[0]) : sourcePath;
             if (!File.Exists(projectSource)) throw new FileNotFoundException("所选资料中没有 ProjectARVRPro.db。", projectSource);
-            System.IO.Directory.CreateDirectory(directory);
+            OfflineFileMaintenanceProvider.CreateImportDirectory(directory);
             foreach (string name in DatabaseNames)
             {
                 string original = name == DatabaseNames[0] ? projectSource : Path.Combine(sourceDirectory, name);

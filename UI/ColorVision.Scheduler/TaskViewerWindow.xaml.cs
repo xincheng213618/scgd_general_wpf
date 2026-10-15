@@ -96,13 +96,6 @@ namespace ColorVision.Scheduler
                 {
                     if (_isClosed)
                         return;
-                    var task = TaskInfos.FirstOrDefault(task => task.JobName == context.JobDetail.Key.Name && task.GroupName == context.JobDetail.Key.Group);
-                    if (task != null)
-                    {
-                        // A one-shot trigger may already be gone; the execution context is authoritative.
-                        task.NextFireTime = context.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                        task.PreviousFireTime = context.FireTimeUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
-                    }
                     QueueCopilotContextPublish();
                 });
             }
@@ -135,7 +128,8 @@ namespace ColorVision.Scheduler
                         TaskInfos.Add(task);
                     }
                     task.NextFireTime = trigger.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                    task.PreviousFireTime = trigger.PreviousFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                    if (trigger.PreviousFireTimeUtc is { } previousFire)
+                        task.PreviousFireTime = previousFire.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
                 }
             }
         }
@@ -151,18 +145,28 @@ namespace ColorVision.Scheduler
         private ContextMenu CreateTaskMenu(SchedulerInfo? task)
         {
             var menu = new ContextMenu { DataContext = task };
-            void Add(string header, RoutedEventHandler handler)
+            MenuItem Add(string header, RoutedEventHandler handler)
             {
                 var item = new MenuItem { Header = header };
                 item.Click += handler;
                 menu.Items.Add(item);
+                return item;
             }
+            MenuItem execute = Add(Properties.Resources.Sched_ExecuteTask, MenuExecute_Click);
             Add(Properties.Resources.Sched_EditTask, MenuEdit_Click);
             Add(Properties.Resources.Sched_ViewProps, MenuView_Click);
             menu.Items.Add(new Separator());
-            Add(Properties.Resources.Sched_PauseTask, MenuPause_Click);
-            Add(Properties.Resources.Sched_ResumeTask, MenuResume_Click);
-            Add(Properties.Resources.Sched_RunNow, MenuTrigger_Click);
+            MenuItem pause = Add(Properties.Resources.Sched_PauseTask, MenuPause_Click);
+            MenuItem runOnce = Add(Properties.Resources.Sched_OnlyRunOnce, MenuTrigger_Click);
+            runOnce.ToolTip = Properties.Resources.Sched_OnlyRunOnceHint;
+            menu.Opened += (_, _) =>
+            {
+                SchedulerInfo? selected = task ?? ListViewTask.SelectedItem as SchedulerInfo;
+                execute.IsEnabled = selected != null && SchedulerPresentation.CanExecutePlan(selected);
+                if (selected != null)
+                    execute.Header = SchedulerPresentation.PrimaryActionText(selected);
+                pause.IsEnabled = selected?.Status is SchedulerStatus.Ready or SchedulerStatus.Running;
+            };
             menu.Items.Add(new Separator());
             Add(Properties.Resources.Sched_ExecHistoryMenu, MenuHistory_Click);
             Add(Properties.Resources.Sched_DeleteTask, MenuDelete_Click);
@@ -220,7 +224,12 @@ namespace ColorVision.Scheduler
             _isOperating = true;
             CreateButton.IsEnabled = false;
             OperationError.Visibility = Visibility.Collapsed;
-            try { await operation(); }
+            try
+            {
+                await _initializationTask;
+                if (!_isClosed)
+                    await operation();
+            }
             catch (Exception ex) { ShowOperationError(ex); }
             finally
             {
@@ -242,24 +251,16 @@ namespace ColorVision.Scheduler
         private async void PauseAll_Click(object sender, RoutedEventArgs e) => await RunOperationAsync(_schedulerService.PauseAll);
         private async void ResumeAll_Click(object sender, RoutedEventArgs e) => await RunOperationAsync(_schedulerService.ResumeAll);
 
-        private async void TogglePause_Click(object sender, RoutedEventArgs e)
+        private async void MenuExecute_Click(object sender, RoutedEventArgs e)
         {
             if (ResolveTask(sender) is SchedulerInfo info)
-                await RunOperationAsync(() => info.Status == SchedulerStatus.Paused
-                    ? _schedulerService.ResumeJob(info.JobName, info.GroupName)
-                    : _schedulerService.StopJob(info.JobName, info.GroupName));
+                await RunOperationAsync(() => _schedulerService.ExecuteJob(info.JobName, info.GroupName));
         }
 
         private async void MenuPause_Click(object sender, RoutedEventArgs e)
         {
             if (ResolveTask(sender) is SchedulerInfo info)
                 await RunOperationAsync(() => _schedulerService.StopJob(info.JobName, info.GroupName));
-        }
-
-        private async void MenuResume_Click(object sender, RoutedEventArgs e)
-        {
-            if (ResolveTask(sender) is SchedulerInfo info)
-                await RunOperationAsync(() => _schedulerService.ResumeJob(info.JobName, info.GroupName));
         }
 
         private async void MenuDelete_Click(object sender, RoutedEventArgs e)

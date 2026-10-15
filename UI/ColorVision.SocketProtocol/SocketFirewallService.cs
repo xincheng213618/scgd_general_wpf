@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace ColorVision.SocketProtocol
 {
-    internal sealed record FirewallStatus(string Summary, string Detail, bool CanAllow);
+    internal sealed record FirewallStatus(string Summary, string Detail, bool CanAllow, bool HasAllowRule = false);
 
     internal sealed record FirewallProfileStatuses(FirewallStatus PrivateStatus, FirewallStatus PublicStatus);
 
@@ -24,15 +24,24 @@ namespace ColorVision.SocketProtocol
                 ServiceHostResponse response = await ColorVisionServiceHostClient.Default
                     .AllowFirewallApplicationAsync(executablePath, profile, TimeSpan.FromSeconds(15))
                     .ConfigureAwait(true);
-                string message = response.Success
-                    ? $"{response.Message}\n\n已通过 ColorVisionServiceHost 完成。"
-                    : $"ColorVisionServiceHost 执行失败：{response.Message}";
-                return new FirewallCommandResult(response.Success, message);
+                if (!response.Success)
+                    return new FirewallCommandResult(false, $"ColorVisionServiceHost 执行失败：{response.Message}");
+
+                FirewallProfileStatuses statuses = await Task.Run(() => GetStatuses(executablePath)).ConfigureAwait(true);
+                return VerifyAllowResult(response.Message, profile == "public" ? statuses.PublicStatus : statuses.PrivateStatus);
             }
             catch (Exception ex)
             {
                 return new FirewallCommandResult(false, $"ColorVisionServiceHost 不可用或版本过旧：{ex.Message}");
             }
+        }
+
+        internal static FirewallCommandResult VerifyAllowResult(string responseMessage, FirewallStatus status)
+        {
+            if (!status.HasAllowRule || status.CanAllow)
+                return new(false, $"服务已返回，但防火墙规则核验未通过：{status.Summary}\n{status.Detail}\n\n请检查 Windows 防火墙高级设置；旧版服务可能只添加允许规则，仍需处理冲突的阻止规则。");
+
+            return new(true, $"{responseMessage}\n\n已重新读取当前程序的入站规则，请重新尝试连接或取图。");
         }
     }
 
@@ -105,7 +114,7 @@ namespace ColorVision.SocketProtocol
             if (allowRules.Count > 0)
             {
                 string detail = BuildDetail(profile.DisplayName, allowRules, blockRules);
-                return new FirewallStatus($"已允许（{allowRules.Count} 条规则）", detail, false);
+                return new FirewallStatus($"已允许（{allowRules.Count} 条规则）", detail, false, true);
             }
 
             return new FirewallStatus("未放行", $"{profile.DisplayName}网络未找到当前程序的入站应用允许规则。", true);

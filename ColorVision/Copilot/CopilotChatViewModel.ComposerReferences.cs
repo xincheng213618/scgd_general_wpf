@@ -322,7 +322,7 @@ namespace ColorVision.Copilot
                     query,
                     immediateSuggestions,
                     workspaceSuggestions);
-                ApplyComposerReferenceSuggestions(merged, preferredValue);
+                ApplyComposerReferenceSuggestions(merged, SelectedComposerReference?.Value ?? preferredValue);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

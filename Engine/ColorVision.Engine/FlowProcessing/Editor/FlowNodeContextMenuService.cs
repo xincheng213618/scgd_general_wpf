@@ -16,7 +16,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
 {
-    internal sealed class FlowNodeContextMenuService : IDisposable
+    internal sealed partial class FlowNodeContextMenuService : IDisposable
     {
         private sealed class NodeMenuCatalogEntry
         {
@@ -105,6 +105,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             _contextMenu = new ContextMenu();
             _nodeEditor.ContextMenu = _contextMenu;
             _nodeEditor.ContextMenuOpening += NodeEditor_ContextMenuOpening;
+            _nodeEditor.NodeGroupDoubleClick += NodeEditor_NodeGroupDoubleClick;
         }
 
         internal static string LocalizeNodeMenuPath(string path)
@@ -139,15 +140,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 .ThenBy(item => item.SortText, LogicalStringComparer.Instance)
                 .Select(item => item.Header)
                 .ToArray();
-        }
-
-        internal static MenuItem CreateImportModuleMenuItem(Action importModule)
-        {
-            ArgumentNullException.ThrowIfNull(importModule);
-
-            var item = new MenuItem { Header = Properties.Resources.Flow_ImportTemplateAsModule };
-            item.Click += (_, _) => importModule();
-            return item;
         }
 
         private static string LocalizeNodeMenuText(string text)
@@ -234,6 +226,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
             else
             {
+                AddRepeatMenuItems(_contextMenu.Items, null);
                 AddNodeCreationMenuItems(_contextMenu.Items);
                 AddImportModuleContextMenu(_contextMenu.Items);
             }
@@ -244,13 +237,14 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void AddNodeMenuItems(ItemCollection items, STNode node)
         {
-            var copyItem = new MenuItem { Header = Properties.Resources.Copy };
-            copyItem.Click += (_, _) => CopyNode(node);
-            items.Add(copyItem);
-
-            var deleteItem = new MenuItem { Header = Properties.Resources.Delete };
-            deleteItem.Click += (_, _) => _nodeEditor.Nodes.Remove(node);
-            items.Add(deleteItem);
+            AddRepeatMenuItems(items, node);
+            STNode[] targets = node.IsSelected ? _nodeEditor.GetSelectedNode() : new[] { node };
+            items.Add(CreateEditMenuItem(Properties.Resources.Copy, () => _nodeEditor.ImportSelectionData(_nodeEditor.GetNodesData(targets))));
+            items.Add(CreateEditMenuItem(Properties.Resources.Delete, () => _nodeEditor.ExecuteEditTransaction(Properties.Resources.Delete, () =>
+            {
+                foreach (STNode target in targets)
+                    _nodeEditor.Nodes.Remove(target);
+            })));
 
             if (node is CVCommonNode commonNode)
             {
@@ -268,33 +262,30 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             items.Add(new Separator());
 
-            var lockOptionItem = new MenuItem
-            {
-                Header = LocalizeNodeMenuText(nameof(STNode.LockOption)),
-                IsCheckable = true,
-                IsChecked = node.LockOption
-            };
-            lockOptionItem.Click += (_, _) => _nodeEditor.ExecuteEditTransaction(
+            var lockOptionItem = CreateEditMenuItem(LocalizeNodeMenuText(nameof(STNode.LockOption)), () => _nodeEditor.ExecuteEditTransaction(
                 LocalizeNodeMenuText(nameof(STNode.LockOption)),
-                () => node.LockOption = !node.LockOption);
+                () => node.LockOption = !node.LockOption));
+            lockOptionItem.IsCheckable = true;
+            lockOptionItem.IsChecked = node.LockOption;
             items.Add(lockOptionItem);
 
-            var lockLocationItem = new MenuItem
-            {
-                Header = LocalizeNodeMenuText(nameof(STNode.LockLocation)),
-                IsCheckable = true,
-                IsChecked = node.LockLocation
-            };
-            lockLocationItem.Click += (_, _) => _nodeEditor.ExecuteEditTransaction(
+            var lockLocationItem = CreateEditMenuItem(LocalizeNodeMenuText(nameof(STNode.LockLocation)), () => _nodeEditor.ExecuteEditTransaction(
                 LocalizeNodeMenuText(nameof(STNode.LockLocation)),
-                () => node.LockLocation = !node.LockLocation);
+                () => node.LockLocation = !node.LockLocation));
+            lockLocationItem.IsCheckable = true;
+            lockLocationItem.IsChecked = node.LockLocation;
             items.Add(lockLocationItem);
         }
 
-        private void CopyNode(STNode node)
+        private MenuItem CreateEditMenuItem(string header, Action edit)
         {
-            byte[] data = _nodeEditor.GetNodesData(new[] { node });
-            _nodeEditor.ImportSelectionData(data, new System.Drawing.Point(node.Left + 30, node.Top + 30));
+            var item = new MenuItem { Header = header, IsEnabled = _nodeEditor.EnableEdit };
+            item.Click += (_, _) =>
+            {
+                if (_nodeEditor.EnableEdit)
+                    edit();
+            };
+            return item;
         }
 
         private void AddNodeCreationMenuItems(ItemCollection items)
@@ -417,9 +408,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 .ThenBy(item => item.NodeType.FullName, StringComparer.Ordinal))
             {
                 Type nodeType = node.NodeType;
-                var nodeItem = new MenuItem { Header = node.Header };
-                nodeItem.Click += (_, _) => CreateNode(nodeType);
-                items.Add(nodeItem);
+                items.Add(CreateEditMenuItem(node.Header, () => CreateNode(nodeType)));
             }
         }
 
@@ -456,8 +445,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
             else if (node is MQTTStartNode startNode)
             {
-                startNode.Server = MQTTControl.Config.Host;
-                startNode.Port = MQTTControl.Config.Port;
+                startNode.Server = MQTTControl.Host;
+                startNode.Port = MQTTControl.Port;
             }
 
             _nodeEditor.Nodes.Add(node);
@@ -467,12 +456,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private void AddImportModuleContextMenu(ItemCollection items)
         {
             items.Add(new Separator());
-            items.Add(CreateImportModuleMenuItem(_importModule));
+            items.Add(CreateEditMenuItem(Properties.Resources.Flow_ImportTemplateAsModule, _importModule));
         }
 
         public void Dispose()
         {
             _nodeEditor.ContextMenuOpening -= NodeEditor_ContextMenuOpening;
+            _nodeEditor.NodeGroupDoubleClick -= NodeEditor_NodeGroupDoubleClick;
             if (ReferenceEquals(_nodeEditor.ContextMenu, _contextMenu))
                 _nodeEditor.ContextMenu = null;
         }

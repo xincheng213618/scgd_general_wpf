@@ -1,6 +1,5 @@
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using FlowEngineLib.Node.Global;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
@@ -14,10 +13,11 @@ internal sealed class LocalSensorFlowExecution : FlowLocalExecution
     private readonly string operation;
     private readonly JObject parameters;
     private readonly LocalSensorConnectionConfig config;
+    private readonly bool autoConnect;
     private CancellationToken stop;
     private object? result;
     internal static bool Supports(CVBaseServerNode node) => node.NodeType == "Sensor"
-        && node is CommonSensorNode or TempCommonSensorNode or RealCommonSensorNode or PhyDeviceControlNode;
+        && node is CommonSensorNode or TempCommonSensorNode or RealCommonSensorNode;
     private static DeviceSensor? Find(string code) => ServiceManager.Current?.DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == code);
 
     internal static void Register() => RegisterBackend(nameof(LocalSensorFlowExecution),
@@ -36,12 +36,13 @@ internal sealed class LocalSensorFlowExecution : FlowLocalExecution
                     return null!;
                 }
             }
-            return new LocalSensorFlowExecution(device, request.EventName, request.Data);
+            return new LocalSensorFlowExecution(device, request.EventName, request.Data, autoConnect: true);
         });
 
-    internal LocalSensorFlowExecution(DeviceSensor device, string operation, object? parameters)
+    internal LocalSensorFlowExecution(DeviceSensor device, string operation, object? parameters, bool autoConnect = false)
     {
         this.device = device; this.operation = operation;
+        this.autoConnect = autoConnect;
         this.parameters = parameters == null ? new JObject() : JObject.FromObject(parameters);
         config = device.SnapshotLocalSensorConfig();
     }
@@ -53,7 +54,7 @@ internal sealed class LocalSensorFlowExecution : FlowLocalExecution
         {
             stop.ThrowIfCancellationRequested();
             var commands = operation == "ExecCmd" ? device.ResolveLocalSensorCommands(parameters, config) : null;
-            result = device.ExecuteLocalSensorAsync(operation, commands, config, stop).GetAwaiter().GetResult();
+            result = device.ExecuteLocalSensorAsync(operation, commands, config, stop, autoConnect).GetAwaiter().GetResult();
         }
         catch (Exception ex) { device.PublishLocalSensorResult(null, ex); throw; }
     }

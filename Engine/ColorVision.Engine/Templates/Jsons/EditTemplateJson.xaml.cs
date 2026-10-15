@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Templates.Jsons
         private string _loadedJsonSnapshot = string.Empty;
         private TemplateJsonSchemaInfo? _schemaInfo;
 
-        public EditTemplateJson(string description)
+        public EditTemplateJson()
         {
             InitializeComponent();
             PropertyModeButton.GroupName = TextModeButton.GroupName = _copilotContextSourceId;

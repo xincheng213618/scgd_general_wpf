@@ -385,20 +385,14 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotSteeringMessageSnapshot> messages)
         {
             var isSelectedConversation = ReferenceEquals(conversation, SelectedConversation);
-            var restored = CopilotSteeringRecovery.RestoreMessagesToDraft(conversation, messages);
-            var changed = restored;
-            changed |= CopilotSteeringRecovery.RemovePending(conversation, messages);
-            if (!changed)
+            if (!CopilotSteeringRecovery.RestorePendingMessagesToDraft(conversation, messages))
                 return false;
 
-            if (restored && isSelectedConversation)
+            if (isSelectedConversation)
                 InputText = conversation.DraftText;
-            if (restored)
-            {
-                RefreshCompactHistoryConversations();
-                if (HasConversationSearchQuery)
-                    RefreshFilteredConversations();
-            }
+            RefreshCompactHistoryConversations();
+            if (HasConversationSearchQuery)
+                RefreshFilteredConversations();
             return true;
         }
 

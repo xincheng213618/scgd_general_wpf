@@ -56,7 +56,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             bool loadedFromFile = !action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) || currentFrame == null;
             if (loadedFromFile)
             {
-                string path = ResolveInputImageFilePath(action, 0, string.Empty);
+                string path = ResolveInputImageFilePath(action, 0);
                 if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("流程中没有可用的本地图像帧或 CVRAW/CVCIE 图像结果。");
                 currentFrame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(path));
                 _ = TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _);
@@ -94,7 +94,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     try
                     {
                         LocalPoiCalculator.SaveDetails(masterId, result);
-                        action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
+                        action.SetRuntimeResource(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
+                        action.SetRuntimeResource(LocalPoiCalculator.ResultResourceKey(masterId), result);
                         action.Data["LocalPoiCount"] = result.Points.Count;
                         action.MasterValue(null, masterId, (int)resultType);
                         ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);

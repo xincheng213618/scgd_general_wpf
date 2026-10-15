@@ -105,6 +105,7 @@ public partial class DeviceSMU
         var config = LocalSmuConnection.From(Config);
         var data = message.Params == null ? new JObject() : JObject.FromObject(message.Params);
         if (message.EventName == "Open") config = config with { IsNet = data.Value<bool?>("IsNet") ?? config.IsNet, DeviceName = data.Value<string>("DevName")?.Trim() ?? config.DeviceName };
+        config = config with { BaudRate = config.IsNet ? 9600 : (int)DisplayConfig.LocalBaudRate };
         bool checkLimits = DisplayConfig.IsUseLimitSigned;
         LocalSmuParameters? parameters = null;
         Exception? setupFailure = null;

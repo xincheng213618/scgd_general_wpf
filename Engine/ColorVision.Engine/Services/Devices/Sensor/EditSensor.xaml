@@ -1,85 +1,98 @@
 <Window x:Class="ColorVision.Engine.Services.Devices.Sensor.EditSensor"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Sensor"
-             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             xmlns:hc="https://handyorg.github.io/handycontrol"
-             d:DataContext="{d:DesignInstance local:DeviceSensor}"
-             mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="UserControl_Initialized">
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:controls="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
+        Title="传感器配置" Width="650" Height="650" MinWidth="580" MinHeight="520"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource GlobalBackground}"
+        SnapsToDevicePixels="True" UseLayoutRounding="True">
     <Window.Resources>
-        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
-            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="VisibleWhen"/>
+            <Style x:Key="CardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,10"/>
+                <Setter Property="Margin" Value="0,0,4,10"/>
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
-    <Grid Margin="5">
+    <Grid Margin="16,14,16,0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigSensor}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
-                <StackPanel>
-                    <GroupBox Header="{x:Static properties:Resources.ResourceInformation}" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Width="120"/>
-                                <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel DataContext="{Binding Draft.Config}">
+                        <TextBlock Text="设备与连接" Style="{StaticResource SectionTitleStyle}"/>
+                        <StackPanel x:Name="DeviceFields"/>
+                        <DockPanel Margin="0,3">
+                            <TextBlock Text="SN" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                            <hc:ComboBox x:Name="CameraPhyID" IsEditable="True" Text="{Binding SN}" DisplayMemberPath="Code" Style="{StaticResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,3">
+                            <TextBlock Text="传感器类型" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                            <hc:ComboBox x:Name="ComboBoxSensor" IsEditable="True" AutoComplete="True" DisplayMemberPath="Key" Text="{Binding Category}" Style="{StaticResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True"/>
+                        </DockPanel>
+                        <StackPanel x:Name="LocalFields"/>
+                        <DockPanel Margin="0,6,0,10">
+                            <TextBlock Text="连接方式（IsNet）" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                            <WrapPanel>
+                                <RadioButton Content="串口" GroupName="ConnectionMode" IsChecked="{Binding IsNet, Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,24,0"/>
+                                <RadioButton Content="网口" GroupName="ConnectionMode" IsChecked="{Binding IsNet}"/>
+                            </WrapPanel>
+                        </DockPanel>
+                        <StackPanel Visibility="{Binding IsNet, Converter={StaticResource VisibleWhen}}">
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="IP / 主机名" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                <controls:IPAddressBox Text="{Binding Addr, UpdateSourceTrigger=PropertyChanged}" AllowTextMode="True" AutomationProperties.Name="传感器 IP 地址"/>
                             </DockPanel>
-                            <DockPanel Margin="0,0,0,5" >
-                                <TextBlock Text="SN" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="{x:Static properties:Resources.DeviceAutoConnect}" Width="120"/>
-                                <CheckBox Content="{x:Static properties:Resources.IsEnable}" IsChecked="{Binding IsAutoOpen}" ToolTip="服务模式自动连接。本地模式需要明确打开，不因执行或关闭操作自动打开。"/>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="端口" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Port}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                         </StackPanel>
-                    </GroupBox>
-
-                    <GroupBox Header="{x:Static properties:Resources.ConfigerInfo}" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="{x:Static properties:Resources.CategoryModel}" Width="120"/>
-                                <hc:ComboBox x:Name="ComboBoxSensor" IsEditable="True" AutoComplete ="True" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Value" Text="{Binding Category}"/>
+                        <StackPanel Visibility="{Binding IsNet, Converter={StaticResource bool2VisibilityConverter1}}">
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="串口" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                <hc:ComboBox x:Name="ComboBoxSerial" IsEditable="True" Text="{Binding Addr}" Style="{StaticResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True"/>
                             </DockPanel>
-                            <DockPanel Margin="0,10" >
-                                <TextBlock Text="{x:Static properties:Resources.CommunicationType}" Width="120"/>
-                                <RadioButton x:Name="IsComm" Content="{x:Static properties:Resources.Serial}" IsChecked="{Binding IsNet,Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                                <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  IsNet}"/>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="波特率" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                <hc:ComboBox x:Name="ComboBoxPort" IsEditable="True" Text="{Binding Port}" Style="{StaticResource ComboBox.Small}" hc:InfoElement.ShowClearButton="True"/>
                             </DockPanel>
-                            <StackPanel Visibility="{Binding IsNet, Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2" >
-                                    <TextBlock Text="{x:Static properties:Resources.IPAddress}" Width="120"/>
-                                    <TextBox Text="{Binding Addr}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2" >
-                                    <TextBlock  Text="{x:Static properties:Resources.Port}" Width="120"/>
-                                    <TextBox  Text="{Binding Port}"/>
-                                </DockPanel>
-                            </StackPanel>
-                            <StackPanel Visibility="{Binding IsNet, Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel Margin="0,2" >
-                                    <TextBlock   Text="{x:Static properties:Resources.Serial}" Width="120"/>
-                                    <hc:ComboBox  x:Name="ComboBoxSerial" IsEditable="True" Text="{Binding Addr}" hc:InfoElement.ShowClearButton="True" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2" >
-                                    <TextBlock Text="{x:Static properties:Resources.BaudRate}" Width="120"/>
-                                    <hc:ComboBox  x:Name="ComboBoxPort" IsEditable="True" Text="{Binding Port}" hc:InfoElement.ShowClearButton="True"  />
-                                </DockPanel>
-                            </StackPanel>
-
-
-
                         </StackPanel>
-                    </GroupBox>
-                </StackPanel>
-            </Border>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardStyle}" Visibility="{Binding Draft.DisplayConfig.UseLocalSensor, Converter={StaticResource VisibleWhen}}">
+                    <StackPanel>
+                        <TextBlock Text="本地连接" Style="{StaticResource SectionTitleStyle}"/>
+                        <StackPanel x:Name="LocalConnectionFields"/>
+                        <Grid Visibility="{Binding Draft.Config.IsNet, Converter={StaticResource bool2VisibilityConverter1}}">
+                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <StackPanel x:Name="SerialOptionsFields" Margin="0,0,16,0"/>
+                            <StackPanel x:Name="SerialSignalFields" Grid.Column="1"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </ScrollViewer>
-        <Border Grid.Row="1" Height="30">
-            <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
+        <TextBlock Grid.Row="1" x:Name="StatusText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,0,4,8"/>
+        <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,12">
+            <DockPanel>
+                <TextBlock Text="修改连接参数后请重新连接。" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.65" FontSize="12" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="90" Height="34" IsDefault="True" Click="Ok_Click"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="90" Height="34" IsCancel="True" Margin="6,0,0,0"/>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </Grid>
 </Window>

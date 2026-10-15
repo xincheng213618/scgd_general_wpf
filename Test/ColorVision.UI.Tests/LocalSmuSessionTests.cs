@@ -3,8 +3,11 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Local;
+using ColorVision.UI;
 using cvColorVision;
 using Newtonsoft.Json.Linq;
+using System.ComponentModel;
+using System.Reflection;
 using System.Text;
 using Channel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType;
 
@@ -16,9 +19,12 @@ public sealed class LocalSmuSessionTests
     private static LocalSmuConnection Config() => new(false, "synthetic-" + Guid.NewGuid(), Pss_Type.Keithley_2600, 10, true, false);
     private static LocalSmuParameters Point(Channel channel = Channel.A) => new() { Channel = channel, MeasureValue = 5, LimitValue = 10 };
 
-    [Fact]
-    public async Task DeviceCommandsRouteLocallyAndCompleteThroughMessageRecords()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeviceCommandsRouteLocallyAndCompleteThroughMessageRecords(bool configuredAsNetwork)
     {
+        string address = configuredAsNetwork ? "192.0.2.17" : "COM23";
         var sdk = new FakeNative();
         var session = new LocalSmuSession(sdk);
         DeviceSMU? device = null;
@@ -30,15 +36,21 @@ public sealed class LocalSmuSessionTests
                 previousConfig = ColorVision.UI.ConfigService.Instance;
                 ColorVision.UI.ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
                 device = new DeviceSMU(new() { Id = -2, Code = "synthetic-smu-" + Guid.NewGuid(),
-                    Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSMU { DevName = "synthetic", DevType = Pss_Type.Keithley_2600 }) }, session);
+                    Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSMU { DevName = "synthetic", DevType = Pss_Type.Keithley_2600, IsNet = configuredAsNetwork }) }, session);
                 Assert.True(device.DisplayConfig.UseLocalSmu);
+                device.DisplayConfig.LocalBaudRate = SMUSerialBaudRate.Baud115200;
+                if (configuredAsNetwork) device.Config.IpAddress = address;
+                else device.Config.SerialPort = address;
                 var display = device.DisplayConfig;
                 device.Config.Code += "-renamed";
                 Assert.Same(display, device.DisplayConfig);
             });
-            var opened = await Command(() => device!.DService.Open(false, "synthetic"));
+            var opened = await Command(() => device!.DService.Open(device.Config.IsNet, device.Config.DevName));
             Assert.Equal(MsgRecordState.Success, opened.MsgRecordState);
             Assert.Equal(DeviceStatusType.Opened, session.Status);
+            Assert.Equal(configuredAsNetwork, sdk.OpenedConnection!.IsNet);
+            Assert.Equal(address, sdk.OpenedConnection.DeviceName);
+            Assert.Equal(configuredAsNetwork ? 9600 : 115200, sdk.OpenedConnection.BaudRate);
             WpfTestHost.Invoke(() =>
             {
                 Assert.Equal("synthetic SMU", device!.LocalDeviceIdentity);
@@ -100,6 +112,102 @@ public sealed class LocalSmuSessionTests
         await session.CloseAsync();
         Assert.Equal(new[] { Channel.B }, sdk.ClosedOutputs);
         Assert.Equal(DeviceStatusType.Closed, session.Status);
+    }
+
+    [Fact]
+    public void ConnectionEditorsCommitOneLegacyAddressAndSwitchByTransport()
+    {
+        var serialProperty = typeof(ConfigSMU).GetProperty(nameof(ConfigSMU.SerialPort))!;
+        var networkProperty = typeof(ConfigSMU).GetProperty(nameof(ConfigSMU.IpAddress))!;
+        Assert.False(TypeDescriptor.GetProperties(typeof(ConfigSMU))[nameof(ConfigSMU.DevName)]!.IsBrowsable);
+        Assert.Equal(typeof(ColorVision.Engine.PropertyEditor.TextSerialPortPropertiesEditor),
+            serialProperty.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType);
+        Assert.Equal(typeof(IPAddressPropertiesEditor), networkProperty.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType);
+        var serialVisibility = serialProperty.GetCustomAttribute<PropertyVisibilityAttribute>()!;
+        var networkVisibility = networkProperty.GetCustomAttribute<PropertyVisibilityAttribute>()!;
+        Assert.Equal(nameof(ConfigSMU.IsNet), serialVisibility.PropertyName);
+        Assert.True(serialVisibility.IsInverted);
+        Assert.Equal(nameof(ConfigSMU.IsNet), networkVisibility.PropertyName);
+        Assert.False(networkVisibility.IsInverted);
+
+        // Hidden DevName must still survive transactional copying through its editable aliases.
+        var source = new JObject { ["IsNet"] = false, ["DevName"] = "COM7", ["DevType"] = (int)Pss_Type.Keithley_2600 }
+            .ToObject<ConfigSMU>()!;
+        var edit = PropertyEditSession.Create(source, PropertyEditorEditMode.Transactional);
+        var working = Assert.IsType<ConfigSMU>(edit.EditableObject);
+        Assert.Equal("COM7", working.SerialPort);
+        Assert.Equal("COM7", working.IpAddress);
+        var changes = new List<string?>();
+        working.PropertyChanged += (_, args) => changes.Add(args.PropertyName);
+        working.SerialPort = "COM23";
+        Assert.Equal("COM7", source.DevName);
+        Assert.Contains(nameof(ConfigSMU.DevName), changes);
+        Assert.Contains(nameof(ConfigSMU.SerialPort), changes);
+        Assert.Contains(nameof(ConfigSMU.IpAddress), changes);
+        edit.Commit();
+        Assert.False(source.IsNet);
+        Assert.Equal("COM23", source.DevName);
+        AssertLegacyPayload(source, "COM23");
+
+        changes.Clear();
+        working.IsNet = true;
+        Assert.Contains(nameof(ConfigSMU.IsNet), changes);
+        Assert.Contains(nameof(ConfigSMU.SerialPort), changes);
+        Assert.Contains(nameof(ConfigSMU.IpAddress), changes);
+        working.IpAddress = "192.0.2.17";
+        Assert.False(source.IsNet);
+        Assert.Equal("COM23", source.DevName);
+        edit.Commit();
+        Assert.True(source.IsNet);
+        Assert.Equal("192.0.2.17", source.DevName);
+        Assert.Equal(source.DevName, source.SerialPort);
+        AssertLegacyPayload(source, "192.0.2.17");
+
+        var legacyNetwork = new JObject { ["IsNet"] = true, ["DevName"] = "192.0.2.8", ["DevType"] = (int)Pss_Type.Keithley_2600 }
+            .ToObject<ConfigSMU>()!;
+        Assert.True(legacyNetwork.IsNet);
+        Assert.Equal("192.0.2.8", legacyNetwork.IpAddress);
+
+        static void AssertLegacyPayload(ConfigSMU config, string address)
+        {
+            var payload = JObject.FromObject(config);
+            Assert.Equal(address, payload.Value<string>(nameof(ConfigSMU.DevName)));
+            Assert.Null(payload[nameof(ConfigSMU.SerialPort)]);
+            Assert.Null(payload[nameof(ConfigSMU.IpAddress)]);
+            var restored = payload.ToObject<ConfigSMU>()!;
+            Assert.Equal(config.IsNet, restored.IsNet);
+            Assert.Equal(address, restored.DevName);
+            Assert.Equal(address, restored.IsNet ? restored.IpAddress : restored.SerialPort);
+        }
+    }
+
+    [Fact]
+    public void LocalBaudRateDefaultsTo9600AndPersistsForSerialConnections()
+    {
+        var display = new JObject().ToObject<DisplaySMUConfig>()!;
+        Assert.Equal(SMUSerialBaudRate.Baud9600, display.LocalBaudRate);
+        display.LocalBaudRate = SMUSerialBaudRate.Baud115200;
+        display = JObject.FromObject(display).ToObject<DisplaySMUConfig>()!;
+        Assert.Equal(SMUSerialBaudRate.Baud115200, display.LocalBaudRate);
+        var config = new ConfigSMU { DevName = "COM7", DevType = Pss_Type.Keithley_2600 };
+        var serial = LocalSmuConnection.From(config, (int)display.LocalBaudRate);
+        serial.Validate();
+        Assert.Equal(115200, serial.BaudRate);
+        config.IsNet = true;
+        Assert.Equal(LocalSmuConnection.From(config), LocalSmuConnection.From(config, (int)display.LocalBaudRate));
+    }
+
+    [Theory]
+    [InlineData(Pss_Type.Keithley_2600, 0)]
+    [InlineData(Pss_Type.Keithley_2600, 921600)]
+    [InlineData(Pss_Type.Keithley_2400, 115200)]
+    [InlineData(Pss_Type.Precise_S100, 115200)]
+    public async Task UnsupportedBaudRateNeverOpensNativeConnection(Pss_Type type, int baudRate)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        await Assert.ThrowsAsync<ArgumentException>(() => session.OpenAsync(Config() with { DeviceType = type, BaudRate = baudRate }));
+        Assert.Null(sdk.OpenedConnection);
     }
 
     [Theory]
@@ -276,7 +384,12 @@ public sealed class LocalSmuSessionTests
         await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config,
             Point() with { Points = 1 }, true, false, true));
         await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config with { DelayTime = 20 }, Point(), false, false, true));
+        var faster = config with { BaudRate = 115200 };
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(faster, Point(), false, false, true));
         Assert.Equal(0, sdk.Measurements);
+        await session.CloseAsync();
+        await session.OpenAsync(faster);
+        Assert.Equal(115200, sdk.OpenedConnection!.BaudRate);
     }
 
     [Fact]
@@ -304,12 +417,13 @@ public sealed class LocalSmuSessionTests
         internal bool BlockCapture;
         internal double LastSource, LastLimit;
         internal LocalSmuParameters? ScanParameters;
+        internal LocalSmuConnection? OpenedConnection;
         internal readonly TaskCompletionSource CaptureStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal readonly List<string> Events = [];
         internal readonly List<Channel> ClosedOutputs = [];
         private Channel channel;
-        public int Open(LocalSmuConnection c) => 0; // Zero is a valid SDK handle.
+        public int Open(LocalSmuConnection c) { OpenedConnection = c; return 0; } // Zero is a valid SDK handle.
         public int GetIdn(int h, StringBuilder text, ref int length) { text.Append("synthetic SMU"); return 1; }
         public int SetWiring(int h, bool wire, bool front) => WiringCode;
         public int SetDelay(int h, double delay) => 1;

@@ -405,6 +405,7 @@ namespace ColorVision.ImageEditor
 
         private void ImageView_Loaded(object sender, RoutedEventArgs e)
         {
+            UpdateSnapshotCacheSource();
             var window = WpfWindow.GetWindow(this);
             if (ReferenceEquals(_shortcutWindow, window)) return;
             if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
@@ -1134,7 +1135,7 @@ namespace ColorVision.ImageEditor
 
             _fullScreenMode?.Dispose();
             _fullScreenMode = null;
-            ReleaseSnapshotBuffer();
+            snapshotCapture.Dispose();
             DebounceTimer.Cancel(_pixelValueOverlayRefreshDebounceKey);
             _realtime?.Dispose();
             Clear();

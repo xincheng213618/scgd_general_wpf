@@ -366,8 +366,8 @@ namespace Spectrum.Models
                 Eqe = 0;
             }
 
-            float safeLuminance = GetSafeLuminanceValue(fPh);
-            LuminousFlux = safeLuminance;
+            // Changing electrical inputs must preserve measured flux, including zero.
+            LuminousFlux ??= fPh;
 
             if (fPL != null && fPL.Length > 0)
             {
@@ -386,7 +386,7 @@ namespace Spectrum.Models
                 double power_W = V * I / 1000.0;
                 if (power_W != 0)
                 {
-                    LuminousEfficacy = safeLuminance / power_W;
+                    LuminousEfficacy = LuminousFlux / power_W;
                 }
             }
 

@@ -8,6 +8,62 @@ public sealed class CopilotStreamDeltaBufferTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SeparateUiBatchesPreserveWhitespaceInChatAndAgentMessages(bool agentMode)
+    {
+        StaTest.Run(() =>
+        {
+            var dispatcher = Dispatcher.CurrentDispatcher;
+            try
+            {
+                var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+                var context = new DispatcherSynchronizationContext(dispatcher);
+                var chatBuffer = new CopilotStreamDeltaBuffer(context, batch =>
+                {
+                    foreach (var delta in batch)
+                        CopilotAssistantMessagePresenter.ApplyStreamDelta(assistant, delta);
+                }, isOnTargetThread: dispatcher.CheckAccess);
+                var agentBuffer = new CopilotAgentEventBuffer(context, batch =>
+                {
+                    foreach (var agentEvent in batch)
+                        CopilotAssistantMessagePresenter.ApplyAgentEvent(assistant, agentEvent);
+                }, isOnTargetThread: dispatcher.CheckAccess);
+
+                foreach (var (reasoning, text) in new[]
+                {
+                    (true, "First"), (true, "\t"), (true, "thought"),
+                    (false, "Hello"), (false, " "), (false, "world"),
+                    (false, "\n\n"), (false, "next"),
+                })
+                {
+                    if (agentMode)
+                    {
+                        agentBuffer.Enqueue(reasoning
+                            ? CopilotAgentEvent.ReasoningDelta(text)
+                            : CopilotAgentEvent.AnswerDelta(text));
+                        Assert.True(agentBuffer.FlushAsync().IsCompletedSuccessfully);
+                    }
+                    else
+                    {
+                        chatBuffer.Enqueue(reasoning
+                            ? new CopilotStreamDelta(text, string.Empty)
+                            : new CopilotStreamDelta(string.Empty, text));
+                        Assert.True(chatBuffer.FlushAsync().IsCompletedSuccessfully);
+                    }
+                }
+
+                Assert.Equal("First\tthought", assistant.ReasoningContent);
+                Assert.Equal("Hello world\n\nnext", assistant.Content);
+            }
+            finally
+            {
+                dispatcher.InvokeShutdown();
+            }
+        });
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public void SameDispatcherBurstIsDeferredAndCompleteCommitsTheTailWithoutDuplicateApply(bool targetCompletion)

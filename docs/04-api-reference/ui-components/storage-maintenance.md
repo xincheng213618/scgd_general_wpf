@@ -2,8 +2,8 @@
 knowledge_id: "ui.storage-maintenance"
 knowledge_type: "topic"
 status: "current"
-summary: "设置中的日志、缓存、安装包扫描与清理，以及配置恢复点和选择性启动重置；先确认白名单清单，保护活跃任务和业务数据，删除不回滚，重置先独立备份。"
-aliases: ["存储与维护", "存储与重置", "扫描空间", "清理选中项", "配置恢复点", "安排重置", "取消重置", "清理日志", "运行垃圾", "工作垃圾", "清理缓存", "重置设置", "StorageMaintenanceCatalog", "StorageMaintenanceControl", "StorageMaintenanceViewModel", "MaintenanceFileCleanup", "ConfigMaintenanceResetService", "ThumbnailCacheMaintenanceSnapshot", "HasPackageMaintenanceProtection", "HasActiveUpdateForCleanup"]
+summary: "独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。"
+aliases: ["存储与维护", "存储与重置", "扫描空间", "清理选中项", "配置恢复点", "安排重置", "取消重置", "清理日志", "运行垃圾", "工作垃圾", "清理缓存", "重置设置", "StorageMaintenanceCatalog", "StorageMaintenanceControl", "StorageMaintenanceViewModel", "MaintenanceFileCleanup", "ConfigMaintenanceResetService", "ThumbnailCacheMaintenanceSnapshot", "HasPackageMaintenanceProtection", "HasActiveUpdateForCleanup", "文件缓存管理", "内存缓存管理", "FileManagementWindow", "IFileMaintenanceProvider", "增量扫描"]
 code_paths: ["ColorVision/Settings/Maintenance", "ColorVision/App.xaml.cs", "ColorVision/Update/CombinedUpdateCoordinator.cs", "UI/ColorVision.UI/Maintenance", "UI/ColorVision.UI/ConfigMaintenanceResetService.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Update/ExitUpdateHandoff.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs", "UI/ColorVision.UI.Desktop/Download/Infrastructure/DownloadTaskStore.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/MaintenanceFileCleanupTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceCatalogTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs","Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"]
 related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update", "engine.database-maintenance"]
@@ -11,9 +11,9 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 # 存储清理与选择性设置重置
 
-`ColorVision/Settings/Maintenance/` 在设置窗口中提供独立的“存储与维护”页。普通清理仅处理明确归属本软件、可删除或可重建的日志和缓存；设置重置是另一个需要管理员确认、下次启动生效的操作。两者都不是“删除整个 AppData”或“恢复出厂后清空业务数据”。
+`ColorVision/Settings/Maintenance/` 提供独立的“文件缓存管理”窗口，通过主窗口底部的文件夹图标或设置“存储与维护”的同名入口打开。“存储与维护”继续提供历史数据维护、程序存档、配置恢复点和选择性重置，并增加“内存缓存管理”跳转；内存释放仍由原有独立窗口处理，不参与文件清理。普通清理仅处理明确归属本软件、可删除或可重建的文件；重置需要管理员确认，下次启动生效。
 
-页面通过 `StorageMaintenanceSettingsProvider` 的 `IConfigSettingProvider` 元数据发现，展示与通用设置窗口的关系见[设置窗口契约](./settings.md)。文件白名单归主程序 `StorageMaintenanceCatalog`，Windows 文件执行器归 `UI/ColorVision.UI/Maintenance/`；缩略图数据库由自己的 owner 管理，不能交给通用文件删除器处理。
+页面通过 `StorageMaintenanceSettingsProvider` 的 `IConfigSettingProvider` 元数据发现，展示与通用设置窗口的关系见[设置窗口契约](./settings.md)。文件类别通过 `IFileMaintenanceProvider` 的程序集发现注册。主程序 `BuiltInFileMaintenanceProvider` 接入现有五类，`StorageMaintenanceCatalog` 保持文件白名单；客户包可以提供独立类别，主程序不依赖客户包。每个类别负责扫描快照、保留期、保护提示和确认清理，准备或扫描失败仅使所属类别不可清理；重复类别标识不覆盖已有 owner。Windows 文件执行器归 `UI/ColorVision.UI/Maintenance/`；缩略图数据库仍由自己的 owner 管理，不能交给通用文件删除器处理。
 
 ## 清理范围与默认保留
 
@@ -25,7 +25,13 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 | CIE 背景 `cie-cache` | `%LocalAppData%\ColorVision\ImageEditor\CieCache` 中三个 `CieDiagramKind` 对应、版本号有效的背景 PNG | 默认勾选；可按需重新生成，不含用户图像 |
 | 安装包缓存 `packages` | `Environments.DirPackageCache` 下 `Application/Full`、`Application/Incremental`、`Plugins`、`Tools` 的顶层已知包扩展 | 保留最近 30 天，默认不勾选；保护待安装更新、下载任务和续传状态，不递归进入 `Recovery` |
 
-日志、临时文件、安装包保留期可选 7、14、30、90、180 天。修改一类的保留期会使该类旧扫描失效，必须重新扫描。保留期以文件 UTC 修改时间判断；更新 GUID 暂存目录的创建时间也必须早于所选保留期（默认 7 天），防止刚解压的文件继承旧修改时间而被误认成历史垃圾。目录不存在时不创建。
+加载 ProjectARVRPro 后，“现场数据副本”由该包的 `OfflineFileMaintenanceProvider` 注册，默认不勾选，保留 7 天。其范围和应用会话保护见[现场数据离线查看](../projects/project-arvr-pro.md)。未知来源的临时解压目录不会仅凭名称自动纳入清理。
+
+“崩溃转储”由 `UI/ColorVision.UI.Desktop/Diagnostics/CrashDumpFileMaintenanceProvider.cs` 注册，读取当前程序的 WER 保存目录，只匹配该程序命名的 `.dmp`，共享目录中其他程序的转储不纳入清理。“服务日志”由 `Engine/ColorVision.Engine/Services/ServiceLogFileMaintenanceProvider.cs` 注册，读取 x64、开发、注册中心及存档服务的实际 `log` 目录，同时提供 `%ProgramData%\ColorVision\ServiceHost` 位置；保留各日志子目录最新文件、当天修改的日志及 `ColorVisionServiceHost.log` 当前记录。两类默认保留 30 天且不勾选，复用确认清单与文件身份复核，不启停服务或自动提权。反馈打包中断留下的 `ColorVision_ProcessDump_*.dmp/.txt` 由工作临时文件白名单管理，反馈窗口仍打开时保留。
+
+有保留期的类别统一提供 7、14、30、90、180 天及“全部清理”（持久化为 0 天）。全部清理取消文件和已结束会话目录的等待期限，仍遵守归属、运行状态、占用和确认清单保护；不会扩张清理范围。修改一类的保留期会使该类旧扫描失效，必须重新扫描。保留期以文件 UTC 修改时间判断；更新 GUID 暂存目录的创建时间也必须早于所选保留期（默认 7 天），防止刚解压的文件继承旧修改时间而被误认成历史垃圾。目录不存在时不创建。
+
+每个类别通过 `FileMaintenanceCategory.SourceDirectories` 提供“打开文件位置”；多个来源显示目录菜单，没有过期候选也能打开已存在目录。文件清单中可对选中的文件使用同名右键操作，在资源管理器中定位该文件。打开位置不执行扫描、清理或创建目录。
 
 不在普通清理范围内的内容包括：原始检测图、结果文件、流程模板、校准文件、设备配置、授权、数据库连接、用户下载目录、Copilot 会话、程序快照和恢复区。不能根据 `.tmp`、`.zip`、`.db` 等扩展名扫描整个磁盘或临时目录。
 
@@ -33,7 +39,7 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 ## 扫描、确认与执行
 
-`StorageMaintenanceViewModel` 使用进程内共享操作门禁，避免多个维护页同时执行扫描或清理。点击“扫描空间”会在后台检查全部五类，未勾选的安装包也会显示扫描结果。勾选决定顶部合计和“清理选中项”的范围；行内“清理”只处理该行，不要求先勾选。普通文件详情显示绝对路径、字节数和 UTC 修改时间。统计表示本次合格候选，不是整个目录占用，也不保证全部字节最终可释放。
+`FileManagementWindow` 首次加载自动扫描，再次通过入口激活也刷新；同一进程重新打开时复用上次快照。`StorageMaintenanceViewModel` 使用共享操作门禁，避免多个窗口同时执行扫描或清理。扫描在后台逐类别执行，每完成一类即更新界面，未勾选的类别也显示扫描结果。普通文件扫描仍枚举白名单目录以发现新增、修改和删除；大小、创建时间及修改时间未变的候选复用既有文件身份，变化文件重新读取身份，不把整盘扫描或文件内容哈希称为增量。保留期、保护回调每次重新评估，过期判断不依赖旧快照。勾选决定顶部合计和“清理选中项”的范围；行内“清理”只处理该行，不要求先勾选。普通文件详情显示绝对路径、字节数和 UTC 修改时间。统计表示本次合格候选，不是整个目录占用，也不保证全部字节最终可释放。
 
 普通文件按以下边界执行：
 
@@ -45,7 +51,7 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 文件删除是永久删除，不进入回收站。执行器只删文件，保留根目录及清空后的目录，不承诺清理所有空目录。成功返回的统计按已完成删除累计；跳过和失败不计为释放空间。
 
-点击“取消”会请求停止后续工作，已经完成的删除不会撤销。设置窗口在当前维护页忙碌时阻止直接关闭并提示先取消或等待；页面卸载也会请求取消。取消不能强制中断每个正在执行的同步操作，特别是缩略图 owner 的一次数据库事务/空间整理；界面取消不是事务回滚。
+点击“取消”会请求停止后续工作，已经完成的删除不会撤销。设置窗口在当前维护页忙碌时阻止直接关闭并提示先取消或等待；独立文件窗口忙碌时同样阻止关闭，并允许请求取消。取消不能强制中断每个正在执行的同步操作，特别是缩略图 owner 的一次数据库事务/空间整理；界面取消不是事务回滚。
 
 ## 更新、下载与反馈保护
 
@@ -55,7 +61,7 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 `Aria2cDownloadManager.IsPathProtectedFromCleanup` 不调用 `GetInstance()`，不会为了扫描而初始化下载器、创建其任务库或启动 aria2。判断包括已有实例的并发活动集合、`.aria2` 续传文件，以及 `DownloadTaskStore` 对既有任务数据库的只读查询。查询覆盖全部 waiting/downloading/paused/failed 记录，不能用分页界面的 `Tasks` 集合代替；任务库不存在不创建，读取失败则保留候选包。
 
-反馈附件保护查看当前 WPF 反馈窗口是否仍打开。窗口打开期间保留其类别的诊断包与截图，不因上传尚未开始、上传已经读取部分附件或用户尚未点击发送而删除。这里没有上传操作，也不会清理原始日志收集源。
+反馈附件保护查看当前 WPF 反馈窗口是否仍打开。窗口打开期间保留其类别的诊断包、临时进程转储与截图，不因上传尚未开始、上传已经读取部分附件或用户尚未点击发送而删除。这项保护检查不触发上传或日志收集。
 
 ## 缩略图必须经 owner 清理
 
@@ -95,7 +101,7 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 - `MaintenanceFileCleanupTests.cs`：确认范围、身份变化、保留期、取消、占用和路径保护。
 - `StorageMaintenanceCatalogTests.cs`：实际日志命名、白名单目录、保护状态复查、新更新目录、续传文件与只读接管标记检查。
-- `StorageMaintenanceTests.cs`：ViewModel 扫描/清理门禁、保留期失效、取消与跨页面互斥；中英语言、深浅主题及 980/1180 宽度的隔离布局；真实设置框架中的注入分组、搜索、滚动复位与说明保留，不发现生产配置或连接生产服务。
+- `StorageMaintenanceTests.cs`：扩展类别的扫描/清理与失败隔离、文件窗口加载自动扫描、ViewModel 门禁、保留期失效、取消与跨页面互斥；中英语言、深浅主题及 980/1180 宽度的隔离布局；真实设置框架中的注入分组、搜索、滚动复位与说明保留，不发现生产配置或连接生产服务。
 - `ThumbnailCacheMaintenanceTests.cs`：缺库只读扫描、变化后重扫、事务清理、原图保留和维护 generation 推进；未模拟旧生成任务的实际回写。
 
 从仓库根目录可执行最小相关测试；仅针对测试创建的隔离数据，不运行实际维护页的删除、联网更新或业务数据清理：

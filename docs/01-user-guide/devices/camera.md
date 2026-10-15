@@ -3,9 +3,9 @@ knowledge_id: "operations.camera"
 knowledge_type: "topic"
 status: "current"
 summary: "本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。"
-aliases: ["BV/LV本地转发", "LVCameraNode", "使用本地相机", "本地相机优先", "相机拍图", "相机服务", "手动采集成功流程失败", "采集超时", "无文件预览", "本地相机管理", "本地相机取图", "视频模式", "相机结果查询", "是否重启服务", "CameraLog", "DeviceCamera", "MQTTCamera", "DisplayCamera", "ViewCamera", "CameraLocalWindow", "LocalCameraNode", "LocalCameraSession", "LocalFrameFileService", "SaveFiles", "AutoRefreshView", "本地相机尚未打开", "LocalFlowFrame", "LocalFlowFrameLease", "LocalFlowFrameRuntime", "SetCurrentFrame", "TryAcquireCurrentFrame", "FlowRuntimeResources", "本地帧租约", "流程帧内存", "SaveFiles=false", "CIE重新分配", "CameraFocusFrameProcessor", "CameraRealtimeFramePipeline"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/LVCameraNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraNative.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraAutoExposure.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraPreview.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraResultService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraFocusFrameProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs", "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraSession.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCameraConfig.cs", "Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs", "Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs", "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs", "Engine/FlowEngineLib/Base/CVStartCFC.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs", "UI/ColorVision.ImageEditor/Realtime/RealtimeFramePresenter.cs", "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs","Test/ColorVision.UI.Tests/LocalCameraOwnershipTests.cs","Test/ColorVision.UI.Tests/LocalCameraResultTests.cs","Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs","Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs"]
+aliases: ["BV/LV本地转发", "LVCameraNode", "使用本地相机", "本地相机优先", "相机拍图", "相机服务", "手动采集成功流程失败", "采集超时", "无文件预览", "本地相机管理", "本地相机取图", "视频模式", "相机结果查询", "是否重启服务", "CameraLog", "DeviceCamera", "MQTTCamera", "DisplayCamera", "ViewCamera", "CameraLocalWindow", "LocalCameraNode", "LocalCameraSession", "LocalFrameFileService", "SaveFiles", "AutoRefreshView", "本地相机尚未打开", "LocalFlowFrame", "LocalFlowFrameLease", "LocalFlowFrameRuntime", "SetCurrentFrame", "TryAcquireCurrentFrame", "FlowRuntimeResources", "本地帧租约", "流程帧内存", "SaveFiles=false", "CIE重新分配", "CameraFocusFrameProcessor", "CameraRealtimeFramePipeline", "海康取图测试", "HikCaptureBenchmark"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/LVCameraNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraNative.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraAutoExposure.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraPreview.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraResultService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraFocusFrameProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs", "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraSession.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCameraConfig.cs", "Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs", "Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs", "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs", "Engine/FlowEngineLib/Base/CVStartCFC.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs", "UI/ColorVision.ImageEditor/Realtime/RealtimeFramePresenter.cs", "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics"]
+test_paths: ["Test/ColorVision.UI.Tests/CameraIdentityOpenPersistenceTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs","Test/ColorVision.UI.Tests/LocalCameraOwnershipTests.cs","Test/ColorVision.UI.Tests/LocalCameraResultTests.cs","Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs","Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs", "Test/ColorVision.UI.Tests/HikCaptureBenchmarkTests.cs"]
 related: ["engine.devices", "operations.device-configuration", "operations.physical-camera", "operations.camera-configuration", "engine.camera-preview-plan", "ui.image-editor-context"]
 ---
 
@@ -27,7 +27,9 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 在相机属性的“采集与显示 → 显示配置”中编辑“使用本地相机”。该软开关持久化在本机 `DisplayCameraConfig.UseLocalCamera`，默认关闭，只决定下次打开的后端，不更改服务端自动打开设置。主面板“连接”使用测量模式；上次配置为 Live 时进入普通拍照，视频由视频按钮开启。可以在已打开、取图或关闭过程中修改，当前连接、取图、自动曝光和关闭仍跟随实际会话；须先关闭当前连接，再打开才应用新偏好。主面板不显示此开关或后端说明文字。服务不可用且未观察到占用时，选择本地后仍提供“连接”入口，但不会把逻辑设备状态改成已打开。
 
-“海康使用新取图”（`DisplayCameraConfig.UseHikMvs`）也可在本地相机管理中勾选，默认开启，已有本机配置缺少此字段时同样开启。对 `HK_USB` 的 BV/LV/LVTOBV 本地会话，开启使用 MVS，关闭使用旧 SCGDCamLayer；CV 滤轮模式和其它相机型号保持原路径。修改只保存本机偏好，不关闭相机、不改变当前连接；仅在下一次实际打开前设置 C++ 后端。“MVS 拍照插值质量”（`DisplayCameraConfig.HikBayerQuality`）可选 0 快速、1 均衡、2 最优、3 最优+，默认 3；旧配置缺少此字段时同样为 3。只影响 MVS 彩色拍照，视频固定使用 2（最优），不跟随拍照配置；旧后端和灰度取图忽略该质量项。和后端偏好一样，拍照质量仅在下次实际打开前下发；切回拍照时恢复本次连接保存的质量。“MVS 输出 BGR（兼容旧流程）”（`DisplayCameraConfig.HikOutputBgr`）默认开启，旧配置缺少此字段时也开启：将 MVS 的 RGB 输出交换红蓝通道，以匹配旧 SCGDCamLayer 的 BGR 输出和现有校正输入。关闭保留 RGB 供对照；此时现有 BGR 校正模板的结果不能作为正常生产测量。该选项同样只在下次打开前下发，不影响旧后端及灰度取图。本地主面板、视频、管理窗口和流程复用同一会话；切换视频/拍照保留当前连接的后端、插值质量及通道顺序偏好。MVS 拍照使用单帧软件触发，视频使用连续采集，模式切换时设置并验证读回，关闭或打开失败时恢复原相机参数；无需先在海康客户端设置 Trigger。对照时在相同曝光、增益、ROI、平均次数、校正、翻转及保存设置下分别连接采集；本地相机管理的 `[CameraCaptureCompare]` 日志中 `HikUseMvs`、`HikBayerQuality` 和 `HikOutputBgr` 记录本次连接实际设置的后端、质量与通道顺序偏好，不随当前配置变化；原生日志 `HikMvsOpen`、`HikMvsMode` 和 `HikMvsCapture` 中的 `BayerQuality` 记录该模式实际使用的质量。
+“选项 → 常规 → 基本”提供默认关闭的“实验功能”，不显示说明文字，选择保存在本机配置中。关闭时，本地拍照、流程自动打开和本地视频入口只比较关联物理相机许可证的 `ExpiryDate` 与当前本机时间，不解码载荷或验证签名；到期时间缺失或已到期时提示许可证问题并关闭本地相机，不保留本次打开的占用。开启实验功能后跳过这项判断。服务端打开路径保持原有行为；只在打开本地相机时判断，复用已打开的会话、取图及视频/拍照模式切换均不检查，关闭后再次打开才重新判断。
+
+“海康使用新取图”（`DisplayCameraConfig.UseHikMvs`）也可在本地相机管理中勾选，默认开启，已有本机配置缺少此字段时同样开启。对 `HK_USB` 和 `HK_CARD` 的 BV/LV/LVTOBV 本地会话，开启使用 MVS，关闭使用旧 SCGDCamLayer；CV 滤轮模式和其它相机型号保持原路径。修改只保存本机偏好，不关闭相机、不改变当前连接；仅在下一次实际打开前设置 C++ 后端。“MVS 拍照插值质量”（`DisplayCameraConfig.HikBayerQuality`）可选 0 快速、1 均衡、2 最优、3 最优+，默认 3；旧配置缺少此字段时同样为 3。只影响 MVS 彩色拍照，视频固定使用 2（最优），不跟随拍照配置；旧后端和灰度取图忽略该质量项。和后端偏好一样，拍照质量仅在下次实际打开前下发；切回拍照时恢复本次连接保存的质量。“MVS 输出 BGR（兼容旧流程）”（`DisplayCameraConfig.HikOutputBgr`）默认开启，旧配置缺少此字段时也开启：将 MVS 的 RGB 输出交换红蓝通道，以匹配旧 SCGDCamLayer 的 BGR 输出和现有校正输入。关闭保留 RGB 供对照；此时现有 BGR 校正模板的结果不能作为正常生产测量。该选项同样只在下次打开前下发，不影响旧后端及灰度取图。本地主面板、视频、管理窗口和流程复用同一会话；切换视频/拍照保留当前连接的后端、插值质量及通道顺序偏好。MVS 拍照使用单帧软件触发，视频使用连续采集，模式切换时设置并验证读回，关闭或打开失败时恢复原相机参数；无需先在海康客户端设置 Trigger。对照时在相同曝光、增益、ROI、平均次数、校正、翻转及保存设置下分别连接采集；本地相机管理的 `[CameraCaptureCompare]` 日志中 `HikUseMvs`、`HikBayerQuality` 和 `HikOutputBgr` 记录本次连接实际设置的后端、质量与通道顺序偏好，不随当前配置变化；原生日志 `HikMvsOpen`、`HikMvsMode` 和 `HikMvsCapture` 中的 `BayerQuality` 记录该模式实际使用的质量。
 
 本地会话通过 `DeviceCamera` 调用 `LocalCameraSession` 和 `LocalCameraCaptureService`，保留 `MsgRecord` 成功/失败通知，不发布 MQTT 相机指令。主面板取图和自动曝光要求会话已打开；视频中取图会先切换到拍照模式，仍使用本地后端，不应用新后端偏好；流程节点的 `AutoConnect` 是独立的显式本地入口。服务已打开或正在操作时，不能再创建本地会话；曾观察到服务占用后，即使服务离线/未知也不视为已释放，须收到 `Closed`。可先选好本地偏好，再用“断开”关闭当前服务会话，随后重新打开。启动时尚未观察到服务占用可尝试本地打开，最终仍以原生 SDK 的独占打开结果为准。应用内同 CameraCode/CameraID 的其它逻辑相机以及独立视频也参与打开前的占用检查；外部进程的并发打开仍依赖 SDK 独占保护。
 
@@ -35,9 +37,15 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 本地视频和拍照切换先停止当前预览队列并注销原生回调，避免旧视频帧覆盖测量图。MVS 普通拍照与视频共用软件触发配置：位深相同时清空 SDK 缓冲并切模式；8/16 位不同时停止取流、设置并读回原生像素格式，再恢复取流，保持相机连接、ROI、曝光、增益和打开时的转换偏好。旧本地后端仍关闭并重开同一管理器及相机 ID，全程保留本地归属；任何失败都终止当前请求，不补发服务请求。MVS 切换失败尝试恢复先前像素格式和取流状态；恢复失败时关闭连接并保留原始错误。该优化仅作用于实际本地会话，服务及其独立视频路径保持原有行为。
 
-共享本地会话的连接入口在 `CameraID` 为空时按当前 `CameraModel` 搜索相机：有 `CameraCode` 时仅选择唯一匹配其 MD5 标识的相机；没有绑定且只发现一台时自动选择。未发现相机、绑定无法唯一匹配或存在多台未绑定相机时明确提示，在本地相机管理中刷新并手动选择 ID 后再连接，不自动选择列表中的第一台。显式选择或已有非空 ID 直接用于连接；自动获取的 ID 仅在连接成功后保存。已打开的共享会话继续复用，不重新扫描。
+共享本地会话打开时，已绑定设备以物理配置的 `CameraID` 为准，忽略显式旧调用参数。旧配置仅在逻辑设备保存 ID 时，关联阶段先校验完整 `MD5(CameraID)` 与当前物理 Code，匹配才补齐缺失或不匹配的物理 ID；已有正确物理 ID 不被逻辑字段覆盖，构造阶段不写数据库。迁移后的配置可直接用于本地或服务连接，无需先打开本地相机管理。
 
-本地主面板及本地相机管理窗口在测量模式下，独立“自动曝光”按钮通过 `CM_GetAutoExpFrame` 回填曝光、饱和度和显示配置，并将达标的最终帧直接显示在图像区；不保存图像文件、不写测量结果记录，也不受“本地取图保存文件”开关控制。通常复用曝光搜索的最后一帧；同步频率处理选择了之前的曝光值时重新取该曝光的帧并验证达标。失败或达到曝光边界但未达标时提示具体错误，不替换当前显示图。管理窗口在视频模式下沿用曝光更新及实时回调显示；主面板独立自动曝光会先进入测量模式，再显示达标帧。本地取图中的自动曝光仍使用 `CM_GetAutoExpTime`，随后按取图参数执行平均及校正，在生成帧元数据之前完成曝光更新。主面板的独立自动曝光和取图前自动曝光分别使用各自选中的 V1/V2 模板：上方模板配合“自动曝光”按钮执行，下方模板配合“取图”执行；下方选择 Empty（不使用）则直接取图，选择有效模板则先自动曝光。本地和服务遵循同一选择规则，不另设拍前曝光开关。执行前复制模板参数，并通过 `Cfg_ExpTime` 下发：V1 保留原字段单位，V2 保留 `type` 和 ROI 等 JSON 参数；模板无效时报告失败，不沿用上一次配置。没有可选模板时，本地显示“本机参数”，通过齿轮编辑并保存到显示配置。服务模式保留独立自曝和拍前自曝各自的模板；本地不显示服务 HDR 模板。其它本地调用传入非空 HDR 模板仍明确失败。`IsAutoExpWithND=true` 和非空 HDR 模板会明确报不支持；ND 手动控制、对焦、电机操作在主面板本地模式下隐藏。校正模板仍由校正组覆盖增益，资源按模板文件引用解析，不要求服务校准设备在线。
+没有可迁移 ID 时，本地连接按当前型号搜索且只选唯一完整 MD5 匹配项；没有物理绑定时保留显式选择，空 ID 且只发现一台时自动选择。未发现或无法唯一匹配时明确提示，不连接其他相机。服务连接不会代替远程主机搜索本机硬件；迁移后仍缺少有效 ID 时明确报错。
+
+已绑定相机每次新建本地连接成功后、或发送服务打开请求前，按最新配置 JSON 保存物理 ID 并同步逻辑镜像；只写变化的身份字段，不重置其他参数或触发服务重启。保存失败会记录日志，已经由固定 Code 验证的身份仍可连接，下一次连接重试保存，包括物理记录已保存而逻辑同步失败的情况。未绑定本地相机也会保留保存失败状态，重连成功后重试，保存成功后停止重试。正常已打开会话不重新扫描；当前连接与物理身份不一致时，须先关闭后重新连接。
+
+共享本地连接的设置或打开失败会向现有界面/命令失败提示返回目标 ID、失败步骤和原始错误码。`CM_Open` 失败后按当前型号重新检测一次，区分未发现设备、指定 ID 未在检测列表中、仍可检测到目标相机，以及重新检测也失败；检测结果只反映失败后的状态，不自动替换绑定或重试其他相机。目标仍可检测到时，提示结合底层错误排查连接与其他程序/服务占用，不把占用推断成已确认根因。
+
+本地主面板及本地相机管理窗口在测量模式下，独立“自动曝光”按钮通过 `CM_GetAutoExpFrame` 回填曝光、饱和度和显示配置，并将达标的最终帧直接显示在图像区；不保存图像文件、不写测量结果记录，也不受“本地取图保存文件”开关控制。通常复用曝光搜索的最后一帧；同步频率处理选择了之前的曝光值时重新取该曝光的帧并验证达标。失败或达到曝光边界但未达标时提示具体错误，不替换当前显示图。管理窗口在视频模式下沿用曝光更新及实时回调显示；主面板独立自动曝光会先进入测量模式，再显示达标帧。本地取图中的自动曝光仍使用 `CM_GetAutoExpTime`，随后按取图参数执行平均及校正，在生成帧元数据之前完成曝光更新。主面板的独立自动曝光和取图前自动曝光分别使用各自选中的 V1/V2 模板：上方模板配合“自动曝光”按钮执行，下方模板配合“取图”执行；下方选择“不使用自动曝光模板”则直接取图，选择有效模板则先自动曝光；校正模板未使用时显示“不使用校正模板”。这两个可选模板的默认选择索引为 0（不使用项），绑定尚未取得值时也以 0 为初值。本地和服务遵循同一选择规则，不另设拍前曝光开关。执行前复制模板参数，并通过 `Cfg_ExpTime` 下发：V1 保留原字段单位，V2 保留 `type` 和 ROI 等 JSON 参数；模板无效时报告失败，不沿用上一次配置。没有可选模板时，本地显示“本机参数”，通过齿轮编辑并保存到显示配置。服务模式保留独立自曝和拍前自曝各自的模板；本地不显示服务 HDR 模板。其它本地调用传入非空 HDR 模板仍明确失败。`IsAutoExpWithND=true` 和非空 HDR 模板会明确报不支持；ND 手动控制、对焦、电机操作在主面板本地模式下隐藏。校正模板仍由校正组覆盖增益，资源按模板文件引用解析，不要求服务校准设备在线。
 
 本地主面板取图按原有手动取图含义创建独立批次（不归档）和测量图像记录，数据库保存成功才报告命令成功。显示配置中的“本地取图保存文件”（`SaveLocalCaptureFiles`）默认开启，包括已有配置缺少此字段的情况；开启时按本地文件规则保存 CVRAW，并包含已执行的色度校正参数。关闭文件保存仍预览内存图并写数据库。此选项用于主面板/POI/定时本地取图和本地相机管理窗口；流程中的 `LVCameraNode` 本地转发和 `LocalCameraNode` 使用节点自己的保存设置。已取到图但数据库保存失败时显示当前图并报告失败，不把预览成功当作落库成功。
 
@@ -63,11 +71,17 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 ## 使用本地相机管理
 
-1. 在逻辑相机右键菜单选择 `Local`，或在“本地相机取图”节点选择“相机管理”。窗口加载会初始化本地 SDK；许可证文件缺失时，入口还可能写出本地许可证。
+1. 在逻辑相机右键菜单选择 `Local`，或在“本地相机取图”节点选择“相机管理”。窗口加载会初始化本地 SDK；连接时按上文规则检查关联物理相机许可证的到期时间。
 2. 在未连接状态选择采集模式和位深，点击“连接”。相机 ID 为空时按共享会话的规则自动搜索和选择；多台或绑定不匹配时先刷新并手动选择 ID。测量使用 `Measure_Normal` 等测量模式；`Live` 用于实时画面。窗口与同一设备的流程节点共用 `LocalCameraSession`，已打开会话会被复用。连接后可直接切换采集模式，视频中点击“测量”也会自动进入拍照模式。相机 ID、型号和拍照位深的配置修改仍需先关闭。MVS 只提供普通拍照和视频，快速/快速扩展选项禁用。
 3. 设置曝光、增益、平均次数和校正模板，按需要勾选“保存文件”，点击“测量”。成功后本窗口直接显示内存中的 RAW 图像，并在存在 CIE 数据时挂载相应数据；关闭“保存文件”仍可显示当前测量图像。该手动窗口路径不写入流程测量主记录，也不发布流程结果通知。
 
-“海康取图测试”是临时诊断入口：先关闭 cvCamera、服务或视频占用的相机并停止流程，再从这里打开独立测试窗口。窗口复用 Engine 可执行程序的诊断启动参数，独立进程不加载插件、设备服务或数据库；需要已安装海康 x64 MVS 运行库和驱动。启动时读取本机的 MVS 插值质量，默认 3；测试窗口也可独立选择 0–3，连接后按本次打开的质量取图。点击“连接相机”后，每点一次“取一张”才执行一次软件触发，不自动连拍；对所选 GigE / USB3 相机将 Bayer16 转成 RGB48，连接及输出缓冲跨次复用，点击“关闭相机”或退出窗口后释放测试会话；不校正、翻转、自动存图或写入数据库。点击“取一张并保存原始帧”会额外触发一帧，将插值前的 Bayer16 数据及 JSON 参数保存为一个 ZIP（不压缩原始数据）；旧帧不保留。ZIP 内 `frame.bayer16.raw` 原样保存 SDK 输入缓冲，`metadata.json` 记录尺寸、像素格式及 Bayer 排列、字节序、有效图像与完整载荷长度、ROI、曝光、增益、帧号、SDK 版本和相机参数。载荷不是紧密排列时行跨度标为 null，需要先核对 Chunk/载荷布局。保存路径、帧号与保存耗时写入日志，文件需手动带回，不会随反馈自动上传。导出沿用当前采集线程，在归还 SDK 缓冲前分块写入；保存期间不能再次取图，取消时删除本次未完成文件，已存在的目标文件只在完整写入后替换。普通取图不增加原始帧复制或缓存；保存耗时从取图及线程 CPU 计时中排除。首次帧单独列出，后续统计拆分原始帧等待、格式转换和调用线程 CPU 时间，设参时间另列，单帧总计包含设参和取图，手动点击之间的等待不计入耗时，报告可复制。原本地测量与 MVS 测试都会记录带序号的 `[CameraCaptureCompare]` 日志；测试日志写入 `%APPDATA%\ColorVision\Log\HikCaptureTest_*.log`，近期文件会被现有反馈收集器自动带回。曝光按 `CameraManager::SetExpTime` 截断为整数微秒，曝光/增益的读回容差和超时沿用原上层规则；增益输入为 MVS 原值。测试连接时自动配置单帧软件触发，采用与生产 MVS 相同的触发选择、连续采集模式及单帧突发规则，关闭其它触发选择器并读回确认；点击“取一张”只发送一次 `TriggerSoftware`。关闭相机或连接失败时恢复原参数，不写入设备 UserSet；无需先到海康客户端修改 Trigger 配置。相机当前 ROI、ADC 位深、触发帧数及其它读回参数会写入报告；原 `SCGDCamLayer.dll` 的插值算法、白平衡映射和内部启停行为不在本仓库可核对的源代码中，因此此工具只用于定位耗时，不能证明测量结果等价。原始 SDK 缓冲在转换及可选导出后归还；退出等待正在执行的原生调用返回，之后释放测试资源。该入口不替换生产采集路径，诊断完成后可连同 `Services/Devices/Camera/Diagnostics/` 及专用 SDK 引用移除。
+“海康取图测试”支持 `HK_USB`（GigE / USB3）和 `HK_CARD`（海康采集卡）。先关闭 cvCamera、服务或视频占用的相机并停止流程，再从本地相机管理打开测试窗口。窗口复用 Engine 可执行程序的诊断启动参数，携带相机类型、序列号、曝光、增益及 MVS 插值质量；独立进程不加载插件、设备服务或数据库，需要已安装海康 x64 MVS 运行库及匹配驱动。`HK_CARD` 采用与[生产 MVS 后端](../../04-api-reference/engine-components/cvColorVision.md)相同的采集卡 CTI 搜索范围，包含万兆光口/XoF，按序列号选择设备并通过 GenTL 创建句柄；报告记录各 CTI 的接口数、设备数、返回码与设备身份。测试成功只证明该次独立测试链路有效，不能据此认定主程序的 SDK、占用状态或防火墙规则一致。
+
+点击“连接相机”后，每点一次“取一张”才执行一次软件触发，不自动连拍。相机当前格式为灰度且支持 Mono16 时，取 Mono16 并复制到复用缓冲，不做 Bayer 插值；彩色保留当前 Bayer 排列，将 Bayer16 转成 RGB48，插值质量 0–3 在打开时生效，默认 3。无法确定 Bayer 排列或缺少所需 16 位格式时明确失败。连接及输出缓冲跨次复用，点击“关闭相机”或退出窗口后释放测试会话；不校正、翻转、自动存图或写入数据库。报告按实际通道数和 Mono16/RGB48 标记样本，灰度的“转换/复制”时间是缓冲复制时间。
+
+点击“取一张并保存原始帧”会额外触发一帧，将原始 Mono16 或插值前的 Bayer16 数据及 JSON 参数保存为一个 ZIP（不压缩原始数据）；旧帧不保留。彩色继续使用 `frame.bayer16.raw`，灰度使用 `frame.mono16.raw`，均原样保存 SDK 输入缓冲；`metadata.json` 的 `RawFile` 与实际条目一致，记录尺寸、像素格式、Bayer 排列（灰度为 None）、字节序、有效图像与完整载荷长度、ROI、曝光、增益、帧号、SDK 版本和相机参数。载荷不是紧密排列时行跨度标为 null，需要先核对 Chunk/载荷布局。保存路径、帧号与保存耗时写入日志，文件需手动带回，不会随反馈自动上传。导出沿用当前采集线程，在归还 SDK 缓冲前分块写入；保存期间不能再次取图，取消时删除本次未完成文件，已存在的目标文件只在完整写入后替换。普通取图不增加原始帧复制或缓存；保存耗时从取图及线程 CPU 计时中排除。
+
+首次帧单独列出，后续统计拆分原始帧等待、转换/复制和调用线程 CPU 时间，设参时间另列，单帧总计包含设参和取图，手动点击之间的等待不计入耗时，报告可复制。原本地测量与 MVS 测试都会记录带序号的 `[CameraCaptureCompare]` 日志；测试日志写入 `%APPDATA%\ColorVision\Log\HikCaptureTest_*.log`，近期文件会被现有反馈收集器自动带回。曝光按 `CameraManager::SetExpTime` 截断为整数微秒，曝光/增益的读回容差和超时沿用原上层规则；增益输入为 MVS 原值。测试连接时自动配置单帧软件触发，采用与生产 MVS 相同的触发选择、连续采集模式及单帧突发规则，关闭其它触发选择器并读回确认；点击“取一张”只发送一次 `TriggerSoftware`。关闭相机或连接失败时恢复原参数，不写入设备 UserSet；无需先到海康客户端修改 Trigger 配置。相机当前 ROI、ADC 位深、触发帧数及其它读回参数会写入报告；原 `SCGDCamLayer.dll` 的插值算法、白平衡映射和内部启停行为不在本仓库可核对的源代码中，因此此工具只用于定位耗时，不能证明测量结果等价。原始 SDK 缓冲在转换/复制及可选导出后归还；退出等待正在执行的原生调用返回，之后释放测试资源。该入口不替换生产采集路径，诊断完成后可连同 `Services/Devices/Camera/Diagnostics/` 及专用 SDK 引用移除。
 
 本地取图按校正模板中保存的文件引用与校正类型解析资源，引用丢失或文件未同步会失败，不自动回退为校正组的默认文件。四色校正窗口自动带入文件共用此资源解析。
 
@@ -83,7 +97,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 节点配置面板每次显示时，沿用节点执行时的后端选择规则，判断是否显示“本地相机”分组（保存文件）：所选设备走本地取图时显示，走旧服务时隐藏。该条件通过节点上的 `PropertyVisibility` 声明，属性面板复用字段显隐结果隐藏空分组；设备状态变化后重新打开配置面板即可刷新。
 
-结果归入原流程 `SerialNumber` 对应的批次和节点 `ZIndex`，保存图像主记录，以 `MasterResultType=100` 和 `MasterId` 交接结果，通过 `SetCurrentFrame` 交给下游并发布结果通知。相机结果视图的自动刷新开启时创建并提交设备预览；关闭时跳过预览快照，不复制 RAW/CIE 或转换显示图。先分配 CVRAW 路径并同步保存数据库主记录，再按节点的 `SaveFiles` 保存图像，后续色度参数追加继承相同模式，不会另建手动取图批次。旧画布缺少保存字段时默认保存；原来通过设备显示配置关闭 L/BV 流程存图的配置，升级后需在节点关闭“保存文件”。服务分支的请求协议保持不变，此选项仅控制本地分支。
+结果归入原流程 `SerialNumber` 对应的批次和节点 `ZIndex`，保存图像主记录，以 `MasterResultType=100` 和 `MasterId` 交接结果，通过 `SetCurrentFrame` 交给下游并发布结果通知。相机结果视图的自动刷新开启时显示独立 RAW/CIE 快照，关闭时只登记结果。先分配 CVRAW 路径并同步保存数据库主记录，再按节点的 `SaveFiles` 保存图像，后续色度参数追加继承相同模式，不会另建手动取图批次。旧画布缺少保存字段时默认保存；原来通过设备显示配置关闭 L/BV 流程存图的配置，升级后需在节点关闭“保存文件”。服务分支的请求协议保持不变，此选项仅控制本地分支。
 
 转发沿用原节点消息 ID 和停止处理。本地分支与本地取图节点一样不启用节点超时，画布中的“最大超时”仅对服务分支生效，旧画布不需修改该值。原生采集不能即时中断，因此不能用节点超时提前结束本地命令，否则重启流程时上一条采集仍可能占用相机。主动停止流程仍生效；采集返回前流程已停止时，晚到帧会释放，不写结果记录、不继续下游，相机命令占用在采集链返回后释放。流程启动及其它服务节点的 MQTT/服务配置前提不变，转发一个相机节点不代表整个流程可脱离服务运行。
 
@@ -100,13 +114,15 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 | `IsAutoExp` / `SaveFiles` | 自动曝光默认 `false`，保存文件默认 `true`。保存开启时写完后继续；关闭时仅缓存，数据库记录仍保留 |
 | `FlipMode` | `None`；方向及校正顺序由本地帧处理链执行 |
 
+取图固定使用 RAW 按需色度路径：采集后完成基础/空间校正和 RAW 方向处理，保留色度系数与曝光参数，不生成整幅 CIE/XYZ 内存。下游本地 POI 按关注点区域计算；需要完整 CIE 内存的下游可接普通本地校正节点并关闭其加速。旧流程中的 `AllowAcceleration` 值忽略，重新保存后不再写出。
+
 关闭自动连接后，须先建立本地会话；已有视频会话也能自动切换，未连接时提示“本地相机尚未打开”。切换和取图在同一设备会话锁内完成，避免其它本地入口在采集前改回视频。此服务的进程级 `CaptureLock` 串行化所有本地测量请求，同时通过设备会话锁访问句柄；设备不同也不表示这些测量会并行执行。
 
-取帧后节点先生成唯一 CVRAW 路径，查找 `action.SerialNumber` 对应的流程批次并保存测量主记录，然后按节点配置写图像缓存/磁盘，最后经 `SetCurrentFrame` 交接内存帧并发布 `ResultMessageBus` 通知。找不到批次或保存主记录失败会使节点失败，并且不会开始图像保存。`SaveFiles=true` 在图像和参数写盘完成后返回；`SaveFiles=false` 只写缓存。后续参数追加继承缓存条目的模式。旧流程中的 `SaveAsynchronously` 字段忽略，已有 `SaveFiles` 值继续保留；缺少保存字段的旧流程和新建节点均默认保存。
+取帧后节点先生成唯一 CVRAW 路径，按节点配置写完图像缓存/磁盘及色度参数，再查找 `action.SerialNumber` 对应的流程批次并保存测量主记录，随后通知相机视图读取，经 `SetCurrentFrame` 交接内存帧并发布 `ResultMessageBus` 通知。图像或参数保存失败时不写主记录；找不到批次或保存主记录失败会使节点失败，已写入的图像仍保留。`SaveFiles=true` 在图像和参数写盘完成后返回；`SaveFiles=false` 只写缓存。后续参数追加继承缓存条目的模式。旧流程中的 `SaveAsynchronously` 字段忽略，已有 `SaveFiles` 值继续保留；缺少保存字段的旧流程和新建节点均默认保存。
 
-数据库路径在保存和仅缓存两种模式下均可用于缓存查找；仅缓存要求全局 CVRAW 缓存开启。调用只识别磁盘文件的旧服务时，由流程配置者开启“保存文件”，不会为仅缓存图像自动补写。数据库中的取图耗时记录写库前已完成的采集/校正，节点结果另记录保存调用耗时；保存开启时包含等待写盘完成的耗时。整图保存和参数追加在调用线程串行完成，不积压后台整图任务；数据库记录仍先同步写入。
+数据库路径在保存和仅缓存两种模式下均可用于缓存查找；仅缓存要求全局 CVRAW 缓存开启。调用只识别磁盘文件的旧服务时，由流程配置者开启“保存文件”，不会为仅缓存图像自动补写。数据库中的取图耗时记录采集/校正，节点结果另记录保存调用耗时；保存开启时包含等待写盘完成的耗时。整图保存和参数追加在调用线程串行完成，不积压后台整图任务；数据库记录在 CVRAW 完整可读后同步写入。
 
-相机结果视图的自动刷新开启时，节点复制内存预览，按设备只保留最新待显示快照；关闭时跳过预览转换，仍保存结果并传递原内存帧。主面板手动取图仍强制显示。历史记录可从仍驻留的 CVRAW 缓存重新打开；仅缓存图像被淘汰或清理后，按普通缺失文件处理。预览转换失败写日志，不改变已有采集和数据库成功结果。
+节点在 CVRAW 像素和色度参数全部写完、结果模型创建或入库后，仅发布一次 `ResultMessageBus` 消息，将模型放在现有 `Attachment` 中。相机视图直接使用模型进入 `ShowResult`，选中结果时按 `FileUrl` 打开，不再为流程结果另发 RAW/CIE 预览快照。未入库模型也沿用这条显示链，不要求正数 ID；同一 ID 的文件路径更新时替换该行，相同 ID 和路径的重复通知仍去重。自动刷新关闭时只登记结果，原内存帧仍传给下游。主面板手动取图仍强制显示。历史记录可从仍驻留的 CVRAW 缓存重新打开；仅缓存图像被淘汰或清理后，按普通缺失文件处理。
 
 ### 流程帧的寿命与读写限制
 
@@ -118,7 +134,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 节点阶段耗时在 `AllocateFrame` 下记录 `AllocateRawBuffer` 或 `ReuseRawBuffer`，据此区分实际申请与复用。各已完成阶段附带 `ProcessGcPauseMs` 和 `ThreadCpuMs`：前者是阶段期间整个进程的 GC 暂停增量，嵌套阶段不能相加；后者只统计执行线程，不包含相机 SDK 内部工作线程，阶段跨线程完成或计数不可用时为空。CPU 时间粒度较粗，短阶段为零不代表没有计算，墙钟与线程 CPU 的差额也不能全部归因于磁盘等待。慢数据库命令的 `DatabaseCommandTiming` 同样记录进程 GC 暂停增量，便于与卡顿时刻对照。
 
-**租约不是不可变图像快照。** 下游 `LocalCalibrationNode` 可对同一帧执行 `CalibrateInPlace`：修改 RAW、重新分配 CIE、更新 Metadata，再处理方向。`ResizeCieBuffer` 会释放旧 CIE 地址，不等待其它租约归零；租约保留取得时的 Metadata/MasterId，而指针和长度读取共享存储。因此跨线程长期保留指针或同时执行预览和校正，不能仅靠 Acquire 保证数据一致或地址稳定；异步消费者必须自行复制稳定快照。CVRAW 保存返回前完成像素写入或缓存复制，参数尾块独立替换；当前相机设备预览在交接下游前复制 RAW/CIE，UI 不持有原生指针或流程帧租约。
+**租约不是不可变图像快照。** 下游 `LocalCalibrationNode` 可对同一帧执行 `CalibrateInPlace`：修改 RAW、重新分配 CIE、更新 Metadata，再处理方向。`ResizeCieBuffer` 会释放旧 CIE 地址，不等待其它租约归零；租约保留取得时的 Metadata/MasterId，而指针和长度读取共享存储。因此跨线程长期保留指针或同时执行预览和校正，不能仅靠 Acquire 保证数据一致或地址稳定；异步消费者必须自行复制稳定快照。CVRAW 保存返回前完成像素写入或缓存复制，参数尾块独立替换；流程相机页从完成的 CVRAW 读取，已有完整 CIE 或无文件的手动预览继续使用独立快照；UI 不持有原生指针或流程帧租约。
 
 `IsMirrorReady` 与缓冲区各自的 flip 状态也要一起判断：有 CIE 时最终翻转可只作用于 CIE，RAW 仍保留传感器方向；无校正模板的节点可发布尚未应用方向的 RAW。不能仅凭 FlipMode 判断显示坐标已与 POI 一致。设备视图快照的范围及后续优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
@@ -127,8 +143,8 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 本地测量的保存开关开启时，`LocalFrameFileService.SaveCapture` 按下列规则写文件：
 
 - 根目录取 `Device.Config.FileServerCfg.DataBasePath`；为空时使用用户“文档”目录下的 `ColorVision`。
-- 子目录为 `<DeviceCode>/Data/yyyy-MM-dd`，文件名为 `Local_yyyyMMdd_HHmmss_fff_<唯一标识>.cvraw`；色度校正参数保存在 CVRAW 尾部，旧服务生成的 `.cvcie` 保留读取兼容。
-- 流程节点先写数据库再保存图像；RAW 与参数保存失败在调用时报告，不会撤销数据库或已写出的内容。主面板和独立本地校正保持原来的同步保存流程。
+- 子目录为 `<DeviceCode>/Data/yyyy-MM-dd`，文件名为 `yyyyMMdd_HHmmss_fff.cvraw`；取图实际执行校正后，在扩展名前追加 `_<校正模板名>`，例如 `20261008_040550_983_SV6100_F3.6_ND0_White255.cvraw`。只有同名时才追加 `_2`、`_3` 等短编号；检查磁盘/图像缓存以及同一进程在当前毫秒已生成但尚未保存的路径，防止覆盖，不创建占位文件。模板名中的文件名非法字符替换为下划线，过长时截断模板名以保持单个文件名不超过 255 个字符；未使用校正时不追加。色度校正参数仍保存在 CVRAW 尾部，旧文件名和旧服务生成的 `.cvcie` 保留读取兼容。
+- `LocalCameraNode` 先保存 RAW 和参数，再写数据库并通知相机视图；RAW 与参数保存失败在调用时报告，不写入数据库主记录。L/BV 本地转发仍先写数据库再保存图像，保存失败不撤销已写记录。保存失败均不撤销已经写出的图像内容。主面板和独立本地校正保持原来的同步保存流程。
 
 因此应分别确认采集、文件和数据库结果，不能仅凭文件存在判断整个节点成功。图像转换与导出格式见[CVRAW/CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md)。
 
@@ -142,7 +158,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 拍照与预览共用 `FlipMode`。预览转换显式映射 OpenCV 方向：X 对应画面上下翻转，Y 对应左右翻转。旧配置同时保存测量翻转与 `LocalVideoTransform` 时以测量翻转为准；仅有旧预览字段时迁移为对应方向，新配置只保存一个翻转值。
 
-普通取图使用面板增益；校正模板关联的组增益优先，服务 HDR 模板也可覆盖手动增益，校正组最终优先。这些测量增益固定时隐藏手动输入。预览仍显示可调整的预览增益，不改校正组配置；本地主面板独立自动曝光也按所选校正组解析测量增益。服务独立自动曝光请求不带增益，沿用相机当前值；服务拍前自曝则在设置本次取图增益后执行，按钮提示区分这两种行为。
+普通取图使用面板增益；校正模板关联的组增益优先，服务 HDR 模板也可覆盖手动增益，校正组最终优先。校正组固定测量增益时，面板仍显示组增益值，但禁止修改，悬停提示所属校正组；选择“不使用”后恢复编辑。仅由服务 HDR 模板控制增益时，仍隐藏手动输入。预览仍显示可调整的预览增益，不改校正组配置；本地主面板独立自动曝光也按所选校正组解析测量增益。服务独立自动曝光请求不带增益，沿用相机当前值；服务拍前自曝则在设置本次取图增益后执行，按钮提示区分这两种行为。
 
 CV 测量显示 R/G/B 三路独立曝光，视频预览显示单路曝光。本地 CV 即使仍保留 Live 连接，停止预览后也显示三路测量参数；手动、POI 和定时取图在切回测量模式前按 R/G/B 组装参数，不能用预览曝光覆盖 R 通道。MVS 彩色图像的三个像素通道共用单路曝光；CV 滤轮模式仍由原相机后端实现，不进入 MVS 快速切换路径。
 
@@ -154,7 +170,7 @@ CV 测量显示 R/G/B 三路独立曝光，视频预览显示单路曝光。本�
 
 帧发布以 `CommitSourcePixels` 登记与显示结果对应的同一帧原图，再经 `ImagePresentation` 发布处理显示。关闭伪彩或处理失败时恢复该帧原图；第一次没有基准源时也先发布原图，随后建立尺寸、像素格式和缩放状态。冻结快照、队列和重入保护的完整契约见[连续帧显示](../../04-api-reference/ui-components/image-editor-context.md#连续帧显示)。这会更新预览文档的源与 revision，不改写相机采集缓冲、流程测量数据或结果文件。
 
-对焦清晰度指标独立由 `CameraFocusFrameProcessor` 计算，输入是原始帧的拥有型副本及 ROI/算法请求；该处理器不生成伪彩图。其双缓冲保留一帧工作和一帧等待，单次处理异常记录日志后继续接收，关闭时等待 worker 退出再释放缓冲。`CameraRealtimeFramePipeline` 以自身 generation 拒绝停流后指标，指标叠加与图像显示分别更新。十字参考线使用独立 `VideoCrossGuideProcessor`，不能把相机指标生命周期等同于视频文件播放的 `VideoPlaybackSession`。
+对焦清晰度指标独立由 `CameraFocusFrameProcessor` 计算，输入是原始帧的拥有型副本及 ROI/算法请求；该处理器不生成伪彩图。其双缓冲保留一帧工作和一帧等待，单次处理异常记录日志后继续接收，关闭时等待 worker 退出再释放缓冲。`CameraRealtimeFramePipeline` 以自身 generation 拒绝停流后指标，指标叠加与图像显示分别更新。十字参考线使用独立 `VideoCrossGuideProcessor`：停止预览、关闭图像页签或关闭十字检测时停止接收帧并释放空闲缓冲，在途检测完成后释放其缓冲并丢弃过期结果；再次预览或启用检测时重新申请，播放期间继续双缓冲复用。视频工作缓冲随会话释放，不接入全局缓存管理；保留最后一帧显示时仍持有该显示位图，托管数组清空引用后由 GC 回收，不能以进程内存立即下降作为释放完成的判据。不能把相机指标生命周期等同于视频文件播放的 `VideoPlaybackSession`。
 
 ## 查询和显示相机结果
 
@@ -171,9 +187,9 @@ CV 测量显示 R/G/B 三路独立曝光，视频预览显示单路曝光。本�
 
 结果列表按主记录 ID 去重，默认实时保留上限为 500 条。搜索时按查询设置完整加载，可以超过此上限；之后有新实时记录加入，就将同一个列表收回到上限，旧搜索记录也会被淘汰。裁剪按最小主记录 ID 淘汰，表头排序和插入方向不改变规则，晚到的旧通知不会挤掉上限内已保留的较新结果。选中行被淘汰时，选择和显示随之清空，开启自动刷新时再选择新结果。裁剪只释放视图内存，不删除数据库记录或原文件。每条结果的右键菜单及相关命令在使用时创建，视图释放时清空结果集合与去重索引。
 
-最新本地结果选择时使用 `LocalCameraPreview` 的独立快照；其它结果的显示链仍是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径清空图像。`SaveFiles=false` 的本地流程结果可立即预览，也继续供下游使用；新的本地结果替换旧快照后，流程记录仍可从驻留文件缓存打开；缓存和磁盘都没有时无法重新打开。主面板和本地管理窗口的 RAW 预览均使用 CVRAW 解码链的 BGR 显示约定和源行步长；16 位三通道只在显示副本中转为 WPF 的 RGB48，不交换绿蓝通道、不缩放采样值、不修改源缓冲；校正处理和可选 CIE 真彩显示是独立步骤。预览方向调整只作用于显示副本；RAW 与 CIE 色彩/坐标的实机验证和进一步性能优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
+本地取图节点在 CVRAW 和色度参数写入完成后，统一使用 `OpenImage(string?) → ImageView.OpenImage(filePath)`，与结果列表切换使用同一打开链；色度参数、测量工具与图层在图像发布前就绪。`SaveFiles=false` 从 CVRAW 缓存读取，`SaveFiles=true` 可从缓存或磁盘读取；缓存和磁盘都没有时无法打开。已有完整 CIE 的采集入口、独立自动曝光等没有 CVRAW 路径的手动预览仍使用内存快照。主面板和本地管理窗口的 RAW 预览均使用 CVRAW 解码链的 BGR 显示约定和源行步长；16 位三通道只在显示副本中转为 WPF 的 RGB48，不交换绿蓝通道、不缩放采样值、不修改源缓冲；校正处理和可选 CIE 真彩显示是独立步骤。预览方向调整只作用于显示副本；RAW 与 CIE 色彩/坐标的实机验证和进一步性能优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
-自动流程在 `AutoRefreshView=false` 时跳过内存预览复制，结果仍可加入列表；主面板手动取图的强制显示请求不受此开关阻止。直接快照显示先清理文件状态，带完整 CIE 时继续挂载内存测量数据。实时帧、取图快照和 CVRAW 文件槽位分别拥有自己的像素：覆盖或统一释放文件/校正缓存不会释放已经显示的独立帧。文件读取缓冲复用也不会消除实时流和取图快照现有的复制与冻结成本。
+自动流程在 `AutoRefreshView=false` 时跳过图像打开，结果仍可加入列表；主面板手动取图的强制显示请求不受此开关阻止。流程相机节点从完成的 CVRAW 打开，不额外复制预览 RAW/CIE，已有打开器负责像素寿命、色度按需测量及迟到读取的拒绝。已有完整 CIE 或没有 CVRAW 路径的手动入口继续使用独立快照。
 
 有记录但无图时，先检查选中行、`FileUrl` 和文件加载；出现其它相机记录时，核对是否执行过全表查询。设备右键菜单 `CameraLog` 从配置的主服务目录查找最新相机日志，可结合命令终态及错误消息定位远程失败。
 
@@ -181,13 +197,14 @@ CV 测量显示 R/G/B 三路独立曝光，视频预览显示单路曝光。本�
 
 `DeviceCamera` 是逻辑相机；`Config.Code` 标识消息中的 `DeviceCode`，`Config.CameraCode` 关联物理相机，`Config.CameraID` 用于打开硬件。
 
-`AttachPhyCamera` 只维护对象关联和 `ConfigChanged` 订阅。`DeviceCamera.Save()` 才解析新的 `CameraCode`、释放旧关联、调用 `PhyCamera.SetDeviceCamera` 并同步物理参数，同时保留逻辑服务的 `CameraID`，最后进入[设备配置持久化与服务重启契约](./configuration.md)。`SetDeviceCamera` 会保存许可证中的 `DevCameraId`；许可证关联了校准设备时，还可能请求该校准服务重启。
+`AttachPhyCamera` 维护对象关联、配置订阅和物理 ID 的内存镜像；在覆盖旧逻辑 ID 前进行上述 MD5 校验迁移，不执行持久化或服务重启。物理 ID 单独更新不会触发全部参数同步。`DeviceCamera.Save()` 解析 `CameraCode`、释放旧关联、调用 `PhyCamera.SetDeviceCamera` 并同步物理参数和 ID，同一绑定也修复旧逻辑 ID，最后进入[设备配置持久化与服务重启契约](./configuration.md)。`SetDeviceCamera` 会保存许可证中的 `DevCameraId`；许可证关联了校准设备时，还可能请求该校准服务重启。
 
 `DeviceCamera.Dispose()` 幂等释放已经创建的控制面板/结果视图、物理订阅、本地会话、校正缓存和 MQTT 服务；不会为释放操作创建懒加载视图。
 
 ## 验证范围
 
 - `DeviceCameraAssociationTests` 覆盖关联/解绑对象不改许可证中设备 ID 的断言；不覆盖 `Save()`、数据库写入和服务重启。
+- `CameraIdentityOpenPersistenceTests` 使用临时本地数据库、拦截 MQTT 发布及模拟 SDK，覆盖旧逻辑 ID 校验迁移后直接发送服务打开请求、完整 MD5 不匹配时拒绝连接、物理或逻辑身份保存失败后重连补齐持久化；检查 Code、曝光和扩展字段保持不变。它不连接硬件或实际 MQTT 服务。
 - `CameraViewLifecycleTests` 覆盖结果列表解绑的幂等性、事件/绑定清理；不证明完整视频或硬件生命周期。
 - `CameraPreviewFileHandoffTests` 使用真实 WPF 视图和软件构造的帧检查文件→视频的过期读取拒绝、旧校正/POI 清理、预览重启丢弃待显示帧、8/16 位单/三通道副本独立、统一释放缓存、视频→文件及 RAW/CIE 直接快照→文件切换；这些测试不连接真实相机，不覆盖驱动回调时序与现场长时间运行。
 - `LocalCameraSessionTests` 覆盖物理配置 JSON 的 14 个字段映射及全帧零 ROI。`LocalCameraOwnershipTests` 用原生替身检查复用、失败状态、参数冲突及关闭后重开；`CameraBackendRoutingTests` 覆盖软开关、当前会话路由、占用和服务心跳隔离；`LocalCameraResultTests` 覆盖默认保存及关闭保存、独立预览副本、方向、非对齐行、与 CVRAW 解码像素的一致性、结果文件字段和曝光回填。它们不打开真实硬件、不写实际业务数据库。

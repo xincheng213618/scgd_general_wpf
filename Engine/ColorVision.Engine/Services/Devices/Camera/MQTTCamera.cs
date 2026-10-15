@@ -233,6 +233,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
             if (Device.CameraBackend.OpensLocally) return Device.OpenLocalCamera(CameraID, TakeImageMode, ImageBpp);
+            CameraID = Device.ResolveCameraId(CameraID);
+            if (!string.IsNullOrWhiteSpace(Config.CameraCode) && string.IsNullOrWhiteSpace(CameraID))
+                throw new InvalidOperationException(EngineLocalization.Get("Camera_LocalBindingUnavailable"));
+            if (!string.IsNullOrWhiteSpace(Config.CameraCode))
+            {
+                try { Device.SaveResolvedCameraId(CameraID); }
+                catch (Exception ex) { log.Error("保存相机 CameraID 失败；使用已校验的物理身份连接，下次连接将重试保存。", ex); }
+            }
             MsgSend msg = new()
             {
                 EventName = "Open",

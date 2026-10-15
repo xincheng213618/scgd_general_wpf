@@ -9,7 +9,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Base;
 
-public class CVCommonNode : STNode
+public partial class CVCommonNode : STNode
 {
 	public const int StandardNodeWidth = 160;
 	public const int StandardNodeMinHeight = 80;

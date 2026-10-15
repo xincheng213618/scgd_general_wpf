@@ -44,7 +44,7 @@ namespace ColorVision.Copilot
             CopilotReasoningMode[] modes;
             if (profile != null && SupportsOpenAiReasoningModes(profile))
             {
-                modes = IsGpt6Astra(profile)
+                modes = HasMandatoryOpenAiReasoning(profile)
                     ? new[]
                     {
                         CopilotReasoningMode.Default,
@@ -109,7 +109,7 @@ namespace ColorVision.Copilot
                     ? CopilotReasoningMode.Default
                     : normalized;
 
-            if (IsGpt6Astra(profile))
+            if (HasMandatoryOpenAiReasoning(profile))
             {
                 return normalized switch
                 {
@@ -197,11 +197,11 @@ namespace ColorVision.Copilot
                 && CopilotOpenAiRequestPolicy.IsOpenAiReasoningModelName(profile.Model);
         }
 
-        private static bool IsGpt6Astra(CopilotProfileConfig profile)
+        private static bool HasMandatoryOpenAiReasoning(CopilotProfileConfig profile)
         {
-            return CopilotOpenAiRequestPolicy.IsGpt6Astra(profile)
+            return CopilotOpenAiRequestPolicy.HasMandatoryReasoning(profile)
                 || profile.ProviderType == CopilotProviderType.LocalCodex
-                && CopilotOpenAiRequestPolicy.IsGpt6AstraModelName(profile.Model);
+                && CopilotOpenAiRequestPolicy.HasMandatoryReasoningModelName(profile.Model);
         }
 
         public static CopilotReasoningOption? FindCommandOption(
@@ -292,7 +292,7 @@ namespace ColorVision.Copilot
                 return mode switch
                 {
                     CopilotReasoningMode.Disabled => "关闭支持该档位的 OpenAI 推理模型的显式推理。",
-                    CopilotReasoningMode.Low => "使用 OpenAI 低推理强度；GPT-6 Astra 的最低可选档位。",
+                    CopilotReasoningMode.Low => "使用 OpenAI 低推理强度；GPT-6 Astra 和 GPT-6.1 Sol 的最低可选档位。",
                     CopilotReasoningMode.Medium => "使用 OpenAI 中等推理强度。",
                     CopilotReasoningMode.High => "使用 OpenAI 高推理强度。",
                     CopilotReasoningMode.XHigh => "使用 OpenAI 极高推理强度。",
@@ -354,11 +354,29 @@ namespace ColorVision.Copilot
             if (!CopilotOpenAiRequestPolicy.SupportsTemperature(profile))
                 return false;
 
+            if (profile.VendorType == CopilotVendorType.Claude
+                && profile.ProviderType == CopilotProviderType.AnthropicCompatible
+                && Uri.TryCreate(profile.BaseUrl, UriKind.Absolute, out var endpoint)
+                && string.Equals(endpoint.Host.TrimEnd('.'), "api.anthropic.com", StringComparison.OrdinalIgnoreCase)
+                && ClaudeRejectsSampling(profile.Model))
+                return false;
+
             var mode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
             if (profile.VendorType == CopilotVendorType.DeepSeek)
                 return mode is CopilotReasoningMode.Default or CopilotReasoningMode.Disabled;
 
-            return profile.VendorType != CopilotVendorType.Xiaomi || mode != CopilotReasoningMode.Enabled;
+            return profile.VendorType != CopilotVendorType.Xiaomi || mode == CopilotReasoningMode.Disabled;
+        }
+
+        private static bool ClaudeRejectsSampling(string model)
+        {
+            return model.StartsWith("claude-fable-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-mythos-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-opus-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-opus-4-7", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-sonnet-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-haiku-5-5", StringComparison.OrdinalIgnoreCase);
         }
 
         private static Dictionary<string, object?> CreateThinking(bool enabled)

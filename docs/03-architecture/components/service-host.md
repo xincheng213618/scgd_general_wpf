@@ -45,6 +45,10 @@ related: ["platform.system", "platform.startup-integrity", "delivery.update", "d
 
 “上次安装未完成”取自当前读到的安装日志末段：后续出现安装完成记录才清除该段中的失败提示。它不等于本次SCM状态，也不证明当前服务仍未运行。界面不展示完整历史；“打开文件”会在资源管理器中定位日志，选中“安装记录”时定位 `install.log`，其他日志页定位运行日志。
 
+桌面服务安装、启停、卸载和代理后台自更新优先使用 `ProgramFiles/PowerShell/7/pwsh.exe`；该文件不存在才使用系统目录下的 Windows PowerShell 5.1。终端默认 shell 不改变这些进程的选择，其它维护任务的 PowerShell 调用不受此规则影响。后台自更新的“已安排”响应仍只表示已启动更新助手，不表示新服务已经就绪，完成状态由 `EnsureReadyAsync` 后续检查。
+
+部署脚本非零退出即形成明确错误，保留十进制和十六进制退出码以及可读取的原始 stderr；`0xC0000005` 标为访问冲突，`0x80131506` 标为 .NET 运行时内部错误，stderr 为空也不会隐藏失败。本次应用进程内的最近一次部署错误在概览优先显示，刷新状态、刷新日志或重新打开窗口都保留它，下一次成功的部署操作清除；操作失败弹窗切换到操作记录。脚本在开始写日志之前崩溃时，旧 `install.log` 不能证明本次安装成功。
+
 ## 协议、身份和票据
 
 `ServiceHostProtocol` 与服务端 `ServiceHostContracts` 定义协议版本2、camelCase JSON、UTF-8无BOM编码。服务名和管道名均为 `ColorVisionServiceHost`。共享客户端连接本机 `.`；一个连接只发送一行请求、接收一行响应，随后释放，不是多请求长连接。请求有 `RequestId`、`OperationId`、`Command`、`Data` 和可选 `BrokerTicket`；响应有 `RequestId`、`Success`、`Message`、`Data`。
@@ -119,7 +123,7 @@ SCM启动会启动更新扫描保护 `ApplicationUpdateScanProtectionService`、
 
 ## 源码核对与验证缺口
 
-- `ServiceHostStatusTests` 测试状态/决策对象、安装脚本文本和临时运行时文件夹；`ServiceHostLogReaderTests` 测试日志末段读取、旧中文编码和安装结果识别。它们不执行真实SCM安装或UAC自更新，也不验证管理窗口的现场操作。
+- `ServiceHostStatusTests` 测试状态/决策对象、安装脚本文本和临时运行时文件夹；另外启动用户权限的 PowerShell 助手，用固定退出码验证无 stderr 的错误仍可见、成功后清除，以及文件不一致时仍显示部署错误的窗口内容。固定退出码不触发真实 CLR 崩溃，窗口测试不显示界面或触发维护。`ServiceHostLogReaderTests` 测试日志末段读取、旧中文编码和安装结果识别。它们不执行真实SCM安装或UAC自更新，也不验证管理窗口的现场操作。
 - `ServiceHostBrokerTicketTests` 检查两端命令分类、单次票据重放、命令/PID变化等；没有逐项验证SID/OperationId/hash变化、真实过期等待、签名或生产管道身份准入。
 - `ServiceHostProcessTerminationTests` 使用隔离本机管道连接真实 UI 客户端、票据签发和服务命令分派，覆盖精确 PID 终止及旧接口未知服务拒绝；其它用例覆盖白名单内程序、未知程序拒绝和不同目标目录。`ServiceHostServicePolicyTests` 额外固定 `CVArchService` 对当前 `ArchivedWindowsService.exe`、旧 `RegWindowsService.exe` 的准入，并拒绝其它服务程序。旧接口的进程匹配与终止步骤仅传入测试自己创建的进程，确认另一安装目录存活，不枚举现场业务服务。调用者身份为注入的测试身份；未覆盖生产 ACL、LocalSystem 提权、真实 SCM/WMI 服务发现或旧接口完整残留清理链路。
 - `ServiceHostPipeServerTests` 使用真实本机命名管道，但大部分用例注入恒成功身份解析和fake handler，绕过生产ACL创建；当前进程token读取测试也不是端到端调用者鉴权。

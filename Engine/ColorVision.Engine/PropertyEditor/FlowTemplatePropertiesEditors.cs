@@ -2,11 +2,10 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.ImageCropping;
+using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.Jsons.ImageROI;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
@@ -90,19 +89,9 @@ public sealed class SensorTemplatePropertiesEditor : IPropertyEditor
         () => FlowNodePropertyEditorRegistration.CreateSensorTemplate(obj), nameof(IFlowDeviceNode.DeviceCode), false);
 }
 
-public sealed class DataLoadTemplatePropertiesEditor : IPropertyEditor
-{
-    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateDataLoad());
-}
-
 public sealed class BlackMuraTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateBlackMura());
-}
-
-public sealed class ImageRoiTemplatePropertiesEditor : IPropertyEditor
-{
-    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateImageROI());
 }
 
 public sealed class PoiAnalysisTemplatePropertiesEditor : IPropertyEditor
@@ -123,4 +112,9 @@ public sealed class LedCheck2TemplatePropertiesEditor : IPropertyEditor
 public sealed class KbTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateKB());
+}
+
+public sealed class AaFindPointsTemplatePropertiesEditor : IPropertyEditor
+{
+    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateAAFindPoints());
 }

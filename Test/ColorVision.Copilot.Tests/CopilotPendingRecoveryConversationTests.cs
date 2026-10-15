@@ -13,6 +13,129 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotPendingRecoveryConversationTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
+    private const string UnsentReviewDraft = "Keep this unsent review request.";
+
+    [Theory]
+    [InlineData("continue")]
+    [InlineData("continue-history-search")]
+    [InlineData("denied-retry")]
+    [InlineData("denied-retry-without-checkpoint")]
+    public async Task RecoverySubmissionPreservesExistingDraftAndDoesNotAttachRecoveryToItsLaterSend(string entry)
+    {
+        await using var fixture = new RecoveryFixture(withReviewDraft: true);
+        var attachment = Assert.Single(fixture.Conversation.Attachments);
+        Task? retrySending = null;
+        var isContinuation = entry is "continue" or "continue-history-search";
+        if (entry == "continue-history-search")
+        {
+            Assert.True(fixture.ViewModel.TryOpenPromptHistorySearch());
+            fixture.ViewModel.InputText = "Original Agent request";
+        }
+        if (isContinuation)
+        {
+            Assert.True(fixture.ViewModel.ContinueAgentTasksCommand.CanExecute(fixture.Assistant));
+            fixture.ViewModel.ContinueAgentTasksCommand.Execute(fixture.Assistant);
+        }
+        else
+        {
+            if (entry == "denied-retry-without-checkpoint")
+                fixture.Conversation.SetAgentSessionCheckpoint(null);
+            var denial = new CopilotAutomaticApprovalDenialSnapshot("denial:retry", fixture.Conversation.Id,
+                "previous-run", string.Empty, "WriteProjectFile", "arguments-digest", DateTimeOffset.UtcNow);
+            var retry = typeof(CopilotChatViewModel).GetMethod("RetryAutomaticallyDeniedActionAsync",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            retrySending = Assert.IsAssignableFrom<Task>(retry.Invoke(fixture.ViewModel, [denial]));
+        }
+
+        Assert.False(fixture.ViewModel.IsPromptHistorySearchOpen);
+        Assert.Equal(UnsentReviewDraft, fixture.ViewModel.InputText);
+        Assert.Equal(UnsentReviewDraft, fixture.Conversation.DraftText);
+        Assert.Equal(CopilotAgentMode.Review, fixture.Conversation.DraftRequestMode);
+        Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, fixture.Conversation.DraftWorkspaceReviewTarget?.Target);
+        Assert.Same(attachment, Assert.Single(fixture.Conversation.Attachments));
+        var recovery = await fixture.Runtime.Entered.WaitAsync(TestTimeout);
+        Assert.Equal(fixture.Conversation.Id, recovery.ConversationId);
+        Assert.Equal(CopilotAgentMode.Auto, recovery.Mode);
+        if (isContinuation)
+        {
+            Assert.Equal(CopilotAgentRecoveryPolicy.FinalizeUserMessage, recovery.UserText);
+            Assert.Equal(CopilotAgentRecoveryMode.Finalize, recovery.Recovery?.Mode);
+            Assert.True(recovery.Recovery?.PreviousResponseWasInterrupted);
+        }
+        else
+        {
+            Assert.Contains("WriteProjectFile", recovery.UserText, StringComparison.Ordinal);
+            if (entry == "denied-retry")
+            {
+                Assert.Equal(CopilotAgentRecoveryMode.RetryDeniedAction, recovery.Recovery?.Mode);
+                Assert.Equal("WriteProjectFile", recovery.Recovery?.ToolName);
+            }
+            else
+            {
+                Assert.Null(recovery.Recovery);
+            }
+        }
+        Assert.Empty(recovery.HostContext.Attachments);
+        Assert.Null(recovery.WorkspaceReviewTarget);
+        var activeRun = Assert.IsType<CopilotHostedAgentRun>(fixture.Host.ActiveRun);
+        fixture.Runtime.Release();
+        await activeRun.Completion.WaitAsync(TestTimeout);
+        if (retrySending != null)
+            await retrySending.WaitAsync(TestTimeout);
+
+        // The user removes the unsupported image before sending the preserved draft.
+        fixture.Conversation.Attachments.Clear();
+        var send = typeof(CopilotChatViewModel).GetMethod("SendAsync", BindingFlags.Instance | BindingFlags.NonPublic,
+            null, Type.EmptyTypes, null)!;
+        await Assert.IsAssignableFrom<Task>(send.Invoke(fixture.ViewModel, null)).WaitAsync(TestTimeout);
+
+        var requests = fixture.Runtime.Requests.ToArray();
+        Assert.Equal(2, requests.Length);
+        Assert.Equal(UnsentReviewDraft, requests[1].UserText);
+        Assert.Equal(CopilotAgentMode.Review, requests[1].Mode);
+        Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, requests[1].WorkspaceReviewTarget?.Target);
+        Assert.Null(requests[1].Recovery);
+        Assert.Null(fixture.Conversation.Messages.Last(message => message.IsUser).RecoveryRequest);
+        Assert.True(File.Exists(fixture.AttachmentPath));
+    }
+
+    [Fact]
+    public async Task QueuedRecoveryKeepsTheSourceDraftAfterSelectingAnotherConversation()
+    {
+        await using var fixture = new RecoveryFixture(withReviewDraft: true);
+        var releaseOtherRun = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var otherRun = fixture.Host.Start(fixture.OtherConversation.Id, CopilotAgentMode.Auto, _ => releaseOtherRun.Task);
+        try
+        {
+            Assert.True(fixture.ViewModel.ContinueAgentTasksCommand.CanExecute(fixture.Assistant));
+            fixture.ViewModel.ContinueAgentTasksCommand.Execute(fixture.Assistant);
+            Assert.Single(fixture.Host.QueuedRuns);
+            Assert.False(fixture.Runtime.Entered.IsCompleted);
+            Assert.Equal(UnsentReviewDraft, fixture.Conversation.DraftText);
+
+            fixture.ViewModel.SelectConversationCommand.Execute(fixture.OtherConversation);
+            fixture.ViewModel.InputText = "Keep the other conversation draft.";
+            releaseOtherRun.TrySetResult();
+            await otherRun.Completion.WaitAsync(TestTimeout);
+            var request = await fixture.Runtime.Entered.WaitAsync(TestTimeout);
+
+            Assert.Equal(fixture.Conversation.Id, request.ConversationId);
+            Assert.Equal(CopilotAgentRecoveryMode.Finalize, request.Recovery?.Mode);
+            Assert.Empty(request.HostContext.Attachments);
+            Assert.Same(fixture.OtherConversation, fixture.ViewModel.SelectedConversation);
+            Assert.Equal("Keep the other conversation draft.", fixture.ViewModel.InputText);
+            Assert.Empty(fixture.OtherConversation.Messages);
+            Assert.Equal(UnsentReviewDraft, fixture.Conversation.DraftText);
+            Assert.Equal(CopilotAgentMode.Review, fixture.Conversation.DraftRequestMode);
+            Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, fixture.Conversation.DraftWorkspaceReviewTarget?.Target);
+            Assert.Equal(fixture.AttachmentPath, Assert.Single(fixture.Conversation.Attachments).Value);
+        }
+        finally
+        {
+            releaseOtherRun.TrySetResult();
+            await otherRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
 
     [Theory]
     [InlineData("select")]
@@ -197,7 +320,7 @@ public sealed class CopilotPendingRecoveryConversationTests
         public CapturingTurnRuntime Runtime { get; } = new();
         public string AttachmentPath { get; }
 
-        public RecoveryFixture()
+        public RecoveryFixture(bool withReviewDraft = false)
         {
             SolutionInstanceField.SetValue(null, _testSolutionInstance);
             Directory.CreateDirectory(_root);
@@ -205,6 +328,12 @@ public sealed class CopilotPendingRecoveryConversationTests
             File.WriteAllBytes(AttachmentPath, Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF9sAAAAASUVORK5CYII="));
             Conversation = CopilotConversationRecord.CreateEmpty(Profile.Id, Profile.DisplayLabel);
+            if (withReviewDraft)
+            {
+                Conversation.DraftText = UnsentReviewDraft;
+                Conversation.DraftRequestMode = CopilotAgentMode.Review;
+                Conversation.DraftWorkspaceReviewTarget = CopilotWorkspaceReviewTargetContext.WorkingTree();
+            }
             Conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Original Agent request")
             {
                 RequestMode = CopilotAgentMode.Auto,
@@ -291,11 +420,13 @@ public sealed class CopilotPendingRecoveryConversationTests
         private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<CopilotTurnRequest> _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Task<CopilotTurnRequest> Entered => _entered.Task;
+        public ConcurrentQueue<CopilotTurnRequest> Requests { get; } = new();
         public void Release() => _release.TrySetResult();
 
         public async IAsyncEnumerable<CopilotTurnEvent> RunAsync(
             CopilotTurnRequest request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
+            Requests.Enqueue(request);
             _entered.TrySetResult(request);
             await _release.Task.WaitAsync(cancellationToken);
             yield return new CopilotTurnStartedEvent("pending-recovery-test", request.Mode);

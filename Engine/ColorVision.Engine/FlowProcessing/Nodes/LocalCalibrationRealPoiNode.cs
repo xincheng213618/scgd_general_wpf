@@ -14,6 +14,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -123,15 +124,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
-        private string imageFilePath = string.Empty;
         private bool useROI;
 
-        [Category("本地校正")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-        [STNodeProperty("备用图像文件", "上游没有本地内存帧时读取此文件；有上游帧时忽略", true)]
-        public string ImageFilePath { get => imageFilePath; set { imageFilePath = value ?? string.Empty; OnPropertyChanged(); } }
-
         [Category("高级")]
+        [Display(Order = 1)]
         [STNodeProperty("使用 ROI", "输入 POI 为全幅坐标且当前图像来自物理相机 ROI 时，将 POI 临时转换为 ROI 图像坐标；全幅或历史图像保持关闭", true)]
         public bool UseROI { get => useROI; set { useROI = value; OnPropertyChanged(); } }
 
@@ -139,8 +135,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             AllowAcceleration = true;
         }
-
-        private protected override string SourceImageFilePath => ImageFilePath;
 
         private protected override float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame)
         {
@@ -241,7 +235,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     });
                 LocalPoiCalculator.SaveDetails(poiMasterId, result);
 
-                action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(execution.Frame.FrameId), result);
+                action.SetRuntimeResource(LocalFlowFrameRuntime.GetPoiResultResourceKey(execution.Frame.FrameId), result);
+                action.SetRuntimeResource(LocalPoiCalculator.ResultResourceKey(poiMasterId), result);
                 action.Data["LocalPoiCount"] = result.Points.Count;
                 action.Data["LocalCalibrationMasterId"] = calibrationMasterId;
                 action.MasterValue(null, poiMasterId, (int)resultType);
@@ -293,11 +288,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 DeviceCode,
                 EventName = OperatorCode,
                 action.SerialNumber,
-                ImageFilePath,
                 CalibTempName,
                 UseROI,
                 AllowAcceleration,
-                InputPriority = "CurrentFrameThenFile",
+                InputPriority = "CurrentFrameThenInputFile",
                 InputPorts = InputPortNames
             });
         }

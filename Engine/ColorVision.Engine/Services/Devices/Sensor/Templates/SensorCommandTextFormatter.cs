@@ -206,6 +206,25 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             return TryHexToBracketText(hexText, useControlNames, out string bracketText) ? bracketText : hexText ?? string.Empty;
         }
 
+        // Diagnostic display only: preserve decoded text and expose otherwise invisible controls.
+        public static string ToReadableText(string? text, bool isHex = false)
+        {
+            if (isHex) return ToBracketTextOrOriginal(text, useControlNames: true);
+            StringBuilder builder = new();
+            foreach (char value in text ?? string.Empty)
+            {
+                if (!char.IsControl(value)) builder.Append(value);
+                else
+                {
+                    string token = value <= byte.MaxValue && ControlByteToName.TryGetValue((byte)value, out string? name)
+                        ? name
+                        : ((int)value).ToString("X2", CultureInfo.InvariantCulture);
+                    builder.Append('[').Append(token).Append(']');
+                }
+            }
+            return builder.ToString();
+        }
+
         public static string NormalizeHex(string? hexText)
         {
             return TryParseHexText(hexText, out List<byte> bytes) ? BytesToHex(bytes) : hexText?.Trim() ?? string.Empty;

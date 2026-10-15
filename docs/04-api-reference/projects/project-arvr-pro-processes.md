@@ -3,9 +3,9 @@ knowledge_id: "projects.arvr-pro-processes"
 knowledge_type: "guide"
 status: "current"
 summary: "配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。"
-aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProjectARVRProProcessGroups.json", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25", "导入旧版Recipe"]
+aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProjectARVRProProcessGroups.json", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25", "鬼影解析", "RingGhostProcess", "RingGhostTestResults", "GMR1", "GMR2"]
 code_paths: ["Projects/ProjectARVRPro/Process/", "Projects/ProjectARVRPro/Recipe/", "Projects/ProjectARVRPro/Services/PictureSwitchService.cs", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs", "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs", "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs", "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"]
 related: ["projects.arvr-pro", "projects.arvr-pro-demura", "flow.templates", "ui.property-grid"]
 ---
 
@@ -112,6 +112,12 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 
 ## 选择处理类型
 
+**ARVR → 缺陷检测 → 圆环鬼影** 使用 `RingGhostProcess`，对应 Flow 的 [圆环鬼影节点](../algorithms/detectors/display-metrology.md)。流程可配置为开始 → 取图/打开线性 RAW 或 TIFF → 圆环鬼影 → 结束，再为该 Flow 选择“圆环鬼影”解析。当前节点不以 CVCIE 主缓冲计算亮度，不应接到把主缓冲切换为 CIE 的校正步骤之后。每个解析步骤必须对应当前批次唯一、成功的 `Ghost` / `ring-ghost/1.0` 结果；零条、多条、失败或明细/文件不完整均报错，不回退旧批次或远端 Ghost2.0。
+
+对外测量项只有 `GMR1`、`GMR2`，单位 `%`；正常未检出按 0 输出，定位、饱和、分级或数据错误保持空项并置 `DATA_ERROR`，同时清除该输出 Key 的旧成功值。节点当前采用“一阶必有，单环归一阶”的方案约定，默认外侧一阶、内侧二阶，仍需客户核对光路。候选、背景、径向曲线和测量区域属于内部结果，不增加客户测量参数。输出 Key 默认 `RingGhost`，不同画面可配置不同 Key，项目 JSON 写入 `ObjectiveTestResult.RingGhostTestResults[Key]` 的两个 `ObjectiveTestItem`，标准 CSV、批次指标和自定义值查找也只导出这两项。
+
+每个实例独立配置 GMR1/GMR2 Recipe，默认上限分别为 1%、0.5%，等于上限时通过；零限值仍表示该侧不限。非零测量沿用 K/B 修正，正常未检出的 0 保持 0。`Execute` 完成与配方 PASS/FAIL 分开，超限可完成解析但总结果为失败。历史记录保存原始测量、源主记录、已应用限值和修正值，导出按快照恢复；修改当前 Recipe 不重新判定历史。绘制测量区域默认开启，只重放保存的原图几何，不重新运行算法，图像尺寸不符时跳过叠图。`GhostFlowAndProcessTests` 验证原位深节点、零值/异常边界、来源与版本选择、历史导出、配方和叠图生命周期；不替代真实 MySQL、硬件及瑞淀对照验收。
+
 类型由 `ProcessManager.LoadProcesses` 从已加载程序集发现，界面分类由 `ProcessTypeCatalog` 提供。下表用于定位处理实现，实际能否测量还取决于绑定的 Flow 输出、设备和 Recipe。
 
 | 能力 | 类型 / 位置 | 选择要点 |
@@ -126,6 +132,7 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 固定或动态点位的几何结果 |
 | 光学中心 | `OpticCenterProcess` / `OpticCenterDynamicProcess` | 固定或动态点位的中心结果 |
 | 十字 RGB 分离 | `RgbCrossProcess`，`OpticCenter/` | 与原十字/光学中心同属“光学与几何”；读取 JSON、绘制 RGB 边缘，可选在本项目判定 |
+| 圆环鬼影 | `RingGhostProcess`，`Ghost/` | 在“缺陷检测”分类读取本地圆环结果，对外输出 GMR1/GMR2，正常未检出为 0 |
 | 动态 POI | `PoiDynamicProcess`，`POI/` | 运行时点位的亮色度解析与显示 |
 | 通用 MTF | `MTFProcess`，`MTF/` | 通用 MTF 结果解析 |
 | HV 特殊图案 | `MTFHVProcess` / `MTFHV048Process` / `MTFHV058Process` | 分别对应 0368、048、058 点位方案 |
@@ -160,6 +167,8 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 
 ## 保存、导入与恢复
 
+流程组工具栏的“添加组”和“重命名”分别打开 `ProcessGroupNameWindow`。重命名预填当前组名并全选；名称在确认时去除首尾空白，拒绝空名称、控制字符以及与其他组不区分大小写的重名。确认成功后新组成为当前组，重命名只修改目标组名并保留流程实例及参数；取消或关闭弹窗不写入任何修改。保存失败在弹窗内提示并保留输入以便重试，原内存状态、活动组和配置文件保持不变。
+
 默认文件为 `%APPDATA%\ColorVision\Config\ProjectARVRProProcessGroups.json`，路径由 `ViewResultManager.DirectoryPath` 提供。版本 3 格式一起保存活动组序号、流程组、独立解析映射及兼容 Recipe 容器；每项 `ConfigJson` 保存自身配置和 Recipe，相机覆盖作为流程项的可选同级字段保存。旧文件缺少该字段时恢复为默认关闭。
 
 写入先生成同目录临时文件，刷新后替换正式文件；目标已存在时保存前一版为 `.bak`。普通保存失败会记录 `保存ProjectARVRProProcessGroups.json失败`；Recipe 编辑还会提示对应文件保存失败。这时内存值可能已改变，磁盘仍是旧内容，应处理路径、权限或空间问题后重试，不能仅看界面值判断保存成功。
@@ -168,7 +177,6 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | --- | --- |
 | 导出配置 | 生成 `.arvrprocess.json`，包含流程组和解析配置，供对应项目导入 |
 | 导入配置 | 读取并校验配置后应用；持久化失败时保留原内存和磁盘配置，见 `ProcessManagerPersistenceTests` |
-| 导入旧版Recipe | 将匹配类型的限值复制到各流程组和解析映射实例，不能理解为建立共享引用 |
 | 启动加载 | 优先读取 `ProjectARVRProProcessGroups.json`；文件不存在时，只从能明确识别为 ARVRPro 的旧共享 `ProcessGroups.json` 或 `ProcessMetas.json` 复制迁移 |
 | 低于版本 3 的组配置 | 从各组按模板名补建解析映射，跳过空处理及已有映射，并保存迁移结果 |
 
@@ -178,9 +186,9 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 
 ## 验证入口
 
-- `ProcessManagerPersistenceTests`：独立复制、顺序、保存重载、解析映射、ARVRPro/LUX 文件隔离及导入失败保护。
+- `ProcessManagerPersistenceTests`：独立复制、组名校验与保存失败保护、顺序、保存重载、解析映射、ARVRPro/LUX 文件隔离及导入失败保护。
 - `FlowCameraParameterOverrideServiceTests`：两种相机的直接修改、关闭开关、缺失/多相机/无效参数跳过，以及重新加载恢复模板原值。
 - `EmbeddedRecipeConfigTests`：实例 Recipe、空值兼容、配置快照、原子替换及备份。
-- `LegacyRecipeImporterTests`：旧 Recipe 导入；`ProcessStepProjectionTests`：启用步骤投影；`MTF07DynamicResultBuilderTests`：07 结果构建。
+- `LegacyRecipeImporterTests`：历史 Recipe 数据兼容解析；`ProcessStepProjectionTests`：启用步骤投影；`MTF07DynamicResultBuilderTests`：07 结果构建。
 
 这些测试位于 `Test/ProjectARVRPro.Tests/`。串口切图、Flow 实际输出和客户阈值仍需在授权环境验证；测试入口的存在不代表该方案已通过现场验收。

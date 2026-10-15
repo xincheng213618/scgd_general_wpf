@@ -31,7 +31,7 @@ related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","e
 
 这两个 helper 候选不是随 Git 跟踪的预编译输入；干净拉仓不能假设只需 .NET SDK。需要可用的 Visual Studio C++ 工具链及项目声明的 OpenCV/SDK 依赖，在 Visual Studio Developer PowerShell 中完成相应 native 构建，再构建托管项目；以 `Native/AGENTS.md` 和 vcxproj 为准，不通过关闭引用或遗漏 DLL 来让构建表面通过。
 
-CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Release/opencv_cuda.dll`。不执行 CUDA 路径不等于允许缺少这个构建/发布输入。
+CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；解决方案构建使用 `$(SolutionDir)x64/Release/opencv_cuda.dll`，单独构建优先 `Native/opencv_cuda/x64/Release/opencv_cuda.dll`，最后回退仓库跟踪的 `x64/Release/opencv_cuda.dll`。检查器核对这三条 Release/x64 选择规则，并继续校验输出与跟踪 DLL 的字节一致性。不执行 CUDA 路径不等于允许缺少这个构建/发布输入。
 
 ### 托管与原生 OpenCV 版本边界
 
@@ -111,7 +111,7 @@ CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Releas
 
 ### CUDA 检查器证明什么
 
-`Scripts/verify_native_contracts.py` 将CUDA头文件/托管声明的返回值、参数、调用约定、DLL名称、HImage AMD64布局和native日志delegate，与被审核的跟踪DLL及其传播字节一起核对。CUDA字符串导入要求显式 `CharSet.Ansi`；可能改变P/Invoke默认值的module级属性会被拒绝。导出分支须为 `__declspec(dllexport)`，Release/x64须定义 `OPENCVCUDA_EXPORTS`。
+`Scripts/verify_native_contracts.py` 将CUDA头文件/托管声明的返回值、参数、调用约定、DLL名称、HImage AMD64布局和native日志delegate，与被审核的跟踪DLL及其传播字节一起核对。CUDA导入要求显式 `CharSet.Ansi`，JSON字符串参数还须显式标注 `[MarshalAs(UnmanagedType.LPUTF8Str)]`；检查器解析并核对参数封送标注，缺失或改为ANSI/UTF-16均拒绝。可能改变P/Invoke默认值的module级属性会被拒绝。导出分支须为 `__declspec(dllexport)`，Release/x64须定义 `OPENCVCUDA_EXPORTS`。
 
 默认模式在Visual Studio环境中求值真实Release/x64的 `ClCompile` / `CudaCompile` 项及CUDA host定义：创建唯一临时project/probe和隔离输出目录，在消费边界捕获项并于编译器运行前移除，结束后清理临时文件。不运行cl/nvcc、不加载DLL、不需要GPU，但缺少匹配CUDA BuildCustomizations时仍失败。它会创建临时文件、运行MSBuild求值，不是仅阅读Markdown。
 

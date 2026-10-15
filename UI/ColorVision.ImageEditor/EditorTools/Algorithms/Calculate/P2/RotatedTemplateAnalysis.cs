@@ -1,19 +1,14 @@
-using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+﻿using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Menus;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 {
@@ -77,12 +72,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
         {
             try
             {
-                BitmapSource template = P2RoiHelper.CropCurrentBitmap(_imageContext, roi);
+                using ImageFrameLease lease = _imageContext.AcquireImageFrame() ?? throw new InvalidOperationException("没有可用源图像。");
+                TemplateMatchingImage template = TemplateMatchingImage.Capture(lease.Image, roi);
                 RotatedTemplateSession session = RotatedTemplateSessionStore.Get(_drawContext);
                 session.Template = template;
                 session.Description = $"当前图像 ROI: {P2RoiHelper.Describe(roi)}";
                 MessageBox.Show(
-                    LocalizedText.Format($"模板已设置：{template.PixelWidth} x {template.PixelHeight}\n{session.Description}"),
+                    LocalizedText.Format($"模板已设置：{template.Width} x {template.Height}\n{session.Description}"),
                     ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate,
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -96,7 +92,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
     internal sealed class RotatedTemplateSession
     {
-        public BitmapSource? Template { get; set; }
+        public TemplateMatchingImage? Template { get; set; }
 
         public string Description { get; set; } = string.Empty;
     }
@@ -124,94 +120,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             }
 
             RotatedTemplateSession session = RotatedTemplateSessionStore.Get(drawContext);
-            if (session.Template == null)
-            {
-                MessageBox.Show(
-                    LocalizedText.Get("请先在图像上绘制矩形，右键该矩形并选择“设为旋转匹配模板”。"),
-                    LocalizedText.Get("尚未设置模板"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            RoiRect roi = P2RoiHelper.Normalize(requestedRoi, lease.Image);
-            P2JsonAnalysisWindow window = new(
-                ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate,
-                $"Search ROI: {P2RoiHelper.Describe(roi)}    Template: {session.Template.PixelWidth} x {session.Template.PixelHeight} ({session.Description})",
-                CreateDefaultConfig(),
-                imageContext,
-                json => RunAsync(imageContext, session.Template, roi, json),
-                BuildSummary,
-                drawContext,
-                config,
-                P2OverlayKind.TemplateMatching)
+            TemplateMatchingWindow window = new(imageContext, drawContext, config, requestedRoi, session.Template)
             {
                 Owner = Application.Current.GetActiveWindow()
             };
             window.Show();
-        }
-
-        private static async Task<P2NativeResult> RunAsync(
-            ImageProcessingContext context,
-            BitmapSource template,
-            RoiRect roi,
-            string config)
-        {
-            using ImageFrameLease? lease = context.AcquireImageFrame();
-            if (lease == null)
-            {
-                throw new InvalidOperationException("当前图像已经关闭或切换。");
-            }
-
-            long revision = lease.Revision;
-            using P2ImageSnapshot templateSnapshot = P2ImageSnapshot.FromBitmap(template);
-            P2NativeResult result = await Task.Run(() => P2NativeJson.Invoke(
-                ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate,
-                (out IntPtr result) => OpenCVMediaHelper.M_MatchRotatedTemplate(
-                    lease.Image,
-                    templateSnapshot.Image,
-                    roi,
-                    config,
-                    out result)));
-            if (!context.IsCurrentImageRevision(revision))
-            {
-                throw new InvalidOperationException("计算期间当前图像发生了切换，结果已丢弃。");
-            }
-            return result;
-        }
-
-        private static string CreateDefaultConfig()
-        {
-            var config = new
-            {
-                angleMin = -15.0,
-                angleMax = 15.0,
-                angleStep = 1.0,
-                scaleMin = 0.90,
-                scaleMax = 1.10,
-                scaleStep = 0.05,
-                featureMode = "gradient",
-                occlusionTolerance = 0.20,
-                scoreThreshold = 0.80,
-                maxMatches = 10,
-                nmsRadius = 12.0,
-                pyramidLevels = 2,
-                subpixel = true
-            };
-            return JsonConvert.SerializeObject(config, Formatting.Indented);
-        }
-
-        private static string BuildSummary(JObject result)
-        {
-            JObject? best = result["matches"]?.First as JObject;
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                "匹配: {0}    候选: {1}    Best Score: {2:F3}    Angle: {3:F1}°    Scale: {4:F2}",
-                (result["matches"] as JArray)?.Count ?? 0,
-                result.Value<int?>("candidateCount") ?? 0,
-                best?.Value<double?>("score") ?? 0.0,
-                best?.Value<double?>("angleDegrees") ?? 0.0,
-                best?.Value<double?>("scale") ?? 1.0);
         }
     }
 }

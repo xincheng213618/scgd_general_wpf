@@ -1,5 +1,4 @@
 using LocalizedText = global::ColorVision.Engine.EngineLocalization;
-using ColorVision.Engine.MQTT;
 using ColorVision.UI.Desktop.Operations;
 using ColorVision.UI.ServiceHost;
 using System;
@@ -22,24 +21,12 @@ namespace ColorVision.Engine.Services.Operations
                 ServiceHostProtocol.ServiceName,
                 maintenanceSupported: false,
                 observedAt);
-            OperationsServiceHealthItem mqttBroker = UsesLocalMqttBroker()
-                ? CaptureWindowsService(
-                    OperationsServiceIds.MqttBroker,
-                    "MQTT 消息服务",
-                    MosquittoServiceName,
-                    maintenanceSupported: true,
-                    observedAt)
-                : new OperationsServiceHealthItem
-                {
-                    ServiceId = OperationsServiceIds.MqttBroker,
-                    Title = LocalizedText.Get("MQTT 消息服务"),
-                    Status = "not_applicable",
-                    Installed = false,
-                    Healthy = true,
-                    MaintenanceSupported = false,
-                    StatusSource = "application-config",
-                    ObservedAt = observedAt,
-                };
+            OperationsServiceHealthItem mqttBroker = CaptureWindowsService(
+                OperationsServiceIds.MqttBroker,
+                "MQTT 消息服务",
+                MosquittoServiceName,
+                maintenanceSupported: true,
+                observedAt);
             OperationsServiceHealthItem[] services = [serviceHost, mqttBroker];
             return new OperationsServiceHealthReport
             {
@@ -48,21 +35,6 @@ namespace ColorVision.Engine.Services.Operations
                 GeneratedAt = observedAt,
                 Services = services,
             };
-        }
-
-        private static bool UsesLocalMqttBroker()
-        {
-            try
-            {
-                string host = MQTTControl.Config.Host?.Trim() ?? string.Empty;
-                return host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
-                    || host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
-                    || host.Equals("::1", StringComparison.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                return true;
-            }
         }
 
         private static OperationsServiceHealthItem CaptureWindowsService(

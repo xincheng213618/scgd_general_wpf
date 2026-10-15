@@ -123,10 +123,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             else
             {
-                string sourceFilePath = ResolveInputImageFilePath(action, 0, SourceImageFilePath);
+                string sourceFilePath = ResolveInputImageFilePath(action, 0);
                 if (string.IsNullOrWhiteSpace(sourceFilePath))
                 {
-                    throw new InvalidOperationException("输入端没有本地图像内存帧，也没有可读取的图像结果。请连接相机取图或图像节点。");
+                    throw new InvalidOperationException("输入端没有本地图像内存帧，也没有可读取的图像结果。请连接相机取图或“加载图片”节点。");
                 }
                 sourceFrame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(sourceFilePath));
                 ownsSourceFrame = true;
@@ -284,8 +284,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 InputMode = "CurrentFrameThenInputFile"
             });
         }
-
-        private protected virtual string SourceImageFilePath => string.Empty;
 
         private protected virtual float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame) => null;
 

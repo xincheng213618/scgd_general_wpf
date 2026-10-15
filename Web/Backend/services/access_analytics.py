@@ -905,6 +905,16 @@ class SqliteAccessTrafficQuery:
         self._today_getter = today_getter
         self._utc_offset_minutes = _validated_utc_offset_minutes(utc_offset_minutes)
 
+    def get_health(self) -> dict[str, Any]:
+        """The overview needs one daily row, not route/client/vital rankings."""
+        today = self._today_getter() if self._today_getter else analytics_calendar_day(utc_offset_minutes=self._utc_offset_minutes)
+        db = self._db_factory()
+        try:
+            row = db.execute("SELECT * FROM access_daily WHERE day = ?", (today.isoformat(),)).fetchone()
+        finally:
+            db.close()
+        return {"today": _daily_payload(row) if row else _zero_daily(today.isoformat()), "recorder": self._recorder_status()}
+
     def get_traffic(self, *, days: int, limit: int) -> dict[str, Any]:
         validate_query_range(days=days, limit=limit)
         today = (

@@ -3649,4 +3649,5 @@ A single image contains no left/right eye pairing; DIFF_H / DIFF_V are not gener
   <data name="Sharma、Wu、Dalal：CIEDE2000 实现说明与 34 组验证数据" xml:space="preserve">
     <value>Sharma, Wu, Dalal: CIEDE2000 Implementation Notes and 34 Test Cases</value>
   </data>
+  <data name="Algorithm_RingGhostMetrology" xml:space="preserve"><value>Ring Ghost Luminance Ratio…</value></data>
 </root>

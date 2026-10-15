@@ -37,11 +37,9 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson();
             return EditTemplateJson;
         }
-        public string Description { get; set; } = "{\r\n  \"width\": 12,\r\n  \"height\": 12,\r\n  \"radius\": 6,\r\n  \"dark_lvs\": [1, 2, 3, 4, 6],\r\n  \"lowRatio\": 10,\r\n  \"topRatio\": 10,\r\n  \"scan_type\": 1,\r\n  \"bright_lvs\": [1, 2, 3, 4, 6],\r\n  \"edge_area_h\": 120,\r\n  \"edge_area_w\": 160,\r\n  \"edge_area_x\": 239,\r\n  \"edge_area_y\": 179,\r\n  \"faultPixelRatio\": 4,\r\n  \"badPixelNumThreshold\": 102,\r\n  \"brightPixelNumThreshold\": 70,\r\n  \"darkPixelLvRatioThreshold\": 0.4,\r\n  \"brightPixelLvRatioThreshold\": 1.2,\r\n  \"connectedBadPixelNumThreshold\": 10\r\n}";
-
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
     }
 }

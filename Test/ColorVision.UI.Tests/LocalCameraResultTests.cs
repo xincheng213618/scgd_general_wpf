@@ -35,14 +35,26 @@ public class LocalCameraResultTests
         Assert.Null(serialized.Property("IsCVCIEFileSave"));
     }
 
-    [Fact]
-    public void SavingKeepsRawFileAndInMemoryCieWithoutWritingCieFile()
+    [Theory]
+    [InlineData("", false, "")]
+    [InlineData("SV6100_F3.6_ND0_White255", true, "_SV6100_F3.6_ND0_White255")]
+    [InlineData("SelectedButUnused", false, "")]
+    [InlineData("Color/校正:*?", true, "_Color_校正___")]
+    public void SavingKeepsRawFileAndInMemoryCieWithoutWritingCieFile(string calibrationTemplate, bool calibrationApplied, string expectedSuffix)
     {
         string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "ColorVisionCameraTests", Guid.NewGuid().ToString("N")));
         try
         {
-            using var frame = CreateFrame(true);
-            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera"));
+            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 3, Height = 2, Channels = 1, SourceBpp = 8, CieBpp = 32,
+                DeviceCode = "camera", Exposure = [10], PrimaryBufferKind = LocalFrameBufferKind.CvCie,
+                CalibrationTemplate = calibrationTemplate, IsMirrorReady = calibrationApplied
+            }, 6, 24);
+            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera", frame.Metadata));
+            string fileName = Path.GetFileName(frame.CvRawFilePath);
+            Assert.Matches(@"^\d{8}_\d{6}_\d{3}" + System.Text.RegularExpressions.Regex.Escape(expectedSuffix) + @"(?:_\d+)?\.cvraw$", fileName);
+            Assert.Equal(Path.Combine(root, "camera", "Data"), Path.GetDirectoryName(Path.GetDirectoryName(frame.CvRawFilePath)));
             Assert.True(File.Exists(frame.CvRawFilePath));
             Assert.Empty(frame.CvCieFilePath);
             Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));
@@ -56,6 +68,17 @@ public class LocalCameraResultTests
             Assert.StartsWith(expectedParent, root, StringComparison.OrdinalIgnoreCase);
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
+    }
+
+    [Fact]
+    public void CapturePathsAreDistinctBeforeEitherFileIsSaved()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ColorVisionCameraTests", Guid.NewGuid().ToString("N"));
+        string first = LocalFrameFileService.CreateCapturePath(root, "camera");
+        string second = LocalFrameFileService.CreateCapturePath(root, "camera");
+        Assert.NotEqual(first, second);
+        Assert.False(File.Exists(first));
+        Assert.False(File.Exists(second));
     }
 
     [Fact]

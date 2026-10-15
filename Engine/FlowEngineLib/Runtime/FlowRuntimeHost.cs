@@ -102,8 +102,9 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
                 .ToLowerInvariant();
             _state = FlowRuntimeHostState.Ready;
         }
-        catch
+        catch when (_state == FlowRuntimeHostState.Loading)
         {
+            // Rejecting a replacement must not change the active run's lifecycle.
             if (previousServiceCatalog != null)
                 _serviceResolver.Replace(previousServiceCatalog);
             _state = previousState == FlowRuntimeHostState.Ready

@@ -1,0 +1,63 @@
+<UserControl x:Class="ColorVision.Themes.Controls.IPAddressBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root" Focusable="False" MinHeight="28">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibleWhen"/>
+        <Style x:Key="SegmentStyle" TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0,3"/>
+            <Setter Property="IsReadOnly" Value="{Binding IsReadOnly, ElementName=Root}"/>
+            <Setter Property="MaxLength" Value="3"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+    <Border x:Name="Chrome" BorderBrush="{DynamicResource GlobalBorderBrush1}" CornerRadius="4" Padding="3,0">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsReadOnly, ElementName=Root}" Value="True">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+        <DockPanel>
+            <Button x:Name="ModeButton" DockPanel.Dock="Right" Content="⋯" Width="22" Padding="0" Margin="2,0,0,0" BorderThickness="0" Background="Transparent" ToolTip="切换 IPv4 或文本地址" Click="Mode_Click">
+                <Button.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="IPv4" Click="IPv4Mode_Click"/>
+                        <MenuItem Header="主机名 / IPv6 / 其它地址" Click="TextMode_Click"/>
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
+            <Grid>
+                <Grid x:Name="Segments" Visibility="{Binding IsSegmented, ElementName=Root, Converter={StaticResource VisibleWhen}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/><ColumnDefinition Width="12"/>
+                        <ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="Part0" Grid.Column="0" Style="{StaticResource SegmentStyle}" AutomationProperties.Name="IPv4 第 1 段"/>
+                    <TextBlock Grid.Column="1" Text="."/>
+                    <TextBox x:Name="Part1" Grid.Column="2" Style="{StaticResource SegmentStyle}" AutomationProperties.Name="IPv4 第 2 段"/>
+                    <TextBlock Grid.Column="3" Text="."/>
+                    <TextBox x:Name="Part2" Grid.Column="4" Style="{StaticResource SegmentStyle}" AutomationProperties.Name="IPv4 第 3 段"/>
+                    <TextBlock Grid.Column="5" Text="."/>
+                    <TextBox x:Name="Part3" Grid.Column="6" Style="{StaticResource SegmentStyle}" AutomationProperties.Name="IPv4 第 4 段"/>
+                </Grid>
+                <TextBox x:Name="PlainText" Text="{Binding Text, ElementName=Root, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsReadOnly, ElementName=Root}" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" VerticalContentAlignment="Center" Visibility="Collapsed" AutomationProperties.Name="主机或网络地址"/>
+            </Grid>
+        </DockPanel>
+    </Border>
+</UserControl>

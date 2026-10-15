@@ -26,35 +26,11 @@ namespace ColorVision.Engine.Templates.Jsons.AutoExpTime
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson();
             return EditTemplateJson;
         }
 
-        public string Description { get; set; } = """
-{
-  "expTimeCfg": {
-    "type": 0,
-    "maxExpTime": 60000,
-    "minExpTime": 10,
-    "autoExpFlag": false,
-    "autoExpSatDev": 20,
-    "RoiMarginRatio": {
-      "margin_RatioTop": 0,
-      "margin_RatioLeft": 0,
-      "margin_RatioRight": 0,
-      "margin_RatioBottom": 0
-    },
-    "burstThreshold": 200,
-    "autoExpSatMaxAD": 65535,
-    "autoExpSyncFreq": 60,
-    "autoExpTimeBegin": 5,
-    "autoExpSaturation": 70,
-    "autoExpMaxPecentage": 0.01
-  }
-}
-""";
-
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
 
     }
 }

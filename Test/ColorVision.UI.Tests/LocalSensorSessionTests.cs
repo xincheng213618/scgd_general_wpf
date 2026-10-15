@@ -9,12 +9,150 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Channels;
+using ColorVision.Themes;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.UI.Tests;
 
 // These regressions protect framing, cancellation and persisted template compatibility.
 public sealed class LocalSensorSessionTests
 {
+    [Fact]
+    public async Task DiagnosticWindowViewsExistingRecordsAndClosingOrClearingDoesNotControlConnection()
+    {
+        var transport = new FakeTransport { Reply = _ => "{\"ok\":true}" };
+        using var session = new LocalSensorSession(_ => transport);
+        await session.OpenAsync(Config());
+        const string request = "{\"event\":\"query\"}";
+        await session.ExecuteAsync([new() { Name = "Query", Request = request, Response = "{\"ok\":true}" }]);
+        WpfTestHost.Invoke(() =>
+        {
+            var previous = Application.Current.Resources;
+            SensorDiagnosticsWindow? window = null;
+            try
+            {
+                var resources = new ResourceDictionary();
+                foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
+                    resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) });
+                Application.Current.Resources = resources;
+                window = new SensorDiagnosticsWindow("Sensor", session, () => "TCP test") { Left = -16000, Top = -16000, ShowInTaskbar = false, ShowActivated = false };
+                window.Show(); window.UpdateLayout();
+                var grid = (DataGrid)window.FindName("MessageGrid");
+                Assert.Equal(2, grid.Items.Count);
+                grid.SelectedIndex = 0;
+                var detail = (TextBox)window.FindName("DetailText");
+                Assert.Contains(Environment.NewLine, detail.Text);
+                ((CheckBox)window.FindName("FormatJson")).IsChecked = false;
+                Assert.Equal(request, detail.Text);
+                var search = (TextBox)window.FindName("SearchBox");
+                search.Text = "no-such-record";
+                Assert.Empty(grid.Items);
+                search.Clear();
+                ((ComboBox)window.FindName("DirectionFilter")).SelectedIndex = 2;
+                Assert.Single(grid.Items);
+                Assert.Equal(LocalSensorDiagnosticKind.Received, ((LocalSensorDiagnosticEntry)grid.Items[0]).Kind);
+                const string replyHex = "50472C494D4147452C77302E706E672C454E440D0A";
+                session.Diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test",
+                    new() { Name = "Image", CmdType = SensorCmdType.Hex }, 2, 1, Convert.FromHexString(replyHex));
+                session.Diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test",
+                    new() { Name = "Unicode", CmdType = SensorCmdType.UTF8 }, 3, 1, Encoding.UTF8.GetBytes("完成\r\n\t"));
+                window.RefreshRecords();
+                search.Text = "PG,IMAGE";
+                var echo = Assert.Single(grid.Items.Cast<LocalSensorDiagnosticEntry>());
+                grid.SelectedItem = echo;
+                Assert.Equal("PG,IMAGE,w0.png,END[CR][LF]", echo.Preview);
+                Assert.Equal(echo.Preview, detail.Text);
+                Assert.Equal(replyHex, echo.Text);
+                Assert.Equal(replyHex, ((TextBox)window.FindName("DetailOriginalText")).Text);
+                Assert.Equal("50 47 2C 49 4D 41 47 45 2C 77 30 2E 70 6E 67 2C 45 4E 44 0D 0A", ((TextBox)window.FindName("DetailHex")).Text);
+                search.Text = "[TAB]";
+                echo = Assert.Single(grid.Items.Cast<LocalSensorDiagnosticEntry>());
+                grid.SelectedItem = echo;
+                Assert.Equal("完成[CR][LF][TAB]", detail.Text);
+                Assert.Equal("完成\r\n\t", echo.Text);
+                search.Clear();
+                ((TabControl)window.FindName("RecordTabs")).SelectedIndex = 1;
+                Assert.All(grid.Items.Cast<LocalSensorDiagnosticEntry>(), entry => Assert.Equal(LocalSensorDiagnosticKind.Log, entry.Kind));
+                Assert.NotEmpty(grid.Items);
+                ((Button)window.FindName("ClearHistoryButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.Empty(grid.Items);
+                Assert.True(session.IsOpen);
+                window.Close();
+                Assert.True(session.IsOpen);
+                Assert.False(transport.Disposed);
+                session.Diagnostics.AddLog("test", "关闭窗口后", "仍然采集");
+                window = new SensorDiagnosticsWindow("Sensor", session, () => "TCP test") { Left = -16000, Top = -16000, ShowInTaskbar = false, ShowActivated = false };
+                window.Show();
+                ((TabControl)window.FindName("RecordTabs")).SelectedIndex = 1;
+                Assert.Single(((DataGrid)window.FindName("MessageGrid")).Items);
+                Assert.Equal(1, transport.Opens);
+                Assert.Equal(1, transport.Writes);
+            }
+            finally { window?.Close(); Application.Current.Resources = previous; }
+        });
+    }
+
+    [Fact]
+    public async Task DiagnosticsRetainEveryFragmentAndRetryWithoutChangingResponseMatching()
+    {
+        var transport = new FakeTransport { ReplyChunks = attempt => attempt == 1 ? ["N"u8.ToArray(), "O"u8.ToArray()] : ["O"u8.ToArray(), "K"u8.ToArray()] };
+        using var session = new LocalSensorSession(_ => transport);
+        await session.OpenAsync(Config());
+        var result = (await session.ExecuteAsync([new() { Name = "Query", Request = "Q", Response = "OK", RetryCount = 2 }])).Single();
+        Assert.Equal("OK", result.ResponseText);
+        Assert.Equal(2, result.Attempts);
+        var history = session.Diagnostics.GetSnapshot(-1, out _)!;
+        var traffic = history.Where(entry => entry.Kind is LocalSensorDiagnosticKind.Sent or LocalSensorDiagnosticKind.Received).ToArray();
+        Assert.Equal(new[] { "51", "4E", "4F", "51", "4F", "4B" }, traffic.Select(entry => entry.Hex));
+        Assert.All(traffic, entry => { Assert.Equal("Query", entry.CommandName); Assert.Equal(1, entry.CommandId); });
+        Assert.Equal(new[] { 1, 1, 1, 2, 2, 2 }, traffic.Select(entry => entry.Attempt));
+        Assert.Contains(history, entry => entry.EventName == "回包不匹配，重试");
+        Assert.Contains(history, entry => entry.EventName == "执行完成" && entry.Text.Contains("OK"));
+        await session.CloseAsync();
+        Assert.Contains(session.Diagnostics.GetSnapshot(-1, out _)!, entry => entry.EventName == "连接关闭");
+    }
+
+    [Fact]
+    public async Task DiagnosticsCaptureUnsolicitedBytesWithoutAnOpenWindowOrPendingCommand()
+    {
+        var transport = new FakeTransport();
+        using var session = new LocalSensorSession(_ => transport);
+        await session.OpenAsync(Config());
+        transport.QueueReceived([0x00, 0xFF]);
+        // Starting the next read proves the previous chunk passed through the session's receive path.
+        await transport.SecondReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var received = Assert.Single(session.Diagnostics.GetSnapshot(-1, out _)!, entry => entry.Kind == LocalSensorDiagnosticKind.Received);
+        Assert.Equal("00FF", received.Hex);
+        Assert.Equal("[NUL][FF]", received.DisplayText);
+        Assert.Equal("Hex", received.Encoding);
+        Assert.Equal(0, received.CommandId);
+        Assert.True(session.IsOpen);
+    }
+
+    [Fact]
+    public void DiagnosticRetentionIsBoundedAndClearInvalidatesSnapshots()
+    {
+        var diagnostics = new LocalSensorDiagnostics();
+        byte[] payload = new byte[LocalSensorDiagnostics.MaxPayloadBytes + 1];
+        payload[0] = 0x41;
+        diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test", null, 0, 0, payload);
+        payload[0] = 0xFF;
+        var entry = Assert.Single(diagnostics.GetSnapshot(-1, out long revision)!);
+        Assert.Equal("41", entry.Hex[..2]);
+        Assert.True(entry.IsTruncated);
+        Assert.Equal(payload.Length, entry.ByteCount);
+        Assert.Equal(LocalSensorDiagnostics.MaxPayloadBytes, entry.CapturedByteCount);
+        Assert.Null(diagnostics.GetSnapshot(revision, out _));
+        for (int index = 0; index < LocalSensorDiagnostics.MaxEntries + 1; index++) diagnostics.AddLog("test", "log", index.ToString());
+        var retained = diagnostics.GetSnapshot(revision, out revision)!;
+        Assert.Equal(LocalSensorDiagnostics.MaxEntries, retained.Length);
+        Assert.Equal("1", retained[0].Text);
+        diagnostics.Clear();
+        Assert.Empty(diagnostics.GetSnapshot(revision, out _)!);
+    }
+
     [Fact]
     public async Task FramingWaitsForCompleteBytes()
     {
@@ -173,6 +311,9 @@ public sealed class LocalSensorSessionTests
         Assert.Contains("query", failure.Message);
         Assert.Contains("O", failure.Message);
         Assert.Equal(DeviceStatusType.Closed, session.Status);
+        var history = session.Diagnostics.GetSnapshot(-1, out _)!;
+        Assert.Contains(history, entry => entry.Kind == LocalSensorDiagnosticKind.Received && entry.Hex == "4F");
+        Assert.Contains(history, entry => entry.Kind == LocalSensorDiagnosticKind.Error && entry.Text.Contains(failure.Message));
         await Assert.ThrowsAsync<InvalidOperationException>(() => session.ExecuteAsync([new() { Request = "NEXT" }]));
         Assert.Equal(1, transport.Writes);
     }
@@ -332,10 +473,14 @@ public sealed class LocalSensorSessionTests
         public bool BlockOpen { get; init; }
         public TaskCompletionSource? OpeningUnwind { get; init; }
         public Func<int, string>? Reply { get; init; }
+        public Func<int, byte[][]>? ReplyChunks { get; init; }
         public int Opens, Writes;
+        private int reads;
         public bool Disposed { get; private set; }
         public TaskCompletionSource OpenStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource WriteStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource SecondReadStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public void QueueReceived(byte[] bytes) => received.Writer.TryWrite(bytes);
         public async Task OpenAsync(LocalSensorConnectionConfig config, CancellationToken token)
         {
             Opens++; OpenStarted.TrySetResult();
@@ -346,9 +491,14 @@ public sealed class LocalSensorSessionTests
             }
         }
         public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
-        { byte[] bytes = await received.Reader.ReadAsync(token); bytes.CopyTo(buffer); return bytes.Length; }
+        { if (++reads == 2) SecondReadStarted.TrySetResult(); byte[] bytes = await received.Reader.ReadAsync(token); bytes.CopyTo(buffer); return bytes.Length; }
         public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken token)
-        { token.ThrowIfCancellationRequested(); Writes++; if (Reply != null) received.Writer.TryWrite(Encoding.ASCII.GetBytes(Reply(Writes))); WriteStarted.TrySetResult(); return ValueTask.CompletedTask; }
+        {
+            token.ThrowIfCancellationRequested(); Writes++;
+            if (Reply != null) received.Writer.TryWrite(Encoding.ASCII.GetBytes(Reply(Writes)));
+            if (ReplyChunks != null) foreach (byte[] chunk in ReplyChunks(Writes)) received.Writer.TryWrite(chunk);
+            WriteStarted.TrySetResult(); return ValueTask.CompletedTask;
+        }
         public void Dispose() { Disposed = true; received.Writer.TryComplete(); }
     }
 }

@@ -2,45 +2,27 @@
 knowledge_id: "algorithms.find-light-area"
 knowledge_type: "topic"
 status: "current"
-summary: "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布。"
-aliases: ["发光区定位1","发光区检测模板","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","TemplateRoi","RobustV2"]
-code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea","UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
-related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","algorithms.template-management","engine.native-integration","engine.results"]
+summary: "AA 模板与本地发光区定位(V2)的入口、图像来源、POI保存模板和结果边界。"
+aliases: ["寻找AA区","AA发光区定位","TemplateAAFindPoints","AaFindPointsTemplatePropertiesEditor","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","RobustV2"]
+code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/AAFindPoints","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmFindLightAreaNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs","Engine/ColorVision.Engine/Abstractions/ViewResultAlgType.cs","Engine/cvColorVision/CVCommCore/CVResultType.cs","Engine/FlowEngineLib/Node/Algorithm/CVResultType.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs","Engine/ColorVision.Engine/Services/Results/LightArea","Engine/ColorVision.Engine/Services/Results/LocalFindLuminousArea","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea","UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/LightAreaResultHandlerTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
+related: ["algorithms.index","algorithms.roi-routes","algorithms.template-management","engine.native-integration","engine.results"]
 ---
 
-# 发光区定位：远端模板与本地 V2
+# 发光区定位：AA 模板与本地 V2
 
-发光区定位用于从图像中取得发光面的点位或四角。**发光区定位1** 使用数据库模板并向算法服务发送请求；**本地发光区定位(V2)** 使用本机 `RobustV2` 算法，不需要检测参数模板。两条 Engine 链路共用点位明细表和历史结果处理器，但参数、执行端和成功判据不同。
+发光区定位节点使用 AA JSON 模板；**参数模板**字段内直接选择模板，旁边的按钮提供参数编辑和模板管理。节点类型、已有连线、模板名称、图像文件、POI 保存模板及角点顺序的持久化契约不变。`TemplateAAFindPoints` 的字典号为 `42`、编码为 `FindLightArea`。
 
-本地算法计算不依赖远端算法服务；本地 Flow 节点的结果保存仍依赖 MySQL 和已有流程批次。名称相近的 **发光区1** 属于另一套 [FocusPoints 模板](./focus-points-template.md)。
+旧定位字典 `31` 与 FocusPoints 字典 `15` 的数据不会自动转换成 AA JSON，也不会由界面清理。保留旧模板的流程需要人工选择 AA 模板；服务端权限独立于主程序，本次主程序移除入口不代表服务端实现已移除。通用旧算法枚举编号 `7/8/9` 保留空位，其中 `9` 是已退役项目的 JND 计算入口；旧流程不能将它们误解释为后续算子，执行时明确拒绝。
 
-## 使用远端发光区定位1
-
-1. 在算法设备的通用手动面板中选择 **基础算法 → 发光区定位1**。
-2. 选择 **发光区检测模板**。需要编辑时使用选择器旁的编辑命令并保存，具体步骤见[模板编辑与创建](./template-management.md)。
-3. 设置算法服务可读取的图像路径，点击 **计算**。输入助手检查模板及非空路径，不检查服务端文件可见性。
-4. 核对服务返回及相应历史结果。创建 `MsgRecord` 只表示建立请求记录并发起发送，不是算法计算或落库成功。
-
-`TemplateRoi : ITemplate<RoiParam>` 的编码为 `FindLightArea`、字典号为 `31`。下表是无明细的新空参数对象初值，现有模板以保存的明细为准。
-
-| 参数 | 类型 / 新空对象初值 | 含义 |
-| --- | --- | --- |
-| `Threshold` | `int` / `1` | 发光区阈值；比较结果时应保持图像类型、曝光条件一致 |
-| `Times` | `int` / `1` | 算法服务参数，具体次数含义由服务解释 |
-| `SmoothSize` | `int` / `1` | 平滑尺寸参数，实际效果由服务实现决定 |
-
-`AlgorithmRoi.Execute()` 将图像路径、文件类型和选中参数交给 `SendCommand()`。请求含 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType` 与 `TemplateParam = { ID: param.Id, Name: param.Name }`；手动入口传入的两个设备字段为空字符串，不在 `TemplateParam` 中展开三项参数。事件常量 `Event_LightArea2_GetData` 的值为 `OLED.GetRIAandPT`。
-
-模板加载按 `ModMasterModel.Pid == 31`、租户 `0`、未删除条件读取数据。程序集发现模板不代表数据库已有字典和模板。
+**本地发光区定位(V2)** 使用本机 `RobustV2` 算法，不需要检测参数模板。本地计算不依赖远端算法服务；本地 Flow 节点的结果保存仍依赖 MySQL 和已有流程批次。两条 Engine 链路共用角点模型、DAO 和点位明细表；AA 与本地 V2 分别由各自的结果处理器加载和展示。
 
 ## 配置本地发光区定位(V2)
 
-在流程中加入 **本地发光区定位(V2)**，接入本地取图或校正后的图像。图像方向变换必须已完成；节点借用当前图像计算，不修改源像素。
+在流程中加入 **本地发光区定位(V2)**，默认使用上游图像：接入相机取图或校正节点，本地文件通过 **加载图片 → 发光区定位** 输入。图像方向变换必须已完成；节点借用当前图像计算，不修改源像素。没有可用上游图像时明确报错，并提示连接取图、校正或加载图片节点。
 
 | 界面选项 | 属性 / 默认值 | 使用方式 |
 | --- | --- | --- |
-| 图像文件 | `ImageFilePath` / 空 | 可选文件来源；上游已有内存帧时不使用此项 |
 | 搜索区域 | `SearchRegion` / 整图 | `0,0,0,0` 表示整图；指定 ROI 时宽高必须大于零且完全位于图像内，输出还原为整图坐标 |
 | 最小置信度 | `MinimumConfidence` / `0.25` | 必须是 `0` 到 `1` 的有限数值；低于门限拒绝结果，不会静默改用旧算法 |
 | POI保存模板 | `SavePOITempName` / 空 | 可选的数据库回写目标，见下文；不是检测输入参数模板 |
@@ -49,13 +31,12 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","
 
 ### 图像来源与格式
 
-节点依次选择以下来源：
+节点按以下优先级使用上游图像：
 
 1. 当前上游本地内存帧。
-2. 配置的非空 **图像文件**。
-3. `IN` 输入图像结果；没有有效输入引用时读取流程数据中的 `MasterId`、`MasterResultType`。结果类型需为相机图像或算法校正，读取对应 `FileUrl`、`RawFile` 中存在的文件。
+2. `IN` 输入图像结果；没有有效输入引用时读取流程数据中的 `MasterId`、`MasterResultType`。结果类型需为相机图像或算法校正，读取对应 `FileUrl`、`RawFile` 中存在的文件。
 
-已选来源存在但无效时会报错，不会一路忽略错误尝试后续来源。例如非空配置路径不存在时，不再尝试 `IN` 图像结果；声明 CIE 主缓冲却缺少 CIE 数据时，也不会改用 RAW。成功从文件加载的帧会交给后续节点，使角点与图像保持同源。
+已选来源存在但无效时会报错，不会一路忽略错误尝试后续来源。例如上游图像结果指向的文件不存在时直接报错；声明 CIE 主缓冲却缺少 CIE 数据时，也不会改用 RAW。成功从文件加载的帧会交给后续节点，使角点与图像保持同源。
 
 本地 RAW 输入支持 8/16 位、1/3 通道交错缓冲；CIE 支持 32 位浮点单平面 Y 或三平面 XYZ，三平面只借用第二个 Y 平面。文件加载器先识别 ColorVision 文件头，否则交给 WPF 位图解码器；支持的位图像素格式包括 Gray8、Gray16、Rgb48、24/32 位彩色，并非只接受 `.cvraw` / `.cvcie` 扩展名。
 
@@ -100,18 +81,28 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 ## 历史结果与 CSV
 
-`ViewHandleFindLightArea` 接受 `LightArea`、`FindLightArea` 两种结果。`AlgResultLightAreaModel` 将 `PosX`、`PosY` 和父结果 `Pid` 保存到 `t_scgd_algorithm_result_detail_light_area`；明细仅在 `ViewResults == null` 时加载，已有集合会复用。
+`AlgResultLightAreaModel` 和 `AlgResultLightAreaDao` 位于 `Engine/ColorVision.Engine/Services/Results/LightArea/` 公共结果目录，命名空间为与目录一致的 `ColorVision.Engine.Services.Results.LightArea`。模型的 `Id`、`Pid`、浮点 `PosX` / `PosY`、表名 `t_scgd_algorithm_result_detail_light_area` 及数据库列映射不变。ARVRPro 更新类型引用后继续通过 DAO 读取，并按项目原有方式绘制；其保存的 JSON 属性名也保持不变。
 
-列表展示保存的点位；叠图先将坐标转为整数，再经 `GrahamScan.ComputeConvexHull()` 求凸包，绘制透明填充、蓝色轮廓的 `DVPolygon`。浮点明细、原始点序与屏幕上的整数凸包是不同表示，不能仅凭凸包还原原始结果。
+此命名空间调整改变了公开类型的完整名称。引用旧类型的项目插件需要同步更新引用、重新编译，并与包含新类型的主程序配套使用；数据库无需迁移，已有角点明细与项目 JSON 仍按原字段读取。
 
-**保存数据列** 调用的 `SideSave()` 尚未写入表头或点位行，只向所选目录写入空内容的 `{ResultType}_{Batch}.csv`，并会覆盖同名文件。它不能作为有效点位 CSV 导出使用。
+- AA 流程结果：`FindLightArea` 且版本 `AA`，由 AA 所属的 `ViewHandleAAFindPoints` 从公共角点 DAO 加载。
+- 本地 V2 流程结果：`FindLightArea` 且版本 `RobustV2`，由 `ViewHandleLocalFindLuminousArea` 加载。已有本地记录未保存版本，使用空版本且模板名 `RobustV2` 的组合兼容；新成功与失败主记录均保存明确版本，避免按处理器发现顺序分派。
+- 独立 JSON AA 入口：`ARVR_AAFindPoints` 且版本 `AA`，仍由 `ViewHandleAAFindPoints` 读取通用明细指向的结果文件；将 JSON `corner` 映射为同一个角点模型供展示。原始 JSON 和 `Points` 布点数据保留，不额外写入角点表，也不改变主结果类型。
+
+两个处理器的匹配条件互斥。流程角点明细仅在 `ViewResults == null` 时加载，已有集合会复用；失败结果没有明细时不生成角点图元。
+
+结果编号 `8` 已退役并保留空位；当前发光区流程编号为 `FindLightArea=36`，独立 AA JSON 入口为 `ARVR_AAFindPoints=61`。旧数据库记录不删除、不重编号；编号 `8` 加载为未定义枚举值，本地 FOV 和 POI 布点拒绝接收该类型。旧 JND、初版定位及无法判定归属的记录也不由当前两个处理器展示。恢复旧记录使用需要同时恢复其结果定义、版本专属处理器和下游接收分支，不能归给 AA 或本地 V2。
+
+两条流程的列表展示保存的浮点点位；叠图先将坐标转为整数，再经 `GrahamScan.ComputeConvexHull()` 求凸包，绘制透明填充、蓝色轮廓的 `DVPolygon`。浮点明细、原始点序与屏幕上的整数凸包是不同表示，不能仅凭凸包还原原始结果。
+
+**保存数据列** 尚未提供角点 CSV 导出：本地处理器沿用基类空实现，AA 处理器也未写入数据。按钮可用或调用返回不表示生成了角点 CSV。
 
 ## 按现象排查
 
 | 现象 | 检查顺序 |
 | --- | --- |
-| 远端模板下拉为空或提示未选择 | 检查 MySQL 连接、字典 `31` 下的模板及选择项 |
-| 远端服务收不到图像 | 核对事件 `OLED.GetRIAandPT`、`ImgFileName`、`FileType` 与服务端文件可见性 |
+| AA 模板下拉为空或提示未选择 | 检查 MySQL 连接、字典 `42` 下的 JSON 模板及选择项 |
+| 远端服务收不到图像 | 核对事件 `FindLightArea`、`ImgFileName`、`FileType` 与服务端文件可见性 |
 | 结果页无点位或凸包异常 | 核对结果类型、主结果 ID、明细 `pid` 和浮点点位；区分检测失败、数据库未加载及整数凸包显示 |
 | V2 逐边证据不足 | 查看 `SideQuality` 的覆盖率、内点比例、边缘对比度、残差、最大缺口；检查暗角、漏光、遮挡后再调整门限 |
 | V2 多个相近候选 | 相近候选可产生 `AmbiguousCandidates` / `MultipleComparableCandidates` 警告并降低置信度；降分后低于门限仍返回 `LowConfidence`。需要唯一目标时缩小搜索 ROI 或消除第二个相似发光面 |
@@ -120,7 +111,7 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 ## 验证入口与边界
 
-`LocalFindLuminousAreaNodeTests.cs` 使用替代检测、保存、发布服务和事务对象检查节点输入优先级、POI 更新次序、四角顺序、失败主结果及提交/回滚流程，不能代替真实数据库或 native 验证。`FindLuminousAreaManualResultTests.cs` 检查手动诊断消息内容。
+`LocalFindLuminousAreaNodeTests.cs` 使用替代检测、保存、发布服务和事务对象检查节点输入优先级、POI 更新次序、四角顺序、失败主结果及提交/回滚流程，不能代替真实数据库或 native 验证。`FindLuminousAreaManualResultTests.cs` 检查手动诊断消息内容；`LightAreaResultHandlerTests.cs` 检查处理器归属互斥、旧本地记录兼容、公共模型的新命名空间与数据库契约及 JSON 角点映射，不连接真实数据库。
 
 普通 ABI 反射检查不等于执行了导出函数。C++ 合成回归位于 `Test/opencv_helper_test/test_find_luminous_area.cpp`。
 

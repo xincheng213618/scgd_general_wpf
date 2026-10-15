@@ -330,7 +330,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 throw new InvalidOperationException("A mirror-ready frame cannot be published before its orientation is finalized.");
             }
-            action.RuntimeResources.Set(GetFrameResourceKey(frame.FrameId), frame);
+            action.SetRuntimeResource(GetFrameResourceKey(frame.FrameId), frame);
             action.Data[FrameIdDataKey] = frame.FrameId.ToString("N");
         }
 

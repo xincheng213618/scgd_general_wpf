@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建唯一物理相机时补齐空设备绑定并静默重启本机注册中心。"
 aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","校正文件管理","四色校正采集","四色校正文件修正","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","CalibrationEdit","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
-code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraCreationBatch.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraInitialBinding.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationArchivePlanBuilder.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationExportArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/PhysicalCameraCreationBatchTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs","Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationExportArchiveTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraCreationBatch.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraInitialBinding.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraIdentity.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationArchivePlanBuilder.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationExportArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PhysicalCameraIdentityTests.cs","Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/PhysicalCameraCreationBatchTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs","Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationExportArchiveTests.cs"]
 related: ["operations.camera","operations.camera-configuration","operations.calibration","engine.devices"]
 ---
 
@@ -15,7 +15,7 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 ## 离线配置与许可证
 
-未连接 MySQL 时，物理相机、设备及许可证沿用现有字段写入 `ColorVision.Local.db` 配置文档；没有服务器数据同步。许可证导入、替换、删除和过期清理使用同一来源；过期清理仍在删除时重查有效期，续期不会重建已有物理相机。原生 SDK 的许可证校验及 `.lic` 文件使用规则不变，数据库里有许可证记录不代表 SDK 已加载文件。具体创建步骤见[离线设备配置](./configuration.md)。
+未连接 MySQL 时，物理相机、设备及许可证沿用现有字段写入 `ColorVision.Local.db` 配置文档；没有服务器数据同步。许可证导入、替换、删除和过期清理使用同一来源；过期清理仍在删除时重查有效期，续期不会重建已有物理相机。本地相机连接由程序读取关联许可证的 `ExpiryDate` 判断是否到期，具体开关与检查时机见[相机服务](./camera.md)。具体创建步骤见[离线设备配置](./configuration.md)。
 
 ## 扫描相机并创建资源
 
@@ -32,13 +32,17 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 `PhyCameraManager.LoadPhyCamera` 查询当前配置库中的 `ServiceTypes.PhyCamera` 资源，有非空配置的记录才新建物理对象。`PhyCamera` 持有配置、许可证、校准资源和逻辑设备关联。
 
-已有 ID 会复用原对象，只更新名称、资源模型以及物理配置中的 `CameraID`（取数据库资源 `Name`）；不会重新反序列化整份 `Value` 或重载全部子资源，会移除当前配置库中已不存在或配置为空的旧对象。因此重新打开管理窗口不是强制重建物理配置和资源的操作。
+已有资源 ID 会复用原对象，只刷新名称、资源模型和相机身份，不重载全部参数或子资源；配置库中不存在或配置为空的旧对象会被移除。首次加载与复用对象采用同一身份读取规则：优先取配置 JSON 的 `CameraID`，缺失时兼容旧 `Name`；空 `Name` 不覆盖已有 ID。若旧值与物理 Code 不匹配，而其他旧字段存在完整 MD5 匹配的 ID，则取匹配值修复；不能把界面显示用的 Code 当作 CameraID。物理配置保存时同时保持资源 `Name` 与配置中的 ID 一致。
 
-`SearchCameraIds` 在后台依次调用所选型号的 SDK 枚举，再加载管理对象。`MarkDiscoveredCamerasOnline` 以发现结果的 `MD5Id` 匹配物理 `Code` 并标为 Online；这个托管方法不把未命中的对象统一改为 Offline。管理列表的在线数和排序来自资源 `Remark`，关注数还检查许可证提示及子资源是否为空；它们与本次扫描结果、实际打开相机、采集成功分别核对。
+`SearchCameraIds` 在后台依次调用所选型号的 SDK 枚举，再加载管理对象。底层搜索只返回 ID/MD5，不负责保存 WPF 配置。`PhysicalCameraIdentity` 将成功搜索的完整 `MD5(CameraID)` 与已有物理 Code 匹配，保存物理 ID 及兼容 `Name`，并同步同一配置库中逻辑相机、校准设备的 ID 镜像；不会改 Code、自动切换绑定、重置参数或重启设备。身份更新使用最新读取的配置 JSON 并保留其他字段，删除或尚未配置的物理记录不被搜索重新创建。
+
+未发现、搜索失败或 MD5 不匹配时保留原 ID，不把其它相机的 ID 填入当前绑定；未命中的对象也不统一改为 Offline。持久化失败会报告错误；物理与各逻辑记录不是跨记录原子事务，重复搜索可补齐未完成的同步。管理列表的在线数和排序来自资源 `Remark`，关注数还检查许可证提示及子资源是否为空；它们与本次扫描结果、实际打开相机、采集成功分别核对。
 
 ## 找到所需操作
 
 先在左侧选择目标物理相机，再使用对应位置的操作。列表与详情均以相机型号为主标题，详情下方保留可复制的相机代码、参数与许可证状态；许可证更新、在线下载、复制和导出集中在许可证区域右侧。下方按“相机配置”“校正管理”“备份与恢复”分组，按钮按等宽四列排列，详情区较窄时切为两列；中英文长文案在按钮内换行，操作区可独立滚动。清单宽度可拖动调整，没有选中相机时显示选择提示。“重置”位于备份与恢复区底部，会清除当前相机的校正资源与模板，执行前仍需确认。
+
+详情许可证区域保留后面的“开始日期 - 结束日期”，仅给前面状态提示中的结束日期补上时间。扣除日期范围占用的宽度后，依次显示 `yyyy-MM-dd HH:mm:ss`、`yyyy-MM-dd HH:mm` 或 `yyyy-MM-dd HH`；较窄时日期范围沿用原有换行布局，悬停状态提示始终可查看到秒的完整时间。结束时间来自许可证记录的 `ExpiryDate`，本地相机打开时的到期判断也使用该字段，具体开关见[相机服务](./camera.md)。
 
 | 位置与名称 | 用途 |
 | --- | --- |
@@ -59,7 +63,7 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 首次创建按保存前是否已有非空物理相机配置判断，保存失败、离线配置、重复导入已有相机许可证都不触发该重启。一次多文件 / ZIP 许可证导入在处理完成后合并为一次后台重启；批次并发时串行执行，避免 Windows 服务启停重叠。原有相机的日常使用不因本流程重启，许可证变更原有的设备服务重启确认仍由许可证入口单独管理。
 
-首次保存物理相机配置后，若已配置物理相机仅一台，维护其许可证记录，并由 `PhysicalCameraInitialBinding` 为同一存储中的现有设备补齐空绑定：普通设备的空 `SN` 填入物理相机 Code，相机与校正设备还补齐空 `CameraCode`。扫描创建时同步物理参数，并把已识别的 Camera ID 填入相机/校正设备的空 ID。初始化数据库中已存在的默认相机、默认算法、默认校正同样覆盖；绑定不依赖许可证存在或有效，运行授权仍由驱动校验。已有其他 SN / CameraCode、已有 Camera ID、光谱仪及另一存储的设备保持不变，仅对发生补齐的设备调用原有保存和重载链，再执行批次的注册中心重启。已有物理配置的重复导入以及第二台物理相机创建不触发首次绑定。普通设备的单独新建入口仍按设备资源配置主题选择到期时间最晚的可用许可证。
+首次保存物理相机配置后，若已配置物理相机仅一台，维护其许可证记录，并由 `PhysicalCameraInitialBinding` 为同一存储中的现有设备补齐空绑定：普通设备的空 `SN` 填入物理相机 Code，相机与校正设备还补齐空 `CameraCode`，对应 ID 统一取物理配置，替换残留的旧逻辑 ID。初始化数据库中已存在的默认相机、默认算法、默认校正同样覆盖；绑定不依赖许可证存在或有效，运行授权仍由驱动校验。已有其他 SN / CameraCode、光谱仪及另一存储的设备保持不变，仅对发生补齐或 ID 修复的设备调用原有保存和重载链，再执行批次的注册中心重启。已有物理配置的重复导入以及第二台物理相机创建不触发首次绑定。普通设备的单独新建入口仍按设备资源配置主题选择到期时间最晚的可用许可证。
 
 ## 许可证字段与界面状态
 

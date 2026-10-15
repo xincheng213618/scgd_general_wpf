@@ -101,6 +101,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {            
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
+            Config.CameraID = PhysicalCameraIdentity.ReadCameraId(SysResourceModel, Config.CameraID);
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
             {
@@ -667,9 +668,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 return LicenseState switch
                 {
                     LicenseState.Unlicensed => Properties.Resources.LicenseStatusUnlicensed,
-                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => string.Format(Properties.Resources.LicenseBadgeExpired, $"{expiryDate:yyyy-MM-dd}"),
+                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => string.Format(Properties.Resources.LicenseBadgeExpired, $"{expiryDate:yyyy-MM-dd HH:mm:ss}"),
                     LicenseState.Invalid => Properties.Resources.LicenseBadgeInvalid,
-                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => string.Format(Properties.Resources.LicenseBadgeExpiringSoon, $"{expiryDate:yyyy-MM-dd}"),
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => string.Format(Properties.Resources.LicenseBadgeExpiringSoon, $"{expiryDate:yyyy-MM-dd HH:mm:ss}"),
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => $"{Properties.Resources.LicenseBadgeValid} {expiryDate:yyyy-MM-dd HH:mm:ss}",
                     LicenseState.Licensed => Properties.Resources.LicenseBadgeValid,
                     _ => Properties.Resources.LicenseBadgeInvalid,
                 };
@@ -1498,8 +1500,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Config.CFW.NDBindDeviceCode = string.Empty;
             }
 
+            SysResourceModel.Name = Config.CameraID;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            SysResourceDao.Instance.Save(SysResourceModel);
+            if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
+                throw new InvalidOperationException($"保存物理相机 {Code} 的配置失败。");
 
             OnPropertyChanged(nameof(DeviceModeDisplayText));
             OnPropertyChanged(nameof(CameraInfoMetaText));
@@ -1509,7 +1513,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
         public override void Save()
         {
-            base.Save();
             SaveConfig();
         }
 

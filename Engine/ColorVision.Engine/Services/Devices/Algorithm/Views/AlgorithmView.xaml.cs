@@ -279,12 +279,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void LocalResultPublished(ResultMessage message)
         {
+            bool isLocalFlow = message.Route == ResultRoutes.LocalFlow;
             if (_isDisposed
                 || Device == null
                 || Device.IsDisposed
-                || message.Route != ResultRoutes.Algorithm
+                || (!isLocalFlow && message.Route != ResultRoutes.Algorithm)
                 || message.ResultKind != ResultKinds.Algorithm
-                || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
+                || (!isLocalFlow && !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)))
                 return;
 
             ShowPersistedResult(message.Data.MasterId);

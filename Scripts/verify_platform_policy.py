@@ -37,7 +37,7 @@ X64_PLATFORM_PROJECTS = (
     Path("UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj"),
 )
 FILEIO_PACKAGE_ID = "ColorVision.FileIO"
-FILEIO_PACKAGE_FRAMEWORKS = ("net10.0", "net8.0", "net6.0", "net461")
+FILEIO_PACKAGE_FRAMEWORKS = ("net10.0",)
 IMAGE_FILE_MACHINE_I386 = 0x014C
 PE32_MAGIC = 0x010B
 COMIMAGE_FLAGS_ILONLY = 0x00000001

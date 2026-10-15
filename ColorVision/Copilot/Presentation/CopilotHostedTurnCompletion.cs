@@ -21,6 +21,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
+            CopilotAssistantMessagePresenter.CancelPendingUserQuestion(assistantMessage);
             assistantMessage.CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
                 "The hosted turn completed unexpectedly");
             if (assistantMessage.IsResponseContentTruncated
@@ -149,6 +150,7 @@ namespace ColorVision.Copilot
 
         private static void CompleteThinking(CopilotChatMessage assistantMessage)
         {
+            CopilotAssistantMessagePresenter.CancelPendingUserQuestion(assistantMessage);
             assistantMessage.IsExecutionInProgress = false;
             assistantMessage.IsReasoningInProgress = false;
             assistantMessage.MarkThinkingCompleted();

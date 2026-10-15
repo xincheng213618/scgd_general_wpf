@@ -1,9 +1,13 @@
 #pragma warning disable CA1707
+using ColorVision.UI;
 using cvColorVision;
+using Spectrum.Data;
 using Spectrum.Models;
+using System.Globalization;
 
 namespace Spectrum.Tests;
 
+[Collection("LocalSpectrumDriver")]
 public class ViewResultSpectrumTests
 {
     [Theory]
@@ -42,6 +46,56 @@ public class ViewResultSpectrumTests
         Assert.Equal(4001, result.SpectrumPointCount);
         Assert.Equal(380f, result.fSpect1);
         Assert.Equal(780f, result.fSpect2, 3);
+    }
+
+    [Theory]
+    [InlineData(350f)]
+    [InlineData(0f)]
+    public void EqeRecalculation_PreservesPersistedFluxInResultAndExport(float flux)
+    {
+        COLOR_PARA colorParam = CreateColorParam(1f);
+        colorParam.fPh = 35f;
+        ViewResultSpectrum result = new(new SprectrumModel
+        {
+            ColorParam = colorParam,
+            LuminousFlux = flux
+        });
+
+        result.CalculateEqeParams(5f, 10f);
+
+        Assert.Equal(flux, result.LuminousFlux);
+        Assert.Equal(flux / 0.05d, result.LuminousEfficacy!.Value, 8);
+
+        string[] lines = SpectrumCsvExporter.CreateCsv([result], isEqeMode: true)
+            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        string[] headers = lines[0].Split(',');
+        string[] values = lines[1].Split(',');
+        Assert.Equal(flux, float.Parse(values[Array.IndexOf(headers, "LuminousFlux(lm)")], CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(-1f)]
+    [InlineData(0f)]
+    [InlineData(35f)]
+    public void EqeCalculation_UsesRawFluxWithoutLuminanceGuard(float flux)
+    {
+        var previousConfig = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        try
+        {
+            ViewResultManagerConfig.Instance.EnableNegativeLuminanceGuard = true;
+            ViewResultManagerConfig.Instance.MinLuminanceValue = 0.01;
+            COLOR_PARA colorParam = CreateColorParam(1f);
+            colorParam.fPh = flux;
+            ViewResultSpectrum result = new(colorParam);
+
+            result.CalculateEqeParams(5f, 10f);
+
+            Assert.Equal(Math.Max(0.01f, flux), float.Parse(result.Lv, CultureInfo.CurrentCulture));
+            Assert.Equal(flux, result.LuminousFlux);
+            Assert.Equal(flux / 0.05d, result.LuminousEfficacy!.Value, 8);
+        }
+        finally { ConfigService.SetInstance(previousConfig); }
     }
 
     private static COLOR_PARA CreateColorParam(float interval)

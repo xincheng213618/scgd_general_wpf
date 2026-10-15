@@ -101,7 +101,7 @@ namespace ProjectARVRPro.Process
                 return GeometrySubcategory;
             }
 
-            if (typeName == "DetectScreenDefectsProcess")
+            if (typeName is "DetectScreenDefectsProcess" or "RingGhostProcess")
                 return DefectSubcategory;
 
             return OtherSubcategory;
@@ -166,6 +166,7 @@ namespace ProjectARVRPro.Process
             "OpticCenterDynamicProcess" => ("动态光学中心", "解析动态点位光学中心结果，适配运行时变化的中心定位流程。", "动态点位 · 中心定位 · 偏移评价 · 文本结果"),
             "PoiDynamicProcess" => ("动态 POI", "解析动态 POI 测量结果，用于运行时生成点位的亮色度展示。", "动态点位 · POI 解析 · 图形叠加 · 文本结果"),
             "DetectScreenDefectsProcess" => ("屏幕缺陷", "解析屏幕缺陷算法结果，显示缺陷类型、位置、尺寸及缺陷区域。", "缺陷解析 · 缺陷列表 · 区域叠加 · 结构化结果"),
+            "RingGhostProcess" => ("圆环鬼影", "解析本地圆环鬼影测量；正常未检出输出 0，对外输出 GMR1、GMR2。", "GMR1/GMR2 · 百分比 · 独立 Recipe · 测量区域叠加"),
             "White51Process" => ("White 51", "解析 White 51 点位结果，用于白画面亮度、色度与均匀性评价。", "51 点位 · 亮色度 · 均匀性 · 边界叠加"),
             "White255Process" => ("White 255", "解析 White 255 点位结果，用于高密度白画面亮色度及均匀性评价。", "255 点位 · 亮色度 · 均匀性 · 点位叠加"),
             "AOIProcess" => ("OLED AOI", "解析 OLED AOI 检测结果，用于画面异常、缺陷与检测状态的综合评价。", "AOI 结果解析 · 缺陷判定 · 图形展示 · 结构化结果"),

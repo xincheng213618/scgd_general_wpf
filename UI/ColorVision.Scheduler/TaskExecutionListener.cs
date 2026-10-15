@@ -2,8 +2,6 @@ using ColorVision.Scheduler.Data;
 using log4net;
 using Quartz;
 using System.Collections.Concurrent;
-using System.Windows;
-using System.Windows.Threading;
 
 namespace ColorVision.Scheduler
 {
@@ -14,10 +12,16 @@ namespace ColorVision.Scheduler
         private readonly ConcurrentDictionary<string, ExecutionState> _activeExecutions = new();
         private readonly object _historyWriteSync = new();
         private Task _historyWriteTail = Task.CompletedTask;
+        private readonly Action<JobExecutionRecord> _writeHistory;
 
-        public TaskExecutionListener(QuartzSchedulerManager schedulerManager)
+        public TaskExecutionListener(QuartzSchedulerManager schedulerManager) : this(schedulerManager, WriteHistoryRecord)
+        {
+        }
+
+        internal TaskExecutionListener(QuartzSchedulerManager schedulerManager, Action<JobExecutionRecord> writeHistory)
         {
             _schedulerManager = schedulerManager;
+            _writeHistory = writeHistory;
         }
 
         public string Name => "TaskExecutionListener";
@@ -33,10 +37,10 @@ namespace ColorVision.Scheduler
             _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
             try
             {
-                await InvokeOnUiThreadAsync(() =>
+                await _schedulerManager.RecordExecutionAsync(context, taskInfo =>
                 {
-                    SchedulerInfo? taskInfo = ResolveTaskInfo(context);
-                    if (taskInfo != null && taskInfo.Status != SchedulerStatus.Paused)
+                    SchedulerScheduleState.RecordFire(taskInfo, context);
+                    if (taskInfo.Status != SchedulerStatus.Paused)
                     {
                         taskInfo.Status = SchedulerStatus.Running;
                     }
@@ -106,20 +110,18 @@ namespace ColorVision.Scheduler
 
             try
             {
-                await InvokeOnUiThreadAsync(() =>
+                await _schedulerManager.RecordExecutionAsync(context, taskInfo =>
                 {
-                    SchedulerInfo? taskInfo = ResolveTaskInfo(context);
-                    if (taskInfo == null)
-                    {
-                        return;
-                    }
-
                     taskInfo.RunCount++;
                     if (taskInfo.Status != SchedulerStatus.Paused)
                     {
                         taskInfo.Status = HasActiveExecution(jobKey)
                             ? SchedulerStatus.Running
-                            : SchedulerStatus.Ready;
+                            : taskInfo.ScheduleCompleted ? SchedulerStatus.Completed : SchedulerStatus.Ready;
+                    }
+                    else if (taskInfo.ScheduleCompleted && !HasActiveExecution(jobKey))
+                    {
+                        taskInfo.Status = SchedulerStatus.Completed;
                     }
 
                     UpdateExecutionStatistics(taskInfo, executionTimeMs);
@@ -139,26 +141,6 @@ namespace ColorVision.Scheduler
             await WriteHistoryAsync(executionRecord);
 
             RaiseJobExecuted(context);
-        }
-
-        private SchedulerInfo? ResolveTaskInfo(IJobExecutionContext context)
-        {
-            JobKey jobKey = context.JobDetail.Key;
-            SchedulerInfo? currentTaskInfo = _schedulerManager.TaskInfos.FirstOrDefault(
-                task => task.JobName == jobKey.Name && task.GroupName == jobKey.Group);
-            if (currentTaskInfo != null)
-            {
-                return currentTaskInfo;
-            }
-
-            JobDataMap jobDataMap = context.JobDetail.JobDataMap;
-            if (jobDataMap.TryGetValue("SchedulerInfo", out object? value) &&
-                value is SchedulerInfo taskInfo)
-            {
-                return taskInfo;
-            }
-
-            return null;
         }
 
         private bool HasActiveExecution(JobKey jobKey)
@@ -197,7 +179,7 @@ namespace ColorVision.Scheduler
             lock (_historyWriteSync)
             {
                 _historyWriteTail = _historyWriteTail.ContinueWith(
-                    _ => WriteHistoryRecord(record),
+                    _ => _writeHistory(record),
                     CancellationToken.None,
                     TaskContinuationOptions.DenyChildAttach,
                     TaskScheduler.Default);
@@ -215,23 +197,6 @@ namespace ColorVision.Scheduler
             {
                 _logger.Error($"Failed to write execution history for job: {record.JobName}({record.GroupName})", ex);
             }
-        }
-
-        private static Task InvokeOnUiThreadAsync(Action action)
-        {
-            Dispatcher? dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
-            {
-                action();
-                return Task.CompletedTask;
-            }
-
-            if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
-            {
-                return Task.CompletedTask;
-            }
-
-            return dispatcher.InvokeAsync(action, DispatcherPriority.DataBind).Task;
         }
 
         private void RaiseJobExecuted(IJobExecutionContext context)

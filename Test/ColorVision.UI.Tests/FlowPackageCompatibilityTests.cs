@@ -96,6 +96,31 @@ public class FlowPackageCompatibilityTests
     }
 
     [Fact]
+    public void CameraCalibrationNamesRemainExternalToFlowPackage()
+    {
+        StaTest.Run(() =>
+        {
+            byte[] flowData = CreateTemplateReferenceFlow(string.Empty, "0.5mm_ND0");
+
+            FlowPackageManifest manifest = FlowPackageHelper.CollectTemplatesForExport("Flow-A", flowData);
+
+            Assert.Empty(manifest.Templates);
+            Assert.Empty(FlowPackageHelper.ExtractTemplateNames(flowData));
+
+            byte[] replaced = FlowPackageHelper.ReplaceTemplateNames(
+                flowData,
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["0.5mm_ND0"] = "Algorithm-Conflict-Copy",
+                });
+
+            Assert.Equal(
+                FlowPackageStnValidator.ValidateAndDecompress(flowData),
+                FlowPackageStnValidator.ValidateAndDecompress(replaced));
+        });
+    }
+
+    [Fact]
     public void VersionThreePackageStoresAndValidatesTemplatePayloads()
     {
         string filePath = Path.Combine(
@@ -752,7 +777,8 @@ public class FlowPackageCompatibilityTests
             {
               "SaveName": "Camera-A",
               "TemplateName": "Camera-A",
-              "Nested": "{\"AutoExpTempName\":\"Camera-A\",\"Note\":\"Camera-A\"}"
+              "CalibTempName": "Camera-A",
+              "Nested": "{\"AutoExpTempName\":\"Camera-A\",\"CaliTempName\":\"Camera-A\",\"Note\":\"Camera-A\"}"
             }
             """;
         string rewritten =
@@ -767,11 +793,15 @@ public class FlowPackageCompatibilityTests
 
         Assert.Equal("Camera-A", root["SaveName"]!.Value<string>());
         Assert.Equal("Camera-B", root["TemplateName"]!.Value<string>());
+        Assert.Equal("Camera-A", root["CalibTempName"]!.Value<string>());
         JObject nested = JObject.Parse(
             root["Nested"]!.Value<string>()!);
         Assert.Equal(
             "Camera-B",
             nested["AutoExpTempName"]!.Value<string>());
+        Assert.Equal(
+            "Camera-A",
+            nested["CaliTempName"]!.Value<string>());
         Assert.Equal(
             "Camera-A",
             nested["Note"]!.Value<string>());
@@ -874,12 +904,14 @@ public class FlowPackageCompatibilityTests
         }
     }
 
-    private static byte[] CreateTemplateReferenceFlow(string templateName)
+    private static byte[] CreateTemplateReferenceFlow(string templateName, string calibrationName = "")
     {
         using var editor = new STNodeEditor();
         var node = new TemplateReferenceNode
         {
             TempName = templateName,
+            CalibTempName = calibrationName,
+            CaliTempName = calibrationName,
         };
         node.Create();
         editor.Nodes.Add(node);
@@ -902,6 +934,12 @@ public class FlowPackageCompatibilityTests
     {
         [STNodeProperty("Template", "Template reference")]
         public string TempName { get; set; } = string.Empty;
+
+        [STNodeProperty("Calibration", "Camera-owned reference")]
+        public string CalibTempName { get; set; } = string.Empty;
+
+        [STNodeProperty("Legacy calibration", "Camera-owned reference")]
+        public string CaliTempName { get; set; } = string.Empty;
     }
 
     private sealed class AlternateTemplateReferenceNode : STNode

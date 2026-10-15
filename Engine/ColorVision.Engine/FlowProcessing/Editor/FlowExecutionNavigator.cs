@@ -37,6 +37,12 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return null;
 
             List<CVCommonNode> candidates = nodes.ToList();
+            if (Guid.TryParse(executionNodeName, out Guid nodeId))
+            {
+                CVCommonNode[] matchesById = candidates.Where(node => node.Guid == nodeId).Take(2).ToArray();
+                return matchesById.Length == 1 ? matchesById[0] : null;
+            }
+
             if (preferredNode != null
                 && candidates.Contains(preferredNode)
                 && IsExecutionNodeNameMatch(preferredNode, executionNodeName))
@@ -57,11 +63,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return false;
 
             string candidate = executionNodeName.Trim();
+            if (Guid.TryParse(candidate, out Guid nodeId))
+                return node.Guid == nodeId;
+
             string fullName = string.IsNullOrWhiteSpace(node.NodeName)
                 ? node.Title
                 : $"{node.Title}.{node.NodeName}";
-            return string.Equals(node.NodeID, candidate, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(node.NodeName, candidate, StringComparison.OrdinalIgnoreCase)
+            return string.Equals(node.NodeName, candidate, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(fullName, candidate, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -83,8 +91,11 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public bool TryFocusExecutionNode(string? nodeId, string? nodeName = null)
         {
-            CVCommonNode? node = ResolveExecutionNode(_nodeEditor, nodeId)
-                ?? ResolveExecutionNode(_nodeEditor, nodeName);
+            // A saved identity must never resolve to a different, similarly named node after editing.
+            if (!string.IsNullOrWhiteSpace(nodeId))
+                return Guid.TryParse(nodeId, out Guid id) && TryFocusNode(id);
+
+            CVCommonNode? node = ResolveExecutionNode(_nodeEditor, nodeName);
             if (node == null)
                 return false;
 
@@ -94,14 +105,15 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public bool TryFocusNode(Guid nodeGuid)
         {
-            STNode? node = _nodeEditor.Nodes
+            STNode[] matches = _nodeEditor.Nodes
                 .Cast<STNode>()
-                .FirstOrDefault(candidate =>
-                    candidate.Guid == nodeGuid);
-            if (node == null)
+                .Where(candidate => candidate.Guid == nodeGuid)
+                .Take(2)
+                .ToArray();
+            if (matches.Length != 1)
                 return false;
 
-            FocusNode(node);
+            FocusNode(matches[0]);
             return true;
         }
 

@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <XunitRunnerVisualStudioVersion>4.0.0</XunitRunnerVisualStudioVersion>
+    <XunitRunnerVisualStudioVersion>4.0.1</XunitRunnerVisualStudioVersion>
     <VSTestTestAdapterPath>$(NuGetPackageRoot)xunit.runner.visualstudio\$(XunitRunnerVisualStudioVersion)\build\net8.0</VSTestTestAdapterPath>
   </PropertyGroup>
 
@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="MvCameraControl.Net">
+      <HintPath>..\..\DLL\Hikrobot\MvCameraControl.Net.dll</HintPath>
+      <Aliases>HikMvsSdk</Aliases>
+    </Reference>
     <Compile Include="..\Shared\StaTest.cs" Link="StaTest.cs" />
     <Compile Include="..\..\Plugins\Spectrum\MainWindowConfig.cs" Link="TestData\Spectrum\MainWindowConfig.cs" />
     <Using Include="ColorVision.Testing" />

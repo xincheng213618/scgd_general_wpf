@@ -106,6 +106,9 @@ namespace ColorVision.Engine.Services
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
             LastGenControl = new ObservableCollection<DeviceService>();
             List<IDisPlayControl> displayControls = new() { FlowEngineManager.GetInstance().DisplayFlow };
+            long flowControlMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+            if (flowControlMilliseconds >= 100)
+                log.Info($"Slow device display control 'Flow' created in {flowControlMilliseconds} ms.");
             ResetCopilotDisplayDeviceMap();
             foreach (var serviceKind in TypeServices)
             {
@@ -116,7 +119,12 @@ namespace ColorVision.Engine.Services
                         if (item is DeviceService device)
                         {
                             LastGenControl.Add(device);
-                            if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
+                            Stopwatch controlStopwatch = Stopwatch.StartNew();
+                            var displayControl = device.GetDisplayControl();
+                            controlStopwatch.Stop();
+                            if (controlStopwatch.ElapsedMilliseconds >= 100)
+                                log.Info($"Slow device display control '{device.Code}' ({device.GetType().Name}) created in {controlStopwatch.ElapsedMilliseconds} ms.");
+                            if (displayControl is IDisPlayControl disPlayControl)
                             {
                                 _copilotDisplayDevices[disPlayControl] = device;
                                 displayControls.Add(disPlayControl);

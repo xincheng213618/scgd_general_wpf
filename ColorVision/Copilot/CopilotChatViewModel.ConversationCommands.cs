@@ -12,13 +12,14 @@ namespace ColorVision.Copilot
         {
             if (!CanSwitchConversation)
                 return;
+            DismissPromptHistorySearch();
             if (IsEditingMessage)
                 CancelMessageEdit();
             _pendingAgentRecoveryRequest = null;
-            ClearPendingRequestModeOverride();
 
             if (CopilotConversationService.IsReusableEmpty(SelectedConversation))
             {
+                ClearPendingRequestModeOverride();
                 return;
             }
 

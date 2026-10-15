@@ -799,13 +799,14 @@
   <data name="自定义标志" xml:space="preserve"><value>自訂旗標</value></data>
   <data name="输入十进制整数或以 0x 开头的 MINIDUMP_TYPE 十六进制标志。" xml:space="preserve"><value>輸入十進位整數或以 0x 開頭的 MINIDUMP_TYPE 十六進位旗標。</value></data>
   <data name="系统操作" xml:space="preserve"><value>系統操作</value></data>
-  <data name="普通用户模式下，应用和清除操作通过 ColorVision Service Host 写入 HKLM；管理员模式可直接写入。手动保存仅写入上方目录。" xml:space="preserve"><value>一般使用者模式下，套用和清除操作透過 ColorVision Service Host 寫入 HKLM；系統管理員模式可直接寫入。手動儲存僅寫入上方目錄。</value></data>
+  <data name="通过 ColorVision Service Host 应用或清除系统设置。" xml:space="preserve"><value>透過 ColorVision Service Host 套用或清除系統設定。</value></data>
   <data name="应用系统设置" xml:space="preserve"><value>套用系統設定</value></data>
   <data name="清除系统设置" xml:space="preserve"><value>清除系統設定</value></data>
   <data name="保存当前进程 Dump" xml:space="preserve"><value>儲存目前處理序傾印</value></data>
-  <data name="当前为管理员模式，系统设置可直接写入。" xml:space="preserve"><value>目前為系統管理員模式，系統設定可直接寫入。</value></data>
-  <data name="当前为普通用户模式，系统设置将由 ColorVision Service Host 代为写入。" xml:space="preserve"><value>目前為一般使用者模式，系統設定將由 ColorVision Service Host 代為寫入。</value></data>
-  <data name="当前目标：{0}。{1}" xml:space="preserve"><value>目前目標：{0}。{1}</value></data>
+  <data name="当前目标：{0}。" xml:space="preserve"><value>目前目標：{0}。</value></data>
+  <data name="FeedbackCurrentProcessDump" xml:space="preserve"><value>目前處理序記憶體傾印</value></data>
+  <data name="仅清理保存目录中属于当前程序的历史 Dump，保留其他程序的转储。" xml:space="preserve"><value>僅清理儲存目錄中屬於目前程式的歷史傾印，保留其他程式的傾印。</value></data>
+  <data name="FeedbackCurrentProcessDumpDescription" xml:space="preserve"><value>封裝時產生完整記憶體快照並壓縮，用於排查記憶體增長，預設不勾選。</value></data>
   <data name="正在应用系统设置……" xml:space="preserve"><value>正在套用系統設定……</value></data>
   <data name="正在通过后台特权服务应用系统设置……" xml:space="preserve"><value>正在透過背景特權服務套用系統設定……</value></data>
   <data name="已应用 Windows Error Reporting 设置：{0}" xml:space="preserve"><value>已套用 Windows Error Reporting 設定：{0}</value></data>

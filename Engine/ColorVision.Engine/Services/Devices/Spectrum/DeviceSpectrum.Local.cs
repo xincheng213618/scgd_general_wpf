@@ -3,6 +3,7 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
@@ -16,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum;
 public partial class DeviceSpectrum
 {
     internal SpectrumBackendState SpectrumBackend { get; private set; } = null!;
-    internal LocalSpectrumSession LocalSession { get; } = new();
+    internal LocalSpectrumSession LocalSession { get; }
     private LocalSpectrumWindow? localWindow;
     private readonly object continuousSync = new();
     private CancellationTokenSource? continuousCancellation;
@@ -71,6 +72,13 @@ public partial class DeviceSpectrum
             if (local) other.SpectrumBackend.EnsureLocalAvailable();
             else other.SpectrumBackend.EnsureServiceAvailable();
         }
+    }
+
+    private void EnsureLocalSpectrumLicense(ConfigSpectrum config)
+    {
+        if (ExperimentalFeaturesConfig.Instance.IsEnabled) return;
+        LicenseModel? license = PhyLicenseDao.Instance.GetByMAC(config.SN, SysResourceDao.IsLocalId(SysResourceModel.Id) || !ColorVision.Database.MySqlSetting.IsConnect);
+        LocalSpectrumLicense.EnsureNotExpired(license?.LiceType == 1 ? license.ExpiryDate : null, false, DateTime.Now);
     }
 
     // Callers reserve the backend before scheduling native work. The session itself serializes all handle access.

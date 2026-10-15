@@ -2,6 +2,119 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotHostedTurnCompletionTests
 {
+    [Fact]
+    public async Task CancellationDeadlineClosesTheDisplayedQuestionWhileItsCheckpointIsStillBlocked()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var releaseCheckpoint = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var producerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var coordinator = new CopilotUserQuestionCoordinator();
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Plan);
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = conversation.Id,
+            TaskId = runId,
+            Mode = CopilotAgentMode.Plan,
+        };
+        var input = CreateQuestionInput();
+        var stream = CopilotTurnEventStream.RunAsync(runId, CopilotAgentMode.Plan,
+            async (sink, producerToken) =>
+            {
+                try
+                {
+                    await coordinator.AskAsync(request, input, sink.OnAgentEvent,
+                        async token =>
+                        {
+                            // Model a checkpoint writer that cannot stop until its current write returns.
+                            await releaseCheckpoint.Task;
+                            token.ThrowIfCancellationRequested();
+                            return true;
+                        }, producerToken);
+                    throw new InvalidOperationException("The cancelled question unexpectedly returned an answer.");
+                }
+                finally
+                {
+                    producerFinished.TrySetResult();
+                }
+            }, cancellation.Token, producerShutdownTimeout: TimeSpan.FromMilliseconds(50));
+
+        try
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ConsumeAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.False(producerFinished.Task.IsCompleted);
+            Assert.True(coordinator.HasPendingQuestion);
+            Assert.True(assistant.HasPendingUserQuestion);
+
+            CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+
+            Assert.False(assistant.HasPendingUserQuestion);
+            Assert.True(assistant.HasResolvedUserQuestion);
+            Assert.Equal(CopilotUserQuestionResolution.Cancelled, assistant.UserQuestion!.Resolution);
+            Assert.Equal("问题已取消", assistant.UserQuestionStatusText);
+            Assert.False(assistant.IsResponsePending);
+        }
+        finally
+        {
+            releaseCheckpoint.TrySetResult();
+            await producerFinished.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        async Task ConsumeAsync()
+        {
+            await foreach (var turnEvent in stream)
+            {
+                if (turnEvent is not CopilotTurnAgentEvent agent)
+                    continue;
+                CopilotAssistantMessagePresenter.ApplyAgentEvent(assistant, agent.Event);
+                if (agent.Event.Type == CopilotAgentEventType.UserQuestionRequested)
+                    cancellation.Cancel();
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("failure", false)]
+    [InlineData("failure", true)]
+    [InlineData("terminal", false)]
+    [InlineData("terminal", true)]
+    [InlineData("cancel", true)]
+    public void HostedCompletionClosesPendingQuestionsWithoutRewritingAnsweredQuestions(string completion, bool answered)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Plan);
+        Assert.True(CopilotUserQuestionSnapshot.TryCreate(conversation.Id,
+            CopilotAgentTaskEventIds.CreateRunId(), CreateQuestionInput(), out var question, out var error), error);
+        assistant.UserQuestion = answered ? question.Resolve(CopilotUserQuestionResolution.Answered, "Current") : question;
+        var originalQuestion = assistant.UserQuestion;
+        assistant.Content = "Existing answer.";
+        assistant.MarkThinkingStarted();
+
+        switch (completion)
+        {
+            case "failure":
+                CopilotHostedTurnCompletion.CompleteFailure(conversation, assistant, "provider failed");
+                break;
+            case "terminal":
+                CopilotHostedTurnCompletion.CompleteTerminalTurn(conversation, assistant, CopilotTokenUsage.Empty);
+                break;
+            case "cancel":
+                CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+                break;
+        }
+
+        Assert.False(assistant.HasPendingUserQuestion);
+        Assert.True(assistant.HasResolvedUserQuestion);
+        Assert.Equal(answered ? CopilotUserQuestionResolution.Answered : CopilotUserQuestionResolution.Cancelled,
+            assistant.UserQuestion!.Resolution);
+        Assert.Equal(answered ? "已回答：Current" : "问题已取消", assistant.UserQuestionStatusText);
+        if (answered)
+            Assert.Same(originalQuestion, assistant.UserQuestion);
+        Assert.Equal("Existing answer.", assistant.Content);
+        Assert.False(assistant.IsResponsePending);
+    }
+
     [Theory]
     [InlineData(CopilotAgentControlIntent.Cancel)]
     [InlineData(CopilotAgentControlIntent.Pause)]
@@ -469,6 +582,17 @@ public sealed class CopilotHostedTurnCompletionTests
         Assert.Same(checkpoint.TaskEventJournal, conversation.CurrentAgentTaskEventJournal);
         Assert.Equal(CopilotAgentStopReason.None, assistant.AgentStopReason);
     }
+
+    private static CopilotUserQuestionInput CreateQuestionInput() => new()
+    {
+        Header = "Scope",
+        Question = "Which scope should be used?",
+        Options =
+        [
+            new CopilotUserQuestionInputOption { Label = "Current", Description = "Keep the current scope." },
+            new CopilotUserQuestionInputOption { Label = "Expand", Description = "Include adjacent modules." },
+        ],
+    };
 
     private static CopilotConversationRecord CreateConversation(
         CopilotAgentSessionCheckpoint checkpoint)

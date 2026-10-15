@@ -5,8 +5,20 @@ using System.Text;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 
+internal sealed class LocalSpectrumLicenseException : InvalidOperationException
+{
+    public LocalSpectrumLicenseException() : base(Properties.Resources.UnauthorizedOrLicenseExpired) { }
+}
+
 internal static class LocalSpectrumLicense
 {
+    internal static void EnsureNotExpired(DateTime? expiryDate, bool experimentalFeatures, DateTime now)
+    {
+        // Match the expiry displayed by physical spectrum management without decoding or validating the payload.
+        if (!experimentalFeatures && (!expiryDate.HasValue || expiryDate.Value <= now))
+            throw new LocalSpectrumLicenseException();
+    }
+
     internal static void EnsureAvailable(string serialNumber, bool localStore)
     {
         if (string.IsNullOrWhiteSpace(serialNumber) || serialNumber.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || serialNumber is "." or "..")

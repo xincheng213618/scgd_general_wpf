@@ -23,6 +23,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public float[] Exposure { get; init; } = Array.Empty<float>();
         public string Template { get; init; } = string.Empty;
         public DateTime CalibratedUtc { get; init; }
+        // Reference and original coefficients allow a repeated correction to replace, not compound, the previous one.
+        public SpectrumColorCorrection? SpectrumCorrection { get; init; }
         // An original sensor RAW may precede the basic stages that produced the color input.
         // Its parameters are still recorded, but replay requires the corrected RAW payload.
         public bool CanReplay { get; init; } = true;

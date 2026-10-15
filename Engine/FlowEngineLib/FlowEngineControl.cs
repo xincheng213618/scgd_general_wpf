@@ -772,14 +772,8 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				}
 				return;
 			}
-			try
-			{
-				ReplaceCanvas(host, rawData);
-			}
-			finally
-			{
-				host.ClearHistory();
-			}
+			ReplaceCanvas(host, rawData);
+			host.ClearHistory();
 			lock (stateLock)
 			{
 				loadedCanvas[text] = rawData;

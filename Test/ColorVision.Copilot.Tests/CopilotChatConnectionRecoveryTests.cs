@@ -7,6 +7,80 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotChatConnectionRecoveryTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WhitespaceOnlyResponseStillFailsWithoutDisplayableText(bool streaming)
+    {
+        const string content = " \t\n";
+        using var handler = new SequentialHandler(_ => streaming
+            ? CreateStreamingResponse(new MemoryStream(Encoding.UTF8.GetBytes(
+                "data: {\"choices\":[{\"delta\":{\"content\":\" \\t\\n\"},\"finish_reason\":\"stop\"}]}\n\n"
+                + "data: [DONE]\n\n")))
+            : new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    "{\"choices\":[{\"message\":{\"content\":\" \\t\\n\"},\"finish_reason\":\"stop\"}]}",
+                    Encoding.UTF8,
+                    "application/json"),
+            });
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 1, []);
+        var deltas = new List<CopilotStreamDelta>();
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => service.StreamReplyAsync(
+            CreateProfile(),
+            [new CopilotRequestMessage("user", "Require a displayable answer.")],
+            deltas.Add,
+            onRetry: null,
+            CancellationToken.None));
+
+        Assert.Contains("no displayable text", failure.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(streaming ? content : string.Empty, string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal(1, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task StreamingResponsePreservesWhitespaceOnlyContentAndReasoningChunks()
+    {
+        const string payload = """
+            data: {"choices":[{"delta":{"reasoning_content":"First"}}]}
+
+            data: {"choices":[{"delta":{"reasoning_content":"\t"}}]}
+
+            data: {"choices":[{"delta":{"reasoning_content":"thought"}}]}
+
+            data: {"choices":[{"delta":{"content":"Hello"}}]}
+
+            data: {"choices":[{"delta":{"content":" "}}]}
+
+            data: {"choices":[{"delta":{"content":"world"}}]}
+
+            data: {"choices":[{"delta":{"content":"\n\n"}}]}
+
+            data: {"choices":[{"delta":{"content":"next"},"finish_reason":"stop"}]}
+
+            data: [DONE]
+
+            """;
+        using var handler = new SequentialHandler(_ =>
+            CreateStreamingResponse(new MemoryStream(Encoding.UTF8.GetBytes(payload))));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 1, []);
+        var deltas = new List<CopilotStreamDelta>();
+
+        await service.StreamReplyAsync(
+            CreateProfile(),
+            [new CopilotRequestMessage("user", "Preserve the answer formatting.")],
+            deltas.Add,
+            onRetry: null,
+            CancellationToken.None);
+
+        Assert.Equal("First\tthought", string.Concat(deltas.Select(delta => delta.ReasoningContent)));
+        Assert.Equal("Hello world\n\nnext", string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal(1, handler.CallCount);
+    }
+
     [Fact]
     public async Task ConnectionFailuresDoNotConsumeOrdinaryRetryBudget()
     {
@@ -59,28 +133,32 @@ public sealed class CopilotChatConnectionRecoveryTests
             delays);
     }
 
-    [Fact]
-    public async Task ConnectionFailureAfterContentIsNotRecoveredOrReplayed()
+    [Theory]
+    [InlineData("Partial.")]
+    [InlineData(" \t\n")]
+    public async Task ConnectionFailureAfterContentIsNotRecoveredOrReplayed(string content)
     {
         using var handler = new SequentialHandler(
             _ => CreateStreamingResponse(new ThrowAfterPayloadStream(
-                "data: {\"choices\":[{\"delta\":{\"content\":\"Partial.\"}}]}\n\n")));
+                "data: {\"choices\":[{\"delta\":{\"content\":" + System.Text.Json.JsonSerializer.Serialize(content) + "}}]}\n\n")));
         using var httpClient = new HttpClient(handler);
         var service = CreateService(httpClient, maximumAttempts: 2, []);
         var deltas = new List<CopilotStreamDelta>();
+        var retries = new List<CopilotProviderRetryInfo>();
         var recoveries = new List<CopilotProviderConnectionRecoveryInfo>();
 
         await Assert.ThrowsAsync<HttpRequestException>(() => service.StreamReplyAsync(
             CreateProfile(),
             [new CopilotRequestMessage("user", "Do not replay partial content.")],
             deltas.Add,
-            onRetry: null,
+            retries.Add,
             recoveries.Add,
             onUsageChanged: null,
             CancellationToken.None));
 
         Assert.Equal(1, handler.CallCount);
-        Assert.Equal("Partial.", string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal(content, string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Empty(retries);
         Assert.Empty(recoveries);
     }
 

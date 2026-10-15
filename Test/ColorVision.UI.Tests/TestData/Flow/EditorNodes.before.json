@@ -330,16 +330,6 @@
     "menu": "03_3 校正"
   },
   {
-    "type": "FlowEngineLib.Node.Algorithm.AlgDataLoadNode",
-    "request": {
-      "TemplateParam": {
-        "ID": -1,
-        "Name": "fixture-TempName"
-      }
-    },
-    "menu": null
-  },
-  {
     "type": "FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode",
     "request": {
       "OIndex": [
@@ -395,24 +385,6 @@
       "MasterResultType": -1
     },
     "menu": "03_2 Algorithm"
-  },
-  {
-    "type": "FlowEngineLib.Node.Algorithm.AlgorithmImageROINode",
-    "request": {
-      "ResultDataFileName": "imgROI.cvraw",
-      "Color": 1,
-      "Channel": 1,
-      "ImgFileName": null,
-      "FileType": -1,
-      "TemplateParam": {
-        "ID": -1,
-        "Name": "fixture-TempName"
-      },
-      "MasterId": -1,
-      "MasterValue": null,
-      "MasterResultType": -1
-    },
-    "menu": "03_3 Image"
   },
   {
     "type": "FlowEngineLib.Node.Algorithm.AlgorithmKBNode",

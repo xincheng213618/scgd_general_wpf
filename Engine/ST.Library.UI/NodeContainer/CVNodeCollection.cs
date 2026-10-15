@@ -131,20 +131,10 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 
 	public void Clear()
 	{
-		for (int i = 0; i < _Count; i++)
+		while (_Count > 0)
 		{
-			foreach (STNodeOption inputOption in m_nodes[i].GetAllInputOptions())
-			{
-				inputOption.DisconnectAllDetached();
-			}
-			foreach (STNodeOption outputOption in m_nodes[i].GetAllOutputOptions())
-			{
-				outputOption.DisconnectAllDetached();
-			}
-			m_nodes[i].Owner = null;
-			m_owner.OnNodeRemoved(new STNodeEditorEventArgs(m_nodes[i]));
+			RemoveAt(_Count - 1);
 		}
-		_Count = 0;
 		m_nodes = new STNode[4];
 	}
 

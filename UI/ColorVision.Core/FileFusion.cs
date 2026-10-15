@@ -22,13 +22,17 @@ namespace ColorVision.Core
         long ValidationMs,
         long NativeMs,
         long ConvertMs,
-        long TotalMs);
+        long TotalMs)
+    {
+        public FileFusionOptions Options { get; init; } = new();
+    }
 
     /// <summary>Shared file-stack execution for interactive tools and local Flow nodes.</summary>
     public sealed class FileFusion
     {
         internal delegate int NativeFusion(string json, FileFusionMode mode, out HImage image);
         private static readonly SemaphoreSlim ExecutionGate = new(1, 1);
+        private static readonly JsonSerializerOptions RequestJsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         private readonly NativeFusion executeNative;
         private readonly Func<bool> cudaAvailable;
         public static FileFusion Default { get; } = new(ExecuteNative, () => ImageCompute.UseCuda);
@@ -56,17 +60,21 @@ namespace ColorVision.Core
         [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
         private static extern int StrCmpLogicalW(string left, string right);
 
-        public Task<FileFusionResult> ExecuteAsync(IEnumerable<string> files, FileFusionMode mode = FileFusionMode.Auto, CancellationToken cancellationToken = default)
+        public Task<FileFusionResult> ExecuteAsync(IEnumerable<string> files, FileFusionMode mode = FileFusionMode.Auto, CancellationToken cancellationToken = default, FileFusionOptions? options = null)
         {
             ArgumentNullException.ThrowIfNull(files);
             string[] snapshot = files.ToArray();
-            return Task.Run(() => Execute(snapshot, mode, cancellationToken), cancellationToken);
+            FileFusionOptions settings = options is null ? new() : options with { };
+            settings.Validate();
+            return Task.Run(() => Execute(snapshot, mode, cancellationToken, settings), cancellationToken);
         }
 
-        public FileFusionResult Execute(IEnumerable<string> files, FileFusionMode mode = FileFusionMode.Auto, CancellationToken cancellationToken = default)
+        public FileFusionResult Execute(IEnumerable<string> files, FileFusionMode mode = FileFusionMode.Auto, CancellationToken cancellationToken = default, FileFusionOptions? options = null)
         {
             ArgumentNullException.ThrowIfNull(files);
             if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+            FileFusionOptions settings = options is null ? new() : options with { };
+            settings.Validate();
             string[] snapshot = files.Select(path =>
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -109,7 +117,8 @@ namespace ColorVision.Core
                 long validationMs = stage.ElapsedMilliseconds;
                 cancellationToken.ThrowIfCancellationRequested();
                 stage.Restart();
-                int code = executeNative(JsonSerializer.Serialize(snapshot), actualMode, out output);
+                string request = JsonSerializer.Serialize(new { files = snapshot, options = settings }, RequestJsonOptions);
+                int code = executeNative(request, actualMode, out output);
                 long nativeMs = stage.ElapsedMilliseconds;
                 cancellationToken.ThrowIfCancellationRequested();
                 if (code != 0) throw new InvalidOperationException($"景深融合失败，模式 {actualMode}，错误码 {code}。");
@@ -120,7 +129,7 @@ namespace ColorVision.Core
                 image.Freeze();
                 long convertMs = stage.ElapsedMilliseconds;
                 cancellationToken.ThrowIfCancellationRequested();
-                return new FileFusionResult(image, Array.AsReadOnly(snapshot), actualMode, validationMs, nativeMs, convertMs, total.ElapsedMilliseconds);
+                return new FileFusionResult(image, Array.AsReadOnly(snapshot), actualMode, validationMs, nativeMs, convertMs, total.ElapsedMilliseconds) { Options = settings };
             }
             finally
             {

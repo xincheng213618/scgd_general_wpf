@@ -32,6 +32,9 @@ def collect_shared_files(root_dir: Path, *, excluded_files: Iterable[Path] = ())
         dir_names[:] = sorted(dir_name for dir_name in dir_names if dir_name.lower() not in EXCLUDED_DIR_NAMES)
         current_root_path = Path(current_root)
         for file_name in sorted(file_names):
+            # Local debugger output is optional and absent from clean CI builds.
+            if file_name.lower().endswith(".runtimeconfig.dev.json"):
+                continue
             if current_root_path == root_dir and file_name.lower() in EXCLUDED_ROOT_FILE_NAMES:
                 continue
             file_path = current_root_path / file_name
@@ -189,6 +192,7 @@ def main() -> None:
 
     print(f"Scanned host directory: {root_dir}")
     print("Ignored directories: Plugins, Log, window-resize-traces")
+    print("Ignored development runtime configs: *.runtimeconfig.dev.json")
     print(f"Shared file count: {len(shared_files)}")
     for output_file, was_updated in updated_outputs:
         action = "Generated manifest" if was_updated else "Manifest already current"

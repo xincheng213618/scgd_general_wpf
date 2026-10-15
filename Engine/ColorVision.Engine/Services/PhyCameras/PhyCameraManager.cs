@@ -1,6 +1,7 @@
 #pragma warning disable CA1822,CA1826,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Diagnostics;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
@@ -61,15 +62,15 @@ namespace ColorVision.Engine.Services.PhyCameras
                 PhyCameras[0].IsSelected = true;
             }
 
-            OpenMVSLogViewerCommand = new RelayCommand(a => OpenMVSLogViewer(), a => File.Exists("C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe"));
+            OpenMVSLogViewerCommand = new RelayCommand(a => OpenMVSLogViewer());
 
         }
 
         public RelayCommand OpenMVSLogViewerCommand { get; set; }
         public void OpenMVSLogViewer()
         {
-            string MVSLogViewer = "C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe";
-            if (!File.Exists(MVSLogViewer))
+            string? MVSLogViewer = MvsDiagnosticsPaths.FindLogViewer(MvsDiagnosticsPaths.GetInstallationDirectories());
+            if (MVSLogViewer == null)
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
@@ -82,13 +83,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             try
             {
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = MVSLogViewer,
-                    UseShellExecute = true,
-                    Verb = "runas" // 请求管理员权限
-                };
-                Process.Start(startInfo);
+                Process.Start(MvsDiagnosticsPaths.CreateLogViewerStartInfo(MVSLogViewer));
             }
             catch (System.ComponentModel.Win32Exception ex)
             {
@@ -286,7 +281,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 var summary = await Task.Run(() => cvCameraCSLib.SearchCameraIds(selectedCameraModels));
                 LoadPhyCamera();
-                MarkDiscoveredCamerasOnline(summary);
+                SynchronizeDiscoveredCameraIdentities(summary);
 
                 var resultWindow = new CameraSearchResultWindow(new CameraSearchResultViewModel(summary, this))
                 {
@@ -306,20 +301,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
-        private void MarkDiscoveredCamerasOnline(cvCameraCSLib.CameraDiscoverySummary summary)
+        internal void SynchronizeDiscoveredCameraIdentities(cvCameraCSLib.CameraDiscoverySummary summary)
         {
-            var existingCameras = PhyCameras
-                .Where(a => !string.IsNullOrWhiteSpace(a.Code))
-                .GroupBy(a => a.Code, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(a => a.Key, a => a.First(), StringComparer.OrdinalIgnoreCase);
-
-            foreach (var camera in summary.Cameras)
-            {
-                if (existingCameras.TryGetValue(camera.MD5Id, out var phyCamera))
-                {
-                    phyCamera.SysResourceModel.Remark = "Online";
-                }
-            }
+            PhysicalCameraIdentity.SynchronizeDiscovered(summary, PhyCameras, SysResourceDao.Instance.GetAll(),
+                ServiceManager.Current?.DeviceServices.AsEnumerable() ?? Enumerable.Empty<DeviceService>(), row => SysResourceDao.Instance.Save(row));
         }
 
         public void Create()
@@ -525,7 +510,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         existingPhyCamera.Name = item.Name ?? string.Empty;
                         existingPhyCamera.SysResourceModel = item;
-                        existingPhyCamera.Config.CameraID = item.Name ?? string.Empty;
+                        existingPhyCamera.Config.CameraID = PhysicalCameraIdentity.ReadCameraId(item, existingPhyCamera.Config.CameraID);
                     }
                     else
                     {

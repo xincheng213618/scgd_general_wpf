@@ -344,6 +344,7 @@ namespace ColorVision.Engine.Media
 
         private CvRawLayerController? InitializeCvFileView(ImageView imageView, string filePath, string displayedLayerId, bool hasRgbLayers, CVCIEFile? loadedRaw = null)
         {
+            imageView.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, null, nameof(CVRawOpen), "CVRAW 尾部保存的实际色度校正参数（只读）");
             if (!CVFileUtil.IsCIEFile(filePath))
             {
                 return null;
@@ -368,6 +369,7 @@ namespace ColorVision.Engine.Media
                 ColorCalibrationSnapshot? snapshot = null;
                 try { snapshot = ColorCalibrationSnapshot.Read(filePath, meta); }
                 catch (Exception ex) { log.Warn($"RAW 色度参数不可用，保留原图：{filePath}", ex); }
+                imageView.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, snapshot, nameof(CVRawOpen), "CVRAW 尾部保存的实际色度校正参数（只读）");
                 if (snapshot?.CanReplay == true)
                 {
                     imageView.EditorContext.ProcessingContext.ProfileMeasurementSources = CvRawProfileSource.CreateOptions(filePath);

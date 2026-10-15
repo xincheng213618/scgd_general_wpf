@@ -361,6 +361,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
     public class GetDataConfig : ViewModelBase, IConfig
     {
+        [DisplayName("平滑算法")]
+        [Category("SpectrumAcquisitionDisplay")]
+        [Description("本地采集使用；默认均值滤波保持原有测量数据。SG 为二阶试验算法，会改变光谱结果，尚未通过真实光谱数据验证。远程服务不使用此选项。")]
+        public cvColorVision.SpectrumSmoothingMethod SmoothingMethod { get => _SmoothingMethod; set { _SmoothingMethod = value; OnPropertyChanged(); } }
+        private cvColorVision.SpectrumSmoothingMethod _SmoothingMethod = cvColorVision.SpectrumSmoothingMethod.Mean;
+
         [DisplayName("IsSyncFrequencyEnabled")]
         [Category("SpectrumAcquisitionDisplay")]
         public bool IsSyncFrequencyEnabled { get => _IsSyncFrequencyEnabled; set { _IsSyncFrequencyEnabled = value; OnPropertyChanged(); } }
@@ -378,6 +384,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         [DisplayName("FilterBW")]
         [Category("SpectrumAcquisitionDisplay")]
+        [Description("原始采样点数。均值滤波沿用原规则：小于等于 2 时使用 5 点，支持偶数窗口；SG 必须使用 3～2047 的奇数，且不超过实际采样点数。")]
         public int FilterBW { get => _FilterBW; set { _FilterBW = value; OnPropertyChanged(); } }
         private int _FilterBW = 5;
 

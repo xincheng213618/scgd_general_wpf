@@ -12,7 +12,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     {
         public static ViewSpectrumConfig Instance => ConfigService.Instance.GetRequiredService<ViewSpectrumConfig>();
 
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         
         [LocalizedDisplayName(nameof(Resources.ShowList)), Category("View")]
@@ -22,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 
-        [LocalizedDisplayName(nameof(Resources.ShowSidebar)), Category("Control")]
+        [LocalizedDisplayName(nameof(Resources.ShowSidebar)), Category("View")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 

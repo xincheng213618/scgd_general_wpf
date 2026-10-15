@@ -7,10 +7,12 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.POI;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Documents;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -24,6 +26,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -172,6 +175,93 @@ public sealed class DockViewLifecycleTests
         });
     }
 
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous, 0)]
+    [InlineData(CVFileSaveMode.MemoryOnly, 0)]
+    [InlineData(CVFileSaveMode.Synchronous, 100)]
+    [InlineData(CVFileSaveMode.MemoryOnly, 100)]
+    public async Task SavedCapturesDisplayCurrentColorParametersWithoutReselection(CVFileSaveMode saveMode, int firstId)
+    {
+        using var first = new RawFile(3, 2);
+        using var second = new RawFile(3, 2);
+        Scope? scope = null;
+        DeviceCamera? camera = null;
+        bool cacheEnabled = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            WpfTestHost.Invoke(() =>
+            {
+                scope = new Scope();
+                camera = new DeviceCamera(Resource("calibrated-capture"));
+                DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+                Image(camera).IEditorToolFactory.IEditorTools.Clear();
+                Image(camera).IEditorToolFactory.IImageOpens[".cvraw"] = new CVRawOpen(Image(camera).EditorContext);
+            });
+            double gain = 1;
+            foreach (string path in new[] { first.Path, second.Path })
+            {
+                File.Delete(path);
+                using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+                    { Width = 3, Height = 2, SourceBpp = 8, Channels = 3, Exposure = [10, 10, 10] }, 18, 0);
+                using (var lease = frame.Acquire()) System.Runtime.InteropServices.Marshal.Copy(Enumerable.Repeat((byte)20, 18).ToArray(), 0, lease.RawPointer, 18);
+                var transform = RawColorTransformV1.Create();
+                transform.Coefficients = [1, 0, 0, 0, gain, 0, 0, 0, 1];
+                frame.ColorCalibration = ColorCalibrationSnapshot.Create(transform, 3, 2, 8, [10, 10, 10], "capture");
+                LocalFrameFileService.SaveCapture(frame, path, saveMode);
+                Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
+                Task<bool> opened = WpfTestHost.Invoke(() =>
+                {
+                    ImageView image = Image(camera!);
+                    TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    EventHandler<ImageViewImageSourceLoadedEventArgs>? handler = null;
+                    handler = (_, _) => { image.ImageSourceLoaded -= handler; completion.TrySetResult(image.Config.GetProperties<bool>("HasCieMeasurements")); };
+                    image.ImageSourceLoaded += handler;
+                    var model = new MeasureResultImgModel { Id = firstId == 0 ? 0 : firstId + (int)gain - 1, FileUrl = path };
+                    ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, camera!.Code,
+                        "GetData", "capture", "camera-node", 0, new ResultReference(model.Id, 100), model));
+                    frame.Dispose();
+                    return completion.Task;
+                });
+                Assert.True(await opened.WaitAsync(TimeSpan.FromSeconds(15)));
+                WpfTestHost.Invoke(() =>
+                {
+                    ImageView image = Image(camera!);
+                    Assert.Equal(path, image.Config.FilePath);
+                    Assert.Equal(path, camera!.View.ViewResults[0].FileUrl);
+                    Assert.Equal(firstId == 0 ? 1 : (int)gain, camera.View.ViewResults.Count);
+                    Assert.True(image.Config.GetProperties<bool>("HasCieMeasurements"));
+                    var buffer = GetOpenerField<PoiMeasurementBuffer>(Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen), "_measurementBuffer")!;
+                    Assert.Equal((float)(20 * gain), PoiMeasurementService.Calculate(buffer, [new(0, 0, 1, 1, PoiMeasurementShape.Point)])[0].Y);
+                    Assert.Equal(0, buffer.RawSource!.CachedXyzBytes);
+                });
+                gain = 2;
+            }
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => { camera?.Dispose(); scope?.Dispose(); });
+            CVFileReadCache.IsEnabled = cacheEnabled;
+        }
+    }
+
+    [Fact]
+    public void CameraResultWithoutFileKeepsTheSameRowOnDuplicateNotification()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var camera = new DeviceCamera(Resource("duplicate-result"));
+            DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+            ColorVision.Engine.Services.Devices.Camera.Views.ViewCamera.Config.AutoRefreshView = false;
+            var model = new MeasureResultImgModel { Id = 100 };
+            camera.View.ShowResult(model);
+            ViewResultImage first = Assert.Single(camera.View.ViewResults);
+            camera.View.ShowResult(model);
+            Assert.Same(first, Assert.Single(camera.View.ViewResults));
+        });
+    }
+
     [Fact]
     public void RealtimePreviewDetachesAndReconnectsWithoutChangingVideoState()
     {
@@ -300,6 +390,42 @@ public sealed class DockViewLifecycleTests
             image.SetImageSource(new WriteableBitmap(64, 32, 96, 96, PixelFormats.Gray8, null));
             image.Clear();
             Assert.Same(Task.CompletedTask, ImageMemoryReclaimer.PendingCollection);
+        });
+    }
+
+    [Fact]
+    public void CieProbeReplacementStopsHiddenPixelReadoutAndRestoresNormalTool()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var image = new ImageView();
+            image.SetImageSource(new WriteableBitmap(200, 200, 96, 96, PixelFormats.Gray8, null));
+            var factory = image.IEditorToolFactory;
+            var normal = Assert.Single(factory.IEditorTools.OfType<MouseMagnifierManager>());
+            int childCount = VisualTreeHelper.GetChildrenCount(image.ImageShow);
+            normal.IsChecked = true;
+            factory.RefreshToolBars();
+            Assert.True(normal.IsChecked);
+            Assert.Equal(childCount + 1, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+
+            var opener = new CVRawOpen(image.EditorContext);
+            opener.AttachLiveCvcie(image, 200, 200, 32, 1, new byte[200 * 200 * sizeof(float)], [1]);
+            Assert.False(normal.IsChecked);
+            Assert.Equal(childCount, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+            var probe = Assert.IsAssignableFrom<IEditorToggleTool>(factory.GetIEditorTool(nameof(MouseMagnifierManager)));
+            Assert.NotSame(normal, probe);
+            probe.IsChecked = true;
+            image.ImageShow.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = Mouse.MouseEnterEvent });
+            Assert.Equal(childCount + 1, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+
+            factory.ApplyImageOpenTools(null);
+            Assert.False(probe.IsChecked);
+            Assert.Same(normal, factory.GetIEditorTool(nameof(MouseMagnifierManager)));
+            Assert.Equal(childCount, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+            normal.IsChecked = true;
+            Assert.Equal(childCount + 1, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+            normal.IsChecked = false;
         });
     }
 

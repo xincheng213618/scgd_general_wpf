@@ -1,5 +1,4 @@
 using ColorVision.Database;
-using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using System.Windows;
 
@@ -77,16 +76,8 @@ namespace WindowsServicePlugin.ServiceManager
             };
             mySqlConnect.ShowDialog();
 
-            MQTTConnect mqttConnect = new()
-            {
-                Owner = owner,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            mqttConnect.ShowDialog();
-
             ConfigHandler configHandler = ConfigHandler.GetInstance();
             configHandler.Save<MySqlSetting>();
-            configHandler.Save<MQTTSetting>();
         }
     }
 }

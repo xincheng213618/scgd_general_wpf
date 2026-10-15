@@ -69,6 +69,11 @@ namespace Spectrum
 
     public class GetDataConfig : ViewModelBase, IConfig
     {
+        [DisplayName("平滑算法")]
+        [Description("默认均值滤波保持原有测量数据；SG 使用优化后的二阶算法，会改变光谱结果，尚未通过真实光谱数据验证。")]
+        public SpectrumSmoothingMethod SmoothingMethod { get => _SmoothingMethod; set { _SmoothingMethod = value; OnPropertyChanged(); } }
+        private SpectrumSmoothingMethod _SmoothingMethod = SpectrumSmoothingMethod.Mean;
+
         [DisplayName("是否开启同步频率")]
         public bool IsSyncFrequencyEnabled { get => _IsSyncFrequencyEnabled; set { _IsSyncFrequencyEnabled = value; OnPropertyChanged(); } }
         private bool _IsSyncFrequencyEnabled;
@@ -82,6 +87,7 @@ namespace Spectrum
         private int _SyncfreqFactor = 10;
 
         [DisplayName("滤波宽度")]
+        [Description("原始采样点数。均值滤波沿用原规则：小于等于 2 时使用 5 点，支持偶数窗口；SG 必须使用 3～2047 的奇数，且不超过实际采样点数。")]
         public int FilterBW { get => _FilterBW; set { _FilterBW = value; OnPropertyChanged(); } }
         private int _FilterBW = 5;
 
@@ -1915,11 +1921,15 @@ namespace Spectrum
 
                     if (GetDataConfig.IsSyncFrequencyEnabled)
                     {
+                        int filterWidth = GetDataConfig.FilterBW;
+                        int smoothingResult = SpectrumSmoothing.Configure(Handle, GetDataConfig.SmoothingMethod, filterWidth);
+                        if (smoothingResult != 1)
+                            throw new InvalidOperationException($"设置光谱平滑算法失败: {Spectrometer.GetErrorMessage(smoothingResult)}");
                         COLOR_PARA colorParam = new();
                         float synchronizedTime = integrationTime;
                         int syncResult = Spectrometer.CM_Emission_GetDataSyncfreq(
                             Handle, 0, GetDataConfig.Syncfreq, GetDataConfig.SyncfreqFactor,
-                            ref synchronizedTime, Average, GetDataConfig.FilterBW, fDarkData,
+                            ref synchronizedTime, Average, filterWidth, fDarkData,
                             0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
                         if (syncResult == 1)
                             integrationTime = synchronizedTime;
@@ -2070,7 +2080,13 @@ namespace Spectrum
             if (!TryGetCalibrationNotReadyReason(out string calibrationError))
                 return Failure(CalibrationUnavailable, calibrationError);
 
-            profile.InputParametersJson = CreateMeasurementInputSnapshotJson();
+            int filterWidth = GetDataConfig.FilterBW;
+            SpectrumSmoothingMethod smoothingMethod = GetDataConfig.SmoothingMethod;
+            int smoothingResult = SpectrumSmoothing.Configure(Handle, smoothingMethod, filterWidth);
+            if (smoothingResult != 1)
+                return Failure(smoothingResult, $"设置光谱平滑算法失败: {Spectrometer.GetErrorMessage(smoothingResult)}");
+
+            profile.InputParametersJson = CreateMeasurementInputSnapshotJson(smoothingMethod, filterWidth);
 
             if (EnableAutodark)
             {
@@ -2120,7 +2136,7 @@ namespace Spectrum
                 float syncIntegrationTime = EnableAutoIntegration ? integrationTime : IntTime;
                 acquireResult = Spectrometer.CM_Emission_GetDataSyncfreq(
                     Handle, 0, GetDataConfig.Syncfreq, GetDataConfig.SyncfreqFactor,
-                    ref syncIntegrationTime, Average, GetDataConfig.FilterBW, fDarkData,
+                    ref syncIntegrationTime, Average, filterWidth, fDarkData,
                     0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
                 if (acquireResult == 1 && EnableAutoIntegration)
                     IntTime = syncIntegrationTime;
@@ -2128,13 +2144,13 @@ namespace Spectrum
             else
             {
                 acquireResult = Spectrometer.CM_Emission_GetData(
-                    Handle, 0, IntTime, Average, GetDataConfig.FilterBW, fDarkData,
+                    Handle, 0, IntTime, Average, filterWidth, fDarkData,
                     0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
                 if (acquireResult == -13007)
                 {
                     log.Warn($"采集数据超时，正在重试: {Spectrometer.GetErrorMessage(acquireResult)}");
                     acquireResult = Spectrometer.CM_Emission_GetData(
-                        Handle, 0, IntTime, Average, GetDataConfig.FilterBW, fDarkData,
+                        Handle, 0, IntTime, Average, filterWidth, fDarkData,
                         0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
                 }
             }
@@ -2231,13 +2247,14 @@ namespace Spectrum
             return true;
         }
 
-        private string CreateMeasurementInputSnapshotJson()
+        private string CreateMeasurementInputSnapshotJson(SpectrumSmoothingMethod smoothingMethod, int filterWidth)
         {
             return JsonConvert.SerializeObject(new
             {
                 RequestedIntTime = IntTime,
                 Average,
-                GetDataConfig.FilterBW,
+                FilterBW = filterWidth,
+                SmoothingMethod = smoothingMethod,
                 EnableAutodark,
                 AutodarkParam.ControlMode,
                 AutodarkParam.FilterWheelDarkPosition,

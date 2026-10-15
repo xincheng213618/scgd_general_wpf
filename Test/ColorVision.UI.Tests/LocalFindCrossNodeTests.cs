@@ -80,7 +80,6 @@ public sealed class LocalFindCrossNodeTests
         Assert.Equal("十字定位", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
-        Assert.Equal(string.Empty, node.ImageFilePath);
         Assert.Equal(Int32Rect.Empty, node.SearchRegion);
         Assert.Equal(string.Empty, node.ResultDirectory);
         JObject parameters = JObject.Parse(node.ParameterJson);
@@ -131,7 +130,6 @@ public sealed class LocalFindCrossNodeTests
     {
         LocalFindCrossNode original = new();
         original.Create();
-        original.ImageFilePath = @"C:\images\cross.cvraw";
         original.ParameterJson = "{\"ExpectedAngleDegrees\":1.5,\"AngleToleranceDegrees\":8}";
         original.SearchRegionPoiTemplate = "发光区";
         original.SearchRegion = new Int32Rect(2888, 1920, 3751, 2655);
@@ -142,7 +140,6 @@ public sealed class LocalFindCrossNodeTests
         restored.Create();
         restored.OnLoadNode(state);
 
-        Assert.Equal(original.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(original.ParameterJson, restored.ParameterJson);
         Assert.Equal(original.SearchRegion, restored.SearchRegion);
         Assert.Equal(original.SearchRegionPoiTemplate, restored.SearchRegionPoiTemplate);

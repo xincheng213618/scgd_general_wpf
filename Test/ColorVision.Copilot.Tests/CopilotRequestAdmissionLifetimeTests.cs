@@ -17,6 +17,105 @@ public sealed class CopilotRequestAdmissionLifetimeTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
+    [Fact]
+    public void DeletingThePreviousImageOwnerPreservesAnImageAlreadyAdmittedForAnotherConversation()
+    {
+        StaTest.Run(() =>
+        {
+            var root = Directory.CreateTempSubdirectory("CopilotAdmissionLifetime-").FullName;
+            var sourcePath = Path.Combine(root, "source.png");
+            CreateImage(sourcePath);
+            var store = new CopilotChatStateStore(root);
+            var originalAttachment = CopilotAttachmentItem.CreateImage(sourcePath);
+            var storedAttachment = Assert.Single(CopilotImageAttachmentAdmission.PersistAsync(
+                [originalAttachment], store.AttachmentDirectoryPath, CancellationToken.None)
+                .WaitAsync(TestTimeout).GetAwaiter().GetResult());
+            var managedPath = storedAttachment.Value;
+            Assert.NotEqual(sourcePath, managedPath);
+            Assert.True(File.Exists(managedPath));
+            var profile = new CopilotProfileConfig
+            {
+                Id = "shared-image-admission-profile", Name = "Shared image admission",
+                VendorType = CopilotVendorType.Custom, ProviderType = CopilotProviderType.OpenAICompatible,
+                ApiKey = "shared-image-admission-test-key", BaseUrl = "https://unit.test/v1",
+                Model = "shared-image-admission-model", SupportsImageInput = true,
+            };
+            var previousOwner = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+            previousOwner.Attachments.Add(storedAttachment);
+            var sending = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+            sending.DraftText = "Inspect the image captured for this conversation.";
+            sending.DraftRequestMode = CopilotAgentMode.Chat;
+            sending.Attachments.Add(originalAttachment);
+            store.Save(new CopilotChatState
+            {
+                ActiveConversationId = sending.Id, ActiveProfileId = profile.Id,
+                Conversations = [previousOwner, sending],
+            });
+            var config = new CopilotConfig
+            {
+                SchemaVersion = CopilotConfig.CurrentSchemaVersion,
+                McpBearerToken = "shared-image-admission-test-token", Profiles = [profile],
+            };
+            using var solutionScope = new IsolatedSolutionManagerScope();
+            var runtime = new RecordingTurnRuntime();
+            var viewModel = new CopilotChatViewModel(new CopilotChatService(), store, config, runtime, new CopilotAgentTaskHost());
+            previousOwner = viewModel.Conversations.Single(item => item.Id == previousOwner.Id);
+            sending = viewModel.Conversations.Single(item => item.Id == sending.Id);
+            using var context = new PausedAdmissionSynchronizationContext();
+            var previousContext = SynchronizationContext.Current;
+            Task? operation = null;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                operation = InvokeTask(viewModel, "SendAsync", [], Type.EmptyTypes);
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(operation.IsCompleted);
+                Assert.False(viewModel.IsBusy);
+                Assert.Empty(runtime.Requests);
+                Assert.Equal(sourcePath, Assert.Single(sending.Attachments).Value);
+                Assert.Equal(managedPath, Assert.Single(Directory.GetFiles(store.AttachmentDirectoryPath, "image-*.png")));
+
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                Assert.True(viewModel.DeleteConversationCommand.CanExecute(previousOwner));
+                // This is the production handler after native confirmation; its real
+                // persistence barrier must finish before it attempts image cleanup.
+                InvokeTask(viewModel, "DeleteConfirmedConversationAsync", [previousOwner], [typeof(CopilotConversationRecord)])
+                    .WaitAsync(TestTimeout).GetAwaiter().GetResult();
+                Assert.DoesNotContain(previousOwner, viewModel.Conversations);
+                Assert.DoesNotContain(store.Load().Conversations, item => item.Id == previousOwner.Id);
+                Assert.True(File.Exists(managedPath), "Image admission already owns this shared managed image before its UI continuation resumes.");
+
+                SynchronizationContext.SetSynchronizationContext(context);
+                context.Complete(operation);
+                operation.GetAwaiter().GetResult();
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                var request = Assert.Single(runtime.Requests);
+                Assert.Equal(sending.Id, request.ConversationId);
+                Assert.Equal(managedPath, Assert.Single(request.HostContext.Attachments).Value);
+                var userMessage = Assert.Single(sending.Messages, message => message.IsUser);
+                Assert.Equal(managedPath, Assert.Single(userMessage.Attachments).Value);
+                Assert.Single(CopilotImagePayloadLoader.LoadAsync(request.HostContext.Attachments, CancellationToken.None)
+                    .WaitAsync(TestTimeout).GetAwaiter().GetResult());
+                Assert.Single(CopilotImagePayloadLoader.LoadAsync(userMessage.Attachments, CancellationToken.None)
+                    .WaitAsync(TestTimeout).GetAwaiter().GetResult());
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                if (operation is { IsCompleted: false })
+                    context.Complete(operation);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                viewModel.Dispose();
+                var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+                var tempRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+                Assert.True(string.Equals(Path.GetDirectoryName(fullRoot), tempRoot, StringComparison.OrdinalIgnoreCase)
+                    && Path.GetFileName(fullRoot).StartsWith("CopilotAdmissionLifetime-", StringComparison.Ordinal),
+                    "Refusing to delete a directory outside this test's temporary root.");
+                Directory.Delete(fullRoot, recursive: true);
+            }
+        }, TimeSpan.FromSeconds(30), "Shared image admission and deletion did not finish.");
+    }
+
     [Theory]
     [InlineData("source")]
     [InlineData("title")]

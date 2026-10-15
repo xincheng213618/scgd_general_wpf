@@ -23,4 +23,5 @@ public sealed class StorageMaintenanceConfig : IConfig
     public int LogRetentionDays { get; set; } = 30;
     public int TemporaryRetentionDays { get; set; } = 7;
     public int PackageRetentionDays { get; set; } = 30;
+    public Dictionary<string, int> FileRetentionDays { get; set; } = new();
 }

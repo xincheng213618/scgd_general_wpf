@@ -340,7 +340,9 @@ namespace ColorVision.Copilot
             var columnNumber = Math.Max(1, result.StartColumn);
             while (reader.ReadLine() is { } line)
             {
-                if (line.StartsWith("...<content truncated; kept the first ", StringComparison.Ordinal))
+                // The reader appends a final notice only for a truncated result;
+                // identical text in the source still owns a physical line number.
+                if (result.WasTruncated && reader.Peek() == -1)
                 {
                     builder.AppendLine(line);
                     continue;

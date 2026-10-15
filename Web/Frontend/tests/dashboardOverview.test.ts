@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { DatabaseBackupInventory, DeploymentHistoryEntry, IndexStatusResponse, ScheduledJob, TrafficStatsResponse, UserAccountSummary } from '../src/types/admin.ts'
+import type { DatabaseBackupInventory, DeploymentHistoryEntry, IndexStatusResponse, ScheduledJob, TrafficHealth, UserAccountSummary } from '../src/types/admin.ts'
 import {
   summarizeDashboardAccountTasks,
   summarizeDashboardDeployment,
@@ -44,7 +44,11 @@ function traffic(clientErrors: number, serverErrors: number, dropped = 0, lastEr
   return {
     today: { clientErrorResponses: clientErrors, serverErrorResponses: serverErrors },
     recorder: { dropped, lastError },
-  } as TrafficStatsResponse
+    recent: { window_seconds: 300, observed_seconds: 300, groups: {
+      application: { requests: 10, client_errors: clientErrors, server_errors: serverErrors },
+      transfer: { requests: 0, client_errors: 0, server_errors: 0 },
+    } },
+  } as TrafficHealth
 }
 
 test('dashboard index health distinguishes ready, missing, and failed scopes', () => {
@@ -61,7 +65,13 @@ test('dashboard traffic health does not confuse 4xx with server failures', () =>
   assert.equal(summarizeDashboardTraffic(traffic(0, 0)).level, 'ok')
   assert.equal(summarizeDashboardTraffic(traffic(3, 0)).level, 'warning')
   assert.equal(summarizeDashboardTraffic(traffic(0, 1)).level, 'error')
-  assert.equal(summarizeDashboardTraffic(traffic(0, 0, 1)).level, 'warning')
+  assert.equal(summarizeDashboardTraffic(traffic(0, 0, 1)).level, 'ok')
+  const recovered = traffic(0, 0)
+  recovered.today.serverErrorResponses = 10
+  assert.equal(summarizeDashboardTraffic(recovered).level, 'ok')
+  assert.equal(summarizeDashboardTraffic({ ...recovered, recent: null }).level, 'unknown')
+  recovered.recent!.groups.application.requests = 0
+  assert.equal(summarizeDashboardTraffic(recovered).level, 'unknown')
 })
 
 test('dashboard deployment health reflects the latest verified result', () => {

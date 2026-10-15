@@ -1,243 +1,214 @@
-using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Principal;
+using System.Text;
 
 namespace ColorVisionServiceHost;
 
 internal static class FirewallCommandService
 {
-    private const int NetFwProfileDomain = 1;
-    private const int NetFwProfilePrivate = 2;
-    private const int NetFwProfilePublic = 4;
-    private const int NetFwProfileAll = int.MaxValue;
+    private const int KnownProfiles = 1 | 2 | 4;
+    private const int AllProfiles = int.MaxValue;
+    private static readonly object PolicyGate = new();
 
     public static ServiceHostResponse AllowApplication(ServiceHostRequest request)
     {
-        string appPath = Path.GetFullPath(GetRequiredDataValue(request, "appPath"));
+        string? requestedPath = request.Data?["appPath"]?.ToString();
+        if (string.IsNullOrWhiteSpace(requestedPath))
+            throw new InvalidOperationException("Missing request data: appPath");
+
+        string appPath = Path.GetFullPath(requestedPath);
         if (!File.Exists(appPath))
             return ServiceHostResponse.FromObject(request.RequestId, false, $"Application executable was not found: {appPath}");
 
-        string profile = GetOptionalDataValue(request, "profile", string.Empty);
-        FirewallAllowResult result = AddApplicationRule(appPath, profile);
+        string profile = request.Data?["profile"]?.ToString() ?? string.Empty;
+        FirewallAllowResult result;
+        lock (PolicyGate)
+        {
+            result = AllowApplicationCore(appPath, profile);
+        }
         return ServiceHostResponse.FromObject(request.RequestId, result.Success, result.Message, new
         {
             appPath,
             profile = result.Profile,
             ruleName = result.RuleName,
+            resolvedBlockRules = result.ResolvedBlockRules,
             identity = WindowsIdentity.GetCurrent().Name,
             isElevated = IsElevated(),
         });
     }
 
-    private static FirewallAllowResult AddApplicationRule(string appPath, string profile)
-    {
-        string profileArgument = GetProfileArgument(profile);
-        string ruleName = BuildFirewallRuleName(appPath, profileArgument);
-        try
-        {
-            ProcessResult deleteResult = RunProcess("netsh.exe", ["advfirewall", "firewall", "delete", "rule", $"name={ruleName}"], 15000);
-            ProcessResult addResult = RunProcess(
-                "netsh.exe",
-                [
-                    "advfirewall",
-                    "firewall",
-                    "add",
-                    "rule",
-                    $"name={ruleName}",
-                    "dir=in",
-                    "action=allow",
-                    $"program={appPath}",
-                    "enable=yes",
-                    "protocol=any",
-                    $"profile={profileArgument}"
-                ],
-                15000);
-
-            if (addResult.ExitCode != 0)
-                return new FirewallAllowResult(false, ruleName, profileArgument, BuildProcessFailureMessage("防火墙允许规则创建失败", addResult));
-
-            ServiceHostLog.Write($"Firewall allow rule added. Rule={ruleName}, App={appPath}, Profile={profileArgument}, DeleteExit={deleteResult.ExitCode}");
-            return new FirewallAllowResult(true, ruleName, profileArgument, $"已创建防火墙入站允许规则：{ruleName}（{FormatProfileDisplay(profileArgument)}）");
-        }
-        catch (Exception ex)
-        {
-            ServiceHostLog.Write($"Firewall allow rule add failed for {appPath}: {ex}");
-            return new FirewallAllowResult(false, ruleName, profileArgument, $"创建防火墙允许规则失败：{ex.Message}");
-        }
-    }
-
-    private static string BuildFirewallRuleName(string appPath, string profileArgument)
-    {
-        string appName = Path.GetFileNameWithoutExtension(appPath);
-        return $"ColorVision Application {FormatProfileDisplay(profileArgument)} ({appName})";
-    }
-
-    private static string GetProfileArgument(string profile)
-    {
-        return profile.Trim().ToLowerInvariant() switch
-        {
-            "domain" => "domain",
-            "private" => "private",
-            "public" => "public",
-            _ => GetActiveProfileArgument()
-        };
-    }
-
-    private static string GetActiveProfileArgument()
+    private static FirewallAllowResult AllowApplicationCore(string appPath, string profile)
     {
         object? policy = null;
+        object? rules = null;
+        var retainedRules = new List<object>();
         try
         {
-            Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-            policy = policyType == null ? null : Activator.CreateInstance(policyType);
-            if (policy == null)
-                return "domain,private,public";
-
+            policy = CreateComObject("HNetCfg.FwPolicy2");
             dynamic firewallPolicy = policy;
-            int activeProfiles = Convert.ToInt32(firewallPolicy.CurrentProfileTypes, System.Globalization.CultureInfo.InvariantCulture);
-            if (activeProfiles == 0 || activeProfiles == NetFwProfileAll)
-                return "domain,private,public";
+            int profileMask = ResolveProfileMask(profile, (int)firewallPolicy.CurrentProfileTypes);
+            // Application exceptions cannot override a profile's global inbound block.
+            foreach (int selectedProfile in new[] { 1, 2, 4 })
+            {
+                if ((profileMask & selectedProfile) != 0 && (bool)firewallPolicy.BlockAllInboundTraffic[selectedProfile])
+                    throw new InvalidOperationException($"{FormatProfileDisplay(selectedProfile)}网络设置了阻止所有入站连接，请在 Windows 防火墙高级设置中检查策略。");
+            }
 
-            var profiles = new List<string>();
-            if ((activeProfiles & NetFwProfileDomain) != 0)
-                profiles.Add("domain");
-            if ((activeProfiles & NetFwProfilePrivate) != 0)
-                profiles.Add("private");
-            if ((activeProfiles & NetFwProfilePublic) != 0)
-                profiles.Add("public");
-            return profiles.Count == 0 ? "domain,private,public" : string.Join(",", profiles);
+            rules = firewallPolicy.Rules;
+            return ConfigureApplicationRules(appPath, profileMask, () =>
+            {
+                var snapshot = new List<object>();
+                foreach (object rule in (dynamic)rules)
+                {
+                    retainedRules.Add(rule);
+                    snapshot.Add(rule);
+                }
+                return snapshot;
+            }, (name, path, profiles) =>
+            {
+                object rule = CreateComObject("HNetCfg.FWRule");
+                retainedRules.Add(rule);
+                dynamic allowRule = rule;
+                allowRule.Name = name;
+                allowRule.Description = "ColorVision application inbound access";
+                allowRule.ApplicationName = path;
+                allowRule.Protocol = 256;
+                allowRule.Direction = 1;
+                allowRule.Action = 1;
+                allowRule.Profiles = profiles;
+                allowRule.InterfaceTypes = "All";
+                allowRule.Enabled = true;
+                ((dynamic)rules).Add(allowRule);
+            });
         }
         catch (Exception ex)
         {
-            ServiceHostLog.Write($"Failed to resolve active firewall profile, using all profiles. {ex.Message}");
-            return "domain,private,public";
+            ServiceHostLog.Write($"Firewall application access failed. App={appPath}, Profile={profile}: {ex}");
+            return new(false, string.Empty, profile, 0, $"防火墙放行失败：{ex.Message}");
         }
         finally
         {
-            if (policy != null && System.Runtime.InteropServices.Marshal.IsComObject(policy))
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(policy);
+            foreach (object rule in retainedRules)
+                ReleaseComObject(rule);
+            ReleaseComObject(rules);
+            ReleaseComObject(policy);
         }
     }
 
-    private static string FormatProfileDisplay(string profileArgument)
+    // Exercise these operations against in-memory rules in tests, without changing
+    // the maintenance computer's firewall or requiring administrator access.
+    internal static FirewallAllowResult ConfigureApplicationRules(string appPath, int profileMask,
+        Func<IReadOnlyList<object>> readRules, Action<string, string, int> addAllowRule)
     {
-        return profileArgument
-            .Replace("domain", "域", StringComparison.OrdinalIgnoreCase)
-            .Replace("private", "专用", StringComparison.OrdinalIgnoreCase)
-            .Replace("public", "公用", StringComparison.OrdinalIgnoreCase);
-    }
+        if (profileMask == 0 || (profileMask & ~KnownProfiles) != 0)
+            throw new ArgumentOutOfRangeException(nameof(profileMask));
 
-    private static string GetRequiredDataValue(ServiceHostRequest request, string name)
-    {
-        string? value = request.Data?[name]?.ToString();
-        if (string.IsNullOrWhiteSpace(value))
-            throw new InvalidOperationException($"Missing request data: {name}");
-
-        return value;
-    }
-
-    private static string GetOptionalDataValue(ServiceHostRequest request, string name, string defaultValue)
-    {
-        string? value = request.Data?[name]?.ToString();
-        return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
-    }
-
-    private static ProcessResult RunProcess(string fileName, IReadOnlyList<string> arguments, int timeoutMilliseconds)
-    {
-        using Process process = new()
+        string ruleName = BuildFirewallRuleName(appPath, profileMask);
+        string profile = FormatProfileArgument(profileMask);
+        int resolved = 0;
+        try
         {
-            StartInfo = new ProcessStartInfo
+            IReadOnlyList<object> before = readRules();
+            // Never delete by display name: another installation can have the same
+            // executable name. Our rule name includes a digest of the full path.
+            var ownedRules = before.Where(rule => (string)((dynamic)rule).Name == ruleName).ToList();
+            if (ownedRules.Any(rule => !IsApplicationAllow(rule, appPath, profileMask, requireEnabled: false)))
+                throw new InvalidOperationException($"同名规则与预期范围不一致，请检查规则：{ruleName}");
+            if (ownedRules.Count == 0)
+                addAllowRule(ruleName, appPath, profileMask);
+            else
+                foreach (dynamic rule in ownedRules)
+                    rule.Enabled = true;
+
+            foreach (dynamic rule in before.Where(rule => IsApplicationBlock(rule, appPath, profileMask)))
             {
-                FileName = fileName,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            },
-        };
+                int originalProfiles = rule.Profiles;
+                int remainingProfiles = NormalizeProfiles(originalProfiles) & ~profileMask;
+                // Retain blocking on unselected networks. Disable a selected-only
+                // rule instead of deleting it so the change remains inspectable.
+                if (remainingProfiles == 0)
+                    rule.Enabled = false;
+                else
+                    rule.Profiles = remainingProfiles;
+                resolved++;
+                ServiceHostLog.Write($"Firewall block scope updated. Rule={rule.Name}, App={appPath}, Profiles={originalProfiles}, RemainingProfiles={remainingProfiles}");
+            }
 
-        foreach (string argument in arguments)
-        {
-            process.StartInfo.ArgumentList.Add(argument);
-        }
+            IReadOnlyList<object> after = readRules();
+            if (after.Any(rule => IsApplicationBlock(rule, appPath, profileMask)))
+                throw new InvalidOperationException("仍有当前程序的入站阻止规则，可能受组织策略管理，请检查 Windows 防火墙高级设置。");
+            if (!after.Any(rule => (string)((dynamic)rule).Name == ruleName && IsApplicationAllow(rule, appPath, profileMask)))
+                throw new InvalidOperationException("未读回预期的入站允许规则，请检查 Windows 防火墙高级设置。");
 
-        process.Start();
-        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-        Task<string> errorTask = process.StandardError.ReadToEndAsync();
-        if (!process.WaitForExit(timeoutMilliseconds))
-        {
-            KillProcessTree(process);
-            string timeoutOutput = ReadCompletedOutput(outputTask);
-            string timeoutError = AppendProcessError(ReadCompletedOutput(errorTask), "Process timed out.");
-            return new ProcessResult(fileName, FormatArgumentsForLog(arguments), -1, timeoutOutput, timeoutError);
-        }
-
-        string output = ReadCompletedOutput(outputTask);
-        string error = ReadCompletedOutput(errorTask);
-        return new ProcessResult(fileName, FormatArgumentsForLog(arguments), process.ExitCode, output, error);
-    }
-
-    private static string BuildProcessFailureMessage(string message, ProcessResult result)
-    {
-        return string.IsNullOrWhiteSpace(result.Error)
-            ? $"{message}: {result.ExitCode}"
-            : $"{message}: {result.ExitCode} ({result.Error.Trim()})";
-    }
-
-    private static void KillProcessTree(Process process)
-    {
-        try
-        {
-            if (!process.HasExited)
-                process.Kill(entireProcessTree: true);
+            ServiceHostLog.Write($"Firewall application rules verified. Rule={ruleName}, App={appPath}, Profile={profile}, ResolvedBlocks={resolved}");
+            return new(true, ruleName, profile, resolved,
+                $"已核对当前程序在{FormatProfileDisplay(profileMask)}网络上的入站允许规则，已解除 {resolved} 条冲突阻止规则在该网络上的限制。\n其它网络类型的限制保留。请重新尝试连接或取图。");
         }
         catch (Exception ex)
         {
-            ServiceHostLog.Write($"Failed to kill timed out process {process.StartInfo.FileName}: {ex.Message}");
+            ServiceHostLog.Write($"Firewall application rules not verified. App={appPath}, Profile={profile}, ResolvedBlocks={resolved}: {ex}");
+            return new(false, ruleName, profile, resolved,
+                $"防火墙放行未完成：{ex.Message}\n已处理 {resolved} 条冲突阻止规则；已写入的变更可能保留，请核对 Windows 防火墙高级设置。");
         }
     }
 
-    private static string ReadCompletedOutput(Task<string> outputTask)
+    private static bool IsApplicationBlock(dynamic rule, string appPath, int profileMask) =>
+        (bool)rule.Enabled && (int)rule.Direction == 1 && (int)rule.Action == 0
+        && MatchesApplication((string)rule.ApplicationName, appPath)
+        && (NormalizeProfiles((int)rule.Profiles) & profileMask) != 0;
+
+    private static bool IsApplicationAllow(dynamic rule, string appPath, int profileMask, bool requireEnabled = true) =>
+        (!requireEnabled || (bool)rule.Enabled) && (int)rule.Direction == 1 && (int)rule.Action == 1
+        && MatchesApplication((string)rule.ApplicationName, appPath)
+        && (NormalizeProfiles((int)rule.Profiles) & profileMask) == profileMask
+        && (int)rule.Protocol == 256
+        && IsAnyAddress((string)rule.LocalAddresses) && IsAnyAddress((string)rule.RemoteAddresses)
+        && string.Equals((string)rule.InterfaceTypes, "All", StringComparison.OrdinalIgnoreCase)
+        && string.IsNullOrEmpty((string)rule.ServiceName);
+
+    private static bool IsAnyAddress(string? addresses) => string.IsNullOrEmpty(addresses) || addresses == "*";
+
+    private static bool MatchesApplication(string? rulePath, string appPath) =>
+        !string.IsNullOrWhiteSpace(rulePath)
+        && string.Equals(Environment.ExpandEnvironmentVariables(rulePath), appPath, StringComparison.OrdinalIgnoreCase);
+
+    private static int NormalizeProfiles(int profiles) => profiles == AllProfiles ? KnownProfiles : profiles;
+
+    internal static int ResolveProfileMask(string profile, int activeProfiles) => profile.Trim().ToLowerInvariant() switch
     {
-        try
-        {
-            return outputTask.Wait(1000) ? outputTask.GetAwaiter().GetResult() : string.Empty;
-        }
-        catch (Exception ex)
-        {
-            return $"Failed to read process output: {ex.Message}";
-        }
+        "domain" => 1,
+        "private" => 2,
+        "public" => 4,
+        "" when (NormalizeProfiles(activeProfiles) & KnownProfiles) != 0 => NormalizeProfiles(activeProfiles) & KnownProfiles,
+        _ => throw new InvalidOperationException("未能确定要放行的网络类型，请明确选择专用或公用网络。"),
+    };
+
+    internal static string BuildFirewallRuleName(string appPath, int profileMask)
+    {
+        string pathHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(appPath.ToUpperInvariant())))[..16];
+        return $"ColorVision Application {FormatProfileDisplay(profileMask)} ({Path.GetFileNameWithoutExtension(appPath)}) [{pathHash}]";
     }
 
-    private static string AppendProcessError(string currentError, string message)
-    {
-        return string.IsNullOrWhiteSpace(currentError)
-            ? message
-            : currentError.TrimEnd() + Environment.NewLine + message;
-    }
+    private static string FormatProfileArgument(int mask) => string.Join(",", new[] { (1, "domain"), (2, "private"), (4, "public") }.Where(p => (mask & p.Item1) != 0).Select(p => p.Item2));
 
-    private static string FormatArgumentsForLog(IEnumerable<string> arguments)
+    private static string FormatProfileDisplay(int mask) => string.Join("/", new[] { (1, "域"), (2, "专用"), (4, "公用") }.Where(p => (mask & p.Item1) != 0).Select(p => p.Item2));
+
+    private static object CreateComObject(string progId) => Activator.CreateInstance(Type.GetTypeFromProgID(progId)
+        ?? throw new InvalidOperationException($"系统没有提供 {progId} 接口。"))
+        ?? throw new InvalidOperationException($"无法创建 {progId} 对象。");
+
+    private static void ReleaseComObject(object? instance)
     {
-        return string.Join(" ", arguments.Select(argument =>
-            argument.Any(char.IsWhiteSpace) || argument.Contains('"', StringComparison.Ordinal)
-                ? $"\"{argument.Replace("\"", "\\\"", StringComparison.Ordinal)}\""
-                : argument));
+        if (instance != null && Marshal.IsComObject(instance))
+            Marshal.ReleaseComObject(instance);
     }
 
     private static bool IsElevated()
     {
-        try
-        {
-            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
-            WindowsPrincipal principal = new(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
-        }
-        catch
-        {
-            return false;
-        }
+        using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
     }
 
-    private sealed record ProcessResult(string FileName, string Arguments, int ExitCode, string Output, string Error);
-
-    private sealed record FirewallAllowResult(bool Success, string RuleName, string Profile, string Message);
+    internal sealed record FirewallAllowResult(bool Success, string RuleName, string Profile, int ResolvedBlockRules, string Message);
 }

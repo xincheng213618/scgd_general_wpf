@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <LangVersion>latest</LangVersion>
-    <VersionPrefix>0.1.1</VersionPrefix>
+    <VersionPrefix>0.1.2</VersionPrefix>
     <Product>ProjectARVRPro SemiAuto</Product>
     <AssemblyName>ProjectARVRPro.SemiAuto</AssemblyName>
   </PropertyGroup>

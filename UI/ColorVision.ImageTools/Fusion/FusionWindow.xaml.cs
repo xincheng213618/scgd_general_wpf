@@ -3,6 +3,7 @@ using AvalonDock.Layout;
 using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.Solution.Workspace;
+using ColorVision.UI;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -27,12 +28,14 @@ namespace ColorVision.Solution.Fusion
         public long ConvertMs { get; set; }
         public long TotalMs { get; set; }
         public int ImageCount { get; set; }
+        public string Parameters { get; set; } = string.Empty;
     }
 
     public partial class FusionWindow : Window
     {
         private CancellationTokenSource? execution;
         private bool closed;
+        private readonly FileFusionOptions options = new();
 
         public ObservableCollection<string> FilePaths { get; } = new();
         public ObservableCollection<TimingRecord> TimingRecords { get; } = new();
@@ -43,8 +46,9 @@ namespace ColorVision.Solution.Fusion
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             FileListBox.ItemsSource = FilePaths;
             TimingListView.ItemsSource = TimingRecords;
-            FilePaths.CollectionChanged += (s, e) => UpdateExecuteButton();
+            FilePaths.CollectionChanged += (s, e) => { UpdateExecuteButton(); UpdateParameterSummary(); };
             UpdateCudaStatus();
+            UpdateParameterSummary();
             Closed += (_, _) => { closed = true; execution?.Cancel(); };
         }
 
@@ -67,6 +71,32 @@ namespace ColorVision.Solution.Fusion
         {
             ButtonExecute.IsEnabled = execution == null && !closed && FilePaths.Count >= 2;
         }
+
+        private void EditParameters_Click(object sender, RoutedEventArgs e)
+        {
+            new PropertyEditorWindow(options, PropertyEditorEditMode.Transactional)
+            {
+                Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            }.ShowDialog();
+            UpdateParameterSummary();
+        }
+
+        private void UpdateParameterSummary()
+        {
+            try { options.Validate(); }
+            catch (ArgumentException ex)
+            {
+                ParameterSummary.Text = ex.Message;
+                ButtonExecute.IsEnabled = false;
+                return;
+            }
+            UpdateExecuteButton();
+            ParameterSummary.Text = FormatParameters(options);
+            if (FilePaths.Count >= 2 && FilePaths.Count < 2 * options.FocusStep + 1)
+                ParameterSummary.Text += $"\n当前 {FilePaths.Count} 张，不足拟合所需的 {2 * options.FocusStep + 1} 张，将使用普通清晰度加权（阈值、α 和可信度平滑不参与）。";
+        }
+
+        private static string FormatParameters(FileFusionOptions settings) => $"清晰度 {settings.FocusWindow}×{settings.FocusWindow} · 阈值 {settings.Threshold:g} dB · 取样间隔 {settings.FocusStep} · 平滑 {settings.ConsistencyWindow}×{settings.ConsistencyWindow} · α {settings.Alpha:g}";
 
         private void AddFiles_Click(object sender, RoutedEventArgs e)
         {
@@ -147,12 +177,12 @@ namespace ColorVision.Solution.Fusion
             using var cancellation = new CancellationTokenSource();
             execution = cancellation;
             FileInputGroup.IsEnabled = false;
-            ComboBoxMode.IsEnabled = false;
+            ConfigurationGroup.IsEnabled = false;
             UpdateExecuteButton();
             StatusText.Text = Properties.Resources.Sol_Fusion_Executing;
             try
             {
-                FileFusionResult result = await FileFusion.Default.ExecuteAsync(FilePaths, (FileFusionMode)ComboBoxMode.SelectedIndex, cancellation.Token);
+                FileFusionResult result = await FileFusion.Default.ExecuteAsync(FilePaths, (FileFusionMode)ComboBoxMode.SelectedIndex, cancellation.Token, options);
                 if (closed || cancellation.IsCancellationRequested) return;
                 TimingRecords.Add(new TimingRecord
                 {
@@ -162,6 +192,7 @@ namespace ColorVision.Solution.Fusion
                     ConvertMs = result.ConvertMs,
                     TotalMs = result.TotalMs,
                     ImageCount = result.Files.Count,
+                    Parameters = FormatParameters(result.Options),
                 });
                 TimingListView.ScrollIntoView(TimingRecords[^1]);
                 StatusText.Text = string.Format(Properties.Resources.Sol_Fusion_Done, $"{result.NativeMs} ms");
@@ -182,7 +213,7 @@ namespace ColorVision.Solution.Fusion
                 if (!closed)
                 {
                     FileInputGroup.IsEnabled = true;
-                    ComboBoxMode.IsEnabled = true;
+                    ConfigurationGroup.IsEnabled = true;
                     UpdateExecuteButton();
                 }
             }

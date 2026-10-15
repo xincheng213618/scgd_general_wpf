@@ -53,10 +53,10 @@ internal static class PhysicalCameraInitialBinding
             if (string.IsNullOrWhiteSpace(cameraConfig.CameraCode))
             {
                 cameraConfig.CameraCode = cameraCode;
-                physicalConfig.ApplyTo(cameraConfig, includeCameraId: false);
+                physicalConfig.ApplyTo(cameraConfig, includeCameraId: true);
                 changed = true;
             }
-            if (string.IsNullOrWhiteSpace(cameraConfig.CameraID) && !string.IsNullOrWhiteSpace(physicalConfig.CameraID))
+            if (!string.Equals(cameraConfig.CameraID, physicalConfig.CameraID, StringComparison.Ordinal))
             {
                 cameraConfig.CameraID = physicalConfig.CameraID;
                 changed = true;
@@ -69,7 +69,7 @@ internal static class PhysicalCameraInitialBinding
                 calibrationConfig.CameraCode = cameraCode;
                 changed = true;
             }
-            if (string.IsNullOrWhiteSpace(calibrationConfig.CameraID) && !string.IsNullOrWhiteSpace(physicalConfig.CameraID))
+            if (!string.Equals(calibrationConfig.CameraID, physicalConfig.CameraID, StringComparison.Ordinal))
             {
                 calibrationConfig.CameraID = physicalConfig.CameraID;
                 changed = true;

@@ -168,6 +168,7 @@ namespace ColorVision.ImageEditor
 
         public void ApplyImageOpenTools(IImageOpen? imageOpen)
         {
+            IReadOnlyList<IEditorTool> previousTools = GetEffectiveEditorTools();
             if (_currentImageOpen is IImageOpenEditorToolLifecycle previousLifecycle)
             {
                 previousLifecycle.OnEditorToolsDeactivated(_context);
@@ -185,6 +186,14 @@ namespace ColorVision.ImageEditor
                         _imageOpenEditorTools.Add(tool);
                     }
                 }
+            }
+
+            // Removing a button does not stop its tool's input handlers or overlays.
+            HashSet<IEditorTool> effectiveTools = new(GetEffectiveEditorTools(), ReferenceEqualityComparer.Instance);
+            foreach (IEditorToggleTool tool in previousTools.OfType<IEditorToggleTool>())
+            {
+                if (!effectiveTools.Contains(tool))
+                    tool.IsChecked = false;
             }
 
             RefreshToolBars();

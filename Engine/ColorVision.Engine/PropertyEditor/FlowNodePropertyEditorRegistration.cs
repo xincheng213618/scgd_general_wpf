@@ -18,7 +18,6 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
 
@@ -165,7 +164,7 @@ namespace ColorVision.Engine.PropertyEditor
                 openButton.Click += (_, _) =>
                 {
                     ITemplate? currentTemplate = template;
-                    if (currentTemplate == null)
+                    if (currentTemplate == null || combo.SelectedItem is not TemplateBase)
                         return;
 
                     int selectedIndex = GetSelectedTemplateIndex(currentTemplate, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
@@ -185,7 +184,7 @@ namespace ColorVision.Engine.PropertyEditor
                 if (currentTemplate == null)
                     return;
 
-                int defaultIndex = GetTemplateIndex(currentTemplate, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
+                int defaultIndex = GetTemplateIndex(currentTemplate, property.GetValue(obj)?.ToString(), combo.SelectedItem is TemplateBase ? combo.SelectedIndex : -1);
                 var window = currentTemplate.CreateManagerWindow(defaultIndex);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -201,14 +200,15 @@ namespace ColorVision.Engine.PropertyEditor
                     template = templateFactory();
                     IEnumerable items = template?.ItemsSource ?? Array.Empty<object>();
                     string? templateName = property.GetValue(obj)?.ToString();
-                    combo.ItemsSource = null;
-                    combo.ItemsSource = items;
-                    SelectTemplate(combo, items, templateName);
-                    openButton?.SetCurrentValue(UIElement.IsEnabledProperty, template != null);
+                    TemplateSelectionDisplay.Select(combo, items, templateName);
                     editButton.SetCurrentValue(UIElement.IsEnabledProperty, template != null);
 
-                    if (clearUnavailableSelection && combo.SelectedItem == null && !string.IsNullOrWhiteSpace(templateName))
+                    if (clearUnavailableSelection && combo.SelectedItem is TemplateSelectionDisplay.MissingTemplate)
+                    {
                         SetValueAndNotify(property, obj, string.Empty);
+                        TemplateSelectionDisplay.Select(combo, items, string.Empty);
+                    }
+                    openButton?.SetCurrentValue(UIElement.IsEnabledProperty, template != null && combo.SelectedItem is TemplateBase);
                 }
                 finally
                 {
@@ -221,8 +221,9 @@ namespace ColorVision.Engine.PropertyEditor
                 if (isRefreshing)
                     return;
 
-                string selectedName = combo.SelectedItem is TemplateBase templateModel ? templateModel.Key : string.Empty;
-                SetValueAndNotify(property, obj, selectedName);
+                SetValueAndNotify(property, obj, TemplateSelectionDisplay.GetName(combo.SelectedItem));
+                combo.ToolTip = (combo.SelectedItem as TemplateSelectionDisplay.MissingTemplate)?.Key;
+                openButton?.SetCurrentValue(UIElement.IsEnabledProperty, template != null && combo.SelectedItem is TemplateBase);
             };
 
             // Rendering an editor must not normalize or clear the source value. A stale
@@ -307,8 +308,7 @@ namespace ColorVision.Engine.PropertyEditor
             {
                 isRefreshing = true;
                 var items = templates.SelectMany(template => template.ItemsSource.Cast<object>()).ToList();
-                combo.ItemsSource = items;
-                SelectTemplate(combo, items, property.GetValue(obj)?.ToString());
+                TemplateSelectionDisplay.Select(combo, items, property.GetValue(obj)?.ToString());
                 isRefreshing = false;
             }
 
@@ -319,8 +319,8 @@ namespace ColorVision.Engine.PropertyEditor
                 if (isRefreshing)
                     return;
 
-                string selectedName = combo.SelectedItem is TemplateBase templateModel ? templateModel.Key : string.Empty;
-                SetValueAndNotify(property, obj, selectedName);
+                SetValueAndNotify(property, obj, TemplateSelectionDisplay.GetName(combo.SelectedItem));
+                combo.ToolTip = (combo.SelectedItem as TemplateSelectionDisplay.MissingTemplate)?.Key;
             };
 
             var editButton = CreateEditButton();
@@ -412,11 +412,6 @@ namespace ColorVision.Engine.PropertyEditor
                 Margin = new Thickness(5, 0, 0, 0),
                 Content = image
             };
-        }
-
-        private static void SelectTemplate(Selector combo, IEnumerable itemsSource, string? templateName)
-        {
-            combo.SelectedItem = itemsSource.Cast<object>().FirstOrDefault(item => item is TemplateBase templateModel && string.Equals(templateModel.Key, templateName, StringComparison.Ordinal));
         }
 
         private static bool HasDirectTemplateEditor(ITemplate template)

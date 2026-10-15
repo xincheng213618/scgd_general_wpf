@@ -127,17 +127,15 @@ namespace ColorVision.Copilot
             return hasDigit && majorVersion >= 5;
         }
 
-        internal static bool IsGpt6AstraModelName(string? model) =>
-            string.Equals(
-                model?.Trim(),
-                "gpt-6-astra",
-                StringComparison.OrdinalIgnoreCase);
+        internal static bool HasMandatoryReasoningModelName(string? model) =>
+            string.Equals(model?.Trim(), "gpt-6-astra", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(model?.Trim(), "gpt-6.1-sol", StringComparison.OrdinalIgnoreCase);
 
-        internal static bool IsGpt6Astra(CopilotProfileConfig profile)
+        internal static bool HasMandatoryReasoning(CopilotProfileConfig profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
             return UsesOfficialOpenAiApi(profile)
-                && IsGpt6AstraModelName(profile.Model);
+                && HasMandatoryReasoningModelName(profile.Model);
         }
     }
 }

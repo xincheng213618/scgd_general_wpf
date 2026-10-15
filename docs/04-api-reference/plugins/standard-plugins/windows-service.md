@@ -20,7 +20,7 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 项目和 `Plugins/Directory.Build.props` 定义 Windows WPF、x64、`net10.0-windows` 及 Engine/UI 依赖。manifest身份为 `WindowsServicePlugin`，入口 `WindowsServicePlugin.dll`；插件发布版本取编译DLL的FileVersion。[插件产物与交付](../../../02-developer-guide/plugin-development/getting-started.md)负责HostCopy、manifest和.cvxp规则。
 
 - `MenuServiceManager` 在“帮助 > 服务管理器”提供常用快捷入口，`ServiceManagerAppProvider` 在“应用与工具 > 内部工具”提供另一入口；两者打开同一非模态窗口并要求应用内 `PermissionMode.Administrator`。这不是Windows提权、目录ACL或后台代理授权已通过的证明。
-- `InstallServiceManager` 是向导步骤，打开模态窗口；`ConfigurationStatus` 仅检查BaseLocation非空且目录存在，不检查数据库、服务安装或健康。首次向导另有 `ServiceManagerWizardInitializer` 的导入/手动/跳过选择。
+- `InstallServiceManager` 是向导步骤，打开模态窗口；`ConfigurationStatus` 仅检查BaseLocation非空且目录存在，不检查数据库、服务安装或健康。首次向导另有 `ServiceManagerWizardInitializer` 的导入/手动/跳过选择，手动配置打开 MySQL 设置，MQTT 自动连接本机。
 - `ServiceHostWindowsServiceController` 将安装/卸载/启停交给 `ColorVisionServiceHostClient`，返回bool并记录代理缺失、旧版本或失败。执行仍需兼容的代理及服务、文件、数据库权限。
 - “终止”沿用已有客户端入口，服务端已接入[通用进程终止](../../../03-architecture/components/service-host.md#通用进程终止)。服务端检查固定服务名和对应程序名白名单：已注册服务按系统 PID 和注册路径定位，清单内未注册残留仍按完整路径定位；进程树结束后仍核对服务状态，正常“停止”是另一条操作。白名单不固定程序所在目录，不增加调用方授信步骤。
 - 项目虽为WinExe，当前 `App.Application_Startup` 初始化配置/日志/主题、加载Engine后即Shutdown，不是另一套独立服务管理器交付入口。
@@ -80,11 +80,11 @@ MySQL页的“ZIP全安装”和“注册服务”会在调用后台前检查运
 | 停止与替换 | 尝试停止受管理服务并关闭旧CVWinSMS进程；普通停止失败不一定阻止清理，归档服务卸载失败则阻止包更新 |
 | CommonDll与注册 | CommonDll存在时复制到已存在的三个服务目录再删源目录；不存在或复制异常只记日志。选中服务安装时，三个服务目录对应的exe均为必需项：缺exe、后台安装返回false或抛异常都会汇总；既有归档服务在替换包后使用当前 `ArchivedWindowsService.exe` 重新注册，失败也并入同一清单，全部尝试结束后统一使安装失败。ServiceHost仍兼容旧 `RegWindowsService.exe` |
 | SQL与业务账号 | 新装MySQL走初始化；其它勾选升级时由插件MySqlServiceManager委托Engine的MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync。同名源库和目标库都尚未创建时按新安装直接初始化，不尝试备份不存在的库；跨库更新缺少源库时仍停止，避免跳过旧数据。安装先要求找到color_vision_all.sql，数据库步骤成功后更新业务账号授权；明确失败中止后续配置/启动 |
-| 配置与启动 | 数据库步骤后才ApplyDatabaseName、ApplyConfigAndRefreshAfterInstall。业务连接会写入或更新CVPath、设为桌面端当前连接并持久化，root配置不会被改成业务账号。有服务/MySQL/MQTT安装工作便自动调用启动，不存在独立可选启动开关；MySQL、MQTT和已安装的三个业务服务会分别尝试启动，返回false或抛异常均汇总，任一必需服务失败都使安装失败 |
+| 配置与启动 | 数据库步骤后才ApplyDatabaseName、ApplyConfigAndRefreshAfterInstall。桌面端当前连接直接更新为业务账号并持久化，安装维护的root凭据由MySqlServiceConfig独立保存。有服务/MySQL/MQTT安装工作便自动调用启动，不存在独立可选启动开关；MySQL、MQTT和已安装的三个业务服务会分别尝试启动，返回false或抛异常均汇总，任一必需服务失败都使安装失败 |
 
 MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHelper` 将带UTF-8 BOM的SQL按UTF-8读取，其余先严格UTF-8解码、失败回退GB18030，再向mysql.exe传UTF-8。[Engine重置与资源保留](../../engine-components/mysql-recovery.md)负责保留表、字典依赖和SQL失败语义，不是整库或全部结果无损迁移。安装器要求SQL存在，而直接调用部分MySQL helper找不到SQL时会记录跳过并返回true，二者成功判据不同。
 
-配置来自ServiceManagerConfig、MySqlServiceConfig、MqttServiceConfig和RC设置，写到实际服务目录cfg/MySql.config、MQTT.config、WinService.config等；旧App.config仍兼容同步。注册中心监控列表还会同步到当前 `RCName` 引用的 `t_scgd_sys_config_monitor` 记录，因为注册中心启动时以数据库值为准并回写本地文件：目标机器已安装 `CVArchService` 时保留监控，未安装时只写MySQL与x64/dev主服务。数据库中找不到当前注册中心对应的监控记录会使配置同步失败，避免服务带旧列表启动。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，但缺配置文件会跳过，`SyncLegacyAppConfig` 异常只记日志。不能沿用“所有同步失败都阻止带旧配置启动”的保证。
+配置来自ServiceManagerConfig、MySqlServiceConfig和RC设置，写到实际服务目录cfg/MySql.config、WinService.config等；现有MQTT.config固定同步为127.0.0.1:1883、空用户名和密码，旧App.config仍兼容同步。旧配置导入不读取MQTT地址、端口和凭据，MQTT服务对象只保存安装及运行状态。注册中心监控列表还会同步到当前 `RCName` 引用的 `t_scgd_sys_config_monitor` 记录，因为注册中心启动时以数据库值为准并回写本地文件：目标机器已安装 `CVArchService` 时保留监控，未安装时只写MySQL与x64/dev主服务。数据库中找不到当前注册中心对应的监控记录会使配置同步失败，避免服务带旧列表启动。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，但缺配置文件会跳过，`SyncLegacyAppConfig` 异常只记日志。不能沿用“所有同步失败都阻止带旧配置启动”的保证。
 
 `ServiceManagerConfig.BaseLocation` 是安装根，`MySqlPort` 默认3306；安装窗口的 `InstallServiceChecked/InstallMySqlChecked/InstallMqttChecked` 直接代理同名配置字段，初始缺省分别true/false/false。`AutoUpdateDatabase`、两个备份开关和所选包路径则是安装ViewModel自己的状态，不能把勾选项一律当作已保存配置或已完成动作。
 

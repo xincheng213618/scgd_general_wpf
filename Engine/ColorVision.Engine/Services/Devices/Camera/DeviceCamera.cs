@@ -16,7 +16,6 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor.Settings;
@@ -140,12 +139,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         internal void OpenLocalCameraWindow(LocalCameraNode? sourceNode = null)
         {
-            if (!File.Exists($"lincense\\{Config.CameraCode}.lic"))
-            {
-                LicenseManagerViewModel licenseManagerViewModel = new();
-                licenseManagerViewModel.SaveToLincense();
-            }
-
             CameraLocalWindow cameraLocalWindow = new(this, sourceNode);
             Window? owner = Application.Current.GetActiveWindow();
             if (owner != null && owner.IsVisible)
@@ -263,7 +256,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed || !ReferenceEquals(sender, _subscribedPhyCamera)) return;
 
-            e.ApplyTo(Config, includeCameraId: false);
+            e.ApplyTo(Config, includeCameraId: true);
 
             DisplayConfig.Gain = e.CameraParameterLimit.GainDefault;
             DisplayConfig.ExpTime = e.CameraParameterLimit.ExpDefalut;
@@ -278,10 +271,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed && phyCamera != null) return;
             if (ReferenceEquals(_subscribedPhyCamera, phyCamera)) return;
 
-            // Construction, reload, and disposal all pass through here. Keep persistence and service restarts in Save/Delete.
+            // Construction, reload, and disposal all pass through here. Do not persist or restart services while attaching.
             if (_subscribedPhyCamera != null)
             {
                 _subscribedPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                _subscribedPhyCamera.Config.PropertyChanged -= PhysicalCameraIdentityChanged;
                 if (ReferenceEquals(_subscribedPhyCamera.DeviceCamera, this))
                     _subscribedPhyCamera.DeviceCamera = null;
             }
@@ -292,8 +286,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (_subscribedPhyCamera != null)
             {
+                PhysicalCameraIdentity.RecoverFromLogical(_subscribedPhyCamera, Config.CameraCode, Config.CameraID);
                 _subscribedPhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                _subscribedPhyCamera.Config.PropertyChanged += PhysicalCameraIdentityChanged;
                 _subscribedPhyCamera.DeviceCamera = this;
+                Config.CameraID = _subscribedPhyCamera.Config.CameraID?.Trim() ?? string.Empty;
             }
         }
 
@@ -337,18 +334,31 @@ namespace ColorVision.Engine.Services.Devices.Camera
             PhyCameraManager.GetInstance().SearchCameraIds();
         }
 
+        internal void EnsurePhyCameraBindingCanChange(string? cameraCode)
+        {
+            if (string.Equals(_subscribedPhyCamera?.Code, cameraCode, StringComparison.OrdinalIgnoreCase)) return;
+            if (CameraBackend.LocalOwned || CameraBackend.VideoOwned || CameraBackend.ServiceMayOwnCamera)
+                throw new InvalidOperationException(EngineLocalization.Get("Camera_PhysicalBindingInUse"));
+        }
+
+        internal void UpdatePhyCameraBinding(PhyCamera? phyCamera)
+        {
+            EnsurePhyCameraBindingCanChange(phyCamera?.Code);
+            PhyCamera = phyCamera;
+            phyCamera?.Config.ApplyTo(Config, includeCameraId: true);
+        }
+
         public override void Save()
         {
             if (IsDisposed) return;
 
             PhyCamera? previousPhyCamera = _subscribedPhyCamera;
-            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
+            UpdatePhyCameraBinding(PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode));
             if (!ReferenceEquals(previousPhyCamera, PhyCamera))
                 previousPhyCamera?.ReleaseDeviceCamera();
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
-                PhyCamera.Config.ApplyTo(Config, includeCameraId: false);
 
                 OnPropertyChanged(nameof(PhyCamera));
             }

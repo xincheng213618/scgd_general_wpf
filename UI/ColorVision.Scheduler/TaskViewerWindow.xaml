@@ -121,15 +121,34 @@
                         <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,12,0,10"/>
                         <DockPanel>
                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="12,0,0,0">
-                                <Button Content="{x:Static properties:Resources.Sched_RunNow}" Style="{StaticResource SchedulerAction}" Click="MenuTrigger_Click"/>
+                                <Button Style="{StaticResource SchedulerPrimaryAction}" Click="MenuExecute_Click">
+                                    <Button.Content>
+                                        <MultiBinding Converter="{StaticResource SchedulerPrimaryActionDisplay}">
+                                            <Binding/><Binding Path="Mode"/><Binding Path="Status"/>
+                                        </MultiBinding>
+                                    </Button.Content>
+                                    <Button.IsEnabled>
+                                        <MultiBinding Converter="{StaticResource SchedulerPrimaryActionDisplay}" ConverterParameter="Enabled">
+                                            <Binding/><Binding Path="Status"/>
+                                        </MultiBinding>
+                                    </Button.IsEnabled>
+                                    <Button.ToolTip>
+                                        <MultiBinding Converter="{StaticResource SchedulerPrimaryActionDisplay}" ConverterParameter="Hint">
+                                            <Binding/><Binding Path="Mode"/>
+                                        </MultiBinding>
+                                    </Button.ToolTip>
+                                </Button>
                                 <Button Content="{x:Static properties:Resources.Sched_EditTask}" Style="{StaticResource SchedulerAction}" Click="MenuEdit_Click" Margin="6,0,0,0"/>
-                                <Button Click="TogglePause_Click" Margin="6,0,0,0" ToolTip="{x:Static properties:Resources.Sched_PauseHint}">
+                                <Button Click="MenuPause_Click" Margin="6,0,0,0" ToolTip="{x:Static properties:Resources.Sched_PauseHint}">
                                     <Button.Style>
                                         <Style TargetType="Button" BasedOn="{StaticResource SchedulerAction}">
                                             <Setter Property="Content" Value="{x:Static properties:Resources.Sched_PauseTask}"/>
                                             <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static local:SchedulerStatus.Completed}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
                                                 <DataTrigger Binding="{Binding Status}" Value="{x:Static local:SchedulerStatus.Paused}">
-                                                    <Setter Property="Content" Value="{x:Static properties:Resources.Sched_ResumeTask}"/>
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

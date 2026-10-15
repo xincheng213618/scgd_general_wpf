@@ -3,6 +3,21 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotTurnAnswerLifecycleTests
 {
     [Fact]
+    public void AnswerSnapshotsRemainIndependentAfterAppendBranchAndReset()
+    {
+        var original = CopilotTurnAnswerLifecycleState.Empty.Observe(CopilotAgentEvent.AnswerDelta("original"));
+        var extended = original.Observe(CopilotAgentEvent.AnswerDelta(" answer"));
+        var branch = original.Observe(CopilotAgentEvent.AnswerDelta(" branch"));
+        var reset = extended.Observe(CopilotAgentEvent.AnswerReset()).Observe(CopilotAgentEvent.AnswerDelta("replacement"));
+
+        original.ValidateSnapshot("original", false);
+        extended.ValidateSnapshot("original answer", false);
+        branch.ValidateSnapshot("original branch", false);
+        reset.ValidateSnapshot("replacement", false);
+        Assert.Empty(CopilotTurnAnswerLifecycleState.Empty.Text);
+    }
+
+    [Fact]
     public void ReviewAcceptsFinalSnapshotThatMatchesDeltasAfterReset()
     {
         var state = CreateEnteredReviewState();

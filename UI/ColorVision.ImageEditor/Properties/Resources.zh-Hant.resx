@@ -3649,4 +3649,5 @@ ORB 特徵上限: {6:N0}    最少匹配/內點: {7}/{8}    重投影閾值: {9:
   <data name="Sharma、Wu、Dalal：CIEDE2000 实现说明与 34 组验证数据" xml:space="preserve">
     <value>Sharma、Wu、Dalal：CIEDE2000 實現說明與 34 組驗證數據</value>
   </data>
+  <data name="Algorithm_RingGhostMetrology" xml:space="preserve"><value>圓環鬼影亮度比…</value></data>
 </root>

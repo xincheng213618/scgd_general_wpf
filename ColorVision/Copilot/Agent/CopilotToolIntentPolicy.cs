@@ -104,8 +104,7 @@ namespace ColorVision.Copilot
         public static bool NeedsDatabaseRead(CopilotAgentRequest? request)
         {
             return IsAgentRequest(request)
-                && !ContainsAny(request!.UserText, DatabaseExplanationMarkers)
-                && MatchesCurrentOrContinuation(request, DatabaseMarkers, "QueryDatabaseSql", "ExecuteDatabaseSql");
+                && MatchesCurrentOrContinuation(request!, DatabaseMarkers, "QueryDatabaseSql", "ExecuteDatabaseSql");
         }
 
         public static bool NeedsDatabaseWrite(CopilotAgentRequest? request)

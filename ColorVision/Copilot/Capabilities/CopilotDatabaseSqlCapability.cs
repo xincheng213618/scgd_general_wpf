@@ -33,7 +33,14 @@ namespace ColorVision.Copilot
     public sealed record CopilotDatabaseQueryResult(
         IReadOnlyList<string> Columns,
         IReadOnlyList<IReadOnlyList<string>> Rows,
-        bool IsTruncated);
+        bool IsTruncated)
+    {
+        public bool RowsTruncated { get; init; }
+
+        public bool ColumnsTruncated { get; init; }
+
+        public int TruncatedCellCount { get; init; }
+    }
 
     public sealed record CopilotDatabaseMutationResult(int AffectedRows, bool Transactional);
 
@@ -524,26 +531,33 @@ namespace ColorVision.Copilot
                 cancellationToken);
             string[] columns;
             var rows = new List<IReadOnlyList<string>>();
-            var truncated = false;
+            var rowsTruncated = false;
+            var columnsTruncated = false;
+            var truncatedCellCount = 0;
             await using (var command = new MySqlCommand(sql, connection, transaction) { CommandTimeout = timeoutSeconds })
             await using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken))
             {
                 var fieldCount = Math.Min(reader.FieldCount, 100);
                 columns = Enumerable.Range(0, fieldCount).Select(reader.GetName).ToArray();
-                truncated = reader.FieldCount > fieldCount;
+                columnsTruncated = reader.FieldCount > fieldCount;
                 while (rows.Count < maxRows && await reader.ReadAsync(cancellationToken))
                 {
                     var values = new string[fieldCount];
                     for (var column = 0; column < fieldCount; column++)
-                        values[column] = IsSensitiveColumn(columns[column]) ? "<redacted>" : FormatValue(reader.GetValue(column));
+                        values[column] = IsSensitiveColumn(columns[column]) ? "<redacted>" : FormatValue(reader.GetValue(column), ref truncatedCellCount);
                     rows.Add(values);
                 }
                 if (rows.Count == maxRows && await reader.ReadAsync(cancellationToken))
-                    truncated = true;
+                    rowsTruncated = true;
             }
 
             await transaction.RollbackAsync(CancellationToken.None);
-            return new CopilotDatabaseQueryResult(columns, rows, truncated);
+            return new CopilotDatabaseQueryResult(columns, rows, rowsTruncated || columnsTruncated || truncatedCellCount > 0)
+            {
+                RowsTruncated = rowsTruncated,
+                ColumnsTruncated = columnsTruncated,
+                TruncatedCellCount = truncatedCellCount,
+            };
         }
 
         public async Task<CopilotDatabaseMutationResult> ExecuteAsync(
@@ -623,7 +637,7 @@ namespace ColorVision.Copilot
             return SensitiveColumnMarkers.Any(marker => name.Contains(marker, StringComparison.OrdinalIgnoreCase));
         }
 
-        private static string FormatValue(object value)
+        private static string FormatValue(object value, ref int truncatedCellCount)
         {
             var text = value switch
             {
@@ -634,8 +648,7 @@ namespace ColorVision.Copilot
                 IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
                 _ => value.ToString() ?? string.Empty,
             };
-            text = CopilotMcpAuditLogger.RedactText(text).Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
-            return text.Length <= 512 ? text : text[..512] + "…";
+            return CopilotDatabaseSqlService.FormatQueryCell(text, ref truncatedCellCount);
         }
     }
 
@@ -686,12 +699,16 @@ namespace ColorVision.Copilot
             try
             {
                 var result = await _executor.QueryAsync(sql, maxRows, timeout, cancellationToken);
+                var output = BuildQueryOutput(analysis!, result);
                 return new CopilotToolResult
                 {
                     ToolName = "QueryDatabaseSql",
                     Success = true,
-                    Summary = $"Database query {analysis!.Fingerprint} returned {result.Rows.Count} row(s){(result.IsTruncated ? " (truncated)" : string.Empty)}.",
-                    Content = BuildQueryContent(analysis, result),
+                    Summary = $"Database query {analysis!.Fingerprint} read {result.Rows.Count} row(s), displayed {output.RowsDisplayed} row(s){(output.IsTruncated ? " (truncated)" : string.Empty)}.",
+                    Content = output.Content,
+                    PartialResultMessage = output.IsTruncated
+                        ? "Database query output is incomplete. Inspect truncation_reasons and narrow the query or use an aggregate before drawing conclusions about all records."
+                        : string.Empty,
                 };
             }
             catch (OperationCanceledException)
@@ -768,32 +785,91 @@ namespace ColorVision.Copilot
                 ReversibilitySummary: "Copilot 不会自动回滚数据库变更；部分 DDL 可能隐式提交，只能通过后续数据库操作恢复。");
         }
 
-        private static string BuildQueryContent(CopilotDatabaseSqlAnalysis analysis, CopilotDatabaseQueryResult result)
+        private static (string Content, int RowsDisplayed, bool IsTruncated) BuildQueryOutput(CopilotDatabaseSqlAnalysis analysis, CopilotDatabaseQueryResult result)
         {
-            var builder = new StringBuilder();
-            builder.AppendLine($"statement: {analysis.RootKeyword}");
-            builder.AppendLine($"fingerprint: {analysis.Fingerprint}");
-            builder.AppendLine($"rows_returned: {result.Rows.Count}");
-            builder.AppendLine($"truncated: {result.IsTruncated.ToString().ToLowerInvariant()}");
-            if (result.Columns.Count == 0)
-                return builder.ToString().TrimEnd();
-            builder.AppendLine("data_tsv:");
-            builder.AppendLine(string.Join('\t', result.Columns.Select(SanitizeCell)));
+            var data = new StringBuilder();
+            var rowOffsets = new List<int>();
+            var truncatedCellCount = result.TruncatedCellCount;
+            var outputTruncated = false;
+            if (result.Columns.Count > 0)
+            {
+                var header = "data_tsv:" + Environment.NewLine + string.Join('\t', result.Columns.Select(SanitizeCell)) + Environment.NewLine;
+                if (header.Length <= MaximumContentLength)
+                    data.Append(header);
+                else
+                    outputTruncated = true;
+            }
             foreach (var row in result.Rows)
             {
                 var cells = row.Select((value, index) => analysis.ContainsSensitiveIdentifier
                     || index < result.Columns.Count && IsSensitiveColumn(result.Columns[index])
                     ? "<redacted>"
-                    : SanitizeCell(CopilotMcpAuditLogger.RedactText(value)));
+                    : FormatQueryCell(value, ref truncatedCellCount));
                 var line = string.Join('\t', cells);
-                if (builder.Length + line.Length + Environment.NewLine.Length > MaximumContentLength)
+                if (outputTruncated || data.Length == 0 || data.Length + line.Length + Environment.NewLine.Length > MaximumContentLength)
                 {
-                    builder.AppendLine("<output truncated at 32000 characters>");
-                    break;
+                    outputTruncated = true;
+                    continue;
                 }
-                builder.AppendLine(line);
+                rowOffsets.Add(data.Length);
+                data.AppendLine(line);
             }
-            return builder.ToString().TrimEnd();
+
+            var metadata = BuildMetadata();
+            while (metadata.Length + data.Length > MaximumContentLength)
+            {
+                outputTruncated = true;
+                if (rowOffsets.Count > 0)
+                {
+                    data.Length = rowOffsets[^1];
+                    rowOffsets.RemoveAt(rowOffsets.Count - 1);
+                }
+                else
+                {
+                    data.Clear();
+                }
+                metadata = BuildMetadata();
+            }
+            var isTruncated = result.IsTruncated || result.RowsTruncated || result.ColumnsTruncated || truncatedCellCount > 0 || outputTruncated;
+            return (metadata + data.ToString(), rowOffsets.Count, isTruncated);
+
+            string BuildMetadata()
+            {
+                var reasons = new List<string>();
+                if (result.RowsTruncated)
+                    reasons.Add("row_limit");
+                if (result.ColumnsTruncated)
+                    reasons.Add("column_limit");
+                if (result.IsTruncated && !result.RowsTruncated && !result.ColumnsTruncated && result.TruncatedCellCount == 0)
+                    reasons.Add("query_result");
+                if (truncatedCellCount > 0)
+                    reasons.Add("cell_limit");
+                if (outputTruncated)
+                    reasons.Add("output_budget");
+                var builder = new StringBuilder();
+                builder.AppendLine($"statement: {analysis.RootKeyword}");
+                builder.AppendLine($"fingerprint: {analysis.Fingerprint}");
+                // Keep rows_returned as the buffered row count for existing consumers.
+                builder.AppendLine($"rows_returned: {result.Rows.Count}");
+                builder.AppendLine($"rows_read: {result.Rows.Count}");
+                builder.AppendLine($"rows_displayed: {rowOffsets.Count}");
+                builder.AppendLine($"cells_truncated: {truncatedCellCount}");
+                builder.AppendLine($"truncated: {(reasons.Count > 0).ToString().ToLowerInvariant()}");
+                builder.AppendLine($"truncation_reasons: {(reasons.Count > 0 ? string.Join(", ", reasons) : "none")}");
+                return builder.ToString();
+            }
+        }
+
+        internal static string FormatQueryCell(string value, ref int truncatedCellCount)
+        {
+            var text = SanitizeCell(CopilotMcpAuditLogger.RedactText(value));
+            if (text.Length <= 512)
+                return text;
+            truncatedCellCount++;
+            var retainedLength = 511;
+            if (char.IsHighSurrogate(text[retainedLength - 1]) && char.IsLowSurrogate(text[retainedLength]))
+                retainedLength--;
+            return text[..retainedLength] + "…";
         }
 
         private static string SanitizeCell(string value)

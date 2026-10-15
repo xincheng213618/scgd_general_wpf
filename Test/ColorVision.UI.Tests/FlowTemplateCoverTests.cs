@@ -2,6 +2,8 @@ using ColorVision.Engine.Templates.Flow;
 using Microsoft.Data.Sqlite;
 using ST.Library.UI.NodeEditor;
 using System.IO;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
 
@@ -18,6 +20,9 @@ public sealed class FlowTemplateCoverTests
         Assert.True(first.IsFrozen);
         Assert.Equal(640, first.PixelWidth);
         Assert.Equal(360, first.PixelHeight);
+        var repeated = service.LoadAsync(data, CancellationToken.None);
+        Assert.True(repeated.IsCompletedSuccessfully);
+        Assert.Same(first, await repeated);
         using var db = new SqliteConnection($"Data Source={path};Pooling=False");
         db.Open();
         using var command = db.CreateCommand();
@@ -25,7 +30,9 @@ public sealed class FlowTemplateCoverTests
         string generatedAt = (string)command.ExecuteScalar()!;
         await new FlowTemplateCoverService(path).LoadAsync(data, CancellationToken.None);
         Assert.Equal(generatedAt, command.ExecuteScalar());
-        await service.LoadAsync(CreateCanvas(160), CancellationToken.None);
+        string changedData = CreateCanvas(160);
+        Assert.False(service.TryGetCached(changedData, out _));
+        await service.LoadAsync(changedData, CancellationToken.None);
         command.CommandText = "SELECT COUNT(*) FROM flow_template_covers";
         Assert.Equal(2L, command.ExecuteScalar());
         command.CommandText = "SELECT COUNT(DISTINCT hex(png)) FROM flow_template_covers";
@@ -46,9 +53,43 @@ public sealed class FlowTemplateCoverTests
             command.CommandText = "UPDATE flow_template_covers SET png=x'0001'";
             command.ExecuteNonQuery();
         }
-        Assert.NotNull(await service.LoadAsync(data, CancellationToken.None));
+        Assert.NotNull(await new FlowTemplateCoverService(path).LoadAsync(data, CancellationToken.None));
         // A file in the directory position makes cache creation fail deterministically.
         Assert.NotNull(await new FlowTemplateCoverService(Path.Combine(path, "unavailable.db")).LoadAsync(data, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task RecreatedTilesShowCachedCoverImmediatelyAndKeepItWhenParametersReload()
+    {
+        var service = new FlowTemplateCoverService(NewCachePath());
+        string data = CreateCanvas();
+        var cached = await service.LoadAsync(data, CancellationToken.None);
+        await WpfTestHost.Invoke<Task>(async () =>
+        {
+            var viewport = new Grid();
+            var host = new Window { Content = viewport, Width = 320, Height = 180, Left = -10000, ShowActivated = false, ShowInTaskbar = false };
+            try
+            {
+                host.Show();
+                // Reopening the browser or switching back to tiles creates a new cover control.
+                var cover = new FlowTemplateCover { Flow = new FlowParam { DataBase64 = data } };
+                var loaded = new TaskCompletionSource();
+                cover.Loaded += (_, _) => loaded.TrySetResult();
+                viewport.Children.Add(cover);
+                host.UpdateLayout();
+                await loaded.Task;
+                cover.Refresh(viewport, service);
+                Assert.Same(cached, Assert.IsType<Image>(cover.Children[1]).Source);
+                Assert.Equal(Visibility.Collapsed, Assert.IsType<TextBlock>(cover.Children[0]).Visibility);
+                cover.Flow = new FlowParam { DataBase64 = data };
+                Assert.Same(cached, Assert.IsType<Image>(cover.Children[1]).Source);
+                cover.Flow = new FlowParam { DataBase64 = "" };
+                cover.Refresh(viewport, service);
+                Assert.Null(Assert.IsType<Image>(cover.Children[1]).Source);
+                Assert.Equal(Visibility.Visible, Assert.IsType<TextBlock>(cover.Children[0]).Visibility);
+            }
+            finally { host.Close(); }
+        });
     }
 
     [Fact]

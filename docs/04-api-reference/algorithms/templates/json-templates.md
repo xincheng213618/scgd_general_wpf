@@ -50,7 +50,6 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | 字典 `SysDictionaryModModel.JsonVal` | 普通新建默认值按 `TemplateDicId` 读取；“重置”按当前记录 `Pid` 读取。复制、导入等创建来源可以覆盖新建内容 |
 | 当前 `ModMasterModel.JsonVal` | 当前模板的参数；有效编辑先改变内存对象，保存才调用数据库更新 |
 | Schema 的 `default` | 维护时记录的字段/对象默认值元数据；编辑器不据此初始化模板、补齐缺失字段或执行重置 |
-| 模板类的 `Description` | 不参与通用编辑器默认值计算，也不自动变成 JSON 注释 |
 
 要让当前内容成为后续新建或重置的默认值，在模板列表选择目标，使用“设置为默认参数”并确认。该操作在一个事务中更新对应字典与当前模板记录，不只是修改本地配置，也不批量替换其它已有模板。确认前应完成输入提交并核对目标；搜索过滤后的索引限制见[搜索后的显示位置不总是源位置](./template-management.md#搜索后的显示位置不总是源位置)。
 
@@ -137,7 +136,6 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | 相机 HDR | `43` / `Camera.RunParams`，位置与 Schema 缺口见上文 |
 | POI 分析 / 十字计算 | `44` / `PoiAnalysis`，`45` / `FindCross` |
 | MTF / SFR | `48` / `MTF`，`49` / `SFR` |
-| 图像 ROI | `52` / `Image.ROI`，与强类型裁剪模板不同 |
 | KB | `150` / `KB`，使用专用编辑器 |
 
 同名算法可同时存在 JSON 与强类型模板。结果显示失败时，沿实际模板、MQTT 事件名、结果 `Version`、`ViewHandle*.CanHandle1` 逐项检查；Schema 索引中的版本不是结果 handler 的匹配条件。结果发现与分发统一见[结果处理链](../../engine-components/result-handoff-chain.md)。

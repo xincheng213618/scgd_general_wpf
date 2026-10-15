@@ -1,6 +1,5 @@
 #pragma warning disable CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.FlowProcessing.Integration;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.MQTT;
@@ -51,7 +50,6 @@ public sealed class FlowEngineManager : ViewModelBase
     public ContextMenu ContextMenu { get; }
     public RelayCommand EditTemplateFlowCommand { get; }
     public RelayCommand MeasureBatchManagerCommand { get; }
-    public RelayCommand OpenServiceCommand { get; }
     public RelayCommand OpenCameraLogCommand { get; }
     public RelayCommand AskCopilotFlowCommand { get; }
     public ViewFlow View { get; }
@@ -146,15 +144,11 @@ public sealed class FlowEngineManager : ViewModelBase
         EditTemplateFlowCommand = new RelayCommand(_ => EditSelectedFlowTemplate());
         MeasureBatchManagerCommand = new RelayCommand(_ => OpenBatchManager());
         AskCopilotFlowCommand = new RelayCommand(_ => Copilot.AskAboutCurrentFlow());
-        OpenServiceCommand = new RelayCommand(
-            _ => PlatformHelper.OpenFolderAndSelectFile(ServiceConfig.RegistrationCenterService),
-            _ => File.Exists(ServiceConfig.RegistrationCenterService));
         OpenCameraLogCommand = new RelayCommand(_ => OpenCameraLog());
 
         ContextMenu = new ContextMenu();
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Flow_AskAiAnalyzeCurrentFlow, Command = AskCopilotFlowCommand });
-        ContextMenu.Items.Add(new MenuItem { Header = "OpenService", Command = OpenServiceCommand });
         DisplayFlow = new DisplayFlow(this);
     }
 
@@ -197,9 +191,6 @@ public sealed class FlowEngineManager : ViewModelBase
             Owner = Application.Current.GetActiveWindow(),
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         }.ShowDialog();
-        if (FlowParams.Count > 0 && (TemplateFlowParamsIndex < 0 || TemplateFlowParamsIndex >= FlowParams.Count))
-            _ = View.SelectFlowTemplateAsync(FlowParams[0], allowEmptyFlow: true);
-        else
-            _ = RefreshFlowAsync();
+        _ = View.ReconcileTemplatesAsync();
     }
 }

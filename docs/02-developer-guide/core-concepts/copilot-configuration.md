@@ -110,11 +110,27 @@ ColorVision 在分块读取 stdout 时检查单行协议消息上限：最多 `1
 
 ## 新建 Profile 的模型预设
 
-`CopilotVendorCatalog` 只为新建或编辑 Profile 提供当前模型名候选，不自动改写已经保存的模型、地址、凭据或默认 Profile。当前候选为：OpenAI `gpt-6-astra`、`gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`；DeepSeek `deepseek-v4-pro`、`deepseek-flash`；Claude `claude-fable-5`、`claude-mythos-5`、`claude-opus-5`、`claude-sonnet-5`、`claude-haiku-4-5-20251001`；Grok `grok-4.6`、`grok-4.5`、`grok-4.20`；Gemini `gemini-3.1-pro-preview`、`gemini-3.8-flash`、`gemini-3.7-flash`、`gemini-3.6-flash`、`gemini-3.5-flash`、`gemini-3.5-flash-lite`；GLM `glm-5.2`、`glm-5-turbo`、`glm-4.7-flash`、`glm-4.5-air`；MiniMax `MiniMax-M2.7`、`MiniMax-M2.7-highspeed`、`MiniMax-M2.5`、`MiniMax-M2.5-highspeed`；MiMo `mimo-v2.5-pro`、`mimo-v2.5`；SenseNova `sensenova-6.7-flash-lite`。
+`CopilotVendorCatalog` 只为新建或编辑 Profile 提供当前模型名候选，不自动改写已经保存的模型、地址、凭据或默认 Profile。以下候选按 2026-10-12 的官方目录核对；这是常用聊天／工具模型列表，不包含各家的完整专用 API 目录。
+
+| 供应商与官方依据 | 模型候选 |
+| --- | --- |
+| [OpenAI](https://developers.openai.com/api/docs/guides/latest-model) | `gpt-6-astra`、`gpt-6.1-sol`、`gpt-6-sol`、`gpt-6-luna`、`gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna` |
+| [DeepSeek](https://api-docs.deepseek.com/quick_start/pricing) | `deepseek-v4-pro`、`deepseek-flash` |
+| [Claude](https://platform.claude.com/docs/en/models/overview) | `claude-fable-5-1`、`claude-opus-5-5`、`claude-sonnet-5-5`、`claude-haiku-5-5`、`claude-haiku-4-5-20251001` |
+| [Grok / xAI](https://docs.x.ai/developers/models) | `grok-4.7`、`grok-4.6`、`grok-4.5`、`grok-4.3` |
+| [Gemini](https://ai.google.dev/gemini-api/docs/deprecations) | `gemini-3.1-pro-preview`、`gemini-3.8-flash`、`gemini-3.7-flash`、`gemini-3.6-flash`、`gemini-3.5-flash-lite` |
+| [GLM](https://docs.bigmodel.cn/cn/guide/start/model-overview) | `glm-5.3`、`glm-5.3-flash`、`glm-5.3-flashx`、`glm-5.2`、`glm-5-turbo`、`glm-4.7-flash`、`glm-4.5-air` |
+| [MiniMax](https://platform.minimax.cn/docs/api-reference/text-anthropic-api) | `MiniMax-M3`、`MiniMax-M2.7`、`MiniMax-M2.7-highspeed`、`MiniMax-M2.5`、`MiniMax-M2.5-highspeed` |
+| [MiMo](https://mimo.mi.com/docs/zh-CN/quick-start/summary/model) | `mimo-v2.6-pro`、`mimo-v2.6-flash` |
+| [SenseNova](https://platform.sensenova.cn/docs) | `sensenova-6.8-flash-lite` |
+
+Claude Mythos 5.1 需要通过官方组织验证，MiniMax-M3.1-Flash-Preview 暂限 M Plan／MiniMax Code，MiMo Pro Ultraspeed 属于定制服务；这些模型不进入通用预设，有权限的用户仍可手工填写模型与端点。MiniMax 新建连接使用 `https://api.minimax.cn/anthropic` 或 `https://api.minimax.cn/v1`；MiMo 对应 `https://api.xiaomimimo.com/anthropic` 或 `https://api.xiaomimimo.com/v1`。切换协议提供匹配的默认地址，不改写已有连接。
 
 DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官方已将旧 `deepseek-v4-flash` 和 `deepseek-v4-flash-vision-exp` 暂时路由到该模型，因此菜单只列正式名称。已有 Profile 的旧名称继续保留；目录更新也不自动开启图像输入，仍由 Profile 的“支持图片输入”声明和附件校验控制。详见 [DeepSeek 2026-09-10 更新](https://api-docs.deepseek.com/news/news260910/) 与[图像接口说明](https://api-docs.deepseek.com/guides/vision/)。
 
-目录移除已退役或已被当前系列替代的旧候选，但兼容读取手工填写或既有保存值。模型名出现在候选中不等于账号已获权限、端点兼容或模型可连接；仍应通过 Profile 的实际连接测试验证。
+目录移除已退役、已弃用或已被当前系列替代的旧候选，但兼容读取手工填写或既有保存值。Gemini `gemini-3.5-flash` 已弃用并由官方路由到 3.6 Flash；MiMo `mimo-v2.5-pro`／`mimo-v2.5` 按[下线公告](https://mimo.mi.com/docs/zh-CN/updates/deprecate)于北京时间 2026-10-14 18:00 转向 2.6 Pro／Flash，2026-10-21 10:00 起旧 ID 报错。ColorVision 不迁移这些保存值、不在模型报错时换用其它模型；用户需手工选择新模型。模型名出现在候选中不等于账号已获权限、端点兼容或模型可连接；仍应通过 Profile 的实际连接测试验证。
+
+普通聊天、Agent 工具阶段与最终回答阶段共用采样限制：官方 Claude Fable 5.1、Opus／Sonnet／Haiku 5.5 不发送非默认温度，Haiku 4.5 保留温度；MiMo 默认开启思考，因此仅显式关闭思考时发送温度。官方 OpenAI 推理模型使用现有 Responses 路径，避免 Chat Completions 对新模型工具调用的限制。Profile 中保存的温度不因这些发送规则而被改写。
 
 ## `/model` 与 `/reasoning` 不是同一种保存
 
@@ -122,7 +138,7 @@ DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官
 
 `/reasoning`（兼容 `/effort`）才会修改当前 Profile 的 `ReasoningMode`。只接受 `CopilotReasoningCapabilities` 为该 Profile 声明的级别；本机 Codex 返回并显式选择的 GPT 推理模型也使用这些档位，选择值经 Agent Framework 传给 App Server。归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
 
-官方 `api.openai.com` 上的 GPT-6 Astra 提供 `Default/Low/Medium/High/XHigh/Max`，不提供 `Disabled/Enabled`；历史 `Disabled` 配置或 Codex `none/minimal` 覆盖发送前收敛为 `low`，`ultra` 收敛为 `max`。枚举新增值追加在已有数值之后，避免改变旧 JSON 中 `Default/Disabled/Enabled/High/Max` 的数字含义。伪装成 OpenAI vendor 的第三方兼容端点不会因此获得官方推理档位。
+官方 `api.openai.com` 上的 GPT-6 Astra 与 GPT-6.1 Sol 提供 `Default/Low/Medium/High/XHigh/Max`，不提供 `Disabled/Enabled`；历史 `Disabled` 配置或 Codex `none/minimal` 覆盖发送前收敛为 `low`，`ultra` 收敛为 `max`。本机 Codex 显式选择这两个模型时也不提供关闭档位；动态模型列表仍由本机运行时决定。枚举新增值追加在已有数值之后，避免改变旧 JSON 中 `Default/Disabled/Enabled/High/Max` 的数字含义。伪装成 OpenAI vendor 的第三方兼容端点不会因此获得官方推理档位。
 
 `SetSelectedProfileReasoningMode` 返回是否完成设置（或已是所选值）；`SelectReasoningMode` 只有成功时才回显“已设置／保持”，否则展示同一保存失败或刷新失败说明。已是所选值时不重复保存。测试专用的无 `ConfigHandler` 构造路径只提交内存，即使内部复用 `PersistedAndPublished` 枚举也不代表写了磁盘。
 

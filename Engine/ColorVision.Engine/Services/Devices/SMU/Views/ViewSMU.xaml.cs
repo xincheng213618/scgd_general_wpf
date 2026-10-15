@@ -24,13 +24,53 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
     public partial class ViewSMU : UserControl
     {
         public ObservableCollection<ViewResultSMU> ViewResults { get; set; } = new ObservableCollection<ViewResultSMU>();
-        public ViewSMU()
+        private bool _initializationStarted;
+        private bool _isInitialized;
+
+        public ViewSMU() : this(deferInitialization: false) { }
+
+        internal ViewSMU(bool deferInitialization)
         {
-            InitializeComponent();
+            Loaded += View_Loaded;
+            IsVisibleChanged += View_IsVisibleChanged;
+            if (!deferInitialization)
+                EnsureInitialized();
         }
+
+        private void View_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (IsVisible) EnsureInitialized();
+        }
+
+        private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsLoaded && IsVisible) EnsureInitialized();
+        }
+
+        internal void EnsureInitialized()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(EnsureInitialized);
+                return;
+            }
+            if (_initializationStarted) return;
+            _initializationStarted = true;
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            // Bind to the view configuration before XAML inherits the dock host's context.
+            DataContext = ViewSMUConfig.Instance;
+            InitializeComponent();
+            // An empty dock shell may already have raised FrameworkElement.Initialized.
+            UserControl_Initialized(this, EventArgs.Empty);
+            log4net.LogManager.GetLogger(typeof(ViewSMU)).Info($"Device view initialized. View={nameof(ViewSMU)}, Duration={stopwatch.ElapsedMilliseconds}ms.");
+        }
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = ViewSMUConfig.Instance;
+            if (_isInitialized) return;
+            _isInitialized = true;
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
@@ -237,6 +277,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public void AddViewResultSMU(ViewResultSMU viewResultSMU)
         {
+            EnsureInitialized();
             ViewResults.Add(viewResultSMU);
 
             ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;

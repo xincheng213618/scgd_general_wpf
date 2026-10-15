@@ -3692,4 +3692,31 @@
   <data name="请选择两个不同的可用端口号。" xml:space="preserve">
     <value>请选择两个不同的可用端口号。</value>
   </data>
+  <data name="{0} 执行服务维护脚本失败，退出码 {1}（{2}）。" xml:space="preserve">
+    <value>{0} 执行服务维护脚本失败，退出码 {1}（{2}）。</value>
+  </data>
+  <data name="无法启动或执行 {0} 服务维护脚本：{1}" xml:space="preserve">
+    <value>无法启动或执行 {0} 服务维护脚本：{1}</value>
+  </data>
+  <data name="访问冲突，PowerShell 进程已崩溃。" xml:space="preserve">
+    <value>访问冲突，PowerShell 进程已崩溃。</value>
+  </data>
+  <data name=".NET 运行时内部错误，PowerShell 进程已崩溃。" xml:space="preserve">
+    <value>.NET 运行时内部错误，PowerShell 进程已崩溃。</value>
+  </data>
+  <data name="服务维护操作失败" xml:space="preserve">
+    <value>服务维护操作失败</value>
+  </data>
+  <data name="重试安装或修复" xml:space="preserve">
+    <value>重试安装或修复</value>
+  </data>
+  <data name="建议操作：查看操作记录并处理错误后重试" xml:space="preserve">
+    <value>建议操作：查看操作记录并处理错误后重试</value>
+  </data>
+  <data name="{0} 失败。" xml:space="preserve">
+    <value>{0} 失败。</value>
+  </data>
+  <data name="详细错误已写入操作记录。" xml:space="preserve">
+    <value>详细错误已写入操作记录。</value>
+  </data>
 </root>

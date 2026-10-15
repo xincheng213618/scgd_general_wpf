@@ -289,6 +289,12 @@ namespace ColorVision.Copilot
                     activeRun.Id,
                     steeringSnapshot,
                     DateTimeOffset.UtcNow);
+                if (!recoveryTracked
+                    && CopilotSteeringRecovery.RestoreMessagesToDraft(conversation, [steeringSnapshot])
+                    && ReferenceEquals(conversation, SelectedConversation))
+                {
+                    InputText = conversation.DraftText;
+                }
                 var activeAssistant = conversation.Messages.LastOrDefault(message =>
                     !message.IsUser && message.IsThinkingInProgress);
                 if (activeAssistant != null)
@@ -303,7 +309,7 @@ namespace ColorVision.Copilot
                 PersistState(immediate: true);
                 SetPendingActionFeedback(recoveryTracked
                     ? "已向当前 Agent 发送精确重试指令；仅原工具及原参数可消费一次票据，重试仍会经过自动审查。"
-                    : "当前 Agent 已接受精确重试指令，但恢复记录未能保存；一次性票据仍只匹配原动作。请观察本轮结果。");
+                    : "当前 Agent 已接受精确重试指令，但恢复记录未能保存；指令已保留在草稿，请先核对本轮结果再决定是否重新发送。一次性票据仍只匹配原动作。");
                 return;
             }
 
@@ -326,12 +332,7 @@ namespace ColorVision.Copilot
                 };
             }
 
-            SetPendingRequestModeOverride(CopilotAgentMode.Auto);
-            InputText = retryInstruction;
-            _pendingAgentRecoveryRequest = recoveryRequest == null
-                ? null
-                : new PendingAgentRecoveryRequest(conversation.Id, retryInstruction, recoveryRequest);
-            await SendAsync();
+            await SendAgentRecoveryAsync(conversation, retryInstruction, recoveryRequest);
         }
 
         private static string BuildAutomaticApprovalRetryInstruction(string? toolName)

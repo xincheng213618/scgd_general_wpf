@@ -37,11 +37,9 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson();
             return EditTemplateJson;
         }
-        public string Description { get; set; } = "{\r\n  \"th\": 0.1,\r\n  \"index\": 1,\r\n  \"num_th\": 10\r\n}";
-
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
     }
 }

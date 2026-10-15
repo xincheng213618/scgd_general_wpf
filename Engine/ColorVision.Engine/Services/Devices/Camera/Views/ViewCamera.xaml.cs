@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822
+#pragma warning disable CA1822
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Database;
@@ -248,7 +248,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
                 return;
 
-            ShowPersistedResult(message.Data.MasterId);
+            if (message.Attachment is MeasureResultImgModel model)
+                Application.Current?.Dispatcher.BeginInvoke(() => ShowResult(model));
+            else ShowPersistedResult(message.Data.MasterId);
         }
 
         private void ShowPersistedResult(int masterId)
@@ -311,7 +313,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed) return;
             EnsureInitialized();
 
-            if (_viewResults.ContainsId(model.Id)) return;
+            ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);
+            if (previous != null)
+            {
+                if (previous.FileUrl == model.FileUrl) return;
+                ViewResults.Remove(previous);
+            }
             ViewResultImage result = new(model);
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, result);

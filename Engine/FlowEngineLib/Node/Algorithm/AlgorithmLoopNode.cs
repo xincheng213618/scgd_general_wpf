@@ -52,12 +52,6 @@ public class AlgorithmLoopNode : CVBaseLoopServerNode<AlgorithmNodeProperty>
 		case AlgorithmType.灯珠检测:
 			operatorCode = "LedCheck";
 			break;
-		case AlgorithmType.发光区检测:
-			operatorCode = "FocusPoints";
-			break;
-		case AlgorithmType.发光区检测OLED:
-			operatorCode = "OLED.GetRIAandPT";
-			break;
 		case AlgorithmType.灯带检测:
 			operatorCode = "LEDStripDetection";
 			break;
@@ -67,7 +61,8 @@ public class AlgorithmLoopNode : CVBaseLoopServerNode<AlgorithmNodeProperty>
 	protected override object getBaseEventData(CVStartCFC start, AlgorithmNodeProperty property)
 	{
 		int masterId = -1;
-		AlgorithmType algorithmType = Enum.Parse<AlgorithmType>(property.AlgorithmType, ignoreCase: true);
+		if (!Enum.TryParse(property.AlgorithmType, ignoreCase: true, out AlgorithmType algorithmType) || !Enum.IsDefined(algorithmType))
+			throw new NotSupportedException($"算法 {property.AlgorithmType} 已退役或不受支持。");
 		setAlgorithmType(algorithmType);
 		AlgorithmParam obj = new AlgorithmParam
 		{

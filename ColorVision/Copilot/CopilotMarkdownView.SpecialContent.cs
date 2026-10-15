@@ -3,7 +3,6 @@ using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -97,40 +96,40 @@ namespace ColorVision.Copilot
         private static void AddInlines(InlineCollection inlines, string text)
         {
             var currentIndex = 0;
-            foreach (Match match in InlineRegex.Matches(text))
+            foreach (var token in CopilotMarkdownInlineScanner.Parse(text))
             {
-                if (match.Index > currentIndex)
-                    AddMathAwareText(inlines, text[currentIndex..match.Index]);
+                if (token.Start > currentIndex)
+                    AddMathAwareText(inlines, text[currentIndex..token.Start]);
 
-                var token = match.Value;
-                if (token.StartsWith("**", StringComparison.Ordinal) && token.EndsWith("**", StringComparison.Ordinal))
+                var content = text.Substring(token.ContentStart, token.ContentLength);
+                if (token.Kind == CopilotMarkdownInlineKind.Bold)
                 {
                     var span = new Span { FontWeight = FontWeights.SemiBold };
-                    AddMathAwareText(span.Inlines, token[2..^2]);
+                    AddMathAwareText(span.Inlines, content);
                     inlines.Add(span);
                 }
-                else if (token.StartsWith('`') && token.EndsWith('`'))
+                else if (token.Kind == CopilotMarkdownInlineKind.Code)
                 {
-                    var codeRun = new Run(token[1..^1]) { FontFamily = new FontFamily("Consolas") };
+                    var codeRun = new Run(content) { FontFamily = new FontFamily("Consolas") };
                     codeRun.SetResourceReference(TextElement.BackgroundProperty, "GlobalBorderBrush1");
                     inlines.Add(codeRun);
                 }
-                else if (token.StartsWith('*') && token.EndsWith('*'))
+                else if (token.Kind == CopilotMarkdownInlineKind.Italic)
                 {
                     var span = new Span { FontStyle = FontStyles.Italic };
-                    AddMathAwareText(span.Inlines, token[1..^1]);
+                    AddMathAwareText(span.Inlines, content);
                     inlines.Add(span);
                 }
-                else if (TryParseLinkToken(token, out var linkText, out var linkTarget))
+                else if (TryParseLinkToken(content, out var linkText, out var linkTarget))
                 {
                     AddLinkInline(inlines, linkText, linkTarget);
                 }
                 else
                 {
-                    AddMathAwareText(inlines, token);
+                    AddMathAwareText(inlines, content);
                 }
 
-                currentIndex = match.Index + match.Length;
+                currentIndex = token.Start + token.Length;
             }
 
             if (currentIndex < text.Length)

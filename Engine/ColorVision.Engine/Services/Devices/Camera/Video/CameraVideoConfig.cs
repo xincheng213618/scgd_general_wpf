@@ -13,6 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _Port = Common.Utilities.Tool.GetFreePort(DeafutPort);
         }
         [DisplayName("主机")]
+        [PropertyEditorType(typeof(NetworkAddressPropertiesEditor))]
         public string Host { get => _Host; set { _Host = value; OnPropertyChanged(); } }
 
         private string _Host = "127.0.0.1";

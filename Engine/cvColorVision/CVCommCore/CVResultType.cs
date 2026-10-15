@@ -11,7 +11,7 @@ public enum CVResultType
 	Algorithm_MTF = 5,
 	Algorithm_Ghost = 6,
 	Algorithm_LedCheck = 7,
-	Algorithm_LightArea = 8,
+	// Result ID 8 retired on 2026-10-11; keep the remaining protocol IDs unchanged.
 	Algorithm_Distortion = 9,
 	Algorithm_BuildPOI = 10,
 	Algorithm_Compliance = 11,
@@ -22,7 +22,6 @@ public enum CVResultType
 	Algorithm_Compliance_Contrast_CIE_Y = 16,
 	Algorithm_LEDStripDetection = 17,
 	Algorithm_RealPOI = 18,
-	Algorithm_DataLoad = 19,
 	Algorithm_POI_Y_V2 = 20,
 	Algorithm_FindDotsArrayMem = 21,
 	Algorithm_POI_LED_File = 22,

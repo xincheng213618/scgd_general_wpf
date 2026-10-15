@@ -139,6 +139,15 @@
           "Unit": "None",
           "TestResult": true
         },
+        "ColorCenterRmsToD65": {
+          "Name": "Color_Center_RMS_To_D65(Δu'v')",
+          "TestValue": "0.00642",
+          "Value": 0.00642,
+          "LowLimit": 0.0,
+          "UpLimit": 0.02,
+          "Unit": "None",
+          "TestResult": true
+        },
         "CenterCorrelatedColorTemperature": {
           "Name": "CenterCorrelatedColorTemperature",
           "TestValue": "6520.4",

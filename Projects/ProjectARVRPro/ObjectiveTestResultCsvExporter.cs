@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS0168
+#pragma warning disable CS0168
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.KeyedResults;
 using System.Collections;
@@ -127,6 +127,7 @@ namespace ProjectARVRPro
                     prop.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.LuminanceChromaticityYWTestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
+                    prop.Name == nameof(ObjectiveTestResult.RingGhostTestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.ChessboardTestResults))
                     continue;
 
@@ -188,6 +189,7 @@ namespace ProjectARVRPro
             CollectRowsFromKeyedResults(results.LuminanceChromaticityTestResults, rows);
             CollectRowsFromKeyedResults(results.LuminanceChromaticityYWTestResults, rows);
             CollectRowsFromKeyedResults(results.FieldOfViewTestResults, rows);
+            CollectRowsFromKeyedResults(results.RingGhostTestResults, rows);
             CollectRowsFromKeyedResults(results.ChessboardTestResults, rows);
 
             if (results.DynamicPoixyuvDatas != null)

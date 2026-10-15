@@ -270,8 +270,8 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 }
                 else if (node is MQTTStartNode startNode)
                 {
-                    startNode.Server = MQTTControl.Config.Host;
-                    startNode.Port = MQTTControl.Config.Port;
+                    startNode.Server = MQTTControl.Host;
+                    startNode.Port = MQTTControl.Port;
                 }
 
                 editor.Nodes.Add(node);
@@ -489,10 +489,12 @@ namespace ColorVision.Engine.FlowProcessing.Integration
 
         private void EnsureCopilotFlowMutationAllowed(string? expectedRevision)
         {
-            if (FlowControl?.IsFlowRun == true)
+            if (View?.IsExecutionActive == true)
                 throw new InvalidOperationException("The active flow is running. Stop it before editing the graph.");
             if (View?.STNodeEditorMain == null)
                 throw new InvalidOperationException("No active Flow editor is available.");
+            if (!View.STNodeEditorMain.EnableEdit)
+                throw new InvalidOperationException("The active Flow editor is read-only.");
 
             if (!string.IsNullOrWhiteSpace(expectedRevision))
             {

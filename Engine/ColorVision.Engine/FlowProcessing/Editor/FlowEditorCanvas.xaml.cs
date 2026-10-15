@@ -29,6 +29,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private bool _hasEnteredCanvasEditMode;
         private float _fitCanvasMaximumScale = 0.85f;
         private bool _disposed;
+        private bool _executionReadOnly;
+        private bool _editingEnabledBeforeExecution;
         private readonly StackPanel _generatedPropertyPanel = new();
         private readonly List<(UIElement Host, CommandBinding Binding)> _editCommandForwarders = [];
 
@@ -59,6 +61,20 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         public STNodeEditor NodeEditor => STNodeEditorMain;
         public Grid NodePropertyPanelContainer => PropertyEditorPanel;
         public StackPanel NodePropertyPanel => NodePropertyPanelContent;
+
+        internal void SetExecutionReadOnly(bool value)
+        {
+            if (_executionReadOnly == value) return;
+            if (value)
+            {
+                Keyboard.ClearFocus();
+                _editingEnabledBeforeExecution = STNodeEditorMain.EnableEdit;
+            }
+            _executionReadOnly = value;
+            STNodeEditorMain.EnableEdit = value ? false : _editingEnabledBeforeExecution;
+            NodePropertyPanel.IsEnabled = _showNodeDocumentation || STNodeEditorMain.EnableEdit;
+            CommandManager.InvalidateRequerySuggested();
+        }
 
         public FlowEditorCanvas()
         {
@@ -244,6 +260,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
 
             StackPanel signPanel = NodePropertyPanel;
+            signPanel.IsEnabled = _showNodeDocumentation || STNodeEditorMain.EnableEdit;
             bool wasPropertyPanelVisible = PropertyEditorPanel.Visibility == Visibility.Visible;
             signPanel.Children.Clear();
 

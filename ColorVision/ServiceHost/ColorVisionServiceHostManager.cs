@@ -146,7 +146,7 @@ namespace ColorVision.ServiceHost
             get
             {
                 StringBuilder builder = new();
-                builder.AppendLine($"Success: {Success}, ExitCode: {ExitCode}");
+                builder.AppendLine($"Success: {Success}, ExitCode: {ExitCode}" + (ExitCode == 0 ? string.Empty : $" (0x{unchecked((uint)ExitCode):X8})"));
                 if (!string.IsNullOrWhiteSpace(Output))
                     builder.AppendLine(Output.Trim());
                 if (!string.IsNullOrWhiteSpace(Error))
@@ -178,6 +178,8 @@ namespace ColorVision.ServiceHost
         private static readonly ILog log = LogManager.GetLogger(typeof(ColorVisionServiceHostManager));
         private static readonly TimeSpan DefaultReadinessTimeout = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan ReadinessPollInterval = TimeSpan.FromMilliseconds(500);
+
+        internal static string LastDeploymentFailure { get; private set; } = string.Empty;
 
         public static bool IsAdministrator()
         {
@@ -794,7 +796,7 @@ namespace ColorVision.ServiceHost
             });
         }
 
-        private static async Task<ServiceHostOperationResult> RunPowerShellScriptAsync(string scriptContent, bool requireAdministrator, CancellationToken cancellationToken)
+        internal static async Task<ServiceHostOperationResult> RunPowerShellScriptAsync(string scriptContent, bool requireAdministrator, CancellationToken cancellationToken)
         {
             string scriptPath = Path.Combine(Path.GetTempPath(), $"ColorVisionServiceHost-{Guid.NewGuid():N}.ps1");
             await File.WriteAllTextAsync(scriptPath, scriptContent, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
@@ -802,7 +804,7 @@ namespace ColorVision.ServiceHost
             bool needsElevation = requireAdministrator && !IsAdministrator();
             ProcessStartInfo startInfo = new()
             {
-                FileName = "powershell.exe",
+                FileName = ResolvePowerShellExecutable(),
                 Arguments = $"-NoProfile -ExecutionPolicy Bypass -File {Quote(scriptPath)}",
                 UseShellExecute = needsElevation,
                 CreateNoWindow = !needsElevation,
@@ -818,12 +820,7 @@ namespace ColorVision.ServiceHost
                 using Process? process = Process.Start(startInfo);
                 if (process == null)
                 {
-                    return new ServiceHostOperationResult
-                    {
-                        Success = false,
-                        ExitCode = -1,
-                        Error = "Failed to start elevated service host deployment.",
-                    };
+                    throw new InvalidOperationException("Failed to start elevated service host deployment.");
                 }
 
                 string output = string.Empty;
@@ -846,19 +843,21 @@ namespace ColorVision.ServiceHost
                     Success = process.ExitCode == 0,
                     ExitCode = process.ExitCode,
                     Output = output,
-                    Error = error,
+                    Error = process.ExitCode == 0 ? error : BuildPowerShellFailure(startInfo.FileName, process.ExitCode, error),
                 };
-                log.Info($"powershell.exe service host deployment: {result.Summary}");
+                LastDeploymentFailure = result.Success ? string.Empty : result.Error;
+                log.Info($"{startInfo.FileName} service host deployment: {result.Summary}");
                 return result;
             }
             catch (Exception ex)
             {
                 log.Error("Failed to run service host deployment script.", ex);
+                LastDeploymentFailure = DisplayText.Format($"无法启动或执行 {Path.GetFileName(startInfo.FileName)} 服务维护脚本：{ex.Message}");
                 return new ServiceHostOperationResult
                 {
                     Success = false,
                     ExitCode = -1,
-                    Error = ex.Message,
+                    Error = LastDeploymentFailure,
                 };
             }
             finally
@@ -871,6 +870,31 @@ namespace ColorVision.ServiceHost
                 {
                 }
             }
+        }
+
+        internal static string ResolvePowerShellExecutable()
+        {
+            string powerShell7 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PowerShell", "7", "pwsh.exe");
+            return File.Exists(powerShell7) ? powerShell7 : Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+        }
+
+        internal static string BuildPowerShellFailure(string executablePath, int exitCode, string error)
+        {
+            string shellName = string.Equals(Path.GetFileName(executablePath), "pwsh.exe", StringComparison.OrdinalIgnoreCase)
+                ? "PowerShell 7 (pwsh.exe)" : "Windows PowerShell (powershell.exe)";
+            string code = $"0x{unchecked((uint)exitCode):X8}";
+            string message = DisplayText.Format($"{shellName} 执行服务维护脚本失败，退出码 {exitCode}（{code}）。");
+            string explanation = unchecked((uint)exitCode) switch
+            {
+                0xC0000005 => DisplayText.Get("访问冲突，PowerShell 进程已崩溃。"),
+                0x80131506 => DisplayText.Get(".NET 运行时内部错误，PowerShell 进程已崩溃。"),
+                _ => string.Empty,
+            };
+            if (!string.IsNullOrWhiteSpace(explanation))
+                message += Environment.NewLine + explanation;
+            if (!string.IsNullOrWhiteSpace(error))
+                message += Environment.NewLine + error.Trim();
+            return message;
         }
 
         private static string Quote(string value)

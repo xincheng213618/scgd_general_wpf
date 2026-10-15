@@ -33,10 +33,10 @@
 		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="5.0.1" />
     <PackageReference Include="HtmlAgilityPack" Version="1.13.0" />
     <PackageReference Include="Markdig.Signed" Version="1.4.0" />
-    <PackageReference Include="Microsoft.Agents.AI" Version="1.23.0" />
-    <PackageReference Include="Microsoft.Agents.AI.Anthropic" Version="1.23.0-preview.260928.1" />
-    <PackageReference Include="Microsoft.Agents.AI.Harness" Version="1.23.0" />
-    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.23.0" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.24.0" />
+    <PackageReference Include="Microsoft.Agents.AI.Anthropic" Version="1.24.0" />
+    <PackageReference Include="Microsoft.Agents.AI.Harness" Version="1.24.0" />
+    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.24.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.1" />
     <PackageReference Include="ModelContextProtocol.Core" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />

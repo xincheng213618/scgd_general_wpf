@@ -11,6 +11,7 @@ namespace ColorVision.Scheduler
         Ready,
         Running,
         Paused,
+        Completed,
     }
 
     public enum JobStartMode
@@ -129,6 +130,12 @@ namespace ColorVision.Scheduler
 
         public DateTime CreateTime { get => _CreateTime; set { _CreateTime = value; OnPropertyChanged(); } }
         private DateTime _CreateTime = DateTime.Now;
+
+        // Progress belongs to the current schedule, separately from lifetime RunCount.
+        public bool HasScheduleCheckpoint { get; set; }
+        public long ScheduledFireCount { get; set; }
+        public bool ScheduleCompleted { get; set; }
+        public DateTimeOffset? NextScheduledFireTimeUtc { get; set; }
 
         // Phase 3: 新增功能字段
         

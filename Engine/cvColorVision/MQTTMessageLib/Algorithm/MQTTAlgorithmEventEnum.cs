@@ -14,10 +14,6 @@ public static class MQTTAlgorithmEventEnum
 
 	public const string Event_LED_StripDetection = "LEDStripDetection";
 
-	public const string Event_LightArea_GetData = "FocusPoints";
-
-	public const string Event_LightArea2_GetData = "OLED.GetRIAandPT";
-
 	public const string Event_MatchTemplate = "MatchTemplate";
 
 	public const string Event_Build_POI = "BuildPOI";

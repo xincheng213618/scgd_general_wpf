@@ -89,9 +89,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public bool SaveLocalCaptureFiles { get; set; } = true;
 
         public double TakePictureDelay { get; set; }
-        public int CalibrationTemplateIndex { get; set; }
+        public int CalibrationTemplateIndex { get; set; } = 0;
         public int ExpTimeParamTemplateIndex { get; set; }
-        public int ExpTimeParamTemplate1Index { get; set; }
+        public int ExpTimeParamTemplate1Index { get; set; } = 0;
         [Browsable(false)]
         public PhyExpTimeCfg LocalAutoExposureConfig { get; set; } = new();
         public int HDRTemplateIndex { get; set; }
@@ -473,7 +473,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _autoExpTimeTemplateOptionsWithEmpty.Clear();
             _autoExpTimeTemplateOptionsWithEmpty.Add(new AutoExpTimeTemplateOption
             {
-                DisplayName = EngineLocalization.Get("CameraPanel_NotUsed"),
+                DisplayName = EngineLocalization.Get("CameraPanel_NoAutoExposureTemplate"),
                 Value = new ParamBase { Id = -1, Name = "Empty" },
                 Kind = AutoExpTimeTemplateKind.Empty
             });
@@ -542,7 +542,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 _crossGuideOverlayVisual.Clear();
                 _crossGuideProcessor.Reset();
             }
-            if (e.PropertyName == nameof(DisplayCameraConfig.IsGainControlledByCalibrationGroup)) RefreshPanelState();
+            if (e.PropertyName is nameof(DisplayCameraConfig.IsGainControlledByCalibrationGroup) or nameof(DisplayCameraConfig.GainSourceHint)) RefreshPanelState();
 
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DisplayCameraConfig.LocalVideoRoi))
             {
@@ -877,6 +877,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
+            if (Device.ExistingView is not { IsContentInitialized: true }) return;
+            _crossGuideProcessor.Start();
             EnsureCrossGuideOverlay();
         }
 
@@ -900,6 +902,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RemoveCrossGuideOverlay()
         {
+            _crossGuideProcessor.Stop();
             if (Device.ExistingView is not { IsContentInitialized: true }) return;
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
@@ -915,8 +918,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 imageView.ImageShow.RemoveOverlayVisual(_crossGuideOverlayVisual);
                 _crossGuideOverlayAdded = false;
             }
-
-            _crossGuideProcessor.Reset();
         }
 
         private bool TryCreateCrossGuideRequest(int width, int height, out VideoCrossGuideRequest request)
@@ -1011,8 +1012,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.AveragePanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             bool calibrationGain = DisplayCameraConfig.IsGainControlledByCalibrationGroup;
             bool hdrGain = state.ShowServiceSettings && CameraTemplateSelection.TryResolveRequired(Capture.ComboBoxHDRTemplate.SelectedValue, out ParamBase _);
-            Capture.GainPanel.Visibility = Visible(previewing || (!calibrationGain && !hdrGain));
-            Capture.GainPanel.ToolTip = previewing && calibrationGain ? EngineLocalization.Get("预览增益；测量使用校正组增益") : null;
+            Capture.GainPanel.Visibility = Visible(previewing || calibrationGain || !hdrGain);
+            Capture.GainPanel.IsEnabled = previewing || !calibrationGain;
+            Capture.GainPanel.ToolTip = calibrationGain
+                ? previewing ? EngineLocalization.Get("预览增益；测量使用校正组增益") : DisplayCameraConfig.GainSourceHint
+                : null;
             bool rgb = !previewing && UsesThreeCaptureExposures;
             Capture.SingleExposure.Visibility = Visible(!rgb);
             Capture.RgbExposure.Visibility = Visible(rgb);
@@ -1704,7 +1708,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed) return;
             _localRealtimePipeline.Stop(resetRealtime: true);
-            _crossGuideProcessor.Reset();
+            _crossGuideProcessor.Stop();
             _crossGuideOverlayVisual.Detach();
             _crossGuideOverlayVisual.Clear();
             _crossGuideOverlayAdded = false;
@@ -1817,7 +1821,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             _sharedVideoActive = false;
             _localRealtimePipeline.Stop(resetRealtime: true);
-            _crossGuideProcessor.Reset();
+            _crossGuideProcessor.Stop();
             Dispatcher.BeginInvoke(() =>
             {
                 if (IsDisposed || _sharedVideoActive) return;
@@ -2146,7 +2150,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Device.Config.CameraID = cameraId;
                 try
                 {
-                    Device.SaveConfig();
+                    Device.SaveResolvedCameraId(cameraId);
                     logger.Info($"Persisted refreshed CameraID. old={configuredCameraId}, new={cameraId}");
                 }
                 catch (Exception ex)
@@ -2214,6 +2218,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return false;
             }
 
+            Device.EnsureLocalCameraLicense();
             errorMessage = string.Empty;
             return true;
         }
@@ -2254,6 +2259,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private string ResolveLocalCameraId(bool ignoreConfiguredId = false)
         {
+            if (!string.IsNullOrWhiteSpace(Device.Config.CameraCode))
+            {
+                string physicalId = Device.ResolveCameraId();
+                if (!string.IsNullOrWhiteSpace(physicalId)) return physicalId;
+                return TryGetLocalCameraIds(out IReadOnlyList<string> boundIds)
+                    ? LocalCameraSession.SelectCameraId(boundIds, null, Device.Config.CameraCode) : string.Empty;
+            }
             if (!ignoreConfiguredId && !string.IsNullOrWhiteSpace(Device.Config.CameraID))
             {
                 return Device.Config.CameraID.Trim();

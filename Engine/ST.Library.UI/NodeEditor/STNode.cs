@@ -107,12 +107,12 @@ public abstract class STNode : INotifyPropertyChanged
 				STNodeOption[] array = _InputOptions.ToArray();
 				foreach (STNodeOption sTNodeOption in array)
 				{
-					sTNodeOption.DisConnectionAll();
+					sTNodeOption.DisconnectAllDetached();
 				}
 				STNodeOption[] array2 = _OutputOptions.ToArray();
 				foreach (STNodeOption sTNodeOption2 in array2)
 				{
-					sTNodeOption2.DisConnectionAll();
+					sTNodeOption2.DisconnectAllDetached();
 				}
 			}
 			_Owner = value;
@@ -280,6 +280,7 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 		set
 		{
+			if (_Mark == value) return;
 			_Mark = value;
 			if (value == null)
 			{
@@ -290,7 +291,8 @@ public abstract class STNode : INotifyPropertyChanged
 				_MarkLines = (from s in value.Split('\n')
 					select s.Trim()).ToArray();
 			}
-			Invalidate(new Rectangle(-5, -5, _MarkRectangle.Width + 10, _MarkRectangle.Height + 10));
+			BuildSize(bBuildNode: false, bBuildMark: true, bRedraw: true);
+			OnPropertyChanged();
 		}
 	}
 
@@ -1167,6 +1169,11 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 	}
 
+	// Execution policy belongs to the node library, not the canvas.
+	protected internal virtual bool OnInputDataTransfer(STNodeOption input, STNodeOptionEventArgs e) => true;
+
+	protected internal virtual bool OnOutputDataTransfer(STNodeOption output) => true;
+
 	public virtual void OnLoadNode(Dictionary<string, byte[]> dic)
 	{
 		if (dic.ContainsKey("AutoSize"))
@@ -1201,10 +1208,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			_Height = BitConverter.ToInt32(dic["Height"], 0);
 		}
-		if (dic.ContainsKey("Mark"))
-		{
-			Mark = Encoding.UTF8.GetString(dic["Mark"]);
-		}
+		Mark = dic.TryGetValue("Mark", out byte[] mark) ? Encoding.UTF8.GetString(mark) : null;
 		Type type = GetType();
 		PropertyInfo[] properties = type.GetProperties();
 		foreach (PropertyInfo propertyInfo in properties)

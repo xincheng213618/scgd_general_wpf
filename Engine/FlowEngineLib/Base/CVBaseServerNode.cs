@@ -728,6 +728,11 @@ public class CVBaseServerNode : CVDeviceNode
 					logger.DebugFormat("[{0}]DoServerTransfer => {1}", ToShortString(), cVStartCFC.ToShortString());
 				}
 				cVStartCFC.NormalizeStopStatus();
+				if (cVStartCFC.FlowStatus == StatusTypeEnum.Completed)
+				{
+					DoTransCompleted(cVTransByEvent, cVStartCFC);
+					return;
+				}
 				bool isIgnoredErrorExecution = false;
 				if (_ignoreErrors && cVStartCFC.FlowStatus != StatusTypeEnum.Runing)
 				{
@@ -786,11 +791,6 @@ public class CVBaseServerNode : CVDeviceNode
 					{
 						DoTransferToServer(cVStartCFC, e);
 					}
-					return;
-				}
-				if (cVStartCFC.FlowStatus == StatusTypeEnum.Completed)
-				{
-					DoTransCompleted(cVTransByEvent, cVStartCFC);
 					return;
 				}
 				if (cVTransByEvent != null)

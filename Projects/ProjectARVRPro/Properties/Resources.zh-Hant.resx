@@ -215,6 +215,9 @@
   <data name="测试" xml:space="preserve">
     <value>測試</value>
   </data>
+  <data name="停止" xml:space="preserve">
+    <value>停止</value>
+  </data>
   <data name="测试次数" xml:space="preserve">
     <value>測試次數</value>
   </data>
@@ -1275,4 +1278,25 @@
   <data name="月度汇总" xml:space="preserve"><value>月度彙總</value></data>
   <data name="图表统计方式" xml:space="preserve"><value>圖表統計方式</value></data>
   <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>按批次結束時間統計；每小時產量包含 PASS 和 FAIL，空小時計為 0。</value></data>
+  <data name="查看截图、图像文件、校正和相机取图缓存" xml:space="preserve"><value>檢視截圖、影像檔案、校正及相機取像快取</value></data>
+  <data name="添加流程组" xml:space="preserve"><value>新增流程組</value></data>
+  <data name="重命名流程组" xml:space="preserve"><value>重新命名流程組</value></data>
+  <data name="流程组名称" xml:space="preserve"><value>流程組名稱</value></data>
+  <data name="创建" xml:space="preserve"><value>建立</value></data>
+  <data name="为新的产品或检测方案创建流程组。" xml:space="preserve"><value>為新的產品或檢測方案建立流程組。</value></data>
+  <data name="修改组名，保留组内流程及其配置。" xml:space="preserve"><value>修改組名，保留組內流程及其設定。</value></data>
+  <data name="名称不能为空，且不能与其他流程组重复。" xml:space="preserve"><value>名稱不可空白，且不能與其他流程組重複。</value></data>
+  <data name="组名不能包含换行或控制字符。" xml:space="preserve"><value>組名不能包含換行或控制字元。</value></data>
+  <data name="保存失败，请检查磁盘空间和写入权限后重试。" xml:space="preserve"><value>儲存失敗，請檢查磁碟空間和寫入權限後重試。</value></data>
+  <data name="流程组已不存在，请关闭后重新选择。" xml:space="preserve"><value>流程組已不存在，請關閉後重新選取。</value></data>
+  <data name="等待" xml:space="preserve"><value>等待</value></data>
+  <data name="执行中" xml:space="preserve"><value>執行中</value></data>
+  <data name="已完成" xml:space="preserve"><value>已完成</value></data>
+  <data name="失败" xml:space="preserve"><value>失敗</value></data>
+  <data name="打开流程模板" xml:space="preserve"><value>開啟流程模板</value></data>
+  <data name="编辑配置" xml:space="preserve"><value>編輯設定</value></data>
+  <data name="进度根据历史耗时估算，以实际完成为准。" xml:space="preserve"><value>進度依歷史耗時估算，以實際完成為準。</value></data>
+  <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>按兩下開啟流程模板，右鍵編輯設定。</value></data>
+  <data name="现场数据副本" xml:space="preserve"><value>現場資料副本</value></data>
+  <data name="清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。" xml:space="preserve"><value>清理已結束應用程式工作階段的過期唯讀副本，原始回饋資料保留；本次執行匯入的副本受保護。</value></data>
 </root>

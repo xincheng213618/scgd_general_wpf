@@ -1,6 +1,3 @@
-using ColorVision.Engine.Templates.FindLightArea;
-using ColorVision.Engine.Templates.FocusPoints;
-using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
@@ -20,18 +17,6 @@ using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
 {
-    [NodeConfigurator(typeof(FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode))]
-    public class AlgorithmFindLightAreaNodeConfigurator : NodeConfiguratorBase
-    {
-        public override void Configure(NodeConfiguratorContext context)
-        {
-            var node = (FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode)context.Node;
-            context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.FindAAArea, new TemplateAAFindPoints());
-            context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.LightAreaLocation, new TemplateRoi());
-            context.AddTemplatePanel(nameof(node.TempName), "FocusPoints", new TemplateFocusPoints());
-        }
-    }
-
     [NodeConfigurator(typeof(FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode))]
     public class AlgorithmFindLEDNodeConfigurator : NodeConfiguratorBase
     {
@@ -50,7 +35,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node)context.Node;
             context.AddTemplateJsonPanel(nameof(node.TempName), "GhostQK", new TemplateGhostQK());
-            context.AddTemplatePanel(nameof(node.TempName), "Ghost", new TemplateGhost());
         }
     }
 
@@ -125,7 +109,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "GhostQK", new TemplateGhostQK());
-                        context.AddTemplatePanel(nameof(node.TempName), "Ghost", new TemplateGhost());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.畸变:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "Distortion2", new TemplateDistortion2());
@@ -136,12 +119,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                     case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.LedStripCheckV2, new TemplateLEDStripDetectionV2());
                         context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.LedStripCheck, new TemplateLEDStripDetection());
-                        break;
-                    case FlowEngineLib.Algorithm.AlgorithmType.发光区检测:
-                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.FindLightArea, new TemplateFocusPoints());
-                        break;
-                    case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
-                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.FindLightAreaOLED, new TemplateRoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR_FindROI:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());

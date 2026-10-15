@@ -54,6 +54,42 @@ public sealed class CopilotTextFileCoordinateTests : IDisposable
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task LiteralTruncationMarkersKeepTheirSourceLineNumbers(bool truncate, bool markerAtEnd)
+    {
+        const string literalMarker = "...<content truncated; kept the first 42 characters.>";
+        const string summary = "SUMMARY result=NG";
+        const int readBudget = 1000;
+        var path = Path.Combine(_directory.FullName, "literal-marker.log");
+        var source = markerAtEnd
+            ? $"header\n{summary}\n{literalMarker}"
+            : $"header\n{literalMarker}\n{summary}";
+        if (truncate)
+            source += "\n" + new string('x', readBudget);
+        File.WriteAllText(path, source);
+        var original = File.ReadAllBytes(path);
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], summary, null, CancellationToken.None);
+        var summaryLine = Assert.Single(search.Matches).LineNumber;
+
+        var result = await new CopilotReadLocalFileTool(readBudget).ExecuteAsync(new()
+        {
+            Mode = CopilotAgentMode.Auto, UserText = "读取日志", SearchRootPaths = [_directory.FullName],
+        }, new() { Path = path }, CancellationToken.None);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.Equal(truncate, Assert.Single(result.LocalFileReadScopes).WasTruncated);
+        Assert.Contains($"L{(markerAtEnd ? 3 : 2)}: {literalMarker}", result.Content);
+        Assert.Contains($"L{summaryLine}: {summary}", result.Content);
+        if (truncate)
+            Assert.EndsWith($"{Environment.NewLine}...<content truncated; kept the first {readBudget} characters.>", result.Content);
+        else
+            Assert.DoesNotContain($"{Environment.NewLine}{literalMarker}", result.Content);
+        Assert.Equal(original, File.ReadAllBytes(path));
+    }
+
+    [Theory]
     [InlineData("\r")]
     [InlineData("\r\n")]
     public async Task CarriageReturnAtReadBufferBoundaryKeepsTheNextLineAddressable(string separator)

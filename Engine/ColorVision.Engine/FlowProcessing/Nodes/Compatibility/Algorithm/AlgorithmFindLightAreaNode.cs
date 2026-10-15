@@ -20,6 +20,7 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 	private STNodeEditText<string> m_ctrl_oidx;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[PropertyEditorType(typeof(AaFindPointsTemplatePropertiesEditor))]
 	public string TempName
 	{
 		get

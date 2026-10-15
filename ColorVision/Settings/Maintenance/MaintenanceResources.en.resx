@@ -15,6 +15,8 @@
   <data name="ScanFirst" xml:space="preserve"><value>Scan first, then review the files to clean.</value></data>
   <data name="Keep" xml:space="preserve"><value>Keep the last</value></data>
   <data name="Days" xml:space="preserve"><value>days</value></data>
+  <data name="ClearAll" xml:space="preserve"><value>Clear all</value></data>
+  <data name="OpenFileLocation" xml:space="preserve"><value>Open file location</value></data>
   <data name="Files" xml:space="preserve"><value>items</value></data>
   <data name="Logs" xml:space="preserve"><value>Application logs</value></data>
   <data name="LogsDescription" xml:space="preserve"><value>Only historical application logs; active log files are kept.</value></data>
@@ -64,7 +66,7 @@
   <data name="ViewWarnings" xml:space="preserve"><value>View details</value></data>
   <data name="NoFiles" xml:space="preserve"><value>No files match the current cleanup rules.</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
-  <data name="BusyClose" xml:space="preserve"><value>Cleanup is still running. Cancel it or wait for completion before closing Settings.</value></data>
+  <data name="BusyClose" xml:space="preserve"><value>Scanning or cleanup is still running. Cancel or wait before closing the window.</value></data>
   <data name="ScanChanged" xml:space="preserve"><value>Retention changed. Scan again.</value></data>
   <data name="Pending" xml:space="preserve"><value>Pending reset at next startup: {0}</value></data>
   <data name="CacheUnavailable" xml:space="preserve"><value>The cache does not exist or has no removable entries.</value></data>
@@ -79,4 +81,9 @@
   <data name="FeedbackProtected" xml:space="preserve"><value>The feedback window is using diagnostic packages and screenshots. These attachments are protected.</value></data>
   <data name="UpdatePackagesProtected" xml:space="preserve"><value>All installer packages are protected while an update is running or awaiting installation.</value></data>
   <data name="ResetStartupFailed" xml:space="preserve"><value>The last startup could not finish the reset: {0}. You can cancel the plan and inspect the configuration and backup.</value></data>
+  <data name="Management" xml:space="preserve"><value>Cache management</value></data>
+  <data name="FileManagement" xml:space="preserve"><value>File cache management</value></data>
+  <data name="FileManagementDescription" xml:space="preserve"><value>Review and clean logs, temporary files, field data copies and rebuildable caches. Scans incrementally when opened.</value></data>
+  <data name="MemoryManagement" xml:space="preserve"><value>Memory cache management</value></data>
+  <data name="MemoryManagementDescription" xml:space="preserve"><value>Inspect camera, calibration and image buffers, and release idle memory.</value></data>
 </root>

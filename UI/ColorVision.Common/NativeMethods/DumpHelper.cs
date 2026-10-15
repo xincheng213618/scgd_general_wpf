@@ -9,6 +9,7 @@ namespace ColorVision.Common.NativeMethods
 {
     public class DumpHelper
     {
+        private static readonly object DumpLock = new();
 
         [DllImport("Dbghelp.dll", SetLastError = true)]
         private static extern bool MiniDumpWriteDump(
@@ -30,17 +31,21 @@ namespace ColorVision.Common.NativeMethods
             {
                 using var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
                 using var process = Process.GetCurrentProcess();
-                bool succeeded = MiniDumpWriteDump(
-                    process.Handle,
-                    (uint)process.Id,
-                    fileStream.SafeFileHandle.DangerousGetHandle(),
-                    dumpType,
-                    IntPtr.Zero,
-                    IntPtr.Zero,
-                    IntPtr.Zero);
+                // DbgHelp is single threaded, including calls from separate feedback/settings windows.
+                lock (DumpLock)
+                {
+                    bool succeeded = MiniDumpWriteDump(
+                        process.Handle,
+                        (uint)process.Id,
+                        fileStream.SafeFileHandle.DangerousGetHandle(),
+                        dumpType,
+                        IntPtr.Zero,
+                        IntPtr.Zero,
+                        IntPtr.Zero);
 
-                if (!succeeded)
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), "MiniDumpWriteDump failed.");
+                    if (!succeeded)
+                        throw new Win32Exception(Marshal.GetLastWin32Error(), "MiniDumpWriteDump failed.");
+                }
             }
             catch
             {

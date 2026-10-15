@@ -158,9 +158,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [Description("SpectrumManagerHint")]
         public RelayCommand OpenPhysicalSpectrumManagerCommand { get; set; }
 
-        [CommandDisplay("RefreshDeviceList", Order = 2, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("SpectrumRefreshHint")]
+        [Browsable(false)]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
         [CommandDisplay("SpectrumDriverTool", Order = 3, CategoryOrder = 0)]
@@ -168,9 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [Description("SpectrumDriverToolHint")]
         public RelayCommand OpenSpectrumDriverToolCommand { get; set; }
 
-        [CommandDisplay("UploadLic", Order = 1, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("SpectrumLicenseHint")]
+        [Browsable(false)]
         public RelayCommand UploadLincenseCommand { get; set; }
 
         [CommandDisplay("AdaptiveZeroCalibration", Order = 3, CategoryOrder = 1)]
@@ -213,6 +209,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            LocalSession = new(ensureLicenseAvailable: EnsureLocalSpectrumLicense);
             InitializeLocalSpectrum();
             DService = new MQTTSpectrum(this);
             DService.RefreshBackendStatus();

@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.PG
                 EditPG window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
+                if (window.ShowDialog() == true) Save();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             EditPGTemplateCommand = new RelayCommand(a => EditPGTemplate());

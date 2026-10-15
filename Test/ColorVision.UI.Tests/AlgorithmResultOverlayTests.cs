@@ -67,6 +67,35 @@ public sealed class AlgorithmResultOverlayTests
     }
 
     [Fact]
+    public void CurvedFovRendererUsesMeasuredContourAndCenterEndpoints()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var context = CreateFovContext();
+            FovMeasurement measurement = FovCalculator.Calculate(
+                [new(10, 20), new(210, 20), new(210, 120), new(10, 120)], 9410, 74.2) with
+            {
+                Mode = FovMeasurementMode.CurvedBoundary,
+                Corners = Array.Empty<LuminousAreaPoint>(),
+                Boundary = new FovBoundaryGeometry
+                {
+                    Center = new(110, 70), Left = new(35, 70), Right = new(185, 70), Top = new(110, 35), Bottom = new(110, 105),
+                    DiagonalPoints = [new(10, 20), new(210, 20), new(210, 120), new(10, 120)],
+                    Contour = [new(10, 20), new(110, 35), new(210, 20), new(185, 70), new(210, 120), new(110, 105), new(10, 120), new(35, 70)]
+                }
+            };
+            FovOverlayRenderer.Render(context.ImageContext, context.DrawContext, measurement);
+            DVPolygon contour = Assert.Single(context.Canvas.Visuals.OfType<DVPolygon>());
+            Assert.Equal(measurement.Boundary.Contour.Select(point => new Point(point.X, point.Y)), contour.Attribute.Points);
+            DVLine horizontal = Assert.Single(context.Canvas.Visuals.OfType<DVLine>(), line => line.Attribute.Pen.Brush == Brushes.Orange);
+            Assert.Equal(new[] { new Point(35, 70), new Point(185, 70) }, horizontal.Attribute.Points);
+            DVLine vertical = Assert.Single(context.Canvas.Visuals.OfType<DVLine>(), line => line.Attribute.Pen.Brush == Brushes.LimeGreen);
+            Assert.Equal(new[] { new Point(110, 35), new Point(110, 105) }, vertical.Attribute.Points);
+            Assert.Equal(3, context.Canvas.Visuals.OfType<DVCircleText>().Count());
+        });
+    }
+
+    [Fact]
     public void GridRendererUsesMeasuredCoordinatesAndRejectsIncompleteOrUnorderedPoints()
     {
         WpfTestHost.Invoke(() =>

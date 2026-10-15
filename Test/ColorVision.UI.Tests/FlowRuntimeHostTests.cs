@@ -2,6 +2,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Runtime;
+using FlowEngineLib.Start;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.Runtime.ExceptionServices;
@@ -52,6 +53,132 @@ public sealed class FlowRuntimeHostTests
             Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
             Assert.Equal(StatusTypeEnum.Canceled, result.Data.Status);
             Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RejectedReloadPreservesRunningFlowUntilCompletionOrStop(bool stop)
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new HeadlessNeverEndNode());
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            string? originalHash = host.ContentHash;
+            BaseStartNode start = Assert.Single(host.Nodes.OfType<BaseStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-REJECT-RELOAD");
+            Assert.Equal(FlowRuntimeHostState.Running, host.State);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => host.LoadAsync(canvas));
+
+            Assert.Equal(FlowRuntimeHostState.Running, host.State);
+            Assert.Equal(originalHash, host.ContentHash);
+            Assert.Same(start, Assert.Single(host.Nodes.OfType<BaseStartNode>()));
+            if (stop)
+            {
+                await host.StopAsync();
+            }
+            else
+            {
+                CVStartCFC action = start.GetCFC("SN-REJECT-RELOAD");
+                action.SetStatusType(StatusTypeEnum.Completed);
+                Assert.True(action.TryDoFinishing());
+                action.FireFinished();
+            }
+
+            FlowEngineRunResult result = await execution.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.True(result.Started);
+            Assert.Equal(stop ? FlowEngineRunTermination.Canceled : FlowEngineRunTermination.Completed, result.Termination);
+            Assert.Equal(stop ? StatusTypeEnum.Canceled : StatusTypeEnum.Completed, result.Data.Status);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+            Assert.False(start.Running);
+        });
+    }
+
+    [Fact]
+    public void RejectedReloadPreservesStoppingUntilPendingReadinessEnds()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new HeadlessNeverEndNode(), new HeadlessPendingReadinessStartNode());
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            HeadlessPendingReadinessStartNode start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-STOPPING-RELOAD");
+            Task stopping = host.StopAsync();
+            FlowEngineRunResult result;
+            try
+            {
+                Assert.Equal(FlowRuntimeHostState.Stopping, host.State);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => host.LoadAsync(canvas));
+                Assert.Equal(FlowRuntimeHostState.Stopping, host.State);
+                Assert.False(stopping.IsCompleted);
+            }
+            finally
+            {
+                // Model a readiness operation acknowledging cancellation after replacement was rejected.
+                start.Readiness.TrySetCanceled();
+                await stopping;
+                result = await execution.WaitAsync(TimeSpan.FromSeconds(2));
+            }
+
+            Assert.False(result.Started);
+            Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Fact]
+    public void CancellationDuringReadinessDoesNotDispatchHeadlessFlow()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new HeadlessNeverEndNode(), new HeadlessPendingReadinessStartNode());
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            HeadlessPendingReadinessStartNode start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            HeadlessNeverEndNode terminal = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+            using var cancellation = new CancellationTokenSource();
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-CANCELED-READY", cancellationToken: cancellation.Token);
+
+            cancellation.Cancel();
+            start.Ready = true;
+            start.Readiness.TrySetResult(true);
+            FlowEngineRunResult result = await execution.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.False(result.Started);
+            Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
+            Assert.Equal(0, terminal.StartedCount);
+            Assert.False(start.Running);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+
+            Task<FlowEngineRunResult> nextExecution = host.RunAsync("HeadlessStart", "SN-FRESH-READY");
+            Assert.Equal(1, terminal.StartedCount);
+            await host.StopAsync();
+            Assert.True((await nextExecution.WaitAsync(TimeSpan.FromSeconds(2))).Started);
+        });
+    }
+
+    [Fact]
+    public void AlreadyCanceledRunnerDoesNotDispatchLocalGraph()
+    {
+        RunInSta(async () =>
+        {
+            using var container = new CVNodeContainer();
+            using var control = new FlowEngineControl(container, isAutoStartName: false, new FlowNodeManager());
+            control.Load(CreateCanvas(new HeadlessNeverEndNode()), waitReady: false);
+            var runner = new FlowEngineRunner(control);
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+
+            FlowEngineRunResult result = await runner.RunAsync("HeadlessStart", "SN-CANCELED-LOCAL", TimeSpan.FromSeconds(1), cancellationToken: cancellation.Token);
+
+            Assert.False(result.Started);
+            Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
+            Assert.Equal(0, Assert.Single(container.Nodes.Cast<STNode>().OfType<HeadlessNeverEndNode>()).StartedCount);
+            Assert.False(control.IsRunning);
         });
     }
 
@@ -268,10 +395,10 @@ public sealed class FlowRuntimeHostTests
         };
     }
 
-    private static byte[] CreateCanvas(STNode terminalNode)
+    private static byte[] CreateCanvas(STNode terminalNode, BaseStartNode? startNode = null)
     {
         using var editor = new STNodeEditor();
-        var start = new HeadlessTestStartNode();
+        BaseStartNode start = startNode ?? new HeadlessTestStartNode();
         start.Create();
         terminalNode.Create();
         editor.Nodes.Add(start);
@@ -307,12 +434,32 @@ public sealed class FlowRuntimeHostTests
     }
 }
 
+public sealed class HeadlessPendingReadinessStartNode : BaseStartNode
+{
+    public HeadlessPendingReadinessStartNode() : base("HeadlessStart")
+    {
+        NodeName = "HeadlessStart";
+    }
+
+    public TaskCompletionSource<bool> Readiness { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public override bool RequiresConnectionReady => true;
+
+    public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default) => Readiness.Task;
+}
+
 public sealed class HeadlessNeverEndNode : STNode
 {
+    public int StartedCount { get; private set; }
+
     protected override void OnCreate()
     {
         base.OnCreate();
-        InputOptions.Add("IN", typeof(CVStartCFC), bSingle: true);
+        InputOptions.Add("IN", typeof(CVStartCFC), bSingle: true).DataTransfer += (_, e) =>
+        {
+            if (e.TargetOption.Data is CVStartCFC { IsRunning: true })
+                StartedCount++;
+        };
     }
 }
 

@@ -223,12 +223,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             BeginExecution(input.Action, new[] { input });
         }
 
-        protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex, string imageFilePath)
+        protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex)
         {
-            if (!string.IsNullOrWhiteSpace(imageFilePath))
-            {
-                return Path.GetFullPath(imageFilePath.Trim());
-            }
             if (!TryGetInputMasterResult(action, inputIndex, out int masterId, out int masterResultType, out _) || masterId <= 0)
             {
                 return string.Empty;
@@ -332,7 +328,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 SendPayload = BuildRunPayload(start)
             });
 
-            _ = Task.Run(() => ExecuteCore(transaction));
+            _ = Task.Run(() => ExecuteCore(transaction, inputs));
         }
 
         private void ClearPendingInputs(string? serialNumber = null)
@@ -357,7 +353,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber });
         }
 
-        private void ExecuteCore(CVTransAction transaction)
+        private void ExecuteCore(CVTransAction transaction, LocalFlowInputSnapshot[] inputs)
         {
             var timing = new FlowNodeTiming();
             using var activation = timing.Activate();
@@ -379,7 +375,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             finally
             {
-                activeInputSets.TryRemove(transaction.trans_action.SerialNumber, out _);
+                activeInputSets.TryRemove(new KeyValuePair<string, LocalFlowInputSnapshot[]>(transaction.trans_action.SerialNumber, inputs));
             }
         }
 

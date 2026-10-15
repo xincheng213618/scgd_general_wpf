@@ -354,10 +354,10 @@
     <value>放行</value>
   </data>
   <data name="AllowPrivateFirewallTooltip" xml:space="preserve">
-    <value>为当前程序创建专用网络入站允许规则。</value>
+    <value>允许当前程序在专用网络接收入站连接，并解除该程序在专用网络上的冲突阻止规则；其它网络类型的限制保留。</value>
   </data>
   <data name="AllowPublicFirewallTooltip" xml:space="preserve">
-    <value>为当前程序创建公用网络入站允许规则。</value>
+    <value>允许当前程序在公用网络接收入站连接，并解除该程序在公用网络上的冲突阻止规则；其它网络类型的限制保留。</value>
   </data>
   <data name="DatabaseCleanup" xml:space="preserve">
     <value>数据库清理</value>

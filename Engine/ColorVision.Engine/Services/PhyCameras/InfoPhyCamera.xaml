@@ -15,6 +15,7 @@
                 <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <local:StatusToTextConverter x:Key="StatusToTextConverter"/>
+            <local:LicenseExpiryTextConverter x:Key="LicenseExpiryTextConverter"/>
             <local:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
 
             <Style TargetType="{x:Type TextBlock}">
@@ -103,9 +104,21 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <WrapPanel VerticalAlignment="Center" Margin="0,0,8,0">
-                            <TextBlock Text="{Binding LicenseStatusBadgeText}" Foreground="{Binding LicenseStatusBrush}"
-                                       FontSize="11" FontWeight="SemiBold" Margin="0,2,6,2"/>
+                        <WrapPanel x:Name="LicenseStatusTextHost" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <TextBlock x:Name="LicenseStatusText" Foreground="{Binding LicenseStatusBrush}"
+                                       ToolTip="{Binding LicenseStatusBadgeText}" TextTrimming="CharacterEllipsis"
+                                       MaxWidth="{Binding ElementName=LicenseStatusTextHost, Path=ActualWidth}"
+                                       FontSize="11" FontWeight="SemiBold" Margin="0,2,6,2">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LicenseExpiryTextConverter}">
+                                        <Binding Path="LicenseStatusBadgeText"/>
+                                        <Binding Path="CameraLicenseModel.ExpiryDate"/>
+                                        <Binding ElementName="LicenseStatusTextHost" Path="ActualWidth"/>
+                                        <Binding ElementName="LicenseStatusText"/>
+                                        <Binding Path="LicenseSummaryMetaText"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
                             <TextBlock Text="{Binding LicenseSummaryMetaText}" FontSize="11" Opacity="0.7" Margin="0,2,0,2"/>
                         </WrapPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

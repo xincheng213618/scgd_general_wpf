@@ -3,6 +3,7 @@
 #pragma warning(disable:4305 4244)
 
 #include <opencv2/opencv.hpp>
+#include "fusion_options.h"
 
 /// <summary>
 /// 摩尔纹滤除
@@ -80,9 +81,9 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent = 1);
 /// 
 /// </summary>
 /// <param name="imgs"></param>
-/// <param name="STEP"></param>
+/// <param name="options"></param>
 /// <returns></returns>
-cv::Mat fusion(const std::vector<cv::Mat>& imgs, int STEP);
+cv::Mat fusion(const std::vector<cv::Mat>& imgs, const FusionOptions& options);
 
 int extractChannel(cv::Mat& input, cv::Mat& dst, int channel);
 

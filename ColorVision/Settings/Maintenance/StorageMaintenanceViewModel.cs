@@ -3,6 +3,7 @@ using ColorVision.UI.Maintenance;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,8 +20,9 @@ public sealed class StorageCleanupItem : ViewModelBase
     public string Description { get; }
     private string _notice = string.Empty;
     public string Notice { get => _notice; internal set { _notice = value; OnPropertyChanged(); } }
-    public bool HasRetention => Id is "logs" or "temp" or "packages";
-    public IReadOnlyList<int> RetentionOptions { get; } = new[] { 7, 14, 30, 90, 180 };
+    public bool HasRetention { get; }
+    public IReadOnlyList<int> RetentionOptions { get; } = new[] { 7, 14, 30, 90, 180, 0 };
+    public bool HasRetentionPeriod => RetentionDays > 0;
     private int _retentionDays;
     public int RetentionDays
     {
@@ -31,6 +33,7 @@ public sealed class StorageCleanupItem : ViewModelBase
             _retentionDays = value;
             Invalidate();
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasRetentionPeriod));
             Changed?.Invoke();
         }
     }
@@ -43,29 +46,40 @@ public sealed class StorageCleanupItem : ViewModelBase
     public bool CanClean => IsScanned && Count > 0;
     internal MaintenanceFileCleanupScanResult? FileScan { get; private set; }
     internal StorageCacheSnapshot? CacheScan { get; private set; }
+    internal FileMaintenanceSnapshot? Snapshot { get; private set; }
+    internal FileMaintenanceSnapshot? PreviousSnapshot { get; private set; }
+    public IReadOnlyList<FileMaintenanceEntry> Files => Snapshot?.Files ?? Array.Empty<FileMaintenanceEntry>();
+    public IReadOnlyList<string> SourceDirectories { get; private set; } = Array.Empty<string>();
+    public bool CanOpenLocation => SourceDirectories.Any(Directory.Exists);
     internal event Action? Changed;
 
-    public StorageCleanupItem(string id, string title, string description, int retentionDays, bool selected)
+    public StorageCleanupItem(string id, string title, string description, int retentionDays, bool selected, bool hasRetention = true)
     {
         Id = id; Title = title; Description = description;
         _retentionDays = RetentionOptions.Contains(retentionDays) ? retentionDays : 30;
         _isSelected = selected;
+        HasRetention = hasRetention;
     }
 
-    internal void SetScan(MaintenanceFileCleanupScanResult scan)
+    internal void SetScan(FileMaintenanceSnapshot snapshot)
     {
-        FileScan = scan; CacheScan = null;
-        SetStatistics(scan.TotalBytes, scan.Files.Count, !scan.IsCancelled);
+        if (snapshot.IsCancelled) { Invalidate(); return; }
+        Snapshot = PreviousSnapshot = snapshot;
+        FileScan = snapshot.Token as MaintenanceFileCleanupScanResult;
+        CacheScan = snapshot.Token as StorageCacheSnapshot;
+        SetStatistics(snapshot.Bytes, snapshot.Count, true);
     }
 
-    internal void SetScan(StorageCacheSnapshot scan)
+    internal void SetSourceDirectories(IEnumerable<string> directories)
     {
-        CacheScan = scan; FileScan = null;
-        SetStatistics(scan.Bytes, scan.Count, true);
+        SourceDirectories = directories.Where(path => !string.IsNullOrWhiteSpace(path)).Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        OnPropertyChanged(nameof(SourceDirectories));
+        OnPropertyChanged(nameof(CanOpenLocation));
     }
 
     public void Invalidate()
     {
+        Snapshot = null;
         FileScan = null; CacheScan = null;
         SetStatistics(0, 0, false);
     }
@@ -90,11 +104,11 @@ public sealed class StorageCleanupItem : ViewModelBase
 public sealed class StorageMaintenanceViewModel : ViewModelBase
 {
     private static readonly SemaphoreSlim OperationGate = new(1, 1);
-    private readonly Func<int, int, int, IEnumerable<MaintenanceFileCleanupRule>> _rulesFactory;
-    private readonly Func<StorageCacheSnapshot> _scanThumbnails;
-    private readonly Func<StorageCacheSnapshot, StorageCacheCleanupResult> _clearThumbnails;
+    private readonly IFileMaintenanceProvider[] _providers;
+    private readonly Dictionary<string, FileMaintenanceCategory> _categories = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IFileMaintenanceProvider> _categoryOwners = new(StringComparer.Ordinal);
+    private readonly List<string> _discoveryIssues = new();
     private readonly StorageMaintenanceConfig _config;
-    private readonly Func<string, string>? _protectionNotice;
     private CancellationTokenSource? _cancellation;
     private bool _busy;
     private string _status = MaintenanceText.ScanFirst;
@@ -112,23 +126,49 @@ public sealed class StorageMaintenanceViewModel : ViewModelBase
         Func<StorageCacheSnapshot> scanThumbnails,
         Func<StorageCacheSnapshot, StorageCacheCleanupResult> clearThumbnails,
         Func<string, string>? protectionNotice = null)
+        : this(config, [new BuiltInFileMaintenanceProvider(config, rulesFactory, scanThumbnails, clearThumbnails, protectionNotice)]) { }
+
+    public StorageMaintenanceViewModel(StorageMaintenanceConfig config, IEnumerable<IFileMaintenanceProvider> providers)
     {
-        _config = config; _rulesFactory = rulesFactory;
-        _scanThumbnails = scanThumbnails; _clearThumbnails = clearThumbnails;
-        _protectionNotice = protectionNotice;
-        Items.Add(new("logs", MaintenanceText.Logs, MaintenanceText.LogsDescription, config.LogRetentionDays, true));
-        Items.Add(new("temp", MaintenanceText.Temporary, MaintenanceText.TemporaryDescription, config.TemporaryRetentionDays, true));
-        Items.Add(new("thumbnails", MaintenanceText.Thumbnails, MaintenanceText.ThumbnailsDescription, 7, true));
-        Items.Add(new("cie-cache", MaintenanceText.Cie, MaintenanceText.CieDescription, 7, true));
-        Items.Add(new("packages", MaintenanceText.Packages, MaintenanceText.PackagesDescription, config.PackageRetentionDays, false));
+        _config = config; _providers = providers.ToArray();
+        foreach (var provider in _providers)
+        {
+            try
+            {
+                foreach (FileMaintenanceCategory category in provider.GetCategories())
+                {
+                    if (string.IsNullOrWhiteSpace(category.Id) || _categories.ContainsKey(category.Id))
+                        throw new InvalidOperationException($"Duplicate or empty file maintenance category: {category.Id}");
+                    _categories.Add(category.Id, category);
+                    _categoryOwners.Add(category.Id, provider);
+                    int retention = category.Id switch
+                    {
+                        "logs" => config.LogRetentionDays,
+                        "temp" => config.TemporaryRetentionDays,
+                        "packages" => config.PackageRetentionDays,
+                        _ => config.FileRetentionDays.TryGetValue(category.Id, out int value) ? value : category.DefaultRetentionDays ?? 30,
+                    };
+                    Items.Add(new(category.Id, category.Title, category.Description, retention, category.DefaultSelected, category.DefaultRetentionDays.HasValue));
+                }
+            }
+            catch (Exception ex) { _discoveryIssues.Add($"{provider.GetType().Name}: {ex.Message}"); }
+        }
         foreach (var item in Items) item.Changed += OnItemChanged;
+        Issues.AddRange(_discoveryIssues);
     }
 
     private void OnItemChanged()
     {
-        _config.LogRetentionDays = Items[0].RetentionDays;
-        _config.TemporaryRetentionDays = Items[1].RetentionDays;
-        _config.PackageRetentionDays = Items[4].RetentionDays;
+        foreach (var item in Items.Where(item => item.HasRetention))
+        {
+            switch (item.Id)
+            {
+                case "logs": _config.LogRetentionDays = item.RetentionDays; break;
+                case "temp": _config.TemporaryRetentionDays = item.RetentionDays; break;
+                case "packages": _config.PackageRetentionDays = item.RetentionDays; break;
+                default: _config.FileRetentionDays[item.Id] = item.RetentionDays; break;
+            }
+        }
         NotifySelection();
     }
 
@@ -145,30 +185,39 @@ public sealed class StorageMaintenanceViewModel : ViewModelBase
         using var cancellation = new CancellationTokenSource();
         _cancellation = cancellation;
         IsBusy = true; Issues.Clear(); Status = MaintenanceText.Scanning;
-        foreach (var item in Items) item.Invalidate();
+        Issues.AddRange(_discoveryIssues);
         try
         {
             // Capture application-owned rule paths on the UI thread; workers do not enumerate UI collections.
-            var rules = _rulesFactory(Items[0].RetentionDays, Items[1].RetentionDays, Items[4].RetentionDays).ToArray();
+            var failedProviders = new HashSet<IFileMaintenanceProvider>();
+            foreach (var provider in _providers)
+            {
+                try { provider.PrepareScan(); }
+                catch (Exception ex) { failedProviders.Add(provider); Issues.Add($"{provider.GetType().Name}: {ex.Message}"); }
+            }
             foreach (var item in Items)
             {
                 if (cancellation.IsCancellationRequested) break;
+                item.Invalidate();
+                if (failedProviders.Contains(_categoryOwners[item.Id])) continue;
+                Status = $"{MaintenanceText.Scanning} {item.Title}";
+                NotifySelection();
                 try
                 {
-                    item.Notice = _protectionNotice?.Invoke(item.Id) ?? string.Empty;
-                    if (item.Id == "thumbnails")
-                        item.SetScan(await Task.Run(_scanThumbnails, cancellation.Token));
-                    else
-                    {
-                        var scan = await Task.Run(() => MaintenanceFileCleanup.Scan(rules.Where(rule => rule.Id == item.Id), cancellation.Token));
-                        item.SetScan(scan);
-                        Issues.AddRange(scan.Issues.Select(issue => $"{item.Title}: {issue.FullPath} — {issue.Message}"));
-                    }
+                    FileMaintenanceCategory category = _categories[item.Id];
+                    item.SetSourceDirectories(category.SourceDirectories);
+                    item.Notice = category.ProtectionNotice;
+                    var scan = await Task.Run(() => category.Scan(item.RetentionDays, item.PreviousSnapshot, cancellation.Token), cancellation.Token);
+                    if (cancellation.IsCancellationRequested || scan.IsCancelled) break;
+                    item.SetScan(scan);
+                    Issues.AddRange(scan.Issues.Select(issue => $"{item.Title}: {issue}"));
+                    NotifySelection();
                 }
                 catch (OperationCanceledException) { break; }
                 catch (Exception ex) { Issues.Add($"{item.Title}: {ex.Message}"); }
             }
-            Status = cancellation.IsCancellationRequested ? MaintenanceText.Cancelled : MaintenanceText.ScanComplete;
+            Status = cancellation.IsCancellationRequested ? MaintenanceText.Cancelled : Issues.Count > 0
+                ? string.Format(MaintenanceText.Failed, Issues[0]) : MaintenanceText.ScanComplete;
         }
         catch (Exception ex) { Status = string.Format(MaintenanceText.Failed, ex.Message); Issues.Add(ex.Message); }
         finally { _cancellation = null; IsBusy = false; OperationGate.Release(); }
@@ -191,19 +240,12 @@ public sealed class StorageMaintenanceViewModel : ViewModelBase
                 if (cancellation.IsCancellationRequested) break;
                 try
                 {
-                    if (item.CacheScan is { } cache)
+                    if (item.Snapshot is { } scan)
                     {
-                        var result = await Task.Run(() => _clearThumbnails(cache));
-                        bytes += result.DeletedBytes; deleted += result.DeletedCount; skipped += result.SkippedCount;
-                        if (result.Error != null) { failed++; Issues.Add($"{item.Title}: {result.Error}"); }
-                        if (result.Notice != null) Issues.Add($"{item.Title}: {result.Notice}");
-                    }
-                    else if (item.FileScan is { } scan)
-                    {
-                        var result = await Task.Run(() => MaintenanceFileCleanup.Cleanup(scan, cancellation.Token));
-                        bytes += result.DeletedBytes; deleted += result.DeletedFileCount;
-                        skipped += result.SkippedFileCount; failed += result.FailedFileCount;
-                        Issues.AddRange(result.Issues.Select(issue => $"{item.Title}: {issue.FullPath} — {issue.Message}"));
+                        var result = await Task.Run(() => _categories[item.Id].Cleanup(scan, cancellation.Token));
+                        bytes += result.DeletedBytes; deleted += result.DeletedCount;
+                        skipped += result.SkippedCount; failed += result.FailedCount;
+                        Issues.AddRange(result.Issues.Select(issue => $"{item.Title}: {issue}"));
                     }
                 }
                 catch (Exception ex) { failed++; Issues.Add($"{item.Title}: {ex.Message}"); }

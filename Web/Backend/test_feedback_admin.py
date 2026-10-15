@@ -17,10 +17,34 @@ from services.feedback_admin import (
     update_feedback_handling,
     validate_feedback_handling_payload,
     FeedbackHandlingConflict,
+    FeedbackInventoryIndex,
 )
 
 
 class FeedbackAdminTests(unittest.TestCase):
+    def test_inventory_reuses_scan_but_never_reuses_owner_filtered_results(self):
+        import services.feedback_admin as feedback
+        now = [100.0]
+        index = FeedbackInventoryIndex(clock=lambda: now[0])
+        directory = self._create_feedback()
+        with mock.patch.object(feedback, "_all_feedback", wraps=feedback._all_feedback) as scan:
+            initial = query_feedback(self.storage, inventory_index=index)
+            self.assertEqual(initial["total"], 1)
+            initial["items"][0]["status"] = "resolved"
+            self.assertEqual(query_feedback(self.storage, owner_user_id=999, inventory_index=index)["total"], 0)
+            self.assertEqual(query_feedback(self.storage, inventory_index=index)["items"][0]["status"], "new")
+            self.assertEqual(scan.call_count, 1)
+            update_feedback_status(self.storage, directory.name, "resolved")
+            index.invalidate()
+            self.assertEqual(query_feedback(self.storage, inventory_index=index)["items"][0]["status"], "resolved")
+            self.assertEqual(scan.call_count, 2)
+            now[0] += 15
+            query_feedback(self.storage, inventory_index=index)
+            self.assertEqual(scan.call_count, 3)
+            other = self.storage / "other"
+            self.assertEqual(query_feedback(other, inventory_index=index)["total"], 0)
+            self.assertEqual(scan.call_count, 4)
+
     def test_unreadable_management_state_is_not_overwritten_by_status_or_handling(self):
         directory = self._create_feedback()
         state_path = directory / ".admin.json"

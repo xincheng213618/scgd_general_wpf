@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Authorizations;
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -9,6 +9,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     {
         public MQTTSensor DService { get; set; }
         public DisplaySensorConfig DisplayConfig { get; }
+        public RelayCommand DiagnosticsCommand { get; }
+        private SensorDiagnosticsWindow? sensorDiagnosticsWindow;
 
         public DeviceSensor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -16,13 +18,30 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             InitializeLocalSensor();
             DService = new MQTTSensor(Config) { Device = this };
             DService.RefreshBackendStatus();
+            DiagnosticsCommand = new RelayCommand(_ =>
+            {
+                if (sensorDiagnosticsWindow != null)
+                {
+                    if (sensorDiagnosticsWindow.WindowState == WindowState.Minimized) sensorDiagnosticsWindow.WindowState = WindowState.Normal;
+                    sensorDiagnosticsWindow.Activate();
+                    return;
+                }
+                sensorDiagnosticsWindow = new SensorDiagnosticsWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                sensorDiagnosticsWindow.Closed += (_, _) => sensorDiagnosticsWindow = null;
+                sensorDiagnosticsWindow.Show();
+            });
+            ContextMenu.Items.Add(new MenuItem { Header = "本地通信调试", Command = DiagnosticsCommand });
             EditCommand = new RelayCommand(a =>
             {
                 EditSensor window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+                if (window.ShowDialog() == true)
+                {
+                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+                    Save();
+                }
+            });
 
         }
 

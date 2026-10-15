@@ -8,33 +8,21 @@ import {
   TeamOutlined,
 } from '@ant-design/icons'
 import { Alert, Badge, Button, Card, Col, Descriptions, Row, Space, Statistic, Tag, Typography } from 'antd'
-import { useEffect, useState } from 'react'
+import { useDashboardResource } from '../hooks/useDashboardResource'
+import { AdminLinkButton } from '../components/AdminLinkButton'
 import {
   getAdminStats,
   getCacheStatus,
   getDeploymentHistory,
   getDocsStatus,
   getIndexStatus,
-  getFeedbackInbox,
-  getTrafficStats,
+  getFeedbackSummary,
+  getTrafficHealth,
   listUsers,
   listJobs,
   listDatabaseBackups,
   getOperationsOverview,
 } from '../services/admin'
-import type {
-  AdminStats,
-  CacheStatus,
-  DeploymentHistoryResponse,
-  DocsStatus,
-  IndexStatusResponse,
-  TrafficStatsResponse,
-  UserAccountSummary,
-  FeedbackInboxResponse,
-  ScheduledJob,
-  DatabaseBackupInventory,
-  OperationsOverview,
-} from '../types/admin'
 import type { AuthSession } from '../types/site'
 import {
   summarizeDashboardDeployment,
@@ -48,7 +36,7 @@ import {
 import { humanSize, shortDate } from '../utils/format'
 import { feedbackAgeInfo, feedbackBeijingTime } from '../utils/feedback'
 import { jobHistoryPath, jobNeedsAttention } from '../utils/jobOperations'
-import { canOpenAdminRoute, getAdminDashboardCapabilities } from '../utils/permissions'
+import { canOpenAdminRoute, getAdminDashboardCapabilities, sessionAuthorizationKey } from '../utils/permissions'
 
 const { Text, Title } = Typography
 
@@ -59,139 +47,57 @@ const healthColors: Record<DashboardHealthLevel, string> = {
   unknown: 'default',
 }
 
-function requestError(label: string, result: PromiseSettledResult<unknown>) {
-  if (result.status === 'fulfilled') return ''
-  const detail = result.reason instanceof Error ? result.reason.message : '请求失败'
-  return `${label}：${detail}`
-}
+const loadOperations = (signal: AbortSignal) => getOperationsOverview(signal, { hostLimit: 3, activityLimit: 1 })
+const loadDeployment = (signal: AbortSignal) => getDeploymentHistory({ current: 1, pageSize: 1 }, signal)
+const loadUsers = (signal: AbortSignal) => listUsers({ current: 1, pageSize: 1 }, signal).then((value) => value.summary)
 
-interface DashboardProps {
-  session: AuthSession | null
-}
+interface DashboardProps { session: AuthSession | null }
 
 export function Dashboard({ session }: DashboardProps) {
-  const [stats, setStats] = useState<AdminStats | null>(null)
-  const [cache, setCache] = useState<CacheStatus | null>(null)
-  const [docs, setDocs] = useState<DocsStatus | null>(null)
-  const [traffic, setTraffic] = useState<TrafficStatsResponse | null>(null)
-  const [indexes, setIndexes] = useState<IndexStatusResponse | null>(null)
-  const [deployments, setDeployments] = useState<DeploymentHistoryResponse | null>(null)
-  const [userSummary, setUserSummary] = useState<UserAccountSummary | null>(null)
-  const [feedbackSummary, setFeedbackSummary] = useState<FeedbackInboxResponse['summary'] | null>(null)
-  const [jobs, setJobs] = useState<ScheduledJob[] | null>(null)
-  const [backups, setBackups] = useState<DatabaseBackupInventory | null>(null)
-  const [operations, setOperations] = useState<OperationsOverview | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadErrors, setLoadErrors] = useState<string[]>([])
-  const [reloadKey, setReloadKey] = useState(0)
+  // Permission/account changes must synchronously discard the previous user's data.
+  return <DashboardContent key={sessionAuthorizationKey(session)} session={session} />
+}
+
+function DashboardContent({ session }: DashboardProps) {
   const { readCache, readDeployments, readStats, readUsers, readFeedback, readJobs, readBackups, readOperations } = getAdminDashboardCapabilities(session)
   const hasDashboardDataAccess = readCache || readDeployments || readStats || readUsers || readFeedback || readJobs || readBackups || readOperations
-
-  useEffect(() => {
-    let mounted = true
-    const controller = new AbortController()
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15000)])
-    queueMicrotask(() => {
-      if (!mounted) return
-      setLoading(true)
-      setLoadErrors([])
-      setStats(null)
-      setTraffic(null)
-      setCache(null)
-      setDocs(null)
-      setIndexes(null)
-      setDeployments(null)
-      setUserSummary(null)
-      setFeedbackSummary(null)
-      setJobs(null)
-      setBackups(null)
-      setOperations(null)
-    })
-
-    const requests: Array<{ label: string, promise: Promise<void> }> = []
-    if (readJobs) requests.push({ label: '任务状态', promise: listJobs(signal).then((value) => { if (mounted) setJobs(value) }) })
-    if (readBackups) requests.push({ label: '备份状态', promise: listDatabaseBackups(signal).then((value) => { if (mounted) setBackups(value) }) })
-    if (readOperations) requests.push({ label: '终端状态', promise: getOperationsOverview(signal, { hostLimit: 3, activityLimit: 1 }).then((value) => { if (mounted) setOperations(value) }) })
-    if (readFeedback) {
-      requests.push({
-        label: '反馈待办',
-        promise: getFeedbackInbox({ status: 'open', pageSize: 1 }, signal).then((value) => {
-          if (mounted) setFeedbackSummary(value.summary)
-        }),
-      })
-    }
-    if (readStats) {
-      requests.push(
-        {
-          label: '发布统计',
-          promise: getAdminStats(signal).then((value) => {
-            if (mounted) setStats(value)
-          }),
-        },
-        {
-          label: '访问健康',
-          promise: getTrafficStats(1, 3, signal).then((value) => {
-            if (mounted) setTraffic(value)
-          }),
-        },
-      )
-    }
-    if (readCache) {
-      requests.push(
-        {
-          label: '缓存状态',
-          promise: getCacheStatus(signal).then((value) => {
-            if (mounted) setCache(value)
-          }),
-        },
-        {
-          label: '文档状态',
-          promise: getDocsStatus(signal).then((value) => {
-            if (mounted) setDocs(value)
-          }),
-        },
-        {
-          label: '索引状态',
-          promise: getIndexStatus(signal).then((value) => {
-            if (mounted) setIndexes(value)
-          }),
-        },
-      )
-    }
-    if (readDeployments) {
-      requests.push({
-        label: '部署历史',
-        promise: getDeploymentHistory({ current: 1, pageSize: 1 }, signal).then((value) => {
-          if (mounted) setDeployments(value)
-        }),
-      })
-    }
-    if (readUsers) {
-      requests.push({
-        label: '账号安全',
-        promise: listUsers({ current: 1, pageSize: 1 }, signal).then((value) => {
-          if (mounted) setUserSummary(value.summary)
-        }),
-      })
-    }
-
-    Promise.allSettled(requests.map((item) => item.promise))
-      .then((results) => {
-        if (!mounted) return
-        setLoadErrors(results.map((result, index) => (
-          requestError(requests[index]?.label || '总览数据', result)
-        )).filter(Boolean))
-      })
-      .finally(() => {
-        if (mounted) setLoading(false)
-      })
-
-    return () => {
-      mounted = false
-      controller.abort()
-    }
-  }, [readCache, readDeployments, readStats, readUsers, readFeedback, readJobs, readBackups, readOperations, reloadKey])
-
+  const statsResource = useDashboardResource(readStats, getAdminStats)
+  const trafficResource = useDashboardResource(readStats, getTrafficHealth)
+  const cacheResource = useDashboardResource(readCache, getCacheStatus)
+  const docsResource = useDashboardResource(readCache, getDocsStatus)
+  const indexesResource = useDashboardResource(readCache, getIndexStatus)
+  const deploymentsResource = useDashboardResource(readDeployments, loadDeployment)
+  const usersResource = useDashboardResource(readUsers, loadUsers)
+  const feedbackResource = useDashboardResource(readFeedback, getFeedbackSummary)
+  const jobsResource = useDashboardResource(readJobs, listJobs)
+  const backupsResource = useDashboardResource(readBackups, listDatabaseBackups)
+  const operationsResource = useDashboardResource(readOperations, loadOperations)
+  const stats = statsResource.data
+  const traffic = trafficResource.data
+  const cache = cacheResource.data
+  const docs = docsResource.data
+  const indexes = indexesResource.data
+  const deployments = deploymentsResource.data
+  const userSummary = usersResource.data
+  const feedbackSummary = feedbackResource.data
+  const jobs = jobsResource.data
+  const backups = backupsResource.data
+  const operations = operationsResource.data
+  const resources = [
+    { label: '发布统计', enabled: readStats, ...statsResource },
+    { label: '访问健康', enabled: readStats, ...trafficResource },
+    { label: '缓存状态', enabled: readCache, ...cacheResource },
+    { label: '文档状态', enabled: readCache, ...docsResource },
+    { label: '索引状态', enabled: readCache, ...indexesResource },
+    { label: '部署历史', enabled: readDeployments, ...deploymentsResource },
+    { label: '账号安全', enabled: readUsers, ...usersResource },
+    { label: '反馈待办', enabled: readFeedback, ...feedbackResource },
+    { label: '任务状态', enabled: readJobs, ...jobsResource },
+    { label: '备份状态', enabled: readBackups, ...backupsResource },
+    { label: '终端状态', enabled: readOperations, ...operationsResource },
+  ].filter((item) => item.enabled)
+  const loading = resources.some((item) => item.loading)
+  const loadErrors = resources.filter((item) => item.error)
   const indexSummary = summarizeDashboardIndexes(indexes)
   const trafficSummary = summarizeDashboardTraffic(traffic)
   const latestDeployment = deployments?.entries[0]
@@ -219,8 +125,12 @@ export function Dashboard({ session }: DashboardProps) {
           type="warning"
           showIcon
           message="部分总览数据加载失败"
-          description={loadErrors.join('；')}
-          action={<Button size="small" onClick={() => setReloadKey((key) => key + 1)}>重试</Button>}
+          description={<Space direction="vertical">{loadErrors.map((item) => (
+            <Space key={item.label} wrap>
+              <Text>{item.label}：{item.error}。{item.updatedAt ? `保留 ${shortDate(new Date(item.updatedAt).toISOString())} 的结果` : '尚无成功结果'}</Text>
+              <Button size="small" loading={item.loading} onClick={item.reload}>重试{item.label}</Button>
+            </Space>
+          ))}</Space>}
         />
       )}
 
@@ -234,21 +144,29 @@ export function Dashboard({ session }: DashboardProps) {
               : '你已进入管理后台，可以从左侧菜单访问当前角色获准使用的功能。'}
           </Text>
           <Space wrap className="dashboard-shortcuts">
-            {canOpenPublish && <Button type="primary" href="/admin/publish">发布中心</Button>}
-            {canOpenCache && <Button href="/admin/cache">缓存与索引</Button>}
-            {canOpenJobs && <Button href="/admin/jobs">任务调度</Button>}
-            {canOpenTraffic && <Button href="/admin/traffic">访问统计</Button>}
-            {readUsers && <Button href="/admin/users">账号管理</Button>}
+            {canOpenPublish && <AdminLinkButton type="primary" to="/admin/publish">发布中心</AdminLinkButton>}
+            {canOpenCache && <AdminLinkButton to="/admin/cache">缓存与索引</AdminLinkButton>}
+            {canOpenJobs && <AdminLinkButton to="/admin/jobs">任务调度</AdminLinkButton>}
+            {canOpenTraffic && <AdminLinkButton to="/admin/traffic">访问统计</AdminLinkButton>}
+            {readUsers && <AdminLinkButton to="/admin/users">账号管理</AdminLinkButton>}
             {hasDashboardDataAccess && (
               <Button
                 icon={<ReloadOutlined />}
                 loading={loading}
-                onClick={() => setReloadKey((key) => key + 1)}
+                onClick={() => resources.forEach((item) => item.reload())}
               >
                 刷新数据
               </Button>
             )}
           </Space>
+          {hasDashboardDataAccess && <details>
+            <summary>数据更新时间{loading ? ' · 刷新中' : ''}</summary>
+            <Space direction="vertical" size={2} style={{ marginTop: 8 }}>{resources.map((item) => (
+              <Text key={item.label} type={item.error ? 'warning' : 'secondary'}>
+                {item.label}：{item.updatedAt ? shortDate(new Date(item.updatedAt).toISOString()) : '尚未取得'}{item.loading ? ' · 更新中' : item.error ? ' · 更新失败' : ''}
+              </Text>
+            ))}</Space>
+          </details>}
         </Space>
       </Card>
 
@@ -265,34 +183,34 @@ export function Dashboard({ session }: DashboardProps) {
         <Row gutter={[16, 16]}>
           {readJobs && (
             <Col xs={24} xl={operationsCardSpan}>
-              <Card title="任务待办" loading={loading && !jobs} extra={<Button type="link" href="/admin/jobs">全部任务</Button>}>
+              <Card title="任务待办" loading={jobsResource.loading && !jobs} extra={<AdminLinkButton type="link" to="/admin/jobs">全部任务</AdminLinkButton>}>
                 <Space direction="vertical" size={12} className="wide-space">
                   <Tag color={healthColors[jobSummary.level]}>{jobSummary.label}</Tag>
                   <Text type="secondary">{jobSummary.detail}</Text>
                   {jobs?.filter(jobNeedsAttention).slice(0, 3).map((job) => (
-                    <Button className="dashboard-detail-link" key={job.id} href={jobHistoryPath(job.id)}>{job.name} · 查看原因</Button>
+                    <AdminLinkButton className="dashboard-detail-link" key={job.id} to={jobHistoryPath(job.id)}>{job.name} · 查看原因</AdminLinkButton>
                   ))}
-                  {(jobs?.filter(jobNeedsAttention).length || 0) > 3 && <Button href="/admin/jobs?view=attention">查看全部异常任务</Button>}
+                  {(jobs?.filter(jobNeedsAttention).length || 0) > 3 && <AdminLinkButton to="/admin/jobs?view=attention">查看全部异常任务</AdminLinkButton>}
                 </Space>
               </Card>
             </Col>
           )}
           {readBackups && (
             <Col xs={24} xl={operationsCardSpan}>
-              <Card title="数据库备份" loading={loading && !backups} extra={<Button type="link" href="/admin/cache#database-backups">查看备份</Button>}>
+              <Card title="数据库备份" loading={backupsResource.loading && !backups} extra={<AdminLinkButton type="link" to="/admin/cache#database-backups">查看备份</AdminLinkButton>}>
                 <Space direction="vertical" size={12} className="wide-space">
                   <Tag color={healthColors[backupSummary.level]}>{backupSummary.label}</Tag>
                   <Text type="secondary">{backupSummary.detail}</Text>
                   <Text>最近文件：{latestBackup ? shortDate(latestBackup.created_at) : backups ? '暂无' : '未知'}</Text>
                   <Text type="secondary">保留文件 {backups?.count ?? '—'} 份</Text>
-                  {backupJob && <Button href={jobHistoryPath(backupJob.id)}>查看自动备份执行记录</Button>}
+                  {backupJob && <AdminLinkButton to={jobHistoryPath(backupJob.id)}>查看自动备份执行记录</AdminLinkButton>}
                 </Space>
               </Card>
             </Col>
           )}
           {readOperations && (
             <Col xs={24} xl={operationsCardSpan}>
-              <Card title="终端连接" loading={loading && !operations} extra={<Button type="link" href="/admin/operations/hosts">查看终端</Button>}>
+              <Card title="终端连接" loading={operationsResource.loading && !operations} extra={<AdminLinkButton type="link" to="/admin/operations/hosts">查看终端</AdminLinkButton>}>
                 <Space direction="vertical" size={12} className="wide-space">
                   {operations ? <>
                     <Space wrap>
@@ -302,7 +220,7 @@ export function Dashboard({ session }: DashboardProps) {
                       {operations.summary.staleHosts > 0 && <Tag color="gold">{operations.summary.staleHosts} 台心跳未更新</Tag>}
                     </Space>
                     <Text type="secondary">超过 {operations.onlineThresholdSeconds} 秒无心跳视为未连接，请结合终端开关机情况检查。</Text>
-                    {operations.hosts.map((host) => <Button className="dashboard-detail-link" key={host.hostId} href={`/admin/operations/hosts?host=${encodeURIComponent(host.hostId)}`}>{host.displayName} · {host.online ? '在线' : '未连接'}</Button>)}
+                    {operations.hosts.map((host) => <AdminLinkButton className="dashboard-detail-link" key={host.hostId} to={`/admin/operations/hosts?host=${encodeURIComponent(host.hostId)}`}>{host.displayName} · {host.online ? '在线' : '未连接'}</AdminLinkButton>)}
                     <Text type="secondary">最近上报的终端 · {shortDate(operations.generatedAt)}</Text>
                   </> : <Text type="secondary">终端状态未知，请刷新重试。</Text>}
                 </Space>
@@ -313,14 +231,14 @@ export function Dashboard({ session }: DashboardProps) {
       )}
 
       {readFeedback && (
-        <Card title="反馈待办" loading={loading && !feedbackSummary}
-          extra={<Button type="link" href="/admin/feedback?status=open">查看未解决反馈</Button>}>
+        <Card title="反馈待办" loading={feedbackResource.loading && !feedbackSummary}
+          extra={<AdminLinkButton type="link" to="/admin/feedback?status=open">查看未解决反馈</AdminLinkButton>}>
           {feedbackSummary ? (
             <Space direction="vertical" size={14} className="wide-space">
               <Space wrap>
-                <Button href="/admin/feedback?status=open">未解决 {feedbackSummary.status_counts.new + feedbackSummary.status_counts.in_progress}</Button>
-                <Button href="/admin/feedback?status=new">待处理 {feedbackSummary.status_counts.new}</Button>
-                <Button href="/admin/feedback?status=in_progress">处理中 {feedbackSummary.status_counts.in_progress}</Button>
+                <AdminLinkButton to="/admin/feedback?status=open">未解决 {feedbackSummary.status_counts.new + feedbackSummary.status_counts.in_progress}</AdminLinkButton>
+                <AdminLinkButton to="/admin/feedback?status=new">待处理 {feedbackSummary.status_counts.new}</AdminLinkButton>
+                <AdminLinkButton to="/admin/feedback?status=in_progress">处理中 {feedbackSummary.status_counts.in_progress}</AdminLinkButton>
               </Space>
               <Text type="secondary">
                 {feedbackSummary.oldest_open_at
@@ -337,8 +255,8 @@ export function Dashboard({ session }: DashboardProps) {
       {readUsers && (
         <Card
           title="账号安全待办"
-          loading={loading && !userSummary}
-          extra={<Button type="link" href="/admin/users">进入账号管理</Button>}
+          loading={usersResource.loading && !userSummary}
+          extra={<AdminLinkButton type="link" to="/admin/users">进入账号管理</AdminLinkButton>}
         >
           <Space direction="vertical" size={14} className="wide-space">
             <Space wrap>
@@ -359,14 +277,14 @@ export function Dashboard({ session }: DashboardProps) {
                 action={(
                   <Space wrap>
                     {accountTaskSummary.passwordRecoveries > 0 && (
-                      <Button type="primary" danger href="/admin/users?recovery_state=pending">
+                      <AdminLinkButton type="primary" danger to="/admin/users?recovery_state=pending">
                         处理找回申请 ({accountTaskSummary.passwordRecoveries})
-                      </Button>
+                      </AdminLinkButton>
                     )}
                     {accountTaskSummary.passwordChanges > 0 && (
-                      <Button href="/admin/users?password_state=pending">
+                      <AdminLinkButton to="/admin/users?password_state=pending">
                         查看待改密账号 ({accountTaskSummary.passwordChanges})
-                      </Button>
+                      </AdminLinkButton>
                     )}
                   </Space>
                 )}
@@ -379,22 +297,22 @@ export function Dashboard({ session }: DashboardProps) {
       {readStats && (
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} xl={6}>
-            <Card loading={loading && !stats}>
+            <Card loading={statsResource.loading && !stats}>
               <Statistic title="插件数量" value={stats?.pluginCount ?? '—'} prefix={<AppstoreOutlined />} />
             </Card>
           </Col>
           <Col xs={24} sm={12} xl={6}>
-            <Card loading={loading && !stats}>
+            <Card loading={statsResource.loading && !stats}>
               <Statistic title="包索引" value={stats?.packageCount ?? '—'} prefix={<DatabaseOutlined />} />
             </Card>
           </Col>
           <Col xs={24} sm={12} xl={6}>
-            <Card loading={loading && !stats}>
+            <Card loading={statsResource.loading && !stats}>
               <Statistic title="今日下载" value={stats?.downloadsToday ?? '—'} prefix={<CloudDownloadOutlined />} />
             </Card>
           </Col>
           <Col xs={24} sm={12} xl={6}>
-            <Card loading={loading && !stats}>
+            <Card loading={statsResource.loading && !stats}>
               <Statistic title="最新版本" value={stats ? stats.latestReleaseVersion || '未检测到' : '未知'} />
             </Card>
           </Col>
@@ -407,8 +325,8 @@ export function Dashboard({ session }: DashboardProps) {
           <Col xs={24} xl={healthCardSpan}>
           <Card
             title="访问健康"
-            loading={loading && !traffic}
-            extra={<Button type="link" href="/admin/traffic">查看详情</Button>}
+            loading={trafficResource.loading && !traffic}
+            extra={<AdminLinkButton type="link" to="/admin/traffic">查看详情</AdminLinkButton>}
           >
             <Space direction="vertical" size={10} className="wide-space">
               <Space wrap>
@@ -419,10 +337,10 @@ export function Dashboard({ session }: DashboardProps) {
               <Space wrap>
                 <Tag>平均响应 {traffic || stats ? Math.round(traffic?.today.avgResponseMs ?? stats?.avgResponseMsToday ?? 0) : '—'} ms</Tag>
                 <Tag color={(traffic?.today.clientErrorResponses || 0) > 0 ? 'gold' : 'default'}>
-                  4xx {traffic?.today.clientErrorResponses ?? '—'}
+                  今日 4xx {traffic?.today.clientErrorResponses ?? '—'}
                 </Tag>
                 <Tag color={!traffic ? 'default' : traffic.today.serverErrorResponses > 0 ? 'red' : 'green'}>
-                  5xx {traffic?.today.serverErrorResponses ?? '—'}
+                  今日 5xx {traffic?.today.serverErrorResponses ?? '—'}
                 </Tag>
               </Space>
             </Space>
@@ -434,8 +352,8 @@ export function Dashboard({ session }: DashboardProps) {
           <Col xs={24} xl={healthCardSpan}>
           <Card
             title="索引健康"
-            loading={loading && !indexes}
-            extra={<Button type="link" href="/admin/cache">进入运维</Button>}
+            loading={indexesResource.loading && !indexes}
+            extra={<AdminLinkButton type="link" to="/admin/cache">进入运维</AdminLinkButton>}
           >
             <Space direction="vertical" size={10} className="wide-space">
               <Space wrap>
@@ -455,8 +373,8 @@ export function Dashboard({ session }: DashboardProps) {
           <Col xs={24} xl={healthCardSpan}>
           <Card
             title="最近部署"
-            loading={loading && !deployments}
-            extra={<Button type="link" href="/admin/deployments">查看历史</Button>}
+            loading={deploymentsResource.loading && !deployments}
+            extra={<AdminLinkButton type="link" to="/admin/deployments">查看历史</AdminLinkButton>}
           >
             <Space direction="vertical" size={10} className="wide-space">
               <Space wrap>
@@ -480,10 +398,10 @@ export function Dashboard({ session }: DashboardProps) {
       {readCache && (
         <Card
         title="存储与文档"
-        loading={loading && !cache && !docs}
+        loading={(cacheResource.loading || docsResource.loading) && !cache && !docs}
         extra={(
           <Space wrap>
-            <Button href="/admin/cache">索引运维</Button>
+            <AdminLinkButton to="/admin/cache">索引运维</AdminLinkButton>
             <Button href="/docs">打开文档</Button>
           </Space>
         )}

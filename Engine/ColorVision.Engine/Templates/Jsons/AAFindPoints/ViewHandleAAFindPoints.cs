@@ -1,6 +1,9 @@
 ﻿#pragma warning disable CA1725,CS8602
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Algorithms;
+using ColorVision.Engine.Services.Results.LightArea;
+
 using ColorVision.Engine.Services;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
@@ -83,6 +86,15 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         public string? ResultFileName { get; set; }
 
         public AAFindPoint? AAFindPoint { get; set; }
+
+        [JsonIgnore]
+        public List<AlgResultLightAreaModel> LightAreaModels => AAFindPoint?.Corner?.Select(corner => new AlgResultLightAreaModel
+        {
+            Id = corner.Id,
+            Pid = DetailCommonModel?.PId ?? 0,
+            PosX = corner.X,
+            PosY = corner.Y
+        }).ToList() ?? new List<AlgResultLightAreaModel>();
     }
 
 
@@ -90,7 +102,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleAAFindPoints));
 
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.ARVR_AAFindPoints };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.ARVR_AAFindPoints, ViewResultAlgType.FindLightArea };
         public override bool CanHandle1(ViewResultAlg result)
         {
             if (result.Version != "AA") return false;
@@ -115,6 +127,12 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
+            if (result.ResultType == ViewResultAlgType.FindLightArea)
+            {
+                result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
+                return;
+            }
+
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -151,22 +169,29 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         {
             OpenSourceImage(ctx, result);
 
-            if (result.ViewResults.FirstOrDefault() is AAFindPointsViewReslut viewResult)
+            if (result.ResultType == ViewResultAlgType.FindLightArea)
             {
+                HandlePersistedCorners(ctx, result);
+                return;
+            }
+
+            if (result.ViewResults.FirstOrDefault() is AAFindPointsViewReslut viewResult && viewResult.AAFindPoint != null)
+            {
+                List<AlgResultLightAreaModel> corners = viewResult.LightAreaModels;
 
                 DVDatumPolygon Polygon = new() { IsComple = true };
                 Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
 
-                foreach (var item in viewResult.AAFindPoint.Corner)
+                foreach (var item in corners)
                 {
-                    Polygon.Attribute.Points.Add(new Point() { X =item.X,Y= item.Y});
+                    Polygon.Attribute.Points.Add(new Point(item.PosX, item.PosY));
                 }
                 Polygon.IsComple = true;
                 Polygon.Render();
                 ctx.ImageView.AddVisual(Polygon);
 
                 List<string> header = new() { "ID", "X", "Y" };
-                List<string> bdHeader = new() { "Id", "X", "Y" };
+                List<string> bdHeader = new() { nameof(AlgResultLightAreaModel.Id), nameof(AlgResultLightAreaModel.PosX), nameof(AlgResultLightAreaModel.PosY) };
                 if (ctx.ListView.View is GridView gridView)
                 {
                     ctx.LeftGridViewColumnVisibilitys.Clear();
@@ -174,7 +199,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
 
-                    ctx.ListView.ItemsSource = new ObservableCollection<Corner>(viewResult.AAFindPoint.Corner);
+                    ctx.ListView.ItemsSource = new ObservableCollection<AlgResultLightAreaModel>(corners);
                 }
             }
             else
@@ -184,6 +209,33 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
                     gridView.Columns.Clear();
                 }
                 ctx.ListView.ItemsSource = null;
+            }
+        }
+
+        private static void HandlePersistedCorners(ViewResultContext ctx, ViewResultAlg result)
+        {
+            var corners = result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>();
+            if (corners.Count > 0)
+            {
+                DVPolygon polygon = new() { IsComple = true };
+                List<Point> points = corners.Select(item => new Point((int)item.PosX, (int)item.PosY)).ToList();
+                foreach (Point point in GrahamScan.ComputeConvexHull(points))
+                    polygon.Attribute.Points.Add(point);
+                polygon.Attribute.Brush = Brushes.Transparent;
+                polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                polygon.Attribute.Id = -1;
+                polygon.Render();
+                ctx.ImageView.AddVisual(polygon);
+            }
+
+            if (ctx.ListView.View is GridView gridView)
+            {
+                ctx.ListView.ItemsSource = null;
+                ctx.LeftGridViewColumnVisibilitys.Clear();
+                gridView.Columns.Clear();
+                gridView.Columns.Add(new GridViewColumn { Header = "PosX", DisplayMemberBinding = new Binding(nameof(AlgResultLightAreaModel.PosX)) });
+                gridView.Columns.Add(new GridViewColumn { Header = "PosY", DisplayMemberBinding = new Binding(nameof(AlgResultLightAreaModel.PosY)) });
+                ctx.ListView.ItemsSource = corners;
             }
         }
     }

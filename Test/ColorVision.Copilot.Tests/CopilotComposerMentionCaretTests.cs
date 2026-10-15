@@ -15,6 +15,102 @@ namespace ColorVision.Copilot.Tests;
 [Collection(CopilotChatViewModelProfileIsolationFixture.Name)]
 public sealed class CopilotComposerMentionCaretTests
 {
+    [Fact]
+    public void WorkspaceResultsPreserveTheCandidateChosenWhileIndexingWasPending()
+    {
+        Run(fixture =>
+        {
+            var root = Directory.CreateTempSubdirectory("CopilotMentionSelection-").FullName;
+            var catalogType = typeof(CopilotComposerReferenceCatalog);
+            var gate = catalogType.GetField("FileIndexLock", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+            var fields = new[] { "_cachedWorkspaceRoot", "_cachedWorkspaceFiles", "_workspaceFileIndexTask", "_hasCachedWorkspaceFileIndex", "_workspaceFileIndexGeneration" }
+                .Select(name => catalogType.GetField(name, BindingFlags.Static | BindingFlags.NonPublic)!).ToArray();
+            object?[] previous;
+            lock (gate)
+                previous = fields.Select(field => field.GetValue(null)).ToArray();
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var context = new CopilotPausedAdmissionContext(TimeSpan.FromSeconds(10), "The workspace selection refresh did not finish.");
+            var previousContext = SynchronizationContext.Current;
+            Task? refresh = null;
+            try
+            {
+                foreach (var name in new[] { "selection-probe-a", "selection-probe-b" })
+                {
+                    var skillRoot = Directory.CreateDirectory(Path.Combine(root, ".agents", "skills", name)).FullName;
+                    File.WriteAllText(Path.Combine(skillRoot, "SKILL.md"),
+                        "---\nname: " + name + "\ndescription: Selection probe skill\n---\nKeep the selected skill.\n");
+                }
+                File.WriteAllText(Path.Combine(root, "selection-probe-file.txt"), "Workspace evidence");
+                var skills = CopilotAgentSkillCatalog.Discover([root], null, root, root);
+                var immediate = CopilotComposerReferenceCatalog.SearchImmediate("selection-probe", null, true, skills);
+                Assert.Equal(2, immediate.Count);
+                var getIndex = catalogType.GetMethod("GetWorkspaceFilesAsync", BindingFlags.Static | BindingFlags.NonPublic)!;
+                var realIndex = Assert.IsAssignableFrom<Task>(getIndex.Invoke(null, [root, true, CancellationToken.None]));
+                realIndex.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+                var holdIndex = typeof(CopilotComposerMentionCaretTests).GetMethod(nameof(HoldWorkspaceIndex), BindingFlags.Static | BindingFlags.NonPublic)!
+                    .MakeGenericMethod(getIndex.ReturnType.GetGenericArguments()[0]);
+                var pendingIndex = Assert.IsAssignableFrom<Task>(holdIndex.Invoke(null, [realIndex, release.Task]));
+                lock (gate)
+                    fields[2].SetValue(null, pendingIndex);
+
+                fixture.SetDraft("@selection-probe", "@selection-probe".Length);
+                typeof(CopilotChatViewModel).GetMethod("ApplyComposerReferenceSuggestions", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(fixture.ViewModel, [immediate, null]);
+                var originalSelection = fixture.ViewModel.SelectedComposerReference!.Value;
+                var version = (long)typeof(CopilotChatViewModel).GetField("_composerReferenceRefreshVersion", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(fixture.ViewModel)!;
+                SynchronizationContext.SetSynchronizationContext(context);
+                refresh = Assert.IsAssignableFrom<Task>(typeof(CopilotChatViewModel)
+                    .GetMethod("RefreshWorkspaceComposerReferencesAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(fixture.ViewModel, ["selection-probe", root, false, immediate, originalSelection, version, CancellationToken.None]));
+                Assert.False(refresh.IsCompleted);
+                Assert.True(fixture.ViewModel.TryNavigateComposerReference(previous: false));
+                var chosen = fixture.ViewModel.SelectedComposerReference!;
+                Assert.NotEqual(originalSelection, chosen.Value);
+
+                release.TrySetResult();
+                context.Complete(refresh);
+                refresh.GetAwaiter().GetResult();
+
+                Assert.Contains(fixture.ViewModel.ComposerReferenceSuggestions, item => item.Kind == CopilotComposerReferenceKind.File);
+                Assert.Equal(chosen.Value, fixture.ViewModel.SelectedComposerReference!.Value);
+                Assert.True(fixture.ViewModel.TryCompleteComposerReference());
+                Assert.Equal("$" + chosen.AgentSkillReference!.Name + " ", fixture.ViewModel.InputText);
+                Assert.Equal(chosen.AgentSkillReference.Name, fixture.ViewModel.SelectedConversation!.DraftAgentSkillReference!.Name);
+            }
+            finally
+            {
+                release.TrySetResult();
+                try
+                {
+                    if (refresh is { IsCompleted: false })
+                        context.Complete(refresh);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                    lock (gate)
+                    {
+                        for (var index = 0; index < fields.Length; index++)
+                            fields[index].SetValue(null, previous[index]);
+                    }
+                    var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+                    var tempRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+                    Assert.Equal(tempRoot, Path.GetDirectoryName(fullRoot), ignoreCase: true);
+                    Assert.StartsWith("CopilotMentionSelection-", Path.GetFileName(fullRoot), StringComparison.Ordinal);
+                    Directory.Delete(fullRoot, recursive: true);
+                }
+            }
+        });
+    }
+
+    private static async Task<T> HoldWorkspaceIndex<T>(Task<T> index, Task release)
+    {
+        var files = await index.ConfigureAwait(false);
+        await release.ConfigureAwait(false);
+        return files;
+    }
+
     [Theory]
     [InlineData("\nKeep the final instructions.")]
     [InlineData(" Keep the final instructions.")]

@@ -42,6 +42,7 @@
         <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" 
                 BorderThickness="1" CornerRadius="5">
             <ListBox x:Name="ItemsListBox"
+                     Foreground="{DynamicResource GlobalTextBrush}"
                      SelectionMode="Extended"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      SelectionChanged="ItemsListBox_SelectionChanged"
@@ -75,7 +76,7 @@
                 </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <ContentControl Content="{Binding Content}" HorizontalContentAlignment="Stretch" Margin="4,6"/>
+                        <ContentControl Content="{Binding Content}" Foreground="{DynamicResource GlobalTextBrush}" HorizontalContentAlignment="Stretch" Margin="4,6"/>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

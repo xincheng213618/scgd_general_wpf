@@ -23,6 +23,21 @@ namespace ColorVision.Scheduler.Properties {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
+        public static string Sched_ExecuteTask => ResourceManager.GetString("Sched_ExecuteTask", resourceCulture);
+        public static string Sched_RerunTask => ResourceManager.GetString("Sched_RerunTask", resourceCulture);
+        public static string Sched_ContinueExecution => ResourceManager.GetString("Sched_ContinueExecution", resourceCulture);
+        public static string Sched_EnablePlan => ResourceManager.GetString("Sched_EnablePlan", resourceCulture);
+        public static string Sched_ReenablePlan => ResourceManager.GetString("Sched_ReenablePlan", resourceCulture);
+        public static string Sched_PlanEnabled => ResourceManager.GetString("Sched_PlanEnabled", resourceCulture);
+        public static string Sched_WaitingExecution => ResourceManager.GetString("Sched_WaitingExecution", resourceCulture);
+        public static string Sched_OnlyRunOnce => ResourceManager.GetString("Sched_OnlyRunOnce", resourceCulture);
+        public static string Sched_ExecuteTaskHint => ResourceManager.GetString("Sched_ExecuteTaskHint", resourceCulture);
+        public static string Sched_EnablePlanHint => ResourceManager.GetString("Sched_EnablePlanHint", resourceCulture);
+        public static string Sched_OnlyRunOnceHint => ResourceManager.GetString("Sched_OnlyRunOnceHint", resourceCulture);
+        public static string Sched_AlreadyActive => ResourceManager.GetString("Sched_AlreadyActive", resourceCulture);
+        public static string Sched_TaskNotFound => ResourceManager.GetString("Sched_TaskNotFound", resourceCulture);
+        public static string Sched_Completed => ResourceManager.GetString("Sched_Completed", resourceCulture);
+        public static string Sched_ScheduleFinished => ResourceManager.GetString("Sched_ScheduleFinished", resourceCulture);
         
         private static global::System.Resources.ResourceManager resourceMan;
         

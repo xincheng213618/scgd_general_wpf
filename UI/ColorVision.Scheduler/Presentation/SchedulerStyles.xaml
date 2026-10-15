@@ -6,6 +6,7 @@
     </ResourceDictionary.MergedDictionaries>
     <local:SchedulerDisplayConverter x:Key="SchedulerDisplay"/>
     <local:SchedulerScheduleSummaryConverter x:Key="SchedulerScheduleSummary"/>
+    <local:SchedulerPrimaryActionConverter x:Key="SchedulerPrimaryActionDisplay"/>
     <Style TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource CV.Text.Primary}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
