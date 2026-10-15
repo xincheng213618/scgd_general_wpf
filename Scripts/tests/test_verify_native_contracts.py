@@ -15,6 +15,7 @@ from Scripts.verify_native_contracts import (
     read_pe_exports,
     validate_cuda_export_sets,
     validate_cuda_native_export_build,
+    validate_cuda_package_binding,
     validate_cuda_source_contracts,
     validate_native_contracts,
 )
@@ -37,6 +38,35 @@ class PeExportReaderTests(unittest.TestCase):
 
 
 class SourceContractTests(unittest.TestCase):
+    def test_cuda_package_binding_requires_release_x64_sources(self) -> None:
+        source = (REPO_ROOT / "UI/ColorVision.Core/ColorVision.Core.csproj").read_text(encoding="utf-8-sig")
+        validate_cuda_package_binding(REPO_ROOT / "UI/ColorVision.Core/ColorVision.Core.csproj")
+        mutations = (
+            (
+                "solution-source",
+                "$(SolutionDir)x64\\Release\\opencv_cuda.dll",
+                "$(SolutionDir)x64\\Debug\\opencv_cuda.dll",
+            ),
+            (
+                "tracked-fallback",
+                "<OpenCvCudaBinary Condition=\"'$(OpenCvCudaBinary)' == ''\">"
+                "..\\..\\x64\\Release\\opencv_cuda.dll</OpenCvCudaBinary>",
+                "",
+            ),
+            (
+                "optional-item",
+                '<Content Include="$(OpenCvCudaBinary)"',
+                '<Content Condition="Exists(\'$(OpenCvCudaBinary)\')" Include="$(OpenCvCudaBinary)"',
+            ),
+        )
+        for name, original, replacement in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix="cuda-package-binding-") as directory:
+                self.assertEqual(1, source.count(original))
+                project = Path(directory) / "ColorVision.Core.csproj"
+                project.write_text(source.replace(original, replacement, 1), encoding="utf-8")
+                with self.assertRaises(NativeContractError):
+                    validate_cuda_package_binding(project)
+
     def test_header_and_managed_parsers_report_declared_entry_points(self) -> None:
         header = read_header_exports((REPO_ROOT / "Native/include/cuda_export.h").read_text(encoding="utf-8-sig"))
         managed = read_managed_dllimports((REPO_ROOT / "UI/ColorVision.Core/OpenCVCuda.cs").read_text(encoding="utf-8-sig"))
@@ -341,12 +371,24 @@ class StaticAbiMutationTests(unittest.TestCase):
     def test_rejects_managed_return_and_parameter_mutation(self) -> None:
         mutated = self._replace_once(
             self.managed,
-            "private static extern int CM_FusionNative(string fusionjson, out HImage hImage);",
-            "private static extern void CM_FusionNative(string fusionjson, ref HImage hImage);",
+            "private static extern int CM_FusionNative([MarshalAs(UnmanagedType.LPUTF8Str)] string fusionjson, out HImage hImage);",
+            "private static extern void CM_FusionNative([MarshalAs(UnmanagedType.LPUTF8Str)] string fusionjson, ref HImage hImage);",
         )
 
         with self.assertRaisesRegex(NativeContractError, "DllImport signature drift"):
             self._validate(managed=mutated)
+
+    def test_rejects_cuda_string_marshalling_drift(self) -> None:
+        original = "CM_FusionNative([MarshalAs(UnmanagedType.LPUTF8Str)] string fusionjson, out HImage hImage);"
+        for attribute in ("", "[MarshalAs(UnmanagedType.LPStr)] ", "[MarshalAs(UnmanagedType.LPWStr)] "):
+            with self.subTest(attribute=attribute):
+                mutated = self._replace_once(
+                    self.managed,
+                    original,
+                    f"CM_FusionNative({attribute}string fusionjson, out HImage hImage);",
+                )
+                with self.assertRaisesRegex(NativeContractError, "DllImport signature drift"):
+                    self._validate(managed=mutated)
 
     def test_rejects_open_cv_cuda_library_name_mutation(self) -> None:
         mutated = self._replace_once(
@@ -783,7 +825,7 @@ class StaticAbiMutationTests(unittest.TestCase):
         managed_declaration = (
             '[DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.Cdecl, '
             'CharSet = CharSet.Ansi)]\n'
-            '        private static extern int CM_FusionNative(string fusionjson, out HImage hImage);'
+            '        private static extern int CM_FusionNative([MarshalAs(UnmanagedType.LPUTF8Str)] string fusionjson, out HImage hImage);'
         )
         managed_mutation = self._replace_once(
             self.managed,

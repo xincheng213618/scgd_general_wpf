@@ -134,26 +134,35 @@ EXPECTED_MANAGED_IMPORTS = {
         "M_Fusion",
         "int",
         "cdecl",
-        (AbiParameter("string", "fusionjson"), AbiParameter("HImage", "hImage", "out")),
+        (
+            AbiParameter("string", "fusionjson", attributes=("MarshalAs(UnmanagedType.LPUTF8Str)",)),
+            AbiParameter("HImage", "hImage", "out"),
+        ),
     ),
     "CM_Fusion": AbiFunction(
         "CM_Fusion",
         "int",
         "cdecl",
-        (AbiParameter("string", "fusionjson"), AbiParameter("HImage", "hImage", "out")),
+        (
+            AbiParameter("string", "fusionjson", attributes=("MarshalAs(UnmanagedType.LPUTF8Str)",)),
+            AbiParameter("HImage", "hImage", "out"),
+        ),
     ),
     "CM_Fusion_Async": AbiFunction(
         "CM_Fusion_Async",
         "int",
         "cdecl",
-        (AbiParameter("string", "fusionjson"), AbiParameter("HImage", "hImage", "out")),
+        (
+            AbiParameter("string", "fusionjson", attributes=("MarshalAs(UnmanagedType.LPUTF8Str)",)),
+            AbiParameter("HImage", "hImage", "out"),
+        ),
     ),
     "CM_Fusion_Batch": AbiFunction(
         "CM_Fusion_Batch",
         "int",
         "cdecl",
         (
-            AbiParameter("string", "batchjson"),
+            AbiParameter("string", "batchjson", attributes=("MarshalAs(UnmanagedType.LPUTF8Str)",)),
             AbiParameter("HImage[]", "outImages", attributes=("Out",)),
             AbiParameter("int", "outCapacity"),
             AbiParameter("int", "outCount", "out"),
@@ -843,7 +852,7 @@ def read_managed_import_contract(source: str) -> tuple[str, dict[str, AbiFunctio
         r"private\s+static\s+extern\s+"
         r"(?P<return>[A-Za-z_]\w*(?:\[\])?)\s+"
         r"(?P<method>[A-Za-z_]\w*)\s*"
-        r"\((?P<parameters>[^;()]*)\)\s*;",
+        r"\((?P<parameters>(?:\[[^\[\];]*\]|[^;()\[\]])*)\)\s*;",
         code,
         flags=re.DOTALL,
     ))
@@ -1320,7 +1329,7 @@ def validate_cuda_package_binding(project_path: Path) -> None:
     matches = []
     for item in root.iter("Content"):
         include = (item.attrib.get("Include") or "").replace("\\", "/").casefold()
-        if include == "../../x64/release/opencv_cuda.dll":
+        if include in {"../../x64/release/opencv_cuda.dll", "$(opencvcudabinary)"}:
             matches.append(item)
     if len(matches) != 1:
         raise NativeContractError(
@@ -1328,6 +1337,28 @@ def validate_cuda_package_binding(project_path: Path) -> None:
         )
 
     item = matches[0]
+    if item.attrib["Include"].casefold() == "$(opencvcudabinary)":
+        selectors = []
+        for group in root.findall("PropertyGroup"):
+            for binding in group.findall("OpenCvCudaBinary"):
+                if group.attrib.get("Condition"):
+                    raise NativeContractError("OpenCvCudaBinary selectors must be in unconditional property groups.")
+                condition = re.sub(r"\s+", "", binding.attrib.get("Condition", "")).replace("\\", "/").casefold()
+                path = (binding.text or "").strip().replace("\\", "/").casefold()
+                selectors.append((condition, path))
+        expected_selectors = [
+            (
+                "'$(solutiondir)'!=''and'$(solutiondir)'!='*undefined*'",
+                "$(solutiondir)x64/release/opencv_cuda.dll",
+            ),
+            (
+                "'$(opencvcudabinary)'==''andexists('../../native/opencv_cuda/x64/release/opencv_cuda.dll')",
+                "../../native/opencv_cuda/x64/release/opencv_cuda.dll",
+            ),
+            ("'$(opencvcudabinary)'==''", "../../x64/release/opencv_cuda.dll"),
+        ]
+        if selectors != expected_selectors or len(list(root.iter("OpenCvCudaBinary"))) != len(selectors):
+            raise NativeContractError("OpenCvCudaBinary must preserve the Release x64 solution, local and tracked DLL selectors.")
     if (item.attrib.get("Condition") or "").strip():
         raise NativeContractError("opencv_cuda.dll packaging must not be conditional; omission must fail the build.")
     metadata = {child.tag: (child.text or "").strip() for child in item}
