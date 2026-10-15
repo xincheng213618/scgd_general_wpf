@@ -105,7 +105,17 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public MQTTSMU DService { get; set; }
 
         private readonly Lazy<ViewSMU> _view;
-        public ViewSMU View => _view.Value;
+        internal ViewSMU ViewShell => Application.Current.Dispatcher.CheckAccess()
+            ? _view.Value : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        public ViewSMU View
+        {
+            get
+            {
+                ViewSMU view = ViewShell;
+                view.EnsureInitialized();
+                return view;
+            }
+        }
         public DisplaySMUConfig DisplayConfig { get; }
 
         public DeviceSMU(SysResourceModel sysResourceModel) : this(sysResourceModel, new LocalSmuSession()) { }
@@ -114,9 +124,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             LocalSession = session;
             DisplayConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplaySMUConfig>(Config.Code);
-            _view = new Lazy<ViewSMU>(() => Application.Current.Dispatcher.CheckAccess()
-                ? new ViewSMU()
-                : Application.Current.Dispatcher.Invoke(() => new ViewSMU()));
+            _view = new Lazy<ViewSMU>(() => new ViewSMU(deferInitialization: true));
             InitializeLocalSmu();
             DService = new MQTTSMU(this);
             DService.RefreshBackendStatus();

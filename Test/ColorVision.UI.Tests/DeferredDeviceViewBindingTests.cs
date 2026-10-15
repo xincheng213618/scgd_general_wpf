@@ -8,9 +8,12 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Themes;
+using ColorVision.UI.Views;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
@@ -29,6 +32,7 @@ public sealed class DeferredDeviceViewBindingTests
     [InlineData("spectrum")]
     [InlineData("algorithm")]
     [InlineData("calibration")]
+    [InlineData("smu")]
     public void DeferredViewUsesItsOwnConfigurationFromFirstBindingEvaluation(string kind)
     {
         WpfTestHost.Invoke(() =>
@@ -53,6 +57,7 @@ public sealed class DeferredDeviceViewBindingTests
                     "spectrum" => new DeviceSpectrum(resource),
                     "algorithm" => new DeviceAlgorithm(resource),
                     "calibration" => new DeviceCalibration(resource),
+                    "smu" => new DeviceSMU(resource),
                     _ => throw new ArgumentException(kind)
                 };
                 UserControl view = device switch
@@ -61,9 +66,11 @@ public sealed class DeferredDeviceViewBindingTests
                     DeviceSpectrum spectrum => new ViewSpectrum(spectrum, true),
                     DeviceAlgorithm algorithm => new AlgorithmView(algorithm, true),
                     DeviceCalibration calibration => new ViewCalibration(calibration, true),
+                    DeviceSMU => new ViewSMU(deferInitialization: true),
                     _ => throw new ArgumentException(kind)
                 };
-                using IDisposable lifetime = (IDisposable)view;
+                using IDisposable? lifetime = view as IDisposable;
+                view.Visibility = Visibility.Collapsed;
                 Grid host = new();
                 window = new Window
                 {
@@ -78,6 +85,9 @@ public sealed class DeferredDeviceViewBindingTests
                 Assert.Null(view.Content);
 
                 PumpBindings();
+                Assert.Null(view.Content);
+                view.Visibility = Visibility.Visible;
+                PumpBindings();
                 Assert.NotNull(view.Content);
                 Assert.Empty(errors.Messages);
 
@@ -87,6 +97,7 @@ public sealed class DeferredDeviceViewBindingTests
                     "spectrum" => ViewSpectrum.Config,
                     "algorithm" => ((AlgorithmView)view).Config,
                     "calibration" => ViewCalibration.Config,
+                    "smu" => ViewSMUConfig.Instance,
                     _ => throw new ArgumentException(kind)
                 };
                 Assert.Same(kind == "spectrum" ? view : config, view.DataContext);
@@ -100,7 +111,7 @@ public sealed class DeferredDeviceViewBindingTests
 
                 Button settings = Descendants(view).OfType<Button>().Single(button => ReferenceEquals(button.Command, config.EditCommand));
                 Assert.NotNull(settings.Command);
-                if (kind != "spectrum")
+                if (kind is not ("spectrum" or "smu"))
                 {
                     ToggleButton toggle = Descendants(view).OfType<ToggleButton>().Single(button =>
                         BindingOperations.GetBinding(button, ToggleButton.IsCheckedProperty)?.Path.Path == "IsShowListView");
@@ -116,11 +127,76 @@ public sealed class DeferredDeviceViewBindingTests
                 PumpBindings();
                 Assert.Empty(errors.Messages);
                 Assert.Same(config.EditCommand, settings.Command);
+                object content = view.Content;
+                view.Visibility = Visibility.Collapsed;
+                PumpBindings();
+                view.Visibility = Visibility.Visible;
+                PumpBindings();
+                Assert.Same(content, view.Content);
                 host.Children.Clear();
             }
             finally
             {
                 if (window != null) { window.Content = null; window.Close(); }
+                foreach (ResourceDictionary dictionary in dictionaries)
+                    Application.Current.Resources.MergedDictionaries.Remove(dictionary);
+                ConfigService.SetInstance(previousConfig);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SmuPanelKeepsChartsDeferredUntilExplicitAccessOrFirstResult(bool accessPublicView)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            IConfigService previousConfig = ConfigService.Instance;
+            List<ResourceDictionary> dictionaries = [];
+            ViewSMU? view = null;
+            try
+            {
+                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
+                {
+                    ResourceDictionary dictionary = new() { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
+                    dictionaries.Add(dictionary);
+                    Application.Current.Resources.MergedDictionaries.Add(dictionary);
+                }
+
+                using DeviceSMU device = new(new SysResourceModel
+                {
+                    Id = -2, Code = $"deferred-smu-{Guid.NewGuid():N}", Name = "Offline deferred SMU test", Value = "{}"
+                });
+                Assert.NotNull(device.GetDisplayControl());
+                view = device.ViewShell;
+                Assert.Null(view.Content);
+                Assert.Null(view.FindName("wpfplot1"));
+                Assert.Null(view.FindName("wpfplot2"));
+
+                if (accessPublicView)
+                {
+                    Assert.Same(view, device.View);
+                    Assert.NotNull(view.Content);
+                }
+
+                ViewResultSMU result = new(MeasurementType.Voltage, 2, [1d, 2d], [0.1d, 0.2d]);
+                view.AddViewResultSMU(result);
+                Assert.NotNull(view.Content);
+                Assert.NotNull(view.FindName("wpfplot1"));
+                Assert.NotNull(view.FindName("wpfplot2"));
+                Assert.Same(result, Assert.Single(view.ViewResults));
+                ListView list = Assert.IsType<ListView>(view.FindName("listView1"));
+                Assert.Same(result, list.SelectedItem);
+                object content = view.Content;
+                Assert.Same(view, device.View);
+                Assert.Same(content, view.Content);
+                Assert.Same(result, Assert.Single(view.ViewResults));
+            }
+            finally
+            {
+                if (view != null) DockViewManager.GetInstance().RemoveView(view);
                 foreach (ResourceDictionary dictionary in dictionaries)
                     Application.Current.Resources.MergedDictionaries.Remove(dictionary);
                 ConfigService.SetInstance(previousConfig);

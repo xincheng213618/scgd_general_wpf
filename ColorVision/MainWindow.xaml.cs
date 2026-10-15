@@ -45,6 +45,7 @@ namespace ColorVision
         private const string OpenDocumentFolderSeparatorUid = "ColorVision.OpenDocumentFolder.Separator";
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
+        private TreeViewControl? _projectPanel;
         public DockViewManager DockViewManager => DockViewManager.GetInstance();
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
@@ -194,7 +195,9 @@ namespace ColorVision
 
             // 初始化停靠面板管理器
             var layoutManager = new DockLayoutManager(DockingManager1);
-            layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
+            // The workspace service remains available to templates and file commands;
+            // only the explorer UI and its saved tree expansion wait for first display.
+            layoutManager.RegisterPanel("ProjectPanel", () => _projectPanel = new TreeViewControl(), Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
 
             var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", LogPanelConfig.Instance);
@@ -217,9 +220,6 @@ namespace ColorVision
 
             // 初始化 DockViewManagerHost，注册 AvalonDock 回调等
             DockViewManagerHost.Initialize();
-
-            // 初始化解决方案项目面板
-            ProjectPanelGrid.Children.Add(new TreeViewControl());
 
             // 初始化显示控件管理器
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);

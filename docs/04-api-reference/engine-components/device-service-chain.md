@@ -107,7 +107,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ### 设备详情视图按需初始化
 
-相机、光谱、算法和校准设备保留完整的真实设备卡片；设备区仍能同时显示多个展开面板，`IsSelected` 继续表示选择和上下文。按需初始化只作用于对应的 `ViewCamera`、`ViewSpectrum`、`AlgorithmView`、`ViewCalibration` 详情内容，不减少 `IDisPlayControls`，也不延迟设备服务或硬件初始化。
+相机、光谱、算法、校准和 SMU 设备保留完整的真实设备卡片；设备区仍能同时显示多个展开面板，`IsSelected` 继续表示选择和上下文。按需初始化只作用于对应的 `ViewCamera`、`ViewSpectrum`、`AlgorithmView`、`ViewCalibration`、`ViewSMU` 详情内容，不减少 `IDisPlayControls`，也不延迟设备服务或硬件初始化。SMU 的设备卡片登记空详情壳，首次可见或结果入口显式访问 `DeviceSMU.View` 后才创建列表及两幅图表。
 
 | 入口 | 详情初始化与兼容契约 |
 | --- | --- |

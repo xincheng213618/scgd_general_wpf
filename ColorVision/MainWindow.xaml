@@ -148,9 +148,7 @@
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup x:Name="LeftPaneGroup" DockWidth="303">
                         <xcad:LayoutAnchorablePane x:Name="LeftPane">
-                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.SolutionExplorer}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="ProjectPanel">
-                                <Grid x:Name="ProjectPanelGrid" />
-                            </xcad:LayoutAnchorable>
+                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.SolutionExplorer}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="ProjectPanel" />
                             <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="AcquirePanel">
                                 <ui:DisPlayControlPanel x:Name="ScrollViewerDisplay"
                                                        Background="{DynamicResource GlobalBackground}"
