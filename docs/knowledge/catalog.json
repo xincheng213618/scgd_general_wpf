@@ -6558,6 +6558,8 @@
         "自动聚焦模板",
         "相机联动",
         "BV/LV本地转发",
+        "CV本地转发",
+        "CVCameraNode",
         "LVCameraNode",
         "使用本地相机",
         "本地相机优先",
@@ -6599,8 +6601,9 @@
         "HikCaptureBenchmark"
       ],
       "code_paths": [
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraFlowExecution.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/LVCameraNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/CVCameraNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs",
@@ -9348,9 +9351,7 @@
         "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs",
         "UI/ColorVision.SocketProtocol/SocketConfig.cs"
       ],
-      "test_paths": [
-        "Test/ProjectARVRPro.Tests/ExternalImageSwitchTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "projects.arvr-pro",
         "projects.arvr-pro-processes",
