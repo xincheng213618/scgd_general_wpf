@@ -16,6 +16,10 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetImageBpp", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetImageBpp(IntPtr handle, int nBpp);
 
+        // This legacy export returns BOOL (1/0), or a negative error for an invalid handle.
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetPortComParam", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_SetPortComParam(IntPtr handle, [MarshalAs(UnmanagedType.Bool)] bool enabled, string port, uint baudRate);
+
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetIndent", CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_SetIndent(IntPtr handle, int nL, int nT, int nR, int nB);
 

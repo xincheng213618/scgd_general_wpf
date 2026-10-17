@@ -8,17 +8,19 @@ using System.Linq;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.FileIO;
 using System.Diagnostics;
+using cvColorVision;
+using FlowEngineLib.Algorithm;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
-internal interface ILocalLvCameraServices
+internal interface ILocalCameraFlowServices
 {
     LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request);
     MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture);
     void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MeasureResultImgModel model);
 }
 
-internal sealed class LocalLvCameraServices : ILocalLvCameraServices
+internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
 {
     public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
     {
@@ -36,11 +38,11 @@ internal sealed class LocalLvCameraServices : ILocalLvCameraServices
     }
 }
 
-internal sealed class LocalLvCameraExecution : FlowLocalExecution
+internal sealed class LocalCameraFlowExecution : FlowLocalExecution
 {
     private readonly DeviceCamera device;
     private readonly LocalCameraCaptureRequest captureRequest;
-    private readonly ILocalLvCameraServices services;
+    private readonly ILocalCameraFlowServices services;
     private readonly string serialNumber;
     private readonly string nodeId;
     private readonly int zIndex;
@@ -57,17 +59,17 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
     {
         DeviceCamera? device = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
             .FirstOrDefault(camera => string.Equals(camera.Code, request.DeviceCode, StringComparison.Ordinal));
-        return CreateForDevice(device, request, new LocalLvCameraServices(), saveMode);
+        return CreateForDevice(device, request, new LocalCameraFlowServices(), saveMode);
     }
 
-    internal static FlowLocalExecution? CreateForDevice(DeviceCamera? device, CVMQTTRequest request, ILocalLvCameraServices services, CVFileSaveMode saveMode)
+    internal static FlowLocalExecution? CreateForDevice(DeviceCamera? device, CVMQTTRequest request, ILocalCameraFlowServices services, CVFileSaveMode saveMode)
     {
         if (device == null || !device.CameraBackend.OpensLocally) return null;
         // Reuse the current owner, or select the next-open preference when closed; keep this request on that backend.
-        return new LocalLvCameraExecution(device, request, services, saveMode);
+        return new LocalCameraFlowExecution(device, request, services, saveMode);
     }
 
-    private LocalLvCameraExecution(DeviceCamera device, CVMQTTRequest request, ILocalLvCameraServices services, CVFileSaveMode saveMode)
+    private LocalCameraFlowExecution(DeviceCamera device, CVMQTTRequest request, ILocalCameraFlowServices services, CVFileSaveMode saveMode)
     {
         this.device = device;
         this.services = services;
@@ -76,15 +78,24 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
         nodeId = request.DeviceNodeCode;
         zIndex = request.ZIndex;
         if (request.EventName != "GetData" || request.Data is not CameraData parameters)
-            throw new InvalidOperationException("本地 L/BV 相机请求格式无效。");
+            throw new InvalidOperationException("本地相机请求格式无效。");
         captureRequest = BuildCaptureRequest(device, parameters);
         device.CameraBackend.BeginLocalCommand();
     }
 
     internal static LocalCameraCaptureRequest BuildCaptureRequest(DeviceCamera device, CameraData parameters)
     {
-        if (parameters.ExpTime == null || parameters.ExpTime.Length != 1 || !float.IsFinite(parameters.ExpTime[0]) || parameters.ExpTime[0] <= 0)
-            throw new InvalidOperationException("L/BV 相机曝光时间必须为一个大于 0 的有限值。");
+        bool isCv = parameters is CVCameraData;
+        int exposureCount = isCv ? 3 : 1;
+        if (parameters.ExpTime == null || parameters.ExpTime.Length != exposureCount || parameters.ExpTime.Any(value => !float.IsFinite(value) || value <= 0))
+            throw new InvalidOperationException(isCv ? "CV 相机 R/G/B 曝光时间必须为三个大于 0 的有限值。" : "L/BV 相机曝光时间必须为一个大于 0 的有限值。");
+        if (parameters is CVCameraData cv)
+        {
+            if (device.Config.CameraMode != CameraMode.CV_MODE || device.Config.Channel != ImageChannel.Three)
+                throw new InvalidOperationException("本地 CV 相机节点需要配置为 CV 模式的三通道相机。");
+            if (cv.CV2LVChannel != (int)CV2LVChannelMode.None)
+                throw new NotSupportedException("本地 CV 相机节点暂不支持 CV2LV 单通道模式，请将 CV2LVChannel 设置为 None。");
+        }
         if (!float.IsFinite(parameters.Gain) || parameters.Gain < 0 || parameters.AvgCount < 1)
             throw new InvalidOperationException("增益必须为非负有限值，平均次数至少为 1。");
         LocalFrameMirrorService.ValidateFlipMode(parameters.FlipMode);
@@ -94,9 +105,15 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
                 ?? throw new InvalidOperationException($"找不到校正模板：{calibrationName}");
         CameraRunParam cameraParameters = new() { Gain = parameters.Gain, AvgCount = parameters.AvgCount };
         cameraParameters.SetAllExposure(parameters.ExpTime[0]);
+        if (isCv)
+        {
+            cameraParameters.ExpTimeR = parameters.ExpTime[0];
+            cameraParameters.ExpTimeG = parameters.ExpTime[1];
+            cameraParameters.ExpTimeB = parameters.ExpTime[2];
+        }
         if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
             cameraParameters.Gain = calibrationGain;
-        // POI, Filter and Revise are deliberately not resolved or executed for local L/BV forwarding.
+        // POI, Filter and Revise are deliberately not resolved or executed for local camera forwarding.
         return new LocalCameraCaptureRequest
         {
             Device = device, CameraParameters = cameraParameters, Calibration = calibration,

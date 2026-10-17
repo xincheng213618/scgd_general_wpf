@@ -59,6 +59,12 @@ public class NativeCameraErrorTests
     }
 
     [Fact]
+    public void FilterWheelSerialEntryPointPreservesInvalidHandleErrorInsteadOfMarshallingItAsTrue()
+    {
+        Assert.Equal(-10000, cvCameraCSLib.CM_SetPortComParam(IntPtr.Zero, false, string.Empty, 9600));
+    }
+
+    [Fact]
     public void CameraIdMismatchAndDeviceOpenFailureHaveDistinctMessages()
     {
         Assert.Contains("ID does not match", GetMessage(-10007));

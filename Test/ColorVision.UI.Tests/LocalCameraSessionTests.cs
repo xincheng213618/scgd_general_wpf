@@ -19,6 +19,73 @@ namespace ColorVision.UI.Tests;
 public class LocalCameraSessionTests
 {
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SerialFilterWheelUsesPhysicalSettingsAndFallsBackToLogicalSettings(bool physical)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = CameraMode.CV_MODE };
+        CFWPORT settings = new() { IsUseCFW = true, IsCOM = true, SzComName = " com7 ", BaudRate = 9600 };
+        if (physical)
+        {
+            var camera = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+            camera.Config = new ConfigPhyCamera { CFW = settings };
+            device.PhyCamera = camera;
+        }
+        else device.Config.CFW = settings;
+        var calls = new List<(bool Enabled, string Port, uint BaudRate)>();
+
+        LocalCameraNative.ConfigureFilterWheel(device, (enabled, port, baudRate) => { calls.Add((enabled, port, baudRate)); return 1; });
+        settings.SzComName = "COM8";
+        settings.BaudRate = 115200;
+        LocalCameraNative.ConfigureFilterWheel(device, (enabled, port, baudRate) => { calls.Add((enabled, port, baudRate)); return 1; });
+
+        Assert.Equal(new[] { (true, "COM7", 9600u), (true, "COM8", 115200u) }, calls);
+    }
+
+    [Theory]
+    [InlineData(CameraMode.CV_MODE, false, true)]
+    [InlineData(CameraMode.CV_MODE, true, false)]
+    [InlineData(CameraMode.BV_MODE, true, true)]
+    public void NonSerialConnectionsClearRetainedSerialControl(CameraMode mode, bool useFilterWheel, bool serial)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = mode, CFW = new CFWPORT { IsUseCFW = useFilterWheel, IsCOM = serial, SzComName = "invalid", BaudRate = -1 } };
+        int calls = 0;
+        LocalCameraNative.ConfigureFilterWheel(device, (enabled, port, baudRate) =>
+        {
+            Assert.False(enabled);
+            Assert.Equal(string.Empty, port);
+            Assert.Equal(9600u, baudRate);
+            calls++;
+            return 1;
+        });
+        Assert.Equal(1, calls);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10000)]
+    public void FilterWheelConfigurationFailureDoesNotContinueAsSuccess(int result)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, CFW = new CFWPORT { IsUseCFW = true, IsCOM = true, SzComName = "COM7" } };
+        var error = Assert.Throws<InvalidOperationException>(() => LocalCameraNative.ConfigureFilterWheel(device, (_, _, _) => result));
+        Assert.Contains("COM7", error.Message);
+        Assert.Contains($"CM_SetPortComParam 返回 {result}", error.Message);
+    }
+
+    [Theory]
+    [InlineData("COM0", 9600)]
+    [InlineData("COM7", 0)]
+    public void InvalidSerialFilterWheelSettingsAreRejectedBeforeCallingNativeCode(string port, int baudRate)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, CFW = new CFWPORT { IsUseCFW = true, IsCOM = true, SzComName = port, BaudRate = baudRate } };
+        Assert.Throws<InvalidOperationException>(() => LocalCameraNative.ConfigureFilterWheel(device, (_, _, _) => throw new Xunit.Sdk.XunitException("Native code must not be called.")));
+    }
+
+    [Theory]
     [InlineData("bound-id", null, 0)]
     [InlineData("bound-id", "", 0)]
     [InlineData("stale-physical-id", "bound-id", 0)]

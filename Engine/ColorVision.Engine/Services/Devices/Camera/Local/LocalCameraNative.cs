@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -57,9 +58,47 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             cameraConfig["hikOutputBgr"] = hikOutputBgr;
             result = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Camera, cameraConfig.ToString());
             if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_UpdateCfgJson", cameraId, result);
-            result = cvCameraCSLib.CM_Open(handle);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_Open", cameraId, result, GetCameraIds);
-            return result;
+            try
+            {
+                ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
+                result = cvCameraCSLib.CM_Open(handle);
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_Open", cameraId, result, GetCameraIds);
+                return result;
+            }
+            catch (Exception error)
+            {
+                if (!IsOpen(handle))
+                {
+                    try { ReleaseFilterWheel(handle); }
+                    catch (Exception cleanup) { throw new AggregateException(error, cleanup); }
+                }
+                throw;
+            }
+        }
+
+        internal static void ConfigureFilterWheel(DeviceCamera device, Func<bool, string, uint, int> configurePort)
+        {
+            var filterWheel = device.PhyCamera?.Config.CFW ?? device.Config.CFW;
+            bool enabled = device.Config.CameraMode == CameraMode.CV_MODE && filterWheel.IsUseCFW && filterWheel.IsCOM;
+            string port = enabled ? filterWheel.SzComName?.Trim().ToUpperInvariant() ?? string.Empty : string.Empty;
+            uint baudRate = 9600;
+            if (enabled)
+            {
+                if (!Regex.IsMatch(port, @"^COM[1-9][0-9]*$") || !int.TryParse(port.AsSpan(3), out _) || filterWheel.BaudRate <= 0)
+                    throw new InvalidOperationException("本地相机滤光轮串口配置无效，请检查 COM 端口和波特率。");
+                baudRate = (uint)filterWheel.BaudRate;
+            }
+            // A retained manager may still have serial control enabled from its previous connection.
+            int result = configurePort(enabled, port, baudRate);
+            if (result != 1)
+                throw new InvalidOperationException($"配置本地相机滤光轮失败：{port}，{baudRate}（CM_SetPortComParam 返回 {result}）。");
+        }
+
+        private static void ReleaseFilterWheel(IntPtr handle)
+        {
+            int result = cvCameraCSLib.CM_SetPortComParam(handle, false, string.Empty, 9600);
+            if (result != 1)
+                throw new InvalidOperationException($"释放本地相机滤光轮串口失败（CM_SetPortComParam 返回 {result}）。");
         }
 
         internal static InvalidOperationException CreateOpenException(string operation, string cameraId, int errorCode, Func<IReadOnlyList<string>>? discover = null)
@@ -86,8 +125,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
         public void Close(IntPtr handle)
         {
-            int result = cvCameraCSLib.CM_Close(handle);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("关闭本地相机失败", result);
+            if (IsOpen(handle))
+            {
+                int result = cvCameraCSLib.CM_Close(handle);
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("关闭本地相机失败", result);
+            }
+            ReleaseFilterWheel(handle);
         }
         public void DetachCallback(IntPtr handle)
         {
