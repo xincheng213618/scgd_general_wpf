@@ -19,7 +19,9 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 ## 绑定与交付前提
 
-当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL 及配置，不在本工程编译这些 native 实现。部分输入显式指定 `runtimes/win-x64/native` 包路径，其他设备 DLL 和配置按各自的 Pack/Copy 元数据处理，不能假设所有资产都位于同一目录。除 `cvCamera.dll` 外，CommLibrary、OpenCV 和设备 SDK 相关 DLL 也在清单中；具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
+当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL，不在本工程编译这些 native 实现。全部 21 个 DLL 的工程链接、构建/发布输出和 NuGet 包路径统一为 `runtimes/win-x64/native/`，包含 `cvCamera.dll`、CommLibrary、OpenCV 及相机和光谱仪 SDK 的间接依赖。供应商原始输入继续保存在 `DLL/scgd_internal_dll/`。主程序与 PluginKit 的共享文件清单使用相同相对路径，安装工程也须从该目录取文件并安装到对应目录。具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
+
+`CameraNativeLibrary` 为本程序集的所有 `cvCamera.dll` P/Invoke 注册统一解析器，在首次调用时优先查找托管程序集旁、其次宿主旁的 `runtimes/win-x64/native/`，再兼容按 RID 发布时平铺到程序集或宿主旁的 native 资产。加载前通过 `SetDllDirectoryW` 将实际目录设为当前进程的 DLL 搜索目录，覆盖 SCGDCamLayer 等旧 SDK 在稍后调用 `LoadLibrary` 按名称加载依赖的行为；这会取代宿主先前设置的单一 DLL 搜索目录，宿主在设备运行期间不得覆盖它。不更改系统或用户 `PATH`，不连接或枚举设备；缺少文件、依赖或架构不匹配仍由加载异常报告。原生 DLL、导出和许可证构建无需随本次目录调整而替换。
 
 电机控制器 `FOCUS_COMMUN` 与原生及已有配置的数值保持一致：`VID_SERIAL=0`、`CANON_SERIAL=1`、`NED_SERIAL=2`、`LONGFOOT_SERIAL=3`、`TSM_SERIAL=4`、`SV6100=5`。`InitCom` / `CM_InitComEx` 的首参对应原生 `HANDLE&`，C# 必须传 `ref IntPtr` 接收独立电机句柄，不能传相机管理器句柄，也不能把整数状态码当句柄。旧调用方需要按此签名重新编译；新增类型需要配套 DLL，选择项存在不证明串口通信已验收。本地相机会话通过 `CM_InitComEx` 创建电机、下发配置，通过 `CM_ShutDown` 释放；托管适配器串行进入原生电机注册表，避免不同相机对未加锁的原生句柄表并发访问。
 

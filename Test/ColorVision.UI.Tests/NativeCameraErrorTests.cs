@@ -14,6 +14,38 @@ namespace ColorVision.UI.Tests;
 public class NativeCameraErrorTests
 {
     [Theory]
+    [InlineData("SCGDCamLayer.dll")]
+    [InlineData("qhyccd.dll")]
+    [InlineData("toupcam.dll")]
+    [InlineData("nncam.dll")]
+    [InlineData("IKapC.dll")]
+    [InlineData("SpectraArsenal.dll")]
+    [InlineData("glaDevSys64.dll")]
+    public void VendorLibrariesResolveByNameFromTheCameraRuntimeDirectory(string name)
+    {
+        // An invalid-handle call loads the binding without initializing or enumerating devices.
+        Assert.False(cvCameraCSLib.CM_IsOpen(IntPtr.Zero));
+        IntPtr module = LoadLibrary(name);
+        Assert.NotEqual(IntPtr.Zero, module);
+        try
+        {
+            var path = new StringBuilder(32768);
+            Assert.NotEqual(0u, GetModuleFileName(module, path, path.Capacity));
+            Assert.Equal(Path.Combine(AppContext.BaseDirectory, "runtimes", "win-x64", "native", name), path.ToString(), StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            NativeLibrary.Free(module);
+        }
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "LoadLibraryW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadLibrary(string name);
+
+    [DllImport("kernel32.dll", EntryPoint = "GetModuleFileNameW", CharSet = CharSet.Unicode)]
+    private static extern uint GetModuleFileName(IntPtr module, StringBuilder path, int size);
+
+    [Theory]
     [InlineData("", "Camera_LocalOpenNoDevices")]
     [InlineData("other-camera", "Camera_LocalOpenIdMismatch")]
     [InlineData("requested-camera", "Camera_LocalOpenDetected")]

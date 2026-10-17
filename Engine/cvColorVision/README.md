@@ -6,6 +6,7 @@ ColorVision 的供应商 native 绑定层，通过 P/Invoke 和薄包装暴露�
 
 - 当前目标为 `net10.0-windows7.0`，原生运行资产提供 Windows x64。框架、包版本、DLL 和配置资源清单以 `cvColorVision.csproj` 为准。
 - 运行需要匹配的 `cvCamera.dll` 及所调用功能的供应商 runtime、驱动和配置；只有主 DLL 或只有托管程序集并不充分。当前内部版不含本地 OLED 接口，不依赖或交付 `cvoled.dll`、`cudart64_12.dll`。项目从 `DLL/scgd_internal_dll/` 复制并打包现成输入，不在这里构建供应商 C++ 实现。
+- 工程中全部供应商 DLL 的链接、构建/发布输出和 NuGet native 资产统一位于 `runtimes/win-x64/native/`。首次调用 `cvCamera.dll` 时，绑定层优先从托管程序集旁的该目录加载，并通过 `SetDllDirectoryW` 设置当前进程的 DLL 搜索目录，使旧 SDK 内部后续按名称调用 `LoadLibrary` 也能找到厂家依赖；不修改系统或用户的 `PATH`。兼容 NuGet 按 RID 发布时将 native 资产平铺到程序集旁的布局。宿主不要在相机运行期间覆盖此进程级搜索目录。
 - `CVCommCore.*` / `MQTTMessageLib.*` 的当前源码类型编入 `cvColorVision.dll`，不会另生成同名 DLL；旧插件若引用独立程序集，仍须保留其匹配依赖，不能通过改名本 DLL 替代。
 - Release 构建会检查高立通 x64 运行依赖是否齐全。托管构建或 NuGet 打包成功不证明设备可用、native ABI 全部兼容或许可证分支已验证。
 - 当前内部版相机创建接口支持空配置路径，直接初始化 native 默认参数；默认交付不含 `cfg/sys.cfg`。显式文件参数仍保留兼容支持，运行时相机和校准参数继续通过 JSON 接口注入，须使用配套更新的 `cvCamera.dll`。
