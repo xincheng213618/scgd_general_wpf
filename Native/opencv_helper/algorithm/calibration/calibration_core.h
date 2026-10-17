@@ -85,8 +85,13 @@ public:
         const ExecutionOptions& options,
         std::string& error) = 0;
 
-    // Optional exact fast path for two adjacent in-place stages. False must
-    // leave RAW untouched so the context can run the original stages normally.
+    // Optional exact fast paths. A requested output flip must be included in
+    // the result; false must leave RAW untouched for the ordinary fallback.
+    virtual bool tryApplyWithFlip(const ImageView&, const ExecutionOptions&) const
+    {
+        return false;
+    }
+
     virtual bool tryApplyWithNext(
         const CalibrationItem&, const ImageView&, const ExecutionOptions&) const
     {

@@ -16,8 +16,13 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
+
+#if defined(_M_X64)
+#include <emmintrin.h>
+#endif
 
 namespace cvcore::calibration {
 namespace {
@@ -874,61 +879,9 @@ public:
             if (!selectMaps(raw, options, selectedGr, selectedGb, error)) {
                 return false;
             }
-            const bool flipRows = options.rawOutputFlip == 0;
-
-            if (!options.interleavedBgr) {
-                if (raw.channels != 3) {
-                    error = "Planar ColorDiff requires ImageView.channels == 3";
-                    return false;
-                }
-                return raw.bitsPerChannel == 8
-                    ? applyPlanar<std::uint8_t>(raw, destination, *selectedGr, *selectedGb, flipRows)
-                    : applyPlanar<std::uint16_t>(raw, destination, *selectedGr, *selectedGb, flipRows);
-            }
-
-            switch (options.rgbType) {
-            case 0:
-                if (raw.channels != 3) {
-                    error = "Combined ColorDiff requires a three-channel BGR image";
-                    return false;
-                }
-                return raw.bitsPerChannel == 8
-                    ? applyInterleaved<std::uint8_t>(raw, destination, *selectedGr, *selectedGb, flipRows)
-                    : applyInterleaved<std::uint16_t>(raw, destination, *selectedGr, *selectedGb, flipRows);
-            case 1:
-            case 2:
-            case 3:
-                if (raw.channels != 1) {
-                    error = "Single-channel ColorDiff requires ImageView.channels == 1";
-                    return false;
-                }
-                if (options.rgbType == 2) {
-                    if (!flipRows) {
-                        std::memcpy(destination.data, raw.data, imageByteCount(raw));
-                        return true;
-                    }
-                    const std::size_t rowBytes = imageByteCount(raw) / raw.height;
-                    cv::parallel_for_(cv::Range(0, raw.height), [&](const cv::Range& range) {
-                        for (int row = range.start; row < range.end; ++row) {
-                            const auto targetRow = raw.height - 1 - row;
-                            std::memcpy(destination.data + targetRow * rowBytes, raw.data + row * rowBytes, rowBytes);
-                        }
-                    });
-                    return true;
-                }
-                return raw.bitsPerChannel == 8
-                    ? applySingle<std::uint8_t>(
-                        raw,
-                        destination,
-                        options.rgbType == 1 ? *selectedGr : *selectedGb, flipRows)
-                    : applySingle<std::uint16_t>(
-                        raw,
-                        destination,
-                        options.rgbType == 1 ? *selectedGr : *selectedGb, flipRows);
-            default:
-                error = "ColorDiff rgbType must be 0 (BGR), 1 (R), 2 (G), or 3 (B)";
-                return false;
-            }
+            return selectedGr->type() == CV_8UC1
+                ? applyTyped<std::uint8_t>(raw, destination, options, *selectedGr, *selectedGb, error)
+                : applyTyped<MapEntry>(raw, destination, options, *selectedGr, *selectedGb, error);
         }
         catch (const cv::Exception& exception) {
             error = "ColorDiff calibration failed: " + std::string(exception.what());
@@ -954,6 +907,105 @@ private:
     }
 
     using MapEntry = cv::Vec<std::uint16_t, 2>;
+
+    // Each nibble stores an exact signed pixel displacement, biased by 8.
+    // Fall back to absolute 16-bit coordinates if either map exceeds [-8, 7].
+    static cv::Mat compactMap(const cv::Mat& source)
+    {
+        cv::Mat compact(source.rows, source.cols, CV_8UC1);
+        for (int row = 0; row < source.rows; ++row) {
+            const auto* input = source.ptr<MapEntry>(row);
+            auto* output = compact.ptr<std::uint8_t>(row);
+            for (int column = 0; column < source.cols; ++column) {
+                const int dx = static_cast<int>(input[column][0]) - column;
+                const int dy = static_cast<int>(input[column][1]) - row;
+                if (dx < -8 || dx > 7 || dy < -8 || dy > 7) return {};
+                output[column] = static_cast<std::uint8_t>((dx + 8) | ((dy + 8) << 4));
+            }
+        }
+        return compact;
+    }
+
+    template<typename Entry>
+    static std::size_t sourcePixel(const Entry& entry, std::size_t pixel, int width)
+    {
+        if constexpr (std::is_same_v<Entry, std::uint8_t>) {
+            const auto dx = static_cast<int>(entry & 15) - 8;
+            const auto dy = static_cast<int>(entry >> 4) - 8;
+            return static_cast<std::size_t>(static_cast<std::ptrdiff_t>(pixel)
+                + static_cast<std::ptrdiff_t>(dy) * width + dx);
+        }
+        else {
+            return static_cast<std::size_t>(entry[1]) * width + entry[0];
+        }
+    }
+
+    template<typename Entry>
+    bool applyTyped(
+        const ImageView& raw,
+        const ImageView& destination,
+        const ExecutionOptions& options,
+        const cv::Mat& mapGr,
+        const cv::Mat& mapGb,
+        std::string& error)
+    {
+        const bool flipRows = options.rawOutputFlip == 0;
+
+        if (!options.interleavedBgr) {
+            if (raw.channels != 3) {
+                error = "Planar ColorDiff requires ImageView.channels == 3";
+                return false;
+            }
+            return raw.bitsPerChannel == 8
+                ? applyPlanar<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipRows)
+                : applyPlanar<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipRows);
+        }
+
+        switch (options.rgbType) {
+        case 0:
+            if (raw.channels != 3) {
+                error = "Combined ColorDiff requires a three-channel BGR image";
+                return false;
+            }
+            return raw.bitsPerChannel == 8
+                ? applyInterleaved<std::uint8_t, Entry>(raw, destination, mapGr, mapGb, flipRows)
+                : applyInterleaved<std::uint16_t, Entry>(raw, destination, mapGr, mapGb, flipRows);
+        case 1:
+        case 2:
+        case 3:
+            if (raw.channels != 1) {
+                error = "Single-channel ColorDiff requires ImageView.channels == 1";
+                return false;
+            }
+            if (options.rgbType == 2) {
+                if (!flipRows) {
+                    std::memcpy(destination.data, raw.data, imageByteCount(raw));
+                    return true;
+                }
+                const std::size_t rowBytes = imageByteCount(raw) / raw.height;
+                cv::parallel_for_(cv::Range(0, raw.height), [&](const cv::Range& range) {
+                    for (int row = range.start; row < range.end; ++row) {
+                        const auto targetRow = raw.height - 1 - row;
+                        std::memcpy(destination.data + targetRow * rowBytes, raw.data + row * rowBytes, rowBytes);
+                    }
+                });
+                return true;
+            }
+            return raw.bitsPerChannel == 8
+                ? applySingle<std::uint8_t, Entry>(
+                    raw,
+                    destination,
+                    options.rgbType == 1 ? mapGr : mapGb, flipRows)
+                : applySingle<std::uint16_t, Entry>(
+                    raw,
+                    destination,
+                    options.rgbType == 1 ? mapGr : mapGb, flipRows);
+        default:
+            error = "ColorDiff rgbType must be 0 (BGR), 1 (R), 2 (G), or 3 (B)";
+            return false;
+        }
+    }
+
 
     void buildMaps(
         int width,
@@ -1006,6 +1058,13 @@ private:
                 }
             }
         });
+        auto compactGr = compactMap(destinationGr);
+        if (compactGr.empty()) return;
+        auto compactGb = compactMap(destinationGb);
+        if (!compactGb.empty()) {
+            destinationGr = std::move(compactGr);
+            destinationGb = std::move(compactGb);
+        }
     }
 
     bool selectMaps(
@@ -1057,7 +1116,7 @@ private:
         return true;
     }
 
-    template<typename Sample>
+    template<typename Sample, typename Entry>
     bool applyInterleaved(
         const ImageView& raw,
         const ImageView& output,
@@ -1065,6 +1124,16 @@ private:
         const cv::Mat& mapGb,
         bool flipRows)
     {
+#if defined(_M_X64)
+        if constexpr (std::is_same_v<Sample, std::uint16_t> && std::is_same_v<Entry, std::uint8_t>) {
+            // Large outputs exceed the useful cache working set. Stream complete
+            // blocks without fetching the old destination pixels into the cache.
+            if (imageByteCount(raw) >= 32ULL * 1024 * 1024
+                && (reinterpret_cast<std::uintptr_t>(output.data) & 1U) == 0) {
+                return applyInterleavedStream16(raw, output, mapGr, mapGb, flipRows);
+            }
+        }
+#endif
         const int width = static_cast<int>(raw.width);
         const int height = static_cast<int>(raw.height);
         const auto* source = reinterpret_cast<const Sample*>(raw.data);
@@ -1072,8 +1141,8 @@ private:
 
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
             for (int row = range.start; row < range.end; ++row) {
-                const auto* gr = mapGr.ptr<MapEntry>(row);
-                const auto* gb = mapGb.ptr<MapEntry>(row);
+                const auto* gr = mapGr.ptr<Entry>(row);
+                const auto* gb = mapGb.ptr<Entry>(row);
                 const bool borderRow = row == 0 || row == height - 1;
                 const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
@@ -1087,9 +1156,9 @@ private:
                     }
 
                     const std::size_t sourceRed =
-                        (static_cast<std::size_t>(gr[column][1]) * width + gr[column][0]) * 3 + 2;
+                        sourcePixel(gr[column], pixel, width) * 3 + 2;
                     const std::size_t sourceBlue =
-                        (static_cast<std::size_t>(gb[column][1]) * width + gb[column][0]) * 3;
+                        sourcePixel(gb[column], pixel, width) * 3;
                     destination[destinationIndex + 2] = source[sourceRed];
                     destination[destinationIndex] = source[sourceBlue];
                 }
@@ -1098,7 +1167,60 @@ private:
         return true;
     }
 
-    template<typename Sample>
+#if defined(_M_X64)
+    bool applyInterleavedStream16(
+        const ImageView& raw,
+        const ImageView& output,
+        const cv::Mat& mapGr,
+        const cv::Mat& mapGb,
+        bool flipRows)
+    {
+        constexpr int blockPixels = 32;
+        const int width = static_cast<int>(raw.width);
+        const int height = static_cast<int>(raw.height);
+        const auto* source = reinterpret_cast<const std::uint16_t*>(raw.data);
+        auto* destination = reinterpret_cast<std::uint16_t*>(output.data);
+        cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
+            alignas(16) std::uint16_t block[blockPixels * 3];
+            for (int row = range.start; row < range.end; ++row) {
+                const auto* gr = mapGr.ptr<std::uint8_t>(row);
+                const auto* gb = mapGb.ptr<std::uint8_t>(row);
+                const auto rowBase = static_cast<std::size_t>(row) * width;
+                const int targetRow = flipRows ? height - 1 - row : row;
+                auto* outputRow = destination + static_cast<std::size_t>(targetRow) * width * 3;
+                const auto writePixel = [&](int column, std::uint16_t* pixel) {
+                    const auto index = rowBase + column;
+                    pixel[1] = source[index * 3 + 1];
+                    if (row == 0 || row == height - 1 || column == 0 || column == width - 1) {
+                        pixel[0] = pixel[2] = 0;
+                        return;
+                    }
+                    pixel[0] = source[sourcePixel(gb[column], index, width) * 3];
+                    pixel[2] = source[sourcePixel(gr[column], index, width) * 3 + 2];
+                };
+                int column = 0;
+                // Keep streamed cache lines separate from scalar heads/tails,
+                // including cache lines shared by two adjacent image rows.
+                for (; column < width && (reinterpret_cast<std::uintptr_t>(outputRow + column * 3) & 63U) != 0; ++column)
+                    writePixel(column, outputRow + column * 3);
+                for (; column + blockPixels <= width; column += blockPixels) {
+                    for (int index = 0; index < blockPixels; ++index)
+                        writePixel(column + index, block + index * 3);
+                    for (int index = 0; index < blockPixels * 3; index += 8) {
+                        _mm_stream_si128(reinterpret_cast<__m128i*>(outputRow + column * 3 + index),
+                            _mm_load_si128(reinterpret_cast<const __m128i*>(block + index)));
+                    }
+                }
+                for (; column < width; ++column) writePixel(column, outputRow + column * 3);
+            }
+            // Fence on every worker before it publishes completion to parallel_for_.
+            _mm_sfence();
+        });
+        return true;
+    }
+#endif
+
+    template<typename Sample, typename Entry>
     bool applySingle(
         const ImageView& raw,
         const ImageView& output,
@@ -1112,7 +1234,7 @@ private:
 
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
             for (int row = range.start; row < range.end; ++row) {
-                const auto* mapRow = map.ptr<MapEntry>(row);
+                const auto* mapRow = map.ptr<Entry>(row);
                 const bool borderRow = row == 0 || row == height - 1;
                 const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
@@ -1123,8 +1245,7 @@ private:
                     }
                     else {
                         const std::size_t sourceIndex =
-                            static_cast<std::size_t>(mapRow[column][1]) * width
-                            + mapRow[column][0];
+                            sourcePixel(mapRow[column], static_cast<std::size_t>(row) * width + column, width);
                         destination[destinationIndex] = source[sourceIndex];
                     }
                 }
@@ -1133,7 +1254,7 @@ private:
         return true;
     }
 
-    template<typename Sample>
+    template<typename Sample, typename Entry>
     bool applyPlanar(
         const ImageView& raw,
         const ImageView& output,
@@ -1149,8 +1270,8 @@ private:
 
         cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {
             for (int row = range.start; row < range.end; ++row) {
-                const auto* gr = mapGr.ptr<MapEntry>(row);
-                const auto* gb = mapGb.ptr<MapEntry>(row);
+                const auto* gr = mapGr.ptr<Entry>(row);
+                const auto* gb = mapGb.ptr<Entry>(row);
                 const bool borderRow = row == 0 || row == height - 1;
                 const int targetRow = flipRows ? height - 1 - row : row;
                 for (int column = 0; column < width; ++column) {
@@ -1164,9 +1285,9 @@ private:
                     }
 
                     const std::size_t sourceRed =
-                        static_cast<std::size_t>(gr[column][1]) * width + gr[column][0];
+                        sourcePixel(gr[column], pixel, width);
                     const std::size_t sourceBlue =
-                        static_cast<std::size_t>(gb[column][1]) * width + gb[column][0];
+                        sourcePixel(gb[column], pixel, width);
                     destination[destinationPixel] = source[sourceRed];
                     destination[pixels * 2 + destinationPixel] = source[pixels * 2 + sourceBlue];
                 }

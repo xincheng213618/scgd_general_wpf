@@ -360,6 +360,11 @@ public:
         return implementation_->applyOutOfPlace(source, destination, options, error);
     }
 
+    bool tryApplyWithFlip(const ImageView& raw, const ExecutionOptions& options) const override
+    {
+        return implementation_->tryApplyWithFlip(raw, options);
+    }
+
     bool tryApplyWithNext(
         const CalibrationItem& next,
         const ImageView& raw,
@@ -981,7 +986,7 @@ bool CalibrationContext::execute(
 
     // Preserve LocalCalibrationCacheManager semantics: every basic item runs
     // in template order; the sole RAW-to-CIE transform always runs last.
-    const bool fusedVerticalFlip = options.rawOutputFlip == 0 && !items_.empty()
+    bool fusedVerticalFlip = options.rawOutputFlip == 0 && !items_.empty()
         && items_.back()->type() == CalibrationType::ColorDiff;
     ExecutionOptions calibrationOptions = options;
     calibrationOptions.rawOutputFlip = -99;
@@ -994,9 +999,17 @@ bool CalibrationContext::execute(
         if (item->isColorTransform()) {
             continue;
         }
+        const bool flipAfterPair = options.rawOutputFlip == 0 && index + 2 == items_.size();
         if (index + 1 < items_.size()
-            && item->tryApplyWithNext(*items_[index + 1], current, calibrationOptions)) {
+            && item->tryApplyWithNext(*items_[index + 1], current,
+                flipAfterPair ? options : calibrationOptions)) {
+            if (flipAfterPair) fusedVerticalFlip = true;
             ++index;
+            continue;
+        }
+        if (options.rawOutputFlip == 0 && index + 1 == items_.size()
+            && item->tryApplyWithFlip(current, options)) {
+            fusedVerticalFlip = true;
             continue;
         }
         std::string error;
