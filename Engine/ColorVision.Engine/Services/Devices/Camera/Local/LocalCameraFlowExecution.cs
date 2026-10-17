@@ -113,7 +113,6 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
         }
         if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
             cameraParameters.Gain = calibrationGain;
-        // POI, Filter and Revise are deliberately not resolved or executed for local camera forwarding.
         return new LocalCameraCaptureRequest
         {
             Device = device, CameraParameters = cameraParameters, Calibration = calibration,

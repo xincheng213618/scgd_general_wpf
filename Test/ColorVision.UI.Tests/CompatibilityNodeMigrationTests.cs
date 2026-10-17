@@ -36,10 +36,55 @@ public sealed class CompatibilityNodeMigrationTests
     });
 
     // These fixtures were saved by the compiled FlowEngineLib nodes before migration.
-    // Retired DataLoad and ImageROI were excluded; the remaining 28 node records retain their original bytes.
+    // Retired nodes are excluded; the remaining 27 node records retain their original bytes.
+    // The synthetic chain connections are reindexed and linked across excluded nodes.
     // They contain synthetic template names/ranges, never user data.
     private static byte[] ReadCanvas() => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "Flow", "EditorNodes.before.stn"));
     private static JArray ReadContracts() => JArray.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "Flow", "EditorNodes.before.json")));
+
+    private static readonly string[] RetiredCameraPoiProperties = ["POITempName", "POIFilterTempName", "POIReviseTempName"];
+
+    [Theory]
+    [InlineData(typeof(FlowEngineLib.Node.Camera.CommCameraNode))]
+    [InlineData(typeof(FlowEngineLib.CVCameraNode))]
+    [InlineData(typeof(FlowEngineLib.LVCameraNode))]
+    public void CameraNodesIgnoreAndDoNotResaveOrSendLegacyPoiTemplates(Type type) => StaTest.Run(() =>
+    {
+        var node = (STNode)Activator.CreateInstance(type)!;
+        node.Create();
+        node.OnLoadNode(RetiredCameraPoiProperties.ToDictionary(key => key, key => Encoding.UTF8.GetBytes("missing-" + key)));
+        foreach (string key in RetiredCameraPoiProperties)
+            Assert.Null(type.GetProperty(key));
+        using var reader = new BinaryReader(new MemoryStream(node.GetSaveData()));
+        reader.ReadBytes(reader.ReadByte()); reader.ReadBytes(reader.ReadByte());
+        var saved = ReadProperties(reader);
+        foreach (string key in RetiredCameraPoiProperties)
+            Assert.DoesNotContain(key, saved.Keys);
+        object request = type.GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(node, [new CVStartCFC("SYNTHETIC-CAMERA-WITHOUT-POI")])!;
+        Assert.Null(JObject.FromObject(request).Property("POIParam"));
+    });
+
+    [Fact]
+    public void PoiNodeAlwaysEnablesCctWaveWhenLoadingAndSavingLegacyFalse() => StaTest.Run(() =>
+    {
+        var node = new FlowEngineLib.POINode();
+        node.Create();
+        node.OnLoadNode(new Dictionary<string, byte[]> { [nameof(node.IsCCTWave)] = Encoding.UTF8.GetBytes("False") });
+        Assert.True(node.IsCCTWave);
+        node.IsCCTWave = false;
+        Assert.True(node.IsCCTWave);
+        PropertyInfo property = typeof(FlowEngineLib.POINode).GetProperty(nameof(node.IsCCTWave))!;
+        Assert.True(property.GetCustomAttribute<ReadOnlyAttribute>()!.IsReadOnly);
+        Assert.True(property.GetCustomAttribute<STNodePropertyAttribute>()!.IsReadOnly);
+        var request = (FlowEngineLib.POIDataParam)typeof(FlowEngineLib.POINode)
+            .GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(node, [new CVStartCFC("SYNTHETIC-POI-CCT-WAVE")])!;
+        Assert.True(request.IsCCTWave);
+        using var reader = new BinaryReader(new MemoryStream(node.GetSaveData()));
+        reader.ReadBytes(reader.ReadByte()); reader.ReadBytes(reader.ReadByte());
+        Assert.Equal(Encoding.UTF8.GetBytes(bool.TrueString), ReadProperties(reader)[nameof(node.IsCCTWave)]);
+    });
 
     [Theory]
     [InlineData(typeof(LocalRealPoiNode), "IN_CIE")]
@@ -81,7 +126,7 @@ public sealed class CompatibilityNodeMigrationTests
         JArray contracts = ReadContracts();
         using var container = new CVNodeContainer();
         container.LoadCanvas(before);
-        Assert.Equal(28, container.Nodes.Count);
+        Assert.Equal(27, container.Nodes.Count);
         var nodes = container.Nodes.Cast<STNode>().ToArray();
         for (int i = 0; i < nodes.Length; i++)
         {
@@ -91,7 +136,10 @@ public sealed class CompatibilityNodeMigrationTests
             Assert.Null(typeof(CVBaseServerNode).Assembly.GetType(type.FullName!));
             var action = new CVStartCFC("SYNTHETIC-EDITOR-MIGRATION");
             object? request = type.GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(nodes[i], [action]);
-            Assert.True(JToken.DeepEquals(contracts[i]["request"], request == null ? JValue.CreateNull() : JToken.FromObject(request)), type.FullName);
+            JToken? expected = contracts[i]["request"]?.DeepClone();
+            if (request is FlowEngineLib.CameraData or FlowEngineLib.Node.Camera.CommCameraData)
+                ((JObject)expected!).Remove("POIParam");
+            Assert.True(JToken.DeepEquals(expected, request == null ? JValue.CreateNull() : JToken.FromObject(request)), type.FullName);
             if (i + 1 < nodes.Length)
                 Assert.Same(nodes[i + 1].GetAllInputOptions()[0], Assert.Single(nodes[i].GetAllOutputOptions()[0].ConnectedOption));
         }
@@ -102,8 +150,8 @@ public sealed class CompatibilityNodeMigrationTests
         editor.LoadCanvas(saved);
         AssertPropertiesAndConnections(saved, editor.GetCanvasData(), editorLayout: true);
         NeutralCanvas neutral = StnV1NeutralCodec.Decode(saved, new());
-        Assert.Equal(28, neutral.Nodes.Count);
-        Assert.Equal(27, neutral.Connections.Count);
+        Assert.Equal(27, neutral.Nodes.Count);
+        Assert.Equal(26, neutral.Connections.Count);
         Assert.All(neutral.Nodes, node => Assert.Equal("FlowEngineLib.dll|" + node.Schema.NodeType.FullName, node.ModelKey));
         container.LoadCanvas(StnV1NeutralCodec.Encode(neutral, new()));
         AssertPropertiesAndConnections(saved, container.GetCanvasData());
@@ -184,10 +232,29 @@ public sealed class CompatibilityNodeMigrationTests
         {
             using var oldNode = new BinaryReader(new MemoryStream(original.Nodes[i]));
             using var newNode = new BinaryReader(new MemoryStream(saved.Nodes[i]));
-            Assert.Equal(Encoding.UTF8.GetString(oldNode.ReadBytes(oldNode.ReadByte())), Encoding.UTF8.GetString(newNode.ReadBytes(newNode.ReadByte())));
+            string modelKey = Encoding.UTF8.GetString(oldNode.ReadBytes(oldNode.ReadByte()));
+            Assert.Equal(modelKey, Encoding.UTF8.GetString(newNode.ReadBytes(newNode.ReadByte())));
             oldNode.ReadBytes(oldNode.ReadByte()); newNode.ReadBytes(newNode.ReadByte());
             var oldProperties = ReadProperties(oldNode);
             var newProperties = ReadProperties(newNode);
+            if (modelKey is "FlowEngineLib.dll|FlowEngineLib.CVCameraNode"
+                or "FlowEngineLib.dll|FlowEngineLib.LVCameraNode"
+                or "FlowEngineLib.dll|FlowEngineLib.Node.Camera.CommCameraNode")
+            {
+                foreach (string key in RetiredCameraPoiProperties)
+                {
+                    oldProperties.Remove(key);
+                    Assert.DoesNotContain(key, newProperties.Keys);
+                }
+            }
+            // Historical CV camera records predate local capture's persisted SaveFiles switch.
+            // Missing values keep the current default and are written on the first save.
+            if (modelKey == "FlowEngineLib.dll|" + typeof(FlowEngineLib.CVCameraNode).FullName
+                && !oldProperties.ContainsKey(nameof(FlowEngineLib.CVCameraNode.SaveFiles)))
+            {
+                Assert.True(newProperties.Remove(nameof(FlowEngineLib.CVCameraNode.SaveFiles), out byte[]? saveFiles));
+                Assert.Equal(Encoding.UTF8.GetBytes(bool.TrueString), saveFiles);
+            }
             Assert.Equal(oldProperties.Keys, newProperties.Keys);
             foreach (var property in oldProperties)
             {

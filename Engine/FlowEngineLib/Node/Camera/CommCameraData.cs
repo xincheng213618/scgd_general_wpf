@@ -14,13 +14,11 @@ public class CommCameraData
 
 	public bool IsHDR { get; set; }
 
-	public POITemplateParam POIParam { get; set; }
-
 	public CVTemplateParam CamParamTemplate { get; set; }
 
 	public CVTemplateParam Calibration { get; set; }
 
-	public CommCameraData(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, string poiTempName, string poiFilterTempName, string poiReviseTempName, string globalVariableName, bool isHDR = false, CVImageFlipMode flipMode = CVImageFlipMode.None)
+	public CommCameraData(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, bool isHDR = false, CVImageFlipMode flipMode = CVImageFlipMode.None)
 	{
 		FlipMode = flipMode;
 		IsAutoExpWithND = isWithND;
@@ -41,9 +39,17 @@ public class CommCameraData
 			ID = -1,
 			Name = caliTempName
 		};
+	}
+}
+
+internal sealed class CommCameraPoiData : CommCameraData
+{
+	public POITemplateParam POIParam { get; set; }
+
+	public CommCameraPoiData(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, string poiTempName, string poiFilterTempName, string poiReviseTempName)
+		: base(camTempName, isWithND, isAutoExpTime, autoExpTempName, caliTempName)
+	{
 		if (!string.IsNullOrEmpty(poiTempName))
-		{
 			POIParam = new POITemplateParam(poiTempName, poiFilterTempName, poiReviseTempName);
-		}
 	}
 }

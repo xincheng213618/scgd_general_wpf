@@ -3,9 +3,9 @@ knowledge_id: "algorithms.poi-template"
 knowledge_type: "reference"
 status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
-aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正"]
-code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs"]
+aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正","POINode","IsCCTWave","色温/波长"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
 
@@ -63,6 +63,8 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 `AlgorithmPoi` 发布 `Event_POI_GetData`，用于按已有点集取值或输出，常带 `TemplateParam`、`FilterTemplate`、`ReviseTemplate`、`OutputTemplate`、`POIStorageType`、`POIPointFileName`、`IsSubPixel`、`IsCCTWave`。`AlgorithmBuildPoi` 发布 `Event_Build_POI`，用于生成点集；CAD Mapping 分支还要带四点多边形和 `CADMappingParam`。
 
 ## Flow 消费
+
+“关注点算法”（`POINode`）的“色温/波长”固定显示 `True` 只读文本，执行请求始终带 `IsCCTWave=true`。旧流程保存的 `false` 不会关闭计算，重新保存时写为 `True`；亚像素等其它选项仍按原配置执行。
 
 Flow 中的常规 POI 模板字段由节点上的 PropertyEditor 类型和 `FlowPropertyEditorRegistry` 绑定；`POINodeConfigurators.cs` 只补充 `BuildPOINode.TemplateName` 的多模板选择：
 

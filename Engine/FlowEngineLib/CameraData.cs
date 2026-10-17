@@ -24,9 +24,7 @@ public class CameraData
 
 	public CVTemplateParam Calibration { get; set; }
 
-	public POITemplateParam POIParam { get; set; }
-
-	public CameraData(CVImageFlipMode flipMode, bool enableFocus, int focus, float aperture, int avgCount, float gain, float[] expTime, string caliTempName, string poiTempName, string poiFilterTempName, string poiReviseTempName, string globalVariableName)
+	public CameraData(CVImageFlipMode flipMode, bool enableFocus, int focus, float aperture, int avgCount, float gain, float[] expTime, string caliTempName)
 	{
 		EnableFocus = enableFocus;
 		Focus = focus;
@@ -35,10 +33,6 @@ public class CameraData
 		AvgCount = avgCount;
 		ExpTime = expTime;
 		FlipMode = flipMode;
-		if (!string.IsNullOrEmpty(poiTempName))
-		{
-			POIParam = new POITemplateParam(poiTempName, poiFilterTempName, poiReviseTempName);
-		}
 		Calibration = new CVTemplateParam
 		{
 			ID = -1,

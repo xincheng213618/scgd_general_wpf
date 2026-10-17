@@ -49,13 +49,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
     public class DisplayCameraConfig : IDisplayConfigBase
     {
         [Category("AcquisitionDisplay"), DisplayName("使用本地相机")]
-        [Description("默认关闭；下次打开相机时生效。修改此项不切换当前会话，取图、自动曝光、电机和关闭始终使用当前已打开的相机后端。")]
+        [Description("默认开启；修改后下次打开相机时生效，当前连接、取图、自动曝光、电机和关闭方式不变。")]
         public bool UseLocalCamera
         {
             get => _useLocalCamera;
             set { if (_useLocalCamera == value) return; _useLocalCamera = value; OnPropertyChanged(); }
         }
-        private bool _useLocalCamera;
+        private bool _useLocalCamera = true;
 
         [Category("AcquisitionDisplay"), LocalizedDisplayName("Camera_UseHikMvs")]
         [LocalizedDescription("Camera_UseHikMvsHint")]

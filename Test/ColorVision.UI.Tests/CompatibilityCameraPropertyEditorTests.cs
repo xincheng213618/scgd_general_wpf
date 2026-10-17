@@ -6,6 +6,7 @@ using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIRevise;
+using ColorVision.UI;
 using FlowEngineLib;
 using System.Collections;
 using System.ComponentModel;
@@ -18,6 +19,22 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CompatibilityCameraPropertyEditorTests
 {
+    [Fact]
+    public void PoiCctWaveDisplaysFixedReadOnlyText() => WpfTestHost.Invoke(() =>
+    {
+        using var resources = new EditorResources();
+        var node = new POINode();
+        node.Create();
+        node.IsCCTWave = false;
+        PropertyInfo property = typeof(POINode).GetProperty(nameof(node.IsCCTWave))!;
+        DockPanel panel = PropertyEditorHelper.GenProperties(property, node);
+        Assert.False(panel.IsEnabled);
+        var textBox = Assert.Single(panel.Children.OfType<TextBox>());
+        textBox.GetBindingExpression(TextBox.TextProperty)!.UpdateTarget();
+        Assert.Equal(bool.TrueString, textBox.Text);
+        Assert.Equal(typeof(TextboxPropertiesEditor), property.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType);
+    });
+
     [Fact]
     public void LightAreaAaEditorUpdatesThePersistedTemplateField() => WpfTestHost.Invoke(() =>
     {
@@ -46,23 +63,24 @@ public sealed class CompatibilityCameraPropertyEditorTests
     });
 
     [Theory]
-    [InlineData(nameof(LVCameraNode.POITempName))]
-    [InlineData(nameof(LVCameraNode.POIFilterTempName))]
-    [InlineData(nameof(LVCameraNode.POIReviseTempName))]
+    [InlineData(nameof(POINode.TempName))]
+    [InlineData(nameof(POINode.FilterTemplateName))]
+    [InlineData(nameof(POINode.ReviseTemplateName))]
     public void DirectPoiEditorsPreserveAndUpdateTheNodeProperty(string propertyName) => WpfTestHost.Invoke(() =>
     {
         using var resources = new EditorResources();
         (IList Templates, TemplateBase Added) data = propertyName switch
         {
-            nameof(LVCameraNode.POITempName) => (TemplatePoi.Params, new TemplateModel<PoiParam>("editor-test-poi", new PoiParam())),
-            nameof(LVCameraNode.POIFilterTempName) => (TemplatePoiFilterParam.Params, new TemplateModel<PoiFilterParam>("editor-test-filter", new PoiFilterParam())),
+            nameof(POINode.TempName) => (TemplatePoi.Params, new TemplateModel<PoiParam>("editor-test-poi", new PoiParam())),
+            nameof(POINode.FilterTemplateName) => (TemplatePoiFilterParam.Params, new TemplateModel<PoiFilterParam>("editor-test-filter", new PoiFilterParam())),
             _ => (TemplatePoiReviseParam.Params, new TemplateModel<PoiReviseParam>("editor-test-revise", new PoiReviseParam()))
         };
         var (templates, added) = data;
         templates.Add(added);
         try
         {
-            var node = new LVCameraNode();
+            var node = new POINode();
+            node.Create();
             PropertyInfo property = node.GetType().GetProperty(propertyName)!;
             var direct = (IPropertyEditor)Activator.CreateInstance(property.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType!)!;
             VerifySelection(direct, node, property, added);
@@ -96,8 +114,10 @@ public sealed class CompatibilityCameraPropertyEditorTests
     public void MultiTemplateEditorDisplaysMissingReferenceAndPersistsOnlyTheName() => WpfTestHost.Invoke(() =>
     {
         using var resources = new EditorResources();
-        var node = new LVCameraNode { POITempName = "unavailable-template" };
-        PropertyInfo property = typeof(LVCameraNode).GetProperty(nameof(node.POITempName))!;
+        var node = new POINode();
+        node.Create();
+        node.TempName = "unavailable-template";
+        PropertyInfo property = typeof(POINode).GetProperty(nameof(node.TempName))!;
         DockPanel panel = FlowNodePropertyEditorRegistration.CreateMultiTemplateEditor(property, node, new TemplatePoi(), new TemplatePoiFilterParam());
         try
         {
@@ -105,12 +125,12 @@ public sealed class CompatibilityCameraPropertyEditorTests
             var combo = Assert.Single(grid.Children.OfType<HandyControl.Controls.ComboBox>());
             var missing = Assert.IsType<TemplateSelectionDisplay.MissingTemplate>(combo.SelectedItem);
             Assert.Equal(missing.Key, combo.Text);
-            Assert.Equal("unavailable-template", node.POITempName);
+            Assert.Equal("unavailable-template", node.TempName);
             Assert.DoesNotContain(TemplatePoi.Params, item => item.Key.Contains("找不到模板", StringComparison.Ordinal));
             combo.SelectedItem = null;
-            Assert.Equal(string.Empty, node.POITempName);
+            Assert.Equal(string.Empty, node.TempName);
             combo.SelectedItem = missing;
-            Assert.Equal("unavailable-template", node.POITempName);
+            Assert.Equal("unavailable-template", node.TempName);
         }
         finally { panel.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
     });
@@ -119,31 +139,33 @@ public sealed class CompatibilityCameraPropertyEditorTests
     public void SupplementalTemplatePanelDisplaysMissingReferenceAndTracksPropertyChanges() => WpfTestHost.Invoke(() =>
     {
         using var resources = new EditorResources();
-        var node = new LVCameraNode { POITempName = "unavailable-template" };
+        var node = new POINode();
+        node.Create();
+        node.TempName = "unavailable-template";
         var template = new TemplateModel<PoiParam>("available-template", new PoiParam());
         var templates = new System.Collections.ObjectModel.ObservableCollection<TemplateModel<PoiParam>> { template };
         var context = new NodeConfiguratorContext { Node = node, SignStackPanel = new StackPanel() };
-        context.AddTemplateCollectionPanel(nameof(node.POITempName), "POI", templates);
+        context.AddTemplateCollectionPanel(nameof(node.TempName), "POI", templates);
         var panel = Assert.IsType<DockPanel>(Assert.Single(context.SignStackPanel.Children));
         var combo = Assert.Single(panel.Children.OfType<HandyControl.Controls.ComboBox>());
         try
         {
-            Assert.Equal("unavailable-template", node.POITempName);
-            Assert.Equal(EngineLocalization.Format($"找不到模板：{node.POITempName}"), combo.Text);
+            Assert.Equal("unavailable-template", node.TempName);
+            Assert.Equal(EngineLocalization.Format($"找不到模板：{node.TempName}"), combo.Text);
             Assert.Single(templates);
             combo.SelectedItem = template;
-            Assert.Equal("available-template", node.POITempName);
+            Assert.Equal("available-template", node.TempName);
             Assert.Null(combo.ToolTip);
-            node.POITempName = "another-missing-template";
-            Assert.Equal(EngineLocalization.Format($"找不到模板：{node.POITempName}"), combo.Text);
+            node.TempName = "another-missing-template";
+            Assert.Equal(EngineLocalization.Format($"找不到模板：{node.TempName}"), combo.Text);
             combo.SelectedItem = null;
-            Assert.Equal(string.Empty, node.POITempName);
+            Assert.Equal(string.Empty, node.TempName);
             Assert.Equal(string.Empty, combo.Text);
         }
         finally { combo.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
     });
 
-    private static void VerifySelection(IPropertyEditor editor, LVCameraNode node, PropertyInfo property, TemplateBase template)
+    private static void VerifySelection(IPropertyEditor editor, POINode node, PropertyInfo property, TemplateBase template)
     {
         property.SetValue(node, "unavailable-template");
         DockPanel panel = editor.GenProperties(property, node);

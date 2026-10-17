@@ -42,11 +42,11 @@ internal class CVCameraLoopNode : CVBaseLoopServerNode<CVCameraNodeProperty>
 
 	protected override object getBaseEventData(CVStartCFC start, CVCameraNodeProperty property)
 	{
-		return new LVCameraData(CVImageFlipMode.None, bool.Parse(property.EnableFocus), int.Parse(property.Focus), float.Parse(property.Aperture), int.Parse(property.AvgCount), float.Parse(property.Gain), new float[3]
+		return new CameraPoiData(CVImageFlipMode.None, bool.Parse(property.EnableFocus), int.Parse(property.Focus), float.Parse(property.Aperture), int.Parse(property.AvgCount), float.Parse(property.Gain), new float[3]
 		{
 			Convert.ToSingle(property.TempR),
 			Convert.ToSingle(property.TempG),
 			Convert.ToSingle(property.TempB)
-		}, property.CaliTempName, property.POITempName, property.POIFilterTempName, property.POIReviseTempName, string.Empty);
+		}, property.CaliTempName, property.POITempName, property.POIFilterTempName, property.POIReviseTempName);
 	}
 }

@@ -78,9 +78,9 @@ public sealed class LvCameraNodeMigrationTests
         Assert.Equal(17, first.Gain);
         Assert.Equal(3, first.AvgCount);
         Assert.Equal("calibration-legacy", first.CaliTempName);
-        Assert.Equal("poi-legacy", first.POITempName);
-        Assert.Equal("filter-legacy", first.POIFilterTempName);
-        Assert.Equal("revise-legacy", first.POIReviseTempName);
+        Assert.Null(typeof(LVCameraNode).GetProperty("POITempName"));
+        Assert.Null(typeof(LVCameraNode).GetProperty("POIFilterTempName"));
+        Assert.Null(typeof(LVCameraNode).GetProperty("POIReviseTempName"));
         Assert.Equal(CVImageFlipMode.Y, first.FlipMode);
         Assert.True(first.SaveFiles);
         Assert.Equal(ColorVision.FileIO.CVFileSaveMode.Synchronous, first.SaveMode);

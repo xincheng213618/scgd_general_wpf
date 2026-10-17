@@ -25,9 +25,6 @@ public class CameraNodeTemplateMappingTests
 
     [Theory]
     [InlineData(nameof(LVCameraNode.CaliTempName), typeof(CalibrationTemplatePropertiesEditor))]
-    [InlineData(nameof(LVCameraNode.POITempName), typeof(PoiTemplatePropertiesEditor))]
-    [InlineData(nameof(LVCameraNode.POIFilterTempName), typeof(PoiFilterTemplatePropertiesEditor))]
-    [InlineData(nameof(LVCameraNode.POIReviseTempName), typeof(PoiReviseTemplatePropertiesEditor))]
     public void EngineCameraPropertiesUseDirectEditors(string propertyName, Type editorType)
     {
         PropertyInfo property = typeof(LVCameraNode).GetProperty(propertyName)!;

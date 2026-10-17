@@ -2071,15 +2071,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 校正+实时POI 的本地化字符串。
-        /// </summary>
-        internal static string 校正2 {
-            get {
-                return ResourceManager.GetString("校正2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 校正ROI 的本地化字符串。
         /// </summary>
         internal static string 校正ROI {

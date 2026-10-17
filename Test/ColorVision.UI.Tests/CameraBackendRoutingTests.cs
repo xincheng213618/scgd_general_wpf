@@ -11,22 +11,27 @@ namespace ColorVision.UI.Tests;
 
 public class CameraBackendRoutingTests
 {
-    [Fact]
-    public void PreferenceDefaultsToServiceAndRoundTrips()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PreferenceDefaultsToLocalAndPreservesExplicitSavedChoice(bool useLocalCamera)
     {
-        Assert.False(JsonConvert.DeserializeObject<DisplayCameraConfig>("{}")!.UseLocalCamera);
-        var restored = JsonConvert.DeserializeObject<DisplayCameraConfig>(JsonConvert.SerializeObject(new DisplayCameraConfig { UseLocalCamera = true }));
-        Assert.True(restored!.UseLocalCamera);
-        var state = new CameraBackendState(false);
+        Assert.True(new DisplayCameraConfig().UseLocalCamera);
+        Assert.True(JsonConvert.DeserializeObject<DisplayCameraConfig>("{}")!.UseLocalCamera);
+        var restored = JsonConvert.DeserializeObject<DisplayCameraConfig>(JsonConvert.SerializeObject(new DisplayCameraConfig { UseLocalCamera = useLocalCamera }));
+        Assert.Equal(useLocalCamera, restored!.UseLocalCamera);
+        var state = new CameraBackendState(restored.UseLocalCamera);
+        Assert.Equal(useLocalCamera, state.OpensLocally);
         state.ObserveService(DeviceStatusType.Opened);
         Assert.False(state.RoutesLocally);
+        Assert.False(state.OpensLocally);
         Assert.Equal(DeviceStatusType.Opened, state.Status);
     }
 
     [Fact]
     public void DisplayPreferenceIsEditableAndNotifiesWithoutOpeningCamera()
     {
-        var config = new DisplayCameraConfig();
+        var config = new DisplayCameraConfig { UseLocalCamera = false };
         var property = TypeDescriptor.GetProperties(config)[nameof(DisplayCameraConfig.UseLocalCamera)]!;
         Assert.True(property.IsBrowsable);
         Assert.False(property.IsReadOnly);
@@ -147,7 +152,7 @@ public class CameraBackendRoutingTests
     }
 
     [Fact]
-    public void ExplicitLocalManagerOwnsRoutingUntilClosedEvenWithDefaultPreference()
+    public void ExplicitLocalManagerOwnsRoutingUntilClosedEvenWithServicePreference()
     {
         var state = new CameraBackendState(false);
         state.BeginLocalOpen();

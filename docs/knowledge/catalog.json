@@ -1380,7 +1380,10 @@
         "ViewHandleRealPOI",
         "POI图标平铺",
         "PoiTemplateManagerWindow",
-        "键盘亮度校正"
+        "键盘亮度校正",
+        "POINode",
+        "IsCCTWave",
+        "色温/波长"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs",
@@ -1390,13 +1393,16 @@
         "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiParam.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs",
-        "Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"
+        "Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs",
         "Test/ColorVision.UI.Tests/PoiPointModelTests.cs",
-        "Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs"
+        "Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs",
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs"
       ],
       "related": [
         "algorithms.index",
@@ -5720,17 +5726,17 @@
       "knowledge_id": "flow.conversion-calibration",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。",
+      "summary": "定位 Flow 数据转换、图像转换、校准及属性选择器。",
       "aliases": [
         "找不到图像转换或校准模板",
         "AlgDataConvertNode",
-        "Calibration2InNode",
+        "LocalCalibrationRealPoiNode",
         "CalibrationTemplatePropertiesEditor"
       ],
       "code_paths": [
         "Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/Calibration2InNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [

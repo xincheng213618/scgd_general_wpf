@@ -557,34 +557,6 @@
     "menu": "02 相机"
   },
   {
-    "type": "FlowEngineLib.Node.OLED.Calibration2InNode",
-    "request": {
-      "POI_MasterId": -1,
-      "ExpTemplateParam": {
-        "ID": -1,
-        "Name": "fixture-ExpTempName"
-      },
-      "POIParam": null,
-      "IsSaveCIE": true,
-      "OutputFileName": null,
-      "IsInversion": false,
-      "BufferLen": 0,
-      "SMUData": null,
-      "Color": 1,
-      "Channel": 1,
-      "ImgFileName": null,
-      "FileType": -1,
-      "TemplateParam": {
-        "ID": -1,
-        "Name": "fixture-TempName"
-      },
-      "MasterId": -1,
-      "MasterValue": null,
-      "MasterResultType": -1
-    },
-    "menu": "03_3 校正"
-  },
-  {
     "type": "FlowEngineLib.Node.OLED.OLEDImageCroppingNode",
     "request": {
       "ROI_MasterId": -1,

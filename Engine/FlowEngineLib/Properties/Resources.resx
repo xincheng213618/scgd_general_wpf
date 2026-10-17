@@ -519,9 +519,6 @@
   <data name="校正" xml:space="preserve">
     <value>校正</value>
   </data>
-  <data name="校正2" xml:space="preserve">
-    <value>校正+实时POI</value>
-  </data>
   <data name="校正ROI" xml:space="preserve">
     <value>校正ROI</value>
   </data>

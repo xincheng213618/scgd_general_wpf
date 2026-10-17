@@ -16,8 +16,6 @@ public class POINode : CVBaseServerNode
 
 	private string _OutputTemplateName;
 
-	private bool _IsCCTWave;
-
 	private bool _IsSubPixel;
 
 	private STNodeEditText<string> m_ctrl_filtertemp;
@@ -103,18 +101,14 @@ public class POINode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("色温/波长", "色温/波长", true)]
+	[STNodeProperty("色温/波长", "色温/波长", true, false, true)]
+	[System.ComponentModel.ReadOnly(true)]
+	[System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.TextboxPropertiesEditor))]
 	public bool IsCCTWave
 	{
-		get
-		{
-			return _IsCCTWave;
-		}
-		set
-		{
-			_IsCCTWave = value;
-			OnPropertyChanged();
-		}
+		get => true;
+		// Keep the setter for old STN records; their saved value cannot disable measurement.
+		set { }
 	}
 
 	[STNodeProperty("亚像素", "亚像素", true)]
@@ -140,7 +134,6 @@ public class POINode : CVBaseServerNode
 		_OutputTemplateName = "";
 		_ImgFileName = "";
 		_IsSubPixel = false;
-		_IsCCTWave = true;
 		base.Height += 50;
 	}
 
@@ -170,7 +163,7 @@ public class POINode : CVBaseServerNode
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		POIDataParam pOIDataParam = new POIDataParam(_FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, param, _IsSubPixel, _IsCCTWave);
+		POIDataParam pOIDataParam = new POIDataParam(_FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, param, _IsSubPixel, IsCCTWave);
 		BuildImageParam(pOIDataParam);
 		pOIDataParam.SMUData = GetSMUResult(start);
 		return pOIDataParam;

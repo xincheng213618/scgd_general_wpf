@@ -516,9 +516,6 @@
   <data name="校正" xml:space="preserve">
     <value>Calibration</value>
   </data>
-  <data name="校正2" xml:space="preserve">
-    <value>Calibration+Real-POI</value>
-  </data>
   <data name="校正ROI" xml:space="preserve">
     <value>ROI-Calibration</value>
   </data>

@@ -86,7 +86,7 @@ public sealed class LvCameraLocalForwardingTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void LocalPreferenceAloneKeepsServiceRequestAndPoiParameters(bool cv) => Run(async () =>
+    public void LocalPreferenceAloneKeepsServiceCaptureRequestWithoutPoi(bool cv) => Run(async () =>
     {
         using var scope = new CaptureScope(localOpen: false, preferLocal: true);
         scope.Backend.ObserveService(DeviceStatusType.Opened);
@@ -96,9 +96,7 @@ public sealed class LvCameraLocalForwardingTests
         {
             var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
             var data = (JObject)request.Data;
-            Assert.Equal("missing-poi", data["POIParam"]!["POI"]!["Name"]);
-            Assert.Equal("missing-filter", data["POIParam"]!["Filter"]!["Name"]);
-            Assert.Equal("missing-revise", data["POIParam"]!["Revise"]!["Name"]);
+            Assert.Null(data.Property("POIParam"));
             Assert.Equal(cv ? new[] { 283f, 467f, 100f } : new[] { 42f }, data["ExpTime"]!.ToObject<float[]>());
             if (cv) Assert.Equal((int)CV2LVChannelMode.GREEN, (int?)data["CV2LVChannel"]);
             Respond(graph.Nodes[0], request);
@@ -235,7 +233,7 @@ public sealed class LvCameraLocalForwardingTests
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
         scope.Camera.Config.CameraMode = cvColorVision.CameraMode.CV_MODE;
         scope.Camera.Config.Channel = cvColorVision.ImageChannel.Three;
-        var parameters = new CVCameraData(CVImageFlipMode.None, CV2LVChannelMode.None, false, 0, 0, 1, 10, [283, greenExposure, 100], "", "", "", "");
+        var parameters = new CVCameraData(CVImageFlipMode.None, CV2LVChannelMode.None, false, 0, 0, 1, 10, [283, greenExposure, 100], "");
         Assert.Throws<InvalidOperationException>(() => LocalCameraFlowExecution.BuildCaptureRequest(scope.Camera, parameters));
         Assert.Empty(scope.Services.Requests);
         return Task.CompletedTask;
@@ -250,7 +248,7 @@ public sealed class LvCameraLocalForwardingTests
         {
             var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
             var data = (JObject)request.Data;
-            Assert.Equal("missing-poi", data["POIParam"]!["POI"]!["Name"]);
+            Assert.Null(data.Property("POIParam"));
             Assert.Equal(42, data["ExpTime"]![0]);
             Respond(graph.Nodes[0], request);
         };
@@ -334,7 +332,7 @@ public sealed class LvCameraLocalForwardingTests
         Assert.Equal(StatusTypeEnum.Failed, (await graph.StartAsync()).Status);
         Assert.Equal(0, graph.Start.PublishCount);
         Assert.Empty(scope.Services.Requests);
-        CameraData parameters = new(CVImageFlipMode.None, false, 0, 0, 1, 2, [10], "", "missing-poi", "missing-filter", "missing-revise", "");
+        CameraData parameters = new(CVImageFlipMode.None, false, 0, 0, 1, 2, [10], "");
         Assert.False(LocalCameraFlowExecution.BuildCaptureRequest(scope.Camera, parameters).SaveFiles);
     });
 
@@ -394,14 +392,18 @@ public sealed class LvCameraLocalForwardingTests
                 if (node is LVCameraNode lv)
                 {
                     lv.ExpTime = 42; lv.Gain = 17; lv.AvgCount = 3; lv.FlipMode = CVImageFlipMode.Y;
-                    lv.POITempName = "missing-poi"; lv.POIFilterTempName = "missing-filter"; lv.POIReviseTempName = "missing-revise";
                 }
                 if (node is CVCameraNode cv)
                 {
                     cv.TempR = 283; cv.TempG = 467; cv.TempB = 100;
                     cv.Gain = 17; cv.AvgCount = 3; cv.FlipMode = CVImageFlipMode.Y;
-                    cv.POITempName = "missing-poi"; cv.POIFilterTempName = "missing-filter"; cv.POIReviseTempName = "missing-revise";
                 }
+                node.OnLoadNode(new Dictionary<string, byte[]>
+                {
+                    ["POITempName"] = System.Text.Encoding.UTF8.GetBytes("missing-poi"),
+                    ["POIFilterTempName"] = System.Text.Encoding.UTF8.GetBytes("missing-filter"),
+                    ["POIReviseTempName"] = System.Text.Encoding.UTF8.GetBytes("missing-revise")
+                });
                 container.Nodes.Add(node);
                 Assert.Equal(ConnectionStatus.Connected, output.ConnectOption(node.GetAllInputOptions()[0], false));
                 output = node.GetAllOutputOptions()[0];
