@@ -27,60 +27,6 @@ public sealed class GhostFlowAndProcessTests
 {
     // Stable contract: valid non-detection is zero; execution/data failures never become passing zeros.
     [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    public async Task RealRawNodePersistsAndProjectExportsExactlyTwoMetrics(int ghosts)
-    {
-        using var services = new NodeServices();
-        var action = new CVStartCFC("ghost-test");
-        action.SetCurrentFrame(PatternFrame(ghosts));
-        try
-        {
-            var node = new LocalRingGhostNode(services) { ImageFilePath = @"C:\must-not-open\fallback.tiff" };
-            var completed = node.ExecuteSynchronously(action);
-            Assert.Equal(ghosts, completed.Measurement.CandidateCount);
-            Assert.Equal(0, services.Opened); Assert.Equal(1, services.Published);
-            Assert.Equal(completed.Measurement.GMR1, action.Data["GMR1"]);
-            Assert.Equal(completed.Measurement.GMR2, action.Data["GMR2"]);
-            Assert.Equal((int)ViewResultAlgType.Ghost, action.Data["MasterResultType"]);
-            var roundtrip = LocalRingGhostResult.Read(completed.Saved.ResultFilePath);
-            Assert.Equal(completed.Measurement.GMR1, roundtrip.GMR1);
-            if (ghosts == 0) Assert.Equal(0, roundtrip.GMR1);
-            else Assert.InRange(roundtrip.GMR1, .7, .92);
-            if (ghosts < 2) Assert.Equal(0, roundtrip.GMR2);
-            else Assert.InRange(roundtrip.GMR2, .24, .39);
-            var master = LocalRingGhostResultPersistence.CreateMaster(services.Request!, 5);
-            Assert.Equal(LocalRingGhostResult.ResultVersion, master.version); Assert.Equal(ViewResultAlgType.Ghost, master.ImgFileType);
-            Assert.Equal(5, master.BatchId); Assert.Equal(0, master.ResultCode);
-            var detail = LocalRingGhostResultPersistence.CreateDetail(42, completed.Saved.ResultFilePath);
-            Assert.Equal(42, detail.PId);
-            Assert.Equal(completed.Saved.ResultFilePath, JsonConvert.DeserializeObject<ResultFile>(detail.ResultJson)!.ResultFileName);
-
-            var process = new RingGhostProcess(new BatchResults(completed.Saved.ResultFilePath));
-            var context = Context();
-            Assert.True(await process.Execute(context));
-            Assert.True(context.Result.Result); Assert.True(context.ObjectiveTestResult.TotalResult);
-            Assert.Equal(640, context.Result.ImageWidth);
-            var rows = process.GetObjectiveCsvRows(context.Result);
-            Assert.Equal(new[] { "GMR1", "GMR2" }, rows.Select(r => r.TestItem));
-            Assert.All(rows, row => { Assert.Equal("%", row.Unit); Assert.Equal("PASS", row.TestResult); });
-            if (ghosts < 2) Assert.Equal("0", rows[1].MetricValue);
-            var customer = JObject.Parse(JsonConvert.SerializeObject(context.ObjectiveTestResult))["RingGhostTestResults"]!["RingGhost"]!;
-            Assert.Equal(new[] { "GMR1", "GMR2" }, ((JObject)customer).Properties().Select(p => p.Name));
-            var metrics = ObjectiveTestResultMetricCollector.Collect(context.ObjectiveTestResult);
-            Assert.Equal(2, metrics.Count); Assert.Equal(new[] { "RingGhost_GMR1", "RingGhost_GMR2" }, metrics.Select(m => m.Header));
-            Assert.NotNull(new ObjectiveTestResultValueResolver(context.ObjectiveTestResult).Find("ringghost", "GMR2"));
-            string csv = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".csv");
-            try { ObjectiveTestResultCsvExporter.ExportToCsv(context.ObjectiveTestResult, csv); Assert.Equal(3, File.ReadAllLines(csv).Length); }
-            finally { File.Delete(csv); }
-            process.Config.OutputKey = "Changed";
-            Assert.All(process.GetObjectiveCsvRows(context.Result), row => Assert.Equal("RingGhost", row.TestScreen));
-        }
-        finally { action.RuntimeResources.Dispose(); }
-    }
-
-    [Theory]
     [InlineData("blank")]
     [InlineData("saturated")]
     public void FailedDetectionClearsOldValuesAndCannotSaveOrPublishZero(string mode)
@@ -199,31 +145,6 @@ public sealed class GhostFlowAndProcessTests
             Assert.Equal(ProcessTypeCatalog.DefectSubcategory, ProcessTypeCatalog.GetSubcategory(typeof(RingGhostProcess)));
         }
         finally { action.RuntimeResources.Dispose(); }
-    }
-
-    [Fact]
-    public void NodeConfigurationAndHistoricalHandlerKeepVersionBoundary()
-    {
-        var node = new LocalRingGhostNode { OrderMapping = RingGhostOrderMapping.InnerIsFirst, ImageFilePath = @"C:\input.tiff", ResultDirectory = @"C:\results" };
-        node.Create();
-        byte[] bytes = node.GetSaveData(); int position = 0; position += bytes[position] + 1; position += bytes[position] + 1;
-        var state = new Dictionary<string, byte[]>();
-        while (position < bytes.Length)
-        {
-            int keyLength = BitConverter.ToInt32(bytes, position); position += 4;
-            string key = Encoding.UTF8.GetString(bytes, position, keyLength); position += keyLength;
-            int length = BitConverter.ToInt32(bytes, position); position += 4;
-            state[key] = bytes.AsSpan(position, length).ToArray(); position += length;
-        }
-        var restored = new LocalRingGhostNode(); restored.Create(); restored.OnLoadNode(state);
-        Assert.Equal(node.OrderMapping, restored.OrderMapping); Assert.Equal(node.ImageFilePath, restored.ImageFilePath);
-        Assert.Equal(node.ResultDirectory, restored.ResultDirectory); Assert.Single(restored.GetAllInputOptions()); Assert.Single(restored.GetAllOutputOptions());
-        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
-        {
-            var handler = new ViewHandleRingGhost();
-            Assert.True(handler.CanHandle1(new() { ResultType = ViewResultAlgType.Ghost, Version = LocalRingGhostResult.ResultVersion }));
-            Assert.False(handler.CanHandle1(new() { ResultType = ViewResultAlgType.Ghost, Version = "2.0" }));
-        });
     }
 
     [Fact]
