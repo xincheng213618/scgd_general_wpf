@@ -149,6 +149,8 @@ Engine 内置 `FlowRunPoiSocketHandler`，通过同一 JSON 监听端口调用�
 
 已取得最终执行结果的失败响应保留 `Data` 中的批次身份和状态，`Poi` 为空；启动前拒绝时 `Data` 为空。协议与结果隔离回归见 `Test/ColorVision.UI.Tests/FlowRunPoiSocketTests.cs`；设备采集、真实 MySQL 明细可见性和对端收包仍需现场联调。TCP 消息边界继续遵守下节的当前实现限制。
 
+独立 net48/x64 调用逻辑和控制台示例位于 `SDK/ColorVision.FlowPoi.Client.Net48/`：客户端仅依赖 Newtonsoft.Json，提供 `RunByNameAsync`、`RunByIdAsync`，每次建立一条连接，按 `EventName + MsgID` 匹配完整 JSON 响应。600 秒默认超时和取消只终止客户端等待，不自动重发，也不保证主程序流程已停止。线上 `X/x`、`Y/y` 分别映射为三刺激值和 `ChromaticityX/ChromaticityY`。现场操作、完整调用示例和独立编译前提见该目录 `README.md`；net48 回环回归位于 `Test/ColorVision.FlowPoi.Net48.Tests/`。
+
 ## Text 分发与 TCP 消息边界
 
 `SocketTextDispatcher` 构造时发现 `ISocketTextDispatcher`。当前实现只调用发现顺序中的第一个 handler：返回非空白字符串时立即返回，空白时也立即返回 `null`，不会尝试后续处理器。没有 handler 时返回字面字符串 `No Dispatcher Hanle`。这是多处理器路由的实现缺口，新增第二个处理器不能作为后备路由，扫描顺序也没有业务优先级约定。

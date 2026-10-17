@@ -1,0 +1,37 @@
+{
+  "Version": "1.0",
+  "MsgID": "example-request-id",
+  "EventName": "FlowRunPoi",
+  "SerialNumber": "sample-1",
+  "Code": 200,
+  "Msg": "流程执行完成",
+  "Data": {
+    "FlowId": 42,
+    "FlowName": "白画面",
+    "BatchId": 137,
+    "ExecutionSerialNumber": "example-execution-137",
+    "Status": "Succeeded",
+    "TotalTime": 150,
+    "Poi": [
+      {
+        "AlgorithmResultId": 301,
+        "AlgorithmName": "White POI",
+        "PoiId": 7,
+        "Name": "中心点",
+        "PixelX": 100,
+        "PixelY": 200,
+        "Width": 3,
+        "Height": 3,
+        "X": 10.0,
+        "Y": 20.0,
+        "Z": 30.0,
+        "x": 0.3,
+        "y": 0.4,
+        "u": 0.2,
+        "v": 0.5,
+        "CCT": 6500.0,
+        "Wave": 550.0
+      }
+    ]
+  }
+}
