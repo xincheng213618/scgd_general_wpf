@@ -1208,6 +1208,12 @@
   <data name="ExternalSwitch_Title" xml:space="preserve">
     <value>外部切图</value>
   </data>
+  <data name="ExternalSwitch_TestTypeLabel" xml:space="preserve">
+    <value>切图类型</value>
+  </data>
+  <data name="ExternalSwitch_TestTypeDescription" xml:space="preserve">
+    <value>用于指定切图画面的数字编号，默认 0。可填写 0、1、2、3 等编号，具体画面由外部程序约定。</value>
+  </data>
   <data name="ExternalSwitch_TimeoutLabel" xml:space="preserve">
     <value>等待超时(ms)</value>
   </data>

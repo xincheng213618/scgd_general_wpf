@@ -5,7 +5,7 @@ status: "current"
 summary: "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。"
 aliases: ["ARVR TCP 协议","ARVRPRO TCP 通讯协议手册","ProjectARVRInit","SwitchPG","SwitchPGCompleted","SwitchGroup","RunAll","GetProcessEnable","SetProcessEnable","ARVRTestType","Partial applied","No enabled ARVR flow","ARVR test is busy","ProjectARVRResult","AoiSwitchPG","AOITestSwitchImageComplete","外部切图","ExternalImageSwitchNode","UseLegacyARVROutput","SNlocked"]
 code_paths: ["Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/ProcessEnableSocket.cs","Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs","Projects/ProjectARVRPro/Services/ExternalImageSwitchService.cs","Projects/ProjectARVRPro/Services/AOITestSwitchImageCompleteHandler.cs","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","Projects/ProjectARVRPro/ObjectiveTestResult.cs","Projects/ProjectARVRPro/LegacyARVR/","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/ExternalImageSwitchTests.cs"]
+test_paths: []
 related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-demo","ui.socket-protocol"]
 ---
 
@@ -206,8 +206,12 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 节点发送以下报文，其中每次请求的 `MsgID` 都不同，`SerialNumber` 是当前产品 SN，而不是 Flow 内部的测量批次编号：
 
 ```json
-{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AoiSwitchPG", "SerialNumber": "SN12345678", "Code": 0, "Msg": "AoiSwitchPG" }
+{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AoiSwitchPG", "SerialNumber": "SN12345678", "Code": 0, "Msg": "AoiSwitchPG", "Data": { "TestType": 0 } }
 ```
+
+从项目包 `1.1.8.73` 起，`Data.TestType` 是外部切图节点中配置的整数编号，默认 `0`，可按 `0、1、2、3` 约定不同画面。例如 Demura 中两个节点分别设为 `0` 和 `1`，调用方分别显示 W128 和 W255。编号本身不表示灰阶，也不是普通 `SwitchPG.Data.ARVRTestType` 的组内步骤索引，不受 Legacy 索引偏移影响；修改模板顺序不会自动修改编号。
+
+旧模板没有该属性时保留默认 `0`。这是请求中新增的数据字段，事件名、SN/MsgID 关联和完成确认保持原约定；确认不需要回传 TestType，旧调用方仍可忽略该字段，继续按原有顺序切图并确认。新调用方按编号选择画面时，应先配置各节点编号；若未配置、多个节点均为 `0`，它们会发送相同编号。
 
 外部程序实际切图完成后，使用同一连接回复：
 
@@ -219,6 +223,7 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 | 节点属性 | 行为 |
 | --- | --- |
+| 切图类型 `TestType` | 默认 `0`；原样作为整数发送到 `Data.TestType`，画面含义由调用方约定 |
 | 等待超时 `TimeoutMs` | 默认 5000 ms，必须大于零；覆盖发送请求和等待确认。到期失败，不自动重发 |
 | 完成后延时 `DelayMs` | 默认 0 ms，不得为负；从收到确认后开始，等待画面稳定，不计入确认超时 |
 | 严格匹配 `RequireMatchingMsgId` | 默认关闭以兼容旧客户端自建确认 ID；开启后必须回显请求的 MsgID |
@@ -281,4 +286,4 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 初始化/确认看 `Services/SocketControl.cs`，RunAll 看 `Services/RunAllSocket.cs`，组切换和启用状态看 `SwitchGroupSocket.cs` / `ProcessEnableSocket.cs`，主动推送看 `ARVRWindow.xaml.cs`，AOI 节点看 `Flow/ExternalImageSwitchNode.cs`，发送等待看 `Services/ExternalImageSwitchService.cs`，完成确认看 `Services/AOITestSwitchImageCompleteHandler.cs`。共享 Socket 的分派、读取与错误包装由 `UI/ColorVision.SocketProtocol` 负责。
 
-`ExternalImageSwitchTests` 验证切图请求/确认、旧协议兼容、严格关联、并发拒绝、超时不重发、停止取消、断开/切换连接、节点接线与保存恢复；不替代现场控制程序与设备验收。联调应覆盖标准/Legacy 索引、空组、忙状态、部分应用、普通切图和 AOI 确认、Code 为 0 但判定失败、最终 SN、半包/粘包、多连接及断线。会推进真实测试或修改配置的命令，应在获得对应现场操作授权后运行；文档和检索校验不替代这些验收。
+联调应覆盖切图编号与画面的对应、旧模板默认 `0`、旧确认格式、严格关联、并发拒绝、超时不重发、停止取消及连接变化。还需覆盖标准/Legacy 索引、空组、忙状态、部分应用、普通切图和 AOI 确认、Code 为 0 但判定失败、最终 SN、半包/粘包、多连接及断线。会推进真实测试或修改配置的命令，应在获得对应现场操作授权后运行；文档和检索校验不替代这些验收。

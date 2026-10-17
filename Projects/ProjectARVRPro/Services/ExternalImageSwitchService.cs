@@ -26,7 +26,7 @@ internal sealed class ExternalImageSwitchService
         this.sent = sent;
     }
 
-    internal async Task<ExternalImageSwitchResult> ExecuteAsync(string serialNumber, int timeoutMs, int delayMs,
+    internal async Task<ExternalImageSwitchResult> ExecuteAsync(string serialNumber, int testType, int timeoutMs, int delayMs,
         bool requireMatchingMsgId, CancellationToken cancellationToken)
     {
         if (timeoutMs <= 0) throw new ArgumentOutOfRangeException(nameof(timeoutMs), DisplayText.Get("ExternalSwitch_InvalidTimeout"));
@@ -50,7 +50,7 @@ internal sealed class ExternalImageSwitchService
             var request = new SocketResponse
             {
                 Version = "1.0", MsgID = operation.MsgID, SerialNumber = serialNumber,
-                EventName = RequestEvent, Code = 0, Msg = RequestEvent
+                EventName = RequestEvent, Code = 0, Msg = RequestEvent, Data = new { TestType = testType }
             };
             await operation.Stream.WriteAsync(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(request)), deadline.Token).ConfigureAwait(false);
             sent?.Invoke(request);

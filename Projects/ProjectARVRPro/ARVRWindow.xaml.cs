@@ -408,7 +408,7 @@ namespace ProjectARVRPro
 
         private TemplateModel<FlowParam> SelectFlowTemplate(ProcessMeta processMeta)
         {
-            var template = TemplateFlow.Params.First(a => string.Equals(a.Key, processMeta.FlowTemplate, StringComparison.OrdinalIgnoreCase));
+            var template = processMeta.RequireFlowTemplate();
             FlowTemplate.SelectedItem = template;
             return template;
         }

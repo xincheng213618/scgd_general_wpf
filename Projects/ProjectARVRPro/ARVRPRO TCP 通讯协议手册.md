@@ -330,8 +330,12 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 节点发送以下报文，其中每次请求的 `MsgID` 都不同，`SerialNumber` 是当前产品 SN，而不是 Flow 内部的测量批次编号：
 
 ```json
-{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AoiSwitchPG", "SerialNumber": "SN12345678", "Code": 0, "Msg": "AoiSwitchPG" }
+{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AoiSwitchPG", "SerialNumber": "SN12345678", "Code": 0, "Msg": "AoiSwitchPG", "Data": { "TestType": 0 } }
 ```
+
+从项目包 `1.1.8.73` 起，`Data.TestType` 是外部切图节点中配置的整数编号，默认 `0`，可按 `0、1、2、3` 约定不同画面。例如 Demura 中两个节点分别设为 `0` 和 `1`，调用方分别显示 W128 和 W255。编号本身不表示灰阶，也不是普通 `SwitchPG.Data.ARVRTestType` 的组内步骤索引，不受 Legacy 索引偏移影响；修改模板顺序不会自动修改编号。
+
+旧模板没有该属性时保留默认 `0`。这是请求中新增的数据字段，事件名、SN/MsgID 关联和完成确认保持原约定；确认不需要回传 TestType，旧调用方仍可忽略该字段，继续按原有顺序切图并确认。新调用方按编号选择画面时，应先配置各节点编号；若未配置、多个节点均为 `0`，它们会发送相同编号。
 
 外部程序实际切图完成后，使用同一连接回复：
 
@@ -343,6 +347,7 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 | 节点属性 | 行为 |
 | --- | --- |
+| 切图类型 `TestType` | 默认 `0`；原样作为整数发送到 `Data.TestType`，画面含义由调用方约定 |
 | 等待超时 `TimeoutMs` | 默认 5000 ms，必须大于零；覆盖发送请求和等待确认。到期失败，不自动重发 |
 | 完成后延时 `DelayMs` | 默认 0 ms，不得为负；从收到确认后开始，等待画面稳定，不计入确认超时 |
 | 严格匹配 `RequireMatchingMsgId` | 默认关闭以兼容旧客户端自建确认 ID；开启后必须回显请求的 MsgID |
