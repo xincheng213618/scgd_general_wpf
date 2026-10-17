@@ -1868,12 +1868,13 @@ def validate_cuda_export_sets(
             f"unexpected={sorted(managed_exports - expected_managed)}."
         )
 
-    expected_binary = header_exports | CUDA_ALLOWED_BINARY_ONLY_EXPORTS
-    if binary_exports != expected_binary:
+    missing_binary = header_exports - binary_exports
+    unexpected_binary = binary_exports - header_exports - CUDA_ALLOWED_BINARY_ONLY_EXPORTS
+    if missing_binary or unexpected_binary:
         raise NativeContractError(
             "Tracked opencv_cuda.dll export drift: "
-            f"missing={sorted(expected_binary - binary_exports)}, "
-            f"unexpected={sorted(binary_exports - expected_binary)}."
+            f"missing={sorted(missing_binary)}, "
+            f"unexpected={sorted(unexpected_binary)}."
         )
 
 

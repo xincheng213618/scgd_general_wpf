@@ -37,9 +37,9 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 
 托管图像处理使用同一版本的 `OpenCvSharp5`、`OpenCvSharp5.runtime.win` 和 `OpenCvSharp5.WpfExtensions`，最低要求 .NET 8。主程序、官方插件和客户项目须一起重新构建，不能混用 4.x 与 5.x 的托管程序集或 `OpenCvSharpExtern.dll`。本地 helper 和 CUDA DLL 使用 OpenCV / opencv_contrib 5.0.0；Release / Debug 的头文件、导入库和运行库以 `packages/OpenCV.*.x64.props` 为准，Core 也从 Release 属性表取得打包清单。
 
-原生工程最低使用 C++17，CUDA 编译显式传入 `--std=c++17`。当前依赖使用 MSVC v145 构建，目录为 `packages/opencv/x64/vc18/`。OpenCV 5 将 `calib3d` 拆为 `calib`、`geometry`、`stereo` 等模块，将 `features2d` 政名为 `features`，圆点/棋盘格检测归入 `objdetect`；几何函数须显式包含 `opencv2/geometry.hpp`，不能依赖 `opencv.hpp` 间接引入。
+共享 OpenCV 属性表默认使用 C++17；`opencv_helper` 和 `opencv_cuda` 项目使用 C++20。`opencv_cuda` 通过 `OpenCVCudaLanguageStandard=c++20` 让 Debug / Release x64 的 CUDA 编译显式传入 `--std=c++20`，与 MSVC 的语言标准保持一致。当前依赖使用 MSVC v145 构建，目录为 `packages/opencv/x64/vc18/`。OpenCV 5 将 `calib3d` 拆为 `calib`、`geometry`、`stereo` 等模块，将 `features2d` 政名为 `features`，圆点/棋盘格检测归入 `objdetect`；几何函数须显式包含 `opencv2/geometry.hpp`，不能依赖 `opencv.hpp` 间接引入。
 
-第三方构建保留共享库、非自由算法、SSE3 基线及 SSE4.1 / SSE4.2 / AVX / FP16 / AVX2 / AVX512 分派、IPP、OpenCL、FFmpeg、DirectShow、Media Foundation 和原有图像格式支持。OpenCV 自身不启用 CUDA；第一方 `opencv_cuda.dll` 使用 CUDA 13.2。已取消 Pascal / Volta 编译目标，支持 Turing（GTX 16 / RTX 20）及更新 GPU；Release / Debug 均使用 v145 和受支持的 CUDA 13.2 host 编译器，保留公开 ABI 和静态 cudart。CUDA 13.x 的驱动兼容基线为 R580，PTX/JIT 还须匹配实际工具链；本地已验证驱动 610.88 / RTX 5080，现场设备仍需验证。驱动要求以 [NVIDIA CUDA 兼容说明](https://docs.nvidia.com/cuda/archive/13.2.0/cuda-toolkit-release-notes/index.html#cuda-driver) 为准。OpenCV 5 不再随源码提供 OpenEXR，构建时需通过 `CMAKE_PREFIX_PATH` 提供独立 OpenEXR；当前使用静态 OpenEXR 3.4.16 / Imath 3.2.2，并保持 Release / Debug CRT 匹配。
+第三方构建保留共享库、非自由算法、SSE3 基线及 SSE4.1 / SSE4.2 / AVX / FP16 / AVX2 / AVX512 分派、IPP、OpenCL、FFmpeg、DirectShow、Media Foundation 和原有图像格式支持。OpenCV 自身不启用 CUDA；第一方 `opencv_cuda.dll` 源码使用 CUDA 13.4。已取消 Pascal / Volta 编译目标，支持 Turing（GTX 16 / RTX 20）及更新 GPU；Release / Debug 均使用 v145 和受支持的 CUDA 13.4 host 编译器，保留公开 ABI 和静态 cudart。MSVC 14.52 标准库要求 CUDA 13.4 或更新版本，不能仅依据 CUDA 的 MSVC 主版本检查判断兼容性，见 [MSVC 标准库版本与 CUDA 要求](https://github.com/microsoft/STL/wiki/Macro-_MSVC_STL_UPDATE)。CUDA 13.x 的驱动兼容基线为 R580，PTX/JIT 还须匹配实际工具链；本地 CUDA 13.4.2 / 驱动 610.88 / RTX 5080 已通过合成图融合 GPU 验证及同源码新旧工具链的逐像素结果对照，现场设备仍需验证。驱动要求以 [NVIDIA CUDA 兼容说明](https://docs.nvidia.com/cuda/archive/13.4.2/cuda-toolkit-release-notes/index.html#cuda-driver) 为准。OpenCV 5 不再随源码提供 OpenEXR，构建时需通过 `CMAKE_PREFIX_PATH` 提供独立 OpenEXR；当前使用静态 OpenEXR 3.4.16 / Imath 3.2.2，并保持 Release / Debug CRT 匹配。
 
 两侧共享 `opencv_videoio_ffmpeg500_64.dll`。运行时内容校验从实际 NuGet 解析结果及 C++ 属性表分别定位依赖，仅在同名文件的 SHA-256 完全一致时复用一份文件；内容不同或源文件缺失仍阻止交付。供应商 SDK 所需的 `opencv_world401.dll` 属于另一条依赖链，须继续保留。
 
@@ -97,7 +97,7 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 
 ## 为什么仓库单独跟踪 `opencv_cuda.dll`
 
-`x64/Release/opencv_cuda.dll` 是有意保留的第一方发布输入，不是误提交的普通构建产物。标准 GitHub Windows runner 不保证具备 `opencv_cuda.vcxproj` 所需的 CUDA 13.2 与受支持的 Visual Studio 集成，当前 `build.sln` 也不编译该 CUDA 项目。托管构建、NuGet 打包和本地发布因此从这个固定路径取得已审核的 DLL，避免普通构建环境必须安装 CUDA 工具链。
+`x64/Release/opencv_cuda.dll` 是有意保留的第一方发布输入，不是误提交的普通构建产物。标准 GitHub Windows runner 不保证具备 `opencv_cuda.vcxproj` 所需的 CUDA 13.4 与受支持的 Visual Studio 集成，当前 `build.sln` 也不编译该 CUDA 项目。托管构建、NuGet 打包和本地发布因此从这个固定路径取得已审核的 DLL，避免普通构建环境必须安装 CUDA 工具链。源码的编译标准或工具链升级不会自动替换该跟踪 DLL；替换仍需完成 ABI / GPU 验收。
 
 不要因为 `x64/` 已在忽略规则中就直接删除该文件。只有同时满足以下条件后，才能移除 Git 中的 DLL：
 
@@ -112,6 +112,8 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 ### CUDA 检查器证明什么
 
 `Scripts/verify_native_contracts.py` 将CUDA头文件/托管声明的返回值、参数、调用约定、DLL名称、HImage AMD64布局和native日志delegate，与被审核的跟踪DLL及其传播字节一起核对。CUDA导入要求显式 `CharSet.Ansi`，JSON字符串参数还须显式标注 `[MarshalAs(UnmanagedType.LPUTF8Str)]`；检查器解析并核对参数封送标注，缺失或改为ANSI/UTF-16均拒绝。可能改变P/Invoke默认值的module级属性会被拒绝。导出分支须为 `__declspec(dllexport)`，Release/x64须定义 `OPENCVCUDA_EXPORTS`。
+
+头文件声明的业务导出全部必需，未知导出会阻止交付。`NvOptimusEnablementCuda` 是允许存在的历史 CUDA 自动导出，新 DLL 不必提供；当前 CUDA 13.4 构建不带此符号。该兼容规则同时覆盖带符号的历史 DLL 和不带符号的新 DLL，ABI 签名、结构布局及传播字节仍分别严格核对。
 
 默认模式在Visual Studio环境中求值真实Release/x64的 `ClCompile` / `CudaCompile` 项及CUDA host定义：创建唯一临时project/probe和隔离输出目录，在消费边界捕获项并于编译器运行前移除，结束后清理临时文件。不运行cl/nvcc、不加载DLL、不需要GPU，但缺少匹配CUDA BuildCustomizations时仍失败。它会创建临时文件、运行MSBuild求值，不是仅阅读Markdown。
 

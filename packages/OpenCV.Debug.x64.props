@@ -8,6 +8,7 @@
     <OpenCVLibDir>$(OpenCVRoot)x64\vc18\lib\</OpenCVLibDir>
     <OpenCVVersion>500</OpenCVVersion>
     <OpenCVConfigSuffix>d</OpenCVConfigSuffix>
+    <OpenCVCudaLanguageStandard Condition="'$(OpenCVCudaLanguageStandard)' == ''">c++17</OpenCVCudaLanguageStandard>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -15,7 +16,7 @@
       <AdditionalIncludeDirectories>$(OpenCVRoot)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <CudaCompile>
-      <AdditionalOptions>--std=c++17 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>--std=$(OpenCVCudaLanguageStandard) %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(OpenCVRoot)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </CudaCompile>
     <Link>
