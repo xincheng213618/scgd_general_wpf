@@ -118,6 +118,37 @@ related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", 
 
 dispatcher 不统一回填响应关联字段。内置空请求/空事件错误 `400` 与找不到 handler 的 `404` 只设置 `Code/Msg`；JSON 解析或业务处理等异常由 `SocketManager` 生成 `Code=-1`，尝试保留已解析请求的关联字段。三者不能视作相同的关联保证。
 
+**主程序执行流程并返回 POI：`FlowRunPoi`**
+
+Engine 内置 `FlowRunPoiSocketHandler`，通过同一 JSON 监听端口调用，不需要加载客户项目。实现位于 `Engine/ColorVision.Engine/Services/Flow/`，复用主工作区的模板选择、前处理、执行、后处理及最终化；运行会切换主工作区的流程，并可能采集设备、写入业务数据库或执行已配置的前后处理。调用前需启用 Socket 服务的 JSON 模式、加载流程模板、连接 MySQL，并满足所选流程的设备和服务依赖。
+
+按流程名称请求：
+
+```json
+{"Version":"1.0","MsgID":"poi-1","EventName":"FlowRunPoi","SerialNumber":"sample-1","Params":"{\"FlowName\":\"白画面\"}"}
+```
+
+也可将 `Params` 换成 `"{\"FlowId\":42}"`。`FlowName` 和 `FlowId` 必须只填一项：名称去除首尾空白后忽略大小写精确匹配；`FlowId` 是模板实际 ID，支持本地模板的负数 ID，不能为 0，也不是列表位置。同名模板必须用唯一 ID 定位，不会自动选择第一项。未知参数返回 `400`。
+
+一次请求等待本次流程及后处理完成后返回一条最终响应，没有提前成功响应。主会话占用、模板切换失败或启动条件不满足时拒绝执行，不排队、不重试，也不替换正在运行的流程。继续使用主程序“停止”操作取消运行；本指令不额外设置整图超时，调用方需为完整流程和后处理预留等待时间，不能将网络等待超时当作流程已停止。
+
+成功响应的 `Data` 包含 `FlowId`、`FlowName`、`BatchId`、`ExecutionSerialNumber`、`Status`、`TotalTime`（引擎返回的毫秒数）和 `Poi` 数组。每个点包含 `AlgorithmResultId`、`AlgorithmName`、`PoiId`、`Name`、`PixelX/PixelY/Width/Height`，以及 `X/Y/Z/x/y/u/v/CCT/Wave`。同一批次所有 `POI_XYZ` 算法的点位按结果主表和明细 ID 排序保留，算法与点位身份不会因为同名而合并。数值沿用 `PoiResultCIExyuvData` 的 CIE 数值归一化规则；不包含仅亮度 `POI_Y`、文件型 POI 或其它算法类型。
+
+`Version/MsgID/EventName/SerialNumber` 保留请求关联值；外层 `SerialNumber` 用于请求关联，实际流程使用共享会话生成的批次编号，由 `Data.ExecutionSerialNumber` 返回。结果读取使用本次运行捕获的批次 ID，不查询“最新一次”或全局当前批次。MySQL 不可用时拒绝启动；读取失败和无点位分别报告，均不回退到历史 POI。
+
+| Code | 含义 |
+| --- | --- |
+| `200` | 流程最终成功或带后处理警告成功，且读取到 POI；`Status` 区分两者 |
+| `400` | 参数格式错误、选择条件冲突或缺失 |
+| `404` | 找不到流程模板 |
+| `409` | 模板身份不唯一，或主会话拒绝启动 |
+| `422` | 流程已完成，但本批次无 `POI_XYZ` 点位 |
+| `499` / `504` | 流程已取消 / 流程报告超时 |
+| `500` | 流程或必需后处理失败、执行异常、POI 查询或解析失败 |
+| `503` | 主程序或 MySQL 结果批次不可用 |
+
+已取得最终执行结果的失败响应保留 `Data` 中的批次身份和状态，`Poi` 为空；启动前拒绝时 `Data` 为空。协议与结果隔离回归见 `Test/ColorVision.UI.Tests/FlowRunPoiSocketTests.cs`；设备采集、真实 MySQL 明细可见性和对端收包仍需现场联调。TCP 消息边界继续遵守下节的当前实现限制。
+
 ## Text 分发与 TCP 消息边界
 
 `SocketTextDispatcher` 构造时发现 `ISocketTextDispatcher`。当前实现只调用发现顺序中的第一个 handler：返回非空白字符串时立即返回，空白时也立即返回 `null`，不会尝试后续处理器。没有 handler 时返回字面字符串 `No Dispatcher Hanle`。这是多处理器路由的实现缺口，新增第二个处理器不能作为后备路由，扫描顺序也没有业务优先级约定。
