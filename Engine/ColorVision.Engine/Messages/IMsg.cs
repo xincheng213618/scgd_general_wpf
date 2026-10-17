@@ -2,8 +2,6 @@
 {
     public delegate void MsgReturnHandler(MsgReturn msg);
 
-    public delegate void MsgHandler(MsgSend msgSend, MsgReturn msgReturn);
-
     public interface IMsg
     {
         public string Version { get; set; }
