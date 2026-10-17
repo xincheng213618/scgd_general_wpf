@@ -49,6 +49,8 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 
 `IsConnect` 是一次 Connect 流程维护的状态，不是每条 SQL 的健康证明。业务 DAO 和直接创建的 client 仍须分别核对连接门禁。
 
+“初始化表”按 `IInitTables` 实体逐表补齐或创建结构，一张表失败后继续其它表并汇总失败；不会在启动时自动执行。该入口使用独立 client，将 SqlSugar 生成的独立 `ALTER TABLE ... ALTER COLUMN ... SET DEFAULT (CURRENT_TIMESTAMP)` 改为兼容 MySQL 5.7 的无外层括号写法，保留时间精度，不改业务 SQL 或字符串默认值。旧库出现 `nd_port`、`version` 等缺列时，需要在确认目标库和备份后手动执行初始化表；本地代码检查不代表现场迁移已完成。
+
 ## 业务 DAO 与批 SQL
 
 `BaseTableDao<T>` 的业务方法主要由扩展类提供，依赖 `IEntity`、业务实体及 SqlSugar 映射，与实体驱动的通用查询窗口分别维护调用契约。这些扩展先检查 `MySqlControl.IsConnect`，不少读取失败返回空集合、null、false 或 0，写入失败返回 -1 并记录日志；因此 DAO 的“空结果”可能是连接未就绪或被吞掉的异常。具体调用者仍须核对方法返回语义，不把基类封装当成事务、重试或业务成功保证。
