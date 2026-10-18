@@ -5,6 +5,7 @@ using ColorVision.Database;
 using ColorVision.UI;
 using cvColorVision;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Spectrum.Models;
 using SqlSugar;
 using System.Collections.ObjectModel;
@@ -237,6 +238,52 @@ namespace Spectrum.Data
             ViewReslutsSelectedIndex = -1;
             ViewResluts.Clear();
         }
+
+        public Task<IReadOnlyList<SpectrumRawExportRecord>> CreateRawExportSnapshotAsync(IReadOnlyList<ViewResultSpectrum> results, bool fluxMode)
+        {
+            // Capture selected results on the caller before querying history on a worker.
+            var snapshot = results.Select(result => result.CreateRawExportRecord(fluxMode)).ToArray();
+            long generation = Volatile.Read(ref _databaseGeneration);
+            int[] ids = snapshot.Select(record => record.MeasurementId).Where(id => id > 0).Distinct().ToArray();
+            return Task.Run<IReadOnlyList<SpectrumRawExportRecord>>(() =>
+            {
+                if (ids.Length == 0) return snapshot;
+                lock (_databaseGate)
+                {
+                    if (generation != Volatile.Read(ref _databaseGeneration)) return snapshot;
+                    EnsureDatabaseInitialized();
+                    using var db = CreateDb();
+                    var profiles = db.Queryable<SpectrumMeasurementProfile>()
+                        .Where(profile => profile.IsSuccess && profile.SpectrumId.HasValue && ids.Contains(profile.SpectrumId.Value))
+                        .ToList().GroupBy(profile => profile.SpectrumId!.Value)
+                        .ToDictionary(group => group.Key, group => group.OrderByDescending(profile => profile.Id).First());
+                    return snapshot.Select(record => profiles.TryGetValue(record.MeasurementId, out var profile)
+                        ? WithMeasurementProfile(record, profile) : record).ToArray();
+                }
+            });
+        }
+
+        private static SpectrumRawExportRecord WithMeasurementProfile(SpectrumRawExportRecord record, SpectrumMeasurementProfile profile)
+        {
+            bool? flux = null;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(profile.StepDetailsJson)
+                    && JObject.Parse(profile.StepDetailsJson)["EqeMeasurement"] is { Type: JTokenType.Boolean } mode)
+                    flux = mode.Value<bool>();
+            }
+            catch (JsonException) { /* Preserve malformed historical JSON verbatim; do not invent metadata. */ }
+            return record with
+            {
+                Mode = flux.HasValue ? flux.Value ? "LuminousFlux" : "Luminance" : record.Mode,
+                AbsoluteUnit = flux.HasValue ? flux.Value ? "W/nm" : "W/(sr*m^2*nm)" : record.AbsoluteUnit,
+                ModeSource = flux.HasValue ? "MeasurementProfile" : record.ModeSource,
+                AcquisitionParametersJson = JsonConvert.SerializeObject(new
+                {
+                    profile.MeasurementMode, profile.InputParametersJson, profile.StepDetailsJson
+                })
+            };
+        }
         public void Query()
         {
             LoadAll(Config.Count);
@@ -353,7 +400,7 @@ namespace Spectrum.Data
                                 .SetColumns(x => x.LuminousFlux == viewResult.LuminousFlux)
                                 .SetColumns(x => x.RadiantFlux == viewResult.RadiantFlux)
                                 .SetColumns(x => x.LuminousEfficacy == viewResult.LuminousEfficacy)
-                                .SetColumns(x => x.ExcitationPurity == (double?)viewResult.ExcitationPurity)
+                                .SetColumns(x => x.ExcitationPurity == viewResult.Chromaticity.ExcitationPurity)
                                 .SetColumns(x => x.IsRecalculated == isRecalculated)
                                 .Where(x => x.Id == viewResult.Id)
                                 .ExecuteCommand();
@@ -417,7 +464,20 @@ namespace Spectrum.Data
             ArgumentNullException.ThrowIfNull(profile);
             long preparationStarted = Stopwatch.GetTimestamp();
             item.ColorParam = ViewResultSpectrum.NormalizeColorParam(item.ColorParam);
-            ViewResultSpectrum viewResultSpectrum = new(item);
+            ViewResultSpectrum viewResultSpectrum = new(item) { AcquisitionFluxMode = eqeVoltage.HasValue && eqeCurrentMA.HasValue };
+            viewResultSpectrum.AcquisitionParametersJson = JsonConvert.SerializeObject(new
+            {
+                profile.MeasurementMode, profile.InputParametersJson, profile.StepDetailsJson
+            });
+            COLOR_PARA color = item.ColorParam;
+            color.fCCT = viewResultSpectrum.fCCT;
+            color.dC = viewResultSpectrum.dC;
+            color.fLd = viewResultSpectrum.fLd;
+            color.fPur = viewResultSpectrum.fPur;
+            color.fRa = viewResultSpectrum.fRa;
+            color.fRi = viewResultSpectrum.fRi;
+            color.fLav = viewResultSpectrum.fLav;
+            item.ColorParam = color;
             if (eqeVoltage.HasValue && eqeCurrentMA.HasValue)
                 viewResultSpectrum.CalculateEqeParams(eqeVoltage.Value, eqeCurrentMA.Value);
 
@@ -427,7 +487,7 @@ namespace Spectrum.Data
             item.LuminousFlux = viewResultSpectrum.LuminousFlux;
             item.RadiantFlux = viewResultSpectrum.RadiantFlux;
             item.LuminousEfficacy = viewResultSpectrum.LuminousEfficacy;
-            item.ExcitationPurity = viewResultSpectrum.ExcitationPurity;
+            item.ExcitationPurity = viewResultSpectrum.Chromaticity.ExcitationPurity;
             item.IsRecalculated = false;
             item.TotalDurationMs = (item.TotalDurationMs ?? 0) + (long)Stopwatch.GetElapsedTime(preparationStarted).TotalMilliseconds;
             viewResultSpectrum.TotalDurationMs = item.TotalDurationMs;

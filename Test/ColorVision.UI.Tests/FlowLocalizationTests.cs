@@ -249,14 +249,15 @@ public class FlowLocalizationTests
     }
 
     [Theory]
-    [InlineData("zh-Hans", "全局", "运算", "自定义节点/其他")]
-    [InlineData("en-US", "Global", "Operation", "Custom Nodes/Other")]
-    [InlineData("zh-Hant", "全局", "運算", "自訂節點/其他")]
-    public void FlowNodeCreationMenuUsesCategoryOrderAndNestedOtherCategory(
+    [InlineData("zh-Hans", "全局", "运算", "自定义节点/本地算法", "自定义节点/本地设备")]
+    [InlineData("en-US", "Global", "Operation", "Custom Nodes/Local Algorithms", "Custom Nodes/Local Devices")]
+    [InlineData("zh-Hant", "全局", "運算", "自訂節點/本機演算法", "自訂節點/本機裝置")]
+    public void FlowNodeCreationMenuUsesCategoryOrderAndSeparateLocalCategories(
         string culture,
         string globalHeader,
         string operationHeader,
-        string otherPath)
+        string algorithmPath,
+        string devicePath)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -268,9 +269,15 @@ public class FlowLocalizationTests
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
 
                 IReadOnlyDictionary<Type, string> paths = FlowNodeContextMenuService.GetNodeCreationMenuPaths();
-                Assert.Equal(otherPath, paths[typeof(CommandLineScriptNode)]);
-                Assert.Equal(otherPath, paths[typeof(LocalImageNode)]);
-                Assert.Equal(otherPath, paths[typeof(LocalFileFusionNode)]);
+                Assert.Equal(algorithmPath, paths[typeof(CommandLineScriptNode)]);
+                Assert.Equal(algorithmPath, paths[typeof(LocalFileFusionNode)]);
+                Assert.Equal(algorithmPath, paths[typeof(LocalFindLuminousAreaNode)]);
+                Assert.Equal(algorithmPath, paths[typeof(LocalCleanupNode)]);
+                Assert.Equal(devicePath, paths[typeof(LocalImageNode)]);
+                Assert.Equal(devicePath, paths[typeof(LocalCalibrationNode)]);
+                Assert.Equal(devicePath, paths[typeof(LocalCalibrationRealPoiNode)]);
+                Assert.Equal(devicePath, paths[typeof(LocalPoiNode)]);
+                Assert.Equal(devicePath, paths[typeof(LocalRealPoiNode)]);
                 ST.Library.UI.NodeEditor.STNodeAttribute globalAttribute = typeof(FlowEngineLib.Start.MQTTStartNode)
                     .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
                 ST.Library.UI.NodeEditor.STNodeAttribute operationAttribute = typeof(LoopNode)
@@ -279,7 +286,7 @@ public class FlowLocalizationTests
                     .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
                 Assert.Equal(("全局", 0), (globalAttribute.Path, globalAttribute.CategoryOrder));
                 Assert.Equal(("运算", 100), (operationAttribute.Path, operationAttribute.CategoryOrder));
-                Assert.Equal(("Flow_CustomNodes/Flow_OtherNodes", 9900), (customAttribute.Path, customAttribute.CategoryOrder));
+                Assert.Equal(("Flow_CustomNodes/Flow_LocalAlgorithms", 9900), (customAttribute.Path, customAttribute.CategoryOrder));
                 Assert.Equal(globalHeader, FlowNodeContextMenuService.LocalizeNodeMenuPath("FlowEngineLib/00 全局"));
                 Assert.Equal(operationHeader, FlowNodeContextMenuService.LocalizeNodeMenuPath("FlowEngineLib/01 运算"));
                 Assert.DoesNotContain(paths.Keys, type => type.FullName == "ColorVision.Engine.FlowProcessing.Nodes.LocalBuildPoiByTemplateNode");

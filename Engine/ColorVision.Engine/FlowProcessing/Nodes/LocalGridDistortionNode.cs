@@ -255,7 +255,7 @@ internal static class LocalGridDistortionResultPersistence
     }
 }
 
-[STNode("Flow_CustomNodes", "点阵畸变", CategoryOrder = 9900)]
+[STNode("Flow_CustomNodes/Flow_LocalAlgorithms", "点阵畸变", CategoryOrder = 9900, NodeOrder = 30)]
 public sealed class LocalGridDistortionNode : LocalFlowNodeBase
 {
     internal const int DetectionFailureResultCode = -1;

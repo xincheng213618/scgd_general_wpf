@@ -38,6 +38,7 @@ public sealed class LocalSpectrumCapture
     public float IntegralTime { get; init; }
     public COLOR_PARA Data { get; init; }
     public COLOR_PARA_EQE? EqeData { get; init; }
+    public string? AcquisitionParametersJson { get; set; }
 }
 
 internal interface ILocalSpectrumNative
@@ -84,14 +85,14 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
             LocalSpectrumSession.Check(Spectrometer.CM_Emission_GetDataEQE(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, p.AFactor, p.Voltage, p.Current, ref eqe), "EQE 采集");
             // Common color fields have the same names, but the native EQE ABI is a different structure.
             COLOR_PARA data = JsonConvert.DeserializeObject<COLOR_PARA>(JsonConvert.SerializeObject(eqe));
-            return new() { IntegralTime = time, Data = data, EqeData = eqe };
+            return new() { IntegralTime = time, Data = SpectrumColorRendering.Apply(data), EqeData = eqe };
         }
         COLOR_PARA result = new() { fPL = new float[10000], fRi = new float[15] };
         int code = settings.IsSyncFrequencyEnabled
             ? Spectrometer.CM_Emission_GetDataSyncfreq(h, (TRIGGER_MODE)0, settings.Syncfreq, settings.SyncfreqFactor, ref time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result)
             : Spectrometer.CM_Emission_GetData(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result);
         LocalSpectrumSession.Check(code, "光谱采集");
-        return new() { IntegralTime = time, Data = result };
+        return new() { IntegralTime = time, Data = SpectrumColorRendering.Apply(result) };
     }
 }
 
@@ -187,7 +188,13 @@ internal sealed class LocalSpectrumSession : IDisposable
             }
             if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
                 Dark(parameters, config, parameters.SelfAdaptionInitDark);
-            return native.Capture(handle, parameters, settings, dark);
+            var result = native.Capture(handle, parameters, settings, dark);
+            result.AcquisitionParametersJson = JsonConvert.SerializeObject(new
+            {
+                Parameters = parameters, Acquisition = settings,
+                config.SN, WavelengthFile = wave, MagnitudeFile = magnitude
+            });
+            return result;
         }
     }
 

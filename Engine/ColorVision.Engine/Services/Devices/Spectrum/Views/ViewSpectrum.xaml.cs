@@ -1,4 +1,7 @@
-﻿#pragma warning disable CA1805,CA1859,CS8604
+using ColorVision.ImageEditor.Draw;
+using ColorVision.Themes;
+using cvColorVision;
+#pragma warning disable CA1805,CA1859,CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
@@ -120,11 +123,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
-            wpfplot1.Plot.Axes.Bottom.Min = 370;
-            wpfplot1.Plot.Axes.Bottom.Max = 1000;
+            wpfplot1.Plot.Axes.Bottom.Min = 380;
+            wpfplot1.Plot.Axes.Bottom.Max = 780;
             wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
-            AddSpectrumColorBar(wpfplot1);
+
             string titleAbsolute = ColorVision.Engine.Properties.Resources.AbsoluteSpectrumCurve;
             wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
             wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "W/nm");
@@ -134,8 +137,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(titleAbsolute);
 
             wpfplot2.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot2.Plot.Axes.Bottom.Min = 370;
-            wpfplot2.Plot.Axes.Bottom.Max = 1000;
+            wpfplot2.Plot.Axes.Bottom.Min = 380;
+            wpfplot2.Plot.Axes.Bottom.Max = 780;
 
             if (listView1.View is GridView gridView)
             {
@@ -144,15 +147,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 ViewSpectrumConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-            if (listView2.View is GridView gridView1)
-            {
-                GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, LeftGridViewColumnVisibilitys);
-
-                ViewSpectrumConfig.Instance.LeftGridViewColumnVisibilitys.CopyToGridView(LeftGridViewColumnVisibilitys);
-                ViewSpectrumConfig.Instance.LeftGridViewColumnVisibilitys = LeftGridViewColumnVisibilitys;
-                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView1.Columns, LeftGridViewColumnVisibilitys);
-            }
-
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
@@ -160,6 +154,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             DisplayConfig_IsIsLuminousFluxModeChanged();
             DisplayConfig.IsIsLuminousFluxModeChanged += LuminousFluxModeChanged;
+            ThemeManager.Current.CurrentUIThemeChanged += ApplySpectrumTheme;
+            ApplySpectrumTheme(ThemeManager.Current.CurrentUITheme);
+            InitializeSpectrumAnalysis();
         }
 
         private void LuminousFluxModeChanged(object? sender, bool value) => DisplayConfig_IsIsLuminousFluxModeChanged();
@@ -168,7 +165,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
-            if (_isInitialized) DisplayConfig.IsIsLuminousFluxModeChanged -= LuminousFluxModeChanged;
+            if (_isInitialized)
+            {
+                DisplayConfig.IsIsLuminousFluxModeChanged -= LuminousFluxModeChanged;
+                ThemeManager.Current.CurrentUIThemeChanged -= ApplySpectrumTheme;
+            }
+            relativeCursor?.Dispose();
+            absoluteCursor?.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -178,7 +181,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + (isLuminousFluxMode ? "W/nm" : "w/sr·m^2·nm"));
 
-            SetColumnVisibility(new[] { EqeColumn, LuminousFluxColumn, RadiantFluxColumn, LuminousEfficacyColumn }, isLuminousFluxMode);
+            SetColumnVisibility(new[] { EqeColumn, LuminousFluxColumn, RadiantFluxColumn, LuminousEfficacyColumn, VoltageColumn, CurrentColumn }, isLuminousFluxMode);
             SetColumnVisibility(new[] { LvColumn }, !isLuminousFluxMode);
 
             if (listView1.View is GridView gridView)
@@ -204,51 +207,54 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private void Delete()
         {
-            if (listView1.SelectedItems.Count == listView1.Items.Count)
-                ViewResults.Clear();
+            var selected = listView1.SelectedItems.Cast<ViewResultSpectrum>().ToArray();
+            foreach (var result in selected) ViewResults.Remove(result);
+            if (ViewResults.Count == 0) Clear();
             else
             {
-                listView1.SelectedIndex = -1;
-                foreach (var item in listView1.SelectedItems.Cast<ViewResultSpectrum>().ToList())
-                    ViewResults.Remove(item);
+                if (listView1.SelectedIndex < 0) listView1.SelectedIndex = 0;
+                ReDrawPlot();
             }
         }
 
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
+            if (sender is not ContextMenu contextMenu || listView1.View is not GridView gridView) return;
+            if (contextMenu.Items.Count == 0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+            foreach (var item in contextMenu.Items.OfType<MenuItem>())
+            {
+                if (BindingOperations.GetBinding(item, MenuItem.IsCheckedProperty)?.Source is GridViewColumnVisibility column
+                    && (column.GridViewColumn == VoltageColumn || column.GridViewColumn == CurrentColumn))
+                    item.Visibility = DisplayConfig.IsLuminousFluxMode ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
 
-        private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView2.View is GridView gridView)
-                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
-        }
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0)
+            var selectedResults = GetSpectrumExportResults(sender);
+            if (selectedResults.Length == 0)
             {
                 MessageBox.Show("SelectDataFirst");
                 return;
             }
 
-            List<ViewResultSpectrum> selectedResults = listView1.SelectedItems.Cast<ViewResultSpectrum>().ToList();
 
+            bool fluxMode = selectedResults.Any(result => result.AcquisitionFluxMode ?? DisplayConfig.IsLuminousFluxMode);
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = (DisplayConfig.IsLuminousFluxMode ? "EQE" : "SpectrometerExport") + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.FileName = (fluxMode ? "EQE" : "SpectrometerExport") + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            if (DisplayConfig.IsLuminousFluxMode)
+            if (fluxMode)
                 SpectrumCsvExportHelper.ExportLuminousFluxMode(dialog.FileName, selectedResults);
             else
                 SpectrumCsvExportHelper.ExportLuminanceMode(dialog.FileName, selectedResults);
@@ -259,112 +265,80 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                listView2.ItemsSource = ViewResults[listview.SelectedIndex].SpectralDatas;
             }
+            else { relativeCursor?.Clear(); absoluteCursor?.Clear(); }
         }
 
         bool MulComparison;
 
         Scatter? LastMulSelectComparsion;
 
+        private Color spectrumCurveColor = Color.FromHex("#303030");
+
+        private void ApplySpectrumTheme(Theme theme)
+        {
+            foreach (var control in new[] { wpfplot1, wpfplot2 })
+            {
+                spectrumCurveColor = SpectrumPlotStyle.ApplyTheme(control.Plot, theme == Theme.Dark);
+                if (!MulComparison)
+                    foreach (var result in ViewResults)
+                    {
+                        if (result.ScatterPlot != null) result.ScatterPlot.Color = spectrumCurveColor;
+                        if (result.AbsoluteScatterPlot != null) result.AbsoluteScatterPlot.Color = spectrumCurveColor;
+                    }
+                control.Refresh();
+            }
+        }
+
         private void DrawPlot()
         {
-            if (listView1.SelectedIndex < 0) return;
-            
-            if (IsShowingAbsoluteSpectrum)
-            {
-                DrawAbsolutePlot();
-                return;
-            }
-            
-            wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
-            wpfplot1.Plot.Axes.Bottom.Min = ViewResults[listView1.SelectedIndex].fSpect1;
-            wpfplot1.Plot.Axes.Bottom.Max = ViewResults[listView1.SelectedIndex].fSpect2;
-            wpfplot1.Plot.Axes.Left.Min = -0.05;
-            wpfplot1.Plot.Axes.Left.Max = 1;
-
-            if (ScatterPlots.Count > 0)
-            {
-                if (MulComparison)
-                {
-                    if (LastMulSelectComparsion != null)
-                    {
-                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                        LastMulSelectComparsion.LineWidth = 1;
-                        LastMulSelectComparsion.MarkerSize = 1;
-                    }
-
-                    LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
-                    LastMulSelectComparsion.LineWidth = 3;
-                    LastMulSelectComparsion.MarkerSize = 3;
-                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
-                    wpfplot1.Plot.PlottableList.Add(LastMulSelectComparsion);
-
-                }
-                else
-                {
-                    var temp = ScatterPlots[listView1.SelectedIndex];
-                    if (temp == null) return;
-                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                    temp.LineWidth = 1;
-                    temp.MarkerSize = 1;
-
-                    wpfplot1.Plot.PlottableList.Add(temp);
-                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                    LastMulSelectComparsion = temp;
-
-                }
-            }
-
-            wpfplot1.Refresh();
+            if (listView1.SelectedItem is not ViewResultSpectrum result) return;
+            if (IsShowingAbsoluteSpectrum) { DrawAbsolutePlot(); return; }
+            DrawSpectrum(wpfplot1, result, result.ScatterPlot, false);
         }
 
         private void DrawAbsolutePlot()
         {
-            if (listView1.SelectedIndex < 0) return;
-            
-            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot2.Plot.Axes.Bottom.Min = ViewResults[listView1.SelectedIndex].fSpect1;
-            wpfplot2.Plot.Axes.Bottom.Max = ViewResults[listView1.SelectedIndex].fSpect2;
-
-            if (AbsoluteScatterPlots.Count > 0)
-            {
-                if (MulComparison)
-                {
-                    if (LastMulSelectComparsion != null)
-                    {
-                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                        LastMulSelectComparsion.LineWidth = 1;
-                        LastMulSelectComparsion.MarkerSize = 1;
-                    }
-
-                    LastMulSelectComparsion = AbsoluteScatterPlots[listView1.SelectedIndex];
-                    LastMulSelectComparsion.LineWidth = 3;
-                    LastMulSelectComparsion.MarkerSize = 3;
-                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
-                    wpfplot2.Plot.PlottableList.Add(LastMulSelectComparsion);
-
-                }
-                else
-                {
-                    var temp = AbsoluteScatterPlots[listView1.SelectedIndex];
-                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                    temp.LineWidth = 1;
-                    temp.MarkerSize = 1;
-
-                    wpfplot2.Plot.PlottableList.Add(temp);
-                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
-                    LastMulSelectComparsion = temp;
-
-                }
-            }
-
-            wpfplot2.Refresh();
+            if (listView1.SelectedItem is not ViewResultSpectrum result) return;
+            DrawSpectrum(wpfplot2, result, result.AbsoluteScatterPlot, true);
         }
 
-        private List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
-        private List<Scatter> AbsoluteScatterPlots { get; set; } = new List<Scatter>();
+        private void DrawSpectrum(ScottPlot.WPF.WpfPlot control, ViewResultSpectrum result, Scatter curve, bool absolute)
+        {
+            if (curve == null) return;
+            UpdateSpectrumCursors(result, absolute);
+            control.Plot.Axes.SetLimitsX(result.fSpect1, result.fSpect2);
+            if (!absolute) control.Plot.Axes.SetLimitsY(-0.05, 1.05);
+            SpectrumPlotStyle.ClearFill(control.Plot);
+            if (MulComparison)
+            {
+                if (LastMulSelectComparsion != null)
+                {
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                    LastMulSelectComparsion.LineWidth = 1;
+                }
+                curve.Color = Colors.Red;
+                curve.LineWidth = 2;
+            }
+            else
+            {
+                control.Plot.Remove(LastMulSelectComparsion);
+                control.Plot.Remove(curve);
+                SpectrumPlotStyle.AddFill(control.Plot, curve, wavelength =>
+                {
+                    var rgb = SpectrumChromaticity.DisplayRgb(wavelength);
+                    return new Color(rgb.red, rgb.green, rgb.blue);
+                });
+                curve.Color = spectrumCurveColor;
+                curve.LineWidth = 1.2f;
+            }
+            curve.MarkerSize = 0;
+            if (!control.Plot.PlottableList.Contains(curve)) control.Plot.PlottableList.Add(curve);
+            LastMulSelectComparsion = curve;
+            if (absolute) control.Plot.Axes.AutoScaleY();
+            control.Refresh();
+        }
+
         private bool IsShowingAbsoluteSpectrum { get; set; } = false;
 
         private void Button1_Click(object sender, RoutedEventArgs e)
@@ -415,7 +389,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     {
                         if (i == listView1.SelectedIndex)
                             continue;
-                        var plot = AbsoluteScatterPlots[i];
+                        var plot = ViewResults[i].AbsoluteScatterPlot;
                         plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                         plot.LineWidth = 1;
                         plot.MarkerSize = 1;
@@ -427,7 +401,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             else
             {
                 wpfplot1.Plot.Clear();
-                AddSpectrumColorBar(wpfplot1);
+
                 LastMulSelectComparsion = null;
                 if (MulComparison)
                 {
@@ -436,7 +410,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     {
                         if (i == listView1.SelectedIndex)
                             continue;
-                        var plot = ScatterPlots[i];
+                        var plot = ViewResults[i].ScatterPlot;
                         plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                         plot.LineWidth = 1;
                         plot.MarkerSize = 1;
@@ -448,20 +422,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             DrawPlot();
         }
 
-        private void Button2_Click(object sender, RoutedEventArgs e)
-        {
-            ViewResults.Clear();
-            ScatterPlots.Clear();
-            AbsoluteScatterPlots.Clear();
-
-            wpfplot1.Plot.Clear();
-            AddSpectrumColorBar(wpfplot1);
-            wpfplot1.Refresh();
-            wpfplot2.Plot.Clear();
-            wpfplot2.Refresh();
-
-            ReDrawPlot();
-        }
+        private void Button2_Click(object sender, RoutedEventArgs e) => Clear();
 
         private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
         {
@@ -476,111 +437,40 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
+            if (e.Key == Key.Delete && listView1.SelectedIndex >= 0)
             {
-                int temp = listView1.SelectedIndex;
-                ViewResults.RemoveAt(listView1.SelectedIndex);
-
-
-                if (listView1.Items.Count > 0)
-                {
-                    listView1.SelectedIndex = temp - 1; ;
-                    DrawPlot();
-                }
-                else
-                {
-                    wpfplot1.Plot.Clear();
-                    AddSpectrumColorBar(wpfplot1);
-                    wpfplot1.Refresh();
-                    wpfplot2.Plot.Clear();
-                    wpfplot2.Refresh();
-                }
+                Delete();
+                e.Handled = true;
             }
-
-        }
-
-        Marker markerPlot1;
-        Marker markerPlot2;
-
-        private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            wpfplot1.Plot.Remove(markerPlot1);
-            wpfplot2.Plot.Remove(markerPlot2);
-            
-            if (listView2.SelectedIndex > -1)
-            {
-                markerPlot1 = new Marker
-                {
-                    X = listView2.SelectedIndex + 380,
-                    Y = ViewResults[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
-                    MarkerShape = MarkerShape.FilledCircle,
-                    MarkerSize = 10f,
-                    Color = Color.FromColor(System.Drawing.Color.Orange),
-                };
-                wpfplot1.Plot.PlottableList.Add(markerPlot1);
-                
-                markerPlot2 = new Marker
-                {
-                    X = listView2.SelectedIndex + 380,
-                    Y = ViewResults[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10] * ViewResults[listView1.SelectedIndex].fPlambda,
-                    MarkerShape = MarkerShape.FilledCircle,
-                    MarkerSize = 10f,
-                    Color = Color.FromColor(System.Drawing.Color.Orange),
-                };
-                wpfplot2.Plot.PlottableList.Add(markerPlot2);
-            }
-            wpfplot1.Refresh();
-            wpfplot2.Refresh();
-
         }
 
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-            var listView = !IsExchange ? listView1 : listView2;
-
-            listView1.Height = ListRow2.ActualHeight - 32;
+            if (!Config.IsShowListView) return;
+            Config.Height = Math.Max(50, ListRow2.ActualHeight - 32);
             ListRow2.Height = GridLength.Auto;
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
 
-        private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
-        {
-            var listView = IsExchange ? listView1 : listView2;
 
-            listView.Width = ListCol2.ActualWidth;
-            ListCol1.Width = new GridLength(1, GridUnitType.Star);
-            ListCol2.Width = GridLength.Auto;
-        }
-
-        /// <summary>
-        /// Adds a visible spectrum rainbow color bar to the bottom of the chart.
-        /// </summary>
-        private static void AddSpectrumColorBar(ScottPlot.WPF.WpfPlot plotControl)
-        {
-            for (int wl = 380; wl < 780; wl += 2)
-            {
-                var color = WavelengthToColor.Convert(wl);
-                var scottColor = new ScottPlot.Color(color.R, color.G, color.B);
-
-                var rect = plotControl.Plot.Add.Rectangle(wl, wl + 2, -0.01, -0.06);
-                rect.FillColor = scottColor;
-                rect.LineColor = scottColor;
-                rect.LineWidth = 0;
-            }
-        }
 
         public void Clear()
         {
             ViewResults.Clear();
-            ScatterPlots.Clear();
-            AbsoluteScatterPlots.Clear();
+            localPreview = null;
+            LastMulSelectComparsion = null;
+            if (!_isInitialized) return;
+            relativeCursor?.Clear();
+            absoluteCursor?.Clear();
+            wpfplot1.Plot.Clear();
+            wpfplot2.Plot.Clear();
+            wpfplot1.Refresh();
+            wpfplot2.Refresh();
         }
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
         {
             ViewResults.Add(viewResultSpectrum);
-            ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-            AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             listView1.SelectedIndex = ViewResults.Count - 1;
             listView1.ScrollIntoView(viewResultSpectrum);
         }
@@ -591,8 +481,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (localPreview != null)
             {
                 ViewResults.Remove(localPreview);
-                ScatterPlots.Remove(localPreview.ScatterPlot);
-                AbsoluteScatterPlots.Remove(localPreview.AbsoluteScatterPlot);
             }
             localPreview = result;
             AddViewResultSpectrum(result);
@@ -600,8 +488,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         private void Inquire_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            ScatterPlots.Clear();
-            AbsoluteScatterPlots.Clear();
             using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             var query = DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
@@ -611,8 +497,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
                 ViewResults.Add(viewResultSpectrum);
-                ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             }
             if (ViewResults.Count > 0)
                 listView1.SelectedIndex = 0;
@@ -626,22 +510,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);
 
-                    ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                    AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
                     return viewResultSpectrum;
                 }
                 );
-            genericQuery.PreQuery += (s, e) =>
-            {
-                ScatterPlots.Clear();
-                AbsoluteScatterPlots.Clear();
-            };
             genericQuery.QueryCompleted += (s, e) =>
             {
                 if (ViewResults.Count > 0)
                 {
-                    listView1.Visibility = Visibility.Visible;
-                    listView2.Visibility = Visibility.Visible;
+
                     listView1.SelectedIndex = 0;
                 }
             };
@@ -660,41 +536,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
 
-        }
-
-        private bool IsExchange;
-
-        private void Exchange_Click(object sender, RoutedEventArgs e)
-        {
-            IsExchange = !IsExchange;
-            var listD = IsExchange ? listView1 : listView2;
-            var listL = IsExchange ? listView2 : listView1;
-            if (listD.Parent is Grid parent1 && listL.Parent is Grid parent2)
-            {
-                var tempCol = Grid.GetColumn(listD);
-                var tempRow = Grid.GetRow(listD);
-
-                var tempCol1 = Grid.GetColumn(listL);
-                var tempRow1 = Grid.GetRow(listL);
-
-                parent1.Children.Remove(listD);
-                parent2.Children.Remove(listL);
-
-                parent1.Children.Add(listL);
-                parent2.Children.Add(listD);
-
-                Grid.SetColumn(listD, tempCol1);
-                Grid.SetRow(listD, tempRow1);
-
-                Grid.SetColumn(listL, tempCol);
-                Grid.SetRow(listL, tempRow);
-
-
-                listD.Width = listL.ActualWidth;
-                listL.Height = listD.ActualHeight;
-                listD.Height = double.NaN;
-                listL.Width = double.NaN;
-            }
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -728,11 +569,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 "Color Rendering (Ra)",
                 "FWHM",
                 "Excitation Purity",
-                "Dominant Wavelength Color",
-                "Voltgage(V) (V)",
-                "Current(I) (mA)"
+                "Dominant Wavelength Color"
             };
 
+            AddRenderingHeaders(headers, includeRa: false);
             AddSpectrumHeaders(headers);
 
             StringBuilder csvBuilder = new();
@@ -742,27 +582,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 List<string> row = new()
                 {
-                    result.Id.ToString(),
-                    result.BatchID?.ToString() ?? string.Empty,
+                    result.Id.ToString(CultureInfo.InvariantCulture),
+                    result.BatchID?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                     result.IP ?? string.Empty,
                     result.Lv ?? string.Empty,
                     result.Blue ?? string.Empty,
-                    result.fx.ToString(),
-                    result.fy.ToString(),
-                    result.fu.ToString(),
-                    result.fv.ToString(),
-                    result.fCCT.ToString(),
-                    result.fLd.ToString(),
-                    result.fPur.ToString(),
-                    result.fLp.ToString(),
-                    result.fRa.ToString(),
-                    result.fHW.ToString(),
-                    result.ExcitationPurity.ToString(),
+                    result.fx.ToString(CultureInfo.InvariantCulture),
+                    result.fy.ToString(CultureInfo.InvariantCulture),
+                    result.fu.ToString(CultureInfo.InvariantCulture),
+                    result.fv.ToString(CultureInfo.InvariantCulture),
+                    result.Chromaticity.ColorTemperature?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.Chromaticity.DominantWavelength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.PurityPercent?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.fLp.ToString(CultureInfo.InvariantCulture),
+                    result.ColorRendering.Ra?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.fHW.ToString(CultureInfo.InvariantCulture),
+                    result.Chromaticity.ExcitationPurity?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                     result.DominantWavelengthHex ?? string.Empty,
-                    result.V?.ToString() ?? string.Empty,
-                    result.I?.ToString() ?? string.Empty,
                 };
 
+                AddRenderingValues(row, result, includeRa: false);
                 AddSpectrumValues(row, result.SpectralDatas);
                 AppendCsvLine(csvBuilder, row);
             }
@@ -791,6 +630,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 "Current(I) (mA)"
             };
 
+            AddRenderingHeaders(headers, includeRa: true);
             AddSpectrumHeaders(headers);
 
             StringBuilder csvBuilder = new();
@@ -800,23 +640,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 List<string> row = new()
                 {
-                    result.Id.ToString(),
-                    result.BatchID?.ToString() ?? string.Empty,
+                    result.Id.ToString(CultureInfo.InvariantCulture),
+                    result.BatchID?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                     result.IP ?? string.Empty,
-                    result.EqePercent.ToString(),
-                    result.LuminousFlux?.ToString() ?? string.Empty,
-                    result.RadiantFlux?.ToString() ?? string.Empty,
-                    result.LuminousEfficacy?.ToString() ?? string.Empty,
-                    result.fx.ToString(),
-                    result.fy.ToString(),
-                    result.fCCT.ToString(),
-                    result.fLp.ToString(),
-                    result.ExcitationPurity.ToString(),
+                    result.EqePercent.ToString(CultureInfo.InvariantCulture),
+                    result.LuminousFlux?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.RadiantFlux?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.LuminousEfficacy?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.fx.ToString(CultureInfo.InvariantCulture),
+                    result.fy.ToString(CultureInfo.InvariantCulture),
+                    result.Chromaticity.ColorTemperature?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.fLp.ToString(CultureInfo.InvariantCulture),
+                    result.Chromaticity.ExcitationPurity?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                     result.DominantWavelengthHex ?? string.Empty,
-                    result.V?.ToString() ?? string.Empty,
-                    result.I?.ToString() ?? string.Empty,
+                    result.AcquisitionFluxMode == false ? string.Empty : result.V?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.AcquisitionFluxMode == false ? string.Empty : result.I?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 };
 
+                AddRenderingValues(row, result, includeRa: true);
                 AddSpectrumValues(row, result.SpectralDatas);
                 AppendCsvLine(csvBuilder, row);
             }
@@ -824,11 +665,39 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
         }
 
+        private static void AddRenderingHeaders(List<string> headers, bool includeRa)
+        {
+            if (includeRa) headers.Add("Color Rendering (Ra)");
+            headers.Add("Mean Wavelength(nm)");
+            headers.AddRange(Enumerable.Range(1, 15).Select(index => $"R{index}"));
+            headers.Add("Color Rendering Status");
+            headers.AddRange(new[] { "Duv", "Complementary Wavelength(nm)", "Wavelength Status", "Temperature Status", "Purity Reference White" });
+            if (includeRa) headers.AddRange(new[] { "DW(Ld)(nm)", "Color Purity(%)" });
+        }
+
+        private static void AddRenderingValues(List<string> row, ViewResultSpectrum result, bool includeRa)
+        {
+            if (includeRa) row.Add(result.ColorRendering.Ra?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
+            row.Add(result.ColorRendering.MeanWavelength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
+            row.AddRange(result.RenderingIndices.Select(value => value?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+            row.Add(result.ColorRendering.Status.ToString());
+            row.Add(result.Chromaticity.Duv?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
+            row.Add(result.Chromaticity.ComplementaryWavelength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
+            row.Add(result.Chromaticity.WavelengthStatus.ToString());
+            row.Add(result.Chromaticity.TemperatureStatus.ToString());
+            row.Add("D65 (0.3127; 0.3290)");
+            if (includeRa)
+            {
+                row.Add(result.Chromaticity.DominantWavelength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
+                row.Add(result.PurityPercent?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
+            }
+        }
+
         private static void AddSpectrumHeaders(List<string> headers)
         {
             for (int wl = StartWavelength; wl <= EndWavelength; wl++)
             {
-                headers.Add(wl.ToString());
+                headers.Add(wl.ToString(CultureInfo.InvariantCulture));
             }
 
             for (int wl = StartWavelength; wl <= EndWavelength; wl++)
@@ -845,19 +714,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             for (int wl = StartWavelength; wl <= EndWavelength; wl++)
             {
                 int index = wl - StartWavelength;
-                row.Add(index < spectralCount ? safeSpectralDatas[index].AbsoluteSpectrum.ToString() : string.Empty);
+                row.Add(index < spectralCount ? safeSpectralDatas[index].AbsoluteSpectrum.ToString(CultureInfo.InvariantCulture) : string.Empty);
             }
 
             for (int wl = StartWavelength; wl <= EndWavelength; wl++)
             {
                 int index = wl - StartWavelength;
-                row.Add(index < spectralCount ? safeSpectralDatas[index].RelativeSpectrum.ToString() : string.Empty);
+                row.Add(index < spectralCount ? safeSpectralDatas[index].RelativeSpectrum.ToString(CultureInfo.InvariantCulture) : string.Empty);
             }
         }
 
         private static void AppendCsvLine(StringBuilder csvBuilder, List<string> values)
         {
-            csvBuilder.AppendLine(string.Join(",", values));
+            csvBuilder.AppendLine(string.Join(",", values.Select(value => value.IndexOfAny(['"', ',', '\r', '\n']) >= 0 ? "\"" + value.Replace("\"", "\"\"") + "\"" : value)));
         }
     }
 }

@@ -408,19 +408,6 @@
     "menu": "03_4 KB"
   },
   {
-    "type": "FlowEngineLib.Node.Algorithm.AlgorithmKBOutputNode",
-    "request": {
-      "TemplateParam": {
-        "ID": -1,
-        "Name": "fixture-TempName"
-      },
-      "MasterId": -1,
-      "MasterValue": null,
-      "MasterResultType": -1
-    },
-    "menu": "03_4 KB"
-  },
-  {
     "type": "FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode",
     "request": {
       "FixedLEDPoint": [

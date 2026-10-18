@@ -1,11 +1,11 @@
 using log4net;
+using ColorVision.Engine.Services.Files;
 using Newtonsoft.Json;
 using ColorVision.Engine.PropertyEditor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,7 +50,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
     public class FolderSizePreProcessor : PreProcessorBase<FolderSizePreProcessorConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FolderSizePreProcessor));
-        private static readonly char[] ExtensionSeparators = { ',', ';', ' ' };
         private const long OneMb = 1024L * 1024L;
         private readonly SemaphoreSlim _executionGate = new(1, 1);
         private readonly Func<Func<bool>, Task<bool>> _runInBackground;
@@ -91,117 +90,16 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private static bool ExecuteCleanup(string[] folderPaths, string fileExtensions, bool includeSubfolders, long triggerBytes, long targetBytes)
         {
-            foreach (var cachePath in folderPaths)
+            try
             {
-                if (string.IsNullOrWhiteSpace(cachePath))
-                {
-                    log.Warn("CacheCleanupPreProcess: 缓存目录未配置");
-                    continue;
-                }
-
-                if (!Directory.Exists(cachePath))
-                {
-                    log.Warn($"CacheCleanupPreProcess: 缓存目录不存在 {cachePath}");
-                    continue;
-                }
-
-                try
-                {
-                    var scanTiming = System.Diagnostics.Stopwatch.StartNew();
-                    // Parse file extensions
-                    var extensions = ParseExtensions(fileExtensions);
-
-                    var searchOption = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-                    long totalSize = 0;
-                    int scannedFiles = 0;
-                    int matchedFiles = 0;
-                    int unreadableFiles = 0;
-                    var files = new List<(FileInfo Info, long Size)>();
-
-                    // Directory enumeration pre-populates size and timestamps; reuse them instead of querying each path again.
-                    foreach (var file in new DirectoryInfo(cachePath).EnumerateFiles("*.*", searchOption))
-                    {
-                        scannedFiles++;
-                        if (extensions.Count > 0 && !extensions.Contains(file.Extension)) continue;
-                        matchedFiles++;
-                        try
-                        {
-                            long fileSize = file.Length;
-                            totalSize += fileSize;
-                            files.Add((file, fileSize));
-                        }
-                        catch
-                        {
-                            unreadableFiles++;
-                            // Skip files we can't access
-                        }
-                    }
-                    if (matchedFiles == 0)
-                    {
-                        log.Debug($"CacheCleanupPreProcess: 缓存目录中没有匹配的文件 {cachePath}");
-                        continue;
-                    }
-                    if (unreadableFiles > 0)
-                        log.Warn($"CacheCleanupPreProcess: 缓存扫描跳过了 {unreadableFiles} 个无法读取大小的文件，目录 {cachePath}");
-                    if (files.Count == 0)
-                    {
-                        continue;
-                    }
-                    long totalSizeMB = totalSize / (1024 * 1024);
-                    long triggerMB = triggerBytes / OneMb;
-                    long targetMB = targetBytes / OneMb;
-
-                    scanTiming.Stop();
-                    log.Debug($"CacheCleanupPreProcess: 缓存目录 {cachePath} 当前大小 {totalSizeMB}MB, 缓存上限 {triggerMB}MB, 清理到 {targetMB}MB");
-                    if (totalSize <= triggerBytes)
-                    {
-                        continue;
-                    }
-
-                    var filesByDate = files.OrderBy(f => f.Info.LastWriteTime);
-
-                    int deletedCount = 0;
-                    long deletedSize = 0;
-                    int deleteFailures = 0;
-                    DateTime? firstDeletedWriteTime = null;
-                    DateTime? lastDeletedWriteTime = null;
-                    var deleteTiming = System.Diagnostics.Stopwatch.StartNew();
-
-                    foreach (var file in filesByDate)
-                    {
-                        if (totalSize - deletedSize <= targetBytes)
-                            break;
-
-                        try
-                        {
-                            File.Delete(file.Info.FullName);
-                            deletedSize += file.Size;
-                            deletedCount++;
-                            firstDeletedWriteTime ??= file.Info.LastWriteTime;
-                            lastDeletedWriteTime = file.Info.LastWriteTime;
-                            if (log.IsDebugEnabled) log.Debug($"删除文件: {file.Info.Name} ({file.Size / 1024}KB)");
-                        }
-                        catch (Exception ex)
-                        {
-                            deleteFailures++;
-                            log.Warn($"删除文件失败: {file.Info.Name}", ex);
-                        }
-                    }
-
-                    long finalSize = (totalSize - deletedSize) / (1024 * 1024);
-                    log.InfoFormat("CacheCleanupPreProcess: 清理完成。Directory={0} FilesScanned={1} UnreadableFiles={2} DeletedFiles={3} DeleteFailures={4} ReleasedMiB={5} RemainingMiB={6} ScanMs={7:F3} DeleteMs={8:F3} BeforeMiB={9} TriggerMiB={10} TargetMiB={11} FirstDeletedWriteTime={12:O} LastDeletedWriteTime={13:O}",
-                        cachePath, scannedFiles, unreadableFiles, deletedCount, deleteFailures,
-                        deletedSize / OneMb, finalSize, scanTiming.Elapsed.TotalMilliseconds, deleteTiming.Elapsed.TotalMilliseconds,
-                        totalSizeMB, triggerMB, targetMB, firstDeletedWriteTime, lastDeletedWriteTime);
-                }
-                catch (Exception ex)
-                {
-                    log.Error("CacheCleanupPreProcess 执行失败", ex);
-                    return false;
-
-                }
+                FolderCleanupService.Execute(folderPaths, fileExtensions, includeSubfolders, triggerBytes, targetBytes);
+                return true;
             }
-            return true;
+            catch (Exception ex)
+            {
+                log.Error("CacheCleanupPreProcess 执行失败", ex);
+                return false;
+            }
         }
 
         private (long TriggerBytes, long TargetBytes) NormalizeThresholds()
@@ -232,23 +130,5 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             return (triggerBytes, targetBytes);
         }
 
-        private static HashSet<string> ParseExtensions(string extensionsStr)
-        {
-            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            
-            if (string.IsNullOrWhiteSpace(extensionsStr))
-                return result;
-
-            var parts = extensionsStr.Split(ExtensionSeparators, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var part in parts)
-            {
-                var ext = part.Trim();
-                if (!ext.StartsWith('.'))
-                    ext = "." + ext;
-                result.Add(ext.ToLowerInvariant());
-            }
-
-            return result;
-        }
     }
 }

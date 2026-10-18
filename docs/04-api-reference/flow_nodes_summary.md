@@ -37,7 +37,7 @@ rg -n "class .*Node|NodeType|FlowNodePropertyEditor|PropertyEditorType|NodeConfi
 
 标注 `Obsolete` 的类型可能仍被旧流程序列化名称引用。新增节点时优先查当前替代类型和兼容要求，不因它不再出现在 UI 菜单中就删除旧类型。
 
-含 `PhyDeviceControlNode` 或 `AlgorithmImageROINode` 的旧流程无法在当前版本加载；需在仍支持相应类型的旧版本中删除或替换该节点并保存，再使用当前版本加载。加载器不会自动删除未知节点或重接流程连线。
+含 `PhyDeviceControlNode`、`AlgorithmImageROINode` 或 `AlgorithmKBOutputNode` 的旧流程无法在当前版本加载；继续运行原有 KB 输出项目时使用支持相应类型的旧版本软件。其他流程需在旧版本中删除或替换该节点并保存，再使用当前版本加载。加载器不会自动删除未知节点或重接流程连线。
 
 ## 修改时保持的边界
 

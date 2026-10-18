@@ -2777,7 +2777,7 @@
   <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>亮度過低，找不到十字</value></data>
   <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>找不到足夠明亮的十字線</value></data>
   <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>亮線覆蓋不足，列：{0:P0}，欄：{1:P0}</value></data>
-  <data name="Flow_CustomNodes" xml:space="preserve"><value>自訂節點</value></data>
+  <data name="Flow_CustomNodes" xml:space="preserve"><value>自訂節點</value></data><data name="Flow_LocalDevices" xml:space="preserve"><value>本機裝置</value></data><data name="Flow_LocalAlgorithms" xml:space="preserve"><value>本機演算法</value></data>
   <data name="Flow_OtherNodes" xml:space="preserve"><value>其他</value></data>
   <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>本機圖片檔案路徑</value></data>
   <data name="LocalImage_PathEmpty" xml:space="preserve"><value>本機圖片路徑為空</value></data>
@@ -7563,4 +7563,63 @@
   <data name="预览增益；测量使用校正组增益" xml:space="preserve"><value>預覽增益；測量使用校正組增益</value></data>
   <data name="高级查询失败或未完成，当前列表可能保留旧数据。" xml:space="preserve"><value>進階查詢失敗或未完成，目前清單可能保留舊資料。</value></data>
   <data name="高级查询：{0} 条；概览仅统计本次查询结果。" xml:space="preserve"><value>進階查詢：{0} 筆；概覽僅統計本次查詢結果。</value></data>
-</root>
+  <data name="平均波长 (nm)" xml:space="preserve"><value>平均波長 (nm)</value></data>
+  <data name="显色性状态" xml:space="preserve"><value>顯色性狀態</value></data>
+  <data name="有效（CIE 13.3；R15 为扩展色样）" xml:space="preserve"><value>有效（CIE 13.3；R15 為擴展色樣）</value></data>
+  <data name="显色性不可用：光谱未覆盖 380–780 nm" xml:space="preserve"><value>顯色性不可用：光譜未覆蓋 380–780 nm</value></data>
+  <data name="显色性不可用：采样间隔超过 5 nm" xml:space="preserve"><value>顯色性不可用：採樣間隔超過 5 nm</value></data>
+  <data name="显色性不可用：色温超出计算范围" xml:space="preserve"><value>顯色性不可用：色溫超出計算範圍</value></data>
+  <data name="显色性不可用：与参考光源色度距离超过 0.0054" xml:space="preserve"><value>顯色性不可用：與參考光源色度距離超過 0.0054</value></data>
+  <data name="显色性不可用：光谱为空、全零、负值或非有限值" xml:space="preserve"><value>顯色性不可用：光譜為空、全零、負值或非有限值</value></data>
+  <data name="有效（D65 白点；CIE 1931 2°）" xml:space="preserve">
+    <value>有效（D65 白點；CIE 1931 2°）</value>
+  </data>
+  <data name="白点附近：主波长未定义，纯度为 0" xml:space="preserve">
+    <value>白點附近：主波長未定義，純度為 0</value>
+  </data>
+  <data name="紫红色：显示补色波长" xml:space="preserve">
+    <value>紫紅色：顯示補色波長</value>
+  </data>
+  <data name="参考白点无效" xml:space="preserve">
+    <value>參考白點無效</value>
+  </data>
+  <data name="色度无效或超出光谱轨迹，波长和纯度不可用" xml:space="preserve">
+    <value>色度無效或超出光譜軌跡，波長和純度不可用</value>
+  </data>
+  <data name="Robertson 1968；Duv 使用 CIE 1960 UCS" xml:space="preserve">
+    <value>Robertson 1968；Duv 使用 CIE 1960 UCS</value>
+  </data>
+  <data name="色温不可用：超出 1667–25000 K" xml:space="preserve">
+    <value>色溫不可用：超出 1667–25000 K</value>
+  </data>
+  <data name="色温不可用：距黑体轨迹过远（|Duv| &gt; 0.05）" xml:space="preserve">
+    <value>色溫不可用：距黑體軌跡过遠（|Duv| &gt; 0.05）</value>
+  </data>
+  <data name="色温不可用：色度无效" xml:space="preserve">
+    <value>色溫不可用：色度無效</value>
+  </data>
+  <data name="显示或隐藏光谱数据" xml:space="preserve">
+    <value>顯示或隱藏光譜數據</value>
+  </data>
+  <data name="补色波长(nm)" xml:space="preserve">
+    <value>補色波長(nm)</value>
+  </data>
+  <data name="色度状态" xml:space="preserve">
+    <value>色度状态</value>
+  </data>
+  <data name="兴奋纯度(%)" xml:space="preserve"><value>興奮純度(%)</value></data>
+  <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>在光譜圖上移動滑鼠讀取取樣值</value></data>
+  <data name="导出测量结果 CSV" xml:space="preserve"><value>匯出測量結果 CSV</value></data>
+  <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>匯出完整原始光譜 CSV</value></data>
+  <data name="保留全部采样点和负值，可能包含采集时的平滑处理" xml:space="preserve"><value>保留全部取樣點和負值，可能包含採集時的平滑處理</value></data>
+  <data name="请先选择要导出的数据。" xml:space="preserve"><value>請先選擇要匯出的資料。</value></data>
+  <data name="导出失败：{0}" xml:space="preserve"><value>匯出失敗：{0}</value></data>
+  <data name="显示或隐藏测量列表" xml:space="preserve"><value>顯示或隱藏測量列表</value></data>
+  <data name="分析" xml:space="preserve"><value>分析</value></data>
+  <data name="分析选中的光谱" xml:space="preserve"><value>分析選取的光譜</value></data>
+  <data name="分析此光谱" xml:space="preserve"><value>分析此光譜</value></data>
+  <data name="导出此条测量结果 CSV" xml:space="preserve"><value>匯出此筆測量結果 CSV</value></data>
+  <data name="导出此条完整原始光谱 CSV" xml:space="preserve"><value>匯出此筆完整原始光譜 CSV</value></data>
+  <data name="光谱分析" xml:space="preserve"><value>光譜分析</value></data>
+  <data name="多曲线比较" xml:space="preserve"><value>多曲線比較</value></data>
+<data name="LocalCleanup_NodeName" xml:space="preserve"><value>快取清理</value></data><data name="LocalCleanup_NodeDescription" xml:space="preserve"><value>超過容量上限後依時間清理舊檔案，保護目前流程的輸入影像。</value></data><data name="LocalCleanup_FoldersRequired" xml:space="preserve"><value>請至少設定一個快取清理目錄。</value></data><data name="LocalCleanup_InvalidThresholds" xml:space="preserve"><value>快取上限必須大於 0，清理目標必須不小於 0 且小於快取上限。</value></data><data name="LocalCleanup_Completed" xml:space="preserve"><value>快取清理完成</value></data><data name="LocalCleanup_Stopped" xml:space="preserve"><value>流程已停止，取消快取清理。</value></data><data name="清理目录必须使用绝对路径：{0}" xml:space="preserve"><value>清理目錄必須使用絕對路徑：{0}</value></data><data name="清理目录不能是磁盘或共享根目录：{0}" xml:space="preserve"><value>清理目錄不能是磁碟或共用根目錄：{0}</value></data><data name="清理文件超出指定目录：{0}" xml:space="preserve"><value>清理檔案超出指定目錄：{0}</value></data><data name="清理时不访问链接或联接点：{0}" xml:space="preserve"><value>清理時不存取連結或接合點：{0}</value></data><data name="LocalCleanup_CompletedWithFailures" xml:space="preserve"><value>快取清理完成，部分檔案未能清理</value></data></root>

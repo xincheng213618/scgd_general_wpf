@@ -1,4 +1,4 @@
-﻿using ColorVision.UI;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 
-        [LocalizedDisplayName(nameof(Resources.ShowSidebar)), Category("View")]
+        [Browsable(false)] // Retained only for old serialized configurations.
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 

@@ -1,66 +1,63 @@
-#pragma warning disable CA1707
-using Spectrum.Models;
+﻿using ColorVision.ImageEditor.Draw;
+using ScottPlot;
+using ScottPlot.Plottables;
+using System.IO;
 
 namespace Spectrum.Tests;
 
 public class SpectrumPlotFillTests
 {
     [Fact]
-    public void CreateSegments_UsesSpectrumValuesAndVisibleWavelengthColors()
+    public void GradientFillRetainsOriginalResolutionAndReplacesPreviousFrame()
     {
-        SpectralData[] samples =
-        [
-            new() { Wavelength = 380, RelativeSpectrum = 0.25, AbsoluteSpectrum = 2 },
-            new() { Wavelength = 381, RelativeSpectrum = 0.5, AbsoluteSpectrum = 4 },
-            new() { Wavelength = 382, RelativeSpectrum = -0.1, AbsoluteSpectrum = -2 },
-        ];
-
-        IReadOnlyList<SpectrumFillSegment> relative = SpectrumPlotFill.CreateSegments(samples, useAbsoluteSpectrum: false);
-        IReadOnlyList<SpectrumFillSegment> absolute = SpectrumPlotFill.CreateSegments(samples, useAbsoluteSpectrum: true);
-
-        Assert.Equal(2, relative.Count);
-        Assert.Equal(380, relative[0].StartWavelength);
-        Assert.Equal(381, relative[0].EndWavelength);
-        Assert.Equal(0.25, relative[0].StartValue);
-        Assert.Equal(0.5, relative[0].EndValue);
-        Assert.Equal(0, relative[1].EndValue);
-        Assert.NotEqual(0, relative[0].Color.A);
-        Assert.Equal(2, absolute[0].StartValue);
-        Assert.Equal(4, absolute[0].EndValue);
-        Assert.Equal(0, absolute[1].EndValue);
+        Plot plot = new();
+        double[] xs = Enumerable.Range(0,4001).Select(i => 380+i*0.1).ToArray();
+        double[] ys = xs.Select(w => 0.001+Math.Exp(-Math.Pow((w-546.1)/0.15,2))).ToArray();
+        var curve = plot.Add.Scatter(xs,ys);
+        SpectrumPlotStyle.AddFill(plot,curve,_=>Colors.Green);
+        Assert.Equal(2,plot.PlottableList.Count);
+        var fill = plot.PlottableList.OfType<Scatter>().Single(item=>item!=curve);
+        Assert.Equal(xs.Length,fill.Data.GetScatterPoints().Count);
+        Assert.Equal(ys.Max(),fill.Data.GetScatterPoints().Max(p=>p.Y));
+        SpectrumPlotStyle.AddFill(plot,curve,_=>Colors.Red);
+        Assert.Equal(2,plot.PlottableList.Count);
+        SpectrumPlotStyle.ClearFill(plot);
+        Assert.Same(curve,Assert.Single(plot.PlottableList));
     }
 
     [Fact]
-    public void CreateSegments_ClipsToVisibleSpectrumAndInterpolatesEdges()
+    public void FillClipsNegativeCrossingsAndVisibleBandWithoutChangingMeasurements()
     {
-        SpectralData[] samples =
-        [
-            new() { Wavelength = 379, RelativeSpectrum = 0.2 },
-            new() { Wavelength = 381, RelativeSpectrum = 0.6 },
-            new() { Wavelength = 779, RelativeSpectrum = 0.6 },
-            new() { Wavelength = 781, RelativeSpectrum = 0.2 },
-        ];
-
-        IReadOnlyList<SpectrumFillSegment> segments = SpectrumPlotFill.CreateSegments(samples, useAbsoluteSpectrum: false);
-
-        Assert.Equal(3, segments.Count);
-        Assert.Equal(380, segments[0].StartWavelength);
-        Assert.Equal(0.4, segments[0].StartValue, 12);
-        Assert.Equal(780, segments[^1].EndWavelength);
-        Assert.Equal(0.4, segments[^1].EndValue, 12);
+        Plot plot=new();
+        double[] ys=[-1,1,1,1];
+        var curve=plot.Add.Scatter(new double[]{370,390,770,790},ys);
+        SpectrumPlotStyle.AddFill(plot,curve,_=>Colors.Blue);
+        var fill=plot.PlottableList.OfType<Scatter>().Single(item=>item!=curve);
+        var points=fill.Data.GetScatterPoints();
+        Assert.Equal(new Coordinates(380,0),points[0]);
+        Assert.Equal(new Coordinates(780,1),points[^1]);
+        Assert.All(points,p=>Assert.True(p.Y>=0 && p.X>=380 && p.X<=780));
+        Assert.Equal(-1,ys[0]);
+        plot.Axes.SetLimits(400,700,0,2);
+        var limits=plot.Axes.GetLimits();
+        SpectrumPlotStyle.ApplyTheme(plot,true);
+        Assert.Equal(limits,plot.Axes.GetLimits());
+        SpectrumPlotStyle.ClearFill(plot);
+        Assert.Same(curve,Assert.Single(plot.PlottableList));
     }
 
     [Fact]
-    public void CreateSegments_SkipsInvalidAndReversedSamples()
+    public void MissingSamplesBreakFillAndPaletteKeepsShortBandsAtTheirWavelength()
     {
-        SpectralData[] samples =
-        [
-            new() { Wavelength = 400, RelativeSpectrum = double.NaN },
-            new() { Wavelength = 401, RelativeSpectrum = 0.5 },
-            new() { Wavelength = 400, RelativeSpectrum = 0.5 },
-        ];
-
-        Assert.Empty(SpectrumPlotFill.CreateSegments(samples, useAbsoluteSpectrum: false));
-        Assert.Empty(SpectrumPlotFill.CreateSegments([], useAbsoluteSpectrum: false));
+        Plot plot=new();
+        var curve=plot.Add.Scatter(new double[]{420,421,422,423,424,425},new double[]{1,1,double.NaN,1,1,1});
+        SpectrumPlotStyle.AddFill(plot,curve,w=>new Color((byte)(w-380),0,0));
+        Assert.Equal(3,plot.PlottableList.Count);
+        foreach(var fill in plot.PlottableList.OfType<Scatter>().Where(item=>item!=curve))
+        {
+            Assert.Equal(380,fill.ColorPositions[0].Position);
+            Assert.Equal(780,fill.ColorPositions[^1].Position);
+            Assert.All(fill.Data.GetScatterPoints(),p=>Assert.True(double.IsFinite(p.Y)));
+        }
     }
 }

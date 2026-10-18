@@ -3650,4 +3650,29 @@ A single image contains no left/right eye pairing; DIFF_H / DIFF_V are not gener
     <value>Sharma, Wu, Dalal: CIEDE2000 Implementation Notes and 34 Test Cases</value>
   </data>
   <data name="Algorithm_RingGhostMetrology" xml:space="preserve"><value>Ring Ghost Luminance Ratio…</value></data>
+  <data name="相对值" xml:space="preserve"><value>Relative</value></data>
+  <data name="绝对值" xml:space="preserve"><value>Absolute</value></data>
+  <data name="显色性 R1～R15" xml:space="preserve"><value>Colour rendering R1-R15</value></data>
+  <data name="Ra 为 R1～R8 的平均值；R9 单独强调，负指数保留。" xml:space="preserve"><value>Ra averages R1-R8. R9 is highlighted; negative indices are preserved.</value></data>
+  <data name="光通量" xml:space="preserve"><value>Luminous flux</value></data>
+  <data name="亮度" xml:space="preserve"><value>Luminance</value></data>
+  <data name="峰值波长" xml:space="preserve"><value>Peak wavelength</value></data>
+  <data name="平均波长" xml:space="preserve"><value>Mean wavelength</value></data>
+  <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>Move over the spectrum to read measured samples</value></data>
+  <data name="导出测量结果 CSV" xml:space="preserve"><value>Export measurement results CSV</value></data>
+  <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>Export full spectrum CSV</value></data>
+  <data name="保留全部采样点和负值，可能包含采集时的平滑处理" xml:space="preserve"><value>Preserves all stored samples and negative values, including any acquisition smoothing</value></data>
+  <data name="请先选择要导出的数据。" xml:space="preserve"><value>Select measurements to export first.</value></data>
+  <data name="导出失败：{0}" xml:space="preserve"><value>Export failed: {0}</value></data>
+  <data name="显示或隐藏测量列表" xml:space="preserve"><value>Show or hide measurement list</value></data>
+  <data name="分析" xml:space="preserve"><value>Analyze</value></data>
+  <data name="分析选中的光谱" xml:space="preserve"><value>Analyze selected spectrum</value></data>
+  <data name="分析此光谱" xml:space="preserve"><value>Analyze this spectrum</value></data>
+  <data name="导出此条测量结果 CSV" xml:space="preserve"><value>Export this measurement as CSV</value></data>
+  <data name="导出此条完整原始光谱 CSV" xml:space="preserve"><value>Export this full stored spectrum as CSV</value></data>
+  <data name="光谱分析" xml:space="preserve"><value>Spectrum analysis</value></data>
+  <data name="波长" xml:space="preserve"><value>Wavelength</value></data>
+  <data name="相对光谱" xml:space="preserve"><value>Relative spectrum</value></data>
+  <data name="绝对光谱" xml:space="preserve"><value>Absolute spectrum</value></data>
+  <data name="无有效光谱数据" xml:space="preserve"><value>No valid spectral data</value></data>
 </root>

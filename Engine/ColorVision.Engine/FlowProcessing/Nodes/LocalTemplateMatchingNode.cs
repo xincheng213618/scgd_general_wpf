@@ -17,7 +17,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes;
 internal sealed record LocalTemplateMatchingNodeResult(string TemplateName, string TemplateFingerprint, string FrameId,
     string? ImageFilePath, TemplateMatchingOptions Options, TemplateMatchingResult Result, long ElapsedMilliseconds);
 
-[STNode("Flow_CustomNodes", "本地模板匹配", CategoryOrder = 9900)]
+[STNode("Flow_CustomNodes/Flow_LocalAlgorithms", "本地模板匹配", CategoryOrder = 9900, NodeOrder = 70)]
 public sealed class LocalTemplateMatchingNode : LocalFlowNodeBase
 {
     private readonly ILocalTemplateMatchingServices services;

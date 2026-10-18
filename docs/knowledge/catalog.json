@@ -6016,6 +6016,9 @@
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs",
+        "Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"
       ],
       "test_paths": [
@@ -6023,7 +6026,9 @@
         "Test/ColorVision.UI.Tests/FlowLocalizationTests.cs",
         "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
         "Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs",
-        "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"
+        "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs",
+        "Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs"
       ],
       "related": [
         "platform.extensibility",

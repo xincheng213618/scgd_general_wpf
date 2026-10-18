@@ -34,6 +34,8 @@ public class STNodeTreeView : UserControl, IDisposable
 
 		public int CategoryOrder { get; set; } = int.MaxValue;
 
+		public int NodeOrder { get; set; } = int.MaxValue;
+
 		public List<CatalogNode> Children { get; } = new List<CatalogNode>();
 
 		public int NodeCount => NodeType == null
@@ -43,6 +45,7 @@ public class STNodeTreeView : UserControl, IDisposable
 
 	private readonly Dictionary<Type, string> m_dic_all_type = new Dictionary<Type, string>();
 	private readonly Dictionary<Type, int> m_dic_category_order = new Dictionary<Type, int>();
+	private readonly Dictionary<Type, int> m_dic_node_order = new Dictionary<Type, int>();
 	private readonly STNodeEditor _editor;
 	private readonly STNodePropertyGrid _property_grid;
 	private readonly TextBox m_search_box;
@@ -354,6 +357,7 @@ public class STNodeTreeView : UserControl, IDisposable
 			: $"{assemblyName}/{NormalizeCategoryPath(declaredPath)}";
 		m_dic_all_type.Add(nodeType, path);
 		m_dic_category_order.Add(nodeType, ResolveCategoryOrder(declaredPath, attribute.CategoryOrder));
+		m_dic_node_order.Add(nodeType, attribute.NodeOrder);
 		RefreshTree();
 		return true;
 	}
@@ -388,6 +392,7 @@ public class STNodeTreeView : UserControl, IDisposable
 	{
 		m_dic_all_type.Clear();
 		m_dic_category_order.Clear();
+		m_dic_node_order.Clear();
 		RefreshTree();
 	}
 
@@ -395,6 +400,7 @@ public class STNodeTreeView : UserControl, IDisposable
 	{
 		bool removed = m_dic_all_type.Remove(nodeType);
 		m_dic_category_order.Remove(nodeType);
+		m_dic_node_order.Remove(nodeType);
 		if (removed)
 		{
 			RefreshTree();
@@ -446,6 +452,7 @@ public class STNodeTreeView : UserControl, IDisposable
 			: $"{assemblyName}/{NormalizeCategoryPath(declaredPath)}";
 		m_dic_all_type.Add(nodeType, path);
 		m_dic_category_order.Add(nodeType, ResolveCategoryOrder(declaredPath, attribute.CategoryOrder));
+		m_dic_node_order.Add(nodeType, attribute.NodeOrder);
 		return true;
 	}
 
@@ -569,7 +576,8 @@ public class STNodeTreeView : UserControl, IDisposable
 			{
 				Name = title,
 				NodeType = entry.Key,
-				NodeColor = nodeColor
+				NodeColor = nodeColor,
+				NodeOrder = m_dic_node_order[entry.Key]
 			});
 		}
 
@@ -585,7 +593,9 @@ public class STNodeTreeView : UserControl, IDisposable
 			{
 				return left.NodeType == null ? -1 : 1;
 			}
-			int orderResult = left.CategoryOrder.CompareTo(right.CategoryOrder);
+			int leftOrder = left.NodeType == null ? left.CategoryOrder : left.NodeOrder;
+			int rightOrder = right.NodeType == null ? right.CategoryOrder : right.NodeOrder;
+			int orderResult = leftOrder.CompareTo(rightOrder);
 			if (orderResult != 0)
 			{
 				return orderResult;

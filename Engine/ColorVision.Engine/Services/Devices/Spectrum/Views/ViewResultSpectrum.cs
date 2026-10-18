@@ -1,5 +1,7 @@
-﻿#pragma warning disable
+﻿using ColorVision.ImageEditor.Draw;
+#pragma warning disable
 using ColorVision.Common.MVVM;
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -19,6 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
     public class cieData
     {
+        public string? AcquisitionParametersJson { get; set; }
         public double fCIEx { get; set; }
         public double fCIEy { get; set; }
         public double fCIEz { get; set; }
@@ -82,15 +85,57 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         [DisplayName("Luminous Efficacy (lm/W)")]
         public double? LuminousEfficacy { get; set; }
 
+        private SpectrumRawExportRecord rawSpectrum = new();
+        private float[]? generatedSpectrum;
+        [Browsable(false), JsonIgnore]
+        public string? AcquisitionParametersJson { get; set; }
+        [Browsable(false), JsonIgnore]
+        public string? AcquisitionDeviceCode { get; set; }
+        [Browsable(false), JsonIgnore]
+        public bool? AcquisitionFluxMode { get; set; }
+
+        private void CaptureStoredSpectrum()
+        {
+            if (!ReferenceEquals(generatedSpectrum, fPL))
+                rawSpectrum = SpectrumRawExporter.CaptureStoredSpectrum(fPL, fSpect1, fSpect2, fInterval, fPlambda);
+        }
+
+        [Browsable(false), JsonIgnore]
+        public SpectrumAnalysisSummary AnalysisSummary => new()
+        {
+            ColorTemperature = Chromaticity.ColorTemperature, Duv = Chromaticity.Duv,
+            Ra = ColorRendering.Ra, RenderingIndices = RenderingIndices,
+            Luminance = double.TryParse(Lv, out double luminance) && double.IsFinite(luminance) ? luminance : null,
+            LuminousFlux = LuminousFlux, PeakWavelength = float.IsFinite(fLp) && fLp > 0 ? fLp : null,
+            Fwhm = float.IsFinite(fHW) && fHW > 0 ? fHW : null, MeanWavelength = ColorRendering.MeanWavelength,
+            RenderingStatus = RenderingStatusText, TemperatureStatus = TemperatureStatusText
+        };
+
+        public SpectrumRawExportRecord CreateRawExportRecord(bool fluxMode)
+        {
+            bool capturedFlux = AcquisitionFluxMode ?? fluxMode;
+            return rawSpectrum with
+            {
+                Samples = (float[])rawSpectrum.Samples.Clone(),
+                MeasurementId = Id, MeasuredAt = CreateTime, DeviceCode = AcquisitionDeviceCode,
+                Mode = capturedFlux ? "LuminousFlux" : "Luminance", ModeSource = AcquisitionFluxMode.HasValue ? "MeasurementRecord" : "ExportContext",
+                AbsoluteUnit = capturedFlux ? "W/nm" : "W/(sr*m^2*nm)",
+                AcquisitionParametersJson = AcquisitionParametersJson,
+                ColorTemperature = Chromaticity.ColorTemperature, Duv = Chromaticity.Duv,
+                Ra = ColorRendering.Ra, RenderingIndices = (double?[])RenderingIndices.Clone(), RenderingStatus = ColorRendering.Status.ToString()
+            };
+        }
+
         public void Gen()
         {
+            CaptureStoredSpectrum();
             try
             {
                 IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
                 float safeLuminance = GetSafeLuminanceValue(fPh);
                 Lv = safeLuminance.ToString();
 
-                if (fPL == null || fPL.Length == 0) return;
+                if (fPL == null || fPL.Length == 0) { UpdateRenderingMetrics(); return; }
                 if (!float.IsFinite(fSpect1) || !float.IsFinite(fSpect2) || !float.IsFinite(fInterval)
                     || fSpect2 <= fSpect1 || fInterval <= 0)
                 {
@@ -98,6 +143,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 }
                 int length = (int)Math.Min(fPL.Length, Math.Round((fSpect2 - fSpect1) / (double)fInterval) + 1);
                 fPL = fPL.Take(length).ToArray();
+                generatedSpectrum = fPL;
+                UpdateRenderingMetrics();
                 int step = Math.Max(1, (int)Math.Round(1d / fInterval));
                 SpectralDatas.Clear();
                 for (int i = 0; i < length; i += step)
@@ -142,21 +189,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     MarkerShape = MarkerShape.None,
                 };
 
-                // Compute dominant wavelength color
-                if (fLd >= 380 && fLd <= 780)
-                {
-                    DominantWavelengthColor = WavelengthToColor.ToBrush(fLd);
-                    DominantWavelengthHex = WavelengthToColor.ToHex(fLd);
-                }
-
-                // Compute excitation purity
-                ComputeExcitationPurity();
-
-                // Compute Ra if C++ didn't calculate it
-                if (fRa == 0 && fPL != null && fPL.Length > 0 && fCCT > 0)
-                {
-                    fRa = RaCalculator.ComputeRa(fPL, fSpect1, fInterval, fCCT);
-                }
             }
             catch(Exception ex)
             {
@@ -164,6 +196,31 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
 
         }
+
+        private void UpdateRenderingMetrics()
+        {
+            ComputeExcitationPurity();
+            ColorRendering = SpectrumColorRendering.Calculate(fPL, fSpect1, fInterval);
+            fLav = (float)(ColorRendering.MeanWavelength ?? double.NaN);
+            fRa = (float)(ColorRendering.Ra ?? double.NaN);
+            fRi = ColorRendering.Ri.Select(value => (float)value).ToArray();
+            RenderingIndices = Enumerable.Range(0, 15).Select(i => i < fRi.Length ? (double?)fRi[i] : null).ToArray();
+            OnPropertyChanged(nameof(AnalysisSummary));
+        }
+
+        [Browsable(false), JsonIgnore]
+        public SpectrumColorRenderingResult ColorRendering { get; private set; } = new();
+        [Browsable(false), JsonIgnore]
+        public double?[] RenderingIndices { get; private set; } = new double?[15];
+        public string RenderingStatusText => LocalizedText.Get(ColorRendering.Status switch
+        {
+            ColorRenderingStatus.Valid => "有效（CIE 13.3；R15 为扩展色样）",
+            ColorRenderingStatus.InsufficientWavelengthRange => "显色性不可用：光谱未覆盖 380–780 nm",
+            ColorRenderingStatus.SamplingTooCoarse => "显色性不可用：采样间隔超过 5 nm",
+            ColorRenderingStatus.UnsupportedColorTemperature => "显色性不可用：色温超出计算范围",
+            ColorRenderingStatus.FarFromReference => "显色性不可用：与参考光源色度距离超过 0.0054",
+            _ => "显色性不可用：光谱为空、全零、负值或非有限值"
+        });
 
         private static float GetSafeLuminanceValue(float rawLuminance)
         {
@@ -259,6 +316,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             V = item.VResult;
             I = item.IResult;
             IntTime = item.IntTime;
+            AcquisitionFluxMode = item.DataType;
+            AcquisitionDeviceCode = item.DeviceCode;
+            AcquisitionParametersJson = JsonConvert.SerializeObject(new
+            {
+                item.IntTime, item.iAveNum, item.AutoIntegration, item.AutoInitDark, item.SelfAdaptionInitDark,
+                item.AFactor, StoredParameters = item.Params
+            });
             fx = item.fx ?? 0;
             fy = item.fy ?? 0;
             fu = item.fu ?? 0;
@@ -306,6 +370,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             cieData cieData = JsonConvert.DeserializeObject<cieData>(item.CieDataEx ?? string.Empty)?? new cieData();
 
 
+            if (!string.IsNullOrWhiteSpace(cieData.AcquisitionParametersJson)) AcquisitionParametersJson = cieData.AcquisitionParametersJson;
             fCIEx = cieData.fCIEx;
             fCIEy = cieData.fCIEy;
             fCIEz = cieData.fCIEz;
@@ -599,9 +664,35 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         /// </summary>
         public void ComputeExcitationPurity()
         {
-            double wave = ColorimetryHelper.CalculateDominantWavelength(fx, fy);
-            ExcitationPurity = ColorimetryHelper.CalculateExcitationPurity(fx, fy, wave);
+            Chromaticity = SpectrumChromaticity.Calculate(fx, fy);
+            fCCT = (float)(Chromaticity.ColorTemperature ?? double.NaN);
+            dC = (float)(Chromaticity.Duv ?? double.NaN);
+            fLd = (float)(Chromaticity.DominantWavelength ?? -Chromaticity.ComplementaryWavelength ?? double.NaN);
+            fPur = (float)(Chromaticity.ExcitationPurity ?? double.NaN);
+            ExcitationPurity = Chromaticity.ExcitationPurity ?? double.NaN;
+            DominantWavelengthColor = WavelengthToColor.ToBrush(Chromaticity.DominantWavelength ?? double.NaN);
+            DominantWavelengthHex = Chromaticity.DominantWavelength.HasValue ? WavelengthToColor.ToHex(fLd) : string.Empty;
         }
+
+        [Browsable(false), JsonIgnore]
+        public SpectrumChromaticityResult Chromaticity { get; private set; } = new();
+        [Browsable(false), JsonIgnore]
+        public double? PurityPercent => Chromaticity.ExcitationPurity * 100;
+        public string ChromaticityStatusText => LocalizedText.Get(Chromaticity.WavelengthStatus switch
+        {
+            SpectrumWavelengthStatus.Valid => "有效（D65 白点；CIE 1931 2°）",
+            SpectrumWavelengthStatus.Achromatic => "白点附近：主波长未定义，纯度为 0",
+            SpectrumWavelengthStatus.Complementary => "紫红色：显示补色波长",
+            SpectrumWavelengthStatus.InvalidReferenceWhite => "参考白点无效",
+            _ => "色度无效或超出光谱轨迹，波长和纯度不可用"
+        });
+        public string TemperatureStatusText => LocalizedText.Get(Chromaticity.TemperatureStatus switch
+        {
+            SpectrumTemperatureStatus.Valid => "Robertson 1968；Duv 使用 CIE 1960 UCS",
+            SpectrumTemperatureStatus.OutOfRange => "色温不可用：超出 1667–25000 K",
+            SpectrumTemperatureStatus.FarFromPlanckianLocus => "色温不可用：距黑体轨迹过远（|Duv| > 0.05）",
+            _ => "色温不可用：色度无效"
+        });
     }
 
 }

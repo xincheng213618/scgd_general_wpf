@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Editor;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 using System.Reflection;
@@ -9,6 +10,36 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowNodeContextMenuTests
 {
+    [Fact]
+    public void LocalAlgorithmOrderMatchesInContextMenuAndNodeCatalog()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Type[] expected = [typeof(LocalFindLuminousAreaNode), typeof(LocalFovNode), typeof(LocalGridDistortionNode), typeof(LocalRgbCrossNode)];
+            using var editor = new STNodeEditor();
+            using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => { });
+            var creationMenu = new ContextMenu();
+            Invoke(menus, "AddNodeCreationMenuItems", creationMenu.Items);
+            string[] path = FlowNodeContextMenuService.LocalizeNodeMenuPath("Flow_CustomNodes/Flow_LocalAlgorithms").Split('/');
+            MenuItem custom = creationMenu.Items.OfType<MenuItem>().Single(item => Equals(item.Header, path[0]));
+            Assert.Equal(2, custom.Items.Count);
+            MenuItem algorithms = custom.Items.OfType<MenuItem>().Single(item => Equals(item.Header, path[1]));
+            MenuItem[] firstAlgorithms = algorithms.Items.OfType<MenuItem>().Take(expected.Length).ToArray();
+            Assert.Equal(expected.Length, firstAlgorithms.Length);
+            for (int index = 0; index < expected.Length; index++)
+            {
+                firstAlgorithms[index].RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                Assert.Equal(expected[index], editor.Nodes.Cast<STNode>().Last().GetType());
+            }
+
+            using var catalog = new STNodeTreeView();
+            var tree = (TreeView)typeof(STNodeTreeView).GetField("m_tree", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(catalog)!;
+            TreeViewItem algorithmFolder = DescendantTreeItems(tree.Items)
+                .Single(item => item.Items.OfType<TreeViewItem>().Any(child => Equals(child.Tag, typeof(LocalFovNode))));
+            Assert.Equal(expected, algorithmFolder.Items.OfType<TreeViewItem>().Take(expected.Length).Select(item => (Type)item.Tag));
+        });
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -154,6 +185,16 @@ public sealed class FlowNodeContextMenuTests
         {
             yield return item;
             foreach (MenuItem descendant in Descendants(item.Items))
+                yield return descendant;
+        }
+    }
+
+    private static IEnumerable<TreeViewItem> DescendantTreeItems(ItemCollection items)
+    {
+        foreach (TreeViewItem item in items.OfType<TreeViewItem>())
+        {
+            yield return item;
+            foreach (TreeViewItem descendant in DescendantTreeItems(item.Items))
                 yield return descendant;
         }
     }

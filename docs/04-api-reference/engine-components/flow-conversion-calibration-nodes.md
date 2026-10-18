@@ -13,7 +13,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 数据转换节点位于 `FlowEngineLib`，使用模板编辑器的校准节点位于 Engine 的 `FlowProcessing/Nodes/Compatibility/Calibration/`；相关选择器和校准设备服务由 Engine 提供。
 
-校正并实时测量上游 POI 使用本地 `LocalCalibrationRealPoiNode`（“自定义节点 → 校正+实时 POI”），图像接 `IN_IMG`，布点结果接 `IN_POI`。包含旧服务端双输入校正节点的流程需要手动替换为此本地节点并重新选择校正资源、核对连线；两者配置语义不同，不自动映射旧节点。
+校正并实时测量上游 POI 使用本地 `LocalCalibrationRealPoiNode`（“自定义节点 → 本地设备 → 校正+实时 POI”），图像接 `IN_IMG`，布点结果接 `IN_POI`。包含旧服务端双输入校正节点的流程需要手动替换为此本地节点并重新选择校正资源、核对连线；两者配置语义不同，不自动映射旧节点。
 
 ## 先查什么
 
@@ -32,7 +32,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | 数据转换参数 | `DataConvertData` | `DataConvertData.cs` | `MethodType`、`InType`、`OutType`、`TemplateParam` |
 | 图像转换 | `AlgorithmImageConvertNode` | `AlgorithmImageConvertNode.cs` | 发送 `Image.Convert` |
 | 图像转换参数 | `AlgorithmImageConvertParam` | `AlgorithmImageConvertParam.cs` | `ResultImageFormat`、`ResultDataFileName`、`Channel` |
-| 单输入校准 | `CalibrationNode` | `ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs` | 曝光模板、图像、可选 POI 参数 |
+| 单输入校准 | `CalibrationNode` | `ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs` | 输入图像和校正模板 |
 | 校准 ROI | `CalibrationROINode` | `Node/Camera/CalibrationROINode.cs` | 发送 `SetROI`，不执行完整校准 |
 | 旧色差校正 | `AlgorithmCaliNode` | `Node/Algorithm/AlgorithmCaliNode.cs` | 不提供新建入口，仅兼容旧流程解析 |
 
@@ -52,16 +52,20 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | --- | --- |
 | 数据转换 | `CVDataConvertMethodType` 当前很窄，不是任意文件格式互转 |
 | 图像转换 | 当前目标格式主要是 `CSV`、`TIF`；默认通道为 `GREEN` |
-| 单输入校准 | 可写曝光模板、图像、`IsSaveCIE` 和可选 POI 模板 |
+| 单输入校准 | 只执行图像校正，使用输入图像携带的曝光信息；服务端请求固定 `IsSaveCIE=true` |
 | 校准 ROI | 只设置 ROI，不保存校准结果文件 |
 | 旧色差校正 | `AlgorithmCaliNode` 同时保留 `STNode` 和 `Obsolete`，由编辑器的 Obsolete 过滤隐藏但仍可反序列化旧画布 |
+
+旧画布中单输入校准节点的 POI、曝光、文件输出模板及 `IsSaveCIE` 字段在加载时忽略，重存时不再写入；类型标识和端口连接保持兼容。请求不携带 `POIParam`、`POI_MasterId` 或 `ExpTemplateParam`，不会触发附带 POI 或曝光模板查找。输入图像须保留实际曝光信息；缺失时应在图像输入端补齐。本地校正节点不读取服务端 `IsSaveCIE`，CIE 生成和文件输出遵循本地执行策略。
+
+历史循环校准节点仍可通过 `CalibrationData.ExpTemplateParam` 提供曝光参数，不受单输入校准节点的配置精简影响。
 
 ## Engine 属性编辑器
 
 | 编辑器 | 对应节点 | 补充内容 |
 | --- | --- | --- |
 | `CalibrationTemplatePropertiesEditor` | `CalibrationNode` 和相机节点 | 根据节点设备和 `PhyCamera` 提供 `TemplateCalibrationParam` 选择 |
-| `AutoExposureTemplatePropertiesEditor` / `TextSelectFilePropertiesEditor` | 校准节点 | 选择曝光模板和图像路径 |
+| `TextSelectFilePropertiesEditor` | 校准节点 | 选择图像路径 |
 
 这些节点在属性上直接使用 `PropertyEditorTypeAttribute` 声明 `FlowTemplatePropertiesEditors.cs` 中的具体编辑器；模板控件复用 `FlowNodePropertyEditorRegistration.cs` 的构建方法，无需模板代理注册。
 
@@ -71,7 +75,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | --- | --- |
 | 数据转换 | `Math.DataConvert` 收到上一步参数、`MethodType` 和 `TemplateParam` |
 | 图像转换 | `Image.Convert` 对已知图像结果输出 `CSV` / `TIF`，通道正确 |
-| 单输入校准 | 请求包含 `CalibrationData`、`ExpTemplateParam`、`IsSaveCIE` |
+| 单输入校准 | 请求包含 `CalibrationData`，固定 `IsSaveCIE=true`，不携带曝光或 POI 参数 |
 | 校准 ROI | `SetROI` 后设备端 ROI 更新 |
 | 旧色差校正 | 新建节点目录不显示；包含该类型的旧流程可正常反序列化 |
 
@@ -86,4 +90,4 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 关联测试：`Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs`。
 
-CameraNodeTemplateMappingTests 只覆盖相机相关模板编辑器映射；转换与校准服务协议、结果文件仍需独立集成验证。
+CameraNodeTemplateMappingTests 只覆盖相机相关模板编辑器映射；`Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs` 覆盖旧校准节点字段忽略、重新保存、请求精简及画布连线兼容。转换与校准服务协议、结果文件仍需独立集成验证。

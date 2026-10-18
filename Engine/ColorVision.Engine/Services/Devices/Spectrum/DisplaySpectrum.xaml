@@ -29,23 +29,27 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <DockPanel Margin="0,0,0,3" LastChildFill="False">
-                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                <Grid Margin="0,0,0,3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
                         <Button x:Name="TextBlockOffLine" HorizontalAlignment="Left" Height="24" Click="Button_Click_Open" Content="OffLine" />
                         <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Height="24" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
                         <Button x:Name="btn_connect" HorizontalAlignment="Left" Height="24" Click="Button_Click_Open" Content="{x:Static properties:Resources.Open}" Visibility="{Binding ElementName=StackPanelContent, Path=Visibility}" />
                     </StackPanel>
-                    <Button x:Name="ConfigureButton" DockPanel.Dock="Left" Margin="5,0,0,0" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resources.ModifyConfiguration}" AutomationProperties.Name="{x:Static properties:Resources.ModifyConfiguration}">
+                    <Button x:Name="ConfigureButton" Grid.Column="1" Margin="5,0,0,0" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resources.ModifyConfiguration}" AutomationProperties.Name="{x:Static properties:Resources.ModifyConfiguration}">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center"/>
                     </Button>
-                </DockPanel>
-                <StackPanel x:Name="StackPanelContent">
-                    <DockPanel Margin="0,0,0,5">
+                    <DockPanel Grid.Column="2" Margin="12,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="{Binding ElementName=StackPanelContent, Path=Visibility}">
                         <Button Width="24" Height="24" Margin="5,0,0,0" Padding="2" DockPanel.Dock="Right" Command="{Binding OpenCalibrationGroupWindowCommand}" ToolTip="{x:Static properties:Resources.SpectrumCalibrationGroups_Title}">
                             <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE713;" />
                         </Button>
                         <ComboBox x:Name="ComboBoxCalibrationGroups"
+                                  MinWidth="80" MaxWidth="200"
                                   DisplayMemberPath="GroupName"
                                   ItemsSource="{Binding Config.CalibrationGroups}"
                                   SelectedValue="{Binding Config.ActiveCalibrationGroupName, Mode=OneWay}"
@@ -53,6 +57,8 @@
                                   SelectionChanged="CalibrationGroup_SelectionChanged"
                                   Style="{StaticResource ComboBox.Small}" Height="24" />
                     </DockPanel>
+                </Grid>
+                <StackPanel x:Name="StackPanelContent">
                     <StackPanel x:Name="StackPanelOpen">
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.AverageTimes}" />

@@ -1,4 +1,4 @@
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
@@ -130,7 +130,11 @@ public partial class DeviceSpectrum
 
     internal static ViewResultSpectrum CreateLocalSpectrumView(LocalSpectrumCapture result)
     {
-        var view = new ViewResultSpectrum(result.Data) { CreateTime = result.CapturedAt };
+        var view = new ViewResultSpectrum(result.Data)
+        {
+            CreateTime = result.CapturedAt, IntTime = result.IntegralTime, AcquisitionFluxMode = result.EqeData.HasValue,
+            AcquisitionDeviceCode = result.DeviceCode, AcquisitionParametersJson = result.AcquisitionParametersJson
+        };
         if (result.EqeData is { } eqe)
         {
             view.Eqe = eqe.dEqe; view.V = (float)eqe.dVoltage; view.I = (float)eqe.dCurrent;

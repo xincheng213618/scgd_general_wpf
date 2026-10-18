@@ -106,7 +106,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public object? POIResult { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "实时 POI", CategoryOrder = 9900)]
+    [STNode("Flow_CustomNodes/Flow_LocalDevices", "实时 POI", CategoryOrder = 9900, NodeOrder = 60)]
     public sealed class LocalRealPoiNode : LocalFlowNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_CIE", "IN_POI" };

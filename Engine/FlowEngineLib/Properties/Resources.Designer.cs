@@ -592,15 +592,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 KB输出 的本地化字符串。
-        /// </summary>
-        internal static string KB输出 {
-            get {
-                return ResourceManager.GetString("KB输出", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 L/BV相机 的本地化字符串。
         /// </summary>
         internal static string L_BV相机 {

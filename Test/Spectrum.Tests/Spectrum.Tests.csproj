@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -22,6 +22,9 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <EmbeddedResource Include="ReferenceData\chromaticity.json" LogicalName="Spectrum.Tests.chromaticity.json" />
+    <EmbeddedResource Include="ReferenceData\spectrum-display-rgb.json" LogicalName="Spectrum.Tests.spectrum-display-rgb.json" />
+    <EmbeddedResource Include="ReferenceData\color-rendering.json" LogicalName="Spectrum.Tests.color-rendering.json" />
     <None Include="$(VSTestTestAdapterPath)\*.dll" CopyToOutputDirectory="PreserveNewest" Visible="False" />
   </ItemGroup>
 

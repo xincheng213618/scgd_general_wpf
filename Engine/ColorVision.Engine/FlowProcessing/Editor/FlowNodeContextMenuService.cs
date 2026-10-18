@@ -24,13 +24,15 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             public string[] PathSegments { get; }
             public int OrderedSegmentIndex { get; }
             public int CategoryOrder { get; }
+            public int NodeOrder { get; }
 
-            public NodeMenuCatalogEntry(Type nodeType, string[] pathSegments, int orderedSegmentIndex, int categoryOrder)
+            public NodeMenuCatalogEntry(Type nodeType, string[] pathSegments, int orderedSegmentIndex, int categoryOrder, int nodeOrder)
             {
                 NodeType = nodeType;
                 PathSegments = pathSegments;
                 OrderedSegmentIndex = orderedSegmentIndex;
                 CategoryOrder = categoryOrder;
+                NodeOrder = nodeOrder;
             }
         }
 
@@ -38,11 +40,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         {
             public Type NodeType { get; }
             public string Header { get; }
+            public int Order { get; }
 
-            public NodeMenuItemEntry(Type nodeType, string header)
+            public NodeMenuItemEntry(Type nodeType, string header, int order)
             {
                 NodeType = nodeType;
                 Header = header;
+                Order = order;
             }
         }
 
@@ -341,7 +345,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 ? declaredSegments.Length > 0 ? declaredSegments : new[] { assemblyName }
                 : new[] { assemblyName }.Concat(declaredSegments).ToArray();
             int orderedSegmentIndex = declaredSegments.Length == 0 ? -1 : isCoreAssembly ? 0 : 1;
-            return new NodeMenuCatalogEntry(type, pathSegments, orderedSegmentIndex, categoryOrder);
+            return new NodeMenuCatalogEntry(type, pathSegments, orderedSegmentIndex, categoryOrder, attribute.NodeOrder);
         }
 
         private static NodeMenuCategory BuildNodeMenuCatalog()
@@ -358,7 +362,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                     int categoryOrder = index == entry.OrderedSegmentIndex ? entry.CategoryOrder : int.MaxValue;
                     category = category.GetOrAddCategory(entry.PathSegments[index], categoryOrder);
                 }
-                category.Nodes.Add(new NodeMenuItemEntry(entry.NodeType, title));
+                category.Nodes.Add(new NodeMenuItemEntry(entry.NodeType, title, entry.NodeOrder));
             }
             return root;
         }
@@ -404,7 +408,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
 
             foreach (NodeMenuItemEntry node in parent.Nodes
-                .OrderBy(item => item.Header, LogicalStringComparer.Instance)
+                .OrderBy(item => item.Order)
+                .ThenBy(item => item.Header, LogicalStringComparer.Instance)
                 .ThenBy(item => item.NodeType.FullName, StringComparer.Ordinal))
             {
                 Type nodeType = node.NodeType;

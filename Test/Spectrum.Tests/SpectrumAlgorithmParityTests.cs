@@ -1,4 +1,4 @@
-#pragma warning disable CA1707
+﻿#pragma warning disable CA1707
 
 using System.Windows.Media;
 using EngineColorimetryHelper = global::ColorVision.Engine.Services.Devices.Spectrum.Views.ColorimetryHelper;
@@ -14,9 +14,6 @@ public class SpectrumAlgorithmParityTests
 {
     private const double CctTolerance = 1e-9;
     private const double RoundedColorimetryTolerance = 1e-9;
-    private const float RaTolerance = 1e-6f;
-    private const double SpectrumStart = 380;
-    private const double SpectrumEnd = 780;
 
     [Theory]
     [InlineData(379.999)]
@@ -80,143 +77,32 @@ public class SpectrumAlgorithmParityTests
     }
 
     [Theory]
-    [InlineData(0, 0, 0)]
-    [InlineData(0.3127, 0.3290, 6505.080591307478)]
-    [InlineData(0.3374, 0.6589, 5442.906899350839)]
-    [InlineData(0.3, 0.6, 6068.7268829022805)]
-    public void Colorimetry_CctMatchesAndCurrentGoldenValuesRemainStable(double x, double y, double expectedCct)
+    [InlineData(0.3127, 0.3290)]
+    [InlineData(0.3374, 0.6589)]
+    [InlineData(0.3, 0.6)]
+    [InlineData(0.37605506, 0.24452225)]
+    [InlineData(0.8, 0.2)]
+    [InlineData(double.NaN, 0.3)]
+    public void ColourimetryCompatibilityEntryPointsUseSharedResults(double x, double y)
     {
-        double engineCct = EngineColorimetryHelper.CalculateCCT(x, y);
-        double pluginCct = PluginColorimetryHelper.CalculateCCT(x, y);
-
-        AssertEquivalent(engineCct, pluginCct, CctTolerance);
-        AssertEquivalent(expectedCct, engineCct, CctTolerance);
-        AssertEquivalent(expectedCct, pluginCct, CctTolerance);
+        var result = cvColorVision.SpectrumChromaticity.Calculate(x, y);
+        double wavelength = result.DominantWavelength ?? -result.ComplementaryWavelength ?? double.NaN;
+        AssertColorimetryPair(result.ColorTemperature ?? double.NaN, EngineColorimetryHelper.CalculateCCT(x, y), PluginColorimetryHelper.CalculateCCT(x, y), CctTolerance);
+        AssertColorimetryPair(wavelength, EngineColorimetryHelper.CalculateDominantWavelength(x,y), PluginColorimetryHelper.CalculateDominantWavelength(x,y), RoundedColorimetryTolerance);
+        AssertColorimetryPair(result.ExcitationPurity ?? double.NaN, EngineColorimetryHelper.CalculateExcitationPurity(x,y,wavelength), PluginColorimetryHelper.CalculateExcitationPurity(x,y,wavelength), RoundedColorimetryTolerance);
     }
 
     [Fact]
-    public void Colorimetry_CctPreservesNaNAndSingularityBehavior()
+    public void RaCompatibilityEntryPointsUseSpectrumDerivedColorTemperature()
     {
-        AssertColorimetryPair(double.NaN, EngineColorimetryHelper.CalculateCCT(double.NaN, 0.3290), PluginColorimetryHelper.CalculateCCT(double.NaN, 0.3290), CctTolerance);
-        AssertColorimetryPair(double.NaN, EngineColorimetryHelper.CalculateCCT(0.3320, 0.1858), PluginColorimetryHelper.CalculateCCT(0.3320, 0.1858), CctTolerance);
-        AssertColorimetryPair(double.PositiveInfinity, EngineColorimetryHelper.CalculateCCT(0.4, 0.1858), PluginColorimetryHelper.CalculateCCT(0.4, 0.1858), CctTolerance);
+        float[] spectrum = ((SpectrumColorRenderingTests.Fixture)SpectrumColorRenderingTests.ReferenceSpectra().First()[0]).Spectrum;
+        float expected = (float)cvColorVision.SpectrumColorRendering.Calculate(spectrum, 380, 1).Ra!.Value;
+        // The legacy CCT argument cannot select an incorrect CRI reference illuminant.
+        Assert.Equal(expected, EngineRaCalculator.ComputeRa(spectrum, 380, 1, 1000));
+        Assert.Equal(expected, PluginRaCalculator.ComputeRa(spectrum, 380, 1, 25000));
+        Assert.True(float.IsNaN(EngineRaCalculator.ComputeRa([], 380, 1, 6500)));
+        Assert.True(float.IsNaN(PluginRaCalculator.ComputeRa([], 380, 1, 6500)));
     }
-
-    [Theory]
-    [InlineData(0.1741, 0.0050, 380)]
-    [InlineData(0.1644, 0.0109, 440)]
-    [InlineData(0.3374, 0.6589, 555)]
-    [InlineData(0.7230, 0.2770, 645)]
-    // The locus table repeats one coordinate from 700 through 780, so the current first match is 700.
-    [InlineData(0.7347, 0.2653, 700)]
-    [InlineData(0.3, 0.6, 549.14)]
-    [InlineData(0.4544, 0.13515, -1)]
-    [InlineData(0.3127, 0.3290, -1)]
-    [InlineData(double.NaN, 0.3, -1)]
-    public void Colorimetry_DominantWavelengthMatchesAndCurrentGoldenValuesRemainStable(double x, double y, double expectedWavelength)
-    {
-        double engineWavelength = EngineColorimetryHelper.CalculateDominantWavelength(x, y);
-        double pluginWavelength = PluginColorimetryHelper.CalculateDominantWavelength(x, y);
-
-        AssertEquivalent(engineWavelength, pluginWavelength, RoundedColorimetryTolerance);
-        AssertEquivalent(expectedWavelength, engineWavelength, RoundedColorimetryTolerance);
-        AssertEquivalent(expectedWavelength, pluginWavelength, RoundedColorimetryTolerance);
-    }
-
-    [Theory]
-    [InlineData(0.3374, 0.6589, 555, 1)]
-    [InlineData(0.32505, 0.49395, 555, 0.5)]
-    [InlineData(0.3127, 0.3290, 555, 0)]
-    [InlineData(0.4544, 0.13515, -1, 0)]
-    [InlineData(double.NaN, 0.6589, 555, 0)]
-    [InlineData(0.3374, double.NaN, 555, 0)]
-    [InlineData(0.3374, 0.6589, 379, 0)]
-    [InlineData(0.3374, 0.6589, 781, 0)]
-    // NaN is not rejected by the wavelength range checks and currently falls back to the 780 locus point.
-    [InlineData(0.3374, 0.6589, double.NaN, 0.7752)]
-    public void Colorimetry_ExcitationPurityMatchesAndCurrentGoldenValuesRemainStable(double x, double y, double wavelength, double expectedPurity)
-    {
-        double enginePurity = EngineColorimetryHelper.CalculateExcitationPurity(x, y, wavelength);
-        double pluginPurity = PluginColorimetryHelper.CalculateExcitationPurity(x, y, wavelength);
-
-        AssertEquivalent(enginePurity, pluginPurity, RoundedColorimetryTolerance);
-        AssertEquivalent(expectedPurity, enginePurity, RoundedColorimetryTolerance);
-        AssertEquivalent(expectedPurity, pluginPurity, RoundedColorimetryTolerance);
-    }
-
-    // ColorimetryHelper has no SPD-to-xy entry point. Synthetic SPDs therefore exercise
-    // RaCalculator, while the public colorimetry contract is covered above with fixed xy inputs.
-    [Theory]
-    [InlineData("flat", 0.1f, 43.0f)]
-    [InlineData("flat", 1f, 43.0f)]
-    [InlineData("narrow", 0.1f, 0.0f)]
-    [InlineData("narrow", 1f, 0.0f)]
-    [InlineData("modulated-planck", 0.1f, 93.1f)]
-    [InlineData("modulated-planck", 1f, 93.1f)]
-    public void Ra_RepresentativeSpdsMatchAndCurrentGoldenValuesRemainStable(string shape, float interval, float expectedRa)
-    {
-        float[] spd = CreateSpd(shape, interval);
-        float engineRa = EngineRaCalculator.ComputeRa(spd, (float)SpectrumStart, interval, 6500);
-        float pluginRa = PluginRaCalculator.ComputeRa(spd, (float)SpectrumStart, interval, 6500);
-
-        Assert.Equal(interval == 0.1f ? 4001 : 401, spd.Length);
-        AssertEquivalent(engineRa, pluginRa, RaTolerance);
-        AssertEquivalent(expectedRa, engineRa, RaTolerance);
-        AssertEquivalent(expectedRa, pluginRa, RaTolerance);
-    }
-
-    [Fact]
-    public void Ra_InvalidInputsMatchCurrentBehavior()
-    {
-        float[] flatSpd = CreateSpd("flat", 1f);
-
-        AssertRaPair(null, 1f, 6500, 0);
-        AssertRaPair(Array.Empty<float>(), 1f, 6500, 0);
-        AssertRaPair(flatSpd, 1f, 999, 0);
-        AssertRaPair(flatSpd, 1f, 25001, 0);
-        AssertRaPair(flatSpd, 0, 6500, 0);
-        AssertRaPair(flatSpd, 1f, float.NaN, float.NaN);
-        AssertRaPair(flatSpd, float.NaN, 6500, float.NaN);
-    }
-
-    private static float[] CreateSpd(string shape, float interval)
-    {
-        int count = checked((int)Math.Round((SpectrumEnd - SpectrumStart) / interval) + 1);
-        float[] spd = new float[count];
-
-        for (int i = 0; i < count; i++)
-        {
-            double wavelength = SpectrumStart + i * interval;
-            spd[i] = shape switch
-            {
-                "flat" => 1f,
-                "narrow" => (float)Math.Exp(-0.5 * Math.Pow((wavelength - 555) / 5, 2)),
-                "modulated-planck" => (float)(PlanckianSpd(wavelength, 6500) * (1 + 0.1 * Math.Sin((wavelength - SpectrumStart) * Math.PI / 45))),
-                _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, null)
-            };
-        }
-
-        return spd;
-    }
-
-    private static double PlanckianSpd(double wavelength, double temperature)
-    {
-        double lambda = wavelength * 1e-9;
-        const double c1 = 3.7418e-16;
-        const double c2 = 1.4388e-2;
-        return c1 / (Math.Pow(lambda, 5) * (Math.Exp(c2 / (lambda * temperature)) - 1));
-    }
-
-    private static void AssertRaPair(float[]? spd, float interval, float cct, float expected)
-    {
-        float engineRa = EngineRaCalculator.ComputeRa(spd!, (float)SpectrumStart, interval, cct);
-        float pluginRa = PluginRaCalculator.ComputeRa(spd!, (float)SpectrumStart, interval, cct);
-
-        AssertEquivalent(engineRa, pluginRa, RaTolerance);
-        AssertEquivalent(expected, engineRa, RaTolerance);
-        AssertEquivalent(expected, pluginRa, RaTolerance);
-    }
-
     private static void AssertColorimetryPair(double expected, double engineValue, double pluginValue, double tolerance)
     {
         AssertEquivalent(engineValue, pluginValue, tolerance);

@@ -1,4 +1,4 @@
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
@@ -22,8 +22,17 @@ internal static class LocalSpectrumResultService
         data[nameof(SpectumResultEntity.fPL)] = JsonConvert.SerializeObject(capture.Data.fPL);
         data[nameof(SpectumResultEntity.fRi)] = JsonConvert.SerializeObject(capture.Data.fRi);
         var model = data.ToObject<SpectumResultEntity>()!;
+        model.fCCT = float.IsFinite(capture.Data.fCCT) ? capture.Data.fCCT : null;
+        model.dC = float.IsFinite(capture.Data.dC) ? capture.Data.dC : null;
+        model.fLd = float.IsFinite(capture.Data.fLd) ? capture.Data.fLd : null;
+        model.fPur = float.IsFinite(capture.Data.fPur) ? capture.Data.fPur : null;
+        model.fRa = float.IsFinite(capture.Data.fRa) ? capture.Data.fRa : null;
+        model.fLav = float.IsFinite(capture.Data.fLav) ? capture.Data.fLav : null;
+        if (capture.Data.fRi == null || Array.Exists(capture.Data.fRi, value => !float.IsFinite(value)))
+            model.fRi = null;
         data.Remove(nameof(SpectumResultEntity.fPL));
         data.Remove(nameof(SpectumResultEntity.fRi));
+        data[nameof(Views.cieData.AcquisitionParametersJson)] = capture.AcquisitionParametersJson;
         model.CieDataEx = data.ToString(Formatting.None);
         model.DeviceCode = capture.DeviceCode;
         model.CreateDate = capture.CapturedAt;
