@@ -62,8 +62,8 @@ internal static class LocalSmuResultService
             capture.Parameters.Channel, capture.Parameters.IsSourceV, capture.V, capture.I });
         double[] scanValues = new double[capture.Voltages.Length];
         // Preserve the service's scan contract: I arrays and current-source ScanList are in A.
-        for (int index = 0; index < scanValues.Length; index++) scanValues[index] = capture.Parameters.NativeSource(capture.Parameters.BeginValue
-            + (capture.Parameters.EndValue - capture.Parameters.BeginValue) * index / (scanValues.Length - 1));
+        for (int index = 0; index < scanValues.Length; index++) scanValues[index] = capture.Parameters.NativeSource(capture.Parameters.SourceValues?[index]
+            ?? capture.Parameters.BeginValue + (capture.Parameters.EndValue - capture.Parameters.BeginValue) * index / (scanValues.Length - 1));
         return JObject.FromObject(new { MasterId = id, MasterResultType = ResultType, capture.Parameters.Channel,
             VList = capture.Voltages, IList = capture.Currents.Select(current => current / 1000), ScanList = scanValues });
     }

@@ -75,6 +75,10 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvStepMeasureDataEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int StepMeasureDataEx(int nDevID, double srcRng, double lmtRng, double measureVal, double lmtVal, ref double rstV, ref double rstI);
 
+        // Optional capability entry point: bit 0 = verified linear IV sweep, bit 1 = verified list IV sweep.
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_GetSweepCapabilities", CallingConvention = CallingConvention.StdCall)]
+        public static extern int GetSweepCapabilities(int nDevID);
+
         // 序列扫描 指定量程
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvSweepData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int SweepData(int nDevID, double srcRng, double lmtRng, double lmtVal, double startVal, double stopVal, int points, [Out] double[] pVList, [Out] double[] pIList);

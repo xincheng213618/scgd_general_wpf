@@ -101,17 +101,12 @@ public partial class DeviceSpectrum
         catch { SpectrumBackend.SetLocalStatus(LocalSession.IsQuarantined ? DeviceStatusType.Unknown : DeviceStatusType.Closed); throw; }
     }
 
-    internal LocalSpectrumCapture CaptureLocalSpectrum(LocalSpectrumParameters parameters, ConfigSpectrum config, bool autoConnect, bool continuous = false)
+    internal LocalSpectrumCapture CaptureLocalSpectrum(LocalSpectrumParameters parameters, ConfigSpectrum config, bool autoConnect)
     {
         EnsureLocalSpectrumConnected(autoConnect, config);
-        if (!continuous) SpectrumBackend.SetLocalStatus(DeviceStatusType.Busy);
-        try
-        {
-            LocalSpectrumCapture result = LocalSession.Capture(parameters, config);
-            result.DeviceCode = Code;
-            return result;
-        }
-        finally { if (!continuous) SpectrumBackend.SetLocalStatus(DeviceStatusType.Opened); }
+        LocalSpectrumCapture result = LocalSession.Capture(parameters, config);
+        result.DeviceCode = Code;
+        return result;
     }
 
     internal void PublishLocalSpectrum(LocalSpectrumCapture result)
@@ -238,7 +233,7 @@ public partial class DeviceSpectrum
                     {
                         while (!cancellation.IsCancellationRequested)
                         {
-                            var result = CaptureLocalSpectrum(parameters, config, false, continuous: true);
+                            var result = CaptureLocalSpectrum(parameters, config, false);
                             if (!cancellation.IsCancellationRequested && Application.Current?.Dispatcher is { } dispatcher)
                                 await dispatcher.InvokeAsync(() => { if (!cancellation.IsCancellationRequested) DisplayLocalSpectrum(result, true); });
                             await Task.Delay(100, cancellation.Token);

@@ -433,8 +433,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                     {
                         markerPlot1 = new Marker
                         {
-                            X = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
-                            Y = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
+                            X = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
+                            Y = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
                             MarkerShape = MarkerShape.FilledCircle,
                             MarkerSize = 10f,
                             Color = Color.FromColor(System.Drawing.Color.Orange),

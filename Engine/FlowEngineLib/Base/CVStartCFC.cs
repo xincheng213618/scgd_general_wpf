@@ -47,7 +47,7 @@ public class CVStartCFC : CVBaseCFC
 	private FlowFinishState finishState = new FlowFinishState();
 
 	[JsonIgnore]
-	internal StatusTypeEnum? FinishedStatus
+	public StatusTypeEnum? FinishedStatus
 	{
 		get { lock (finishState.Lock) return finishState.Status; }
 	}

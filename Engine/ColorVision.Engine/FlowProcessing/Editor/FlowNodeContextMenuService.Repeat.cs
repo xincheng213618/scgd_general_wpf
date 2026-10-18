@@ -28,7 +28,7 @@ internal sealed partial class FlowNodeContextMenuService
         if (member != null && !string.IsNullOrEmpty(member.RepeatRegionId))
         {
             CVCommonNode[] members = _nodeEditor.Nodes.OfType<CVCommonNode>().Where(node => node.RepeatRegionId == member.RepeatRegionId).ToArray();
-            var edit = new MenuItem { Header = FlowRepeatRegion.Text("修改重复次数…"), IsEnabled = CanEditRepeat };
+            var edit = new MenuItem { Header = "编辑重复框…", IsEnabled = CanEditRepeat };
             edit.Click += (_, _) => EditRepeat(members, member.RepeatRegionId, member.RepeatCount);
             items.Add(edit);
             var remove = new MenuItem { Header = FlowRepeatRegion.Text("取消重复框"), IsEnabled = CanEditRepeat };
@@ -70,6 +70,21 @@ internal sealed partial class FlowNodeContextMenuService
     private void EditRepeat(CVCommonNode[] members, string id, int count)
     {
         if (!CanEditRepeat) return;
+        if (members.Any(node => node is IRepeatParameterNode))
+        {
+            if (count > RepeatRegionEditSession.MaximumEditableRounds)
+            {
+                var countDialog = new FlowRepeatCountWindow(count) { Owner = Window.GetWindow(_nodeEditor) };
+                if (countDialog.FindName("Explanation") is TextBlock explanation)
+                    explanation.Text = $"逐轮参数编辑支持最多 {RepeatRegionEditSession.MaximumEditableRounds:N0} 轮。请调整次数后继续编辑；此时尚未修改画布。";
+                if (countDialog.ShowDialog() != true || countDialog.Count > RepeatRegionEditSession.MaximumEditableRounds) return;
+                count = countDialog.Count;
+            }
+            var parameterDialog = new FlowRepeatRegionWindow(members, count) { Owner = Window.GetWindow(_nodeEditor) };
+            if (parameterDialog.ShowDialog() == true && CanEditRepeat)
+                _nodeEditor.ExecuteEditTransaction("编辑重复框", () => parameterDialog.Session.Apply(id, members));
+            return;
+        }
         var dialog = new FlowRepeatCountWindow(count)
         {
             Owner = Window.GetWindow(_nodeEditor)

@@ -79,21 +79,21 @@ public partial class DeviceSMU
     }
 
     internal async Task<LocalSmuCapture?> ExecuteLocalSmuAsync(string operation, LocalSmuConnection config, LocalSmuParameters parameters,
-        bool autoConnect, bool checkLimits, CancellationToken token)
+        bool autoConnect, bool checkLimits, CancellationToken token, object? flowOwner = null)
     {
         ObjectDisposedException.ThrowIf(localDisposed, this);
         lock (SmuBackend.Sync) { EnsureOtherSmuBackends(true, config); SmuBackend.BeginLocalCommand(); }
         try
         {
-            if (operation == "Close") { await LocalSession.CloseAsync().ConfigureAwait(false); return null; }
-            if (operation == "Reopen") await LocalSession.CloseAsync().ConfigureAwait(false);
+            if (operation == "Close") { await LocalSession.CloseAsync(flowOwner).ConfigureAwait(false); return null; }
+            if (operation == "Reopen") await LocalSession.CloseAsync(flowOwner).ConfigureAwait(false);
             if (operation is "Open" or "Reopen" || (autoConnect && !LocalSession.IsOpen))
-                await LocalSession.OpenAsync(config, token).ConfigureAwait(false);
+                await LocalSession.OpenAsync(config, token, flowOwner).ConfigureAwait(false);
             if (operation is "Open" or "Reopen") return null;
-            if (operation == "CloseOutput") { await LocalSession.CloseOutputAsync(parameters.Channel, token).ConfigureAwait(false); return null; }
+            if (operation == "CloseOutput") { await LocalSession.CloseOutputAsync(parameters.Channel, token, flowOwner: flowOwner).ConfigureAwait(false); return null; }
             if (operation is not ("GetData" or "StepData" or "Scan" or "SMU.MeasureResult")) throw new NotSupportedException($"本地源表暂不支持 {operation}。");
             return await LocalSession.CaptureAsync(config, parameters, operation == "Scan", operation != "GetData", checkLimits,
-                read: operation == "SMU.MeasureResult", token: token).ConfigureAwait(false);
+                read: operation == "SMU.MeasureResult", token: token, flowOwner: flowOwner).ConfigureAwait(false);
         }
         finally { SmuBackend.EndLocalCommand(); }
     }
@@ -151,7 +151,7 @@ public partial class DeviceSMU
         {
             if (localDisposed) return;
             View.AddViewResultSMU(LocalSmuResultService.CreateView(capture, Code, id));
-            if (!capture.IsScan)
+            if (!capture.IsScan || capture.Parameters.SourceValues != null)
             {
                 var channel = capture.Parameters.Channel == SMUChannelType.A ? DisplayConfig.ChannelA : DisplayConfig.ChannelB;
                 channel.V = capture.V; channel.I = capture.I;

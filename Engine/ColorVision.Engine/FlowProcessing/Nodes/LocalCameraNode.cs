@@ -13,10 +13,12 @@ using ColorVision.Themes.Controls;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using FlowEngineLib.Repeat;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
@@ -48,8 +50,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         Usage = "Flow_LocalCamera_Usage",
         Processing = "Flow_LocalCamera_Processing",
         Notes = "Flow_LocalCamera_Notes")]
-    public sealed class LocalCameraNode : LocalDeviceFlowNodeBase
+    public sealed class LocalCameraNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     {
+        private sealed record CameraExecutionParameters(DeviceCamera Device, CameraRunParam CameraParameters, CalibrationParam? Calibration,
+            CVImageFlipMode FlipMode, bool IsAutoExp, bool AutoConnect, bool SaveFiles, string CalibTempName);
         private const int CameraMasterResultType = 100;
         private string _CalibTempName = string.Empty;
         private float _ExpTime = 100;
@@ -125,23 +129,39 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             device.OpenLocalCameraWindow(this);
         }
 
-        protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
+        public IReadOnlyList<RepeatParameterDefinition> GetRepeatParameters() => new[]
+        {
+            new RepeatParameterDefinition(nameof(ExpTime), "曝光时间", "ms", ExpTime, minimum: float.Epsilon, maximum: float.MaxValue,
+                unavailableReason: IsAutoExp ? "请先关闭相机节点的自动曝光，再设置逐轮曝光。" : null),
+            new RepeatParameterDefinition(nameof(AvgCount), "平均次数", "次", AvgCount, isInteger: true, minimum: 1, maximum: int.MaxValue)
+        };
+
+        protected override object CaptureExecutionParameters(CVStartCFC action)
         {
             DeviceCamera device = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>()
                 .FirstOrDefault(camera => string.Equals(camera.Code, DeviceCode, StringComparison.Ordinal))
                 ?? throw new InvalidOperationException($"找不到本地相机设备：{DeviceCode}");
-            CameraRunParam cameraParameters = BuildCameraParameters();
+            CameraRunParam cameraParameters = BuildCameraParameters(action);
             CalibrationParam? calibration = ResolveCalibration(device);
             if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
                 cameraParameters.Gain = calibrationGain;
-            FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(AutoConnect));
+            return new CameraExecutionParameters(device, cameraParameters, calibration, FlipMode, IsAutoExp, AutoConnect, SaveFiles, CalibTempName);
+        }
+
+        protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
+        {
+            CameraExecutionParameters parameters = GetExecutionParameters<CameraExecutionParameters>(action);
+            DeviceCamera device = parameters.Device;
+            CameraRunParam cameraParameters = parameters.CameraParameters;
+            CalibrationParam? calibration = parameters.Calibration;
+            FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(parameters.AutoConnect));
             LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
             {
                 Device = device,
                 CameraParameters = cameraParameters,
                 Calibration = calibration,
-                FlipMode = FlipMode,
-                IsAutoExposure = IsAutoExp,
+                FlipMode = parameters.FlipMode,
+                IsAutoExposure = parameters.IsAutoExp,
                 SaveFiles = false,
                 AllowAcceleration = true
             });
@@ -151,9 +171,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata);
                 Stopwatch saveTimer = Stopwatch.StartNew();
-                LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, SaveMode);
+                LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, parameters.SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly);
                 int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
-                MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp));
+                MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, parameters.IsAutoExp));
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
@@ -188,26 +208,37 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string BuildRunPayload(CVStartCFC action)
         {
-            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles, AllowAcceleration = true });
+            CameraExecutionParameters parameters = GetExecutionParameters<CameraExecutionParameters>(action);
+            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode = parameters.Device.Code, EventName = OperatorCode,
+                action.SerialNumber, parameters.CameraParameters.ExpTime, parameters.CameraParameters.Gain, parameters.CameraParameters.AvgCount,
+                parameters.CalibTempName, parameters.FlipMode, parameters.AutoConnect, parameters.IsAutoExp, parameters.SaveFiles, AllowAcceleration = true });
         }
 
         internal CVFileSaveMode SaveMode => SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly;
 
-        internal CameraRunParam BuildCameraParameters()
+        internal CameraRunParam BuildCameraParameters(CVStartCFC? action = null)
         {
-            if (!float.IsFinite(ExpTime) || ExpTime <= 0)
+            if (action != null)
+                foreach (RepeatParameterDefinition definition in GetRepeatParameters())
+                {
+                    double value = ResolveRepeatParameter(action, definition.Key, double.NaN);
+                    if (!double.IsNaN(value) && !definition.TryValidate(value, out string error)) throw new InvalidOperationException(error);
+                }
+            float exposure = action == null ? ExpTime : checked((float)ResolveRepeatParameter(action, nameof(ExpTime), ExpTime));
+            int average = action == null ? AvgCount : checked((int)ResolveRepeatParameter(action, nameof(AvgCount), AvgCount));
+            if (!float.IsFinite(exposure) || exposure <= 0)
                 throw new InvalidOperationException("曝光时间必须大于 0。");
             if (!float.IsFinite(Gain) || Gain < 0)
                 throw new InvalidOperationException("增益不能小于 0。");
-            if (AvgCount < 1)
+            if (average < 1)
                 throw new InvalidOperationException("平均次数必须大于或等于 1。");
 
             var cameraParameters = new CameraRunParam
             {
                 Gain = Gain,
-                AvgCount = AvgCount
+                AvgCount = average
             };
-            cameraParameters.SetAllExposure(ExpTime);
+            cameraParameters.SetAllExposure(exposure);
             return cameraParameters;
         }
 

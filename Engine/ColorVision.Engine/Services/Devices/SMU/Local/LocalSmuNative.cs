@@ -15,6 +15,8 @@ internal interface ILocalSmuNative
     int Measure(int handle, LocalSmuParameters parameters, bool step, ref double voltage, ref double current);
     int Read(int handle, ref double voltage, ref double current);
     int Sweep(int handle, LocalSmuParameters parameters, double[] voltages, double[] currents);
+    int GetSweepCapabilities(int handle) => 0;
+    int List(int handle, LocalSmuParameters parameters, double[] sourceValues, double[] voltages, double[] currents) => throw new NotSupportedException("当前源表驱动不支持列表扫描。");
     int CloseOutput(int handle);
     int Close(int handle);
 }
@@ -43,6 +45,16 @@ internal sealed class LocalSmuNative : ILocalSmuNative
     public int Sweep(int h, LocalSmuParameters p, double[] v, double[] i) => p.IsAutoRng
         ? PassSx.SweepDataAutoRng(h, p.NativeLimit, p.NativeSource(p.BeginValue), p.NativeSource(p.EndValue), p.Points, v, i)
         : PassSx.SweepData(h, p.SrcRng, p.LmtRng, p.NativeLimit, p.NativeSource(p.BeginValue), p.NativeSource(p.EndValue), p.Points, v, i);
+    public int GetSweepCapabilities(int h)
+    {
+        try { return PassSx.GetSweepCapabilities(h); }
+        catch (EntryPointNotFoundException) { return 0; }
+    }
+    public int List(int h, LocalSmuParameters p, double[] sourceValues, double[] v, double[] i)
+    {
+        double[] nativeValues = Array.ConvertAll(sourceValues, p.NativeSource);
+        return PassSx.ListData(h, p.IsAutoRng ? 0 : p.SrcRng, p.IsAutoRng ? 0 : p.LmtRng, p.NativeLimit, nativeValues, nativeValues.Length, v, i);
+    }
     public int CloseOutput(int h) => PassSx.CloseOutput(h);
     public int Close(int h) => PassSx.CloseDevice(h);
 }

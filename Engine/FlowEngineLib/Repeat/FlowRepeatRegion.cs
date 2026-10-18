@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using FlowEngineLib.Base;
@@ -91,12 +92,25 @@ public sealed class FlowRepeatRegion
                 error = Text("重复框的节点或次数已改变，请取消该框后重新框选。");
                 return false;
             }
+            if (!region.TryCaptureParameters(out _, out error)) return false;
         }
         error = string.Empty;
         return true;
     }
 
     private bool HasConsistentSettings() => Count > 0 && Nodes.All(node => node.RepeatCount == Count && node.RepeatMemberCount == Nodes.Length);
+
+    private bool TryCaptureParameters(out Dictionary<CVCommonNode, IReadOnlyDictionary<string, double[]>> parameters, out string error)
+    {
+        parameters = new Dictionary<CVCommonNode, IReadOnlyDictionary<string, double[]>>();
+        foreach (CVCommonNode node in Nodes)
+        {
+            if (!node.TryCaptureRepeatParameters(Count, out IReadOnlyDictionary<string, double[]> values, out error)) return false;
+            parameters.Add(node, values);
+        }
+        error = string.Empty;
+        return true;
+    }
 
     private static IEnumerable<STNode> ConnectedMembers(CVCommonNode start)
     {
@@ -125,7 +139,12 @@ public sealed class FlowRepeatRegion
             Fail(action, node, string.IsNullOrEmpty(error) ? Text("重复框的节点或次数已改变，请取消该框后重新框选。") : error);
             return false;
         }
-        var run = new FlowRepeatRegionRun(region, action);
+        if (!region.TryCaptureParameters(out Dictionary<CVCommonNode, IReadOnlyDictionary<string, double[]>> parameters, out error))
+        {
+            Fail(action, node, error);
+            return false;
+        }
+        var run = new FlowRepeatRegionRun(region, action, parameters);
         action.RuntimeResources.Set("RepeatRegion:" + region.Id, run);
         action.RepeatRun = run;
         action.RepeatRound = 1;
@@ -161,15 +180,64 @@ internal sealed class FlowRepeatRegionRun : IDisposable
     private readonly object sync = new();
     private readonly object displayOwner = new();
     private readonly CVStartCFC input;
+    private readonly int count;
+    private readonly Dictionary<CVCommonNode, IReadOnlyDictionary<string, double[]>> parameters;
     private int round = 1;
     private bool finished;
+    private CVStartCFC batchOwner;
+    private bool batchCompleted;
     private readonly HashSet<string> resources = new(StringComparer.Ordinal);
     public FlowRepeatRegion Region { get; }
 
-    internal FlowRepeatRegionRun(FlowRepeatRegion region, CVStartCFC action)
+    internal FlowRepeatRegionRun(FlowRepeatRegion region, CVStartCFC action, Dictionary<CVCommonNode, IReadOnlyDictionary<string, double[]>> parameters)
     {
         Region = region;
         input = new CVStartCFC(action);
+        count = region.Count;
+        this.parameters = parameters;
+    }
+
+    internal bool TryResolveParameter(CVCommonNode node, CVStartCFC action, string key, out double value)
+    {
+        value = default;
+        if (!parameters.TryGetValue(node, out IReadOnlyDictionary<string, double[]> values) || !values.TryGetValue(key, out double[] sequence)) return false;
+        if (action.RepeatRound < 1 || action.RepeatRound > count)
+            throw new InvalidOperationException($"节点“{node.Title}”的重复轮次无效。 ");
+        value = sequence[action.RepeatRound - 1];
+        return true;
+    }
+
+    private bool CanBatch(CVCommonNode node, CVStartCFC action, bool isRunning) =>
+        count > 1 && round == 1 && Region.Nodes.Length == 1 && ReferenceEquals(Region.Nodes[0], node)
+        && ReferenceEquals(action.RepeatRun, this) && ReferenceEquals(action.RuntimeResources, input.RuntimeResources)
+        && isRunning && Accepts(action);
+
+    internal bool TryGetBatchParameters(CVCommonNode node, CVStartCFC action, out int batchCount, out IReadOnlyDictionary<string, double[]> values)
+    {
+        batchCount = 0;
+        values = null;
+        // Finishing holds the shared finish-state lock while disposing this run. Read that state before taking sync.
+        bool isRunning = action.IsRunning && !action.IsDel && !action.TryGetStopStatus(out _) && action.FinishedStatus == null;
+        lock (sync)
+        {
+            if (!CanBatch(node, action, isRunning) || batchCompleted || batchOwner != null && !ReferenceEquals(batchOwner, action)) return false;
+            batchOwner = action;
+            batchCount = count;
+            values = new ReadOnlyDictionary<string, double[]>(parameters[node].ToDictionary(entry => entry.Key,
+                entry => (double[])entry.Value.Clone(), StringComparer.Ordinal));
+            return true;
+        }
+    }
+
+    internal void CompleteBatch(CVCommonNode node, CVStartCFC action, int batchCount)
+    {
+        bool isRunning = action.IsRunning && !action.IsDel && !action.TryGetStopStatus(out _) && action.FinishedStatus == null;
+        lock (sync)
+        {
+            if (!CanBatch(node, action, isRunning) || !ReferenceEquals(batchOwner, action) || batchCompleted || batchCount != count)
+                throw new InvalidOperationException("批量执行的动作、次数或状态与当前重复框不一致，不能跳过剩余轮次。");
+            batchCompleted = true;
+        }
     }
 
     internal bool Accepts(CVStartCFC action)
@@ -224,7 +292,13 @@ internal sealed class FlowRepeatRegionRun : IDisposable
         lock (sync)
         {
             if (!Accepts(action)) return false;
-            if (round == Region.Count)
+            if (batchCompleted)
+            {
+                if (!ReferenceEquals(batchOwner, action)) return false;
+                round = count;
+                action.RepeatRound = count;
+            }
+            if (round == count)
             {
                 finished = true;
                 ShowState(STNodeGroupState.Completed);

@@ -3,17 +3,22 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using FlowEngineLib.Base;
+using FlowEngineLib.Repeat;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
 [STNode("Flow_CustomNodes/Flow_LocalDevices", "本地光谱采集", CategoryOrder = 9900, NodeOrder = 80)]
-public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase
+public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
 {
+    // Native acquisition converts float milliseconds to signed integer microseconds.
+    private const double MaximumIntegralTime = 2_147_483.5;
+    private sealed record ExecutionParameters(DeviceSpectrum Device, string DeviceCode, LocalSpectrumParameters Capture, bool AutoConnect, int ZIndex, string NodeId);
     private float integralTime = 100;
     private int average = 1;
     private bool autoIntegration, autoDark, adaptiveDark;
@@ -65,17 +70,63 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase
     }
     private DeviceSpectrum FindDevice() => ServiceManager.Current?.DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault(d => d.Code == DeviceCode)
         ?? throw new InvalidOperationException($"找不到光谱仪设备：{DeviceCode}");
-    protected override string GetCompactSummaryValue() => $"{IntegralTime:0.###} ms × {NumberOfAverage}";
-    protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
+
+    public IReadOnlyList<RepeatParameterDefinition> GetRepeatParameters()
     {
-        using var execution = new LocalSpectrumFlowExecution(FindDevice(), new LocalSpectrumParameters
+        bool syncFrequency = ServiceManager.Current?.DeviceServices.OfType<DeviceSpectrum>()
+            .FirstOrDefault(device => device.Code == DeviceCode)?.Config.GetDataConfig.IsSyncFrequencyEnabled == true;
+        string? syncReason = syncFrequency ? "同步频率模式会调整实际积分时间和平均次数，请先在光谱仪设置中关闭同步频率。" : null;
+        return
+        [
+            new(nameof(IntegralTime), "积分时间", "ms", IntegralTime, minimum: 0.001, maximum: MaximumIntegralTime,
+                unavailableReason: syncReason ?? (AutoIntegration ? "自动积分已启用，请先关闭自动积分后设置逐轮积分时间。" : null)),
+            new(nameof(NumberOfAverage), "平均次数", "次", NumberOfAverage, isInteger: true, minimum: 1, maximum: int.MaxValue, unavailableReason: syncReason)
+        ];
+    }
+
+    protected override string GetCompactSummaryValue() => $"{IntegralTime:0.###} ms × {NumberOfAverage}";
+
+    protected override object CaptureExecutionParameters(CVStartCFC action)
+    {
+        double roundIntegralTime = ResolveRepeatParameter(action, nameof(IntegralTime), double.NaN);
+        double roundAverage = ResolveRepeatParameter(action, nameof(NumberOfAverage), double.NaN);
+        foreach (var definition in GetRepeatParameters())
         {
-            IntegralTime = IntegralTime, NumberOfAverage = NumberOfAverage, AutoIntegration = AutoIntegration,
+            double value = definition.Key == nameof(IntegralTime) ? roundIntegralTime : roundAverage;
+            if (!double.IsNaN(value) && !definition.TryValidate(value, out string error))
+                throw new InvalidOperationException(error);
+        }
+        var parameters = new LocalSpectrumParameters
+        {
+            IntegralTime = double.IsNaN(roundIntegralTime) ? IntegralTime : (float)roundIntegralTime,
+            NumberOfAverage = double.IsNaN(roundAverage) ? NumberOfAverage : checked((int)roundAverage), AutoIntegration = AutoIntegration,
             AutoInitDark = AutoInitDark, SelfAdaptionInitDark = SelfAdaptionInitDark,
             Eqe = Eqe, AFactor = AFactor, Voltage = Voltage, Current = Current
-        }, Eqe ? "EQE.GetData" : "GetData", AutoConnect, ZIndex, NodeID);
+        };
+        parameters.Validate();
+        if (parameters.IntegralTime > MaximumIntegralTime)
+            throw new InvalidOperationException($"积分时间不能超过 {MaximumIntegralTime:0.###} ms。");
+        return new ExecutionParameters(FindDevice(), DeviceCode, parameters, AutoConnect, ZIndex, NodeID);
+    }
+
+    protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
+    {
+        var snapshot = GetExecutionParameters<ExecutionParameters>(action);
+        using var execution = new LocalSpectrumFlowExecution(snapshot.Device, snapshot.Capture,
+            snapshot.Capture.Eqe ? "EQE.GetData" : "GetData", snapshot.AutoConnect, snapshot.ZIndex, snapshot.NodeId);
         execution.Execute();
         return new LocalNodeExecutionResult { Data = execution.Complete(action) };
     }
-    protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new { DeviceCode, IntegralTime, NumberOfAverage, AutoIntegration, AutoInitDark, SelfAdaptionInitDark, AutoConnect, Eqe, AFactor, Voltage, Current });
+
+    protected override string BuildRunPayload(CVStartCFC action)
+    {
+        var snapshot = GetExecutionParameters<ExecutionParameters>(action);
+        var parameters = snapshot.Capture;
+        return JsonConvert.SerializeObject(new
+        {
+            snapshot.DeviceCode, parameters.IntegralTime, parameters.NumberOfAverage, parameters.AutoIntegration,
+            parameters.AutoInitDark, parameters.SelfAdaptionInitDark, snapshot.AutoConnect,
+            parameters.Eqe, parameters.AFactor, parameters.Voltage, parameters.Current
+        });
+    }
 }

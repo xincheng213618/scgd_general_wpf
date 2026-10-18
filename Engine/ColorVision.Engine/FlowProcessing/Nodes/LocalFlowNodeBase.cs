@@ -13,6 +13,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -86,6 +87,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected const string LocalTopic = "LOCAL";
         private readonly string[] inputNames;
         private readonly object inputSync = new();
+        private readonly ConditionalWeakTable<CVStartCFC, object> executionParameters = new();
         private readonly Dictionary<string, LocalFlowInputSnapshot?[]> pendingInputSets = new(StringComparer.Ordinal);
         private readonly ConcurrentDictionary<string, LocalFlowInputSnapshot[]> activeInputSets = new(StringComparer.Ordinal);
         private STNodeOption[] flowInputOptions = Array.Empty<STNodeOption>();
@@ -319,16 +321,29 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             CVTransAction transaction = new(start);
             activeInputSets.AddOrUpdate(start.SerialNumber, inputs, (_, _) => inputs);
+            Exception? preparationError = null;
+            string payload;
+            try
+            {
+                object? parameters = CaptureExecutionParameters(start);
+                if (parameters != null) executionParameters.Add(start, parameters);
+                payload = BuildRunPayload(start);
+            }
+            catch (Exception ex)
+            {
+                preparationError = ex;
+                payload = JsonConvert.SerializeObject(new { DeviceNodeCode = NodeID, Error = ex.Message });
+            }
             PublishNodeRun(new FlowEngineNodeRunEventArgs
             {
                 SerialNumber = start.SerialNumber,
                 SendTopic = LocalTopic,
                 SendMsgId = start.SerialNumber,
                 SendEventName = OperatorCode,
-                SendPayload = BuildRunPayload(start)
+                SendPayload = payload
             });
 
-            _ = Task.Run(() => ExecuteCore(transaction, inputs));
+            _ = Task.Run(() => ExecuteCore(transaction, inputs, preparationError));
         }
 
         private void ClearPendingInputs(string? serialNumber = null)
@@ -348,17 +363,25 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected abstract LocalNodeExecutionResult ExecuteLocal(CVStartCFC action);
 
+        protected virtual object? CaptureExecutionParameters(CVStartCFC action) => null;
+
+        protected T GetExecutionParameters<T>(CVStartCFC action) where T : class
+            => executionParameters.TryGetValue(action, out object? parameters) && parameters is T typed
+                ? typed : throw new InvalidOperationException("节点的本次执行参数尚未准备。");
+
         protected virtual string BuildRunPayload(CVStartCFC action)
         {
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber });
         }
 
-        private void ExecuteCore(CVTransAction transaction, LocalFlowInputSnapshot[] inputs)
+        private void ExecuteCore(CVTransAction transaction, LocalFlowInputSnapshot[] inputs, Exception? preparationError)
         {
             var timing = new FlowNodeTiming();
             using var activation = timing.Activate();
             try
             {
+                if (transaction.trans_action.RuntimeResources.IsDisposed || transaction.trans_action.IsDel || transaction.trans_action.TryGetStopStatus(out _)) return;
+                if (preparationError != null) throw preparationError;
                 LocalNodeExecutionResult result = FlowNodeTiming.Run("ExecuteLocal", () => ExecuteLocal(transaction.trans_action));
                 if (transaction.trans_action.RuntimeResources.IsDisposed) return;
                 CVServerResponse response = new(transaction.trans_action.SerialNumber, ActionStatusEnum.Finish, result.Message, OperatorCode, result.Data);
@@ -375,6 +398,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             finally
             {
+                executionParameters.Remove(transaction.trans_action);
                 activeInputSets.TryRemove(new KeyValuePair<string, LocalFlowInputSnapshot[]>(transaction.trans_action.SerialNumber, inputs));
             }
         }
