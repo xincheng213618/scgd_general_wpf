@@ -124,6 +124,8 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn Header="{x:Static properties:Resources.Duration}" HeaderStringFormat="{}{0} (ms)"
+                                            Width="90" DisplayMemberBinding="{Binding TotalTime, TargetNullValue=—}"/>
                             <GridViewColumn  Header="Type">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">

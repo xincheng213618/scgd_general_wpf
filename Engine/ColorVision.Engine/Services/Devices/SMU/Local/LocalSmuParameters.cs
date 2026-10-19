@@ -31,6 +31,7 @@ internal sealed record LocalSmuParameters
     public bool IsSourceV { get; init; } = true;
     public double MeasureValue { get; init; }
     public double LimitValue { get; init; }
+    public double? MeasureDelayMs { get; init; }
     public bool IsAutoRng { get; init; } = true;
     public double SrcRng { get; init; }
     public double LmtRng { get; init; }
@@ -51,6 +52,7 @@ internal sealed record LocalSmuParameters
     internal void Validate(Pss_Type type, bool scan, bool checkLimits)
     {
         if (!Enum.IsDefined(Channel)) throw new ArgumentException("源表通道无效。");
+        if (MeasureDelayMs is { } delay && (!double.IsFinite(delay) || delay < 0)) throw new ArgumentException("源表测量延时必须是非负有限值。");
         if (!double.IsFinite(LimitValue) || LimitValue == 0) throw new ArgumentException("源表保护限值必须是非零有限值。");
         if (!double.IsFinite(MeasureValue) || !double.IsFinite(BeginValue) || !double.IsFinite(EndValue)) throw new ArgumentException("源表设置值必须为有限值。");
         if (scan && Points is < 2 or > 100000) throw new ArgumentException("源表扫描点数必须在 2 到 100000 之间。");

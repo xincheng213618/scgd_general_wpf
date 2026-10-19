@@ -29,6 +29,9 @@ internal interface ILocalSmuNative
 
 internal sealed class LocalSmuNative : ILocalSmuNative
 {
+    [DllImport("cvCamera.dll", EntryPoint = "cvPss_Sx_OpenNetDeviceWithError", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    private static extern int NativeOpen([MarshalAs(UnmanagedType.Bool)] bool network, string deviceName, Pss_Type type,
+        int baudRate, out int failure, [Out] byte[] error, int capacity);
     [DllImport("cvCamera.dll", EntryPoint = "cvPss_Sx_GetLocalFamily", CallingConvention = CallingConvention.StdCall)]
     private static extern int NativeFamily(int handle);
     [DllImport("cvCamera.dll", EntryPoint = "cvPss_Sx_CloseLocalOutput", CallingConvention = CallingConvention.StdCall)]
@@ -63,12 +66,34 @@ internal sealed class LocalSmuNative : ILocalSmuNative
     }
     public int Open(LocalSmuConnection c)
     {
+        byte[] error = new byte[4096];
+        try
+        {
+            int handle = NativeOpen(c.IsNet, c.DeviceName, c.DeviceType, c.BaudRate, out int failure, error, error.Length);
+            if (handle >= 0) return handle;
+            int end = Array.IndexOf(error, (byte)0);
+            throw OpenFailure(failure, Encoding.UTF8.GetString(error, 0, end < 0 ? error.Length : end));
+        }
+        catch (EntryPointNotFoundException) { } // Older drivers retain their existing connection path.
         if (c.IsNet || c.BaudRate == 9600) return PassSx.OpenNetDevice(c.IsNet, c.DeviceName, c.DeviceType);
         try { return PassSx.OpenNetDeviceEx(false, c.DeviceName, c.DeviceType, c.BaudRate); }
         catch (EntryPointNotFoundException ex)
         {
             throw new InvalidOperationException("当前源表 DLL 不支持设置串口波特率，请更新 cvCamera.dll 后重新启动程序。", ex);
         }
+    }
+    internal static InvalidOperationException OpenFailure(int failure, string detail)
+    {
+        string reason = failure switch
+        {
+            1 => "连接参数无效，请核对设备类型和连接设置。",
+            2 => "串口打开、配置或读写失败。请检查串口是否存在、是否被其他程序占用，以及串口线连接。",
+            3 => "等待仪器响应超时。请核对软件与仪器面板的波特率是否一致，并检查仪器供电和接线。",
+            4 => "仪器返回错误提示 TSP?，初始化未完成。请查看下方仪器错误详情。",
+            5 => "仪器响应不完整或不符合预期。请核对设备型号、波特率和接线。",
+            _ => "驱动未能建立连接，请核对设备连接设置。"
+        };
+        return new InvalidOperationException(reason + (string.IsNullOrWhiteSpace(detail) ? string.Empty : $"\n驱动详情：{detail.Trim()}"));
     }
     public int GetIdn(int h, StringBuilder text, ref int length) => PassSx.GetIDN(h, text, ref length);
     public int SetWiring(int h, bool fourWire, bool front) => PassSx.Set4WireFront(h, fourWire, front);

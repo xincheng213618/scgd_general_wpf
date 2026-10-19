@@ -222,6 +222,13 @@ public sealed class LocalSmuAdvancedTests
                 manager.DeviceServices.Add(device);
                 Assert.Contains(device.ContextMenu.Items.OfType<MenuItem>(),item=>ReferenceEquals(item.Command,device.OpenLocalSmuManagerCommand));
                 var node=new LocalSmuNode { DeviceCode=device.Code };node.Create();
+                Assert.True(node.UseDeviceDelay);
+                var delayEditor=PropertyEditorHelper.GenProperties(node,nameof(LocalSmuNode.MeasureDelayMs));
+                Assert.Equal(Visibility.Collapsed,delayEditor.Visibility);
+                node.UseDeviceDelay=false;node.MeasureDelayMs=0;
+                Assert.Equal(Visibility.Visible,delayEditor.Visibility);
+                node.UseWindowSettings=true;Assert.Equal(Visibility.Collapsed,delayEditor.Visibility);
+                node.UseWindowSettings=false;Assert.Equal(Visibility.Visible,delayEditor.Visibility);
                 window=new LocalSmuWindow(device);window.AttachNode(node);
                 window.Settings.SourceValue=3;window.Settings.Measurement=SmuMeasurement.Resistance;
                 Assert.Null(node.LocalSettings);Assert.Equal(1,node.MeasureValue);
@@ -232,9 +239,13 @@ public sealed class LocalSmuAdvancedTests
                 var restored=new LocalSmuNode();restored.Create();restored.OnLoadNode(saved);
                 Assert.Equal(SmuMeasurement.Resistance,restored.LocalSettings!.Measurement);
                 Assert.Equal(3,restored.MeasureValue);
+                Assert.False(restored.UseDeviceDelay);Assert.Equal(0,restored.MeasureDelayMs);
                 Assert.True(restored.UseWindowSettings);
                 restored.UseWindowSettings=false;Assert.Null(restored.LocalSettings);
                 saved.Remove("LocalSmuSettings.v1");restored.OnLoadNode(saved);Assert.Null(restored.LocalSettings);
+                saved.Remove(nameof(LocalSmuNode.UseDeviceDelay));saved.Remove(nameof(LocalSmuNode.MeasureDelayMs));
+                var legacy=new LocalSmuNode();legacy.Create();legacy.OnLoadNode(saved);
+                Assert.True(legacy.UseDeviceDelay);Assert.False(legacy.ShowMeasureDelay);
                 Assert.Equal(0,native.Captures);Assert.Equal(0,native.Opens);
                 string? preview=Environment.GetEnvironmentVariable("CV_SMU_PREVIEW_PATH");
                 if(!string.IsNullOrEmpty(preview))

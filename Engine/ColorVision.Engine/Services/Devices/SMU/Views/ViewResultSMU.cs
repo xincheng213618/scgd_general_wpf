@@ -17,6 +17,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Type = "Scan";
             Id = item.Id;
             CreateTime = item.CreateDate;
+            TotalTime = item.TotalTime;
             BatchID = item.BatchId;
             ChannelType = item.ChannelType;
             if (item.IsSourceV!=null)
@@ -48,9 +49,11 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Type = "GetData";
             Id = item.Id;
             CreateTime = item.CreateDate;
+            TotalTime = item.TotalTime;
             BatchID = item.BatchId;
             ChannelType = item.ChannelType;
             MeasurementType = item.IsSourceV == true ? MeasurementType.Voltage : MeasurementType.Current;
+            LimitStart = item.SrcValue ?? 0;
             LimitEnd = item.LimitValue ?? 0;
             VResult = item.VResult ?? 0;
             IResult = item.IResult ?? 0;
@@ -154,6 +157,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public int Id { get => _ID; set { _ID = value; OnPropertyChanged(); } }
         private int _ID;
         public DateTime? CreateTime { get; set; }
+        public int? TotalTime { get; set; }
         public string? Batch { get; set; }
         public int? BatchID { get; set; }
         public ObservableCollection<SMUData> SMUDatas { get; set; } = new ObservableCollection<SMUData>();

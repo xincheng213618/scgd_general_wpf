@@ -27,14 +27,14 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
 {
     private SourceType source = SourceType.Voltage_V;
     private SMUChannelType channel;
-    private double measureValue = 1, limitValue = 10, srcRng, lmtRng;
-    private bool autoConnect = true, isAutoRng = true, closeOutputOnFinish = true;
+    private double measureValue = 1, limitValue = 10, srcRng, lmtRng, measureDelayMs = 100;
+    private bool autoConnect = true, isAutoRng = true, closeOutputOnFinish = true, useDeviceDelay = true;
     private LocalSmuSettings? localSettings;
     [Browsable(false)]
     public LocalSmuSettings? LocalSettings
     {
         get => localSettings;
-        set { localSettings = value; OnPropertyChanged(nameof(UseWindowSettings)); }
+        set { localSettings = value; OnPropertyChanged(nameof(UseWindowSettings)); OnPropertyChanged(nameof(ShowMeasureDelay)); }
     }
     [Category("本地源表"), STNodeProperty("使用窗口设置", "启用窗口中的测量、扫描和脉冲参数；关闭后恢复普通点测与重复框自动合批", true)]
     public bool UseWindowSettings
@@ -86,6 +86,21 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     [PropertyVisibility(nameof(UseWindowSettings), true)]
     public double LmtRng { get => lmtRng; set { lmtRng = value; OnPropertyChanged(); } }
 
+    [Category("本地源表"), STNodeProperty("沿用设备延时", "使用设备配置中的测量延时；关闭后可单独设置此节点的等待时间", true)]
+    [PropertyVisibility(nameof(UseWindowSettings), true)]
+    public bool UseDeviceDelay
+    {
+        get => useDeviceDelay;
+        set { useDeviceDelay = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowMeasureDelay)); }
+    }
+
+    [Browsable(false)]
+    public bool ShowMeasureDelay => !UseWindowSettings && !UseDeviceDelay;
+
+    [Category("本地源表"), STNodeProperty("测量延时 (ms)", "输出设置后、源表采样前的等待时间。0 表示不额外等待；在这里等待灯响应后，下游无需再添加同用途的延时。扫描时每点均使用此延时", true)]
+    [PropertyVisibility(nameof(ShowMeasureDelay))]
+    public double MeasureDelayMs { get => measureDelayMs; set { measureDelayMs = value; OnPropertyChanged(); } }
+
     [Category("本地源表"), STNodeProperty("自动连接", "源表未连接时，按所选设备的本地连接配置打开", true)]
     public bool AutoConnect { get => autoConnect; set { autoConnect = value; OnPropertyChanged(); } }
 
@@ -127,7 +142,8 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
             Channel = (SmuChannel)(int)Channel, IsSourceV = Source == SourceType.Voltage_V,
             MeasureValue = ResolveRepeatParameter(action, nameof(MeasureValue), MeasureValue),
             LimitValue = ResolveRepeatParameter(action, nameof(LimitValue), LimitValue),
-            IsAutoRng = IsAutoRng, SrcRng = SrcRng, LmtRng = LmtRng
+            IsAutoRng = IsAutoRng, SrcRng = SrcRng, LmtRng = LmtRng,
+            MeasureDelayMs = !UseWindowSettings && !UseDeviceDelay ? MeasureDelayMs : null
         };
         connection.Validate();
         if (LocalSettings != null)

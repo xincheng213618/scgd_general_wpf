@@ -141,7 +141,7 @@ public partial class LocalSmuWindow : Window
                 catch (Exception ex) { Message.Text = $"已取消；输出清理未完成：{ex.Message}"; }
             }
         }
-        catch (Exception ex) { Message.Text = ex.Message; }
+        catch (Exception ex) { Message.Text = ex.Message; MQTTServiceBase.log.Error("本地源表操作失败", ex); }
         finally { operation.Dispose(); operation = null; ParameterTabs.IsEnabled = true; ExecuteButton.IsEnabled = true; RefreshIdentity(); }
     }
 

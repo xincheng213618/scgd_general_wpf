@@ -104,6 +104,7 @@ public sealed class LocalSmuFlowTests
     [InlineData(false, true, RepeatScanScenario.FailedLinear)]
     [InlineData(false, true, RepeatScanScenario.CanceledList)]
     [InlineData(false, true, RepeatScanScenario.InvalidLaterPoint)]
+    [InlineData(false, true, RepeatScanScenario.NodeDelayOverride)]
     public async Task PointNodesAutoOpenWithConfiguredConnectionAndCloseAtFlowEnd(bool configuredAsNetwork, bool singlePointNode, RepeatScanScenario scanScenario)
     {
         string address = configuredAsNetwork ? "192.0.2.18" : "COM24";
@@ -160,6 +161,7 @@ public sealed class LocalSmuFlowTests
                 device.Config.IsNet = configuredAsNetwork;
                 if (configuredAsNetwork) device.Config.IpAddress = address;
                 else device.Config.SerialPort = address;
+                if (scanScenario == RepeatScanScenario.NodeDelayOverride) device.Config.DelayTime = 100;
                 container = new CVNodeContainer();
                 start = new RuntimeTestStartNode();
                 node = singlePointNode ? new LocalSmuNode() : new SMUNode();
@@ -173,6 +175,11 @@ public sealed class LocalSmuFlowTests
                     local.MeasureValue = 7;
                     local.LimitValue = 5;
                     local.CloseOutputOnFinish = true;
+                    if (scanScenario == RepeatScanScenario.NodeDelayOverride)
+                    {
+                        local.UseDeviceDelay = false;
+                        local.MeasureDelayMs = 0;
+                    }
                     Assert.Single(local.GetAllInputOptions());
                     Assert.Single(local.GetAllOutputOptions());
                     local.SetRepeatRegion(Guid.NewGuid().ToString(), 3, 1);
@@ -266,6 +273,8 @@ public sealed class LocalSmuFlowTests
             Assert.Equal(configuredAsNetwork, connection.IsNet);
             Assert.Equal(address, connection.DeviceName);
             Assert.Equal(configuredAsNetwork ? 9600 : 115200, connection.BaudRate);
+            if (scanScenario == RepeatScanScenario.NodeDelayOverride)
+                Assert.Equal(new double[] { 100, 0, 0, 0 }, sdk.AppliedDelays);
             Assert.Equal(!usesScan, sdk.Step);
             Assert.Equal(singlePointNode ? sources[^1] / 1000 : 0.007, sdk.NativeSource);
             Assert.Equal(singlePointNode ? limits[^1] : 5, sdk.NativeLimit);
@@ -340,7 +349,7 @@ public sealed class LocalSmuFlowTests
         }
     }
 
-    public enum RepeatScanScenario { Ordinary, Linear, List, NoCapabilities, VaryingLimits, MultipleNodes, LinearWithOnlyListCapability, FailedLinear, CanceledList, InvalidLaterPoint }
+    public enum RepeatScanScenario { Ordinary, Linear, List, NoCapabilities, VaryingLimits, MultipleNodes, LinearWithOnlyListCapability, FailedLinear, CanceledList, InvalidLaterPoint, NodeDelayOverride }
 
     // An upstream scan must not survive a later point-only result under the same latest-result keys.
     private sealed class ScanSeedNode() : CVCommonNode("Upstream scan", "Test", "Test")
@@ -393,12 +402,13 @@ public sealed class LocalSmuFlowTests
         internal LocalSmuParameters? ScanParameters;
         internal double[]? ListSourceValues;
         internal readonly List<(double Source, double Limit)> Points = [];
+        internal readonly List<double> AppliedDelays = [];
         internal readonly List<int> ClosedBeforePoint = [];
         private Channel channel;
         public int Open(LocalSmuConnection connection) { OpenedConnections.Add(connection); return 0; }
         public int GetIdn(int handle, StringBuilder text, ref int length) { text.Append("synthetic flow SMU"); return 1; }
         public int SetWiring(int handle, bool fourWire, bool front) => 1;
-        public int SetDelay(int handle, double milliseconds) => 1;
+        public int SetDelay(int handle, double milliseconds) { AppliedDelays.Add(milliseconds); return 1; }
         public int SetChannel(int handle, bool channelA) { channel = channelA ? Channel.A : Channel.B; return 1; }
         public int SetSource(int handle, bool voltage) => 1;
         public int Measure(int handle, LocalSmuParameters parameters, bool step, ref double voltage, ref double current)

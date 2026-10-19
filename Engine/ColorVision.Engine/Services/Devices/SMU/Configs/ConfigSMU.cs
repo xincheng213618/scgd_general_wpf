@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
         public bool IsSrcA { get => _IsSrcA; set { _IsSrcA = value; OnPropertyChanged(); } }
         private bool _IsSrcA = true;
 
-        [DisplayName("测量延时（ms）"), Description("DelayTime 以毫秒传给源表驱动，驱动转换为秒后用于源延时。修改后需重新连接。")]
+        [DisplayName("测量延时（ms）"), Description("设备默认的测量前等待时间，以毫秒传给驱动。普通本地源表节点可单独覆盖此延时；高级操作使用本地窗口的延时。修改设备默认值后需重新连接。")]
         public double DelayTime { get => _DelayTime; set { _DelayTime = value; OnPropertyChanged(); } }
         private double _DelayTime;
     }

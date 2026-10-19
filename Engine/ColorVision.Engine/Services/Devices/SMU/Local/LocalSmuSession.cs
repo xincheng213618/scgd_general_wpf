@@ -58,14 +58,18 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         }
         lock (sync) connection = config;
         SetStatus(DeviceStatusType.Opening);
+        string stage = "打开连接";
         try
         {
             handle = native.Open(config);
-            if (handle < 0) throw new InvalidOperationException($"打开本地源表失败，SDK 返回 {handle}。");
+            if (handle < 0) throw new InvalidOperationException($"SDK 返回 {handle}。请核对连接地址、串口占用和仪器面板波特率，修正后重新连接。");
+            stage = "设置接线";
             Check(native.SetWiring(handle, config.Is4Wire, config.IsFront), "设置源表接线");
+            stage = "设置延时";
             Check(native.SetDelay(handle, config.DelayTime), "设置源表延时");
             var text = new StringBuilder(1024);
             int length = text.Capacity;
+            stage = "读取仪器型号";
             Check(native.GetIdn(handle, text, ref length), "读取源表标识");
             Idn = text.ToString();
             SweepCapabilities = native.GetSweepCapabilities(handle);
@@ -75,9 +79,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         }
         catch (Exception failure)
         {
+            string target = config.IsNet ? $"{config.DeviceType}，{config.DeviceName}，网络" : $"{config.DeviceType}，{config.DeviceName}，{config.BaudRate} baud";
+            var reported = new InvalidOperationException($"本地源表连接失败（{target}）。\n失败阶段：{stage}。\n{failure.Message}", failure);
             try { CloseCore(); }
-            catch (Exception cleanup) { throw new AggregateException(failure, cleanup); }
-            throw;
+            catch (Exception cleanup) { throw new AggregateException($"{reported.Message}\n连接清理失败：{cleanup.Message}", reported, cleanup); }
+            throw reported;
         }
     }, token, flowOwner);
 
@@ -99,6 +105,9 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             {
                 SelectChannel(parameters.Channel);
                 if (!read) Check(native.SetSource(handle, parameters.IsSourceV), "设置源类型");
+                // Apply each request's delay under the session lock; an override must not leak
+                // into a later node or a manual measurement that inherits the device setting.
+                if (!read) Check(native.SetDelay(handle, parameters.MeasureDelayMs ?? config.DelayTime), "设置源表测量延时");
                 if (!read) advancedMode = false;
                 if (!read) lastParameters = parameters;
                 // A failing or canceled native call may already have enabled the selected output.
