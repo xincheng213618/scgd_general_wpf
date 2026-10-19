@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons'
 import { Alert, Button, Col, Row, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
-import { WindowsDownloadMenu } from '../components/WindowsDownloadMenu'
+import { WindowsDownloadActions } from '../components/WindowsDownloadActions'
 import { usePhoneLayout } from '../hooks/usePhoneLayout'
 import { getHome } from '../services/site'
 import type { AuthSession, HomePayload } from '../types/site'
@@ -208,7 +208,7 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
                 下载 Android APK
               </Button>
             )}
-            <WindowsDownloadMenu className="hero-action-windows" size="large" assistant={data.download_assistant} installer={latest} />
+            <WindowsDownloadActions className="hero-action-windows" size="large" assistant={data.download_assistant} installer={latest} />
             <Button className="hero-action-plugins" size="large" shape="round" icon={<AppstoreOutlined />} href="/plugins">
               插件市场
             </Button>
@@ -242,7 +242,7 @@ export function HomePage({ session }: { session?: AuthSession | null }) {
               <span className="platform-card-desc">{item.desc}</span>
               <span className="platform-card-meta">{item.meta}</span>
               {item.key === 'windows' ? (
-                <WindowsDownloadMenu className="platform-windows-download" assistant={data.download_assistant} installer={latest} />
+                <WindowsDownloadActions className="platform-windows-download" assistant={data.download_assistant} installer={latest} />
               ) : (
                 <span className="platform-card-action">
                   {item.action}

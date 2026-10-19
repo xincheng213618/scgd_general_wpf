@@ -15,7 +15,7 @@ related: ["delivery.backend", "delivery.plugin-catalog", "delivery.artifact-deli
 
 查询存在不表示无副作用：回退可以写SQLite缓存，home/updates回退还可能修复旧更新目录。启动、配置和数据库隔离前提见[Backend组成](./README.md)，不要为验证文档随意启动服务或向实际存储发“只读探针”。
 
-首页与版本中心的 Windows 下载菜单分别提供“下载助手”和“完整安装包”，指定版本列表仍直接下载对应完整包。两种首页/发行读模型都额外返回顶层 `download_assistant`：由 `services/setup_download.py` 检查存储根下 `Tool/ColorVisionSetup/ColorVisionSetup.exe`，存在非空普通文件时提供 `relative_path` 和真实 `size`，缺失、空文件或符号链接时为 `null`。前端据此启用助手菜单项；助手未提供时完整包仍可独立下载。该字段逐次检查文件，不改写主程序 `LATEST_RELEASE`，也不依赖发行索引重建。正式签名后的助手通过既有工具文件发布流程放入上述位置，下载沿用公共 `/download/` 入口；构建官网不会自动发布本地助手。
+首页与版本中心的 Windows 下载使用分体按钮：左侧“下载 Windows 桌面端”直接下载当前最新版完整安装包，右侧箭头展开“下载助手 / 完整安装包”菜单；指定版本列表直接下载对应完整包。两种首页/发行读模型都额外返回顶层 `download_assistant`：由 `services/setup_download.py` 检查存储根下 `Tool/ColorVisionSetup/ColorVisionSetup.exe`，存在非空普通文件时提供 `relative_path` 和真实 `size`，缺失、空文件或符号链接时为 `null`。前端据此启用助手菜单项；完整包缺失时禁用左侧下载按钮，助手仍可独立使用；两者均缺失时禁用右侧菜单按钮。该字段逐次检查文件，不改写主程序 `LATEST_RELEASE`，也不依赖发行索引重建。正式签名后的助手通过既有工具文件发布流程放入上述位置，下载沿用公共 `/download/` 入口；构建官网不会自动发布本地助手。
 
 首页与版本中心使用 `usePhoneLayout` 按视口宽度不超过 768 CSS 像素显示 Android 按钮、卡片、统计与历史包；较宽布局只展示 Windows 下载。窗口尺寸变化会即时更新。这是响应式展示规则，窄桌面窗口也会进入手机布局，Android 公共 API 与文件下载权限保持原契约。
 

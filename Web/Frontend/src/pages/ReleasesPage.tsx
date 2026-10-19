@@ -2,7 +2,7 @@ import { BookOutlined, CloudDownloadOutlined, FileDoneOutlined, FileMarkdownOutl
 import { Alert, Button, Card, Col, Collapse, Form, Pagination, Row, Select, Skeleton, Space, Statistic, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { WindowsDownloadMenu } from '../components/WindowsDownloadMenu'
+import { WindowsDownloadActions } from '../components/WindowsDownloadActions'
 import { usePhoneLayout } from '../hooks/usePhoneLayout'
 import { getReleases } from '../services/site'
 import type { ReleaseGroup, ReleasesPayload } from '../types/site'
@@ -89,7 +89,7 @@ export function ReleasesPage() {
           <Col flex="auto">
             <Tag color="blue">版本中心</Tag>
             <Typography.Title level={2}>版本档案</Typography.Title>
-            <Typography.Paragraph type="secondary">{isPhoneLayout ? 'Windows 桌面端和 Android APK 分区下载，历史制品单独归档。' : '选择 Windows 下载方式，或下载指定版本的完整安装包。'}</Typography.Paragraph>
+            <Typography.Paragraph type="secondary">{isPhoneLayout ? 'Windows 桌面端和 Android APK 分区下载，历史制品单独归档。' : '直接下载最新版 Windows 完整安装包，或在列表中选择指定版本。'}</Typography.Paragraph>
           </Col>
           <Col>
             <Space wrap>
@@ -119,8 +119,8 @@ export function ReleasesPage() {
               <span className="release-platform-icon"><FileDoneOutlined /></span>
               <div className="release-platform-copy">
                 <Typography.Title level={4}>Windows 下载</Typography.Title>
-                <Typography.Paragraph type="secondary">通过下载助手获取最新版，或直接下载下面指定版本的完整安装包。</Typography.Paragraph>
-                <WindowsDownloadMenu assistant={data.download_assistant} installer={desktopReleases[0] ?? data.app_info.latest_release} />
+                <Typography.Paragraph type="secondary">直接下载最新版完整安装包，也可使用下载助手（需要 .NET Framework 4.8）联网获取最新版。</Typography.Paragraph>
+                <WindowsDownloadActions assistant={data.download_assistant} installer={desktopReleases[0] ?? data.app_info.latest_release} />
               </div>
             </div>
             <Space direction="vertical" className="wide-space release-platform-list">
