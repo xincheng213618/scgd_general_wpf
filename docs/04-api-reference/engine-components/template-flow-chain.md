@@ -53,6 +53,8 @@ MySQL 未连接时，启动仍加载本地流程；MySQL 流程列表查询失�
 
 `Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录 `WARN` 并清空本次侧车 revision 信息，明确提示流程已保存、仅版本历史/节点搜索索引未更新，不影响流程保存和执行。保存成功与“版本/搜索索引可用”是两个检查点；该警告不表示主存储保存失败，也不表示索引功能已恢复。
 
+本机版本历史恢复目标版本的完整 STN 快照，并追加新版本；重复框成员、重复次数和逐轮参数随快照恢复。用户确认替换未保存修改后，主流程与独立编辑窗口直接加载恢复内容，不再经过普通刷新的保存提示，避免旧画布再次保存覆盖恢复结果。历史窗口等待画布加载完成，加载失败会提示版本已保存但编辑器刷新失败；若用户已切换到另一份文档，不替换那份画布。`FlowVersionRestoreServiceTests`、`FlowTemplateWorkspaceEditingTests` 与 `ViewFlowDocumentBehaviorTests` 覆盖快照往返及两种编辑窗口的替换边界，不代表现场硬件已验收。
+
 `FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现默认 option schema。`STNodeInHub`、`STNodeOutHub`、`STNodeHub` 及其派生节点按各自保存的 `count` 扩展输入、输出或成对端口，保留空闲端口及原有端口顺序；类型缓存只保存默认结构，不把一个实例的端口数量套给另一个实例。索引恢复不调用 `OnLoadNode`、属性 setter 或真实连线事件，避免触发设备/MQTT行为。缺失、非四字节或非正数的动态数量会拒绝；整张画布最多分配 1,000,000 个端口，分配前检查预算。
 
 多路接线引起端口增长是正常行为，不需要删除重建节点。更新后的索引器能直接解析已有流程；重新保存可生成本次版本和节点搜索索引。catalog revision 是不可变记录。旧 Artifact 表不再由当前保存/运行链读写或迁移，既有表与数据按兼容保留，不要求手工清库。

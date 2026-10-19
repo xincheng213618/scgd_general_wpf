@@ -221,12 +221,33 @@
   <data name="Engine_PG_AutoIntegration" xml:space="preserve">
     <value>自动积分</value>
   </data>
+  <data name="Engine_PG_MaxAveragingCount" xml:space="preserve">
+    <value>最大平均次数</value>
+  </data>
+  <data name="Engine_PG_SingleSpectrumTest" xml:space="preserve">
+    <value>光谱单次测试</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceName" xml:space="preserve">
+    <value>光谱仪设备名称</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
+    <value>选择执行单次测试的光谱仪设备。</value>
+  </data>
+  <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
+    <value>光谱仪设置</value>
+  </data>
   <data name="Engine_PG_MaxIntegrationTime" xml:space="preserve">
     <value>积分时间最大值</value>
   </data>
 
   <data name="Engine_PG_NegativeLuminanceGuard" xml:space="preserve">
     <value>防负亮度</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill" xml:space="preserve">
+    <value>显示光谱彩色填充</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill_Description" xml:space="preserve">
+    <value>在单曲线模式下按波长填充光谱颜色，关闭后只显示曲线。适用于相对光谱和绝对光谱，多曲线比较不填充。</value>
   </data>
   <data name="Engine_PG_MinLuminanceValue" xml:space="preserve">
     <value>亮度最小值</value>

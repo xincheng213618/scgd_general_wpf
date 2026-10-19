@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 MeasurementType = item.IsSourceV ==true ? MeasurementType.Voltage : MeasurementType.Current;
             LimitStart = item.SrcBegin ?? 0;
             LimitEnd = item.SrcEnd??0;
+            ProtectionLimit = item.LimitValue;
 
             VList = JsonConvert.DeserializeObject<double[]>(item.VResult??string.Empty)?? Array.Empty<Double>();
             IList = JsonConvert.DeserializeObject<double[]>(item.IResult ?? string.Empty) ?? Array.Empty<Double>();
@@ -55,6 +56,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             MeasurementType = item.IsSourceV == true ? MeasurementType.Voltage : MeasurementType.Current;
             LimitStart = item.SrcValue ?? 0;
             LimitEnd = item.LimitValue ?? 0;
+            ProtectionLimit = item.LimitValue;
             VResult = item.VResult ?? 0;
             IResult = item.IResult ?? 0;
             // For single-point measurement (SMUResultModel), use actual VResult/IResult as the single data point
@@ -87,12 +89,14 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public string Type { get; set; }
 
         public string? LocalDetails { get; private set; }
+        private Local.LocalSmuSettings? localSettings;
         private void ApplyLocalDetails()
         {
             if (string.IsNullOrWhiteSpace(LocalDetails)) return;
             try
             {
                 var details = JsonConvert.DeserializeObject<Local.LocalSmuDetails>(LocalDetails);
+                localSettings = details?.Settings;
                 if (details?.Settings?.Measurement != Local.SmuMeasurement.Resistance || details.Resistance == null) return;
                 for (int index = 0; index < Math.Min(SMUDatas.Count, details.Resistance.Length); index++)
                 { SMUDatas[index].HasNativeResistance = true; SMUDatas[index].NativeResistance = details.Resistance[index]; }
@@ -122,6 +126,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             double minimumY = double.PositiveInfinity, maximumY = double.NegativeInfinity;
             for (int index = 0; index < count; index++)
             {
+                if (index < SMUDatas.Count) SMUDatas[index].Index = index + 1;
                 double current = DisplayCurrent(IList![index]);
                 xs[index] = MeasurementType == MeasurementType.Voltage ? VList![index] : current;
                 ys[index] = MeasurementType == MeasurementType.Voltage ? current : VList![index];
@@ -170,6 +175,17 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public float LimitStart { get; set; }
         public float LimitEnd { get; set; }
+        public float? ProtectionLimit { get; private set; }
+        public bool HasCurve => Type == "Scan" && SMUDatas.Count > 1;
+        public int PointCount => SMUDatas.Count;
+        public string ResultKind => localSettings?.Waveform == Local.SmuWaveform.Pulse ? "脉冲" : Type == "Scan" ? "扫描" : "单点";
+        public string SourceMode => IsSourceV ? "电压源" : "电流源";
+        public double? LastVoltage => SMUDatas.Count > 0 ? SMUDatas[^1].Voltage : null;
+        public double? LastCurrent => SMUDatas.Count > 0 ? SMUDatas[^1].Current : null;
+        public double? LastResistance => SMUDatas.Count > 0 ? SMUDatas[^1].Resistance : null;
+        public double? LastPower => SMUDatas.Count > 0 ? SMUDatas[^1].Power : null;
+        public string SourceDescription => Type == "Scan" ? $"{LimitStart:G6} → {LimitEnd:G6} {(IsSourceV ? "V" : "mA")}" : $"{LimitStart:G6} {(IsSourceV ? "V" : "mA")}";
+        public string ProtectionDescription => ProtectionLimit is { } limit ? $"{(IsSourceV ? "限流" : "限压")} {limit:G6} {(IsSourceV ? "mA" : "V")}" : "保护限值未记录";
 
 
 

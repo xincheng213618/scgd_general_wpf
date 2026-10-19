@@ -563,12 +563,32 @@ namespace ColorVision.Engine.FlowProcessing
 
             new FlowVersionHistoryWindow(
                 flowParam,
-                Refresh,
+                () => ReloadRestoredVersionAsync(flowParam),
                 _documentLoadedContentHash,
                 () => IsExecutionActive)
             {
                 Owner = Application.Current.GetActiveWindow()
             }.Show();
+        }
+
+        internal async Task ReloadRestoredVersionAsync(FlowParam flowParam)
+        {
+            // The history window already confirmed replacing unsaved edits.
+            // A second save prompt could overwrite the snapshot just restored.
+            if (!ReferenceEquals(GetActiveFlowParam(), flowParam))
+                return;
+            ThrowIfExecutionActive();
+            if (_isStandalone)
+            {
+                LoadStandaloneFlowParam(flowParam, _saveStandaloneFlowParam);
+                return;
+            }
+
+            FlowTemplateExecutionSnapshotResult result = await SelectFlowTemplateAsync(
+                new TemplateModel<FlowParam>(flowParam.Name, flowParam),
+                replacementMode: FlowWorkspaceReplacementMode.AlreadyConfirmed);
+            if (result.Snapshot == null)
+                throw new InvalidOperationException(result.FailureReason);
         }
 
         private void ShowIncidentManagement()

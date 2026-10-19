@@ -4616,6 +4616,51 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 最大平均次数 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_MaxAveragingCount {
+            get {
+                return ResourceManager.GetString("Engine_PG_MaxAveragingCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 光谱单次测试 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SingleSpectrumTest {
+            get {
+                return ResourceManager.GetString("Engine_PG_SingleSpectrumTest", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 光谱仪设备名称 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SpectrometerDeviceName {
+            get {
+                return ResourceManager.GetString("Engine_PG_SpectrometerDeviceName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 选择执行单次测试的光谱仪设备。 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SpectrometerDeviceNameDesc {
+            get {
+                return ResourceManager.GetString("Engine_PG_SpectrometerDeviceNameDesc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 光谱仪设置 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_SpectrometerSettings {
+            get {
+                return ResourceManager.GetString("Engine_PG_SpectrometerSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 积分时间最大值 的本地化字符串。
         /// </summary>
         public static string Engine_PG_MaxIntegrationTime {

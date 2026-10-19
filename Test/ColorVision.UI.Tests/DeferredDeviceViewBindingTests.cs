@@ -102,8 +102,16 @@ public sealed class DeferredDeviceViewBindingTests
                 };
                 Assert.Same(kind == "spectrum" ? view : config, view.DataContext);
                 ListView list = Assert.IsType<ListView>(view.FindName("listView1"));
-                BindingExpression height = Assert.IsType<BindingExpression>(BindingOperations.GetBindingExpression(list, FrameworkElement.HeightProperty));
-                Assert.Equal(BindingStatus.Active, height.Status);
+                if (kind == "smu")
+                {
+                    RowDefinition row = Assert.IsType<RowDefinition>(view.FindName("HistoryRow"));
+                    Assert.Equal(BindingStatus.Active, BindingOperations.GetMultiBindingExpression(row, RowDefinition.HeightProperty)!.Status);
+                }
+                else
+                {
+                    BindingExpression height = Assert.IsType<BindingExpression>(BindingOperations.GetBindingExpression(list, FrameworkElement.HeightProperty));
+                    Assert.Equal(BindingStatus.Active, height.Status);
+                }
                 Assert.NotNull(list.ItemsSource);
 
                 if (kind is "camera" or "algorithm")
@@ -185,7 +193,7 @@ public sealed class DeferredDeviceViewBindingTests
                 view.AddViewResultSMU(result);
                 Assert.NotNull(view.Content);
                 Assert.NotNull(view.FindName("wpfplot1"));
-                Assert.NotNull(view.FindName("wpfplot2"));
+                Assert.Null(view.FindName("wpfplot2"));
                 Assert.Same(result, Assert.Single(view.ViewResults));
                 ListView list = Assert.IsType<ListView>(view.FindName("listView1"));
                 Assert.Same(result, list.SelectedItem);

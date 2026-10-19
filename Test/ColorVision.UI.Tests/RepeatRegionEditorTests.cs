@@ -4,8 +4,10 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using FlowEngineLib.Repeat;
 using System.ComponentModel;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -18,6 +20,64 @@ namespace ColorVision.UI.Tests;
 
 public sealed class RepeatRegionEditorTests
 {
+    // Decimal stepping must survive storage as doubles, including crossing zero and small/high-precision inputs.
+    [Theory]
+    [InlineData(-1.2, 0.2, new double[] { -1.2, -1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6 })]
+    [InlineData(0.6, -0.2, new double[] { 0.6, 0.4, 0.2, 0, -0.2 })]
+    [InlineData(1e-9, 1e-10, new double[] { 1e-9, 1.1e-9, 1.2e-9 })]
+    [InlineData(1.2345678901234567, 1e-16, new double[] { 1.2345678901234567, 1.2345678901234568, 1.2345678901234569 })]
+    public void DecimalFillPreservesExpectedStoredValues(double start, double increment, double[] expected)
+    {
+        var series = new RepeatParameterEditSeries(new RepeatParameterDefinition("Value", "Value", "", 0), expected.Length, null);
+        series.Fill(0, expected.Length - 1, start, increment);
+        Assert.Equal(expected, series.Values);
+    }
+
+    [Theory]
+    [InlineData(1e-30, 1e-30)]
+    [InlineData(1e30, 1e30)]
+    [InlineData(7e28, 1e28)]
+    public void FillRetainsDoubleRangeBeyondDecimal(double start, double increment)
+    {
+        var series = new RepeatParameterEditSeries(new RepeatParameterDefinition("Value", "Value", "", 0), 3, null);
+        series.Fill(0, 2, start, increment);
+        Assert.Equal(Enumerable.Range(0, 3).Select(index => start + index * increment), series.Values);
+    }
+
+    [Fact]
+    public void SmuDecimalFillDisplaysAndReopensWithoutFloatingPointTails()
+    {
+        WithTheme(() =>
+        {
+            var smu = new LocalSmuNode();
+            smu.Create();
+            string[] expected = ["-1.2", "-1", "-0.8", "-0.6", "-0.4", "-0.2", "0", "0.2", "0.4", "0.6"];
+            var window = new FlowRepeatRegionWindow([smu], expected.Length);
+            try
+            {
+                SetText(window, "StartValueBox", (-1.2).ToString(CultureInfo.CurrentCulture));
+                SetText(window, "IncrementBox", 0.2.ToString(CultureInfo.CurrentCulture));
+                Click(window, "FillButton");
+                Assert.True(window.ValidateEdits());
+                var grid = (DataGrid)window.FindName("ParameterGrid");
+                var view = Assert.IsType<DataView>(grid.ItemsSource);
+                Assert.Equal(expected.Select(value => double.Parse(value, CultureInfo.InvariantCulture).ToString("G", CultureInfo.CurrentCulture)),
+                    view.Cast<DataRowView>().Select(row => row[nameof(smu.MeasureValue)]));
+                window.Session.Apply(Guid.NewGuid().ToString(), [smu]);
+            }
+            finally { window.Close(); }
+            var reopened = new FlowRepeatRegionWindow([smu], expected.Length);
+            try
+            {
+                Assert.True(reopened.ValidateEdits());
+                Assert.Equal(expected.Select(value => double.Parse(value, CultureInfo.InvariantCulture)), smu.RepeatParameterValues[nameof(smu.MeasureValue)]);
+                var view = Assert.IsType<DataView>(((DataGrid)reopened.FindName("ParameterGrid")).ItemsSource);
+                Assert.Equal("0", view[6][nameof(smu.MeasureValue)]);
+            }
+            finally { reopened.Close(); }
+        });
+    }
+
     // The editor is a detached transaction: resizing, generating and cancelling must preserve saved values.
     [Fact]
     public void WorkingArraysResizeTogetherAndOnlyApplyCommitsThem()

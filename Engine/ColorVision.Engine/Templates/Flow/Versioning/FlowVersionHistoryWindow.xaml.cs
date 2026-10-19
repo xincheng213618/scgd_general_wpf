@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow.Versioning
@@ -8,13 +9,13 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
     public partial class FlowVersionHistoryWindow : Window
     {
         private readonly FlowParam flowParam;
-        private readonly Action? restored;
+        private readonly Func<Task>? restored;
         private readonly Func<bool>? isFlowRunning;
         private string? expectedContentHash;
 
         public FlowVersionHistoryWindow(
             FlowParam flowParam,
-            Action? restored = null,
+            Func<Task>? restored = null,
             string? expectedContentHash = null,
             Func<bool>? isFlowRunning = null)
         {
@@ -114,7 +115,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 MessageBoxImage.Information);
         }
 
-        private void RestoreButton_Click(
+        private async void RestoreButton_Click(
             object sender,
             RoutedEventArgs e)
         {
@@ -180,7 +181,9 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             expectedContentHash = result.LoadedContentHash;
             try
             {
-                restored?.Invoke();
+                IsEnabled = false;
+                if (restored != null)
+                    await restored();
                 Reload();
                 if (!result.VersionCatalogUpdated)
                 {
@@ -200,6 +203,10 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                     EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsEnabled = true;
             }
         }
 

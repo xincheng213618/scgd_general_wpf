@@ -3215,12 +3215,33 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Engine_PG_AutoIntegration" xml:space="preserve">
     <value>Auto Integration</value>
   </data>
+  <data name="Engine_PG_MaxAveragingCount" xml:space="preserve">
+    <value>Max Averaging Count</value>
+  </data>
+  <data name="Engine_PG_SingleSpectrumTest" xml:space="preserve">
+    <value>Single Spectrum Test</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceName" xml:space="preserve">
+    <value>Spectrometer Device Name</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
+    <value>Select the spectrometer device for the single test.</value>
+  </data>
+  <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
+    <value>Spectrometer Settings</value>
+  </data>
   <data name="Engine_PG_MaxIntegrationTime" xml:space="preserve">
     <value>Max Integration Time</value>
   </data>
 
   <data name="Engine_PG_NegativeLuminanceGuard" xml:space="preserve">
     <value>Negative Luminance Guard</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill" xml:space="preserve">
+    <value>Show Spectrum Color Fill</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill_Description" xml:space="preserve">
+    <value>Fill the area under a single spectrum curve with wavelength colors. Disable to show only the curve. Applies to relative and absolute spectra; comparison mode uses no fill.</value>
   </data>
   <data name="Engine_PG_MinLuminanceValue" xml:space="preserve">
     <value>Min Luminance Value</value>

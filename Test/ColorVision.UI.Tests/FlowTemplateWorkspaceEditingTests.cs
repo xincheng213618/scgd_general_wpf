@@ -3,6 +3,8 @@ using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Flow.Versioning;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using ST.Library.UI.NodeEditor;
@@ -14,6 +16,51 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowTemplateWorkspaceEditingTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HistoricalRepeatRestoreReplacesCanvasWithoutSavingDraftAgain(bool dirty)
+    {
+        WithFixture(fixture =>
+        {
+            using var historical = new STNodeEditor();
+            var node = new LocalSmuNode();
+            node.Create();
+            historical.Nodes.Add(node);
+            node.SetRepeatRegion("restored-repeat", 3, 1);
+            node.SetRepeatParameterValues(new Dictionary<string, double[]>
+            {
+                [nameof(LocalSmuNode.MeasureValue)] = [-1.2, -1.3, -1.4],
+            });
+            fixture.A.Value.FlowKey = "flow:restored-repeat";
+            if (dirty) fixture.MakeDirty();
+            var revision = new FlowRevision
+            {
+                FlowKey = fixture.A.Value.FlowKey,
+                Revision = 5,
+                FullSnapshot = historical.GetCanvasData(),
+            };
+            var restore = new FlowVersionRestoreService((param, _) =>
+            {
+                param.LoadedContentHash = FlowSemanticHash.ComputeBinaryHash(revision.FullSnapshot);
+                param.TemplateRevision = 6;
+            });
+            Assert.True(restore.Restore(new FlowVersionRestoreRequest(fixture.A.Value, revision, null)).Succeeded);
+
+            PumpUntil(fixture.View.ReloadRestoredVersionAsync(fixture.A.Value));
+
+            LocalSmuNode loaded = Assert.Single(fixture.Editor.Nodes.OfType<LocalSmuNode>());
+            Assert.Single(fixture.Editor.GetNodeGroups());
+            Assert.Equal("restored-repeat", loaded.RepeatRegionId);
+            Assert.Equal(3, loaded.RepeatCount);
+            Assert.Equal(new double[] { -1.2, -1.3, -1.4 }, loaded.RepeatParameterValues[nameof(LocalSmuNode.MeasureValue)]);
+            Assert.Equal(0, fixture.ConfirmCalls);
+            Assert.Equal(fixture.A.Value.LoadedContentHash, fixture.DocumentBaseline);
+            Assert.False(fixture.Editor.IsModified);
+            Assert.False(fixture.Editor.CanUndo);
+        });
+    }
+
     [Theory]
     [InlineData(0)] // Programmatic selection preserves edits without prompting.
     [InlineData(1)] // Interactive selection is canceled.

@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private double _Divisor = 1.0;
 
 
-        [Display(Name = "Engine_PG_AutoIntegration", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Properties.Resources.Engine_PG_AutoIntegration), ResourceType = typeof(Properties.Resources))]
         public bool IsAutoIntTime { get => _IsAutoIntTime; set { _IsAutoIntTime = value; OnPropertyChanged(); } }
         private bool _IsAutoIntTime;
 
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private double _IntTime = 100;
 
-        [Display(Name = "Engine_PG_MaxIntegrationTime", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Properties.Resources.Engine_PG_MaxIntegrationTime), ResourceType = typeof(Properties.Resources))]
         public double MaxIntTime { get => _MaxIntTime; set { _MaxIntTime = value; OnPropertyChanged(); } }
         private double _MaxIntTime = 6000;
 
@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public int AveNum { get => _AveNum; set { _AveNum = value; OnPropertyChanged(); } }
         private int _AveNum = 1;
 
-        [Display(Name = "Engine_PG_MaxAveragingCount", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Properties.Resources.Engine_PG_MaxAveragingCount), ResourceType = typeof(Properties.Resources))]
         public int MaxAveNum { get => _MaxAveNum; set { _MaxAveNum = value; OnPropertyChanged(); } }
         private int _MaxAveNum = 10;
 

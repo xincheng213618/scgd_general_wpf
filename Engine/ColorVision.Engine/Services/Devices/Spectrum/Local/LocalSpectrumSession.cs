@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
@@ -102,6 +103,7 @@ internal sealed class LocalSpectrumSession : IDisposable
     private static readonly List<LocalSpectrumSession> QuarantinedSessions = [];
     private readonly object gate = new();
     private readonly ILocalSpectrumNative native;
+    private readonly LocalSpectrumShutter shutter;
     private readonly Action<ConfigSpectrum> ensureLicenseAvailable;
     private readonly Spectrometer.Emission_CallBack callback = (_, _) => 1;
     private IntPtr handle;
@@ -114,9 +116,10 @@ internal sealed class LocalSpectrumSession : IDisposable
     public bool IsOpen { get { lock (gate) return handle != IntPtr.Zero && !quarantined; } }
     public bool IsQuarantined { get { lock (gate) return quarantined; } }
 
-    internal LocalSpectrumSession(ILocalSpectrumNative? native = null, Action<ConfigSpectrum>? ensureLicenseAvailable = null)
+    internal LocalSpectrumSession(ILocalSpectrumNative? native = null, Action<ConfigSpectrum>? ensureLicenseAvailable = null, LocalSpectrumShutter? shutter = null)
     {
         this.native = native ?? new LocalSpectrumNative();
+        this.shutter = shutter ?? new LocalSpectrumShutter();
         this.ensureLicenseAvailable = ensureLicenseAvailable ?? (_ => { });
     }
 
@@ -166,8 +169,6 @@ internal sealed class LocalSpectrumSession : IDisposable
                 SetWL2 = configured.SetWL2
             };
             SpectrumSmoothing.Validate(settings.SmoothingMethod, settings.FilterBW);
-            if (parameters.AutoInitDark && config.IsShutterEnable)
-                throw new NotSupportedException("本地采集尚未接入外部快门。请关闭自动校零，手动遮光并校零后再测量。");
             string wave = ResolvePath(config.WavelengthFile), magnitude = ResolvePath(config.MaguideFile);
             string? error = DeviceSpectrum.ValidateMeasurementCalibrationFiles(wave, magnitude);
             if (error != null) throw new InvalidOperationException(error);
@@ -179,6 +180,7 @@ internal sealed class LocalSpectrumSession : IDisposable
             }
             Check(native.LoadWavelength(handle, wave), "加载波长校正");
             Check(native.LoadMagnitude(handle, magnitude), "加载幅度校正");
+            if (config.IsShutterEnable) shutter.SetOpen(true, config.ShutterCfg);
             if (parameters.AutoIntegration)
             {
                 float time = parameters.IntegralTime;
@@ -206,7 +208,10 @@ internal sealed class LocalSpectrumSession : IDisposable
             p.Validate();
             if (adaptive && !adaptiveDarkInitialized) throw new InvalidOperationException("请先完成自适应校零初始化，再使用自适应暗校正。");
             var buffer = new float[10000];
-            Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, c.GetDataConfig.FilterBW, buffer, adaptive), "光谱校零");
+            void AcquireDark() => Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, c.GetDataConfig.FilterBW, buffer, adaptive), "光谱校零");
+            // Adaptive dark reads the initialized table; only real dark acquisition needs the shutter closed.
+            if (adaptive) AcquireDark();
+            else WithClosedShutter(c, AcquireDark);
             dark = buffer;
         }
     }
@@ -217,9 +222,46 @@ internal sealed class LocalSpectrumSession : IDisposable
         {
             EnsureOpen(c);
             adaptiveDarkInitialized = false;
-            Check(native.InitAutoDark(handle, c.SelfAdaptionInitDark), "自适应校零");
+            WithClosedShutter(c, () => Check(native.InitAutoDark(handle, c.SelfAdaptionInitDark), "自适应校零"));
             adaptiveDarkInitialized = true;
         }
+    }
+
+    public void ControlShutter(string eventName, ConfigSpectrum config)
+    {
+        lock (gate)
+        {
+            EnsureOpen(config);
+            if (eventName == "ShutterDisconnect") { shutter.Disconnect(); return; }
+            if (!config.IsShutterEnable) throw new InvalidOperationException("请先在光谱仪配置中启用快门。");
+            switch (eventName)
+            {
+                case "ShutterConnect": shutter.Connect(config.ShutterCfg); break;
+                case "ShutterDoOpen": shutter.SetOpen(true, config.ShutterCfg); break;
+                case "ShutterDoClose": shutter.SetOpen(false, config.ShutterCfg); break;
+                default: throw new NotSupportedException($"未知快门操作：{eventName}。");
+            }
+        }
+    }
+
+    private void WithClosedShutter(ConfigSpectrum config, Action operation)
+    {
+        if (!config.IsShutterEnable) { operation(); return; }
+        Exception? failure = null;
+        try
+        {
+            shutter.SetOpen(false, config.ShutterCfg);
+            operation();
+        }
+        catch (Exception ex) { failure = ex; }
+        // Even an unconfirmed close may have moved the shutter. Always attempt to restore light.
+        try { shutter.SetOpen(true, config.ShutterCfg); }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"{failure?.Message} 校零后恢复打开快门失败：{ex.Message} 请检查光路。".Trim(),
+                failure == null ? ex : new AggregateException(failure, ex));
+        }
+        if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
     private void EnsureOpen(ConfigSpectrum config)
@@ -264,6 +306,7 @@ internal sealed class LocalSpectrumSession : IDisposable
                 adaptiveDarkInitialized = false;
                 lease?.Dispose();
                 if (!quarantined) lease = null;
+                shutter.Disconnect();
             }
         }
     }

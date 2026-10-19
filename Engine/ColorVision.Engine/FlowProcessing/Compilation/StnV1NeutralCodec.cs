@@ -352,7 +352,7 @@ internal static class StnV1NeutralCodec
         byte[]? countData,
         int remainingPortCount)
     {
-        bool pairedHub = typeof(STNodeHub).IsAssignableFrom(schema.NodeType);
+        bool pairedHub = typeof(ISTNodeHub).IsAssignableFrom(schema.NodeType);
         bool inputHub = typeof(STNodeInHub).IsAssignableFrom(schema.NodeType);
         bool outputHub = typeof(STNodeOutHub).IsAssignableFrom(schema.NodeType);
         int inputCount = schema.Inputs.Length;

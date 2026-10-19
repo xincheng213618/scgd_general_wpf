@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Media
             return dst;
         }
 
-        private static Mat CreateMatFromCVCIEFile(CVCIEFile fileInfo)
+        internal static Mat CreateMatFromCVCIEFile(CVCIEFile fileInfo)
         {
             ValidateImageBuffer(fileInfo, fileInfo.Channels, fileInfo.Data);
             return Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
@@ -215,7 +215,7 @@ namespace ColorVision.Engine.Media
             return File.Exists(fallback) ? fallback : null;
         }
 
-        private static ColorVisionTiffParameters CreateTiffParameters(CVCIEFile fileInfo, string exportedChannel)
+        internal static ColorVisionTiffParameters CreateTiffParameters(CVCIEFile fileInfo, string exportedChannel)
         {
             return new ColorVisionTiffParameters
             {

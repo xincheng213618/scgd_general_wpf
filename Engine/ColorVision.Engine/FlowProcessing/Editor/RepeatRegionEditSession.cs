@@ -2,6 +2,7 @@ using FlowEngineLib.Base;
 using FlowEngineLib.Repeat;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace ColorVision.Engine.FlowProcessing.Editor;
@@ -120,14 +121,31 @@ internal sealed class RepeatParameterEditSeries
         if (!Enabled) throw new InvalidOperationException("请先启用此参数的逐轮编辑。");
         if (first < 0 || last < first || last >= Values.Length) throw new ArgumentOutOfRangeException(nameof(first), "轮次范围无效。");
         double[] generated = new double[last - first + 1];
+        bool useDecimal = TryDecimal(start, out decimal decimalStart);
+        useDecimal &= TryDecimal(increment, out decimal decimalIncrement);
         for (int index = 0; index < generated.Length; index++)
         {
             double value = start + index * increment;
+            if (useDecimal)
+            {
+                // Calculate decimal steps before converting to the stored double, so crossing zero stays exact.
+                try { value = ToDouble(decimalStart + index * decimalIncrement); }
+                catch (OverflowException) { useDecimal = false; }
+            }
             if (!Definition.TryValidate(value, out string error)) throw new InvalidOperationException($"第 {first + index + 1} 轮：{error}");
             generated[index] = value;
         }
         return generated;
     }
+
+    // Round-trip text preserves input precision; values outside decimal's range or scale retain double arithmetic.
+    private static bool TryDecimal(double value, out decimal result)
+        => decimal.TryParse(value.ToString("R", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture, out result)
+            && ToDouble(result) == value;
+
+    // Parsing avoids an extra rounding error in decimal's direct double conversion and normalizes decimal negative zero.
+    private static double ToDouble(decimal value)
+        => double.Parse(value.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
 
     public override string ToString() => Header;
 }

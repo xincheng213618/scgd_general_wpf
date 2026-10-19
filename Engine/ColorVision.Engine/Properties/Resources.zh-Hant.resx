@@ -2052,12 +2052,33 @@
   <data name="Engine_PG_AutoIntegration" xml:space="preserve">
     <value>Auto Integration</value>
   </data>
+  <data name="Engine_PG_MaxAveragingCount" xml:space="preserve">
+    <value>最大平均次數</value>
+  </data>
+  <data name="Engine_PG_SingleSpectrumTest" xml:space="preserve">
+    <value>光譜單次測試</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceName" xml:space="preserve">
+    <value>光譜儀裝置名稱</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
+    <value>選擇執行單次測試的光譜儀裝置。</value>
+  </data>
+  <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
+    <value>光譜儀設定</value>
+  </data>
   <data name="Engine_PG_MaxIntegrationTime" xml:space="preserve">
     <value>Max Integration Time</value>
   </data>
 
   <data name="Engine_PG_NegativeLuminanceGuard" xml:space="preserve">
     <value>Negative Luminance Guard</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill" xml:space="preserve">
+    <value>顯示光譜彩色填充</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill_Description" xml:space="preserve">
+    <value>在單曲線模式下按波長填充光譜顏色，關閉後只顯示曲線。適用於相對光譜和絕對光譜，多曲線比較不填充。</value>
   </data>
   <data name="Engine_PG_MinLuminanceValue" xml:space="preserve">
     <value>Min Luminance Value</value>

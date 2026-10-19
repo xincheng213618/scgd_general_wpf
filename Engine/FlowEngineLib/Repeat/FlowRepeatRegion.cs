@@ -65,6 +65,7 @@ public sealed class FlowRepeatRegion
             STNodeOption[] inputs = Ports(node, true), outputs = Ports(node, false);
             if (inputs.Length == 0 || outputs.Length != 1 || inputs.Any(input => input.ConnectionCount > 1)) return false;
             if (node.GetAllInputOptions().Concat(node.GetAllOutputOptions()).Any(port => port != STNodeOption.Empty
+                && !(node is ISTNodeHub && port is STNodeHubOption && port.DataType == typeof(object) && port.ConnectionCount == 0)
                 && port.DataType != typeof(CVStartCFC) && port.DataType != typeof(CVMQTTRequest) && port.DataType != typeof(MQActionEvent))) return false;
         }
         var incoming = members.ToDictionary(node => node, node => Ports(node, true)

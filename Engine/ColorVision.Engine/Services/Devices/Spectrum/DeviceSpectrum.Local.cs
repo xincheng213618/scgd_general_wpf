@@ -172,6 +172,7 @@ public partial class DeviceSpectrum
             EnsureLocalSpectrumConnected(false, config);
             if (eventName == "InitDark") LocalSession.Dark(parameters, config);
             else if (eventName == "InitAutoDark") LocalSession.InitAutoDark(config);
+            else if (eventName is "ShutterConnect" or "ShutterDisconnect" or "ShutterDoOpen" or "ShutterDoClose") LocalSession.ControlShutter(eventName, config);
             else throw new NotSupportedException($"本地光谱仪暂不支持 {eventName} 操作。");
             return null;
         });

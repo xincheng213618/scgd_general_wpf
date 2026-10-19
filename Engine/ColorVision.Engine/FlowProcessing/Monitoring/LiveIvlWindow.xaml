@@ -35,7 +35,7 @@
                         <Button x:Name="RunButton" Content="执行流程" Command="{Binding View.RunFlowCommand}" Margin="0,0,4,0" />
                         <Button x:Name="StopButton" Grid.Column="1" Content="停止流程" Command="{Binding View.StopFlowCommand}" Margin="4,0,0,0" />
                     </Grid>
-                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding BatchProgress}" Height="5" Margin="0,0,0,10" />
+                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding BatchProgress}" Height="22" Margin="0,0,0,10" />
                 </StackPanel>
                 <TextBlock x:Name="BatchInfo" Text="等待流程批次…" TextWrapping="Wrap" Margin="0,0,0,12" />
                 <Separator Margin="0,0,0,14" />

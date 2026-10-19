@@ -91,6 +91,7 @@ namespace ProjectARVRPro
         private static bool IsSeparatelyCollectedProperty(string propertyName)
         {
             return propertyName == nameof(ObjectiveTestResult.DynamicTestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.DemuraTestResults) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicRgbCrossResults) ||

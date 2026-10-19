@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-10-15T06:05:52.909059+00:00",
+  "generated_at": "2026-10-19T07:44:04.399689+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/InstallTool/Everything-1.4.1.1032.x64-Setup.exe",
@@ -243,6 +243,7 @@
     "Tasks/RegisterFileAssociations.ps1",
     "Tasks/RegisterThumbnail.ps1",
     "Tasks/UnregisterThumbnail.ps1",
+    "ThirdPartyNotices/Colour-Science.txt",
     "Tools/Spectrum/zadig-2.4.exe",
     "Tools/Spectrum/zadig-NOTICE.txt",
     "WpfHexEditor.ColorPicker.dll",

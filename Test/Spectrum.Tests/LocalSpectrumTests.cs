@@ -190,6 +190,145 @@ public sealed class LocalSpectrumTests
         Assert.True(session.IsOpen);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShutterCaptureOpensForAutoTimeAndClosesOnlyForDark(bool eqe)
+    {
+        using var files = new CalibrationFiles();
+        files.Config.IsShutterEnable = true;
+        var native = new FakeNative();
+        var port = new FakeShutterPort(native.Calls);
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => port));
+        session.Open(files.Config);
+        var result = session.Capture(new() { AutoIntegration = true, AutoInitDark = true, Eqe = eqe, Current = 1 }, files.Config);
+        Assert.Equal(240, result.IntegralTime);
+        Assert.Equal(new[] { "smoothing", "wave", "magnitude", "shutter-open", "auto", "shutter-close", "dark", "shutter-open", "capture" }, native.Calls);
+        Assert.Equal(240, native.DarkTime);
+        Assert.Equal(3, port.DiscardCalls);
+        session.Close();
+        Assert.True(port.Disposed);
+    }
+
+    [Theory]
+    [InlineData(true, 1, false)]
+    [InlineData(false, -3, false)]
+    [InlineData(false, 1, true)]
+    [InlineData(false, -3, true)]
+    public void FailedShutterOrDarkRestoresLightAndStopsMeasurement(bool closeFails, int darkCode, bool reopenFails)
+    {
+        using var files = new CalibrationFiles();
+        files.Config.IsShutterEnable = true;
+        var native = new FakeNative { DarkCode = darkCode };
+        int opens = 0;
+        var shutter = new LocalSpectrumShutter(_ => new FakeShutterPort(native.Calls)
+        {
+            Reply = command =>
+            {
+                if (command == "b") return [closeFails ? "turn on" : "turn off"];
+                opens++;
+                return [opens > 1 && reopenFails ? "turn off" : "turn on"];
+            }
+        });
+        using var session = new LocalSpectrumSession(native, shutter: shutter);
+        session.Open(files.Config);
+        var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoInitDark = true }, files.Config));
+        string[] expected = ["smoothing", "wave", "magnitude", "shutter-open", "shutter-close"];
+        Assert.Equal(expected.Concat(closeFails ? ["shutter-open"] : new[] { "dark", "shutter-open" }), native.Calls);
+        Assert.Equal(closeFails ? 0 : 1, native.DarkCalls);
+        Assert.Equal(0, native.CaptureCalls);
+        if (reopenFails) Assert.Contains("恢复打开快门失败", error.Message);
+        if (darkCode != 1) Assert.Contains("光谱校零失败", error.Message);
+    }
+
+    [Fact]
+    public void FailedShutterAcknowledgementPreventsCapture()
+    {
+        using var files = new CalibrationFiles();
+        files.Config.IsShutterEnable = true;
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls) { Reply = _ => ["turn off"] }));
+        session.Open(files.Config);
+        Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoIntegration = true, AutoInitDark = true }, files.Config));
+        Assert.DoesNotContain("auto", native.Calls);
+        Assert.Equal(0, native.DarkCalls);
+        Assert.Equal(0, native.CaptureCalls);
+    }
+
+    [Fact]
+    public void AdaptiveInitializationClosesShutterButReadingTheDarkTableDoesNot()
+    {
+        using var files = new CalibrationFiles();
+        files.Config.IsShutterEnable = true;
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls)));
+        session.Open(files.Config);
+        session.InitAutoDark(files.Config);
+        Assert.Equal(new[] { "shutter-close", "init-adaptive", "shutter-open" }, native.Calls);
+        native.Calls.Clear();
+        session.Capture(new() { SelfAdaptionInitDark = true }, files.Config);
+        Assert.Equal(new[] { "smoothing", "wave", "magnitude", "shutter-open", "dark", "capture" }, native.Calls);
+        Assert.True(native.LastDarkAdaptive);
+    }
+
+    [Fact]
+    public void ShutterCommandsReuseConnectionAndReleaseItOnDisconnectAndSpectrumClose()
+    {
+        var config = Config();
+        config.IsShutterEnable = true;
+        var native = new FakeNative();
+        var ports = new List<FakeShutterPort>();
+        var shutter = new LocalSpectrumShutter(_ => { var port = new FakeShutterPort(native.Calls); ports.Add(port); return port; });
+        using var session = new LocalSpectrumSession(native, shutter: shutter);
+        session.Open(config);
+        session.ControlShutter("ShutterConnect", config);
+        session.ControlShutter("ShutterDoOpen", config);
+        session.ControlShutter("ShutterDoClose", config);
+        Assert.Single(ports);
+        Assert.Equal(new[] { "shutter-open", "shutter-close" }, native.Calls);
+        session.ControlShutter("ShutterDisconnect", config);
+        Assert.True(ports[0].Disposed);
+        session.ControlShutter("ShutterConnect", config);
+        config.ShutterCfg.Addr = "COM2";
+        session.ControlShutter("ShutterDoOpen", config);
+        Assert.Equal(3, ports.Count);
+        Assert.True(ports[1].Disposed);
+        session.Close();
+        Assert.All(ports, port => Assert.True(port.Disposed));
+    }
+
+    [Fact]
+    public void ShutterTimeoutAndStaleOppositeReplyCannotConfirmCommand()
+    {
+        var config = new ShutterConfig { DelayTime = 1, OpenCmd = "OPEN", CloseCmd = "CLOSE" };
+        var port = new FakeShutterPort([]) { Reply = _ => [] };
+        var shutter = new LocalSpectrumShutter(_ => port);
+        shutter.Connect(config);
+        port.Pending.Enqueue("turn on");
+        Assert.Throws<TimeoutException>(() => shutter.SetOpen(true, config));
+        Assert.Equal(1, port.DiscardCalls);
+        Assert.True(port.Disposed);
+
+        port = new FakeShutterPort([]) { Reply = _ => ["turn off\r\nturn on"] };
+        Assert.Throws<InvalidOperationException>(() => shutter.SetOpen(true, config));
+        Assert.True(port.Disposed);
+    }
+
+    [Fact]
+    public void ShutterRequiresOpenSpectrumAndEnabledConfiguration()
+    {
+        var config = Config();
+        var native = new FakeNative();
+        int connections = 0;
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => { connections++; return new FakeShutterPort([]); }));
+        config.IsShutterEnable = true;
+        Assert.Throws<InvalidOperationException>(() => session.ControlShutter("ShutterConnect", config));
+        session.Open(config);
+        config.IsShutterEnable = false;
+        Assert.Throws<InvalidOperationException>(() => session.ControlShutter("ShutterDoOpen", config));
+        Assert.Equal(0, connections);
+    }
+
     [Fact]
     public void ConnectionConfigurationCannotChangeUnderAnOpenHandle()
     {
@@ -329,7 +468,9 @@ public sealed class LocalSpectrumTests
 
     private sealed class FakeNative : ILocalSpectrumNative
     {
-        public int InitCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls;
+        public int InitCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls, DarkCode = 1;
+        public float DarkTime;
+        public bool LastDarkAdaptive;
         public bool CaptureFails;
         public int SmoothingCode = 1;
         public (SpectrumSmoothingMethod Method, int Width) Smoothing;
@@ -349,8 +490,9 @@ public sealed class LocalSpectrumTests
         public int ConfigureSmoothing(IntPtr h, SpectrumSmoothingMethod method, int filterWidth)
         { Calls.Add("smoothing"); Smoothing = (method, filterWidth); return SmoothingCode; }
         public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c) { Calls.Add("auto"); time = 240; return 1; }
-        public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive) { Calls.Add("dark"); DarkCalls++; return 1; }
-        public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) => 1;
+        public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive)
+        { Calls.Add("dark"); DarkCalls++; DarkTime = time; LastDarkAdaptive = adaptive; return DarkCode; }
+        public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) { Calls.Add("init-adaptive"); return 1; }
         public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, EngineSettings settings, float[] dark)
         {
             CaptureSmoothing = (settings.SmoothingMethod, settings.FilterBW);
@@ -358,6 +500,24 @@ public sealed class LocalSpectrumTests
             if (CaptureFails) throw new InvalidOperationException("Native failure");
             return new() { IntegralTime = p.IntegralTime, Data = NativeData() };
         }
+    }
+
+    private sealed class FakeShutterPort(List<string> calls) : ILocalSpectrumShutterPort
+    {
+        public bool IsOpen { get; private set; }
+        public bool Disposed;
+        public int DiscardCalls;
+        public Queue<string> Pending = new();
+        public Func<string, string[]> Reply = command => command == "a" ? ["TURN ", "ON"] : ["turn ", "off"];
+        public void Open() => IsOpen = true;
+        public void DiscardInBuffer() { DiscardCalls++; Pending.Clear(); }
+        public void Write(string command)
+        {
+            calls.Add(command == "a" ? "shutter-open" : "shutter-close");
+            foreach (string response in Reply(command)) Pending.Enqueue(response);
+        }
+        public string ReadExisting() => Pending.TryDequeue(out string? value) ? value : string.Empty;
+        public void Dispose() { Disposed = true; IsOpen = false; }
     }
 
     private sealed class CalibrationFiles : IDisposable

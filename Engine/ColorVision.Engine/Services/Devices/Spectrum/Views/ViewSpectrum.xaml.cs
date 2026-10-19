@@ -12,6 +12,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -154,6 +155,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             DisplayConfig_IsIsLuminousFluxModeChanged();
             DisplayConfig.IsIsLuminousFluxModeChanged += LuminousFluxModeChanged;
+            PropertyChangedEventManager.AddHandler(Config, SpectrumConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowSpectrumFill));
             ThemeManager.Current.CurrentUIThemeChanged += ApplySpectrumTheme;
             ApplySpectrumTheme(ThemeManager.Current.CurrentUITheme);
             InitializeSpectrumAnalysis();
@@ -168,6 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (_isInitialized)
             {
                 DisplayConfig.IsIsLuminousFluxModeChanged -= LuminousFluxModeChanged;
+                PropertyChangedEventManager.RemoveHandler(Config, SpectrumConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowSpectrumFill));
                 ThemeManager.Current.CurrentUIThemeChanged -= ApplySpectrumTheme;
             }
             relativeCursor?.Dispose();
@@ -297,6 +300,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             DrawSpectrum(wpfplot1, result, result.ScatterPlot, false);
         }
 
+        private void SpectrumConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                SpectrumPlotStyle.ClearFill(wpfplot1.Plot);
+                SpectrumPlotStyle.ClearFill(wpfplot2.Plot);
+                DrawPlot();
+                wpfplot1.Refresh();
+                wpfplot2.Refresh();
+            });
+        }
+
         private void DrawAbsolutePlot()
         {
             if (listView1.SelectedItem is not ViewResultSpectrum result) return;
@@ -324,11 +339,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 control.Plot.Remove(LastMulSelectComparsion);
                 control.Plot.Remove(curve);
-                SpectrumPlotStyle.AddFill(control.Plot, curve, wavelength =>
-                {
-                    var rgb = SpectrumChromaticity.DisplayRgb(wavelength);
-                    return new Color(rgb.red, rgb.green, rgb.blue);
-                });
+                if (Config.IsShowSpectrumFill)
+                    SpectrumPlotStyle.AddFill(control.Plot, curve, wavelength =>
+                    {
+                        var rgb = SpectrumChromaticity.DisplayRgb(wavelength);
+                        return new Color(rgb.red, rgb.green, rgb.blue);
+                    });
                 curve.Color = spectrumCurveColor;
                 curve.LineWidth = 1.2f;
             }

@@ -101,6 +101,11 @@ public sealed class LocalSmuCurveTests
         Assert.Equal(12, Assert.Single(point.ScatterPlot.Data.GetScatterPoints()).Y);
         Assert.Equal(12, Assert.Single(scan.SMUDatas).Current);
         Assert.Equal(12, Assert.Single(point.SMUDatas).Current);
+        Assert.Equal(scan.LastCurrent, point.LastCurrent);
+        Assert.Equal(1, Assert.Single(point.SMUDatas).Index);
+        Assert.False(point.HasCurve);
+        Assert.False(scan.HasCurve);
+        Assert.Null(scan.ProtectionLimit);
         Assert.Equal(new double[] { 0.012 }, scan.IList);
         Assert.Equal(new double[] { 12 }, point.IList);
         scan.Gen();

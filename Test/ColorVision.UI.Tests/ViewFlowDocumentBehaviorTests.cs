@@ -1,7 +1,9 @@
 #pragma warning disable CA1707
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.Editor;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Flow.Versioning;
 using ColorVision.UI;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
@@ -15,6 +17,42 @@ namespace ColorVision.UI.Tests;
 
 public class ViewFlowDocumentBehaviorTests
 {
+    [Fact]
+    public void ConfirmedStandaloneVersionRestoreReplacesDirtyCanvasAndRepeatParameters()
+    {
+        WithStandaloneWindow(window =>
+        {
+            ViewFlow view = window.View;
+            var param = new FlowParam { Name = "Repeat history", FlowKey = "flow:standalone-repeat", DataBase64 = Convert.ToBase64String(CreateCanvas("Old canvas")) };
+            view.LoadStandaloneFlowParam(param, true);
+            view.STNodeEditorMain.Nodes[0].Title = "Unsaved draft";
+            Assert.True(view.STNodeEditorMain.IsModified);
+
+            using var historical = new STNodeEditor();
+            var node = new LocalSmuNode();
+            node.Create();
+            historical.Nodes.Add(node);
+            node.SetRepeatRegion("standalone-repeat", 3, 1);
+            node.SetRepeatParameterValues(new Dictionary<string, double[]>
+            {
+                [nameof(LocalSmuNode.MeasureValue)] = [-1.2, -1.3, -1.4],
+            });
+            byte[] restoredCanvas = historical.GetCanvasData();
+            param.DataBase64 = Convert.ToBase64String(restoredCanvas);
+            param.LoadedContentHash = FlowSemanticHash.ComputeBinaryHash(restoredCanvas);
+            PumpUntil(view.ReloadRestoredVersionAsync(param));
+
+            LocalSmuNode loaded = Assert.Single(view.STNodeEditorMain.Nodes.OfType<LocalSmuNode>());
+            Assert.Equal("standalone-repeat", loaded.RepeatRegionId);
+            Assert.Equal(3, loaded.RepeatCount);
+            Assert.Equal(new double[] { -1.2, -1.3, -1.4 }, loaded.RepeatParameterValues[nameof(LocalSmuNode.MeasureValue)]);
+            Assert.Single(view.STNodeEditorMain.GetNodeGroups());
+            Assert.Equal(param.LoadedContentHash, GetField(view, "_documentLoadedContentHash"));
+            Assert.False(view.STNodeEditorMain.IsModified);
+            Assert.False(view.STNodeEditorMain.CanUndo);
+        });
+    }
+
     [Fact]
     public void StandaloneFailureDetailsAreVisibleOnlyForAnIdentifiedCurrentNode()
     {

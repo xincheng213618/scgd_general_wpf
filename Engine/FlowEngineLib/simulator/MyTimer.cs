@@ -1,37 +1,49 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.simulator;
 
-internal class MyTimer : System.Timers.Timer
+internal sealed class MyTimer : IDisposable
 {
-	public STNodeOption OutputOption;
+    private readonly int interval;
+    private readonly STNodeOption output;
+    private readonly DateTime startTime = DateTime.Now;
+    private readonly CancellationTokenSource stopped;
+    private readonly CancellationToken token;
+    private int disposed;
 
-	public string sn;
+    internal CVStartCFC Action { get; }
 
-	public DateTime startTime;
+    internal MyTimer(int interval, STNodeOption output, CVStartCFC action)
+    {
+        this.interval = interval;
+        this.output = output;
+        Action = action;
+        stopped = CancellationTokenSource.CreateLinkedTokenSource(action.RuntimeResources.StopToken);
+        token = stopped.Token;
+    }
 
-	public MyTimer(double interval, STNodeOption outputOption)
-		: base(interval)
-	{
-		startTime = DateTime.Now;
-		OutputOption = outputOption;
-		CVStartCFC cVStartCFC = (CVStartCFC)OutputOption.Data;
-		sn = cVStartCFC.SerialNumber;
-	}
+    internal Task WaitAsync() => Task.Delay(interval, token);
 
-	internal void TransferData(ActionTypeEnum actionType)
-	{
-		CVStartCFC obj = (CVStartCFC)OutputOption.Data;
-		obj.SetActionType(actionType);
-		obj.AddTTL(startTime);
-		OutputOption.TransferData();
-	}
+    internal void TransferData()
+    {
+        lock (output)
+        {
+            if (token.IsCancellationRequested || Action.RuntimeResources.IsDisposed) return;
+            Action.NormalizeStopStatus();
+            if (!Action.IsRunning) return;
+            Action.AddTTL(startTime);
+            output.TransferData(Action);
+        }
+    }
 
-	internal void TransferData()
-	{
-		((CVStartCFC)OutputOption.Data)?.AddTTL(startTime);
-		OutputOption.TransferData();
-	}
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+        stopped.Cancel();
+        stopped.Dispose();
+    }
 }

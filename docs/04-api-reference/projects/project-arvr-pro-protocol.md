@@ -262,6 +262,10 @@ AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → Proje
 
 `UseLegacyARVROutput=false` 时，Data 为 `ObjectiveTestResult`。亮色度、视场角和棋盘格等键化集合分别位于 `LuminanceChromaticityTestResults`、`FieldOfViewTestResults`、`ChessboardTestResults`；Key 来自流程配置，应枚举实际值。对应默认 Key 还可能写入 `W255TestResult`、`W51TestResult`、`ChessboardTestResult` 兼容字段。同一集合的同 Key 后写覆盖前值，独立测试项应使用可区分的 Key。
 
+Demura 的 W128 源文件放在 `Data.DemuraTestResults` 字典，Key 是流程配置的“导出名称”（`DemuraProcessConfig.Name`，默认 `Demura`），Value 只包含 `FileName` 和 `Data`：`FileName` 是不含目录的原文件名，`Data` 是按 UTF-8 读取的文件文本，不是 Base64；JSON 会转义换行、引号和反斜杠，解析后恢复文本。读取发生在 DemuraTool 准备之前，不依赖 W255 或 `G128.csv` 是否生成。每次执行先清除对应 Key 的旧结果，未找到 W128 时不写入该 Key；读取异常按解析失败处理，避免回传旧文件。不同名称可以并存，同名后写覆盖。文件内容不参与测量项 CSV 或总结果判定。
+
+W128 文件可能达到数 MB，调用端应按「TCP 消息边界」累计接收完整 JSON，不能把单次读取缓冲区当作报文长度上限。Integration Demo 使用 8 KB 读取块，跨读取保留 UTF-8 解码及 JSON 字符串、转义和嵌套状态，只扫描新增内容并提取完整对象；JSON 解析器的 `MaxJsonLength` 为 `int.MaxValue`。其他调用端需核对自身的报文长度和超时设置。
+
 `UseLegacyARVROutput=true` 时，Data 整体换为扁平 `LegacyARVRObjectiveTestResult`，不能用标准嵌套样例直接解释。完整字段以 `ObjectiveTestResult.cs`、`LegacyARVR/LegacyARVRObjectiveTestResult.cs` 和对应处理器为准；客户端字段展开与样例见 [Demo 的公开代码边界](./project-arvr-pro-integration-demo.md#公开代码边界)。
 
 客户程序应在所选 schema 中验证必需字段、预期 SN 和明确的最终判定后，再执行产线放行动作。当前 Demo 对缺失 `TotalResult` 与最终 SN 的校验有限，其正常退出不代表上述校验全部完成。
