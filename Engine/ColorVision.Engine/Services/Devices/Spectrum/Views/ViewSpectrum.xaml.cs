@@ -457,7 +457,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public void Clear()
         {
             ViewResults.Clear();
-            localPreview = null;
             LastMulSelectComparsion = null;
             if (!_isInitialized) return;
             relativeCursor?.Clear();
@@ -475,37 +474,36 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.ScrollIntoView(viewResultSpectrum);
         }
 
-        private ViewResultSpectrum? localPreview;
-        internal void SetLocalPreview(ViewResultSpectrum result)
+        internal void ReplaceHistoryResults(IEnumerable<ViewResultSpectrum> results)
         {
-            if (localPreview != null)
-            {
-                ViewResults.Remove(localPreview);
-            }
-            localPreview = result;
-            AddViewResultSpectrum(result);
+            var snapshot = results.ToArray();
+            ViewResults.Clear();
+            foreach (var result in snapshot) ViewResults.Add(result);
+            if (ViewResults.Count > 0) listView1.SelectedIndex = 0;
         }
         private void Inquire_Click(object sender, RoutedEventArgs e)
         {
-            ViewResults.Clear();
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            var query = DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
-            query = query.OrderBy(x => x.Id, Config.OrderByType);
-            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            foreach (var item in dbList)
+            try
             {
-                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
-                ViewResults.Add(viewResultSpectrum);
+                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                var query = DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
+                query = query.OrderBy(x => x.Id, Config.OrderByType);
+                var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
+                ReplaceHistoryResults(dbList.Select(item => new ViewResultSpectrum(item)));
             }
-            if (ViewResults.Count > 0)
-                listView1.SelectedIndex = 0;
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(ViewSpectrum)).Error("Spectrum history query failed; existing results retained.", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("光谱查询失败，当前列表已保留。详情请查看日志。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(DB, ViewResults, 
+            ObservableCollection<ViewResultSpectrum> queryResults = new();
+            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(DB, queryResults,
                 t =>
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);
@@ -515,11 +513,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 );
             genericQuery.QueryCompleted += (s, e) =>
             {
-                if (ViewResults.Count > 0)
-                {
-
-                    listView1.SelectedIndex = 0;
-                }
+                ReplaceHistoryResults(queryResults);
             };
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();

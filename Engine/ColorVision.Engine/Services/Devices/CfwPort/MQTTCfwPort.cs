@@ -1,5 +1,7 @@
 ﻿using ColorVision.Engine.Messages;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
+using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {
@@ -86,7 +88,30 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 Params = new Dictionary<string, object>() { { "PortNum", port } }
             };
 
-            return PublishAsyncClient(msg);
+            MsgRecord record = PublishAsyncClient(msg);
+            TrackPortCommand(record, port);
+            return record;
+        }
+
+        private void TrackPortCommand(MsgRecord record, int? requestedPort)
+        {
+            int completed = 0;
+            void Complete(object? sender, MsgRecordState state)
+            {
+                if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)
+                    || Interlocked.Exchange(ref completed, 1) != 0) return;
+                record.MsgRecordStateChanged -= Complete;
+                if (state != MsgRecordState.Success) return;
+
+                int? port = requestedPort;
+                if (record.MsgReturn?.Data is JObject data && data["Port"] is JValue { Type: JTokenType.Integer } value
+                    && value.Value<long>() is >= 0 and <= int.MaxValue)
+                    port = value.Value<int>();
+                if (port.HasValue)
+                    DisplayConfigManager.Instance.GetDisplayConfig<DisplayCfwPortConfig>(DeviceCode).PortNum = port;
+            }
+            record.MsgRecordStateChanged += Complete;
+            Complete(record, record.MsgRecordState);
         }
 
         public MsgRecord GetPort()
@@ -98,7 +123,9 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 Params = new Dictionary<string, object>() { }
             };
 
-            return PublishAsyncClient(msg);
+            MsgRecord record = PublishAsyncClient(msg);
+            TrackPortCommand(record, null);
+            return record;
         }
 
     }

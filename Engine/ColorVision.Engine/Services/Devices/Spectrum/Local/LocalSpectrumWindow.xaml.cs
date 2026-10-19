@@ -39,8 +39,7 @@ public partial class LocalSpectrumWindow : Window
     private void ResultAvailable(LocalSpectrumCapture result, bool continuous)
     {
         latest = result;
-        if (continuous) results.SetLocalPreview(DeviceSpectrum.CreateLocalSpectrumView(result));
-        else results.AddViewResultSpectrum(DeviceSpectrum.CreateLocalSpectrumView(result));
+        results.AddViewResultSpectrum(DeviceSpectrum.CreateLocalSpectrumView(result));
         Message.Text = LocalizedText.Format($"采集完成  {result.CapturedAt:HH:mm:ss}  积分 {result.IntegralTime:0.###} ms");
     }
     private void CaptureFailed(string error) => Dispatcher.BeginInvoke(() => Message.Text = error);

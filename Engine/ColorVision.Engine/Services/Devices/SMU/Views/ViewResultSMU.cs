@@ -13,6 +13,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
     {
         public ViewResultSMU(SmuScanModel item)
         {
+            LocalDetails = item.LocalDetails;
             Type = "Scan";
             Id = item.Id;
             CreateTime = item.CreateDate;
@@ -43,6 +44,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         /// </summary>
         public ViewResultSMU(SMUResultModel item)
         {
+            LocalDetails = item.LocalDetails;
             Type = "GetData";
             Id = item.Id;
             CreateTime = item.CreateDate;
@@ -81,6 +83,19 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public string Type { get; set; }
 
+        public string? LocalDetails { get; private set; }
+        private void ApplyLocalDetails()
+        {
+            if (string.IsNullOrWhiteSpace(LocalDetails)) return;
+            try
+            {
+                var details = JsonConvert.DeserializeObject<Local.LocalSmuDetails>(LocalDetails);
+                if (details?.Settings?.Measurement != Local.SmuMeasurement.Resistance || details.Resistance == null) return;
+                for (int index = 0; index < Math.Min(SMUDatas.Count, details.Resistance.Length); index++)
+                { SMUDatas[index].HasNativeResistance = true; SMUDatas[index].NativeResistance = details.Resistance[index]; }
+            }
+            catch (JsonException ex) { log4net.LogManager.GetLogger(typeof(ViewResultSMU)).Warn("无法读取源表历史结果的本地模式信息", ex); }
+        }
         public double VResult { get; set; }
         public double IResult { get; set; }
 
@@ -97,6 +112,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public void Gen()
         {
+            ApplyLocalDetails();
             int count = Math.Min(VList?.Length ?? 0, IList?.Length ?? 0);
             double[] xs = new double[count], ys = new double[count];
             double minimumX = double.PositiveInfinity, maximumX = double.NegativeInfinity;

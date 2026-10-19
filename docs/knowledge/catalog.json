@@ -5586,10 +5586,13 @@
         "物理光谱仪管理",
         "PhySpectrumManager",
         "SpectrumLicenseUpdateService",
-        "光谱仪联网更新许可证"
+        "光谱仪联网更新许可证",
+        "ND位置记忆",
+        "本地ND标定切换"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Spectrum",
+        "Engine/ColorVision.Engine/Services/Devices/CfwPort",
         "Engine/ColorVision.Engine/Services/PhySpectrums",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"
       ],
@@ -5598,7 +5601,8 @@
         "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs",
         "Test/Spectrum.Tests/PhySpectrumManagerTests.cs",
         "Test/Spectrum.Tests/LocalSpectrumTests.cs",
-        "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"
+        "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs",
+        "Test/ColorVision.UI.Tests/SpectrumNdSelectionTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -7471,7 +7475,7 @@
       "knowledge_id": "operations.smu",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "SMU本地与服务模式的参数、A/B通道、结果单位、Flow及输出释放边界；SDK成功或空读数不能单独证明实机输出关闭。",
+      "summary": "SMU本地窗口、直流电阻/功率、扫描/脉冲、触发与关闭状态，以及服务兼容、结果单位和Flow输出释放边界。",
       "aliases": [
         "SMU",
         "源表",
@@ -7483,19 +7487,29 @@
         "关闭输出",
         "MQTTSMU",
         "SMUParam",
-        "SMUSweepModelNode"
+        "SMUSweepModelNode",
+        "IVL",
+        "实时曲线",
+        "LiveIvlWindow",
+        "LocalSmuWindow",
+        "电阻测量",
+        "脉冲",
+        "高阻"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/SMU",
         "Engine/cvColorVision/Devices/PassSx/PassSx.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU",
         "Engine/FlowEngineLib/SMUBaseNode.cs",
-        "Engine/FlowEngineLib/Node/SMU"
+        "Engine/FlowEngineLib/Node/SMU",
+        "Engine/ColorVision.Engine/FlowProcessing/Monitoring"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalSmuSessionTests.cs",
         "Test/ColorVision.UI.Tests/LocalSmuFlowTests.cs",
-        "Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs"
+        "Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs",
+        "Test/ColorVision.UI.Tests/LiveIvlTests.cs",
+        "Test/ColorVision.UI.Tests/LocalSmuAdvancedTests.cs"
       ],
       "related": [
         "engine.devices",

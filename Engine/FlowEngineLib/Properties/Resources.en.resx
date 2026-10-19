@@ -954,8 +954,8 @@
   <data name="取消重复框" xml:space="preserve">
     <value>Remove repeat region</value>
   </data>
-  <data name="请选择连续连接的一段流程，重复框内不能包含分支、开始、结束或旧循环节点。" xml:space="preserve">
-    <value>Select a connected linear sequence. A repeat region cannot contain branches, Start, End, or legacy loop nodes.</value>
+  <data name="请选择单入口、单出口的完整流程区域，分流必须在框内汇合，不能包含环、开始、结束或旧循环节点。" xml:space="preserve">
+    <value>Select a complete single-entry, single-exit region. Branches must rejoin inside it; cycles, Start, End, and legacy loop nodes are not supported.</value>
   </data>
   <data name="重复框的节点或次数已改变，请取消该框后重新框选。" xml:space="preserve">
     <value>The repeat region is incomplete or inconsistent. Remove it and select the nodes again.</value>

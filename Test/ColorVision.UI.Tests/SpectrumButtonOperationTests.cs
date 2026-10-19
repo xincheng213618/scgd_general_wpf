@@ -2,8 +2,12 @@ using ColorVision.Engine;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Local;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Themes;
 using ColorVision.UI.Views;
+using cvColorVision;
+using Newtonsoft.Json;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,10 +18,13 @@ namespace ColorVision.UI.Tests;
 public sealed class SpectrumButtonOperationTests
 {
     [Theory]
-    [InlineData(MsgRecordState.Success)]
-    [InlineData(MsgRecordState.Fail)]
-    [InlineData(MsgRecordState.Timeout)]
-    public void ProgressProtectsOnlyTheInvokedButtonAndRestoresItAtCompletion(MsgRecordState terminalState)
+    [InlineData(MsgRecordState.Success, false)]
+    [InlineData(MsgRecordState.Fail, false)]
+    [InlineData(MsgRecordState.Timeout, false)]
+    [InlineData(MsgRecordState.Success, true)]
+    [InlineData(MsgRecordState.Fail, true)]
+    [InlineData(MsgRecordState.Timeout, true)]
+    public void ProgressProtectsOnlyTheInvokedButtonAndRestoresItAtCompletion(MsgRecordState terminalState, bool opening)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -39,7 +46,7 @@ public sealed class SpectrumButtonOperationTests
                 {
                     Id = -2, Code = $"spectrum-button-{Guid.NewGuid():N}", Name = "Offline spectrum button test", Value = "{}"
                 });
-                device.SpectrumBackend.SetLocalStatus(DeviceStatusType.Opened);
+                device.SpectrumBackend.SetLocalStatus(opening ? DeviceStatusType.Closed : DeviceStatusType.Opened);
                 card = new DisplaySpectrum(device);
                 window = new Window
                 {
@@ -49,9 +56,10 @@ public sealed class SpectrumButtonOperationTests
                 window.Show();
                 Pump();
 
-                var single = Assert.IsType<Button>(card.FindName("btn_oneTest"));
+                var single = Assert.IsType<Button>(card.FindName(opening ? "btn_connect" : "btn_oneTest"));
                 var close = Assert.IsType<Button>(card.FindName("btn_connect"));
                 var panel = Assert.IsType<StackPanel>(card.FindName("StackPanelOpen"));
+                var content = Assert.IsType<StackPanel>(card.FindName("StackPanelContent"));
                 var record = new MsgRecord { MsgRecordState = MsgRecordState.Sended };
                 int calls = 0, completions = 0;
                 Func<MsgRecord> command = () => { calls++; return record; };
@@ -59,24 +67,60 @@ public sealed class SpectrumButtonOperationTests
                 var execute = typeof(DisplaySpectrum).GetMethod("ExecuteSpectrumCommand", BindingFlags.Instance | BindingFlags.NonPublic)!;
                 execute.Invoke(card, [single, command, completed]);
                 execute.Invoke(card, [single, command, completed]);
+                if (opening) device.SpectrumBackend.SetLocalStatus(DeviceStatusType.Opening);
                 Pump();
 
                 Assert.Equal(1, calls);
                 Assert.True(card.TryGetTimedButtonOperations()!.Get(single)!.IsRunning);
                 Assert.False(single.IsEnabled);
-                Assert.True(close.IsEnabled);
-                Assert.True(panel.IsVisible);
+                Assert.Equal(!opening, close.IsEnabled);
+                Assert.True(content.IsVisible);
+                Assert.Equal(!opening, panel.IsVisible);
                 Assert.True(panel.IsEnabled);
-                Assert.Equal(DeviceStatusType.Opened, device.DService.DeviceStatus);
+                Assert.Equal(opening ? DeviceStatusType.Opening : DeviceStatusType.Opened, device.DService.DeviceStatus);
 
+                if (opening) device.SpectrumBackend.SetLocalStatus(terminalState == MsgRecordState.Success ? DeviceStatusType.Opened : DeviceStatusType.Closed);
                 record.MsgRecordState = terminalState;
                 Pump();
                 Assert.Equal(1, completions);
                 Assert.False(card.TryGetTimedButtonOperations()!.Get(single)!.IsRunning);
                 Assert.True(single.IsEnabled);
                 Assert.True(close.IsEnabled);
-                Assert.True(panel.IsVisible);
-                Assert.Equal(ColorVision.Engine.Properties.Resources.SingleTest, single.Content);
+                Assert.True(content.IsVisible);
+                Assert.Equal(!opening || terminalState == MsgRecordState.Success, panel.IsVisible);
+                Assert.Equal(opening
+                    ? terminalState == MsgRecordState.Success ? ColorVision.Engine.Properties.Resources.Close : ColorVision.Engine.Properties.Resources.Open
+                    : ColorVision.Engine.Properties.Resources.SingleTest, single.Content);
+
+                if (!opening && terminalState == MsgRecordState.Success)
+                {
+                    // Continuous measurements append saved records; a later frame must not replace an earlier row.
+                    var display = typeof(DeviceSpectrum).GetMethod("DisplayLocalSpectrum", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                    foreach (int id in new[] { 18, 19, 20 })
+                        display.Invoke(device, [new LocalSpectrumCapture
+                        {
+                            MeasurementId = id, DeviceCode = device.Code, IntegralTime = 100,
+                            Data = new COLOR_PARA { fPL = [1, -.5f], fSpect1 = 500, fSpect2 = 501, fInterval = 1 }
+                        }, true]);
+                    Assert.Equal(new[] { 18, 19, 20 }, device.View.ViewResults.Select(row => row.Id));
+                    Assert.All(device.View.ViewResults, row => Assert.Equal(new float[] { 1, -.5f }, row.fPL));
+                    var original = device.View.ViewResults.ToArray();
+                    IEnumerable<ViewResultSpectrum> InvalidHistory()
+                    {
+                        yield return original[0];
+                        throw new JsonSerializationException("Unreadable history row");
+                    }
+                    Assert.Throws<JsonSerializationException>(() => device.View.ReplaceHistoryResults(InvalidHistory()));
+                    Assert.Equal(original, device.View.ViewResults);
+                    device.SpectrumBackend.SetLocalStatus(DeviceStatusType.Closing);
+                    Pump();
+                    Assert.True(content.IsVisible);
+                    Assert.True(panel.IsVisible);
+                    device.SpectrumBackend.SetLocalStatus(DeviceStatusType.Closed);
+                    Pump();
+                    Assert.True(content.IsVisible);
+                    Assert.False(panel.IsVisible);
+                }
 
                 // Immediate replies (for example rejected calibration) must not leave a progress overlay running.
                 execute.Invoke(card, [single, command, completed]);

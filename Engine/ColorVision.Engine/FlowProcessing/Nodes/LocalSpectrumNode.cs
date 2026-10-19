@@ -13,7 +13,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
-[STNode("Flow_CustomNodes/Flow_LocalDevices", "本地光谱采集", CategoryOrder = 9900, NodeOrder = 80)]
+[STNode("Flow_LocalDevices", "本地光谱采集", CategoryOrder = 9900, NodeOrder = 80)]
 public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
 {
     // Native acquisition converts float milliseconds to signed integer microseconds.

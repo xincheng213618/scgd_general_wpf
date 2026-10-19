@@ -13,7 +13,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 数据转换节点位于 `FlowEngineLib`，使用模板编辑器的校准节点位于 Engine 的 `FlowProcessing/Nodes/Compatibility/Calibration/`；相关选择器和校准设备服务由 Engine 提供。
 
-校正并实时测量上游 POI 使用本地 `LocalCalibrationRealPoiNode`（“自定义节点 → 本地设备 → 校正+实时 POI”），图像接 `IN_IMG`，布点结果接 `IN_POI`。包含旧服务端双输入校正节点的流程需要手动替换为此本地节点并重新选择校正资源、核对连线；两者配置语义不同，不自动映射旧节点。
+校正并实时测量上游 POI 使用本地 `LocalCalibrationRealPoiNode`（“本地设备 → 校正+实时 POI”），图像接 `IN_IMG`，布点结果接 `IN_POI`。包含旧服务端双输入校正节点的流程需要手动替换为此本地节点并重新选择校正资源、核对连线；两者配置语义不同，不自动映射旧节点。
 
 ## 先查什么
 

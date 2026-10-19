@@ -438,7 +438,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     DeviceStatusType.Opening => "光谱仪服务正在连接，请连接完成后再采集。",
                     DeviceStatusType.Closing => "光谱仪服务正在关闭，请稍后重试。",
-                    DeviceStatusType.Busy => "光谱仪正在执行其他测量，请完成后再采集。",
                     DeviceStatusType.SP_Continuous_Mode => "光谱仪正在连续测量，请先停止连续测量。",
                     DeviceStatusType.Closed or DeviceStatusType.UnInit => "光谱仪尚未连接，请先打开服务连接。",
                     DeviceStatusType.OffLine => "光谱仪服务离线，暂时不能采集。",
@@ -520,7 +519,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     {
                         string reason = deviceStatus switch
                         {
-                            DeviceStatusType.Busy => "光谱仪正在测量，不能应用幅值标定文件。",
                             DeviceStatusType.SP_Continuous_Mode => "光谱仪正在连续测量，请先停止连续测量再应用幅值标定文件。",
                             _ => $"光谱仪当前状态为 {deviceStatus}，不能安全应用幅值标定文件。",
                         };
@@ -1033,12 +1031,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             msgRecord = null;
             error = null;
-            if (SpectrumBackend?.OpensLocally == true)
-            {
-                error = "本地光谱仪暂不支持 ND 轮自动切换，请选择不关联 ND 端口的校正组。";
-                return false;
-            }
-
             if (Config.NDConfig.IsBingNDDevice)
             {
                 DeviceCfwPort? cfwPort = GetBoundCfwPort();

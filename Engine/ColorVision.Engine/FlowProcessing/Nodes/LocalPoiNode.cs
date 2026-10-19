@@ -23,7 +23,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public object? POIResult { get; init; }
     }
 
-    [STNode("Flow_CustomNodes/Flow_LocalDevices", "POI", CategoryOrder = 9900, NodeOrder = 50)]
+    [STNode("Flow_LocalDevices", "POI", CategoryOrder = 9900, NodeOrder = 50)]
     public sealed class LocalPoiNode : LocalFlowNodeBase
     {
         private string _POITempName = string.Empty;

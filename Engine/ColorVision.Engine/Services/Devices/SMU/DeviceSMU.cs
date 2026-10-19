@@ -45,6 +45,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
     public class DisplaySMUConfig : IDisplayConfigBase
     {
+        [Browsable(false)]
+        public LocalSmuSettings LocalSettings { get; set; } = new();
         [Category("AcquisitionDisplay"), DisplayName("使用本地源表"), Description("由当前电脑通过串口或网口直接连接；在源表配置窗口编辑。关闭当前连接后切换生效。")]
         public bool UseLocalSmu { get => _useLocalSmu; set => SetProperty(ref _useLocalSmu, value); }
         private bool _useLocalSmu;

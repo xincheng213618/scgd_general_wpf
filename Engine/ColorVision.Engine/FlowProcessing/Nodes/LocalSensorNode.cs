@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
-[STNode("Flow_CustomNodes/Flow_LocalDevices", "本地通用传感器", CategoryOrder = 9900, NodeOrder = 100)]
+[STNode("Flow_LocalDevices", "本地通用传感器", CategoryOrder = 9900, NodeOrder = 100)]
 public sealed class LocalSensorNode : LocalDeviceFlowNodeBase
 {
     private string templateName = string.Empty;

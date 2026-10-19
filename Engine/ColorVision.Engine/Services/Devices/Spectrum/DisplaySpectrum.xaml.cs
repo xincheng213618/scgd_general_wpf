@@ -59,6 +59,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 });
             };
             this.AddViewConfig(Device.ViewShell, DisPlayName);
+            DService_DeviceStatusChanged(sender, DeviceStatusType.Closed);
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
@@ -77,16 +78,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return;
 
             if (ComboBoxCalibrationGroups.SelectedItem is not SpectrumCalibrationGroup group
+                || string.Equals(group.GroupName, Device.Config.ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase)
                 || !Device.CalibrationGroupChangeGuard.TryBeginUserSwitch())
             {
                 return;
             }
 
-            if (group.NDHoleIndex < 0)
+            if (group.NDHoleIndex >= 0 && Device.Config.NDConfig.IsBingNDDevice && Device.GetBoundCfwPort() == null)
+            {
+                CompleteCalibrationGroupSwitch(group, Device.DisplayConfig.PortNum, null, null);
+                return;
+            }
+
+            if (group.NDHoleIndex < 0 || Device.SpectrumBackend.OpensLocally)
             {
                 try
                 {
                     Device.ApplyCalibrationGroup(group, true);
+                    if (group.NDHoleIndex >= 0) Device.DisplayConfig.PortNum = group.NDHoleIndex;
                 }
                 finally
                 {
@@ -149,8 +158,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     else
                     {
                         Device.DisplayConfig.PortNum = previousPort;
-                        ComboBoxCalibrationGroups.SelectedValue = Device.Config.ActiveCalibrationGroupName;
-                        MessageBox.Show(
+                        ComboBoxCalibrationGroups.SetCurrentValue(ComboBox.SelectedValueProperty, Device.Config.ActiveCalibrationGroupName);
+                        if (!string.IsNullOrWhiteSpace(failure)) MessageBox.Show(
                             Application.Current.GetActiveWindow(),
                             LocalizedText.Format($"切换标定分组对应的 ND 失败：{failure}"),
                             "ColorVision",
@@ -183,6 +192,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
         {
+            // Command progress belongs to the button; intermediate or unsupported states keep the current layout.
+            if (e is not (DeviceStatusType.Unknown or DeviceStatusType.Unauthorized or DeviceStatusType.OffLine
+                or DeviceStatusType.UnInit or DeviceStatusType.Closed or DeviceStatusType.Opened
+                or DeviceStatusType.Free or DeviceStatusType.SP_Continuous_Mode)) return;
+
             void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
             void HideAllButtons()
             {
@@ -216,7 +230,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Open;
                     break;
                 case DeviceStatusType.Opened:
-                case DeviceStatusType.Busy:
+                case DeviceStatusType.Free:
                     SetVisibility(StackPanelContent, Visibility.Visible);
                     SetVisibility(StackPanelOpen, Visibility.Visible);
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Close;
@@ -384,6 +398,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void NDport_Click(object sender, RoutedEventArgs e)
         {
+            if (Device.Config.NDConfig.IsBingNDDevice && Device.GetBoundCfwPort() == null) return;
             ExecuteSpectrumCommand(sender, () => DService.SetPort(), (record, state) =>
             {
                 if (state == MsgRecordState.Fail)

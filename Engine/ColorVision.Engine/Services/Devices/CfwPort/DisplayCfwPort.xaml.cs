@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,20 +31,23 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         {
             DataContext = Device;
             this.ApplyChangedSelectedColor(DisPlayBorder);
-            List<int> ports = new List<int>();
-
-            CombPort.ItemsSource = Device.FilterWheelConfig.HoleMapping;
-            CombPort.DisplayMemberPath = "HoleName";
-            Device.ConfigChanged += (s, e) =>
-            {
-                CombPort.ItemsSource = Device.FilterWheelConfig.HoleMapping;
-                CombPort.DisplayMemberPath = "HoleName";
-            };
+            RefreshPortMappings();
+            Device.ConfigChanged += Device_ConfigChanged;
 
             DService_DeviceStatusChanged(sender, DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged; ;
 
 
+        }
+
+        private void Device_ConfigChanged(object? sender, EventArgs e) => RefreshPortMappings();
+
+        private void RefreshPortMappings()
+        {
+            int? port = Device.DisplayConfig.PortNum;
+            CombPort.ItemsSource = Device.FilterWheelConfig.HoleMapping;
+            CombPort.DisplayMemberPath = "HoleName";
+            CombPort.SetCurrentValue(ComboBox.SelectedValueProperty, port);
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
@@ -130,7 +132,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         }
         private void SetPort_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && CombPort.SelectedValue is HoleMap holeMap)
+            if (sender is Button button && CombPort.SelectedItem is HoleMap holeMap)
             {
                 var msgRecord = DService.SetPort(holeMap.HoleIndex);
                 msgRecord.MsgRecordStateChanged += (s, e) =>
@@ -176,7 +178,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     int port = msgRecord.MsgReturn.Data.Port;
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        CombPort.SelectedItem = Device.FilterWheelConfig.HoleMapping.FirstOrDefault(a => a.HoleIndex == port);
+                        Device.DisplayConfig.PortNum = port;
                         ApplyBoundSpectrumCalibration(port, false);
                     });
                 }
@@ -190,7 +192,8 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         public void Dispose()
         {
-            DService.DeviceStatusChanged -= DService_DeviceStatusChanged; ;
+            Device.ConfigChanged -= Device_ConfigChanged;
+            DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
         }
 
         private void ApplyBoundSpectrumCalibration(int holeIndex, bool forceRestart)

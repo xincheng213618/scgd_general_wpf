@@ -26,6 +26,7 @@ internal sealed record LocalSmuConnection(bool IsNet, string DeviceName, Pss_Typ
 // Parameters and session captures use V / mA. Legacy scan payloads/storage retain A in the result adapter.
 internal sealed record LocalSmuParameters
 {
+    public LocalSmuSettings? AdvancedSettings { get; init; }
     public SMUChannelType Channel { get; init; }
     public bool IsSourceV { get; init; } = true;
     public double MeasureValue { get; init; }
@@ -78,6 +79,8 @@ internal sealed record LocalSmuParameters
 
 internal sealed record LocalSmuCapture(LocalSmuParameters Parameters, double[] Voltages, double[] Currents, int TotalTime, bool IsScan)
 {
+    internal LocalSmuDetails? Details { get; init; }
+    internal bool HasMeasurements => Voltages.Length != 0;
     internal DateTime CapturedAt { get; init; } = DateTime.Now;
     internal long Generation { get; init; }
     internal double V => Voltages[^1];

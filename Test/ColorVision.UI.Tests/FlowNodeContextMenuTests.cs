@@ -20,10 +20,11 @@ public sealed class FlowNodeContextMenuTests
             using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => { });
             var creationMenu = new ContextMenu();
             Invoke(menus, "AddNodeCreationMenuItems", creationMenu.Items);
-            string[] path = FlowNodeContextMenuService.LocalizeNodeMenuPath("Flow_CustomNodes/Flow_LocalAlgorithms").Split('/');
-            MenuItem custom = creationMenu.Items.OfType<MenuItem>().Single(item => Equals(item.Header, path[0]));
-            Assert.Equal(2, custom.Items.Count);
-            MenuItem algorithms = custom.Items.OfType<MenuItem>().Single(item => Equals(item.Header, path[1]));
+            string algorithmHeader = FlowNodeContextMenuService.LocalizeNodeMenuPath("Flow_LocalAlgorithms");
+            string deviceHeader = FlowNodeContextMenuService.LocalizeNodeMenuPath("Flow_LocalDevices");
+            MenuItem algorithms = creationMenu.Items.OfType<MenuItem>().Single(item => Equals(item.Header, algorithmHeader));
+            Assert.Single(creationMenu.Items.OfType<MenuItem>().Where(item => Equals(item.Header, deviceHeader)));
+            Assert.DoesNotContain(creationMenu.Items.OfType<MenuItem>(), item => Equals(item.Header, FlowNodeContextMenuService.LocalizeNodeMenuPath("Flow_CustomNodes")));
             MenuItem[] firstAlgorithms = algorithms.Items.OfType<MenuItem>().Take(expected.Length).ToArray();
             Assert.Equal(expected.Length, firstAlgorithms.Length);
             for (int index = 0; index < expected.Length; index++)
@@ -33,6 +34,8 @@ public sealed class FlowNodeContextMenuTests
             }
 
             using var catalog = new STNodeTreeView();
+            Assert.Equal("ColorVision.Engine/Flow_LocalAlgorithms", catalog.NodeTypes[typeof(LocalFovNode)]);
+            Assert.Equal("ColorVision.Engine/Flow_LocalDevices", catalog.NodeTypes[typeof(LocalImageNode)]);
             var tree = (TreeView)typeof(STNodeTreeView).GetField("m_tree", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(catalog)!;
             TreeViewItem algorithmFolder = DescendantTreeItems(tree.Items)
                 .Single(item => item.Items.OfType<TreeViewItem>().Any(child => Equals(child.Tag, typeof(LocalFovNode))));

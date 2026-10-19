@@ -3,9 +3,9 @@ knowledge_id: "engine.spectrum-device"
 knowledge_type: "topic"
 status: "current"
 summary: "主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。"
-aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类", "物理光谱仪管理", "PhySpectrumManager", "SpectrumLicenseUpdateService", "光谱仪联网更新许可证"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/PhySpectrums", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
-test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs", "Test/Spectrum.Tests/PhySpectrumManagerTests.cs", "Test/Spectrum.Tests/LocalSpectrumTests.cs", "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"]
+aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类", "物理光谱仪管理", "PhySpectrumManager", "SpectrumLicenseUpdateService", "光谱仪联网更新许可证", "ND位置记忆", "本地ND标定切换"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/Devices/CfwPort", "Engine/ColorVision.Engine/Services/PhySpectrums", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
+test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs", "Test/Spectrum.Tests/PhySpectrumManagerTests.cs", "Test/Spectrum.Tests/LocalSpectrumTests.cs", "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs", "Test/ColorVision.UI.Tests/SpectrumNdSelectionTests.cs"]
 related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugins.spectrum"]
 ---
 
@@ -27,9 +27,11 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 本地光谱采集加入重复框后，可在“编辑重复框…”中保存每轮积分时间与平均次数数组。每轮生成独立采集参数，节点默认属性和保存的数组不被自动积分回写。自动积分开启时积分时间不能手动覆盖；设备采集配置启用同步频率时，SDK 可能重新计算积分时间与实际平均次数，因此两项逐轮覆盖均禁用。手动积分数组须在 0.001 至 2,147,483.5 ms 内，保护原生微秒整数转换；具体硬件仍可能限制或量化时长。请求日志保存本轮参数，结果沿用实际积分时间记录。重复次数与单轮内部平均次数分别生效。
 
-单次测量和流程执行将光谱、色度与实际积分时间直接交给界面/流程。离线结果留在内存，可由本地窗口导出 JSON；在线历史结果仍写入原 MySQL 光谱结果表，流程遵守 `PersistResults`。连续预览不自动累积数据库历史。任何采集结果都不写配置 SQLite。图表按原生返回的波长起点、间隔和有效点数绘制，保留原始结果用于校正与导出。
+单次、连续测量和流程执行将光谱、色度与实际积分时间直接交给界面/流程。连续测量逐条保存并追加到主界面和本地窗口，下一次测量不替换上一条；停止期间已经完成的原生采集仍保存和展示。离线结果逐条留在内存，可由本地窗口导出 JSON；在线历史结果写入原 MySQL 光谱结果表，流程遵守 `PersistResults`。保存成功后列表及导出使用数据库记录 ID；写入失败停止连续测量并报告错误，不继续静默丢弃记录。任何采集结果都不写配置 SQLite。图表按原生返回的波长起点、间隔和有效点数绘制，保留原始结果用于校正与导出。
 
-本地 EQE 使用当前 V/I 和修正系数，暂不支持 EQE 同步频率模式；外部快门自动控制、ND 轮与端口操作暂不接入本地 SDK，相关请求明确失败，不发送服务命令。手动校零和不使用外部快门的自动校零要求先遮光，自适应暗校正需要先完成自适应校零初始化。设备驱动、实际许可证、校正文件与现场遮光条件仍由真实设备验收确认。
+光谱、显色性数组和 CIE 扩展数据以原始 JSON 文本写入历史表，不再由 ORM 额外序列化字符串。读取兼容既有的 JSON 数组/对象及被引号包装的历史字符串，无需批量重写数据。普通查询和高级查询先完成读取、转换，再替换当前列表，查询失败时保留原列表。
+
+本地 EQE 使用当前 V/I 和修正系数，暂不支持 EQE 同步频率模式；外部快门自动控制暂不接入本地 SDK，相关请求明确失败，不发送服务命令。本地 ND 位置用于选择标定文件，不要求光谱 SDK 控制滤光轮；开启“使用 ND”仍按当前活动分组加载标定文件后采集。手动校零和不使用外部快门的自动校零要求先遮光，自适应暗校正需要先完成自适应校零初始化。设备驱动、实际许可证、校正文件与现场遮光条件仍由真实设备验收确认。
 
 本地采集的平滑算法在 **修改配置 → 采集参数** 设置：`GetDataConfig.SmoothingMethod` 默认为 `Mean=0`（均值滤波），`SavitzkyGolay=1` 使用优化后的二阶 SG。缺少此字段的旧配置仍为均值，原有 `FilterBW` 数值原样保留；均值宽度小于等于 2 时沿用 5 点、偶数窗口和零填充保持原样。SG 使用原始采样索引的缓存卷积核，宽度必须为 3～2047 的奇数且不超过实际点数，非法值拒绝采集。它沿用零填充，可能出现负旁瓣和边缘过冲，目前只有合成数据验证。算法选择在每次本地普通、同步频率或 EQE 采集前应用于同一原生句柄，切回均值不会沿用 SG。远程服务不使用此选项。
 
@@ -61,7 +63,7 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 设备卡片将标定分组选择和分组管理按钮放在“打开 / 关闭”同一行的右侧；长分组名可通过下拉选择查看，连接状态和采集参数区域继续按设备状态显示。
 
-连接、单次采集、连续采集启停及手动校零复用按钮进度条提示执行过程，只防止当前按钮重复触发；完成、失败或超时后恢复按钮。单次本地采集不切换设备忙碌状态，卡片和关闭入口保持可见，底层驱动占用保护继续生效。
+连接、单次采集、连续采集启停及手动校零复用按钮进度条提示执行过程，只防止当前按钮重复触发；完成、失败或超时后恢复按钮。打开、关闭及测量执行期间保留原有卡片布局，在连接完成、断开等有效结果后更新可用功能；关闭入口及底层驱动占用保护继续沿用。
 
 | 分类 | 操作 |
 | --- | --- |
@@ -97,11 +99,17 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 波长文件和幅值文件是当前标定分组的兼容镜像。属性窗口修改这两个文件时同步更新当前分组；分组窗口保存或应用分组时再把分组文件同步回这两个字段。加载已有配置时以非空的当前文件修复活动分组中的旧路径，避免 `Default` 分组在后续应用时恢复过期文件。切换分组窗口中的浏览选择不会在保存前改变活动分组。
 
-设备卡片上的标定分组下拉框会按分组关联的 `NDHoleIndex` 切换 ND：绑定外部滤光轮时向该服务发送端口指令，否则使用光谱仪自身的 ND 指令。只有设备成功回执后才提交活动分组、文件和显示端口；发送失败、设备失败或超时时恢复原分组和端口。没有关联 ND 的分组仍直接应用。由 ND 位置回写分组属于程序内部应用，受重入保护且不会反向再发 ND 指令；一条用户切换尚未结束时也不会重复启动下一条切换，避免双向联动形成回环。
+启动恢复和内部回写当前活动标定分组时，下拉框只更新显示，不发送 ND 指令；延迟到初始化完成后的绑定更新也遵守此规则。
+
+启用独立 ND 绑定但尚未绑定设备、或绑定设备未加载时，自动切换和“设置位置”直接跳过，不发送指令、不弹窗，也不提交新分组或位置。本地光谱后端在 ND 绑定可用或使用直接标定位置模式时选择分组，直接应用该分组的波长、幅值文件，并记录关联的 `NDHoleIndex`。本地“设置位置”选择该位置对应的标定分组，找不到对应分组时失败并保留原分组；“读取位置”返回本地记录。下次开始采集加载当前分组文件，连续采集沿用开始时的配置快照。上述操作不驱动独立滤光轮，真实机械位置仍由其设备卡片控制。
+
+服务后端的分组切换沿用 ND 联动：绑定外部滤光轮时向该服务发送端口指令，否则使用光谱仪自身的 ND 指令。只有设备成功回执后才提交活动分组、文件和显示端口；发送失败、设备失败或超时时恢复原分组和端口。没有关联 ND 的分组仍直接应用。由 ND 位置回写分组属于程序内部应用，受重入保护且不会反向再发 ND 指令；一条用户切换尚未结束时也不会重复启动下一条切换。
+
+独立 ND 滤光轮按设备 Code 将所选位置保存在客户端显示配置中；有效位置因下拉选择或设置、读取成功回执变化时，立即保存显示配置到磁盘，不依赖进程退出时统一保存。位置通过固定下拉列表选择；重新打开软件或刷新孔位映射时按 `HoleIndex` 恢复，不依赖下拉项的对象实例。设备已打开或连接后首次显示下拉框时均保留记录，不自动读取或移动机构。设置、读取位置成功回执会更新记录，失败或超时不以请求值覆盖记录；多台滤光轮的位置分别保存。记录用于恢复界面选择，不能代替读取真实位置。
 
 ## 验证边界
 
-`SpectrumButtonOperationTests` 使用实际 WPF 光谱卡片和模拟命令，验证按钮进度期间面板及关闭入口保留、当前按钮防止重复触发，以及成功、失败、超时和即时回复后的恢复；不连接光谱硬件。
+`SpectrumButtonOperationTests` 使用实际 WPF 光谱卡片和模拟命令，验证打开、关闭和测量期间原布局保留、当前按钮防止重复触发，以及成功、失败、超时和即时回复后的恢复；同时检查连续结果逐条追加、保存 ID 对齐，以及查询转换失败时列表不变。`EngineSpectrumResultTests` 用隔离 SQLite 验证 ORM 写入、普通/历史字符串 JSON 读取和原始样本保留；不连接现场 MySQL 或光谱硬件。
 
 `LocalSpectrumTests` 使用替身原生接口验证句柄复用、初始化失败清理、SN 不匹配、驱动互斥、校正前置检查、自动积分/校零顺序、参数和后端占用状态，以及结果数组/波长轴。`LocalSpectrumFlowTests` 验证流程本地执行钩子、失败不发 MQTT、离线开始节点对本地转发和服务节点的不同限制，以及本地节点保存字段。它们不替代真实 SDK、硬件采集和现场窗口操作验收。
 

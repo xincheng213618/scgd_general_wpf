@@ -1,0 +1,94 @@
+<Window x:Class="ColorVision.Engine.FlowProcessing.Monitoring.LiveIvlWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        Title="IV / IVL 实时曲线" Width="1250" Height="800" MinWidth="960" MinHeight="640"
+        Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded" Closed="Window_Closed">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <ScrollViewer Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="18">
+                <TextBlock Text="IV / IVL 实时曲线" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,14" />
+                <StackPanel x:Name="FlowControls">
+                    <TextBlock Text="执行流程" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <ComboBox x:Name="FlowSelection" ItemsSource="{Binding FlowParams}" DisplayMemberPath="Key"
+                              SelectedIndex="{Binding TemplateFlowParamsIndex}" SelectionChanged="FlowSelection_Changed" Margin="0,0,0,10">
+                        <ComboBox.Style>
+                            <Style TargetType="ComboBox">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding View.IsExecutionActive}" Value="True"><Setter Property="IsEnabled" Value="False" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                    </ComboBox>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+                        <Button x:Name="RunButton" Content="执行流程" Command="{Binding View.RunFlowCommand}" Margin="0,0,4,0" />
+                        <Button x:Name="StopButton" Grid.Column="1" Content="停止流程" Command="{Binding View.StopFlowCommand}" Margin="4,0,0,0" />
+                    </Grid>
+                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding BatchProgress}" Height="5" Margin="0,0,0,10" />
+                </StackPanel>
+                <TextBlock x:Name="BatchInfo" Text="等待流程批次…" TextWrapping="Wrap" Margin="0,0,0,12" />
+                <Separator Margin="0,0,0,14" />
+                <TextBlock Text="曲线模式" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <ComboBox x:Name="Mode" SelectedIndex="0" SelectionChanged="PlotOption_Changed" Margin="0,0,0,12">
+                    <ComboBoxItem Content="IV：电压 → 电流" />
+                    <ComboBoxItem Content="I-L：电流 → 亮度" />
+                    <ComboBoxItem Content="V-L：电压 → 亮度" />
+                    <ComboBoxItem Content="P-L：功率 → 亮度" />
+                    <ComboBoxItem Content="I-t：电流随时间" />
+                    <ComboBoxItem Content="V-t：电压随时间" />
+                    <ComboBoxItem Content="L-t：亮度随时间" />
+                </ComboBox>
+                <CheckBox x:Name="AutoScale" Content="自动适应坐标范围" IsChecked="True" Click="PlotOption_Click" Margin="0,0,0,8" />
+                <Button Content="重置坐标范围" Click="ResetAxes_Click" Margin="0,0,0,14" />
+                <TextBlock Text="显示数据系列" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto" Margin="0,0,0,14">
+                    <ItemsControl x:Name="SeriesList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding Visible}" Click="PlotOption_Click" Margin="0,4" ToolTip="{Binding Name}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <Button Content="导出当前数据 CSV" Click="Export_Click" Margin="0,0,0,8" />
+                <Button Content="保存曲线图片" Click="SavePlot_Click" Margin="0,0,0,14" />
+                <Button Content="重新读取结果" Click="Refresh_Click" Margin="0,0,0,14" />
+                <TextBlock Text="选择并执行流程，节点完成后自动更新右侧曲线。" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,8" />
+                <TextBlock Text="扫描数据在仪器返回整批结果后显示；时间趋势使用实际记录时间。" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </ScrollViewer>
+        <Grid Grid.Column="1" Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="180" /><RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Margin="0,0,0,10">
+                <TextBlock x:Name="ChartTitle" Text="IV 曲线" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock x:Name="Summary" Text="等待已保存的源表、相机 POI 或光谱结果" Margin="0,5,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+            <plot:WpfPlot x:Name="Chart" Grid.Row="1" />
+            <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" Margin="0,6" />
+            <DataGrid x:Name="Values" Grid.Row="3" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                      EnableRowVirtualization="True" EnableColumnVirtualization="True" Style="{DynamicResource DataGrid.Small}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="系列" Binding="{Binding Series}" Width="*" MinWidth="160" />
+                    <DataGridTextColumn Header="测量时间" Binding="{Binding Time, StringFormat=HH:mm:ss.fff}" Width="115" />
+                    <DataGridTextColumn Header="电压 (V)" Binding="{Binding Voltage, StringFormat=G6}" Width="100" />
+                    <DataGridTextColumn Header="电流 (mA)" Binding="{Binding Current, StringFormat=G6}" Width="110" />
+                    <DataGridTextColumn Header="亮度 (cd/m²)" Binding="{Binding Luminance, StringFormat=G6}" Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <TextBlock x:Name="Status" Grid.Row="4" Text="就绪" Margin="0,10,0,0" TextWrapping="Wrap" />
+        </Grid>
+    </Grid>
+</Window>

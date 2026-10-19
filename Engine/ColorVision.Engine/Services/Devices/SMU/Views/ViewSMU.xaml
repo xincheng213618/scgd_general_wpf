@@ -208,6 +208,8 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+                    <GridViewColumn Header="R (Ω)" DisplayMemberBinding="{Binding Resistance}"/>
+                    <GridViewColumn Header="P (W)" DisplayMemberBinding="{Binding Power}"/>
                 </GridView>
             </ListView.View>
         </ListView>

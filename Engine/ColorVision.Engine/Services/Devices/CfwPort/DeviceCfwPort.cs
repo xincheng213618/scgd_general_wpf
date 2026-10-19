@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     public class DeviceCfwPort : DeviceService<ConfigCfwPort>
     {
         public MQTTCfwPort DService { get; set; }
-        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
+        public DisplayCfwPortConfig DisplayConfig { get; }
 
         public FilterWheelConfig FilterWheelConfig
         {
@@ -34,6 +35,8 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         }
         public DeviceCfwPort(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            DisplayConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCfwPortConfig>(Config.Code);
+            DisplayConfig.PropertyChanged += DisplayConfig_PropertyChanged;
             DService = new MQTTCfwPort(Config);
 
             this.SetIconResource("CfwPortDrawingImage");
@@ -45,6 +48,18 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 propertyEditorWindow.ShowDialog();
 
             }, a => AccessControl.Check(PermissionMode.Administrator));
+        }
+
+        private void DisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DisplayCfwPortConfig.PortNum) && DisplayConfig.PortNum.HasValue)
+                ConfigService.Instance.Save<DisplayConfigManager>();
+        }
+
+        public override void Dispose()
+        {
+            DisplayConfig.PropertyChanged -= DisplayConfig_PropertyChanged;
+            base.Dispose();
         }
 
         public override UserControl GetDeviceInfo() => new InfoCfwPort(this);

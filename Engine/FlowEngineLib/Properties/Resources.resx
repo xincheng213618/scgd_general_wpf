@@ -954,8 +954,8 @@
   <data name="取消重复框" xml:space="preserve">
     <value>取消重复框</value>
   </data>
-  <data name="请选择连续连接的一段流程，重复框内不能包含分支、开始、结束或旧循环节点。" xml:space="preserve">
-    <value>请选择连续连接的一段流程，重复框内不能包含分支、开始、结束或旧循环节点。</value>
+  <data name="请选择单入口、单出口的完整流程区域，分流必须在框内汇合，不能包含环、开始、结束或旧循环节点。" xml:space="preserve">
+    <value>请选择单入口、单出口的完整流程区域，分流必须在框内汇合，不能包含环、开始、结束或旧循环节点。</value>
   </data>
   <data name="重复框的节点或次数已改变，请取消该框后重新框选。" xml:space="preserve">
     <value>重复框的节点或次数已改变，请取消该框后重新框选。</value>

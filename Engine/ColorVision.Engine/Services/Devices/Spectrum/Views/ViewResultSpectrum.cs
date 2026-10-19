@@ -354,20 +354,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             if (!string.IsNullOrWhiteSpace(item.fPL_file_name) && File.Exists(item.fPL_file_name))
             {
-                File.ReadAllBytes(item.fPL_file_name);
                 string json = File.ReadAllText(item.fPL_file_name);
-                fPL = JsonConvert.DeserializeObject<float[]>(json) ?? Array.Empty<float>();
+                fPL = SpectrumStoredJson.Read<float[]>(json) ?? Array.Empty<float>();
             }
             else
             {
-                fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>();
+                fPL = SpectrumStoredJson.Read<float[]>(item.fPL) ?? Array.Empty<float>();
             }
 
 
 
-            fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>();
+            fRi = SpectrumStoredJson.Read<float[]>(item.fRi) ?? Array.Empty<float>();
 
-            cieData cieData = JsonConvert.DeserializeObject<cieData>(item.CieDataEx ?? string.Empty)?? new cieData();
+            cieData cieData = SpectrumStoredJson.Read<cieData>(item.CieDataEx) ?? new cieData();
 
 
             if (!string.IsNullOrWhiteSpace(cieData.AcquisitionParametersJson)) AcquisitionParametersJson = cieData.AcquisitionParametersJson;

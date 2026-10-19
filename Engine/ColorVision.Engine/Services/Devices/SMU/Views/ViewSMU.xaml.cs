@@ -356,6 +356,13 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
+            ClearResults();
+            ReDrawPlot();
+        }
+
+        internal void ClearResults()
+        {
+            EnsureInitialized();
             ViewResults.Clear();
 
             wpfplot1.Plot.Clear();
@@ -363,8 +370,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
             wpfplot2.Plot.Clear();
             wpfplot2.Refresh();
-
-            ReDrawPlot();
 
         }
 
@@ -493,14 +498,20 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             ViewResults.Clear();
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            foreach (var item in Db.Queryable<SMUResultModel>().ToList())
+            var points = Db.Queryable<SMUResultModel>().ToList();
+            var pointDetails = Local.LocalSmuResultService.ReadDetails(Db, false, points.Select(item => item.Id).ToArray());
+            foreach (var item in points)
             {
+                if (pointDetails.TryGetValue(item.Id, out string? details)) item.LocalDetails = details;
                 ViewResultSMU viewResultSMU = new ViewResultSMU(item);
                 ViewResults.Add(viewResultSMU);
             }
 
-            foreach (var item in Db.Queryable<SmuScanModel>().ToList())
+            var scans = Db.Queryable<SmuScanModel>().ToList();
+            var scanDetails = Local.LocalSmuResultService.ReadDetails(Db, true, scans.Select(item => item.Id).ToArray());
+            foreach (var item in scans)
             {
+                if (scanDetails.TryGetValue(item.Id, out string? details)) item.LocalDetails = details;
                 ViewResultSMU viewResultSMU = new ViewResultSMU(item);
                 ViewResults.Add(viewResultSMU);
             }

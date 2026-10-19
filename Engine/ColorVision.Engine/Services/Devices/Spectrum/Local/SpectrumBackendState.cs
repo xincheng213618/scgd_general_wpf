@@ -25,7 +25,7 @@ internal sealed class SpectrumBackendState
         {
             serviceStatus = value;
             if (value == DeviceStatusType.Closed && serviceCommands == 0) serviceMayOwn = false;
-            else if (value is DeviceStatusType.Opening or DeviceStatusType.Opened or DeviceStatusType.Free or DeviceStatusType.Busy or DeviceStatusType.Closing or DeviceStatusType.SP_Continuous_Mode) serviceMayOwn = true;
+            else if (value is DeviceStatusType.Opening or DeviceStatusType.Opened or DeviceStatusType.Free or DeviceStatusType.Closing or DeviceStatusType.SP_Continuous_Mode) serviceMayOwn = true;
         }
         Changed?.Invoke();
     }

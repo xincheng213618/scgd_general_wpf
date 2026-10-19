@@ -256,6 +256,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             masterResultType = -1;
             masterValue = null;
             if (!activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
+                || !action.IsSameExecutionIteration(inputs[0].Action)
                 || inputIndex < 0
                 || inputIndex >= inputs.Length)
             {
@@ -283,7 +284,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             start.NormalizeStopStatus();
             if (!start.IsRunning)
             {
-                ClearPendingInputs(start.SerialNumber);
+                ClearPendingInputs(start);
                 flowOutputOption.TransferData(start);
                 return;
             }
@@ -297,6 +298,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     inputs = new LocalFlowInputSnapshot?[inputNames.Length];
                     pendingInputSets.Add(start.SerialNumber, inputs);
+                }
+                else if (inputs.Any(input => input != null && !start.IsSameExecutionIteration(input.Action)))
+                {
+                    Array.Clear(inputs);
                 }
                 inputs[inputIndex] = CaptureInput(start);
                 if (inputs.All(input => input != null))
@@ -346,17 +351,20 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             _ = Task.Run(() => ExecuteCore(transaction, inputs, preparationError));
         }
 
-        private void ClearPendingInputs(string? serialNumber = null)
+        private void ClearPendingInputs(CVStartCFC? action = null)
         {
             lock (inputSync)
             {
-                if (serialNumber == null)
+                if (action == null)
                 {
                     pendingInputSets.Clear();
                 }
                 else
                 {
-                    pendingInputSets.Remove(serialNumber);
+                    if (pendingInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot?[]? inputs)
+                        && inputs.Any(input => input != null && (action.IsSameExecutionIteration(input.Action)
+                            || ReferenceEquals(action.RuntimeResources, input.Action.RuntimeResources))))
+                        pendingInputSets.Remove(action.SerialNumber);
                 }
             }
         }

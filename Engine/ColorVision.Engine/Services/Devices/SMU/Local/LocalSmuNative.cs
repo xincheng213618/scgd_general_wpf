@@ -1,11 +1,17 @@
 using cvColorVision;
 using System;
 using System.Text;
+using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Local;
 
 internal interface ILocalSmuNative
 {
+    int GetLocalFamily(int handle) => 0;
+    int CloseAdvancedOutput(int handle, int channel, int mode) => throw new NotSupportedException("当前 DLL 不支持本地输出关闭状态。");
+    void ExecuteAdvanced(int handle, LocalSmuSettings settings, double[] sources, double[] limits, double[] v, double[] i, double[] r, int[] status)
+        => throw new NotSupportedException("当前源表 DLL 未提供本地高级测量，请更新 cvCamera.dll。");
     int Open(LocalSmuConnection connection);
     int GetIdn(int handle, StringBuilder text, ref int length);
     int SetWiring(int handle, bool fourWire, bool front);
@@ -23,6 +29,38 @@ internal interface ILocalSmuNative
 
 internal sealed class LocalSmuNative : ILocalSmuNative
 {
+    [DllImport("cvCamera.dll", EntryPoint = "cvPss_Sx_GetLocalFamily", CallingConvention = CallingConvention.StdCall)]
+    private static extern int NativeFamily(int handle);
+    [DllImport("cvCamera.dll", EntryPoint = "cvPss_Sx_CloseLocalOutput", CallingConvention = CallingConvention.StdCall)]
+    private static extern int NativeCloseOutput(int handle, int channel, int mode);
+    public int CloseAdvancedOutput(int handle, int channel, int mode)
+    {
+        try { return NativeCloseOutput(handle, channel, mode); }
+        catch (EntryPointNotFoundException ex) { throw new InvalidOperationException("当前 DLL 不支持本地输出关闭状态，请更新 cvCamera.dll。", ex); }
+    }
+    [DllImport("cvCamera.dll", EntryPoint = "cvPss_Sx_ExecuteLocal", CallingConvention = CallingConvention.StdCall)]
+    private static extern int NativeExecute(int handle, in SmuNativeSettings settings, [In] double[] sources, [In] double[] limits,
+        [Out] double[] v, [Out] double[] i, [Out] double[] r, [Out] int[] status, [Out] byte[] error, int capacity);
+    public int GetLocalFamily(int handle)
+    {
+        try { return NativeFamily(handle); }
+        catch (EntryPointNotFoundException) { return 0; }
+    }
+    public void ExecuteAdvanced(int handle, LocalSmuSettings settings, double[] sources, double[] limits, double[] v, double[] i, double[] r, int[] status)
+    {
+        var native = SmuNativeSettings.From(settings, sources.Length);
+        byte[] error = new byte[2048];
+        try
+        {
+            if (NativeExecute(handle, in native, sources.Select(value => settings.IsSourceV ? value : value / 1000).ToArray(),
+                limits.Select(value => settings.IsSourceV ? value / 1000 : value).ToArray(), v, i, r, status, error, error.Length) != 1)
+            {
+                int terminator = Array.IndexOf(error, (byte)0);
+                throw new InvalidOperationException($"源表操作失败：{Encoding.ASCII.GetString(error, 0, terminator < 0 ? error.Length : terminator)}");
+            }
+        }
+        catch (EntryPointNotFoundException ex) { throw new InvalidOperationException("当前源表 DLL 未提供本地高级测量，请更新 cvCamera.dll 后重启。", ex); }
+    }
     public int Open(LocalSmuConnection c)
     {
         if (c.IsNet || c.BaudRate == 9600) return PassSx.OpenNetDevice(c.IsNet, c.DeviceName, c.DeviceType);

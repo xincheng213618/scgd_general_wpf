@@ -249,9 +249,9 @@ public class FlowLocalizationTests
     }
 
     [Theory]
-    [InlineData("zh-Hans", "全局", "运算", "自定义节点/本地算法", "自定义节点/本地设备")]
-    [InlineData("en-US", "Global", "Operation", "Custom Nodes/Local Algorithms", "Custom Nodes/Local Devices")]
-    [InlineData("zh-Hant", "全局", "運算", "自訂節點/本機演算法", "自訂節點/本機裝置")]
+    [InlineData("zh-Hans", "全局", "运算", "本地算法", "本地设备")]
+    [InlineData("en-US", "Global", "Operation", "Local Algorithms", "Local Devices")]
+    [InlineData("zh-Hant", "全局", "運算", "本機演算法", "本機裝置")]
     public void FlowNodeCreationMenuUsesCategoryOrderAndSeparateLocalCategories(
         string culture,
         string globalHeader,
@@ -282,11 +282,11 @@ public class FlowLocalizationTests
                     .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
                 ST.Library.UI.NodeEditor.STNodeAttribute operationAttribute = typeof(LoopNode)
                     .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
-                ST.Library.UI.NodeEditor.STNodeAttribute customAttribute = typeof(CommandLineScriptNode)
+                ST.Library.UI.NodeEditor.STNodeAttribute algorithmAttribute = typeof(CommandLineScriptNode)
                     .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
                 Assert.Equal(("全局", 0), (globalAttribute.Path, globalAttribute.CategoryOrder));
                 Assert.Equal(("运算", 100), (operationAttribute.Path, operationAttribute.CategoryOrder));
-                Assert.Equal(("Flow_CustomNodes/Flow_LocalAlgorithms", 9900), (customAttribute.Path, customAttribute.CategoryOrder));
+                Assert.Equal(("Flow_LocalAlgorithms", 9910), (algorithmAttribute.Path, algorithmAttribute.CategoryOrder));
                 Assert.Equal(globalHeader, FlowNodeContextMenuService.LocalizeNodeMenuPath("FlowEngineLib/00 全局"));
                 Assert.Equal(operationHeader, FlowNodeContextMenuService.LocalizeNodeMenuPath("FlowEngineLib/01 运算"));
                 Assert.DoesNotContain(paths.Keys, type => type.FullName == "ColorVision.Engine.FlowProcessing.Nodes.LocalBuildPoiByTemplateNode");
@@ -318,6 +318,10 @@ public class FlowLocalizationTests
                     group => Assert.Single(group.Select(category => category.CategoryOrder).Distinct()));
 
                 IReadOnlyList<string> rootHeaders = FlowNodeContextMenuService.GetNodeCreationMenuRootHeaders();
+                Assert.Contains(devicePath, rootHeaders);
+                Assert.Contains(algorithmPath, rootHeaders);
+                Assert.DoesNotContain(FlowNodeContextMenuService.LocalizeNodeMenuPath("Flow_CustomNodes"), rootHeaders);
+                Assert.True(rootHeaders.ToList().IndexOf(devicePath) < rootHeaders.ToList().IndexOf(algorithmPath));
                 int globalIndex = rootHeaders.ToList().IndexOf(globalHeader);
                 int operationIndex = rootHeaders.ToList().IndexOf(operationHeader);
                 Assert.True(globalIndex >= 0, $"Missing root category: {globalHeader}");

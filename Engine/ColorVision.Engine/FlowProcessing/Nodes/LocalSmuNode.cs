@@ -3,6 +3,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Local;
 using ColorVision.Engine.Services.Results;
+using ColorVision.Themes.Controls;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Repeat;
@@ -13,16 +14,49 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using SmuChannel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType;
+using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using System.Windows;
+using ColorVision.Themes;
+using System.Text;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
-[STNode("Flow_CustomNodes/Flow_LocalDevices", "源表", CategoryOrder = 9900, NodeOrder = 20)]
+[STNode("Flow_LocalDevices", "源表", CategoryOrder = 9900, NodeOrder = 20)]
 public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
 {
     private SourceType source = SourceType.Voltage_V;
     private SMUChannelType channel;
     private double measureValue = 1, limitValue = 10, srcRng, lmtRng;
     private bool autoConnect = true, isAutoRng = true, closeOutputOnFinish = true;
+    private LocalSmuSettings? localSettings;
+    [Browsable(false)]
+    public LocalSmuSettings? LocalSettings
+    {
+        get => localSettings;
+        set { localSettings = value; OnPropertyChanged(nameof(UseWindowSettings)); }
+    }
+    [Category("本地源表"), STNodeProperty("使用窗口设置", "启用窗口中的测量、扫描和脉冲参数；关闭后恢复普通点测与重复框自动合批", true)]
+    public bool UseWindowSettings
+    {
+        get => LocalSettings != null;
+        set => LocalSettings = value ? LocalSettings ?? new LocalSmuSettings { Channel = (SmuChannel)(int)Channel,
+            IsSourceV = Source == SourceType.Voltage_V, SourceValue = MeasureValue, Limit = LimitValue,
+            SourceRange = IsAutoRng ? 0 : SrcRng, MeasureRange = IsAutoRng ? 0 : LmtRng } : null;
+    }
+    [JsonIgnore, CommandDisplay("本地源表", Order = -100), Description("打开本地源表窗口，编辑测量、扫描、脉冲和接线参数并应用到此节点。")]
+    public RelayCommand OpenLocalSmuManagerCommand { get; }
+    protected override void OnSaveNode(Dictionary<string, byte[]> data)
+    {
+        base.OnSaveNode(data);
+        if (LocalSettings != null) data["LocalSmuSettings.v1"] = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(LocalSettings));
+    }
+    public override void OnLoadNode(Dictionary<string, byte[]> data)
+    {
+        base.OnLoadNode(data);
+        LocalSettings = data.TryGetValue("LocalSmuSettings.v1", out var bytes)
+            ? JsonConvert.DeserializeObject<LocalSmuSettings>(Encoding.UTF8.GetString(bytes)) ?? throw new InvalidOperationException("本地源表参数为空。") : null;
+    }
 
     [Category("本地源表"), STNodeProperty("电(压/流)源", "源值使用 V 或 mA，保护限值使用 mA 或 V；源类型在重复执行期间固定", true)]
     public SourceType Source { get => source; set { source = value; OnPropertyChanged(); } }
@@ -39,14 +73,17 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     public double LimitValue { get => limitValue; set { limitValue = value; OnPropertyChanged(); } }
 
     [Category("本地源表"), STNodeProperty("自动量程", "按当前设备能力自动选择量程", true)]
+    [PropertyVisibility(nameof(UseWindowSettings), true)]
     public bool IsAutoRng { get => isAutoRng; set { isAutoRng = value; OnPropertyChanged(); } }
 
     [Category("本地源表"), STNodeProperty("源量程", "手动量程沿用设备 SDK 的量程单位与支持范围", true)]
     [PropertyEditorType(typeof(SmuRangePropertiesEditor))]
+    [PropertyVisibility(nameof(UseWindowSettings), true)]
     public double SrcRng { get => srcRng; set { srcRng = value; OnPropertyChanged(); } }
 
     [Category("本地源表"), STNodeProperty("限量程", "手动量程沿用设备 SDK 的量程单位与支持范围", true)]
     [PropertyEditorType(typeof(SmuRangePropertiesEditor))]
+    [PropertyVisibility(nameof(UseWindowSettings), true)]
     public double LmtRng { get => lmtRng; set { lmtRng = value; OnPropertyChanged(); } }
 
     [Category("本地源表"), STNodeProperty("自动连接", "源表未连接时，按所选设备的本地连接配置打开", true)]
@@ -55,7 +92,16 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     [Category("本地源表"), STNodeProperty("结束关闭输出", "设置后保持输出供相机或光谱仪测量，流程结束时关闭；失败或取消始终尝试关闭", true)]
     public bool CloseOutputOnFinish { get => closeOutputOnFinish; set { closeOutputOnFinish = value; OnPropertyChanged(); } }
 
-    public LocalSmuNode() : base("源表", "SMU", "StepData") => SelectFirstAvailableDevice<DeviceSMU>();
+    public LocalSmuNode() : base("源表", "SMU", "StepData")
+    {
+        SelectFirstAvailableDevice<DeviceSMU>();
+        OpenLocalSmuManagerCommand = new RelayCommand(_ =>
+        {
+            DeviceSMU? device = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().FirstOrDefault(item => item.Code == DeviceCode);
+            if (device == null) { MessageBox1.Show(Application.Current.GetActiveWindow(), $"找不到本地源表设备：{DeviceCode}", "ColorVision"); return; }
+            device.OpenLocalSmuWindow(this);
+        });
+    }
 
     public IReadOnlyList<RepeatParameterDefinition> GetRepeatParameters() =>
     [
@@ -84,6 +130,26 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
             IsAutoRng = IsAutoRng, SrcRng = SrcRng, LmtRng = LmtRng
         };
         connection.Validate();
+        if (LocalSettings != null)
+        {
+            var settings = LocalSettings.Clone();
+            settings.Channel = parameters.Channel; settings.IsSourceV = parameters.IsSourceV;
+            settings.SourceValue = parameters.MeasureValue; settings.Limit = parameters.LimitValue;
+            // Output ownership and normal finish are managed by the entire flow.
+            settings.CloseOutput = false;
+            settings.Validate(connection.DeviceType, device.DisplayConfig.IsUseLimitSigned);
+            if (TryGetSingleNodeRepeatParameters(action, out int repeatCount, out var repeatValues))
+            {
+                repeatValues.TryGetValue(nameof(MeasureValue), out double[]? repeatSources);
+                repeatValues.TryGetValue(nameof(LimitValue), out double[]? repeatLimits);
+                double scanMaximum = settings.SourceValues().Max(value => Math.Abs(value));
+                for (int index = 0; index < repeatCount; index++)
+                    (parameters with { MeasureValue = settings.Sweep == SmuSweep.Fixed ? repeatSources?[index] ?? settings.SourceValue : scanMaximum,
+                        LimitValue = repeatLimits?[index] ?? settings.Limit }).Validate(connection.DeviceType, false, device.DisplayConfig.IsUseLimitSigned);
+            }
+            return new ExecutionParameters(device, DeviceCode, connection, parameters with { AdvancedSettings = settings }, null, AutoConnect,
+                device.DisplayConfig.IsUseLimitSigned, CloseOutputOnFinish, ZIndex, NodeID);
+        }
         parameters.Validate(connection.DeviceType, false, device.DisplayConfig.IsUseLimitSigned);
         LocalSmuParameters? scanParameters = null;
         if (TryGetSingleNodeRepeatParameters(action, out int count, out var values) && count <= 100000)
@@ -144,11 +210,36 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
             if ((run.Device.LocalSession.SweepCapabilities & required) != 0)
                 return ExecuteScan(action, run);
         }
-        LocalSmuCapture capture = run.Device.ExecuteLocalSmuAsync("StepData", run.Connection, run.Parameters, run.AutoConnect,
+        LocalSmuCapture capture = run.Device.ExecuteLocalSmuAsync(run.Parameters.AdvancedSettings == null ? "StepData" : "Advanced", run.Connection, run.Parameters, run.AutoConnect,
             run.CheckLimits, owner.StopToken, owner).GetAwaiter().GetResult()!;
         owner.StopToken.ThrowIfCancellationRequested();
         action.Data.Remove("LocalSmuScan");
         action.Data.Remove("SMUScanResult");
+        if (capture.Details != null)
+        {
+            int advancedId;
+            if (capture.IsScan)
+            {
+                advancedId = LocalSmuResultService.Save(capture, run.DeviceCode, action, run.ZIndex);
+                var point = capture with { Voltages = [capture.V], Currents = [capture.I], IsScan = false, TotalTime = 0,
+                    Details = capture.Details with { SourceValues = [capture.Details.SourceValues[^1]],
+                        Resistance = [capture.Details.Resistance[^1]], Status = [capture.Details.Status[^1]] } };
+                SavePoint(action, run, point, publishView: false);
+            }
+            else if (capture.HasMeasurements) advancedId = SavePoint(action, run, capture, publishView: false);
+            else
+            {
+                advancedId = 0; action.MasterValue(null, 0, LocalSmuResultService.ResultType);
+                action.Data["LocalSmu"] = capture; action.Data.Remove("SMUResult");
+            }
+            if (capture.IsScan) { action.Data["LocalSmuScan"] = capture; action.Data["SMUScanResult"] = LocalSmuResultService.Response(capture, advancedId); }
+            run.Device.PublishLocalSmu(capture, advancedId);
+            if (capture.IsScan && advancedId > 0) ResultMessageBus.Default.PublishPersisted(ResultRoutes.Smu, ResultKinds.Smu, run.DeviceCode, "Scan",
+                action.SerialNumber, run.NodeId, run.ZIndex, advancedId, LocalSmuResultService.ResultType);
+            var advancedResponse = LocalSmuResultService.Response(capture, advancedId);
+            advancedResponse["ExecutionMode"] = capture.Details.TimingMode;
+            return new LocalNodeExecutionResult { Data = advancedResponse };
+        }
         int id = SavePoint(action, run, capture, publishView: true);
         var response = LocalSmuResultService.Response(capture, id);
         response["ExecutionMode"] = "Point";

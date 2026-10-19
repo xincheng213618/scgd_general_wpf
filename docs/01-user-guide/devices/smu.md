@@ -2,10 +2,10 @@
 knowledge_id: "operations.smu"
 knowledge_type: "topic"
 status: "current"
-summary: "SMU本地与服务模式的参数、A/B通道、结果单位、Flow及输出释放边界；SDK成功或空读数不能单独证明实机输出关闭。"
-aliases: ["SMU","源表","本地源表","UseLocalSmu","点测","扫描电压","通道串了","关闭输出","MQTTSMU","SMUParam","SMUSweepModelNode"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/SMU","Engine/cvColorVision/Devices/PassSx/PassSx.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU","Engine/FlowEngineLib/SMUBaseNode.cs","Engine/FlowEngineLib/Node/SMU"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalSmuSessionTests.cs","Test/ColorVision.UI.Tests/LocalSmuFlowTests.cs","Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs"]
+summary: "SMU本地窗口、直流电阻/功率、扫描/脉冲、触发与关闭状态，以及服务兼容、结果单位和Flow输出释放边界。"
+aliases: ["SMU","源表","本地源表","UseLocalSmu","点测","扫描电压","通道串了","关闭输出","MQTTSMU","SMUParam","SMUSweepModelNode","IVL","实时曲线","LiveIvlWindow","LocalSmuWindow","电阻测量","脉冲","高阻"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/SMU","Engine/cvColorVision/Devices/PassSx/PassSx.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU","Engine/FlowEngineLib/SMUBaseNode.cs","Engine/FlowEngineLib/Node/SMU","Engine/ColorVision.Engine/FlowProcessing/Monitoring"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalSmuSessionTests.cs","Test/ColorVision.UI.Tests/LocalSmuFlowTests.cs","Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs","Test/ColorVision.UI.Tests/LiveIvlTests.cs","Test/ColorVision.UI.Tests/LocalSmuAdvancedTests.cs"]
 related: ["engine.devices","operations.device-configuration","flow.session"]
 ---
 
@@ -46,7 +46,30 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 连接、输出和端点占用由 `LocalSmuSession` 持有。关闭/释放取消未开始的排队操作；已进入原生 SDK 的调用必须等其返回，随后关闭相关输出和连接，不能提前复用句柄或声明取消已完成。释放失败时状态为未知，并保留端点占用，避免另一会话立即重开；诊断和实机输出确认仍由现场操作承担。本应用内相同设备名/连接类型不能同时由多个本地会话占用，已观察到的服务占用也阻止切换；无法由此检测其它程序或另一台机器的连接。
 
+设备右键菜单的“本地源表”和 `LocalSmuNode` 的同名命令打开独立的 `LocalSmuWindow`；打开窗口不连接或通电。窗口分别配置源类型、工作方式、测量量、扫描和波形，并提供连接、关闭输出、断开、停止、保存参数、应用到节点和 JSON 导出。节点入口编辑独立副本，点击“应用到节点”后才修改节点；高级设置以 `LocalSmuSettings.v1` 随流程保存。节点的“使用窗口设置”开启时，量程由窗口管理，隐藏旧量程字段；关闭该选项可恢复普通点测及重复框自动合批。没有高级设置键的旧节点继续原有执行路径。保存窗口参数归 `DisplaySMUConfig.LocalSettings`，不改变服务 MQTT 参数。
+
+高级执行通过新原生导出 `cvPss_Sx_GetLocalFamily`、`cvPss_Sx_ExecuteLocal`、`cvPss_Sx_CloseLocalOutput`，需要匹配的新 `cvCamera.dll`。IDN 严格区分已识别的 2400、2430、原始 2600 和 2600 A/B；未知型号、其它驱动及缺少导出的旧 DLL 明确拒绝高级操作，不静默用普通点测替代。能力识别和协议替身不代表真机已验收，驱动分类名称也不等于仪器实际型号。
+
+| 窗口功能 | 当前协议范围 |
+| --- | --- |
+| 输出与测量 | 电压源、电流源；输出并测量、仅输出、仅测量接法；保留实测 V/I，电阻 Ω 与功率 W 单独显示 |
+| 电阻 | 2400 手动/自动电阻、直流偏置补偿、2/4 线及 Ohms Guard；2600 使用设定激励的 V/I 比值测量电阻。Ohms Guard 需要对应六线实物接线 |
+| 扫描 | 线性、同号非零起止值的对数、任意列表；高级直流路径逐点执行；2400 源记忆扫描支持最多 100 个同源类型的源值及逐点保护限值，覆盖本次使用的源记忆槽 |
+| 2600 A/B 脉冲 | 仪器定时器控制周期与脉宽，内部触发列表并采集双 V/I 缓冲及原始状态；结束返回基线。原始 2600 不启用这一 A/B 定时器协议 |
+| 2400 脉冲 | 普通 2400 使用 Source Auto Clear 的 SDM 间接脉冲，脉宽/周期为目标值，采样位置由 SDM 与积分时间决定，实际波形必须示波器校准；2430 专用脉冲当前仅输出，脉宽 0.15～5 ms、关闭时间至少 1.1 ms，不宣称并发 V/I 测量 |
+| 关闭状态 | Normal、HighImpedance、Zero，2400 另支持 Guard；“关闭输出”直接配置所选关闭状态再关闭目标通道，不为应用高阻状态而先通电 |
+| 采样与触发 | 源/测量量程、NPLC、稳定延时、平均滤波、自动调零、2600 A/B 高电容模式；立即或外部触发。2400 Trigger Link 1～4 逐点触发；2600 数字 I/O 1～14 直流逐点、脉冲整组起始触发 |
+
+这里的 Ω 是直流电阻；HighImpedance 是关闭后的高阻状态；高电容模式用于驱动电容负载稳定。这些功能均不表示交流阻抗、频率/相位或电容量测量。高电容模式的电流保护不得低于 1 µA，避免仪器隐式提高保护限值。脉冲要求固定源/测量量程，关闭滤波、自动调零及高电容模式；V/I 积分窗口必须位于脉宽内，脉冲组最短时长须小于操作超时。客户端电压、电流限制仍沿用已有保守门限，不因此开放仪器扩展脉冲功率区。
+
+窗口结果表使用 V、mA、Ω、W；既有点测/扫描数据库结构与单位不变。测量设置、目标数组、电阻与原始状态保存在独立扩展表 `t_scgd_measure_result_smu_local_details`，按点测/扫描类型及结果 ID 关联。首次保存高级结果时初始化这一张扩展表，需要建表权限；主结果与详情在同一事务保存。普通旧结果查询/写入不要求新列；历史界面在扩展表存在时批量读取详情，保留原生电阻结果。电阻溢出或无效比值显示为空，不用零替代。仅输出不生成虚构的 V/I 或测量数据库记录。源记忆扫描只切换已开放的源值/保护值，不表示完整复刻厂家任意模式分支序列。原始状态是仪器返回字段；2400 为读数状态字，2600 直流为 compliance 标记，2600 脉冲为读数缓冲状态字，不统一解释为同一种位图。
+
+高级节点每次进入执行一组设置，内部扫描/脉冲完成后下游进入一次；放在重复框时每轮可执行一组，不复用旧单点自动合批。节点依然持有整个流程的源表使用权，正常结束按节点选项关闭，失败/取消/超时尝试关闭。脉冲完成后已经返回基线，后续相机节点不会自动与脉冲峰值同步。高级模式期间旧 `SMU.MeasureResult` 读取被拒绝，避免把新回包格式套进旧解析器；执行普通点测会复位相关高级状态后恢复原有读取路径。停止不会中断阻塞中的 SDK 调用，必须等返回后清理，清理失败保留未知状态。
+
+`LocalSmuAdvancedTests` 保护本地 ABI、A/mA 边界、原生 Ω 历史往返、仅输出无伪造读数、会话取消/占用，以及 WPF 节点草稿与流程保存兼容。原生 `SmuLocalProtocolTest` 直接编译生产协议头，使用通信替身检查命令、结果完整性和失败关闭；这些离线验证不覆盖实际脉冲时序、保护、外部接线或 MySQL 迁移验收。
+
 ## 手动 MQTT 命令与客户端限制
+
 
 | 命令 | 实际参数来源和载荷 |
 | --- | --- |
@@ -89,7 +112,7 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 选择本地后端时，原有流程图无需替换源表节点：现有点测/CSV/模板循环、扫描/模板扫描、结果读取及物理设备打开/关闭/重开节点在进程内执行，不发布 MQTT 请求；可自动打开已配置的本地源表，并使用提交时快照的本地串口波特率。模板取自已加载的 `TemplateSMUParam.Params`，要求 ID 或名称唯一，参数在提交时快照。内联 `DeviceParam` 优先于模板。`SMU.MeasureResult` 读取最近使用通道及源类型，并按节点等待时间延迟结果转交。流程沿用批次、节点 ZIndex 和 `PersistResults`，保存正数结果 ID 后发布现有结果消息。
 
-新建流程可使用“自定义节点 → 本地设备 → 源表”（`LocalSmuNode`）。它只有普通 `IN` / `OUT`，每次进入执行一次本地 `StepData`：选择节点配置的 A/B 通道和源类型，设置源值、保护限值并完成单点测量，再放行后续节点；不在节点内循环，也不需要 `IN_LP_NEXT` 或循环名称。设备连接、量程及客户端限值检查复用本地源表会话，未连接时可按“自动连接”打开。节点实现位于 `Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalSmuNode.cs`，使用现有点测结果、批次和 `PersistResults` 链路，不发送 MQTT。
+新建流程可使用“本地设备 → 源表”（`LocalSmuNode`）。它只有普通 `IN` / `OUT`，每次进入执行一次本地 `StepData`：选择节点配置的 A/B 通道和源类型，设置源值、保护限值并完成单点测量，再放行后续节点；不在节点内循环，也不需要 `IN_LP_NEXT` 或循环名称。设备连接、量程及客户端限值检查复用本地源表会话，未连接时可按“自动连接”打开。节点实现位于 `Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalSmuNode.cs`，使用现有点测结果、批次和 `PersistResults` 链路，不发送 MQTT。
 
 属性面板与重复框使用相同的参数名称和单位：电压源显示“设定电压（V）”和“电流上限（mA）”，电流源显示“设定电流（mA）”和“电压上限（V）”；切换源类型时属性面板立即更新。将这个节点放入重复框后，可为这两个参数保存逐轮数组，数组长度等于重复次数，初始值取节点当前配置；数组随流程保存。源类型、通道和量程仍由节点固定配置决定，不参与数组替换。每轮解析后的值形成独立执行快照，日志和设备请求使用同一份快照，不回写节点默认值；进入 SDK 时沿用既有 V/A 换算及手动量程约定。
 
@@ -103,7 +126,13 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 流程停止或超时后拒绝迟到结果；清理被丢弃结果时检查该次测量的输出归属，不关闭同通道后来开始的测量。SDK 没有可中断接口，超时后的原生调用仍要等返回再完成清理，不能把流程终态当作硬件释放已完成。
 
+“工具 → IV / IVL 实时曲线”左侧可选择并执行、停止主工作区流程，沿用工作流程面板的模板和运行命令；执行中禁用模板切换。右侧随当前批次的节点完成通知更新曲线并列出最近 500 个点，无需配置 IVL 后处理。支持 IV、I-L、V-L、P-L 及电流、电压、亮度的时间趋势，可选择显示系列、导出当前批次显示数据 CSV 和保存图片。批次变化、节点完成及流程最终化时触发后台读取，不使用定时轮询；读取期间新到的节点通知合并为后续补读，每次成功读取即更新曲线。切批次和关闭后拒绝迟到的旧读取结果；关闭窗口只解除订阅，流程继续执行。连接失败保留最近一次成功数据，下一节点通知到达时重试，也可点击“重新读取结果”。
+
+监控要求 MySQL 已连接并启用流程结果保存，仅在结果入库后显示；本地批量扫描必须等仪器返回整批数据，不能展示仪器尚未返回的中间点。电流统一显示为 mA，扫描存储中的 A 只在显示时转换，保留测量顺序以显示往返曲线。时间曲线以批次开始为零点，使用记录时间；没有逐点时钟的扫描数组不绘制时间趋势。相机读取 XYZ POI 的 Y，光谱读取亮度结果，不将光通量/EQE 结果标成亮度。本地算法和普通光谱持久化时保存当前执行上下文的上游 `SMUResult` 关联；显示优先使用记录内的电压、电流及明确的源表结果 ID。旧数据仅在单一源表设备/通道/节点且前一测量时间唯一时按时间匹配，多源或时间歧义时保留亮度时间曲线并提示未配对，不能按当前记录数量猜测。每类最多读取最近 20,000 条记录，扫描最多最近 20 条且合计最多 20,000 点，达到上限时提示截断；CSV 导出受同一显示上限约束。
+
 ## 证据与验证缺口
+
+实现入口为 `Engine/ColorVision.Engine/FlowProcessing/Monitoring/`，`Test/ColorVision.UI.Tests/LiveIvlTests.cs` 保护不完整批次的关联、通道隔离、扫描单位、往返顺序以及迟到读取的生命周期边界，并检查 WPF 窗口构造。这些合成数据回归不替代现场流程、MySQL 查询往返和实际仪器采集验收。
 
 `NodeConfiguratorBindingTests.PropertyEditors_BindAndFilterAdvancedProperties` 包含 SMU 量程编辑器的元数据、选项和属性绑定断言；`InitTableEntityMappingTests` 校验 `SmuScanModel.channel` 的枚举/数据库列映射。这些测试不覆盖实际点测、扫描、关闭输出、超时保护或数据库结果往返。
 

@@ -178,6 +178,14 @@ public class CVStartCFC : CVBaseCFC
 		return other != null && string.Equals(SerialNumber, other.SerialNumber, StringComparison.Ordinal);
 	}
 
+	/// <summary>Pairs branch inputs from the same flow and, inside a repeat region, the same run and round.</summary>
+	public bool IsSameExecutionIteration(CVStartCFC other)
+	{
+		return IsSameFlow(other) && (RepeatRun == null && other.RepeatRun == null
+			|| ReferenceEquals(RepeatRun, other.RepeatRun) && RepeatRound == other.RepeatRound
+				&& ReferenceEquals(RuntimeResources, other.RuntimeResources));
+	}
+
 	/// <summary>Owns a node-created resource and releases intermediate repeat resources between rounds.</summary>
 	public void SetRuntimeResource(string key, object value)
 	{

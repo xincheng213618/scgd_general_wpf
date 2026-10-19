@@ -176,6 +176,8 @@ namespace ColorVision.Engine.FlowProcessing
         /// </summary>
         public event EventHandler<FlowRunFinalizedData>? RunFinalized;
 
+        public event EventHandler<FlowNodeExecutionCompletedEventArgs>? NodeExecutionCompleted;
+
         /// <summary>
         /// 启动流程并等待执行完成，返回流程执行结果。
         /// 如果流程未能启动（验证失败、已在运行等），返回 null。
@@ -646,6 +648,7 @@ namespace ColorVision.Engine.FlowProcessing
 
             if (sender is CVCommonNode algorithmNode)
             {
+                MeasureBatchModel? nodeBatch = CurrentBatch;
                 string writeKey = GetNodeExecutionKey(algorithmNode, e.RecvMsgId, e.SerialNumber);
                 if (!TryTakePendingNodeExecution(writeKey, algorithmNode, e.SerialNumber, out PendingNodeExecution? execution))
                     return;
@@ -800,6 +803,13 @@ namespace ColorVision.Engine.FlowProcessing
                                 ?.TrySetResult(true);
                         }
                     }
+                }
+                var completed = new FlowNodeExecutionCompletedEventArgs(nodeBatch?.Id ?? 0,
+                    e.SerialNumber, algorithmNode.NodeID, algorithmNode.Title, e.RecvStatusCode);
+                foreach (EventHandler<FlowNodeExecutionCompletedEventArgs> handler in NodeExecutionCompleted?.GetInvocationList() ?? Array.Empty<Delegate>())
+                {
+                    try { handler(this, completed); }
+                    catch (Exception ex) { log.Error("流程节点完成订阅者处理失败。", ex); }
                 }
                 _pendingNodeExecutionDrain.Complete(generation);
             }

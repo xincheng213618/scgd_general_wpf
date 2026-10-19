@@ -73,16 +73,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
         public double? LuminousEfficacy { get; set; }
 
 
-        [SugarColumn(ColumnName = "fPL", IsNullable = true, IsJson = true, ColumnDataType = "json", ColumnDescription = "相对光谱数据")]
+        [SugarColumn(ColumnName = "fPL", IsNullable = true, ColumnDataType = "json", ColumnDescription = "相对光谱数据")]
         public string? fPL { get; set; }
 
         [SugarColumn(ColumnName = "fPL_file_name", IsNullable = true, Length =1024, ColumnDescription = "相对光谱数据文件(fPL为空)")]
         public string? fPL_file_name { get; set; }
 
-        [SugarColumn(ColumnName = "fRi", IsNullable = true, IsJson = true, ColumnDataType = "json", ColumnDescription = "显色性指数 R1-R15")]
+        [SugarColumn(ColumnName = "fRi", IsNullable = true, ColumnDataType = "json", ColumnDescription = "显色性指数 R1-R15")]
         public string? fRi { get; set; }
 
-        [SugarColumn(ColumnName = "cie_data_ex", IsNullable = true, IsJson = true, ColumnDataType = "json", ColumnDescription = "CIE扩展数据")]
+        [SugarColumn(ColumnName = "cie_data_ex", IsNullable = true, ColumnDataType = "json", ColumnDescription = "CIE扩展数据")]
         public string? CieDataEx { get; set; }
 
         [SugarColumn(ColumnName = "fx", IsNullable = true, ColumnDescription = "色坐标x")]

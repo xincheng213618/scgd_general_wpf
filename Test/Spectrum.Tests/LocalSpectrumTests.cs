@@ -223,11 +223,18 @@ public sealed class LocalSpectrumTests
         => Assert.Throws<InvalidOperationException>(() => new LocalSpectrumParameters { IntegralTime = time, NumberOfAverage = average }.Validate());
 
     [Fact]
-    public void UnsupportedNdIsRejectedBeforeNativeCapture()
+    public void NdCaptureLoadsTheSelectedCalibrationFilesOnEveryMeasurement()
     {
-        using var session = new LocalSpectrumSession(new FakeNative());
-        session.Open(Config());
-        Assert.Throws<NotSupportedException>(() => session.Capture(new() { IsWithND = true }, Config()));
+        using var first = new CalibrationFiles();
+        using var second = new CalibrationFiles();
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native);
+        session.Open(first.Config);
+        session.Capture(new() { IsWithND = true }, first.Config);
+        Assert.Equal(Path.GetFullPath(first.Config.MaguideFile), native.MagnitudePath);
+        session.Capture(new() { IsWithND = true }, second.Config);
+        Assert.Equal(Path.GetFullPath(second.Config.MaguideFile), native.MagnitudePath);
+        Assert.Equal(2, native.CaptureCalls);
     }
 
     [Fact]
@@ -336,7 +343,8 @@ public sealed class LocalSpectrumTests
         public int Close(IntPtr h) { CloseCalls++; return 1; }
         public int Release(IntPtr h) { ReleaseCalls++; return 1; }
         public int LoadWavelength(IntPtr h, string path) { Calls.Add("wave"); return 1; }
-        public int LoadMagnitude(IntPtr h, string path) { Calls.Add("magnitude"); OnLoadMagnitude?.Invoke(); return 1; }
+        public string? MagnitudePath;
+        public int LoadMagnitude(IntPtr h, string path) { Calls.Add("magnitude"); MagnitudePath = path; OnLoadMagnitude?.Invoke(); return 1; }
         public int Configure(IntPtr h, ColorVision.Engine.Services.Devices.Spectrum.Configs.SetEmissionSP100Config c) => 1;
         public int ConfigureSmoothing(IntPtr h, SpectrumSmoothingMethod method, int filterWidth)
         { Calls.Add("smoothing"); Smoothing = (method, filterWidth); return SmoothingCode; }

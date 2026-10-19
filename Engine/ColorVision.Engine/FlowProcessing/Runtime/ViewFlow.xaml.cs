@@ -108,6 +108,13 @@ namespace ColorVision.Engine.FlowProcessing
             remove => _executionSession.RunFinalized -= value;
         }
 
+        /// <summary>Accepted node completions during this view's active run, before overall finalization.</summary>
+        public event EventHandler<FlowNodeExecutionCompletedEventArgs>? NodeExecutionCompleted
+        {
+            add => _executionSession.NodeExecutionCompleted += value;
+            remove => _executionSession.NodeExecutionCompleted -= value;
+        }
+
         private readonly bool _isStandalone;
         private readonly FlowControl? _standaloneFlowControl;
         private readonly FlowNodeManager? _standaloneNodeManager;

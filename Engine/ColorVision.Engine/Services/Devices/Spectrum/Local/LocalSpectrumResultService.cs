@@ -62,11 +62,19 @@ internal static class LocalSpectrumResultService
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
             model.BatchId = batch.Id;
             model.Zindex = zIndex;
+            if (!parameters.Eqe && action.Data.TryGetValue("SMUResult", out var value)
+                && value is FlowEngineLib.SMUResultData { MasterId: > 0, MasterResultType: 200 } smu)
+            {
+                model.SmuDataId = smu.MasterId;
+                model.VResult = double.IsFinite(smu.V) ? (float)smu.V : null;
+                model.IResult = double.IsFinite(smu.I) ? (float)smu.I : null;
+            }
         }
         // Historical results always use the existing MySQL table, never the configuration SQLite store.
         using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true });
         model.Id = db.Insertable(model).ExecuteReturnIdentity();
         if (model.Id <= 0) throw new InvalidOperationException("保存本地光谱结果失败。");
+        capture.MeasurementId = model.Id;
         return model;
     }
 }

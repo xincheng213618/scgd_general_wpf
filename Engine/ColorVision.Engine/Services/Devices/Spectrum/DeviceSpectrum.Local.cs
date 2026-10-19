@@ -118,8 +118,7 @@ public partial class DeviceSpectrum
     {
         if (localDisposed) return;
         DisplayConfig.IntTime = result.IntegralTime;
-        if (continuous) View.SetLocalPreview(CreateLocalSpectrumView(result));
-        else View.AddViewResultSpectrum(CreateLocalSpectrumView(result));
+        View.AddViewResultSpectrum(CreateLocalSpectrumView(result));
         LocalResultAvailable?.Invoke(result, continuous);
     }
 
@@ -130,6 +129,7 @@ public partial class DeviceSpectrum
             CreateTime = result.CapturedAt, IntTime = result.IntegralTime, AcquisitionFluxMode = result.EqeData.HasValue,
             AcquisitionDeviceCode = result.DeviceCode, AcquisitionParametersJson = result.AcquisitionParametersJson
         };
+        if (result.MeasurementId > 0) view.Id = result.MeasurementId;
         if (result.EqeData is { } eqe)
         {
             view.Eqe = eqe.dEqe; view.V = (float)eqe.dVoltage; view.I = (float)eqe.dCurrent;
@@ -140,6 +140,20 @@ public partial class DeviceSpectrum
 
     internal MsgRecord RunLocalSpectrumCommand(string eventName)
     {
+        if (eventName is "SetPort" or "GetPort")
+        {
+            int port = DisplayConfig.PortNum;
+            return StartLocalRecord(eventName, () =>
+            {
+                if (eventName == "SetPort")
+                {
+                    var group = Config.FindCalibrationGroupForND(port, GetNDHoleName(port))
+                        ?? throw new InvalidOperationException($"ND 位置 {port} 没有对应的标定分组。");
+                    ApplyCalibrationGroup(group, false);
+                }
+                return Task.FromResult<object?>(new { Port = port });
+            });
+        }
         // Snapshot UI settings before leaving the dispatcher; continuous runs keep their starting parameters.
         LocalSpectrumParameters parameters = BuildLocalSpectrumParameters(eventName.StartsWith("EQE", StringComparison.Ordinal) ? true : null);
         ConfigSpectrum config = SnapshotLocalConfiguration();
@@ -234,8 +248,10 @@ public partial class DeviceSpectrum
                         while (!cancellation.IsCancellationRequested)
                         {
                             var result = CaptureLocalSpectrum(parameters, config, false);
-                            if (!cancellation.IsCancellationRequested && Application.Current?.Dispatcher is { } dispatcher)
-                                await dispatcher.InvokeAsync(() => { if (!cancellation.IsCancellationRequested) DisplayLocalSpectrum(result, true); });
+                            LocalSpectrumResultService.Save(result, parameters);
+                            // A completed capture is a result even if stop was requested while the SDK was running.
+                            if (Application.Current?.Dispatcher is { } dispatcher)
+                                await dispatcher.InvokeAsync(() => DisplayLocalSpectrum(result, true));
                             await Task.Delay(100, cancellation.Token);
                         }
                     }

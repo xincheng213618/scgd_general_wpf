@@ -25,7 +25,6 @@ public sealed class LocalSpectrumParameters
     {
         if (!float.IsFinite(IntegralTime) || IntegralTime <= 0 || NumberOfAverage < 1)
             throw new InvalidOperationException("积分时间必须大于 0，平均次数至少为 1。");
-        if (IsWithND) throw new NotSupportedException("本地光谱采集暂不支持服务控制的 ND 轮，请关闭使用 ND 后采集。");
         if (Eqe && (!double.IsFinite(AFactor) || AFactor <= 0 || !float.IsFinite(Voltage) || !float.IsFinite(Current) || Current <= 0))
             throw new InvalidOperationException("EQE 系数和电流必须大于 0，电压必须为有限值。");
     }
@@ -33,6 +32,7 @@ public sealed class LocalSpectrumParameters
 
 public sealed class LocalSpectrumCapture
 {
+    public int MeasurementId { get; set; }
     public DateTime CapturedAt { get; init; } = DateTime.Now;
     public string DeviceCode { get; set; } = string.Empty;
     public float IntegralTime { get; init; }

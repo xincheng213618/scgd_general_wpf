@@ -19,7 +19,7 @@ public sealed class CleanupSettingsDescriptor : STNodePropertyDescriptor
         ?? throw new FormatException("Invalid cleanup setting.");
 }
 
-[STNode("Flow_CustomNodes/Flow_LocalAlgorithms", "LocalCleanup_NodeDescription", CategoryOrder = 9900, NodeOrder = 110)]
+[STNode("Flow_LocalAlgorithms", "LocalCleanup_NodeDescription", CategoryOrder = 9910, NodeOrder = 110)]
 public sealed class LocalCleanupNode : LocalFlowNodeBase
 {
     private readonly FolderSizePreProcessorConfig config = new() { FolderPaths = [] };
