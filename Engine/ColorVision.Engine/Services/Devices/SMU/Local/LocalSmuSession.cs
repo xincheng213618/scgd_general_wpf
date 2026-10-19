@@ -93,6 +93,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         parameters = parameters with { SourceValues = parameters.SourceValues?.ToArray() };
         return RunAsync(() =>
         {
+            config.Validate();
             EnsureConnection(config);
             if (read && advancedMode) throw new InvalidOperationException("当前使用本地高级模式，请从本地源表窗口执行测量；切换普通点测后可使用旧读取命令。");
             if (read && lastParameters != null) parameters = lastParameters with { IsCloseOutput = false };
@@ -161,6 +162,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         CancellationToken token = default, object? flowOwner = null)
     {
         settings = settings.Clone();
+        config.Validate();
         settings.Validate(config.DeviceType, checkLimits);
         double[] sources = settings.SourceValues(), limits = settings.Limits(sources.Length);
         return RunAsync(() =>
@@ -270,7 +272,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     private void EnsureConnection(LocalSmuConnection config)
     {
         if (handle < 0) throw new InvalidOperationException("请先打开本地源表。");
-        if (connection != config) throw new InvalidOperationException("源表连接配置已更改，请先关闭连接后重新打开。");
+        // The default delay is applied per measurement, so changing it does not replace the open connection.
+        if (connection is not { } opened || opened.IsNet != config.IsNet || opened.DeviceName != config.DeviceName
+            || opened.DeviceType != config.DeviceType || opened.BaudRate != config.BaudRate
+            || opened.Is4Wire != config.Is4Wire || opened.IsFront != config.IsFront)
+            throw new InvalidOperationException("源表连接或接线配置已更改，请先关闭连接后重新打开；修改测量延时无需重连。");
     }
     private void SelectChannel(SMUChannelType channel)
     {

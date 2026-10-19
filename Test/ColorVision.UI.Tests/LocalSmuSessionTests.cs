@@ -137,7 +137,7 @@ public sealed class LocalSmuSessionTests
 
     // A node override must preserve zero and must not become the next caller's device default.
     [Fact]
-    public async Task MeasurementDelayOverridesAreScopedAndValidatedBeforeNativeCalls()
+    public async Task MeasurementDelayChangesAndOverridesAreScopedAndValidatedBeforeNativeCalls()
     {
         var sdk = new FakeNative();
         await using var session = new LocalSmuSession(sdk);
@@ -150,12 +150,20 @@ public sealed class LocalSmuSessionTests
         await session.CaptureAsync(config, Point(), false, false, false, read: true);
         await session.CaptureAsync(config, Point() with { MeasureDelayMs = 0, BeginValue = 1, EndValue = 2, Points = 2 }, true, true, true);
         await session.CaptureAsync(config, Point(), false, false, true);
-        Assert.Equal(new double[] { 100, 0, 25, 100, 0, 100 }, sdk.AppliedDelays);
+        config = config with { DelayTime = 40 };
+        await session.OpenAsync(config);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        await session.CaptureAsync(config with { DelayTime = 0 }, Point(), false, true, true);
+        Assert.Equal(new double[] { 100, 0, 25, 100, 0, 100, 40, 0 }, sdk.AppliedDelays);
+        Assert.Equal(1, sdk.Opens);
         int measurements = sdk.Measurements;
         foreach (double delay in new[] { -1d, double.NaN, double.PositiveInfinity })
+        {
             await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config, Point() with { MeasureDelayMs = delay }, false, true, true));
+            await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config with { DelayTime = delay }, Point(), false, true, true));
+        }
         Assert.Equal(measurements, sdk.Measurements);
-        Assert.Equal(6, sdk.AppliedDelays.Count);
+        Assert.Equal(8, sdk.AppliedDelays.Count);
         Assert.Equal(0, sdk.Closes);
     }
 
@@ -445,7 +453,10 @@ public sealed class LocalSmuSessionTests
             Point() with { BeginValue = 50, EndValue = 1, Points = 3 }, true, false, true));
         await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config,
             Point() with { Points = 1 }, true, false, true));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config with { DelayTime = 20 }, Point(), false, false, true));
+        foreach (var changed in new[] { config with { DeviceName = config.DeviceName + "-other" },
+            config with { DeviceType = Pss_Type.Keithley_2400 }, config with { IsNet = true },
+            config with { Is4Wire = !config.Is4Wire }, config with { IsFront = !config.IsFront } })
+            await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(changed, Point(), false, false, true));
         var faster = config with { BaudRate = 115200 };
         await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(faster, Point(), false, false, true));
         Assert.Equal(0, sdk.Measurements);
@@ -623,7 +634,7 @@ public sealed class LocalSmuSessionTests
 
     private sealed class FakeNative : ILocalSmuNative
     {
-        internal int OpenCode, OpenFailureCode;
+        internal int OpenCode, OpenFailureCode, Opens;
         internal string OpenDetail = string.Empty;
         internal int WiringCode = 1, CloseCode = 1, MeasureCode = 1, CloseOutputCode = 1, Closes, Measurements;
         internal int SweepCapabilities, SweepCode = 1, ListCode = 1, Sweeps, Lists, PointMeasurements;
@@ -640,6 +651,7 @@ public sealed class LocalSmuSessionTests
         private Channel channel;
         public int Open(LocalSmuConnection c)
         {
+            Opens++;
             OpenedConnection = c;
             if (OpenFailureCode != 0) throw LocalSmuNative.OpenFailure(OpenFailureCode, OpenDetail);
             return OpenCode; // Zero is a valid SDK handle.

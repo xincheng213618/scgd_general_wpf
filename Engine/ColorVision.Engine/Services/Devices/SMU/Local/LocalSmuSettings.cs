@@ -27,9 +27,9 @@ public sealed class LocalSmuSettings
     public bool IsSourceV { get; set; } = true;
     [Category("输出与测量"), DisplayName("工作方式"), Description("SourceMeasure：输出并测量；SourceOnly：仅输出；MeasureOnly：电压表/电流表接法，使用 0 A/0 V 源，仍会接通仪器输出。")]
     public SmuOperation Operation { get; set; }
-    [Category("输出与测量"), DisplayName("测量量"), Description("Resistance 为直流电阻 Ω，Power 为功率 W；所有有测量的操作同时保留实测 V/I。")]
+    [Category("输出与测量"), DisplayName("测量量"), Description("2600 电阻为当前激励下的实测 V/I 比值；2400 保留仪器原生 Ω，可使用自动电阻和偏置补偿。LED 等非线性器件的比值随工作点变化，不是微分电阻或交流阻抗。所有测量同时保留实测 V/I，功率为 V×I。")]
     public SmuMeasurement Measurement { get; set; }
-    [Category("输出与测量"), DisplayName("源值（V / mA）")]
+    [Category("输出与测量"), DisplayName("源值（V / mA）"), Description("固定直流时为输出值，固定值脉冲时为峰值；扫描脉冲的峰值来自扫描数组。2400 自动电阻由仪器按电阻量程决定测试电流，此源值不参与激励。")]
     public double SourceValue { get; set; } = 1;
     [Category("输出与测量"), DisplayName("保护限值（mA / V）")]
     public double Limit { get; set; } = 10;
@@ -49,17 +49,17 @@ public sealed class LocalSmuSettings
     public string MemoryLimits { get; set; } = string.Empty;
     [Category("脉冲"), DisplayName("波形"), Description("2600 A/B 使用仪器定时器。普通 2400 使用 SDM 间接脉冲，实际脉宽需示波器校准；2430 使用专用脉冲模式。")]
     public SmuWaveform Waveform { get; set; }
-    [Category("脉冲"), DisplayName("脉宽（ms）")]
+    [Category("脉冲"), DisplayName("脉宽（ms）"), Description("每次脉冲峰值的目标持续时间。2600 A/B 使用仪器定时器；普通 2400 的实际波形需示波器校准。")]
     public double PulseWidth { get; set; } = 20;
-    [Category("脉冲"), DisplayName("周期（ms）")]
+    [Category("脉冲"), DisplayName("周期（ms）"), Description("相邻脉冲起点之间的目标间隔，必须大于脉宽；2600 脉冲间的基线时间约为周期减去脉宽。普通 2400/2430 的逐点主机通信还会影响实际间隔。")]
     public double PulsePeriod { get; set; } = 100;
-    [Category("脉冲"), DisplayName("2600 采样延时（ms）"), Description("仅用于 2600 A/B 脉冲。2400 的采样位置由 SDM 源延时和积分时间决定；2430 仅输出时不采样。")]
+    [Category("脉冲"), DisplayName("2600 采样延时（ms）"), Description("2600 A/B 每次脉冲采样前的等待，须与 V/I 积分窗口一起落在脉宽内；每个脉冲返回一组 V/I，不是完整波形。2400 的采样位置由 SDM 决定；2430 当前仅输出。")]
     public double PulseMeasureDelay { get; set; } = 1;
     [Category("脉冲"), DisplayName("基线（V / mA）"), Description("2600 脉冲间返回此值；2400/2430 脉冲只支持零基线。")]
     public double Bias { get; set; }
     [Category("电阻"), DisplayName("电阻测量方式"), Description("2400 Auto 根据电阻量程选择测试电流；2600 使用 Manual，设置测试电压或电流。")]
     public SmuOhmsMode OhmsMode { get; set; }
-    [Category("电阻"), DisplayName("电阻量程（Ω）"), Description("2400 自动电阻模式所用量程；0 表示自动量程。")]
+    [Category("电阻"), DisplayName("电阻量程（Ω）"), Description("仅用于 2400 自动电阻，0 表示自动量程，仪器按此选择测试电流。2600 请设置测试源值及 V/A 量程，此项不参与其 V/I 计算。")]
     public double OhmsRange { get; set; }
     [Category("电阻"), DisplayName("偏置补偿"), Description("2400 电阻测量的仪器偏置补偿。")]
     public bool OffsetCompensation { get; set; }
@@ -77,7 +77,7 @@ public sealed class LocalSmuSettings
     public double MeasureRange { get; set; }
     [Category("量程与采样"), DisplayName("积分时间（NPLC）")]
     public double Nplc { get; set; } = 0.01;
-    [Category("量程与采样"), DisplayName("稳定延时（ms）")]
+    [Category("量程与采样"), DisplayName("稳定延时（ms）"), Description("高级直流测量在采样前的等待。2600 A/B 脉冲改用“2600 采样延时”，普通 2400 脉冲由目标脉宽和积分窗口确定源延时。")]
     public double Delay { get; set; } = 1;
     [Category("量程与采样"), DisplayName("滤波")]
     public SmuFilter Filter { get; set; }
