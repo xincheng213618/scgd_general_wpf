@@ -43,18 +43,26 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         if (code != 1) throw new InvalidOperationException($"{operation}失败，SDK 返回 {code}。");
     }
 
-    internal Task OpenAsync(LocalSmuConnection config, CancellationToken token = default, object? flowOwner = null) => RunAsync(() =>
+    internal Task OpenAsync(LocalSmuConnection config, CancellationToken token = default, object? flowOwner = null) => RunAsync(() => OpenCore(config), token, flowOwner);
+
+    // Called only under the session gate; reserve the destination before releasing the old handle.
+    private bool OpenCore(LocalSmuConnection config)
     {
         config.Validate();
-        if (handle >= 0)
-        {
-            EnsureConnection(config);
-            return true;
-        }
+        if (handle >= 0 && MatchesOpenSettings(config)) return true;
         lock (OwnersSync)
         {
             if (Owners.TryGetValue(config.Endpoint, out var owner) && !ReferenceEquals(owner, this)) throw new InvalidOperationException("另一个本地源表正在使用此连接。");
             Owners[config.Endpoint] = this;
+        }
+        try
+        {
+            if (handle >= 0) CloseCore(retainedEndpoint: config.Endpoint);
+        }
+        catch
+        {
+            if (connection?.Endpoint != config.Endpoint) ReleaseEndpoint(config.Endpoint);
+            throw;
         }
         lock (sync) connection = config;
         SetStatus(DeviceStatusType.Opening);
@@ -85,7 +93,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             catch (Exception cleanup) { throw new AggregateException($"{reported.Message}\n连接清理失败：{cleanup.Message}", reported, cleanup); }
             throw reported;
         }
-    }, token, flowOwner);
+    }
 
     internal Task<LocalSmuCapture> CaptureAsync(LocalSmuConnection config, LocalSmuParameters parameters, bool scan, bool step,
         bool checkLimits, bool read = false, CancellationToken token = default, object? flowOwner = null)
@@ -94,11 +102,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         return RunAsync(() =>
         {
             config.Validate();
-            EnsureConnection(config);
+            if (!read) parameters.Validate(config.DeviceType, scan, checkLimits);
+            EnsureConnection(config, reconnect: !read);
             if (read && advancedMode) throw new InvalidOperationException("当前使用本地高级模式，请从本地源表窗口执行测量；切换普通点测后可使用旧读取命令。");
             if (read && lastParameters != null) parameters = lastParameters with { IsCloseOutput = false };
-            if (!read) parameters.Validate(config.DeviceType, scan, checkLimits);
-            else if (!Enum.IsDefined(parameters.Channel)) throw new ArgumentException("源表通道无效。");
+            if (read && !Enum.IsDefined(parameters.Channel)) throw new ArgumentException("源表通道无效。");
             SetStatus(DeviceStatusType.Busy);
             Exception? failure = null;
             LocalSmuCapture? capture = null;
@@ -167,7 +175,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         double[] sources = settings.SourceValues(), limits = settings.Limits(sources.Length);
         return RunAsync(() =>
         {
-            EnsureConnection(config);
+            EnsureConnection(config, reconnect: true);
             if (LocalFamily == 0) throw new NotSupportedException("当前 DLL 或仪器命令集不支持本地高级源表功能；请核对实际型号并更新 DLL。");
             settings.ValidateFamily(LocalFamily);
             SetStatus(DeviceStatusType.Busy);
@@ -208,12 +216,13 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         }, token, flowOwner);
     }
 
-    internal Task CloseAdvancedOutputAsync(LocalSmuConnection config, LocalSmuSettings settings, CancellationToken token, object? owner)
+    internal Task CloseAdvancedOutputAsync(LocalSmuSettings settings, CancellationToken token, object? owner)
     {
         settings = settings.Clone();
         return RunAsync(() =>
         {
-            EnsureConnection(config);
+            // Always close the existing handle, even after the saved connection settings change.
+            if (handle < 0) throw new InvalidOperationException("请先打开本地源表。");
             if (!Enum.IsDefined(settings.Channel) || !Enum.IsDefined(settings.OffMode)) throw new ArgumentException("关闭输出的通道或状态无效。");
             SelectChannel(settings.Channel);
             try
@@ -269,14 +278,18 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             throw new InvalidOperationException("源表正在被流程使用，请等待流程结束后再操作。");
     }
 
-    private void EnsureConnection(LocalSmuConnection config)
+    private bool MatchesOpenSettings(LocalSmuConnection config) => connection is { } opened
+        && opened.IsNet == config.IsNet && opened.DeviceName == config.DeviceName
+        && opened.DeviceType == config.DeviceType && opened.BaudRate == config.BaudRate
+        && opened.Is4Wire == config.Is4Wire && opened.IsFront == config.IsFront;
+
+    private void EnsureConnection(LocalSmuConnection config, bool reconnect)
     {
         if (handle < 0) throw new InvalidOperationException("请先打开本地源表。");
-        // The default delay is applied per measurement, so changing it does not replace the open connection.
-        if (connection is not { } opened || opened.IsNet != config.IsNet || opened.DeviceName != config.DeviceName
-            || opened.DeviceType != config.DeviceType || opened.BaudRate != config.BaudRate
-            || opened.Is4Wire != config.Is4Wire || opened.IsFront != config.IsFront)
-            throw new InvalidOperationException("源表连接或接线配置已更改，请先关闭连接后重新打开；修改测量延时无需重连。");
+        if (MatchesOpenSettings(config)) return;
+        // A reconnect loses the instrument's previous reading; never reopen just to read that result.
+        if (!reconnect) throw new InvalidOperationException("源表连接或接线配置已更改，请先执行一次测量以自动重连，再读取结果。");
+        OpenCore(config);
     }
     private void SelectChannel(SMUChannelType channel)
     {
@@ -317,7 +330,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             }
             catch (OperationCanceledException) when (started)
             {
-                try { await Task.Run(CloseCore, CancellationToken.None).ConfigureAwait(false); }
+                try { await Task.Run(() => CloseCore(), CancellationToken.None).ConfigureAwait(false); }
                 catch (Exception cleanup) { throw new AggregateException("源表取消后的释放失败。", cleanup); }
                 throw;
             }
@@ -339,14 +352,14 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     private async Task CloseAfterWorkAsync()
     {
         await gate.WaitAsync().ConfigureAwait(false);
-        try { await Task.Run(CloseCore).ConfigureAwait(false); }
+        try { await Task.Run(() => CloseCore()).ConfigureAwait(false); }
         finally
         {
             lock (sync) { lifetime.Dispose(); lifetime = new CancellationTokenSource(); }
             gate.Release();
         }
     }
-    private void CloseCore()
+    private void CloseCore(string? retainedEndpoint = null)
     {
         SetStatus(DeviceStatusType.Closing);
         List<Exception> failures = [];
@@ -366,10 +379,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             SetStatus(DeviceStatusType.Unknown);
             throw new AggregateException("源表输出或连接释放失败。", failures);
         }
-        lock (OwnersSync)
-        {
-            if (connection != null && Owners.TryGetValue(connection.Endpoint, out var owner) && ReferenceEquals(owner, this)) Owners.Remove(connection.Endpoint);
-        }
+        if (connection is { } opened && opened.Endpoint != retainedEndpoint) ReleaseEndpoint(opened.Endpoint);
         lock (sync) connection = null;
         Idn = string.Empty;
         SweepCapabilities = 0;
@@ -377,6 +387,12 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         lastParameters = null;
         advancedMode = false;
         SetStatus(DeviceStatusType.Closed);
+    }
+
+    private void ReleaseEndpoint(string endpoint)
+    {
+        lock (OwnersSync)
+            if (Owners.TryGetValue(endpoint, out var owner) && ReferenceEquals(owner, this)) Owners.Remove(endpoint);
     }
     public async ValueTask DisposeAsync()
     {

@@ -118,10 +118,33 @@ public sealed class LocalSmuAdvancedTests
         var native=new FakeNative();await using var session=new LocalSmuSession(native);
         var connection=Connection();await session.OpenAsync(connection);
         var settings=new LocalSmuSettings { OffMode=SmuOffMode.HighImpedance };
-        await session.CloseAdvancedOutputAsync(connection,settings,CancellationToken.None,null);
+        await session.CloseAdvancedOutputAsync(settings,CancellationToken.None,null);
         Assert.Equal(0,native.Captures);Assert.Equal(SmuOffMode.HighImpedance,native.OffMode);Assert.Contains(Channel.A,native.ClosedChannels);
         await session.CaptureAdvancedAsync(connection,settings,true);
         await Assert.ThrowsAsync<InvalidOperationException>(()=>session.CaptureAsync(connection,new(){LimitValue=10},false,false,true,read:true));
+    }
+
+    [Theory]
+    [InlineData(SmuWaveform.DC)]
+    [InlineData(SmuWaveform.Pulse)]
+    public async Task AdvancedReconnectNeverReplaysFailedMeasurementsOrPulses(SmuWaveform waveform)
+    {
+        var native = new FakeNative();
+        await using var session = new LocalSmuSession(native);
+        var connection = Connection();
+        var settings = new LocalSmuSettings { Waveform = waveform, CloseOutput = false,
+            SourceRange = 6, MeasureRange = 0.1, AutoZero = SmuAutoZero.Off };
+        await session.OpenAsync(connection);
+        await session.CaptureAdvancedAsync(connection, settings, true);
+        native.Fail = true;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAdvancedAsync(
+            connection with { BaudRate = 115200 }, settings, true));
+        Assert.Equal(2, native.Opens);
+        Assert.Equal(1, native.Closes);
+        Assert.Equal(2, native.Captures);
+        Assert.Equal(2, native.ClosedChannels.Count);
+        await session.CloseAdvancedOutputAsync(settings, CancellationToken.None, null);
+        Assert.Equal(2, native.Opens);
     }
 
     [Theory]

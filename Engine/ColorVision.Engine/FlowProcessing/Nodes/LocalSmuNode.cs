@@ -104,7 +104,7 @@ public sealed class LocalSmuNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     [Category("本地源表"), STNodeProperty("自动连接", "源表未连接时，按所选设备的本地连接配置打开", true)]
     public bool AutoConnect { get => autoConnect; set { autoConnect = value; OnPropertyChanged(); } }
 
-    [Category("本地源表"), STNodeProperty("结束关闭输出", "设置后保持输出供相机或光谱仪测量，流程结束时关闭；失败或取消始终尝试关闭", true)]
+    [Category("本地源表"), STNodeProperty("流程结束关闭输出", "整个流程正常结束后关闭本节点使用的通道；节点测完和每轮重复结束时保持输出供后续设备测量。关闭此项会在正常结束后保持最后源值；失败或取消仍尝试关闭", true)]
     public bool CloseOutputOnFinish { get => closeOutputOnFinish; set { closeOutputOnFinish = value; OnPropertyChanged(); } }
 
     public LocalSmuNode() : base("源表", "SMU", "StepData")

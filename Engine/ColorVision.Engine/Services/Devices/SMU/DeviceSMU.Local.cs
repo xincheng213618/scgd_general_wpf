@@ -101,7 +101,11 @@ public partial class DeviceSMU
         bool autoConnect, bool checkLimits, CancellationToken token, object? flowOwner = null)
     {
         ObjectDisposedException.ThrowIf(localDisposed, this);
-        lock (SmuBackend.Sync) { EnsureOtherSmuBackends(true, config); SmuBackend.BeginLocalCommand(); }
+        lock (SmuBackend.Sync)
+        {
+            if (operation is not ("Close" or "CloseOutput")) EnsureOtherSmuBackends(true, config);
+            SmuBackend.BeginLocalCommand();
+        }
         try
         {
             if (operation == "Close") { await LocalSession.CloseAsync(flowOwner).ConfigureAwait(false); return null; }
@@ -111,7 +115,7 @@ public partial class DeviceSMU
             if (operation is "Open" or "Reopen") return null;
             if (operation == "CloseOutput")
             {
-                if (parameters.AdvancedSettings is { } settings) await LocalSession.CloseAdvancedOutputAsync(config, settings, token, flowOwner).ConfigureAwait(false);
+                if (parameters.AdvancedSettings is { } settings) await LocalSession.CloseAdvancedOutputAsync(settings, token, flowOwner).ConfigureAwait(false);
                 else await LocalSession.CloseOutputAsync(parameters.Channel, token, flowOwner: flowOwner).ConfigureAwait(false);
                 return null;
             }

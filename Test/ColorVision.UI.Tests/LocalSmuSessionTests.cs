@@ -8,6 +8,7 @@ using cvColorVision;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Channel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType;
 
@@ -28,6 +29,9 @@ public sealed class LocalSmuSessionTests
         var sdk = new FakeNative();
         var session = new LocalSmuSession(sdk);
         DeviceSMU? device = null;
+        DeviceSMU? destination = null;
+        var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? previousManager = null;
         ColorVision.UI.IConfigService? previousConfig = null;
         try
         {
@@ -35,6 +39,10 @@ public sealed class LocalSmuSessionTests
             {
                 previousConfig = ColorVision.UI.ConfigService.Instance;
                 ColorVision.UI.ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                previousManager = managerField.GetValue(null);
+                var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+                manager.DeviceServices = [];
+                managerField.SetValue(null, manager);
                 device = new DeviceSMU(new() { Id = -2, Code = "synthetic-smu-" + Guid.NewGuid(),
                     Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSMU { DevName = "synthetic", DevType = Pss_Type.Keithley_2600, IsNet = configuredAsNetwork }) }, session);
                 Assert.True(device.DisplayConfig.UseLocalSmu);
@@ -44,6 +52,7 @@ public sealed class LocalSmuSessionTests
                 var display = device.DisplayConfig;
                 device.Config.Code += "-renamed";
                 Assert.Same(display, device.DisplayConfig);
+                manager.DeviceServices.Add(device);
             });
             sdk.OpenFailureCode = configuredAsNetwork ? 6 : 3;
             sdk.OpenDetail = "stage=synchronize, response=";
@@ -73,13 +82,34 @@ public sealed class LocalSmuSessionTests
             var invalid = await Command(() => device!.DService.GetData(true, double.NaN, 1, Channel.B)!);
             Assert.Equal(MsgRecordState.Fail, invalid.MsgRecordState);
             Assert.Equal(0, sdk.Measurements);
+            WpfTestHost.Invoke(() =>
+            {
+                destination = new DeviceSMU(new() { Id = -3, Code = "occupied-smu-" + Guid.NewGuid(),
+                    Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSMU { DevType = Pss_Type.Keithley_2600,
+                        IsNet = configuredAsNetwork }) }, new LocalSmuSession(new FakeNative()));
+                if (configuredAsNetwork) device!.Config.IpAddress = destination.Config.IpAddress = "192.0.2.77";
+                else device!.Config.SerialPort = destination.Config.SerialPort = "COM77";
+                ServiceManager.Current!.DeviceServices.Add(destination);
+                destination.SmuBackend.SetLocalStatus(DeviceStatusType.Opened);
+            });
+            var occupied = await Command(() => device!.DService.Open(device.Config.IsNet, device.Config.DevName));
+            Assert.Equal(MsgRecordState.Fail, occupied.MsgRecordState);
+            Assert.Equal(0, sdk.Closes);
+            Assert.Equal(2, sdk.Opens);
+            Assert.Equal(MsgRecordState.Success, (await Command(() => device!.DService.CloseOutput())).MsgRecordState);
+            Assert.Single(sdk.ClosedOutputs);
             Assert.Equal(MsgRecordState.Success, (await Command(() => device!.DService.Close())).MsgRecordState);
             Assert.Equal(DeviceStatusType.Closed, session.Status);
+            Assert.True(destination!.SmuBackend.LocalOwned);
             WpfTestHost.Invoke(() => Assert.False(device!.SmuBackend.OpensLocally));
         }
         finally
         {
-            WpfTestHost.Invoke(() => { device?.Dispose(); if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig); });
+            WpfTestHost.Invoke(() =>
+            {
+                device?.Dispose(); destination?.Dispose(); managerField.SetValue(null, previousManager);
+                if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig);
+            });
             await session.DisposeAsync();
         }
         static Task<MsgRecord> Command(Func<MsgRecord> send)
@@ -443,26 +473,135 @@ public sealed class LocalSmuSessionTests
     }
 
     [Fact]
-    public async Task InvalidSweepAndChangedConnectionNeverReachMeasurement()
+    public async Task InvalidSweepNeverReconnectsOrReachesMeasurement()
     {
         var sdk = new FakeNative();
         await using var session = new LocalSmuSession(sdk);
         var config = Config();
         await session.OpenAsync(config);
-        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config,
+        var changed = config with { BaudRate = 115200 };
+        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(changed,
             Point() with { BeginValue = 50, EndValue = 1, Points = 3 }, true, false, true));
-        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config,
+        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(changed,
             Point() with { Points = 1 }, true, false, true));
-        foreach (var changed in new[] { config with { DeviceName = config.DeviceName + "-other" },
-            config with { DeviceType = Pss_Type.Keithley_2400 }, config with { IsNet = true },
-            config with { Is4Wire = !config.Is4Wire }, config with { IsFront = !config.IsFront } })
-            await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(changed, Point(), false, false, true));
-        var faster = config with { BaudRate = 115200 };
-        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(faster, Point(), false, false, true));
+        Assert.Equal(1, sdk.Opens);
+        Assert.Equal(0, sdk.Closes);
         Assert.Equal(0, sdk.Measurements);
-        await session.CloseAsync();
-        await session.OpenAsync(faster);
-        Assert.Equal(115200, sdk.OpenedConnection!.BaudRate);
+    }
+
+    // Reconnect is a serialized resource handover, not a retry of a completed output operation.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public async Task ChangedOpenSettingsReconnectBeforeMeasurementAndPreserveOwnership(int change)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        await using var contender = new LocalSmuSession(new FakeNative());
+        var config = Config();
+        await session.OpenAsync(config);
+        object owner = new();
+        using var lease = await session.AcquireFlowLeaseAsync(owner, () => false);
+        lease.ConfigureChannel(Channel.A, true);
+        var first = await session.CaptureAsync(config, Point(), false, true, true, flowOwner: owner);
+        var changed = change switch
+        {
+            0 => config with { DeviceName = config.DeviceName + "-other" },
+            1 => config with { DeviceType = Pss_Type.Keithley_2400 },
+            2 => config with { IsNet = true },
+            3 => config with { Is4Wire = !config.Is4Wire },
+            4 => config with { IsFront = !config.IsFront },
+            _ => config with { BaudRate = 115200 }
+        };
+        bool ownershipChecked = false;
+        void CheckOwnership(DeviceStatusType status)
+        {
+            if (status != DeviceStatusType.Closed) return;
+            Assert.Throws<InvalidOperationException>(() => contender.OpenAsync(changed).GetAwaiter().GetResult());
+            ownershipChecked = true;
+        }
+        sdk.Events.Clear();
+        sdk.SweepCapabilities = 3;
+        session.StatusChanged += CheckOwnership;
+        try { await session.CaptureAsync(changed, Point(), false, true, true, flowOwner: owner); }
+        finally { session.StatusChanged -= CheckOwnership; }
+        Assert.True(ownershipChecked);
+        Assert.Equal(new[] { "off:A", "close", "open", "measure:A" }, sdk.Events);
+        Assert.Equal(changed, sdk.OpenedConnection);
+        Assert.Equal(2, sdk.Opens);
+        Assert.Equal(1, sdk.Closes);
+        Assert.Equal(2, sdk.Measurements);
+        Assert.Equal(3, session.SweepCapabilities);
+        await session.CloseOutputAsync(Channel.A, expectedGeneration: first.Generation, flowOwner: owner);
+        Assert.Single(sdk.ClosedOutputs);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.OpenAsync(changed));
+        await session.OpenAsync(changed, flowOwner: owner);
+        Assert.Equal(2, sdk.Opens);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedReconnectCleanupNeverOpensDestinationAndRetainsOldOwnership(bool outputCloseFails)
+    {
+        var sdk = new FakeNative();
+        var session = new LocalSmuSession(sdk);
+        var config = Config();
+        var changed = config with { DeviceName = config.DeviceName + "-other" };
+        try
+        {
+            await session.OpenAsync(config);
+            await session.CaptureAsync(config, Point(), false, true, true);
+            sdk.CloseOutputCode = outputCloseFails ? 0 : 1;
+            sdk.CloseCode = outputCloseFails ? 1 : 0;
+            await Assert.ThrowsAsync<AggregateException>(() => session.CaptureAsync(changed, Point(), false, true, true));
+            Assert.Equal(DeviceStatusType.Unknown, session.Status);
+            Assert.Equal(1, sdk.Opens);
+            Assert.Equal(1, sdk.Measurements);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => session.OpenAsync(changed));
+            await using var contender = new LocalSmuSession(new FakeNative());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => contender.OpenAsync(config));
+            await contender.OpenAsync(changed);
+        }
+        finally { sdk.CloseCode = sdk.CloseOutputCode = 1; await session.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task FailedReconnectOpenNeverRetriesMeasurementAndReleasesDestination()
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        sdk.OpenCode = -1;
+        var changed = config with { BaudRate = 115200 };
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(changed, Point(), false, true, true));
+        Assert.Equal(2, sdk.Opens);
+        Assert.Equal(1, sdk.Measurements);
+        Assert.Equal(DeviceStatusType.Closed, session.Status);
+        await using var contender = new LocalSmuSession(new FakeNative());
+        await contender.OpenAsync(changed);
+    }
+
+    [Fact]
+    public async Task ReadingPreviousResultAndClosingOutputNeverReconnect()
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config with { IsFront = !config.IsFront },
+            Point(), false, false, true, read: true));
+        await session.CloseOutputAsync(Channel.A);
+        Assert.Equal(1, sdk.Opens);
+        Assert.Equal(0, sdk.Closes);
+        Assert.Single(sdk.ClosedOutputs);
     }
 
     [Fact]
@@ -651,6 +790,7 @@ public sealed class LocalSmuSessionTests
         private Channel channel;
         public int Open(LocalSmuConnection c)
         {
+            Events.Add("open");
             Opens++;
             OpenedConnection = c;
             if (OpenFailureCode != 0) throw LocalSmuNative.OpenFailure(OpenFailureCode, OpenDetail);
@@ -691,6 +831,6 @@ public sealed class LocalSmuSessionTests
             return ListCode;
         }
         public int CloseOutput(int h) { Events.Add("off:" + channel); ClosedOutputs.Add(channel); return CloseOutputCode; }
-        public int Close(int h) { Closes++; return CloseCode; }
+        public int Close(int h) { Events.Add("close"); Closes++; return CloseCode; }
     }
 }
