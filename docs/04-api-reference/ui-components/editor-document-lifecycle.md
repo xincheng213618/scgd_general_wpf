@@ -108,6 +108,8 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 ## 停靠注册、布局恢复和重置
 
+主程序在 `ColorVision/MainWindow.xaml` 的 `DockingManager` 上开启 `AllowMixedOrientation`，允许文档窗格在左右分栏后继续分别上下拆分，组成 2×2 四视图或其它嵌套布局。拖动文档标签到目标窗格中央的上、下、左、右停靠箭头可拆分，到中央合并为标签页。该选项属于窗口宿主配置，不依赖布局文件，也不自动排列已有文档；各视图仍由原有文档宿主管理。
+
 `DockLayoutManager` 的注册表按 ContentId 保存内容与元数据，独立于 `EditorDocumentService` 的动态文档会话。主窗口先注册自身面板和各 `IDockPanelProvider`，再加载布局；只有已经注册的内容才有恢复入口。
 
 布局位置为 `Environments.DirStateLayout/MainWindowDockLayout.xml`，通常来自 `DirAppData/State/Layout`，不是工作区 `.cvsln` 内的文件标签清单，也不序列化 `DocumentTabPinManager` 的固定状态。`SaveLayout()` 建目录后用 `StreamWriter` 直接序列化 XML，捕获异常记警告，不返回失败状态；这里没有配置存储那样的临时文件原子替换、备份或写后验证，返回不证明布局文件完整落盘。

@@ -143,7 +143,7 @@
             <Border x:Name="NativeCaptionButtonsPlaceholder" Grid.Column="1" Width="0" IsHitTestVisible="False" />
         </Grid>
 
-        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-2,-3,-2,-2" Padding="0" BorderThickness="0" Background="{DynamicResource GlobalBackground}" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
+        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-2,-3,-2,-2" Padding="0" BorderThickness="0" Background="{DynamicResource GlobalBackground}" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}" AllowMixedOrientation="True">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup x:Name="LeftPaneGroup" DockWidth="303">
