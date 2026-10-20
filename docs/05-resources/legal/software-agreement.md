@@ -2,14 +2,26 @@
 knowledge_id: "platform.license"
 knowledge_type: "reference"
 status: "current"
-summary: "保留软件许可协议原文供定位，不由AI重新解释或改写许可条款。"
-aliases: ["软件许可协议","许可入口","license"]
-code_paths: ["LICENSE.md"]
+summary: "说明 GPL-3.0-only 源码许可、相应源码分发义务、第三方兼容性及既有独立授权发布包的条款边界。"
+aliases: ["软件许可协议","许可入口","license","GPL-3.0","GPL-3.0-only","源码分发","商业使用"]
+code_paths: ["LICENSE.md","COPYING","package.json","package-lock.json"]
 test_paths: []
 related: ["governance.knowledge"]
 ---
 
 # 软件许可协议
+
+## GPL 源码许可
+
+本仓库原创代码及随附文档的许可入口是根目录 `LICENSE.md`，采用 GPL-3.0-only，完整、未经修改的英文原文位于根目录 `COPYING`（[GNU 官方原文](https://www.gnu.org/licenses/gpl-3.0.html)）。具体权利及义务以原文为准，第三方材料与附有独立许可的内容保留各自许可。
+
+GPL 允许商业使用和收费分发，无需另行取得商业使用许可。对外分发受 GPL 约束的衍生程序时，须按协议许可相关作品、保留版权和许可声明、标明修改，并向接收者提供相应源码；二进制分发须满足 GPL 第 6 条规定的提供方式和其他适用条件。
+
+第三方库、厂商 SDK 与插件的组合分发须另行确认许可兼容性，独立许可不构成对 GPL 义务的豁免。仅修改仓库许可声明不代表所有依赖或现有交付包已经通过许可兼容性审查。
+
+下列原文仅保留此前独立授权发布包的使用条款，适用于对应独立授权的版本和交付范围。它不适用于按当前仓库声明提供的 GPL 版本，不限制接收者依据 GPL 获得的权利，也不替换第三方独立许可。
+
+## 既有独立授权发布包协议原文
 
 **重要事项：**
 
