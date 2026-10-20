@@ -23,7 +23,7 @@
     "vitepress"
   ],
   "author": "ColorVision Inc",
-  "license": "ISC",
+  "license": "SEE LICENSE IN LICENSE.md",
   "overrides": {
     "vite": "^6.4.3"
   },

@@ -62,4 +62,6 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 
 ## 许可
 
-见 [LICENSE.md](LICENSE.md) 和维护中的 [软件许可协议](docs/05-resources/legal/software-agreement.md)。
+本仓库采用 **ColorVision 软件许可协议**，允许协议范围内的非商业源码学习、研究、本地编译、修改和测试；商业生产、商业研发或集成、客户交付和商业分发须事先取得独立书面授权。
+
+许可入口见 [LICENSE.md](LICENSE.md)，完整条款见 [软件许可协议](docs/05-resources/legal/software-agreement.md)。第三方材料及此前已合法取得的独立许可保留原有权利和适用条件。
