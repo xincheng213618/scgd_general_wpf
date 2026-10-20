@@ -48,7 +48,7 @@ next: false
   Web 的组成根、HTTP/服务/持久化边界、现有接口和架构检查；区分已实现约束、性能预算与后续演进目标。
 
 - [软件许可协议](../../05-resources/legal/software-agreement.md) — `platform.license`
-  说明 GPL-3.0-only 源码许可、相应源码分发义务、第三方兼容性及既有独立授权发布包的条款边界。
+  保留原软件使用条款，补充非商业源码学习、编译和修改、书面商业授权及第三方和既有许可的边界。
 
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。

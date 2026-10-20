@@ -62,6 +62,6 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 
 ## 许可
 
-原创代码及随附文档采用 **GPL-3.0-only**，允许商业使用和收费分发；对外分发受 GPL 约束的衍生程序时，须按协议提供相应源码。第三方材料保留各自许可，组合分发前须确认许可兼容性。
+本仓库采用 **ColorVision 软件许可协议**，允许协议范围内的非商业源码学习、研究、本地编译、修改和测试；商业生产、商业研发或集成、客户交付和商业分发须事先取得独立书面授权。
 
-适用范围见 [LICENSE.md](LICENSE.md)，许可证全文见 [COPYING](COPYING)；GPL 版本与此前独立授权发布包的条款边界见 [软件许可协议](docs/05-resources/legal/software-agreement.md)。
+许可入口见 [LICENSE.md](LICENSE.md)，完整条款见 [软件许可协议](docs/05-resources/legal/software-agreement.md)。第三方材料及此前已合法取得的独立许可保留原有权利和适用条件。

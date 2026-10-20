@@ -23,7 +23,7 @@
     "vitepress"
   ],
   "author": "ColorVision Inc",
-  "license": "GPL-3.0-only",
+  "license": "SEE LICENSE IN LICENSE.md",
   "overrides": {
     "vite": "^6.4.3"
   },

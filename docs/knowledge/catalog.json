@@ -7770,19 +7770,18 @@
       "knowledge_id": "platform.license",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "说明 GPL-3.0-only 源码许可、相应源码分发义务、第三方兼容性及既有独立授权发布包的条款边界。",
+      "summary": "保留原软件使用条款，补充非商业源码学习、编译和修改、书面商业授权及第三方和既有许可的边界。",
       "aliases": [
         "软件许可协议",
         "许可入口",
         "license",
-        "GPL-3.0",
-        "GPL-3.0-only",
-        "源码分发",
-        "商业使用"
+        "源码使用",
+        "非商业学习",
+        "商业授权",
+        "书面授权"
       ],
       "code_paths": [
         "LICENSE.md",
-        "COPYING",
         "package.json",
         "package-lock.json"
       ],

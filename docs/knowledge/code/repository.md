@@ -71,7 +71,7 @@ next: false
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
 
 - [软件许可协议](../../05-resources/legal/software-agreement.md) — `platform.license`
-  说明 GPL-3.0-only 源码许可、相应源码分发义务、第三方兼容性及既有独立授权发布包的条款边界。
+  保留原软件使用条款，补充非商业源码学习、编译和修改、书面商业授权及第三方和既有许可的边界。
 
 ## .github/workflows {#module-2e6769746875622f776f726b666c6f7773}
 
