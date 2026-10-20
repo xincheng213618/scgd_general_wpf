@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private Action? stopPreview;
         private bool disposed;
         private bool identitySavePending;
+        private bool filterWheelPrepared;
         private readonly Func<MotorConfig> getMotorConfig;
         private readonly LocalCameraMotorSession motor;
         private readonly object focusSync = new();
@@ -135,6 +136,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     if (openedCameraId != cameraId || OpenedMode != takeImageMode || openedBpp != imageBpp)
                         throw new InvalidOperationException("本地会话已使用其它打开参数连接，请先关闭相机再修改 Camera ID、模式或位深。");
                     motor.EnsureConfiguration(getMotorConfig());
+                    config.TakeImageMode = OpenedMode;
                     return cvErrorDefine.CV_ERR_SUCCESS;
                 }
                 if (cameraId.Length == 0)
@@ -158,6 +160,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 try
                 {
                     IntPtr manager = EnsureInitialized();
+                    PrepareMeasurement(takeImageMode);
                     bool useHikMvs = getUseHikMvs();
                     int hikBayerQuality = getHikBayerQuality();
                     bool hikOutputBgr = getHikOutputBgr();
@@ -178,6 +181,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         EnsureLicenseAvailable();
                         if (result == cvErrorDefine.CV_ERR_SUCCESS)
                         {
+                            config.TakeImageMode = takeImageMode;
                             try { motor.Open(getMotorConfig()); }
                             catch (Exception error)
                             {
@@ -257,6 +261,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
+        private void PrepareMeasurement(TakeImageMode mode)
+        {
+            if (mode == TakeImageMode.Live || getConfig().CameraMode != CameraMode.CV_MODE || filterWheelPrepared) return;
+            native.PrepareMeasurement(handle);
+            filterWheelPrepared = true;
+        }
+
         // Retain an MVS connection, or reopen the same legacy manager/identity.
         // Keep ownership reserved until the SDK reports the actual final state.
         internal int SwitchMode(TakeImageMode mode, int imageBpp)
@@ -269,16 +280,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (!IsOpen) throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
                 ensureAvailable(openedCameraId);
                 EnsureOpenedCameraIdentity();
-                if (OpenedMode == mode && openedBpp == imageBpp) return cvErrorDefine.CV_ERR_SUCCESS;
+                if (OpenedMode == mode && openedBpp == imageBpp)
+                {
+                    getConfig().TakeImageMode = OpenedMode;
+                    return cvErrorDefine.CV_ERR_SUCCESS;
+                }
                 try
                 {
+                    // Keep the existing preview intact if first-time CFW preparation fails.
+                    PrepareMeasurement(mode);
                     DetachPreviewCore();
                     int result = native.SwitchMode(handle, mode, imageBpp);
                     if (result == cvErrorDefine.CV_ERR_CAM_TYPE_NOT)
                     {
                         native.Close(handle);
+                        filterWheelPrepared = false;
                         if (native.IsOpen(handle)) throw new InvalidOperationException("本地相机关闭失败，无法切换采集模式。");
                         loadedCalibrationJson = null;
+                        PrepareMeasurement(mode);
                         result = native.Open(handle, openedCameraId!, mode, imageBpp, OpenedUseHikMvs, OpenedHikBayerQuality, OpenedHikOutputBgr);
                     }
                     if (result == cvErrorDefine.CV_ERR_SUCCESS && !native.IsOpen(handle))
@@ -489,6 +508,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             bool isOpen = IsOpen;
             if (!isOpen)
             {
+                filterWheelPrepared = false;
                 RawBufferPool.Dispose();
                 try { motor.Close(); }
                 catch (Exception error)

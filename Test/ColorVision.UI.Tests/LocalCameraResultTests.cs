@@ -273,6 +273,21 @@ public class LocalCameraResultTests
     }
 
     [Fact]
+    public void AutoExposureUsesCaptureFilterSlotsAndRejectsDuplicateChannels()
+    {
+        var device = (DeviceCamera)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = cvColorVision.CameraMode.CV_MODE };
+        device.Config.CFW.ChannelCfgs.Add(new() { Chtype = cvColorVision.ImageChannelType.Gray_Y, Cfwport = 4 });
+        device.Config.CFW.ChannelCfgs.Add(new() { Chtype = cvColorVision.ImageChannelType.Gray_X, Cfwport = 2 });
+        device.Config.CFW.ChannelCfgs.Add(new() { Chtype = cvColorVision.ImageChannelType.Gray_Z, Cfwport = 6 });
+        var actual = JObject.Parse(LocalCameraAutoExposure.BuildChannelConfiguration(device))["channelCfg"]!;
+        Assert.Equal(new[] { 4, 2, 6 }, actual.Select(channel => channel.Value<int>("cfwport")));
+        Assert.Equal(new[] { 1, 0, 2 }, actual.Select(channel => channel.Value<int>("chtype")));
+        device.Config.CFW.ChannelCfgs[1].Chtype = cvColorVision.ImageChannelType.Gray_Y;
+        Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.BuildChannelConfiguration(device));
+    }
+
+    [Fact]
     public void AutoExposureWritesAllChannelsAndRejectsInvalidNativeResultAtomically()
     {
         CameraRunParam parameters = new();

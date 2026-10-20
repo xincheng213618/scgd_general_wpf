@@ -257,6 +257,7 @@ public class NativeCameraErrorTests
     public void OtherCameraOperationsPreserveInvalidHandleErrors()
     {
         const int invalidHandle = -10000;
+        Assert.Equal(invalidHandle, cvCameraCSLib.CM_GetAutoExpTimeEx(IntPtr.Zero, new float[3], new float[3]));
         Assert.Equal(invalidHandle, cvCameraCSLib.CM_SetTakeImageMode(IntPtr.Zero, TakeImageMode.Measure_Normal));
         Assert.Equal(invalidHandle, cvCameraCSLib.CM_SetImageBpp(IntPtr.Zero, 8));
         Assert.Equal(invalidHandle, cvCameraCSLib.CM_SetExpTimeEx(IntPtr.Zero, 0, 10));

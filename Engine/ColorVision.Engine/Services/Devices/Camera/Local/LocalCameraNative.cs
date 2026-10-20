@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         IReadOnlyList<string> GetCameraIds();
         IntPtr Initialize();
         bool IsOpen(IntPtr handle);
+        void PrepareMeasurement(IntPtr handle);
         int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr);
         int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp);
         void Close(IntPtr handle);
@@ -40,27 +41,45 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
 
         public bool IsOpen(IntPtr handle) => cvCameraCSLib.CM_IsOpen(handle);
-        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
+        public void PrepareMeasurement(IntPtr handle)
         {
-            // The manager survives Close; reapply configuration changed since its creation.
-            int result = cvCameraCSLib.CM_SetCameraModel(handle, device.Config.CameraModel, device.Config.CameraMode);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraModel", cameraId, result);
-            result = cvCameraCSLib.CM_SetCameraID(handle, cameraId);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraID", cameraId, result);
-            result = cvCameraCSLib.CM_SetTakeImageMode(handle, mode);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetTakeImageMode", cameraId, result);
-            result = cvCameraCSLib.CM_SetImageBpp(handle, bpp);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetImageBpp", cameraId, result);
-            var config = device.PhyCamera?.Config.CameraCfg;
-            JObject cameraConfig = config == null ? new JObject() : JObject.Parse(LocalCameraSession.BuildCameraConfigurationJson(config));
-            cameraConfig["useHikMvs"] = useHikMvs;
-            cameraConfig["hikBayerQuality"] = hikBayerQuality;
-            cameraConfig["hikOutputBgr"] = hikOutputBgr;
-            result = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Camera, cameraConfig.ToString());
-            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_UpdateCfgJson", cameraId, result);
             try
             {
                 ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
+            }
+            catch (Exception error)
+            {
+                // A failed first preparation must not leave a partial port or stop video.
+                try { ReleaseFilterWheel(handle); }
+                catch (Exception cleanup) { throw new AggregateException(error, cleanup); }
+                throw;
+            }
+        }
+
+        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
+        {
+            try
+            {
+                // The manager survives Close; reapply configuration changed since its creation.
+                int result = cvCameraCSLib.CM_SetCameraModel(handle, device.Config.CameraModel, device.Config.CameraMode);
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraModel", cameraId, result);
+                result = cvCameraCSLib.CM_SetCameraID(handle, cameraId);
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraID", cameraId, result);
+                result = cvCameraCSLib.CM_SetTakeImageMode(handle, mode);
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetTakeImageMode", cameraId, result);
+                result = cvCameraCSLib.CM_SetImageBpp(handle, bpp);
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetImageBpp", cameraId, result);
+                var config = device.PhyCamera?.Config.CameraCfg;
+                JObject cameraConfig = config == null ? new JObject() : JObject.Parse(LocalCameraSession.BuildCameraConfigurationJson(config));
+                cameraConfig["useHikMvs"] = useHikMvs;
+                cameraConfig["hikBayerQuality"] = hikBayerQuality;
+                cameraConfig["hikOutputBgr"] = hikOutputBgr;
+                result = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Camera, cameraConfig.ToString());
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_UpdateCfgJson", cameraId, result);
+                // CV serial control is prepared by the session only for measurement.
+                // Preserve the existing disabled-serial configuration for other modes.
+                if (device.Config.CameraMode != CameraMode.CV_MODE)
+                    ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
                 result = cvCameraCSLib.CM_Open(handle);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_Open", cameraId, result, GetCameraIds);
                 return result;

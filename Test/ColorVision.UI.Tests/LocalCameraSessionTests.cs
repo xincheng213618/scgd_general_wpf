@@ -18,6 +18,99 @@ namespace ColorVision.UI.Tests;
 
 public class LocalCameraSessionTests
 {
+    [Fact]
+    public void CvVideoStartsWithoutPreparingTheWheelAndFailedMeasurementPreservesPreview()
+    {
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        var backend = new CameraBackendState(true);
+        var config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, backend, config);
+        native.OnPrepareMeasurement = () => throw new InvalidOperationException("CFW unavailable");
+
+        session.Open("cv-camera", TakeImageMode.Live, 8);
+        int stopped = 0;
+        session.RegisterPreview(_ => 1, () => stopped++);
+        native.Events.Clear();
+        Assert.Equal(0, native.MeasurementPreparations);
+        Assert.Equal(TakeImageMode.Live, config.TakeImageMode);
+        Assert.False(config.IsExpThree);
+
+        Assert.Throws<InvalidOperationException>(() => session.EnsureMeasurement(false));
+        Assert.True(session.IsOpen);
+        Assert.True(backend.LocalOwned);
+        Assert.Equal(TakeImageMode.Live, session.OpenedMode);
+        Assert.Equal(0, stopped);
+        Assert.Empty(native.Events);
+        Assert.Equal(0, native.Closes);
+
+        native.OnPrepareMeasurement = null;
+        session.EnsureMeasurement(false);
+        Assert.Equal(2, native.MeasurementPreparations);
+        Assert.Equal(1, stopped);
+        Assert.Equal(new[] { "detach", "switch" }, native.Events);
+        Assert.Equal(TakeImageMode.Measure_Normal, session.OpenedMode);
+        Assert.True(config.IsExpThree);
+    }
+
+    [Theory]
+    [InlineData(TakeImageMode.Live)]
+    [InlineData(TakeImageMode.Measure_Normal)]
+    public void CvRoundTripsReuseWheelPreparationUntilTheRealClose(TakeImageMode firstMode)
+    {
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        var config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("cv-camera", firstMode, firstMode == TakeImageMode.Live ? 8 : 16);
+        session.SwitchMode(TakeImageMode.Measure_Normal, 16);
+        session.SwitchMode(TakeImageMode.Live, 8);
+        session.SwitchMode(TakeImageMode.Measure_Normal, 16);
+        Assert.Equal(1, native.MeasurementPreparations);
+        Assert.Equal(0, native.Closes);
+        Assert.Equal(1, native.Opens);
+
+        session.Close(true);
+        session.Open("cv-camera", TakeImageMode.Live, 8);
+        Assert.Equal(1, native.MeasurementPreparations);
+        session.EnsureMeasurement(false);
+        Assert.Equal(2, native.MeasurementPreparations);
+        Assert.Equal(1, native.Closes);
+    }
+
+    [Fact]
+    public void FailedCvPhotoOpenDoesNotPreventVideoAndPreparationIsRetriedForPhoto()
+    {
+        var native = new FakeNative { OpenResult = -10009, SwitchResult = 1 };
+        var config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, ImageBpp = ImageBpp.bpp16 };
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(native, backend, config);
+        Assert.Equal(-10009, session.Open("cv-camera", TakeImageMode.Measure_Normal, 16));
+        Assert.False(backend.LocalOwned);
+        Assert.Equal(1, native.MeasurementPreparations);
+        native.OpenResult = 1;
+        session.Open("cv-camera", TakeImageMode.Live, 8);
+        Assert.Equal(1, native.MeasurementPreparations);
+        session.EnsureMeasurement(false);
+        Assert.Equal(2, native.MeasurementPreparations);
+    }
+
+    [Theory]
+    [InlineData(CameraModel.HK_USB, CameraMode.BV_MODE)]
+    [InlineData(CameraModel.HK_CARD, CameraMode.LV_MODE)]
+    [InlineData(CameraModel.HK_USB, CameraMode.LVTOBV_MODE)]
+    public void HkModesDoNotPrepareAFilterWheel(CameraModel model, CameraMode mode)
+    {
+        var native = new FakeNative { SwitchResult = 1, OnPrepareMeasurement = () => throw new InvalidOperationException("No CFW") };
+        var config = new ConfigCamera { CameraModel = model, CameraMode = mode, ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("hk-camera", TakeImageMode.Measure_Normal, 16);
+        session.SwitchMode(TakeImageMode.Live, 8);
+        session.EnsureMeasurement(false);
+        Assert.Equal(0, native.MeasurementPreparations);
+        Assert.Equal(0, native.Closes);
+        Assert.True(native.OpenedUseHikMvs);
+        Assert.Equal(16, native.LastBpp);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -860,6 +953,8 @@ public class LocalCameraSessionTests
         public Exception? CloseError { get; set; }
         public int Releases;
         public int Scans, Initializations, Opens, Closes, Switches;
+        public int MeasurementPreparations;
+        public Action? OnPrepareMeasurement;
         public int SwitchResult = cvErrorDefine.CV_ERR_CAM_TYPE_NOT;
         public Action? OnSwitch;
         public readonly List<string> Events = [];
@@ -877,6 +972,7 @@ public class LocalCameraSessionTests
         }
         public IntPtr Initialize() { Initializations++; return new IntPtr(42); }
         public bool IsOpen(IntPtr handle) => opened;
+        public void PrepareMeasurement(IntPtr handle) { MeasurementPreparations++; OnPrepareMeasurement?.Invoke(); }
         public int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp)
         {
             Switches++;

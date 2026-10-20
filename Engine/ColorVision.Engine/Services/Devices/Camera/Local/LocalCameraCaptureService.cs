@@ -271,7 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return JsonConvert.SerializeObject(param);
         }
 
-        private static IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> GetChannelConfigs(DeviceCamera device, int channelCount)
+        internal static IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> GetChannelConfigs(DeviceCamera device, int channelCount)
         {
             if (channelCount == 3 && device.Config.CameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
             {

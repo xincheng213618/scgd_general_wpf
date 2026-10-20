@@ -35,6 +35,9 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAutoExpTime",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_GetAutoExpTime(IntPtr handle, float[] exp, float[] Saturat);
+        // CV results are ordered by X/Y/Z, independently of filter-wheel traversal order.
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAutoExpTimeEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_GetAutoExpTimeEx(IntPtr handle, float[] exp, float[] saturation);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetSrcAutoExpTime", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_GetSrcAutoExpTime(IntPtr handle, float[] exp, float[] Saturat);
 

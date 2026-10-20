@@ -224,43 +224,16 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void UpdateChannelOptions(bool applyModeDefaults)
         {
-            List<ImageChannel> channels;
-            if (EditConfig.CameraMode == CameraMode.BV_MODE)
+            List<ImageChannel> channels = new() { EditConfig.Channel };
+            if (applyModeDefaults)
             {
-                channels = new List<ImageChannel> { ImageChannel.One, ImageChannel.Three };
-                if (EditConfig.Channel != ImageChannel.One && EditConfig.Channel != ImageChannel.Three)
-                {
-                    EditConfig.Channel = ImageChannel.Three;
-                }
-
-                if (applyModeDefaults)
-                {
-                    EditConfig.CFW.IsUseCFW = false;
-                }
-            }
-            else if (EditConfig.CameraMode == CameraMode.CV_MODE)
-            {
-                channels = new List<ImageChannel> { ImageChannel.Three };
-                EditConfig.Channel = ImageChannel.Three;
-                if (applyModeDefaults)
-                {
-                    EditConfig.CFW.IsUseCFW = true;
-                }
-            }
-            else
-            {
-                channels = new List<ImageChannel> { ImageChannel.One };
-                EditConfig.Channel = ImageChannel.One;
-                if (applyModeDefaults)
-                {
-                    EditConfig.CFW.IsUseCFW = false;
-                }
+                EditConfig.CFW.IsUseCFW = EditConfig.CameraMode == CameraMode.CV_MODE;
             }
 
             ComboxCameraChannel.ItemsSource = channels
                 .Select(item => new KeyValuePair<ImageChannel, string>(item, item.ToDescription()));
             ComboxCameraChannel.SetCurrentValue(ComboBox.SelectedValueProperty, EditConfig.Channel);
-            ComboxCameraChannel.IsEnabled = EditConfig.CameraMode == CameraMode.BV_MODE;
+            ComboxCameraChannel.IsEnabled = false;
             ChannelField.Visibility = EditConfig.CameraMode == CameraMode.LV_MODE ? Visibility.Collapsed : Visibility.Visible;
 
             if (EditConfig.CameraMode == CameraMode.CV_MODE && applyModeDefaults)

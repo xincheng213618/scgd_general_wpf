@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private string _CameraID;
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; OnPropertyChanged();} }
         private CameraType _CameraType;
-        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsExpThree)); } }
+        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; OnPropertyChanged(); OnPropertyChanged(nameof(Channel)); OnPropertyChanged(nameof(IsChannelThree)); OnPropertyChanged(nameof(IsExpThree)); } }
         private CameraMode _CameraMode = CameraMode.BV_MODE;
 
         public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; OnPropertyChanged();  } }
@@ -36,7 +36,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; OnPropertyChanged(); } }
         private ImageBpp _ImageBpp;
-        public ImageChannel Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsExpThree)); OnPropertyChanged(nameof(IsChannelThree)); } }
+        [ReadOnly(true)]
+        public ImageChannel Channel { get => CameraChannels.Resolve(CameraMode, _Channel); set { _Channel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsExpThree)); OnPropertyChanged(nameof(IsChannelThree)); } }
         private ImageChannel _Channel;
 
 
