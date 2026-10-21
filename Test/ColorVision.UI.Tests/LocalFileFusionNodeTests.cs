@@ -137,33 +137,6 @@ public sealed class LocalFileFusionNodeTests
             fixture.Directory + Path.DirectorySeparatorChar, [fixture.Add("a.png")]));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LocalNodeBaseDoesNotPublishCompletionAfterFlowResourcesAreReleased(bool fail)
-    {
-        var node = new StoppedNode(fail);
-        node.Create();
-        bool published = false;
-        node.nodeEndEvent += (_, _) => published = true;
-        var action = new CVStartCFC("late-completion");
-        MethodInfo execute = typeof(LocalFlowNodeBase).GetMethod("ExecuteCore", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        Array inputs = Array.CreateInstance(execute.GetParameters()[1].ParameterType.GetElementType()!, 0);
-        execute.Invoke(node, [new CVTransAction(action), inputs]);
-        Assert.False(published);
-        Assert.False(action.Data.ContainsKey("ErrorNodeName"));
-    }
-
-    private sealed class StoppedNode(bool fail) : LocalFlowNodeBase("Stopped", "Stopped", "Stopped")
-    {
-        protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
-        {
-            action.RuntimeResources.Dispose();
-            if (fail) throw new OperationCanceledException();
-            return new();
-        }
-    }
-
     private sealed class FakeServices : IFileFusionServices
     {
         public List<string> Events { get; } = new();

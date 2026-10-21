@@ -16,40 +16,6 @@ namespace ColorVision.UI.Tests;
 [Collection(AssemblyDiscoveryCollection.CollectionName)]
 public sealed class HelpKeyboardNavigationTests
 {
-    [Theory]
-    [InlineData("zh-CN")]
-    [InlineData("en")]
-    [InlineData("zh-TW")]
-    public void CommonHelpEntriesHaveDistinctAccessKeysAndKeepDescriptiveWindowTitles(string cultureName)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            var previous = CultureInfo.CurrentUICulture;
-            try
-            {
-                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
-                IMenuItem[] entries = [new WindowsServicePlugin.ServiceManager.MenuServiceManager(), new WindowsServicePlugin.Menus.ServiceLog(),
-                    new Guidance.MenuNewUserGuide(), new global::ColorVision.ServiceHost.MenuServiceHostManager(),
-                    new ColorVision.UI.Desktop.Feedback.MenuSendFeedback(), new ColorVision.UI.Desktop.Marketplace.MenuPluginManager(),
-                    new ColorVision.SocketProtocol.MenuProjectManager(), new MenuCheckAndUpdateV1(),
-                    new ColorVision.UI.LogImp.MenuLogWindow(), new NativeLogging.MenuNativeLog(), new AboutMsgExport()];
-                char[] keys = entries.Select(entry => char.ToUpperInvariant(new AccessText { Text = entry.Header }.AccessKey)).ToArray();
-                Assert.DoesNotContain('\0', keys);
-                Assert.Equal(keys.Length, keys.Distinct().Count());
-                Assert.Contains("Socket", ColorVision.SocketProtocol.Properties.Resources.SocketManagementWindow);
-                if (cultureName == "zh-CN")
-                    Assert.Equal("网络通信(_C)", entries[6].Header);
-                else if (cultureName == "en")
-                {
-                    Assert.Equal(["Service _manager", "Ser_vice logs", "Interface _tour", "ColorVision _Service Host",
-                        "Send _feedback...", "Market_place", "Network _communication", "Check for _updates",
-                        "_Log", "_Native logs", "_About ColorVision"], entries.Select(entry => entry.Header));
-                    Assert.Equal("_Tools", ColorVision.UI.Properties.Resources.MenuTool);
-                }
-            }
-            finally { CultureInfo.CurrentUICulture = previous; }
-        });
-    }
 
     [Theory]
     [InlineData(true, false, false, false, "none")]

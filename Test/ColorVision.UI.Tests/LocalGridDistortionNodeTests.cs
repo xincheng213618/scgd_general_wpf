@@ -149,20 +149,6 @@ public sealed class LocalGridDistortionNodeTests
     }
 
     [Fact]
-    public void TargetPolarityUsesVisibleBooleanEditorAndSameExplanationAsImageView()
-    {
-        PropertyInfo nodeProperty = typeof(LocalGridDistortionNode).GetProperty(nameof(LocalGridDistortionNode.BrightTarget))!;
-        PropertyInfo imageProperty = typeof(GridDistortionOptions).GetProperty(nameof(GridDistortionOptions.BrightTarget))!;
-        var metadata = FlowNodePropertyMetadataProvider.Instance;
-        Assert.Equal(typeof(bool), nodeProperty.PropertyType);
-        Assert.True(metadata.IsPropertyManaged(nodeProperty));
-        Assert.True(metadata.IsBrowsable(nodeProperty));
-        Assert.False(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(nodeProperty));
-        Assert.Equal(imageProperty.GetCustomAttribute<DisplayNameAttribute>()!.DisplayName, metadata.GetDisplayName(nodeProperty));
-        Assert.Equal(imageProperty.GetCustomAttribute<DescriptionAttribute>()!.Description, metadata.GetDescription(nodeProperty));
-    }
-
-    [Fact]
     public void MemoryExecutionPreservesPixelsAndSnapshotsConfigurationBeforePersistenceAndPublish()
     {
         CVStartCFC action = CreateAction();

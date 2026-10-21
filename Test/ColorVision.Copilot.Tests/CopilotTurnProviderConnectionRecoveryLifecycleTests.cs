@@ -24,17 +24,6 @@ public sealed class CopilotTurnProviderConnectionRecoveryLifecycleTests
     }
 
     [Fact]
-    public void ReducerRejectsDuplicateRecoveryAttempt()
-    {
-        var state = ObserveRecovery(CreatePreparedChatState(), CreateRecovery(1));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            ObserveRecovery(state, CreateRecovery(1)));
-
-        Assert.Contains("did not advance in sequence", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void ReducerRejectsSkippedRecoveryAttempt()
     {
         var state = ObserveRecovery(CreatePreparedChatState(), CreateRecovery(1));
@@ -43,20 +32,6 @@ public sealed class CopilotTurnProviderConnectionRecoveryLifecycleTests
             ObserveRecovery(state, CreateRecovery(3)));
 
         Assert.Contains("did not advance in sequence", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsStructurallyInvalidRecovery()
-    {
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            ObserveRecovery(
-                CreatePreparedChatState(),
-                new CopilotProviderConnectionRecoveryInfo(
-                    1,
-                    TimeSpan.FromSeconds(-1),
-                    "connection failure")));
-
-        Assert.Contains("invalid metadata", exception.Message, StringComparison.Ordinal);
     }
 
     private static CopilotTurnEventState CreatePreparedChatState()

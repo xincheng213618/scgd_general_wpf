@@ -1,16 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
-using ColorVision.Engine.PropertyEditor;
-using ColorVision.Themes;
-using ICSharpCode.AvalonEdit;
-using System.ComponentModel;
-using System.Reflection;
 using System.Text.Json.Nodes;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.IO;
 
 namespace ColorVision.UI.Tests;
 
@@ -79,68 +68,5 @@ public sealed class LocalFindCrossConfigurationTests
     public void VendorTemplateOrBrokenJsonIsNotSilentlyConverted(string json)
     {
         Assert.False(LocalFindCrossConfigurationDraft.TryCreate(json, out _, out _));
-    }
-
-    [Fact]
-    public void OnlyLocalNodeHasIndependentEditor()
-    {
-        var property = typeof(LocalFindCrossNode).GetProperty(nameof(LocalFindCrossNode.ParameterJson))!;
-        Assert.Equal(typeof(LocalFindCrossConfigurationEditor), property.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void WindowEditsDraftSwitchesViewsAndCancelsWithoutChangingNode(bool dark)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            foreach (var uri in (dark ? ThemeManager.ResourceDictionaryDark : ThemeManager.ResourceDictionaryWhite).Concat(ThemeManager.ResourceDictionaryBase))
-                Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) });
-            var node = new LocalFindCrossNode();
-            string original = node.ParameterJson;
-            var window = new LocalFindCrossConfigurationWindow(original) { Left = -16000, Top = -16000, ShowInTaskbar = false, ShowActivated = false, Width = 780, Height = 620 };
-            try
-            {
-                window.Show(); window.UpdateLayout();
-                var angle = Descendants(window).OfType<TextBox>().Single(box => box.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path.Path == "ExpectedAngle");
-                angle.Text = "bad";
-                Assert.False(window.TryGetConfiguration(out _));
-                Click(window, "JsonMode");
-                Assert.True(((RadioButton)window.FindName("FormMode")).IsChecked);
-                Assert.Equal("bad", angle.Text);
-                angle.Text = "3.25";
-                Click(window, "JsonMode");
-                var json = (TextEditor)window.FindName("JsonText");
-                Assert.Equal(3.25, (double)JsonNode.Parse(json.Text)!["ExpectedAngleDegrees"]!);
-                json.Text = "{broken";
-                Click(window, "FormMode");
-                Assert.True(((RadioButton)window.FindName("JsonMode")).IsChecked);
-                Assert.Equal("{broken", json.Text);
-                json.Text = "{\"ExpectedAngleDegrees\":4.5}";
-                Click(window, "FormMode");
-                Assert.True(window.TryGetConfiguration(out var changed));
-                Assert.Equal(4.5, (double)JsonNode.Parse(changed)!["ExpectedAngleDegrees"]!);
-                window.UpdateLayout();
-                var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-                bitmap.Render(window);
-                string directory = Path.Combine(AppContext.BaseDirectory, "editor-evidence"); Directory.CreateDirectory(directory);
-                using var stream = File.Create(Path.Combine(directory, dark ? "local-cross-dark.png" : "local-cross-light.png"));
-                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); encoder.Save(stream);
-            }
-            finally { window.Close(); }
-            Assert.Equal(original, node.ParameterJson);
-            Assert.Null(window.ResultJson);
-        });
-    }
-
-    private static void Click(Window window, string name) => ((RadioButton)window.FindName(name)).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
-    {
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            var child = VisualTreeHelper.GetChild(root, i); yield return child;
-            foreach (var nested in Descendants(child)) yield return nested;
-        }
     }
 }

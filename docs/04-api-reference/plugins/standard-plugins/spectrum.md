@@ -5,7 +5,7 @@ status: "current"
 summary: "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。"
 aliases: ["HoleMapping","孔位映射","编辑滤光轮配置","Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
 code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.Chrome.cs","Plugins/Spectrum/MainWindow.PlotTheme.cs","Plugins/Spectrum/MainWindowConfig.cs","Plugins/Spectrum/Layout/","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/PropertyEditor/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
-test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
+test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
 related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket","ui.documents","operations.main-window","ui.themes"]
 ---
 
@@ -177,7 +177,7 @@ dotnet build .\Plugins\Spectrum\Spectrum.csproj -c Release -p:Platform=x64
 dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -c Release -p:Platform=x64
 ```
 
-`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumPlotFillTests` 覆盖共享渐变填充的原始采样、波段/零点裁剪、断点和重复刷新替换；`SpectrumChromaticityTests` 用独立参考数据验证 CCT/Duv、主/补色波长、纯度及双端导出边界；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查展示导出的字段、采样网格、格式和调用时快照；`SpectrumRawExportTests` 检查完整采样、负值/异常值、ABI 填充、网格来源、双端一致性及原子写入；`SpectrumCursorTests` 检查原始网格读数、边界和不插值行为。`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
+`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumPlotFillTests` 覆盖共享渐变填充的原始采样、波段/零点裁剪、断点和重复刷新替换；`SpectrumChromaticityTests` 用独立参考数据验证 CCT/Duv、主/补色波长、纯度及双端导出边界；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查展示导出的字段、采样网格、格式和调用时快照；`SpectrumRawExportTests` 检查完整采样、负值/异常值、ABI 填充、网格来源、双端一致性及原子写入；`SpectrumCursorTests` 检查原始网格读数、边界和不插值行为。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
 
 ## 双通道发布（需明确发布授权）
 

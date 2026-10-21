@@ -5,7 +5,7 @@ status: "current"
 summary: "属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。"
 aliases: ["属性面板", "属性编辑器窗口", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "自定义编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowTemplatePropertiesEditors", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor", "命令自动生成", "GenCommand", "CommandDisplay", "按钮分类", "IP地址编辑器", "四段IP输入", "IPAddressBox", "NetworkAddressPropertiesEditor"]
 code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs", "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml", "UI/ColorVision.Themes/Controls/IPAddressBox.xaml", "UI/ColorVision.Themes/Controls/IPAddressBox.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/IPAddressPropertiesEditor.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs","Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs","Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs", "Test/ColorVision.UI.Tests/IPAddressBoxTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs","Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs","Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs","Test/ColorVision.UI.Tests/IPAddressBoxTests.cs"]
 related: ["ui.index", "ui.configuration", "ui.discovery", "flow.templates", "algorithms.template-management"]
 ---
 
@@ -158,8 +158,6 @@ Flow 的单模板、多模板族下拉框及算法补充面板在已保存名称
 | 测试文件，均在 `Test/ColorVision.UI.Tests/` | 覆盖契约 |
 | --- | --- |
 | `PropertyEditSessionTests.cs` | 配置数据工作副本隔离、嵌套提交、重置、直接写入模式，以及 WPF 运行时引用保留 |
-| `AlgorithmNodeTemplateMappingTests.cs` | ARVR POI 使用原生属性编辑行 |
-| `CameraNodeTemplateMappingTests.cs` | 相机和校准的模板类型映射 |
 
 可在 Windows/x64 上运行最接近的测试，例如：
 

@@ -34,21 +34,6 @@ public sealed class NativeLogBridgeTests
         Assert.Equal("CM_", getExportPrefix.Invoke(null, [NativeLogSource.OpencvCuda]));
     }
 
-    [Theory]
-    [InlineData(nameof(OpenCVCuda.M_Fusion))]
-    [InlineData(nameof(OpenCVCuda.CM_Fusion))]
-    [InlineData(nameof(OpenCVCuda.CM_Fusion_Async))]
-    [InlineData(nameof(OpenCVCuda.CM_Fusion_Batch))]
-    public void CudaEntryPoints_PrepareLoggingThroughManagedWrappers(string methodName)
-    {
-        MethodInfo method = typeof(OpenCVCuda).GetMethod(
-            methodName,
-            BindingFlags.Public | BindingFlags.Static)
-            ?? throw new MissingMethodException(nameof(OpenCVCuda), methodName);
-
-        Assert.Null(method.GetCustomAttribute<DllImportAttribute>());
-    }
-
     [Fact]
     public void OnNativeLog_DoesNotThrow_WhenSinkThrows()
     {

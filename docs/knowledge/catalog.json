@@ -63,7 +63,6 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/StripeMtfLocatorTests.cs",
-        "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
         "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"
       ],
       "related": [
@@ -102,7 +101,6 @@
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/BlobAnalysisV1Tests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
       ],
       "related": [
@@ -134,7 +132,6 @@
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/CircleFitV1Tests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
       ],
       "related": [
@@ -166,7 +163,6 @@
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/ContourAnalysisV1Tests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
       ],
       "related": [
@@ -1011,7 +1007,6 @@
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/LineFitV1Tests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
       ],
       "related": [
@@ -1510,7 +1505,6 @@
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/SubpixelEdgeV1Tests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
       ],
       "related": [
@@ -1788,8 +1782,6 @@
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotCodexTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs",
@@ -2051,14 +2043,12 @@
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotWebPageRenderingTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotConversationFindNavigationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs",
-        "Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMarkdownTableBoundaryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImageAttachmentAdmissionTests.cs",
@@ -2071,7 +2061,6 @@
         "Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotComposerMentionCaretTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerMentionRangeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatPanelScrollLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMarkdownRenderSchedulingTests.cs",
@@ -5624,7 +5613,6 @@
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
         "Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"
       ],
       "related": [
@@ -5710,7 +5698,7 @@
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs"
       ],
       "related": [
         "flow.index",
@@ -6704,8 +6692,7 @@
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/CameraRunParamTests.cs",
         "Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs",
-        "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs",
-        "Test/ColorVision.UI.Tests/MotorConfigurationEditorTests.cs"
+        "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"
       ],
       "related": [
         "operations.camera",
@@ -7150,7 +7137,6 @@
         "Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs",
         "Test/ColorVision.UI.Tests/LogSearchHelperTests.cs",
         "Test/ColorVision.UI.Tests/LogEntryParserTests.cs",
-        "Test/ColorVision.UI.Tests/LogViewConfigTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
         "Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"
@@ -8862,7 +8848,6 @@
         "Test/Spectrum.Tests/Spectrum.Tests.csproj",
         "Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs",
         "Test/Spectrum.Tests/ViewResultSpectrumTests.cs",
-        "Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs",
         "Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs",
         "Test/Spectrum.Tests/SpectrumCsvExporterTests.cs",
         "Scripts/tests/test_build_spectrum.py"
@@ -9690,9 +9675,7 @@
         "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml",
         "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml.cs"
       ],
-      "test_paths": [
-        "Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "ui.themes",
         "ui.hotkeys",
@@ -10177,8 +10160,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DesktopPetPackageServiceTests.cs",
-        "Test/ColorVision.UI.Tests/DesktopPetCodexServiceTests.cs",
-        "Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs"
+        "Test/ColorVision.UI.Tests/DesktopPetCodexServiceTests.cs"
       ],
       "related": [
         "ui.settings",
@@ -10563,7 +10545,6 @@
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs",
-        "Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs",
         "Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs",
         "Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/VideoLifecycleTests.cs",
@@ -11237,10 +11218,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs",
-        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs",
         "Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
-        "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs",
         "Test/ColorVision.UI.Tests/IPAddressBoxTests.cs"
       ],

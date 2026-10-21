@@ -5,7 +5,7 @@ status: "current"
 summary: "定位 Flow 数据转换、图像转换、校准及属性选择器。"
 aliases: ["找不到图像转换或校准模板","AlgDataConvertNode","LocalCalibrationRealPoiNode","CalibrationTemplatePropertiesEditor"]
 code_paths: ["Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs"]
 related: ["flow.index","flow.templates","ui.property-grid"]
 ---
 
@@ -88,6 +88,4 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs`。
-
-CameraNodeTemplateMappingTests 只覆盖相机相关模板编辑器映射；`Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs` 覆盖旧校准节点字段忽略、重新保存、请求精简及画布连线兼容。转换与校准服务协议、结果文件仍需独立集成验证。
+`Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs` 覆盖旧校准节点字段忽略、重新保存、请求精简及画布连线兼容。转换与校准服务协议、结果文件仍需独立集成验证。

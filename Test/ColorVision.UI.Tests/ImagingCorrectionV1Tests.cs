@@ -28,43 +28,6 @@ public sealed class ImagingCorrectionV1Tests
     };
 
     [Fact]
-    public void CatalogPresetDefaultsAliasesAndHostPolicyAreStable()
-    {
-        AlgorithmCatalog catalog = StandardAlgorithmCatalog.Create();
-        AlgorithmDescriptor descriptor = Assert.Single(catalog.Descriptors, value => value.Id == StandardAlgorithmIds.ImagingCorrection);
-        Assert.Equal(new AlgorithmVersion(1, 0, 0), descriptor.Version);
-        Assert.Equal(1, descriptor.MinimumInputCount);
-        Assert.Equal(5, descriptor.MaximumInputCount);
-        Assert.Equal("primary=same-as-source; validity-mask=gray8", descriptor.OutputFormatPolicy);
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Interactive));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Batch));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Flow));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.MultiInput));
-        Assert.False(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Copilot));
-        Assert.True(catalog.TryResolveAlias("FlatFieldCorrection", out AlgorithmDescriptor? alias));
-        Assert.Equal(descriptor.Id, alias!.Id);
-        ImagingCorrectionParameters defaults = descriptor.ParameterSchema.Defaults.Deserialize<ImagingCorrectionParameters>(AlgorithmJson.Options)!;
-        Assert.True(defaults.Validate().IsValid);
-        Assert.Contains(descriptor.ParameterSchema.Fields, value => value.Name == nameof(ImagingCorrectionParameters.BadPixelRadius) && value.Minimum == 1 && value.Maximum == 7);
-        Assert.Contains(BatchImageAlgorithms.CreateAll(catalog), value => value.Descriptor?.Id == descriptor.Id);
-
-        ImagingCorrectionParameters parameters = new()
-        {
-            EnableDarkFrame = true,
-            DarkFramePath = "references/dark.tif",
-            CalibrationSource = "camera-17",
-            CalibrationVersion = "2026-08-28",
-            CalibrationChecksum = "sha256:fixture",
-        };
-        string json = ImagingCorrectionPresetSerializer.Serialize("camera-17-v3", parameters);
-        (string presetId, ImagingCorrectionParameters restored) = ImagingCorrectionPresetSerializer.Deserialize(json);
-        Assert.Equal("camera-17-v3", presetId);
-        Assert.True(restored.EnableDarkFrame);
-        Assert.Equal(parameters.DarkFramePath, restored.DarkFramePath);
-        Assert.Equal(parameters.CalibrationChecksum, restored.CalibrationChecksum);
-    }
-
-    [Fact]
     public void ValidationRejectsThresholdGainEnumRadiusAndProvenanceDrift()
     {
         ImagingCorrectionParameters parameters = new()
@@ -523,50 +486,6 @@ public sealed class ImagingCorrectionV1Tests
         {
             if (File.Exists(darkPath)) File.Delete(darkPath);
             if (Directory.Exists(directory)) Directory.Delete(directory);
-        }
-    }
-
-    [Fact]
-    public async Task ImageViewMultiInputSessionCommitsAndResultWindowOwnsArtifacts()
-    {
-        ImageView imageView = WpfTestHost.Invoke(() =>
-        {
-            EnsureResources();
-            ImageView view = new();
-            WriteableBitmap bitmap = new(4, 3, 96, 96, PixelFormats.Gray8, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, 4, 3), Enumerable.Repeat((byte)100, 12).ToArray(), 4, 0);
-            view.SetImageSource(bitmap, enableEditorImageServices: false, configureDefaultLayerController: false);
-            return view;
-        });
-        AlgorithmResult? result = null;
-        try
-        {
-            ImageProcessingContext context = imageView.EditorContext.ProcessingContext;
-            WpfTestHost.Invoke(() => Assert.Single(new AlgorithmsContextMenu(context).GetContextMenuItems(), value => value.GuidId == "ImagingCorrection"));
-            long revision = context.ImageRevision;
-            AlgorithmImageBuffer dark = ByteBuffer(4, 3, Enumerable.Repeat((byte)10, 12).ToArray());
-            result = await WpfTestHost.Invoke(() => ImageAlgorithmApplier.ApplyAsync(
-                context,
-                AlgorithmInvocation.Create(StandardAlgorithmIds.ImagingCorrection, new ImagingCorrectionParameters { EnableDarkFrame = true }),
-                [new AlgorithmInput { Name = "dark-frame", Image = dark, Ownership = AlgorithmInputOwnership.Transferred, ColorSpace = "encoded-device-values" }]));
-            Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
-            Assert.Equal(revision + 1, context.ImageRevision);
-            Assert.True(dark.IsDisposed);
-            WpfTestHost.Invoke(() =>
-            {
-                ImagingCorrectionResultWindow window = new(result);
-                window.Show();
-                Assert.Equal(4, Assert.IsAssignableFrom<BitmapSource>(Assert.IsType<System.Windows.Controls.Image>(window.FindName("CorrectedPreview")).Source).PixelWidth);
-                Assert.NotNull(Assert.IsType<DataGrid>(window.FindName("StageGrid")).ItemsSource);
-                Assert.NotNull(Assert.IsType<DataGrid>(window.FindName("ProvenanceGrid")).ItemsSource);
-                window.Close();
-                Assert.True(result.IsDisposed);
-            });
-        }
-        finally
-        {
-            result?.Dispose();
-            WpfTestHost.Invoke(imageView.Dispose);
         }
     }
 

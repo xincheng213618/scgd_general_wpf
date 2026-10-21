@@ -5,7 +5,7 @@ status: "current"
 summary: "CircleFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["如何拟合圆、为什么圆拟合默认不可执行","CircleFit","CircleFitAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/CircleFitAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CircleFitV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -56,6 +56,6 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 验证范围与限制
 
-`CircleFitV1Tests` 覆盖九种规范图像格式、带离群点的稳健数值 golden、Physical/DPI、最小二乘、共线/不足/半径/角覆盖拒绝、资源上限、取消、输入只读、所有权释放、Batch/Flow 一致性，以及 ImageView 表格、圆形 WPF Visual 和回收。计算上限由共识候选/距离评估预算限定，后续 IRLS 为 `O(iterations × points)`，结果内存为 `O(points)`。
+计算上限由共识候选/距离评估预算限定，后续 IRLS 为 `O(iterations × points)`，结果内存为 `O(points)`。
 
 V1 不从像素自动检测圆、不拟合椭圆或多个圆，也不输出统计协方差。仿射、透视和单应性属于 [几何变换](./geometric-transform-v1.md) 的独立契约，不由圆拟合隐式提供。

@@ -5,7 +5,7 @@ status: "current"
 summary: "SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["亚像素边缘如何采样、为什么默认不可执行","SubpixelEdge","SubpixelEdgeAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/SubpixelEdgeAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SubpixelEdgeV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 

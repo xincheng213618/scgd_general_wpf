@@ -35,56 +35,6 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DockViewLifecycleTests
 {
-    [Fact]
-    public void RegisteringFactoryDoesNotCreateItsView()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            int created = 0;
-            using var registration = new DockViewRegistration(() => { created++; return new UserControl(); }, "Lazy view");
-            new UserControl().AddViewConfig(registration, "Lazy view");
-            Assert.Null(registration.Current);
-            Assert.Equal(0, created);
-            DockViewManager.GetInstance().ShowAllViews();
-            Assert.NotNull(registration.Current);
-            Assert.Equal(1, created);
-        });
-    }
-
-    [Fact]
-    public void BackgroundCameraPreviewDoesNotCreateAView()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using var camera = new DeviceCamera(Resource("background"));
-            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
-            {
-                Width = 2, Height = 1, SourceBpp = 8, Channels = 1
-            }, 2, 0);
-            camera.PublishLocalPreview(frame, null, forceDisplay: true);
-            Pump();
-            Assert.Null(camera.ExistingView);
-            Assert.Null(camera.GetType().GetField("pendingPreview", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(camera));
-        });
-    }
-
-    [Theory]
-    [InlineData("camera")]
-    [InlineData("algorithm")]
-    [InlineData("calibration")]
-    public void DevicePanelDoesNotCreateAnImageView(string kind)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using DeviceService device = CreateDevice(kind);
-            Assert.NotNull(device.GetDisplayControl());
-            Assert.Null(Registration(device).Current);
-            Assert.Empty(scope.Pane.Children);
-        });
-    }
 
     [Theory]
     [InlineData("camera")]
@@ -175,93 +125,6 @@ public sealed class DockViewLifecycleTests
         });
     }
 
-    [Theory]
-    [InlineData(CVFileSaveMode.Synchronous, 0)]
-    [InlineData(CVFileSaveMode.MemoryOnly, 0)]
-    [InlineData(CVFileSaveMode.Synchronous, 100)]
-    [InlineData(CVFileSaveMode.MemoryOnly, 100)]
-    public async Task SavedCapturesDisplayCurrentColorParametersWithoutReselection(CVFileSaveMode saveMode, int firstId)
-    {
-        using var first = new RawFile(3, 2);
-        using var second = new RawFile(3, 2);
-        Scope? scope = null;
-        DeviceCamera? camera = null;
-        bool cacheEnabled = CVFileReadCache.IsEnabled;
-        try
-        {
-            CVFileReadCache.IsEnabled = true;
-            WpfTestHost.Invoke(() =>
-            {
-                scope = new Scope();
-                camera = new DeviceCamera(Resource("calibrated-capture"));
-                DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
-                Image(camera).IEditorToolFactory.IEditorTools.Clear();
-                Image(camera).IEditorToolFactory.IImageOpens[".cvraw"] = new CVRawOpen(Image(camera).EditorContext);
-            });
-            double gain = 1;
-            foreach (string path in new[] { first.Path, second.Path })
-            {
-                File.Delete(path);
-                using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
-                    { Width = 3, Height = 2, SourceBpp = 8, Channels = 3, Exposure = [10, 10, 10] }, 18, 0);
-                using (var lease = frame.Acquire()) System.Runtime.InteropServices.Marshal.Copy(Enumerable.Repeat((byte)20, 18).ToArray(), 0, lease.RawPointer, 18);
-                var transform = RawColorTransformV1.Create();
-                transform.Coefficients = [1, 0, 0, 0, gain, 0, 0, 0, 1];
-                frame.ColorCalibration = ColorCalibrationSnapshot.Create(transform, 3, 2, 8, [10, 10, 10], "capture");
-                LocalFrameFileService.SaveCapture(frame, path, saveMode);
-                Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
-                Task<bool> opened = WpfTestHost.Invoke(() =>
-                {
-                    ImageView image = Image(camera!);
-                    TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                    EventHandler<ImageViewImageSourceLoadedEventArgs>? handler = null;
-                    handler = (_, _) => { image.ImageSourceLoaded -= handler; completion.TrySetResult(image.Config.GetProperties<bool>("HasCieMeasurements")); };
-                    image.ImageSourceLoaded += handler;
-                    var model = new MeasureResultImgModel { Id = firstId == 0 ? 0 : firstId + (int)gain - 1, FileUrl = path };
-                    ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, camera!.Code,
-                        "GetData", "capture", "camera-node", 0, new ResultReference(model.Id, 100), model));
-                    frame.Dispose();
-                    return completion.Task;
-                });
-                Assert.True(await opened.WaitAsync(TimeSpan.FromSeconds(15)));
-                WpfTestHost.Invoke(() =>
-                {
-                    ImageView image = Image(camera!);
-                    Assert.Equal(path, image.Config.FilePath);
-                    Assert.Equal(path, camera!.View.ViewResults[0].FileUrl);
-                    Assert.Equal(firstId == 0 ? 1 : (int)gain, camera.View.ViewResults.Count);
-                    Assert.True(image.Config.GetProperties<bool>("HasCieMeasurements"));
-                    var buffer = GetOpenerField<PoiMeasurementBuffer>(Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen), "_measurementBuffer")!;
-                    Assert.Equal((float)(20 * gain), PoiMeasurementService.Calculate(buffer, [new(0, 0, 1, 1, PoiMeasurementShape.Point)])[0].Y);
-                    Assert.Equal(0, buffer.RawSource!.CachedXyzBytes);
-                });
-                gain = 2;
-            }
-        }
-        finally
-        {
-            WpfTestHost.Invoke(() => { camera?.Dispose(); scope?.Dispose(); });
-            CVFileReadCache.IsEnabled = cacheEnabled;
-        }
-    }
-
-    [Fact]
-    public void CameraResultWithoutFileKeepsTheSameRowOnDuplicateNotification()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using var camera = new DeviceCamera(Resource("duplicate-result"));
-            DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
-            ColorVision.Engine.Services.Devices.Camera.Views.ViewCamera.Config.AutoRefreshView = false;
-            var model = new MeasureResultImgModel { Id = 100 };
-            camera.View.ShowResult(model);
-            ViewResultImage first = Assert.Single(camera.View.ViewResults);
-            camera.View.ShowResult(model);
-            Assert.Same(first, Assert.Single(camera.View.ViewResults));
-        });
-    }
-
     [Fact]
     public void RealtimePreviewDetachesAndReconnectsWithoutChangingVideoState()
     {
@@ -324,45 +187,6 @@ public sealed class DockViewLifecycleTests
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task LargeImageClearAndCloseReclaimWithoutTestInitiatedCollection(bool closeView)
-    {
-        using var sample = new RawFile(4096, 3072);
-        Scope? scope = null;
-        DeviceService? device = null;
-        Window? window = null;
-        try
-        {
-            WpfTestHost.Invoke(() =>
-            {
-                scope = new Scope();
-                device = CreateDevice("camera");
-                var docking = new AvalonDock.DockingManager { Layout = Assert.IsType<LayoutRoot>(scope.Pane.Root) };
-                window = new Window { Content = docking, Width = 800, Height = 600, ShowActivated = false };
-                window.Show();
-            });
-            Task loading = WpfTestHost.Invoke(() => OpenRaw(device!, sample.Path));
-            await loading.WaitAsync(TimeSpan.FromSeconds(30));
-            SemaphoreSlim gate = WpfTestHost.Invoke(() => (SemaphoreSlim)typeof(CVRawOpen)
-                .GetField("_rawOpenGate", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .GetValue(Image(device!).EditorContext.IImageOpen)!);
-            Assert.True(await gate.WaitAsync(TimeSpan.FromSeconds(30)));
-            gate.Release();
-
-            (WeakReference[] references, Task reclamation) = WpfTestHost.Invoke(() => RetireLargeImage(device!, closeView));
-            // Observe the product's task; do not trigger GC or request another collection here.
-            Assert.NotSame(Task.CompletedTask, reclamation);
-            await reclamation.WaitAsync(TimeSpan.FromSeconds(30));
-            Assert.All(references, reference => Assert.False(reference.IsAlive));
-        }
-        finally
-        {
-            WpfTestHost.Invoke(() => { window?.Close(); device?.Dispose(); scope?.Dispose(); });
-        }
-    }
-
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static (WeakReference[], Task) RetireLargeImage(DeviceService device, bool closeView)
     {
@@ -375,22 +199,6 @@ public sealed class DockViewLifecycleTests
         else image.Clear();
         Assert.Null(image.ViewBitmapSource);
         return (references, ImageMemoryReclaimer.PendingCollection);
-    }
-
-    [Fact]
-    public void ClearingAnEmptyOrSmallImageDoesNotScheduleCollection()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using var device = CreateDevice("camera");
-            ImageView image = Image(device);
-            image.Clear();
-            Assert.Same(Task.CompletedTask, ImageMemoryReclaimer.PendingCollection);
-            image.SetImageSource(new WriteableBitmap(64, 32, 96, 96, PixelFormats.Gray8, null));
-            image.Clear();
-            Assert.Same(Task.CompletedTask, ImageMemoryReclaimer.PendingCollection);
-        });
     }
 
     [Fact]

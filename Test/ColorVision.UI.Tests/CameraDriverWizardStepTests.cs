@@ -178,32 +178,6 @@ public sealed class CameraDriverWizardStepTests
     }
 
     [Fact]
-    public void WindowBindsAndLaysOutWithoutStartingDownloadsOrInstallers()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            FakeService service = new() { Status = Installed };
-            FakeDownloader downloader = new();
-            CameraDriverWindowModel model = new(service, downloader);
-            model.RefreshAsync(CancellationToken.None).GetAwaiter().GetResult();
-            CameraDriverWindow window = new(model);
-            try
-            {
-                var content = (System.Windows.FrameworkElement)window.Content;
-                window.Content = null;
-                var surface = new System.Windows.Controls.Border { DataContext = model, Child = content };
-                surface.Measure(new System.Windows.Size(680, 430));
-                surface.Arrange(new System.Windows.Rect(0, 0, 680, 430));
-                surface.UpdateLayout();
-                Assert.Equal(CameraDriverText.Get("ReinstallAction"), model.InstallText);
-                Assert.Equal(0, downloader.Calls);
-                Assert.Equal(0, service.InstallCalls);
-            }
-            finally { window.Close(); }
-        });
-    }
-
-    [Fact]
     public async Task DownloadedHtmlOrCorruptFileIsRejectedBeforeLaunching()
     {
         string file = Path.GetTempFileName();

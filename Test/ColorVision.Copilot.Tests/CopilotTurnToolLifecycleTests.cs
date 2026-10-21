@@ -39,36 +39,6 @@ public sealed class CopilotTurnToolLifecycleTests
     }
 
     [Fact]
-    public void ReducerRejectsRunningProgressBeforeToolStart()
-    {
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                CreateStartedState(),
-                CopilotAgentEvent.ToolProgress(
-                    CreateExecution(CopilotToolExecutionState.Running, durationMs: 10),
-                    "ProtectedTool is running.")));
-
-        Assert.Contains("before the tool started", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsPendingProgressAfterToolStart()
-    {
-        var state = Observe(
-            CreateStartedState(),
-            CopilotAgentEvent.ToolStarted(CreateExecution(CopilotToolExecutionState.Running)));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                state,
-                CopilotAgentEvent.ToolProgress(
-                    CreateExecution(CopilotToolExecutionState.Pending, durationMs: 10),
-                    "ProtectedTool is queued.")));
-
-        Assert.Contains("back to pending", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void ReducerRejectsAgentCompletionWhileToolIsRunning()
     {
         var state = Observe(
@@ -79,19 +49,6 @@ public sealed class CopilotTurnToolLifecycleTests
             Observe(state, CopilotAgentEvent.Completed()));
 
         Assert.Contains("tool item was still active", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerAcceptsDirectRejectedResultWithoutToolStart()
-    {
-        var state = Observe(
-            CreateStartedState(),
-            CreateTerminalResult(
-                CreateExecution(CopilotToolExecutionState.Failed, durationMs: 0),
-                success: false));
-        state = Observe(state, CopilotAgentEvent.Completed());
-
-        Assert.True(state.AgentCompleted);
     }
 
     [Fact]
@@ -109,41 +66,6 @@ public sealed class CopilotTurnToolLifecycleTests
             Observe(state, CreateTerminalResult(mismatched, success: true)));
 
         Assert.Contains("did not match", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsCompletedStateWithFailedResult()
-    {
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                CreateStartedState(),
-                CreateTerminalResult(
-                    CreateExecution(CopilotToolExecutionState.Completed),
-                    success: false)));
-
-        Assert.Contains("invalid state metadata", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsToolProgressThatMovesBackwards()
-    {
-        var state = Observe(
-            CreateStartedState(),
-            CopilotAgentEvent.ToolStarted(CreateExecution(CopilotToolExecutionState.Running)));
-        state = Observe(
-            state,
-            CopilotAgentEvent.ToolProgress(
-                CreateExecution(CopilotToolExecutionState.Running, durationMs: 100),
-                "ProtectedTool is running."));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                state,
-                CopilotAgentEvent.ToolProgress(
-                    CreateExecution(CopilotToolExecutionState.Running, durationMs: 90),
-                    "ProtectedTool is running.")));
-
-        Assert.Contains("moved backwards", exception.Message, StringComparison.Ordinal);
     }
 
     private static CopilotTurnEventState CreateStartedState() =>

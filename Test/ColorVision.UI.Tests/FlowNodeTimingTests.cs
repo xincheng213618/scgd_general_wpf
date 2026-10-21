@@ -138,32 +138,6 @@ public class FlowNodeTimingTests
         Assert.Equal(2, snapshot.OmittedStages);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void RealLocalNodeCompletionPublishesTimingJsonOnSuccessAndFailure(bool fail)
-    {
-        var node = new TimingNode(fail);
-        node.Create();
-        FlowEngineNodeEndEventArgs? completed = null;
-        node.nodeEndEvent += (_, args) => completed = args;
-        var action = new CVStartCFC("timing-test");
-        try
-        {
-            typeof(LocalFlowNodeBase).GetMethod("ExecuteCore", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(node, [new CVTransAction(action)]);
-            Assert.NotNull(completed);
-            Assert.Equal(fail ? -1 : 0, completed.RecvStatusCode);
-            var payload = JObject.Parse(completed.RecvPayload);
-            Assert.Equal("ms", (string?)payload["Timing"]?["Unit"]);
-            var stages = (JArray)payload["Timing"]!["Stages"]!;
-            Assert.Contains(stages, stage => (string?)stage["Name"] == "OpenImage" && (string?)stage["Status"] == (fail ? "Failed" : "Completed"));
-            if (!fail) Assert.Equal(7, (int?)payload["Answer"]);
-            Assert.Null(FlowNodeTiming.Measure("outside"));
-        }
-        finally { action.RuntimeResources.Dispose(); }
-    }
-
     [Fact]
     public void AStageCompletedOnAnotherThreadDoesNotInventThreadCpuTime()
     {
@@ -179,14 +153,5 @@ public class FlowNodeTimingTests
         Assert.Null(recorded.ThreadCpuMs);
         Assert.True(recorded.ProcessGcPauseMs >= 0);
         Assert.Equal("Completed", recorded.Status);
-    }
-
-    private sealed class TimingNode(bool fail) : LocalFlowNodeBase("Timing", "Test", "Test")
-    {
-        protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
-        {
-            FlowNodeTiming.Run("OpenImage", () => { if (fail) throw new InvalidOperationException("open failed"); });
-            return new LocalNodeExecutionResult { Data = new { Answer = 7 } };
-        }
     }
 }

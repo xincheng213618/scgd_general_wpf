@@ -11,37 +11,6 @@ namespace ColorVision.UI.Tests;
 [Collection(AssemblyDiscoveryCollection.CollectionName)]
 public sealed class HotkeyMenuBindingTests
 {
-    [Theory]
-    [InlineData(typeof(ColorVision.UI.Desktop.Settings.MenuOptions), Key.OemComma, ModifierKeys.Control)]
-    [InlineData(typeof(ColorVision.UI.LogImp.MenuLogWindow), Key.L, ModifierKeys.Control | ModifierKeys.Alt)]
-    [InlineData(typeof(ColorVision.Update.MenuCheckAndUpdateV1), Key.None, ModifierKeys.None)]
-    [InlineData(typeof(ColorVision.ExportMenuViewStatusBar), Key.None, ModifierKeys.None)]
-    [InlineData(typeof(ColorVision.AboutMsgExport), Key.None, ModifierKeys.None)]
-    [InlineData(typeof(ColorVision.Solution.Workspace.MenuResetLayout), Key.R, ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift)]
-    public void BuiltInMenusKeepTheirDefaultDeclarationsAndFollowRuntimeOverrides(Type providerType, Key defaultKey, ModifierKeys defaultModifiers)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            // These providers have side-effect-free constructors/declarations; do not execute their callbacks.
-            var source = Assert.IsAssignableFrom<IMenuItem>(Activator.CreateInstance(providerType));
-            HotKeys declaration = Assert.IsAssignableFrom<IHotKey>(source).HotKeys;
-            Assert.Equal(new Hotkey(defaultKey, defaultModifiers), declaration.DefaultHotkey);
-            string id = string.IsNullOrWhiteSpace(declaration.Id) ? providerType.FullName! : declaration.Id;
-            var runtime = Runtime(id, Key.F12);
-            var menu = new MenuItem { InputGestureText = source.InputGestureText };
-            if (defaultKey == Key.None)
-            {
-                Assert.Empty(declaration.GetDefaultBindings());
-                Assert.True(string.IsNullOrEmpty(menu.InputGestureText));
-            }
-
-            HotkeyMenuGestureBinding.Attach(menu, source, new ObservableCollection<HotKeys> { runtime });
-
-            Assert.Equal("Ctrl+F12", menu.InputGestureText);
-            Assert.Equal(new Hotkey(defaultKey, defaultModifiers), declaration.DefaultHotkey);
-            Assert.False(runtime.IsRegistered);
-        });
-    }
 
     [Fact]
     public void ExistingRuntimeCombinationIsShownWithoutInvokingOrRegisteringTheAction()

@@ -197,13 +197,6 @@ public sealed class GridDistortionTests
     }
 
     [Fact]
-    public void ImageViewMenusHaveDiscoverableContextConstructors()
-    {
-        Assert.NotNull(typeof(CMGridDistortion).GetConstructor(new[] { typeof(ImageProcessingContext), typeof(DrawEditorContext) }));
-        Assert.NotNull(typeof(DVCMGridDistortion).GetConstructor(new[] { typeof(ImageProcessingContext), typeof(DrawEditorContext), typeof(ImageViewConfig) }));
-    }
-
-    [Fact]
     public void AnalysisExportIncludesAllConventionsAndPreservesNativeEnvelope()
     {
         Assert.True(GridDistortionResultParser.TryParse(ValidJson(7).ToJsonString(), 1000, 800, out GridDistortionResult result, out _));

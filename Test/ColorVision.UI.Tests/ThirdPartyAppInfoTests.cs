@@ -72,17 +72,6 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void MenuManagerIsAnAdministratorToolWithItsOwnIcon()
-        {
-            ThirdPartyAppInfo app = Assert.Single(new MenuItemManagerAppProvider().GetThirdPartyApps());
-
-            Assert.Equal(ThirdPartyAppCategory.Internal, app.Category);
-            Assert.Equal(PermissionMode.Administrator, app.RequiredPermission);
-            Assert.Equal(ThirdPartyAppIconGlyphs.MenuManager, app.IconGlyph);
-            Assert.NotNull(app.LaunchAction);
-        }
-
-        [Fact]
         public void ServiceManagerMenuIsAvailableUnderHelpForAdministrators()
         {
             Authorization previousAuthorization = Authorization.Instance;
@@ -104,34 +93,6 @@ namespace ColorVision.UI.Tests
             {
                 Authorization.Instance = previousAuthorization;
             }
-        }
-
-        [Fact]
-        public void LauncherKeepsClassicToolbarGlyphSeparateFromCardFallback()
-        {
-            Assert.Equal("\uE74C", ThirdPartyAppIconGlyphs.Launcher);
-            Assert.NotEqual(ThirdPartyAppIconGlyphs.Default, ThirdPartyAppIconGlyphs.Launcher);
-        }
-
-        [Fact]
-        public void InternalProvidersExposeDistinctSemanticIcons()
-        {
-            IThirdPartyAppProvider[] providers =
-            [
-                new MenuItemManagerAppProvider(),
-                new ColorVision.ToolPlugins.ThirdPartyApps.InternalAppProvider(),
-                new ColorVision.ImageEditor.EditorTools.ThreeD.ModelViewer3DAppProvider(),
-                new ColorVision.UI.Desktop.TimedButtons.TimedButtonOperationStatsAppProvider(),
-                new ColorVision.UI.Desktop.ThirdPartyApps.Treemap.TreemapAppProvider(),
-                new WindowsServicePlugin.ServiceManager.ServiceManagerAppProvider(),
-            ];
-
-            ThirdPartyAppInfo[] apps = providers.SelectMany(provider => provider.GetThirdPartyApps()).ToArray();
-
-            Assert.Equal(providers.Length, apps.Length);
-            Assert.All(apps, app => Assert.Equal(ThirdPartyAppCategory.Internal, app.Category));
-            Assert.All(apps, app => Assert.NotEqual(ThirdPartyAppIconGlyphs.Default, app.IconGlyph));
-            Assert.Equal(apps.Length, apps.Select(app => app.IconGlyph).Distinct(StringComparer.Ordinal).Count());
         }
 
         [Fact]

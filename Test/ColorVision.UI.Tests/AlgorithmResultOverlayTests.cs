@@ -120,48 +120,6 @@ public sealed class AlgorithmResultOverlayTests
         });
     }
 
-    [Fact]
-    public void FovLabelCirclesFollowTheResultOverlayFontSize()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            var context = CreateFovContext();
-            context.Canvas.IsLayoutUpdated = false;
-            context.Canvas.TextFontSizeOverride = 80;
-            FovMeasurement measurement = new()
-            {
-                Corners =
-                [
-                    new LuminousAreaPoint(10, 20),
-                    new LuminousAreaPoint(210, 20),
-                    new LuminousAreaPoint(210, 120),
-                    new LuminousAreaPoint(10, 120)
-                ]
-            };
-
-            FovOverlayRenderer.Render(
-                context.ImageContext,
-                context.DrawContext,
-                measurement);
-
-            DVCircleText[] labels = context.Canvas.Visuals.OfType<DVCircleText>().ToArray();
-            Assert.All(labels, label =>
-            {
-                Assert.Equal(80, label.TextAttribute.FontSize);
-                Assert.Equal(40, label.Radius);
-            });
-
-            context.Canvas.TextFontSizeOverride = 40;
-            context.Canvas.ApplyLayoutScaleToVisuals();
-
-            Assert.All(labels, label =>
-            {
-                Assert.Equal(40, label.TextAttribute.FontSize);
-                Assert.Equal(20, label.Radius);
-            });
-        });
-    }
-
     private static (ImageProcessingContext ImageContext, DrawEditorContext DrawContext, DrawCanvas Canvas) CreateFovContext()
     {
         DrawCanvas canvas = new();

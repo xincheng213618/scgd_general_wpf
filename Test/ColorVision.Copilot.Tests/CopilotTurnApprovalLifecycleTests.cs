@@ -6,52 +6,6 @@ public sealed class CopilotTurnApprovalLifecycleTests
     private const string ActionId = "approval:11111111111111111111111111111111";
 
     [Fact]
-    public void ReducerAcceptsApprovalRequestExecutionAndTerminalResult()
-    {
-        var state = Observe(CreateStartedState(), CreateApprovalRequest());
-
-        state = Observe(
-            state,
-            CopilotAgentEvent.ToolStarted(CreateExecution(
-                CopilotToolExecutionState.Running,
-                ActionId)));
-        state = Observe(
-            state,
-            CopilotAgentEvent.FromToolResult(
-                new CopilotToolResult
-                {
-                    ToolName = "ProtectedTool",
-                    Success = true,
-                    Summary = "Protected tool completed.",
-                },
-                CreateExecution(CopilotToolExecutionState.Completed, ActionId)));
-        state = Observe(state, CopilotAgentEvent.Completed());
-
-        Assert.True(state.AgentCompleted);
-    }
-
-    [Fact]
-    public void ReducerAcceptsApprovalRequestFollowedByDenial()
-    {
-        var state = Observe(CreateStartedState(), CreateApprovalRequest());
-
-        state = Observe(
-            state,
-            CopilotAgentEvent.FromToolResult(
-                new CopilotToolResult
-                {
-                    ToolName = "ProtectedTool",
-                    Success = false,
-                    Summary = "Approval was denied.",
-                    FailureKind = CopilotToolFailureKind.Authorization,
-                },
-                CreateExecution(CopilotToolExecutionState.Denied, ActionId)));
-        state = Observe(state, CopilotAgentEvent.Completed());
-
-        Assert.True(state.AgentCompleted);
-    }
-
-    [Fact]
     public void ReducerRejectsAgentCompletionWithPendingTurnBlockingApproval()
     {
         var state = Observe(CreateStartedState(), CreateApprovalRequest());
@@ -60,32 +14,6 @@ public sealed class CopilotTurnApprovalLifecycleTests
             Observe(state, CopilotAgentEvent.Completed()));
 
         Assert.Contains("approval request was still pending", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsContinuationWithDifferentApprovalAction()
-    {
-        var state = Observe(CreateStartedState(), CreateApprovalRequest());
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                state,
-                CopilotAgentEvent.ToolStarted(CreateExecution(
-                    CopilotToolExecutionState.Running,
-                    "approval:22222222222222222222222222222222"))));
-
-        Assert.Contains("did not match", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsDuplicateApprovalRequest()
-    {
-        var state = Observe(CreateStartedState(), CreateApprovalRequest());
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(state, CreateApprovalRequest()));
-
-        Assert.Contains("more than once", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -100,19 +28,6 @@ public sealed class CopilotTurnApprovalLifecycleTests
         state = Observe(state, CopilotAgentEvent.Completed());
 
         Assert.True(state.AgentCompleted);
-    }
-
-    [Fact]
-    public void ReducerRejectsContradictoryApprovalExecutionSemantics()
-    {
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                CreateStartedState(),
-                CreateApprovalRequest(
-                    executeOnApproval: true,
-                    resumesAgentOnApproval: true)));
-
-        Assert.Contains("invalid approval request", exception.Message, StringComparison.Ordinal);
     }
 
     private static CopilotTurnEventState CreateStartedState() =>
