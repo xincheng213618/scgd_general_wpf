@@ -31,9 +31,9 @@ Package-local prerequisites and warnings:
 - Online package selection and local cache reuse are implemented. This consumer
   checks package directory names, not a publisher signature or package hash.
 - Legacy `CVWinSMS/InstallTool` and service-log menu classes are still compiled and
-  discoverable. The old tool path can query/download from its separate endpoint,
-  replace files, terminate processes, and launch an elevated executable after its
-  confirmation flow; do not treat it as inert configuration compatibility code.
+  discoverable. The old tool opens an existing executable or, after confirmation,
+  downloads a missing tool from its separate endpoint, extracts files, terminates
+  old tool processes, and launches the executable with elevation.
 - Publishing this plugin through `Scripts/package_plugin.bat WindowsServicePlugin`
   uploads a `.cvxp`; it neither publishes the service ZIP nor authorizes installing it.
 

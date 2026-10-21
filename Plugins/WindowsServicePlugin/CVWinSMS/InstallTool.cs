@@ -1,4 +1,4 @@
-﻿using ColorVision.UI;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using System.Diagnostics;
@@ -10,13 +10,6 @@ using System.Windows;
 
 namespace WindowsServicePlugin.CVWinSMS
 {
-    internal enum InstallToolUpdateCheckStatus
-    {
-        ToolMissing,
-        UpToDate,
-        Unavailable,
-    }
-
     public class InstallTool : MenuItemBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(InstallTool));
@@ -38,7 +31,7 @@ namespace WindowsServicePlugin.CVWinSMS
 
         public string GetDescription()
         {
-            string Description = "打开已配置的服务管理工具；如果不存在，可确认下载并指定保存位置。更新检查请使用同组的手动检查入口。";
+            string Description = "打开已配置的服务管理工具；如果不存在，可确认下载并指定保存位置。";
             if (File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
             {
                 string filePath = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath) + @"\config\App.config";
@@ -55,153 +48,8 @@ namespace WindowsServicePlugin.CVWinSMS
         public static string LatestReleaseUrl => Config.UpdatePath + "/LATEST_RELEASE";
 
 
-        // Keep the public entry point for callers, but do not enroll an optional
-        // external-tool update request in the application's startup initializers.
-        public Task Initialize() => GetLatestReleaseVersion();
         public bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; OnPropertyChanged(); } }
         private bool _ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
-
-        public async Task GetLatestReleaseVersion()
-        {
-            try
-            {
-                await CheckForUpdatesAsync(
-                    () => File.Exists(Config.CVWinSMSPath)
-                        ? new Version(FileVersionInfo.GetVersionInfo(Config.CVWinSMSPath).FileVersion!)
-                        : null,
-                    () => new DownloadFile().GetLatestVersionNumber(LatestReleaseUrl),
-                    ShowUpdateCheckStatus,
-                    version =>
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), GetText("服务管理工具:找到新版本，是否更新"), "CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                        {
-                            string downloadDir = Environments.DirToolPackageCache;
-                            string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[{version}].zip";
-
-                            var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
-                            if (service == null) return;
-
-                            service.ShowDownloadWindow();
-                            service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
-                            {
-                                if (filePath == null) return;
-                                _ = Task.Run(async () =>
-                                {
-                                    Process.GetProcessesByName("CVWinSMS").ToList().ForEach(p => p.Kill());
-                                    log.Info("正在关闭CVWinSMS");
-                                    await Task.Delay(3000);
-                                    Application.Current?.Dispatcher.Invoke(() =>
-                                    {
-                                        try
-                                        {
-                                            string configuredPath = CVWinSMSConfig.Instance.CVWinSMSPath;
-                                            DirectoryInfo? directoryInfo = string.IsNullOrWhiteSpace(configuredPath)
-                                                ? null
-                                                : Directory.GetParent(configuredPath);
-                                            string? folderBrowser = directoryInfo?.Parent?.FullName;
-                                            if (folderBrowser != null && directoryInfo != null)
-                                            {
-                                                ZipFile.ExtractToDirectory(filePath, folderBrowser, true);
-
-                                                if (directoryInfo.Name != "InstallTool")
-                                                {
-                                                    string ConfigPath = directoryInfo.FullName + "\\config\\App.config";
-                                                    string dirconfig = folderBrowser + "\\InstallTool\\config\\App.config";
-                                                    DirectoryInfo targetDirInfo = Directory.GetParent(dirconfig)
-                                                        ?? throw new InvalidOperationException("无法确定 CVWinSMS 配置目录。");
-                                                    if (!targetDirInfo.Exists)
-                                                    {
-                                                        targetDirInfo.Create();
-                                                    }
-                                                    File.Copy(ConfigPath, dirconfig, true);
-                                                    directoryInfo.Delete(true);
-                                                }
-                                                CVWinSMSConfig.Instance.CVWinSMSPath = folderBrowser + "\\InstallTool\\CVWinSMS.exe";
-                                            }
-                                            else
-                                            {
-                                                MessageBox.Show(GetText("更新失败， 找不到更新所在的文件夹"));
-                                            }
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            MessageBox.Show(GetText("更新失败，") + ex.Message);
-                                        }
-
-                                        ProcessStartInfo startInfo = new()
-                                        {
-                                            UseShellExecute = true,
-                                            WorkingDirectory = Environment.CurrentDirectory,
-                                            FileName = CVWinSMSConfig.Instance.CVWinSMSPath,
-                                            Verb = "runas"
-                                        };
-                                        try
-                                        {
-                                            Process.Start(startInfo);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            MessageBox.Show(ex.ToString());
-                                            File.Delete(filePath);
-                                        }
-                                    });
-                                });
-                            });
-
-                        };
-
-                    });
-
-                });
-            }catch(Exception ex)
-            {
-                ReportUpdateCheckFailure(ex);
-            }
-        }
-
-        internal static async Task CheckForUpdatesAsync(
-            Func<Version?> getInstalledVersion,
-            Func<Task<Version>> getLatestVersion,
-            Action<InstallToolUpdateCheckStatus> reportStatus,
-            Action<Version> offerUpdate)
-        {
-            Version? installedVersion;
-            try
-            {
-                installedVersion = getInstalledVersion();
-            }
-            catch (Exception ex)
-            {
-                log.Error("读取服务管理工具版本失败。", ex);
-                reportStatus(InstallToolUpdateCheckStatus.Unavailable);
-                return;
-            }
-
-            if (installedVersion == null)
-            {
-                reportStatus(InstallToolUpdateCheckStatus.ToolMissing);
-                return;
-            }
-
-            Version latestVersion;
-            try
-            {
-                latestVersion = await GetRequiredLatestVersionAsync(getLatestVersion);
-            }
-            catch (Exception ex)
-            {
-                log.Error("检查服务管理工具更新失败。", ex);
-                reportStatus(InstallToolUpdateCheckStatus.Unavailable);
-                return;
-            }
-
-            if (latestVersion > installedVersion)
-                offerUpdate(latestVersion);
-            else
-                reportStatus(InstallToolUpdateCheckStatus.UpToDate);
-        }
 
         internal static async Task<Version> GetRequiredLatestVersionAsync(Func<Task<Version>> getLatestVersion)
         {
@@ -209,28 +57,6 @@ namespace WindowsServicePlugin.CVWinSMS
             if (version == null || version <= new Version(0, 0, 0, 0))
                 throw new InvalidOperationException(GetText("无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。"));
             return version;
-        }
-
-        private static void ShowUpdateCheckStatus(InstallToolUpdateCheckStatus status)
-        {
-            string message = status switch
-            {
-                InstallToolUpdateCheckStatus.ToolMissing => GetText("未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。"),
-                InstallToolUpdateCheckStatus.UpToDate => GetText("未发现更新，当前服务管理工具可继续使用。"),
-                _ => GetText("无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。"),
-            };
-            Application.Current.Dispatcher.Invoke(() => MessageBox.Show(
-                Application.Current.GetActiveWindow(), message, GetText("检查旧服务管理工具更新"),
-                MessageBoxButton.OK,
-                status == InstallToolUpdateCheckStatus.Unavailable ? MessageBoxImage.Warning : MessageBoxImage.Information));
-        }
-
-        internal static void ReportUpdateCheckFailure(Exception ex)
-        {
-            log.Error("检查服务管理工具更新失败。", ex);
-            Application.Current.Dispatcher.Invoke(() => MessageBox.Show(
-                Application.Current.GetActiveWindow(), string.Format(GetText("检查服务管理工具更新失败：{0}"), ex.Message),
-                GetText("检查旧服务管理工具更新"), MessageBoxButton.OK, MessageBoxImage.Error));
         }
 
         public async Task Download()

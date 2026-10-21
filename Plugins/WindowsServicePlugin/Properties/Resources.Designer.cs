@@ -294,23 +294,7 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 导入配置 的本地化字符串。
-        /// </summary>
-        public static string ImportConfig {
-            get {
-                return ResourceManager.GetString("ImportConfig", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 定位旧版 CVWinSMS 并读取 App.config 的本地化字符串。
-        /// </summary>
-        public static string ImportConfigDescription {
-            get {
-                return ResourceManager.GetString("ImportConfigDescription", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 安装 的本地化字符串。
@@ -384,23 +368,7 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 检测到旧版配置：{0} 的本地化字符串。
-        /// </summary>
-        public static string LegacyConfigDetectedFormat {
-            get {
-                return ResourceManager.GetString("LegacyConfigDetectedFormat", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 未检测到旧版配置。导入时可以选择旧版 CVWinSMS.exe，手动配置可直接填写 MySQL 和 MQTT。 的本地化字符串。
-        /// </summary>
-        public static string LegacyConfigNotDetected {
-            get {
-                return ResourceManager.GetString("LegacyConfigNotDetected", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 日志输出 的本地化字符串。
@@ -429,23 +397,7 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 手动配置 的本地化字符串。
-        /// </summary>
-        public static string ManualConfig {
-            get {
-                return ResourceManager.GetString("ManualConfig", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 配置 MySQL 和 MQTT 的本地化字符串。
-        /// </summary>
-        public static string ManualConfigDescription {
-            get {
-                return ResourceManager.GetString("ManualConfigDescription", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 更多操作 的本地化字符串。
@@ -1105,32 +1057,8 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 选择初始化配置方式 的本地化字符串。
-        /// </summary>
-        public static string SetupConfigChoiceTitle {
-            get {
-                return ResourceManager.GetString("SetupConfigChoiceTitle", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 服务管理器配置 的本地化字符串。
-        /// </summary>
-        public static string SetupConfigTitle {
-            get {
-                return ResourceManager.GetString("SetupConfigTitle", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 跳过配置 的本地化字符串。
-        /// </summary>
-        public static string SkipConfig {
-            get {
-                return ResourceManager.GetString("SkipConfig", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 光谱仪日志 的本地化字符串。

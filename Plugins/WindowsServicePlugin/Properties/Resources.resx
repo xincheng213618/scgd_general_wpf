@@ -346,33 +346,6 @@
   <data name="LogOutput" xml:space="preserve">
     <value>日志输出</value>
   </data>
-  <data name="SetupConfigTitle" xml:space="preserve">
-    <value>服务管理器配置</value>
-  </data>
-  <data name="SetupConfigChoiceTitle" xml:space="preserve">
-    <value>选择初始化配置方式</value>
-  </data>
-  <data name="ImportConfig" xml:space="preserve">
-    <value>导入配置</value>
-  </data>
-  <data name="ImportConfigDescription" xml:space="preserve">
-    <value>定位旧版 CVWinSMS 并读取 App.config</value>
-  </data>
-  <data name="ManualConfig" xml:space="preserve">
-    <value>手动配置</value>
-  </data>
-  <data name="ManualConfigDescription" xml:space="preserve">
-    <value>配置 MySQL 和 MQTT</value>
-  </data>
-  <data name="SkipConfig" xml:space="preserve">
-    <value>跳过配置</value>
-  </data>
-  <data name="LegacyConfigDetectedFormat" xml:space="preserve">
-    <value>检测到旧版配置：{0}</value>
-  </data>
-  <data name="LegacyConfigNotDetected" xml:space="preserve">
-    <value>未检测到旧版配置。导入时可以选择旧版 CVWinSMS.exe，手动配置可直接填写 MySQL 和 MQTT。</value>
-  </data>
   <data name="MqttServiceDisplayName" xml:space="preserve">
     <value>MQTT服务</value>
   </data>
@@ -500,15 +473,7 @@
   <data name="MySqlVersionUnreadable" xml:space="preserve">
     <value>无法读取所选 MySQL 的版本，已停止操作。请选择原安装目录中的 bin\mysqld.exe，或包含该程序的有效 MySQL ZIP 安装包。</value>
   </data>
-  <data name="检查旧服务管理工具更新" xml:space="preserve"><value>检查旧服务管理工具更新</value></data>
-  <data name="未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。" xml:space="preserve"><value>未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。</value></data>
-  <data name="未发现更新，当前服务管理工具可继续使用。" xml:space="preserve"><value>未发现更新，当前服务管理工具可继续使用。</value></data>
-  <data name="无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。" xml:space="preserve"><value>无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。</value></data>
-  <data name="检查服务管理工具更新失败：{0}" xml:space="preserve"><value>检查服务管理工具更新失败：{0}</value></data>
   <data name="无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。" xml:space="preserve"><value>无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。</value></data>
-  <data name="服务管理工具:找到新版本，是否更新" xml:space="preserve"><value>服务管理工具:找到新版本，是否更新</value></data>
-  <data name="更新失败， 找不到更新所在的文件夹" xml:space="preserve"><value>更新失败， 找不到更新所在的文件夹</value></data>
-  <data name="更新失败，" xml:space="preserve"><value>更新失败，</value></data>
   <data name="请选择解压缩目录" xml:space="preserve"><value>请选择解压缩目录</value></data>
   <data name="找不到管理工具，是否下载" xml:space="preserve"><value>找不到管理工具，是否下载</value></data>
   <data name="打开或下载服务管理工具失败：{0}" xml:space="preserve"><value>打开或下载服务管理工具失败：{0}</value></data>
