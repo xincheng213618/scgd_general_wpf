@@ -88,25 +88,9 @@
 
                     <DockPanel>
                         <Button x:Name="CalibrationButton" Padding="15,3" HorizontalAlignment="Right" Click="Calibration_Click" Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right" />
-                        <Grid Width="20" Margin="5,0" DockPanel.Dock="Right">
-                            <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE713;">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8" />
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                            <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE713;" />
-                            <Button Width="20" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Click="MenuItem_Template" Tag="Calibration">
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                            </Button>
-                        </Grid>
+                        <Button Width="24" Height="24" Padding="2" Margin="5,0" VerticalAlignment="Center" DockPanel.Dock="Right" Click="MenuItem_Template" Tag="Calibration" ToolTip="{x:Static properties:Resources.Template}" AutomationProperties.Name="{x:Static properties:Resources.Template}">
+                            <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE713;" />
+                        </Button>
 
                         <ComboBox x:Name="ComboxCalibrationTemplate" HorizontalAlignment="Stretch" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
                     </DockPanel>

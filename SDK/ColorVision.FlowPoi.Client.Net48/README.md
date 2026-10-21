@@ -7,8 +7,12 @@
 1. 主程序应更新到包含 `FlowRunPoi` 的版本并启动。在“帮助 → 网络通信”启用 Socket 服务，选择 **JSON** 模式。确认实际监听端口（默认 `6666`）及现场可访问的 IP。
 2. 在主程序连接 MySQL，加载待执行流程。流程需产生 `POI_XYZ` 结果，并满足其设备、服务和前后处理依赖；先确认流程及现场设备可以执行。
 3. 将运行包整个 `Binaries` 目录复制到现场 Windows x64 电脑。需要安装 .NET Framework 4.8；运行示例不需要 .NET 10 SDK 或 Visual Studio。
-4. 双击 `FlowPoiClientDemo.exe`，按提示输入主程序 IP、端口、流程名称或模板 ID。按名称与按 ID 二选一；ID 是模板实际 ID，不是列表位置，本地模板的负数 ID 可直接使用。
-5. 查看返回码、批次编号和各点结果。交互模式会将完整 JSON 响应保存到程序旁的 `Results` 目录，请放到可写目录。
+4. 双击 `FlowPoiClientDemo.exe` 打开 WPF 窗口，输入主程序 IP、端口、流程名称或模板 ID，点击“发送并执行流程”。按名称与按 ID 二选一；ID 是模板实际 ID，不是列表位置，本地模板的负数 ID 可直接使用。
+5. 查看返回码、流程状态、批次和执行编号，以及 POI 表格、完整响应 JSON；使用“导出 JSON”或“导出 CSV”保存结果。CSV 同时保留批次身份、三刺激值和色度坐标。
+
+窗口支持“查看离线样例”和“打开响应 JSON”，不用连接主程序即可了解结果格式；离线显示会明确标注来源。运行期间可“取消等待”。关闭窗口同样取消本地等待。
+
+Demo 产品版本为 `1.0.1`，报文协议版本为 `1.0`。客户端运行只需 .NET Framework 4.8，不需要安装 .NET Core / .NET 10。完整请求、响应字段与返回码见 [API.md](API.md)。
 
 示例会真实执行流程及已配置的前后处理，可能触发采集、设备动作和数据库写入。`SerialNumber` 是请求关联编号；本次流程的执行编号在 `Data.ExecutionSerialNumber` 中返回。
 
@@ -18,9 +22,10 @@
 .\FlowPoiClientDemo.exe --host 192.168.1.10 --port 6666 --name "白画面" --timeout 600 --output .\result.json
 .\FlowPoiClientDemo.exe --host 192.168.1.10 --port 6666 --id 42 --timeout 600 --sn "sample-1" --output .\result.json
 .\FlowPoiClientDemo.exe --help
+.\FlowPoiClientDemo.exe --parse .\Samples\flow-poi-response.json --csv .\result.csv
 ```
 
-CLI 模式只在指定 `--output` 时写文件；已有同名输出文件会被覆盖。退出码 `0` 为业务成功，`2` 为主程序返回业务失败，`3` 为用户取消等待，`1` 为参数、连接、超时、协议或文件保存错误。
+CLI 模式只在指定 `--output` / `--csv` 时写文件；已有同名输出文件会被覆盖。`--parse` 仅离线解析文件，不能与 `--name` / `--id` 同用。无参数或 `--ui` 打开窗口。退出码 `0` 为业务成功，`2` 为主程序返回业务失败，`3` 为用户取消等待，`1` 为参数、连接、超时、协议或文件保存错误。
 
 ## 在自己的 net48 程序中调用
 
@@ -60,6 +65,8 @@ public static async Task ExecuteAndReadPoiAsync()
 
 线上字段大写 `X/Y/Z` 是三刺激值，小写 `x/y` 是色度坐标。客户端分别映射为 `X/Y/Z` 和 `ChromaticityX/ChromaticityY`；`u/v` 映射为 `U/V`，防止调用方混淆。每个点保留 `AlgorithmResultId/AlgorithmName/PoiId/Name` 和像素位置、尺寸。
 
+已保存的响应可使用 `FlowPoiResponse.Parse(File.ReadAllText(path))` 解析；它复用联机响应的校验规则，不会将缺失字段或空成功结果当作零值测量。
+
 ## 完成与失败
 
 客户端每次调用建立独立 TCP 连接，发送一次完整 JSON 请求；`Params` 按主程序要求编码成 JSON 字符串。使用 `EventName + MsgID` 匹配响应，持续读取完整 JSON，支持响应分包、连包、跨读取的 UTF-8 中文和没有换行符的响应。示例响应见 `Samples/flow-poi-response.json`，其中数据均为合成示例。
@@ -87,12 +94,20 @@ public static async Task ExecuteAndReadPoiAsync()
 
 `Source` 中包含可独立编译的 SDK 风格项目，编译机需 Visual Studio/MSBuild 或支持 net48 的 .NET SDK，以及 .NET Framework 4.8 Developer Pack。还原 Newtonsoft.Json 需要包源访问或已有 NuGet 缓存。
 
-在本目录执行：
+在 SDK 源码目录执行（交付包中为 `Source` 目录）：
 
 ```powershell
 dotnet build .\Demo\FlowPoiClientDemo.csproj -c Release -p:Platform=x64
 ```
 
 输出在 `Demo/bin/x64/Release/net48/`。复制时保留 EXE、EXE.config、客户端 DLL 和 Newtonsoft.Json.dll；源码包不包含仓库签名私钥。
+
+维护人员可从仓库根运行以下命令，生成带 `Binaries` 和 `Source` 的本地客户 ZIP；不上传、不连接设备：
+
+```powershell
+pwsh -NoProfile -File .\Scripts\package_flow_poi_demo.ps1
+```
+
+交付包的 `Source` 目录可单独复制并编译，只包含客户端、Demo、合成样例与说明，不引用 Engine、UI、ProjectARVRPro 或仓库私钥。
 
 仓库内网络回归入口：`Test/ColorVision.FlowPoi.Net48.Tests/`。使用本机回环模拟主程序验证请求、分包/连包、字段大小写、超时、取消和控制台输出，不控制设备，也不访问现场 MySQL；这些检查不能代替现场联调。

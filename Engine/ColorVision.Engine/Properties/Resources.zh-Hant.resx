@@ -1495,15 +1495,6 @@
   <data name="DataBaseConfig" xml:space="preserve">
     <value>資料庫配置</value>
   </data>
-  <data name="RESTAddress" xml:space="preserve">
-    <value>REST 位址</value>
-  </data>
-  <data name="ServerMonitorConfig" xml:space="preserve">
-    <value>服務監控配置</value>
-  </data>
-  <data name="MqttConfigId" xml:space="preserve">
-    <value>MQTT 配置 ID</value>
-  </data>
   <data name="TenantId" xml:space="preserve">
     <value>租戶 ID</value>
   </data>
@@ -1665,9 +1656,6 @@
     <value>範本編輯</value>
   </data>
   
-  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
-    <value>服務註冊中心配置</value>
-  </data>
   <data name="ExportSucceeded" xml:space="preserve">
     <value>匯出成功</value>
   </data>
@@ -1860,9 +1848,6 @@
   </data>
   <data name="Engine_Msg_FileProcessError" xml:space="preserve">
     <value>Error processing file: {0}</value>
-  </data>
-  <data name="Engine_Msg_RCConfigInfoNotFound" xml:space="preserve">
-    <value>{0} configuration info not found</value>
   </data>
   <data name="Engine_Msg_ConfirmDeleteAllRecords" xml:space="preserve">
     <value>Are you sure you want to delete all records in the database? This action cannot be undone.</value>

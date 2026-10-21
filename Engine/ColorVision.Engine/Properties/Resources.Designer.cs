@@ -4280,14 +4280,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 找不到{0}配置信息 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_RCConfigInfoNotFound {
-            get {
-                return ResourceManager.GetString("Engine_Msg_RCConfigInfoNotFound", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 当前结果只有 Y，没有色坐标，无法显示到 CIE 图。 的本地化字符串。
@@ -8750,14 +8742,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 MQTT配置ID 的本地化字符串。
-        /// </summary>
-        public static string MqttConfigId {
-            get {
-                return ResourceManager.GetString("MqttConfigId", resourceCulture);
-            }
-        }
         
         
         
@@ -10549,14 +10533,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 REST地址 的本地化字符串。
-        /// </summary>
-        public static string RESTAddress {
-            get {
-                return ResourceManager.GetString("RESTAddress", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 重启服务 的本地化字符串。
@@ -11663,14 +11639,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 服务监控配置 的本地化字符串。
-        /// </summary>
-        public static string ServerMonitorConfig {
-            get {
-                return ResourceManager.GetString("ServerMonitorConfig", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 服务 的本地化字符串。
@@ -11780,14 +11748,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 服务注册中心配置 的本地化字符串。
-        /// </summary>
-        public static string ServiceRegistryCenterConfig {
-            get {
-                return ResourceManager.GetString("ServiceRegistryCenterConfig", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 算法服务 的本地化字符串。

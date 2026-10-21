@@ -1644,15 +1644,6 @@
   <data name="DataBaseConfig" xml:space="preserve">
     <value>Database configuration</value>
   </data>
-  <data name="RESTAddress" xml:space="preserve">
-    <value>REST Address</value>
-  </data>
-  <data name="ServerMonitorConfig" xml:space="preserve">
-    <value>Service monitoring configuration</value>
-  </data>
-  <data name="MqttConfigId" xml:space="preserve">
-    <value>MQTT Configuration ID</value>
-  </data>
   <data name="TenantId" xml:space="preserve">
     <value>Tenant ID</value>
   </data>
@@ -1818,9 +1809,6 @@
     <value>Template editing</value>
   </data>
   
-  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
-    <value>Service Registry Configuration</value>
-  </data>
   <data name="ExportSucceeded" xml:space="preserve">
     <value>Export successful</value>
   </data>
@@ -3023,9 +3011,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="Engine_Msg_FileProcessError" xml:space="preserve">
     <value>Error processing file: {0}</value>
-  </data>
-  <data name="Engine_Msg_RCConfigInfoNotFound" xml:space="preserve">
-    <value>{0} configuration info not found</value>
   </data>
   <data name="Engine_Msg_ConfirmDeleteAllRecords" xml:space="preserve">
     <value>Are you sure you want to delete all records in the database? This action cannot be undone.</value>

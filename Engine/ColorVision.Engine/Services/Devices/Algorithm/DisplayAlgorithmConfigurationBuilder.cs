@@ -170,26 +170,24 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 System.Windows.Controls.Primitives.Selector.SelectedIndexProperty,
                 CreateBinding(selection, nameof(selection.SelectedIndex)));
 
-            Grid editButton = new()
+            Button editButton = new()
             {
-                Width = 26,
-                Margin = new Thickness(5, 0, 0, 0)
-            };
-            editButton.Children.Add(new TextBlock
-            {
-                Text = "\uE713",
-                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
-                FontSize = 15,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            editButton.Children.Add(new Button
-            {
+                Width = 24,
+                Height = 24,
+                Padding = new Thickness(2),
+                Margin = new Thickness(5, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
                 Command = selection.EditCommand,
-                Background = System.Windows.Media.Brushes.Transparent,
-                BorderBrush = System.Windows.Media.Brushes.Transparent,
-                BorderThickness = new Thickness(0)
-            });
+                ToolTip = selection.DisplayName,
+                Content = new TextBlock
+                {
+                    Text = "\uE713",
+                    FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 14,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                }
+            };
+            System.Windows.Automation.AutomationProperties.SetName(editButton, selection.DisplayName);
 
             Grid.SetColumn(label, 0);
             Grid.SetColumn(comboBox, 1);

@@ -1,11 +1,100 @@
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Browser;
+using ColorVision.Engine.Templates.Flow;
 using SqlSugar;
+using System.Collections;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class FlowTemplateBrowserOrderTests
 {
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 1)]
+    [InlineData(false, -1)]
+    [InlineData(true, -1)]
+    public async Task ReversedBrowserOrderKeepsSourceIdentityForFilteringOpeningSwappingAndDeleting(bool covers, int idSign)
+    {
+        await WpfTestHost.Invoke<Task>(async () =>
+        {
+            var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
+            Application.Current.Resources.MergedDictionaries.Add(theme);
+            var template = new BrowserTemplate();
+            var first = new TemplateBase { Id = idSign * 10, Key = "Match first" };
+            var middle = new TemplateBase { Id = idSign * 20, Key = "Middle" };
+            var last = new TemplateBase { Id = idSign * 30, Key = "Match last" };
+            template.Items.Add(first);
+            template.Items.Add(middle);
+            template.Items.Add(last);
+            var service = new FlowTemplateCoverService(Path.Combine(Directory.CreateTempSubdirectory("ColorVision-browser-order-").FullName, "covers.db"));
+            TemplateBrowserWindow? window = null;
+            try
+            {
+                window = new TemplateBrowserWindow(template, 0, new TemplateBrowserOptions("Test", covers, _ => { }), service);
+                var list = (ListView)window.FindName("TemplateList");
+                var search = (TextBox)window.FindName("SearchBox");
+                Assert.Equal(new[] { last, middle, first }, list.Items.Cast<TemplateBase>());
+                Assert.Equal(new[] { first, middle, last }, template.Items);
+                Assert.Same(first, list.SelectedItem);
+
+                search.Text = "Match";
+                Assert.Equal(new[] { last, first }, list.Items.Cast<TemplateBase>());
+                list.SelectedItem = last;
+                window.OpenSelected();
+                Assert.Same(last, template.Opened);
+
+                await window.SwapItemsAsync(last, first);
+                Assert.Equal((2, 0), template.Swapped);
+                Assert.Equal(new[] { first, last }, list.Items.Cast<TemplateBase>());
+                Assert.Same(last, list.SelectedItem);
+
+                search.Clear();
+                var added = new TemplateBase { Id = idSign * 40, Key = "Newest" };
+                template.Items.Add(added);
+                Assert.Equal(new[] { added, first, middle, last }, list.Items.Cast<TemplateBase>());
+                window.DeleteItems([last]);
+                Assert.Same(last, template.Deleted);
+                Assert.Equal(new[] { added, first, middle }, list.Items.Cast<TemplateBase>());
+
+                window.Close();
+                window = new TemplateBrowserWindow(template, 0, new TemplateBrowserOptions("Test", covers, _ => { }), service);
+                list = (ListView)window.FindName("TemplateList");
+                Assert.Equal(new[] { added, first, middle }, list.Items.Cast<TemplateBase>());
+            }
+            finally
+            {
+                window?.Close();
+                TemplateControl.ITemplateNames.Remove(template.Name);
+                Application.Current.Resources.MergedDictionaries.Remove(theme);
+            }
+        });
+    }
+
+    private sealed class BrowserTemplate : ITemplate
+    {
+        public ObservableCollection<TemplateBase> Items { get; } = [];
+        public override IEnumerable ItemsSource => Items;
+        public override string Title { get; set; } = "Browser order test";
+        public TemplateBase? Opened { get; private set; }
+        public TemplateBase? Deleted { get; private set; }
+        public (int, int) Swapped { get; private set; }
+        public override void PreviewMouseDoubleClick(int index) => Opened = Items[index];
+        public override void Delete(int index) { Deleted = Items[index]; Items.RemoveAt(index); }
+        public override bool SwapTemplateOrder(int index1, int index2)
+        {
+            Swapped = (index1, index2);
+            // Persisted swaps publish moves that keep source objects unique throughout.
+            int low = Math.Min(index1, index2), high = Math.Max(index1, index2);
+            Items.Move(high, low);
+            if (high > low + 1) Items.Move(low + 1, high);
+            return true;
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

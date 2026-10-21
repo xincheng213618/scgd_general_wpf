@@ -41,9 +41,9 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 
 ## 主模板存储
 
-主菜单、图像工具栏、手动算法模板选择、流程节点属性面板和 Conoscope 对焦点管理通过 `PoiTemplateManagerWindow` 浏览主 POI 点集。窗口复用流程的 `TemplateBrowserWindow` 搜索、操作栏和浏览交互；默认紧凑图标平铺，统一点阵图标下方显示居中的单行名称，长名称悬停查看。图标不是点位预览，浏览时不为它额外读取或渲染点明细。列表切换保留筛选、勾选、选中对象及各自滚动位置；双击仍交给原 `EditPoiParam`。过滤、修正、输出等伴生模板维持旧编辑宿主，主 POI 也可从“更多 → 旧版管理”回退。
+主菜单、图像工具栏、手动算法模板选择、流程节点属性面板和 Conoscope 对焦点管理通过 `PoiTemplateManagerWindow` 浏览主 POI 点集。窗口复用流程的 `TemplateBrowserWindow` 搜索、操作栏和浏览交互；固定使用紧凑图标平铺，按数据库保存顺序倒序显示，新建项排在前面。统一点阵图标下方显示居中的单行名称，长名称悬停查看。图标不是点位预览，浏览时不为它额外读取或渲染点明细。双击交给原 `EditPoiParam`；过滤、修正、输出等伴生模板维持各自的编辑宿主。
 
-拖拽交换两个模板的数据库顺序，新旧管理窗口采用同一事务实现。MySQL 交换 POI 主记录 ID 并同步全部点明细 Pid，名称、尺寸、配置与点位内容不变；本地点集交换 SQLite sort_order，保持 ID。提交后共享下拉框集合同步并保留选中对象，保存失败提示重新打开核对。重新打开使用数据库顺序，不再读取旧 flow_template_browser_order 本机偏好。新建、复制、导入、导出仍使用 `TemplatePoi` 原操作；重命名经 `PoiTemplateStorage.SaveMetadata` 保留未加载的点位；删除处理实际勾选项，包括被筛选隐藏的条目。重新加载跳过位置不变的集合移动，以免清空绑定的 ComboBox 选择。
+拖拽交换两个模板的数据库顺序。MySQL 交换 POI 主记录 ID 并同步全部点明细 Pid，名称、尺寸、配置与点位内容不变；本地点集交换 SQLite sort_order，保持 ID。提交后共享下拉框集合同步并保留选中对象，保存失败提示重新打开核对。管理窗口及重新打开时都按数据库顺序倒序展示，不反转或筛选共享下拉框集合，不读取旧 flow_template_browser_order 本机偏好。新建、复制、导入、导出仍使用 `TemplatePoi` 原操作；重命名经 `PoiTemplateStorage.SaveMetadata` 保留未加载的点位；删除处理实际勾选项，包括被筛选隐藏的条目。重新加载跳过位置不变的集合移动，以免清空绑定的 ComboBox 选择。
 
 `TemplatePoi` 双击打开 `EditPoiParam`，不是普通右侧 PropertyGrid。`PoiParam` 里保存画布尺寸、四角、配置 JSON 和 `ObservableCollection<PoiPoint>`。POI 主模板走专用表：
 

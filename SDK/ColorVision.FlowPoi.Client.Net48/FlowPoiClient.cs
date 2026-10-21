@@ -100,16 +100,9 @@ namespace ColorVision.FlowPoi.Client
                                         || !string.Equals((string)json["MsgID"], messageId, StringComparison.Ordinal))
                                         continue;
 
-                                    FlowPoiResponse response = json.ToObject<FlowPoiResponse>();
-                                    if (response == null)
-                                        throw new InvalidDataException("无法解析 FlowRunPoi 响应。");
-                                    if (response.IsSuccess && (response.Data == null || response.Data.BatchId <= 0
-                                        || response.Data.Poi == null || response.Data.Poi.Count == 0
-                                        || (response.Data.Status != "Succeeded" && response.Data.Status != "SucceededWithWarnings")))
-                                        throw new InvalidDataException("主程序返回成功码，但没有完整的成功批次和 POI 结果。");
+                                    FlowPoiResponse response = FlowPoiResponse.FromJsonObject(json);
 
                                     linked.Token.ThrowIfCancellationRequested();
-                                    response.ResponseJson = json.ToString(Formatting.Indented);
                                     return response;
                                 }
                             }

@@ -33,7 +33,10 @@ namespace ColorVision.FlowPoi.Tests
                 Test("Invalid selectors are rejected", InvalidSelectors)
             };
             if (args.Length == 2 && args[0] == "--demo")
+            {
                 tests.Add(Test("Packaged console executable calls TCP and writes result", () => ConsoleDemo(args[1])));
+                tests.Add(Test("Offline demo exports batch identity and distinct XYZ/xy columns", () => OfflineDemo(args[1])));
+            }
             int failed = 0;
             foreach (var test in tests)
             {
@@ -240,6 +243,52 @@ namespace ColorVision.FlowPoi.Tests
                 }
             }).ConfigureAwait(false);
             File.Delete(output);
+        }
+
+        private static async Task OfflineDemo(string executable)
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "flow-poi-demo-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string jsonPath = Path.Combine(directory, "response.json");
+            string csvPath = Path.Combine(directory, "points.csv");
+            try
+            {
+                string sample = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "flow-poi-response.json");
+                var start = new ProcessStartInfo(executable,
+                    "--parse \"" + sample + "\" --output \"" + jsonPath + "\" --csv \"" + csvPath + "\"")
+                {
+                    UseShellExecute = false, CreateNoWindow = true,
+                    RedirectStandardOutput = true, RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
+                };
+                using (Process process = Process.Start(start))
+                {
+                    Task<string> stdout = process.StandardOutput.ReadToEndAsync();
+                    Task<string> stderr = process.StandardError.ReadToEndAsync();
+                    if (!await Task.Run(() => process.WaitForExit(10000)).ConfigureAwait(false))
+                    {
+                        process.Kill();
+                        throw new InvalidOperationException("Offline demo did not exit.");
+                    }
+                    string display = await stdout.ConfigureAwait(false);
+                    string errors = await stderr.ConfigureAwait(false);
+                    if (process.ExitCode != 0) throw new InvalidOperationException(display + errors);
+                }
+                Equal(137, (int)JObject.Parse(File.ReadAllText(jsonPath))["Data"]["BatchId"]);
+                string[] lines = File.ReadAllLines(csvPath);
+                Equal(2, lines.Length);
+                string[] headers = lines[0].Split(',');
+                string[] values = lines[1].Split(',');
+                Equal(137, int.Parse(values[Array.IndexOf(headers, "BatchId")].Trim('"')));
+                Equal(10d, double.Parse(values[Array.IndexOf(headers, "X")].Trim('"'), System.Globalization.CultureInfo.InvariantCulture));
+                Equal(0.3d, double.Parse(values[Array.IndexOf(headers, "x")].Trim('"'), System.Globalization.CultureInfo.InvariantCulture));
+            }
+            finally
+            {
+                if (File.Exists(jsonPath)) File.Delete(jsonPath);
+                if (File.Exists(csvPath)) File.Delete(csvPath);
+                Directory.Delete(directory);
+            }
         }
 
         private static JObject Response(JObject request)

@@ -149,7 +149,7 @@ Engine 内置 `FlowRunPoiSocketHandler`，通过同一 JSON 监听端口调用�
 
 已取得最终执行结果的失败响应保留 `Data` 中的批次身份和状态，`Poi` 为空；启动前拒绝时 `Data` 为空。协议与结果隔离回归见 `Test/ColorVision.UI.Tests/FlowRunPoiSocketTests.cs`；设备采集、真实 MySQL 明细可见性和对端收包仍需现场联调。TCP 消息边界继续遵守下节的当前实现限制。
 
-独立 net48/x64 调用逻辑和控制台示例位于 `SDK/ColorVision.FlowPoi.Client.Net48/`：客户端仅依赖 Newtonsoft.Json，提供 `RunByNameAsync`、`RunByIdAsync`，每次建立一条连接，按 `EventName + MsgID` 匹配完整 JSON 响应。600 秒默认超时和取消只终止客户端等待，不自动重发，也不保证主程序流程已停止。线上 `X/x`、`Y/y` 分别映射为三刺激值和 `ChromaticityX/ChromaticityY`。现场操作、完整调用示例和独立编译前提见该目录 `README.md`；net48 回环回归位于 `Test/ColorVision.FlowPoi.Net48.Tests/`。
+独立 net48/x64 调用逻辑、WPF 窗口及兼容命令行示例位于 `SDK/ColorVision.FlowPoi.Client.Net48/`：客户端仅依赖 Newtonsoft.Json，提供 `RunByNameAsync`、`RunByIdAsync`，每次建立一条连接，按 `EventName + MsgID` 匹配完整 JSON 响应。600 秒默认超时和取消只终止客户端等待，不自动重发，也不保证主程序流程已停止。线上 `X/x`、`Y/y` 分别映射为三刺激值和 `ChromaticityX/ChromaticityY`。窗口支持按名称/ID 执行、取消等待、离线样例与 JSON/CSV 导出，`FlowPoiResponse.Parse` 复用联机校验解析离线响应。现场操作和独立编译前提见该目录 `README.md`，客户报文与字段手册为 `API.md`；`Scripts/package_flow_poi_demo.ps1` 只生成包含 Binaries/Source 的本地客户 ZIP，不上传。net48 回环及已打包 Demo 回归位于 `Test/ColorVision.FlowPoi.Net48.Tests/`。
 
 ## Text 分发与 TCP 消息边界
 

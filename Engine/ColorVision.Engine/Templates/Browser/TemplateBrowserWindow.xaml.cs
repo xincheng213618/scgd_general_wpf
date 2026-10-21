@@ -34,19 +34,14 @@ public partial class TemplateBrowserWindow : Window
     private IEnumerable<TemplateBase> SourceItems => template.ItemsSource.Cast<TemplateBase>();
     private readonly ListCollectionView items;
     private readonly ObservableCollection<TemplateBase> browserItems;
-    private readonly ViewBase listView;
-    private readonly ItemsPanelTemplate listPanel;
     private readonly HashSet<TemplateBase> renamed = [];
     private readonly HashSet<FlowTemplateCover> covers = [];
     private bool isClosed, coverRefreshPending;
-    private double listOffset, tileOffset;
     private ListViewItem? dropTarget;
     private long lastDragScroll;
     internal Task OrderSaveTask { get; private set; } = Task.CompletedTask;
-    private int modeGeneration;
     private Point dragStart;
     private TemplateBase? dragItem;
-    internal bool IsTileMode { get; private set; }
     internal FlowTemplateCoverService CoverService { get; }
 
     internal TemplateBrowserWindow(ITemplate template, int selectedIndex, TemplateBrowserOptions options, FlowTemplateCoverService coverService)
@@ -55,7 +50,8 @@ public partial class TemplateBrowserWindow : Window
         this.template = template;
         CoverService = coverService;
         template.Load();
-        browserItems = new ObservableCollection<TemplateBase>(SourceItems);
+        // Reverse only the browser projection; shared picker indexes and local negative IDs retain their meaning.
+        browserItems = new ObservableCollection<TemplateBase>(SourceItems.Reverse());
         items = new ListCollectionView(browserItems);
         InitializeComponent();
         this.ApplyCaption();
@@ -65,10 +61,8 @@ public partial class TemplateBrowserWindow : Window
         System.Windows.Automation.AutomationProperties.SetName(NewButton, NewLabel.Text);
         SearchPlaceholder.Text = string.Format(EngineResources.TemplateBrowserSearch, options.Label);
         System.Windows.Automation.AutomationProperties.SetName(SearchBox, SearchPlaceholder.Text);
-        TileModeButton.ToolTip = options.HasCovers ? EngineResources.TemplateBrowserCoverTiles : EngineResources.TemplateBrowserIconTiles;
         Title = template.Title;
-        listView = TemplateList.View;
-        listPanel = TemplateList.ItemsPanel;
+        TemplateList.ItemTemplate = (DataTemplate)Resources[options.HasCovers ? "FlowTile" : "PoiTile"];
         TemplateList.ItemsSource = items;
         TemplateList.SelectedItem = SourceItems.ElementAtOrDefault(selectedIndex);
         ((INotifyCollectionChanged)items).CollectionChanged += Items_CollectionChanged;
@@ -93,12 +87,10 @@ public partial class TemplateBrowserWindow : Window
         TemplateList.SelectionChanged += (_, _) => UpdateStatus();
         TemplateList.SizeChanged += (_, _) =>
         {
-            if (!IsTileMode && listView is GridView grid) grid.Columns[2].Width = Math.Max(150, TemplateList.ActualWidth - 138);
             UpdateTileSize();
             QueueCoverRefresh();
         };
         Activated += (_, _) => QueueCoverRefresh();
-        SetViewMode(true);
         Loaded += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
         {
             if (isClosed) return;
@@ -114,7 +106,7 @@ public partial class TemplateBrowserWindow : Window
             foreach (var item in browserItems) item.PropertyChanged -= Item_PropertyChanged;
             foreach (var item in renamed) item.IsEditMode = false;
             foreach (var cover in covers.ToArray()) cover.Cancel();
-            // Preserve the old manager's close/reload contract, but never reload on a view switch.
+            // Reload shared templates after the manager closes.
             try { template.Load(); }
             catch (Exception ex) { log.Warn("Reloading templates after closing the manager failed.", ex); }
         };
@@ -122,7 +114,6 @@ public partial class TemplateBrowserWindow : Window
 
     private void UpdateTileSize()
     {
-        if (!IsTileMode) return;
         double available = FindChild<ScrollContentPresenter>(TemplateList)?.ActualWidth ?? TemplateList.ActualWidth;
         if (available <= 0) return;
         int columns = Math.Max(1, (int)(available / (options.HasCovers ? 220 : 144)));
@@ -166,7 +157,7 @@ public partial class TemplateBrowserWindow : Window
             browserItems.Add(added);
         }
         int index = 0;
-        foreach (var item in SourceItems)
+        foreach (var item in SourceItems.Reverse())
         {
             int previous = browserItems.IndexOf(item);
             if (previous != index) browserItems.Move(previous, index);
@@ -194,84 +185,22 @@ public partial class TemplateBrowserWindow : Window
     internal void SelectTemplate(int id) => TemplateList.SelectedItem = browserItems.FirstOrDefault(item => item.Id == id);
     private int SourceIndex => Selected == null ? -1 : SourceItems.ToList().IndexOf(Selected);
 
-    internal void SetViewMode(bool tiles)
-    {
-        if (tiles == IsTileMode) { UpdateModeButtons(); return; }
-        var selected = Selected;
-        var scroll = FindChild<ScrollViewer>(TemplateList);
-        if (IsTileMode) tileOffset = scroll?.VerticalOffset ?? 0;
-        else listOffset = scroll?.VerticalOffset ?? 0;
-        IsTileMode = tiles;
-        foreach (var cover in covers.ToArray()) cover.Cancel();
-        TemplateList.View = tiles ? null : listView;
-        if (tiles) TemplateList.Template = (ControlTemplate)Resources["TemplateTileList"];
-        else TemplateList.ClearValue(TemplateProperty);
-        TemplateList.ItemTemplate = tiles ? (DataTemplate)Resources[options.HasCovers ? "FlowTile" : "PoiTile"] : null;
-        TemplateList.ItemsPanel = tiles ? (ItemsPanelTemplate)Resources["TemplateTilePanel"] : listPanel;
-        TemplateList.ItemContainerStyle = (Style)Resources[tiles ? "TemplateTileItem" : "TemplateListItem"];
-        ScrollViewer.SetCanContentScroll(TemplateList, !tiles);
-        TemplateList.SelectedItem = selected;
-        UpdateModeButtons();
-        int generation = ++modeGeneration;
-        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
-        {
-            if (isClosed || generation != modeGeneration) return;
-            TemplateList.UpdateLayout();
-            UpdateTileSize();
-            FindChild<ScrollViewer>(TemplateList)?.ScrollToVerticalOffset(tiles ? tileOffset : listOffset);
-            QueueCoverRefresh();
-        });
-    }
-
-    private void UpdateModeButtons() { ListModeButton.IsChecked = !IsTileMode; TileModeButton.IsChecked = IsTileMode; }
-    private void ListMode_Click(object sender, RoutedEventArgs e) => SetViewMode(false);
-    private void TileMode_Click(object sender, RoutedEventArgs e) => SetViewMode(true);
-
-    private void More_Click(object sender, RoutedEventArgs e)
-    {
-        var menu = (ContextMenu)Resources["MoreMenu"];
-        menu.PlacementTarget = (Button)sender;
-        menu.Placement = PlacementMode.Bottom;
-        menu.IsOpen = true;
-    }
-
-    private void LegacyManager_Click(object sender, RoutedEventArgs e) => TryAction(() =>
-    {
-        Keyboard.ClearFocus();
-        if (renamed.Any(SourceItems.Contains))
-        {
-            var result = MessageBox.Show(this, EngineResources.TemplateBrowserLegacyPrompt, Title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            if (result == MessageBoxResult.Cancel) return;
-            if (result == MessageBoxResult.Yes) SaveRenames();
-        }
-        var selected = Selected;
-        new TemplateEditorWindow(template, Math.Max(0, SourceIndex)) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        foreach (var item in renamed) item.IsEditMode = false;
-        renamed.Clear();
-        // Source changes already update browserItems. A view reset would recreate
-        // every cover; only re-filter when a legacy rename changed membership.
-        if (items.Filter != null && !items.Cast<TemplateBase>().SequenceEqual(browserItems.Where(item => items.Filter(item)))) items.Refresh();
-        TemplateList.SelectedItem = selected != null && items.Contains(selected) ? selected : items.Cast<object>().FirstOrDefault();
-        Title = template.Title;
-        QueueCoverRefresh();
-    }, EngineResources.TemplateBrowserLegacyFailed);
-
     internal void RegisterCover(FlowTemplateCover cover) { covers.Add(cover); QueueCoverRefresh(); }
     internal void UnregisterCover(FlowTemplateCover cover) { covers.Remove(cover); cover.Cancel(); }
 
     private void QueueCoverRefresh()
     {
-        if (!options.HasCovers || isClosed || !IsTileMode || coverRefreshPending) return;
+        if (!options.HasCovers || isClosed || coverRefreshPending) return;
         coverRefreshPending = true;
         Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
             coverRefreshPending = false;
-            if (isClosed || !IsTileMode) return;
+            if (isClosed) return;
             var viewport = FindChild<ScrollContentPresenter>(TemplateList);
             if (viewport == null) return;
             foreach (var cover in covers.ToArray())
             {
-                // TemplateModel.Value is replaced by legacy reloads without notifying its binding.
+                // Template reloads replace TemplateModel.Value without notifying its binding.
                 cover.GetBindingExpression(FlowTemplateCover.FlowProperty)?.UpdateTarget();
                 cover.Refresh(viewport, CoverService);
             }
