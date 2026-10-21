@@ -129,7 +129,7 @@ public sealed class SpectrumNdSelectionTests
                     Pump();
                     Assert.True(selector.IsVisible);
                     Assert.Null(device.DisplayConfig.PortNum);
-                    selector.SelectedIndex = zeroBased ? port : port - 1;
+                    selector.SetCurrentValue(ComboBox.SelectedValueProperty, port);
                     Pump();
                     Assert.Equal(port, device.DisplayConfig.PortNum);
                     Assert.Equal(0, mqtt.Commands);

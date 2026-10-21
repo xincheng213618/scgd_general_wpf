@@ -33,6 +33,17 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             DataGridHoleMapping.ItemsSource = WorkingCopy;
         }
 
+        private void Button_Reset_Click(object sender, RoutedEventArgs e)
+        {
+            WorkingCopy.Clear();
+            foreach (var item in new FilterWheelConfig().HoleMapping)
+            {
+                WorkingCopy.Add(item);
+            }
+            DataGridHoleMapping.SelectedIndex = 0;
+            DataGridHoleMapping.ScrollIntoView(WorkingCopy[0]);
+        }
+
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
             int nextIndex = WorkingCopy.Count == 0 ? 1 : WorkingCopy.Max(item => item.HoleIndex) + 1;

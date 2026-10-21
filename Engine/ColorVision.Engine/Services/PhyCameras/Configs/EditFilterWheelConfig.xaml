@@ -50,12 +50,18 @@
                                FontWeight="SemiBold"/>
                     <TextBlock Text="{x:Static properties:Resources.FilterWheelHoleMapping}" FontSize="12" Opacity="0.6" Margin="0,4,0,0"/>
                 </StackPanel>
-                <Button Grid.Column="1"
-                        Content="{x:Static properties:Resources.Add}"
-                        Click="Button_Add_Click"
-                        VerticalAlignment="Center"
-                        MinWidth="84"
-                        Height="34"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="{x:Static properties:Resources.Reset}"
+                            Click="Button_Reset_Click"
+                            MinWidth="84"
+                            Height="34"
+                            Margin="0,0,8,0"/>
+                    <Button Content="{x:Static properties:Resources.Add}"
+                            Click="Button_Add_Click"
+                            VerticalAlignment="Center"
+                            MinWidth="84"
+                            Height="34"/>
+                </StackPanel>
             </Grid>
         </Border>
 
