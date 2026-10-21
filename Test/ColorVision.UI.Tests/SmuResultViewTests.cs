@@ -19,8 +19,10 @@ namespace ColorVision.UI.Tests;
 
 public sealed class SmuResultViewTests
 {
-    [Fact]
-    public void ResultSelectionSwitchesPointAndScanWithoutChangingUnitsOrJoiningPointHistory()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResultSelectionSwitchesPointAndScanWithoutChangingUnitsOrJoiningPointHistory(bool insertAtBeginning)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -30,6 +32,7 @@ public sealed class SmuResultViewTests
             try
             {
                 ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                ViewSMUConfig.Instance.InsertAtBeginning = insertAtBeginning;
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
                     ResourceDictionary dictionary = new() { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -52,7 +55,10 @@ public sealed class SmuResultViewTests
                         Id = 1800 + index, CreateDate = time.AddSeconds(index * 2), TotalTime = 31 + index % 3,
                         IsSourceV = true, SrcValue = -1.3f, LimitValue = 100, VResult = -1.30032f, IResult = -0.00003834f * (1 + index * 0.01f)
                     }));
-                var point = view.ViewResults[^1];
+                var point = Assert.IsType<ViewResultSMU>(history.SelectedItem);
+                Assert.Equal(1808, point.Id);
+                Assert.Same(point, insertAtBeginning ? view.ViewResults[0] : view.ViewResults[^1]);
+                Assert.True(follow.IsChecked);
                 Pump(window);
                 Assert.Equal(Visibility.Collapsed, scanPanel.Visibility);
                 Assert.Same(point.SMUDatas[0], metrics.DataContext);
@@ -95,11 +101,17 @@ public sealed class SmuResultViewTests
                 Assert.Empty(plot.Plot.GetPlottables());
                 // Readings must not jump while reviewing an older record.
                 Assert.Same(point.SMUDatas[0], metrics.DataContext);
+                // Changing insertion direction does not change which capture is the latest.
+                ViewSMUConfig.Instance.InsertAtBeginning = !insertAtBeginning;
                 follow.IsChecked = true;
                 follow.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 Assert.Same(next, history.SelectedItem);
+                Assert.True(follow.IsChecked);
                 ViewResultSMU otherScan = new(MeasurementType.Voltage, 5, [1, 2], [0.001, 0.002]);
                 view.AddViewResultSMU(otherScan);
+                Assert.Same(otherScan, history.SelectedItem);
+                Assert.Same(otherScan, insertAtBeginning ? view.ViewResults[^1] : view.ViewResults[0]);
+                Assert.True(follow.IsChecked);
                 history.SelectedItems.Add(scan);
                 CheckBox compare = (CheckBox)view.FindName("CompareScans");
                 compare.IsChecked = true;

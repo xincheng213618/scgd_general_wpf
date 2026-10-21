@@ -2943,7 +2943,7 @@
   <data name="CommandEditConfigHint" xml:space="preserve"><value>連線、裝置參數與執行設定</value></data>
   <data name="CommandRestartHint" xml:space="preserve"><value>儲存目前設定並重新啟動裝置服務</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>刪除目前裝置資源</value></data>
-  <data name="CommandCameraLogHint" xml:space="preserve"><value>檢視相機服務執行日誌</value></data>
+  <data name="CommandCameraLogHint" xml:space="preserve"><value>依目前後端檢視本地相機或相機服務日誌</value></data>
   <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>檢視和釋放校正與影像檔案快取</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>設定相機關聯的校正檔案</value></data>
   <data name="CommandAutoExposureHint" xml:space="preserve"><value>管理自動曝光參數範本</value></data>

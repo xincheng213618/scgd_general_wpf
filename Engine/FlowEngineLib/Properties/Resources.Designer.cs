@@ -95,6 +95,33 @@ namespace FlowEngineLib.Properties {
                 return ResourceManager.GetString("AI算法2", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 AOI 定位+提取相机 的本地化字符串。
+        /// </summary>
+        internal static string AOILocAndRegPixels {
+            get {
+                return ResourceManager.GetString("AOILocAndRegPixels", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 AOI 定位相机（参数） 的本地化字符串。
+        /// </summary>
+        internal static string AOILocatePixels {
+            get {
+                return ResourceManager.GetString("AOILocatePixels", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 AOI 提取相机（参数） 的本地化字符串。
+        /// </summary>
+        internal static string AOIRegisterPixels {
+            get {
+                return ResourceManager.GetString("AOIRegisterPixels", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 算法 的本地化字符串。
@@ -2701,7 +2728,7 @@ namespace FlowEngineLib.Properties {
         }
 
         /// <summary>
-        ///   查找类似 通用AOI相机 的本地化字符串。
+        ///   查找类似 AOI 定位相机（模板） 的本地化字符串。
         /// </summary>
         internal static string 通用AOI相机 {
             get {
@@ -2710,7 +2737,7 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 通用AOI相机2 的本地化字符串。
+        ///   查找类似 AOI 提取相机（模板） 的本地化字符串。
         /// </summary>
         internal static string 通用AOI相机2 {
             get {

@@ -2,8 +2,12 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.RC;
+using cvColorVision;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -11,6 +15,62 @@ namespace ColorVision.UI.Tests;
 
 public class CameraBackendRoutingTests
 {
+    [Fact]
+    public void CameraLogFollowsEffectiveOwnershipAndNeverFallsBackAcrossBackends()
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        var backend = new CameraBackendState(true);
+        typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, backend);
+        string root = Path.Combine(Path.GetTempPath(), $"ColorVision_CameraLog_{Guid.NewGuid():N}");
+        string nativeDirectory = Directory.CreateDirectory(Path.Combine(root, "native")).FullName;
+        string serviceDirectory = Directory.CreateDirectory(Path.Combine(root, "service")).FullName;
+        string serviceLogDirectory = Directory.CreateDirectory(Path.Combine(serviceDirectory, "log")).FullName;
+        using Process process = Process.GetCurrentProcess();
+        string olderNative = Path.Combine(nativeDirectory, $"{process.ProcessName}_Main_202610210000_000001_000.log");
+        string latestNative = Path.Combine(nativeDirectory, $"{process.ProcessName}_Main_202610220000_000001_000.log");
+        string unrelated = Path.Combine(nativeDirectory, "CVMainWindowsService_x64_camera_20261022.log");
+        string serviceLog = Path.Combine(serviceLogDirectory, "CVMainWindowsService_x64_camera_20261022.log");
+        string[] files = [olderNative, latestNative, unrelated, serviceLog];
+        string? previousDirectory = Environment.GetEnvironmentVariable(cvCameraCSLib.NativeLogDirectoryEnvironmentVariable);
+        var serviceConfig = ServiceConfig.Instance;
+        string previousServicePath = serviceConfig.CVMainService_x64;
+        try
+        {
+            foreach (string file in files) File.WriteAllText(file, "isolated log fixture");
+            File.SetLastWriteTimeUtc(olderNative, DateTime.UtcNow.AddHours(-2));
+            File.SetLastWriteTimeUtc(latestNative, DateTime.UtcNow.AddHours(-1));
+            Environment.SetEnvironmentVariable(cvCameraCSLib.NativeLogDirectoryEnvironmentVariable, nativeDirectory);
+            serviceConfig.CVMainService_x64 = Path.Combine(serviceDirectory, "CVMainWindowsService_x64.exe");
+            Assert.Equal(latestNative, device.GetCameraLogFilePath());
+
+            backend.ObserveService(DeviceStatusType.Opened);
+            Assert.Equal(serviceLog, device.GetCameraLogFilePath());
+            backend.ObserveService(DeviceStatusType.Closed);
+            backend.BeginLocalOpen();
+            backend.SetLocalStatus(DeviceStatusType.Opened);
+            backend.SetPreference(false);
+            Assert.Equal(latestNative, device.GetCameraLogFilePath());
+            backend.SetLocalStatus(DeviceStatusType.Closed);
+            Assert.Equal(serviceLog, device.GetCameraLogFilePath());
+
+            backend.BeginLocalOpen(video: true);
+            Assert.Equal(latestNative, device.GetCameraLogFilePath());
+            File.Delete(olderNative);
+            File.Delete(latestNative);
+            Assert.Null(device.GetCameraLogFilePath());
+        }
+        finally
+        {
+            serviceConfig.CVMainService_x64 = previousServicePath;
+            Environment.SetEnvironmentVariable(cvCameraCSLib.NativeLogDirectoryEnvironmentVariable, previousDirectory);
+            foreach (string file in files) File.Delete(file);
+            Directory.Delete(nativeDirectory);
+            Directory.Delete(serviceLogDirectory);
+            Directory.Delete(serviceDirectory);
+            Directory.Delete(root);
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

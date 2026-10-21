@@ -13,7 +13,7 @@ using System.Linq;
 
 namespace FlowEngineLib;
 
-[STNode("相机", CategoryOrder = 200)]
+[STNode("相机", CategoryOrder = 200, NodeOrder = 20)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.CVCameraNode")]
 [FlowNodeDocumentation(
 	"执行 CV 相机取图；复用当前相机会话，关闭且启用本地偏好时自动打开本地相机。",

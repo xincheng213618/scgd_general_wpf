@@ -201,9 +201,11 @@ public sealed class CompatibilityNodeMigrationTests
                 Assert.NotNull(nodeAttribute);
                 string expectedPath = type == typeof(FlowEngineLib.Node.Algorithm.AlgorithmKBNode) ? "Algorithm"
                     : type == typeof(FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode) ? "Algorithm/OLED"
+                    : type == typeof(FlowEngineLib.Algorithm.CalibrationNode) ? "相机"
                     : RemoveLegacyMenuSortPrefix(legacyMenuPath);
                 int expectedOrder = type == typeof(FlowEngineLib.Node.Algorithm.AlgorithmKBNode)
-                    || type == typeof(FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode) ? 320 : GetExpectedCategoryOrder(legacyMenuPath);
+                    || type == typeof(FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode) ? 320
+                    : type == typeof(FlowEngineLib.Algorithm.CalibrationNode) ? 200 : GetExpectedCategoryOrder(legacyMenuPath);
                 Assert.Equal(expectedPath, nodeAttribute.Path);
                 Assert.Equal(expectedOrder, nodeAttribute.CategoryOrder);
             }

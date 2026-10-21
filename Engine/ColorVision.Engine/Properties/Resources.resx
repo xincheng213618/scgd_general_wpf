@@ -1070,7 +1070,7 @@
   <data name="CommandEditConfigHint" xml:space="preserve"><value>连接、设备参数与运行配置</value></data>
   <data name="CommandRestartHint" xml:space="preserve"><value>保存当前配置并重启设备服务</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>删除当前设备资源</value></data>
-  <data name="CommandCameraLogHint" xml:space="preserve"><value>查看相机服务运行日志</value></data>
+  <data name="CommandCameraLogHint" xml:space="preserve"><value>根据当前后端查看本地相机或相机服务日志</value></data>
   <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>查看和释放校正与图像文件缓存</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>配置相机关联的校正文件</value></data>
   <data name="CommandAutoExposureHint" xml:space="preserve"><value>管理自动曝光参数模板</value></data>

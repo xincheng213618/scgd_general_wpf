@@ -46,6 +46,11 @@ public class STNodeAttribute : Attribute
 	/// </summary>
 	public int NodeOrder { get; set; } = int.MaxValue;
 
+	/// <summary>
+	/// Adds a separator before this node when earlier items exist in its menu category.
+	/// </summary>
+	public bool SeparatorBefore { get; set; }
+
 	public STNodeAttribute(string strPath)
 		: this(strPath, null, null, null, null)
 	{

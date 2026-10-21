@@ -2,6 +2,7 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
+using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +11,31 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowNodeContextMenuTests
 {
+    [Fact]
+    public void CameraMenuSeparatesAcquisitionFromAoiAndUsesWorkflowOrder()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            CultureInfo previousCulture = CultureInfo.CurrentUICulture;
+            try
+            {
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("zh-CN");
+                using var editor = new STNodeEditor();
+                using var menus = new FlowNodeContextMenuService(editor, new FlowExecutionNavigator(editor), () => { });
+                var creationMenu = new ContextMenu();
+                Invoke(menus, "AddNodeCreationMenuItems", creationMenu.Items);
+                MenuItem camera = Assert.Single(creationMenu.Items.OfType<MenuItem>(), item => Equals(item.Header, "相机"));
+
+                Assert.Equal(new[]
+                {
+                    "校正", "L/BV相机", "CV相机", "通用相机", "---",
+                    "AOI 定位相机（模板）", "AOI 提取相机（模板）",
+                    "AOI 定位相机（参数）", "AOI 提取相机（参数）", "AOI 定位+提取相机"
+                }, camera.Items.Cast<object>().Select(item => item is Separator ? "---" : Assert.IsType<MenuItem>(item).Header));
+            }
+            finally { CultureInfo.CurrentUICulture = previousCulture; }
+        });
+    }
 
     [Theory]
     [InlineData(true)]

@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Algorithm;
 
-[STNode("校正", CategoryOrder = 331)]
+[STNode("相机", CategoryOrder = 200, NodeOrder = 0)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Algorithm.CalibrationNode")]
 public class CalibrationNode : CVBaseServerNode
 {

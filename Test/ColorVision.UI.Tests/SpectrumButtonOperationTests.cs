@@ -95,15 +95,19 @@ public sealed class SpectrumButtonOperationTests
 
                 if (!opening && terminalState == MsgRecordState.Success)
                 {
-                    // Continuous measurements append saved records; a later frame must not replace an earlier row.
+                    // Continuous measurements retain every saved frame and read the insertion setting for each capture.
                     var display = typeof(DeviceSpectrum).GetMethod("DisplayLocalSpectrum", BindingFlags.Instance | BindingFlags.NonPublic)!;
                     foreach (int id in new[] { 18, 19, 20 })
+                    {
+                        ViewSpectrum.Config.InsertAtBeginning = id != 19;
                         display.Invoke(device, [new LocalSpectrumCapture
                         {
                             MeasurementId = id, DeviceCode = device.Code, IntegralTime = 100,
                             Data = new COLOR_PARA { fPL = [1, -.5f], fSpect1 = 500, fSpect2 = 501, fInterval = 1 }
                         }, true]);
-                    Assert.Equal(new[] { 18, 19, 20 }, device.View.ViewResults.Select(row => row.Id));
+                        Assert.Equal(id, Assert.IsType<ViewResultSpectrum>(((ListView)device.View.FindName("listView1")).SelectedItem).Id);
+                    }
+                    Assert.Equal(new[] { 20, 18, 19 }, device.View.ViewResults.Select(row => row.Id));
                     Assert.All(device.View.ViewResults, row => Assert.Equal(new float[] { 1, -.5f }, row.fPL));
                     var original = device.View.ViewResults.ToArray();
                     IEnumerable<ViewResultSpectrum> InvalidHistory()

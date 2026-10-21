@@ -127,10 +127,19 @@
     <value>CV相机</value>
   </data>
   <data name="通用AOI相机" xml:space="preserve">
-    <value>通用AOI相机</value>
+    <value>AOI 定位相机（模板）</value>
   </data>
   <data name="通用AOI相机2" xml:space="preserve">
-    <value>通用AOI相机2</value>
+    <value>AOI 提取相机（模板）</value>
+  </data>
+  <data name="AOILocatePixels" xml:space="preserve">
+    <value>AOI 定位相机（参数）</value>
+  </data>
+  <data name="AOIRegisterPixels" xml:space="preserve">
+    <value>AOI 提取相机（参数）</value>
+  </data>
+  <data name="AOILocAndRegPixels" xml:space="preserve">
+    <value>AOI 定位+提取相机</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
     <value>相机+ND</value>

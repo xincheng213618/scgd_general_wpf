@@ -2442,7 +2442,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 查看相机服务运行日志 的本地化字符串。
+        ///   查找类似 根据当前后端查看本地相机或相机服务日志 的本地化字符串。
         /// </summary>
         public static string CommandCameraLogHint {
             get {

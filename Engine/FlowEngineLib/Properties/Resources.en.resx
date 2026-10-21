@@ -124,10 +124,19 @@
     <value>CVCamera</value>
   </data>
   <data name="通用AOI相机" xml:space="preserve">
-    <value>GeneralCamera-AOI</value>
+    <value>AOI Locate Camera (Template)</value>
   </data>
   <data name="通用AOI相机2" xml:space="preserve">
-    <value>GeneralCamera-AOI2</value>
+    <value>AOI Extract Camera (Template)</value>
+  </data>
+  <data name="AOILocatePixels" xml:space="preserve">
+    <value>AOI Locate Camera (Parameters)</value>
+  </data>
+  <data name="AOIRegisterPixels" xml:space="preserve">
+    <value>AOI Extract Camera (Parameters)</value>
+  </data>
+  <data name="AOILocAndRegPixels" xml:space="preserve">
+    <value>AOI Locate+Extract Camera</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
     <value>Camera+ND</value>

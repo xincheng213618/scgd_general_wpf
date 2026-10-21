@@ -4659,7 +4659,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CommandEditConfigHint" xml:space="preserve"><value>Connection, device and runtime settings</value></data>
   <data name="CommandRestartHint" xml:space="preserve"><value>Save current settings and restart the device service</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>Delete the current device resource</value></data>
-  <data name="CommandCameraLogHint" xml:space="preserve"><value>View camera service logs</value></data>
+  <data name="CommandCameraLogHint" xml:space="preserve"><value>View local camera or camera service logs for the active backend</value></data>
   <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>Inspect and release calibration and image file caches</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>Configure associated calibration files</value></data>
   <data name="CommandAutoExposureHint" xml:space="preserve"><value>Manage auto exposure templates</value></data>

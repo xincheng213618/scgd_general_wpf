@@ -30,6 +30,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -175,13 +176,36 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void OpenCameraLog()
         {
-            string baseDir = Directory.GetParent(ServiceConfig.Instance.CVMainService_x64).FullName;
-            string? latestLogPath = ServiceLogFileLocator.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_camera");
+            string? latestLogPath = GetCameraLogFilePath();
             if (!string.IsNullOrEmpty(latestLogPath))
             {
                 WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
                 windowLogLocal.Show();
             }
+        }
+
+        internal string? GetCameraLogFilePath()
+        {
+            if (CameraBackend.OpensLocally || CameraBackend.VideoOwned)
+            {
+                string? logDirectory = Environment.GetEnvironmentVariable(cvCameraCSLib.NativeLogDirectoryEnvironmentVariable);
+                if (string.IsNullOrWhiteSpace(logDirectory))
+                {
+                    string? applicationLogFile = log4net.LogManager.GetRepository().GetAppenders()
+                        .OfType<log4net.Appender.FileAppender>().FirstOrDefault(appender => !string.IsNullOrWhiteSpace(appender.File))?.File;
+                    logDirectory = string.IsNullOrWhiteSpace(applicationLogFile)
+                        ? Path.Combine(Environment.CurrentDirectory, "log")
+                        : Path.GetDirectoryName(Path.GetFullPath(applicationLogFile));
+                }
+                if (!Directory.Exists(logDirectory)) return null;
+                using Process process = Process.GetCurrentProcess();
+                return Directory.EnumerateFiles(logDirectory, $"{process.ProcessName}_Main_*.log", SearchOption.TopDirectoryOnly)
+                    .OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault();
+            }
+
+            string? serviceDirectory = Path.GetDirectoryName(ServiceConfig.Instance.CVMainService_x64);
+            return string.IsNullOrWhiteSpace(serviceDirectory) ? null
+                : ServiceLogFileLocator.GetMostRecentLogFile(Path.Combine(serviceDirectory, "log"), "CVMainWindowsService_x64_camera");
         }
 
 

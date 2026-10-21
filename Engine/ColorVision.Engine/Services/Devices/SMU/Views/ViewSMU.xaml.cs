@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         private bool _isInitialized;
         private bool _updatingPoints;
         private ViewResultSMU? _activeResult;
+        private ViewResultSMU? _latestResult;
         private Marker? _pointMarker;
 
         public ViewSMU() : this(deferInitialization: false) { }
@@ -92,7 +93,11 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public void AddViewResultSMU(ViewResultSMU result)
         {
             EnsureInitialized();
-            ViewResults.Add(result);
+            _latestResult = result;
+            if (ViewSMUConfig.Instance.InsertAtBeginning)
+                ViewResults.Insert(0, result);
+            else
+                ViewResults.Add(result);
             if (FollowLatest.IsChecked == true || listView1.SelectedItem == null)
             {
                 listView1.SelectedItem = result;
@@ -104,7 +109,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             if (!_isInitialized) return;
             var result = e.AddedItems.OfType<ViewResultSMU>().LastOrDefault() ?? listView1.SelectedItem as ViewResultSMU;
-            if (result != null && !ReferenceEquals(result, ViewResults.LastOrDefault())) FollowLatest.IsChecked = false;
+            if (result != null && !ReferenceEquals(result, _latestResult)) FollowLatest.IsChecked = false;
             PresentResult(result);
         }
 
@@ -203,9 +208,9 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         private void FollowLatest_Click(object sender, RoutedEventArgs e)
         {
-            if (FollowLatest.IsChecked == true && ViewResults.Count > 0)
+            if (FollowLatest.IsChecked == true && _latestResult != null)
             {
-                listView1.SelectedItem = ViewResults[^1];
+                listView1.SelectedItem = _latestResult;
                 listView1.ScrollIntoView(listView1.SelectedItem);
             }
         }
@@ -231,7 +236,9 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             var selected = listView1.SelectedItems.Cast<ViewResultSMU>().ToArray();
             foreach (var result in selected) ViewResults.Remove(result);
-            if (listView1.SelectedItem == null && ViewResults.Count > 0) listView1.SelectedItem = ViewResults[^1];
+            if (_latestResult != null && !ViewResults.Contains(_latestResult))
+                _latestResult = ViewResults.MaxBy(result => result.CreateTime);
+            if (listView1.SelectedItem == null) listView1.SelectedItem = _latestResult;
         }
 
         private void Delete_Click(object sender, RoutedEventArgs e) => Delete();
@@ -240,6 +247,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         internal void ClearResults()
         {
             EnsureInitialized();
+            _latestResult = null;
             ViewResults.Clear();
             PresentResult(null);
         }
@@ -299,7 +307,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 var results = points.Select(item => new ViewResultSMU(item)).Concat(scans.Select(item => new ViewResultSMU(item))).OrderBy(item => item.CreateTime).ToArray();
                 ClearResults();
                 foreach (var result in results) ViewResults.Add(result);
-                if (results.Length > 0) listView1.SelectedItem = results[^1];
+                _latestResult = results.LastOrDefault();
+                listView1.SelectedItem = _latestResult;
             }
             catch (Exception ex) { MessageBox1.Show($"查询源表历史失败：{ex.Message}"); }
         }

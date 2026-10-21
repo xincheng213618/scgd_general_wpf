@@ -179,8 +179,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return true;
             }
 
-            return propertyInfo.Name == nameof(FlowEngineLib.Base.CVCommonNode.ZIndex)
-                && IsLocalNodeType(nodeType);
+            return propertyInfo.Name == nameof(FlowEngineLib.Base.CVCommonNode.ZIndex);
         }
 
         private static Type? GetNodeType(PropertyInfo propertyInfo)

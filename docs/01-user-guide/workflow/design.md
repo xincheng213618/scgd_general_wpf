@@ -82,6 +82,8 @@ ARVRPro、LUX、KB 的流程编辑按钮在未选择模板时仍可打开空白�
 
 普通设备/模板字段使用 属性上的 `PropertyEditorTypeAttribute`；多模板族、随算法类型变化的补充面板归 `Editor/NodeConfiguration/`。选择顺序、缓存和降级规则只在 [PropertyGrid 契约](../../04-api-reference/ui-components/property-grid.md)维护。
 
+可编辑的 `ZIndex`（z-索引）统一归入高级属性，点击节点配置面板右上角的高级属性按钮后显示；收起时保留原值，流程保存、加载和运行仍使用该值。
+
 ## 选择、加载与多窗口隔离
 
 `FlowTemplateWorkspaceController` 区分 requested template 和已加载的 `ActiveFlowParam`。请求选择还在加载时，保存使用当前画布的 active 模板，不能把画布写进刚选中但尚未加载的模板；历史查询可以跟随 requested 选择。导出和删除入口也从 active 模板取得索引，但底层勾选规则仍可能改变最终范围。

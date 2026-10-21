@@ -485,8 +485,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
         {
-            ViewResults.Add(viewResultSpectrum);
-            listView1.SelectedIndex = ViewResults.Count - 1;
+            EnsureInitialized();
+            if (Config.InsertAtBeginning)
+                ViewResults.Insert(0, viewResultSpectrum);
+            else
+                ViewResults.Add(viewResultSpectrum);
+            listView1.SelectedItem = viewResultSpectrum;
             listView1.ScrollIntoView(viewResultSpectrum);
         }
 
