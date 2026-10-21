@@ -59,6 +59,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             lock (Device.SpectrumBackend.Sync)
             {
                 if (Device.SpectrumBackend.OpensLocally) return Device.RunLocalSpectrumCommand(msg.EventName);
+                if (Config.IsShutterEnable && Config.ShutterCfg.UseFilterWheel && msg.EventName is not ("Close" or "GetDataAutoStop"))
+                    return CreateRejectedMeasurementRecord(msg.EventName, "滤色轮校零仅支持本地光谱模式，请启用使用本地光谱。");
                 Device.EnsureOtherSpectrumBackends(false);
                 Device.SpectrumBackend.BeginServiceCommand(msg.EventName);
             }

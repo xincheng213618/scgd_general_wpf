@@ -18,6 +18,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using ColorVision.Engine.Services.Devices.Spectrum.Local;
 
 namespace ColorVision.UI.Tests;
 
@@ -194,6 +195,90 @@ public sealed class SpectrumNdSelectionTests
             mqtt.SetPort(4);
             Assert.Equal(4, config.PortNum);
         });
+    }
+
+    [Fact]
+    public void FilterWheelCalibrationReservationRejectsOtherCommandsAndReleasesAfterFailure()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            using var mqtt = new RecordingFilterWheel(new ConfigCfwPort { Code = "ND.Reservation" });
+            MsgRecord pending = mqtt.SetPort(1);
+            Assert.Throws<InvalidOperationException>(() => mqtt.ReserveForCalibration());
+            pending.MsgRecordState = MsgRecordState.Timeout;
+            using var reserved = new ManualResetEventSlim();
+            using var release = new ManualResetEventSlim();
+            Task worker = Task.Run(() =>
+            {
+                using var reservation = mqtt.ReserveForCalibration();
+                reserved.Set();
+                release.Wait();
+            });
+            try
+            {
+                Assert.True(reserved.Wait(TimeSpan.FromSeconds(5)));
+                Assert.Equal(MsgRecordState.Fail, mqtt.SetPort(4).MsgRecordState);
+                Assert.Equal(MsgRecordState.Fail, mqtt.Clsoe().MsgRecordState);
+                Assert.Equal(1, mqtt.Commands);
+            }
+            finally { release.Set(); worker.GetAwaiter().GetResult(); }
+            mqtt.Immediate = true;
+            Assert.Equal(MsgRecordState.Success, mqtt.SetPort(5).MsgRecordState);
+            using var available = mqtt.ReserveForCalibration();
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FilterWheelDarkControlChecksReadbackAndKeepsSharedWheelConnected(bool wrongReadback)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            using var device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = "ND.DarkControl", Value = "{}" });
+            device.DService.Dispose();
+            using var mqtt = new PositionFilterWheel(device.Config) { WrongReadback = wrongReadback };
+            device.DService = mqtt;
+            mqtt.DeviceStatus = DeviceStatusType.Opened;
+            var manager = ServiceManager.GetInstance();
+            manager.DeviceServices.Add(device);
+            try
+            {
+                using (var operation = new LocalSpectrumFilterWheel(new ShutterConfig { FilterWheelDeviceCode = device.Code }))
+                {
+                    if (wrongReadback) Assert.Throws<InvalidOperationException>(() => operation.SetOpen(false));
+                    else
+                    {
+                        operation.SetOpen(false);
+                        operation.SetOpen(true);
+                        Assert.Equal(new[] { "SetPort:0", "GetPort", "SetPort:5", "GetPort" }, mqtt.Commands);
+                        Assert.Equal(5, device.DisplayConfig.PortNum);
+                    }
+                }
+                Assert.Equal(DeviceStatusType.Opened, mqtt.DeviceStatus);
+                using var available = mqtt.ReserveForCalibration();
+            }
+            finally { manager.DeviceServices.Remove(device); }
+        });
+    }
+
+    private sealed class PositionFilterWheel(ConfigCfwPort config) : MQTTCfwPort(config)
+    {
+        public List<string> Commands = [];
+        public bool WrongReadback;
+        private int position;
+        internal override MsgRecord PublishAsyncClient(MsgSend msg, double timeout = 30000)
+        {
+            if (msg.EventName == "SetPort")
+            {
+                position = JObject.FromObject(msg.Params).Value<int>("PortNum");
+                Commands.Add($"SetPort:{position}");
+            }
+            else Commands.Add(msg.EventName);
+            return new MsgRecord { MsgSend = msg, MsgReturn = new MsgReturn { Data = JObject.FromObject(new { Port = WrongReadback ? position + 1 : position }) }, MsgRecordState = MsgRecordState.Success };
+        }
     }
 
     private static DeviceSpectrum CreateSpectrum() => new(new SysResourceModel

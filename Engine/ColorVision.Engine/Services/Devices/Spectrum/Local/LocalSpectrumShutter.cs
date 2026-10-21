@@ -28,15 +28,36 @@ internal sealed class LocalSpectrumShutterPort(ShutterConfig config) : ILocalSpe
 }
 
 // Owned by LocalSpectrumSession and always called under its operation gate.
-internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShutterPort>? createPort = null)
+internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShutterPort>? createPort = null,
+    Func<ShutterConfig, ILocalSpectrumFilterWheelOperation>? acquireFilterWheel = null)
 {
     private readonly Func<ShutterConfig, ILocalSpectrumShutterPort> createPort = createPort ?? (config => new LocalSpectrumShutterPort(config));
     private ILocalSpectrumShutterPort? port;
     private string? address;
     private int baudRate;
+    private ILocalSpectrumFilterWheelOperation? filterWheel;
+
+    public IDisposable? AcquireOperation(ShutterConfig config)
+    {
+        if (!config.UseFilterWheel || filterWheel != null) return null;
+        Disconnect();
+        filterWheel = acquireFilterWheel?.Invoke(config) ?? new LocalSpectrumFilterWheel(config);
+        return new FilterWheelScope(this);
+    }
+
+    private sealed class FilterWheelScope(LocalSpectrumShutter owner) : IDisposable
+    {
+        public void Dispose()
+        {
+            var operation = owner.filterWheel;
+            owner.filterWheel = null;
+            operation?.Dispose();
+        }
+    }
 
     public void Connect(ShutterConfig config)
     {
+        if (config.UseFilterWheel) { using var operation = AcquireOperation(config); return; }
         if (port?.IsOpen == true && string.Equals(address, config.Addr, StringComparison.OrdinalIgnoreCase) && baudRate == config.BaudRate) return;
         Disconnect();
         try
@@ -55,6 +76,12 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
 
     public void SetOpen(bool open, ShutterConfig config)
     {
+        if (config.UseFilterWheel)
+        {
+            using var operation = AcquireOperation(config);
+            filterWheel!.SetOpen(open);
+            return;
+        }
         string command = open ? config.OpenCmd : config.CloseCmd;
         if (string.IsNullOrEmpty(command)) throw new InvalidOperationException("请先配置快门开关指令。");
         Connect(config);

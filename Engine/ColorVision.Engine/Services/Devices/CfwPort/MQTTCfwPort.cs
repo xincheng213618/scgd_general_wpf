@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
 using System.Collections.Generic;
+using System;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 
@@ -7,6 +8,58 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class MQTTCfwPort : MQTTDeviceService<ConfigCfwPort>
     {
+        private readonly object commandGate = new();
+        private int calibrationOwner;
+        private int pendingCommands;
+
+        internal IDisposable ReserveForCalibration()
+        {
+            lock (commandGate)
+            {
+                if (calibrationOwner != 0 || pendingCommands != 0)
+                    throw new InvalidOperationException("滤色轮正在执行其他操作，请稍后再校零。");
+                calibrationOwner = Environment.CurrentManagedThreadId;
+                return new CalibrationReservation(this);
+            }
+        }
+
+        private sealed class CalibrationReservation(MQTTCfwPort owner) : IDisposable
+        {
+            private MQTTCfwPort? owner = owner;
+            public void Dispose()
+            {
+                var current = Interlocked.Exchange(ref owner, null);
+                if (current == null) return;
+                lock (current.commandGate) current.calibrationOwner = 0;
+            }
+        }
+
+        private MsgRecord SendCommand(MsgSend msg)
+        {
+            bool reserved;
+            lock (commandGate)
+            {
+                reserved = calibrationOwner != 0 && calibrationOwner != Environment.CurrentManagedThreadId;
+                if (!reserved) pendingCommands++;
+            }
+            if (reserved)
+                return new MsgRecord { MsgSend = msg, MsgReturn = new MsgReturn { Code = -1, Message = "滤色轮正在用于光谱采集或校零，请等待完成。" }, MsgRecordState = MsgRecordState.Fail };
+            MsgRecord record;
+            try { record = PublishAsyncClient(msg); }
+            catch { lock (commandGate) pendingCommands--; throw; }
+            int completed = 0;
+            void Complete(object? sender, MsgRecordState state)
+            {
+                if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)
+                    || Interlocked.Exchange(ref completed, 1) != 0) return;
+                record.MsgRecordStateChanged -= Complete;
+                lock (commandGate) pendingCommands--;
+            }
+            record.MsgRecordStateChanged += Complete;
+            Complete(record, record.MsgRecordState);
+            return record;
+        }
+
         public MQTTCfwPort(ConfigCfwPort config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
@@ -64,7 +117,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 EventName = "Close",
             };
 
-            return PublishAsyncClient(msg);
+            return SendCommand(msg);
         }
 
 
@@ -76,7 +129,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 EventName = "Open",
             };
 
-            return PublishAsyncClient(msg);
+            return SendCommand(msg);
         }
 
         public MsgRecord SetPort(int port)
@@ -88,7 +141,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 Params = new Dictionary<string, object>() { { "PortNum", port } }
             };
 
-            MsgRecord record = PublishAsyncClient(msg);
+            MsgRecord record = SendCommand(msg);
             TrackPortCommand(record, port);
             return record;
         }
@@ -123,7 +176,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 Params = new Dictionary<string, object>() { }
             };
 
-            MsgRecord record = PublishAsyncClient(msg);
+            MsgRecord record = SendCommand(msg);
             TrackPortCommand(record, null);
             return record;
         }

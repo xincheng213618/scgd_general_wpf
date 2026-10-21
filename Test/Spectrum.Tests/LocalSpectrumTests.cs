@@ -191,45 +191,64 @@ public sealed class LocalSpectrumTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ShutterCaptureOpensForAutoTimeAndClosesOnlyForDark(bool eqe)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void ShutterCaptureOpensForAutoTimeAndClosesOnlyForDark(bool eqe, bool useFilterWheel)
     {
         using var files = new CalibrationFiles();
         files.Config.IsShutterEnable = true;
+        files.Config.ShutterCfg.UseFilterWheel = useFilterWheel;
         var native = new FakeNative();
         var port = new FakeShutterPort(native.Calls);
-        using var session = new LocalSpectrumSession(native, shutter: new(_ => port));
+        var wheel = new FakeFilterWheel(native.Calls, files.Config.ShutterCfg);
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => port, _ => wheel));
         session.Open(files.Config);
         var result = session.Capture(new() { AutoIntegration = true, AutoInitDark = true, Eqe = eqe, Current = 1 }, files.Config);
         Assert.Equal(240, result.IntegralTime);
         Assert.Equal(new[] { "smoothing", "wave", "magnitude", "shutter-open", "auto", "shutter-close", "dark", "shutter-open", "capture" }, native.Calls);
         Assert.Equal(240, native.DarkTime);
-        Assert.Equal(3, port.DiscardCalls);
+        Assert.Equal(useFilterWheel ? 0 : 3, port.DiscardCalls);
+        if (useFilterWheel)
+        {
+            Assert.Equal(new[] { 5, 0, 5 }, wheel.Ports);
+            Assert.True(wheel.Disposed);
+        }
         session.Close();
-        Assert.True(port.Disposed);
+        Assert.Equal(!useFilterWheel, port.Disposed);
     }
 
     [Theory]
-    [InlineData(true, 1, false)]
-    [InlineData(false, -3, false)]
-    [InlineData(false, 1, true)]
-    [InlineData(false, -3, true)]
-    public void FailedShutterOrDarkRestoresLightAndStopsMeasurement(bool closeFails, int darkCode, bool reopenFails)
+    [InlineData(true, 1, false, false)]
+    [InlineData(false, -3, false, false)]
+    [InlineData(false, 1, true, false)]
+    [InlineData(false, -3, true, false)]
+    [InlineData(true, 1, false, true)]
+    [InlineData(false, -3, false, true)]
+    [InlineData(false, 1, true, true)]
+    [InlineData(false, -3, true, true)]
+    public void FailedShutterOrDarkRestoresLightAndStopsMeasurement(bool closeFails, int darkCode, bool reopenFails, bool useFilterWheel)
     {
         using var files = new CalibrationFiles();
         files.Config.IsShutterEnable = true;
+        files.Config.ShutterCfg.UseFilterWheel = useFilterWheel;
         var native = new FakeNative { DarkCode = darkCode };
         int opens = 0;
+        bool Confirm(bool open)
+        {
+            if (!open) return !closeFails;
+            return ++opens <= 1 || !reopenFails;
+        }
+        var wheel = new FakeFilterWheel(native.Calls, files.Config.ShutterCfg) { Confirm = Confirm };
         var shutter = new LocalSpectrumShutter(_ => new FakeShutterPort(native.Calls)
         {
             Reply = command =>
             {
-                if (command == "b") return [closeFails ? "turn on" : "turn off"];
-                opens++;
-                return [opens > 1 && reopenFails ? "turn off" : "turn on"];
+                bool open = command == "a";
+                return [Confirm(open) == open ? "turn on" : "turn off"];
             }
-        });
+        }, _ => wheel);
         using var session = new LocalSpectrumSession(native, shutter: shutter);
         session.Open(files.Config);
         var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoInitDark = true }, files.Config));
@@ -237,8 +256,9 @@ public sealed class LocalSpectrumTests
         Assert.Equal(expected.Concat(closeFails ? ["shutter-open"] : new[] { "dark", "shutter-open" }), native.Calls);
         Assert.Equal(closeFails ? 0 : 1, native.DarkCalls);
         Assert.Equal(0, native.CaptureCalls);
-        if (reopenFails) Assert.Contains("恢复打开快门失败", error.Message);
+        if (reopenFails) Assert.Contains(useFilterWheel ? "恢复滤色轮测量位失败" : "恢复打开快门失败", error.Message);
         if (darkCode != 1) Assert.Contains("光谱校零失败", error.Message);
+        if (useFilterWheel) Assert.True(wheel.Disposed);
     }
 
     [Fact]
@@ -255,13 +275,16 @@ public sealed class LocalSpectrumTests
         Assert.Equal(0, native.CaptureCalls);
     }
 
-    [Fact]
-    public void AdaptiveInitializationClosesShutterButReadingTheDarkTableDoesNot()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AdaptiveInitializationClosesShutterButReadingTheDarkTableDoesNot(bool useFilterWheel)
     {
         using var files = new CalibrationFiles();
         files.Config.IsShutterEnable = true;
+        files.Config.ShutterCfg.UseFilterWheel = useFilterWheel;
         var native = new FakeNative();
-        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls)));
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls), config => new FakeFilterWheel(native.Calls, config)));
         session.Open(files.Config);
         session.InitAutoDark(files.Config);
         Assert.Equal(new[] { "shutter-close", "init-adaptive", "shutter-open" }, native.Calls);
@@ -518,6 +541,21 @@ public sealed class LocalSpectrumTests
         }
         public string ReadExisting() => Pending.TryDequeue(out string? value) ? value : string.Empty;
         public void Dispose() { Disposed = true; IsOpen = false; }
+    }
+
+    private sealed class FakeFilterWheel(List<string> calls, ShutterConfig config) : ILocalSpectrumFilterWheelOperation
+    {
+        public bool Disposed;
+        public List<int> Ports = [];
+        public Func<bool, bool> Confirm = _ => true;
+        public void SetOpen(bool open)
+        {
+            Assert.False(Disposed);
+            calls.Add(open ? "shutter-open" : "shutter-close");
+            Ports.Add(open ? config.MeasurementPort : config.DarkPort);
+            if (!Confirm(open)) throw new InvalidOperationException("滤色轮未确认到位。");
+        }
+        public void Dispose() => Disposed = true;
     }
 
     private sealed class CalibrationFiles : IDisposable

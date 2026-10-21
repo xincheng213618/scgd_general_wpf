@@ -172,6 +172,7 @@ internal sealed class LocalSpectrumSession : IDisposable
             string wave = ResolvePath(config.WavelengthFile), magnitude = ResolvePath(config.MaguideFile);
             string? error = DeviceSpectrum.ValidateMeasurementCalibrationFiles(wave, magnitude);
             if (error != null) throw new InvalidOperationException(error);
+            using var lightPathOperation = config.IsShutterEnable ? shutter.AcquireOperation(config.ShutterCfg) : null;
             Check(native.ConfigureSmoothing(handle, settings.SmoothingMethod, settings.FilterBW), "设置光谱平滑算法");
             if (config.SetEmissionSP100Config.IsEnabled || openedConfig!.SetEmissionSP100Config.IsEnabled)
             {
@@ -207,6 +208,7 @@ internal sealed class LocalSpectrumSession : IDisposable
             EnsureOpen(c);
             p.Validate();
             if (adaptive && !adaptiveDarkInitialized) throw new InvalidOperationException("请先完成自适应校零初始化，再使用自适应暗校正。");
+            using var lightPathOperation = !adaptive && c.IsShutterEnable ? shutter.AcquireOperation(c.ShutterCfg) : null;
             var buffer = new float[10000];
             void AcquireDark() => Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, c.GetDataConfig.FilterBW, buffer, adaptive), "光谱校零");
             // Adaptive dark reads the initialized table; only real dark acquisition needs the shutter closed.
@@ -222,6 +224,7 @@ internal sealed class LocalSpectrumSession : IDisposable
         {
             EnsureOpen(c);
             adaptiveDarkInitialized = false;
+            using var lightPathOperation = c.IsShutterEnable ? shutter.AcquireOperation(c.ShutterCfg) : null;
             WithClosedShutter(c, () => Check(native.InitAutoDark(handle, c.SelfAdaptionInitDark), "自适应校零"));
             adaptiveDarkInitialized = true;
         }
@@ -234,6 +237,7 @@ internal sealed class LocalSpectrumSession : IDisposable
             EnsureOpen(config);
             if (eventName == "ShutterDisconnect") { shutter.Disconnect(); return; }
             if (!config.IsShutterEnable) throw new InvalidOperationException("请先在光谱仪配置中启用快门。");
+            using var lightPathOperation = shutter.AcquireOperation(config.ShutterCfg);
             switch (eventName)
             {
                 case "ShutterConnect": shutter.Connect(config.ShutterCfg); break;
@@ -258,7 +262,8 @@ internal sealed class LocalSpectrumSession : IDisposable
         try { shutter.SetOpen(true, config.ShutterCfg); }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"{failure?.Message} 校零后恢复打开快门失败：{ex.Message} 请检查光路。".Trim(),
+            string restore = config.ShutterCfg.UseFilterWheel ? "恢复滤色轮测量位失败" : "恢复打开快门失败";
+            throw new InvalidOperationException($"{failure?.Message} 校零后{restore}：{ex.Message} 请检查光路。".Trim(),
                 failure == null ? ex : new AggregateException(failure, ex));
         }
         if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
