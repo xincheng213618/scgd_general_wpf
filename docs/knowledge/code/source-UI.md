@@ -31,7 +31,7 @@ next: false
   区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
 
 - [ROI 模型与模板入口](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
-  按用途定位发光区、传统裁剪、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。
+  按用途定位发光区、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
   图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。

@@ -11,7 +11,7 @@ public enum AlgorithmType
 	畸变 = 4,
 	灯珠检测 = 5,
 	灯带检测 = 6,
-	图像裁剪 = 10,
+	// Value 10 (OLED.GetRIAand) retired on 2026-10-22; do not reuse it.
 	双目融合 = 11,
 	SFR_FindROI = 12,
 	AA布点 = 13,

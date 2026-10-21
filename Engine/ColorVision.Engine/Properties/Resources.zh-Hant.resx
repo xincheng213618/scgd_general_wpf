@@ -1251,9 +1251,6 @@
   <data name="ImportFlow" xml:space="preserve">
     <value>匯入流程</value>
   </data>
-  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
-    <value>發光區裁切模板</value>
-  </data>
 
   <data name="ImageEdit" xml:space="preserve">
     <value>圖片編輯</value>
@@ -2996,7 +2993,6 @@
   <data name="亚像素模板" xml:space="preserve"><value>次像素範本</value></data>
   <data name="参数模板名称" xml:space="preserve"><value>參數範本名稱</value></data>
   <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>啟用ND濾輪(自動曝光)</value></data>
-  <data name="图像裁剪2" xml:space="preserve"><value>影像裁剪2</value></data>
   <data name="布点ROI(区域)" xml:space="preserve"><value>布點ROI(區域)</value></data>
   <data name="自动曝光模板" xml:space="preserve"><value>自動曝光範本</value></data>
   <data name="电压量程（V）" xml:space="preserve"><value>電壓量程（V）</value></data>
@@ -7021,9 +7017,6 @@
   <data name="灯条Poi中心计算" xml:space="preserve">
     <value>燈條 POI 中心計算</value>
   </data>
-  <data name="发光区裁剪" xml:space="preserve">
-    <value>發光區裁切</value>
-  </data>
   <data name="AA布点" xml:space="preserve">
     <value>AA 布點</value>
   </data>
@@ -7074,9 +7067,6 @@
   </data>
   <data name="灯珠检测模板" xml:space="preserve">
     <value>燈珠檢測範本</value>
-  </data>
-  <data name="发光区裁剪模板" xml:space="preserve">
-    <value>發光區裁切範本</value>
   </data>
   <data name="关注点模板" xml:space="preserve">
     <value>關注點範本</value>
@@ -7146,9 +7136,6 @@
   </data>
   <data name="请先选择灯珠检测模板" xml:space="preserve">
     <value>請先選擇燈珠檢測範本</value>
-  </data>
-  <data name="请先选择发光区裁剪模板" xml:space="preserve">
-    <value>請先選擇發光區裁切範本</value>
   </data>
   <data name="请先选择黑画面检测模板" xml:space="preserve">
     <value>請先選擇黑畫面檢測範本</value>

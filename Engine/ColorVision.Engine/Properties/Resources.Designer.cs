@@ -7284,14 +7284,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发光区裁剪模板 的本地化字符串。
-        /// </summary>
-        public static string ImageCroppingTemplateSettings {
-            get {
-                return ResourceManager.GetString("ImageCroppingTemplateSettings", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 图形编辑 的本地化字符串。
@@ -15615,23 +15607,7 @@ namespace ColorVision.Engine.Properties {
         
         
         
-        /// <summary>
-        ///   查找类似 发光区裁剪 的本地化字符串。
-        /// </summary>
-        public static string 发光区裁剪 {
-            get {
-                return ResourceManager.GetString("发光区裁剪", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 发光区裁剪模板 的本地化字符串。
-        /// </summary>
-        public static string 发光区裁剪模板 {
-            get {
-                return ResourceManager.GetString("发光区裁剪模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 发送消息 的本地化字符串。
@@ -15768,14 +15744,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 图像裁剪2 的本地化字符串。
-        /// </summary>
-        public static string 图像裁剪2 {
-            get {
-                return ResourceManager.GetString("图像裁剪2", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 图像视图 的本地化字符串。
@@ -17876,14 +17844,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         
-        /// <summary>
-        ///   查找类似 请先选择发光区裁剪模板 的本地化字符串。
-        /// </summary>
-        public static string 请先选择发光区裁剪模板 {
-            get {
-                return ResourceManager.GetString("请先选择发光区裁剪模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 请先选择屏幕缺陷检测模板 的本地化字符串。

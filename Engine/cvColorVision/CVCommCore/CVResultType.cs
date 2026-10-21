@@ -31,7 +31,7 @@ public enum CVResultType
 	Algorithm_OLED_FindDotsArrayOutFile = 26,
 	Algorithm_POI_JND = 27,
 	Algorithm_POI_CAD_Mapping = 28,
-	Algorithm_ImageCropping = 29,
+	// Result ID 29 retired on 2026-10-22; keep the remaining protocol IDs unchanged.
 	Algorithm_Calibration = 30,
 	Algorithm_POI_ReviseGen = 31,
 	Algorithm_OLED_RebuildPixelsMem = 32,

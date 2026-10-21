@@ -544,24 +544,6 @@
     "menu": "02 相机"
   },
   {
-    "type": "FlowEngineLib.Node.OLED.OLEDImageCroppingNode",
-    "request": {
-      "ROI_MasterId": -1,
-      "Color": 1,
-      "Channel": 1,
-      "ImgFileName": null,
-      "FileType": -1,
-      "TemplateParam": {
-        "ID": -1,
-        "Name": "fixture-TempName"
-      },
-      "MasterId": -1,
-      "MasterValue": null,
-      "MasterResultType": -1
-    },
-    "menu": null
-  },
-  {
     "type": "FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode",
     "request": {
       "CIE_MasterId": -1,

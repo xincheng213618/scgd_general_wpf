@@ -18,8 +18,6 @@ public static class MQTTAlgorithmEventEnum
 
 	public const string Event_Build_POI = "BuildPOI";
 
-	public const string Event_Image_Cropping = "OLED.GetRIAand";
-
 	public const string Event_OLED_FindDotsArrayMem_GetData = "FindDotsArray";
 
 }

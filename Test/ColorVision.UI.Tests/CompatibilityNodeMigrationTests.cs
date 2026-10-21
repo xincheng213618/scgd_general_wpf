@@ -16,27 +16,33 @@ namespace ColorVision.UI.Tests;
 public sealed class CompatibilityNodeMigrationTests
 {
     [Theory]
-    [InlineData(7)]
-    [InlineData(8)]
-    [InlineData(9)]
-    public void RetiredAlgorithmIdsLoadWithoutBecomingOtherAlgorithms(int value) => StaTest.Run(() =>
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), 7)]
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), 8)]
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), 9)]
+    [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), 10)]
+    [InlineData(typeof(FlowEngineLib.Node.OLED.Algorithm2InNode), 2)]
+    [InlineData(typeof(FlowEngineLib.Node.OLED.OLEDJNDCalVasNode), 2)]
+    public void RetiredAlgorithmIdsLoadWithoutBecomingOtherAlgorithms(Type type, int value) => StaTest.Run(() =>
     {
-        var node = new FlowEngineLib.Algorithm.AlgorithmNode();
+        var node = (STNode)Activator.CreateInstance(type)!;
         node.Create();
         node.OnLoadNode(new Dictionary<string, byte[]> { ["Algorithm"] = Encoding.UTF8.GetBytes(value.ToString()) });
-        Assert.Equal(value, (int)node.Algorithm);
-        Assert.False(Enum.IsDefined(node.Algorithm));
-        Assert.Equal(10, (int)FlowEngineLib.Algorithm.AlgorithmType.图像裁剪);
+        PropertyInfo property = type.GetProperty("Algorithm")!;
+        Assert.Equal(value, Convert.ToInt32(property.GetValue(node)));
+        Assert.False(Enum.IsDefined(property.PropertyType, value));
+        Assert.Equal(11, (int)FlowEngineLib.Algorithm.AlgorithmType.双目融合);
         Assert.Equal(13, (int)FlowEngineLib.Algorithm.AlgorithmType.AA布点);
+        Assert.Equal(3, (int)FlowEngineLib.Algorithm.Algorithm2Type.SFR);
+        Assert.Equal(6, (int)FlowEngineLib.Algorithm.Algorithm2Type.灯带检测);
         var error = Assert.Throws<TargetInvocationException>(() => node.GetType()
             .GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(node, [new CVStartCFC("SYNTHETIC-RETIRED-LIGHT-AREA")]));
+            .Invoke(node, [new CVStartCFC("SYNTHETIC-RETIRED-ALGORITHM")]));
         Assert.IsType<NotSupportedException>(error.InnerException);
         Assert.Contains("已退役", error.InnerException!.Message);
     });
 
     // These fixtures were saved by the compiled FlowEngineLib nodes before migration.
-    // Retired nodes are excluded; the remaining 26 node records retain their original bytes.
+    // Retired nodes are excluded; the remaining 25 node records retain their original bytes.
     // The synthetic chain connections are reindexed and linked across excluded nodes.
     // They contain synthetic template names/ranges, never user data.
     private static byte[] ReadCanvas() => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "Flow", "EditorNodes.before.stn"));
@@ -138,7 +144,7 @@ public sealed class CompatibilityNodeMigrationTests
         JArray contracts = ReadContracts();
         using var container = new CVNodeContainer();
         container.LoadCanvas(before);
-        Assert.Equal(26, container.Nodes.Count);
+        Assert.Equal(25, container.Nodes.Count);
         var nodes = container.Nodes.Cast<STNode>().ToArray();
         for (int i = 0; i < nodes.Length; i++)
         {
@@ -168,8 +174,8 @@ public sealed class CompatibilityNodeMigrationTests
         editor.LoadCanvas(saved);
         AssertPropertiesAndConnections(saved, editor.GetCanvasData(), editorLayout: true);
         NeutralCanvas neutral = StnV1NeutralCodec.Decode(saved, new());
-        Assert.Equal(26, neutral.Nodes.Count);
-        Assert.Equal(25, neutral.Connections.Count);
+        Assert.Equal(25, neutral.Nodes.Count);
+        Assert.Equal(24, neutral.Connections.Count);
         Assert.All(neutral.Nodes, node => Assert.Equal("FlowEngineLib.dll|" + node.Schema.NodeType.FullName, node.ModelKey));
         container.LoadCanvas(StnV1NeutralCodec.Encode(neutral, new()));
         AssertPropertiesAndConnections(saved, container.GetCanvasData());

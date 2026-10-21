@@ -1388,9 +1388,6 @@
   <data name="ImportFlow" xml:space="preserve">
     <value>Import process</value>
   </data>
-  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
-    <value>Illumination area cutting template</value>
-  </data>
   
   <data name="ImageEdit" xml:space="preserve">
     <value>Image Edit</value>
@@ -4711,7 +4708,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="亚像素模板" xml:space="preserve"><value>Subpixel Template</value></data>
   <data name="参数模板名称" xml:space="preserve"><value>Parameter template name</value></data>
   <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>Enable ND Filter Wheel (Auto Exposure)</value></data>
-  <data name="图像裁剪2" xml:space="preserve"><value>Image Cropping 2</value></data>
   <data name="布点ROI(区域)" xml:space="preserve"><value>Point Placement ROI (Region)</value></data>
   <data name="自动曝光模板" xml:space="preserve"><value>Auto Exposure Template</value></data>
   <data name="电压量程（V）" xml:space="preserve"><value>Voltage Range (V)</value></data>
@@ -6078,9 +6074,6 @@ Open the spectrum log?</value>
   <data name="灯条Poi中心计算" xml:space="preserve">
     <value>LED Strip POI Center</value>
   </data>
-  <data name="发光区裁剪" xml:space="preserve">
-    <value>Emitting Area Crop</value>
-  </data>
   <data name="AA布点" xml:space="preserve">
     <value>AA Point Layout</value>
   </data>
@@ -6131,9 +6124,6 @@ Open the spectrum log?</value>
   </data>
   <data name="灯珠检测模板" xml:space="preserve">
     <value>LED Detection Template</value>
-  </data>
-  <data name="发光区裁剪模板" xml:space="preserve">
-    <value>Emitting Area Crop Template</value>
   </data>
   <data name="关注点模板" xml:space="preserve">
     <value>POI Template</value>
@@ -6203,9 +6193,6 @@ Open the spectrum log?</value>
   </data>
   <data name="请先选择灯珠检测模板" xml:space="preserve">
     <value>Select an LED detection template first</value>
-  </data>
-  <data name="请先选择发光区裁剪模板" xml:space="preserve">
-    <value>Select an emitting area crop template first</value>
   </data>
   <data name="请先选择黑画面检测模板" xml:space="preserve">
     <value>Select a black screen template first</value>

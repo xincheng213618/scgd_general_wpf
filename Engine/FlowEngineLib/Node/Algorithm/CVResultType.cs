@@ -26,7 +26,7 @@ public enum CVResultType
 	Algorithm_FindDotsArrayMem_File = 22,
 	Algorithm_POI_XYZ_File = 23,
 	Algorithm_POI_Y_File = 24,
-	Algorithm_ImageCropping = 29,
+	// Result ID 29 retired on 2026-10-22; keep the remaining persisted IDs unchanged.
 	ThirdPartyAlgorithms_File = 40,
 	ThirdPartyAlgorithms_RealParam = 41,
 	Camera_Img = 100,

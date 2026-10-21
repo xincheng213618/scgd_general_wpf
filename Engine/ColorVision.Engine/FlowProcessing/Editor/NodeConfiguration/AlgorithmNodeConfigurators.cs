@@ -1,4 +1,3 @@
-using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.DetectScreenDefects;
@@ -129,9 +128,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.AA布点:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.AABuildPoints, new TemplateAAFindPoints());
-                        break;
-                    case FlowEngineLib.Algorithm.AlgorithmType.图像裁剪:
-                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.ImageCrop, new TemplateImageCropping());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.十字计算:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.CrossCalc, new TemplateFindCross());

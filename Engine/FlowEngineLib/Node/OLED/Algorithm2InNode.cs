@@ -115,9 +115,6 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		case Algorithm2Type.JND:
 			operatorCode = "OLED.JND.CalVas";
 			break;
-		case Algorithm2Type.图像裁剪:
-			operatorCode = "OLED.GetRIAand";
-			break;
 		case Algorithm2Type.SFR:
 			operatorCode = "SFR";
 			break;
@@ -128,7 +125,7 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 			operatorCode = "FindCross";
 			break;
 		default:
-			operatorCode = "OLED.JND.CalVas";
+			operatorCode = string.Empty;
 			break;
 		}
 		base.nodeEvent?.Invoke(this, new FlowEngineNodeEventArgs());
@@ -136,6 +133,8 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		if (!System.Enum.IsDefined(_Algorithm))
+			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		Algorithm2InParam algorithm2InParam = new Algorithm2InParam(_IsAdd, -1, _OrderIndex, _BufferLen);
 		getPreStepParam(0, algorithm2InParam);
