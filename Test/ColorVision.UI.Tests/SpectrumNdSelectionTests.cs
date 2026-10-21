@@ -19,6 +19,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
+using ColorVision.Engine.PropertyEditor;
 
 namespace ColorVision.UI.Tests;
 
@@ -261,6 +262,63 @@ public sealed class SpectrumNdSelectionTests
                 using var available = mqtt.ReserveForCalibration();
             }
             finally { manager.DeviceServices.Remove(device); }
+        });
+    }
+
+    [Fact]
+    public void ShutterPositionChoicesShowBoundWheelNamesAndPreserveIndicesWhenChoicesChange()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            scope.AddZeroBasedPhysicalWheel();
+            PhyCameraManager.GetInstance().PhyCameras[0].Config.FilterWheelConfig.HoleMapping[0].HoleName = "遮光";
+            using var standard = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = "ND.Names.Standard", Value = "{}" });
+            using var custom = new DeviceCfwPort(new SysResourceModel { Id = -3, Code = "ND.Names.Custom", Value = "{\"SN\":\"PHY.CFW.TEST\"}" });
+            var devices = ServiceManager.GetInstance().DeviceServices;
+            devices.Add(standard);
+            devices.Add(custom);
+            var config = new ShutterConfig { UseFilterWheel = true, FilterWheelDeviceCode = standard.Code };
+            var measurementPanel = PropertyEditorHelper.GenProperties(config, nameof(ShutterConfig.MeasurementPort), ColorVision.Engine.Properties.Resources.ResourceManager);
+            var darkPanel = PropertyEditorHelper.GenProperties(config, nameof(ShutterConfig.DarkPort), ColorVision.Engine.Properties.Resources.ResourceManager);
+            var measurement = Assert.Single(measurementPanel.Children.OfType<ComboBox>());
+            var dark = Assert.Single(darkPanel.Children.OfType<ComboBox>());
+            var content = new StackPanel();
+            content.Children.Add(measurementPanel);
+            content.Children.Add(darkPanel);
+            var window = ShowCard(new UserControl { Content = content });
+            try
+            {
+                Assert.False(measurement.IsEditable);
+                Assert.Equal("Spectrum", Assert.IsType<HoleMap>(measurement.SelectedItem).HoleName);
+                Assert.Equal("ND0", Assert.IsType<HoleMap>(dark.SelectedItem).HoleName);
+                config.FilterWheelDeviceCode = custom.Code;
+                Pump();
+                Assert.Null(measurement.SelectedItem);
+                Assert.Equal(5, config.MeasurementPort);
+                Assert.Equal("遮光", Assert.IsType<HoleMap>(dark.SelectedItem).HoleName);
+                measurement.SetCurrentValue(ComboBox.SelectedValueProperty, 3);
+                Pump();
+                Assert.Equal(3, config.MeasurementPort);
+                Assert.Equal("ND3", Assert.IsType<HoleMap>(measurement.SelectedItem).HoleName);
+                config.FilterWheelDeviceCode = string.Empty;
+                Pump();
+                Assert.Null(measurement.SelectedItem);
+                Assert.Null(dark.SelectedItem);
+                Assert.Equal(3, config.MeasurementPort);
+                Assert.Equal(0, config.DarkPort);
+                config.FilterWheelDeviceCode = standard.Code;
+                Pump();
+                Assert.Equal("ND1000", Assert.IsType<HoleMap>(measurement.SelectedItem).HoleName);
+                Assert.Equal("ND0", Assert.IsType<HoleMap>(dark.SelectedItem).HoleName);
+            }
+            finally
+            {
+                window.Content = null;
+                window.Close();
+                devices.Remove(custom);
+                devices.Remove(standard);
+            }
         });
     }
 

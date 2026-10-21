@@ -17,11 +17,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public string FilterWheelDeviceCode { get => filterWheelDeviceCode; set { filterWheelDeviceCode = value; OnPropertyChanged(); } }
         private string filterWheelDeviceCode = string.Empty;
 
-        [DisplayName("SpectrumFilterWheelMeasurementPort"), PropertyVisibility(nameof(UseFilterWheel))]
+        [DisplayName("SpectrumFilterWheelMeasurementPort"), PropertyEditorType(typeof(SpectrumFilterWheelPositionEditor)), PropertyVisibility(nameof(UseFilterWheel))]
         public int MeasurementPort { get => measurementPort; set { measurementPort = value; OnPropertyChanged(); } }
         private int measurementPort = 5;
 
-        [DisplayName("SpectrumFilterWheelDarkPort"), PropertyVisibility(nameof(UseFilterWheel))]
+        [DisplayName("SpectrumFilterWheelDarkPort"), PropertyEditorType(typeof(SpectrumFilterWheelPositionEditor)), PropertyVisibility(nameof(UseFilterWheel))]
         public int DarkPort { get => darkPort; set { darkPort = value; OnPropertyChanged(); } }
         private int darkPort;
 
