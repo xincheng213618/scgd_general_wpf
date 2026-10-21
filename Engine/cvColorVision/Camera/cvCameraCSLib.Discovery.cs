@@ -149,9 +149,11 @@ namespace cvColorVision
                 {
                     StringBuilder builder = new StringBuilder(bufferSize);
                     int ret = GetAllCameraIDV1(cameraModel, builder, bufferSize);
-                    modelResult.Success = ret == cvErrorDefine.CV_ERR_SUCCESS;
+                    // Native discovery uses CV_ERR_CAM_SCAN when no devices are present.
+                    // An empty result is a completed search, not a discovery failure.
+                    modelResult.Success = ret == cvErrorDefine.CV_ERR_SUCCESS || ret == cvErrorDefine.CV_ERR_CAM_SCAN;
 
-                    if (modelResult.Success)
+                    if (ret == cvErrorDefine.CV_ERR_SUCCESS)
                     {
                         foreach (string cameraId in ExtractCameraIds(builder.ToString()))
                         {
@@ -170,7 +172,7 @@ namespace cvColorVision
                             });
                         }
                     }
-                    else
+                    else if (!modelResult.Success)
                     {
                         modelResult.ErrorMessage = $"CM_GetCameraIDV1 returned {ret}";
                     }

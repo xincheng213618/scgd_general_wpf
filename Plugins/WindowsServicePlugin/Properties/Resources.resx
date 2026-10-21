@@ -208,9 +208,6 @@
   <data name="DatabaseBackup" xml:space="preserve">
     <value>数据库备份</value>
   </data>
-  <data name="BackupDatabaseBeforeInstall" xml:space="preserve">
-    <value>安装前备份数据库</value>
-  </data>
   <data name="BackupNow" xml:space="preserve">
     <value>立即备份</value>
   </data>
@@ -220,29 +217,8 @@
   <data name="DatabaseBackupLocationHint" xml:space="preserve">
     <value>(保存至：我的文档\ColorVision\Backup)</value>
   </data>
-  <data name="ServiceBackup" xml:space="preserve">
-    <value>服务备份</value>
-  </data>
-  <data name="BackupServiceBeforeInstall" xml:space="preserve">
-    <value>安装前备份服务文件夹</value>
-  </data>
-  <data name="BackupServiceNow" xml:space="preserve">
-    <value>立即备份服务</value>
-  </data>
-  <data name="RestoreServiceBackup" xml:space="preserve">
-    <value>恢复服务备份</value>
-  </data>
-  <data name="ServiceBackupLocationHint" xml:space="preserve">
-    <value>(保存至：我的文档\ColorVision\ServiceBackup)</value>
-  </data>
   <data name="InstallLog" xml:space="preserve">
     <value>安装日志</value>
-  </data>
-  <data name="InstallCompletedMessage" xml:space="preserve">
-    <value>所选组件已安装完成。</value>
-  </data>
-  <data name="InstallCompletedTitle" xml:space="preserve">
-    <value>安装完成</value>
   </data>
   <data name="InstallNow" xml:space="preserve">
     <value>立即安装</value>

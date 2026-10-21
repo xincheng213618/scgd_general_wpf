@@ -18,6 +18,13 @@ namespace ColorVision.UI
         void Download(string url, string saveDir, string? authorization = null, Action<string?>? onCompleted = null);
 
         /// <summary>
+        /// Downloads to an explicit file name, including when the URL ends in an API version or identifier.
+        /// The original overload remains available to existing callers and implementations.
+        /// </summary>
+        void Download(string url, string saveDir, string? authorization, Action<string?>? onCompleted, string fileName)
+            => throw new NotSupportedException("This download service does not support explicit file names.");
+
+        /// <summary>
         /// Shows the download manager window.
         /// </summary>
         void ShowDownloadWindow();

@@ -73,9 +73,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ResetCommand { get; set; }
         [CommandDisplay("ModifyConfiguration", Order = -99)]
         public RelayCommand EditCommand { get; set; }
-        [CommandDisplay("PropertyEditorWindow", Order = -98)]
-        public RelayCommand PropertyEditorEditCommand { get; set; }
-        public RelayCommand CopyConfigCommand { get; set; }
         [CommandDisplay("OpenConfigFile")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
 
@@ -114,9 +111,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             });
 
-            PropertyEditorEditCommand = new RelayCommand(a => OpenPropertyEditor());
-
-            CopyConfigCommand = new RelayCommand(a => Common.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a), a => !_calibrationUploadRunner.IsRunning);
@@ -167,26 +161,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
-        }
-
-        private void OpenPropertyEditor()
-        {
-            var editConfig = Config.Clone();
-            editConfig.CFW = Config.CFW.CloneForEdit();
-            editConfig.CFW.EnsureChannelCfgsForEdit();
-
-            var propertyEditorWindow = new PropertyEditorWindow(editConfig)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            propertyEditorWindow.Submitted += (s, e) =>
-            {
-                editConfig.CFW.NormalizeChannelCfgsForSave();
-                editConfig.CopyTo(Config);
-                Save();
-            };
-            propertyEditorWindow.ShowDialog();
         }
 
         public async void CreateRestore()
@@ -1471,9 +1445,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.PropertyEditorFallback, Command = PropertyEditorEditCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuCopy, Command = CopyConfigCommand });
         }
 
         public event EventHandler<ConfigPhyCamera> ConfigChanged;

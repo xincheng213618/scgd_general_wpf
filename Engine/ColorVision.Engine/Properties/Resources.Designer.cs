@@ -10271,15 +10271,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 属性编辑器(备用) 的本地化字符串。
-        /// </summary>
-        public static string PropertyEditorFallback {
-            get {
-                return ResourceManager.GetString("PropertyEditorFallback", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 四边形 的本地化字符串。
         /// </summary>
         public static string Quadrilateral {

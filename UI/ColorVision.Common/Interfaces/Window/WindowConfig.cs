@@ -13,6 +13,8 @@ namespace ColorVision.UI
 {
     public abstract class WindowConfig : ViewModelBase, IConfig
     {
+        protected virtual Size DefaultWindowSize => new(800, 600);
+
         [DisplayName("StartRecoverUILayout")]
         [Description("StartRecoverUILayoutDescription")]
         public bool IsRestoreWindow { get; set; } = true;
@@ -132,8 +134,9 @@ namespace ColorVision.UI
             // 如果保存的矩形无效或不相交，则居中到目标屏
             if (IsInvalidRect(savedRect) || !savedRect.IntersectsWith(target.WorkingArea))
             {
-                double w = Double.IsNaN(Width) || Width <= 0 ? Math.Max(window.MinWidth, 800) : Width;
-                double h = Double.IsNaN(Height) || Height <= 0 ? Math.Max(window.MinHeight, 600) : Height;
+                Size defaultSize = DefaultWindowSize;
+                double w = Double.IsNaN(Width) || Width <= 0 ? Math.Max(window.MinWidth, defaultSize.Width) : Width;
+                double h = Double.IsNaN(Height) || Height <= 0 ? Math.Max(window.MinHeight, defaultSize.Height) : Height;
                 w = Math.Min(w, target.WorkingArea.Width);
                 h = Math.Min(h, target.WorkingArea.Height);
 

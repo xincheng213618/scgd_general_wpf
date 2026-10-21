@@ -3735,9 +3735,6 @@
   <data name="Position" xml:space="preserve">
     <value>位置</value>
   </data>
-  <data name="PropertyEditorFallback" xml:space="preserve">
-    <value>屬性編輯器(備用)</value>
-  </data>
   <data name="RadiantFlux" xml:space="preserve">
     <value>輻射通量(W)</value>
   </data>
@@ -7482,10 +7479,11 @@
   </data>
   <data name="内存缓存管理" xml:space="preserve"><value>記憶體快取管理</value></data>
   <data name="Camera_LocalOpenFailure" xml:space="preserve"><value>本機相機連線失敗，目標 ID：{0}，失敗步驟：{1}</value></data>
-  <data name="Camera_LocalOpenNoDevices" xml:space="preserve"><value>開啟失敗後重新偵測，未發現目前型號的相機。請檢查相機電源、連線、驅動程式及型號設定。</value></data>
+  <data name="Camera_LocalOpenNoDevices" xml:space="preserve"><value>本機未偵測到目前型號的相機。請先連接相機，或在實體相機管理中檢查型號與綁定。</value></data>
   <data name="Camera_LocalOpenIdMismatch" xml:space="preserve"><value>開啟失敗後重新偵測，未找到指定相機 ID：{0}。目前偵測到：{1}。請核對實體相機綁定及 CameraID。</value></data>
   <data name="Camera_LocalOpenDetected" xml:space="preserve"><value>開啟失敗後仍可偵測到相機 {0}。請根據下方底層錯誤檢查連線，以及其他程式或服務的佔用情況。</value></data>
-  <data name="Camera_LocalOpenDiscoveryFailed" xml:space="preserve"><value>開啟失敗後無法重新偵測相機：{0}。請根據下方原始錯誤繼續排查。</value></data>
+  <data name="Camera_LocalOpenDiscoveryFailed" xml:space="preserve"><value>開啟失敗後未能完成相機偵測：{0}
+請根據下方原始錯誤繼續排查。</value></data>
   <data name="Camera_PhysicalBindingInUse" xml:space="preserve"><value>目前相機仍由本機工作階段、視訊或服務佔用。請先關閉目前相機，再切換實體相機。</value></data>
   <data name="{0} 迁移状态检查失败：{1}" xml:space="preserve"><value>{0} 遷移狀態檢查失敗：{1}</value></data>
   <data name="切换画布拖动/框选" xml:space="preserve"><value>切換畫布拖曳/框選</value></data>

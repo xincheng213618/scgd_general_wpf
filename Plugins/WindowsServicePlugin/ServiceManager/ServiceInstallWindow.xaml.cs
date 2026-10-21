@@ -17,12 +17,16 @@ namespace WindowsServicePlugin.ServiceManager
             InitializeComponent();
             this.ApplyCaption();
             ViewModel = new ServiceInstallViewModel();
+            ViewModel.InstallationCompleted += ViewModel_InstallationCompleted;
             DataContext = ViewModel;
             OperationLog.StartCapture();
         }
 
+        private void ViewModel_InstallationCompleted(object? sender, EventArgs e) => Close();
+
         protected override void OnClosed(EventArgs e)
         {
+            ViewModel.InstallationCompleted -= ViewModel_InstallationCompleted;
             OperationLog.Dispose();
             base.OnClosed(e);
         }

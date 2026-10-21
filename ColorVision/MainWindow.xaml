@@ -13,7 +13,7 @@
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
-        Title="" Width="1280" Height="720"
+        Title="" Width="1920" Height="1280"
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized">
     <Window.Resources>

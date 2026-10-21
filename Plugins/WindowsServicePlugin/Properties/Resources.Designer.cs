@@ -88,38 +88,11 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 安装前备份数据库 的本地化字符串。
-        /// </summary>
-        public static string BackupDatabaseBeforeInstall {
-            get {
-                return ResourceManager.GetString("BackupDatabaseBeforeInstall", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 立即备份 的本地化字符串。
         /// </summary>
         public static string BackupNow {
             get {
                 return ResourceManager.GetString("BackupNow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装前备份服务文件夹 的本地化字符串。
-        /// </summary>
-        public static string BackupServiceBeforeInstall {
-            get {
-                return ResourceManager.GetString("BackupServiceBeforeInstall", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 立即备份服务 的本地化字符串。
-        /// </summary>
-        public static string BackupServiceNow {
-            get {
-                return ResourceManager.GetString("BackupServiceNow", resourceCulture);
             }
         }
         
@@ -311,24 +284,6 @@ namespace WindowsServicePlugin.Properties {
         public static string InstallAndUpdate {
             get {
                 return ResourceManager.GetString("InstallAndUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 所选组件已安装完成。 的本地化字符串。
-        /// </summary>
-        public static string InstallCompletedMessage {
-            get {
-                return ResourceManager.GetString("InstallCompletedMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装完成 的本地化字符串。
-        /// </summary>
-        public static string InstallCompletedTitle {
-            get {
-                return ResourceManager.GetString("InstallCompletedTitle", resourceCulture);
             }
         }
         
@@ -644,15 +599,6 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 恢复服务备份 的本地化字符串。
-        /// </summary>
-        public static string RestoreServiceBackup {
-            get {
-                return ResourceManager.GetString("RestoreServiceBackup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 root密码 的本地化字符串。
         /// </summary>
         public static string RootPassword {
@@ -748,24 +694,6 @@ namespace WindowsServicePlugin.Properties {
         public static string Service {
             get {
                 return ResourceManager.GetString("Service", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务备份 的本地化字符串。
-        /// </summary>
-        public static string ServiceBackup {
-            get {
-                return ResourceManager.GetString("ServiceBackup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 (保存至：我的文档\ColorVision\ServiceBackup) 的本地化字符串。
-        /// </summary>
-        public static string ServiceBackupLocationHint {
-            get {
-                return ResourceManager.GetString("ServiceBackupLocationHint", resourceCulture);
             }
         }
         

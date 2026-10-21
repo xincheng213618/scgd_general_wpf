@@ -28,8 +28,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public IReadOnlyList<string> GetCameraIds()
         {
             var summary = cvCameraCSLib.SearchCameraIds(new[] { device.Config.CameraModel });
-            if (summary.Models.Single().Success != true)
-                throw new InvalidOperationException(EngineLocalization.Get("Camera_LocalDiscoveryFailed"));
+            var model = summary.Models.Single();
+            if (!model.Success)
+                throw new InvalidOperationException($"{EngineLocalization.Get("Camera_LocalDiscoveryFailed")}{Environment.NewLine}{model.ErrorMessage}");
             return summary.Cameras.Select(camera => camera.CameraId).ToArray();
         }
 

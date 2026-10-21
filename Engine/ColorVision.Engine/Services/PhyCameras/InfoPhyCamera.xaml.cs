@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             // Keep translated captions in equal cells; narrow detail panes use two columns.
             if (sender is UniformGrid grid)
-                grid.Columns = e.NewSize.Width >= 520 ? 4 : 2;
+                grid.Columns = e.NewSize.Width >= 520 ? (grid == CameraConfigurationActions ? 3 : 4) : 2;
         }
     }
 }

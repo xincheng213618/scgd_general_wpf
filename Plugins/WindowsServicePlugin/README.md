@@ -24,10 +24,9 @@ Package-local prerequisites and warnings:
 - Current installation uses full service packages. It can stop/register/start
   services, replace files, execute SQL, change credentials/configuration, and close
   the old CVWinSMS process. Confirm the targets and obtain maintenance authority.
-- Backup options are off by default; backup failures do not always stop installation.
-  An installation-complete log is not proof that all services started. Manual
-  service-file restore deletes the entire configured installation directory before
-  extraction and is not a transactional rollback.
+- Database backup and restore are manual operations. A completed backup file or
+  installation log is not proof of a successful recovery or healthy services;
+  installation is not transactional.
 - Online package selection and local cache reuse are implemented. This consumer
   checks package directory names, not a publisher signature or package hash.
 - Legacy `CVWinSMS/InstallTool` and service-log menu classes are still compiled and

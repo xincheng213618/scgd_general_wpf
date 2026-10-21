@@ -8991,8 +8991,6 @@
         "InstallTool",
         "CVWinSMS",
         "AutoUpdateDatabase",
-        "BackupBeforeInstall",
-        "BackupServiceBeforeInstall",
         "UpdateServerUrl",
         "DownloadLocation",
         "IsFullServicePackageZip",
@@ -9038,6 +9036,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceInstallDownloadTests.cs",
         "Test/ColorVision.UI.Tests/InstallToolAsyncCommandTests.cs",
         "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs",
         "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs",

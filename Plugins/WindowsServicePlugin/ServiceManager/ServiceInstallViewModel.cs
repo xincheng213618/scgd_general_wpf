@@ -20,6 +20,8 @@ namespace WindowsServicePlugin.ServiceManager
         private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
         public ServiceManagerConfig Config => _config;
 
+        public event EventHandler? InstallationCompleted;
+
         public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
         private bool _isBusy;
 
@@ -61,12 +63,6 @@ namespace WindowsServicePlugin.ServiceManager
         public bool AutoUpdateDatabase { get => _autoUpdateDatabase; set { _autoUpdateDatabase = value; OnPropertyChanged(); } }
         private bool _autoUpdateDatabase = true;
 
-        public bool BackupBeforeInstall { get => _backupBeforeInstall; set { _backupBeforeInstall = value; OnPropertyChanged(); } }
-        private bool _backupBeforeInstall;
-
-        public bool BackupServiceBeforeInstall { get => _backupServiceBeforeInstall; set { _backupServiceBeforeInstall = value; OnPropertyChanged(); } }
-        private bool _backupServiceBeforeInstall;
-
         public bool InstallServiceChecked
         {
             get => Config.InstallServiceChecked;
@@ -97,8 +93,6 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand SelectMqttInstallerInFolderCommand { get; }
         public RelayCommand BackupNowCommand { get; }
         public RelayCommand RestoreBackupCommand { get; }
-        public RelayCommand BackupServiceNowCommand { get; }
-        public RelayCommand RestoreServiceBackupCommand { get; }
         public RelayCommand DoInstallCommand { get; }
         public RelayCommand OneKeyInstallAllCommand { get; }
         public RelayCommand DownloadOneKeyPackageCommand { get; }
@@ -121,8 +115,6 @@ namespace WindowsServicePlugin.ServiceManager
             SelectMqttInstallerInFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(MqttInstallerPath));
             BackupNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupNow()), a => !IsBusy);
             RestoreBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreBackup()), a => !IsBusy);
-            BackupServiceNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupServiceNow()), a => !IsBusy);
-            RestoreServiceBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreServiceBackup()), a => !IsBusy);
             DoInstallCommand = new RelayCommand(a => _ = ExecuteInstallAsync(), a => !IsBusy);
             OneKeyInstallAllCommand = new RelayCommand(a => _ = OneKeyInstallAllAsync(), a => !IsBusy);
             DownloadServicePackageCommand = new RelayCommand(a => _ = DownloadServicePackageAsync(), a => !IsBusy);
