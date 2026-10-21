@@ -11,7 +11,7 @@ public sealed class SensorConfigurationDraftTests
     public void CombinedDraftIsDetachedAndAppliesWithoutReplacingLiveInstancesOrMovingSettings()
     {
         var config = new ConfigSensor { Name = "Original", Addr = "COM7", Port = 9600, Category = "Sensor.Default" };
-        var display = new DisplaySensorConfig();
+        var display = new DisplaySensorConfig { UseLocalSensor = false };
         var draft = new SensorConfigurationDraft(config, display);
         draft.Config.Name = "Edited";
         draft.Config.IsNet = true;
@@ -60,7 +60,7 @@ public sealed class SensorConfigurationDraftTests
     public void InvalidLocalDraftDoesNotApplyEitherConfiguration(bool network, string address, int port, int timeout, int bits)
     {
         var config = new ConfigSensor { Name = "Original", Addr = "COM3", Port = 9600 };
-        var display = new DisplaySensorConfig();
+        var display = new DisplaySensorConfig { UseLocalSensor = false };
         var draft = new SensorConfigurationDraft(config, display);
         draft.Config.Name = "Edited";
         draft.Config.IsNet = network;

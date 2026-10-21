@@ -31,7 +31,6 @@ public partial class DeviceSMU
     {
         OpenLocalSmuManagerCommand = new RelayCommand(_ => OpenLocalSmuWindow());
         ContextMenu.Items.Add(new System.Windows.Controls.MenuItem { Header = "本地源表", Command = OpenLocalSmuManagerCommand });
-        if (SysResourceDao.IsLocalId(SysResourceModel.Id)) DisplayConfig.UseLocalSmu = true;
         SmuBackend = new SmuBackendState(DisplayConfig.UseLocalSmu);
         SmuBackend.Changed += RefreshSmuBackendStatus;
         LocalSession.StatusChanged += LocalSmuStatusChanged;

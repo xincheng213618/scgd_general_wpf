@@ -18,9 +18,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor;
 public sealed class DisplaySensorConfig : IDisplayConfigBase
 {
     [Category("AcquisitionDisplay"), DisplayName("使用本地传感器")]
-    [Description("下次打开时直接连接 TCP 或串口。已打开的连接在关闭前保持当前模式。")]
+    [Description("默认开启；下次打开时直接连接 TCP 或串口。已打开的连接在关闭前保持当前模式。")]
     public bool UseLocalSensor { get => useLocal; set { if (useLocal == value) return; useLocal = value; OnPropertyChanged(); } }
-    private bool useLocal;
+    private bool useLocal = true;
 
     [Category("本地连接"), DisplayName("连接超时(ms)"), Description("建立本地连接的最长等待时间；指令超时仍使用原模板设置。")]
     public int ConnectTimeout { get; set; } = 3000;
@@ -47,7 +47,6 @@ public partial class DeviceSensor
     private void InitializeLocalSensor()
     {
         LocalSession.Diagnostics.DeviceCode = Config.Code;
-        if (SysResourceDao.IsLocalId(SysResourceModel.Id)) DisplayConfig.UseLocalSensor = true;
         SensorBackend = new SensorBackendState(DisplayConfig.UseLocalSensor);
         SensorBackend.Changed += RefreshLocalSensorStatus;
         LocalSession.StatusChanged += LocalSensorStatusChanged;

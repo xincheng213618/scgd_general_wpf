@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            CameraBackend = new CameraBackendState(SysResourceDao.IsLocalId(sysResourceModel.Id) || DisplayConfig.UseLocalCamera);
+            CameraBackend = new CameraBackendState(DisplayConfig.UseLocalCamera);
             LocalCameraSession = new LocalCameraSession(this);
             LocalCalibrationCacheManager = new LocalCalibrationCacheManager(Config.Code);
             DService = new MQTTCamera(this);

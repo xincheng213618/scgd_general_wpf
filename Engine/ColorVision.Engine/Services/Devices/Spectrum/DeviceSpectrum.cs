@@ -48,9 +48,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public class DisplaySpectrumConfig : IDisplayConfigBase
     {
         [DisplayName("启用本地光谱仪")]
-        [Description("下次打开时直接连接本机光谱仪；已打开的连接在关闭前保持当前模式。")]
+        [Description("默认开启；下次打开时直接连接本机光谱仪；已打开的连接在关闭前保持当前模式。")]
         public bool UseLocalSpectrum { get => _useLocalSpectrum; set { _useLocalSpectrum = value; OnPropertyChanged(); } }
-        private bool _useLocalSpectrum;
+        private bool _useLocalSpectrum = true;
         /// <summary>
         /// 是否光通量模式
         /// </summary>

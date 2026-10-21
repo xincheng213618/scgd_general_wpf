@@ -30,7 +30,6 @@ public partial class DeviceSpectrum
 
     private void InitializeLocalSpectrum()
     {
-        if (SysResourceDao.IsLocalId(SysResourceModel.Id)) DisplayConfig.UseLocalSpectrum = true;
         SpectrumBackend = new SpectrumBackendState(DisplayConfig.UseLocalSpectrum);
         SpectrumBackend.Changed += RefreshLocalSpectrumStatus;
         DisplayConfig.PropertyChanged += LocalDisplayConfigChanged;
