@@ -512,60 +512,12 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 归档 的本地化字符串。
-        /// </summary>
-        public static string Archive {
-            get {
-                return ResourceManager.GetString("Archive", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 找不到归档配置信息 的本地化字符串。
-        /// </summary>
-        public static string ArchiveConfigInfoNotFound {
-            get {
-                return ResourceManager.GetString("ArchiveConfigInfoNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 归档配置 的本地化字符串。
-        /// </summary>
-        public static string ArchiveConfiguration {
-            get {
-                return ResourceManager.GetString("ArchiveConfiguration", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 归档日期 的本地化字符串。
-        /// </summary>
-        public static string ArchiveDate {
-            get {
-                return ResourceManager.GetString("ArchiveDate", resourceCulture);
-            }
-        }
         
         
-        /// <summary>
-        ///   查找类似 归档服务器配置 的本地化字符串。
-        /// </summary>
-        public static string ArchiveServerConfig {
-            get {
-                return ResourceManager.GetString("ArchiveServerConfig", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 找不到归档服务器配置，正在重置 的本地化字符串。
-        /// </summary>
-        public static string ArchiveServerConfigNotFound_Resetting {
-            get {
-                return ResourceManager.GetString("ArchiveServerConfigNotFound_Resetting", resourceCulture);
-            }
-        }
+        
+        
+        
         
         /// <summary>
         ///   查找类似 自动对齐 的本地化字符串。
@@ -2224,14 +2176,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 仅清除数据库 的本地化字符串。
-        /// </summary>
-        public static string ClearDatabaseOnly {
-            get {
-                return ResourceManager.GetString("ClearDatabaseOnly", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 清空POI 的本地化字符串。
@@ -3306,23 +3250,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 数据保存天数 的本地化字符串。
-        /// </summary>
-        public static string DataRetentionDays {
-            get {
-                return ResourceManager.GetString("DataRetentionDays", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 数据保存小时数 的本地化字符串。
-        /// </summary>
-        public static string DataRetentionHours {
-            get {
-                return ResourceManager.GetString("DataRetentionHours", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 数据存储路径 的本地化字符串。
@@ -3505,14 +3433,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 删除本地文件 的本地化字符串。
-        /// </summary>
-        public static string DeleteLocalFiles {
-            get {
-                return ResourceManager.GetString("DeleteLocalFiles", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 删除选中 的本地化字符串。
@@ -10446,14 +10366,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 找不到RC配置信息 的本地化字符串。
-        /// </summary>
-        public static string RcConfigInfoNotFound {
-            get {
-                return ResourceManager.GetString("RcConfigInfoNotFound", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 注册中心连接配置 的本地化字符串。

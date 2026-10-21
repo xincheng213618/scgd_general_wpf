@@ -12,6 +12,10 @@ namespace cvColorVision
     public static class Spectrometer
     {
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+        public const int SdkFaultErrorCode = -13025;
+        public const int AutoExposureCancelledErrorCode = -13026;
+        public const int AutoExposureNotConvergedErrorCode = -13027;
+        public const int AutoExposureInvalidErrorCode = -13028;
 
         // EXPORTC MYDLL BOOL STDCALL CM_GetErrorMessage(int nErr, char* szMsg, int& strLen);
         [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
@@ -25,6 +29,10 @@ namespace cvColorVision
         public static string GetErrorMessage(int errorCode)
         {
             if (errorCode == 1) return string.Empty;
+            if (errorCode == SdkFaultErrorCode) return "光谱仪底层 SDK 发生异常，已停止调用该驱动。请重启程序后重新连接；若仍失败，请发送反馈。";
+            if (errorCode == AutoExposureCancelledErrorCode) return "光谱仪自动曝光已停止。";
+            if (errorCode == AutoExposureNotConvergedErrorCode) return "自动曝光无法收敛，请检查光路、亮度和 ND 设置，或改用手动积分时间。";
+            if (errorCode == AutoExposureInvalidErrorCode) return "自动曝光参数或光谱数据无效，请检查积分时间上限、起始时间和设备状态。";
             try
             {
                 const int bufferSize = 1024;
@@ -118,6 +126,12 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetAutoTime", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_GetAutoTime(IntPtr handle, ref float fIntTime, int iLimitTime, float fTimeB, int nSaturation);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate int EmissionCancellationCallback();
+
+        [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_Emission_GetAutoTimeCancelable(IntPtr handle, ref float fIntTime, int iLimitTime, float fTimeB, int nSaturation, EmissionCancellationCallback cancelled);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetAutoTimeEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_GetAutoTimeEx(IntPtr handle, ref float fIntTime, int iLimitTime, float fTimeB, float dMaxva1, AutoTime_CallBack autoTime_CallBack);

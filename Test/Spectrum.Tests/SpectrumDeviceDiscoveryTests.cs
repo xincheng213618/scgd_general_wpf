@@ -57,6 +57,22 @@ public sealed class SpectrumDeviceDiscoveryTests
     }
 
     [Fact]
+    public void Discovery_ReportsQuarantinedSdkAndContinuesWithOtherDrivers()
+    {
+        var results = SpectrumDeviceDiscovery.Discover(0, (type, port, buffer, length) =>
+        {
+            if (type == 0) return cvColorVision.Spectrometer.SdkFaultErrorCode;
+            buffer.Append("[]");
+            return 1;
+        });
+
+        Assert.Equal(cvColorVision.Spectrometer.SdkFaultErrorCode, results[0].NativeResult);
+        Assert.Contains("SDK", results[0].Error);
+        Assert.Contains("重启", results[0].Error);
+        Assert.All(results.Skip(1), result => Assert.Null(result.Error));
+    }
+
+    [Fact]
     public void Discovery_ReportsMalformedPayloadAndContinues()
     {
         var results = SpectrumDeviceDiscovery.Discover(0, (type, port, buffer, length) =>

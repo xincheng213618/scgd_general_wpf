@@ -114,6 +114,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
         var snapshot = GetExecutionParameters<ExecutionParameters>(action);
         using var execution = new LocalSpectrumFlowExecution(snapshot.Device, snapshot.Capture,
             snapshot.Capture.Eqe ? "EQE.GetData" : "GetData", snapshot.AutoConnect, snapshot.ZIndex, snapshot.NodeId);
+        execution.Bind(action);
         execution.Execute();
         return new LocalNodeExecutionResult { Data = execution.Complete(action) };
     }

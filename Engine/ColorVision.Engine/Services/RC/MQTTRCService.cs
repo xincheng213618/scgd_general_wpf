@@ -114,7 +114,6 @@ namespace ColorVision.Engine.Services.RC
         private string RCHeartbeatTopic;
         private string RCPublicTopic;
         private string RCAdminTopic;
-        private string ArchivedTopic;
         private string SysConfigTopic;
         private string SysConfigRespTopic;
         
@@ -231,7 +230,6 @@ namespace ColorVision.Engine.Services.RC
             RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
             RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
             RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
-            ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
             SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
 
             MQTTControl.SubscribeCache(SubscribeTopic);
@@ -646,18 +644,6 @@ namespace ColorVision.Engine.Services.RC
             MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             await PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
             return await WaitForConnectionAsync();
-        }
-
-        public void Archived(string sn)
-        {
-            MQTTArchivedRequest request = new MQTTArchivedRequest(sn);
-            PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
-        }
-        public void ArchivedAll()
-        {
-            MQTTArchivedRequest request = new MQTTArchivedRequest();
-            request.EventName = "ArchivedAll";
-            PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
         }
 
         public Task PublishAsyncClient(string topic, string json) => MQTTControl.PublishAsyncClient(topic, json, false);

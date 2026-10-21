@@ -1,34 +1,10 @@
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Archive.Dao;
 
 namespace ColorVision.UI.Tests;
 
 public class BatchSqlConsumerTests
 {
-    [Fact]
-    public void ArchiveConfigurationMigrationExecutesOneAlterWithAllThreeColumnAdditions()
-    {
-        string? executedSql = null;
-        bool editorOpened = false;
-
-        int count = ArchiveConfigurationSchemaMigration.EnsureColumnsAndExecute(
-            () => new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-            sql =>
-            {
-                executedSql = sql;
-                return 0;
-            },
-            () => { editorOpened = true; });
-
-        Assert.Equal(0, count);
-        Assert.NotNull(executedSql);
-        Assert.StartsWith($"ALTER TABLE `{ArchiveConfigurationSchemaMigration.TableName}`", executedSql, StringComparison.Ordinal);
-        Assert.Equal(1, executedSql.Split("ALTER TABLE", StringSplitOptions.None).Length - 1);
-        Assert.Equal(3, executedSql.Split("ADD COLUMN", StringSplitOptions.None).Length - 1);
-        Assert.True(editorOpened);
-    }
-
     [Fact]
     public void CommittedCleanupWarningStillRunsTheConsumerFollowUp()
     {
@@ -67,27 +43,13 @@ public class BatchSqlConsumerTests
     }
 
     [Fact]
-    public void ArchiveSchemaFailureDoesNotOpenEditor()
-    {
-        bool editorOpened = false;
-
-        Assert.Throws<BatchExecuteNonQueryException>(() =>
-            ArchiveConfigurationSchemaMigration.EnsureColumnsAndExecute(
-                () => new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                _ => throw CreateBatchFailure(),
-                () => { editorOpened = true; }));
-
-        Assert.False(editorOpened);
-    }
-
-    [Fact]
-    public void ArchiveServerFailureDoesNotReloadConfiguration()
+    public void FailedBatchDoesNotReloadConfiguration()
     {
         bool reloadRan = false;
 
         Assert.Throws<BatchExecuteNonQueryException>(() =>
             BatchSqlConsumer.ExecuteAfterCommit(
-                "insert archive configuration;",
+                "insert configuration;",
                 _ => throw CreateBatchFailure(),
                 () =>
                 {
@@ -108,8 +70,8 @@ public class BatchSqlConsumerTests
             new InvalidOperationException($"provider included SQL: {secretSql}"),
             new ApplicationException("rollback included secret SQL"));
 
-        string uiMessage = BatchSqlConsumer.FormatFailureMessage("更新归档配置数据库结构", exception);
-        string logMessage = BatchSqlConsumer.FormatDiagnosticSummary("更新归档配置数据库结构", exception);
+        string uiMessage = BatchSqlConsumer.FormatFailureMessage("更新配置数据库结构", exception);
+        string logMessage = BatchSqlConsumer.FormatDiagnosticSummary("更新配置数据库结构", exception);
 
         Assert.DoesNotContain(secretSql, uiMessage, StringComparison.Ordinal);
         Assert.DoesNotContain("rollback included secret SQL", uiMessage, StringComparison.Ordinal);

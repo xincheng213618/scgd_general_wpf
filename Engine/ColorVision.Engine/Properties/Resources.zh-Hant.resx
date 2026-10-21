@@ -568,24 +568,6 @@
 
   
   
-  <data name="Archive" xml:space="preserve">
-    <value>歸檔</value>
-  </data>
-  <data name="ArchiveServerConfig" xml:space="preserve">
-    <value>歸檔伺服器配置</value>
-  </data>
-  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
-    <value>找不到歸檔伺服器配置，正在重置</value>
-  </data>
-  <data name="ArchiveConfiguration" xml:space="preserve">
-    <value>歸檔配置</value>
-  </data>
-  <data name="RcConfigInfoNotFound" xml:space="preserve">
-    <value>找不到RC配置訊息</value>
-  </data>
-  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
-    <value>找不到歸檔配置資訊</value>
-  </data>
   
   <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
     <value>未授權或許可證過期</value>
@@ -1416,9 +1398,6 @@
   <data name="ParamInput" xml:space="preserve">
     <value>輸入參數</value>
   </data>
-  <data name="ArchiveDate" xml:space="preserve">
-    <value>歸檔日期</value>
-  </data>
   <data name="CreationDate" xml:space="preserve">
     <value>建立日期</value>
   </data>
@@ -1515,18 +1494,6 @@
 
   <data name="SelectExportFileLocation" xml:space="preserve">
     <value>選擇匯出檔案位置</value>
-  </data>
-  <data name="DataRetentionDays" xml:space="preserve">
-    <value>資料保存天數</value>
-  </data>
-  <data name="DataRetentionHours" xml:space="preserve">
-    <value>資料保存小時數</value>
-  </data>
-  <data name="ClearDatabaseOnly" xml:space="preserve">
-    <value>僅清除資料庫</value>
-  </data>
-  <data name="DeleteLocalFiles" xml:space="preserve">
-    <value>刪除本機檔案</value>
   </data>
   <data name="DataBaseConfig" xml:space="preserve">
     <value>資料庫配置</value>

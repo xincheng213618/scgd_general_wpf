@@ -22,7 +22,6 @@ internal sealed class ServiceHostCommandHandler
         ["RegistrationCenterService"] = ["RegWindowsService.exe"],
         ["CVMainService_x64"] = ["CVMainWindowsService_x64.exe"],
         ["CVMainService_dev"] = ["CVMainWindowsService_dev.exe"],
-        ["CVArchService"] = ["ArchivedWindowsService.exe", "RegWindowsService.exe"],
         ["MySQL"] = ["mysqld.exe"],
         ["MySQL57"] = ["mysqld.exe"],
         ["MySQL80"] = ["mysqld.exe"],
@@ -813,7 +812,7 @@ internal sealed class ServiceHostCommandHandler
     private static ServiceHostResponse UninstallWindowsService(ServiceHostRequest request)
     {
         string serviceName = ResolveRequestedServiceName(request);
-        if (!IsAllowedServiceName(serviceName))
+        if (!IsAllowedServiceUninstall(serviceName))
             return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
 
         int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
@@ -1210,6 +1209,11 @@ internal sealed class ServiceHostCommandHandler
     internal static bool IsAllowedServiceName(string serviceName)
     {
         return ServiceExecutableNames.ContainsKey(serviceName);
+    }
+
+    internal static bool IsAllowedServiceUninstall(string serviceName)
+    {
+        return IsAllowedServiceName(serviceName) || serviceName.Equals("CVArchService", StringComparison.OrdinalIgnoreCase);
     }
 
     internal static bool IsAllowedServiceExecutable(string serviceName, string executablePath)

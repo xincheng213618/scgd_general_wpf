@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 
@@ -53,7 +54,7 @@ internal interface ILocalSpectrumNative
     int LoadMagnitude(IntPtr handle, string path);
     int Configure(IntPtr handle, SetEmissionSP100Config config);
     int ConfigureSmoothing(IntPtr handle, SpectrumSmoothingMethod method, int filterWidth);
-    int AutoTime(IntPtr handle, ref float time, ConfigSpectrum config);
+    int AutoTime(IntPtr handle, ref float time, ConfigSpectrum config, CancellationToken cancellationToken);
     int Dark(IntPtr handle, float time, int average, int filter, float[] data, bool adaptive);
     int InitAutoDark(IntPtr handle, SelfAdaptionInitDark config);
     LocalSpectrumCapture Capture(IntPtr handle, LocalSpectrumParameters parameters, GetDataConfig settings, float[] dark);
@@ -70,7 +71,8 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
     public int LoadMagnitude(IntPtr h, string path) => Spectrometer.CM_Emission_LoadMagiudeFile(h, path);
     public int Configure(IntPtr h, SetEmissionSP100Config c) => Spectrometer.CM_SetEmissionSP100(h, c.IsEnabled, c.nStartPos, c.nEndPos, c.dMeanThreshold);
     public int ConfigureSmoothing(IntPtr h, SpectrumSmoothingMethod method, int filterWidth) => SpectrumSmoothing.Configure(h, method, filterWidth);
-    public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c) => Spectrometer.CM_Emission_GetAutoTime(h, ref time, c.MaxIntegralTime, c.BeginIntegralTime, c.Saturation);
+    public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c, CancellationToken cancellationToken)
+        => Spectrometer.CM_Emission_GetAutoTimeCancelable(h, ref time, c.MaxIntegralTime, c.BeginIntegralTime, c.Saturation, () => cancellationToken.IsCancellationRequested ? 1 : 0);
     public int Dark(IntPtr h, float time, int average, int filter, float[] data, bool adaptive) => adaptive
         ? Spectrometer.CM_Emission_AutoDarkStorage(h, time, average, filter, data)
         : Spectrometer.CM_Emission_DarkStorage(h, time, average, filter, data);
@@ -150,11 +152,12 @@ internal sealed class LocalSpectrumSession : IDisposable
         }
     }
 
-    public LocalSpectrumCapture Capture(LocalSpectrumParameters parameters, ConfigSpectrum config)
+    public LocalSpectrumCapture Capture(LocalSpectrumParameters parameters, ConfigSpectrum config, CancellationToken cancellationToken = default)
     {
         lock (gate)
         {
             EnsureOpen(config);
+            cancellationToken.ThrowIfCancellationRequested();
             parameters.Validate();
             // Freeze the selection and width together while native calls run; the UI can edit the live config.
             var configured = config.GetDataConfig;
@@ -185,12 +188,17 @@ internal sealed class LocalSpectrumSession : IDisposable
             if (parameters.AutoIntegration)
             {
                 float time = parameters.IntegralTime;
-                Check(native.AutoTime(handle, ref time, config), "自动积分");
+                int code = native.AutoTime(handle, ref time, config, cancellationToken);
+                if (code == Spectrometer.AutoExposureCancelledErrorCode) throw new OperationCanceledException("光谱仪自动曝光已停止。", cancellationToken);
+                Check(code, "自动积分");
+                cancellationToken.ThrowIfCancellationRequested();
                 parameters.IntegralTime = time;
                 parameters.Validate();
             }
+            cancellationToken.ThrowIfCancellationRequested();
             if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
                 Dark(parameters, config, parameters.SelfAdaptionInitDark);
+            cancellationToken.ThrowIfCancellationRequested();
             var result = native.Capture(handle, parameters, settings, dark);
             result.AcquisitionParametersJson = JsonConvert.SerializeObject(new
             {

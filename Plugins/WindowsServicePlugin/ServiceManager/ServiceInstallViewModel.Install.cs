@@ -15,8 +15,6 @@ namespace WindowsServicePlugin.ServiceManager
     public partial class ServiceInstallViewModel
     {
         private const string ArchiveServiceName = "CVArchService";
-        private const string ArchiveServiceDisplayName = "CVArchService";
-        private const string ArchiveServiceExecutableName = "ArchivedWindowsService.exe";
 
         private async Task ExecuteInstallAsync()
         {
@@ -173,57 +171,33 @@ namespace WindowsServicePlugin.ServiceManager
                                 StopPackagedServices();
                                 servicesStoppedForInstall = true;
                             }
-                            ArchiveServiceInstallState? archiveServiceState = null;
-                            try
+                            UninstallArchiveServiceBeforePackageUpdate();
+                            CleanExistingServicePackageTargets(ServicePackagePath, basePath);
+                            ZipFile.ExtractToDirectory(ServicePackagePath, basePath, true);
+                            log.Info("解压服务包完成");
+
+                            string installRoot = ResolveServiceInstallRoot(basePath);
+                            log.Info($"服务安装根目录: {installRoot}");
+                            if (ServicePackageVersionResolver.TryGetInstalledVersion(installRoot, out Version extractedVersion))
                             {
-                                archiveServiceState = UninstallArchiveServiceBeforePackageUpdate();
-                                if (archiveServiceState != null && !WaitForServiceRemoval(ArchiveServiceName, TimeSpan.FromSeconds(15)))
+                                if (targetServiceVersion != null && extractedVersion != targetServiceVersion)
                                 {
-                                    throw new InvalidOperationException($"{ArchiveServiceName} 已卸载但仍被系统占用，请关闭服务属性窗口后重试");
+                                    throw new InvalidOperationException(
+                                        $"解压后的 CVWindowsService 版本 {extractedVersion} 与安装包版本 {targetServiceVersion} 不一致");
                                 }
 
-                                CleanExistingServicePackageTargets(ServicePackagePath, basePath);
-                                ZipFile.ExtractToDirectory(ServicePackagePath, basePath, true);
-                                log.Info("解压服务包完成");
-
-                                string installRoot = ResolveServiceInstallRoot(basePath);
-                                log.Info($"服务安装根目录: {installRoot}");
-                                if (ServicePackageVersionResolver.TryGetInstalledVersion(installRoot, out Version extractedVersion))
-                                {
-                                    if (targetServiceVersion != null && extractedVersion != targetServiceVersion)
-                                    {
-                                        throw new InvalidOperationException(
-                                            $"解压后的 CVWindowsService 版本 {extractedVersion} 与安装包版本 {targetServiceVersion} 不一致");
-                                    }
-
-                                    targetServiceVersion = extractedVersion;
-                                    targetDatabase = ServiceDatabaseVersionMap.GetDatabaseName(extractedVersion);
-                                    log.Info($"已确认安装后的 CVWindowsService 版本: {targetServiceVersion}，目标数据库: {targetDatabase}");
-                                }
-                                else
-                                {
-                                    log.Info($"未能从解压目录复核版本，继续使用安装包版本 {targetServiceVersion}");
-                                }
-                                DeleteCommonDllAfterUpdate(installRoot);
-
-                                SetProgress(progress += 5, "注册/更新服务...");
-                                var serviceInstallFailures = new List<string>(InstallOrUpdatePackagedServices(installRoot));
-                                try
-                                {
-                                    ReinstallArchiveServiceAfterPackageUpdate(installRoot, archiveServiceState);
-                                }
-                                catch (Exception ex)
-                                {
-                                    log.Info($"服务安装失败: {ArchiveServiceName}, {ex.Message}");
-                                    serviceInstallFailures.Add($"{ArchiveServiceDisplayName} ({ArchiveServiceName})");
-                                }
-                                ThrowIfRequiredServiceOperationsFailed("安装", serviceInstallFailures);
+                                targetServiceVersion = extractedVersion;
+                                targetDatabase = ServiceDatabaseVersionMap.GetDatabaseName(extractedVersion);
+                                log.Info($"已确认安装后的 CVWindowsService 版本: {targetServiceVersion}，目标数据库: {targetDatabase}");
                             }
-                            catch
+                            else
                             {
-                                TryRestoreArchiveServiceAfterFailedPackageUpdate(basePath, archiveServiceState);
-                                throw;
+                                log.Info($"未能从解压目录复核版本，继续使用安装包版本 {targetServiceVersion}");
                             }
+                            DeleteCommonDllAfterUpdate(installRoot);
+
+                            SetProgress(progress += 5, "注册/更新服务...");
+                            ThrowIfRequiredServiceOperationsFailed("安装", InstallOrUpdatePackagedServices(installRoot));
                         }
 
                         // 6. 更新数据库。跨版本时始终从旧服务对应的库备份，并回写到新服务对应的库。
@@ -1139,94 +1113,23 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private ArchiveServiceInstallState? UninstallArchiveServiceBeforePackageUpdate()
+        private void UninstallArchiveServiceBeforePackageUpdate()
         {
             if (!WinServiceHelper.IsServiceExisted(ArchiveServiceName))
-                return null;
+                return;
 
-            var state = new ArchiveServiceInstallState(
-                WinServiceHelper.GetServiceInstallPath(ArchiveServiceName),
-                WinServiceHelper.IsServiceRunning(ArchiveServiceName),
-                WinServiceHelper.GetServiceStartType(ArchiveServiceName));
-
-            log.Info($"检测到已有 {ArchiveServiceName}，安装前先卸载以释放服务文件");
+            log.Info($"检测到已有 {ArchiveServiceName}，安装前卸载停用，安装后不再恢复");
             bool uninstalled = ServiceHostWindowsServiceController
-                .UninstallAsync(ArchiveServiceName, log.Info, ArchiveServiceDisplayName)
+                .UninstallAsync(ArchiveServiceName, log.Info)
                 .GetAwaiter()
                 .GetResult();
             if (!uninstalled)
-            {
                 throw new InvalidOperationException($"卸载 {ArchiveServiceName} 失败，已停止更新服务包以避免文件占用");
-            }
 
-            log.Info($"安装前已卸载服务: {ArchiveServiceName}");
-            return state;
-        }
+            if (!WaitForServiceRemoval(ArchiveServiceName, TimeSpan.FromSeconds(15)))
+                throw new InvalidOperationException($"{ArchiveServiceName} 已卸载但仍被系统占用，请关闭服务属性窗口后重试");
 
-        private void ReinstallArchiveServiceAfterPackageUpdate(string installRoot, ArchiveServiceInstallState? state)
-        {
-            if (state == null)
-                return;
-
-            string executablePath = Path.Combine(installRoot, "RegWindowsService", ArchiveServiceExecutableName);
-            if (!File.Exists(executablePath))
-            {
-                throw new FileNotFoundException($"原有 {ArchiveServiceName} 已卸载，但新服务包中未找到归档服务程序", executablePath);
-            }
-
-            log.Info($"重新安装服务: {ArchiveServiceName} => {executablePath}");
-            bool installed = ServiceHostWindowsServiceController
-                .InstallAsync(
-                    ArchiveServiceName,
-                    executablePath,
-                    log.Info,
-                    ArchiveServiceDisplayName,
-                    startAfterInstall: state.WasRunning,
-                    startType: state.StartType,
-                    description: "归档服务")
-                .GetAwaiter()
-                .GetResult();
-            if (!installed)
-            {
-                throw new InvalidOperationException($"重新安装 {ArchiveServiceName} 失败");
-            }
-
-            log.Info(state.WasRunning
-                ? $"服务重新安装并恢复运行: {ArchiveServiceName}"
-                : $"服务重新安装成功: {ArchiveServiceName}");
-        }
-
-        private void TryRestoreArchiveServiceAfterFailedPackageUpdate(string basePath, ArchiveServiceInstallState? state)
-        {
-            if (state == null || WinServiceHelper.IsServiceExisted(ArchiveServiceName))
-                return;
-
-            string currentExecutablePath = Path.Combine(ResolveServiceInstallRoot(basePath), "RegWindowsService", ArchiveServiceExecutableName);
-            string? executablePath = new[] { currentExecutablePath, state.PreviousExecutablePath }
-                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(executablePath))
-            {
-                log.Info($"安装失败后无法恢复 {ArchiveServiceName}：归档服务程序已不存在");
-                return;
-            }
-
-            log.Info($"安装失败，尝试恢复原有服务: {ArchiveServiceName}");
-            bool restored = ServiceHostWindowsServiceController
-                .InstallAsync(
-                    ArchiveServiceName,
-                    executablePath,
-                    log.Info,
-                    ArchiveServiceDisplayName,
-                    startAfterInstall: state.WasRunning,
-                    startType: state.StartType,
-                    description: "归档服务")
-                .GetAwaiter()
-                .GetResult();
-            log.Info(restored
-                ? $"已恢复原有服务: {ArchiveServiceName}"
-                : $"恢复原有服务失败: {ArchiveServiceName}");
+            log.Info($"已卸载停用服务: {ArchiveServiceName}");
         }
 
         private static bool WaitForServiceRemoval(string serviceName, TimeSpan timeout)
@@ -1242,8 +1145,6 @@ namespace WindowsServicePlugin.ServiceManager
 
             return !WinServiceHelper.IsServiceExisted(serviceName);
         }
-
-        private sealed record ArchiveServiceInstallState(string? PreviousExecutablePath, bool WasRunning, string StartType);
 
         private void CleanExistingServicePackageTargets(string zipPath, string basePath)
         {

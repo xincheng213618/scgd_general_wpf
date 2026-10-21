@@ -168,7 +168,6 @@ namespace ColorVision.Engine.Services
             ("WindowsServiceX64", ServiceConfig.Instance.CVMainService_x64Info),
             ("WindowsServiceDev", ServiceConfig.Instance.CVMainService_devInfo),
             ("RegistrationCenter", ServiceConfig.Instance.RegistrationCenterServiceInfo),
-            ("CVArchService", ServiceConfig.Instance.CVArchServiceInfo),
         ];
 
         internal static IReadOnlyList<string> GetLogDirectories() => GetServices()

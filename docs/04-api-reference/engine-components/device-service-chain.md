@@ -77,7 +77,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 内置设备卡片标题与 Flow 设备选择器的属性入口统一使用主题 `ButtonProperty` 样式：24 DIP 点击区域、单色信息图标和属性工具提示。按钮不显示边框或默认焦点虚线框，悬停与键盘焦点通过图标主题强调色反馈。图标随深浅主题更新，只表示打开属性窗口，不承担在线状态显示；不叠加常亮的绿色状态灯。它仍绑定原设备的 `PropertyCommand`，与相邻的置顶按钮各自独立。设备与工作流程内容区未选中时使用 `CV.Border.Weak` 的低对比度主题描边，选中时保留深浅主题各自的紫色高亮。
 
-设备配置窗口顶部的“归档”按钮直接展开“归档服务器配置”“归档配置”“服务注册中心配置”三个操作。配置动作由 `Engine/ColorVision.Engine/Archive/ArchiveConfigurationActions.cs` 承载，使用事务式属性编辑器，只在提交时保存。归档配置先补齐所需字段，再按当前 `RCSetting.Config.RCName` 查询注册中心记录及其 `ArchivedId`，不使用固定归档配置 ID；检查或迁移失败时停止打开编辑器并报告诊断信息。菜单展开本身不连接归档数据库或执行配置修改。
+设备配置窗口顶部的“服务注册中心配置”按钮直接打开当前注册中心的配置。`Services/RC/RCConfigurationActions.cs` 按 `RCSetting.Config.RCName` 查询 `SysConfigRcModel`，使用事务式属性编辑器，只在提交时保存；记录不存在时提示并停止。
 
 `GenDeviceDisplayControl()` 沿当前类型树生成主显示区；`GenControl(collection)` 使用指定设备集合。两者都先加入共享 `DisplayFlow`，只有设备 `GetDisplayControl()` 返回 `IDisPlayControl` 才追加该页，最后通过 `DisPlayManager.ReplaceControls` 替换显示集合。
 

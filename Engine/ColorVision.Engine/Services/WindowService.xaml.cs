@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Archive;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Engine.Services.Devices.Spectrum;
@@ -271,20 +271,7 @@ namespace ColorVision.Engine.Services
             new PhySpectrumManagerWindow(device?.Config.SN, port) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        private void ButtonArchiveSettings_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.ContextMenu != null)
-            {
-                button.ContextMenu.PlacementTarget = button;
-                button.ContextMenu.IsOpen = true;
-            }
-        }
-
-        private void ArchiveServerConfig_Click(object sender, RoutedEventArgs e) => ArchiveConfigurationActions.OpenServerConfiguration();
-
-        private void ArchiveConfiguration_Click(object sender, RoutedEventArgs e) => ArchiveConfigurationActions.OpenArchiveConfiguration();
-
-        private void ServiceRegistryCenterConfig_Click(object sender, RoutedEventArgs e) => ArchiveConfigurationActions.OpenServiceRegistryConfiguration();
+        private void ServiceRegistryCenterConfig_Click(object sender, RoutedEventArgs e) => RCConfigurationActions.OpenServiceRegistryConfiguration();
 
     }
 }

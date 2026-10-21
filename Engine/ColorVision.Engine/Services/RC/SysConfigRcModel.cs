@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using ColorVision.Engine.Utilities;
 using ColorVision.Engine.Properties;
 
-namespace ColorVision.Engine.Archive.Dao
+namespace ColorVision.Engine.Services.RC
 {
     [SugarTable("t_scgd_sys_config_rc")]
     public class SysConfigRcModel : ViewEntity 
@@ -33,9 +33,6 @@ namespace ColorVision.Engine.Archive.Dao
 
         [SugarColumn(ColumnName ="monitor_id"), LocalizedDisplayName(nameof(Resources.ServerMonitorConfig))]
         public int? MonitorId { get; set; }
-
-        [SugarColumn(ColumnName ="archived_id"), LocalizedDisplayName(nameof(Resources.ArchiveConfiguration))]
-        public int? ArchivedId { get; set; }
 
         [SugarColumn(ColumnName ="mqtt_cfg_id"), LocalizedDisplayName(nameof(Resources.MqttConfigId))]
         public int? MqttCfgId { get; set; }

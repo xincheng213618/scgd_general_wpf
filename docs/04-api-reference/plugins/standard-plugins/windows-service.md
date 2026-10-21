@@ -78,13 +78,13 @@ MySQL页的“ZIP全安装”和“注册服务”会在调用后台前检查运
 | 数据库升级选择 | AutoUpdateDatabase初始为true。已有MySQL且跨库名边界时，关闭该选项会在替换文件前拒绝 |
 | 备份 | BackupBeforeInstall和BackupServiceBeforeInstall初始均false；即使勾选，方法也可能跳过、只记异常或忽略返回false而继续，不是备份验证成功才允许覆盖 |
 | 停止与替换 | 尝试停止受管理服务并关闭旧CVWinSMS进程；普通停止失败不一定阻止清理，归档服务卸载失败则阻止包更新 |
-| CommonDll与注册 | CommonDll存在时复制到已存在的三个服务目录再删源目录；不存在或复制异常只记日志。选中服务安装时，三个服务目录对应的exe均为必需项：缺exe、后台安装返回false或抛异常都会汇总；既有归档服务在替换包后使用当前 `ArchivedWindowsService.exe` 重新注册，失败也并入同一清单，全部尝试结束后统一使安装失败。ServiceHost仍兼容旧 `RegWindowsService.exe` |
+| CommonDll与注册 | CommonDll存在时复制到已存在的三个服务目录再删源目录；不存在或复制异常只记日志。选中服务安装时，三个服务目录对应的exe均为必需项：缺exe、后台安装返回false或抛异常都会汇总，全部尝试结束后统一使安装失败 |
 | SQL与业务账号 | 新装MySQL走初始化；其它勾选升级时由插件MySqlServiceManager委托Engine的MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync。同名源库和目标库都尚未创建时按新安装直接初始化，不尝试备份不存在的库；跨库更新缺少源库时仍停止，避免跳过旧数据。安装先要求找到color_vision_all.sql，数据库步骤成功后更新业务账号授权；明确失败中止后续配置/启动 |
 | 配置与启动 | 数据库步骤后才ApplyDatabaseName、ApplyConfigAndRefreshAfterInstall。桌面端当前连接直接更新为业务账号并持久化，安装维护的root凭据由MySqlServiceConfig独立保存。有服务/MySQL/MQTT安装工作便自动调用启动，不存在独立可选启动开关；MySQL、MQTT和已安装的三个业务服务会分别尝试启动，返回false或抛异常均汇总，任一必需服务失败都使安装失败 |
 
 MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHelper` 将带UTF-8 BOM的SQL按UTF-8读取，其余先严格UTF-8解码、失败回退GB18030，再向mysql.exe传UTF-8。[Engine重置与资源保留](../../engine-components/mysql-recovery.md)负责保留表、字典依赖和SQL失败语义，不是整库或全部结果无损迁移。安装器要求SQL存在，而直接调用部分MySQL helper找不到SQL时会记录跳过并返回true，二者成功判据不同。
 
-配置来自ServiceManagerConfig、MySqlServiceConfig和RC设置，写到实际服务目录cfg/MySql.config、WinService.config等；现有MQTT.config固定同步为127.0.0.1:1883、空用户名和密码，旧App.config仍兼容同步。旧配置导入不读取MQTT地址、端口和凭据，MQTT服务对象只保存安装及运行状态。注册中心监控列表还会同步到当前 `RCName` 引用的 `t_scgd_sys_config_monitor` 记录，因为注册中心启动时以数据库值为准并回写本地文件：目标机器已安装 `CVArchService` 时保留监控，未安装时只写MySQL与x64/dev主服务。数据库中找不到当前注册中心对应的监控记录会使配置同步失败，避免服务带旧列表启动。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，但缺配置文件会跳过，`SyncLegacyAppConfig` 异常只记日志。不能沿用“所有同步失败都阻止带旧配置启动”的保证。
+配置来自ServiceManagerConfig、MySqlServiceConfig和RC设置，写到实际服务目录cfg/MySql.config、WinService.config等；现有MQTT.config固定同步为127.0.0.1:1883、空用户名和密码，旧App.config仍兼容同步。旧配置导入不读取MQTT地址、端口和凭据，MQTT服务对象只保存安装及运行状态。注册中心监控列表还会同步到当前 `RCName` 引用的 `t_scgd_sys_config_monitor` 记录，因为注册中心启动时以数据库值为准并回写本地文件：监控列表固定只写 `MySQL,CVMainService_x64,CVMainService_dev`，数据库记录、`cfg/WinService.config` 的 `Monitor.Services` 和兼容 App.config 保持一致。数据库中找不到当前注册中心对应的监控记录会使配置同步失败，避免服务带旧列表启动。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，但缺配置文件会跳过，`SyncLegacyAppConfig` 异常只记日志。不能沿用“所有同步失败都阻止带旧配置启动”的保证。
 
 `ServiceManagerConfig.BaseLocation` 是安装根，`MySqlPort` 默认3306；安装窗口的 `InstallServiceChecked/InstallMySqlChecked/InstallMqttChecked` 直接代理同名配置字段，初始缺省分别true/false/false。`AutoUpdateDatabase`、两个备份开关和所选包路径则是安装ViewModel自己的状态，不能把勾选项一律当作已保存配置或已完成动作。
 
@@ -96,7 +96,7 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 数据库备份默认写入“我的文档/ColorVision/Backup”；服务文件备份写入“我的文档/ColorVision/ServiceBackup”，优先RAR，工具不可用/失败时回退ZIP。文件存在或完成日志不是恢复演练证明；ZIP备份逐文件异常也可能只记日志后继续。
 
-`TryRestoreArchiveServiceAfterFailedPackageUpdate` 仅尝试恢复原有归档服务注册/启动状态，可能选择当前解压后仍存在的exe；不还原全部旧文件、数据库和配置，不是全安装回滚。
+服务包更新前检测到已有 `CVArchService` 时，通过 ServiceHost 停止并卸载，卸载失败或仍被系统占用时停止更新。它仅作为旧部署退役清理保留；安装成功及失败路径均不重新注册或恢复该服务，启动时的缺失服务补装也只处理注册中心与 x64/dev 主服务。ServiceHost 对 `CVArchService` 仅开放卸载，不开放安装、启动或重启。卸载服务不会删除历史归档数据库或归档数据。
 
 手动 `DoRestoreServiceBackup` 会尝试停服务、删除整个BaseLocation，再解压ZIP/RAR，比安装时按包顶层清理范围更大。RAR工具缺失/解压失败可能发生在删除之后，finally仍尝试启动服务，没有自动恢复刚删除目录的补偿。必须先确认目标绝对路径、独立可用备份、工具及恢复授权；数据库恢复是另一项操作，不因文件恢复完成自动完成。
 
@@ -129,6 +129,6 @@ dotnet build .\Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj -c Relea
 - `InstallToolAsyncCommandTests` 验证旧菜单异步失败可观察、Download返回Task、退出启动初始化发现，以及手动检查的缺失/版本/失败分支；使用替身，不验证旧站点、下载内容或工具运行。
 - `MySqlBackupRestoreSafetyTests` 中插件相关用例检查恢复/重置委托Engine的源码边界，另有恢复阶段失败摘要和临时配置文件测试；不是安装、真库迁移或故障回滚验收。
 - `ThirdPartyAppInfoTests` 包含服务管理器提供器元数据检查，不证明应用角色、Windows权限及后台代理全链可用。
-- `ServiceHostServicePolicyTests` 固定归档服务当前/旧程序名白名单，不执行真实SCM安装、启动或停止。
+- `ServiceHostServicePolicyTests` 验证三个业务服务的程序名准入，以及旧归档服务仅允许卸载、拒绝安装或启动的策略边界，不执行真实 SCM 操作。
 
 这些是现存测试范围，不是执行通过声明。客户端源回退/包排序/缓存、完整包识别、下载中断、服务安装/启动失败汇总的真实SCM链路、部分备份、真实SQL迁移和恢复尚不能由这些测试认证；需在获授权的隔离环境逐层验证，不由文档构建替代。

@@ -87,7 +87,7 @@ related: ["platform.system", "platform.startup-integrity", "delivery.update", "d
 
 单实例启动只是该能力的一个调用方：它在直接结束遭遇访问拒绝后调用通用接口；旧实例筛选、多实例选择及窗口行为见[单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)。白名单内的程序复用相同服务命令，清单外程序必须先更新服务中的白名单。
 
-服务管理器已有的 `TerminateServiceAsync` / `service-terminate` 保留协议兼容入口，内部复用 `ProcessCommandService.TerminateProcess`，并使用既有 `ServiceExecutableNames` 检查服务名及其对应的可执行文件名；未知服务或不匹配的程序返回 `service_target_not_allowed`。`CVArchService` 的当前程序名为 `ArchivedWindowsService.exe`，同时保留旧包 `RegWindowsService.exe` 的兼容准入，其它业务服务程序不能借用该服务名通过检查。已注册服务按系统报告的服务 PID 选择目标，并核对注册可执行路径，避免按同名进程误伤另一安装或其它服务；白名单内未注册的残留程序仍按调用方提供的完整可执行路径选择。该兼容入口保留结束进程树的行为，按 `timeoutSeconds` 等待每个目标退出（默认 20 秒，限制为 5–180 秒），并复核服务是否仍运行；“停止服务”仍是独立的正常停止命令。MySQL 安装清理也复用同一终止实现，其业务目标选择仍由安装流程负责。服务安装、启停等其它命令的准入契约不由进程终止接口改变。
+服务管理器已有的 `TerminateServiceAsync` / `service-terminate` 保留协议兼容入口，内部复用 `ProcessCommandService.TerminateProcess`，并使用既有 `ServiceExecutableNames` 检查服务名及其对应的可执行文件名；未知服务或不匹配的程序返回 `service_target_not_allowed`。旧部署的 `CVArchService` 仅保留 `service-uninstall` 入口，用于停止并卸载；安装、启动、重启及进程终止命令不接受该服务名。已注册服务按系统报告的服务 PID 选择目标，并核对注册可执行路径，避免按同名进程误伤另一安装或其它服务；白名单内未注册的残留程序仍按调用方提供的完整可执行路径选择。该兼容入口保留结束进程树的行为，按 `timeoutSeconds` 等待每个目标退出（默认 20 秒，限制为 5–180 秒），并复核服务是否仍运行；“停止服务”仍是独立的正常停止命令。MySQL 安装清理也复用同一终止实现，其业务目标选择仍由安装流程负责。服务安装、启停等其它命令的准入契约不由进程终止接口改变。
 
 ### 通用发送与停止排空
 
@@ -125,7 +125,7 @@ SCM启动会启动更新扫描保护 `ApplicationUpdateScanProtectionService`、
 
 - `ServiceHostStatusTests` 测试状态/决策对象、安装脚本文本和临时运行时文件夹；另外启动用户权限的 PowerShell 助手，用固定退出码验证无 stderr 的错误仍可见、成功后清除，以及文件不一致时仍显示部署错误的窗口内容。固定退出码不触发真实 CLR 崩溃，窗口测试不显示界面或触发维护。`ServiceHostLogReaderTests` 测试日志末段读取、旧中文编码和安装结果识别。它们不执行真实SCM安装或UAC自更新，也不验证管理窗口的现场操作。
 - `ServiceHostBrokerTicketTests` 检查两端命令分类、单次票据重放、命令/PID变化等；没有逐项验证SID/OperationId/hash变化、真实过期等待、签名或生产管道身份准入。
-- `ServiceHostProcessTerminationTests` 使用隔离本机管道连接真实 UI 客户端、票据签发和服务命令分派，覆盖精确 PID 终止及旧接口未知服务拒绝；其它用例覆盖白名单内程序、未知程序拒绝和不同目标目录。`ServiceHostServicePolicyTests` 额外固定 `CVArchService` 对当前 `ArchivedWindowsService.exe`、旧 `RegWindowsService.exe` 的准入，并拒绝其它服务程序。旧接口的进程匹配与终止步骤仅传入测试自己创建的进程，确认另一安装目录存活，不枚举现场业务服务。调用者身份为注入的测试身份；未覆盖生产 ACL、LocalSystem 提权、真实 SCM/WMI 服务发现或旧接口完整残留清理链路。
+- `ServiceHostProcessTerminationTests` 使用隔离本机管道连接真实 UI 客户端、票据签发和服务命令分派，覆盖精确 PID 终止及旧接口未知服务拒绝；其它用例覆盖白名单内程序、未知程序拒绝和不同目标目录。`ServiceHostServicePolicyTests` 额外验证三个业务服务的程序名准入、不同服务程序的拒绝，以及 `CVArchService` 仅可卸载的退役边界。旧接口的进程匹配与终止步骤仅传入测试自己创建的进程，确认另一安装目录存活，不枚举现场业务服务。调用者身份为注入的测试身份；未覆盖生产 ACL、LocalSystem 提权、真实 SCM/WMI 服务发现或旧接口完整残留清理链路。
 - `ServiceHostPipeServerTests` 使用真实本机命名管道，但大部分用例注入恒成功身份解析和fake handler，绕过生产ACL创建；当前进程token读取测试也不是端到端调用者鉴权。
 - `ColorVisionServiceHostServiceLifecycleTests` 使用fake SCM、pipe和扫描保护、手动时钟，验证停止所有权、预算及释放；没有真实服务安装、LocalSystem运行或完整性监视器验收。其中 `SelfUpdateCallerKeepsOwnershipUntilServiceReallyStops` 只模拟 `stopped → copy → restart` 事件与所有权变量，不替换真实文件或执行更新脚本。
 - `ServiceHostStartupStatusTests` 手工构造调用上下文；`ServiceHostApplicationUpdateAccessTests` 包含对临时目录实际执行 `icacls` 的用例，不能把全部相关产品测试视为纯只读检查。

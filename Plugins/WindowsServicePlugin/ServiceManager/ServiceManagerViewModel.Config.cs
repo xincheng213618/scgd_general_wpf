@@ -11,7 +11,7 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceManagerViewModel
     {
-        private const string BaseMonitorServices = "MySQL,CVMainService_x64,CVMainService_dev";
+        private const string MonitorServices = "MySQL,CVMainService_x64,CVMainService_dev";
 
         private void UpdateConfig()
         {
@@ -76,12 +76,11 @@ namespace WindowsServicePlugin.ServiceManager
             if (string.IsNullOrWhiteSpace(baseLocation) || !Directory.Exists(baseLocation))
                 return;
 
-            string monitorServices = BuildRegistrationCenterMonitorServices(WinServiceHelper.IsServiceExisted("CVArchService"));
             string regDir = Path.Combine(baseLocation, "RegWindowsService");
             if (Directory.Exists(regDir))
             {
-                UpdateRegistrationCenterMonitorServices(monitorServices);
-                UpdateServiceConfigFiles(regDir, isRC: true, monitorServices: monitorServices);
+                UpdateRegistrationCenterMonitorServices(MonitorServices);
+                UpdateServiceConfigFiles(regDir, isRC: true, monitorServices: MonitorServices);
             }
 
             string[] serviceFolders = ["CVMainWindowsService_x64", "CVMainWindowsService_dev", "TPAWindowsService", "TPAWindowsService32", "CVFlowWindowsService"];
@@ -93,9 +92,6 @@ namespace WindowsServicePlugin.ServiceManager
                 UpdateServiceConfigFiles(svcDir, isRC: false, monitorServices: null);
             }
         }
-
-        internal static string BuildRegistrationCenterMonitorServices(bool archiveServiceInstalled) =>
-            archiveServiceInstalled ? $"{BaseMonitorServices},CVArchService" : BaseMonitorServices;
 
         private void UpdateRegistrationCenterMonitorServices(string monitorServices)
         {

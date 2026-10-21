@@ -622,24 +622,6 @@
 
   
   
-  <data name="Archive" xml:space="preserve">
-    <value>Archive</value>
-  </data>
-  <data name="ArchiveServerConfig" xml:space="preserve">
-    <value>Archive server configuration</value>
-  </data>
-  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
-    <value>Archive server configuration not found, resetting</value>
-  </data>
-  <data name="ArchiveConfiguration" xml:space="preserve">
-    <value>Archive configuration</value>
-  </data>
-  <data name="RcConfigInfoNotFound" xml:space="preserve">
-    <value>RC configuration information not found</value>
-  </data>
-  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
-    <value>Archive configuration information not found</value>
-  </data>
   
   <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
     <value>Unauthorized or expired license</value>
@@ -1561,9 +1543,6 @@
   <data name="ParamInput" xml:space="preserve">
     <value>Input parameters</value>
   </data>
-  <data name="ArchiveDate" xml:space="preserve">
-    <value>Archived date</value>
-  </data>
   <data name="CreationDate" xml:space="preserve">
     <value>Creation Date</value>
   </data>
@@ -1664,18 +1643,6 @@
 
   <data name="SelectExportFileLocation" xml:space="preserve">
     <value>Select the export file location</value>
-  </data>
-  <data name="DataRetentionDays" xml:space="preserve">
-    <value>Data Retention Days</value>
-  </data>
-  <data name="DataRetentionHours" xml:space="preserve">
-    <value>Data Retention Hours</value>
-  </data>
-  <data name="ClearDatabaseOnly" xml:space="preserve">
-    <value>Clear the database only</value>
-  </data>
-  <data name="DeleteLocalFiles" xml:space="preserve">
-    <value>Delete Local Files</value>
   </data>
   <data name="DataBaseConfig" xml:space="preserve">
     <value>Database configuration</value>

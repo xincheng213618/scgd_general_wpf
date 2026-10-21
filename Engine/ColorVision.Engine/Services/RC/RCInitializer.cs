@@ -59,8 +59,6 @@ namespace ColorVision.Engine.Services.RC
         public string CVMainService_dev { get; set; }
         public string CVMainService_x64 { get; set; }
 
-        public string CVArchService { get; set; }
-
         public ServiceInfo RegistrationCenterServiceInfo { get => _registrationCenterServiceInfo; set => SetProperty(ref _registrationCenterServiceInfo, value); }
         private ServiceInfo _registrationCenterServiceInfo = new();
 
@@ -70,21 +68,16 @@ namespace ColorVision.Engine.Services.RC
         public ServiceInfo CVMainService_x64Info { get => _cvMainServiceX64Info; set => SetProperty(ref _cvMainServiceX64Info, value); }
         private ServiceInfo _cvMainServiceX64Info = new();
 
-        public ServiceInfo CVArchServiceInfo { get => _cvArchServiceInfo; set => SetProperty(ref _cvArchServiceInfo, value); }
-        private ServiceInfo _cvArchServiceInfo = new();
-
         public void RefreshInstalledServices()
         {
             RegistrationCenterServiceInfo = ServiceInfo.FromServiceName("RegistrationCenterService");
             CVMainService_devInfo = ServiceInfo.FromServiceName("CVMainService_dev");
             CVMainService_x64Info = ServiceInfo.FromServiceName("CVMainService_x64");
-            CVArchServiceInfo = ServiceInfo.FromServiceName("CVArchService");
 
             // 服务掉线/被 Windows 更新移除时，不能用空路径覆盖之前保存的可执行文件路径。
             UpdateSavedServicePath(RegistrationCenterServiceInfo, path => RegistrationCenterService = path);
             UpdateSavedServicePath(CVMainService_devInfo, path => CVMainService_dev = path);
             UpdateSavedServicePath(CVMainService_x64Info, path => CVMainService_x64 = path);
-            UpdateSavedServicePath(CVArchServiceInfo, path => CVArchService = path);
         }
 
         private static void UpdateSavedServicePath(ServiceInfo serviceInfo, Action<string> updatePath)
@@ -169,11 +162,6 @@ namespace ColorVision.Engine.Services.RC
                         await InstallMissingServiceViaServiceHostAsync(
                             "CVMainService_dev",
                             ServiceConfig.Instance.CVMainService_dev,
-                            startAfterInstall: false);
-
-                        await InstallMissingServiceViaServiceHostAsync(
-                            "CVArchService",
-                            ServiceConfig.Instance.CVArchService,
                             startAfterInstall: false);
 
                         if (rcInstalled)

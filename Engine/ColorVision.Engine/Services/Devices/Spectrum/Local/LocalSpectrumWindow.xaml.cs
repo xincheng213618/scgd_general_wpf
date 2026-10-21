@@ -49,7 +49,8 @@ public partial class LocalSpectrumWindow : Window
         if (sender is not Button { Tag: string command }) return;
         try
         {
-            Message.Text = LocalizedText.Get("正在执行…");
+            Message.Text = command is "GetDataAutoStop" or "Close"
+                ? "正在停止，等待当前采集返回…" : LocalizedText.Get("正在执行…");
             MsgRecord record = device.RunLocalSpectrumCommand(command);
             MsgRecordState state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(record, TimeSpan.FromMinutes(20), CancellationToken.None);
             Message.Text = state == MsgRecordState.Success ? LocalizedText.Get("操作完成") : record.MsgReturn?.Message ?? LocalizedText.Get("操作失败");

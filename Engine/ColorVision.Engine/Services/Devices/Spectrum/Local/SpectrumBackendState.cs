@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 
@@ -11,6 +13,9 @@ internal sealed class SpectrumBackendState
     private bool serviceMayOwn;
     private int serviceCommands;
     private int localCommands;
+    private CancellationTokenSource? localCancellation;
+    private TaskCompletionSource? localCompletion;
+    public CancellationToken LocalCancellationToken { get { lock (Sync) return localCancellation?.Token ?? CancellationToken.None; } }
     private DeviceStatusType serviceStatus = DeviceStatusType.UnInit;
     private DeviceStatusType localStatus = DeviceStatusType.Closed;
     public bool LocalOwned { get; private set; }
@@ -41,11 +46,36 @@ internal sealed class SpectrumBackendState
         lock (Sync)
         {
             EnsureLocalAvailable();
-            if (localCommands != 0) throw new InvalidOperationException("本地光谱仪正在操作，请完成或停止连续采集后再试。");
+            if (localCommands != 0) throw new InvalidOperationException("本地光谱仪正在操作，请完成或停止当前采集后再试。");
+            localCancellation = new CancellationTokenSource();
+            localCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             localCommands++;
         }
     }
-    public void EndLocalCommand() { lock (Sync) localCommands--; }
+    public void EndLocalCommand()
+    {
+        CancellationTokenSource? cancellation;
+        TaskCompletionSource? completion;
+        lock (Sync)
+        {
+            localCommands--;
+            cancellation = localCancellation;
+            completion = localCompletion;
+            localCancellation = null;
+            localCompletion = null;
+        }
+        cancellation?.Dispose();
+        completion?.TrySetResult();
+    }
+    public Task StopLocalCommandAsync()
+    {
+        lock (Sync)
+        {
+            Task completion = localCompletion?.Task ?? Task.CompletedTask;
+            localCancellation?.Cancel();
+            return completion;
+        }
+    }
     public void BeginServiceCommand(string eventName)
     {
         lock (Sync)

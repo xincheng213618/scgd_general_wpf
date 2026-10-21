@@ -77,6 +77,7 @@ public sealed class SpectrumButtonOperationTests
                 Assert.True(content.IsVisible);
                 Assert.Equal(!opening, panel.IsVisible);
                 Assert.True(panel.IsEnabled);
+                if (!opening) Assert.True(Assert.IsType<Button>(card.FindName("btn_stopTest")).IsEnabled);
                 Assert.Equal(opening ? DeviceStatusType.Opening : DeviceStatusType.Opened, device.DService.DeviceStatus);
 
                 if (opening) device.SpectrumBackend.SetLocalStatus(terminalState == MsgRecordState.Success ? DeviceStatusType.Opened : DeviceStatusType.Closed);

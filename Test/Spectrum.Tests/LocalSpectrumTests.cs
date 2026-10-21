@@ -130,6 +130,22 @@ public sealed class LocalSpectrumTests
     }
 
     [Fact]
+    public void SdkFaultReportsRestartInstructionAndReleasesTheWrapperHandle()
+    {
+        var native = new FakeNative { InitCode = Spectrometer.SdkFaultErrorCode };
+        using var session = new LocalSpectrumSession(native);
+
+        var error = Assert.Throws<InvalidOperationException>(() => session.Open(Config()));
+
+        Assert.Contains("-13025", error.Message);
+        Assert.Contains("重启", error.Message);
+        Assert.False(session.IsOpen);
+        Assert.Equal(1, native.CloseCalls);
+        Assert.Equal(1, native.ReleaseCalls);
+        Assert.Equal(0, native.CaptureCalls);
+    }
+
+    [Fact]
     public void WrongSerialIsRejectedAndHandleReleased()
     {
         var native = new FakeNative { Serial = "OTHER" };
@@ -172,6 +188,100 @@ public sealed class LocalSpectrumTests
         session.Open(config);
         Assert.Throws<InvalidOperationException>(() => session.Capture(new(), config));
         Assert.Equal(0, native.CaptureCalls);
+    }
+
+    [Fact]
+    public void StopCancelsPendingCommandAndKeepsReservationUntilWorkReturns()
+    {
+        var backend = new SpectrumBackendState(true);
+        backend.BeginLocalCommand();
+        CancellationToken first = backend.LocalCancellationToken;
+        Task stopped = backend.StopLocalCommandAsync();
+        Assert.True(first.IsCancellationRequested);
+        Assert.False(stopped.IsCompleted);
+        Assert.Throws<InvalidOperationException>(backend.BeginLocalCommand);
+        backend.EndLocalCommand();
+        Assert.True(stopped.IsCompletedSuccessfully);
+        backend.BeginLocalCommand();
+        Assert.False(backend.LocalCancellationToken.IsCancellationRequested);
+        backend.EndLocalCommand();
+    }
+
+    [Fact]
+    public async Task StopReachesRunningAutoExposureAndSessionCanBeUsedAgain()
+    {
+        using var files = new CalibrationFiles();
+        using var entered = new ManualResetEventSlim();
+        using var finishSample = new ManualResetEventSlim();
+        var backend = new SpectrumBackendState(true);
+        var native = new FakeNative { OnAutoTime = token => {
+            entered.Set();
+            token.WaitHandle.WaitOne();
+            finishSample.Wait(CancellationToken.None);
+        } };
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        var parameters = new LocalSpectrumParameters { AutoIntegration = true, AutoInitDark = true };
+        backend.BeginLocalCommand();
+        CancellationToken token = backend.LocalCancellationToken;
+        Task capture = Task.Run(() => {
+            try { session.Capture(parameters, files.Config, token); }
+            finally { backend.EndLocalCommand(); }
+        });
+        Task stopped;
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(10)), "Automatic exposure did not start");
+            stopped = backend.StopLocalCommandAsync();
+            Assert.True(token.IsCancellationRequested);
+            Assert.False(stopped.IsCompleted);
+            Assert.Throws<InvalidOperationException>(backend.BeginLocalCommand);
+        }
+        finally { _ = backend.StopLocalCommandAsync(); finishSample.Set(); }
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => capture.WaitAsync(TimeSpan.FromSeconds(10)));
+        await stopped;
+        Assert.Equal(100, parameters.IntegralTime);
+        Assert.Equal(0, native.DarkCalls);
+        Assert.Equal(0, native.CaptureCalls);
+        Assert.True(session.IsOpen);
+        native.OnAutoTime = null;
+        session.Capture(new() { AutoIntegration = true }, files.Config);
+        Assert.Equal(1, native.CaptureCalls);
+        Assert.Equal(1, native.CreateCalls);
+    }
+
+    [Theory]
+    [InlineData(Spectrometer.AutoExposureCancelledErrorCode)]
+    [InlineData(Spectrometer.AutoExposureNotConvergedErrorCode)]
+    public void AutoExposureFailureDoesNotContinueToDarkOrMeasurement(int code)
+    {
+        using var files = new CalibrationFiles();
+        var native = new FakeNative { AutoTimeCode = code };
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        var parameters = new LocalSpectrumParameters { AutoIntegration = true, AutoInitDark = true };
+        if (code == Spectrometer.AutoExposureCancelledErrorCode)
+            Assert.Throws<OperationCanceledException>(() => session.Capture(parameters, files.Config));
+        else
+            Assert.Contains("无法收敛", Assert.Throws<InvalidOperationException>(() => session.Capture(parameters, files.Config)).Message);
+        Assert.Equal(100, parameters.IntegralTime);
+        Assert.Equal(0, native.DarkCalls);
+        Assert.Equal(0, native.CaptureCalls);
+        Assert.True(session.IsOpen);
+    }
+
+    [Fact]
+    public void CancellationDuringFinalAcquisitionRetainsTheCompletedResult()
+    {
+        using var files = new CalibrationFiles();
+        using var cancellation = new CancellationTokenSource();
+        var native = new FakeNative { OnCapture = cancellation.Cancel };
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        LocalSpectrumCapture result = session.Capture(new(), files.Config, cancellation.Token);
+        Assert.True(cancellation.IsCancellationRequested);
+        Assert.Equal(401, result.Data.fPL.Length);
+        Assert.Equal(1, native.CaptureCalls);
     }
 
     [Fact]
@@ -495,6 +605,7 @@ public sealed class LocalSpectrumTests
         public float DarkTime;
         public bool LastDarkAdaptive;
         public bool CaptureFails;
+        public Action? OnCapture;
         public int SmoothingCode = 1;
         public (SpectrumSmoothingMethod Method, int Width) Smoothing;
         public (SpectrumSmoothingMethod Method, int Width) CaptureSmoothing;
@@ -512,7 +623,10 @@ public sealed class LocalSpectrumTests
         public int Configure(IntPtr h, ColorVision.Engine.Services.Devices.Spectrum.Configs.SetEmissionSP100Config c) => 1;
         public int ConfigureSmoothing(IntPtr h, SpectrumSmoothingMethod method, int filterWidth)
         { Calls.Add("smoothing"); Smoothing = (method, filterWidth); return SmoothingCode; }
-        public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c) { Calls.Add("auto"); time = 240; return 1; }
+        public Action<CancellationToken>? OnAutoTime;
+        public int AutoTimeCode = 1;
+        public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c, CancellationToken cancellationToken)
+        { Calls.Add("auto"); OnAutoTime?.Invoke(cancellationToken); time = 240; return AutoTimeCode; }
         public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive)
         { Calls.Add("dark"); DarkCalls++; DarkTime = time; LastDarkAdaptive = adaptive; return DarkCode; }
         public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) { Calls.Add("init-adaptive"); return 1; }
@@ -520,6 +634,7 @@ public sealed class LocalSpectrumTests
         {
             CaptureSmoothing = (settings.SmoothingMethod, settings.FilterBW);
             Calls.Add("capture"); CaptureCalls++;
+            OnCapture?.Invoke();
             if (CaptureFails) throw new InvalidOperationException("Native failure");
             return new() { IntegralTime = p.IntegralTime, Data = NativeData() };
         }

@@ -271,6 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             operations.Register(btn_autoTest, options => options.ContentFactory = _ =>
                 DService.DeviceStatus == DeviceStatusType.SP_Continuous_Mode ? Properties.Resources.CancelAutoTest : Properties.Resources.ContinuousMeasurement);
             operations.Register(btn_oneTest);
+            operations.Register(btn_stopTest);
             operations.Register(btn_oneInitDark);
             return operations;
         }
@@ -335,6 +336,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (state == MsgRecordState.Fail)
                     MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
+            });
+        }
+        private void Button_Click_StopTest(object sender, RoutedEventArgs e)
+        {
+            ExecuteSpectrumCommand(sender, () => DService.GetDataAutoStop(), (record, state) =>
+            {
+                if (state == MsgRecordState.Fail) ShowGetDataFailure(record);
             });
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)

@@ -33,7 +33,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     nativeResult = query((int)type, port, buffer, buffer.Capacity);
                     results.Add(nativeResult == 1
                         ? new(type, port, nativeResult, ParseSerialNumbers(buffer.ToString()), null)
-                        : new(type, port, nativeResult, Array.Empty<string>(), string.Format(Properties.Resources.SpectrumDiscoveryFailed, nativeResult)));
+                        : new(type, port, nativeResult, Array.Empty<string>(), nativeResult == cvColorVision.Spectrometer.SdkFaultErrorCode
+                            ? cvColorVision.Spectrometer.GetErrorMessage(nativeResult.Value)
+                            : string.Format(Properties.Resources.SpectrumDiscoveryFailed, nativeResult)));
                 }
                 catch (Exception ex)
                 {
