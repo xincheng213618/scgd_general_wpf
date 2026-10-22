@@ -71,6 +71,13 @@ public class CVBaseServerNodeHub : CVBaseServerNode
 		return base.getPreStepParam(idx, param);
 	}
 
+    // Internal execution needs the image branch's runtime frame independently of input arrival order.
+    protected CVStartCFC GetInputAction(int index)
+    {
+        CVStartCFC[] inputs = requestInputs.Value ?? masterInput;
+        return index >= 0 && index < inputs.Length ? inputs[index] : null;
+    }
+
     private static void FinishFlow(CVStartCFC start)
     {
         if (start.TryDoFinishing()) start.FireFinished();

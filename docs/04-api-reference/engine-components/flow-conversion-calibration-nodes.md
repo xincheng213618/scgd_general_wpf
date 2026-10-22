@@ -4,8 +4,8 @@ knowledge_type: "reference"
 status: "current"
 summary: "定位 Flow 数据转换、图像转换、校准及属性选择器。"
 aliases: ["找不到图像转换或校准模板","AlgDataConvertNode","LocalCalibrationRealPoiNode","CalibrationTemplatePropertiesEditor"]
-code_paths: ["Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs"]
+code_paths: ["Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/RealPOINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","Engine/ColorVision.Engine/Services/Devices/Calibration","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityLocalCalibrationFlowTests.cs"]
 related: ["flow.index","flow.templates","ui.property-grid"]
 ---
 
@@ -14,6 +14,10 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 数据转换节点位于 `FlowEngineLib`，使用模板编辑器的校准节点位于 Engine 的 `FlowProcessing/Nodes/Compatibility/Calibration/`；相关选择器和校准设备服务由 Engine 提供。
 
 单输入“校正”节点（`CalibrationNode`）在新建节点菜单的“相机”分类下；节点类型标识、参数和旧流程加载保持兼容。
+
+`CalibrationNode` 和原“实时关注点算法”（`RealPOINode`）复用服务节点的内部执行交接链路。校正服务显示配置中的“使用本地校正”开启时，旧节点分别把参数和输入转交给现有的 `LocalCalibrationNode` / `LocalRealPoiNode`，图像加载、计算、入库及通知均复用本地节点实现；关闭后两者使用原 MQTT 请求。切换只影响后续请求，已经开始的调用保持所选后端；内部失败不会再次发送服务请求。本地分支等待调用完成或流程停止，不使用服务节点的最大超时。
+
+实时关注点从 `IN_CIE` 沿图像分支查找最近的校正服务；直接相机输入通过物理相机关联校正服务。没有对应上游设备时使用默认校正服务，或唯一的校正服务；无法唯一确定时使用原服务。多个校正服务的开关分别生效。原节点类型、输入端口、参数保存格式以及校正 `30` / 实时关注点 `18` 的结果类型保持不变。
 
 校正并实时测量上游 POI 使用本地 `LocalCalibrationRealPoiNode`（“本地设备 → 校正+实时 POI”），图像接 `IN_IMG`，布点结果接 `IN_POI`。包含旧服务端双输入校正节点的流程需要手动替换为此本地节点并重新选择校正资源、核对连线；两者配置语义不同，不自动映射旧节点。
 
@@ -44,7 +48,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | --- | --- | --- | --- |
 | `AlgDataConvertNode` | `Math.DataConvert` | Algorithm 默认服务 | `DataConvertData` |
 | `AlgorithmImageConvertNode` | `Image.Convert` | Algorithm 默认服务 | `AlgorithmImageConvertParam` |
-| `CalibrationNode` | `Calibration` | Calibration 默认服务 | `CalibrationData` |
+| `CalibrationNode` | `Calibration` | 所选 Calibration 服务的本地偏好决定内部调用或 MQTT | `CalibrationData` |
 | `CalibrationROINode` | `SetROI` | Calibration 默认服务 | `CalibrationSetROIParam` |
 | `AlgorithmCaliNode` | `CaliAngleShift` | Algorithm 默认服务 | `AlgorithmCaliParam` |
 
@@ -54,11 +58,13 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | --- | --- |
 | 数据转换 | `CVDataConvertMethodType` 当前很窄，不是任意文件格式互转 |
 | 图像转换 | 当前目标格式主要是 `CSV`、`TIF`；默认通道为 `GREEN` |
-| 单输入校准 | 只执行图像校正，使用输入图像携带的曝光信息；服务端请求固定 `IsSaveCIE=true` |
+| 单输入校准 | 只执行图像校正，使用输入图像携带的曝光信息；服务端请求固定 `IsSaveCIE=true`；内部调用复用本地校正实现，保留完整 CIE 内存及本地结果交接策略 |
 | 校准 ROI | 只设置 ROI，不保存校准结果文件 |
 | 旧色差校正 | `AlgorithmCaliNode` 同时保留 `STNode` 和 `Obsolete`，由编辑器的 Obsolete 过滤隐藏但仍可反序列化旧画布 |
 
 旧画布中单输入校准节点的 POI、曝光、文件输出模板及 `IsSaveCIE` 字段在加载时忽略，重存时不再写入；类型标识和端口连接保持兼容。请求不携带 `POIParam`、`POI_MasterId` 或 `ExpTemplateParam`，不会触发附带 POI 或曝光模板查找。输入图像须保留实际曝光信息；缺失时应在图像输入端补齐。本地校正节点不读取服务端 `IsSaveCIE`，CIE 生成和文件输出遵循本地执行策略。
+
+原实时关注点的内部调用优先使用 `IN_CIE` 分支的内存帧，也能从图像结果或显式图像文件读取 CIE / 带色度参数的 RAW。`POIType=None` 沿用上游点形状和尺寸，普通点、圆和矩形按节点配置覆盖。过滤、修正、二次修正文件、亚像素、文件输出、POI 新增及色温/波长开关仅保留配置，内部测量忽略这些高级设置并计算可用色度指标；亚像素和键盘专用类型沿用上游点定义。关闭“使用本地校正”后，原服务请求继续携带全部原参数。需要这些高级能力时应关闭该开关。
 
 历史循环校准节点仍可通过 `CalibrationData.ExpTemplateParam` 提供曝光参数，不受单输入校准节点的配置精简影响。
 
@@ -77,7 +83,8 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | --- | --- |
 | 数据转换 | `Math.DataConvert` 收到上一步参数、`MethodType` 和 `TemplateParam` |
 | 图像转换 | `Image.Convert` 对已知图像结果输出 `CSV` / `TIF`，通道正确 |
-| 单输入校准 | 请求包含 `CalibrationData`，固定 `IsSaveCIE=true`，不携带曝光或 POI 参数 |
+| 单输入校准 | 开关两侧均保留参数和结果类型；内部调用交接当前帧，服务请求固定 `IsSaveCIE=true`，不携带曝光或 POI 参数 |
+| 实时关注点 | 随图像分支的校正开关切换；双输入任意到达顺序均使用 `IN_CIE` 的帧；内部忽略高级设置，服务请求保留原字段 |
 | 校准 ROI | `SetROI` 后设备端 ROI 更新 |
 | 旧色差校正 | 新建节点目录不显示；包含该类型的旧流程可正常反序列化 |
 
@@ -90,4 +97,4 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 ## 验证入口与缺口
 
-`Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs` 覆盖旧校准节点字段忽略、重新保存、请求精简及画布连线兼容。转换与校准服务协议、结果文件仍需独立集成验证。
+`CompatibilityNodeMigrationTests.cs` 覆盖旧校准节点字段忽略、重新保存、请求精简及画布连线兼容。`CompatibilityLocalCalibrationFlowTests.cs` 覆盖后端开关联动、结果类型、输入内存帧选择、停止后的交接拒绝及内部失败不发送 MQTT。真实设备、数据库入库和完整服务协议仍需独立集成验证。

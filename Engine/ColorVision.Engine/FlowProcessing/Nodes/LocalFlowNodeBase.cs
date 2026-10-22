@@ -1,5 +1,6 @@
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -50,7 +51,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             public int MasterResultType { get; init; } = -1;
             public string? MasterValue { get; init; }
 
-            public static LocalFlowInputSnapshot Create(CVStartCFC action)
+            public string? ImageFilePath { get; init; }
+
+            public static LocalFlowInputSnapshot Create(CVStartCFC action, string? imageFilePath = null)
             {
                 int masterId = ReadInt(action, "MasterId");
                 int masterResultType = ReadInt(action, "MasterResultType");
@@ -58,6 +61,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return new LocalFlowInputSnapshot
                 {
                     Action = new CVStartCFC(action),
+                    ImageFilePath = imageFilePath,
                     MasterId = masterId,
                     MasterResultType = masterResultType,
                     MasterValue = masterValue?.ToString()
@@ -227,6 +231,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex)
         {
+            if (activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
+                && inputIndex >= 0 && inputIndex < inputs.Length && !string.IsNullOrWhiteSpace(inputs[inputIndex].ImageFilePath))
+                return inputs[inputIndex].ImageFilePath!;
             if (!TryGetInputMasterResult(action, inputIndex, out int masterId, out int masterResultType, out _) || masterId <= 0)
             {
                 return string.Empty;
@@ -370,6 +377,55 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         protected abstract LocalNodeExecutionResult ExecuteLocal(CVStartCFC action);
+
+        private string? compatibilityNodeId;
+        protected string ExecutionNodeId => compatibilityNodeId ?? NodeID;
+
+        // Old service nodes retain their own lifecycle and delegate the work to the existing local node.
+        internal FlowLocalExecution CreateCompatibilityExecution(CVMQTTRequest request, string? imageFilePath, params CVStartCFC[] inputs)
+        {
+            compatibilityNodeId = request.DeviceNodeCode;
+            ZIndex = request.ZIndex;
+            return new CompatibilityExecution(this, request.SerialNumber, imageFilePath, inputs);
+        }
+
+        private sealed class CompatibilityExecution(LocalFlowNodeBase node, string serialNumber, string? imageFilePath, CVStartCFC[] inputs) : FlowLocalExecution
+        {
+            private CVStartCFC action = null!;
+            private LocalFlowFrameLease? imageLease;
+            private object? result;
+            public override bool UseNodeTimeout => false;
+
+            public override void Bind(CVStartCFC owner)
+            {
+                action = new CVStartCFC(owner);
+                CVStartCFC image = inputs.Length > 0 ? inputs[0] : owner;
+                action.Data.Remove(LocalFlowFrameRuntime.FrameIdDataKey);
+                if (string.IsNullOrWhiteSpace(imageFilePath) && image.TryAcquireCurrentFrame(out imageLease))
+                    action.Data[LocalFlowFrameRuntime.FrameIdDataKey] = imageLease!.FrameId.ToString("N");
+            }
+
+            public override void Execute()
+            {
+                action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+                LocalFlowInputSnapshot[] snapshots = (inputs.Length > 0 ? inputs : new[] { action })
+                    .Select((input, index) => LocalFlowInputSnapshot.Create(input, index == 0 ? imageFilePath : null)).ToArray();
+                node.activeInputSets[action.SerialNumber] = snapshots;
+                try { result = node.ExecuteLocal(action).Data; }
+                finally { node.activeInputSets.TryRemove(action.SerialNumber, out _); }
+            }
+
+            public override object? Complete(CVStartCFC owner)
+            {
+                owner.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+                if (owner.IsDel || owner.TryGetStopStatus(out _)) throw new OperationCanceledException("流程已停止，本地结果不再交接。");
+                if (owner.SerialNumber != serialNumber) throw new InvalidOperationException("本地结果与当前流程批次不匹配。");
+                owner.Data = action.Data;
+                return result;
+            }
+
+            public override void Dispose() => imageLease?.Dispose();
+        }
 
         protected virtual object? CaptureExecutionParameters(CVStartCFC action) => null;
 

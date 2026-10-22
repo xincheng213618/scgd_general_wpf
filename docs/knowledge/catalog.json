@@ -5694,11 +5694,16 @@
       "code_paths": [
         "Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/RealPOINode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Calibration",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs"
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/CompatibilityLocalCalibrationFlowTests.cs"
       ],
       "related": [
         "flow.index",

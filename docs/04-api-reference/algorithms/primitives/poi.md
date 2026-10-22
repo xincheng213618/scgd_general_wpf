@@ -86,6 +86,8 @@ POI 有专门的主从表结构，不只是普通模板明细：
 
 Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统一见[POI 模板的 Flow 消费](../templates/poi-template.md#flow-消费)。
 
+原“实时关注点算法”节点也可随校正服务的“使用本地校正”开关走内部测量；该分支保留配置，但忽略过滤、修正、亚像素和文件输出等高级参数。关闭开关后恢复原服务对全部参数的处理。路由、支持范围和兼容契约见 [Flow 转换与校准节点](../../engine-components/flow-conversion-calibration-nodes.md)。
+
 ## 修改边界
 
 - POI 不是单一检测算法的结果结构，它同时用于检测、布点、分析、AOI 和 Flow。

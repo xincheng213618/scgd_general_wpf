@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         [Category("高级设置")]
         [DisplayName("使用本地校正")]
-        [Description("使用进程内优化校正；关闭后通过 MQTT 校正服务执行。")]
+        [Description("使用进程内优化校正；流程中的校正及其下游实时关注点结点一起使用内部调用，实时关注点忽略高级参数。关闭后两者使用原 MQTT 服务。")]
         public bool UseLocalCalibration { get => _UseLocalCalibration; set { _UseLocalCalibration = value; OnPropertyChanged(); } }
         private bool _UseLocalCalibration = true;
 
