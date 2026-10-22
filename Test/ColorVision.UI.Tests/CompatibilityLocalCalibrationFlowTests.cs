@@ -75,12 +75,14 @@ public sealed class CompatibilityLocalCalibrationFlowTests
         Assert.False(poi.RequiresRemoteService);
     });
 
-    [Fact]
-    public void BridgeUsesImageInputAndCommitsTheExistingLocalNodeResult()
+    [Theory]
+    [InlineData(1, 2)]
+    [InlineData(3, 1)]
+    public void BridgeKeepsLocalPoiMeasurementTypeForDownstreamAnalysis(int channels, int resultType)
     {
         var image = new CVStartCFC("local-contract");
         using var resources = image.RuntimeResources;
-        image.SetCurrentFrame(CreateCieFrame(7));
+        image.SetCurrentFrame(CreateCieFrame(7, channels));
         image.MasterValue(null, 301, 30);
         var poi = new CVStartCFC(image);
         poi.SetCurrentFrame(CreateCieFrame(99));
@@ -97,6 +99,14 @@ public sealed class CompatibilityLocalCalibrationFlowTests
         Assert.Equal("poi-node", (string?)result["NodeId"]);
         Assert.Equal(4, (int)result["ZIndex"]!);
         Assert.Equal(1801, poi.Data["MasterId"]);
+        Assert.Equal(resultType, poi.Data["MasterResultType"]);
+        var analysis = new POIAnalysisNode();
+        analysis.Create();
+        var request = (PoiAnalysisParam)typeof(POIAnalysisNode).GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(analysis, [poi])!;
+        Assert.Equal(1801, request.MasterId);
+        Assert.Equal(resultType, request.MasterResultType);
+        Assert.NotEqual(18, request.MasterResultType);
     }
 
     [Theory]
@@ -183,12 +193,12 @@ public sealed class CompatibilityLocalCalibrationFlowTests
         Assert.Equal(PoiShape.Point, source.PoiPoints.Single().PointType);
     }
 
-    private static LocalFlowFrame CreateCieFrame(float value)
+    private static LocalFlowFrame CreateCieFrame(float value, int channels = 1)
     {
         LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
-            { Width = 1, Height = 1, Channels = 1, SourceBpp = 16, PrimaryBufferKind = LocalFrameBufferKind.CvCie, IsMirrorReady = true }, 0, sizeof(float));
+            { Width = 1, Height = 1, Channels = channels, SourceBpp = 16, PrimaryBufferKind = LocalFrameBufferKind.CvCie, IsMirrorReady = true }, 0, sizeof(float) * channels);
         using var lease = frame.Acquire();
-        Marshal.Copy(new[] { value }, 0, lease.CiePointer, 1);
+        Marshal.Copy(Enumerable.Repeat(value, channels).ToArray(), 0, lease.CiePointer, channels);
         return frame;
     }
 
@@ -220,17 +230,18 @@ public sealed class CompatibilityLocalCalibrationFlowTests
         internal float Y;
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
+            ViewResultAlgType resultType;
             Assert.True(action.TryAcquireCurrentFrame(out LocalFlowFrameLease? frame));
             using (frame)
             {
-                float[] values = new float[1];
-                Marshal.Copy(frame!.CiePointer, values, 0, 1);
-                Y = values[0];
+                LocalPoiResultSet result = LocalPoiCalculator.Calculate(frame!, CreatePoi());
+                Y = JObject.FromObject(result.Points.Single().Value)["Y"]!.Value<float>();
+                resultType = LocalPoiCalculator.ResolveResultType(frame!.Metadata.Channels);
             }
             TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _);
             TryGetInputMasterResult(action, 1, out int poiMasterId, out _, out _);
             action.Data["LocalProbe"] = true;
-            action.MasterValue(null, 1801, 18);
+            action.MasterValue(null, 1801, (int)resultType);
             return new LocalNodeExecutionResult { Data = new { Y, ImageMasterId = imageMasterId, PoiMasterId = poiMasterId, NodeId = ExecutionNodeId, ZIndex } };
         }
     }

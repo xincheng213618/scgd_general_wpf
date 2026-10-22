@@ -112,7 +112,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     public sealed class LocalRealPoiNode : LocalFlowNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_CIE", "IN_POI" };
-        internal ViewResultAlgType? ResultTypeOverride { get; init; }
         internal string? DeviceCodeOverride { get; init; }
         internal POITypeData? PointTypeOverride { get; init; }
 
@@ -147,7 +146,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
-                ViewResultAlgType resultType = ResultTypeOverride ?? LocalPoiCalculator.ResolveResultType(currentFrame.Metadata.Channels);
+                ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(currentFrame.Metadata.Channels);
                 int masterId = -1;
                 try
                 {

@@ -24,8 +24,7 @@ public class RealPOINode : CVBaseServerNodeHub
 	{
 		if (LocalCalibrationFlowRouting.FindForPoi(this)?.DisplayConfig.UseLocalCalibration != true) return null;
 		RealPOIData data = (RealPOIData)request.Data;
-		return new LocalRealPoiNode { ResultTypeOverride = ColorVision.Engine.ViewResultAlgType.RealPOI,
-			DeviceCodeOverride = request.DeviceCode, PointTypeOverride = data.POITypeData }
+		return new LocalRealPoiNode { DeviceCodeOverride = request.DeviceCode, PointTypeOverride = data.POITypeData }
 			.CreateCompatibilityExecution(request, data.ImgFileName, GetInputAction(0), GetInputAction(1));
 	}
 
