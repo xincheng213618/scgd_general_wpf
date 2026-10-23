@@ -3,9 +3,9 @@ knowledge_id: "operations.camera-configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "相机参数的编辑入口、同步覆盖与保存；CameraID统一以物理配置为准，搜索保存身份并同步逻辑镜像，路径移动失败或被拒绝不等于取消路径变更。"
-aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","应用设置","相机数据路径"]
+aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","应用设置","相机数据路径","光心","畸变光心","十字寻引"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs","Test/ColorVision.UI.Tests/CameraOpticalCenterTests.cs"]
 related: ["operations.camera","operations.physical-camera","operations.device-configuration"]
 ---
 
@@ -68,6 +68,14 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 `EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐。未对齐时显示当前值和未对齐项，询问是否继续保存，默认选择“否”；选择“是”按原值继续保存，选择“否”或关闭提示则停留在配置窗口。此提示不强制调整 ROI，也不包含所有型号/坐标合法性检查，不应宣称每个保存入口都执行了它。
 
 创建与编辑物理配置的 `PhyCameraConfigEditor` 按相同规则约束可选通道：BV 可选单通道或三通道，CV 固定三通道，LV 固定单通道并隐藏通道选择。切换到 CV 模式启用 `CFW.IsUseCFW` 并选中 CFW 分类，切换到其他模式关闭该开关并返回可用分类；初次载入保留原有 CFW 开关。`PhyCamera.SaveConfig()` 保存前还会规范化 CFW：不启用时清空 `ChannelCfgs` 并关闭 `IsCOM`；绑定独立 ND 设备时清空串口名，否则清空 ND 绑定代码。这些不是只影响显示的开关。
+
+物理相机参数页的“光心 X (px) / 光心 Y (px)”保存于 `ConfigPhyCamera.CameraCfg.OpticalCenterX/Y`，使用未翻转图像的像素坐标，两项有限且非负时一起生效，0 是有效值。可手动编辑；缺失或不完整时先尝试读取该相机已有的本机畸变校正，无有效文件则保持缺失。十字寻引界面的中心框直接只读绑定 `PhyCamera.OpticalCenter.X/Y`，缺失时显示“图像中心”，检测时使用当前帧宽高的一半。预览翻转时参考点同步变换。旧显示配置中的独立中心字段不再参与计算。
+
+`PhyCamera.OpticalCenter` 和统一的 `RefreshOpticalCenter` 接口负责读取、缓存及持久化，不依赖 `View` 或已打开的图像页签。首次读取光心、加载或刷新物理相机时，已有有效物理配置直接采用，缺失时遍历已登记的畸变资源（包含校正组中的资源），从按行排列的 `cameraMatrix[2]`、`cameraMatrix[5]` 读取 X/Y，以最后一份有效文件赋值并保存。
+
+整包校正上传成功后调用一次刷新接口，按本次导入顺序遍历畸变文件，最终保留最后一份有效光心；导入或生成单个畸变文件成功后也调用该接口。有效导入会覆盖已有光心，不可读或无效文件保留已有值。刷新通知使界面绑定更新；该接口单独持久化光心，不触发完整 `SaveConfig()` 的曝光/增益重置和服务同步。
+
+十字寻引参数区及相机属性中的“编辑相机配置”入口打开关联物理相机的编辑窗口；未绑定相机或无管理员权限时不可用。此窗口保留原有完整配置保存流程，保存后也会刷新光心绑定。本地拍照直接读取物理相机的光心记录，与界面是否打开无关；历史图像不随当前配置补写。
 
 ## 改数据路径与保存的副作用
 

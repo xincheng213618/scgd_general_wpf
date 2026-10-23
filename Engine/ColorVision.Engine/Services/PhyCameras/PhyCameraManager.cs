@@ -511,11 +511,13 @@ namespace ColorVision.Engine.Services.PhyCameras
                         existingPhyCamera.Name = item.Name ?? string.Empty;
                         existingPhyCamera.SysResourceModel = item;
                         existingPhyCamera.Config.CameraID = PhysicalCameraIdentity.ReadCameraId(item, existingPhyCamera.Config.CameraID);
+                        existingPhyCamera.RefreshOpticalCenter();
                     }
                     else
                     {
                         var newPhyCamera = new PhyCamera(item);
                         LoadPhyCameraResources(newPhyCamera);
+                        newPhyCamera.RefreshOpticalCenter();
                         PhyCameras.Add(newPhyCamera);
                     }
                 }

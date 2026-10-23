@@ -18,6 +18,7 @@ public sealed record ImageCameraInformation
 public sealed record ImageAcquisitionRecord
 {
     public ImageCameraInformation? Camera { get; init; }
+    public ImageOpticalCenter? OpticalCenter { get; init; }
     public DateTime? CapturedUtc { get; init; }
     public int Width { get; init; }
     public int Height { get; init; }
@@ -30,6 +31,9 @@ public sealed record ImageAcquisitionRecord
     public int? NdPort { get; init; }
     public int? AverageCount { get; init; }
 }
+
+/// <summary>Principal point in the camera's unflipped image coordinates, in pixels.</summary>
+public sealed record ImageOpticalCenter(double X, double Y);
 
 public sealed record ImageCalibrationSource
 {

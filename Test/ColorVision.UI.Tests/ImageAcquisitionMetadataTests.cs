@@ -50,9 +50,11 @@ public sealed class ImageAcquisitionMetadataTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void AcquisitionAndExecutedCalibrationSurviveRawSaveAndLoad(bool memoryOnly)
+    [InlineData(false, "png")]
+    [InlineData(true, "png")]
+    [InlineData(false, "tiff")]
+    [InlineData(true, "tiff")]
+    public void AcquisitionAndExecutedCalibrationSurviveRawSaveAndLoad(bool memoryOnly, string extension)
     {
         string root = Path.Combine(Path.GetTempPath(), "cv-acquisition-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -66,6 +68,7 @@ public sealed class ImageAcquisitionMetadataTests
             using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 2, 16, 3);
             var acquisition = new ImageAcquisitionRecord
             {
+                OpticalCenter = new(1.25, 0),
                 Camera = new() { DeviceName = "相机一", DeviceCode = "DEV.Camera.1", CameraId = "CAM-123", Model = "HK_USB" },
                 CapturedUtc = new DateTime(2026, 10, 23, 0, 1, 2, DateTimeKind.Utc),
                 Width = 3, Height = 2, BitsPerChannel = 16, Channels = 3,
@@ -89,6 +92,7 @@ public sealed class ImageAcquisitionMetadataTests
             frame.ColorCalibration!.Save(path, true);
             using LocalFlowFrame reopened = LocalFrameFileService.Load(path);
             Assert.Equal("CAM-123", reopened.Metadata.Acquisition!.Camera!.CameraId);
+            Assert.Equal(acquisition.OpticalCenter, reopened.Metadata.Acquisition.OpticalCenter);
             Assert.Equal(acquisition.CapturedUtc, reopened.Metadata.Acquisition.CapturedUtc);
             Assert.Equal(4, reopened.Metadata.Acquisition.NdPort);
             Assert.Equal(new float[] { 10, 20, 30 }, reopened.Metadata.Acquisition.Exposure);
@@ -103,16 +107,21 @@ public sealed class ImageAcquisitionMetadataTests
             Assert.Equal("CAM-123", parameters.Acquisition!.Camera!.CameraId);
             VExportCIE export = new(path)
             {
-                SavePath = root, Name = "measurement", ExportImageFormat = ImageFormat.Png,
+                SavePath = root, Name = "measurement", ExportImageFormat = extension == "png" ? ImageFormat.Png : ImageFormat.Tiff,
                 IsExportSrc = true, IsExportChannelX = false, IsExportChannelY = false, IsExportChannelZ = false
             };
             VExportCIE.SaveToTifOrThrow(export);
             WpfTestHost.Invoke(() =>
             {
-                using var stream = File.OpenRead(Path.Combine(root, "measurement.png"));
+                using var stream = File.OpenRead(Path.Combine(root, "measurement." + extension));
                 var pixels = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
                 Assert.True(ColorVisionTiffParameters.TryRead(pixels.Metadata as BitmapMetadata, out var exported));
                 Assert.Equal("CAM-123", exported!.Acquisition!.Camera!.CameraId);
+                Assert.Equal(acquisition.OpticalCenter, exported.Acquisition.OpticalCenter);
+                var config = new ImageViewConfig();
+                Opentif.ApplyColorVisionMetadata(config, exported);
+                Assert.Equal(1.25, config.GetProperties<double>("ColorVision.Camera.OpticalCenterX"));
+                Assert.Equal(0, config.GetProperties<double>("ColorVision.Camera.OpticalCenterY"));
                 Assert.Equal(expectedHash, Assert.Single(exported.CalibrationSummary!.Sources).FileSha256);
                 Assert.NotNull(exported.Calibration);
                 Assert.Equal(ColorVisionPixelBinding.ComputeSha256(pixels), exported.PixelSha256);

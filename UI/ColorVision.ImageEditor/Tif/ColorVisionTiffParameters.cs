@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -90,6 +91,28 @@ namespace ColorVision.ImageEditor.Tif
                 return false;
             }
             catch (NotSupportedException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Reads the container record without decoding image samples or granting measurement capabilities.</summary>
+        public static bool TryReadFile(string filePath, out ColorVisionTiffParameters? parameters)
+        {
+            parameters = null;
+            if (string.IsNullOrWhiteSpace(filePath)) return false;
+            try
+            {
+                string extension = Path.GetExtension(filePath);
+                if (!extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+                    && !extension.Equals(".tif", StringComparison.OrdinalIgnoreCase)
+                    && !extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase)) return false;
+                using var stream = File.OpenRead(filePath);
+                BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);
+                return decoder.Frames.Count > 0 && TryRead(decoder.Frames[0].Metadata as BitmapMetadata, out parameters);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException
+                or NotSupportedException or InvalidOperationException or System.Runtime.InteropServices.COMException or FileFormatException)
             {
                 return false;
             }

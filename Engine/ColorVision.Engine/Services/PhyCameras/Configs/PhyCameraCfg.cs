@@ -2,6 +2,9 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Utilities;
+using ColorVision.ImageEditor.Tif;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
@@ -88,6 +91,37 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [LocalizedDisplayName(nameof(Resources.Gain))]
         public int Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private int _Gain = 10;
+
+        [Category("光学参数"), DisplayName("光心 X (px)")]
+        [Description("未翻转图像的光心横坐标；未设置时读取已有畸变校正，无可用畸变时使用图像中心。")]
+        public double? OpticalCenterX { get => _OpticalCenterX; set { _OpticalCenterX = value; OnPropertyChanged(); } }
+        private double? _OpticalCenterX;
+
+        [Category("光学参数"), DisplayName("光心 Y (px)")]
+        [Description("未翻转图像的光心纵坐标；可从畸变校正文件自动提取，也可手动编辑。")]
+        public double? OpticalCenterY { get => _OpticalCenterY; set { _OpticalCenterY = value; OnPropertyChanged(); } }
+        private double? _OpticalCenterY;
+
+        public ImageOpticalCenter? GetOpticalCenter()
+            => OpticalCenterX is double x && OpticalCenterY is double y
+                && double.IsFinite(x) && double.IsFinite(y) && x >= 0 && y >= 0
+                ? new ImageOpticalCenter(x, y) : null;
+
+        internal bool TryImportOpticalCenter(string distortionJson)
+        {
+            try
+            {
+                if (JObject.Parse(distortionJson.TrimStart('\uFEFF'))["cameraMatrix"] is not JArray { Count: 9 } matrix
+                    || matrix[2].Type is not (JTokenType.Integer or JTokenType.Float)
+                    || matrix[5].Type is not (JTokenType.Integer or JTokenType.Float)) return false;
+                double x = matrix[2].Value<double>(), y = matrix[5].Value<double>();
+                if (!double.IsFinite(x) || !double.IsFinite(y) || x < 0 || y < 0) return false;
+                OpticalCenterX = x;
+                OpticalCenterY = y;
+                return true;
+            }
+            catch (JsonException) { return false; }
+        }
 
         [JsonIgnore]
         [Browsable(true)]

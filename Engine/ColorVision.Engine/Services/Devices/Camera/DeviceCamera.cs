@@ -108,6 +108,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
 
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+            EditPhyCameraConfigCommand = new RelayCommand(_ => PhyCamera?.EditCommand.Execute(null),
+                _ => PhyCamera != null && AccessControl.Check(PermissionMode.Administrator));
 
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
 
@@ -307,6 +309,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _subscribedPhyCamera = phyCamera;
             _PhyCamera = phyCamera;
             OnPropertyChanged(nameof(PhyCamera));
+            EditPhyCameraConfigCommand?.RaiseCanExecuteChanged();
 
             if (_subscribedPhyCamera != null)
             {
@@ -330,6 +333,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Category("DeviceConnection")]
         [Description("CommandPhysicalCameraHint")]
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
+
+        [CommandDisplay("TitleEditCameraConfig", CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        public RelayCommand EditPhyCameraConfigCommand { get; set; }
 
         [RequiresPermission(PermissionMode.Administrator)]
         public void OpenPhyCameraManger()

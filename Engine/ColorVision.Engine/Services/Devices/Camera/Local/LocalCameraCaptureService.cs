@@ -144,6 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     CaptureTime = DateTime.Now,
                     Acquisition = new ImageAcquisitionRecord
                     {
+                        OpticalCenter = device.PhyCamera?.OpticalCenter,
                         Camera = new ImageCameraInformation
                         {
                             DeviceName = device.Config.Name, DeviceCode = device.Code,

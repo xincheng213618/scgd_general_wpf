@@ -7,8 +7,10 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
@@ -50,6 +52,17 @@ namespace ColorVision.Engine.Services.PhyCameras
         private readonly CalibrationUploadRunner _calibrationUploadRunner = new();
 
         public ConfigPhyCamera Config { get; set; }
+
+        private bool _opticalCenterResolved;
+        private ImageOpticalCenter? _opticalCenter;
+        public ImageOpticalCenter? OpticalCenter
+        {
+            get
+            {
+                if (!_opticalCenterResolved) RefreshOpticalCenter();
+                return _opticalCenter;
+            }
+        }
 
         [CommandDisplay("UploadCalibrationFiles", Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
@@ -1118,6 +1131,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(ReadCalibrationPackageText(Calibrationcfg));
 
                     Dictionary<string, CalibrationResource> keyValuePairs2 = new();
+                    List<string> importedDistortionFiles = new();
 
                     var uniqueItems = AllCalFiles.SelectMany(item => item.Value)
                              .GroupBy(x => new { x.CalibrationType, x.Title })
@@ -1278,6 +1292,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                             }
 
                             keyValuePairs2.TryAdd(item.Title, calibrationResource);
+                            if (item.CalibrationType == CalibrationType.Distortion)
+                                importedDistortionFiles.Add(DesFilePath);
                             uploadMeta.UploadStatus = UploadStatus.Completed;
                         }
                         catch (Exception ex)
@@ -1350,6 +1366,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     bool completed = !UploadList.Any(a => a.UploadStatus == UploadStatus.Failed);
                     if (completed)
                     {
+                        Application.Current.Dispatcher.Invoke(() => RefreshOpticalCenter(
+                            importedDistortionFiles.Count > 0 ? importedDistortionFiles : null));
                         await Task.Delay(500);
                         NotifyUploadClosed();
                         if (restoreCameraSettings)
@@ -1450,6 +1468,43 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public event EventHandler<ConfigPhyCamera> ConfigChanged;
 
+        public void RefreshOpticalCenter(IEnumerable<string>? importedDistortionFiles = null)
+        {
+            if (importedDistortionFiles != null || Config.CameraCfg.GetOpticalCenter() == null)
+            {
+                var candidate = new PhyCameraCfg();
+                foreach (string file in importedDistortionFiles ?? EnumerateDistortionFiles(this).Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    try { candidate.TryImportOpticalCenter(ReadCalibrationPackageText(file)); }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                    {
+                        log.Warn("无法读取畸变校正的光心参数。", error);
+                    }
+                }
+                if (candidate.GetOpticalCenter() is { } center && center != Config.CameraCfg.GetOpticalCenter())
+                {
+                    Config.CameraCfg.OpticalCenterX = center.X;
+                    Config.CameraCfg.OpticalCenterY = center.Y;
+                    // Optical metadata refresh does not reset exposure/gain or restart the bound service.
+                    PersistConfig();
+                }
+            }
+            _opticalCenter = Config.CameraCfg.GetOpticalCenter();
+            _opticalCenterResolved = true;
+            OnPropertyChanged(nameof(OpticalCenter));
+        }
+
+        private static IEnumerable<string> EnumerateDistortionFiles(ServiceObjectBase parent)
+        {
+            foreach (ServiceObjectBase child in parent.VisualChildren)
+            {
+                if (child is CalibrationResource resource && resource.SysResourceModel.Type == (int)ServiceTypes.Distortion
+                    && resource.TryGetFilePath(out string file)) yield return file;
+                else if (child is GroupResource group)
+                    foreach (string nestedFile in EnumerateDistortionFiles(group)) yield return nestedFile;
+            }
+        }
+
         public void SaveConfig()
         {
             //加这个是因为陈宏那边没有解析IsUseCFW，要清除掉ChannelCfgs,以及IsCOM的配置。具体的是因为SDK中串口和滤轮是分离的，所以在配置中需要单独处理
@@ -1472,16 +1527,22 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Config.CFW.NDBindDeviceCode = string.Empty;
             }
 
-            SysResourceModel.Name = Config.CameraID;
-            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
-                throw new InvalidOperationException($"保存物理相机 {Code} 的配置失败。");
+            PersistConfig();
+            RefreshOpticalCenter();
 
             OnPropertyChanged(nameof(DeviceModeDisplayText));
             OnPropertyChanged(nameof(CameraInfoMetaText));
             OnPropertyChanged(nameof(CameraListMetaText));
 
             ConfigChanged?.Invoke(this, Config);
+        }
+
+        private void PersistConfig()
+        {
+            SysResourceModel.Name = Config.CameraID;
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
+            if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
+                throw new InvalidOperationException($"保存物理相机 {Code} 的配置失败。");
         }
         public override void Save()
         {

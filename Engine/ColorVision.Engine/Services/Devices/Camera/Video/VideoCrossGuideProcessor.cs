@@ -438,8 +438,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private static Point ResolveStandardCenter(Point standardCenter, int width, int height)
         {
-            double x = standardCenter.X > 0 ? standardCenter.X : width / 2.0;
-            double y = standardCenter.Y > 0 ? standardCenter.Y : height / 2.0;
+            double x = double.IsFinite(standardCenter.X) ? standardCenter.X : width / 2.0;
+            double y = double.IsFinite(standardCenter.Y) ? standardCenter.Y : height / 2.0;
             return new Point(x, y);
         }
 
@@ -468,7 +468,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return new RoiRect((int)Math.Round(x), (int)Math.Round(y), (int)Math.Round(rect.Width), (int)Math.Round(rect.Height));
         }
 
-        private static Point TransformPointToDisplay(Point sourcePoint, int width, int height, int transform)
+        internal static Point TransformPointToDisplay(Point sourcePoint, int width, int height, int transform)
         {
             double x = (transform & RealtimeFramePresenter.TransformFlipY) != 0 ? width - 1 - sourcePoint.X : sourcePoint.X;
             double y = (transform & RealtimeFramePresenter.TransformFlipX) != 0 ? height - 1 - sourcePoint.Y : sourcePoint.Y;

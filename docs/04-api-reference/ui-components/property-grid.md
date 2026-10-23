@@ -94,6 +94,8 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 | 3 | `PropertyEditorRegistry.Find(property.PropertyType)` | 无类型注册时尝试嵌套对象 |
 | 4 | 可生成的嵌套对象属性面板 | 无有效控件则不生成该行 |
 
+通用 `TextboxPropertiesEditor` 对可空数值等文本属性将空文本映射为 `null`，允许清空可选参数；非可空字段继续使用其类型转换与校验规则。
+
 类型注册内部先找精确类型，再按注册顺序寻找第一个命中的谓词。谓词抛异常会记录警告并跳过该谓词。`TryGenerateEditor` 在构造或 `GenProperties` 失败时记录错误并返回空，让外层按上述路径继续；**不保证任意未知类型或所有编辑器失败后都会出现文本框**。
 
 异常边界不能混为一谈：元数据 Provider 的 `GetEditorType` 回调在 `TryGenerateEditor` 之外。该回调自身抛异常时，外层 `TryCreatePropertyDockPanel` 记录错误并返回 `false`，不会继续尝试属性标注；可见性绑定等外层步骤抛异常也会终止该行。新增 Provider 时需单独验证这些异常路径。

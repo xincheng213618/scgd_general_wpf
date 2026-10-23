@@ -394,6 +394,11 @@ namespace ColorVision.ImageEditor.Tif
             if (parameters.Acquisition != null)
             {
                 config.SetImageMetadata("ColorVision.Acquisition", JsonConvert.SerializeObject(parameters.Acquisition), owner, "原始相机及采集记录");
+                if (parameters.Acquisition.OpticalCenter is { } center && double.IsFinite(center.X) && double.IsFinite(center.Y))
+                {
+                    config.SetImageMetadata("ColorVision.Camera.OpticalCenterX", center.X, owner, "采集时的光心 X，未翻转图像像素坐标");
+                    config.SetImageMetadata("ColorVision.Camera.OpticalCenterY", center.Y, owner, "采集时的光心 Y，未翻转图像像素坐标");
+                }
                 if (parameters.Acquisition.Camera is { } camera)
                 {
                     // CameraModel/CameraManufacturer select ruler calibration profiles. Provenance

@@ -6507,6 +6507,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CalibrationExposureDisplayTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationDocumentEditorTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationBinaryDocumentTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationMapCreationTests.cs",
@@ -6682,7 +6683,10 @@
         "includeCameraId",
         "本地相机ID",
         "应用设置",
-        "相机数据路径"
+        "相机数据路径",
+        "光心",
+        "畸变光心",
+        "十字寻引"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs",
@@ -6705,7 +6709,8 @@
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/CameraRunParamTests.cs",
         "Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs",
-        "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"
+        "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs",
+        "Test/ColorVision.UI.Tests/CameraOpticalCenterTests.cs"
       ],
       "related": [
         "operations.camera",

@@ -22,6 +22,7 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -150,14 +151,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
         private Rect _CrossGuideRoi = Rect.Empty;
-
-        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterX))]
-        public double CrossGuideStandardCenterX { get => _CrossGuideStandardCenterX; set { _CrossGuideStandardCenterX = value; OnPropertyChanged(); } }
-        private double _CrossGuideStandardCenterX;
-
-        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterY))]
-        public double CrossGuideStandardCenterY { get => _CrossGuideStandardCenterY; set { _CrossGuideStandardCenterY = value; OnPropertyChanged(); } }
-        private double _CrossGuideStandardCenterY;
 
         [LocalizedDisplayName(nameof(Properties.Resources.Camera_TolerancePx))]
         public double CrossGuideTolerancePx { get => _CrossGuideTolerancePx; set { _CrossGuideTolerancePx = Math.Max(0, value); OnPropertyChanged(); } }
@@ -566,8 +559,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private static bool IsCrossGuideConfigProperty(string? propertyName) => string.IsNullOrEmpty(propertyName)
             || propertyName == nameof(DisplayCameraConfig.IsCrossGuideEnabled)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideRoi)
-            || propertyName == nameof(DisplayCameraConfig.CrossGuideStandardCenterX)
-            || propertyName == nameof(DisplayCameraConfig.CrossGuideStandardCenterY)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideTolerancePx)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideIntervalMs)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideThresholdRatio)
@@ -929,7 +920,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             int transform = Device.DisplayConfig.LocalVideoTransform;
             RoiRect sourceRoi = VideoCrossGuideDetector.TransformDisplayRoiToSource(Device.DisplayConfig.LocalVideoRoi, width, height, transform);
-            Point standardCenter = new(Device.DisplayConfig.CrossGuideStandardCenterX, Device.DisplayConfig.CrossGuideStandardCenterY);
+            ImageOpticalCenter? opticalCenter = Device.PhyCamera?.OpticalCenter;
+            Point standardCenter = opticalCenter is { } center ? new Point(center.X, center.Y) : new Point(width / 2.0, height / 2.0);
+            if (opticalCenter != null)
+                standardCenter = VideoCrossGuideDetector.TransformPointToDisplay(standardCenter, width, height, transform);
             request = new VideoCrossGuideRequest(
                 sourceRoi,
                 standardCenter,
