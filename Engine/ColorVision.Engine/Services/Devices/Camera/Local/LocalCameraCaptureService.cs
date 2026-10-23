@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
+using ColorVision.ImageEditor.Tif;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -141,6 +142,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     DeviceCode = device.Code,
                     CalibrationTemplate = request.Calibration?.Name ?? string.Empty,
                     CaptureTime = DateTime.Now,
+                    Acquisition = new ImageAcquisitionRecord
+                    {
+                        Camera = new ImageCameraInformation
+                        {
+                            DeviceName = device.Config.Name, DeviceCode = device.Code,
+                            CameraId = device.LocalCameraSession.OpenedCameraId, CameraCode = device.Config.CameraCode,
+                            Model = device.Config.CameraModel.ToString(), Mode = device.Config.CameraMode.ToString()
+                        },
+                        CapturedUtc = DateTime.UtcNow, Width = (int)width, Height = (int)height,
+                        BitsPerChannel = (int)sourceBpp, Channels = (int)channels, Gain = cameraParameters.Gain,
+                        Exposure = (float[])exposure.Clone(), ExposureUnit = "ms", NdPort = device.Config.NDPort,
+                        AverageCount = cameraParameters.AvgCount,
+                        ChannelOrder = channels == 1 ? "Y" : device.Config.IsExpThree ? "X/Y/Z" : "R/G/B"
+                    },
                     PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
                     FlipMode = request.FlipMode,
                     IsMirrorReady = calibrationFiles.Count > 0

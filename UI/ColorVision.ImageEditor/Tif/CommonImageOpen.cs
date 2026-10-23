@@ -1,4 +1,4 @@
-﻿using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -10,15 +10,33 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.ImageEditor.Tif
 {
     [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|.gif")]
-    public record class CommonImageOpen(EditorContext EditorContext) : IImageOpen
+    public record class CommonImageOpen(EditorContext EditorContext) : IAsyncImageOpen, IImageOpenContentLifetime
     {
         private readonly object _decodeSync = new();
         private Task _decodeTail = Task.CompletedTask;
         private long _latestRequestId;
+        private readonly object _requestSync = new();
+        private CancellationTokenSource? _pendingRequest;
 
         public async void OpenImage(EditorContext context, string? filePath)
         {
-            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
+            try { await OpenImageAsync(context, filePath); }
+            catch (OperationCanceledException) { }
+            catch (Exception) { /* Legacy fire-and-forget callers have no completion channel. */ }
+        }
+
+        public Task ReleaseContentAsync(bool reuseBuffers)
+        {
+            Interlocked.Increment(ref _latestRequestId);
+            lock (_requestSync) _pendingRequest?.Cancel();
+            return _decodeTail;
+        }
+
+        public async Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ArgumentException.ThrowIfNullOrEmpty(filePath);
+            if (!File.Exists(filePath)) throw new FileNotFoundException("Image file does not exist.", filePath);
 
             string requestedFilePath = filePath;
             long requestId = Interlocked.Increment(ref _latestRequestId);
@@ -31,6 +49,14 @@ namespace ColorVision.ImageEditor.Tif
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileCreationTime, fileInfo.CreationTime, nameof(CommonImageOpen), "当前文件创建时间");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileModifiedTime, fileInfo.LastWriteTime, nameof(CommonImageOpen), "当前文件修改时间");
 
+            using CancellationTokenSource requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            lock (_requestSync)
+            {
+                _pendingRequest?.Cancel();
+                _pendingRequest = requestCancellation;
+            }
+            cancellationToken = requestCancellation.Token;
+
             TaskCompletionSource decodeTurn = new(TaskCreationOptions.RunContinuationsAsynchronously);
             Task previousDecode;
             lock (_decodeSync)
@@ -42,13 +68,14 @@ namespace ColorVision.ImageEditor.Tif
             await previousDecode;
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!IsCurrentRequest(context, requestedFilePath, requestId))
-                    return;
+                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
 
-                DecodedImage decodedImage = await Task.Run(() => DecodeImage(requestedFilePath));
+                DecodedImage decodedImage = await Task.Run(() => DecodeImage(requestedFilePath), cancellationToken);
 
                 if (!IsCurrentRequest(context, requestedFilePath, requestId))
-                    return;
+                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
 
                 BitmapSource bitmapSource = decodedImage.BitmapSource;
 
@@ -59,7 +86,7 @@ namespace ColorVision.ImageEditor.Tif
                 ApplyMetadata(context, decodedImage.Metadata);
 
                 WriteableBitmap writeableBitmap;
-                if (context.ImageView.ViewBitmapSource is WriteableBitmap currentBitmap && TryUpdateWriteableBitmap(bitmapSource, currentBitmap))
+                if (decodedImage.Metadata.ColorVisionParameters == null && context.ImageView.ViewBitmapSource is WriteableBitmap currentBitmap && TryUpdateWriteableBitmap(bitmapSource, currentBitmap))
                 {
                     writeableBitmap = currentBitmap;
                 }
@@ -68,11 +95,20 @@ namespace ColorVision.ImageEditor.Tif
                     writeableBitmap = new WriteableBitmap(bitmapSource);
                 }
 
-                context.ImageView.SetImageSource(writeableBitmap);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!IsCurrentRequest(context, requestedFilePath, requestId))
+                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
+                await context.ImageView.PublishDecodedImageContentAsync(
+                    new DecodedImageContent(decodedImage.Metadata.ColorVisionParameters == null ? writeableBitmap : decodedImage.BitmapSource, decodedImage.Metadata.ColorVisionParameters, requestedFilePath),
+                    writeableBitmap, cancellationToken);
                 context.ImageView.UpdateZoomAndScale();
             }
             finally
             {
+                lock (_requestSync)
+                {
+                    if (ReferenceEquals(_pendingRequest, requestCancellation)) _pendingRequest = null;
+                }
                 decodeTurn.TrySetResult();
             }
         }
@@ -92,7 +128,7 @@ namespace ColorVision.ImageEditor.Tif
             string extension = Path.GetExtension(filePath).ToLowerInvariant();
             if (extension == ".png")
             {
-                PngBitmapDecoder decoder = new(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                PngBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
                 if (decoder.Frames.Count == 0)
                     throw new InvalidDataException($"PNG 文件不包含可显示帧：{filePath}");
 
@@ -139,6 +175,7 @@ namespace ColorVision.ImageEditor.Tif
             if (metadata == null)
                 return ImageMetadata.Empty;
 
+            ColorVisionTiffParameters.TryRead(metadata, out ColorVisionTiffParameters? parameters);
             try
             {
                 return new ImageMetadata(
@@ -147,16 +184,19 @@ namespace ColorVision.ImageEditor.Tif
                     metadata.DateTaken,
                     metadata.ApplicationName,
                     metadata.Title,
-                    metadata.Subject);
+                    metadata.Subject,
+                    parameters);
             }
             catch
             {
-                return ImageMetadata.Empty;
+                return new ImageMetadata(null, null, null, null, null, null, parameters);
             }
         }
 
         private static void ApplyMetadata(EditorContext context, ImageMetadata metadata)
         {
+            if (metadata.ColorVisionParameters != null)
+                Opentif.ApplyColorVisionMetadata(context.Config, metadata.ColorVisionParameters);
             if (metadata.CameraModel != null)
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.CameraModel, metadata.CameraModel, nameof(CommonImageOpen), "EXIF 相机型号");
             if (metadata.CameraManufacturer != null)
@@ -218,9 +258,10 @@ namespace ColorVision.ImageEditor.Tif
             string? DateTaken,
             string? ApplicationName,
             string? Title,
-            string? Subject)
+            string? Subject,
+            ColorVisionTiffParameters? ColorVisionParameters)
         {
-            public static ImageMetadata Empty { get; } = new(null, null, null, null, null, null);
+            public static ImageMetadata Empty { get; } = new(null, null, null, null, null, null, null);
         }
     }
 

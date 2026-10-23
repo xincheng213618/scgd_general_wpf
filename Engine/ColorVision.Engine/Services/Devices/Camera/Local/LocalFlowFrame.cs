@@ -3,6 +3,7 @@ using FlowEngineLib.Algorithm;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using ColorVision.ImageEditor.Tif;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -30,6 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
         /// <summary>Whether all sensor-coordinate transforms have completed.</summary>
         public bool IsMirrorReady { get; init; }
+        public ImageAcquisitionRecord? Acquisition { get; init; }
     }
 
     /// <summary>
@@ -55,6 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public string CvRawFilePath { get; set; } = string.Empty;
         public string CvCieFilePath { get; set; } = string.Empty;
         internal ColorCalibrationSnapshot? ColorCalibration { get; set; }
+        internal ImageCalibrationSummary? CalibrationProvenance { get; set; }
         public bool HasRaw => storage.RawLength > 0;
         public bool HasCie => storage.CieLength > 0;
         public bool IsRawFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvRaw, Metadata.FlipMode);
@@ -94,12 +97,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 SourceFilePath = source.SourceFilePath,
                 CalibrationTemplate = calibrationTemplate,
                 CaptureTime = source.CaptureTime,
+                Acquisition = source.Acquisition,
                 PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
                 FlipMode = source.FlipMode,
                 IsMirrorReady = true
             };
             CvCieFilePath = string.Empty;
             ColorCalibration = null;
+            CalibrationProvenance = null;
             if (hasBasicCalibration) CvRawFilePath = string.Empty;
         }
 
@@ -107,7 +112,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
             storage.AddReference();
-            return new LocalFlowFrameLease(storage, Metadata, FrameId, MasterId, ColorCalibration);
+            return new LocalFlowFrameLease(storage, Metadata, FrameId, MasterId, ColorCalibration, CalibrationProvenance);
         }
 
         internal void ApplyPendingFlip(Action<LocalFlowFrameLease, LocalFrameBufferKind, CVImageFlipMode> apply)
@@ -265,19 +270,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     {
         private LocalFlowFrame.SharedFrameStorage? storage;
 
-        internal LocalFlowFrameLease(LocalFlowFrame.SharedFrameStorage storage, LocalFrameMetadata metadata, Guid frameId, int masterId, ColorCalibrationSnapshot? colorCalibration)
+        internal LocalFlowFrameLease(LocalFlowFrame.SharedFrameStorage storage, LocalFrameMetadata metadata, Guid frameId, int masterId, ColorCalibrationSnapshot? colorCalibration, ImageCalibrationSummary? calibrationProvenance)
         {
             this.storage = storage;
             Metadata = metadata;
             FrameId = frameId;
             MasterId = masterId;
             ColorCalibration = colorCalibration;
+            CalibrationProvenance = calibrationProvenance;
         }
 
         public Guid FrameId { get; }
         public int MasterId { get; }
         public LocalFrameMetadata Metadata { get; }
         internal ColorCalibrationSnapshot? ColorCalibration { get; }
+        internal ImageCalibrationSummary? CalibrationProvenance { get; }
         public IntPtr RawPointer => GetStorage().RawPointer;
         public int RawLength => GetStorage().RawLength;
         public IntPtr CiePointer => GetStorage().CiePointer;

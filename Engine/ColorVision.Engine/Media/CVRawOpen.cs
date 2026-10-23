@@ -28,8 +28,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
-    [FileExtension(".cvraw|.cvcie")]
-    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IImageOpenContentLifetime, IIEditorToolContextMenu, IImageOpenEditorToolProvider, IImageOpenEditorToolLifecycle
+    public record class CalibratedImageCapability(EditorContext EditorContext) : IAsyncImageOpen, IImageOpenContentLifetime, IIEditorToolContextMenu, IImageContentCapability
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
         public long? GetCachedFileLength(string filePath) => CVFileReadCache.GetCachedLength(filePath);
@@ -41,6 +40,9 @@ namespace ColorVision.Engine.Media
         private CvcieDiagramEditorTool? _cvcieDiagramEditorTool;
         private CvcieMouseProbeOptions? _probeOptions;
         private PoiMeasurementBuffer? _measurementBuffer;
+        private EmbeddedProfileLifetime? _embeddedProfileLifetime;
+        private long _activationVersion = -1;
+        private Task _retiredReaders = Task.CompletedTask;
         private ImageView? _bufferOwner;
         private EventHandler? _bufferCleanup;
         private Action? _loadBuffer;
@@ -223,6 +225,7 @@ namespace ColorVision.Engine.Media
 
         private async Task CalculateCurrentRawCieAsync(string filePath, CVRawManualCieConfig config)
         {
+            long contentVersion = EditorContext.ImageView.ContentVersion;
             try
             {
                 var calculated = await Task.Run(() =>
@@ -241,7 +244,7 @@ namespace ColorVision.Engine.Media
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    if (!string.Equals(GetCurrentFilePath(), filePath, StringComparison.OrdinalIgnoreCase)) return;
+                    if (EditorContext.ImageView.ContentVersion != contentVersion || !string.Equals(GetCurrentFilePath(), filePath, StringComparison.OrdinalIgnoreCase)) return;
                     try
                     {
                         config.CopyTo(CVRawManualCieConfig.Instance);
@@ -268,7 +271,7 @@ namespace ColorVision.Engine.Media
                     MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                     try
                     {
-                        if (!string.Equals(GetCurrentFilePath(), filePath, StringComparison.OrdinalIgnoreCase)) return;
+                        if (EditorContext.ImageView.ContentVersion != contentVersion || !string.Equals(GetCurrentFilePath(), filePath, StringComparison.OrdinalIgnoreCase)) return;
                         using CVCIEFile raw = CvRawLayerController.LoadSourceFile(filePath, out _);
                         using OpenCvSharp.Mat mat = raw.ToMat(showErrors: false);
                         if (mat != null && !mat.Empty())
@@ -278,7 +281,7 @@ namespace ColorVision.Engine.Media
                             EditorContext.Config.SetOpenerRuntime("IsCVCIE", false, nameof(CVRawOpen), "校正失败，继续显示原始 CVRAW");
                             EditorContext.ImageView.OpenImage(mat.CreateDisplayBitmap());
                             InitializeCvFileView(EditorContext.ImageView, filePath, "composite", raw.Channels >= 3);
-                            EditorContext.ImageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
+                            EditorContext.ImageView.AttachImageContentCapability(this);
                         }
                     }
                     catch (Exception fallbackError)
@@ -289,16 +292,21 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private (int Channels, PoiMeasurementResult[] Results) CalculatePoi(IReadOnlyList<PoiMeasurementPoint> points, bool preserveNonPositiveValues)
+        internal (int Channels, PoiMeasurementResult[] Results) CalculatePoi(IReadOnlyList<PoiMeasurementPoint> points, bool preserveNonPositiveValues)
+        {
+            PoiMeasurementBuffer buffer = GetMeasurementBuffer();
+            return (buffer.Channels, preserveNonPositiveValues
+                ? PoiMeasurementService.CalculateRaw(buffer, points)
+                : PoiMeasurementService.Calculate(buffer, points));
+        }
+
+        private PoiMeasurementBuffer GetMeasurementBuffer()
         {
             _loadBuffer?.Invoke();
             lock (_bufferSync)
             {
-                PoiMeasurementBuffer buffer = _measurementBuffer
+                return _measurementBuffer
                     ?? throw new InvalidOperationException("当前 CVCIE 视图没有可用的测量缓冲区。");
-                return (buffer.Channels, preserveNonPositiveValues
-                    ? PoiMeasurementService.CalculateRaw(buffer, points)
-                    : PoiMeasurementService.Calculate(buffer, points));
             }
         }
 
@@ -314,6 +322,11 @@ namespace ColorVision.Engine.Media
             lock (_bufferSync)
             {
                 previous = _measurementBuffer;
+                if (!ReferenceEquals(previous, buffer))
+                {
+                    _embeddedProfileLifetime?.Retire();
+                    _embeddedProfileLifetime = null;
+                }
                 _measurementBuffer = buffer;
             }
             if (!ReferenceEquals(previous, buffer)) previous?.Dispose();
@@ -327,8 +340,10 @@ namespace ColorVision.Engine.Media
             }
 
             _bufferOwner = imageView;
-            _bufferCleanup = (_, _) =>
+            EventHandler? cleanup = null;
+            cleanup = (_, _) =>
             {
+                if (!ReferenceEquals(_bufferCleanup, cleanup)) return;
                 if (_bufferOwner != null && _bufferCleanup != null)
                 {
                     _bufferOwner.Config.Cleared -= _bufferCleanup;
@@ -339,6 +354,7 @@ namespace ColorVision.Engine.Media
                 _bufferOwner = null;
                 _bufferCleanup = null;
             };
+            _bufferCleanup = cleanup;
             imageView.Config.Cleared += _bufferCleanup;
         }
 
@@ -359,6 +375,9 @@ namespace ColorVision.Engine.Media
             {
                 return null;
             }
+            meta.FileExtType = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase) ? CVType.CIE : CVType.Raw;
+            var parameterRecord = VExportCIE.CreateTiffParameters(meta, "Src");
+            imageView.SetImageParameterRecord(parameterRecord);
 
             if (!string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase))
             {
@@ -370,6 +389,11 @@ namespace ColorVision.Engine.Media
                 try { snapshot = ColorCalibrationSnapshot.Read(filePath, meta); }
                 catch (Exception ex) { log.Warn($"RAW 色度参数不可用，保留原图：{filePath}", ex); }
                 imageView.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, snapshot, nameof(CVRawOpen), "CVRAW 尾部保存的实际色度校正参数（只读）");
+                if (snapshot != null)
+                {
+                    parameterRecord.CalibrationSummary = snapshot.ToSummary();
+                    imageView.SetImageParameterRecord(parameterRecord);
+                }
                 if (snapshot?.CanReplay == true)
                 {
                     imageView.EditorContext.ProcessingContext.ProfileMeasurementSources = CvRawProfileSource.CreateOptions(filePath);
@@ -383,7 +407,7 @@ namespace ColorVision.Engine.Media
                     imageView.Config.SetOpenerRuntime("HasCieMeasurements", true, nameof(CVRawOpen), "RAW 与当前色度参数可按需测量");
                     imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "RAW 原始文件头");
                     imageView.Config.SetOpenerRuntime("Exp", snapshot.Exposure, nameof(CVRawOpen), "色度校正实际曝光");
-                    CvRawLayerController calibrated = CvRawLayerController.CreateCalibratedRaw(imageView, filePath, _measurementBuffer!.RawSource!, displayedLayerId);
+                    CvRawLayerController calibrated = CvRawLayerController.CreateCalibratedRaw(imageView, filePath, _measurementBuffer!.RawSource!, displayedLayerId, null);
                     imageView.SetLayerController(calibrated);
                     imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
                     return calibrated;
@@ -394,10 +418,12 @@ namespace ColorVision.Engine.Media
             }
             meta.FileExtType = CVType.CIE;
 
-            Action loadBuffer = new(() =>
+            Action? loadBuffer = null;
+            loadBuffer = () =>
             {
                 lock (_bufferSync)
                 {
+                    if (!ReferenceEquals(_loadBuffer, loadBuffer)) throw new OperationCanceledException("The measurement source was retired.");
                     if (_measurementBuffer != null) return;
                     CVFileUtil.ReadCIEFileData(filePath, ref meta, index);
                     byte[] data = meta.Data ?? throw new InvalidDataException($"读取 CVCIE 数据失败：{filePath}");
@@ -405,7 +431,7 @@ namespace ColorVision.Engine.Media
                     meta.Data = null;
                     imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和测量缓冲元信息");
                 }
-            });
+            };
 
             ReplaceMeasurementBuffer(null);
             _loadBuffer = loadBuffer;
@@ -488,7 +514,7 @@ namespace ColorVision.Engine.Media
             imageView.Config.SetOpenerRuntime("Exp", exposure, nameof(CVRawOpen), "当前内存 CVCIE 曝光数组");
 
             imageView.EditorContext.IImageOpen = this;
-            imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
+            imageView.AttachImageContentCapability(this);
 
             if (imageView.ViewBitmapSource is WriteableBitmap source)
             {
@@ -642,26 +668,22 @@ namespace ColorVision.Engine.Media
         private (int Channels, PoiMeasurementResult[] Results) CalculateViewPoi(List<ViewPoiRequest> requests)
         {
             if (requests.Count == 0) throw new ArgumentException("请先绘制圆、椭圆、矩形或闭合多边形；开放折线需要先闭合。");
-            _loadBuffer?.Invoke();
-            lock (_bufferSync)
+            PoiMeasurementBuffer buffer = GetMeasurementBuffer();
+            var results = new PoiMeasurementResult[requests.Count];
+            var standard = new List<PoiMeasurementPoint>();
+            var indices = new List<int>();
+            for (int i = 0; i < requests.Count; i++)
             {
-                PoiMeasurementBuffer buffer = _measurementBuffer ?? throw new InvalidOperationException("当前图像没有可用的 CIE 测量数据。");
-                var results = new PoiMeasurementResult[requests.Count];
-                var standard = new List<PoiMeasurementPoint>();
-                var indices = new List<int>();
-                for (int i = 0; i < requests.Count; i++)
+                if (requests[i].Region is ClosedPixelRegion region)
                 {
-                    if (requests[i].Region is ClosedPixelRegion region)
-                    {
-                        try { results[i] = PoiMeasurementService.CalculateRegion(buffer, region, true); }
-                        catch (ArgumentException error) { throw new ArgumentException($"区域 {requests[i].Point.Name}：{error.Message}", error); }
-                    }
-                    else { standard.Add(requests[i].MeasurementPoint); indices.Add(i); }
+                    try { results[i] = PoiMeasurementService.CalculateRegion(buffer, region, true); }
+                    catch (ArgumentException error) { throw new ArgumentException($"区域 {requests[i].Point.Name}：{error.Message}", error); }
                 }
-                PoiMeasurementResult[] legacy = PoiMeasurementService.CalculateRaw(buffer, standard);
-                for (int i = 0; i < legacy.Length; i++) results[indices[i]] = legacy[i];
-                return (buffer.Channels, results);
+                else { standard.Add(requests[i].MeasurementPoint); indices.Add(i); }
             }
+            PoiMeasurementResult[] legacy = PoiMeasurementService.CalculateRaw(buffer, standard);
+            for (int i = 0; i < legacy.Length; i++) results[indices[i]] = legacy[i];
+            return (buffer.Channels, results);
         }
 
         private static PoiPoint CreateCirclePoint(string name, int x, int y, int diameter)
@@ -704,7 +726,23 @@ namespace ColorVision.Engine.Media
         public List<MenuItemMetadata> GetContextMenuItems()
         {
             List<MenuItemMetadata> menuItems = new List<MenuItemMetadata>();
-            menuItems.Add(new MenuItemMetadata()
+            if (ReferenceEquals(EditorContext.ImageView.ImageContentCapability, this) && EditorContext.Config.GetProperties<bool>("HasCieMeasurements") && EditorContext.ImageView.ImageContent is { } content)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    Header = "导出测量原图…", GuidId = "CalibratedImageExport", Order = 300,
+                    Command = new RelayCommand(_ =>
+                    {
+                        if (!ReferenceEquals(EditorContext.ImageView.ImageContent, content) || !ReferenceEquals(EditorContext.ImageView.ImageContentCapability, this)) return;
+                        var dialog = new Microsoft.Win32.SaveFileDialog { Filter = "TIFF|*.tif|PNG|*.png", FileName = System.IO.Path.GetFileNameWithoutExtension(content.FilePath) };
+                        if (dialog.ShowDialog() != true) return;
+                        if (!ReferenceEquals(EditorContext.ImageView.ImageContent, content) || !ReferenceEquals(EditorContext.ImageView.ImageContentCapability, this)) return;
+                        try { CalibratedImageExport.Save(content.Pixels, content.Parameters, dialog.FileName); }
+                        catch (Exception error) { MessageBox.Show(error.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning); }
+                    })
+                });
+            }
+            if (CVFileUtil.IsCIEFile(GetCurrentFilePath() ?? string.Empty)) menuItems.Add(new MenuItemMetadata()
             {
                 Header = ColorVision.Engine.Properties.Resources.Export,
                 GuidId = "CVCIEExport",
@@ -830,21 +868,39 @@ namespace ColorVision.Engine.Media
             _bufferOwner = null;
             _bufferCleanup = null;
             // A subsequent RAW read uses the same gate and may reuse its allocation after old readers exit.
-            if (reuseBuffers) return;
+            Task readers;
+            lock (_bufferSync) readers = _retiredReaders;
+            if (reuseBuffers)
+            {
+                await readers;
+                return;
+            }
             // Detach now: a later open must never be cleared by this asynchronous retirement.
             CvRawPixelBuffer retired = _rawPixels;
             _rawPixels = new();
             // Never block the UI waiting for a load that may itself be waiting to publish on the UI.
             await _rawOpenGate.WaitAsync();
-            try { retired.Clear(); }
+            try
+            {
+                await readers;
+                retired.Clear();
+            }
             finally { _rawOpenGate.Release(); }
         }
 
         public async void OpenImage(EditorContext context, string? filePath)
         {
-            if (string.IsNullOrWhiteSpace(filePath))
-                return;
+            try { await OpenImageAsync(context, filePath); }
+            catch (OperationCanceledException) { }
+            catch (Exception error) { log.Error("图像打开失败。", error); }
+        }
 
+        public async Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+
+            context.ImageView.AttachImageContentCapability(null);
             string requestedFilePath = filePath;
             long requestId = Interlocked.Increment(ref _latestOpenRequest);
             bool isRaw = string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase);
@@ -862,19 +918,25 @@ namespace ColorVision.Engine.Media
             {
                 if (isRaw)
                 {
-                    await _rawOpenGate.WaitAsync();
+                    await _rawOpenGate.WaitAsync(cancellationToken);
                     rawGateEntered = true;
+                    Task readers;
+                    lock (_bufferSync) readers = _retiredReaders;
+                    await readers.WaitAsync(cancellationToken);
                 }
                 await Task.Run(() =>
                 {
-                    if (requestId != Volatile.Read(ref _latestOpenRequest)) return;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (requestId != Volatile.Read(ref _latestOpenRequest))
+                        throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
                     WriteableBitmap? srgb = null;
                     if (preferSrgb)
                     {
                         try
                         {
-                            srgb = CvRawLayerController.LoadSrgb(requestedFilePath, brightnessMode, referenceWhite);
+                            srgb = CvRawLayerController.LoadSrgb(requestedFilePath, brightnessMode, referenceWhite, cancellationToken);
                         }
+                        catch (OperationCanceledException) { throw; }
                         catch (Exception ex)
                         {
                             log.Warn($"CVCIE 真彩转换失败，尝试 CVRAW 或 Y 灰度回退：{requestedFilePath}", ex);
@@ -884,23 +946,26 @@ namespace ColorVision.Engine.Media
                     // A successful XYZ render needs only metadata, not another RAW/Y payload and conversion.
                     using CVCIEFile cVCIEFile = srgb != null ? ReadDisplayHeader(requestedFilePath)
                         : isRaw ? rawPixels.Read(requestedFilePath)
-                        : CvRawLayerController.LoadSourceFile(requestedFilePath, out usesLuminance);
+                        : CvRawLayerController.LoadSourceFile(requestedFilePath, out usesLuminance, cancellationToken);
                     WriteableBitmap? displayBitmap = srgb;
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
-                        displayBitmap = MediaHelper.RenderFloatChannel(cVCIEFile);
+                        displayBitmap = MediaHelper.RenderFloatChannel(cVCIEFile, cancellationToken);
                     using OpenCvSharp.Mat? mat = displayBitmap == null ? cVCIEFile.ToMat(showErrors: false) : null;
-                    if (displayBitmap == null && (mat == null || mat.Empty())) return;
+                    if (displayBitmap == null && (mat == null || mat.Empty()))
+                        throw new InvalidDataException("The file contains no displayable image pixels.");
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-                        if (requestId != Volatile.Read(ref _latestOpenRequest)
+                        if (cancellationToken.IsCancellationRequested || requestId != Volatile.Read(ref _latestOpenRequest)
                             || !string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
                         {
                             log.DebugFormat("图像目标已切换，丢弃迟到的 CVCIE 加载结果：{0}", requestedFilePath);
-                            return;
+                            throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
                         }
 
+                        using var publication = context.ImageView.BeginImageContentPublication();
                         int displayWidth = displayBitmap?.PixelWidth ?? mat!.Cols;
                         int displayHeight = displayBitmap?.PixelHeight ?? mat!.Rows;
                         context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(CVRawOpen), "打开器接收到的源文件路径");
@@ -962,14 +1027,89 @@ namespace ColorVision.Engine.Media
                             context.ImageView.SetImageSource(replacement, context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
                             context.ImageView.UpdateZoomAndScale();
                         }
+                        context.ImageView.AttachImageContentCapability(this);
                     });
-                });
+                }, cancellationToken);
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
                 log.Error($"打开 CVCIE 图像失败：{requestedFilePath}", ex);
+                throw;
             }
             finally { if (rawGateEntered) _rawOpenGate.Release(); }
+        }
+
+        internal void InitializeEmbedded(PoiMeasurementBuffer buffer, ColorCalibrationSnapshot? snapshot, string path, BitmapSource? sourcePixels)
+        {
+            ReplaceMeasurementBuffer(buffer);
+            _loadBuffer = null;
+            _probeOptions = CvcieMouseProbeOptions.GetOrCreate(EditorContext.ImageView);
+            ShowDateFilePath = false;
+            Points.Clear();
+            EditorContext.Config.SetOpenerRuntime("IsCVCIE", false, nameof(CalibratedImageCapability), "保留实际图像文件格式");
+            EditorContext.Config.SetOpenerRuntime("HasCieMeasurements", true, nameof(CalibratedImageCapability), "当前内容提供校正测量数据");
+            EditorContext.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, snapshot, nameof(CalibratedImageCapability), "图像内嵌的实际校正参数");
+            EmbeddedProfileLifetime profileLifetime = new();
+            lock (_bufferSync) _embeddedProfileLifetime = profileLifetime;
+            EditorContext.ProcessingContext.ProfileMeasurementSources = EmbeddedImageProfileSource.CreateOptions(buffer, snapshot, profileLifetime);
+            if (buffer.RawSource != null)
+                EditorContext.ImageView.SetLayerController(CvRawLayerController.CreateCalibratedRaw(EditorContext.ImageView, path, buffer.RawSource, "composite", sourcePixels));
+        }
+
+        public virtual void Activate() => Volatile.Write(ref _activationVersion, EditorContext.ImageView.ContentVersion);
+
+        public virtual void Dispose() => DetachForRetirement(EditorContext.ImageView.ContentVersion)();
+
+        public virtual Action DetachForRetirement(long retirementVersion)
+        {
+            long activationVersion = Volatile.Read(ref _activationVersion);
+            PoiMeasurementBuffer? buffer;
+            ImageView? owner;
+            EventHandler? cleanup;
+            TaskCompletionSource? readersExited = null;
+            lock (_bufferSync)
+            {
+                buffer = _measurementBuffer;
+                _measurementBuffer = null;
+                _embeddedProfileLifetime?.Retire();
+                _embeddedProfileLifetime = null;
+                _loadBuffer = null;
+                _probeOptions = null;
+                owner = _bufferOwner;
+                cleanup = _bufferCleanup;
+                _bufferOwner = null;
+                _bufferCleanup = null;
+                if (buffer != null)
+                {
+                    readersExited = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    _retiredReaders = _retiredReaders.IsCompleted ? readersExited.Task : Task.WhenAll(_retiredReaders, readersExited.Task);
+                }
+            }
+            if (owner != null && cleanup != null) owner.Config.Cleared -= cleanup;
+            void RetireUi()
+            {
+                // CVRawOpen is reusable. A queued cleanup belongs only to its old activation.
+                if (Volatile.Read(ref _activationVersion) != activationVersion) return;
+                OnEditorToolsDeactivated(EditorContext);
+                if (activationVersion >= 0 && EditorContext.ImageView.ContentVersion == retirementVersion
+                    && (EditorContext.ImageView.ImageContentCapability == null || ReferenceEquals(EditorContext.ImageView.ImageContentCapability, this)))
+                {
+                    EditorContext.Config.SetOpenerRuntime("HasCieMeasurements", false, nameof(CalibratedImageCapability), "内容测量能力已失效");
+                    EditorContext.Config.SetOpenerRuntime("IsCVCIE", false, nameof(CalibratedImageCapability), "内容测量能力已失效");
+                    EditorContext.ProcessingContext.ProfileMeasurementSources = null;
+                }
+            }
+            return () =>
+            {
+                try { buffer?.Dispose(); }
+                finally
+                {
+                    readersExited?.TrySetResult();
+                    if (EditorContext.ImageView.Dispatcher.CheckAccess()) RetireUi();
+                    else _ = EditorContext.ImageView.Dispatcher.BeginInvoke((Action)RetireUi);
+                }
+            };
         }
 
         private static CVCIEFile ReadDisplayHeader(string filePath)
@@ -979,4 +1119,7 @@ namespace ColorVision.Engine.Media
             throw new InvalidDataException($"CVCIE 文件头无效：{filePath}");
         }
     }
+
+    [FileExtension(".cvraw|.cvcie")]
+    public record class CVRawOpen(EditorContext EditorContext) : CalibratedImageCapability(EditorContext);
 }

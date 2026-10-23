@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using ColorVision.ImageEditor.Tif;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -70,12 +71,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             float[] normalizedExposure = plan.GeneratesCie ? NormalizeExposure(effectiveExposure) : Array.Empty<float>();
             frame.PrepareForCalibration(calibrationTemplate, allowAcceleration ? 0 : plan.CieLength, plan.HasBasicCalibration, effectiveExposure);
             RawColorTransformV1? colorTransform;
+            ImageCalibrationSource[] sources;
             using (LocalFlowFrameLease lease = frame.Acquire())
             {
                 CVImageFlipMode rawOutputFlip = plan.HasBasicCalibration
                     && lease.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw && !lease.IsRawFlipApplied
                     ? lease.Metadata.FlipMode : CVImageFlipMode.None;
-                colorTransform = cacheManager.Execute(
+                LocalCalibrationExecution execution = cacheManager.Execute(
                     new LocalCalibrationLayout(
                         lease.Metadata.Width,
                         lease.Metadata.Height,
@@ -88,6 +90,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     calibrationRoi,
                     allowAcceleration,
                     rawOutputFlip);
+                colorTransform = execution.Transform;
+                sources = execution.Sources;
                 if (rawOutputFlip != CVImageFlipMode.None)
                     lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvRaw);
                 if (plan.GeneratesCie && !allowAcceleration && sourceRawAlreadyMirrored)
@@ -97,10 +101,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             if (frame.IsFlipApplied) FlowNodeTiming.Skip("MirrorImage");
             else FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.ApplyPending(frame));
+            frame.CalibrationProvenance = new ImageCalibrationSummary
+            {
+                Template = calibrationTemplate, CalibratedUtc = DateTime.UtcNow,
+                Backend = cacheManager.BackendName, Sources = sources
+            };
             if (colorTransform.HasValue)
             {
                 ColorCalibrationSnapshot snapshot = ColorCalibrationSnapshot.Create(colorTransform.Value,
-                    frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, normalizedExposure, calibrationTemplate);
+                    frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, normalizedExposure, calibrationTemplate)
+                    with { Provenance = frame.CalibrationProvenance };
+                frame.CalibrationProvenance = snapshot.ToSummary();
                 frame.ColorCalibration = snapshot;
                 string rawPath = frame.CvRawFilePath;
                 bool canReplay = !string.IsNullOrWhiteSpace(rawPath);
@@ -127,6 +138,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (!frame.HasRaw || !snapshot.CanReplay)
                 throw new InvalidOperationException("切换色度输出模式需要可回放的 RAW 输入。");
             bool rawAlreadyMirrored = frame.IsRawFlipApplied;
+            ImageCalibrationSummary? provenance = frame.CalibrationProvenance;
             int cieLength = allowAcceleration ? 0 : checked(4 * frame.Metadata.Width * frame.Metadata.Height * frame.Metadata.Channels);
             frame.PrepareForCalibration(snapshot.Template, cieLength, false);
             if (!allowAcceleration)
@@ -140,6 +152,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             LocalFrameMirrorService.ApplyPending(frame);
             frame.ColorCalibration = snapshot;
+            frame.CalibrationProvenance = provenance;
         }
 
         private static void ValidateSource(LocalFlowFrameLease source)

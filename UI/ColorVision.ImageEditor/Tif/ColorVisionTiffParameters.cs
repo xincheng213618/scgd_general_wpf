@@ -1,23 +1,28 @@
 using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Runtime.InteropServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
     /// <summary>
-    /// Versioned ColorVision acquisition parameters stored in TIFF ImageDescription (tag 270).
+    /// Versioned ColorVision acquisition records stored in TIFF ImageDescription or PNG tEXt.
     /// </summary>
     public sealed class ColorVisionTiffParameters
     {
-        public const string CurrentSchema = "ColorVision.CVImage/1";
+        public const string CurrentSchema = "ColorVision.CVImage/2";
         internal const string ImageDescriptionQuery = "/ifd/{ushort=270}";
+        public const string PngMetadataKeyword = "ColorVision";
+        internal const string PngDescriptionQuery = "/tEXt/{str=ColorVision}";
 
-        private static readonly JsonSerializerOptions SerializerOptions = new()
+        private static readonly JsonSerializerSettings SerializerSettings = new()
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore,
+            StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+            DateParseHandling = DateParseHandling.None,
         };
 
         public string Schema { get; set; } = CurrentSchema;
@@ -33,8 +38,32 @@ namespace ColorVision.ImageEditor.Tif
         public int NdPort { get; set; }
         public float Gain { get; set; }
         public float[] Exposure { get; set; } = [];
+        public JToken? Calibration { get; set; }
+        public string? PixelRole { get; set; }
+        public string? PixelLayout { get; set; }
+        public string? PixelSha256 { get; set; }
+        public int PixelChannels { get; set; }
+        public string? MeasurementChannel { get; set; }
+        public ImageAcquisitionRecord? Acquisition { get; set; }
+        public ImageCalibrationSummary? CalibrationSummary { get; set; }
+        public ImageRenderedOutput? RenderedOutput { get; set; }
 
-        public string ToJson() => JsonSerializer.Serialize(this, SerializerOptions);
+        internal ColorVisionTiffParameters ToDisplayRecord()
+        {
+            // Whitelist record fields: a screenshot must never inherit a transform or pixel binding.
+            ColorVisionTiffParameters record = new()
+            {
+                SourceType = SourceType, ExportedChannel = "Snapshot", InputFileName = InputFileName,
+                AssociatedSourceFileName = AssociatedSourceFileName, FileVersion = FileVersion,
+                Rows = Rows, Cols = Cols, Bpp = Bpp, SourceChannels = SourceChannels,
+                NdPort = NdPort, Gain = Gain, Exposure = (float[])Exposure.Clone(),
+                Acquisition = Acquisition, CalibrationSummary = CalibrationSummary, PixelRole = "display"
+            };
+            // Detach nested arrays as well as the top-level record from mutable producer state.
+            return JsonConvert.DeserializeObject<ColorVisionTiffParameters>(record.ToJson(), SerializerSettings)!;
+        }
+
+        public string ToJson() => JsonConvert.SerializeObject(this, SerializerSettings);
 
         public static bool TryParse(string? json, out ColorVisionTiffParameters? parameters)
         {
@@ -44,7 +73,9 @@ namespace ColorVision.ImageEditor.Tif
 
             try
             {
-                ColorVisionTiffParameters? candidate = JsonSerializer.Deserialize<ColorVisionTiffParameters>(json, SerializerOptions);
+                JObject? document = JsonConvert.DeserializeObject<JObject>(json, SerializerSettings);
+                if (document?.GetValue("schema", StringComparison.OrdinalIgnoreCase)?.Type != JTokenType.String) return false;
+                ColorVisionTiffParameters? candidate = document.ToObject<ColorVisionTiffParameters>(JsonSerializer.Create(SerializerSettings));
                 if (candidate == null
                     || string.IsNullOrWhiteSpace(candidate.Schema)
                     || !candidate.Schema.StartsWith("ColorVision.CVImage/", StringComparison.Ordinal))
@@ -72,7 +103,9 @@ namespace ColorVision.ImageEditor.Tif
 
             try
             {
-                string? description = metadata.GetQuery(ImageDescriptionQuery) as string;
+                string? description = string.Equals(metadata.Format, "jpg", StringComparison.OrdinalIgnoreCase)
+                    ? metadata.Comment
+                    : metadata.GetQuery(string.Equals(metadata.Format, "png", StringComparison.OrdinalIgnoreCase) ? PngDescriptionQuery : ImageDescriptionQuery) as string;
                 return TryParse(description?.TrimEnd('\0'), out parameters);
             }
             catch (NotSupportedException)
@@ -80,6 +113,14 @@ namespace ColorVision.ImageEditor.Tif
                 return false;
             }
             catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (COMException)
             {
                 return false;
             }

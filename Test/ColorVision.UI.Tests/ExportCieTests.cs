@@ -1,10 +1,11 @@
-using ColorVision.Engine.Media;
+﻿using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.Mru;
 using OpenCvSharp;
+using Newtonsoft.Json.Linq;
 using System.Collections.Specialized;
 using System.Drawing.Imaging;
 using System.IO;
@@ -52,7 +53,7 @@ public sealed class ExportCieTests
             Assert.False(export.IsCVCIE);
             Assert.Equal(canReplay, export.HasCieChannels);
             Assert.Equal(canReplay && channels == 3, export.IsCieThreeChannel);
-            Assert.Equal(canReplay ? 1 : 3, export.AvailableImageFormats.Count);
+            Assert.Equal(3, export.AvailableImageFormats.Count);
             VExportCIE.SaveToTifOrThrow(export);
 
             int count = (includeSource ? 1 : 0) + (canReplay ? channels : 0);
@@ -65,6 +66,11 @@ public sealed class ExportCieTests
                 byte[] actual = new byte[raw.Length];
                 Marshal.Copy(source.Data, actual, 0, actual.Length);
                 Assert.Equal(raw, actual);
+                ColorVisionTiffParameters sourceParameters = ReadTiffParameters(path);
+                Assert.Equal("calibration-input", sourceParameters.PixelRole);
+                Assert.NotNull(sourceParameters.Calibration);
+                Assert.Equal(canReplay, sourceParameters.Calibration["CanReplay"]!.Value<bool>());
+                AssertPixelBinding(path, sourceParameters);
             }
             for (int channel = 0; canReplay && channel < channels; channel++)
             {
@@ -84,6 +90,9 @@ public sealed class ExportCieTests
                 Assert.Equal("CVRAW", parameters.SourceType);
                 Assert.Equal(name, parameters.ExportedChannel);
                 Assert.Equal(32, parameters.Bpp);
+                Assert.Equal("xyz-channel", parameters.PixelRole);
+                Assert.Equal(name, parameters.MeasurementChannel);
+                AssertPixelBinding(path, parameters);
             }
             if (memoryOnly) Assert.False(File.Exists(sourcePath));
             else Assert.Equal(original, File.ReadAllBytes(sourcePath));
@@ -96,6 +105,109 @@ public sealed class ExportCieTests
             Directory.Delete(root, recursive: true);
         }
     }
+
+    [Theory]
+    [InlineData("png", 1)]
+    [InlineData("png", 3)]
+    [InlineData("tiff", 3)]
+    [InlineData("png", 3, true)]
+    [InlineData("tiff", 3, true)]
+    public void SourceSnapshotRoundTripRetainsBindingWithoutOriginalRaw(string format, int channels, bool planar = false)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-replay-export-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            string sourcePath = Path.Combine(root, "source.cvraw");
+            byte[] raw = WritePatternedRawFixture(sourcePath, 2, 3, channels);
+            new ColorCalibrationSnapshot
+            {
+                Width = 3, Height = 2, RawBpp = 16, Channels = channels,
+                TransformKind = channels == 1 ? 2 : 0,
+                Coefficients = [2, 0, 0, 0, -3, 0, 0, 0, 4],
+                Exposure = [2, 3, 4], Template = "导出后无需模板-颜色🌈", InterleavedBgr = !planar
+            }.Save(sourcePath, canReplay: true);
+            var export = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = root, Name = "roundtrip", IsExportSrc = true,
+                IsExportChannelX = false, IsExportChannelY = false, IsExportChannelZ = false,
+                ExportImageFormat = format == "png" ? ImageFormat.Png : ImageFormat.Tiff
+            };
+            VExportCIE.SaveToTifOrThrow(export);
+            string path = Path.Combine(root, "roundtrip." + format);
+            WpfTestHost.Invoke(() =>
+            {
+                BitmapFrame frame = ReadFrame(path);
+                Assert.True(ColorVisionTiffParameters.TryRead(frame.Metadata as BitmapMetadata, out var parameters));
+                Assert.NotNull(parameters);
+                Assert.Equal("calibration-input", parameters.PixelRole);
+                Assert.Equal(ColorVisionPixelBinding.ComputeSha256(frame), parameters.PixelSha256);
+                Assert.Equal(new float[] { 2, 3, 4 }, parameters.Exposure);
+                Assert.Equal("导出后无需模板-颜色🌈", parameters.Calibration!["Template"]!.Value<string>());
+                File.Delete(sourcePath);
+                string secondPath = Path.Combine(root, "independent." + format);
+                CalibratedImageExport.Save(frame, parameters, secondPath);
+                using Mat image = Cv2.ImRead(secondPath, ImreadModes.Unchanged);
+                byte[] bytes = new byte[raw.Length];
+                Marshal.Copy(image.Data, bytes, 0, bytes.Length);
+                byte[] expected = raw;
+                if (planar)
+                {
+                    expected = new byte[raw.Length];
+                    for (int pixel = 0; pixel < 6; pixel++)
+                        for (int channel = 0; channel < 3; channel++)
+                            Buffer.BlockCopy(raw, ((2 - channel) * 6 + pixel) * 2, expected, (pixel * 3 + channel) * 2, 2);
+                }
+                Assert.Equal(expected, bytes);
+                BitmapFrame reopened = ReadFrame(secondPath);
+                Assert.True(ColorVisionTiffParameters.TryRead(reopened.Metadata as BitmapMetadata, out var copied));
+                Assert.True(JToken.DeepEquals(parameters.Calibration, copied!.Calibration));
+                Assert.Equal(parameters.PixelSha256, copied.PixelSha256);
+
+                // An edit with identical dimensions cannot acquire replay rights from the old metadata.
+                byte[] changed = new byte[checked(frame.PixelWidth * frame.PixelHeight * frame.Format.BitsPerPixel / 8)];
+                BitmapSource edit = BitmapSource.Create(frame.PixelWidth, frame.PixelHeight, 96, 96, frame.Format, null,
+                    changed, checked(frame.PixelWidth * frame.Format.BitsPerPixel / 8));
+                string editedPath = Path.Combine(root, "edited." + format);
+                CalibratedImageExport.Save(edit, parameters, editedPath);
+                BitmapFrame editedFrame = ReadFrame(editedPath);
+                Assert.True(ColorVisionTiffParameters.TryRead(editedFrame.Metadata as BitmapMetadata, out var editedParameters));
+                Assert.Equal("display", editedParameters!.PixelRole);
+                Assert.NotNull(editedParameters.Calibration);
+            });
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void FloatPngExportRejectsQuantizationAndPreservesExistingDestination()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-float-export-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            string path = Path.Combine(root, "existing.png");
+            byte[] original = [1, 2, 3, 4];
+            File.WriteAllBytes(path, original);
+            WpfTestHost.Invoke(() =>
+            {
+                BitmapSource pixels = BitmapSource.Create(2, 1, 96, 96, PixelFormats.Gray32Float, null, new float[] { -4.5f, 3.25f }, 8);
+                Assert.Throws<NotSupportedException>(() => CalibratedImageExport.Save(pixels, null, path));
+            });
+            Assert.Equal(original, File.ReadAllBytes(path));
+            Assert.Single(Directory.GetFiles(root));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static BitmapFrame ReadFrame(string path)
+    {
+        using FileStream stream = File.OpenRead(path);
+        return BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
+    }
+
+    private static void AssertPixelBinding(string path, ColorVisionTiffParameters parameters)
+        => WpfTestHost.Invoke(() => Assert.Equal(ColorVisionPixelBinding.ComputeSha256(ReadFrame(path)), parameters.PixelSha256));
 
     [Fact]
     public void RememberExportLocationPreservesTheBoundSavePathDuringListRefresh()

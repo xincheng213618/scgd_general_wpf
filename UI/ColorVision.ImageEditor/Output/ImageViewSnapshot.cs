@@ -60,6 +60,7 @@ namespace ColorVision.ImageEditor
 
         internal DrawingGroup Scene { get; }
         internal BitmapSource? FrozenSource { get; }
+        internal string? RenderedParametersJson { get; set; }
         public int PixelWidth { get; }
         public int PixelHeight { get; }
         internal double DpiX { get; }

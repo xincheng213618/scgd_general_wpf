@@ -5,6 +5,7 @@ using OpenCvSharp;
 using System;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ColorVision.ImageEditor.Tif;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -15,6 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal required byte[] CieData { get; init; }
         internal required LocalFrameMetadata Metadata { get; init; }
         internal required float[] Exposure { get; init; }
+        internal required ColorVisionTiffParameters Parameters { get; init; }
 
         public static LocalCameraPreview Create(LocalFlowFrame frame)
         {
@@ -30,7 +32,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 bitmap = new TransformedBitmap(bitmap, new ScaleTransform(flipX ? -1 : 1, flipY ? -1 : 1));
             }
             bitmap.Freeze();
-            return new LocalCameraPreview { Bitmap = bitmap, CieData = lease.CopyCieToArray(), Metadata = metadata, Exposure = (float[])metadata.Exposure.Clone() };
+            return new LocalCameraPreview
+            {
+                Bitmap = bitmap, CieData = lease.CopyCieToArray(), Metadata = metadata,
+                Exposure = (float[])metadata.Exposure.Clone(),
+                Parameters = CameraFileMetadata.CreateParameters(metadata, lease.ColorCalibration, lease.CalibrationProvenance)
+            };
         }
 
         internal static unsafe WriteableBitmap CreateRawBitmap(byte[] raw, int bpp, int channels, int width, int height)
@@ -71,6 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 cvRaw.AttachLiveCvcie(view, (uint)Metadata.Width, (uint)Metadata.Height, (uint)Metadata.CieBpp,
                     (uint)cieChannels, CieData, (float[])Exposure.Clone());
             }
+            view.SetImageParameterRecord(Parameters);
         }
     }
 }

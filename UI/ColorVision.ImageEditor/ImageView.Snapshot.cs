@@ -1,4 +1,6 @@
 using ColorVision.ImageEditor.Output;
+using ColorVision.ImageEditor.Tif;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
@@ -37,11 +39,12 @@ namespace ColorVision.ImageEditor
         public BitmapSource? CaptureSnapshot()
         {
             Dispatcher.VerifyAccess();
-            return snapshotCapture.CaptureRendered(
+            BitmapSource? pixels = snapshotCapture.CaptureRendered(
                 ImageShow,
                 Config.GetProperties<double>("DpiX"),
                 Config.GetProperties<double>("DpiY"),
                 CommitActiveDrawingEditsForOutput);
+            return pixels == null ? null : ImageSnapshotMetadata.CaptureRecord(pixels, CaptureParameterRecord());
         }
 
         public ImageViewSnapshot? CaptureSnapshotForBackgroundSave() => CaptureSnapshotForBackgroundSave(includeOverlays: true);
@@ -51,13 +54,37 @@ namespace ColorVision.ImageEditor
         {
             Dispatcher.VerifyAccess();
             UpdateSnapshotCacheSource();
-            return snapshotCapture.CaptureForBackgroundSave(
+            ImageViewSnapshot? snapshot = snapshotCapture.CaptureForBackgroundSave(
                 ImageShow,
                 ViewBitmapSource,
                 Config.GetProperties<double>("DpiX"),
                 Config.GetProperties<double>("DpiY"),
                 includeOverlays,
                 CommitActiveDrawingEditsForOutput);
+            if (snapshot != null) snapshot.RenderedParametersJson = CaptureParameterRecord();
+            return snapshot;
+        }
+
+        private string CaptureParameterRecord()
+        {
+            ColorVisionTiffParameters parameters = _document.ParameterRecord ?? new()
+            {
+                InputFileName = Path.GetFileName(Config.FilePath), SourceType = Path.GetExtension(Config.FilePath).TrimStart('.').ToUpperInvariant(),
+                Rows = Config.GetProperties<int>(ImageViewPropertyKeys.ImageHeight), Cols = Config.GetProperties<int>(ImageViewPropertyKeys.ImageWidth),
+                Bpp = Config.GetProperties<int>(ImageViewPropertyKeys.Depth), SourceChannels = Config.GetProperties<int>(ImageViewPropertyKeys.Channel)
+            };
+            var record = parameters.ToDisplayRecord();
+            if (record.Acquisition == null && (Config.GetProperties<string>(ImageViewPropertyKeys.CameraModel) != null
+                || Config.GetProperties<string>(ImageViewPropertyKeys.CameraManufacturer) != null))
+                record.Acquisition = new()
+                {
+                    Camera = new()
+                    {
+                        Model = Config.GetProperties<string>(ImageViewPropertyKeys.CameraModel),
+                        Manufacturer = Config.GetProperties<string>(ImageViewPropertyKeys.CameraManufacturer)
+                    }
+                };
+            return record.ToJson();
         }
 
         public static Task SaveSnapshotAsync(BitmapSource snapshot, string fileName, CancellationToken cancellationToken = default)

@@ -31,6 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private string? openedCameraId;
         private int openedBpp;
         public TakeImageMode OpenedMode { get; private set; }
+        internal string? OpenedCameraId => openedCameraId;
         public bool OpenedUseHikMvs { get; private set; }
         public int OpenedHikBayerQuality { get; private set; }
         public bool OpenedHikOutputBgr { get; private set; }

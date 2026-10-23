@@ -41,6 +41,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private sealed class LocalCaptureDisplayResult
         {
+            public required ColorVision.ImageEditor.Tif.ColorVisionTiffParameters Parameters { get; init; }
             public required byte[] RawData { get; init; }
             public required byte[] CieData { get; init; }
             public required WriteableBitmap DisplayBitmap { get; init; }
@@ -976,6 +977,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     AttachLiveCvcieResult(src_w, src_h, checked((uint)display.CieBpp), src_channels);
                 }
+                ImageView.SetImageParameterRecord(display.Parameters);
                 FitFirstCaptureToWindow();
 
                 CaptureStatusText.Text = EngineLocalization.Format($"取图 {display.CaptureTimeMs} ms · 校正 {display.CalibrationTimeMs} ms · 保存 {display.SaveTimeMs} ms · 总计 {display.TotalTimeMs} ms");
@@ -1007,6 +1009,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             displayBitmap.Freeze();
             return new LocalCaptureDisplayResult
             {
+                Parameters = CameraFileMetadata.CreateParameters(lease.Metadata, lease.ColorCalibration, lease.CalibrationProvenance),
                 RawData = rawData,
                 CieData = cieData,
                 DisplayBitmap = displayBitmap,

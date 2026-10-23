@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。"
 aliases: ["CVRAW转TIFF", "CVCIE导出", "TIFF参数元数据", "ColorVision命令行导出", "Python批量转换CVRAW", "导出返回0但没有文件", "CVRawFileExporter", "VExportCIE", "ExportCVCIE", "SaveToTif"]
-code_paths: ["Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs", "Engine/ColorVision.Engine/Media/FileCVCIE.cs", "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs", "Engine/ColorVision.Engine/Media/Export/TiffImageDescriptionWriter.cs", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs", "UI/ColorVision.ImageEditor/Tif/ColorVisionTiffParameters.cs", "UI/ColorVision.ImageEditor/Tif/Opentif.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Shell/ArgumentParser.cs", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"]
-test_paths: ["Test/ColorVision.UI.Tests/ExportCieTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Media/Export/CalibratedImageExport.cs", "Engine/ColorVision.Engine/Media/Export/PngParameterWriter.cs", "Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs", "Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs", "Engine/ColorVision.Engine/Media/FileCVCIE.cs", "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs", "Engine/ColorVision.Engine/Media/Export/TiffImageDescriptionWriter.cs", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs", "UI/ColorVision.ImageEditor/Tif/ColorVisionTiffParameters.cs", "UI/ColorVision.ImageEditor/Tif/Opentif.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Shell/ArgumentParser.cs", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"]
+test_paths: ["Test/ColorVision.UI.Tests/ColorVisionPixelBindingTests.cs", "Test/ColorVision.UI.Tests/ExportCieTests.cs"]
 related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.skills"]
 ---
 
@@ -19,20 +19,23 @@ related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.s
 
 1. 核对源文件、尺寸、位深与通道数。
 2. CVCIE 可选择 Y；三通道文件另可选择 X、Z，关联原图可读取时才显示“原图”。带有效且 `CanReplay=true` 校正参数的 CVRAW 同样提供 CIE 通道选择，原图来自自身；单通道亮度校正只有 Y。无可重放参数的 CVRAW 只导出原图。
-3. 设置名称、输出目录和格式。普通 CVRAW 提供 TIFF、PNG、JPEG；具备 CIE 通道的 CVRAW 与 CVCIE 窗口提供 TIFF。TIFF 可选 LZW 或 ZIP。PNG 使用自动压缩，JPEG 使用质量 100。
+3. 设置名称、输出目录和格式。CVRAW 原图提供 TIFF、PNG、JPEG；浮点 XYZ 通道必须选 TIFF，PNG 不能保存浮点样本，选择不支持的组合会明确报错。CVCIE 窗口提供 TIFF。TIFF 可选 LZW 或 ZIP。PNG 使用自动压缩，JPEG 使用质量 100。
 4. 点击导出。工作在后台执行，期间表单和按钮禁用；成功提示后关闭窗口，异常提示后保留窗口。进度条不表示通道完成比例。
 
-名称默认取源文件主干，可在窗口中修改。目录可新建，最近导出位置通过 `recent-image-export-locations.json` 保存。导出会直接写目标文件，没有同名覆盖确认或整组回滚；需要保留已有文件时选择新的空目录。
+名称默认取源文件主干，可在窗口中修改。目录可新建，最近导出位置通过 `recent-image-export-locations.json` 保存。单个输出先在同目录编码临时文件，像素和参数写入成功后才替换目标；编码或元数据写入失败保留已有目标。没有同名覆盖确认或整组回滚；需要保留已有文件时选择新的空目录。
 
 ## TIFF 中的 ColorVision 参数
 
-TIFF 输出在标准 `ImageDescription`（Tag 270）中保存 `ColorVision.CVImage/1` JSON，不重新编码已经由 OpenCV 写出的像素。参数包含源类型、实际导出的 `Src` / `X` / `Y` / `Z` 通道、输入及关联文件名、CV 文件版本、行列数、位深、源通道数、NDPort、增益和各源通道曝光值；文件名只保存末级名称，不写本机完整路径。CVCIE 的 `Src` 图使用关联 CVRAW 自己的文件头参数，X/Y/Z 使用 CVCIE 文件头参数。校正 CVRAW 的 X/Y/Z 按参数逐通道生成 32 位浮点 TIFF，保留负值，不做显示归一化；元数据源类型仍为 CVRAW，位深为输出的 32 位。导出不生成中间 CVCIE，也不改写源图。
+TIFF 输出在标准 `ImageDescription`（Tag 270）中保存 `ColorVision.CVImage/2` JSON；PNG 使用标准 `tEXt`，关键字为 `ColorVision`。两种容器使用相同语义，保留源类型、实际导出的 `Src` / `X` / `Y` / `Z` 通道、输入及关联文件名、CV 文件版本、行列数、位深、源通道数、NDPort、增益和曝光。存在实际执行的色度校正快照时，保存其完整参数，矩阵已包含曝光、增益等归一化因素，重放时不重复施加。文件名只保存末级名称，不写本机完整路径。CVCIE 的 `Src` 图使用关联原图自己的文件头参数，X/Y/Z 使用 CVCIE 参数。校正 CVRAW 的 X/Y/Z 逐通道生成 32 位浮点 TIFF，保留负值，不做显示归一化；不生成中间 CVCIE，也不改写源图。
 
-再次用 ColorVision 打开这类 TIFF 时，解析成功的字段显示在图像信息的“图像元数据”分组中，键名以 `ColorVision.` 开头。普通第三方 TIFF、旧版 ColorVision TIFF、缺少 Tag 270、schema 不匹配或 JSON 损坏时只跳过 ColorVision 参数，不影响像素打开。PNG/JPEG 导出不包含这组 TIFF 参数；当前文件头也不包含算法模板或设备配置，因此这些上层参数不会被推断写入。
+`pixelRole` 区分校正输入、已计算测量通道和显示图，`pixelSha256` 绑定逐行紧密样本（统一 RGB 顺序、不含行填充），另校验尺寸、布局和通道身份。哈希只需行缓冲，计算成本随像素数线性增长。相同尺寸和位深不赋予重放资格。再次打开时，ImageEditor 独立解码像素和参数；可选 Engine 提供者在正式发布前验证绑定，满足条件的校正输入提供按需 XYZ/POI，已计算浮点 Y 直接测量，不再乘矩阵。X/Z 单平面只保留通道记录，不能当作完整 XYZ 或亮度测量。无需原 CVRAW 或原模板。
+
+解析成功的参数在统一信息页以只读记录展示。兼容旧 `ColorVision.CVImage/1`；未知版本、坏参数、绑定不匹配或缺少 Engine 时仍可打开基础像素，但不启用测量。普通第三方图片保持原行为。PNG/TIFF 的文件身份不变为 CVCIE。图像编辑撤销测量资格并保留参数记录；RGB/XYZ 显示切换保留能力。重新打开的有效图片可以从当前内容快照导出测量原图。原生导出同时带出已有的相机采集记录及校正来源摘要。通用 Save、截图和叠图输出只携带显示用途的采集/相机/校正摘要，不继承矩阵或重放绑定；通用批量处理输出不继承有效校正参数，JPEG 不携带可重放参数。
 
 ## 命令行导出
 
-使用已安装、具备对应 Engine/FileIO 与原生图像运行依赖的 ColorVision。命令会启动应用的初始化链并写输出文件，不是纯读取或独立解码器；`-q` 也不保证启动过程的所有错误都无弹窗。
+使用已安装、具备对应 Engine/FileIO 与
+原生图像运行依赖的 ColorVision。命令会启动应用的初始化链并写输出文件，不是纯读取或独立解码器；`-q` 也不保证启动过程的所有错误都无弹窗。
 
 以下是从 PowerShell 调用单个文件的参数形状。替换实际路径后才执行；自动化包装器还需设置进程超时并收集实际输出证据。
 

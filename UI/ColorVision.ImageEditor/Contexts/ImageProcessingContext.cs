@@ -17,6 +17,7 @@ namespace ColorVision.ImageEditor
         SourcePixelsChanged,
         ImageSourceReplaced,
         ImageCleared,
+        DisplayLayerChanged,
     }
 
     public sealed class ImageProcessingContext

@@ -1,4 +1,6 @@
 using ColorVision.Core;
+using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Tif;
 using System;
 using System.Threading;
 using System.Windows.Media;
@@ -15,6 +17,9 @@ public sealed class ImageDocument : IDisposable
     private ImageSource? _source;
     private ImageSource? _cachedSource;
     private int _disposed;
+    private long _contentVersion;
+    private readonly object _contentSync = new();
+    private IImageContentCapability? _capability;
 
     internal ImageDocument(Dispatcher dispatcher) => _dispatcher = dispatcher;
 
@@ -22,6 +27,49 @@ public sealed class ImageDocument : IDisposable
     public long Revision => _frames.Revision;
     public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
     public ImageSource? Source => _source;
+    public DecodedImageContent? Content { get; internal set; }
+    public ColorVisionTiffParameters? ParameterRecord { get; internal set; }
+    public IImageContentCapability? Capability => Volatile.Read(ref _capability);
+    public long ContentVersion => Volatile.Read(ref _contentVersion);
+    internal event Action<long>? CapabilityRetired;
+
+    internal void RetireCapability(bool clearContent)
+    {
+        CompleteRetirement(DetachCapability(clearContent));
+    }
+
+    internal void ReplaceCapability(IImageContentCapability? capability)
+    {
+        (Action? Release, long Version) retirement;
+        lock (_contentSync)
+        {
+            if (ReferenceEquals(_capability, capability)) return;
+            long version = Interlocked.Increment(ref _contentVersion);
+            retirement = (_capability?.DetachForRetirement(version), version);
+            Volatile.Write(ref _capability, capability);
+        }
+        CompleteRetirement(retirement);
+    }
+
+    private (Action? Release, long Version) DetachCapability(bool clearContent)
+    {
+        lock (_contentSync)
+        {
+            if (clearContent) Content = null;
+            var previous = _capability;
+            Volatile.Write(ref _capability, null);
+            long version = Interlocked.Increment(ref _contentVersion);
+            return (previous?.DetachForRetirement(version), version);
+        }
+    }
+
+    private void CompleteRetirement((Action? Release, long Version) retirement)
+    {
+        if (retirement.Release == null) return;
+        // Cancel old UI consumers before waiting for a reader that may still be computing a layer.
+        try { CapabilityRetired?.Invoke(retirement.Version); }
+        finally { retirement.Release(); }
+    }
 
     internal event Action<ImageDocumentMutationKind, long, long>? Changed;
 
@@ -40,10 +88,21 @@ public sealed class ImageDocument : IDisposable
     {
         // In-place producers may notify from their worker after updating pixels. The frame
         // store serializes revision retirement; host cleanup dispatches to the UI separately.
-        _cachedSource = null;
-        long previous = Revision;
-        long current = _frames.Invalidate();
-        Changed?.Invoke(kind, previous, current);
+        (Action? Release, long Version) retirement;
+        long previous;
+        long current;
+        lock (_contentSync)
+        {
+            retirement = kind == ImageDocumentMutationKind.DisplayLayerChanged
+                ? (Release: null, Version: ContentVersion) : DetachCapability(true);
+            _cachedSource = null;
+            previous = Revision;
+            current = _frames.Invalidate();
+        }
+        CompleteRetirement(retirement);
+        // A slow retiring reader must not invalidate consumers of a replacement installed meanwhile.
+        if (_frames.IsCurrent(current) && ContentVersion == retirement.Version)
+            Changed?.Invoke(kind, previous, current);
     }
 
     internal ImageFrameLease? AcquireFrame()
@@ -65,6 +124,8 @@ public sealed class ImageDocument : IDisposable
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         _frames.Dispose();
+        RetireCapability(true);
+        ParameterRecord = null;
         _source = null;
         _cachedSource = null;
         Changed = null;

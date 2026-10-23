@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static CalibrationSharedCacheReleaseResult ClearShared()
             => OpenCVCalibration.ClearCalibrationSharedCache();
 
-        public RawColorTransformV1? Execute(
+        public LocalCalibrationExecution Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
@@ -145,4 +145,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     }
 
     internal readonly record struct LocalCalibrationLayout(int Width, int Height, int Bpp, int Channels);
+    internal sealed record LocalCalibrationExecution(RawColorTransformV1? Transform,
+        ColorVision.ImageEditor.Tif.ImageCalibrationSource[] Sources);
 }

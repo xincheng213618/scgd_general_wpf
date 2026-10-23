@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
@@ -23,7 +24,7 @@ namespace ColorVision.Engine.Media
         private readonly bool _isCie;
         private readonly CVCIEFile? _liveXyz;
         private readonly RawColorMeasurementSource? _rawColor;
-        private readonly WriteableBitmap? _liveSource;
+        private BitmapSource? _liveSource;
         private ImageLayerDescriptor _lastSuccessfulLayer;
         private CancellationTokenSource? _selection;
         private readonly SemaphoreSlim _loadGate = new(1, 1);
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.Media
         private sealed record DisplayCache(string LayerId, CvcieBrightnessMode Mode, double White, FileStamp Stamp, WriteableBitmap Bitmap, long Bytes);
 
         private CvRawLayerController(ImageView imageView, string filePath, bool isCie, IReadOnlyList<ImageLayerDescriptor> layers, string displayedLayerId,
-            CVCIEFile? liveXyz = null, WriteableBitmap? liveSource = null, RawColorMeasurementSource? rawColor = null)
+            CVCIEFile? liveXyz = null, BitmapSource? liveSource = null, RawColorMeasurementSource? rawColor = null)
         {
             _imageView = imageView;
             _filePath = filePath;
@@ -47,7 +48,7 @@ namespace ColorVision.Engine.Media
             _rawColor = rawColor;
             if (liveSource != null)
             {
-                _liveSource = liveSource.Clone();
+                _liveSource = liveSource.IsFrozen ? liveSource : liveSource.Clone();
                 _liveSource.Freeze();
             }
         }
@@ -66,10 +67,12 @@ namespace ColorVision.Engine.Media
             return new CvRawLayerController(imageView, string.Empty, true, BuildLayers(true, xyz.Channels, xyz.Bpp, false), displayedLayerId, xyz, source);
         }
 
-        internal static CvRawLayerController CreateCalibratedRaw(ImageView imageView, string path, RawColorMeasurementSource source, string displayedLayerId)
+        internal static CvRawLayerController CreateCalibratedRaw(ImageView imageView, string path, RawColorMeasurementSource source, string displayedLayerId, BitmapSource? sourcePixels)
         {
             var layers = BuildLayers(true, source.Channels, 32, source.Channels >= 3).Where(layer => layer.Id != "cie-srgb").ToArray();
-            return new CvRawLayerController(imageView, path, true, layers, displayedLayerId, rawColor: source);
+            if (sourcePixels?.Format == PixelFormats.Bgr24)
+                layers = layers.Select(layer => layer.SourceChannelIndex is int channel ? layer with { SourceChannelIndex = 2 - channel } : layer).ToArray();
+            return new CvRawLayerController(imageView, path, true, layers, displayedLayerId, liveSource: sourcePixels, rawColor: source);
         }
 
         public static WriteableBitmap LoadSrgb(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken = default)
@@ -303,12 +306,21 @@ namespace ColorVision.Engine.Media
             _selection?.Cancel();
             _srgbCache = null;
             _channelCache = null;
+            _liveSource = null;
         }
 
         private WriteableBitmap LoadSource(out bool usesLuminance, CancellationToken token)
         {
             usesLuminance = false;
-            if (_liveSource != null) return _liveSource;
+            BitmapSource? liveSource = _liveSource;
+            if (liveSource != null)
+            {
+                if (liveSource is WriteableBitmap writable) return writable;
+                // Decoded samples may be RGB while native calibration uses planar RGB or BGR.
+                WriteableBitmap bitmap = new(liveSource);
+                bitmap.Freeze();
+                return bitmap;
+            }
             if (_rawColor != null)
             {
                 return _rawColor.BorrowRaw(raw => ConvertForDisplay(raw, token));
@@ -371,7 +383,7 @@ namespace ColorVision.Engine.Media
 
         private void ShowLayer(WriteableBitmap writeableBitmap)
         {
-            _imageView.SetImageSource(writeableBitmap.IsFrozen ? writeableBitmap.Clone() : writeableBitmap, _imageView.EnableEditorImageServices, configureDefaultLayerController: false);
+            _imageView.SetDisplayLayerSource(writeableBitmap.IsFrozen ? writeableBitmap.Clone() : writeableBitmap);
         }
 
         private static IReadOnlyList<ImageLayerDescriptor> BuildLayers(bool isCie, int channelCount, int bpp, bool hasRgbLayers)

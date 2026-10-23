@@ -1,5 +1,6 @@
 using ColorVision.Core;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.POI;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Algorithms;
 using System;
@@ -14,7 +15,9 @@ namespace ColorVision.Engine.Media;
 /// <summary>Reads original RAW and replays calibration only at the sampled pixels.</summary>
 internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
 {
-    private readonly Stream _stream;
+    private readonly Stream? _stream;
+    private readonly RawColorMeasurementSource? _rawSource;
+    private readonly Action? _checkContent;
     private readonly byte[]? _cachedPixels;
     private readonly MemoryMappedFile? _mapping;
     private readonly MemoryMappedViewAccessor? _view;
@@ -33,7 +36,7 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
     public int Height { get; }
     public int RawChannelCount => _channels * (_transform.HasValue ? 2 : 1);
     public IReadOnlyList<string> ChannelNames { get; }
-    public string FormatName => $"CVRAW {_bpp}-bit; original pixels";
+    public string FormatName => $"{(_rawSource == null ? "CVRAW" : "Decoded RAW")} {_bpp}-bit; original pixels";
     public string ValueDescription => _transform.HasValue
         ? "RGB/Gray in DN; calibrated XYZ matches native float output before interpolation; x/y is computed after XYZ interpolation. No normalization or clamping."
         : "Original RAW pixels in DN; no normalization or clamping.";
@@ -105,6 +108,22 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
         catch { _stream.Dispose(); throw; }
     }
 
+    internal CvRawProfileSource(RawColorMeasurementSource source, ColorCalibrationSnapshot snapshot, CancellationToken token, Action checkContent)
+    {
+        token.ThrowIfCancellationRequested();
+        checkContent();
+        // Borrow for each read instead of retaining a pixel array after document retirement.
+        source.BorrowRaw(_ => 0);
+        _rawSource = source;
+        _checkContent = checkContent;
+        Width = source.Width; Height = source.Height; _bpp = source.Bpp; _channels = source.Channels;
+        _interleaved = snapshot.InterleavedBgr;
+        _transform = snapshot.ToNative();
+        _token = token;
+        ChannelNames = Array.AsReadOnly(_channels == 1 ? new[] { "Gray", "CIE Y" }
+            : new[] { "B", "G", "R", "CIE X", "CIE Y", "CIE Z", "CIE x", "CIE y" });
+    }
+
     public double GetChannelValue(int channel, ReadOnlySpan<double> values)
     {
         if (_channels == 1) return values[channel];
@@ -120,34 +139,42 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         _token.ThrowIfCancellationRequested();
+        _checkContent?.Invoke();
         if ((uint)x >= (uint)Width || (uint)y >= (uint)Height || (uint)channel >= (uint)RawChannelCount)
             throw new ArgumentOutOfRangeException(nameof(x));
+        // Validate the owner even on a cache hit. Old requests cannot keep reading retired pixels.
+        return _rawSource != null ? _rawSource.BorrowRaw(file => ReadCore(x, y, channel, file.Data)) : ReadCore(x, y, channel, null);
+    }
+
+    private double ReadCore(int x, int y, int channel, byte[]? livePixels)
+    {
         long pixel = (long)y * Width + x;
-        if (channel < _channels) return ReadRaw(pixel, channel);
+        if (channel < _channels) return ReadRaw(pixel, channel, livePixels);
         foreach (var cached in _cache)
             if (cached.Values != null && cached.Pixel == pixel) return cached.Values[channel - _channels];
-        float[] values = TransformPixel(pixel);
+        float[] values = TransformPixel(pixel, livePixels);
         _cache[_cacheIndex++ % _cache.Length] = (pixel, values);
         return values[channel - _channels];
     }
 
-    private double ReadRaw(long pixel, int channel)
+    private double ReadRaw(long pixel, int channel, byte[]? livePixels)
     {
         long element = _interleaved || _channels == 1 ? pixel * _channels + channel : (2 - channel) * (long)Width * Height + pixel;
         long offset = checked(element * (_bpp / 8));
-        if (_cachedPixels != null) return _bpp == 8 ? _cachedPixels[checked((int)offset)] : BitConverter.ToUInt16(_cachedPixels, checked((int)offset));
+        byte[]? pixels = livePixels ?? _cachedPixels;
+        if (pixels != null) return _bpp == 8 ? pixels[checked((int)offset)] : BitConverter.ToUInt16(pixels, checked((int)offset));
         offset += _payloadStart;
         return _bpp == 8 ? _view!.ReadByte(offset) : _view!.ReadUInt16(offset);
     }
 
-    private unsafe float[] TransformPixel(long pixel)
+    private unsafe float[] TransformPixel(long pixel, byte[]? livePixels)
     {
         byte* raw = stackalloc byte[6];
         for (int channel = 0; channel < _channels; channel++)
         {
             // A 1x1 planar RGB buffer and a 1x1 interleaved BGR buffer differ only in order.
             int inputChannel = _interleaved || _channels == 1 ? channel : 2 - channel;
-            double value = ReadRaw(pixel, inputChannel);
+            double value = ReadRaw(pixel, inputChannel, livePixels);
             if (_bpp == 8) raw[channel] = (byte)value;
             else ((ushort*)raw)[channel] = (ushort)value;
         }
@@ -166,6 +193,6 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
     {
         if (_disposed) return;
         _disposed = true;
-        _view?.Dispose(); _mapping?.Dispose(); _stream.Dispose();
+        _view?.Dispose(); _mapping?.Dispose(); _stream?.Dispose();
     }
 }

@@ -1,4 +1,7 @@
-using ColorVision.FileIO;
+﻿using ColorVision.FileIO;
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.ImageEditor.Tif;
+using Newtonsoft.Json.Linq;
 using log4net;
 using OpenCvSharp;
 using System;
@@ -104,11 +107,21 @@ namespace ColorVision.Engine.Media
                     cancellationToken.ThrowIfCancellationRequested();
 
                     // Preserve source samples; ToMat() is a display conversion for floating-point RAW.
-                    using Mat image = VExportCIE.CreateMatFromCVCIEFile(raw);
+                    ColorCalibrationSnapshot? calibration = VExportCIE.ReadCalibration(sourcePath, raw);
+                    using Mat image = VExportCIE.CreateSourceMat(raw, calibration);
                     temporaryPath = Path.Combine(Path.GetDirectoryName(outputPath)!, $".__cvraw_export_{Guid.NewGuid():N}.tif");
                     if (!Cv2.ImWrite(temporaryPath, image, [new ImageEncodingParam(ImwriteFlags.TiffCompression, VExportCIE.DefaultTiffCompression)]))
                         throw new IOException("TIFF 图像写入失败。");
-                    TiffImageDescriptionWriter.Write(temporaryPath, VExportCIE.CreateTiffParameters(raw, "Src").ToJson());
+                    ColorVisionTiffParameters parameters = VExportCIE.CreateTiffParameters(raw, "Src");
+                    parameters.PixelRole = "calibration-input";
+                    if (calibration != null)
+                    {
+                        parameters.CalibrationSummary = calibration.ToSummary();
+                        parameters.Calibration = JToken.FromObject(calibration with { InterleavedBgr = true });
+                        parameters.Exposure = (float[])calibration.Exposure.Clone();
+                    }
+                    CalibratedImageExport.BindPixels(parameters, image);
+                    TiffImageDescriptionWriter.Write(temporaryPath, parameters.ToJson());
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();

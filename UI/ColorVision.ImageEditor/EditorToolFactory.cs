@@ -33,7 +33,7 @@ namespace ColorVision.ImageEditor
         private readonly EditorToolbarComposer _toolbarComposer;
         private readonly EditorContext _context;
         private readonly List<IEditorTool> _imageOpenEditorTools = new();
-        private IImageOpen? _currentImageOpen;
+        private object? _currentImageOpen;
 
         public T? GetIEditorTool<T>() where T : IEditorTool => GetEffectiveEditorTools().OfType<T>().FirstOrDefault();
 
@@ -166,7 +166,11 @@ namespace ColorVision.ImageEditor
             return effectiveTools;
         }
 
+        // Keep the existing method signature for independently built image plugins.
         public void ApplyImageOpenTools(IImageOpen? imageOpen)
+            => ApplyImageContentTools(imageOpen == null ? null : _context.ImageView.ImageContentCapability ?? (object)imageOpen);
+
+        internal void ApplyImageContentTools(object? imageOpen)
         {
             IReadOnlyList<IEditorTool> previousTools = GetEffectiveEditorTools();
             if (_currentImageOpen is IImageOpenEditorToolLifecycle previousLifecycle)

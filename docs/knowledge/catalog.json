@@ -4364,6 +4364,9 @@
         "SaveToTif"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Media/Export/CalibratedImageExport.cs",
+        "Engine/ColorVision.Engine/Media/Export/PngParameterWriter.cs",
+        "Engine/ColorVision.Engine/Media/Export/CvRawBatchExporter.cs",
         "Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs",
         "Engine/ColorVision.Engine/Media/FileCVCIE.cs",
         "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs",
@@ -4378,6 +4381,7 @@
         "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ColorVisionPixelBindingTests.cs",
         "Test/ColorVision.UI.Tests/ExportCieTests.cs"
       ],
       "related": [
@@ -4683,6 +4687,8 @@
         "校正文件备份"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraFileMetadata.cs",
+        "Engine/ColorVision.Engine/Media/CalibratedImageContentProvider.cs",
         "Engine/ColorVision.FileIO/CVFileMetadata.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/ColorCalibrationSnapshot.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
@@ -4720,6 +4726,8 @@
         "Plugins/Conoscope/ConoscopeDocument.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ImageAcquisitionMetadataTests.cs",
+        "Test/ColorVision.UI.Tests/EmbeddedCalibratedImageTests.cs",
         "Test/ColorVision.UI.Tests/CVFileMetadataTests.cs",
         "Test/ColorVision.UI.Tests/RawColorCalibrationTests.cs",
         "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs",
@@ -10504,6 +10512,8 @@
         "ImageContextMenuComposer"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageEditor/Tif/ImageAcquisitionRecord.cs",
+        "UI/ColorVision.ImageEditor/Output/ImageSnapshotMetadata.cs",
         "UI/ColorVision.ImageEditor/Cie",
         "UI/ColorVision.ImageEditor/Zoombox.cs",
         "UI/ColorVision.ImageEditor/EditorTools/FullScreen",
@@ -10546,6 +10556,7 @@
         "UI/ColorVision.ImageEditor/Video/VideoAudioTrack.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ScreenshotParameterTests.cs",
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs",
@@ -10619,6 +10630,8 @@
         "EnableEditorImageServices"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageEditor/Abstractions/DecodedImageContent.cs",
+        "UI/ColorVision.ImageEditor/ImageView.Content.cs",
         "UI/ColorVision.ImageEditor/ARCHITECTURE.md",
         "UI/ColorVision.ImageEditor/Documents",
         "UI/ColorVision.ImageEditor/ImageEditorSession.cs",
@@ -10640,6 +10653,7 @@
         "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
         "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs",
         "Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs",
         "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"

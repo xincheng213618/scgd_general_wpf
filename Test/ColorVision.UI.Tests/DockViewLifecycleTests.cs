@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Documents;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Solution.Workspace;
@@ -169,7 +170,7 @@ public sealed class DockViewLifecycleTests
                 await loading.WaitAsync(TimeSpan.FromSeconds(15));
                 // Publication runs before the opener releases its load gate. Await that completion,
                 // so the close assertions observe cleanup rather than an in-flight load continuation.
-                SemaphoreSlim gate = WpfTestHost.Invoke(() => (SemaphoreSlim)typeof(CVRawOpen)
+                SemaphoreSlim gate = WpfTestHost.Invoke(() => (SemaphoreSlim)typeof(CalibratedImageCapability)
                     .GetField("_rawOpenGate", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .GetValue(Image(device!).EditorContext.IImageOpen)!);
                 Assert.True(await gate.WaitAsync(TimeSpan.FromSeconds(15)));
@@ -192,7 +193,7 @@ public sealed class DockViewLifecycleTests
     {
         ImageView image = Image(device);
         var opener = Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen);
-        object raw = typeof(CVRawOpen).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
+        object raw = typeof(CalibratedImageCapability).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
         object pixels = raw.GetType().GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(raw)!;
         var references = new[] { new WeakReference(image.ViewBitmapSource), new WeakReference(pixels) };
         if (closeView) Assert.Single(WorkspaceManager.LayoutDocumentPane.Children).Close();
@@ -204,6 +205,7 @@ public sealed class DockViewLifecycleTests
     [Fact]
     public void CieProbeReplacementStopsHiddenPixelReadoutAndRestoresNormalTool()
     {
+        Assert.NotNull(typeof(IEditorToolFactory).GetMethod(nameof(IEditorToolFactory.ApplyImageOpenTools), [typeof(IImageOpen)]));
         WpfTestHost.Invoke(() =>
         {
             using var scope = new Scope();
@@ -367,7 +369,7 @@ public sealed class DockViewLifecycleTests
     }
 
     private static T? GetOpenerField<T>(CVRawOpen opener, string name) where T : class
-        => (T?)typeof(CVRawOpen).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener);
+        => (T?)typeof(CalibratedImageCapability).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener);
 
     private static byte[]? GetRawPixels(CvRawPixelBuffer buffer)
         => (byte[]?)typeof(CvRawPixelBuffer).GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(buffer);
@@ -403,7 +405,7 @@ public sealed class DockViewLifecycleTests
         ImageView image = Image(device);
         using (var lease = image.AcquireImageFrame()) Assert.NotNull(lease);
         var opener = Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen);
-        object raw = typeof(CVRawOpen).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
+        object raw = typeof(CalibratedImageCapability).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
         object pixels = raw.GetType().GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(raw)!;
         var references = new[] { new WeakReference(control), new WeakReference(image), new WeakReference(image.ViewBitmapSource), new WeakReference(pixels) };
 

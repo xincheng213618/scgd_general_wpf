@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using ColorVision.ImageEditor.Tif;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -25,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public int CachedItemCount => contexts.Sum(entry => entry.Files.Length);
 
-        public RawColorTransformV1? Execute(
+        public LocalCalibrationExecution Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
@@ -54,9 +56,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (deferredResult != OpenCVCalibration.CalibrationOk)
                     throw CreateNativeException("读取色度校正参数失败", deferredResult, colorContext.Context);
                 DeviceCameraCalibrationFile[] basicFiles = calibrationFiles.Where(file => !IsColorCalibration(file.CalibrationType)).ToArray();
-                if (basicFiles.Length > 0) Execute(layout, basicFiles, rawPointer, IntPtr.Zero, exposure, calibrationRoi, rawOutputFlip: rawOutputFlip);
+                ImageCalibrationSource[] basicSources = [];
+                if (basicFiles.Length > 0)
+                    basicSources = Execute(layout, basicFiles, rawPointer, IntPtr.Zero, exposure, calibrationRoi, rawOutputFlip: rawOutputFlip).Sources;
                 else FlowNodeTiming.Skip("CalibrationAlgorithm");
-                return deferred;
+                return new(deferred, basicSources.Concat(GetSources(colorContext.Files)).ToArray());
             }
 
             CachedContext cachedContext = FlowNodeTiming.Run("LoadCalibrationResources", () => Prepare(layout, calibrationFiles, ciePointer));
@@ -84,12 +88,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 throw CreateNativeException("执行本地校正失败", result, cachedContext.Context);
             }
             computeStage?.Complete();
-            if (!cachedContext.Files.Any(file => IsColorCalibration(file.CalibrationType))) return null;
+            if (!cachedContext.Files.Any(file => IsColorCalibration(file.CalibrationType))) return new(null, GetSources(cachedContext.Files));
             RawColorTransformV1 transform = RawColorTransformV1.Create();
             int snapshotResult = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(cachedContext.Context, in options, ref transform);
             if (snapshotResult != OpenCVCalibration.CalibrationOk)
                 throw CreateNativeException("读取已执行的色度校正参数失败", snapshotResult, cachedContext.Context);
-            return transform;
+            return new(transform, GetSources(cachedContext.Files));
         }
 
         internal static CalibrationExecutionOptionsV1 CreateExecutionOptions(float[] exposure, LocalCalibrationRoi calibrationRoi)
@@ -225,6 +229,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 foreach (CachedCalibrationFile file in requestedFiles)
                 {
+                    // Keep the file stable while fingerprinting and loading the native resource.
+                    using FileStream source = new(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    if (source.Length != file.Length || File.GetLastWriteTimeUtc(file.FullPath).Ticks != file.LastWriteTimeUtcTicks)
+                        throw new IOException("校正资源在加载前已变化，请重试。");
+                    file.Sha256 = Convert.ToHexString(SHA256.HashData(source));
                     int loadResult = OpenCVCalibration.M_CalibrationLoadFileW(newContext, (int)file.CalibrationType, file.FullPath);
                     if (loadResult != OpenCVCalibration.CalibrationOk)
                     {
@@ -344,12 +353,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 or CalibrationType.LumFourColor
                 or CalibrationType.LumMultiColor;
 
-        private readonly record struct CachedCalibrationFile(
+        private static ImageCalibrationSource[] GetSources(IEnumerable<CachedCalibrationFile> files)
+            => files.Select(file => new ImageCalibrationSource
+            {
+                CalibrationType = (int)file.CalibrationType, Name = file.DisplayName,
+                FileName = Path.GetFileName(file.FullPath), FileBytes = file.Length,
+                FileModifiedUtc = new DateTime(file.LastWriteTimeUtcTicks, DateTimeKind.Utc), FileSha256 = file.Sha256
+            }).ToArray();
+
+        private sealed record CachedCalibrationFile(
             CalibrationType CalibrationType,
             string DisplayName,
             string FullPath,
             long Length,
-            long LastWriteTimeUtcTicks);
+            long LastWriteTimeUtcTicks)
+        {
+            public string? Sha256 { get; set; }
+        }
 
         private sealed class CachedContext(
             IntPtr context,
