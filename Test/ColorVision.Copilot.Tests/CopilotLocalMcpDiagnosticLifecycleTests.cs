@@ -178,7 +178,7 @@ public sealed class CopilotLocalMcpDiagnosticLifecycleTests : IDisposable
         var configHandler = new ConfigHandler { ConfigFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json") };
         configHandler.Configs[typeof(CopilotConfig)] = config;
         return new CopilotSettingsViewModel(configHandler,
-            new CopilotChatState { ActiveProfileId = config.Profiles[0].Id }, mcpHttpClient: client);
+            new CopilotChatState(), mcpHttpClient: client);
     }
 
     private static void ChangeDraft(CopilotSettingsViewModel viewModel, string change)

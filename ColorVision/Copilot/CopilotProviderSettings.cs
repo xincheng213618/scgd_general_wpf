@@ -10,6 +10,8 @@ namespace ColorVision.Copilot
     public sealed class CopilotProviderSettings : ViewModelBase, IDisposable
     {
         private readonly Action _changed;
+        private int _connectionUpdateDepth;
+        private bool _connectionChangePending;
         public CopilotProviderSettings(IEnumerable<CopilotProfileConfig> models, Action changed)
         {
             Models = models.ToArray();
@@ -23,50 +25,67 @@ namespace ColorVision.Copilot
         public string Name
         {
             get => string.IsNullOrWhiteSpace(Connection.ConnectionName) ? Connection.IsLocalCodex ? "本地 Codex" : Connection.DisplayLabel : Connection.ConnectionName;
-            set { foreach (var model in Models) model.ConnectionName = value.Trim(); Changed(); }
+            set => UpdateConnection(value?.Trim() ?? string.Empty, model => model.ConnectionName, (model, name) => model.ConnectionName = name);
         }
         public bool IsLocalCodex => Connection.IsLocalCodex;
         public bool IsApiProvider => !IsLocalCodex;
         public bool IsEnabled
         {
             get => Connection.ConnectionEnabled;
-            set { foreach (var model in Models) model.ConnectionEnabled = value; Changed(); }
+            set => UpdateConnection(value, model => model.ConnectionEnabled, (model, enabled) => model.ConnectionEnabled = enabled);
         }
         public string BaseUrl
         {
             get => Connection.BaseUrl;
-            set => UpdateConnection(model => model.BaseUrl = value, refreshCapabilities: true);
+            set => UpdateConnection(value?.Trim() ?? string.Empty, model => model.BaseUrl, (model, url) => model.BaseUrl = url, refreshCapabilities: true);
         }
         public string ApiKey
         {
             get => Connection.ApiKey;
-            set => UpdateConnection(model => model.ApiKey = value);
+            set => UpdateConnection(value?.Trim() ?? string.Empty, model => model.ApiKey, (model, key) => model.ApiKey = key);
         }
         public CopilotProviderType ProviderType
         {
             get => Connection.ProviderType;
-            set => UpdateConnection(model => model.ProviderType = value, refreshCapabilities: true);
+            set => UpdateConnection(value, model => model.ProviderType, (model, type) => model.ProviderType = type, refreshCapabilities: true);
         }
         public bool AllowInsecureHttp
         {
             get => Connection.AllowInsecureHttp;
-            set => UpdateConnection(model => model.AllowInsecureHttp = value);
+            set => UpdateConnection(value, model => model.AllowInsecureHttp, (model, allow) => model.AllowInsecureHttp = allow);
         }
         public bool IsReady => IsEnabled && Models.Any(model => model.IsConfigured);
         public string StatusText => !IsEnabled ? "已停用" : IsLocalCodex ? "本地账户 · 请检测登录状态" : IsReady ? "已配置" : "待配置";
 
-        private void UpdateConnection(Action<CopilotProfileConfig> update, bool refreshCapabilities = false)
+        private void UpdateConnection<T>(T value, Func<CopilotProfileConfig, T> currentValue, Action<CopilotProfileConfig, T> update, bool refreshCapabilities = false)
         {
-            foreach (var model in Models)
+            _connectionUpdateDepth++;
+            try
             {
-                update(model);
-                if (refreshCapabilities && model.UseModelDefaults)
-                    model.SupportsImageInput = CopilotModelDefaults.Find(model)?.SupportsImages ?? false;
+                foreach (var model in Models)
+                {
+                    if (EqualityComparer<T>.Default.Equals(currentValue(model), value)) continue;
+                    _connectionChangePending = true;
+                    update(model, value);
+                    if (refreshCapabilities && model.UseModelDefaults)
+                        model.SupportsImageInput = CopilotModelDefaults.Find(model)?.SupportsImages ?? false;
+                }
             }
-            Changed();
+            finally
+            {
+                if (--_connectionUpdateDepth == 0 && _connectionChangePending)
+                {
+                    _connectionChangePending = false;
+                    Changed();
+                }
+            }
         }
 
-        private void ModelChanged(object? sender, PropertyChangedEventArgs e) => Changed();
+        private void ModelChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_connectionUpdateDepth > 0) _connectionChangePending = true;
+            else Changed();
+        }
         private void Changed()
         {
             OnPropertyChanged(string.Empty);

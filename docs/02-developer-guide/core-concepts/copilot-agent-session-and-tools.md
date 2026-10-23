@@ -26,6 +26,8 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 
 运行中补充指令先保存为绑定 run ID 的待确认记录。Runtime 在停止宽限内未能发布恢复事件时，宿主终态仍会把该 run 剩余未确认指令恢复到原会话草稿，保留后来输入和附件；不会自动重发，也不处理其他 run 的记录。已确认送达的批次继续按原 checkpoint 确认或显式取消规则消费；恢复事件只消费仍待确认的指令 ID，退出时已恢复的输入不能因随后刷新缓冲事件而重复追加。若运行时接受指令但恢复记录已满，普通输入保持在草稿；自动审批重试指令也立即追加到原会话草稿，保留已有输入和附件。恢复提示说明“尚未确认”，不以缺失事件断言指令一定没有执行。`CopilotSteeringCancellationRecoveryTests` 使用真实 ViewModel 和有界事件流覆盖取消、暂停、切换会话、及时恢复及已确认批次；`CopilotChatViewModelProfileIsolationTests` 覆盖退出恢复与缓冲刷新顺序。
 
+顶层会话恢复执行 Session 时，在注册新一轮输入前移除旧待发送队列中由宿主标记的 user steering，防止已交由草稿恢复的同一指令随检查点自动重发。已提交历史、任务与审批状态不受这项队列清理影响；同队列中的后台观察及 hook 上下文按原顺序保留。子代理协调输入没有聊天草稿副本，仍由子运行保留其待发送队列；恢复时按原消息 ID 重建未送达跟踪，计入待处理上限，不重复入队或记录接收事件。只有框架历史成功保存后才确认送达、更新投递计数及两份对话记忆，使后续恢复保留该指令且不重复注入。`CopilotInitialCheckpointPromptRecoveryTests` 通过真实 Runtime、检查点重载和模拟供应商请求验证这项投递边界；其中模型变化仅验证 Runtime 记忆重建，子任务协调器仍拒绝不兼容的续作。
+
 `CopilotAgentTaskHost` 另外提供同一活动 Agent 会话的 follow-up 队列。steering 调整当前轮，queue 等待下一轮取得执行权，不能把两者按键固定写死。它有以下边界：
 
 - follow-up 只能绑定当前活动的 Agent conversation；Chat 模式、其他 conversation、关闭中的 Host 和满队列全部 fail closed。普通调度入口仍拒绝同一 conversation 重复入队，只有专用 follow-up 入口允许。
@@ -47,6 +49,12 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 运行期间保存 Profile（包括排队的 `/reasoning`）会走 `CopilotChatStateProfileReconciler.Apply`，但这不是重启恢复。`EnsureInitialized` 在这条路径只同步配置与会话元数据，不把正在执行的本地命令恢复成草稿，也不消费自动目标续作记录；`PrepareForRestartDispatch` 仅在 `EnsureInitializedAfterRestore` 的实际恢复路径执行。`CopilotChatStateProfileReconciliationTests` 验证运行期保留记录和附件引用，再经真实 Save／Load 后才恢复普通命令、保留新草稿，并丢弃不应重放的自动续作。
 
 `CopilotChatStateStore` 从旧 `.bak` 或 Recovery 快照恢复时，旧引用集可能遗漏仅由损坏的新状态引用的托管附件。两种回退都先创建持久化保护标记，再恢复主文件；附件清理不据旧快照删除未引用文件，保护会跨随后从 primary 加载的重启保留。全部现存托管文件重新被引用后，清理器才解除该标记。正常 Primary/Temporary 加载仍执行原有孤儿附件清理；未来 schema 的拒绝覆盖规则保持不变。
+
+文件占用、I/O 或权限失败不属于损坏记录：读取候选或提交前检查遇到这些错误时直接失败，不跳过较新的候选、不用旧备份覆盖主文件。仅文件确实不存在才视为缺失；内容验证失败仍走损坏恢复。未成功打开本次临时写入文件的保存尝试，不删除已有 `.tmp` 恢复快照；成功接管后产生的失败或取消仍清理本次临时文件。`CopilotChatStateStoreReadFailureTests` 以真实文件锁覆盖加载、同步/异步提交及临时文件所有权，并在解锁后重新加载或保存。
+
+状态文件形状检查保留日期字符串，到目标类型反序列化时才解析；不能先转成本地时区再还原。任务事件 ID 包含原始时间偏移，加载必须保留这份表示，否则有效 journal 和执行检查点会被误判失效。`CopilotAgentSessionCheckpointTests` 通过真实 Save／Load 验证与本机时区不同的事件时间及 ID 完整保留。
+
+聊天面板读取失败时显示重试入口，解除占用或恢复访问权限后可以在原面板重新加载；失败的 ViewModel 构造不订阅全局事件或启动保存任务。已打开聊天中的设置窗口若读取会话状态失败，保留当前聊天并显示可重试的错误提示，不宣称已加载空历史。
 
 保护标记写入失败时，本次加载仍保留附件，但不把旧状态提升成 primary。后续同步或异步保存会重试写标记，仍失败则报 `IOException` 并保留原恢复入口，避免自动保存后重启失去保护。`CopilotChatStateRecoveryAttachmentTests` 使用临时文件覆盖两种回退、跨重启、标记写失败及恢复保存；不代表损坏会话内容已经完整找回。
 
@@ -70,7 +78,11 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 
 Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边界：首次创建 Session 时先保存一个安全点，此后每次成功的真实模型调用写入历史后，都通过 `SerializeSessionAsync` 增量序列化 `AgentSession`，连同最新 todo ledger、evidence 和 journal 原子保存到对应 `CopilotConversationRecord`。包装器内部仍委托 `InMemoryChatHistoryProvider`，并使用与 Harness 相同的 context-window compaction reducer，不维护第二份聊天历史。正常结束时再写入带最终 stop reason 的检查点。应用重启或重新创建 Runtime 后，下一轮使用 `DeserializeSessionAsync` 恢复框架内部历史；运行时将 checkpoint 的有界 conversation memory 与 UI 可见历史做有序对齐，只把 checkpoint 之后尚未持久化的可见消息插入当前用户消息之前，既避免重复整段历史，也覆盖异常退出、旧状态迁移或增量保存滞后造成的上下文缺口。对话记忆与可执行 Session 分开保存：Profile、能力或请求工具变化导致 Session 重建时恢复有界语义上下文，而 todo、历史工具调用和审批继续作废。该扩展点的调用顺序见官方 [Harness 文档](https://learn.microsoft.com/en-us/agent-framework/agents/harness)。
 
+检查点分别保存用于重建的 `ConversationMemory` 和已写入执行 Session 的 `SessionConversationMemory`。新 Session 的后者明确为空，只有成功写入框架历史才推进；首次安全点、工具前保存及最终序列化本身不代表当前请求已经进入模型历史。恢复时分别补回尚未提交的语义记忆和可见历史，因此请求前暂停、调用失败或 Session 重建后再次退出都不丢失原要求及 checkpoint 独有的补充指令。运行中补充指令按成功保存回调中的原始消息 ID 确认，队列出队本身不算保存；最后一批指令也在同一边界进入记忆，避免下次恢复重复追加。旧检查点缺少新字段时兼容使用原记忆；只更新结果或 journal 而保留原 Session 时，也保留原已提交边界。`CopilotInitialCheckpointPromptRecoveryTests` 使用真实 Runtime 和模拟供应商，经检查点 JSON 重载检查恢复请求中的约束，不调用真实模型。
+
 `CopilotAgentConversationMemory` 对齐时先比较完整文本，只有存在已知截断标记时才使用与检查点一致的单条字符权重预算，避免长中文或代理对文本因两侧截断长度不同被重复插入，同时保留完整长消息末尾的不同结论。比较副本不缩短交回 Runtime 的新可见消息，也不改变 steering 标记；旧版 ASCII 截断后缀继续按原规范化规则比较。`CopilotAgentConversationRecoveryTests` 验证重复恢复的幂等性、新增长消息的完整保留及完整消息的结论区分。
+
+Session 重建时，已按当前模型窗口准备的可见历史也保留原有消息数量和正文；与检查点中的有界记忆对齐后，共同消息使用当前可见版本，仅补回检查点独有的上下文。检查点存储上限不作为第二次请求裁剪，最终请求仍受实际模型上下文预算约束。
 
 记忆的字符截断同样预留完整终态说明，并保持 UTF-16 代理对完整；去重检查说明之前的截断后缀，终态内容仍参与比较。持久化后的长中文／emoji 记忆重复恢复时保留说明，不再次插入已见历史；不完整回答仍属于历史上下文，不因保留说明产生新的执行许可。
 

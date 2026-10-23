@@ -9,14 +9,14 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(state);
             ArgumentNullException.ThrowIfNull(config);
 
-            var profile = config.FindProfile(requestedProfileId)
-                ?? config.FindProfile(state.ActiveProfileId)
+            CopilotProfileConfig? FindAvailable(string? id) => config.FindProfile(id) is { IsAvailable: true } candidate ? candidate : null;
+            var profile = FindAvailable(requestedProfileId)
+                ?? FindAvailable(state.ActiveProfileId)
                 ?? config.GetPreferredDefaultProfile();
-            if (profile != null)
-                state.ActiveProfileId = profile.Id;
+            state.ActiveProfileId = profile?.Id ?? string.Empty;
 
             state.EnsureInitialized(config);
-            return config.FindProfile(state.ActiveProfileId) ?? profile;
+            return FindAvailable(state.ActiveProfileId) ?? profile;
         }
     }
 }

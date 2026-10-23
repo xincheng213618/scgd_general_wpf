@@ -231,11 +231,15 @@ namespace ColorVision.Copilot
                 AIAgent checkpointAgent,
                 AgentSession checkpointSession,
                 CopilotProviderToolHistoryDelta toolHistoryDelta,
+                IReadOnlyList<string> storedUserMessageIds,
                 CancellationToken checkpointToken)
             {
                 taskEventJournalBuilder.RecordProviderToolHistory(toolHistoryDelta);
                 if (liveCheckpointPublisher != null)
+                {
+                    liveCheckpointPublisher.RecordHistoryStored(storedUserMessageIds);
                     await liveCheckpointPublisher.TryPublishAsync(checkpointAgent, checkpointSession, checkpointToken);
+                }
             }
             var checkpointingHistoryProvider = new CopilotCheckpointingChatHistoryProvider(
                 new InMemoryChatHistoryProviderOptions
@@ -474,7 +478,6 @@ namespace ColorVision.Copilot
                     taskEventJournalBuilder,
                     emit,
                     steeringRegistration,
-                    liveCheckpointPublisher,
                     messageInjector,
                     answerText,
                     deferredBackgroundOutputDelivery,

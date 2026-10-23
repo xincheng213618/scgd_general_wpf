@@ -71,7 +71,8 @@ namespace ColorVision.Copilot
             private readonly Action<CopilotAgentEvent> _emit;
             private readonly bool _sessionResumed;
             private readonly Func<string> _answerText;
-            private readonly Func<IReadOnlyList<string>> _deliveredSteeringMessages;
+            private readonly SteeringRegistration _steeringRegistration;
+            private IReadOnlyList<CopilotRequestMessage> _sessionConversationMemory;
             private CopilotAgentCheckpointPublication? _latestPublication;
             private readonly CopilotAgentCheckpointPublicationGate _publicationGate = new();
 
@@ -90,7 +91,7 @@ namespace ColorVision.Copilot
                 Action<CopilotAgentEvent> emit,
                 bool sessionResumed,
                 Func<string> answerText,
-                Func<IReadOnlyList<string>> deliveredSteeringMessages)
+                SteeringRegistration steeringRegistration)
             {
                 _request = request;
                 _requestedCheckpoint = requestedCheckpoint;
@@ -106,8 +107,38 @@ namespace ColorVision.Copilot
                 _emit = emit;
                 _sessionResumed = sessionResumed;
                 _answerText = answerText;
-                _deliveredSteeringMessages = deliveredSteeringMessages;
+                _steeringRegistration = steeringRegistration;
+                _sessionConversationMemory = sessionResumed
+                    ? requestedCheckpoint?.SessionConversationMemory
+                        ?? requestedCheckpoint?.ConversationMemory
+                        ?? Array.Empty<CopilotRequestMessage>()
+                    : Array.Empty<CopilotRequestMessage>();
             }
+
+            public IReadOnlyList<CopilotRequestMessage> SessionConversationMemory =>
+                Volatile.Read(ref _sessionConversationMemory);
+
+            public void RecordHistoryStored(IReadOnlyList<string> storedUserMessageIds)
+            {
+                var deliveredSteering = _steeringRegistration.RecordStoredSteeringMessages(storedUserMessageIds);
+                // Only the successful history-store callback confirms that the current
+                // prompt belongs to the session. Publishing or serializing alone does not.
+                Volatile.Write(ref _sessionConversationMemory, BuildConversationMemory());
+                if (deliveredSteering.Count > 0)
+                {
+                    _emit(CopilotAgentEvent.SteeringDelivered(deliveredSteering));
+                    _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"Agent provider stored {deliveredSteering.Count} queued user steering instruction(s)."));
+                }
+            }
+
+            private IReadOnlyList<CopilotRequestMessage> BuildConversationMemory() =>
+                CopilotAgentConversationMemory.Merge(
+                    _requestedCheckpoint?.ConversationMemory,
+                    _request.History,
+                    _request.UserText,
+                    _answerText(),
+                    _steeringRegistration.GetDeliveredSteeringMessages());
 
             public CopilotAgentSessionCheckpoint? LatestCheckpoint =>
                 Volatile.Read(ref _latestPublication)?.SessionCheckpoint;
@@ -163,16 +194,14 @@ namespace ColorVision.Copilot
                         _bridge.StepRecords,
                         _capabilitySnapshot,
                         DateTimeOffset.UtcNow);
+                    // Read the confirmed boundary before serialization. A concurrent store
+                    // must never mark input seen by an older serialized session.
+                    var sessionConversationMemory = SessionConversationMemory;
                     var serializedSession = await agent.SerializeSessionAsync(
                         session,
                         null,
                         cancellationToken);
-                    var conversationMemory = CopilotAgentConversationMemory.Merge(
-                        _requestedCheckpoint?.ConversationMemory,
-                        _request.History,
-                        _request.UserText,
-                        _answerText(),
-                        _deliveredSteeringMessages());
+                    var conversationMemory = BuildConversationMemory();
                     var checkpoint = CopilotAgentSessionCheckpoint.Create(
                         _request.Profile,
                         serializedSession.GetRawText(),
@@ -185,7 +214,8 @@ namespace ColorVision.Copilot
                         _request.TaskIntentText,
                         _hookSurfaceSnapshot,
                         _request.ProjectInstructions,
-                        _request.ConfiguredDeveloperInstructions);
+                        _request.ConfiguredDeveloperInstructions,
+                        sessionConversationMemory);
                     if (checkpoint == null)
                     {
                         _emit(CopilotAgentEvent.RuntimeDiagnostic(

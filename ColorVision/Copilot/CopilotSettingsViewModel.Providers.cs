@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
             set
             {
                 if (!SetProperty(ref _selectedProvider, value)) return;
+                if (value != null) IsAddingModel = false;
                 IsSelectedProfileApiKeyVisible = false;
                 if (value != null && !value.Models.Contains(SelectedProfile)) SelectedProfile = value.Connection;
                 OnPropertyChanged(nameof(HasSelectedProvider));
@@ -92,7 +93,7 @@ namespace ColorVision.Copilot
             if (provider == null) return false;
             if (!draft.IsLocalCodex && string.IsNullOrWhiteSpace(draft.Model)) error = "请输入模型 ID。";
             else if (provider.Models.Any(model => !ReferenceEquals(model, original) && string.Equals(model.Model, draft.Model, StringComparison.OrdinalIgnoreCase))) error = "此供应商已存在相同模型。";
-            else if (draft.ContextWindowTokens > 0 && draft.MaxTokens >= draft.ContextWindowTokens) error = "最大输出 Token 必须小于上下文窗口。";
+            else if (draft.MaxTokens >= (draft.ContextWindowTokens > 0 ? draft.ContextWindowTokens : AgentContextWindowTokens)) error = "最大输出 Token 必须小于上下文窗口（含继承的 Agent 默认值）。";
             if (error.Length > 0) return false;
             foreach (var model in provider.Models) model.ConnectionId = provider.Id;
             draft.ConnectionId = provider.Id;

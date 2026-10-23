@@ -9,7 +9,7 @@ using AIMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace ColorVision.Copilot.Tests;
 
-public sealed class CopilotCodexTests
+public sealed partial class CopilotCodexTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
@@ -82,6 +82,72 @@ public sealed class CopilotCodexTests
         Assert.Equal("read-only", thread["sandbox"]!.GetValue<string>());
     }
 
+    [Theory]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, null, "max", "chat")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, null, "xhigh", "chat")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, null, "max", "agent")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, null, "xhigh", "agent")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, null, "max", "final")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, null, "xhigh", "final")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "low", "low", "agent")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "low", "low", "final")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "none", "low", "agent")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "none", "low", "final")]
+    [InlineData("gpt-5.4", CopilotReasoningMode.Max, "none", "none", "agent")]
+    [InlineData("gpt-5.4", CopilotReasoningMode.Max, "none", "none", "final")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Default, null, null, "chat")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Default, null, null, "agent")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Default, null, null, "final")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, "max", "max", "agent")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, "max", "max", "final")]
+    public async Task LocalReasoningModeSurvivesFrameworkOptionsAndTurnSerialization(
+        string model, CopilotReasoningMode mode, string? configuredEffort, string? expectedEffort, string stage)
+    {
+        var profile = Profile();
+        profile.Model = model;
+        profile.ReasoningMode = mode;
+        // Unspecified inherits the profile; only the profile's Default delegates to the runtime.
+        var effort = CopilotCodexReasoningEffort.Unspecified;
+        if (configuredEffort != null)
+            Assert.True(CopilotCodexReasoningEffortSelection.TryParsePlanMode(configuredEffort, out effort));
+        var request = new CopilotAgentRequest { Profile = profile, CodexReasoningEffort = effort };
+        var options = stage switch
+        {
+            "agent" => CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []),
+            "final" => CopilotMicrosoftAgentFrameworkRuntime.BuildFinalAnswerOptions(request),
+            _ => new ChatOptions { Reasoning = CopilotMicrosoftAgentFrameworkRuntime.BuildReasoningOptions(profile) },
+        };
+        var server = new FakeServer(
+            """{"method":"turn/completed","params":{"threadId":"thread","turn":{"id":"turn","status":"completed"}}}""");
+        using var client = new CopilotCodexChatClient(profile, _ => Task.FromResult<ICopilotCodexAppServer>(server));
+
+        await client.GetResponseAsync([new AIMessage(ChatRole.User, "test")], options);
+
+        var turn = Assert.Single(server.Requests, item => item.Method == "turn/start").Parameters;
+        Assert.Equal(expectedEffort, turn["effort"]?.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData(ReasoningEffort.ExtraHigh, "xhigh")]
+    [InlineData(ReasoningEffort.None, "none")]
+    public async Task ExplicitLocalReasoningEffortOverridesTheMaxProfileFallback(ReasoningEffort effort, string expectedEffort)
+    {
+        var profile = Profile();
+        profile.Model = "gpt-6-astra";
+        profile.ReasoningMode = CopilotReasoningMode.Max;
+        var server = new FakeServer(
+            """{"method":"turn/completed","params":{"threadId":"thread","turn":{"id":"turn","status":"completed"}}}""");
+        using var client = new CopilotCodexChatClient(profile, _ => Task.FromResult<ICopilotCodexAppServer>(server));
+
+        await client.GetResponseAsync([new AIMessage(ChatRole.User, "test")], new ChatOptions
+        {
+            Reasoning = new ReasoningOptions { Effort = effort },
+        });
+
+        var turn = Assert.Single(server.Requests, item => item.Method == "turn/start").Parameters;
+        Assert.Equal(expectedEffort, turn["effort"]!.GetValue<string>());
+    }
+
     [Fact]
     public async Task CumulativeUsageSnapshotsAreCountedOnceThroughSdkResponseAggregation()
     {
@@ -140,7 +206,7 @@ public sealed class CopilotCodexTests
             }
             else
             {
-                failure = await Assert.ThrowsAsync<InvalidOperationException>(() => response);
+                failure = await Assert.ThrowsAsync<CopilotProviderPayloadException>(() => response);
             }
 
             Assert.Equal(new CopilotTokenUsage(16, 4, 20, 6),
@@ -204,9 +270,10 @@ public sealed class CopilotCodexTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task HarnessStreamingCumulativeUsageCountsEachProviderRequestOnce(bool requestTool)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task HarnessStreamingCumulativeUsageCountsEachProviderRequestOnce(bool requestTool, bool retryAfterTool)
     {
         string[] usageMessages =
         [
@@ -221,7 +288,9 @@ public sealed class CopilotCodexTests
         var toolServer = new FakeServer(
             [.. usageMessages,
              """{"id":101,"method":"item/tool/call","params":{"threadId":"thread","turnId":"turn","callId":"usage-probe","tool":"colorvision_run_workspace_validation","arguments":{}}}"""]);
-        var servers = new Queue<FakeServer>(requestTool ? [toolServer, answerServer] : [answerServer]);
+        var failedServer = new FakeServer([.. usageMessages, CodexFailure("\"rateLimitExceeded\"")]);
+        var servers = new Queue<FakeServer>(retryAfterTool ? [toolServer, failedServer, answerServer]
+            : requestTool ? [toolServer, answerServer] : [answerServer]);
         var directory = Directory.CreateTempSubdirectory("CopilotCodexHarnessUsageTests-");
         try
         {
@@ -281,12 +350,13 @@ public sealed class CopilotCodexTests
             }
 
             var result = Assert.IsType<CopilotAgentRunResult>(runResult);
-            var providerCalls = requestTool ? 2 : 1;
+            var providerCalls = (requestTool ? 2 : 1) + (retryAfterTool ? 1 : 0);
             var expectedUsage = new CopilotTokenUsage(16 * providerCalls, 4 * providerCalls, 20 * providerCalls, 6 * providerCalls);
             Assert.Equal(providerCalls, result.Budget.ProviderCalls);
             Assert.Equal(requestTool ? 1 : 0, tool.CallCount);
             Assert.Equal(requestTool ? 1 : 0, result.StepRecords.Count);
             Assert.Equal(requestTool ? 1 : 0, result.Budget.ToolCalls);
+            Assert.Equal(retryAfterTool ? 1 : 0, result.Budget.ProviderRetryCount);
             Assert.Equal(expectedUsage, CopilotTurnRuntime.GetReportedTokenUsage(result.Budget));
             Assert.Equal(expectedUsage.EffectiveTotalTokens, result.Budget.ConsumedTokens);
             Assert.False(result.Budget.UsedEstimatedUsage);
@@ -297,6 +367,8 @@ public sealed class CopilotCodexTests
             Assert.True(answerServer.Disposed);
             if (requestTool)
                 Assert.True(toolServer.Disposed);
+            if (retryAfterTool)
+                Assert.True(failedServer.Disposed);
             Assert.Equal(expectedUsage, result.Usage);
             Assert.Equal(expectedUsage, CopilotTurnEventReducer.RequireCompletion(turn).Usage);
             Assert.Equal(expectedUsage, assistant.ReportedUsage);
@@ -407,8 +479,7 @@ public sealed class CopilotCodexTests
     [InlineData("""{"id":101,"method":"item/tool/call","params":{"tool":"unregistered","arguments":{}}}""")]
     [InlineData("""{"id":102,"method":"item/commandExecution/requestApproval","params":{}}""")]
     [InlineData("""{"method":"item/started","params":{"item":{"type":"commandExecution"}}}""")]
-    [InlineData("""{"method":"turn/completed","params":{"turn":{"status":"failed"}}}""")]
-    public async Task RefusesUnknownToolsIndependentApprovalsAndFailedTurns(string message)
+    public async Task RefusesUnknownToolsAndIndependentApprovals(string message)
     {
         var server = new FakeServer(message);
         using var client = new CopilotCodexChatClient(Profile(), _ => Task.FromResult<ICopilotCodexAppServer>(server));
@@ -477,17 +548,17 @@ public sealed class CopilotCodexTests
             + "{\"method\":\"second\"}\r{\"method\":\"third\"}\n{\"method\":\"last\"}", maximumChunkBytes: 1);
         using var reader = CreateProtocolReader(stream);
 
-        var first = await CopilotCodexAppServer.ReadProtocolMessageAsync(reader, CancellationToken.None);
-        var second = await CopilotCodexAppServer.ReadProtocolMessageAsync(reader, CancellationToken.None);
-        var third = await CopilotCodexAppServer.ReadProtocolMessageAsync(reader, CancellationToken.None);
-        var last = await CopilotCodexAppServer.ReadProtocolMessageAsync(reader, CancellationToken.None);
+        var first = await CopilotCodexProtocol.ReadProtocolMessageAsync(reader, CancellationToken.None);
+        var second = await CopilotCodexProtocol.ReadProtocolMessageAsync(reader, CancellationToken.None);
+        var third = await CopilotCodexProtocol.ReadProtocolMessageAsync(reader, CancellationToken.None);
+        var last = await CopilotCodexProtocol.ReadProtocolMessageAsync(reader, CancellationToken.None);
 
         Assert.Equal("first", first["method"]!.GetValue<string>());
         Assert.Equal("第一段😀", first["params"]!["delta"]!.GetValue<string>());
         Assert.Equal("second", second["method"]!.GetValue<string>());
         Assert.Equal("third", third["method"]!.GetValue<string>());
         Assert.Equal("last", last["method"]!.GetValue<string>());
-        await Assert.ThrowsAsync<IOException>(() => CopilotCodexAppServer.ReadProtocolMessageAsync(reader, CancellationToken.None));
+        await Assert.ThrowsAsync<IOException>(() => CopilotCodexProtocol.ReadProtocolMessageAsync(reader, CancellationToken.None));
     }
 
     [Theory]
@@ -502,7 +573,7 @@ public sealed class CopilotCodexTests
             maximumChunkBytes: 4_096, stallAtEnd: oversized);
         using var reader = CreateProtocolReader(stream);
         using var cancellation = new CancellationTokenSource();
-        var reading = CopilotCodexAppServer.ReadProtocolMessageAsync(reader, cancellation.Token);
+        var reading = CopilotCodexProtocol.ReadProtocolMessageAsync(reader, cancellation.Token);
         try
         {
             if (oversized)
@@ -533,7 +604,7 @@ public sealed class CopilotCodexTests
         using var stream = new ProtocolStream("{\"method\":\"partial", maximumChunkBytes: 1, stallAtEnd: true);
         using var reader = CreateProtocolReader(stream);
         using var cancellation = new CancellationTokenSource();
-        var reading = CopilotCodexAppServer.ReadProtocolMessageAsync(reader, cancellation.Token);
+        var reading = CopilotCodexProtocol.ReadProtocolMessageAsync(reader, cancellation.Token);
         try
         {
             await stream.ReadBlocked.Task.WaitAsync(TestTimeout);
@@ -560,13 +631,13 @@ public sealed class CopilotCodexTests
         using var reader = new CopilotBoundedTextLineReader(source,
             CopilotCodexAppServer.MaximumProtocolMessageCharacters, "Codex stdout");
         using var cancellation = new CancellationTokenSource();
-        var first = await CopilotCodexAppServer.ReadProtocolMessageAsync(reader, cancellation.Token);
+        var first = await CopilotCodexProtocol.ReadProtocolMessageAsync(reader, cancellation.Token);
         Assert.Equal("first", first["method"]!.GetValue<string>());
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            CopilotCodexAppServer.ReadProtocolMessageAsync(reader, cancellation.Token));
-        var buffered = await CopilotCodexAppServer.ReadProtocolMessageAsync(reader, CancellationToken.None);
+            CopilotCodexProtocol.ReadProtocolMessageAsync(reader, cancellation.Token));
+        var buffered = await CopilotCodexProtocol.ReadProtocolMessageAsync(reader, CancellationToken.None);
         Assert.Equal("buffered", buffered["method"]!.GetValue<string>());
     }
 
@@ -623,74 +694,6 @@ public sealed class CopilotCodexTests
         Assert.True(draining.IsCompletedSuccessfully);
     }
 
-    [Theory]
-    [InlineData("io")]
-    [InlineData("invalid_operation")]
-    public async Task StopOwnedProcessTerminatesItsNativeChildAfterStandardInputCloseFails(string failureKind)
-    {
-        using var process = CreateOwnedPowerShellProcess(
-            "[Console]::Out.WriteLine('READY'); [Console]::Out.Flush(); while ($true) { [System.Threading.Thread]::Sleep(1000) }");
-        StreamWriter? standardInput = null;
-        StreamReader? standardOutput = null;
-        StreamReader? standardError = null;
-        var started = false;
-        try
-        {
-            started = process.Start();
-            Assert.True(started);
-            standardInput = process.StandardInput;
-            standardOutput = process.StandardOutput;
-            standardError = process.StandardError;
-            using var handshakeCancellation = new CancellationTokenSource(TestTimeout);
-            Assert.Equal("READY", await standardOutput.ReadLineAsync(handshakeCancellation.Token));
-            Assert.False(process.HasExited);
-            Exception failure = failureKind == "io"
-                ? new IOException("Controlled standard input close failure.")
-                : new InvalidOperationException("Controlled standard input close failure.");
-            using var throwingInput = new ThrowingTextWriter(failure);
-
-            CopilotCodexAppServer.StopOwnedProcess(process, throwingInput);
-
-            Assert.True(throwingInput.CloseCalled);
-            await process.WaitForExitAsync().WaitAsync(TestTimeout);
-            Assert.True(process.HasExited);
-        }
-        finally
-        {
-            await CleanupOwnedTestProcessAsync(process, started, standardInput, standardOutput, standardError);
-        }
-    }
-
-    [Fact]
-    public async Task StopOwnedProcessSafelyHandlesAnAlreadyExitedNativeChild()
-    {
-        using var process = CreateOwnedPowerShellProcess("exit 0");
-        StreamWriter? standardInput = null;
-        StreamReader? standardOutput = null;
-        StreamReader? standardError = null;
-        var started = false;
-        try
-        {
-            started = process.Start();
-            Assert.True(started);
-            standardInput = process.StandardInput;
-            standardOutput = process.StandardOutput;
-            standardError = process.StandardError;
-            await process.WaitForExitAsync().WaitAsync(TestTimeout);
-            Assert.Equal(0, process.ExitCode);
-
-            CopilotCodexAppServer.StopOwnedProcess(process, standardInput);
-            CopilotCodexAppServer.StopOwnedProcess(process, standardInput);
-
-            Assert.True(process.HasExited);
-            Assert.Equal(0, process.ExitCode);
-        }
-        finally
-        {
-            await CleanupOwnedTestProcessAsync(process, started, standardInput, standardOutput, standardError);
-        }
-    }
-
     [Fact]
     public void HistoryPreservesRolesAndActualHostToolResults()
     {
@@ -725,47 +728,6 @@ public sealed class CopilotCodexTests
         start.ArgumentList.Add("-EncodedCommand");
         start.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
         return new Process { StartInfo = start };
-    }
-
-    private static async Task CleanupOwnedTestProcessAsync(
-        Process process, bool started, StreamWriter? standardInput, StreamReader? standardOutput, StreamReader? standardError)
-    {
-        try
-        {
-            if (started)
-            {
-                try
-                {
-                    if (!process.HasExited)
-                        process.Kill(entireProcessTree: true);
-                }
-                catch (Exception exception) when ((exception is InvalidOperationException or System.ComponentModel.Win32Exception) && process.HasExited)
-                {
-                }
-                await process.WaitForExitAsync().WaitAsync(TestTimeout);
-            }
-        }
-        finally
-        {
-            try { standardInput?.Dispose(); }
-            catch (IOException) { }
-            finally
-            {
-                try { standardOutput?.Dispose(); }
-                finally { standardError?.Dispose(); }
-            }
-        }
-    }
-
-    private sealed class ThrowingTextWriter(Exception failure) : TextWriter
-    {
-        public override Encoding Encoding => Encoding.UTF8;
-        public bool CloseCalled { get; private set; }
-        public override void Close()
-        {
-            CloseCalled = true;
-            throw failure;
-        }
     }
 
     private sealed class ProtocolStream(string text, int maximumChunkBytes, bool stallAtEnd = false)
@@ -872,6 +834,7 @@ public sealed class CopilotCodexTests
         public string? ReturnedThreadId { get; init; } = "thread";
         public string? ReturnedTurnId { get; init; } = "turn";
         public bool Disposed { get; private set; }
+        public TaskCompletionSource DisposedSignal { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Reading { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource WaitingForMessage { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public List<(string Method, JsonNode Parameters)> Requests { get; } = [];
@@ -895,6 +858,10 @@ public sealed class CopilotCodexTests
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             throw new InvalidOperationException("unreachable");
         }
-        public void Dispose() => Disposed = true;
+        public void Dispose()
+        {
+            Disposed = true;
+            DisposedSignal.TrySetResult();
+        }
     }
 }

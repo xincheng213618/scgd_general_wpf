@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
@@ -15,11 +14,15 @@ namespace ColorVision.Copilot
             string taskId,
             MessageInjectingChatClient messageInjector,
             AgentSession session,
+            IReadOnlyList<CopilotSteeringMessageSnapshot> restoredSteeringMessages,
             CopilotAgentTaskEventJournalBuilder taskEventJournal,
             Action onInputAccepted)
         {
             private readonly object _syncRoot = new();
-            private readonly List<TrackedSteeringMessage> _undeliveredSteeringMessages = new();
+            // Restored delegated input is already in the framework queue. Track its original
+            // IDs before accepting new input, without enqueueing it or recording acceptance again.
+            private readonly List<TrackedSteeringMessage> _undeliveredSteeringMessages = restoredSteeringMessages
+                .Select(message => new TrackedSteeringMessage(message.MessageId, message.Text)).ToList();
             private readonly List<string> _deliveredSteeringMessages = new();
 
             public string ConversationId { get; } = conversationId;
@@ -64,34 +67,20 @@ namespace ColorVision.Copilot
                 }
             }
 
-            public async Task<IReadOnlyList<CopilotSteeringMessageSnapshot>> RecordDeliveredSteeringMessagesAsync(
-                CancellationToken cancellationToken)
+            public IReadOnlyList<CopilotSteeringMessageSnapshot> RecordStoredSteeringMessages(
+                IReadOnlyList<string> storedUserMessageIds)
             {
-                TrackedSteeringMessage[] trackedMessages;
-                lock (_syncRoot)
-                {
-                    trackedMessages = _undeliveredSteeringMessages.ToArray();
-                    if (trackedMessages.Length == 0)
-                        return Array.Empty<CopilotSteeringMessageSnapshot>();
-                }
-
-                var pendingMessageIds = (await MessageInjector
-                        .GetPendingMessagesAsync(Session, cancellationToken))
-                    .Select(message => message.MessageId)
-                    .Where(messageId => !string.IsNullOrWhiteSpace(messageId))
-                    .ToHashSet(StringComparer.Ordinal);
+                var storedMessageIds = storedUserMessageIds.ToHashSet(StringComparer.Ordinal);
                 var deliveredMessages = new List<string>();
                 var deliveredSnapshots = new List<CopilotSteeringMessageSnapshot>();
                 lock (_syncRoot)
                 {
-                    foreach (var message in trackedMessages)
+                    foreach (var message in _undeliveredSteeringMessages.ToArray())
                     {
-                        if (pendingMessageIds.Contains(message.MessageId)
-                            || !_undeliveredSteeringMessages.Remove(message))
-                        {
+                        if (!storedMessageIds.Contains(message.MessageId))
                             continue;
-                        }
 
+                        _undeliveredSteeringMessages.Remove(message);
                         TaskEventJournal.RecordSteeringDelivered(message.Text);
                         deliveredMessages.Add(message.Text);
                         deliveredSnapshots.Add(new CopilotSteeringMessageSnapshot(
@@ -149,9 +138,9 @@ namespace ColorVision.Copilot
                 Interlocked.Exchange(ref _owner, null)?.ClearSteeringContext(context);
             }
 
-            public Task<IReadOnlyList<CopilotSteeringMessageSnapshot>> RecordDeliveredSteeringMessagesAsync(
-                CancellationToken cancellationToken) =>
-                context.RecordDeliveredSteeringMessagesAsync(cancellationToken);
+            public IReadOnlyList<CopilotSteeringMessageSnapshot> RecordStoredSteeringMessages(
+                IReadOnlyList<string> storedUserMessageIds) =>
+                context.RecordStoredSteeringMessages(storedUserMessageIds);
 
             public IReadOnlyList<string> GetDeliveredSteeringMessages() =>
                 context.GetDeliveredSteeringMessages();

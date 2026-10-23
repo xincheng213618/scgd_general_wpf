@@ -44,7 +44,6 @@ namespace ColorVision.Copilot
             CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
             Action<CopilotAgentEvent> emit,
             SteeringRegistration steeringRegistration,
-            LiveCheckpointPublisher liveCheckpointPublisher,
             MessageInjectingChatClient messageInjector,
             StringBuilder answerText,
             CopilotBackgroundShellOutputDeliveryLease deferredBackgroundOutputDelivery,
@@ -117,20 +116,6 @@ namespace ColorVision.Copilot
                         }
                         if (!string.IsNullOrEmpty(update.Text))
                             emit(CopilotAgentEvent.AnswerDelta(update.Text));
-                    }
-
-                    var deliveredSteeringMessages = await steeringRegistration
-                        .RecordDeliveredSteeringMessagesAsync(
-                            agentLoopCancellationToken);
-                    if (deliveredSteeringMessages.Count > 0)
-                    {
-                        emit(CopilotAgentEvent.SteeringDelivered(deliveredSteeringMessages));
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            $"Agent provider received {deliveredSteeringMessages.Count} queued user steering instruction(s)."));
-                        await liveCheckpointPublisher.TryPublishAsync(
-                            agent,
-                            session,
-                            agentLoopCancellationToken);
                     }
 
                     if (approvalRequests.Count == 0)

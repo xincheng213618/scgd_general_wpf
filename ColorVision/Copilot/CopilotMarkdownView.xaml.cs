@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -31,6 +32,8 @@ namespace ColorVision.Copilot
         private string? _renderedMarkdown;
         private FlowDocument? _renderDocument;
         private double _lastRenderedWidth;
+        private object? _selectionDataContext;
+        private long _selectionRevision;
 
         private readonly record struct MarkdownCodeFence(char Marker, int Length, int Indentation, string Info);
 
@@ -45,6 +48,7 @@ namespace ColorVision.Copilot
             Loaded += CopilotMarkdownView_Loaded;
             SizeChanged += CopilotMarkdownView_SizeChanged;
             Unloaded += CopilotMarkdownView_Unloaded;
+            DataContextChanged += CopilotMarkdownView_DataContextChanged;
         }
 
         public string Markdown
@@ -67,6 +71,29 @@ namespace ColorVision.Copilot
         private void CopilotMarkdownView_Unloaded(object sender, RoutedEventArgs e)
         {
             _renderTimer.Stop();
+        }
+
+        private void CopilotMarkdownView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            // Recycling can temporarily disconnect an item before attaching it again.
+            // Preserve the same owner's selection, but never carry it to another message.
+            if (e.NewValue == null || ReferenceEquals(e.NewValue, BindingOperations.DisconnectedSource)
+                || ReferenceEquals(e.NewValue, _selectionDataContext))
+            {
+                return;
+            }
+
+            _selectionDataContext = e.NewValue;
+            _selectionRevision++;
+            _renderedMarkdown = null;
+            DocumentViewer.Selection.Select(DocumentViewer.Document.ContentStart, DocumentViewer.Document.ContentStart);
+            foreach (var editor in GetCodeEditors(DocumentViewer.Document))
+            {
+                editor.Select(0, 0);
+                editor.ScrollToHorizontalOffset(0);
+                editor.ScrollToVerticalOffset(0);
+            }
+            ScheduleRender();
         }
 
         private void CopilotMarkdownView_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -99,6 +126,9 @@ namespace ColorVision.Copilot
 
         private void RenderMarkdown(string markdown)
         {
+            var selectionRevision = _selectionRevision;
+            var selection = CaptureTextSelection(markdown);
+            var codeSelections = CaptureCodeSelections(markdown);
             _lastRenderedWidth = ActualWidth;
             try
             {
@@ -112,7 +142,13 @@ namespace ColorVision.Copilot
                 DocumentViewer.Document = CreatePlainTextDocument(markdown);
             }
 
-            _renderedMarkdown = markdown;
+            if (selectionRevision == _selectionRevision)
+                RestoreTextSelection(selection);
+            if (selectionRevision == _selectionRevision)
+                RestoreCodeSelections(codeSelections, markdown);
+            // Document replacement can synchronously switch the binding owner.
+            // Leave that owner's render pending even if its text happens to match.
+            _renderedMarkdown = selectionRevision == _selectionRevision ? markdown : null;
         }
 
         private FlowDocument BuildMarkdownDocument(string markdown)
@@ -415,6 +451,7 @@ namespace ColorVision.Copilot
             var block = new BlockUIContainer(border)
             {
                 Margin = new Thickness(0, 2, 0, 10),
+                Tag = codeTextBox,
             };
             CurrentDocument.Blocks.Add(block);
         }

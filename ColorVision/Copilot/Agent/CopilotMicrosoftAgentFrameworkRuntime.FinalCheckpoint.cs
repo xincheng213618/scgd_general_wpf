@@ -31,6 +31,7 @@ namespace ColorVision.Copilot
             {
                 if (controlIntent != CopilotAgentControlIntent.Cancel)
                 {
+                    var sessionConversationMemory = liveCheckpointPublisher.SessionConversationMemory;
                     var serializedSession = await agent.SerializeSessionAsync(session, null, finalization.Token)
                         .AsTask()
                         .WaitAsync(finalization.Token);
@@ -52,7 +53,8 @@ namespace ColorVision.Copilot
                         request.TaskIntentText,
                         hookSurfaceSnapshot,
                         request.ProjectInstructions,
-                        request.ConfiguredDeveloperInstructions);
+                        request.ConfiguredDeveloperInstructions,
+                        sessionConversationMemory);
                     if (sessionCheckpoint == null)
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
                 }

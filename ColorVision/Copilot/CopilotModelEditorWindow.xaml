@@ -14,7 +14,7 @@
             <TextBlock Text="模型 ID" Style="{StaticResource SettingsFieldLabelStyle}" />
             <ComboBox ItemsSource="{Binding ModelPresets}" IsEditable="True" IsTextSearchEnabled="False" Text="{Binding ModelId, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,20" />
             <TextBlock Text="{display:DisplayText Key='上下文窗口'}" Style="{StaticResource SettingsFieldLabelStyle}" />
-            <TextBox Text="{Binding ContextWindowText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditCapabilities}" Margin="0,8,0,20" />
+            <TextBox Text="{Binding ContextWindowText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditContextWindow}" Margin="0,8,0,20" />
             <TextBlock Text="{display:DisplayText Key='最大输出 Token'}" Style="{StaticResource SettingsFieldLabelStyle}" />
             <TextBox Text="{Binding MaxOutputText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditOutputLimit}" Margin="0,8,0,8" />
             <TextBlock Text="{Binding OutputLimitHint}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,6" />
@@ -23,9 +23,10 @@
                 <StackPanel Margin="12">
                     <CheckBox Content="{display:DisplayText Key='支持视觉（图片输入）'}" IsChecked="{Binding SupportsImages}" IsEnabled="{Binding CanEditCapabilities}" Margin="0,0,0,16" />
                     <TextBlock Text="{display:DisplayText Key='首段内容超时（秒）'}" Style="{StaticResource SettingsFieldLabelStyle}" />
-                    <TextBox Text="{Binding Draft.FirstContentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12" />
+                    <TextBox Text="{Binding FirstContentTimeoutText, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12" />
                     <TextBlock Text="{display:DisplayText Key='流式响应间隔（秒）'}" Style="{StaticResource SettingsFieldLabelStyle}" />
-                    <TextBox Text="{Binding Draft.StreamingInactivityTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0" />
+                    <TextBox Text="{Binding StreamingInactivityTimeoutText, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,6" />
+                    <TextBlock Text="两项超时均支持 15–3600 秒。" Style="{StaticResource SettingsHintTextStyle}" />
                 </StackPanel>
             </Expander>
             <TextBlock Text="{Binding Error}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,14,0,0" />

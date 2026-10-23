@@ -19,6 +19,8 @@ namespace ColorVision.Copilot
         private bool _isLocalCodexSignedIn;
         private string _localCodexStatus = "正在检测本机 Codex…";
         private IReadOnlyList<string> _localCodexModels = Array.Empty<string>();
+        private readonly Func<IReadOnlyList<string>> _findLocalCodexCandidates;
+        private readonly Func<IReadOnlyList<string>?, CancellationToken, Task<ICopilotCodexAppServer>> _connectLocalCodex;
 
         public bool IsCheckingLocalCodex { get => _isCheckingLocalCodex; private set { SetProperty(ref _isCheckingLocalCodex, value); CommandManager.InvalidateRequerySuggested(); } }
         public bool HasLocalCodex { get => _hasLocalCodex; private set => SetProperty(ref _hasLocalCodex, value); }
@@ -37,38 +39,58 @@ namespace ColorVision.Copilot
         {
             if (_disposed || IsCheckingLocalCodex) return;
             IsCheckingLocalCodex = true;
+            ClearLocalCodexAccount();
             LocalCodexStatus = "正在检测本机 Codex…";
             try
             {
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
                 timeout.CancelAfter(TimeSpan.FromSeconds(30));
-                var candidates = await Task.Run(() => CopilotCodexRuntimeLocator.FindCandidates(), timeout.Token);
+                var candidates = await Task.Run(_findLocalCodexCandidates, timeout.Token);
+                timeout.Token.ThrowIfCancellationRequested();
                 HasLocalCodex = candidates.Count > 0;
-                IsLocalCodexSignedIn = false;
                 if (!HasLocalCodex) { LocalCodexStatus = "未检测到 Codex，可继续配置 API Key。"; return; }
-                using var server = await CopilotCodexAppServer.ConnectAsync(timeout.Token);
-                await RefreshLocalCodexAccountAsync(server, timeout.Token);
+                await using var server = await _connectLocalCodex(candidates, timeout.Token);
+                timeout.Token.ThrowIfCancellationRequested();
+                await RefreshLocalCodexAccountAsync(server, timeout.Token, useInitialSnapshot: true);
             }
             catch (OperationCanceledException) { if (!_disposed) LocalCodexStatus = "检测超时，请启动或更新 Codex 后重新检测。"; }
             catch (Exception ex) { if (!_disposed) LocalCodexStatus = SanitizeError(ex.Message); }
             finally { IsCheckingLocalCodex = false; }
         }
 
-        private async Task RefreshLocalCodexAccountAsync(CopilotCodexAppServer server, CancellationToken token)
+        private void ClearLocalCodexAccount()
         {
-            var account = await server.RequestAsync("account/read", new { refreshToken = false }, token);
-            var signedIn = account["account"] != null;
             IsLocalCodexSignedIn = false;
-            LocalCodexStatus = "已检测到 Codex，登录后即可使用。";
             _localCodexModels = Array.Empty<string>();
+            OnPropertyChanged(nameof(LocalCodexModels));
+            OnPropertyChanged(nameof(AvailableModelPresets));
+        }
+
+        internal async Task RefreshLocalCodexAccountAsync(ICopilotCodexAppServer server, CancellationToken token, bool useInitialSnapshot)
+        {
+            token.ThrowIfCancellationRequested();
+            var initialSignedIn = useInitialSnapshot ? server.InitialSignedIn : null;
+            bool signedIn;
+            if (initialSignedIn.HasValue)
+                signedIn = initialSignedIn.Value;
+            else
+            {
+                var account = await server.RequestAsync("account/read", new { refreshToken = false }, token);
+                token.ThrowIfCancellationRequested();
+                signedIn = account["account"] != null;
+            }
+            token.ThrowIfCancellationRequested();
+            IReadOnlyList<string> availableModels = Array.Empty<string>();
             if (signedIn)
             {
                 var models = await server.RequestAsync("model/list", new { limit = 100 }, token);
+                token.ThrowIfCancellationRequested();
                 if (models["data"] is System.Text.Json.Nodes.JsonArray data)
-                    _localCodexModels = data.Select(m => m?["model"]?.GetValue<string>() ?? string.Empty).Where(m => m.Length > 0).Distinct().ToArray();
-                IsLocalCodexSignedIn = true;
-                LocalCodexStatus = "已检测到 Codex，已登录。可使用本机账户，无需 API Key。";
+                    availableModels = data.Select(m => m?["model"]?.GetValue<string>() ?? string.Empty).Where(m => m.Length > 0).Distinct().ToArray();
             }
+            _localCodexModels = availableModels;
+            IsLocalCodexSignedIn = signedIn;
+            LocalCodexStatus = signedIn ? "已检测到 Codex，已登录。可使用本机账户，无需 API Key。" : "已检测到 Codex，登录后即可使用。";
             OnPropertyChanged(nameof(LocalCodexModels));
             OnPropertyChanged(nameof(AvailableModelPresets));
         }
@@ -77,12 +99,15 @@ namespace ColorVision.Copilot
         {
             if (_disposed || IsCheckingLocalCodex) return;
             IsCheckingLocalCodex = true;
+            ClearLocalCodexAccount();
             try
             {
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
                 timeout.CancelAfter(TimeSpan.FromMinutes(5));
-                using var server = await CopilotCodexAppServer.ConnectAsync(timeout.Token);
+                await using var server = await _connectLocalCodex(null, timeout.Token);
+                timeout.Token.ThrowIfCancellationRequested();
                 var login = await server.RequestAsync("account/login/start", new { type = "chatgpt" }, timeout.Token);
+                timeout.Token.ThrowIfCancellationRequested();
                 var url = login["authUrl"]?.GetValue<string>();
                 if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
                     || !(uri.Host == "auth.openai.com" || uri.Host == "chatgpt.com" || uri.Host.EndsWith(".openai.com", StringComparison.OrdinalIgnoreCase)))
@@ -92,12 +117,13 @@ namespace ColorVision.Copilot
                 while (true)
                 {
                     var message = await server.ReadAsync(timeout.Token);
+                    timeout.Token.ThrowIfCancellationRequested();
                     if (message["method"]?.GetValue<string>() != "account/login/completed") continue;
                     if (message["params"]?["success"]?.GetValue<bool>() != true)
                         throw new InvalidOperationException("Codex 登录未完成，请重试或在桌面版中登录。");
                     break;
                 }
-                await RefreshLocalCodexAccountAsync(server, timeout.Token);
+                await RefreshLocalCodexAccountAsync(server, timeout.Token, useInitialSnapshot: false);
             }
             catch (OperationCanceledException) { if (!_disposed) LocalCodexStatus = "登录已超时，请重新登录。"; }
             catch (Exception ex) { if (!_disposed) LocalCodexStatus = SanitizeError(ex.Message); }

@@ -1,5 +1,6 @@
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 
@@ -9,6 +10,8 @@ namespace ColorVision.Copilot
     {
         internal bool TryStopCurrentReplyFromKeyboard()
         {
+            if (TryCancelSelectedImagePreparation())
+                return true;
             if (!IsViewingActiveRun
                 || ActiveHostedRunInteraction.PrimaryAction == CopilotHostedRunPrimaryAction.None)
             {
@@ -30,6 +33,11 @@ namespace ColorVision.Copilot
 
         private void StopTaskFromCommand(CopilotLocalCommand command)
         {
+            if (TryCancelSelectedImagePreparation())
+            {
+                ShowLocalCommandResult(command, "已请求取消图片准备，尚未发送新请求。");
+                return;
+            }
             var activeRun = ActiveHostedRun;
             if (!IsViewingActiveRun || activeRun == null)
             {
@@ -85,11 +93,22 @@ namespace ColorVision.Copilot
             if (IsBusy)
                 return;
 
-            var window = new CopilotSettingsWindow(initialPage)
+            CopilotSettingsWindow window;
+            try
             {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            };
+                window = new CopilotSettingsWindow(initialPage)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                };
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                LocalCommandResultTitle = "设置暂时无法打开";
+                LocalCommandResultText = "无法读取本地会话记录，请解除文件占用或恢复目录访问权限后重试。"
+                    + Environment.NewLine + CopilotUserFacingErrorFormatter.Sanitize(exception.Message);
+                return;
+            }
 
             var result = window.ShowDialog();
             if (result != true && !window.HasAppliedChanges)

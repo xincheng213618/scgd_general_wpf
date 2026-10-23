@@ -1,3 +1,4 @@
+using ColorVision.UI;
 using System.Globalization;
 using System.IO;
 
@@ -10,7 +11,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests : IDisposable
     public CopilotEffectiveConfigDiagnosticsTests() => Directory.CreateDirectory(_directory);
 
     [Fact]
-    public void CurrentSettingsAndSessionChangesRefreshTheReportWithoutClaimingToUpdateTheRunningTask()
+    public void PersistedConfigAndSessionChangesRefreshTheReportWithoutClaimingToUpdateTheRunningTask()
     {
         var profile = new CopilotProfileConfig { Id = "local-profile", Name = "Local", Model = "model-before" };
         var config = new CopilotConfig
@@ -30,8 +31,15 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests : IDisposable
             ComposerMode = CopilotAgentMode.Code,
             ConversationRunState = CopilotHostedRunState.Running,
             StateLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Backup),
-            ConfigFilePath = WriteConfigMetadata(),
+            ConfigFilePath = WriteConfig(config),
         };
+
+        var probe = CopilotEffectiveConfigDiagnostics.ProbeConfigFile(context.ConfigFilePath);
+        Assert.Equal(CopilotConfigFileProbeState.Loaded, probe.State);
+        Assert.Equal(config.SchemaVersion, probe.SchemaVersion);
+        Assert.Equal(profile.Id, Assert.Single(probe.PersistedProfileIds));
+        Assert.True(probe.HasAgentDefaults);
+        Assert.True(probe.HasMcpSettings);
 
         var before = CopilotEffectiveConfigDiagnostics.Format(context);
         profile.Model = "model-after";
@@ -66,7 +74,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests : IDisposable
     public void ReportRedactsConfigurationSecretsAndUsesTheSelectedProfile()
     {
         const string secret = "private-value-must-not-appear";
-        var path = WriteConfigMetadata();
+        var path = WriteConfig();
         var originalConfig = File.ReadAllText(path);
         File.WriteAllText(Path.Combine(_directory, "config.toml"), $"model = \"{secret}\"");
         var profile = new CopilotProfileConfig
@@ -114,6 +122,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests : IDisposable
     [Theory]
     [InlineData(null, "FileMissing", "当前文件不存在")]
     [InlineData("{}", "SectionMissing", "当前无 CopilotConfig 节")]
+    [InlineData("{\"CopilotConfig\":{}}", "SectionMissing", "当前无 CopilotConfig 节")]
     [InlineData("{broken", "InvalidJson", "JSON 无法解析")]
     public void UnusableCurrentFilesDoNotInventPersistedProfileOrAgentSources(
         string? content,
@@ -149,7 +158,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests : IDisposable
 
         var futureSchema = CopilotConfig.CurrentSchemaVersion + 1;
         var futurePath = Path.Combine(_directory, "future.json");
-        File.WriteAllText(futurePath, $$"""{ "CopilotConfig": { "SchemaVersion": {{futureSchema}} } }""");
+        File.WriteAllText(futurePath, $$"""{ "{{typeof(CopilotConfig).FullName}}": { "SchemaVersion": {{futureSchema}} } }""");
         var report = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
         {
             Config = new CopilotConfig { SchemaVersion = futureSchema },
@@ -185,17 +194,16 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests : IDisposable
         Assert.DoesNotContain("Codex config", report, StringComparison.Ordinal);
     }
 
-    private string WriteConfigMetadata()
+    private string WriteConfig(CopilotConfig? config = null)
     {
         var path = Path.Combine(_directory, "ColorVision.config.json");
-        File.WriteAllText(path, $$"""
-            { "CopilotConfig": {
-                "SchemaVersion": {{CopilotConfig.CurrentSchemaVersion}},
-                "Profiles": [{ "Id": "local-profile" }],
-                "AgentDefaults": {},
-                "McpEnabled": false
-            } }
-            """);
+        var handler = new ConfigHandler { ConfigFilePath = path, IsAutoSave = false };
+        config ??= new CopilotConfig
+        {
+            SchemaVersion = CopilotConfig.CurrentSchemaVersion,
+            Profiles = [new CopilotProfileConfig { Id = "local-profile" }],
+        };
+        Assert.True(handler.TrySave(config, out var errorMessage), errorMessage);
         return path;
     }
 

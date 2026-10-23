@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
                 TryCompletePromptHistorySearch();
                 return;
             }
+            if (TryCancelSelectedImagePreparation())
+                return;
             if (_isCompactingConversation)
             {
                 if (_queuedLocalCommandExecution is { } execution)

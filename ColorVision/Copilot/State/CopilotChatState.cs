@@ -168,15 +168,20 @@ namespace ColorVision.Copilot
             }
             var preferredDefaultProfile = config.GetPreferredDefaultProfile();
 
-            if (config.Profiles.Count > 0 && (
+            if (preferredDefaultProfile == null && !string.IsNullOrEmpty(ActiveProfileId))
+            {
+                ActiveProfileId = string.Empty;
+                changed = true;
+            }
+            else if (preferredDefaultProfile != null && (
                 string.IsNullOrWhiteSpace(ActiveProfileId)
-                || config.Profiles.All(profile => profile.Id != ActiveProfileId)
+                || config.Profiles.All(profile => profile.Id != ActiveProfileId || !profile.IsAvailable)
                 || (preferredDefaultProfile != null
                     && !string.IsNullOrWhiteSpace(ActiveProfileId)
                     && string.Equals(ActiveProfileId, config.Profiles[0].Id, StringComparison.Ordinal)
                     && !string.Equals(ActiveProfileId, preferredDefaultProfile.Id, StringComparison.Ordinal))))
             {
-                ActiveProfileId = preferredDefaultProfile?.Id ?? config.Profiles[0].Id;
+                ActiveProfileId = preferredDefaultProfile.Id;
                 changed = true;
             }
 

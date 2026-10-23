@@ -88,6 +88,12 @@ namespace ColorVision.Copilot
                 return true;
             }
 
+            if (chain.Any(candidate => candidate is CopilotProviderPayloadException { ErrorCode: "context_length_exceeded" }))
+            {
+                failureKind = "provider context limit";
+                return true;
+            }
+
             var statusCode = TryGetStatusCode(chain);
             if (statusCode == (int)HttpStatusCode.RequestEntityTooLarge)
             {

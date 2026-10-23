@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore] public bool IsAvailable => IsEnabled && ConnectionEnabled;
+        [JsonIgnore] public string ModelIdLabel => string.IsNullOrWhiteSpace(Model) ? "默认模型" : Model;
 
         // Legacy/manual profiles retain their explicit capability declarations on load.
         public bool UseModelDefaults { get; set; }

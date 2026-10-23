@@ -268,8 +268,13 @@ namespace ColorVision.Copilot
                         enumerator: null,
                         bufferedUpdates.ToArray());
             }
-            catch
+            catch (Exception exception)
             {
+                // Cancellation guards may replace the adapter exception. Keep the usage that
+                // this layer already buffered, including cumulative snapshots from local Codex.
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception,
+                    CopilotTokenBudgetChatClient.ExtractUsage(bufferedUpdates.SelectMany(update => update.Contents))
+                        .MergeProgress(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception)));
                 if (enumerator != null)
                 {
                     try

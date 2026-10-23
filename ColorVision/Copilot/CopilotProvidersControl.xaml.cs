@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 
 namespace ColorVision.Copilot
 {
@@ -10,6 +11,15 @@ namespace ColorVision.Copilot
         private CopilotSettingsViewModel ViewModel => (CopilotSettingsViewModel)DataContext;
         private void AddProvider_Click(object sender, RoutedEventArgs e) { ViewModel.ConnectProviderSearchText = string.Empty; ViewModel.IsAddingModel = true; }
         private void Back_Click(object sender, RoutedEventArgs e) => ViewModel.IsAddingModel = false;
+        private void ProviderList_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListBox list && e.OriginalSource is DependencyObject source
+                && ItemsControl.ContainerFromElement(list, source) is ListBoxItem)
+            {
+                ViewModel.IsAddingModel = false;
+                RenamePanel.Visibility = Visibility.Collapsed;
+            }
+        }
         private void ChooseProvider_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button { Tag: CopilotConnectProviderOption option }) ViewModel.AddProvider(option);
@@ -30,12 +40,17 @@ namespace ColorVision.Copilot
         private void TestModel_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button { Tag: CopilotProfileConfig model }) return;
-            ViewModel.SelectedProfile = model;
-            if (ViewModel.TestSelectedProfileCommand.CanExecute(null)) ViewModel.TestSelectedProfileCommand.Execute(null);
+            ViewModel.RequestProfileConnectionTest(model);
         }
         private void DeleteModel_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem { Tag: CopilotProfileConfig model }) ViewModel.DeleteModel(model);
+        }
+        private void ModelMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu menu || menu.Items[0] is not MenuItem item) return;
+            item.IsEnabled = ViewModel.SelectedProvider?.Models.Count > 1;
+            item.ToolTip = item.IsEnabled ? "删除此模型" : "供应商至少保留一个模型；可从供应商菜单删除整个连接。";
         }
     }
 }

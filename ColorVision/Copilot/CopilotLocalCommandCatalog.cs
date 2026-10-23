@@ -553,7 +553,7 @@ namespace ColorVision.Copilot
             CopilotProfileConfig? selectedProfile)
         {
             var candidates = (profiles ?? Array.Empty<CopilotProfileConfig>())
-                .Where(profile => profile != null)
+                .Where(profile => profile?.IsAvailable == true)
                 .ToArray();
             var duplicateLabels = candidates
                 .GroupBy(profile => profile.DisplayLabel, StringComparer.OrdinalIgnoreCase)

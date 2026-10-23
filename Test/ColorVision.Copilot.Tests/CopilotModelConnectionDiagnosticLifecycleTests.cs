@@ -23,7 +23,7 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         using var client = new HttpClient(handler);
         using var viewModel = CreateViewModel(client);
         var context = new PausedSynchronizationContext();
-        var diagnostic = StartDiagnostic(viewModel, context);
+        var diagnostic = StartDiagnostic(viewModel.TestSelectedProfileConnectionAsync, context);
 
         handler.Release.TrySetResult();
         await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -64,7 +64,7 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         using var viewModel = CreateViewModel(client);
         var profile = viewModel.SelectedProfile;
         var context = new PausedSynchronizationContext();
-        var diagnostic = StartDiagnostic(viewModel, context);
+        var diagnostic = StartDiagnostic(viewModel.TestSelectedProfileConnectionAsync, context);
 
         handler.Release.TrySetResult();
         await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -122,7 +122,7 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         using var viewModel = CreateViewModel(client);
         var originalProfile = viewModel.SelectedProfile!;
         var context = new PausedSynchronizationContext();
-        var diagnostic = StartDiagnostic(viewModel, context);
+        var diagnostic = StartDiagnostic(viewModel.TestSelectedProfileConnectionAsync, context);
 
         handler.Release.TrySetResult();
         await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -225,6 +225,194 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequestedModelWaitsForPreviousCancellationCleanup(bool selectBeforeRequest)
+    {
+        using var handler = new SequentialModelHandler();
+        using var client = new HttpClient(handler);
+        using var viewModel = CreateViewModel(client);
+        var first = viewModel.TestSelectedProfileConnectionAsync();
+        await handler.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var target = viewModel.Profiles[1];
+        if (selectBeforeRequest)
+            viewModel.SelectedProfile = target;
+
+        var requested = viewModel.TestProfileConnectionAsync(target);
+        try
+        {
+            await handler.FirstCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(requested.IsCompleted);
+            Assert.Equal(1, handler.RequestCount);
+            Assert.True(viewModel.IsTestingSelectedProfileConnection);
+            Assert.Same(target, viewModel.SelectedProfile);
+            Assert.Contains("随后测试 Profile B", viewModel.SelectedProfileConnectionTestText, StringComparison.Ordinal);
+
+            handler.ReleaseFirstCleanup.TrySetResult();
+            await handler.NextStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(new[] { "test-model-a", "test-model-b" }, handler.Models.ToArray());
+            Assert.True(viewModel.IsTestingSelectedProfileConnection);
+            Assert.Equal(1, handler.MaximumConcurrentRequests);
+            handler.ReleaseNext.TrySetResult();
+            await Task.WhenAll(first, requested).WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.StartsWith("Connected in ", viewModel.SelectedProfileConnectionTestText, StringComparison.Ordinal);
+            Assert.Contains("Model test succeeded for Profile B.", viewModel.SettingsStatusText, StringComparison.Ordinal);
+            Assert.False(viewModel.IsTestingSelectedProfileConnection);
+        }
+        finally
+        {
+            handler.ReleaseFirstCleanup.TrySetResult();
+            handler.ReleaseNext.TrySetResult();
+        }
+    }
+
+    [Fact]
+    public async Task LatestRequestedModelReplacesTheWaitingRequest()
+    {
+        using var handler = new SequentialModelHandler();
+        using var client = new HttpClient(handler);
+        using var viewModel = CreateViewModel(client);
+        var first = viewModel.TestSelectedProfileConnectionAsync();
+        await handler.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var superseded = viewModel.TestProfileConnectionAsync(viewModel.Profiles[1]);
+        var latestModel = CreateProfile("c", "Profile C");
+        viewModel.Profiles.Add(latestModel);
+        var latest = viewModel.TestProfileConnectionAsync(latestModel);
+        try
+        {
+            await handler.FirstCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(1, handler.RequestCount);
+            handler.ReleaseFirstCleanup.TrySetResult();
+            await handler.NextStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(new[] { "test-model-a", "test-model-c" }, handler.Models.ToArray());
+            Assert.Equal(1, handler.MaximumConcurrentRequests);
+            handler.ReleaseNext.TrySetResult();
+            await Task.WhenAll(first, superseded, latest).WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Same(latestModel, viewModel.SelectedProfile);
+            Assert.Contains("Model test succeeded for Profile C.", viewModel.SettingsStatusText, StringComparison.Ordinal);
+        }
+        finally
+        {
+            handler.ReleaseFirstCleanup.TrySetResult();
+            handler.ReleaseNext.TrySetResult();
+        }
+    }
+
+    [Theory]
+    [InlineData("switch")]
+    [InlineData("switch-back")]
+    [InlineData("edit")]
+    [InlineData("remove")]
+    [InlineData("cancel")]
+    [InlineData("repeat-row")]
+    [InlineData("repeat-row-after-cleanup")]
+    [InlineData("close")]
+    public async Task WaitingDiagnosticIsRevokedByFurtherUserChanges(string change)
+    {
+        using var handler = new SequentialModelHandler();
+        using var client = new HttpClient(handler);
+        using var viewModel = CreateViewModel(client);
+        var first = viewModel.TestSelectedProfileConnectionAsync();
+        await handler.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var target = viewModel.Profiles[1];
+        var context = change == "repeat-row-after-cleanup" ? new PausedSynchronizationContext() : null;
+        var requested = context == null ? viewModel.TestProfileConnectionAsync(target)
+            : StartDiagnostic(() => viewModel.TestProfileConnectionAsync(target), context);
+        try
+        {
+            await handler.FirstCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            if (context != null)
+            {
+                handler.ReleaseFirstCleanup.TrySetResult();
+                await first.WaitAsync(TimeSpan.FromSeconds(5));
+                await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            switch (change)
+            {
+                case "switch":
+                case "switch-back":
+                    viewModel.SelectedProfile = viewModel.Profiles[0];
+                    if (change == "switch-back")
+                        viewModel.SelectedProfile = target;
+                    break;
+                case "edit":
+                    target.Model = "edited-model";
+                    break;
+                case "remove":
+                    viewModel.Profiles.Remove(target);
+                    break;
+                case "cancel":
+                    viewModel.TestSelectedProfileCommand.Execute(null);
+                    break;
+                case "repeat-row":
+                case "repeat-row-after-cleanup":
+                    await viewModel.TestProfileConnectionAsync(target);
+                    break;
+                case "close":
+                    viewModel.Dispose();
+                    break;
+                default:
+                    throw new InvalidOperationException("Unknown waiting diagnostic transition.");
+            }
+
+            var settingsNotice = viewModel.SettingsStatusText;
+            var testText = viewModel.SelectedProfileConnectionTestText;
+            handler.ReleaseFirstCleanup.TrySetResult();
+            context?.RunPending();
+            await Task.WhenAll(first, requested).WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(new[] { "test-model-a" }, handler.Models.ToArray());
+            Assert.Equal(1, handler.MaximumConcurrentRequests);
+            Assert.False(viewModel.IsTestingSelectedProfileConnection);
+            Assert.DoesNotContain("Connected", viewModel.SelectedProfileConnectionTestText, StringComparison.Ordinal);
+            if (change is "cancel" or "repeat-row" or "repeat-row-after-cleanup")
+            {
+                Assert.Equal("Connection test cancelled.", viewModel.SelectedProfileConnectionTestText);
+                Assert.Equal(viewModel.SelectedProfileConnectionTestText, viewModel.SettingsStatusText);
+            }
+            else
+            {
+                Assert.Equal(settingsNotice, viewModel.SettingsStatusText);
+            }
+            if (change == "close")
+                Assert.Equal(testText, viewModel.SelectedProfileConnectionTestText);
+        }
+        finally
+        {
+            handler.ReleaseFirstCleanup.TrySetResult();
+            handler.ReleaseNext.TrySetResult();
+        }
+    }
+
+    [Fact]
+    public async Task ClickingTheRunningModelCancelsWithoutRestartingIt()
+    {
+        using var handler = new SequentialModelHandler();
+        using var client = new HttpClient(handler);
+        using var viewModel = CreateViewModel(client);
+        var first = viewModel.TestProfileConnectionAsync(viewModel.SelectedProfile!);
+        await handler.FirstStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        try
+        {
+            await viewModel.TestProfileConnectionAsync(viewModel.SelectedProfile!);
+            await handler.FirstCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            handler.ReleaseFirstCleanup.TrySetResult();
+            await first.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(1, handler.RequestCount);
+            Assert.Equal("Connection test cancelled.", viewModel.SelectedProfileConnectionTestText);
+            Assert.False(viewModel.IsTestingSelectedProfileConnection);
+        }
+        finally
+        {
+            handler.ReleaseFirstCleanup.TrySetResult();
+            handler.ReleaseNext.TrySetResult();
+        }
+    }
+
     private CopilotSettingsViewModel CreateViewModel(HttpClient client)
     {
         var config = new CopilotConfig
@@ -256,13 +444,13 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         Model = "test-model-" + id,
     };
 
-    private static Task StartDiagnostic(CopilotSettingsViewModel viewModel, SynchronizationContext context)
+    private static Task StartDiagnostic(Func<Task> diagnostic, SynchronizationContext context)
     {
         var previousContext = SynchronizationContext.Current;
         try
         {
             SynchronizationContext.SetSynchronizationContext(context);
-            return viewModel.TestSelectedProfileConnectionAsync();
+            return diagnostic();
         }
         finally
         {
@@ -295,6 +483,60 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
             finally
             {
                 SetSynchronizationContext(previousContext);
+            }
+        }
+    }
+
+    private sealed class SequentialModelHandler : HttpMessageHandler
+    {
+        private readonly object _concurrencyLock = new();
+        private int _activeRequests;
+        private int _requestCount;
+        public TaskCompletionSource FirstStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource FirstCancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseFirstCleanup { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource NextStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseNext { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public ConcurrentQueue<string> Models { get; } = new();
+        public int RequestCount => Volatile.Read(ref _requestCount);
+        public int MaximumConcurrentRequests { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var requestNumber = Interlocked.Increment(ref _requestCount);
+            lock (_concurrencyLock)
+                MaximumConcurrentRequests = Math.Max(MaximumConcurrentRequests, ++_activeRequests);
+            try
+            {
+                using var payload = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+                Models.Enqueue(payload.RootElement.GetProperty("model").GetString()!);
+                if (requestNumber == 1)
+                {
+                    FirstStarted.TrySetResult();
+                    try
+                    {
+                        await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        FirstCancelled.TrySetResult();
+                        // Keep cancellation cleanup in flight until the test admits it.
+                        await ReleaseFirstCleanup.Task.ConfigureAwait(false);
+                        throw;
+                    }
+                }
+
+                NextStarted.TrySetResult();
+                await ReleaseNext.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("data: {\"choices\":[{\"delta\":{\"content\":\"OK\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n", Encoding.UTF8, "text/event-stream"),
+                };
+            }
+            finally
+            {
+                lock (_concurrencyLock)
+                    _activeRequests--;
             }
         }
     }

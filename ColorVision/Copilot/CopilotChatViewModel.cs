@@ -146,16 +146,29 @@ namespace ColorVision.Copilot
             bool persistConfigChanges)
         {
             _chatService = chatService;
+            _turnRuntime = turnRuntime;
+            _taskHost = taskHost;
+            _configHandler = configHandler;
+            _config = config;
+            _stateStore = stateStore;
+
+            // A temporarily unreadable state must fail before this instance is
+            // retained by global events or a background persistence worker.
+            if (_config.EnsureInitialized() && persistConfigChanges)
+                _ = TryPersistCurrentConfig(out _);
+            _state = _stateStore.Load();
+            var stateChanged = _state.EnsureInitializedAfterRestore(_config, deferQueuedDraftRecovery: true);
+            stateChanged |= CopilotSteeringRecovery.RestorePendingToDrafts(_state);
+            stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
+                _state,
+                DateTimeOffset.UtcNow);
+            _stateStore.CleanupOrphanedAttachments(_state);
+
             _conversationTitleCoordinator = new CopilotConversationTitleCoordinator(
                 new CopilotConversationTitleGenerator(_chatService),
                 ApplyGeneratedConversationTitleAsync);
             _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
-            _turnRuntime = turnRuntime;
-            _taskHost = taskHost;
             _localGitDiffService = new CopilotLocalGitDiffService();
-            _configHandler = configHandler;
-            _config = config;
-            _stateStore = stateStore;
             _statePersistenceCoordinator = new CopilotChatStatePersistenceCoordinator(
                 _stateStore,
                 () => _state,
@@ -182,16 +195,6 @@ namespace ColorVision.Copilot
             CopilotLiveContextRegistry.CurrentChanged += CopilotLiveContextRegistry_CurrentChanged;
             CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
             CopilotAgentSkillCatalog.CatalogChanged += AgentSkillCatalog_CatalogChanged;
-            if (_config.EnsureInitialized() && persistConfigChanges)
-                _ = TryPersistCurrentConfig(out _);
-
-            _state = _stateStore.Load();
-            var stateChanged = _state.EnsureInitializedAfterRestore(_config, deferQueuedDraftRecovery: true);
-            stateChanged |= CopilotSteeringRecovery.RestorePendingToDrafts(_state);
-            stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
-                _state,
-                DateTimeOffset.UtcNow);
-            _stateStore.CleanupOrphanedAttachments(_state);
             _conversationSession = new CopilotConversationSession(_state, _config);
             _approvalCoordinator = new CopilotApprovalCoordinator(
                 CopilotMcpConfirmationStore.Instance,

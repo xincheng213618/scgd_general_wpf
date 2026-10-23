@@ -14,7 +14,7 @@
                 <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="0,0,1,0" Padding="8,16">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Text="{display:DisplayText Key='供应商'}" Style="{StaticResource SettingsHintTextStyle}" Margin="12,0,0,14" />
-                        <ListBox ItemsSource="{Binding Providers}" SelectedItem="{Binding SelectedProvider}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemContainerStyle="{StaticResource SettingsModelItemStyle}">
+                        <ListBox ItemsSource="{Binding Providers}" SelectedItem="{Binding SelectedProvider}" PreviewMouseLeftButtonUp="ProviderList_Click" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemContainerStyle="{StaticResource SettingsModelItemStyle}">
                             <ListBox.ItemTemplate><DataTemplate>
                                 <Grid MinHeight="26">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
@@ -23,6 +23,9 @@
                                         <Ellipse.Style><Style TargetType="Ellipse"><Setter Property="Fill" Value="#D98218" /><Style.Triggers>
                                             <DataTrigger Binding="{Binding IsReady}" Value="True"><Setter Property="Fill" Value="#218A48" /></DataTrigger>
                                             <DataTrigger Binding="{Binding IsLocalCodex}" Value="True"><Setter Property="Fill" Value="#D98218" /></DataTrigger>
+                                            <MultiDataTrigger><MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsLocalCodex}" Value="True" /><Condition Binding="{Binding DataContext.IsLocalCodexSignedIn, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True" />
+                                            </MultiDataTrigger.Conditions><Setter Property="Fill" Value="#218A48" /></MultiDataTrigger>
                                             <DataTrigger Binding="{Binding IsEnabled}" Value="False"><Setter Property="Fill" Value="#A5A5A5" /></DataTrigger>
                                         </Style.Triggers></Style></Ellipse.Style>
                                     </Ellipse>
@@ -32,6 +35,11 @@
                     </DockPanel>
                 </Border>
                 <Grid Grid.Column="1">
+                    <TextBlock Text="{display:DisplayText Key='添加供应商以开始配置模型'}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6">
+                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                            <MultiDataTrigger><MultiDataTrigger.Conditions><Condition Binding="{Binding HasSelectedProvider}" Value="False" /><Condition Binding="{Binding IsAddingModel}" Value="False" /></MultiDataTrigger.Conditions><Setter Property="Visibility" Value="Visible" /></MultiDataTrigger>
+                        </Style.Triggers></Style></TextBlock.Style>
+                    </TextBlock>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsAddingModel, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel Margin="24">
                             <DockPanel Margin="0,0,0,22">
@@ -83,10 +91,7 @@
                                     <Button Grid.Column="1" Content="&#xE890;" Command="{Binding ToggleSelectedProfileApiKeyVisibilityCommand}" Style="{StaticResource SettingsIconButtonStyle}" ToolTip="{Binding SelectedProfileApiKeyVisibilityText}" AutomationProperties.Name="显示或隐藏 API Key" Margin="8,0,0,0" />
                                 </Grid>
                                 <TextBlock Text="{display:DisplayText Key='当前 Windows 用户无法解密已保存的密钥，请重新输入。'}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Visibility="{Binding SelectedProvider.Connection.CredentialNeedsReentry, Converter={StaticResource BoolToVisibility}}" />
-                                <Expander Header="{display:DisplayText Key='连接选项'}" Margin="0,8,0,12"><StackPanel Margin="0,10">
-                                    <TextBlock Text="{Binding SelectedProvider.Connection.EndpointStatusText}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
-                                    <CheckBox Content="{display:DisplayText Key='允许向非本机 HTTP 服务发送密钥'}" IsChecked="{Binding SelectedProvider.AllowInsecureHttp}" />
-                                </StackPanel></Expander>
+
                             </StackPanel>
                             <StackPanel Visibility="{Binding SelectedProvider.IsLocalCodex, Converter={StaticResource BoolToVisibility}}" Margin="0,0,0,20">
                                 <TextBlock Text="{display:DisplayText Key='使用本机 Codex 账户，无需填写 API Key。'}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" />
@@ -104,21 +109,25 @@
                                             <Grid MinHeight="24">
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                                 <WrapPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding ModelDisplayLabel}" FontFamily="Consolas" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" TextTrimming="CharacterEllipsis" MaxWidth="230" ToolTip="{Binding Model}" />
+                                                    <TextBlock Text="{Binding ModelIdLabel}" FontFamily="Consolas" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" TextTrimming="CharacterEllipsis" MaxWidth="230" ToolTip="{Binding Model}" />
                                                     <Border Style="{StaticResource SettingsModelBadgeStyle}"><TextBlock Text="{Binding ContextWindowLabel}" FontSize="10" /></Border>
                                                     <Border Style="{StaticResource SettingsModelBadgeStyle}" Visibility="{Binding SupportsImageInput, Converter={StaticResource BoolToVisibility}}"><TextBlock Text="视觉" FontSize="10" /></Border>
                                                 </WrapPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
-                                                    <Button Content="&#xE774;" Style="{StaticResource SettingsIconButtonStyle}" Click="TestModel_Click" Tag="{Binding}" ToolTip="测试连接（会使用模型额度）" AutomationProperties.Name="测试连接" />
+                                                    <Button Content="&#xE774;" Style="{StaticResource SettingsIconButtonStyle}" Click="TestModel_Click" Tag="{Binding}" IsEnabled="{Binding IsConfigured}" ToolTip="测试连接（启用模型并填写连接信息后可用，会使用模型额度）" AutomationProperties.Name="测试连接" />
                                                     <Button Content="&#xE70F;" Style="{StaticResource SettingsIconButtonStyle}" Click="EditModel_Click" Tag="{Binding}" ToolTip="编辑模型" AutomationProperties.Name="编辑模型" />
                                                     <CheckBox IsChecked="{Binding IsEnabled}" Style="{StaticResource SettingsToggleStyle}" Margin="8,0,0,0" ToolTip="启用模型" AutomationProperties.Name="启用模型" />
                                                 </StackPanel>
                                             </Grid>
-                                            <Border.ContextMenu><ContextMenu><MenuItem Header="删除模型" Click="DeleteModel_Click" Tag="{Binding}" /></ContextMenu></Border.ContextMenu>
+                                            <Border.ContextMenu><ContextMenu Opened="ModelMenu_Opened"><MenuItem Header="删除模型" Click="DeleteModel_Click" Tag="{Binding}" /></ContextMenu></Border.ContextMenu>
                                         </Border>
                                     </DataTemplate></ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </Border>
+                                <Expander Header="{display:DisplayText Key='连接选项'}" Margin="0,16,0,0" Visibility="{Binding SelectedProvider.IsApiProvider, Converter={StaticResource BoolToVisibility}}"><StackPanel Margin="0,10">
+                                    <TextBlock Text="{Binding SelectedProvider.Connection.EndpointStatusText}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                    <CheckBox Content="{display:DisplayText Key='允许向非本机 HTTP 服务发送密钥'}" IsChecked="{Binding SelectedProvider.AllowInsecureHttp}" />
+                                </StackPanel></Expander>
                             <TextBlock Text="{Binding SelectedProfileConnectionTestText}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" Margin="0,12,0,0" />
                         </StackPanel>
                     </ScrollViewer>

@@ -13,8 +13,19 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotSettingsViewModel
     {
+        private sealed record RunningModelConnectionTest(CopilotProfileConfig Profile, TaskCompletionSource Completion);
+        private RunningModelConnectionTest? _runningModelConnectionTest;
+        private CopilotProfileConfig? _pendingModelConnectionTest;
+        private long _modelConnectionRequestRevision;
+
         public bool Save()
         {
+            var invalidModel = Profiles.FirstOrDefault(profile => profile.MaxTokens >= (profile.ContextWindowTokens > 0 ? profile.ContextWindowTokens : AgentContextWindowTokens));
+            if (invalidModel != null)
+            {
+                SetSettingsNotice($"{invalidModel.ModelDisplayLabel} 的最大输出 Token 必须小于上下文窗口。请检查模型或 Agent 默认值。");
+                return false;
+            }
             if (!ApplyMcpPortText(updateNotice: true))
                 return false;
             if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var externalMcpServers, out var externalMcpError))
@@ -306,6 +317,7 @@ namespace ColorVision.Copilot
         private void InvalidateSelectedProfileConnectionTest()
         {
             _selectedProfileConnectionRevision++;
+            _pendingModelConnectionTest = null;
             var cancellation = _modelConnectionTestCancellation;
             if (cancellation == null)
                 return;
@@ -317,10 +329,13 @@ namespace ColorVision.Copilot
 
         private void ToggleSelectedProfileConnectionTest()
         {
+            var hadPendingRequest = _pendingModelConnectionTest != null;
+            _modelConnectionRequestRevision++;
+            _pendingModelConnectionTest = null;
             if (IsTestingSelectedProfileConnection)
             {
                 var cancellation = _modelConnectionTestCancellation;
-                if (cancellation == null || cancellation.IsCancellationRequested)
+                if (cancellation == null)
                     return;
 
                 SelectedProfileConnectionTestText = "Cancelling model connection test...";
@@ -330,7 +345,65 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (hadPendingRequest)
+            {
+                SelectedProfileConnectionTestText = "Connection test cancelled.";
+                SetSettingsNotice(SelectedProfileConnectionTestText);
+                return;
+            }
+
             RunUiOperation(TestSelectedProfileConnectionAsync, "测试模型连接");
+        }
+
+        internal void RequestProfileConnectionTest(CopilotProfileConfig profile) =>
+            RunUiOperation(() => TestProfileConnectionAsync(profile), "测试模型连接");
+
+        internal async Task TestProfileConnectionAsync(CopilotProfileConfig profile)
+        {
+            if (_disposed || !Profiles.Contains(profile))
+                return;
+
+            SelectedProfile = profile;
+            if (ReferenceEquals(_pendingModelConnectionTest, profile))
+            {
+                ToggleSelectedProfileConnectionTest();
+                return;
+            }
+
+            var requestRevision = ++_modelConnectionRequestRevision;
+            var profileRevision = _selectedProfileConnectionRevision;
+            var running = _runningModelConnectionTest;
+            if (running != null)
+            {
+                if (ReferenceEquals(running.Profile, profile) && _modelConnectionTestCancellation?.IsCancellationRequested != true)
+                {
+                    ToggleSelectedProfileConnectionTest();
+                    return;
+                }
+
+                SelectedProfileConnectionTestText = $"正在结束上一项测试，随后测试 {profile.DisplayLabel}...";
+                // Cancellation can still be disposing a stream or an HTTP request.
+                // Admit the requested model only after that whole diagnostic exits.
+                _pendingModelConnectionTest = profile;
+                try
+                {
+                    await running.Completion.Task;
+                }
+                finally
+                {
+                    if (requestRevision == _modelConnectionRequestRevision)
+                        _pendingModelConnectionTest = null;
+                }
+            }
+
+            if (_disposed || requestRevision != _modelConnectionRequestRevision
+                || profileRevision != _selectedProfileConnectionRevision
+                || !ReferenceEquals(SelectedProfile, profile) || !Profiles.Contains(profile) || !profile.IsConfigured)
+            {
+                return;
+            }
+
+            await TestSelectedProfileConnectionAsync();
         }
 
         internal async Task TestSelectedProfileConnectionAsync()
@@ -361,6 +434,8 @@ namespace ColorVision.Copilot
             bool IsCurrentProfile() => !_disposed
                 && ReferenceEquals(SelectedProfile, sourceProfile)
                 && _selectedProfileConnectionRevision == profileRevision;
+            var running = new RunningModelConnectionTest(sourceProfile, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+            _runningModelConnectionTest = running;
             _modelConnectionTestCancellation = cancellation;
             _modelConnectionTestNotice = $"Testing {profileLabel}...";
             IsTestingSelectedProfileConnection = true;
@@ -405,6 +480,8 @@ namespace ColorVision.Copilot
                     _modelConnectionTestCancellation = null;
                     _modelConnectionTestNotice = string.Empty;
                 }
+                if (ReferenceEquals(_runningModelConnectionTest, running))
+                    _runningModelConnectionTest = null;
                 IsTestingSelectedProfileConnection = false;
                 if (IsCurrentProfile() && cancellation.IsCancellationRequested)
                 {
@@ -414,8 +491,17 @@ namespace ColorVision.Copilot
                 }
                 else if (!_disposed && !IsCurrentProfile())
                 {
-                    RefreshSelectedProfileTestState("Profile details changed. Test uses the current unsaved values.");
+                    if (ownsSettingsNotice && cancellation.IsCancellationRequested)
+                    {
+                        SelectedProfileConnectionTestText = "Connection test cancelled.";
+                        SetSettingsNotice(SelectedProfileConnectionTestText);
+                    }
+                    else
+                    {
+                        RefreshSelectedProfileTestState("Profile details changed. Test uses the current unsaved values.");
+                    }
                 }
+                running.Completion.TrySetResult();
             }
         }
 

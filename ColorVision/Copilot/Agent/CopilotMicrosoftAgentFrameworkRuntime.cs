@@ -195,6 +195,7 @@ namespace ColorVision.Copilot
             string taskId,
             MessageInjectingChatClient messageInjector,
             AgentSession session,
+            IReadOnlyList<CopilotSteeringMessageSnapshot> restoredSteeringMessages,
             CopilotAgentTaskEventJournalBuilder taskEventJournal,
             Action onInputAccepted)
         {
@@ -203,6 +204,7 @@ namespace ColorVision.Copilot
                 (taskId ?? string.Empty).Trim(),
                 messageInjector,
                 session,
+                restoredSteeringMessages,
                 taskEventJournal,
                 onInputAccepted);
             lock (_steeringSyncRoot)

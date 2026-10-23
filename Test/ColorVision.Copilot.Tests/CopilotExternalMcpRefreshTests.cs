@@ -269,7 +269,7 @@ public sealed class CopilotExternalMcpRefreshTests : IDisposable
         configHandler.Configs[typeof(CopilotConfig)] = config;
         var provider = new CopilotMcpToolProvider(new CopilotMcpToolDiscoveryCache(), new CopilotCapabilityCatalog(), handler.CreateClient);
         return new CopilotSettingsViewModel(configHandler,
-            new CopilotChatState { ActiveProfileId = config.Profiles[0].Id }, externalMcpToolProvider: provider);
+            new CopilotChatState(), externalMcpToolProvider: provider);
     }
 
     private static CopilotMcpClientServerConfig[] CreateServers(int count)

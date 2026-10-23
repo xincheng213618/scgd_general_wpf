@@ -151,12 +151,16 @@ namespace ColorVision.Copilot
             CopilotChatState? initialState,
             CopilotModelConnectionDiagnostic? modelConnectionDiagnostic = null,
             CopilotMcpToolProvider? externalMcpToolProvider = null,
-            HttpClient? mcpHttpClient = null)
+            HttpClient? mcpHttpClient = null,
+            Func<IReadOnlyList<string>>? findLocalCodexCandidates = null,
+            Func<IReadOnlyList<string>?, CancellationToken, Task<ICopilotCodexAppServer>>? connectLocalCodex = null)
         {
             _configHandler = configHandler ?? throw new ArgumentNullException(nameof(configHandler));
             _modelConnectionDiagnostic = modelConnectionDiagnostic ?? new CopilotModelConnectionDiagnostic();
             _externalMcpToolProvider = externalMcpToolProvider ?? new CopilotMcpToolProvider();
             _mcpConnectionHttpClient = mcpHttpClient ?? McpHttpClient;
+            _findLocalCodexCandidates = findLocalCodexCandidates ?? (() => CopilotCodexRuntimeLocator.FindCandidates());
+            _connectLocalCodex = connectLocalCodex ?? (async (candidates, token) => await CopilotCodexAppServer.ConnectAsync(token, candidates).ConfigureAwait(false));
             _config = _configHandler.GetRequiredService<CopilotConfig>();
             var config = _config;
             if (config.EnsureInitialized())
@@ -191,9 +195,6 @@ namespace ColorVision.Copilot
                 profile.EnsureValid();
                 Profiles.Add(profile);
             }
-
-            if (Profiles.Count == 0)
-                Profiles.Add(CopilotProfileConfig.CreateDefault());
 
             var state = initialState ?? CopilotChatStateStore.Instance.Load();
             _activeProfileId = Profiles.Any(profile => string.Equals(profile.Id, state.ActiveProfileId, StringComparison.Ordinal))
@@ -536,9 +537,7 @@ namespace ColorVision.Copilot
 
         private void SetActiveProfileId(string? profileId)
         {
-            var normalizedProfileId = string.IsNullOrWhiteSpace(profileId)
-                ? _activeProfileId
-                : profileId;
+            var normalizedProfileId = profileId ?? _activeProfileId;
             if (string.Equals(_activeProfileId, normalizedProfileId, StringComparison.Ordinal))
             {
                 OnSelectedProfileUsageChanged();

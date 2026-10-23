@@ -191,11 +191,21 @@ namespace ColorVision.Copilot
 
         private static string BuildPreview(string content, int maxLength)
         {
-            var normalized = (content ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
-            if (normalized.Length <= maxLength)
-                return normalized;
+            // Only materialize the visible prefix: a streaming answer or restored
+            // draft can be much larger than the conversation-list preview.
+            var visible = content.AsSpan().Trim();
+            var truncated = visible.Length > maxLength;
+            var retainedLength = Math.Min(visible.Length, maxLength);
+            if (truncated
+                && retainedLength > 0
+                && char.IsHighSurrogate(visible[retainedLength - 1])
+                && char.IsLowSurrogate(visible[retainedLength]))
+            {
+                retainedLength--;
+            }
 
-            return normalized[..maxLength] + "...";
+            var preview = visible[..retainedLength].ToString().Replace('\r', ' ').Replace('\n', ' ');
+            return truncated ? preview + "..." : preview;
         }
 
         private static string BuildComposerStashPreview(CopilotComposerStash stash)

@@ -43,6 +43,9 @@ public sealed class CopilotAgentConversationRecoveryTests
     [Theory]
     [InlineData("中", 3_000)]
     [InlineData("😀", 1_500)]
+    [InlineData("x", 9_000)]
+    [InlineData("中", 9_000)]
+    [InlineData("😀", 4_500)]
     public void SelectUnseenVisibleTailDoesNotReplayLongUnicodeCheckpointHistory(string fragment, int repetitions)
     {
         var visibleHistory = new[]
@@ -62,6 +65,9 @@ public sealed class CopilotAgentConversationRecoveryTests
     [Theory]
     [InlineData("中", 3_000)]
     [InlineData("😀", 1_500)]
+    [InlineData("x", 9_000)]
+    [InlineData("中", 9_000)]
+    [InlineData("😀", 4_500)]
     public void SelectUnseenVisibleTailReturnsOnlyCompleteNewUnicodeTail(string fragment, int repetitions)
     {
         var longContent = string.Concat(Enumerable.Repeat(fragment, repetitions));
@@ -81,6 +87,64 @@ public sealed class CopilotAgentConversationRecoveryTests
             checkpointMemory, seenHistory.Append(newMessage));
 
         Assert.Equal(newMessage, Assert.Single(unseen));
+    }
+
+    [Theory]
+    [InlineData("x", 9_000)]
+    [InlineData("中", 9_000)]
+    [InlineData("😀", 4_500)]
+    public void RebuildingPreparedPromptPreservesCurrentHistoryBeyondCheckpointContentLimits(string fragment, int repetitions)
+    {
+        var goal = Message("user", "initial goal");
+        var longAnswer = Message("assistant",
+            string.Concat(Enumerable.Repeat(fragment, repetitions)) + " preserve this current conclusion");
+        var currentRequest = Message("user", "continue using the complete conclusion");
+        var prepared = new[] { goal, longAnswer, currentRequest };
+
+        var rebuilt = CopilotAgentConversationMemory.MergeIntoPreparedPrompt([goal], prepared);
+
+        Assert.Equal(prepared, rebuilt);
+        Assert.EndsWith("preserve this current conclusion", rebuilt[1].Content, StringComparison.Ordinal);
+
+        var checkpointMemory = CopilotAgentConversationMemory.Merge(
+            [], prepared.Take(prepared.Length - 1), string.Empty, string.Empty);
+        Assert.True(checkpointMemory[^1].Content.Length < longAnswer.Content.Length);
+        Assert.Equal(prepared, CopilotAgentConversationMemory.MergeIntoPreparedPrompt(checkpointMemory, prepared));
+    }
+
+    [Fact]
+    public void RebuildingPreparedPromptPreservesCurrentHistoryBeyondCheckpointMessageLimit()
+    {
+        var prepared = Enumerable.Range(0, 20)
+            .Select(index => Message(index % 2 == 0 ? "user" : "assistant", "current history message " + index))
+            .Append(Message("user", "current request"))
+            .ToArray();
+        var checkpointMemory = prepared.Take(2).ToArray();
+
+        var rebuilt = CopilotAgentConversationMemory.MergeIntoPreparedPrompt(checkpointMemory, prepared);
+
+        Assert.Equal(prepared, rebuilt);
+    }
+
+    [Fact]
+    public void LegacyHistoryTruncationMatchesCompleteHistoryAfterContextBudgetIncreases()
+    {
+        var visibleHistory = new[]
+        {
+            Message("user", "initial goal"),
+            Message("assistant", new string('x', 9_000) + " complete conclusion"),
+        };
+        var boundedHistory = CopilotConversationHistoryWindow.Select(
+            visibleHistory, 16, 64_000, 8_000);
+        var checkpointMemory = CopilotAgentConversationMemory.Merge(
+            [], boundedHistory, string.Empty, string.Empty);
+        Assert.EndsWith("\n...<conversation history truncated>", checkpointMemory[^1].Content, StringComparison.Ordinal);
+
+        Assert.Empty(CopilotAgentConversationMemory.SelectUnseenVisibleTail(checkpointMemory, visibleHistory));
+        var prepared = visibleHistory.Append(Message("user", "continue using the complete conclusion")).ToArray();
+        Assert.Equal(prepared, CopilotAgentConversationMemory.MergeIntoPreparedPrompt(checkpointMemory, prepared));
+        Assert.Equal(checkpointMemory, CopilotAgentConversationMemory.Merge(
+            checkpointMemory, visibleHistory, string.Empty, string.Empty));
     }
 
     [Theory]

@@ -66,6 +66,9 @@ namespace ColorVision.Copilot
             get => _providerType;
             set
             {
+                if (_providerType == value)
+                    return;
+
                 if (SetProperty(ref _providerType, value))
                 {
                     SupportsImageInput = false;
@@ -116,7 +119,11 @@ namespace ColorVision.Copilot
             get => _baseUrl;
             set
             {
-                if (SetProperty(ref _baseUrl, NormalizeText(value)))
+                var normalized = NormalizeText(value);
+                if (string.Equals(_baseUrl, normalized, StringComparison.Ordinal))
+                    return;
+
+                if (SetProperty(ref _baseUrl, normalized))
                 {
                     SupportsImageInput = false;
                     OnPropertyChanged(nameof(IsConfigured));
@@ -148,7 +155,11 @@ namespace ColorVision.Copilot
             get => _model;
             set
             {
-                if (SetProperty(ref _model, NormalizeText(value)))
+                var normalized = NormalizeText(value);
+                if (string.Equals(_model, normalized, StringComparison.Ordinal))
+                    return;
+
+                if (SetProperty(ref _model, normalized))
                 {
                     SupportsImageInput = false;
                     OnPropertyChanged(nameof(DisplayLabel));
@@ -388,7 +399,8 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
-            if (VendorType == CopilotVendorType.Custom)
+            // Grouped connections have an explicit provider choice; only legacy profiles need inference.
+            if (VendorType == CopilotVendorType.Custom && string.IsNullOrWhiteSpace(ConnectionId))
             {
                 var inferredVendor = CopilotVendorCatalog.InferVendorType(BaseUrl, Model);
                 if (inferredVendor != CopilotVendorType.Custom)
@@ -478,6 +490,7 @@ namespace ColorVision.Copilot
 
         private void OnConfigurationStateChanged()
         {
+            OnPropertyChanged(nameof(ModelIdLabel));
             OnPropertyChanged(nameof(IsLocalCodex));
             OnPropertyChanged(nameof(IsApiProfile));
             OnPropertyChanged(nameof(IsConfigured));

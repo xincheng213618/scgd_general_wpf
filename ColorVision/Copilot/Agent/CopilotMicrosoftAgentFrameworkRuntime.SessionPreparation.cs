@@ -1,5 +1,6 @@
 #pragma warning disable MAAI001
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,6 +55,7 @@ namespace ColorVision.Copilot
             try
             {
                 var sessionResumed = false;
+                IReadOnlyList<CopilotSteeringMessageSnapshot> restoredSteeringMessages = Array.Empty<CopilotSteeringMessageSnapshot>();
                 AgentSession session;
                 if (checkpointCompatibility?.CanResume == true && requestedCheckpoint != null)
                 {
@@ -61,9 +63,32 @@ namespace ColorVision.Copilot
                     {
                         using var checkpointDocument = JsonDocument.Parse(requestedCheckpoint.SerializedSessionJson);
                         session = await agent.DeserializeSessionAsync(checkpointDocument.RootElement.Clone(), null, cancellationToken);
+                        // Only the top-level host recovers unconfirmed input into a draft.
+                        // Delegated runs retain their own pending coordination messages.
+                        var recoverSteeringToDraft = request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard
+                            && string.IsNullOrWhiteSpace(request.RuntimeExecutionScope.ParentRunId);
+                        var recoveredSteeringCount = 0;
+                        if (recoverSteeringToDraft)
+                        {
+                            recoveredSteeringCount = await DiscardRecoveredSteeringAsync(messageInjector, session, cancellationToken);
+                        }
+                        else
+                        {
+                            var pendingMessages = await messageInjector.GetPendingMessagesAsync(session, cancellationToken);
+                            restoredSteeringMessages = pendingMessages
+                                .Where(message => IsOwnedSteeringMessage(message) && !string.IsNullOrWhiteSpace(message.Text))
+                                .DistinctBy(message => message.MessageId, StringComparer.Ordinal)
+                                .Select(message => new CopilotSteeringMessageSnapshot(message.MessageId!, message.Text))
+                                .ToArray();
+                        }
                         sessionResumed = true;
                         taskEventJournalBuilder.RecordSessionResumed();
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework session resumed from the persisted conversation checkpoint."));
+                        if (recoveredSteeringCount > 0)
+                        {
+                            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                                $"Removed {recoveredSteeringCount} unconfirmed steering instruction(s) from the resumed delivery queue; host draft recovery owns their resubmission."));
+                        }
                     }
                     catch (OperationCanceledException)
                     {
@@ -71,6 +96,7 @@ namespace ColorVision.Copilot
                     }
                     catch (Exception ex)
                     {
+                        restoredSteeringMessages = Array.Empty<CopilotSteeringMessageSnapshot>();
                         taskEventJournalBuilder.RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind.Invalid);
                         emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be resumed; starting a fresh session ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
                         session = await agent.CreateSessionAsync(cancellationToken);
@@ -91,6 +117,7 @@ namespace ColorVision.Copilot
                     request.TaskId,
                     messageInjector,
                     session,
+                    restoredSteeringMessages,
                     taskEventJournalBuilder,
                     bridge.NotifyUserInputAccepted);
                 var liveCheckpointPublisher = new LiveCheckpointPublisher(
@@ -108,7 +135,7 @@ namespace ColorVision.Copilot
                     emit,
                     sessionResumed,
                     () => answerText.ToString(),
-                    steeringRegistration.GetDeliveredSteeringMessages);
+                    steeringRegistration);
 
                 var recoveredTaskLedger = await CaptureTaskLedgerAsync(
                     todoProvider,
@@ -126,11 +153,16 @@ namespace ColorVision.Copilot
                         + " Persisted tasks are planning state, not authorization; protected tools require a fresh exact-call approval."));
                 }
 
+                var sessionMemory = requestedCheckpoint?.SessionConversationMemory
+                    ?? requestedCheckpoint?.ConversationMemory;
                 IReadOnlyList<CopilotRequestMessage> unseenVisibleHistory = sessionResumed && requestedCheckpoint != null
-                    ? CopilotAgentConversationMemory.SelectUnseenVisibleTail(requestedCheckpoint.ConversationMemory, request.History)
+                    ? CopilotAgentConversationMemory.SelectUnseenVisibleTail(sessionMemory, request.History)
                     : Array.Empty<CopilotRequestMessage>();
                 var promptMessages = sessionResumed
-                    ? unseenVisibleHistory.Concat(preparedPromptMessages.TakeLast(1)).ToArray()
+                    ? CopilotAgentConversationMemory.MergeIntoPreparedPrompt(
+                        CopilotAgentConversationMemory.SelectUnseenVisibleTail(
+                            sessionMemory, requestedCheckpoint!.ConversationMemory),
+                        unseenVisibleHistory.Concat(preparedPromptMessages.TakeLast(1)).ToArray())
                     : preparedPromptMessages;
                 if (unseenVisibleHistory.Count > 0)
                 {
@@ -189,5 +221,36 @@ namespace ColorVision.Copilot
                 throw;
             }
         }
+
+        private static async Task<int> DiscardRecoveredSteeringAsync(
+            MessageInjectingChatClient messageInjector,
+            AgentSession session,
+            CancellationToken cancellationToken)
+        {
+            // Run before registering producers for this restored session. The host returns
+            // unconfirmed steering to the draft; its old delivery queue must not resend it.
+            var pending = await messageInjector.GetPendingMessagesAsync(session, cancellationToken);
+            var retained = pending.Where(message => !IsOwnedSteeringMessage(message)).ToArray();
+            var removedCount = pending.Count - retained.Length;
+            if (removedCount == 0)
+                return 0;
+
+            // Framework 1.24 exposes queue snapshots and enqueue, but no removal API.
+            // This persisted key also appears in the supported 1.21 session format.
+            // Fail into normal session rebuilding if that compatibility boundary changes.
+            const string pendingQueueKey = "MessageInjectingChatClient.PendingInjectedMessages";
+            if (!session.StateBag.TryRemoveValue(pendingQueueKey))
+                throw new InvalidOperationException("The restored message-injection queue could not be isolated.");
+
+            // Background observations and hook context have no draft-recovery counterpart.
+            // Keep their messages, including identifiers and order, in the resumed queue.
+            if (retained.Length > 0)
+                await messageInjector.EnqueueMessagesAsync(session, retained, cancellationToken);
+            return removedCount;
+        }
+
+        private static bool IsOwnedSteeringMessage(ChatMessage message) =>
+            message.Role == ChatRole.User
+            && message.MessageId?.StartsWith(SteeringMessageIdPrefix, StringComparison.Ordinal) == true;
     }
 }
