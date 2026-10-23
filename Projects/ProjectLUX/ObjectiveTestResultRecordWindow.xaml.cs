@@ -91,7 +91,7 @@ namespace ProjectLUX
             if (dialog.ShowDialog(this) != true) return;
 
             string sn = SanitizeFileName(string.IsNullOrWhiteSpace(record.SN) ? "SN" : record.SN);
-            string path = Path.Combine(dialog.FolderName, $"C_{sn}.csv");
+            string path = Path.Combine(dialog.FolderName, ColorVision.Common.Utilities.Tool.SanitizeFileName($"C_{sn}.csv"));
             try
             {
                 ObjectiveTestResultCsvExporter.ExportToCsv(result, path);

@@ -41,6 +41,7 @@ public sealed class FlowEngineRunner
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
         ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
+        serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(
             readinessTimeout,
             TimeSpan.Zero);

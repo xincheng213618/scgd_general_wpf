@@ -263,6 +263,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	protected virtual void DoStartTransferData(CVStartCFC action)
 	{
+		if (action != null)
+			action.SerialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(action.SerialNumber);
 		if (m_op_start.ConnectionCount <= 0 && (action == null || !action.IsStop))
 		{
 			return;
@@ -349,6 +351,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public CVStartCFC GetCFC(string serialNumber)
 	{
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		lock (startActionsLock)
 		{
 			if (startActions.TryGetValue(serialNumber, out CVStartCFC action))
@@ -461,6 +464,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public bool TryStart(string serialNumber)
 	{
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		if (!CanAcceptStart)
 		{
 			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);

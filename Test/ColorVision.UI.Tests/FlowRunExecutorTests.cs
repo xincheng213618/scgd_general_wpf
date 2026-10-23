@@ -12,8 +12,10 @@ namespace ColorVision.UI.Tests;
 
 public class FlowRunExecutorTests
 {
-    [Fact]
-    public void EngineCompletionReturnsTheMatchingResult()
+    [Theory]
+    [InlineData("SN-Completed", "SN-Completed")]
+    [InlineData("SN?Completed", "SN_Completed")]
+    public void EngineCompletionReturnsTheMatchingResult(string requestedSerialNumber, string executionSerialNumber)
     {
         RunInSta(() =>
         {
@@ -22,11 +24,12 @@ public class FlowRunExecutorTests
 
             Task<FlowRunExecutionResult> execution = fixture.Executor.RunAsync(
                 "Selected",
-                "SN-Completed",
+                requestedSerialNumber,
                 executionTimeout: null);
             Assert.False(execution.IsCompleted);
 
-            start.Complete("SN-Completed", StatusTypeEnum.Completed);
+            Assert.Equal(executionSerialNumber, fixture.FlowControl.SerialNumber);
+            start.Complete(executionSerialNumber, StatusTypeEnum.Completed);
             FlowRunExecutionResult result = execution.WaitAsync(TimeSpan.FromSeconds(2))
                 .GetAwaiter()
                 .GetResult();
@@ -35,7 +38,7 @@ public class FlowRunExecutorTests
             Assert.Equal(FlowRunTermination.EngineCompleted, result.Termination);
             Assert.Equal(StatusTypeEnum.Completed, result.Data.Status);
             Assert.Equal("Selected", result.Data.StartNodeName);
-            Assert.Equal("SN-Completed", result.Data.SerialNumber);
+            Assert.Equal(executionSerialNumber, result.Data.SerialNumber);
             Assert.False(fixture.FlowControl.IsFlowRun);
         });
     }

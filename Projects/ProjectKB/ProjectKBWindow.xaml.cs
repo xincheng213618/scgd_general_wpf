@@ -1100,7 +1100,7 @@ namespace ProjectKB
 
             if (ViewResultManager.Config.SaveText)
             {
-                string resultPath = Path.Combine(ViewResultManager.Config.TextSavePath, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
+                string resultPath = Path.Combine(ViewResultManager.Config.TextSavePath, Tool.SanitizeFileName($"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt"));
                 string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
                 log.Info($"结果正在写入{resultPath},result:{result}");
                 File.WriteAllText(resultPath, result);
@@ -1116,7 +1116,7 @@ namespace ProjectKB
                     string safeModel = Regex.Replace(KBItemMaster.Model ?? string.Empty, regexPattern2, "");
                     string summaryDir = Path.Combine(ViewResultManager.Config.SummarySavePath, safeModel);
                     Directory.CreateDirectory(summaryDir);
-                    string summaryPath = Path.Combine(summaryDir, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
+                    string summaryPath = Path.Combine(summaryDir, Tool.SanitizeFileName($"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt"));
                     string summaryText = BuildSummaryText(KBItemMaster);
                     log.Info($"Summary 正在写入 {summaryPath}");
                     File.WriteAllText(summaryPath, summaryText);

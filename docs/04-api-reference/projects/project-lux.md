@@ -39,6 +39,8 @@ related: ["projects.index","projects.capabilities","projects.lux-protocol","proj
 
 普通流程由当前 `ProcessGroup` 和步骤的 `FlowTemplate` 绑定 Engine Flow。Flow 完成后读取批次和算法结果，`IProcess.Execute()` 应用 Fix 修正和 Recipe 限值，写入聚合结果与 SQLite，再导出 CSV 并返回客户响应。Socket 入口先解析命令和 SN，再分派到下表路径；`T0000` 仅握手，`T0001` 与 `T0031` 分别使用相机和光谱仪专用链，不能把所有命令都理解为初始化后运行同一条流程。
 
+产品 SN 和协议、CSV 内容保留原值；用 SN 生成 `C_`、`D_`、`B_` 及 MTF CSV 文件名时，通过公共文件名规范化处理 Windows 非法字符。自动保存、Socket 触发、手动导出和历史结果导出使用同一规则，因此带 `?` 或路径分隔符的 SN 不会被当成路径的一部分。
+
 ## 界面主题
 
 测试工具栏下方与 ARVRPro、KB 共用 `ColorVision.UI.Controls.FlowExecutionStatus` 紧凑状态栏。普通提示一行、长错误最多两行，窄窗口隐藏辅助耗时，完整信息通过“详情”查看和复制。状态文字与提示使用相同行高；流程结束后的排队计时回调不得覆盖最终状态。此显示层不改变 Socket 响应和结果持久化：超时记录的 `Msg` 仍按原来的流程名与 `OverTime` 组合保存，不从界面中文摘要反向读取。

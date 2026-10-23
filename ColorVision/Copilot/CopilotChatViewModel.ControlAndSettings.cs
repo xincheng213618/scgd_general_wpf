@@ -136,9 +136,13 @@ namespace ColorVision.Copilot
 
         private int ResolveContextWindowTokens(
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
-            CopilotAgentDefaultsConfig? agentDefaults = null)
+            CopilotAgentDefaultsConfig? agentDefaults = null,
+            CopilotProfileConfig? profile = null)
         {
             agentDefaults ??= _config.AgentDefaults;
+            profile ??= SelectedProfile;
+            if (profile?.ContextWindowTokens > 0)
+                return Math.Clamp(profile.ContextWindowTokens, CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotAgentTokenBudget.MaximumContextWindowTokens);
             return codexConfigOptions?.ResolveContextWindowTokens(
                     agentDefaults.ContextWindowTokens)
                 ?? Math.Clamp(
@@ -153,7 +157,7 @@ namespace ColorVision.Copilot
             CopilotAgentDefaultsConfig? agentDefaults = null)
         {
             return CopilotConversationRequestBuilder.ResolveHistoryLimits(
-                ResolveContextWindowTokens(codexConfigOptions, agentDefaults),
+                ResolveContextWindowTokens(codexConfigOptions, agentDefaults, profile),
                 profile?.MaxTokens ?? CopilotProfileConfig.DefaultMaxTokens);
         }
     }

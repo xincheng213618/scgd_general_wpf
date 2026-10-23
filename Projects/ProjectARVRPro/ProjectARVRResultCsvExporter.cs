@@ -7,6 +7,9 @@ public static class ProjectARVRResultCsvExporter
 {
     public const string Header = "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result";
 
+    internal static string BuildFileName(string? serialNumber, DateTime timestamp) =>
+        ColorVision.Common.Utilities.Tool.SanitizeFileName($"TestResults_{serialNumber}_{timestamp:yyyyMMdd_HHmmss}_.csv");
+
     public static IReadOnlyList<ObjectiveTestCsvRow> CollectRows(IEnumerable<ProjectARVRReuslt> results)
     {
         ArgumentNullException.ThrowIfNull(results);

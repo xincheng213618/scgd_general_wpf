@@ -20,9 +20,21 @@ namespace ProjectARVRPro.Process.W255
         public string DisplayTemplate { get => _DisplayTemplate; set { _DisplayTemplate = value ?? string.Empty; OnPropertyChanged(); } }
         private string _DisplayTemplate = PoiDisplayTemplateDefaults.Cie;
 
+        [Category("显示配置")]
+        [DisplayName("亮度均匀性格式")]
+        [Description("选择百分比或小数显示，并同步结果单位；不改变内部比例数值和Recipe限值。")]
+        public UniformityDisplayFormat LuminanceUniformityDisplayFormat { get => _luminanceUniformityDisplayFormat; set { _luminanceUniformityDisplayFormat = value; OnPropertyChanged(); } }
+        private UniformityDisplayFormat _luminanceUniformityDisplayFormat = UniformityDisplayFormat.Percentage;
+
+        [Category("显示配置")]
+        [DisplayName("色度均匀性格式")]
+        [Description("选择百分比或小数显示，并同步结果单位；不改变内部比例数值和Recipe限值。")]
+        public UniformityDisplayFormat ColorUniformityDisplayFormat { get => _colorUniformityDisplayFormat; set { _colorUniformityDisplayFormat = value; OnPropertyChanged(); } }
+        private UniformityDisplayFormat _colorUniformityDisplayFormat = UniformityDisplayFormat.Decimal;
+
         [Category("解析配置")]
         [DisplayName("从修正后POI重算均匀性")]
-        [Description("关闭时按配置的TName读取模板均匀性结果；开启时使用应用Recipe修正后的POI重新计算亮度和色度均匀性。")]
+        [Description("关闭时优先按配置的TName读取模板均匀性结果，缺失项从原始POI补算；开启时使用应用Recipe修正后的POI重新计算亮度和色度均匀性。")]
         public bool CalculateUniformityFromCorrectedPoi { get => _CalculateUniformityFromCorrectedPoi; set { _CalculateUniformityFromCorrectedPoi = value; OnPropertyChanged(); } }
         private bool _CalculateUniformityFromCorrectedPoi;
 

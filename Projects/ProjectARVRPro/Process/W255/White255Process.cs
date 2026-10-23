@@ -25,6 +25,8 @@ namespace ProjectARVRPro.Process.W255
             var log = ctx.Log;
             W255RecipeConfig recipeConfig = Config.RecipeConfig;
             W255ViewTestResult testResult = new W255ViewTestResult();
+            bool hasLuminanceUniformity = false;
+            bool hasColorUniformity = false;
 
             try
             {
@@ -135,7 +137,11 @@ namespace ProjectARVRPro.Process.W255
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                SetLuminanceUniformity(ctx, testResult, recipeConfig, view.PoiAnalysisResult.result.Value);
+                                if (view.PoiAnalysisResult?.result is { } analysis && double.IsFinite(analysis.Value))
+                                {
+                                    SetLuminanceUniformity(ctx, testResult, recipeConfig, analysis.Value);
+                                    hasLuminanceUniformity = true;
+                                }
                             }
                         }
                         else if (isColorUniformity)
@@ -144,7 +150,11 @@ namespace ProjectARVRPro.Process.W255
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                SetColorUniformity(ctx, testResult, recipeConfig, view.PoiAnalysisResult.result.Value);
+                                if (view.PoiAnalysisResult?.result is { } analysis && double.IsFinite(analysis.Value))
+                                {
+                                    SetColorUniformity(ctx, testResult, recipeConfig, analysis.Value);
+                                    hasColorUniformity = true;
+                                }
                             }
                         }
                     }
@@ -191,19 +201,8 @@ namespace ProjectARVRPro.Process.W255
                 else
                     ctx.Result.Result &= testResult.ColorCenterRmsToD65.TestResult;
 
-                if (calculateUniformityFromCorrectedPoi)
-                {
-                    var calculation = LuminanceChromaticityUniformityCalculator.Calculate(testResult.ViewPoixyuvDatas);
-                    if (!calculation.Success)
-                    {
-                        log?.Error($"W255本地均匀性计算失败: message={calculation.ErrorMessage}");
-                        return false;
-                    }
-
-                    SetLuminanceUniformity(ctx, testResult, recipeConfig, calculation.LuminanceUniformity);
-                    SetColorUniformity(ctx, testResult, recipeConfig, calculation.ColorUniformity);
-                    log?.Info($"W255均匀性来源: corrected-poi, pointCount={calculation.PointCount}, luminance={testResult.LuminanceUniformity.Value:R}, color={testResult.ColorUniformity.Value:R}");
-                }
+                if (!TryPopulateUniformity(ctx, testResult, hasLuminanceUniformity, hasColorUniformity))
+                    return false;
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.W255TestResult = JsonConvert.DeserializeObject<W255TestResult>(ctx.Result.ViewResultJson) ?? new W255TestResult();
@@ -217,25 +216,57 @@ namespace ProjectARVRPro.Process.W255
             }
         }
 
-        private static void SetLuminanceUniformity(IProcessExecutionContext ctx, W255TestResult testResult, W255RecipeConfig recipeConfig, double value)
+        internal bool TryPopulateUniformity(IProcessExecutionContext ctx, W255ViewTestResult testResult, bool hasLuminanceUniformity, bool hasColorUniformity)
+        {
+            bool useCorrectedPoi = Config.CalculateUniformityFromCorrectedPoi;
+            if (!useCorrectedPoi && hasLuminanceUniformity && hasColorUniformity)
+                return true;
+
+            var points = useCorrectedPoi ? testResult.ViewPoixyuvDatas
+                : testResult.ViewPoixyuvDatas.Select(point => new PoiResultCIExyuvData(point.POIPointResultModel)).ToList();
+            var calculation = LuminanceChromaticityUniformityCalculator.Calculate(points);
+            if (!calculation.Success)
+            {
+                ctx.Log?.Error($"W255本地均匀性计算失败: message={calculation.ErrorMessage}");
+                return false;
+            }
+
+            if (useCorrectedPoi || !hasLuminanceUniformity)
+                SetLuminanceUniformity(ctx, testResult, Config.RecipeConfig, calculation.LuminanceUniformity);
+            if (useCorrectedPoi || !hasColorUniformity)
+                SetColorUniformity(ctx, testResult, Config.RecipeConfig, calculation.ColorUniformity);
+            ctx.Log?.Info($"W255均匀性来源: {(useCorrectedPoi ? "corrected-poi" : "raw-poi-fallback")}, pointCount={calculation.PointCount}, luminance={testResult.LuminanceUniformity.Value:R}, color={testResult.ColorUniformity.Value:R}");
+            return true;
+        }
+
+        private void SetLuminanceUniformity(IProcessExecutionContext ctx, W255TestResult testResult, W255RecipeConfig recipeConfig, double value)
         {
             value = recipeConfig.LuminanceUniformity.Apply(value);
             testResult.LuminanceUniformity.LowLimit = recipeConfig.LuminanceUniformity.Min;
             testResult.LuminanceUniformity.UpLimit = recipeConfig.LuminanceUniformity.Max;
             testResult.LuminanceUniformity.Value = value;
-            testResult.LuminanceUniformity.TestValue = (value * 100).ToString("F4") + "%";
+            bool percentage = Config.LuminanceUniformityDisplayFormat == UniformityDisplayFormat.Percentage;
+            testResult.LuminanceUniformity.Name = percentage ? "Luminance_Uniformity(min/max*100%)" : "Luminance_Uniformity(min/max)";
+            testResult.LuminanceUniformity.Unit = percentage ? "%" : "";
+            testResult.LuminanceUniformity.TestValue = (value * (percentage ? 100 : 1)).ToString("F4");
             ctx.Result.Result &= testResult.LuminanceUniformity.TestResult;
         }
 
-        private static void SetColorUniformity(IProcessExecutionContext ctx, W255TestResult testResult, W255RecipeConfig recipeConfig, double value)
+        private void SetColorUniformity(IProcessExecutionContext ctx, W255TestResult testResult, W255RecipeConfig recipeConfig, double value)
         {
             value = recipeConfig.ColorUniformity.Apply(value);
             testResult.ColorUniformity.LowLimit = recipeConfig.ColorUniformity.Min;
             testResult.ColorUniformity.UpLimit = recipeConfig.ColorUniformity.Max;
             testResult.ColorUniformity.Value = value;
-            testResult.ColorUniformity.TestValue = value.ToString("F5");
+            bool percentage = Config.ColorUniformityDisplayFormat == UniformityDisplayFormat.Percentage;
+            testResult.ColorUniformity.Unit = percentage ? "%" : "";
+            testResult.ColorUniformity.TestValue = (value * (percentage ? 100 : 1)).ToString("F5");
             ctx.Result.Result &= testResult.ColorUniformity.TestResult;
         }
+
+        internal static string FormatUniformityValue(ObjectiveTestItem item) =>
+            string.IsNullOrEmpty(item.Unit) || item.TestValue?.EndsWith(item.Unit, StringComparison.Ordinal) == true
+                ? item.TestValue ?? string.Empty : $"{item.TestValue}{item.Unit}";
 
         internal static bool TryPopulateColorCenterRmsToD65(W255TestResult testResult, W255RecipeConfig recipeConfig, IEnumerable<PoiResultCIExyuvData> points)
         {
@@ -305,8 +336,8 @@ namespace ProjectARVRPro.Process.W255
                 outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
             }
 
-            outtext += $"Luminance_uniformity:{testResult.LuminanceUniformity.TestValue} LowLimit:{testResult.LuminanceUniformity.LowLimit}  UpLimit:{testResult.LuminanceUniformity.UpLimit},Rsult{(testResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            outtext += $"Color_uniformity:{testResult.ColorUniformity.TestValue} LowLimit:{testResult.ColorUniformity.LowLimit} UpLimit:{testResult.ColorUniformity.UpLimit},Rsult{(testResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"Luminance_uniformity:{FormatUniformityValue(testResult.LuminanceUniformity)} LowLimit:{testResult.LuminanceUniformity.LowLimit}  UpLimit:{testResult.LuminanceUniformity.UpLimit},Rsult{(testResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"Color_uniformity:{FormatUniformityValue(testResult.ColorUniformity)} LowLimit:{testResult.ColorUniformity.LowLimit} UpLimit:{testResult.ColorUniformity.UpLimit},Rsult{(testResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"ColorCenterRmsToD65:{testResult.ColorCenterRmsToD65.TestValue} LowLimit:{testResult.ColorCenterRmsToD65.LowLimit} UpLimit:{testResult.ColorCenterRmsToD65.UpLimit},Rsult{(testResult.ColorCenterRmsToD65.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"CenterCorrelatedColorTemperature:{testResult.CenterCorrelatedColorTemperature.TestValue} LowLimit:{testResult.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{testResult.CenterCorrelatedColorTemperature.UpLimit},Rsult{(testResult.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 

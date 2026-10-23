@@ -64,6 +64,12 @@ namespace ProjectARVRPro
         public string CodeDateFormat { get => _CodeDateFormat; set { _CodeDateFormat = value; OnPropertyChanged(); } }
         private string _CodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
 
+        internal string CreateFlowCode(string? serialNumber, DateTime timestamp)
+        {
+            string prefix = CodeUseSN ? serialNumber + "_" : string.Empty;
+            return ColorVision.Common.Utilities.Tool.SanitizeFileName(prefix + timestamp.ToString(CodeDateFormat));
+        }
+
         [DisplayName("按日期创建文件夹"), Category("保存选项")]
         public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
         private bool _SaveByDate;

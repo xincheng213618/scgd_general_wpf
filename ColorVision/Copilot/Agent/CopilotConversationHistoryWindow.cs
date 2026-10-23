@@ -40,7 +40,7 @@ namespace ColorVision.Copilot
                 contextWindowTokens,
                 CopilotAgentTokenBudget.MinimumContextWindowTokens,
                 CopilotAgentTokenBudget.MaximumContextWindowTokens);
-            var boundedOutputTokens = Math.Clamp(maxOutputTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
+            var boundedOutputTokens = Math.Clamp(maxOutputTokens, 32, CopilotProfileConfig.MaximumMaxTokens);
             var inputTokens = Math.Max(1, boundedContextTokens - boundedOutputTokens);
             var historyTokens = Math.Max(1, (long)inputTokens * HistoryContextPercent / 100);
             var maximumCharacters = (int)Math.Clamp(

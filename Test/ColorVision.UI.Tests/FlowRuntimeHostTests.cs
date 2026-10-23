@@ -11,8 +11,10 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowRuntimeHostTests
 {
-    [Fact]
-    public void BareRuntimeLoadsAndCompletesWithoutAnEditor()
+    [Theory]
+    [InlineData("SN-BARE", "SN-BARE")]
+    [InlineData("SN?BARE", "SN_BARE")]
+    public void BareRuntimeLoadsAndCompletesWithoutAnEditor(string requestedSerialNumber, string executionSerialNumber)
     {
         RunInSta(async () =>
         {
@@ -22,11 +24,12 @@ public sealed class FlowRuntimeHostTests
             await host.LoadAsync(canvas);
             FlowEngineRunResult result = await host.RunAsync(
                 "HeadlessStart",
-                "SN-BARE");
+                requestedSerialNumber);
 
             Assert.True(result.Started);
             Assert.Equal(FlowEngineRunTermination.Completed, result.Termination);
             Assert.Equal(StatusTypeEnum.Completed, result.Data.Status);
+            Assert.Equal(executionSerialNumber, result.Data.SerialNumber);
             Assert.Equal(FlowRuntimeHostState.Ready, host.State);
             Assert.NotNull(host.ContentHash);
             Assert.Equal(2, host.Nodes.Count);

@@ -1144,7 +1144,7 @@ namespace ColorVision.Engine.FlowProcessing
                 return default;
             }
 
-            string sn = requestedSerialNumber ?? CreateFlowSerialNumber();
+            string sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(requestedSerialNumber ?? CreateFlowSerialNumber());
             using CancellationTokenSource flowRunCts = new CancellationTokenSource();
             if (!_runLifecycle.TryBegin(
                     sn,

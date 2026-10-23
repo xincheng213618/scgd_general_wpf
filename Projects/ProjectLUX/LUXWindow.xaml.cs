@@ -624,7 +624,7 @@ namespace ProjectLUX
                     if (executed)
                     {
                         //每次结束都保存
-                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{result.SN}.csv");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, Tool.SanitizeFileName($"C_{result.SN}.csv"));
                         if (Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
                         {
                             log.Info("savepath" + path);
@@ -1378,7 +1378,7 @@ namespace ProjectLUX
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             string sn = "ssss";
-            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
+            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, Tool.SanitizeFileName($"C_{sn}.csv"));
             ObjectiveTestResult TestResult = new ObjectiveTestResult();
             TestResult.VRMTFHTestResult = new Process.VR.MTFH.VRMTFHTestResult();
             for (int i = 0; i < 80; i++)
@@ -1404,7 +1404,7 @@ namespace ProjectLUX
 
             try
             {
-                string path = Path.Combine(dialog.FolderName, $"C_{sn}.csv");
+                string path = Path.Combine(dialog.FolderName, Tool.SanitizeFileName($"C_{sn}.csv"));
                 ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
                 log.Info("手动导出 ObjectiveTestResult：" + path);
                 MessageBox.Show(this, LocalizedText.Get("导出完成：") + path, "ColorVision");

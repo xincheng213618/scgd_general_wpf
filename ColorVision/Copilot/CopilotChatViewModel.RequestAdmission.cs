@@ -155,8 +155,8 @@ namespace ColorVision.Copilot
             }
             else
             {
-                var contextWindowTokens = ResolveContextWindowTokens(codexConfigOptions, agentDefaults);
-                var outputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
+                var contextWindowTokens = ResolveContextWindowTokens(codexConfigOptions, agentDefaults, profile);
+                var outputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.MaximumMaxTokens);
                 var inputBudgetTokens = Math.Max(1, contextWindowTokens - outputTokens);
                 var requestBudgetTokens = Math.Clamp(
                     agentDefaults.RequestTokenBudget,

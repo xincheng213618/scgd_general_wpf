@@ -877,6 +877,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public bool TryStartNode(string name, string serialNumber)
 	{
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		BaseStartNode startNode = null;
 		lock (stateLock)
 		{
@@ -928,6 +929,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void StopNode(string name, string serialNumber)
 	{
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		BaseStartNode startNode;
 		lock (stateLock)
 		{

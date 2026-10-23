@@ -863,8 +863,7 @@ namespace ProjectARVRPro
                 FlowName = flowTemplate.Key;
                 PrepareExecutionStatus();
 
-                string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
-                CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
+                CurrentFlowResult.Code = ViewResultManager.Config.CreateFlowCode(ProjectARVRProConfig.Instance.SN, DateTime.Now);
                 _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
                 ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
 
@@ -1791,7 +1790,6 @@ namespace ProjectARVRPro
             string serialNumber = SNtextBox.Text;
             var responseStream = SocketControl.Current.Stream;
             DateTime exportTime = DateTime.Now;
-            string timeStr = exportTime.ToString("yyyyMMdd_HHmmss");
             string csvOutputDirectory = outputConfig.CsvSavePath;
             string customXlsxOutputDirectory = string.IsNullOrWhiteSpace(outputConfig.CustomXlsxSavePath)
                 ? outputConfig.CsvSavePath
@@ -1802,13 +1800,11 @@ namespace ProjectARVRPro
                 csvOutputDirectory = Path.Combine(csvOutputDirectory, dateFolder);
             }
 
-            string baseFileName = $"TestResults_{serialNumber}_{timeStr}";
-
             if (outputConfig.IsSaveCsv)
             {
                 try
                 {
-                    string filePath = Path.Combine(csvOutputDirectory, $"{baseFileName}_.csv");
+                    string filePath = Path.Combine(csvOutputDirectory, ProjectARVRResultCsvExporter.BuildFileName(serialNumber, exportTime));
                     string currentSnDirectory = ProjectImageExportService.BuildOutputDirectory(
                         outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, serialNumber);
                     using var csvWrite = ResultStorageSpaceManager.Instance.BeginWrite(
@@ -2817,8 +2813,7 @@ namespace ProjectARVRPro
                     ApplyPendingSwitchTiming(CurrentFlowResult);
                     FlowName = CurrentFlowResult.Model;
                     PrepareExecutionStatus();
-                    string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
-                    CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
+                    CurrentFlowResult.Code = ViewResultManager.Config.CreateFlowCode(ProjectARVRProConfig.Instance.SN, DateTime.Now);
 
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
 

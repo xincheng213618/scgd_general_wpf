@@ -166,6 +166,6 @@ namespace ColorVision.Copilot
             || (!conversation.IsArchived && Conversations.Contains(conversation));
 
         private CopilotProfileConfig? ResolveProfile(string? profileId) =>
-            _config.FindProfile(profileId);
+            _config.FindProfile(profileId) is { IsAvailable: true } profile ? profile : null;
     }
 }

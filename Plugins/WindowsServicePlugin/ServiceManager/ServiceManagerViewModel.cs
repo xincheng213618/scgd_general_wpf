@@ -49,6 +49,7 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand OneKeyStartCommand { get; }
         public RelayCommand OneKeyStopCommand { get; }
         public RelayCommand UpdateConfigCommand { get; }
+        public RelayCommand RemoveArchiveServiceMonitoringCommand { get; }
         public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
         public RelayCommand SetBasePathCommand { get; }
@@ -84,6 +85,7 @@ namespace WindowsServicePlugin.ServiceManager
             OneKeyStartCommand = new RelayCommand(a => _ = OneKeyStartAsync(), a => !IsBusy);
             OneKeyStopCommand = new RelayCommand(a => _ = OneKeyStopAsync(), a => !IsBusy);
             UpdateConfigCommand = new RelayCommand(a => UpdateConfig(), a => !IsBusy);
+            RemoveArchiveServiceMonitoringCommand = new RelayCommand(a => _ = RemoveArchiveServiceMonitoringAsync(), a => !IsBusy);
             OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
             SetBasePathCommand = new RelayCommand(a => SetBasePath());

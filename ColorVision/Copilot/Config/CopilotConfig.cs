@@ -201,7 +201,7 @@ namespace ColorVision.Copilot
         public CopilotProfileConfig? GetPreferredDefaultProfile()
         {
             return Profiles.FirstOrDefault(profile => profile.IsConfigured)
-                ?? Profiles.FirstOrDefault();
+                ?? Profiles.FirstOrDefault(profile => profile.IsAvailable);
         }
 
         internal CopilotConfig CreatePersistenceSnapshot(

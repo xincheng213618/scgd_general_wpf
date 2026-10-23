@@ -40,6 +40,8 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 `FlowEngineAPI` 定义 `LoadFromFile` / `LoadFromBase64`、`StartNode` 和 `StopNode`，具体的 `FlowEngineControl` 另提供 `TryStartNode`。`TryStartNode(name, serialNumber)` 检查当前未运行、开始节点存在、`IsExecutionReady` 和 `CanAcceptStart`；拒绝时返回 `false`。返回 `true` 只说明启动被接受，不代表图或客户业务完成；返回 `void` 的 `StartNode` 不提供该拒绝结果。
 
+流程执行编号会被旧服务用于结果文件名，开始入口通过 `Tool.SanitizeFileName` 将 Windows 非法文件名字符（含 `?`、路径分隔符和控制字符）替换为 `_`，去除尾部点/空格，空名与保留设备名使用安全占位/前缀。合法编号保持不变；等待完成、回调、运行状态、查找开始动作和停止均使用相同规范化编号，`FlowHeadlessExecutionRequest.SerialNumber` 也保存实际执行编号。拥有业务批次的调用方须在创建批次和诊断记录前生成此编号，不能只在某个算法请求发送时替换，否则会割裂批次、消息和完成事件的关联。客户产品 SN 是独立业务字段，保留原值用于显示、追溯和协议回传；用它生成文件名时单独格式化，不改写文件内容或历史批次。
+
 `BaseStartNode.RequiresConnectionReady` 默认是 `false`，因此不能统一要求所有本地开始节点的 `Ready` 为真；要求连接的开始节点才通过 `Ready` 门禁。`CanAcceptStart` 还要求开始输出已连线。服务节点的 `getActionEvent` / `getBaseEvent` 构造请求，再由 `DoTransferToServer` 转交发送链。扩展方式见[节点扩展契约](../extensions/flow-node.md)。
 
 `BaseStartNode` 实现 `IDisposable`；脱离 `FlowEngineControl` 构造开始节点的读取器也必须在读取后释放节点。

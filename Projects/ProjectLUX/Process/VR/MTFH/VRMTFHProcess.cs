@@ -201,7 +201,7 @@ namespace ProjectLUX.Process.VR.MTFH
 
                 if (Config.SaveCsv && Directory.Exists(ctx.SavePath))
                 {
-                    string csvPath = System.IO.Path.Combine(ctx.SavePath, $"{ctx.Result.SN}_MTFH_Result.csv");
+                    string csvPath = System.IO.Path.Combine(ctx.SavePath, ColorVision.Common.Utilities.Tool.SanitizeFileName($"{ctx.Result.SN}_MTFH_Result.csv"));
                     ObjectiveTestResultCsvExporter.ExportToCsv(ctx.ObjectiveTestResult, csvPath);
                 }
                 return true;

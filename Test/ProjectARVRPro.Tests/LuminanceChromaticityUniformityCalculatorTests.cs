@@ -1,5 +1,7 @@
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.POI;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.KeyedResults;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.Uniformity;
@@ -176,10 +178,14 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
 
         Assert.NotNull(w255);
         Assert.False(w255.CalculateUniformityFromCorrectedPoi);
+        Assert.Equal(UniformityDisplayFormat.Percentage, w255.LuminanceUniformityDisplayFormat);
+        Assert.Equal(UniformityDisplayFormat.Decimal, w255.ColorUniformityDisplayFormat);
         Assert.Equal("Luminance_uniformity", w255.GetLuminanceUniformityResultName());
         Assert.Equal("Color_uniformity", w255.GetColorUniformityResultName());
         Assert.NotNull(luminance);
         Assert.False(luminance.CalculateUniformityFromCorrectedPoi);
+        Assert.Equal(UniformityDisplayFormat.Percentage, luminance.LuminanceUniformityDisplayFormat);
+        Assert.Equal(UniformityDisplayFormat.Decimal, luminance.ColorUniformityDisplayFormat);
         Assert.Equal("Luminance_uniformity", luminance.GetLuminanceUniformityResultName());
         Assert.Equal("Color_uniformity", luminance.GetColorUniformityResultName());
     }
@@ -206,6 +212,151 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
         Assert.Equal("W255Lum", w255Config.GetLuminanceUniformityResultName());
         Assert.Equal("W255Color", w255Config.GetColorUniformityResultName());
         Assert.True(LuminanceChromaticityUniformityCalculator.MatchesResultName("W255_W255Color_Result", w255Config.GetColorUniformityResultName()));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MissingAnalysisUsesRawPoiAndAppliesUniformityRecipeAndLimits(bool w255)
+    {
+        var points = CreateRawAndCorrectedPoints();
+
+        var result = PopulateUniformity(w255, false, false, false, points);
+
+        Assert.True(result.Success);
+        Assert.Equal(0.8 * 0.5 + 0.1, result.Luminance.Value, 12);
+        Assert.Equal(Math.Sqrt(2 * 0.0625 * 0.0625) * 2 + 0.001, result.Color.Value, 12);
+        Assert.Equal(0.6, result.Luminance.LowLimit);
+        Assert.Equal(0.08, result.Color.UpLimit);
+        Assert.False(result.Passed);
+        Assert.NotNull(result.Luminance.TestValue);
+        Assert.NotNull(result.Color.TestValue);
+        Assert.Equal("%", result.Luminance.Unit);
+        Assert.Equal((result.Luminance.Value * 100).ToString("F4"), result.Luminance.TestValue);
+        Assert.Equal("", result.Color.Unit);
+        Assert.Equal(100, points[0].Y);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void MissingAnalysisOnlyFillsTheMissingMetric(bool w255, bool hasLuminance)
+    {
+        var result = PopulateUniformity(w255, false, hasLuminance, !hasLuminance, CreateRawAndCorrectedPoints());
+
+        Assert.True(result.Success);
+        Assert.Equal(hasLuminance ? 0.9 : 0.5, result.Luminance.Value, 12);
+        Assert.Equal(hasLuminance ? Math.Sqrt(2 * 0.0625 * 0.0625) * 2 + 0.001 : 0.001, result.Color.Value, 12);
+        Assert.False(result.Passed);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CorrectedPoiSwitchReplacesBothTemplateMetrics(bool w255)
+    {
+        var result = PopulateUniformity(w255, true, true, true, CreateRawAndCorrectedPoints());
+
+        Assert.True(result.Success);
+        Assert.Equal(100d / 120d * 0.5 + 0.1, result.Luminance.Value, 12);
+        Assert.Equal(Math.Sqrt(0.125 * 0.125 + 0.03125 * 0.03125) * 2 + 0.001, result.Color.Value, 12);
+        Assert.False(result.Passed);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void PoiIsRequiredOnlyWhenAnalysisNeedsLocalCalculation(bool w255, bool hasAnalysis)
+    {
+        var result = PopulateUniformity(w255, false, hasAnalysis, hasAnalysis, []);
+
+        Assert.Equal(hasAnalysis, result.Success);
+        Assert.Equal(0.9, result.Luminance.Value);
+        Assert.Equal(0.001, result.Color.Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UniformityDisplayFormatsChangeTextAndUnitsWithoutChangingValuesOrLimits(bool w255)
+    {
+        var result = PopulateUniformity(w255, false, false, false, CreateRawAndCorrectedPoints(), UniformityDisplayFormat.Decimal, UniformityDisplayFormat.Percentage);
+
+        Assert.True(result.Success);
+        Assert.Equal(0.5, result.Luminance.Value, 12);
+        Assert.Equal("", result.Luminance.Unit);
+        Assert.Equal(result.Luminance.Value.ToString("F4"), result.Luminance.TestValue);
+        Assert.Equal("%", result.Color.Unit);
+        Assert.Equal((result.Color.Value * 100).ToString("F5"), result.Color.TestValue);
+        Assert.Equal(0.6, result.Luminance.LowLimit);
+        Assert.Equal(0.08, result.Color.UpLimit);
+        Assert.False(result.Passed);
+        Assert.DoesNotContain("%", result.Luminance.Name, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("12.5000", "%", "12.5000%")]
+    [InlineData("12.5000%", "%", "12.5000%")]
+    [InlineData("0.1250", "", "0.1250")]
+    public void W255UniformityTextUsesUnitAndKeepsHistoricalPercentResults(string value, string unit, string expected)
+    {
+        Assert.Equal(expected, White255Process.FormatUniformityValue(new() { TestValue = value, Unit = unit }));
+    }
+
+    private static List<PoiResultCIExyuvData> CreateRawAndCorrectedPoints()
+    {
+        var points = new List<PoiResultCIExyuvData>();
+        foreach (var value in new[] { new { Y = 80d, u = 0.125, v = 0.25 }, new { Y = 100d, u = 0.1875, v = 0.3125 } })
+        {
+            var point = new PoiResultCIExyuvData(new PoiPointResultModel
+            {
+                Value = JsonConvert.SerializeObject(new { X = value.Y, value.Y, Z = value.Y, value.u, value.v })
+            });
+            point.Y += 20;
+            point.u = point.u * 2 + 0.015625;
+            point.v = point.v * 0.5 - 0.03125;
+            points.Add(point);
+        }
+        return points;
+    }
+
+    private static (bool Success, bool Passed, ObjectiveTestItem Luminance, ObjectiveTestItem Color) PopulateUniformity(
+        bool w255, bool corrected, bool hasLuminance, bool hasColor, List<PoiResultCIExyuvData> points,
+        UniformityDisplayFormat luminanceFormat = UniformityDisplayFormat.Percentage, UniformityDisplayFormat colorFormat = UniformityDisplayFormat.Decimal)
+    {
+        var context = new IProcessExecutionContext { Result = new() { Result = true } };
+        var luminance = new ObjectiveTestItem { Value = 0.9 };
+        var color = new ObjectiveTestItem { Value = 0.001 };
+        var luminanceRecipe = new RecipeBase(0.6, 0, 0.5, 0.1);
+        var colorRecipe = new RecipeBase(0, 0.08, 2, 0.001);
+        if (w255)
+        {
+            var process = new White255Process();
+            process.Config.CalculateUniformityFromCorrectedPoi = corrected;
+            process.Config.LuminanceUniformityDisplayFormat = luminanceFormat;
+            process.Config.ColorUniformityDisplayFormat = colorFormat;
+            process.Config.RecipeConfig.LuminanceUniformity = luminanceRecipe;
+            process.Config.RecipeConfig.ColorUniformity = colorRecipe;
+            var result = new W255ViewTestResult { ViewPoixyuvDatas = points, LuminanceUniformity = luminance, ColorUniformity = color };
+            bool success = process.TryPopulateUniformity(context, result, hasLuminance, hasColor);
+            return (success, context.Result.Result, result.LuminanceUniformity, result.ColorUniformity);
+        }
+        else
+        {
+            var process = new LuminanceChromaticityProcess();
+            process.Config.CalculateUniformityFromCorrectedPoi = corrected;
+            process.Config.LuminanceUniformityDisplayFormat = luminanceFormat;
+            process.Config.ColorUniformityDisplayFormat = colorFormat;
+            process.Config.RecipeConfig.LuminanceUniformity = luminanceRecipe;
+            process.Config.RecipeConfig.ColorUniformity = colorRecipe;
+            var result = new LuminanceChromaticityViewTestResult { ViewPoixyuvDatas = points, LuminanceUniformity = luminance, ColorUniformity = color };
+            bool success = process.TryPopulateUniformity(context, result, hasLuminance, hasColor);
+            return (success, context.Result.Result, result.LuminanceUniformity, result.ColorUniformity);
+        }
     }
 
     private static PoiResultCIExyuvData Correct(

@@ -89,7 +89,7 @@ namespace ProjectLUX.Services
 
 
 
-                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"D_{sn}.csv");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, ColorVision.Common.Utilities.Tool.SanitizeFileName($"D_{sn}.csv"));
                         DeviceSpectrum deviceSprectrm = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
                         MsgRecord msgRecord = deviceSprectrm.DService.GetData();
 
@@ -148,7 +148,7 @@ namespace ProjectLUX.Services
                     if (lastTwo == "01")
                     {
                         log.Info("VID虚像距执行");
-                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"B_{sn}.csv");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, ColorVision.Common.Utilities.Tool.SanitizeFileName($"B_{sn}.csv"));
                         var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
                         VIDTestResult vIDTestResult = new VIDTestResult();
                         DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();

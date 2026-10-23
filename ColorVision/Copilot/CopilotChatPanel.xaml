@@ -2711,12 +2711,14 @@
                                             <ListBox x:Name="ProfileListBox" Foreground="{DynamicResource GlobalTextBrush}"
                                                      MaxHeight="220" Background="Transparent"
                                                      BorderThickness="0"
-                                                     ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"
                                                      ItemsSource="{Binding Profiles}"
                                                      PreviewMouseLeftButtonUp="ProfileListBox_PreviewMouseLeftButtonUp"
                                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                      SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                                                <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource ComposerPopoverListBoxItemStyle}"><Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAvailable}" Value="False"><Setter Property="Visibility" Value="Collapsed" /><Setter Property="IsEnabled" Value="False" /></DataTrigger>
+                                                </Style.Triggers></Style></ListBox.ItemContainerStyle>
                                                 <ListBox.ItemTemplate>
                                                     <DataTemplate>
                                                         <Grid MinHeight="36" Margin="8,2" TextElement.Foreground="{DynamicResource GlobalTextBrush}">

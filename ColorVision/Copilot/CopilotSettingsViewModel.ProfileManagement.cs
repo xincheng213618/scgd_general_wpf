@@ -99,6 +99,7 @@ namespace ColorVision.Copilot
                         string.Equals(profile.Id, selectedProfileId, StringComparison.Ordinal))
                     ?? Profiles.FirstOrDefault(profile => profile.IsConfigured)
                     ?? Profiles.FirstOrDefault();
+                RebuildProviders();
                 McpPort = config.McpPort;
                 McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
                 McpEndpoint = BuildMcpEndpoint();
@@ -113,7 +114,7 @@ namespace ColorVision.Copilot
                 });
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
-                SetActiveProfileId(SelectedProfile?.Id);
+                SetActiveProfileId(SelectedProfile?.IsConfigured == true ? SelectedProfile.Id : Profiles.FirstOrDefault(profile => profile.IsConfigured)?.Id ?? string.Empty);
             }
             catch (Exception ex)
             {
@@ -281,16 +282,6 @@ namespace ColorVision.Copilot
             InvalidateSelectedProfileConnectionTest();
             if (_isApplyingPreset)
                 return;
-
-            if (!profile.IsLocalCodex && e.PropertyName == nameof(CopilotProfileConfig.VendorType))
-            {
-                ApplyVendorPreset(profile, resetName: false);
-                OnPropertyChanged(nameof(AvailableModelPresets));
-            }
-            else if (!profile.IsLocalCodex && e.PropertyName == nameof(CopilotProfileConfig.ProviderType))
-            {
-                ApplyProviderPreset(profile);
-            }
 
             RefreshSelectedProfileTestState("Profile details changed. Test uses the current unsaved values.");
             OnSelectedProfileUsageChanged();

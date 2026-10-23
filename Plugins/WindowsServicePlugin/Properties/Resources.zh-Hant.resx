@@ -475,4 +475,10 @@
   <data name="打开或下载服务管理工具失败：{0}" xml:space="preserve"><value>開啟或下載服務管理工具失敗：{0}</value></data>
   <data name="I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?" xml:space="preserve"><value>找不到 CVWinSMS（CVWinSMS.exe），是否指定其位置？</value></data>
   <data name="Open in CVWinSMS" xml:space="preserve"><value>在 CVWinSMS 中開啟</value></data>
+  <data name="RemoveArchiveServiceMonitoring" xml:space="preserve">
+    <value>移除歸檔服務檢測</value>
+  </data>
+  <data name="RemoveArchiveServiceMonitoringToolTip" xml:space="preserve">
+    <value>從註冊中心監控清單移除 CVArchService；執行中的註冊中心會短暫停止並恢復</value>
+  </data>
 </root>

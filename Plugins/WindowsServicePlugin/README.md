@@ -17,6 +17,13 @@ this README is copied into a plugin package.
 
 Package-local prerequisites and warnings:
 
+- The CVWindowsService tab provides "Remove archive service monitoring" for old
+  deployments that keep trying to start CVArchService. It updates the current
+  registration center's database monitor list and local cfg/WinService.config,
+  retaining other database monitor entries. After confirmation, a running
+  registration center briefly stops and resumes so the list takes effect;
+  a stopped registration center remains stopped. File/database rights and a
+  compatible broker are required. This does not uninstall services or delete data.
 - `WindowsServicePlugin` is not the `CVWindowsService` service ZIP or the separate
   `ColorVisionServiceHost` privilege broker. Broker-backed operations require a
   compatible installed broker and appropriate service, file, and database rights.

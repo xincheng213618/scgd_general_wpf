@@ -7,9 +7,10 @@ using System.ComponentModel;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotProfileConfig : ViewModelBase
+    public sealed partial class CopilotProfileConfig : ViewModelBase
     {
         public const int DefaultMaxTokens = 8192;
+        public const int MaximumMaxTokens = 1_048_576;
         public const double DefaultTemperature = 0.2;
         public const int DefaultFirstContentTimeoutSeconds = 180;
         public const int DefaultStreamingInactivityTimeoutSeconds = 120;
@@ -185,12 +186,11 @@ namespace ColorVision.Copilot
 
         private string _systemPromptOverride = string.Empty;
 
-        [JsonIgnore]
         [Browsable(false)]
         public int MaxTokens
         {
             get => _maxTokens;
-            set => SetProperty(ref _maxTokens, Math.Clamp(value, 32, DefaultMaxTokens));
+            set => SetProperty(ref _maxTokens, Math.Clamp(value, 32, MaximumMaxTokens));
         }
         private int _maxTokens = DefaultMaxTokens;
 
@@ -258,17 +258,18 @@ namespace ColorVision.Copilot
         public bool IsApiProfile => !IsLocalCodex;
 
         [JsonIgnore]
-        public bool IsConfigured => IsLocalCodex || (
+        public bool IsConfigured => IsAvailable && (IsLocalCodex || (
             !string.IsNullOrWhiteSpace(ApiKey)
             && !string.IsNullOrWhiteSpace(BaseUrl)
             && !string.IsNullOrWhiteSpace(Model)
-            && CopilotProviderEndpoint.Validate(this).IsValid);
+            && CopilotProviderEndpoint.Validate(this).IsValid));
 
         [JsonIgnore]
         public string ConfigurationStatusText
         {
             get
             {
+                if (!IsAvailable) return "已停用";
                 if (IsLocalCodex) return "本机 Codex";
                 if (!IsConfigured)
                     return "Incomplete";
@@ -405,6 +406,12 @@ namespace ColorVision.Copilot
             var clone = new CopilotProfileConfig
             {
                 Id = Id,
+                ConnectionId = ConnectionId,
+                ConnectionName = ConnectionName,
+                ConnectionEnabled = ConnectionEnabled,
+                IsEnabled = IsEnabled,
+                UseModelDefaults = UseModelDefaults,
+                ContextWindowTokens = ContextWindowTokens,
                 VendorType = VendorType,
                 Name = Name,
                 ProviderType = ProviderType,

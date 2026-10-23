@@ -475,4 +475,10 @@ Download or select and install the VC++ 2013 x64 runtime in the service installa
   <data name="打开或下载服务管理工具失败：{0}" xml:space="preserve"><value>Failed to open or download the service tool: {0}</value></data>
   <data name="I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?" xml:space="preserve"><value>CVWinSMS (CVWinSMS.exe) was not found. Select its location?</value></data>
   <data name="Open in CVWinSMS" xml:space="preserve"><value>Open in CVWinSMS</value></data>
+  <data name="RemoveArchiveServiceMonitoring" xml:space="preserve">
+    <value>Remove archive service monitoring</value>
+  </data>
+  <data name="RemoveArchiveServiceMonitoringToolTip" xml:space="preserve">
+    <value>Remove CVArchService from registration center monitoring; a running registration center will briefly stop and resume</value>
+  </data>
 </root>

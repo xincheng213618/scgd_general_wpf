@@ -29,6 +29,12 @@ namespace ColorVision.Copilot
             {
                 new CopilotConnectProviderOption
                 {
+                    GroupName = "本地", IconText = "⌘", Label = "本地 Codex",
+                    Description = "使用本机 Codex 账户，无需 API Key", SearchKeywords = "local codex 本地 本机",
+                    VendorType = CopilotVendorType.OpenAI, IsLocalCodex = true,
+                },
+                new CopilotConnectProviderOption
+                {
                     GroupName = "热门",
                     IconText = "D",
                     Label = "DeepSeek",
@@ -246,6 +252,7 @@ namespace ColorVision.Copilot
             RefreshMcpDiagnostics();
             RefreshAgentSkillDiagnostics();
             _isReadyForUserChanges = true;
+            RebuildProviders();
         }
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; } = new();
@@ -439,6 +446,7 @@ namespace ColorVision.Copilot
                 return;
 
             ClearQuickAddModelDraft();
+            foreach (var provider in Providers) provider.Dispose();
             _disposed = true;
             try
             {
