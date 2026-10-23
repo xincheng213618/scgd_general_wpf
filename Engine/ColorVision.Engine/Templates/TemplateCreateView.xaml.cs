@@ -13,7 +13,8 @@ namespace ColorVision.Engine.Templates
         Default,
         Prepared,
         Existing,
-        File
+        File,
+        Preset
     }
 
     public sealed class TemplateCreateOptions
@@ -59,6 +60,7 @@ namespace ColorVision.Engine.Templates
             _appliedSource = null;
             _nameWasEdited = false;
             ValidationTextBlock.Visibility = Visibility.Collapsed;
+            PresetLoadStatus.Visibility = Visibility.Collapsed;
             _isRefreshingSources = true;
             SourceSearchTextBox.Text = string.Empty;
             _isRefreshingSources = false;
@@ -73,6 +75,8 @@ namespace ColorVision.Engine.Templates
             string suggestedName = options?.SuggestedName ?? string.Empty;
             if (string.IsNullOrWhiteSpace(suggestedName) && initialSource?.Kind == TemplateCreateSourceKind.Prepared)
                 suggestedName = template.ImportName;
+            if (string.IsNullOrWhiteSpace(suggestedName) && initialSource?.Preset != null)
+                suggestedName = template.NewCreateFileName(initialSource.Preset.SuggestedName);
             if (string.IsNullOrWhiteSpace(suggestedName))
                 suggestedName = template.NewCreateFileName(template.Code);
 
@@ -91,6 +95,8 @@ namespace ColorVision.Engine.Templates
             _appliedSource = null;
             PropertyGrid1.SelectedObject = null;
             CustomPreviewHost.Children.Clear();
+            PresetGuide.DataContext = null;
+            PresetGuide.Visibility = Visibility.Collapsed;
         }
 
         private void BuildTemplateSources()
@@ -117,6 +123,30 @@ namespace ColorVision.Engine.Templates
                 Description = Properties.Resources.UseSystemDefaultTemplate,
                 SourceLabel = LocalizedText.Get("默认")
             });
+
+            if (_template is ITemplateCreatePresetProvider presetProvider)
+            {
+                try
+                {
+                    foreach (TemplateCreatePreset preset in presetProvider.GetCreatePresets().ToArray())
+                    {
+                        _templateSources.Add(new TemplateCreateSource
+                        {
+                            Kind = TemplateCreateSourceKind.Preset,
+                            Title = preset.Title,
+                            Description = preset.Description,
+                            SourceLabel = preset.SourceLabel,
+                            Preset = preset
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log4net.LogManager.GetLogger(typeof(TemplateCreateView)).Warn("基础模板库加载失败", ex);
+                    PresetLoadStatus.Text = "内置基础模板暂不可用，请修复软件安装。仍可使用默认模板、已有模板或导入文件。";
+                    PresetLoadStatus.Visibility = Visibility.Visible;
+                }
+            }
 
             bool supportsCopy = _template.GetType().GetMethod(nameof(ITemplate.CopyTo), [typeof(int)])?.DeclaringType != typeof(ITemplate);
             if (supportsCopy)
@@ -246,6 +276,9 @@ namespace ColorVision.Engine.Templates
                     case TemplateCreateSourceKind.Existing:
                         applied = source.TemplateIndex >= 0 && _template.CopyTo(source.TemplateIndex);
                         break;
+                    case TemplateCreateSourceKind.Preset:
+                        applied = source.Preset != null && _template is ITemplateCreatePresetProvider provider && provider.ApplyCreatePreset(source.Preset.Id);
+                        break;
                     case TemplateCreateSourceKind.File:
                         applied = _template.Import();
                         if (applied)
@@ -283,6 +316,8 @@ namespace ColorVision.Engine.Templates
 
         private void UpdateCreatePreview()
         {
+            PresetGuide.DataContext = _appliedSource?.Preset;
+            PresetGuide.Visibility = _appliedSource?.Preset?.Guide != null ? Visibility.Visible : Visibility.Collapsed;
             if (_template == null || _template.IsSideHide)
             {
                 SourceColumn.Width = new GridLength(1, GridUnitType.Star);
@@ -339,6 +374,7 @@ namespace ColorVision.Engine.Templates
                 TemplateCreateSourceKind.Prepared when !string.IsNullOrWhiteSpace(_template.ImportName) => _template.ImportName,
                 TemplateCreateSourceKind.Existing => _template.NewCreateFileName($"{source.Title}_Copy"),
                 TemplateCreateSourceKind.File when !string.IsNullOrWhiteSpace(_template.ImportName) => _template.ImportName,
+                TemplateCreateSourceKind.Preset when source.Preset != null => _template.NewCreateFileName(source.Preset.SuggestedName),
                 _ => _template.NewCreateFileName(_template.Code)
             };
             SetSuggestedName(suggestedName);
@@ -456,6 +492,7 @@ namespace ColorVision.Engine.Templates
             public string Description { get; set; } = string.Empty;
             public string SourceLabel { get; set; } = string.Empty;
             public int TemplateIndex { get; set; } = -1;
+            public TemplateCreatePreset? Preset { get; set; }
         }
     }
 }

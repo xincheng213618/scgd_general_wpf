@@ -142,7 +142,9 @@ DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官
 
 `/model` 选择一个已经存在的 Profile，不改写其 provider、模型地址或凭据。`SelectModelProfile` 通过 `SelectedProfile` → `CopilotConversationSession.SelectProfile` 更新运行期选择、`ActiveProfileId` 和当前会话的 `ProfileId`，再由 `PersistState()` 请求保存会话状态。选择先在内存生效，状态保存由 `CopilotChatStatePersistenceCoordinator` 异步完成；命令的“后续请求将使用”不是耐久化回执，保存故障也没有在此选择方法中回滚。会话保存通知、重试与 Flush 属于[状态所有权](./copilot-view-model-architecture.md)。
 
-`/reasoning`（兼容 `/effort`）才会修改当前 Profile 的 `ReasoningMode`。只接受 `CopilotReasoningCapabilities` 为该 Profile 声明的级别；本机 Codex 返回并显式选择的 GPT 推理模型也使用这些档位，选择值经 Agent Framework 传给 App Server。归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
+聊天输入框的模型菜单按连接分组；顶部供应商入口展开连接列表和“管理模型”，仅浏览连接不更改当前模型，点击模型或按 Enter 才应用选择。停用的供应商及模型不出现在列表中，旧 Profile 仍按自身 ID 独立分组。模型行仅按能力声明显示“视觉”标记。
+
+模型菜单底部的推理滑杆与 `/reasoning`（兼容 `/effort`）都会修改当前 Profile 的 `ReasoningMode`。滑杆只使用 `CopilotReasoningCapabilities` 为该 Profile 声明的离散档位，拖动时预览、释放时保存；也可用方向键选择，菜单内 Ctrl+T 循环档位。不支持推理配置的模型不显示滑杆。本机 Codex 返回并显式选择的 GPT 推理模型也使用这些档位，选择值经 Agent Framework 传给 App Server。归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，滑杆恢复原档位；`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
 
 官方 `api.openai.com` 上的 GPT-6 Astra 与 GPT-6.1 Sol 提供 `Default/Low/Medium/High/XHigh/Max`，不提供 `Disabled/Enabled`；历史 `Disabled` 配置或 Codex `none/minimal` 覆盖发送前收敛为 `low`，`ultra` 收敛为 `max`。本机 Codex 显式选择这两个模型时也不提供关闭档位；动态模型列表仍由本机运行时决定。枚举新增值追加在已有数值之后，避免改变旧 JSON 中 `Default/Disabled/Enabled/High/Max` 的数字含义。伪装成 OpenAI vendor 的第三方兼容端点不会因此获得官方推理档位。
 

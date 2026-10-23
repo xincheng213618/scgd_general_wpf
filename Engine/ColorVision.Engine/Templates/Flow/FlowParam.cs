@@ -10,6 +10,9 @@ namespace ColorVision.Engine.Templates.Flow
     /// </summary>
     public class FlowParam : ParamModBase
     {
+        [Browsable(false), JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
+        public FlowTemplatePreset? CreationPreset { get; set; }
+
         public FlowParam() 
         {
 

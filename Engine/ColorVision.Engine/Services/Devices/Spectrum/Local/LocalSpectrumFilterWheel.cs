@@ -65,7 +65,8 @@ internal sealed class LocalSpectrumFilterWheel : ILocalSpectrumFilterWheelOperat
         try
         {
             Complete(record, record.MsgRecordState);
-            if (!completion.Task.Wait(TimeSpan.FromSeconds(31))) throw new TimeoutException($"{operation}等待回执超时。");
+            if (record is LocalCfwPortRecord) completion.Task.GetAwaiter().GetResult();
+            else if (!completion.Task.Wait(TimeSpan.FromSeconds(31))) throw new TimeoutException($"{operation}等待回执超时。");
             if (completion.Task.Result != MsgRecordState.Success)
                 throw new InvalidOperationException($"{operation}失败：{record.MsgReturn?.Message ?? completion.Task.Result.ToString()}");
         }

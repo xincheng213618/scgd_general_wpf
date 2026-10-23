@@ -4,6 +4,7 @@ using ColorVision.UI;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Globalization;
 using System.Windows;
@@ -33,6 +34,10 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private bool _editingEnabledBeforeExecution;
         private readonly StackPanel _generatedPropertyPanel = new();
         private readonly List<(UIElement Host, CommandBinding Binding)> _editCommandForwarders = [];
+        private readonly FlowEditorSettings _settings;
+        private readonly ThemeManager _themeManager;
+        private ResourceDictionary? _paletteResources;
+        private bool? _paletteIsDark;
 
         public static readonly DependencyProperty ToolbarContentProperty = DependencyProperty.Register(
             nameof(ToolbarContent),
@@ -76,8 +81,14 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             CommandManager.InvalidateRequerySuggested();
         }
 
-        public FlowEditorCanvas()
+        public FlowEditorCanvas() : this(ConfigService.Instance?.GetRequiredService<FlowEditorSettings>() ?? new FlowEditorSettings())
         {
+        }
+
+        internal FlowEditorCanvas(FlowEditorSettings settings)
+        {
+            _settings = settings;
+            _themeManager = ThemeManager.Current;
             InitializeComponent();
             ConfigurationViewButton.Content = GetInspectorText("Flow_NodeInspector_Configuration");
             DocumentationViewButton.Content = GetInspectorText("Flow_NodeInspector_Documentation");
@@ -98,8 +109,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             STNodeEditorMain.CanvasMoved += STNodeEditorMain_CanvasChanged;
             STNodeEditorMain.CanvasScaled += STNodeEditorMain_CanvasChanged;
 
-            ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
-            ThemeChanged(ThemeManager.Current.CurrentUITheme);
+            _settings.PropertyChanged += SettingsChanged;
+            _themeManager.CurrentUIThemeChanged += ThemeChanged;
+            ApplyEditorSettings();
             AdvancedPropertiesButton.ToolTip = FlowNodePropertyMetadataProvider.AdvancedOptions.ToolTip;
             UpdateInspectorViewButtons();
         }
@@ -653,13 +665,120 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void ThemeChanged(Theme theme)
         {
-            STNodeEditorMain.VisualTheme = theme == Theme.Dark ? STNodeVisualTheme.Dark : STNodeVisualTheme.Light;
+            ApplyEditorSettings();
+        }
+
+        private void SettingsChanged(object? sender, PropertyChangedEventArgs e) => ApplyEditorSettings();
+
+        private void ApplyEditorSettings()
+        {
+            if (_disposed || Dispatcher.HasShutdownStarted) return;
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(ApplyEditorSettings);
+                return;
+            }
+
+            STNodeVisualTheme theme = _settings.ResolveTheme(_themeManager.CurrentUITheme);
+            STNodeEditorMain.VisualTheme = theme;
+            STNodeEditorMain.ShowGrid = _settings.ShowGrid;
+            STNodeEditorMain.ShowMagnet = _settings.ShowMagnet;
+            STNodeEditorMain.ShowNodeShadow = _settings.ShowNodeShadow;
+            STNodeEditorMain.NodeCornerRadius = _settings.NodeCornerRadius;
+            STNodeEditorMain.Curvature = (float)_settings.Curvature;
+            STNodeEditorMain.MagnetColor = theme.Accent;
+            if (_paletteIsDark != theme.IsDark)
+            {
+                var palette = new ResourceDictionary();
+                var sources = new List<string>(theme.IsDark ? ThemeManager.ResourceDictionaryDark : ThemeManager.ResourceDictionaryWhite);
+                sources.AddRange(ThemeManager.ResourceDictionaryBase);
+                foreach (string source in sources)
+                    palette.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(source, UriKind.RelativeOrAbsolute) });
+                if (_paletteResources != null) Resources.MergedDictionaries.Remove(_paletteResources);
+                Resources.MergedDictionaries.Add(palette);
+                _paletteResources = palette;
+                _paletteIsDark = theme.IsDark;
+            }
+            // Scope the canvas chrome and its settings window without changing application resources.
+            SetBrush("GlobalBackground", theme.Surface);
+            SetBrush("GlobalTextBrush", theme.Text);
+            SetBrush("GlobalBorderBrush", theme.Border);
+            SetBrush("PrimaryTextBrush", theme.Text);
+            SetBrush("SecondaryTextBrush", theme.SecondaryText);
+            SetBrush("PrimaryBrush", theme.Accent);
+            ThemeButton.ToolTip = EngineLocalization.Get("画布主题") + "：" + GetThemeName(_settings.ThemeMode);
+        }
+
+        private void SetBrush(string key, Color color)
+        {
+            var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(color.A, color.R, color.G, color.B));
+            brush.Freeze();
+            Resources[key] = brush;
+        }
+
+        private static string GetThemeName(FlowEditorThemeMode mode) => EngineLocalization.Get(mode switch
+        {
+            FlowEditorThemeMode.Light => "浅色",
+            FlowEditorThemeMode.Dark => "深色",
+            FlowEditorThemeMode.Custom => "自定义配色",
+            _ => "跟随软件主题"
+        });
+
+        private void ThemeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var menu = new ContextMenu { PlacementTarget = ThemeButton, Placement = PlacementMode.Bottom };
+            menu.Resources.MergedDictionaries.Add(Resources);
+            foreach (FlowEditorThemeMode mode in Enum.GetValues<FlowEditorThemeMode>())
+            {
+                var item = new MenuItem { Header = GetThemeName(mode), IsCheckable = true, IsChecked = _settings.ThemeMode == mode };
+                item.Click += (_, _) =>
+                {
+                    _settings.ThemeMode = mode;
+                    SaveSettings();
+                };
+                menu.Items.Add(item);
+            }
+            ThemeButton.ContextMenu = menu;
+            menu.IsOpen = true;
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new PropertyEditorWindow(_settings, PropertyEditorEditMode.Immediate)
+            {
+                Title = EngineLocalization.Get("工作流程设置"),
+                Owner = Window.GetWindow(this),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Width = 760, Height = 640, MinWidth = 600, MinHeight = 420
+            };
+            window.Resources.MergedDictionaries.Add(Resources);
+            window.ShowDialog();
+            SaveSettings();
+        }
+
+        private void SaveSettings()
+        {
+            try
+            {
+                if (ConfigService.Instance is ConfigHandler handler)
+                {
+                    if (!handler.TrySave(_settings, out string error)) throw new System.IO.IOException(error);
+                }
+                else ConfigService.Instance?.Save<FlowEditorSettings>();
+            }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(FlowEditorCanvas)).Error("Unable to save flow editor settings.", ex);
+                MessageBox.Show(EngineLocalization.Get("工作流程设置保存失败") + Environment.NewLine + ex.Message);
+            }
         }
 
         public void Dispose()
         {
+            if (_disposed) return;
             _disposed = true;
-            ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+            _settings.PropertyChanged -= SettingsChanged;
+            _themeManager.CurrentUIThemeChanged -= ThemeChanged;
             SizeChanged -= FlowEditorCanvas_SizeChanged;
             STNodeEditorMain.SizeChanged -= STNodeEditorMain_SizeChanged;
             PropertyEditorPanel.IsVisibleChanged -= PropertyEditorPanel_IsVisibleChanged;

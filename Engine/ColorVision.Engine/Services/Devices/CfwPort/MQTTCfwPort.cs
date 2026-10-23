@@ -3,14 +3,70 @@ using System.Collections.Generic;
 using System;
 using Newtonsoft.Json.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using ColorVision.Engine.Services.Devices.CfwPort.Local;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class MQTTCfwPort : MQTTDeviceService<ConfigCfwPort>
     {
+        internal DeviceCfwPort? Device { get; init; }
+        public override DeviceStatusType DeviceStatus
+        {
+            get => Device?.CfwBackend.Status ?? base.DeviceStatus;
+            set { if (Device == null) base.DeviceStatus = value; else Device.CfwBackend.ObserveService(value); }
+        }
+        internal void RefreshBackendStatus() => base.DeviceStatus = Device!.CfwBackend.Status;
+
+        internal override MsgRecord PublishAsyncClient(MsgSend message, double timeout = 30000)
+        {
+            if (Device == null) return base.PublishAsyncClient(message, timeout);
+            bool local;
+            lock (CfwPortBackendState.Sync)
+            {
+                local = Device.CfwBackend.OpensLocally;
+                if (!local)
+                {
+                    var config = LocalCfwPortConnection.From(Config);
+                    if (message.EventName != "Close") Device.EnsureOtherCfwBackends(false, config);
+                    Device.CfwBackend.Begin(false, message.EventName, config.PortName);
+                }
+            }
+            if (local) return Device.RunLocalCfwCommand(message);
+            try
+            {
+                var record = base.PublishAsyncClient(message, timeout);
+                int completed = 0;
+                void Complete(object? sender, MsgRecordState state)
+                {
+                    if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout) || Interlocked.Exchange(ref completed, 1) != 0) return;
+                    record.MsgRecordStateChanged -= Complete;
+                    Device.CfwBackend.End(false);
+                    if (state == MsgRecordState.Success && message.EventName is "Open" or "Close")
+                        DeviceStatus = message.EventName == "Close" ? DeviceStatusType.Closed : DeviceStatusType.Opened;
+                }
+                record.MsgRecordStateChanged += Complete;
+                Complete(record, record.MsgRecordState);
+                return record;
+            }
+            catch { Device.CfwBackend.End(false); throw; }
+        }
+
         private readonly object commandGate = new();
         private int calibrationOwner;
         private int pendingCommands;
+
+        internal async Task<int?> ExecuteLocalAsync(string operation, LocalCfwPortConnection config, int? port, CancellationToken token)
+        {
+            lock (commandGate)
+            {
+                if (calibrationOwner != 0 && calibrationOwner != Environment.CurrentManagedThreadId)
+                    throw new InvalidOperationException("滤色轮正在用于光谱采集或校零，请等待完成。");
+                pendingCommands++;
+            }
+            try { return await Device!.ExecuteLocalCfwAsync(operation, config, port, true, token).ConfigureAwait(false); }
+            finally { lock (commandGate) pendingCommands--; }
+        }
 
         internal IDisposable ReserveForCalibration()
         {
@@ -68,6 +124,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         private void ProcessingReceived(MsgReturn msg)
         {
+            if (!string.IsNullOrEmpty(msg.DeviceCode) && msg.DeviceCode != DeviceCode) return;
             if (msg.Code == 0)
             {
                 switch (msg.EventName)
@@ -79,27 +136,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                         break;
                     case "GetPort":
                         break;
-                    case "Clode":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else if (msg.Code == 1)
-            {
-
-                switch (msg.EventName)
-                {
-                    case "Open":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
-                    case "SetPort":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
-                    case "GetPort":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
                     case "Close":
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
@@ -107,6 +143,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                         break;
                 }
             }
+            // A failed move/read/close is not proof that the service released its serial handle.
         }
 
         public MsgRecord Clsoe()

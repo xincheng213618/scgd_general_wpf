@@ -20,7 +20,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons
 {
-    public class ITemplateJson<T> : ITemplate where T: TemplateJsonParam,new()
+    public class ITemplateJson<T> : ITemplate, ITemplateCreatePresetProvider where T: TemplateJsonParam,new()
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ITemplate));
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
@@ -55,8 +55,30 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public T? CreateTemp { get; set; }
 
+        public virtual IEnumerable<TemplateCreatePreset> GetCreatePresets() => ParameterTemplatePresets.Read(Code, ParameterTemplatePresets.JsonKind).Select(preset => preset.Source);
+
+        public virtual bool ApplyCreatePreset(string presetId)
+        {
+            var preset = ParameterTemplatePresets.Read(Code, ParameterTemplatePresets.JsonKind).FirstOrDefault(item => item.Source.Id == presetId);
+            if (preset == null) return false;
+            ExportTemp = CreatePresetDraft(preset, ParameterTemplatePresets.ReadJson(preset));
+            CreateTemp = null;
+            ImportName = preset.Source.SuggestedName;
+            return true;
+        }
+
+        private T CreatePresetDraft(BuiltInTemplatePreset preset, string json)
+        {
+            var master = new ModMasterModel { Id = -1, Pid = TemplateDicId, Code = Code, Name = preset.Source.Title, JsonVal = json, TenantId = 0 };
+            var draft = (T)Activator.CreateInstance(typeof(T), [master]);
+            draft.CreationPreset = preset;
+            return draft;
+        }
+
         public override object CreateDefault()
         {
+            if (ExportTemp?.CreationPreset is BuiltInTemplatePreset preset)
+                return CreateTemp = CreatePresetDraft(preset, ExportTemp.JsonValue);
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             var dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
             if (dictemplate ==null)

@@ -1,0 +1,1457 @@
+{
+  "schema_version": 1,
+  "content_version": "2026.10.24",
+  "presets": [
+    {
+      "id": "pg-power-on",
+      "template_code": "Sensor.Default",
+      "title": "PG 上电",
+      "description": "PG,POWER,ON；上电点屏；用于支持此文本协议的 PG 或驱动板。",
+      "category": "PG 电源",
+      "suggested_name": "POWER_ON",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "上电点屏；用于支持此文本协议的 PG 或驱动板。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 50 4F 57 45 52 2C 4F 4E 0A,50 47 2C 50 4F 57 45 52 2C 4F 4E 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-power-off",
+      "template_code": "Sensor.Default",
+      "title": "PG 下电",
+      "description": "PG,POWER,OFF；下电熄屏。",
+      "category": "PG 电源",
+      "suggested_name": "POWER_OFF",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "下电熄屏。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 50 4F 57 45 52 2C 4F 46 46 0A,50 47 2C 50 4F 57 45 52 2C 4F 46 46 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-white-255",
+      "template_code": "Sensor.Default",
+      "title": "全白图 w255",
+      "description": "PG,IMAGE,w255.png；切换到设备已有的 w255.png 全白图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Chage_W255",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 w255.png 全白图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 77 32 35 35 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 77 32 35 35 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-gray-128",
+      "template_code": "Sensor.Default",
+      "title": "灰阶图 w128",
+      "description": "PG,IMAGE,w128.png；切换到设备已有的 w128.png 灰阶图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Chage_W128",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 w128.png 灰阶图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 77 31 32 38 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 77 31 32 38 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-black",
+      "template_code": "Sensor.Default",
+      "title": "黑图 w0",
+      "description": "PG,IMAGE,w0.png；切换到设备已有的 w0.png 黑图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Chage_W0",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 w0.png 黑图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 77 30 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 77 30 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-pattern-1by4",
+      "template_code": "Sensor.Default",
+      "title": "测试图 1by4",
+      "description": "PG,IMAGE,1by4.png；切换到设备已有的 1by4.png 测试图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Image_1by4",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 1by4.png 测试图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 31 62 79 34 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 31 62 79 34 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-pattern-2by4",
+      "template_code": "Sensor.Default",
+      "title": "测试图 2by4",
+      "description": "PG,IMAGE,2by4.png；切换到设备已有的 2by4.png 测试图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Image_2by4",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 2by4.png 测试图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 32 62 79 34 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 32 62 79 34 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-pattern-3by4",
+      "template_code": "Sensor.Default",
+      "title": "测试图 3by4",
+      "description": "PG,IMAGE,3by4.png；切换到设备已有的 3by4.png 测试图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Image_3by4",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 3by4.png 测试图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 33 62 79 34 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 33 62 79 34 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-pattern-4by4",
+      "template_code": "Sensor.Default",
+      "title": "测试图 4by4",
+      "description": "PG,IMAGE,4by4.png；切换到设备已有的 4by4.png 测试图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Image_4by4",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 4by4.png 测试图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 34 62 79 34 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 34 62 79 34 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-apl-10",
+      "template_code": "Sensor.Default",
+      "title": "APL10 图",
+      "description": "PG,IMAGE,apl10.png；切换到设备已有的 apl10.png 测试图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Image_apl10",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 apl10.png 测试图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 61 70 6C 31 30 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 61 70 6C 31 30 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pg-apl-25",
+      "template_code": "Sensor.Default",
+      "title": "APL25 图",
+      "description": "PG,IMAGE,apl25.png；切换到设备已有的 apl25.png 测试图片。 需先在设备上准备同名图片。",
+      "category": "PG 切图",
+      "suggested_name": "Image_apl25",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。",
+      "purpose": "切换到设备已有的 apl25.png 测试图片。 需先在设备上准备同名图片。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "50 47 2C 49 4D 41 47 45 2C 61 70 6C 32 35 2E 70 6E 67 0A,50 47 2C 49 4D 41 47 45 2C 61 70 6C 32 35 2E 70 6E 67 2C 45 4E 44 0D 0A,Hex,5000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "sa-light-on",
+      "template_code": "Sensor.Default",
+      "title": "灯控开灯（SA）",
+      "description": "串口灯控 SA0200#，应答 A",
+      "category": "SA 灯控",
+      "suggested_name": "Light_ON",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 SA…# 且应答 A 的串口灯控器；SA0200# 是已有模板中的开灯示例值，亮度范围和通道含义需按控制器协议核对。",
+      "purpose": "发送已有模板中的开灯示例值；可在下方编辑具体值。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "SA0200#,A,Ascii,1000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "sa-light-off",
+      "template_code": "Sensor.Default",
+      "title": "灯控关灯（SA）",
+      "description": "串口灯控 SA0000# + LF，应答 A",
+      "category": "SA 灯控",
+      "suggested_name": "Light_OFF",
+      "module_guide": "流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。",
+      "device_guide": "适用于支持 SA…# 且应答 A 的串口灯控器；SA0200# 是已有模板中的开灯示例值，亮度范围和通道含义需按控制器协议核对。",
+      "purpose": "发送已有模板中的关灯示例值，保留指令末尾的 LF。",
+      "payload": {
+        "version": 1,
+        "commands": [
+          {
+            "valueA": "SA0000#\n,A,Ascii,1000/0,0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "camera-exposure-15ms",
+      "template_code": "Camera.RunParams",
+      "title": "曝光 15.67 ms",
+      "description": "三通道一致曝光的拍照起点。 相机设备的曝光模板，或流程的拍照节点 → 曝光模板。选择目标相机后使用本模板。",
+      "category": "相机拍照",
+      "suggested_name": "Exposure_15ms",
+      "module_guide": "相机设备的曝光模板，或流程的拍照节点 → 曝光模板。选择目标相机后使用本模板。",
+      "device_guide": "曝光单位为 ms，各通道相同曝光、单次平均、零增益。需按相机支持范围和实际亮度调整；",
+      "purpose": "三通道一致曝光的拍照起点。",
+      "payload": {
+        "version": 1,
+        "kind": "mod-details",
+        "details": [
+          {
+            "symbol": "ExpTime",
+            "valueA": "15.67",
+            "valueB": null
+          },
+          {
+            "symbol": "ExpTimeR",
+            "valueA": "15.67",
+            "valueB": null
+          },
+          {
+            "symbol": "ExpTimeG",
+            "valueA": "15.67",
+            "valueB": null
+          },
+          {
+            "symbol": "ExpTimeB",
+            "valueA": "15.67",
+            "valueB": null
+          },
+          {
+            "symbol": "EnableFocus",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "AvgCount",
+            "valueA": "1",
+            "valueB": null
+          },
+          {
+            "symbol": "Focus",
+            "valueA": "-1",
+            "valueB": null
+          },
+          {
+            "symbol": "Aperture",
+            "valueA": "-1",
+            "valueB": null
+          },
+          {
+            "symbol": "Gain",
+            "valueA": "0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "camera-exposure-133ms",
+      "template_code": "Camera.RunParams",
+      "title": "曝光 133.33 ms",
+      "description": "较长曝光的拍照起点，曝光不足时可继续调整。 相机设备的曝光模板，或流程的拍照节点 → 曝光模板。选择目标相机后使用本模板。",
+      "category": "相机拍照",
+      "suggested_name": "Exposure_133ms",
+      "module_guide": "相机设备的曝光模板，或流程的拍照节点 → 曝光模板。选择目标相机后使用本模板。",
+      "device_guide": "曝光单位为 ms，各通道相同曝光、单次平均、零增益。需按相机支持范围和实际亮度调整；",
+      "purpose": "较长曝光的拍照起点，曝光不足时可继续调整。",
+      "payload": {
+        "version": 1,
+        "kind": "mod-details",
+        "details": [
+          {
+            "symbol": "ExpTime",
+            "valueA": "133.33",
+            "valueB": "133"
+          },
+          {
+            "symbol": "ExpTimeR",
+            "valueA": "133.33",
+            "valueB": "133"
+          },
+          {
+            "symbol": "ExpTimeG",
+            "valueA": "133.33",
+            "valueB": "133"
+          },
+          {
+            "symbol": "ExpTimeB",
+            "valueA": "133.33",
+            "valueB": "133"
+          },
+          {
+            "symbol": "EnableFocus",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "AvgCount",
+            "valueA": "1",
+            "valueB": null
+          },
+          {
+            "symbol": "Focus",
+            "valueA": "-1",
+            "valueB": null
+          },
+          {
+            "symbol": "Aperture",
+            "valueA": "-1",
+            "valueB": null
+          },
+          {
+            "symbol": "Gain",
+            "valueA": "0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "camera-auto-exposure-2s",
+      "template_code": "auto_exp_time",
+      "title": "16位自动曝光·2秒",
+      "description": "以 10 ms 起步，允许在 0.2–2000 ms 内寻找目标曝光。 相机设备 → 自动曝光模板；流程中选择相机的自动曝光功能，再选此模板。",
+      "category": "自动曝光",
+      "suggested_name": "AutoExposure_2s",
+      "module_guide": "相机设备 → 自动曝光模板；流程中选择相机的自动曝光功能，再选此模板。",
+      "device_guide": "适用于 16 位原始图像，AD 上限 65000、目标饱和度 70%；曝光单位 ms。8 位数据需先修改 AD 上限，曝光范围需符合相机能力。",
+      "purpose": "以 10 ms 起步，允许在 0.2–2000 ms 内寻找目标曝光。",
+      "payload": {
+        "version": 1,
+        "kind": "mod-details",
+        "details": [
+          {
+            "symbol": "autoExpTimeBegin",
+            "valueA": "10",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpFlag",
+            "valueA": "True",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSyncFreq",
+            "valueA": "-1",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSaturation",
+            "valueA": "70",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSatMaxAD",
+            "valueA": "65000",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpMaxPecentage",
+            "valueA": "0.01",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSatDev",
+            "valueA": "20",
+            "valueB": null
+          },
+          {
+            "symbol": "maxExpTime",
+            "valueA": "2000",
+            "valueB": "60000"
+          },
+          {
+            "symbol": "minExpTime",
+            "valueA": "0.2",
+            "valueB": null
+          },
+          {
+            "symbol": "burstThreshold",
+            "valueA": "200",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "camera-auto-exposure-60s",
+      "template_code": "auto_exp_time",
+      "title": "16位自动曝光·60秒",
+      "description": "较宽曝光范围：0.2–60000 ms，适合低亮度时作为配置起点。 相机设备 → 自动曝光模板；流程中选择相机的自动曝光功能，再选此模板。",
+      "category": "自动曝光",
+      "suggested_name": "AutoExposure_60s",
+      "module_guide": "相机设备 → 自动曝光模板；流程中选择相机的自动曝光功能，再选此模板。",
+      "device_guide": "适用于 16 位原始图像，AD 上限 65000、目标饱和度 70%；曝光单位 ms。8 位数据需先修改 AD 上限，曝光范围需符合相机能力。",
+      "purpose": "较宽曝光范围：0.2–60000 ms，适合低亮度时作为配置起点。",
+      "payload": {
+        "version": 1,
+        "kind": "mod-details",
+        "details": [
+          {
+            "symbol": "autoExpTimeBegin",
+            "valueA": "10",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpFlag",
+            "valueA": "True",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSyncFreq",
+            "valueA": "-1",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSaturation",
+            "valueA": "70",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSatMaxAD",
+            "valueA": "65000",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpMaxPecentage",
+            "valueA": "0.01",
+            "valueB": null
+          },
+          {
+            "symbol": "autoExpSatDev",
+            "valueA": "20",
+            "valueB": null
+          },
+          {
+            "symbol": "maxExpTime",
+            "valueA": "60000",
+            "valueB": null
+          },
+          {
+            "symbol": "minExpTime",
+            "valueA": "0.2",
+            "valueB": null
+          },
+          {
+            "symbol": "burstThreshold",
+            "valueA": "200",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "poi-quadrilateral-3x3",
+      "template_code": "BuildPOI",
+      "title": "四角区域 3×3 采样",
+      "description": "在四角区域内生成 3×3 矩形采样点，点宽高 30，边距 10%。 选择 POI 布点（BuildPOI）的参数模板；先提供四角区域，再将生成的 POI 交给测量和分析。",
+      "category": "POI 布点",
+      "suggested_name": "POI_3x3",
+      "module_guide": "选择 POI 布点（BuildPOI）的参数模板；先提供四角区域，再将生成的 POI 交给测量和分析。",
+      "device_guide": "需要四角区域输入，不能把任意图像直接当成四角坐标。点尺寸以像素为单位，需按实际图像调整。",
+      "purpose": "在四角区域内生成 3×3 矩形采样点，点宽高 30，边距 10%。",
+      "payload": {
+        "version": 1,
+        "kind": "mod-details",
+        "details": [
+          {
+            "symbol": "POILayout",
+            "valueA": "PolygonFour",
+            "valueB": "Rect"
+          },
+          {
+            "symbol": "LayoutCircleNum",
+            "valueA": "4",
+            "valueB": null
+          },
+          {
+            "symbol": "LayoutCircleAngle",
+            "valueA": "0",
+            "valueB": null
+          },
+          {
+            "symbol": "LayoutRows",
+            "valueA": "3",
+            "valueB": null
+          },
+          {
+            "symbol": "LayoutCols",
+            "valueA": "3",
+            "valueB": null
+          },
+          {
+            "symbol": "PointType",
+            "valueA": "Rect",
+            "valueB": null
+          },
+          {
+            "symbol": "PointWidth",
+            "valueA": "30",
+            "valueB": null
+          },
+          {
+            "symbol": "PointHeight",
+            "valueA": "30",
+            "valueB": null
+          },
+          {
+            "symbol": "PointPosition",
+            "valueA": "LineOn",
+            "valueB": null
+          },
+          {
+            "symbol": "MarginType",
+            "valueA": "Relative",
+            "valueB": null
+          },
+          {
+            "symbol": "MarginLeft",
+            "valueA": "10",
+            "valueB": null
+          },
+          {
+            "symbol": "MarginTop",
+            "valueA": "10",
+            "valueB": null
+          },
+          {
+            "symbol": "MarginRight",
+            "valueA": "10",
+            "valueB": null
+          },
+          {
+            "symbol": "MarginBottom",
+            "valueA": "10",
+            "valueB": null
+          },
+          {
+            "symbol": "PolygonFour_OIndex",
+            "valueA": "[0,1,2,3]",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "poi-output-y",
+      "template_code": "PoiOutput",
+      "title": "只导出 Y 亮度图",
+      "description": "仅启用 Y 通道，文件名 Y.tif。 选择 POI 文件输出（PoiOutput）的参数模板；流程执行到文件输出时使用，输出目录沿原流程设置。",
+      "category": "图像输出",
+      "suggested_name": "Output_Y",
+      "module_guide": "选择 POI 文件输出（PoiOutput）的参数模板；流程执行到文件输出时使用，输出目录沿原流程设置。",
+      "device_guide": "需要已有测量图像/POI 输入。输出目录由流程指定，文件名为相对名称；核对实际尺寸及是否允许同名覆盖。",
+      "purpose": "仅启用 Y 通道，文件名 Y.tif。",
+      "payload": {
+        "version": 1,
+        "kind": "mod-details",
+        "details": [
+          {
+            "symbol": "XIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "XFileName",
+            "valueA": "X.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "YIsEnable",
+            "valueA": "true",
+            "valueB": null
+          },
+          {
+            "symbol": "YFileName",
+            "valueA": "Y.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "ZIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "ZFileName",
+            "valueA": "Z.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "xIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "xFileName",
+            "valueA": "x1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "yIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "yFileName",
+            "valueA": "y1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "uIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "uFileName",
+            "valueA": "u1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "vIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "vFileName",
+            "valueA": "v1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "CCTIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "CCTFileName",
+            "valueA": "CCT.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "WaveIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "WaveFileName",
+            "valueA": "Wave.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "Height",
+            "valueA": "0",
+            "valueB": null
+          },
+          {
+            "symbol": "Width",
+            "valueA": "0",
+            "valueB": null
+          },
+          {
+            "symbol": "MaskFileName",
+            "valueA": null,
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "poi-output-xyz",
+      "template_code": "PoiOutput",
+      "title": "导出 XYZ 三刺激值图",
+      "description": "仅启用 X、Y、Z 通道，使用 X.tif、Y.tif、Z.tif。 选择 POI 文件输出（PoiOutput）的参数模板；流程执行到文件输出时使用，输出目录沿原流程设置。",
+      "category": "图像输出",
+      "suggested_name": "Output_XYZ",
+      "module_guide": "选择 POI 文件输出（PoiOutput）的参数模板；流程执行到文件输出时使用，输出目录沿原流程设置。",
+      "device_guide": "需要已有测量图像/POI 输入。输出目录由流程指定，文件名为相对名称；核对实际尺寸及是否允许同名覆盖。",
+      "purpose": "仅启用 X、Y、Z 通道，使用 X.tif、Y.tif、Z.tif。",
+      "payload": {
+        "version": 1,
+        "kind": "mod-details",
+        "details": [
+          {
+            "symbol": "XIsEnable",
+            "valueA": "true",
+            "valueB": null
+          },
+          {
+            "symbol": "XFileName",
+            "valueA": "X.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "YIsEnable",
+            "valueA": "true",
+            "valueB": null
+          },
+          {
+            "symbol": "YFileName",
+            "valueA": "Y.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "ZIsEnable",
+            "valueA": "true",
+            "valueB": null
+          },
+          {
+            "symbol": "ZFileName",
+            "valueA": "Z.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "xIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "xFileName",
+            "valueA": "x1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "yIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "yFileName",
+            "valueA": "y1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "uIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "uFileName",
+            "valueA": "u1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "vIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "vFileName",
+            "valueA": "v1.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "CCTIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "CCTFileName",
+            "valueA": "CCT.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "WaveIsEnable",
+            "valueA": "false",
+            "valueB": null
+          },
+          {
+            "symbol": "WaveFileName",
+            "valueA": "Wave.tif",
+            "valueB": null
+          },
+          {
+            "symbol": "Height",
+            "valueA": "0",
+            "valueB": null
+          },
+          {
+            "symbol": "Width",
+            "valueA": "0",
+            "valueB": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "poi-luminance-uniformity",
+      "template_code": "PoiAnalysis",
+      "title": "亮度均匀性 min/max",
+      "description": "对 POI 亮度计算 min/max 均匀性。 选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "category": "POI 分析",
+      "suggested_name": "Luminance_Uniformity",
+      "module_guide": "选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "device_guide": "需要有效 POI 亮度测量结果。不同均匀性公式不能混用，结果以 min/max 定义解释。",
+      "purpose": "对 POI 亮度计算 min/max 均匀性。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "analysisType": 1,
+          "CheckerboardContrast": {
+            "numX": 4,
+            "numY": 4,
+            "firstIsBlack": true
+          }
+        }
+      }
+    },
+    {
+      "id": "poi-color-uniformity",
+      "template_code": "PoiAnalysis",
+      "title": "色度均匀性（uv）",
+      "description": "按反馈使用的 uv 方差最大值计算色度均匀性。 选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "category": "POI 分析",
+      "suggested_name": "Color_Uniformity_uv",
+      "module_guide": "选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "device_guide": "需要含色度的 POI 测量结果；该计算不是 CIE x/y 极差或色差 ΔE。",
+      "purpose": "按反馈使用的 uv 方差最大值计算色度均匀性。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "analysisType": 7,
+          "CheckerboardContrast": {
+            "numX": 4,
+            "numY": 4,
+            "firstIsBlack": true
+          }
+        }
+      }
+    },
+    {
+      "id": "poi-checkerboard-white",
+      "template_code": "PoiAnalysis",
+      "title": "首格白 · 4×4 对比度",
+      "description": "按 4×4 棋盘格计算对比度。 选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "category": "棋盘格对比度",
+      "suggested_name": "Checkerboard_WhiteFirst",
+      "module_guide": "选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "device_guide": "需要按棋盘格顺序排列的 16 个采样结果；核对横纵数量及第一个采样点的黑白顺序。",
+      "purpose": "按 4×4 棋盘格计算对比度。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "analysisType": 0,
+          "CheckerboardContrast": {
+            "numX": 4,
+            "numY": 4,
+            "firstIsBlack": true
+          }
+        }
+      }
+    },
+    {
+      "id": "poi-checkerboard-black",
+      "template_code": "PoiAnalysis",
+      "title": "首格黑 · 4×4 对比度",
+      "description": "按 4×4 棋盘格计算对比度。 选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "category": "棋盘格对比度",
+      "suggested_name": "Checkerboard_BlackFirst",
+      "module_guide": "选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。",
+      "device_guide": "需要按棋盘格顺序排列的 16 个采样结果；核对横纵数量及第一个采样点的黑白顺序。",
+      "purpose": "按 4×4 棋盘格计算对比度。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "analysisType": 0,
+          "CheckerboardContrast": {
+            "numX": 4,
+            "numY": 4,
+            "firstIsBlack": true
+          }
+        }
+      }
+    },
+    {
+      "id": "mtf-pattern-4",
+      "template_code": "MTF",
+      "title": "MTF 基础定位（图案 4）",
+      "description": "使用对比度法计算 MTF，自动定位测试图案。 选择 MTF V2（MTF）的参数模板；将测试图像连接到 MTF 算法输入。",
+      "category": "MTF 分辨率",
+      "suggested_name": "MTF_Pattern4",
+      "module_guide": "选择 MTF V2（MTF）的参数模板；将测试图像连接到 MTF 算法输入。",
+      "device_guide": "需要对应图案；图案号、阈值、ROI 尺寸随实际图像核对。",
+      "purpose": "使用对比度法计算 MTF，自动定位测试图案。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "nV1": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "AAminSize": 20,
+            "lineWidth": 4,
+            "rectWidth": 15,
+            "firstIsHor": true,
+            "rectHeight": 10,
+            "distanceToRect": 20
+          },
+          "dRatio": 0.01,
+          "pattern": 2,
+          "RoiRects": [
+            {
+              "h": 238,
+              "w": 350,
+              "x": 3415,
+              "y": 2158
+            },
+            {
+              "h": 154,
+              "w": 231,
+              "x": 5118,
+              "y": 2556
+            },
+            {
+              "h": 417,
+              "w": 455,
+              "x": 3492,
+              "y": 3102
+            },
+            {
+              "h": 460,
+              "w": 631,
+              "x": 5203,
+              "y": 3626
+            }
+          ],
+          "debugCfg": {
+            "Debug": false,
+            "debugPath": "Result\\",
+            "debugImgResize": 2
+          },
+          "threshold": 2000,
+          "CalcMethod": 1,
+          "mathMaskRect": {
+            "h": 0,
+            "w": 0,
+            "x": 0,
+            "y": 0,
+            "enable": false
+          }
+        }
+      }
+    },
+    {
+      "id": "mtf-pattern-5",
+      "template_code": "MTF",
+      "title": "MTF 水平／垂直图案（5）",
+      "description": "使用对比度法计算 MTF，自动定位测试图案。 选择 MTF V2（MTF）的参数模板；将测试图像连接到 MTF 算法输入。",
+      "category": "MTF 分辨率",
+      "suggested_name": "MTF_Pattern5",
+      "module_guide": "选择 MTF V2（MTF）的参数模板；将测试图像连接到 MTF 算法输入。",
+      "device_guide": "需要对应图案；图案号、阈值、ROI 尺寸随实际图像核对。",
+      "purpose": "使用对比度法计算 MTF，自动定位测试图案。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "nV1": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "AAminSize": 100,
+            "lineWidth": 4,
+            "rectWidth": 60,
+            "firstIsHor": false,
+            "rectHeight": 60,
+            "distanceToRect": 70
+          },
+          "dRatio": 0.1,
+          "pattern": 5,
+          "debugCfg": {
+            "Debug": false,
+            "debugPath": "Result\\",
+            "debugImgResize": 2
+          },
+          "threshold": 5000,
+          "CalcMethod": 0,
+          "mathMaskRect": {
+            "h": 0,
+            "w": 0,
+            "x": 0,
+            "y": 0,
+            "enable": false
+          },
+          "PercentageDisplay": false
+        }
+      }
+    },
+    {
+      "id": "aa-light-area-3x3",
+      "template_code": "FindLightArea",
+      "title": "矩形亮区九点定位",
+      "description": "矩形亮区定位并生成 3×3 点，四侧边距初始为 0，可按图像调整。 选择发光区定位（FindLightArea）的参数模板，将亮屏图像连接到算法输入。",
+      "category": "AA 定位",
+      "suggested_name": "LightArea_3x3",
+      "module_guide": "选择发光区定位（FindLightArea）的参数模板，将亮屏图像连接到算法输入。",
+      "device_guide": "阈值使用图像原始灰度；需根据位深、曝光、亮区尺寸调整。使用图案 1、拟合定位（aaLocationWay=1）。",
+      "purpose": "矩形亮区定位并生成 3×3 点，四侧边距初始为 0，可按图像调整。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "pattern": 1,
+          "MaskRect": {
+            "h": 0,
+            "w": 0,
+            "x": 0,
+            "y": 0,
+            "enable": false
+          },
+          "RectArea": {
+            "nummber_x": 3,
+            "nummber_y": 3,
+            "offset_top": 0,
+            "offset_left": 0,
+            "offset_right": 0,
+            "offset_bottom": 0
+          },
+          "debugCfg": {
+            "Debug": false,
+            "debugPath": "Result\\",
+            "debugImgResize": 2
+          },
+          "threshold": 2500,
+          "CircleArea": {
+            "turnNum": 1,
+            "distance": 400,
+            "roateAngle": 0,
+            "singleAngle": 36
+          },
+          "brightRate": 0.1,
+          "ExactCorner": {
+            "edge": 10,
+            "active": true,
+            "cutWidth": 200,
+            "qualityLevel": 0.04
+          },
+          "aaLocationWay": 1,
+          "erodeAndDiate": {
+            "erodeTime": 0,
+            "dilateTime": 0,
+            "erodeFirst": true,
+            "erodeKernel": 3,
+            "dilateKernel": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "aa-layout-3x3",
+      "template_code": "BuildPOI",
+      "title": "AA 区域 3×3 布点",
+      "description": "在亮区范围内生成 3×3 点，四侧偏移为 0。 选择 AA 布点（BuildPOI，JSON 参数）的模板；与四角区域 POI 布点使用不同的参数格式。",
+      "category": "AA 布点",
+      "suggested_name": "AA_Layout_3x3",
+      "module_guide": "选择 AA 布点（BuildPOI，JSON 参数）的模板；与四角区域 POI 布点使用不同的参数格式。",
+      "device_guide": "使用亮区图案 1；阈值和腐蚀参数需按实际图像调整。",
+      "purpose": "在亮区范围内生成 3×3 点，四侧偏移为 0。",
+      "payload": {
+        "version": 1,
+        "kind": "json",
+        "parameters": {
+          "pattern": 1,
+          "MaskRect": {
+            "h": 0,
+            "w": 0,
+            "x": 0,
+            "y": 0,
+            "enable": false
+          },
+          "debugCfg": {
+            "Debug": false,
+            "debugPath": "Result\\",
+            "debugImgResize": 2
+          },
+          "erodeTime": 1,
+          "nummber_x": 3,
+          "nummber_y": 3,
+          "threshold": 10000,
+          "brightRate": 0.1,
+          "offset_top": 0,
+          "ExactCorner": {
+            "edge": 10,
+            "cutWidth": 400,
+            "qualityLevel": 0.04
+          },
+          "erodeKernel": 3,
+          "offset_left": 0,
+          "offset_right": 0,
+          "offset_bottom": 0
+        }
+      }
+    },
+    {
+      "id": "flow-camera-capture",
+      "template_code": "flow",
+      "title": "相机取图",
+      "description": "手动开始 → 相机取图 → 结束。先建立最小采集流程，再增加校正或测量步骤。",
+      "category": "相机采集",
+      "suggested_name": "Camera_Capture",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "手动开始 → 相机取图 → 结束。先建立最小采集流程，再增加校正或测量步骤。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "camera",
+            "name": "相机取图",
+            "exposureMs": 15.67
+          }
+        ],
+        "setup": [
+          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。"
+        ],
+        "start": "manual"
+      }
+    },
+    {
+      "id": "flow-camera-poi",
+      "template_code": "flow",
+      "title": "拍照与 POI 测量",
+      "description": "手动开始 → 相机取图 → POI → 结束。采集、校正与关注点测量按顺序执行。",
+      "category": "POI 测量",
+      "suggested_name": "Camera_POI",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "手动开始 → 相机取图 → POI → 结束。采集、校正与关注点测量按顺序执行。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "camera",
+            "name": "相机取图",
+            "exposureMs": 15.67
+          },
+          {
+            "type": "poi",
+            "name": "POI 测量"
+          }
+        ],
+        "setup": [
+          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
+          "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。"
+        ],
+        "start": "manual"
+      }
+    },
+    {
+      "id": "flow-luminance-uniformity",
+      "template_code": "flow",
+      "title": "亮度均匀性流程",
+      "description": "MQTT 开始 → 相机取图 → POI → 亮度均匀性分析 → 结束。",
+      "category": "均匀性",
+      "suggested_name": "Luminance_Uniformity_Flow",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "MQTT 开始 → 相机取图 → POI → 亮度均匀性分析 → 结束。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "camera",
+            "name": "相机取图",
+            "exposureMs": 15.67
+          },
+          {
+            "type": "poi",
+            "name": "POI 测量"
+          },
+          {
+            "type": "analysis",
+            "name": "亮度均匀性"
+          }
+        ],
+        "setup": [
+          "MQTT 开始：配置本机使用的 MQTT 服务地址和端口，确认连接正常；POI 分析请求通过该连接发送。",
+          "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
+          "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。",
+          "POI 分析：选择本机算法设备，并在 POI 分析模板中创建“亮度均匀性 min/max”，然后在分析节点选择该参数模板。"
+        ],
+        "start": "mqtt"
+      }
+    },
+    {
+      "id": "flow-color-uniformity",
+      "template_code": "flow",
+      "title": "色度均匀性流程",
+      "description": "MQTT 开始 → 相机取图 → POI → 色度均匀性分析 → 结束。",
+      "category": "均匀性",
+      "suggested_name": "Color_Uniformity_Flow",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "MQTT 开始 → 相机取图 → POI → 色度均匀性分析 → 结束。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "camera",
+            "name": "相机取图",
+            "exposureMs": 15.67
+          },
+          {
+            "type": "poi",
+            "name": "POI 测量"
+          },
+          {
+            "type": "analysis",
+            "name": "色度均匀性"
+          }
+        ],
+        "setup": [
+          "MQTT 开始：配置本机使用的 MQTT 服务地址和端口，确认连接正常；POI 分析请求通过该连接发送。",
+          "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
+          "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。",
+          "POI 分析：选择本机算法设备，并在 POI 分析模板中创建“色度均匀性（uv）”，然后在分析节点选择该参数模板。"
+        ],
+        "start": "mqtt"
+      }
+    },
+    {
+      "id": "flow-checkerboard-contrast",
+      "template_code": "flow",
+      "title": "棋盘格对比度流程",
+      "description": "MQTT 开始 → 相机取图 → POI → 棋盘格对比度分析 → 结束。",
+      "category": "对比度",
+      "suggested_name": "Checkerboard_Contrast_Flow",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "MQTT 开始 → 相机取图 → POI → 棋盘格对比度分析 → 结束。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "camera",
+            "name": "相机取图",
+            "exposureMs": 15.67
+          },
+          {
+            "type": "poi",
+            "name": "棋盘格 POI"
+          },
+          {
+            "type": "analysis",
+            "name": "棋盘格对比度"
+          }
+        ],
+        "setup": [
+          "MQTT 开始：配置本机使用的 MQTT 服务地址和端口，确认连接正常；POI 分析请求通过该连接发送。",
+          "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
+          "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。",
+          "POI 分析：选择本机算法设备，并在 POI 分析模板中创建“首格白 · 4×4 对比度 或 首格黑 · 4×4 对比度”，然后在分析节点选择该参数模板。",
+          "棋盘格：配置按顺序排列的 16 个采样点，并核对首格黑白；调整棋盘数量时同时修改采样点与分析参数。"
+        ],
+        "start": "mqtt"
+      }
+    },
+    {
+      "id": "flow-camera-mtf",
+      "template_code": "flow",
+      "title": "拍照与条纹 MTF",
+      "description": "手动开始 → 相机取图 → 本地 MTF → 结束，使用四部横竖条纹参数。",
+      "category": "MTF",
+      "suggested_name": "Camera_MTF_Flow",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "手动开始 → 相机取图 → 本地 MTF → 结束，使用四部横竖条纹参数。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "camera",
+            "name": "相机取图",
+            "exposureMs": 15.67
+          },
+          {
+            "type": "mtf",
+            "name": "条纹 MTF"
+          }
+        ],
+        "setup": [
+          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
+          "MTF：默认四部横竖条纹，可打开算法参数选择单独 H/V；按图案位置设置测量区域，无需数据库 MTF 参数模板。"
+        ],
+        "start": "manual"
+      }
+    },
+    {
+      "id": "flow-image-mtf",
+      "template_code": "flow",
+      "title": "图片条纹 MTF",
+      "description": "手动开始 → 加载图片 → 本地 MTF → 结束，适合先用已有图片确认算法。",
+      "category": "MTF",
+      "suggested_name": "Image_MTF_Flow",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "手动开始 → 加载图片 → 本地 MTF → 结束，适合先用已有图片确认算法。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "image",
+            "name": "加载图片"
+          },
+          {
+            "type": "mtf",
+            "name": "条纹 MTF"
+          }
+        ],
+        "setup": [
+          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "加载图片：选择实际存在的图片文件，核对图像位深、方向和尺寸。",
+          "MTF：默认四部横竖条纹，按实际图案修改算法参数和测量区域。"
+        ],
+        "start": "manual"
+      }
+    },
+    {
+      "id": "flow-image-luminous-area",
+      "template_code": "flow",
+      "title": "图片发光区定位",
+      "description": "手动开始 → 加载图片 → 本地发光区定位 → 结束。输出四角定位结果。",
+      "category": "图像定位",
+      "suggested_name": "Image_LightArea_Flow",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "手动开始 → 加载图片 → 本地发光区定位 → 结束。输出四角定位结果。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "image",
+            "name": "加载图片"
+          },
+          {
+            "type": "luminous",
+            "name": "发光区定位"
+          }
+        ],
+        "setup": [
+          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "加载图片：选择实际存在的图片文件，核对图像位深、方向和尺寸。",
+          "发光区定位：检查搜索区域和最小置信度；需要保存四角 POI 时再选择 POI 保存模板。"
+        ],
+        "start": "manual"
+      }
+    },
+    {
+      "id": "flow-sensor-command",
+      "template_code": "flow",
+      "title": "通用传感器控制",
+      "description": "手动开始 → 本地通用传感器 → 结束。可选择 PG 上下电、切图或灯控参数模板。",
+      "category": "设备控制",
+      "suggested_name": "Sensor_Command_Flow",
+      "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
+      "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
+      "purpose": "手动开始 → 本地通用传感器 → 结束。可选择 PG 上下电、切图或灯控参数模板。",
+      "payload": {
+        "version": 1,
+        "kind": "flow-recipe",
+        "stages": [
+          {
+            "type": "sensor",
+            "name": "传感器指令"
+          }
+        ],
+        "setup": [
+          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "通用传感器：选择本机传感器设备，核对 TCP/串口连接参数。",
+          "先从传感器模板新建适用协议的指令模板，再在流程节点选择；PG 文本与 SA 灯控等协议须与设备匹配。"
+        ],
+        "start": "manual"
+      }
+    }
+  ]
+}

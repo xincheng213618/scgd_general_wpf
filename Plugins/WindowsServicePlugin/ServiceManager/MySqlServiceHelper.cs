@@ -490,7 +490,7 @@ namespace WindowsServicePlugin.ServiceManager
         }
 
         /// <summary>
-        /// 生成随机密码（参考 CVWinSMS.MySqlTools.GenerateRandomPassword）
+        /// 生成随机密码
         /// </summary>
         public static string GenerateRandomPassword(int length = 12)
         {

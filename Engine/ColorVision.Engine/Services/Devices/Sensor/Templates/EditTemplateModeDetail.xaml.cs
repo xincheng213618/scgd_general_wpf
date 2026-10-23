@@ -13,7 +13,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using ColorVision.UI.Menus;
 using ColorVision.Themes.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
@@ -83,6 +82,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             }
         }
         public ParamModBase Param { get; set; }
+        public SensorCommand? SelectedCommand => CommandForm.DataContext as SensorCommand;
+        public event EventHandler? CommandSelectionChanged;
 
         public void SetParam(ParamModBase param)
         {
@@ -96,6 +97,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 sensorParam.SensorCommands.CollectionChanged += Commands_CollectionChanged;
             }
             this.DataContext = Param;
+            DeleteTypeButton.Visibility = Param.Id > 0 ? Visibility.Visible : Visibility.Collapsed;
             RefreshCommandSelection(null, 0);
         }
 
@@ -130,6 +132,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             int index = CommandSelector.SelectedIndex;
             CommandForm.DataContext = commands != null && index >= 0 && index < commands.Count ? commands[index] : null;
             CommandPosition.Text = commands != null && index >= 0 ? $"{index + 1} / {commands.Count}" : string.Empty;
+            CommandSelectionChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
@@ -168,7 +171,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 TemplateSensor.Params.Remove(template.Code);
                 foreach (var window in Application.Current.Windows.OfType<TemplateEditorWindow>().Where(window => window.ITemplate is TemplateSensor sensor && sensor.TemplateDicId == template.TemplateDicId).ToArray())
                     window.Close();
-                MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuTemplateSensor));
             }
             catch (Exception ex)
             {

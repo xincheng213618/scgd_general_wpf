@@ -7,7 +7,7 @@ using System.Xml.Linq;
 namespace WindowsServicePlugin.ServiceManager
 {
     /// <summary>
-    /// 配置同步：从当前系统配置写入服务 cfg 目录、旧版 App.config 同步
+    /// 配置同步：从当前系统配置写入服务 cfg 目录
     /// </summary>
     public partial class ServiceManagerViewModel
     {
@@ -309,8 +309,6 @@ namespace WindowsServicePlugin.ServiceManager
 
             SyncManagedServiceConfigs();
 
-            SyncLegacyAppConfig();
-
             if (restartRegistrationCenter)
             {
                 ServiceHostWindowsServiceController
@@ -318,66 +316,6 @@ namespace WindowsServicePlugin.ServiceManager
                     .GetAwaiter()
                     .GetResult();
             }
-        }
-
-        private void SyncLegacyAppConfig()
-        {
-            string? filePath = GetLegacyAppConfigPath();
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-                return;
-
-            try
-            {
-                XDocument config = XDocument.Load(filePath);
-                XElement? appSettings = config.Element("configuration")?.Element("appSettings");
-                if (appSettings == null)
-                    return;
-
-                void SetSetting(string key, string? value)
-                {
-                    if (value == null) return;
-                    XElement? element = appSettings.Elements("add").FirstOrDefault(x => x.Attribute("key")?.Value == key);
-                    if (element == null)
-                    {
-                        appSettings.Add(new XElement("add", new XAttribute("key", key), new XAttribute("value", value)));
-                    }
-                    else
-                    {
-                        element.SetAttributeValue("value", value);
-                    }
-                }
-
-                var dbCfg = MySqlManager.Config;
-                SetSetting("BaseLocation", Config.BaseLocation);
-                SetSetting("MysqlHost", dbCfg.Host);
-                SetSetting("MysqlPort", dbCfg.Port.ToString());
-                SetSetting("MysqlServiceName", MySqlManager.Helper.ServiceName);
-                SetSetting("MysqlUser", dbCfg.AppUser);
-                SetSetting("MysqlPwd", dbCfg.AppPassword);
-                SetSetting("MysqlRootPwd", dbCfg.RootPassword);
-                SetSetting("MysqlDatabase", dbCfg.Database);
-                SetSetting("RCName", ColorVision.Engine.Services.RC.RCSetting.Instance.Config.RCName);
-
-                config.Save(filePath);
-                log.Info($"已同步旧版配置: {filePath}");
-            }
-            catch (Exception ex)
-            {
-                log.Info($"同步旧版配置失败: {ex.Message}");
-            }
-        }
-
-        private static string? GetLegacyAppConfigPath()
-        {
-            if (string.IsNullOrWhiteSpace(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath))
-                return null;
-
-            string? dir = Directory.GetParent(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath)?.FullName;
-            if (string.IsNullOrWhiteSpace(dir))
-                return null;
-
-            string filePath = Path.Combine(dir, "config", "App.config");
-            return File.Exists(filePath) ? filePath : null;
         }
 
     }

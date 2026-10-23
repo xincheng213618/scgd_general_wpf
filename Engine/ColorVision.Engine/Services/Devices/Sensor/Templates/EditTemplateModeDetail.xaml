@@ -116,6 +116,6 @@
                 </Expander>
             </StackPanel>
         </ScrollViewer>
-        <Button Grid.Row="2" Content="{x:Static properties:Resources.Sensor_DeleteType}" HorizontalAlignment="Right" Margin="0,12,0,0" Click="DeleteType_Click"/>
+        <Button x:Name="DeleteTypeButton" Grid.Row="2" Content="{x:Static properties:Resources.Sensor_DeleteType}" HorizontalAlignment="Right" Margin="0,12,0,0" Click="DeleteType_Click"/>
     </Grid>
 </UserControl>

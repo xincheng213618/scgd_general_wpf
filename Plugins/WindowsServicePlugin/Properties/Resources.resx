@@ -112,17 +112,8 @@
   <data name="CameraLog" xml:space="preserve">
     <value>相机日志</value>
   </data>
-  <data name="ManagementService" xml:space="preserve">
-    <value>管理服务</value>
-  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>服务管理器</value>
-  </data>
-  <data name="CVWinSMSPath" xml:space="preserve">
-    <value>CVWinSMS 路径</value>
-  </data>
-  <data name="CVWinSMSPathDescription" xml:space="preserve">
-    <value>CVWinSMS 服务程序的可执行文件路径。</value>
   </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>服务安装根目录</value>
@@ -449,12 +440,6 @@
   <data name="MySqlVersionUnreadable" xml:space="preserve">
     <value>无法读取所选 MySQL 的版本，已停止操作。请选择原安装目录中的 bin\mysqld.exe，或包含该程序的有效 MySQL ZIP 安装包。</value>
   </data>
-  <data name="无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。" xml:space="preserve"><value>无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。</value></data>
-  <data name="请选择解压缩目录" xml:space="preserve"><value>请选择解压缩目录</value></data>
-  <data name="找不到管理工具，是否下载" xml:space="preserve"><value>找不到管理工具，是否下载</value></data>
-  <data name="打开或下载服务管理工具失败：{0}" xml:space="preserve"><value>打开或下载服务管理工具失败：{0}</value></data>
-  <data name="I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?" xml:space="preserve"><value>找不到 CVWinSMS（CVWinSMS.exe），是否指定其位置？</value></data>
-  <data name="Open in CVWinSMS" xml:space="preserve"><value>在 CVWinSMS 中打开</value></data>
   <data name="RemoveArchiveServiceMonitoring" xml:space="preserve">
     <value>移除归档服务检测</value>
   </data>

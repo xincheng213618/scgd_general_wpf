@@ -17,7 +17,8 @@ this README is copied into a plugin package.
 
 Package-local prerequisites and warnings:
 
-- The CVWindowsService tab provides "Remove archive service monitoring" for old
+- The registration center row on the CVWindowsService tab provides "Remove archive
+  service monitoring" in its more-actions menu for old
   deployments that keep trying to start CVArchService. It updates the current
   registration center's database monitor list and local cfg/WinService.config,
   retaining other database monitor entries. After confirmation, a running
@@ -29,17 +30,12 @@ Package-local prerequisites and warnings:
   compatible installed broker and appropriate service, file, and database rights.
   The app Administrator permission is not proof of Windows elevation.
 - Current installation uses full service packages. It can stop/register/start
-  services, replace files, execute SQL, change credentials/configuration, and close
-  the old CVWinSMS process. Confirm the targets and obtain maintenance authority.
+  services, replace files, execute SQL, and change credentials/configuration. Confirm the targets and obtain maintenance authority.
 - Database backup and restore are manual operations. A completed backup file or
   installation log is not proof of a successful recovery or healthy services;
   installation is not transactional.
 - Online package selection and local cache reuse are implemented. This consumer
   checks package directory names, not a publisher signature or package hash.
-- Legacy `CVWinSMS/InstallTool` and service-log menu classes are still compiled and
-  discoverable. The old tool opens an existing executable or, after confirmation,
-  downloads a missing tool from its separate endpoint, extracts files, terminates
-  old tool processes, and launches the executable with elevation.
 - Publishing this plugin through `Scripts/package_plugin.bat WindowsServicePlugin`
   uploads a `.cvxp`; it neither publishes the service ZIP nor authorizes installing it.
 

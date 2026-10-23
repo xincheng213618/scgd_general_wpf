@@ -149,7 +149,6 @@ namespace WindowsServicePlugin.ServiceManager
                         {
                             // 完整安装包：全量解压 + 重新注册服务。
                             SetProgress(progress += 20, "安装 CVWindowsService...");
-                            StopLegacyManagementToolProcesses();
                             StopPackagedServices();
                             UninstallArchiveServiceBeforePackageUpdate();
                             CleanExistingServicePackageTargets(ServicePackagePath, basePath);
@@ -953,33 +952,6 @@ namespace WindowsServicePlugin.ServiceManager
                     log.Info($"停止服务失败: {svc.ServiceName}, {ex.Message}");
                 }
                 Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
-            }
-        }
-
-        private void StopLegacyManagementToolProcesses()
-        {
-            foreach (var process in Process.GetProcessesByName("CVWinSMS"))
-            {
-                try
-                {
-                    log.Info($"关闭旧版服务管理工具进程: CVWinSMS, PID={process.Id}");
-                    if (!process.CloseMainWindow())
-                    {
-                        process.Kill();
-                    }
-                    else if (!process.WaitForExit(5000))
-                    {
-                        process.Kill();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Info($"关闭 CVWinSMS 进程失败: PID={process.Id}, {ex.Message}");
-                }
-                finally
-                {
-                    process.Dispose();
-                }
             }
         }
 

@@ -15,6 +15,8 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 
 `ViewFlow` 组合 `FlowEditorCanvas`、模板工作区和执行会话；独立窗口 `FlowEngineToolWindow` 复用同一个 `ViewFlow`。底层节点与画布输入见 [ST.Library.UI](../../04-api-reference/engine-components/ST.Library.UI.md)，数据库和包格式见[模板持久化](../../04-api-reference/engine-components/template-flow-chain.md)。
 
+画布右上角的半明半暗按钮可选择“跟随软件主题”“浅色”“深色”或“自定义配色”，默认跟随软件主题并响应软件主题切换。旁边的齿轮打开“工作流程设置”：可调整网格、节点对齐辅助、阴影、圆角和连线弯曲度；选择自定义配色后可修改画布、节点、网格线、文字、边框和状态颜色。设置即时预览，窗口关闭后保存，可恢复本次打开前的值或恢复默认。主题选择和设置由所有流程编辑器共享，重启后保留；仅影响本机显示，不改变软件全局主题、流程模板内容或画布撤销记录。
+
 编辑、导入模块和布局改变当前文档；保存或删除数据库模板会改持久数据，导入流程包还可能创建关联模板。切换文档可能触发保存提示或结束当前运行。必须确认目标文档、备份和已授权动作，不能用实际运行设备来代替只读排查。
 
 ## 打开并编辑流程

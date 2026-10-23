@@ -205,24 +205,6 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 CVWinSMS 路径 的本地化字符串。
-        /// </summary>
-        public static string CVWinSMSPath {
-            get {
-                return ResourceManager.GetString("CVWinSMSPath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 CVWinSMS 服务程序的可执行文件路径。 的本地化字符串。
-        /// </summary>
-        public static string CVWinSMSPathDescription {
-            get {
-                return ResourceManager.GetString("CVWinSMSPathDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 数据库 的本地化字符串。
         /// </summary>
         public static string Database {
@@ -331,15 +313,6 @@ namespace WindowsServicePlugin.Properties {
         public static string LogOutput {
             get {
                 return ResourceManager.GetString("LogOutput", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 管理服务 的本地化字符串。
-        /// </summary>
-        public static string ManagementService {
-            get {
-                return ResourceManager.GetString("ManagementService", resourceCulture);
             }
         }
         

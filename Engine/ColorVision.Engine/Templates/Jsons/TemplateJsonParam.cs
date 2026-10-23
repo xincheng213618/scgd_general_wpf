@@ -12,6 +12,9 @@ namespace ColorVision.Engine.Templates.Jsons
 {
     public class TemplateJsonParam : ParamBase, IEditTemplateJson
     {
+        [Browsable(false), JsonIgnore]
+        public BuiltInTemplatePreset? CreationPreset { get; set; }
+
         [Browsable(false)]
         [JsonIgnore]
         public ModMasterModel TemplateJsonModel { get; set; }

@@ -264,24 +264,26 @@ namespace ColorVision.UI
         {
             var border = new Border
             {
-                Background = showHeader ? (Brush)FindResource("GlobalBorderBrush") : Brushes.Transparent,
+                Background = Brushes.Transparent,
                 BorderThickness = new Thickness(showHeader ? 1 : 0),
-                BorderBrush = (Brush)FindResource("BorderBrush"),
                 CornerRadius = new CornerRadius(5),
                 Margin = new Thickness(0, 0, 0, 5),
                 Tag = category
             };
+            if (showHeader) border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
 
             stackPanel = new StackPanel { Margin = showHeader ? new Thickness(10, 5, 10, 0) : new Thickness(5) };
             if (showHeader)
             {
-                stackPanel.Children.Add(new TextBlock
+                var header = new TextBlock
                 {
                     Text = category,
                     FontWeight = FontWeights.Bold,
-                    Foreground = PropertyEditorHelper.GlobalTextBrush,
                     Margin = new Thickness(0, 0, 0, 5)
-                });
+                };
+                header.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                stackPanel.Children.Add(header);
             }
 
             border.Child = stackPanel;

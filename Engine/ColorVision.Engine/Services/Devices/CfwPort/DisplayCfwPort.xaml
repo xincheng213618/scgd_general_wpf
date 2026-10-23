@@ -48,6 +48,7 @@
                     <Button x:Name="ConfigureButton" DockPanel.Dock="Left" Margin="5,0,0,0" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resources.ModifyConfiguration}" AutomationProperties.Name="{x:Static properties:Resources.ModifyConfiguration}">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center"/>
                     </Button>
+                    <TextBlock DockPanel.Dock="Left" Margin="8,0,0,0" Text="{Binding ConnectionMode}" />
                 </DockPanel>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel Margin="0,2">

@@ -34,6 +34,7 @@ try:
     from .native_runtime_integrity import ensure_native_runtime_integrity
     from .build_update import get_all_files, get_file_version
     from .installer_shared_files import collect_installer_shared_files
+    from .build_basic_templates import validate_runtime as validate_basic_template_runtime
     from .operations_watchdog_runtime import (
         REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
         validate_operations_watchdog_runtime,
@@ -62,6 +63,7 @@ except ImportError:
     from native_runtime_integrity import ensure_native_runtime_integrity
     from build_update import get_all_files, get_file_version
     from installer_shared_files import collect_installer_shared_files
+    from build_basic_templates import validate_runtime as validate_basic_template_runtime
     from operations_watchdog_runtime import (
         REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
         validate_operations_watchdog_runtime,
@@ -266,6 +268,12 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
             print(f"Native runtime integrity check failed: {exc}")
             return False
         if not validate_installer_runtime_dlls(runtime_directory, aip_path):
+            return False
+
+        try:
+            validate_basic_template_runtime(runtime_directory, collect_installer_shared_files(aip_path, runtime_directory))
+        except (OSError, ValueError, ElementTree.ParseError) as exc:
+            print(f"Built-in template delivery check failed: {exc}")
             return False
 
         print(f"Running Advanced Installer: {advanced_installer_path} /rebuild {aip_path}")

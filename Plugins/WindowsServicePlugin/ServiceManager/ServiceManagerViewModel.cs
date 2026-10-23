@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
-using WindowsServicePlugin.CVWinSMS;
 
 namespace WindowsServicePlugin.ServiceManager
 {
@@ -127,15 +126,6 @@ namespace WindowsServicePlugin.ServiceManager
             if (string.IsNullOrEmpty(Config.BaseLocation))
             {
                 if (Config.TryDetectInstallPath())
-                {
-                    SaveServiceManagerConfig();
-                }
-            }
-
-            // 尝试从CVWinSMS配置读取
-            if (string.IsNullOrEmpty(Config.BaseLocation) && File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
-            {
-                if (Config.ReadFromCVWinSMSConfig(CVWinSMSConfig.Instance.CVWinSMSPath))
                 {
                     SaveServiceManagerConfig();
                 }

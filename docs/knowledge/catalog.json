@@ -9006,8 +9006,6 @@
         "ServiceDatabaseVersionMap",
         "ServiceHostWindowsServiceController",
         "InstallServiceManager",
-        "InstallTool",
-        "CVWinSMS",
         "AutoUpdateDatabase",
         "UpdateServerUrl",
         "DownloadLocation",
@@ -9039,8 +9037,6 @@
         "Plugins/WindowsServicePlugin/ServiceManager/Mysql/MySqlServiceManager.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/MySqlServiceHelper.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/Mqtt/MqttServiceManager.cs",
-        "Plugins/WindowsServicePlugin/CVWinSMS/InstallTool.cs",
-        "Plugins/WindowsServicePlugin/CVWinSMS/CVWinSMSConfig.cs",
         "Plugins/WindowsServicePlugin/Menus",
         "UI/ColorVision.UI/Menus/MenuManager.cs",
         "UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs",
@@ -9055,7 +9051,6 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs",
         "Test/ColorVision.UI.Tests/ServiceInstallDownloadTests.cs",
-        "Test/ColorVision.UI.Tests/InstallToolAsyncCommandTests.cs",
         "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs",
         "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs",
         "Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"

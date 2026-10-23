@@ -52,8 +52,6 @@
             <TabItem Header="{x:Static res:Resources.CVWindowsService}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <Button Content="{x:Static res:Resources.RemoveArchiveServiceMonitoring}" Command="{Binding RemoveArchiveServiceMonitoringCommand}"
-                                ToolTip="{x:Static res:Resources.RemoveArchiveServiceMonitoringToolTip}" HorizontalAlignment="Left" Margin="0,16,0,0" />
                         <ItemsControl ItemsSource="{Binding Services}" Margin="0,8,0,12">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -88,6 +86,19 @@
                                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                                 <MenuItem Header="{x:Static res:Resources.ClearServiceLogs}" Command="{Binding ClearServiceLogsCommand}"
                                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{x:Static res:Resources.RemoveArchiveServiceMonitoring}" Command="{Binding RemoveArchiveServiceMonitoringCommand}"
+                                                                          ToolTip="{x:Static res:Resources.RemoveArchiveServiceMonitoringToolTip}">
+                                                                    <MenuItem.Style>
+                                                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding PlacementTarget.DataContext.ServiceName, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Value="RegistrationCenterService">
+                                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </MenuItem.Style>
+                                                                </MenuItem>
                                                                 <Separator />
                                                                 <MenuItem Header="{x:Static res:Resources.Install}" Command="{Binding ServiceInstallCommand}"
                                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />

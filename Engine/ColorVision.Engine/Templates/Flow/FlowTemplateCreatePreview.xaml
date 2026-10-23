@@ -1,0 +1,19 @@
+<UserControl x:Class="ColorVision.Engine.Templates.Flow.FlowTemplateCreatePreview"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Foreground="{DynamicResource CV.Text.Primary}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="14,8">
+            <TextBlock x:Name="EmptyHint" Text="选择左侧内置业务流程可查看节点与连线；创建后双击打开流程编辑器。" TextWrapping="Wrap" Margin="0,0,0,10"/>
+            <Image x:Name="CanvasImage" Stretch="Uniform" MaxHeight="300" Margin="0,0,0,12"/>
+            <TextBlock x:Name="SetupTitle" Text="运行前配置" FontWeight="SemiBold" HorizontalAlignment="Left" Margin="0,0,0,8" Visibility="Collapsed"/>
+            <ItemsControl x:Name="SetupItems">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,0,0,8" HorizontalAlignment="Left"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

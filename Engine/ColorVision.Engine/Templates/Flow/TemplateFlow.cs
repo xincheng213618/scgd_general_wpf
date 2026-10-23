@@ -20,6 +20,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -58,7 +59,8 @@ namespace ColorVision.Engine.Templates.Flow
             this.localStorage = localStorage;
             this.isMySqlConnected = isMySqlConnected ?? (() => MySqlSetting.IsConnect);
             this.openMySql = openMySql ?? (() => new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }));
-            IsSideHide = true;
+            IsSideHide = false;
+            IsUserControl = true;
             Title = ColorVision.Engine.Properties.Resources.WorkflowEngineTemplateManagement;
             Code = "flow";
             TemplateParams = Params;
@@ -685,9 +687,25 @@ namespace ColorVision.Engine.Templates.Flow
             return created;
         }
 
-        public override object CreateDefault() => UseLocalStorage
-            ? CreateTemp = new FlowParam { Id = -1 }
-            : base.CreateDefault();
+        public override IEnumerable<TemplateCreatePreset> GetCreatePresets() => FlowTemplatePresets.All.Select(preset => preset.Source);
+
+        public override bool ApplyCreatePreset(string presetId)
+        {
+            var preset = FlowTemplatePresets.Find(presetId);
+            if (preset == null) return false;
+            ImportTemp = FlowTemplatePresets.CreateDraft(preset);
+            CreateTemp = null;
+            ImportName = preset.Source.SuggestedName;
+            return true;
+        }
+
+        public override object CreateDefault() => CreateTemp = new FlowParam
+        {
+            Id = -1, Name = ImportTemp?.Name ?? string.Empty, DataBase64 = ImportTemp?.DataBase64 ?? string.Empty,
+            CreationPreset = ImportTemp?.CreationPreset
+        };
+
+        public override UserControl CreateUserControl() => new FlowTemplateCreatePreview();
 
         private static void TryRecordCatalogRevision(FlowParam flowParam)
         {
