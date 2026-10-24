@@ -87,11 +87,11 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 - AA 流程结果：`FindLightArea` 且版本 `AA`，由 AA 所属的 `ViewHandleAAFindPoints` 从公共角点 DAO 加载。
 - 本地 V2 流程结果：`FindLightArea` 且版本 `RobustV2`，由 `ViewHandleLocalFindLuminousArea` 加载。已有本地记录未保存版本，使用空版本且模板名 `RobustV2` 的组合兼容；新成功与失败主记录均保存明确版本，避免按处理器发现顺序分派。
-- 独立 JSON AA 入口：`ARVR_AAFindPoints` 且版本 `AA`，仍由 `ViewHandleAAFindPoints` 读取通用明细指向的结果文件；将 JSON `corner` 映射为同一个角点模型供展示。原始 JSON 和 `Points` 布点数据保留，不额外写入角点表，也不改变主结果类型。
+- 已有独立 AA JSON 结果：`ARVR_AAFindPoints` 且版本 `AA`，仍由 `ViewHandleAAFindPoints` 读取通用明细指向的结果文件；将 JSON `corner` 映射为同一个角点模型供展示。原始 JSON 和 `Points` 布点数据保留，不额外写入角点表，也不改变主结果类型。
 
 两个处理器的匹配条件互斥。流程角点明细仅在 `ViewResults == null` 时加载，已有集合会复用；失败结果没有明细时不生成角点图元。
 
-结果编号 `8` 已退役并保留空位；当前发光区流程编号为 `FindLightArea=36`，独立 AA JSON 入口为 `ARVR_AAFindPoints=61`。旧数据库记录不删除、不重编号；编号 `8` 加载为未定义枚举值，本地 FOV 和 POI 布点拒绝接收该类型。旧 JND、初版定位及无法判定归属的记录也不由当前两个处理器展示。恢复旧记录使用需要同时恢复其结果定义、版本专属处理器和下游接收分支，不能归给 AA 或本地 V2。
+结果编号 `8` 已退役并保留空位；当前发光区流程编号为 `FindLightArea=36`，独立 AA JSON 结果编号为 `ARVR_AAFindPoints=61`。旧数据库记录不删除、不重编号；编号 `8` 加载为未定义枚举值，本地 FOV 和 POI 布点拒绝接收该类型。旧 JND、初版定位及无法判定归属的记录也不由当前两个处理器展示。恢复旧记录使用需要同时恢复其结果定义、版本专属处理器和下游接收分支，不能归给 AA 或本地 V2。
 
 两条流程的列表展示保存的浮点点位；叠图先将坐标转为整数，再经 `GrahamScan.ComputeConvexHull()` 求凸包，绘制透明填充、蓝色轮廓的 `DVPolygon`。浮点明细、原始点序与屏幕上的整数凸包是不同表示，不能仅凭凸包还原原始结果。
 

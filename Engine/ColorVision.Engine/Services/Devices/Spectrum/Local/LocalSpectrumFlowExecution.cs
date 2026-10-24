@@ -23,6 +23,7 @@ internal sealed class LocalSpectrumFlowExecution : FlowLocalExecution
 
     internal static void Register()
     {
+        LocalSpectrumNdFlowExecution.Register();
         RegisterBackend(nameof(LocalSpectrumFlowExecution), node => (node is SpectrumNode or SpectrumEQENode) && Find(node.DeviceCode)?.SpectrumBackend.OpensLocally == true, (node, request) =>
         {
             if (node is not (SpectrumNode or SpectrumEQENode)) return null!;

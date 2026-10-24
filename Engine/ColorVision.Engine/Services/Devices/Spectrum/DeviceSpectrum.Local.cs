@@ -114,6 +114,7 @@ public partial class DeviceSpectrum
     private void DisplayLocalSpectrum(LocalSpectrumCapture result, bool continuous)
     {
         if (localDisposed) return;
+        if (result.NDPort.HasValue) ApplyLocalNdState(result.NDPort.Value, result.NdCalibration);
         DisplayConfig.IntTime = result.IntegralTime;
         View.AddViewResultSpectrum(CreateLocalSpectrumView(result));
         LocalResultAvailable?.Invoke(result, continuous);
@@ -138,19 +139,7 @@ public partial class DeviceSpectrum
     internal MsgRecord RunLocalSpectrumCommand(string eventName)
     {
         if (eventName is "SetPort" or "GetPort")
-        {
-            int port = DisplayConfig.PortNum;
-            return StartLocalRecord(eventName, () =>
-            {
-                if (eventName == "SetPort")
-                {
-                    var group = Config.FindCalibrationGroupForND(port, GetNDHoleName(port))
-                        ?? throw new InvalidOperationException($"ND 位置 {port} 没有对应的标定分组。");
-                    ApplyCalibrationGroup(group, false);
-                }
-                return Task.FromResult<object?>(new { Port = port });
-            });
-        }
+            return RunLocalNdCommand(eventName, eventName == "SetPort" ? DisplayConfig.PortNum : null);
         // Snapshot UI settings before leaving the dispatcher; continuous runs keep their starting parameters.
         LocalSpectrumParameters parameters = BuildLocalSpectrumParameters(eventName.StartsWith("EQE", StringComparison.Ordinal) ? true : null);
         ConfigSpectrum config = SnapshotLocalConfiguration();
@@ -173,6 +162,63 @@ public partial class DeviceSpectrum
             else throw new NotSupportedException($"本地光谱仪暂不支持 {eventName} 操作。");
             return null;
         });
+    }
+
+    internal bool UsesLocalNd => SpectrumBackend.OpensLocally || (Config.NDConfig.IsBingNDDevice && GetBoundCfwPort()?.CfwBackend.OpensLocally == true);
+
+    internal MsgRecord RunLocalNdCommand(string eventName, int? port)
+    {
+        ConfigSpectrum config = SnapshotLocalConfiguration();
+        bool reserveSpectrum = SpectrumBackend.OpensLocally;
+        Exception? reservationError = null;
+        try
+        {
+            if (!config.NDConfig.IsNDPort) throw new InvalidOperationException("请先在光谱仪配置中启用 ND。");
+            if (reserveSpectrum) SpectrumBackend.BeginLocalCommand();
+            else if (DService.DeviceStatus is DeviceStatusType.Busy or DeviceStatusType.SP_Continuous_Mode)
+                throw new InvalidOperationException("光谱仪正在采集，请完成或停止后再切换 ND。");
+        }
+        catch (Exception ex) { reservationError = ex; }
+        return StartLocalRecord(eventName, async () =>
+        {
+            if (reservationError != null) throw reservationError;
+            try
+            {
+                var result = await Task.Run(() => ExecuteLocalNd(config, port, reserveSpectrum ? SpectrumBackend.LocalCancellationToken : CancellationToken.None));
+                if (Application.Current?.Dispatcher is { } dispatcher) await dispatcher.InvokeAsync(() => ApplyLocalNdState(result.Port, result.Calibration));
+                else ApplyLocalNdState(result.Port, result.Calibration);
+                return new { result.Port };
+            }
+            finally { if (reserveSpectrum) SpectrumBackend.EndLocalCommand(); }
+        });
+    }
+
+    internal (int Port, LocalSpectrumNd.Calibration Calibration) ExecuteLocalNd(ConfigSpectrum config, int? port, CancellationToken token)
+    {
+        if (!config.NDConfig.IsNDPort) throw new InvalidOperationException("请先在光谱仪配置中启用 ND。");
+        // Validate the destination before moving, then commit files only after the SDK confirms its position.
+        LocalSpectrumNd.Calibration? calibration = port.HasValue ? LocalSpectrumNd.ResolveCalibration(config, port.Value) : null;
+        int actual = LocalSession.ControlNd(config, port, token);
+        return (actual, calibration ?? LocalSpectrumNd.ResolveCalibration(config, actual));
+    }
+
+    internal void ApplyLocalNdState(int port, LocalSpectrumNd.Calibration? calibration)
+    {
+        if (localDisposed) return;
+        DisplayConfig.PortNum = port;
+        if (calibration == null) return;
+        if (calibration.GroupName is { } name)
+            ApplyCalibrationGroup(new SpectrumCalibrationGroup { GroupName = name, NDHoleIndex = port,
+                WavelengthFile = calibration.WavelengthFile, MaguideFile = calibration.MagnitudeFile }, true);
+        else
+        {
+            if (string.Equals(Config.WavelengthFile, calibration.WavelengthFile, StringComparison.Ordinal)
+                && string.Equals(Config.MaguideFile, calibration.MagnitudeFile, StringComparison.Ordinal)) return;
+            using var scope = CalibrationGroupChangeGuard.EnterApply();
+            Config.WavelengthFile = calibration.WavelengthFile;
+            Config.MaguideFile = calibration.MagnitudeFile;
+            SaveConfig();
+        }
     }
 
     private MsgRecord RunLocalSpectrumWork(string eventName, Func<object?> work)

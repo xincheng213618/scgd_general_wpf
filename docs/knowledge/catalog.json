@@ -1290,7 +1290,7 @@
       "knowledge_id": "algorithms.poi-routes",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。",
+      "summary": "说明 POI 点位、伴生模板及 Flow 和 JSON 算法的消费关系。",
       "aliases": [
         "POI点集由谁生成和消费",
         "POI 1x1中心点",
@@ -1299,9 +1299,7 @@
         "自动适配尺寸",
         "POI边距设置",
         "PoiPoint",
-        "PoiParam",
-        "AlgorithmPoi",
-        "AlgorithmBuildPoi"
+        "PoiParam"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs",
@@ -1309,8 +1307,8 @@
         "Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml",
         "Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiLayoutGeometry.cs",
-        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs",
-        "Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PoiPointModelTests.cs"
@@ -1355,9 +1353,11 @@
         "Engine/ColorVision.Engine/Templates/Browser",
         "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiParam.cs",
-        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs",
-        "Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs"
+        "Engine/ColorVision.Engine/Templates/POI/BuildPoi/TemplateBuildPoi.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs",

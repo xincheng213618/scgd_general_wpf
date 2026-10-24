@@ -23,6 +23,31 @@ public sealed class LocalCfwPortTests
     private static int nextPort = 5000;
     private static LocalCfwPortConnection Connection() => new("COM" + Interlocked.Increment(ref nextPort), 9600, 5000, 1, 6, 0, false, false);
 
+    [Fact]
+    public async Task SpectrumOwnedNdReusesItsConnectionAndBlocksServiceUntilDisconnect()
+    {
+        var native = new FakeNative();
+        await using var session = new LocalCfwPortSession(native);
+        var nd = new LocalSpectrumNd(directSession: session);
+        var config = new NDConfig { IsNDPort = true, IsBingNDDevice = false, SzComName = Connection().PortName, BaudRate = 19200 };
+        try
+        {
+            await Task.Run(() =>
+            {
+                using (var operation = nd.Acquire(config)) Assert.Equal(2, operation.SetPort(2));
+                Assert.Equal(0, native.Closes);
+                using (var operation = nd.Acquire(config)) Assert.Equal(2, operation.GetPort());
+                Assert.Equal(1, native.Opens);
+                Assert.Equal(19200, native.Connection!.BaudRate);
+                Assert.Throws<InvalidOperationException>(() => LocalCfwPortSession.EnsureNotLocallyOwned(config.SzComName));
+                nd.Disconnect();
+                Assert.Equal(1, native.Closes);
+                LocalCfwPortSession.EnsureNotLocallyOwned(config.SzComName);
+            });
+        }
+        finally { nd.Disconnect(); }
+    }
+
     [Theory]
     [InlineData(6, 5)]
     [InlineData(12, 11)]

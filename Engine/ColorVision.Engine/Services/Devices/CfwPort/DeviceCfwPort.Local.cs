@@ -19,7 +19,6 @@ public partial class DeviceCfwPort
     internal CfwPortBackendState CfwBackend { get; private set; } = null!;
     private bool localDisposed;
     private bool autoConnectAttempted;
-    public string ConnectionMode => CfwBackend.OpensLocally ? "本地连接" : "服务连接";
 
     internal bool TryBeginLocalAutoConnect()
     {
@@ -49,7 +48,6 @@ public partial class DeviceCfwPort
         {
             if (localDisposed) return;
             DService?.RefreshBackendStatus();
-            OnPropertyChanged(nameof(ConnectionMode));
         }
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Refresh);
         else Refresh();
@@ -57,6 +55,7 @@ public partial class DeviceCfwPort
 
     internal void EnsureOtherCfwBackends(bool local, LocalCfwPortConnection config)
     {
+        if (!local) LocalCfwPortSession.EnsureNotLocallyOwned(config.PortName);
         foreach (var other in ServiceManager.Current?.DeviceServices.OfType<DeviceCfwPort>() ?? Enumerable.Empty<DeviceCfwPort>())
         {
             if (ReferenceEquals(other, this) || !string.Equals(other.LocalSession.Endpoint ?? other.CfwBackend.Endpoint ?? LocalCfwPortConnection.From(other.Config).PortName, config.PortName, StringComparison.OrdinalIgnoreCase)) continue;

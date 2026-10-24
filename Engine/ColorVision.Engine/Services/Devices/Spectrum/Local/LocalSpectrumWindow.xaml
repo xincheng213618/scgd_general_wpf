@@ -57,6 +57,7 @@
                              Text="{Binding DisplayConfig.AveNum, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"/>
                 </Grid>
                 <CheckBox Content="{display:EngineLang Key='自动积分'}" IsChecked="{Binding DisplayConfig.IsAutoIntTime}"/>
+                <CheckBox Content="{display:EngineLang Key='使用 ND'}" IsChecked="{Binding DisplayConfig.IsWithND}"/>
                 <CheckBox Content="{display:EngineLang Key='自动校零（需遮光）'}" IsChecked="{Binding DisplayConfig.IsAutoDark}"/>
                 <CheckBox Content="{display:EngineLang Key='自适应暗校正'}" IsChecked="{Binding DisplayConfig.IsShutter}"/>
                 <UniformGrid Columns="2" Margin="0,12,0,8">

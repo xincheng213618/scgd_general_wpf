@@ -3,6 +3,9 @@ using ColorVision.Engine;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.CfwPort.Local;
+using FlowEngineLib;
+using FlowEngineLib.Base;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.PhyCameras;
@@ -25,6 +28,134 @@ namespace ColorVision.UI.Tests;
 
 public sealed class SpectrumNdSelectionTests
 {
+    // Exercise the real registration, routing, shared wheel session and file commit without a spectrum SDK or MQTT.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SpectrumNdNodeForwardsToLocalWheelAndCommitsCalibrationOnlyAfterConfirmedMove(bool localSpectrum)
+    {
+        var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static)!;
+        object? previousManager = null;
+        TestScope? scope = null;
+        DeviceSpectrum? spectrum = null;
+        DeviceCfwPort? wheel = null;
+        var native = new NdNative();
+        string directory = Path.Combine(Path.GetTempPath(), "spectrum-nd-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string wave = Path.Combine(directory, "wave.dat"), first = Path.Combine(directory, "nd0.dat"), second = Path.Combine(directory, "nd1.dat");
+        using (var writer = new BinaryWriter(File.Create(wave))) { writer.Write(24UL); writer.Write(380d); writer.Write(780d); }
+        foreach (string path in new[] { first, second })
+            using (var writer = new BinaryWriter(File.Create(path)))
+            { writer.Write(56UL); writer.Write(4f); writer.Write(683); writer.Write(2UL); writer.Write(380d); writer.Write(780d); writer.Write(1d); writer.Write(1d); }
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                scope = new TestScope();
+                previousManager = managerField.GetValue(null);
+                var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+                manager.DeviceServices = [];
+                managerField.SetValue(null, manager);
+                wheel = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = "ND.Local." + Guid.NewGuid(),
+                    Value = JsonConvert.SerializeObject(new ConfigCfwPort { SzComName = "COM7800" }) }, new LocalCfwPortSession(native));
+                spectrum = CreateSpectrum();
+                spectrum.SpectrumBackend.SetPreference(localSpectrum);
+                spectrum.Config.NDConfig.IsNDPort = true;
+                spectrum.Config.NDConfig.IsBingNDDevice = true;
+                spectrum.Config.NDConfig.NDBindDeviceCode = wheel.Code;
+                spectrum.Config.CalibrationGroups = [new() { GroupName = "ND0", NDHoleIndex = 0, WavelengthFile = wave, MaguideFile = first },
+                    new() { GroupName = "ND1", NDHoleIndex = 1, WavelengthFile = wave, MaguideFile = second }];
+                spectrum.Config.ActiveCalibrationGroupName = "ND0";
+                spectrum.Config.WavelengthFile = wave;
+                spectrum.Config.MaguideFile = first;
+                manager.DeviceServices.Add(wheel);
+                manager.DeviceServices.Add(spectrum);
+                var node = new FWNode();
+                node.Create();
+                node.ModelType = FWModelType.Spectrum_FilterWheel;
+                node.DeviceCode = spectrum.Code;
+                Assert.Equal(!localSpectrum, node.RequiresRemoteService);
+                wheel.DisplayConfig.UseLocalCfwPort = true;
+                Assert.False(node.RequiresRemoteService);
+            });
+
+            var action = new CVStartCFC("spectrum-nd-forward");
+            using var resources = action.RuntimeResources;
+            FlowLocalExecution? execution = null;
+            WpfTestHost.Invoke(() =>
+            {
+                var node = new FWNode(); node.Create(); node.ModelType = FWModelType.Spectrum_FilterWheel; node.DeviceCode = spectrum!.Code;
+                execution = FlowLocalExecution.CreateForNode(node, new CVMQTTRequest { DeviceCode = spectrum.Code, EventName = "SetPort", Data = new FWData(1) });
+                Assert.IsType<LocalSpectrumNdFlowExecution>(execution);
+            });
+            using (execution)
+            {
+                execution!.Bind(action);
+                await Task.Run(execution.Execute);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Equal(1, ((JObject)execution.Complete(action)).Value<int>("Port"));
+                    Assert.Equal("ND1", spectrum!.Config.ActiveCalibrationGroupName);
+                    Assert.Equal(second, spectrum.Config.MaguideFile);
+                    Assert.Equal(wave, spectrum.Config.WavelengthFile);
+                    Assert.Equal(1, spectrum.DisplayConfig.PortNum);
+                });
+            }
+            Assert.Equal(1, native.Opens);
+            Assert.Equal(1, native.Port);
+            // No spectrum connection was needed; SetPort/GetPort still use the actual ND hardware backend.
+            MsgRecord read = await NdCommand(() => spectrum!.DService.GetPort());
+            Assert.Equal(MsgRecordState.Success, read.MsgRecordState);
+            Assert.Equal(1, JObject.FromObject((object)read.MsgReturn.Data).Value<int>("Port"));
+            native.WrongRead = true;
+            WpfTestHost.Invoke(() => spectrum!.DisplayConfig.PortNum = 0);
+            MsgRecord failed = await NdCommand(() => spectrum!.DService.SetPort());
+            Assert.Equal(MsgRecordState.Fail, failed.MsgRecordState);
+            WpfTestHost.Invoke(() => Assert.Equal("ND1", spectrum!.Config.ActiveCalibrationGroupName));
+            Assert.Equal(second, spectrum!.Config.MaguideFile);
+        }
+        finally
+        {
+            if (wheel != null) await wheel.LocalSession.ExecuteAsync("Close", LocalCfwPortConnection.From(wheel.Config));
+            WpfTestHost.Invoke(() =>
+            {
+                spectrum?.Dispose(); wheel?.Dispose();
+                managerField.SetValue(null, previousManager);
+                scope?.Dispose();
+            });
+            foreach (string file in Directory.EnumerateFiles(directory)) File.Delete(file);
+            Directory.Delete(directory);
+        }
+    }
+
+    private static async Task<MsgRecord> NdCommand(Func<MsgRecord> send)
+    {
+        var completion = new TaskCompletionSource<MsgRecord>(TaskCreationOptions.RunContinuationsAsynchronously);
+        WpfTestHost.Invoke(() =>
+        {
+            MsgRecord record = send();
+            void Complete(object? sender, MsgRecordState state)
+            {
+                if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)) return;
+                record.MsgRecordStateChanged -= Complete;
+                completion.TrySetResult(record);
+            }
+            record.MsgRecordStateChanged += Complete;
+            Complete(record, record.MsgRecordState);
+        });
+        return await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
+    private sealed class NdNative : ILocalCfwPortNative
+    {
+        internal int Opens, Port;
+        internal bool WrongRead;
+        public IntPtr Open(LocalCfwPortConnection config) { Opens++; return new IntPtr(1234); }
+        public int Close(IntPtr handle) => 0;
+        public int SetPort(IntPtr handle, int port) { Port = port; return 0; }
+        public int GetPort(IntPtr handle, ref int port) { port = WrongRead ? Port + 1 : Port; return 0; }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -70,13 +201,14 @@ public sealed class SpectrumNdSelectionTests
                     device.DisplayConfig.PortNum = 2;
                     MsgRecord set = device.RunLocalSpectrumCommand("SetPort");
                     Pump();
-                    Assert.Equal(MsgRecordState.Success, set.MsgRecordState);
-                    Assert.Equal("ND2", device.Config.ActiveCalibrationGroupName);
-                    Assert.Equal("nd2-magnitude.dat", device.Config.MaguideFile);
+                    Assert.Equal(MsgRecordState.Fail, set.MsgRecordState);
+                    Assert.Contains("启用 ND", (string)set.MsgReturn.Message);
+                    Assert.Equal("ND1", device.Config.ActiveCalibrationGroupName);
+                    Assert.Equal("nd1-magnitude.dat", device.Config.MaguideFile);
                     MsgRecord read = device.RunLocalSpectrumCommand("GetPort");
                     Pump();
-                    Assert.Equal(MsgRecordState.Success, read.MsgRecordState);
-                    Assert.Equal(2, JObject.FromObject((object)read.MsgReturn.Data).Value<int>("Port"));
+                    Assert.Equal(MsgRecordState.Fail, read.MsgRecordState);
+                    Assert.Contains("启用 ND", (string)read.MsgReturn.Message);
                     Assert.Equal(0, mqtt.Commands);
                 }
 

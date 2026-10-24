@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
 aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正","POINode","IsCCTWave","色温/波长"]
-code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/TemplateBuildPoi.cs","Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs","Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
@@ -58,10 +58,6 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 
 `EditPoiParam1` 的键盘快速亮度校正使用 `opencv_helper.dll`，通过 Unicode 文件接口加载所选模板的单通道 Luminance 资源。有效按键的归一化灰阶均值仍先四舍五入并限制到 16 位范围，再按当前图像的 `Exp` / `exp` 曝光执行校正；缺少曝光元数据时使用有效模板曝光，否则取 1。结果映射回原按键顺序，无效按键保留缺失值。未配置资源、文件加载失败或执行失败时返回未校正灰阶；四色模板仍不支持这条单通道快速路径。`KeyboardLuminanceCalibrationTests` 验证灰阶量化、曝光缩放、按键顺序与失败边界，不替代真机键盘验收。
 
-## 运行事件
-
-`AlgorithmPoi` 发布 `Event_POI_GetData`，用于按已有点集取值或输出，常带 `TemplateParam`、`FilterTemplate`、`ReviseTemplate`、`OutputTemplate`、`POIStorageType`、`POIPointFileName`、`IsSubPixel`、`IsCCTWave`。`AlgorithmBuildPoi` 发布 `Event_Build_POI`，用于生成点集；CAD Mapping 分支还要带四点多边形和 `CADMappingParam`。
-
 ## Flow 消费
 
 “关注点算法”（`POINode`）的“色温/波长”固定显示 `True` 只读文本，执行请求始终带 `IsCCTWave=true`。旧流程保存的 `false` 不会关闭计算，重新保存时写为 `True`；亚像素等其它选项仍按原配置执行。
@@ -76,7 +72,7 @@ Flow 中的常规 POI 模板字段由节点上的 PropertyEditor 类型和 `Flow
 | BuildPOI | `TemplateBuildPoi` 或 `TemplateBuildPOIAA`，以及 `RePOI`、`LayoutROI`、`SavePOI` |
 | PoiAnalysis | `TemplatePoiAnalysis` |
 
-POI 也会被 `AlgorithmPoiAnalysis`、SFR ROI、OLED AOI、项目包等继续消费。它是共享原语，不是某个模板私有能力。
+POI 也会被 `POIAnalysisNode`、SFR ROI、OLED AOI、项目包等继续消费。它是共享原语，不是某个模板私有能力。
 
 本地“光谱参考校正”（`LocalSpectrumCalibrationNode`）用于将本次光谱测量应用到整幅图像：`相机取图 → POI → IN_POI`，同一流程的光谱仪亮度结果接 `IN_SPE`，节点输出接 End。使用本地“相机取图”的按需色度路径并选择颜色校正模板；本地 POI 保留对应 RAW 帧，因此无需生成或保存 CVCIE。单个 POI 可不填点名，多个点必须明确选择与光谱仪视场对应的唯一参考区域；不取多个点的隐式平均。光谱输入可以来自本地或服务采集，但必须已入库且属于本批次，不接受光通量/EQE 数据。
 
@@ -114,8 +110,7 @@ POI 也会被 `AlgorithmPoiAnalysis`、SFR ROI、OLED AOI、项目包等继续�
 | 任务 | 先看 |
 | --- | --- |
 | 主点集和点明细 | `TemplatePoi.cs`、`PoiParam.cs`、`PoiPoint.cs` |
-| 运行取值 | `AlgorithmImp/AlgorithmPOI.cs` |
-| 生成点集 | `BuildPoi/AlgorithmBuildPoi.cs` |
+| 运行取值与生成点集 | `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs`、`Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs` |
 | 过滤/修正/输出/标定 | `POIFilters/`、`POIRevise/`、`POIOutput/`、`POIGenCali/` |
 | Flow 节点选择 | `Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs`、`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` |
 

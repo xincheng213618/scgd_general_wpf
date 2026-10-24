@@ -84,13 +84,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return;
             }
 
-            if (group.NDHoleIndex >= 0 && Device.Config.NDConfig.IsBingNDDevice && Device.GetBoundCfwPort() == null)
+            if (group.NDHoleIndex >= 0 && Device.Config.NDConfig.IsBingNDDevice && Device.GetBoundCfwPort() == null
+                && !(Device.Config.NDConfig.IsNDPort && Device.UsesLocalNd))
             {
                 CompleteCalibrationGroupSwitch(group, Device.DisplayConfig.PortNum, null, null);
                 return;
             }
 
-            if (group.NDHoleIndex < 0 || Device.SpectrumBackend.OpensLocally)
+            if (group.NDHoleIndex < 0 || (Device.SpectrumBackend.OpensLocally && !Device.Config.NDConfig.IsNDPort))
             {
                 try
                 {

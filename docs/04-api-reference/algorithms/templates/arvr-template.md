@@ -28,7 +28,6 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | ARVR → Ghost2.0 | `TemplateGhostQK`；`ghost` / `38` | `Ghost` | `ViewHandleGhostQK`；`Version == "2.0"` |
 | ARVR → MTF2.0 | `TemplateMTF2`；`MTF` / `48` | `MTF` | `ViewHandleMTF2`；`Version == "2.0"` |
 | ARVR → FOV2.0 | `TemplateDFOV`；`FOV` / `39` | `FOV` | `ViewHandleDFOV`；`Version == "2.0"` |
-| ARVR → 畸变2.0 | `TemplateDistortion2`；`distortion` / `40` | `Distortion` | `ViewHandleDistortion2`；`Version == "2.0"` |
 | ARVR → StereoFusion | `TemplateBinocularFusion`；`ARVR.BinocularFusion` / `35` | `ARVR.BinocularFusion` | `ViewHandleBinocularFusion` |
 | Json → SFR寻边 | `TemplateSFRFindROI`；`ARVR.SFR.FindROI` / `36` | `ARVR.SFR.FindROI` | `ViewHandleSFRFindROI` |
 | ARVR → FindCross | `TemplateFindCross`；`FindCross` / `45` | `FindCross` | `ViewHandleFindCross`；`Version == "1.0"` |
@@ -40,7 +39,7 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 
 - **SFR2.0、MTF2.0、FindCross、SFR寻边**：配置界面有关注点模板，但 `JsonDisplayAlgorithmBase.Execute()` 只统一校验主模板与图像输入；各自仅在辅助模板选择有效时加入 `POITemplateParam`。不能把“有选择器”当作“发送前必填检查”，服务端要求需按对应协议确认。
 - **屏幕缺陷检测**：辅助选择器标为 **ROI**，使用 POI 模板；未有效选择时仍发送 `POITemplateParam = { ID: -1, Name: null }`。请求还含 `OutputFileName`、`BufferLen`、`IsInversion = false`、`Color = 1`、`Channel = 1`；新配置输出文件名为 `result.json`，缓存大小为 `1024`。
-- **SFR2.0、MTF2.0、FOV2.0、Ghost2.0、畸变2.0**：手动请求明确带 `Params.Version = "2.0"`。Ghost2.0 与畸变2.0 还发送 `CIEFileName`。模板编码相同不代表请求参数可以互换。
+- **SFR2.0、MTF2.0、FOV2.0、Ghost2.0**：手动请求明确带 `Params.Version = "2.0"`。Ghost2.0 还发送 `CIEFileName`。模板编码相同不代表请求参数可以互换。
 
 这些请求通过 `TemplateParam` 引用模板身份，不在该字段中展开完整参数内容。修改模板后应确认保存成功，再核对服务实际读取的模板。
 
@@ -53,7 +52,7 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | MTF | `MTF` | `TemplateMTF2` |
 | SFR | `SFR` | `TemplateSFR2` |
 | FOV | `FOV` | `TemplateDFOV` |
-| 畸变 | `Distortion` | `TemplateDistortion2` 绑定 `TempName` |
+| 畸变 | `Distortion` | `TemplateDistortion2`（`distortion` / 字典 `40`）绑定 `TempName` |
 | 双目融合 | `ARVR.BinocularFusion` | `TemplateBinocularFusion` |
 | SFR_FindROI | `ARVR.SFR.FindROI` | `TemplateSFRFindROI` |
 | 十字计算 | `FindCross` | `TemplateFindCross` |

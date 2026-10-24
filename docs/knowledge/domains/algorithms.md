@@ -48,7 +48,7 @@ next: false
   图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
 
 - [POI](../../04-api-reference/algorithms/primitives/poi.md) — `algorithms.poi-routes`
-  说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。
+  说明 POI 点位、伴生模板及 Flow 和 JSON 算法的消费关系。
 
 - [模板编辑与创建宿主](../../04-api-reference/algorithms/templates/template-management.md) — `algorithms.template-management`
   TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。

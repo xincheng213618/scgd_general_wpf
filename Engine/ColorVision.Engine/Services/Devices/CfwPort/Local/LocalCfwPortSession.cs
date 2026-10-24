@@ -46,6 +46,11 @@ internal sealed class LocalCfwPortNative : ILocalCfwPortNative
 internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : IAsyncDisposable
 {
     private static readonly Dictionary<string, LocalCfwPortSession> Owners = new(StringComparer.OrdinalIgnoreCase);
+    internal static void EnsureNotLocallyOwned(string endpoint)
+    {
+        lock (Owners)
+            if (Owners.ContainsKey(endpoint)) throw new InvalidOperationException("本地滤色轮或光谱 ND 正在使用此串口，请先关闭本地连接。");
+    }
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly ILocalCfwPortNative native = native ?? new LocalCfwPortNative();
     private LocalCfwPortConnection? connection;

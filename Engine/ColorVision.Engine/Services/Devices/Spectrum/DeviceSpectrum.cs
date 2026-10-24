@@ -1031,6 +1031,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             msgRecord = null;
             error = null;
+            if (Config.NDConfig.IsNDPort && UsesLocalNd)
+            {
+                msgRecord = RunLocalNdCommand("SetPort", holeIndex);
+                return true;
+            }
             if (Config.NDConfig.IsBingNDDevice)
             {
                 DeviceCfwPort? cfwPort = GetBoundCfwPort();

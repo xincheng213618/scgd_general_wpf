@@ -509,6 +509,115 @@ public sealed class LocalSpectrumTests
         Assert.Equal(2, native.CaptureCalls);
     }
 
+    // These cases protect the physical ND/calibration and dark-path boundaries, independently of UI routing.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NdAutoIntegrationUsesConfirmedHoleCalibrationAndRestoresThatHoleAfterDark(bool eqe)
+    {
+        using var first = new CalibrationFiles();
+        using var second = new CalibrationFiles();
+        ConfigureNd(first.Config, second.Config);
+        var wheel = new FakeNd();
+        var native = new FakeNative { OnAutoTime = _ => { }, AutoTimes = new([1, 100]) };
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(first.Config);
+        var result = session.Capture(new() { IsWithND = true, AutoIntegration = true, AutoInitDark = true, Eqe = eqe, Current = 1 }, first.Config);
+        Assert.Equal(1, result.NDPort);
+        Assert.Equal(1, LocalSpectrumResultService.CreateModel(result, new()).NDPort);
+        Assert.Equal(100, result.IntegralTime);
+        Assert.Equal(Path.GetFullPath(second.Config.MaguideFile), native.MagnitudePath);
+        Assert.Equal("ND1", result.NdCalibration!.GroupName);
+        Assert.Equal(new[] { 1, 4, 1 }, wheel.Moves);
+        Assert.Equal(1, wheel.Port);
+        Assert.Equal(new[] { "auto", "auto", "dark", "capture" }, native.Calls.Where(call => call is "auto" or "dark" or "capture"));
+        Assert.True(wheel.Disposed);
+        Assert.Contains(Path.GetFileName(second.Config.MaguideFile), result.AcquisitionParametersJson);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedNdDarkRestoresLightAndNeverCaptures(bool restoreFails)
+    {
+        using var files = new CalibrationFiles();
+        ConfigureNd(files.Config, files.Config);
+        var wheel = new FakeNd { Port = 1, FailRestore = restoreFails };
+        var native = new FakeNative { DarkCode = 0 };
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(files.Config);
+        var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { IsWithND = true, AutoInitDark = true }, files.Config));
+        Assert.Equal(new[] { 4, 1 }, wheel.Moves);
+        Assert.Equal(0, native.CaptureCalls);
+        Assert.Contains(restoreFails ? "恢复 ND" : "光谱校零", error.Message);
+        Assert.True(wheel.Disposed);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NdAutoIntegrationStopsOnCancellationOrRevisitedHole(bool cancel)
+    {
+        using var files = new CalibrationFiles();
+        ConfigureNd(files.Config, files.Config);
+        var wheel = new FakeNd();
+        using var stopped = new CancellationTokenSource();
+        var native = new FakeNative { AutoTimes = new([1, 500]), OnAutoTime = _ => { if (cancel) stopped.Cancel(); } };
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(files.Config);
+        var parameters = new LocalSpectrumParameters { IsWithND = true, AutoIntegration = true, AutoInitDark = true };
+        if (cancel) Assert.Throws<OperationCanceledException>(() => session.Capture(parameters, files.Config, stopped.Token));
+        else Assert.Contains("收敛", Assert.Throws<InvalidOperationException>(() => session.Capture(parameters, files.Config)).Message);
+        Assert.Equal(cancel ? Array.Empty<int>() : [1], wheel.Moves);
+        Assert.Equal(0, native.DarkCalls);
+        Assert.Equal(0, native.CaptureCalls);
+        Assert.Equal(100, parameters.IntegralTime);
+        Assert.True(wheel.Disposed);
+    }
+
+    [Fact]
+    public void NdMissingCalibrationRejectsCaptureBeforeAnyMovementAndLegacyFilesRemainUsable()
+    {
+        using var files = new CalibrationFiles();
+        ConfigureNd(files.Config, files.Config);
+        files.Config.CalibrationGroups.RemoveAt(1);
+        var wheel = new FakeNd();
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(files.Config);
+        Assert.Throws<InvalidOperationException>(() => session.Capture(new() { IsWithND = true, AutoIntegration = true }, files.Config));
+        Assert.Empty(wheel.Moves);
+        Assert.Equal(0, native.CaptureCalls);
+        files.Config.NDConfig.NDCaliNameGroups = [files.Config.MaguideFile, files.Config.MaguideFile];
+        Assert.Equal(Path.GetFullPath(files.Config.MaguideFile), LocalSpectrumNd.ResolveCalibration(files.Config, 1).MagnitudeFile);
+    }
+
+    private static void ConfigureNd(ConfigSpectrum first, ConfigSpectrum second)
+    {
+        first.NDConfig.IsNDPort = true;
+        first.NDConfig.NDRate = [0, 8];
+        first.NDConfig.NDMinExpTime = 10;
+        first.NDConfig.NDMaxExpTime = 300;
+        first.NDConfig.DarkNDPort = 4;
+        first.CalibrationGroups = [new() { GroupName = "ND0", NDHoleIndex = 0, WavelengthFile = first.WavelengthFile, MaguideFile = first.MaguideFile },
+            new() { GroupName = "ND1", NDHoleIndex = 1, WavelengthFile = second.WavelengthFile, MaguideFile = second.MaguideFile }];
+    }
+
+    private sealed class FakeNd : ILocalSpectrumNdOperation
+    {
+        public int Port;
+        public bool Disposed, FailRestore;
+        public List<int> Moves = [];
+        public int GetPort() => Port;
+        public int SetPort(int port)
+        {
+            Moves.Add(port);
+            if (FailRestore && Moves.Count > 1 && port == 1) throw new InvalidOperationException("restore failed");
+            return Port = port;
+        }
+        public void Dispose() => Disposed = true;
+    }
+
     [Fact]
     public void ResultModelRetainsFullArrayAndDoesNotInventDatabaseIdentity()
     {
@@ -625,8 +734,9 @@ public sealed class LocalSpectrumTests
         { Calls.Add("smoothing"); Smoothing = (method, filterWidth); return SmoothingCode; }
         public Action<CancellationToken>? OnAutoTime;
         public int AutoTimeCode = 1;
+        public Queue<float>? AutoTimes;
         public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c, CancellationToken cancellationToken)
-        { Calls.Add("auto"); OnAutoTime?.Invoke(cancellationToken); time = 240; return AutoTimeCode; }
+        { Calls.Add("auto"); OnAutoTime?.Invoke(cancellationToken); time = AutoTimes?.Dequeue() ?? 240; return AutoTimeCode; }
         public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive)
         { Calls.Add("dark"); DarkCalls++; DarkTime = time; LastDarkAdaptive = adaptive; return DarkCode; }
         public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) { Calls.Add("init-adaptive"); return 1; }

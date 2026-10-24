@@ -22,6 +22,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
     private float integralTime = 100;
     private int average = 1;
     private bool autoIntegration, autoDark, adaptiveDark;
+    private bool isWithNd;
     private bool autoConnect = true;
     private bool eqe;
     private float voltage = 5, current = 1;
@@ -32,6 +33,8 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
     public int NumberOfAverage { get => average; set { average = value; OnPropertyChanged(); } }
     [STNodeProperty("自动积分", "自动选择积分时间", true)]
     public bool AutoIntegration { get => autoIntegration; set { autoIntegration = value; OnPropertyChanged(); } }
+    [STNodeProperty("使用 ND", "按实际 ND 孔位选择标定；自动积分时联动 ND", true)]
+    public bool IsWithND { get => isWithNd; set { isWithNd = value; OnPropertyChanged(); } }
     [STNodeProperty("自动校零", "测量前进行暗采集，请确保光路已遮光", true)]
     public bool AutoInitDark { get => autoDark; set { autoDark = value; OnPropertyChanged(); } }
     [STNodeProperty("自适应暗校正", "使用已初始化的自适应暗数据", true)]
@@ -64,7 +67,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             device.DisplayConfig.Divisor = AFactor;
             device.DisplayConfig.V = Voltage;
             device.DisplayConfig.I = Current;
-            device.DisplayConfig.IsWithND = false;
+            device.DisplayConfig.IsWithND = IsWithND;
             device.OpenLocalSpectrumWindow(this);
         });
     }
@@ -101,6 +104,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             IntegralTime = double.IsNaN(roundIntegralTime) ? IntegralTime : (float)roundIntegralTime,
             NumberOfAverage = double.IsNaN(roundAverage) ? NumberOfAverage : checked((int)roundAverage), AutoIntegration = AutoIntegration,
             AutoInitDark = AutoInitDark, SelfAdaptionInitDark = SelfAdaptionInitDark,
+            IsWithND = IsWithND,
             Eqe = Eqe, AFactor = AFactor, Voltage = Voltage, Current = Current
         };
         parameters.Validate();
@@ -127,6 +131,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
         {
             snapshot.DeviceCode, parameters.IntegralTime, parameters.NumberOfAverage, parameters.AutoIntegration,
             parameters.AutoInitDark, parameters.SelfAdaptionInitDark, snapshot.AutoConnect,
+            parameters.IsWithND,
             parameters.Eqe, parameters.AFactor, parameters.Voltage, parameters.Current
         });
     }

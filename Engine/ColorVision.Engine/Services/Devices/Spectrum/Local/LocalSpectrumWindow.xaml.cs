@@ -64,6 +64,7 @@ public partial class LocalSpectrumWindow : Window
         node.IntegralTime = (float)device.DisplayConfig.IntTime;
         node.NumberOfAverage = device.DisplayConfig.AveNum;
         node.AutoIntegration = device.DisplayConfig.IsAutoIntTime;
+        node.IsWithND = device.DisplayConfig.IsWithND;
         node.AutoInitDark = device.DisplayConfig.IsAutoDark;
         node.SelfAdaptionInitDark = device.DisplayConfig.IsShutter;
         node.Eqe = device.DisplayConfig.IsLuminousFluxMode;

@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1725
-using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
@@ -25,7 +24,6 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                     ViewResultBuildPoi mTFResultData = new(item);
                     result.ViewResults.Add(mTFResultData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBuildPoi), ImageFilePath = result.FilePath })) });
             }
 
         }
