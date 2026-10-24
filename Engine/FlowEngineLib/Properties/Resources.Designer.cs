@@ -1420,29 +1420,11 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关注点分析-IVL 的本地化字符串。
-        /// </summary>
-        internal static string 关注点分析_SMU {
-            get {
-                return ResourceManager.GetString("关注点分析_SMU", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 关注点布点 的本地化字符串。
         /// </summary>
         internal static string 关注点布点 {
             get {
                 return ResourceManager.GetString("关注点布点", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 关注点布点2 的本地化字符串。
-        /// </summary>
-        internal static string 关注点布点2 {
-            get {
-                return ResourceManager.GetString("关注点布点2", resourceCulture);
             }
         }
         

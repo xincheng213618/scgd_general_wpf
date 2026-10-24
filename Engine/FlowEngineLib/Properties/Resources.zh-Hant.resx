@@ -270,14 +270,8 @@
   <data name="关注点布点" xml:space="preserve">
     <value>關注點布點</value>
   </data>
-  <data name="关注点布点2" xml:space="preserve">
-    <value>關注點布點2</value>
-  </data>
   <data name="关注点修正标定" xml:space="preserve">
     <value>關注點修正標定</value>
-  </data>
-  <data name="关注点分析_SMU" xml:space="preserve">
-    <value>關注點分析-IVL</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>實時關注點算法</value>

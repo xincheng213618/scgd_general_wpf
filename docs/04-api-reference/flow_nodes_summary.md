@@ -37,7 +37,7 @@ rg -n "class .*Node|NodeType|FlowNodePropertyEditor|PropertyEditorType|NodeConfi
 
 标注 `Obsolete` 的类型可能仍被旧流程序列化名称引用。新增节点时优先查当前替代类型和兼容要求，不因它不再出现在 UI 菜单中就删除旧类型。
 
-含 `PhyDeviceControlNode`、`AlgorithmImageROINode`、`OLEDImageCroppingNode` 或 `AlgorithmKBOutputNode` 的旧流程无法在当前版本加载；继续运行原有 KB 输出项目时使用支持相应类型的旧版本软件。其他流程需在旧版本中删除或替换该节点并保存，再使用当前版本加载。加载器不会自动删除未知节点或重接流程连线。
+含 `PhyDeviceControlNode`、`AlgorithmImageROINode`、`OLEDImageCroppingNode`、`AlgorithmKBOutputNode`、`BuildPOI2Node`（关注点布点2）或 `POIAnalysisAndSMUNode`（关注点分析-IVL）的旧流程无法在当前版本加载；继续运行原有 KB 输出项目时使用支持相应类型的旧版本软件。其他流程需在旧版本中删除或替换该节点并保存，再使用当前版本加载。加载器不会自动删除未知节点或重接流程连线。
 
 通用 AI 节点的 `AlgorithmType` 历史编号 10、双输入 AI 节点的 `Algorithm2Type` 历史编号 2 对应已退役裁剪算子，加载时保持数值，执行时拒绝，需手动改选受支持的算子与模板。编号保留空位，后续算法不会重新编号；数据库中的旧模板与结果不会自动删除或转换。
 
