@@ -32,6 +32,7 @@
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="6"
+                                ToolTip="{Binding Description}"
                                 SnapsToDevicePixels="True">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -120,6 +121,7 @@
                 <Grid x:Name="SourcePanel" Grid.Row="3" Grid.RowSpan="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Margin="0,20,0,8">
@@ -142,8 +144,9 @@
                                     TextChanged="SourceSearchTextBox_TextChanged"/>
                     </Grid>
 
+                    <TextBlock x:Name="PresetLoadStatus" Grid.Row="1" Margin="0,0,8,8" TextWrapping="Wrap" Visibility="Collapsed"/>
                     <ListBox x:Name="SourceListBox"
-                             Grid.Row="1"
+                             Grid.Row="2"
                              Padding="0"
                              Background="Transparent"
                              BorderThickness="0"
@@ -170,10 +173,33 @@
                     CornerRadius="6"
                     Visibility="Collapsed">
                 <Grid>
-                    <WindowsFormsHost x:Name="PropertyGridHost">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border x:Name="PresetGuide" Margin="16,12,16,6" Visibility="Collapsed">
+                        <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel>
+                                <StackPanel.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                                        <Setter Property="TextAlignment" Value="Left"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource CV.Text.Primary}"/>
+                                    </Style>
+                                </StackPanel.Resources>
+                                <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Guide.Purpose}" Margin="0,6,0,12" TextWrapping="Wrap"/>
+                                <TextBlock Text="用哪个模块" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Guide.ModuleGuide}" Margin="0,4,0,10" TextWrapping="Wrap"/>
+                                <TextBlock Text="适用条件" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Guide.DeviceGuide}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                    <WindowsFormsHost x:Name="PropertyGridHost" Grid.Row="1">
                         <winf:PropertyGrid x:Name="PropertyGrid1"/>
                     </WindowsFormsHost>
-                    <Grid x:Name="CustomPreviewHost" Margin="5" Visibility="Collapsed"/>
+                    <Grid x:Name="CustomPreviewHost" Grid.Row="1" Margin="5" Visibility="Collapsed"/>
                 </Grid>
             </Border>
         </Grid>

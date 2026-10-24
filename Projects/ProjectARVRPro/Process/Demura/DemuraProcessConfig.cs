@@ -6,7 +6,7 @@ namespace ProjectARVRPro.Process.Demura
     {
         [Category("导出配置")]
         [DisplayName("导出名称")]
-        [Description("导出CSV和DynamicTestResults时显示的测试画面名称")]
+        [Description("导出CSV时显示的测试画面名称，也是DynamicTestResults和DemuraTestResults的Key")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name = "Demura";
 

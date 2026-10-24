@@ -127,10 +127,19 @@
     <value>CV相机</value>
   </data>
   <data name="通用AOI相机" xml:space="preserve">
-    <value>通用AOI相机</value>
+    <value>AOI 定位相机（模板）</value>
   </data>
   <data name="通用AOI相机2" xml:space="preserve">
-    <value>通用AOI相机2</value>
+    <value>AOI 提取相机（模板）</value>
+  </data>
+  <data name="AOILocatePixels" xml:space="preserve">
+    <value>AOI 定位相机（参数）</value>
+  </data>
+  <data name="AOIRegisterPixels" xml:space="preserve">
+    <value>AOI 提取相机（参数）</value>
+  </data>
+  <data name="AOILocAndRegPixels" xml:space="preserve">
+    <value>AOI 定位+提取相机</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
     <value>相机+ND</value>
@@ -264,14 +273,8 @@
   <data name="关注点布点" xml:space="preserve">
     <value>关注点布点</value>
   </data>
-  <data name="关注点布点2" xml:space="preserve">
-    <value>关注点布点2</value>
-  </data>
   <data name="关注点修正标定" xml:space="preserve">
     <value>关注点修正标定</value>
-  </data>
-  <data name="关注点分析_SMU" xml:space="preserve">
-    <value>关注点分析-IVL</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>实时关注点算法</value>
@@ -380,9 +383,6 @@
   </data>
   <data name="KB算法" xml:space="preserve">
     <value>KB算法</value>
-  </data>
-  <data name="KB输出" xml:space="preserve">
-    <value>KB输出</value>
   </data>
   <data name="ARVR算法" xml:space="preserve">
     <value>ARVR算法</value>
@@ -518,9 +518,6 @@
   </data>
   <data name="校正" xml:space="preserve">
     <value>校正</value>
-  </data>
-  <data name="校正2" xml:space="preserve">
-    <value>校正+实时POI</value>
   </data>
   <data name="校正ROI" xml:space="preserve">
     <value>校正ROI</value>
@@ -960,8 +957,8 @@
   <data name="取消重复框" xml:space="preserve">
     <value>取消重复框</value>
   </data>
-  <data name="请选择连续连接的一段流程，重复框内不能包含分支、开始、结束或旧循环节点。" xml:space="preserve">
-    <value>请选择连续连接的一段流程，重复框内不能包含分支、开始、结束或旧循环节点。</value>
+  <data name="请选择单入口、单出口的完整流程区域，分流必须在框内汇合，不能包含环、开始、结束或旧循环节点。" xml:space="preserve">
+    <value>请选择单入口、单出口的完整流程区域，分流必须在框内汇合，不能包含环、开始、结束或旧循环节点。</value>
   </data>
   <data name="重复框的节点或次数已改变，请取消该框后重新框选。" xml:space="preserve">
     <value>重复框的节点或次数已改变，请取消该框后重新框选。</value>

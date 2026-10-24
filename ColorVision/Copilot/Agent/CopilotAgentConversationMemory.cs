@@ -39,11 +39,12 @@ namespace ColorVision.Copilot
             if (preparedMessages == null || preparedMessages.Count == 0)
                 return Normalize(previousMemory);
 
-            var history = Merge(
-                previousMemory,
-                preparedMessages.Take(preparedMessages.Count - 1),
-                string.Empty,
-                string.Empty);
+            // The checkpoint is already bounded for storage. The prepared history has its own
+            // model-context budget and must not be reduced to checkpoint storage limits again.
+            var history = MergeChronologically(
+                Normalize(previousMemory, truncateContent: false),
+                Normalize(preparedMessages.Take(preparedMessages.Count - 1), truncateContent: false),
+                preferVisibleHistory: true);
             return history.Append(preparedMessages[^1]).ToArray();
         }
 
@@ -51,8 +52,8 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage>? previousMemory,
             IEnumerable<CopilotRequestMessage>? visibleHistory)
         {
-            var previous = Normalize(previousMemory);
-            var visible = Normalize(visibleHistory);
+            var previous = Normalize(previousMemory, truncateContent: false);
+            var visible = Normalize(visibleHistory, truncateContent: false);
             if (visible.Length == 0 || previous.Length == 0)
                 return visible;
 
@@ -103,15 +104,17 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private static CopilotRequestMessage[] Normalize(IEnumerable<CopilotRequestMessage>? messages)
+        private static CopilotRequestMessage[] Normalize(
+            IEnumerable<CopilotRequestMessage>? messages,
+            bool truncateContent = true)
         {
             return (messages ?? Array.Empty<CopilotRequestMessage>())
-                .Select(Normalize)
+                .Select(message => Normalize(message, truncateContent))
                 .Where(message => !string.IsNullOrEmpty(message.Content))
                 .ToArray();
         }
 
-        private static CopilotRequestMessage Normalize(CopilotRequestMessage message)
+        private static CopilotRequestMessage Normalize(CopilotRequestMessage message, bool truncateContent = true)
         {
             var role = string.Equals(message.Role?.Trim(), "assistant", StringComparison.OrdinalIgnoreCase)
                 ? "assistant"
@@ -122,7 +125,7 @@ namespace ColorVision.Copilot
                 return default;
 
             var content = (message.Content ?? string.Empty).Trim();
-            if (content.Length > CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)
+            if (truncateContent && content.Length > CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)
             {
                 var (body, terminalSuffix) = CopilotChatMessage.SplitModelTerminalEvidence(role, content);
                 var ending = TruncationSuffix + (terminalSuffix.Length == 0 ? string.Empty : "\n\n" + terminalSuffix);
@@ -145,7 +148,8 @@ namespace ColorVision.Copilot
 
         private static CopilotRequestMessage[] MergeChronologically(
             CopilotRequestMessage[] previousMemory,
-            CopilotRequestMessage[] visibleHistory)
+            CopilotRequestMessage[] visibleHistory,
+            bool preferVisibleHistory = false)
         {
             if (previousMemory.Length == 0)
                 return visibleHistory.ToArray();
@@ -169,7 +173,9 @@ namespace ColorVision.Copilot
                     previousKeys[previousCursor],
                     visibleKeys[visibleCursor]))
                 {
-                    merged.Add(previousMemory[previousCursor]);
+                    // Bounded matching may pair a stored truncation with a complete current
+                    // message. Rebuilding a request must retain the current message in full.
+                    merged.Add(preferVisibleHistory ? visibleHistory[visibleCursor] : previousMemory[previousCursor]);
                     previousCursor++;
                     visibleCursor++;
                     continue;
@@ -243,11 +249,25 @@ namespace ColorVision.Copilot
             return messages.Select(message => new ComparisonKey(
                 message,
                 CopilotConversationHistoryWindow.Select(
-                    [message],
+                    [NormalizeComparisonTruncation(message)],
                     1,
                     CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength,
                     CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)[0],
                 IsTruncated(message))).ToArray();
+        }
+
+        private static CopilotRequestMessage NormalizeComparisonTruncation(CopilotRequestMessage message)
+        {
+            var (body, terminalSuffix) = CopilotChatMessage.SplitModelTerminalEvidence(message.Role, message.Content);
+            body = body.TrimEnd();
+            if (!body.EndsWith(TruncationSuffix, StringComparison.Ordinal))
+                return message;
+
+            // Older checkpoints used either marker depending on which budget first
+            // shortened the content. Canonicalize only the comparison copy.
+            var content = body[..^TruncationSuffix.Length] + HistoryTruncationSuffix
+                + (terminalSuffix.Length == 0 ? string.Empty : "\n\n" + terminalSuffix);
+            return new CopilotRequestMessage(message.Role, content) { IsSteering = message.IsSteering };
         }
 
         private static bool IsTruncated(CopilotRequestMessage message)

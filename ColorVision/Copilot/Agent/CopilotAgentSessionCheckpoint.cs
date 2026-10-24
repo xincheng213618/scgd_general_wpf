@@ -158,6 +158,10 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotRequestMessage> ConversationMemory { get; init; } = Array.Empty<CopilotRequestMessage>();
 
+        // Null retains the legacy ConversationMemory watermark; an empty collection
+        // explicitly means no conversation messages have been stored in this session.
+        public IReadOnlyList<CopilotRequestMessage>? SessionConversationMemory { get; init; }
+
         public string TaskIntentText { get; init; } = string.Empty;
 
         public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
@@ -359,15 +363,8 @@ namespace ColorVision.Copilot
                 || EvidenceArtifacts == null
                 || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts
                 || (EvidenceArtifacts?.Any(artifact => artifact?.IsStructurallyValid() != true) ?? false)
-                || ConversationMemory == null
-                || ConversationMemory.Count > MaxConversationMemoryMessages
-                || ConversationMemory.Sum(message => message.Content?.Length ?? 0) > MaxConversationMemoryCharacters
-                || ConversationMemory.Any(message => message.Role is not ("user" or "assistant")
-                    || string.IsNullOrWhiteSpace(message.Content)
-                    || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
-                    || message.Content.Length > MaxConversationMemoryContentLength
-                    || message.Content.Contains('\0')
-                    || (message.IsSteering && message.Role != "user"))
+                || !IsConversationMemoryValid(ConversationMemory)
+                || (SessionConversationMemory != null && !IsConversationMemoryValid(SessionConversationMemory))
                 || TaskIntentText == null
                 || TaskIntentText.Length > MaxTaskIntentTextLength
                 || TaskIntentText.Contains('\0')
@@ -387,6 +384,17 @@ namespace ColorVision.Copilot
                 return false;
             }
         }
+
+        private static bool IsConversationMemoryValid(IReadOnlyList<CopilotRequestMessage>? memory) =>
+            memory != null
+            && memory.Count <= MaxConversationMemoryMessages
+            && memory.Sum(message => message.Content?.Length ?? 0) <= MaxConversationMemoryCharacters
+            && !memory.Any(message => message.Role is not ("user" or "assistant")
+                || string.IsNullOrWhiteSpace(message.Content)
+                || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
+                || message.Content.Length > MaxConversationMemoryContentLength
+                || message.Content.Contains('\0')
+                || (message.IsSteering && message.Role != "user"));
 
         internal static bool TryCreateSnapshot(
             CopilotAgentSessionCheckpoint? source,
@@ -442,6 +450,11 @@ namespace ColorVision.Copilot
                     ConversationMemory = Array.AsReadOnly(source.ConversationMemory
                         .Take(MaxConversationMemoryMessages + 1)
                         .ToArray()),
+                    SessionConversationMemory = source.SessionConversationMemory == null
+                        ? null
+                        : Array.AsReadOnly(source.SessionConversationMemory
+                            .Take(MaxConversationMemoryMessages + 1)
+                            .ToArray()),
                     TaskIntentText = source.TaskIntentText,
                     TaskEventJournal = taskEventJournal,
                     UpdatedAtUtc = source.UpdatedAtUtc,
@@ -486,6 +499,10 @@ namespace ColorVision.Copilot
                     StringComparison.Ordinal)
                 && SequenceEqual(left.EvidenceArtifacts, right.EvidenceArtifacts, AreEvidenceArtifactsEquivalent)
                 && left.ConversationMemory.SequenceEqual(right.ConversationMemory)
+                && (left.SessionConversationMemory == null
+                    ? right.SessionConversationMemory == null
+                    : right.SessionConversationMemory != null
+                        && left.SessionConversationMemory.SequenceEqual(right.SessionConversationMemory))
                 && string.Equals(left.TaskIntentText, right.TaskIntentText, StringComparison.Ordinal)
                 && CopilotAgentTaskEventJournal.AreEquivalent(left.TaskEventJournal, right.TaskEventJournal)
                 && left.UpdatedAtUtc == right.UpdatedAtUtc;
@@ -537,7 +554,8 @@ namespace ColorVision.Copilot
             string? taskIntentText = null,
             CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null,
             IReadOnlyList<CopilotProjectInstructionDocument>? projectInstructions = null,
-            string? configuredDeveloperInstructions = null)
+            string? configuredDeveloperInstructions = null,
+            IReadOnlyList<CopilotRequestMessage>? sessionConversationMemory = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -609,6 +627,9 @@ namespace ColorVision.Copilot
                 ProjectInstructionSurfaceFingerprint = projectInstructionSurfaceFingerprint,
                 EvidenceArtifacts = Array.AsReadOnly(persistedEvidence),
                 ConversationMemory = Array.AsReadOnly(persistedConversationMemory),
+                SessionConversationMemory = sessionConversationMemory == null
+                    ? null
+                    : Array.AsReadOnly(sessionConversationMemory.ToArray()),
                 TaskIntentText = persistedTaskIntentText,
                 TaskEventJournal = persistedTaskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
@@ -655,6 +676,13 @@ namespace ColorVision.Copilot
             {
                 return null;
             }
+            var sessionConversationMemory = SessionConversationMemory;
+            if (sessionConversationMemory == null && !conversationMemory.SequenceEqual(ConversationMemory))
+            {
+                // Updating recovery prose does not add it to the unchanged opaque session.
+                // Freeze the legacy fallback before replacing its source memory.
+                sessionConversationMemory = ConversationMemory;
+            }
             var checkpoint = new CopilotAgentSessionCheckpoint(this)
             {
                 ProfileKey = ProfileKey,
@@ -676,6 +704,9 @@ namespace ColorVision.Copilot
                 EvidenceArtifacts = Array.AsReadOnly(
                     (EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray()),
                 ConversationMemory = Array.AsReadOnly(conversationMemory.ToArray()),
+                SessionConversationMemory = sessionConversationMemory == null
+                    ? null
+                    : Array.AsReadOnly(sessionConversationMemory.ToArray()),
                 TaskIntentText = TaskIntentText,
                 TaskEventJournal = taskEventJournalSnapshot,
                 UpdatedAtUtc = updatedAtUtc,

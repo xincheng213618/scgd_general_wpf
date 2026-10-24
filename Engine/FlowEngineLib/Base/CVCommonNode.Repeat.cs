@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using FlowEngineLib.Repeat;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Base;
@@ -48,6 +49,7 @@ public partial class CVCommonNode : ISTNodeGroupMember
         RepeatRegionId = id ?? string.Empty;
         RepeatCount = string.IsNullOrEmpty(id) ? 1 : count;
         RepeatMemberCount = string.IsNullOrEmpty(id) ? 0 : memberCount;
+        if (string.IsNullOrEmpty(id)) SetRepeatParameterValues(null);
         ResetRepeatState();
         OnPropertyChanged(nameof(RepeatRegionId));
     }
@@ -92,6 +94,8 @@ public partial class CVCommonNode : ISTNodeGroupMember
         data[nameof(RepeatRegionId)] = Encoding.UTF8.GetBytes(RepeatRegionId);
         data[nameof(RepeatCount)] = BitConverter.GetBytes(RepeatCount);
         data[nameof(RepeatMemberCount)] = BitConverter.GetBytes(RepeatMemberCount);
+        if (RepeatParameterValues.Count > 0)
+            data[nameof(RepeatParameterValues)] = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(RepeatParameterValues));
     }
 
     public override void OnLoadNode(Dictionary<string, byte[]> data)
@@ -100,6 +104,9 @@ public partial class CVCommonNode : ISTNodeGroupMember
         SetRepeatRegion(data.TryGetValue(nameof(RepeatRegionId), out byte[] id) ? Encoding.UTF8.GetString(id) : string.Empty,
             data.TryGetValue(nameof(RepeatCount), out byte[] count) ? BitConverter.ToInt32(count, 0) : 1,
             data.TryGetValue(nameof(RepeatMemberCount), out byte[] size) ? BitConverter.ToInt32(size, 0) : 0);
+        SetRepeatParameterValues(!string.IsNullOrEmpty(RepeatRegionId) && data.TryGetValue(nameof(RepeatParameterValues), out byte[] parameters)
+            ? JsonConvert.DeserializeObject<Dictionary<string, double[]>>(Encoding.UTF8.GetString(parameters))
+            : null);
     }
 
     protected override bool OnInputDataTransfer(STNodeOption input, STNodeOptionEventArgs e) =>

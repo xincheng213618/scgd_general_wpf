@@ -3129,64 +3129,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	internal STNode GetNodeFromData(byte[] byData)
 	{
-		if (byData == null)
-		{
-			throw new ArgumentNullException(nameof(byData));
-		}
-		int offset = 0;
-		string modelKey = ReadNodeByteLengthString(byData, ref offset, "节点类型");
-		string typeKey = ReadNodeByteLengthString(byData, ref offset, "节点类型标识");
-		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
-		while (offset < byData.Length)
-		{
-			int keyLength = ReadNodeInt32(byData, ref offset, "属性名称长度");
-			string propertyName = Encoding.UTF8.GetString(ReadNodeBytes(byData, ref offset, keyLength, "属性名称"));
-			int valueLength = ReadNodeInt32(byData, ref offset, "属性值长度");
-			byte[] propertyValue = ReadNodeBytes(byData, ref offset, valueLength, "属性值");
-			if (dictionary.ContainsKey(propertyName))
-			{
-				throw new InvalidDataException($"节点数据包含重复属性：{propertyName}");
-			}
-			dictionary.Add(propertyName, propertyValue);
-		}
-		Type type = null;
-		STNodeTypeRegistry.TryGetNodeType(typeKey, modelKey, out type);
-		if (type == null)
-		{
-			throw new TypeLoadException($"无法找到节点类型 {{{modelKey}}}，请确认对应程序集已由编辑器加载");
-		}
-		STNode sTNode = (STNode)Activator.CreateInstance(type);
-		sTNode.Create();
-		sTNode.OnLoadNode(dictionary);
-		return sTNode;
-	}
-
-	private static string ReadNodeByteLengthString(byte[] data, ref int offset, string valueName)
-	{
-		if (offset >= data.Length)
-		{
-			throw new InvalidDataException($"{valueName}缺失");
-		}
-		int length = data[offset++];
-		return Encoding.UTF8.GetString(ReadNodeBytes(data, ref offset, length, valueName));
-	}
-
-	private static int ReadNodeInt32(byte[] data, ref int offset, string valueName)
-	{
-		byte[] value = ReadNodeBytes(data, ref offset, sizeof(int), valueName);
-		return BitConverter.ToInt32(value, 0);
-	}
-
-	private static byte[] ReadNodeBytes(byte[] data, ref int offset, int length, string valueName)
-	{
-		if (length < 0 || offset < 0 || offset > data.Length - length)
-		{
-			throw new InvalidDataException($"{valueName}长度无效：{length}");
-		}
-		byte[] value = new byte[length];
-		Buffer.BlockCopy(data, offset, value, 0, length);
-		offset += length;
-		return value;
+		return STNodeSavedState.Parse(byData).CreateNode();
 	}
 
 	public void ShowAlert(string strText, Color foreColor, Color backColor)

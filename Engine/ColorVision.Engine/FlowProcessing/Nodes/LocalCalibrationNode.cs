@@ -3,6 +3,7 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
@@ -293,6 +294,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (string.IsNullOrWhiteSpace(deviceCode)) throw new InvalidOperationException("校正 RAW 内存前必须选择本地相机设备。");
             return ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>()
                 .FirstOrDefault(camera => string.Equals(camera.Code, deviceCode, StringComparison.Ordinal))
+                ?? LocalCalibrationFlowRouting.Find(deviceCode)?.PhyCamera?.DeviceCamera
                 ?? throw new InvalidOperationException($"找不到本地相机设备：{deviceCode}");
         }
 
@@ -308,6 +310,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private protected (string Route, string DeviceCode) ResolveCalibrationResultTarget(string cameraDeviceCode)
         {
+            if (LocalCalibrationFlowRouting.Find(cameraDeviceCode) is { } calibration)
+                return (ResultRoutes.Calibration, calibration.Code);
             DeviceCamera? camera = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
                 .FirstOrDefault(item => string.Equals(item.Code, cameraDeviceCode, StringComparison.Ordinal));
             string? calibrationDeviceCode = camera?.PhyCamera?.DeviceCalibration?.Code;
@@ -319,7 +323,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    [STNode("Flow_CustomNodes", "校正", CategoryOrder = 9900)]
+    [STNode("Flow_LocalDevices", "校正", CategoryOrder = 9900, NodeOrder = 30)]
     public sealed class LocalCalibrationNode : LocalCalibrationNodeBase
     {
         public LocalCalibrationNode() : base("校正", "LocalCalibration", "Calibration")
@@ -329,13 +333,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
             using LocalCalibrationExecution execution = ExecuteCalibration(action);
+            action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
             MeasureResultImgModel persistedResult = SaveCalibrationResult(action, execution);
             int masterId = persistedResult.Id;
             execution.Frame.MasterId = masterId;
             action.MasterValue(null, masterId, (int)ViewResultAlgType.Calibration);
             execution.TransferFrameTo(action);
             (string route, string deviceCode) = ResolveCalibrationResultTarget(persistedResult.DeviceCode ?? string.Empty);
-            FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(route, ResultKinds.Image, deviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.Calibration));
+            FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(route, ResultKinds.Image, deviceCode, OperatorCode, action.SerialNumber, ExecutionNodeId, ZIndex, masterId, (int)ViewResultAlgType.Calibration));
             return new LocalNodeExecutionResult
             {
                 Data = new LocalCalibrationNodeResultData

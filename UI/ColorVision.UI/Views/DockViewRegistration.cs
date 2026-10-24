@@ -21,6 +21,7 @@ public sealed class DockViewRegistration : IDisposable
     }
 
     public string Title { get; set; }
+    public string? PersistenceKey { get; set; }
     public Control? Current => Volatile.Read(ref _view);
     public event Action<Control>? ViewCreated;
     public event Action<Control>? ViewReleasing;
@@ -29,9 +30,14 @@ public sealed class DockViewRegistration : IDisposable
     {
         if (!_dispatcher.CheckAccess()) return _dispatcher.Invoke(GetOrCreate);
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_view != null) return _view;
+        if (_view != null)
+        {
+            if (!string.IsNullOrWhiteSpace(PersistenceKey)) DockViewManager.GetInstance().SetViewIdentity(_view, PersistenceKey);
+            return _view;
+        }
         DockViewManager.GetInstance().RegisterView(this);
         _view = _factory();
+        if (!string.IsNullOrWhiteSpace(PersistenceKey)) DockViewManager.GetInstance().SetViewIdentity(_view, PersistenceKey);
         ViewCreated?.Invoke(_view);
         return _view;
     }

@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         {
             HoleMapping ??= new ObservableCollection<HoleMap>
             {
+                new HoleMap { HoleIndex = 0, HoleName = "ND0" },
                 new HoleMap { HoleIndex = 1, HoleName = "ND8" },
                 new HoleMap { HoleIndex = 2, HoleName = "ND64" },
                 new HoleMap { HoleIndex = 3, HoleName = "ND1000" },

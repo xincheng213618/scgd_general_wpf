@@ -41,6 +41,6 @@ internal class LVCameraLoopNode : CVBaseLoopServerNode<CameraNodeProperty>
 
 	protected override object getBaseEventData(CVStartCFC start, CameraNodeProperty property)
 	{
-		return new LVCameraData(CVImageFlipMode.None, bool.Parse(property.EnableFocus), int.Parse(property.Focus), float.Parse(property.Aperture), int.Parse(property.AvgCount), float.Parse(property.Gain), new float[1] { Convert.ToSingle(property.Temp) }, property.CaliTempName, property.POITempName, property.POIFilterTempName, property.POIReviseTempName, string.Empty);
+		return new CameraPoiData(CVImageFlipMode.None, bool.Parse(property.EnableFocus), int.Parse(property.Focus), float.Parse(property.Aperture), int.Parse(property.AvgCount), float.Parse(property.Gain), new float[1] { Convert.ToSingle(property.Temp) }, property.CaliTempName, property.POITempName, property.POIFilterTempName, property.POIReviseTempName);
 	}
 }

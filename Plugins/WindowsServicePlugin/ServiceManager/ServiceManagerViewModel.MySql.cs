@@ -62,7 +62,6 @@ namespace WindowsServicePlugin.ServiceManager
                 if (ok)
                 {
                     log.Info("MySQL 服务注册完成");
-                    SyncLegacyAppConfig();
                 }
                 else
                 {
@@ -200,7 +199,6 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     log.Info("数据库重置完成");
                     SyncManagedServiceConfigs();
-                    SyncLegacyAppConfig();
                     resetSucceeded = true;
                 }
                 else
@@ -279,7 +277,6 @@ namespace WindowsServicePlugin.ServiceManager
         {
             if (MySqlManager.ApplyRootPassword(log.Info))
             {
-                SyncLegacyAppConfig();
                 RefreshMySqlStatus();
             }
         }
@@ -288,7 +285,6 @@ namespace WindowsServicePlugin.ServiceManager
         {
             if (MySqlManager.CreateOrUpdateUser(log.Info))
             {
-                SyncLegacyAppConfig();
                 SyncAllConfigs(false);
                 log.Info("业务用户配置已更新到 MySqlServiceConfig");
             }

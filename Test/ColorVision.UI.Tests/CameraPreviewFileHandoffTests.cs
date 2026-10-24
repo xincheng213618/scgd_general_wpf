@@ -232,8 +232,8 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
         WpfTestHost.Invoke(() => Assert.Equal(new byte[] { 71, 72, 73, 74, 75, 76 }, Pixels((BitmapSource)view.ViewBitmapSource)));
     }
 
-    private SemaphoreSlim OpenGate => (SemaphoreSlim)typeof(CVRawOpen).GetField("_rawOpenGate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener)!;
-    private PoiMeasurementBuffer? Measurement => (PoiMeasurementBuffer?)typeof(CVRawOpen).GetField("_measurementBuffer", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener);
+    private SemaphoreSlim OpenGate => (SemaphoreSlim)typeof(CalibratedImageCapability).GetField("_rawOpenGate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener)!;
+    private PoiMeasurementBuffer? Measurement => (PoiMeasurementBuffer?)typeof(CalibratedImageCapability).GetField("_measurementBuffer", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener);
     private string WriteRaw(string name, byte value)
     {
         string path = Path.Combine(root, name);

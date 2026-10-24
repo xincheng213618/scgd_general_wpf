@@ -165,7 +165,8 @@ namespace ColorVision.Copilot
             try
             {
                 using var imageLease = new CopilotManagedImageAttachmentLease();
-                var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments, imageLease);
+                var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments, imageLease,
+                    conversation, queuedCommandExecution?.HostedRun);
                 if (admittedAttachments == null
                     || !CanContinueConversationRequestPreparation(conversation, requestMode, queuedCommandExecution)
                     || !IsCapturedMessageEditCurrent())

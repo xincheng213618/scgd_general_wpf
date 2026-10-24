@@ -105,6 +105,21 @@ public sealed class OfflineDeviceConfigurationTests
                 Assert.True(spectrum.ResourceId < -1);
                 Assert.Equal(license.Id, spectrum.License!.Id);
                 Assert.Equal(DateTime.Today.AddDays(20), spectrum.License.ExpiryDate);
+                // Historical databases can contain multiple licenses for one SN, with different device associations.
+                var duplicate = new LicenseModel { MacAddress = "SPECTRUM-1", LiceType = 1, LicenseValue = "stale", ExpiryDate = DateTime.Today.AddDays(-1), DevCameraId = 363 };
+                PhyLicenseDao.Instance.Save(duplicate, local: true);
+                PhySpectrumStore.SaveLicense(new LicenseModel { MacAddress = "spectrum-1", LiceType = 1, LicenseValue = "renewed", ExpiryDate = DateTime.Today.AddDays(25), Model = "SP-NEW" });
+                var matching = PhyLicenseDao.Instance.GetLocal().Where(item => item.LiceType == 1).ToArray();
+                Assert.Equal(2, matching.Length);
+                Assert.All(matching, item =>
+                {
+                    Assert.Equal("renewed", item.LicenseValue);
+                    Assert.Equal("SP-NEW", item.Model);
+                    Assert.Equal(DateTime.Today.AddDays(25), item.ExpiryDate);
+                });
+                Assert.Equal(363, matching.Single(item => item.Id == duplicate.Id).DevCameraId);
+                Assert.Contains(matching, item => item.Id == license.Id);
+                Assert.Equal("renewed", Assert.Single(PhySpectrumStore.Load()).License!.LicenseValue);
                 PhyLicenseDao.Instance.Save(new LicenseModel { MacAddress = "camera-1", LiceType = 0 });
                 Assert.Throws<InvalidOperationException>(() => PhySpectrumStore.SaveLicense(new LicenseModel { MacAddress = "camera-1", LiceType = 1 }));
                 Assert.Throws<InvalidOperationException>(() => PhySpectrumStore.SaveLicense(new LicenseModel { Id = 9, MacAddress = "spectrum-1", LiceType = 1 }));

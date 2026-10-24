@@ -146,12 +146,9 @@
                             <TextBlock Text="{x:Static properties:Resources.PhyCameraConfigurationSection}" Style="{StaticResource ConsoleSectionTitleStyle}"
                                        ToolTip="{x:Static properties:Resources.PhyCameraConfigurationHint}"/>
                         </StackPanel>
-                        <UniformGrid Columns="4" SizeChanged="ActionGrid_SizeChanged">
+                        <UniformGrid x:Name="CameraConfigurationActions" Columns="3" SizeChanged="ActionGrid_SizeChanged">
                             <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding EditCommand}">
                                 <TextBlock Text="{x:Static properties:Resources.ModifyConfiguration}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding PropertyEditorEditCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
                             </Button>
                             <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
                                 <TextBlock Text="{x:Static properties:Resources.ButtonOpenConfigFile}" Style="{StaticResource CommandButtonTextStyle}"/>

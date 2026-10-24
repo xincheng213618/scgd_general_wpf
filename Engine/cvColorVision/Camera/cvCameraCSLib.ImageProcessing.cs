@@ -115,7 +115,7 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ShutDown", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int ShutDown(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitCom",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int InitCom(IntPtr handle, FOCUS_COMMUN eFOCUS_COMMUN, string ComName, uint BaudRate);
+        public unsafe static extern int InitCom(ref IntPtr handle, FOCUS_COMMUN eFOCUS_COMMUN, string ComName, uint BaudRate);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "IsOpen",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int IsOpen(IntPtr handle);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "MoveDiaphragm",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]

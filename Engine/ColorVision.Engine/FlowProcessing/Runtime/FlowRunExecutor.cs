@@ -41,6 +41,7 @@ namespace ColorVision.Engine.FlowProcessing
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
             ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
+            serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
             if (executionTimeout.HasValue
                 && executionTimeout.Value != Timeout.InfiniteTimeSpan
                 && executionTimeout.Value <= TimeSpan.Zero)

@@ -17,11 +17,13 @@ internal sealed class LocalSpectrumFlowExecution : FlowLocalExecution
     private readonly string operation;
     private readonly bool autoConnect;
     private LocalSpectrumCapture? capture;
+    private CancellationToken flowStopToken;
     private int released;
     private static DeviceSpectrum? Find(string code) => ServiceManager.Current?.DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault(d => d.Code == code);
 
     internal static void Register()
     {
+        LocalSpectrumNdFlowExecution.Register();
         RegisterBackend(nameof(LocalSpectrumFlowExecution), node => (node is SpectrumNode or SpectrumEQENode) && Find(node.DeviceCode)?.SpectrumBackend.OpensLocally == true, (node, request) =>
         {
             if (node is not (SpectrumNode or SpectrumEQENode)) return null!;
@@ -57,13 +59,17 @@ internal sealed class LocalSpectrumFlowExecution : FlowLocalExecution
         device.SpectrumBackend.BeginLocalCommand();
     }
 
+    public override void Bind(CVStartCFC action) => flowStopToken = action.RuntimeResources.StopToken;
+
     public override void Execute()
     {
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(device.SpectrumBackend.LocalCancellationToken, flowStopToken);
         try
         {
+            cancellation.Token.ThrowIfCancellationRequested();
             device.EnsureLocalSpectrumConnected(autoConnect, config);
             if (operation == "InitDark") device.LocalSession.Dark(parameters, config);
-            else capture = device.CaptureLocalSpectrum(parameters, config, false);
+            else capture = device.CaptureLocalSpectrum(parameters, config, false, cancellation.Token);
         }
         finally { Release(); }
     }

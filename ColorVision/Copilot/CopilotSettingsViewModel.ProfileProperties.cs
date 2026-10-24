@@ -67,7 +67,7 @@ namespace ColorVision.Copilot
         public bool IsConnectProviderFormVisible => !IsConnectProviderPickerVisible;
 
         public CopilotConnectProviderOption SelectedConnectProvider =>
-            ConnectProviderOptions.FirstOrDefault(option => option.VendorType == NewProfileVendorType)
+            ConnectProviderOptions.FirstOrDefault(option => !option.IsLocalCodex && option.VendorType == NewProfileVendorType)
             ?? ConnectProviderOptions[0];
 
         public string ConnectProviderTitle => $"连接 {SelectedConnectProvider.Label}";

@@ -27,7 +27,7 @@ Engine 设备与注册中心通过 `MQTTControl` 共用 broker 连接；设备�
 | Flow 连接 | `MQTTHelper`、`MQTTClientPool` | 按连接身份复用客户端，管理引用、topic 订阅与重连；通过该 Helper 运行的节点沿此链排查 |
 | 旧 Flow MQTT 节点 | `FlowEngineLib/MQTT/`、`MQTTCustom*Node.cs` | 4 个旧节点已标记 `Obsolete`，保留旧流程加载兼容，见 [Flow 节点兼容](../../04-api-reference/engine-components/FlowEngineLib.md#弃用节点兼容) |
 
-Engine 不读取旧 MQTT 设置段，历史地址、端口和凭据不影响连接。服务管理器向现有 `MQTT.config` 同步相同的本机端点和空凭据，旧配置导入也不会恢复 MQTT 连接设置。Flow 的独立连接管理及旧流程序列化契约保持原样，Engine 创建的 Flow 起点使用相同固定端点。
+Engine 不读取旧 MQTT 设置段，历史地址、端口和凭据不影响连接。服务管理器向现有 `MQTT.config` 同步相同的本机端点和空凭据。Flow 的独立连接管理及旧流程序列化契约保持原样，Engine 创建的 Flow 起点使用相同固定端点。
 
 ## 命令执行链
 

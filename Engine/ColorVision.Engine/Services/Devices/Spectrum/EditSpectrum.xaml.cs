@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Themes;
 using ColorVision.UI;
 using cvColorVision;
+using log4net;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public partial class EditSpectrum : Window
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(EditSpectrum));
         private readonly ConfigSpectrum target;
         private readonly bool useLocalStore = SysResourceDao.Instance.UseLocal;
         private readonly CancellationTokenSource cancellation = new();
@@ -137,7 +139,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (!closed && StatusText.Text == Properties.Resources.SpectrumWorking) StatusText.Text = string.Empty;
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { if (!closed) StatusText.Text = ex.Message; }
+            catch (Exception ex)
+            {
+                Log.Error($"Spectrum configuration operation failed: {EditConfig.SN}", ex);
+                if (!closed) StatusText.Text = ex.Message;
+            }
             finally
             {
                 isBusy = false;
@@ -183,17 +189,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private async void Import_Click(object sender, RoutedEventArgs e)
         {
-            string sn = EditConfig.SN?.Trim() ?? string.Empty;
-            if (sn.Length == 0) return;
-            var dialog = new OpenFileDialog { Filter = "License (*.zip;*.lic)|*.zip;*.lic", Title = $"{Properties.Resources.SpectrumImportLicense} · {sn}" };
-            if (dialog.ShowDialog(this) != true) return;
             await RunAsync(async () =>
             {
-                LicenseModel license = await Task.Run(() => SpectrumLicenseUpdateService.ReadFile(dialog.FileName, sn), cancellation.Token);
-                await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore), cancellation.Token);
-                await LoadChoicesAsync();
-                StatusText.Text = $"{sn} · {Properties.Resources.UpdataSucess}";
+                Keyboard.ClearFocus();
+                SerialChoices.GetBindingExpression(ComboBox.TextProperty)?.UpdateSource();
+                string sn = PhySpectrumStore.NormalizeSerial(SerialChoices.Text ?? string.Empty);
+                EditConfig.SN = sn;
+                Log.Info($"Spectrum license import requested: {sn}");
+                var dialog = new OpenFileDialog { Filter = "License (*.zip;*.lic)|*.zip;*.lic", Title = $"{Properties.Resources.SpectrumImportLicense} · {sn}" };
+                // Include the native file picker in the operation's error handling; the application
+                // otherwise records Dispatcher exceptions silently and this click appears to do nothing.
+                if (dialog.ShowDialog(this) == true) await ImportLicenseAsync(dialog.FileName, sn);
             });
+        }
+
+        internal async Task ImportLicenseAsync(string filePath, string sn)
+        {
+            LicenseModel license = await Task.Run(() => SpectrumLicenseUpdateService.ReadFile(filePath, sn), cancellation.Token);
+            await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore), cancellation.Token);
+            Log.Info($"Spectrum license imported: {sn}, local={useLocalStore}, expiry={license.ExpiryDate:O}");
+            await LoadChoicesAsync();
+            StatusText.Text = $"{sn} · {Properties.Resources.UpdataSucess}";
         }
 
         private async void ManageLicenses_Click(object sender, RoutedEventArgs e)

@@ -18,6 +18,166 @@ namespace ColorVision.UI.Tests;
 
 public class LocalCameraSessionTests
 {
+    [Fact]
+    public void CvVideoStartsWithoutPreparingTheWheelAndFailedMeasurementPreservesPreview()
+    {
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        var backend = new CameraBackendState(true);
+        var config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, backend, config);
+        native.OnPrepareMeasurement = () => throw new InvalidOperationException("CFW unavailable");
+
+        session.Open("cv-camera", TakeImageMode.Live, 8);
+        int stopped = 0;
+        session.RegisterPreview(_ => 1, () => stopped++);
+        native.Events.Clear();
+        Assert.Equal(0, native.MeasurementPreparations);
+        Assert.Equal(TakeImageMode.Live, config.TakeImageMode);
+        Assert.False(config.IsExpThree);
+
+        Assert.Throws<InvalidOperationException>(() => session.EnsureMeasurement(false));
+        Assert.True(session.IsOpen);
+        Assert.True(backend.LocalOwned);
+        Assert.Equal(TakeImageMode.Live, session.OpenedMode);
+        Assert.Equal(0, stopped);
+        Assert.Empty(native.Events);
+        Assert.Equal(0, native.Closes);
+
+        native.OnPrepareMeasurement = null;
+        session.EnsureMeasurement(false);
+        Assert.Equal(2, native.MeasurementPreparations);
+        Assert.Equal(1, stopped);
+        Assert.Equal(new[] { "detach", "switch" }, native.Events);
+        Assert.Equal(TakeImageMode.Measure_Normal, session.OpenedMode);
+        Assert.True(config.IsExpThree);
+    }
+
+    [Theory]
+    [InlineData(TakeImageMode.Live)]
+    [InlineData(TakeImageMode.Measure_Normal)]
+    public void CvRoundTripsReuseWheelPreparationUntilTheRealClose(TakeImageMode firstMode)
+    {
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        var config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("cv-camera", firstMode, firstMode == TakeImageMode.Live ? 8 : 16);
+        session.SwitchMode(TakeImageMode.Measure_Normal, 16);
+        session.SwitchMode(TakeImageMode.Live, 8);
+        session.SwitchMode(TakeImageMode.Measure_Normal, 16);
+        Assert.Equal(1, native.MeasurementPreparations);
+        Assert.Equal(0, native.Closes);
+        Assert.Equal(1, native.Opens);
+
+        session.Close(true);
+        session.Open("cv-camera", TakeImageMode.Live, 8);
+        Assert.Equal(1, native.MeasurementPreparations);
+        session.EnsureMeasurement(false);
+        Assert.Equal(2, native.MeasurementPreparations);
+        Assert.Equal(1, native.Closes);
+    }
+
+    [Fact]
+    public void FailedCvPhotoOpenDoesNotPreventVideoAndPreparationIsRetriedForPhoto()
+    {
+        var native = new FakeNative { OpenResult = -10009, SwitchResult = 1 };
+        var config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, ImageBpp = ImageBpp.bpp16 };
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(native, backend, config);
+        Assert.Equal(-10009, session.Open("cv-camera", TakeImageMode.Measure_Normal, 16));
+        Assert.False(backend.LocalOwned);
+        Assert.Equal(1, native.MeasurementPreparations);
+        native.OpenResult = 1;
+        session.Open("cv-camera", TakeImageMode.Live, 8);
+        Assert.Equal(1, native.MeasurementPreparations);
+        session.EnsureMeasurement(false);
+        Assert.Equal(2, native.MeasurementPreparations);
+    }
+
+    [Theory]
+    [InlineData(CameraModel.HK_USB, CameraMode.BV_MODE)]
+    [InlineData(CameraModel.HK_CARD, CameraMode.LV_MODE)]
+    [InlineData(CameraModel.HK_USB, CameraMode.LVTOBV_MODE)]
+    public void HkModesDoNotPrepareAFilterWheel(CameraModel model, CameraMode mode)
+    {
+        var native = new FakeNative { SwitchResult = 1, OnPrepareMeasurement = () => throw new InvalidOperationException("No CFW") };
+        var config = new ConfigCamera { CameraModel = model, CameraMode = mode, ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("hk-camera", TakeImageMode.Measure_Normal, 16);
+        session.SwitchMode(TakeImageMode.Live, 8);
+        session.EnsureMeasurement(false);
+        Assert.Equal(0, native.MeasurementPreparations);
+        Assert.Equal(0, native.Closes);
+        Assert.True(native.OpenedUseHikMvs);
+        Assert.Equal(16, native.LastBpp);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SerialFilterWheelUsesPhysicalSettingsAndFallsBackToLogicalSettings(bool physical)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = CameraMode.CV_MODE };
+        CFWPORT settings = new() { IsUseCFW = true, IsCOM = true, SzComName = " com7 ", BaudRate = 9600 };
+        if (physical)
+        {
+            var camera = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+            camera.Config = new ConfigPhyCamera { CFW = settings };
+            device.PhyCamera = camera;
+        }
+        else device.Config.CFW = settings;
+        var calls = new List<(bool Enabled, string Port, uint BaudRate)>();
+
+        LocalCameraNative.ConfigureFilterWheel(device, (enabled, port, baudRate) => { calls.Add((enabled, port, baudRate)); return 1; });
+        settings.SzComName = "COM8";
+        settings.BaudRate = 115200;
+        LocalCameraNative.ConfigureFilterWheel(device, (enabled, port, baudRate) => { calls.Add((enabled, port, baudRate)); return 1; });
+
+        Assert.Equal(new[] { (true, "COM7", 9600u), (true, "COM8", 115200u) }, calls);
+    }
+
+    [Theory]
+    [InlineData(CameraMode.CV_MODE, false, true)]
+    [InlineData(CameraMode.CV_MODE, true, false)]
+    [InlineData(CameraMode.BV_MODE, true, true)]
+    public void NonSerialConnectionsClearRetainedSerialControl(CameraMode mode, bool useFilterWheel, bool serial)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = mode, CFW = new CFWPORT { IsUseCFW = useFilterWheel, IsCOM = serial, SzComName = "invalid", BaudRate = -1 } };
+        int calls = 0;
+        LocalCameraNative.ConfigureFilterWheel(device, (enabled, port, baudRate) =>
+        {
+            Assert.False(enabled);
+            Assert.Equal(string.Empty, port);
+            Assert.Equal(9600u, baudRate);
+            calls++;
+            return 1;
+        });
+        Assert.Equal(1, calls);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10000)]
+    public void FilterWheelConfigurationFailureDoesNotContinueAsSuccess(int result)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, CFW = new CFWPORT { IsUseCFW = true, IsCOM = true, SzComName = "COM7" } };
+        var error = Assert.Throws<InvalidOperationException>(() => LocalCameraNative.ConfigureFilterWheel(device, (_, _, _) => result));
+        Assert.Contains("COM7", error.Message);
+        Assert.Contains($"CM_SetPortComParam 返回 {result}", error.Message);
+    }
+
+    [Theory]
+    [InlineData("COM0", 9600)]
+    [InlineData("COM7", 0)]
+    public void InvalidSerialFilterWheelSettingsAreRejectedBeforeCallingNativeCode(string port, int baudRate)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraMode = CameraMode.CV_MODE, CFW = new CFWPORT { IsUseCFW = true, IsCOM = true, SzComName = port, BaudRate = baudRate } };
+        Assert.Throws<InvalidOperationException>(() => LocalCameraNative.ConfigureFilterWheel(device, (_, _, _) => throw new Xunit.Sdk.XunitException("Native code must not be called.")));
+    }
+
     [Theory]
     [InlineData("bound-id", null, 0)]
     [InlineData("bound-id", "", 0)]
@@ -793,6 +953,8 @@ public class LocalCameraSessionTests
         public Exception? CloseError { get; set; }
         public int Releases;
         public int Scans, Initializations, Opens, Closes, Switches;
+        public int MeasurementPreparations;
+        public Action? OnPrepareMeasurement;
         public int SwitchResult = cvErrorDefine.CV_ERR_CAM_TYPE_NOT;
         public Action? OnSwitch;
         public readonly List<string> Events = [];
@@ -810,6 +972,7 @@ public class LocalCameraSessionTests
         }
         public IntPtr Initialize() { Initializations++; return new IntPtr(42); }
         public bool IsOpen(IntPtr handle) => opened;
+        public void PrepareMeasurement(IntPtr handle) { MeasurementPreparations++; OnPrepareMeasurement?.Invoke(); }
         public int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp)
         {
             Switches++;

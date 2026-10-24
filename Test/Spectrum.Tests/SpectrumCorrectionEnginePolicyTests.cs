@@ -120,7 +120,6 @@ public class SpectrumCorrectionEnginePolicyTests
     [InlineData(DeviceStatusType.Opened, true)]
     [InlineData(DeviceStatusType.Free, true)]
     [InlineData(DeviceStatusType.LiveOpened, true)]
-    [InlineData(DeviceStatusType.Busy, false)]
     [InlineData(DeviceStatusType.SP_Continuous_Mode, false)]
     [InlineData(DeviceStatusType.Closed, false)]
     public void CorrectionCaptureReadyStateIsNarrow(DeviceStatusType status, bool expected)

@@ -8,6 +8,7 @@ using cvColorVision;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Channel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType;
 
@@ -28,6 +29,9 @@ public sealed class LocalSmuSessionTests
         var sdk = new FakeNative();
         var session = new LocalSmuSession(sdk);
         DeviceSMU? device = null;
+        DeviceSMU? destination = null;
+        var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? previousManager = null;
         ColorVision.UI.IConfigService? previousConfig = null;
         try
         {
@@ -35,6 +39,10 @@ public sealed class LocalSmuSessionTests
             {
                 previousConfig = ColorVision.UI.ConfigService.Instance;
                 ColorVision.UI.ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                previousManager = managerField.GetValue(null);
+                var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+                manager.DeviceServices = [];
+                managerField.SetValue(null, manager);
                 device = new DeviceSMU(new() { Id = -2, Code = "synthetic-smu-" + Guid.NewGuid(),
                     Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSMU { DevName = "synthetic", DevType = Pss_Type.Keithley_2600, IsNet = configuredAsNetwork }) }, session);
                 Assert.True(device.DisplayConfig.UseLocalSmu);
@@ -44,7 +52,21 @@ public sealed class LocalSmuSessionTests
                 var display = device.DisplayConfig;
                 device.Config.Code += "-renamed";
                 Assert.Same(display, device.DisplayConfig);
+                manager.DeviceServices.Add(device);
             });
+            sdk.OpenFailureCode = configuredAsNetwork ? 6 : 3;
+            sdk.OpenDetail = "stage=synchronize, response=";
+            var failed = await Command(() => device!.DService.Open(device.Config.IsNet, device.Config.DevName));
+            Assert.Equal(MsgRecordState.Fail, failed.MsgRecordState);
+            Assert.Contains(address, failed.MsgReturn.Message);
+            Assert.Contains("stage=synchronize", failed.MsgReturn.Message);
+            if (!configuredAsNetwork)
+            {
+                Assert.Contains("115200 baud", failed.MsgReturn.Message);
+                Assert.Contains("波特率是否一致", failed.MsgReturn.Message);
+            }
+            Assert.Equal(DeviceStatusType.Closed, session.Status);
+            sdk.OpenFailureCode = 0;
             var opened = await Command(() => device!.DService.Open(device.Config.IsNet, device.Config.DevName));
             Assert.Equal(MsgRecordState.Success, opened.MsgRecordState);
             Assert.Equal(DeviceStatusType.Opened, session.Status);
@@ -60,13 +82,34 @@ public sealed class LocalSmuSessionTests
             var invalid = await Command(() => device!.DService.GetData(true, double.NaN, 1, Channel.B)!);
             Assert.Equal(MsgRecordState.Fail, invalid.MsgRecordState);
             Assert.Equal(0, sdk.Measurements);
+            WpfTestHost.Invoke(() =>
+            {
+                destination = new DeviceSMU(new() { Id = -3, Code = "occupied-smu-" + Guid.NewGuid(),
+                    Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSMU { DevType = Pss_Type.Keithley_2600,
+                        IsNet = configuredAsNetwork }) }, new LocalSmuSession(new FakeNative()));
+                if (configuredAsNetwork) device!.Config.IpAddress = destination.Config.IpAddress = "192.0.2.77";
+                else device!.Config.SerialPort = destination.Config.SerialPort = "COM77";
+                ServiceManager.Current!.DeviceServices.Add(destination);
+                destination.SmuBackend.SetLocalStatus(DeviceStatusType.Opened);
+            });
+            var occupied = await Command(() => device!.DService.Open(device.Config.IsNet, device.Config.DevName));
+            Assert.Equal(MsgRecordState.Fail, occupied.MsgRecordState);
+            Assert.Equal(0, sdk.Closes);
+            Assert.Equal(2, sdk.Opens);
+            Assert.Equal(MsgRecordState.Success, (await Command(() => device!.DService.CloseOutput())).MsgRecordState);
+            Assert.Single(sdk.ClosedOutputs);
             Assert.Equal(MsgRecordState.Success, (await Command(() => device!.DService.Close())).MsgRecordState);
             Assert.Equal(DeviceStatusType.Closed, session.Status);
+            Assert.True(destination!.SmuBackend.LocalOwned);
             WpfTestHost.Invoke(() => Assert.False(device!.SmuBackend.OpensLocally));
         }
         finally
         {
-            WpfTestHost.Invoke(() => { device?.Dispose(); if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig); });
+            WpfTestHost.Invoke(() =>
+            {
+                device?.Dispose(); destination?.Dispose(); managerField.SetValue(null, previousManager);
+                if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig);
+            });
             await session.DisposeAsync();
         }
         static Task<MsgRecord> Command(Func<MsgRecord> send)
@@ -106,12 +149,52 @@ public sealed class LocalSmuSessionTests
         Assert.Equal(Channel.B, read.Parameters.Channel);
         Assert.Equal(voltage, read.Parameters.IsSourceV);
         Assert.Equal(12, read.I);
-        Assert.Equal(12, LocalSmuResultService.CreateMeasurement(point, "synthetic").IResult);
+        var stored = LocalSmuResultService.CreateMeasurement(point, "synthetic");
+        Assert.Equal(12, stored.IResult);
+        Assert.Equal((float)source, stored.SrcValue);
+        Assert.Equal((float)limit, stored.LimitValue);
+        Assert.Equal(point.TotalTime, stored.TotalTime);
+        var view = new ColorVision.Engine.Services.Devices.SMU.Views.ViewResultSMU(stored);
+        Assert.Equal((float)source, view.LimitStart);
+        Assert.Equal((float)limit, view.LimitEnd);
+        Assert.Equal(point.TotalTime, view.TotalTime);
         dynamic response = LocalSmuResultService.Response(point, 0);
         Assert.Equal(12d, (double)response.I);
         await session.CloseAsync();
         Assert.Equal(new[] { Channel.B }, sdk.ClosedOutputs);
         Assert.Equal(DeviceStatusType.Closed, session.Status);
+    }
+
+    // A node override must preserve zero and must not become the next caller's device default.
+    [Fact]
+    public async Task MeasurementDelayChangesAndOverridesAreScopedAndValidatedBeforeNativeCalls()
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config() with { DelayTime = 100 };
+        await session.OpenAsync(config);
+        var zero = await session.CaptureAsync(config, Point() with { MeasureDelayMs = 0 }, false, true, true);
+        Assert.Equal(0d, zero.Parameters.MeasureDelayMs);
+        await session.CaptureAsync(config, Point(Channel.B) with { MeasureDelayMs = 25 }, false, true, true);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        await session.CaptureAsync(config, Point(), false, false, false, read: true);
+        await session.CaptureAsync(config, Point() with { MeasureDelayMs = 0, BeginValue = 1, EndValue = 2, Points = 2 }, true, true, true);
+        await session.CaptureAsync(config, Point(), false, false, true);
+        config = config with { DelayTime = 40 };
+        await session.OpenAsync(config);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        await session.CaptureAsync(config with { DelayTime = 0 }, Point(), false, true, true);
+        Assert.Equal(new double[] { 100, 0, 25, 100, 0, 100, 40, 0 }, sdk.AppliedDelays);
+        Assert.Equal(1, sdk.Opens);
+        int measurements = sdk.Measurements;
+        foreach (double delay in new[] { -1d, double.NaN, double.PositiveInfinity })
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config, Point() with { MeasureDelayMs = delay }, false, true, true));
+            await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config with { DelayTime = delay }, Point(), false, true, true));
+        }
+        Assert.Equal(measurements, sdk.Measurements);
+        Assert.Equal(8, sdk.AppliedDelays.Count);
+        Assert.Equal(0, sdk.Closes);
     }
 
     [Fact]
@@ -337,17 +420,34 @@ public sealed class LocalSmuSessionTests
         Assert.Equal(new[] { Channel.A }, sdk.ClosedOutputs);
     }
 
-    [Fact]
-    public async Task FailedOpenReleasesHandleAndEndpoint()
+    [Theory]
+    [InlineData(-1, 1, 0)]
+    [InlineData(0, 0, 0)]
+    [InlineData(0, 1, 4)]
+    public async Task FailedOpenReportsAttemptAndReleasesHandleAndEndpoint(int openCode, int wiringCode, int failureCode)
     {
-        var sdk = new FakeNative { WiringCode = 0 };
+        var sdk = new FakeNative { OpenCode = openCode, WiringCode = wiringCode, OpenFailureCode = failureCode,
+            OpenDetail = "stage=reset status, response=TSP?, instrument=-100, synthetic error" };
         await using var session = new LocalSmuSession(sdk);
-        var config = Config();
-        await Assert.ThrowsAsync<InvalidOperationException>(() => session.OpenAsync(config));
-        Assert.Equal(1, sdk.Closes);
+        var config = Config() with { BaudRate = 57600 };
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => session.OpenAsync(config));
+        Assert.Contains(config.DeviceName, error.Message);
+        Assert.Contains("57600 baud", error.Message);
+        Assert.Contains(wiringCode == 0 ? "设置接线" : "打开连接", error.Message);
+        if (failureCode == 4)
+        {
+            Assert.Contains("TSP?", error.Message);
+            Assert.Contains("instrument=-100, synthetic error", error.Message);
+        }
+        Assert.Equal(wiringCode == 0 ? 1 : 0, sdk.Closes);
         Assert.Equal(DeviceStatusType.Closed, session.Status);
         await using var contender = new LocalSmuSession(new FakeNative());
         await contender.OpenAsync(config);
+        await contender.CloseAsync();
+        sdk.OpenCode = 0; sdk.WiringCode = 1; sdk.OpenFailureCode = 0;
+        await session.OpenAsync(config with { BaudRate = 115200 });
+        Assert.Equal(115200, sdk.OpenedConnection!.BaudRate);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
     }
 
     [Fact]
@@ -373,23 +473,135 @@ public sealed class LocalSmuSessionTests
     }
 
     [Fact]
-    public async Task InvalidSweepAndChangedConnectionNeverReachMeasurement()
+    public async Task InvalidSweepNeverReconnectsOrReachesMeasurement()
     {
         var sdk = new FakeNative();
         await using var session = new LocalSmuSession(sdk);
         var config = Config();
         await session.OpenAsync(config);
-        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config,
+        var changed = config with { BaudRate = 115200 };
+        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(changed,
             Point() with { BeginValue = 50, EndValue = 1, Points = 3 }, true, false, true));
-        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config,
+        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(changed,
             Point() with { Points = 1 }, true, false, true));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config with { DelayTime = 20 }, Point(), false, false, true));
-        var faster = config with { BaudRate = 115200 };
-        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(faster, Point(), false, false, true));
+        Assert.Equal(1, sdk.Opens);
+        Assert.Equal(0, sdk.Closes);
         Assert.Equal(0, sdk.Measurements);
-        await session.CloseAsync();
-        await session.OpenAsync(faster);
-        Assert.Equal(115200, sdk.OpenedConnection!.BaudRate);
+    }
+
+    // Reconnect is a serialized resource handover, not a retry of a completed output operation.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public async Task ChangedOpenSettingsReconnectBeforeMeasurementAndPreserveOwnership(int change)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        await using var contender = new LocalSmuSession(new FakeNative());
+        var config = Config();
+        await session.OpenAsync(config);
+        object owner = new();
+        using var lease = await session.AcquireFlowLeaseAsync(owner, () => false);
+        lease.ConfigureChannel(Channel.A, true);
+        var first = await session.CaptureAsync(config, Point(), false, true, true, flowOwner: owner);
+        var changed = change switch
+        {
+            0 => config with { DeviceName = config.DeviceName + "-other" },
+            1 => config with { DeviceType = Pss_Type.Keithley_2400 },
+            2 => config with { IsNet = true },
+            3 => config with { Is4Wire = !config.Is4Wire },
+            4 => config with { IsFront = !config.IsFront },
+            _ => config with { BaudRate = 115200 }
+        };
+        bool ownershipChecked = false;
+        void CheckOwnership(DeviceStatusType status)
+        {
+            if (status != DeviceStatusType.Closed) return;
+            Assert.Throws<InvalidOperationException>(() => contender.OpenAsync(changed).GetAwaiter().GetResult());
+            ownershipChecked = true;
+        }
+        sdk.Events.Clear();
+        sdk.SweepCapabilities = 3;
+        session.StatusChanged += CheckOwnership;
+        try { await session.CaptureAsync(changed, Point(), false, true, true, flowOwner: owner); }
+        finally { session.StatusChanged -= CheckOwnership; }
+        Assert.True(ownershipChecked);
+        Assert.Equal(new[] { "off:A", "close", "open", "measure:A" }, sdk.Events);
+        Assert.Equal(changed, sdk.OpenedConnection);
+        Assert.Equal(2, sdk.Opens);
+        Assert.Equal(1, sdk.Closes);
+        Assert.Equal(2, sdk.Measurements);
+        Assert.Equal(3, session.SweepCapabilities);
+        await session.CloseOutputAsync(Channel.A, expectedGeneration: first.Generation, flowOwner: owner);
+        Assert.Single(sdk.ClosedOutputs);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.OpenAsync(changed));
+        await session.OpenAsync(changed, flowOwner: owner);
+        Assert.Equal(2, sdk.Opens);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedReconnectCleanupNeverOpensDestinationAndRetainsOldOwnership(bool outputCloseFails)
+    {
+        var sdk = new FakeNative();
+        var session = new LocalSmuSession(sdk);
+        var config = Config();
+        var changed = config with { DeviceName = config.DeviceName + "-other" };
+        try
+        {
+            await session.OpenAsync(config);
+            await session.CaptureAsync(config, Point(), false, true, true);
+            sdk.CloseOutputCode = outputCloseFails ? 0 : 1;
+            sdk.CloseCode = outputCloseFails ? 1 : 0;
+            await Assert.ThrowsAsync<AggregateException>(() => session.CaptureAsync(changed, Point(), false, true, true));
+            Assert.Equal(DeviceStatusType.Unknown, session.Status);
+            Assert.Equal(1, sdk.Opens);
+            Assert.Equal(1, sdk.Measurements);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => session.OpenAsync(changed));
+            await using var contender = new LocalSmuSession(new FakeNative());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => contender.OpenAsync(config));
+            await contender.OpenAsync(changed);
+        }
+        finally { sdk.CloseCode = sdk.CloseOutputCode = 1; await session.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task FailedReconnectOpenNeverRetriesMeasurementAndReleasesDestination()
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        sdk.OpenCode = -1;
+        var changed = config with { BaudRate = 115200 };
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(changed, Point(), false, true, true));
+        Assert.Equal(2, sdk.Opens);
+        Assert.Equal(1, sdk.Measurements);
+        Assert.Equal(DeviceStatusType.Closed, session.Status);
+        await using var contender = new LocalSmuSession(new FakeNative());
+        await contender.OpenAsync(changed);
+    }
+
+    [Fact]
+    public async Task ReadingPreviousResultAndClosingOutputNeverReconnect()
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config with { IsFront = !config.IsFront },
+            Point(), false, false, true, read: true));
+        await session.CloseOutputAsync(Channel.A);
+        Assert.Equal(1, sdk.Opens);
+        Assert.Equal(0, sdk.Closes);
+        Assert.Single(sdk.ClosedOutputs);
     }
 
     [Fact]
@@ -411,22 +623,182 @@ public sealed class LocalSmuSessionTests
         Assert.False(backend.OpensLocally);
     }
 
+    [Fact]
+    public async Task FlowLeaseKeepsOutputAcrossPointsAndRejectsInterleavedCommands()
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        var owner = new object();
+        using var lease = await session.AcquireFlowLeaseAsync(owner, () => false);
+        Assert.Same(lease, await session.AcquireFlowLeaseAsync(owner, () => false));
+        lease.ConfigureChannel(Channel.B, true);
+        await session.OpenAsync(config, flowOwner: owner);
+        await session.CaptureAsync(config, Point(Channel.B), false, true, true, flowOwner: owner);
+        await session.CaptureAsync(config, Point(Channel.B) with { MeasureValue = 6 }, false, true, true, flowOwner: owner);
+        Assert.Empty(sdk.ClosedOutputs);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config, Point(), false, true, true));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CloseOutputAsync(Channel.B));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.AcquireFlowLeaseAsync(new object(), () => false));
+        Assert.Throws<InvalidOperationException>(() => { _ = session.CloseAsync(); });
+        Assert.Equal(2, sdk.Measurements);
+        lease.Dispose();
+        Assert.Equal(new[] { Channel.B }, sdk.ClosedOutputs);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        Assert.Equal(3, sdk.Measurements);
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, true)]
+    public async Task FlowLeaseClosesOnlyAtFlowReleaseAndHonorsSuccessfulKeepOutput(bool closeOnFinish, bool failed, bool shouldClose)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        var owner = new object();
+        var lease = await session.AcquireFlowLeaseAsync(owner, () => failed);
+        lease.ConfigureChannel(Channel.B, closeOnFinish);
+        await session.OpenAsync(config, flowOwner: owner);
+        await session.CaptureAsync(config, Point(Channel.B), false, true, true, flowOwner: owner);
+        Assert.Empty(sdk.ClosedOutputs);
+        lease.Dispose();
+        lease.Dispose();
+        Assert.Equal(shouldClose ? 1 : 0, sdk.ClosedOutputs.Count);
+        await session.CloseAsync();
+        Assert.Single(sdk.ClosedOutputs);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public async Task RepeatScanPreservesRequestedSourcesAndActualMeasurements(bool list, bool voltageSource)
+    {
+        var sdk = new FakeNative { SweepCapabilities = 3 };
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        Assert.Equal(3, session.SweepCapabilities);
+        sdk.SweepCapabilities = 0;
+        Assert.Equal(3, session.SweepCapabilities);
+        var parameters = Scan(list, voltageSource);
+        var capture = await session.CaptureAsync(config, parameters, true, false, true);
+        Assert.Equal(list ? 0 : 1, sdk.Sweeps);
+        Assert.Equal(list ? 1 : 0, sdk.Lists);
+        Assert.Equal(0, sdk.PointMeasurements);
+        Assert.Equal(parameters.SourceValues, capture.Parameters.SourceValues);
+        Assert.Equal(parameters.IsAutoRng, sdk.ScanParameters!.IsAutoRng);
+        Assert.Equal(parameters.SrcRng, sdk.ScanParameters.SrcRng);
+        Assert.Equal(parameters.LmtRng, sdk.ScanParameters.LmtRng);
+        if (list) Assert.Equal(parameters.SourceValues, sdk.ListSourceValues);
+        Assert.Equal(new double[] { 1, 2, 3 }, capture.Voltages);
+        Assert.Equal(new double[] { 10, 20, 30 }, capture.Currents);
+        Assert.Equal(3, capture.V);
+        Assert.Equal(30, capture.I);
+        var response = LocalSmuResultService.Response(capture, 0);
+        Assert.Equal(parameters.SourceValues!.Select(parameters.NativeSource).ToArray(), response["ScanList"]!.ToObject<double[]>());
+        Assert.Equal(new double[] { 0.01, 0.02, 0.03 }, response["IList"]!.ToObject<double[]>());
+        Assert.Equal(new double[] { 0.01, 0.02, 0.03 }, JArray.Parse(LocalSmuResultService.CreateScan(capture, "synthetic").IResult!).ToObject<double[]>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedRepeatScanClosesOutputWithoutRetryingPointMeasurements(bool list)
+    {
+        var sdk = new FakeNative { SweepCapabilities = 3, SweepCode = 0, ListCode = 0 };
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config, Scan(list), true, false, true));
+        Assert.Equal(1, sdk.Sweeps + sdk.Lists);
+        Assert.Equal(0, sdk.PointMeasurements);
+        Assert.Equal(new[] { Channel.B }, sdk.ClosedOutputs);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CanceledRepeatScanKeepsHandleUntilNativeReturnsAndNeverRetriesPoints(bool list)
+    {
+        var sdk = new FakeNative { SweepCapabilities = 3, BlockCapture = true };
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        using var stop = new CancellationTokenSource();
+        Task scanning = session.CaptureAsync(config, Scan(list), true, false, true, token: stop.Token);
+        try
+        {
+            await sdk.CaptureStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            stop.Cancel();
+            Assert.False(scanning.IsCompleted);
+            Assert.Empty(sdk.ClosedOutputs);
+            Assert.Equal(0, sdk.Closes);
+        }
+        finally { sdk.Release.TrySetResult(); }
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => scanning);
+        Assert.Equal(1, sdk.Sweeps + sdk.Lists);
+        Assert.Equal(0, sdk.PointMeasurements);
+        Assert.Equal(new[] { Channel.B }, sdk.ClosedOutputs);
+        Assert.Equal(1, sdk.Closes);
+        Assert.Equal(DeviceStatusType.Closed, session.Status);
+    }
+
+    [Fact]
+    public async Task RepeatListValidatesEverySourceBeforeStartingNativeMeasurement()
+    {
+        var sdk = new FakeNative { SweepCapabilities = 3 };
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        var parameters = Scan(true) with { BeginValue = 1, EndValue = 2, SourceValues = [1, 250, 2] };
+        await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config, parameters, true, false, true));
+        Assert.Equal(0, sdk.Sweeps + sdk.Lists + sdk.PointMeasurements);
+        Assert.Empty(sdk.ClosedOutputs);
+    }
+
+    private static LocalSmuParameters Scan(bool list, bool voltageSource = true)
+    {
+        double[] values = list ? [3, 1, 4] : [1, 2, 3];
+        return Point(Channel.B) with
+        {
+            IsSourceV = voltageSource, MeasureValue = values[0], BeginValue = values[0], EndValue = values[^1], Points = values.Length,
+            IsAutoRng = false, SrcRng = voltageSource ? 20 : 0.1, LmtRng = voltageSource ? 0.1 : 20, SourceValues = values, IsListSweep = list
+        };
+    }
+
     private sealed class FakeNative : ILocalSmuNative
     {
+        internal int OpenCode, OpenFailureCode, Opens;
+        internal string OpenDetail = string.Empty;
         internal int WiringCode = 1, CloseCode = 1, MeasureCode = 1, CloseOutputCode = 1, Closes, Measurements;
+        internal int SweepCapabilities, SweepCode = 1, ListCode = 1, Sweeps, Lists, PointMeasurements;
         internal bool BlockCapture;
         internal double LastSource, LastLimit;
         internal LocalSmuParameters? ScanParameters;
+        internal double[]? ListSourceValues;
         internal LocalSmuConnection? OpenedConnection;
         internal readonly TaskCompletionSource CaptureStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal readonly List<string> Events = [];
+        internal readonly List<double> AppliedDelays = [];
         internal readonly List<Channel> ClosedOutputs = [];
         private Channel channel;
-        public int Open(LocalSmuConnection c) { OpenedConnection = c; return 0; } // Zero is a valid SDK handle.
+        public int Open(LocalSmuConnection c)
+        {
+            Events.Add("open");
+            Opens++;
+            OpenedConnection = c;
+            if (OpenFailureCode != 0) throw LocalSmuNative.OpenFailure(OpenFailureCode, OpenDetail);
+            return OpenCode; // Zero is a valid SDK handle.
+        }
         public int GetIdn(int h, StringBuilder text, ref int length) { text.Append("synthetic SMU"); return 1; }
         public int SetWiring(int h, bool wire, bool front) => WiringCode;
-        public int SetDelay(int h, double delay) => 1;
+        public int SetDelay(int h, double delay) { AppliedDelays.Add(delay); return 1; }
         public int SetChannel(int h, bool channelA) { channel = channelA ? Channel.A : Channel.B; return 1; }
         public int SetSource(int h, bool voltage) => 1;
         private void Capture()
@@ -437,6 +809,7 @@ public sealed class LocalSmuSessionTests
         }
         public int Measure(int h, LocalSmuParameters p, bool step, ref double v, ref double i)
         {
+            PointMeasurements++;
             Events.Add("measure:" + channel); Capture();
             LastSource = p.NativeSource(p.MeasureValue); LastLimit = p.NativeLimit;
             v = 5; i = 0.012; return MeasureCode;
@@ -444,11 +817,20 @@ public sealed class LocalSmuSessionTests
         public int Read(int h, ref double v, ref double i) { v = 5; i = 0.012; return 1; }
         public int Sweep(int h, LocalSmuParameters p, double[] v, double[] i)
         {
-            Events.Add("scan:" + channel); Capture(); ScanParameters = p;
+            Sweeps++; ScanParameters = p;
+            Events.Add("scan:" + channel); Capture();
             for (int index = 0; index < v.Length; index++) { v[index] = index + 1; i[index] = (index + 1) * 0.01; }
-            return 1;
+            return SweepCode;
+        }
+        public int GetSweepCapabilities(int h) => SweepCapabilities;
+        public int List(int h, LocalSmuParameters p, double[] sourceValues, double[] v, double[] i)
+        {
+            Lists++; ScanParameters = p; ListSourceValues = (double[])sourceValues.Clone();
+            Events.Add("list:" + channel); Capture();
+            for (int index = 0; index < v.Length; index++) { v[index] = index + 1; i[index] = (index + 1) * 0.01; }
+            return ListCode;
         }
         public int CloseOutput(int h) { Events.Add("off:" + channel); ClosedOutputs.Add(channel); return CloseOutputCode; }
-        public int Close(int h) { Closes++; return CloseCode; }
+        public int Close(int h) { Events.Add("close"); Closes++; return CloseCode; }
     }
 }

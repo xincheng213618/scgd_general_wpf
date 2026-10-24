@@ -51,57 +51,72 @@
         <TabControl Grid.Row="1" BorderThickness="0" Background="Transparent" Padding="0">
             <TabItem Header="{x:Static res:Resources.CVWindowsService}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding Services}" Margin="0,8,0,12">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,0,0,1" Padding="0,20">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
-                                            <WrapPanel>
-                                                <TextBlock Text="{Binding DisplayName}" FontSize="17" FontWeight="SemiBold" ToolTip="{Binding ExePath}" />
-                                                <TextBlock Text="{Binding VersionText}" Style="{StaticResource ServiceSubtitle}" Margin="10,3,0,0" />
-                                            </WrapPanel>
-                                            <TextBlock Text="{Binding ServiceName}" Style="{StaticResource ServiceSubtitle}" Margin="0,7,0,0" TextTrimming="CharacterEllipsis" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource ServiceStatus}" HorizontalAlignment="Right" Margin="0,0,0,10" />
-                                            <StackPanel Orientation="Horizontal">
-                                                <Button Content="{x:Static res:Resources.Start}" Style="{StaticResource ServiceStartAction}"
-                                                        Command="{Binding DataContext.ServiceStartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-                                                <Button Content="{x:Static res:Resources.Stop}" Style="{StaticResource ServiceStopAction}"
-                                                        Command="{Binding DataContext.ServiceStopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-                                                <Button Content="{x:Static res:Resources.Restart}" Margin="8,0,0,0"
-                                                        Command="{Binding DataContext.ServiceRestartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-                                                <Button Content="•••" Margin="8,0,0,0" MinWidth="36" Padding="10,7"
-                                                        ToolTip="{x:Static res:Resources.MoreActions}" AutomationProperties.Name="{x:Static res:Resources.MoreActions}"
-                                                        Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}" Click="OpenActionsMenu">
-                                                    <Button.ContextMenu>
-                                                        <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
-                                                            <MenuItem Header="{x:Static res:Resources.OpenFolder}" Command="{Binding OpenFolderCommand}"
-                                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                            <MenuItem Header="{x:Static res:Resources.ClearServiceLogs}" Command="{Binding ClearServiceLogsCommand}"
-                                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                            <Separator />
-                                                            <MenuItem Header="{x:Static res:Resources.Install}" Command="{Binding ServiceInstallCommand}"
-                                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                            <MenuItem Header="{x:Static res:Resources.Uninstall}" Command="{Binding ServiceUninstallCommand}"
-                                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                            <MenuItem Header="{x:Static res:Resources.Terminate}" Command="{Binding ServiceTerminateCommand}"
-                                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                        </ContextMenu>
-                                                    </Button.ContextMenu>
-                                                </Button>
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Services}" Margin="0,8,0,12">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,0,0,1" Padding="0,20">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
+                                                <WrapPanel>
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="17" FontWeight="SemiBold" ToolTip="{Binding ExePath}" />
+                                                    <TextBlock Text="{Binding VersionText}" Style="{StaticResource ServiceSubtitle}" Margin="10,3,0,0" />
+                                                </WrapPanel>
+                                                <TextBlock Text="{Binding ServiceName}" Style="{StaticResource ServiceSubtitle}" Margin="0,7,0,0" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding StatusText}" Style="{StaticResource ServiceStatus}" HorizontalAlignment="Right" Margin="0,0,0,10" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="{x:Static res:Resources.Start}" Style="{StaticResource ServiceStartAction}"
+                                                            Command="{Binding DataContext.ServiceStartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                                    <Button Content="{x:Static res:Resources.Stop}" Style="{StaticResource ServiceStopAction}"
+                                                            Command="{Binding DataContext.ServiceStopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                                    <Button Content="{x:Static res:Resources.Restart}" Margin="8,0,0,0"
+                                                            Command="{Binding DataContext.ServiceRestartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                                    <Button Content="•••" Margin="8,0,0,0" MinWidth="36" Padding="10,7"
+                                                            ToolTip="{x:Static res:Resources.MoreActions}" AutomationProperties.Name="{x:Static res:Resources.MoreActions}"
+                                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}" Click="OpenActionsMenu">
+                                                        <Button.ContextMenu>
+                                                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                                                <MenuItem Header="{x:Static res:Resources.OpenFolder}" Command="{Binding OpenFolderCommand}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{x:Static res:Resources.ClearServiceLogs}" Command="{Binding ClearServiceLogsCommand}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{x:Static res:Resources.RemoveArchiveServiceMonitoring}" Command="{Binding RemoveArchiveServiceMonitoringCommand}"
+                                                                          ToolTip="{x:Static res:Resources.RemoveArchiveServiceMonitoringToolTip}">
+                                                                    <MenuItem.Style>
+                                                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding PlacementTarget.DataContext.ServiceName, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Value="RegistrationCenterService">
+                                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </MenuItem.Style>
+                                                                </MenuItem>
+                                                                <Separator />
+                                                                <MenuItem Header="{x:Static res:Resources.Install}" Command="{Binding ServiceInstallCommand}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{x:Static res:Resources.Uninstall}" Command="{Binding ServiceUninstallCommand}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{x:Static res:Resources.Terminate}" Command="{Binding ServiceTerminateCommand}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                            </ContextMenu>
+                                                        </Button.ContextMenu>
+                                                    </Button>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </ScrollViewer>
             </TabItem>
 

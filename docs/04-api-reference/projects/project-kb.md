@@ -36,6 +36,8 @@ related: ["projects.index","projects.capabilities"]
 
 `ProjectKBWindow` 初始化 FlowEngine；选择 Flow 模板时，用模板名调用 `RecipeManager.SetCurrentTemplate(Name)`。`AutoModbusConnect` 打开时，窗口启动后连接 Modbus 并订阅 `StatusChanged`。PLC 把寄存器写为 `1` 后触发 `RunTemplate()`；SN 为空且启用 `IgnoreAutoRunWhenSnEmpty` 时，本次自动触发会被忽略并写回 `0`。Flow 完成后 `Processing()` 读取 `KB`/`KB_Raw` 和 `POI_Y`/`POI_Y_V2`，计算每个按键亮度、局部对比度、均匀性和不良点，保存数据库、txt、summary、CSV，最后 Modbus 写回 `0`，必要时调用 MES `Collect_test`。
 
+产品 SN 保留原值用于结果、文本内容和 MES；生成测试记录 txt 与生产汇总 txt 的文件名时，使用公共 Windows 文件名规范化规则处理非法字符。执行流程的 `Code` 继续使用独立时间戳，并与 MySQL 批次、诊断记录和完成回调保持一致。
+
 ## 界面主题
 
 测试工具栏下方与 ARVRPro、LUX 共用 `ColorVision.UI.Controls.FlowExecutionStatus` 紧凑状态栏，普通提示一行、长错误最多两行，状态文字和提示保持相同行高。窄窗口优先显示提示，完整内容通过“详情”查看、选择和复制。管理员自动退出、空 SN 触发忽略和服务重启提示继续显示，MES 返回仍追加到当前提示并在详情内保留原文；控件不解释 MES 返回码，也不改变业务判定、上传及结果持久化。流程完成后停止计时，排队刷新不得覆盖最终状态。

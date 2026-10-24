@@ -12,6 +12,7 @@ namespace ProjectARVRPro.Flow;
 [STNode("", "ExternalSwitch_Title")]
 public sealed class ExternalImageSwitchNode : LocalFlowNodeBase
 {
+    private int testType;
     private int timeoutMs = 5000;
     private int delayMs;
     private bool requireMatchingMsgId;
@@ -28,6 +29,10 @@ public sealed class ExternalImageSwitchNode : LocalFlowNodeBase
         this.service = service;
         this.productSerialNumber = productSerialNumber;
     }
+
+    [Category("ExternalSwitch_Title")]
+    [STNodeProperty("ExternalSwitch_TestTypeLabel", "ExternalSwitch_TestTypeDescription", true)]
+    public int TestType { get => testType; set { testType = value; OnPropertyChanged(); } }
 
     [Category("ExternalSwitch_Title")]
     [STNodeProperty("ExternalSwitch_TimeoutLabel", "ExternalSwitch_TimeoutDescription", true)]
@@ -51,7 +56,7 @@ public sealed class ExternalImageSwitchNode : LocalFlowNodeBase
         action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
         // The flow serial number identifies a measurement run; the wire protocol uses the product SN.
         ExternalImageSwitchResult result = service.ExecuteAsync(
-            productSerialNumber(), TimeoutMs, DelayMs, RequireMatchingMsgId,
+            productSerialNumber(), TestType, TimeoutMs, DelayMs, RequireMatchingMsgId,
             action.RuntimeResources.StopToken).GetAwaiter().GetResult();
         return new LocalNodeExecutionResult { Message = DisplayText.Get("ExternalSwitch_Completed"), Data = result };
     }
@@ -59,6 +64,6 @@ public sealed class ExternalImageSwitchNode : LocalFlowNodeBase
     protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new
     {
         EventName = ExternalImageSwitchService.RequestEvent, FlowRunId = action.SerialNumber,
-        TimeoutMs, DelayMs, RequireMatchingMsgId
+        TestType, TimeoutMs, DelayMs, RequireMatchingMsgId
     });
 }

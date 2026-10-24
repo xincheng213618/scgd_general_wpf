@@ -18,6 +18,7 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotConnectProviderOption
     {
+        public bool IsLocalCodex { get; init; }
         public string GroupName { get; init; } = string.Empty;
 
         public string IconText { get; init; } = string.Empty;

@@ -203,8 +203,7 @@ namespace ColorVision.Copilot
             if (ProfileSelectorPopup.IsOpen)
             {
                 _rewindEscapeGesture.Reset();
-                CloseProfileSelectorPopup();
-                e.Handled = true;
+                ProfileSelectorContent_PreviewKeyDown(ProfileSelectorContent, e);
                 return;
             }
 
@@ -438,6 +437,12 @@ namespace ColorVision.Copilot
         {
             if (_attachedViewModel == null)
                 return;
+
+            if (ProfileSelectorPopup.IsOpen
+                && e.PropertyName is nameof(CopilotChatViewModel.SelectedProfile)
+                    or nameof(CopilotChatViewModel.SelectedProfileReasoningOptions)
+                    or nameof(CopilotChatViewModel.CanSelectProfile))
+                RefreshProfileSelector();
 
             if (e.PropertyName == nameof(CopilotChatViewModel.IsComposerFullAccess))
                 UpdateComposerLayout();

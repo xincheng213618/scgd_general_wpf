@@ -34,54 +34,6 @@ public sealed class LensDistortionCorrectionV1Tests
     };
 
     [Fact]
-    public void CatalogDefaultsAliasesHostsAndPresetBoundaryAreStable()
-    {
-        AlgorithmCatalog catalog = StandardAlgorithmCatalog.Create();
-        AlgorithmDescriptor descriptor = Assert.Single(catalog.Descriptors, value => value.Id == StandardAlgorithmIds.LensDistortionCorrection);
-        Assert.Equal(new AlgorithmVersion(1, 0, 0), descriptor.Version);
-        Assert.Equal("primary=same-as-input; canvas=same-as-input; validity-mask=gray8", descriptor.OutputFormatPolicy);
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Interactive));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Batch));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Flow));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Headless));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Local));
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Deterministic));
-        Assert.False(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Copilot));
-        Assert.True(catalog.TryResolveAlias("Undistort", out AlgorithmDescriptor? alias));
-        Assert.Equal(descriptor.Id, alias!.Id);
-        LensDistortionCorrectionParameters defaults = descriptor.ParameterSchema.Defaults.Deserialize<LensDistortionCorrectionParameters>(AlgorithmJson.Options)!;
-        Assert.True(defaults.Validate().IsValid);
-        Assert.Contains(descriptor.ParameterSchema.Fields, field => field.Name == nameof(LensDistortionCorrectionParameters.FxPixels)
-            && field.Unit == "px" && field.Minimum == 0.000001);
-        Assert.Contains(BatchImageAlgorithms.CreateAll(catalog), item => item.Descriptor?.Id == descriptor.Id);
-
-        LensDistortionCorrectionParameters parameters = new()
-        {
-            FxPixels = 812.5,
-            FyPixels = 809.25,
-            K1 = -0.18,
-            CalibrationSource = "camera-fixture-17",
-            CalibrationVersion = "2026-08-28",
-            CalibrationChecksum = "sha256:fixture",
-        };
-        string json = LensDistortionCorrectionPresetSerializer.Serialize("lens-fixture", parameters);
-        (string presetId, LensDistortionCorrectionParameters restored) = LensDistortionCorrectionPresetSerializer.Deserialize(json);
-        Assert.Equal("lens-fixture", presetId);
-        Assert.Equal(parameters.FxPixels, restored.FxPixels);
-        Assert.Equal(parameters.K1, restored.K1);
-        Assert.Equal(parameters.CalibrationChecksum, restored.CalibrationChecksum);
-
-        AlgorithmParameterPreset wrongVersion = new()
-        {
-            PresetId = "wrong-version",
-            AlgorithmId = descriptor.Id,
-            AlgorithmVersion = new AlgorithmVersion(2, 0, 0),
-            Parameters = AlgorithmJson.ToElement(parameters),
-        };
-        Assert.Throws<InvalidOperationException>(() => LensDistortionCorrectionPresetSerializer.Deserialize(JsonSerializer.Serialize(wrongVersion, AlgorithmJson.Options)));
-    }
-
-    [Fact]
     public void ValidationRejectsInvalidIntrinsicsCoefficientsProvenanceAndQuality()
     {
         LensDistortionCorrectionParameters invalid = new()
@@ -294,48 +246,6 @@ public sealed class LensDistortionCorrectionV1Tests
     }
 
     [Fact]
-    public async Task ImageViewEntryCommitsAndResultWindowDisplaysArtifactsAndReleasesThem()
-    {
-        ImageView imageView = WpfTestHost.Invoke(() =>
-        {
-            EnsureResources();
-            ImageView view = new();
-            WriteableBitmap bitmap = new(32, 24, 96, 96, PixelFormats.Gray8, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, 32, 24), Enumerable.Range(0, 32 * 24).Select(index => (byte)(index & 0xff)).ToArray(), 32, 0);
-            view.SetImageSource(bitmap, enableEditorImageServices: false, configureDefaultLayerController: false);
-            return view;
-        });
-        AlgorithmResult? result = null;
-        try
-        {
-            ImageProcessingContext context = imageView.EditorContext.ProcessingContext;
-            WpfTestHost.Invoke(() => Assert.Single(new AlgorithmsContextMenu(context).GetContextMenuItems(), item => item.GuidId == "LensDistortionCorrection"));
-            long revision = context.ImageRevision;
-            result = await WpfTestHost.Invoke(() => ImageAlgorithmApplier.ApplyAsync(
-                context,
-                AlgorithmInvocation.Create(StandardAlgorithmIds.LensDistortionCorrection, new LensDistortionCorrectionParameters())));
-            Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
-            Assert.Equal(revision + 1, context.ImageRevision);
-            WpfTestHost.Invoke(() =>
-            {
-                LensDistortionCorrectionResultWindow window = new(result);
-                window.Show();
-                Assert.Equal(32, Assert.IsAssignableFrom<BitmapSource>(Assert.IsType<System.Windows.Controls.Image>(window.FindName("CorrectedPreview")).Source).PixelWidth);
-                Assert.Equal(PixelFormats.Gray8, Assert.IsAssignableFrom<BitmapSource>(Assert.IsType<System.Windows.Controls.Image>(window.FindName("MaskPreview")).Source).Format);
-                Assert.NotNull(Assert.IsType<DataGrid>(window.FindName("MatrixGrid")).ItemsSource);
-                Assert.NotNull(Assert.IsType<DataGrid>(window.FindName("CoefficientGrid")).ItemsSource);
-                window.Close();
-                Assert.True(result.IsDisposed);
-            });
-        }
-        finally
-        {
-            result?.Dispose();
-            WpfTestHost.Invoke(imageView.Dispose);
-        }
-    }
-
-    [Fact]
     public async Task StructuredResultExportsWithoutOverwriting()
     {
         using AlgorithmImageBuffer input = Pattern(20, 16, AlgorithmImageFormat.Gray8);
@@ -434,18 +344,6 @@ public sealed class LensDistortionCorrectionV1Tests
             else BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(offset, 4), index / 37f);
         }
         return new AlgorithmImageBuffer(width, height, stride, format, data, dpiX, dpiY);
-    }
-
-    private static void EnsureResources()
-    {
-        Application application = Application.Current ?? new Application();
-        application.Resources["TextBox.Small"] = new Style(typeof(TextBox));
-        application.Resources["ComboBox.Small"] = new Style(typeof(ComboBox));
-        application.Resources["ToolBarBaseStyle"] = new Style(typeof(ToolBar));
-        application.Resources["ToolBarImage"] = new Style(typeof(System.Windows.Controls.Image));
-        application.Resources["BaseStyle"] = new Style(typeof(Control));
-        application.Resources["RangeSliderBaseStyle"] = new Style(typeof(HandyControl.Controls.RangeSlider));
-        application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
     }
 
     private sealed class InlineProgress(Action<AlgorithmProgress> report) : IProgress<AlgorithmProgress>

@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2;
 using ColorVision.Engine.Templates.Jsons.OLEDImageProcessing;
-using ColorVision.Engine.Templates.ImageCropping;
 using Jsons = ColorVision.Engine.Templates.Jsons;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
@@ -67,9 +66,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.SFR:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR2", new Jsons.SFR2.TemplateSFR2());
-                        break;
-                    case FlowEngineLib.Algorithm.Algorithm2Type.图像裁剪:
-                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.ImageCrop, new TemplateImageCropping());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.SFR_FindROI:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new Jsons.SFRFindROI.TemplateSFRFindROI());

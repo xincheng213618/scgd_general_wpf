@@ -2,6 +2,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.UI;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Windows;
@@ -15,7 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             Prepare(device, handle, parameters, configuration);
             float[] exposure = new float[3];
             float[] saturation = new float[3];
-            int result = cvCameraCSLib.CM_GetAutoExpTime(handle, exposure, saturation);
+            int result = cvCameraCSLib.CM_GetAutoExpTimeEx(handle, exposure, saturation);
             if (result != cvErrorDefine.CV_ERR_SUCCESS)
                 throw LocalCameraCaptureService.CreateNativeException("本地自动曝光失败", result);
             ApplyExposure(parameters, exposure, device.Config.IsExpThree);
@@ -63,6 +64,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             if (device.Config.IsAutoExpWithND)
                 throw new NotSupportedException("本地自动曝光尚不支持服务的 ND 自动切换，请关闭自动曝光 ND 选项后重试。");
+            if (device.Config.IsExpThree)
+            {
+                int channelResult = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Channels, BuildChannelConfiguration(device));
+                if (channelResult != cvErrorDefine.CV_ERR_SUCCESS)
+                    throw LocalCameraCaptureService.CreateNativeException("本地自动曝光加载滤轮通道失败", channelResult);
+            }
             if (configuration != null)
             {
                 int configurationResult = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_ExpTime, configuration);
@@ -73,6 +80,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地自动曝光设置增益失败", gainResult);
             int exposureResult = cvCameraCSLib.CM_SetExpTime(handle, parameters.ExpTime);
             if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地自动曝光设置曝光失败", exposureResult);
+        }
+
+        internal static string BuildChannelConfiguration(DeviceCamera device)
+        {
+            var channels = LocalCameraCaptureService.GetChannelConfigs(device, 3);
+            if (channels.Count != 3 || channels.Select(channel => channel.ChannelType).Distinct().Count() != 3
+                || channels.Any(channel => channel.ChannelType is not (ImageChannelType.Gray_X or ImageChannelType.Gray_Y or ImageChannelType.Gray_Z)))
+                throw new InvalidOperationException("CV 自动曝光需要各一个 X、Y、Z 通道，请检查滤轮通道配置。");
+            return JsonConvert.SerializeObject(new
+            {
+                channelCfg = channels.Select(channel => new { cfwport = channel.CfwPort, chtype = channel.ChannelType })
+            });
         }
 
         private static void UpdateDisplay(DeviceCamera device, CameraRunParam parameters, float[] saturation)

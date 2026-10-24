@@ -54,7 +54,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         internal static List<SysDictionaryModDetaiModel> GetOrCreateCommandDefinitions(int templateDictionaryId)
         {
             using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            return GetOrCreateCommandDefinitions(db, templateDictionaryId);
+            var definitions = GetOrCreateCommandDefinitions(db, templateDictionaryId);
+            foreach (var definition in definitions) SymbolCache.Instance.Cache.TryAdd(definition.Id, definition);
+            return definitions;
         }
 
         internal static List<SysDictionaryModDetaiModel> GetOrCreateCommandDefinitions(SqlSugarClient db, int templateDictionaryId)
@@ -70,7 +72,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             int id = db.Queryable<SysDictionaryModDetaiModel>().Max(x => (int?)x.Id) ?? 0;
             var defaultCommand = CreateCommandDefinition(id + 1, templateDictionaryId);
             InsertCommandDefinition(db, defaultCommand);
-            SymbolCache.Instance.Cache.TryAdd(defaultCommand.Id, defaultCommand);
             return [defaultCommand];
         }
 
@@ -119,7 +120,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                        SET cc_pid = @targetItemId
                        WHERE id IN ({string.Join(", ", detailIds)})",
                     new SugarParameter("@targetItemId", commandDefinition.Id));
-                SymbolCache.Instance.Cache.TryAdd(commandDefinition.Id, commandDefinition);
                 log.Warn($"已自动重建传感器模板字典引用: templateDictionaryId={templateDictionaryId}, oldCcPid={group.Key}, newCcPid={commandDefinition.Id}");
             }
         }

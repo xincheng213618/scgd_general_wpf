@@ -1,4 +1,4 @@
-using ColorVision.SocketProtocol;
+﻿using ColorVision.SocketProtocol;
 using log4net;
 using System.Net.Sockets;
 
@@ -40,13 +40,16 @@ namespace Spectrum.Socket
                         y = result.fy,
                         u = result.fu,
                         v = result.fv,
-                        CCT = result.fCCT,
-                        Duv = result.dC,
-                        DominantWavelength = result.fLd,
+                        CCT = result.Chromaticity.ColorTemperature,
+                        Duv = result.Chromaticity.Duv,
+                        DominantWavelength = result.Chromaticity.DominantWavelength,
+                        ComplementaryWavelength = result.Chromaticity.ComplementaryWavelength,
+                        WavelengthStatus = result.Chromaticity.WavelengthStatus.ToString(),
+                        TemperatureStatus = result.Chromaticity.TemperatureStatus.ToString(),
                         PeakWavelength = result.fLp,
                         HalfBandwidth = result.fHW,
-                        ColorPurity = result.fPur,
-                        Ra = result.fRa,
+                        ColorPurity = result.Chromaticity.ExcitationPurity,
+                        Ra = result.ColorRendering.Ra,
                         result.IP,
                         result.Blue,
                         manager.IntTime

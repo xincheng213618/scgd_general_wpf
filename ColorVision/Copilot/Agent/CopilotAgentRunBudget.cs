@@ -84,7 +84,7 @@ namespace ColorVision.Copilot
             var resolved = new CopilotAgentRunBudget
             {
                 ContextWindowTokens = Clamp(
-                    requestOverride?.ContextWindowTokens ?? defaults?.ContextWindowTokens ?? CopilotAgentDefaultsConfig.DefaultContextWindowTokens,
+                    requestOverride?.ContextWindowTokens ?? (request.Profile?.ContextWindowTokens > 0 ? request.Profile.ContextWindowTokens : defaults?.ContextWindowTokens ?? CopilotAgentDefaultsConfig.DefaultContextWindowTokens),
                     CopilotAgentTokenBudget.MinimumContextWindowTokens,
                     CopilotAgentTokenBudget.MaximumContextWindowTokens),
                 RequestTokenBudget = Clamp(

@@ -53,7 +53,8 @@ namespace ColorVision.ImageEditor.Output
             BitmapSource snapshot,
             string fileName,
             ImageViewSnapshotSaveOptions options,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string? parametersJson = null)
         {
             cancellationToken.ThrowIfCancellationRequested();
             string? directory = Path.GetDirectoryName(fileName);
@@ -69,7 +70,8 @@ namespace ColorVision.ImageEditor.Output
                 },
                 _ => throw new ArgumentOutOfRangeException(nameof(options), options.Format, "Unsupported snapshot format."),
             };
-            encoder.Frames.Add(BitmapFrame.Create(snapshot));
+            encoder.Frames.Add(ImageSnapshotMetadata.CreateFrame(snapshot, parametersJson,
+                options.Format == ImageViewSnapshotFormat.Png ? "png" : "jpg"));
             SaveEncoderAtomically(encoder, fileName, cancellationToken);
         }
 
@@ -291,7 +293,7 @@ namespace ColorVision.ImageEditor.Output
 
             return new PreparedSnapshot(
                 rendered,
-                string.IsNullOrWhiteSpace(options.SourceFileName) ? null : source);
+                string.IsNullOrWhiteSpace(options.SourceFileName) ? null : source, snapshot.RenderedParametersJson);
         }
 
         private static void SavePreparedSnapshotExports(
@@ -303,7 +305,7 @@ namespace ColorVision.ImageEditor.Output
             {
                 BitmapSource rendered = prepared.Rendered
                     ?? throw new InvalidOperationException("The rendered snapshot was not prepared.");
-                SaveSnapshot(rendered, options.RenderedFileName, options.RenderedOptions, cancellationToken);
+                SaveSnapshot(rendered, options.RenderedFileName, options.RenderedOptions, cancellationToken, prepared.ParametersJson);
             }
 
             if (!string.IsNullOrWhiteSpace(options.SourceFileName))
@@ -423,7 +425,7 @@ namespace ColorVision.ImageEditor.Output
                 SnapshotEncodeWorker.MaxConcurrency));
         }
 
-        private sealed record PreparedSnapshot(BitmapSource? Rendered, BitmapSource? Source);
+        private sealed record PreparedSnapshot(BitmapSource? Rendered, BitmapSource? Source, string? ParametersJson);
 
     }
 }

@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.EditorTools.Filters;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;
@@ -41,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         [Category("高级设置")]
         [DisplayName("使用本地校正")]
-        [Description("使用进程内优化校正；关闭后通过 MQTT 校正服务执行。")]
+        [Description("使用进程内优化校正；流程中的校正及其下游实时关注点结点一起使用内部调用，实时关注点忽略高级参数。关闭后两者使用原 MQTT 服务。")]
         public bool UseLocalCalibration { get => _UseLocalCalibration; set { _UseLocalCalibration = value; OnPropertyChanged(); } }
         private bool _UseLocalCalibration = true;
 
@@ -58,6 +59,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private bool _isInitialized;
         private bool _isDisposed;
         private DeviceStatusType _deviceStatus = DeviceStatusType.Unknown;
+        private CalibrationParam? _observedCalibration;
+        private float[]? _fileExposure;
+        private bool _exposureFileExists;
 
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DService;  }
@@ -124,6 +128,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private void DisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(DisplayCalibrationConfig.IsAdvancedExposure))
+            {
+                if (Dispatcher.CheckAccess()) UpdateExposurePresentation();
+                else Dispatcher.BeginInvoke(UpdateExposurePresentation);
+            }
             if (e.PropertyName == nameof(DisplayCalibrationConfig.UseLocalCalibration))
             {
                 if (!Dispatcher.CheckAccess())
@@ -235,6 +244,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private float[] GetExposureValues()
         {
+            if (_fileExposure != null) return (float[])_fileExposure.Clone();
             float exposure = (float)Device.DisplayConfig.ExpTimeR;
             return Device.DisplayConfig.IsAdvancedExposure
                 ? new[] { exposure, (float)Device.DisplayConfig.ExpTimeG, (float)Device.DisplayConfig.ExpTimeB }
@@ -306,33 +316,81 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private void UpdateFileExposureInfo(string filePath)
         {
-            bool isCVFile = false;
-            bool fileExists = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath.Trim());
-            if (fileExists)
+            _exposureFileExists = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath.Trim());
+            _fileExposure = _exposureFileExists ? ReadFileExposure(filePath.Trim()) : null;
+            bool recorded = _fileExposure != null;
+            foreach (var slider in new[] { SliderExp, SliderExpR, SliderExpG, SliderExpB })
             {
-                string normalizedPath = filePath.Trim();
-                string ext = Path.GetExtension(normalizedPath).ToLowerInvariant();
-                if (ext == ".cvraw" || ext == ".cvcie")
-                {
-                    int headerEnd = CVFileUtil.ReadCIEFileHeader(normalizedPath, out CVCIEFile cvcie);
-                    if (headerEnd > 0 && cvcie.Exp != null && cvcie.Exp.Any(value => value > 0))
-                    {
-                        isCVFile = true;
-                        Device.DisplayConfig.ExpTimeR = cvcie.Exp[0];
-                        Device.DisplayConfig.ExpTimeG = cvcie.Exp[Math.Min(1, cvcie.Exp.Length - 1)];
-                        Device.DisplayConfig.ExpTimeB = cvcie.Exp[Math.Min(2, cvcie.Exp.Length - 1)];
-                    }
-                }
+                slider.IsEnabled = !recorded;
+                slider.IsSnapToTickEnabled = !recorded;
+                slider.Minimum = recorded ? Math.Min(1, _fileExposure!.Min()) : 1;
+                slider.Maximum = recorded ? Math.Max(6000, _fileExposure!.Max()) : 6000;
             }
-            ExposurePanel.Visibility = fileExists ? Visibility.Visible : Visibility.Collapsed;
-            TextBoxExp.IsReadOnly = isCVFile;
-            SliderExp.IsEnabled = !isCVFile;
-            TextBoxExpR.IsReadOnly = isCVFile;
-            SliderExpR.IsEnabled = !isCVFile;
-            TextBoxExpG.IsReadOnly = isCVFile;
-            SliderExpG.IsEnabled = !isCVFile;
-            TextBoxExpB.IsReadOnly = isCVFile;
-            SliderExpB.IsEnabled = !isCVFile;
+            if (recorded)
+            {
+                Device.DisplayConfig.ExpTimeR = _fileExposure![0];
+                Device.DisplayConfig.ExpTimeG = _fileExposure[1];
+                Device.DisplayConfig.ExpTimeB = _fileExposure[2];
+            }
+            TextBoxExp.IsReadOnly = recorded;
+            TextBoxExpR.IsReadOnly = recorded;
+            TextBoxExpG.IsReadOnly = recorded;
+            TextBoxExpB.IsReadOnly = recorded;
+            UpdateExposurePresentation();
+        }
+
+        private static float[]? ReadFileExposure(string path)
+        {
+            float[]? exposure = null;
+            string extension = Path.GetExtension(path);
+            if (extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase) || extension.Equals(".cvcie", StringComparison.OrdinalIgnoreCase))
+            {
+                int headerEnd = CVFileUtil.ReadCIEFileHeader(path, out CVCIEFile header);
+                using (header) { if (headerEnd > 0) exposure = header.Exp; }
+            }
+            else if (ColorVisionTiffParameters.TryReadFile(path, out var parameters)
+                && parameters!.Schema is ColorVisionTiffParameters.CurrentSchema or "ColorVision.CVImage/1")
+            {
+                exposure = parameters.Exposure;
+                if (exposure.Length == 0 && parameters.Acquisition?.ExposureUnit == "ms") exposure = parameters.Acquisition.Exposure;
+            }
+            if (exposure == null || exposure.Length == 0) return null;
+            float[] values = Enumerable.Range(0, 3).Select(index => exposure[Math.Min(index, exposure.Length - 1)]).ToArray();
+            return values.All(value => float.IsFinite(value) && value > 0) ? values : null;
+        }
+
+        private void CalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isDisposed) return;
+            ObserveCalibrationTemplate(ComboxCalibrationTemplate.SelectedValue as CalibrationParam);
+            UpdateExposurePresentation();
+        }
+
+        private void ObserveCalibrationTemplate(CalibrationParam? template)
+        {
+            if (ReferenceEquals(template, _observedCalibration)) return;
+            if (_observedCalibration != null)
+                foreach (var slot in CalibrationSlotDefinitions.ColorSlots) slot.ParamGetter(_observedCalibration).PropertyChanged -= CalibrationExposureChanged;
+            _observedCalibration = template;
+            if (template != null)
+                foreach (var slot in CalibrationSlotDefinitions.ColorSlots) slot.ParamGetter(template).PropertyChanged += CalibrationExposureChanged;
+        }
+
+        private void CalibrationExposureChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (Dispatcher.CheckAccess()) UpdateExposurePresentation();
+            else Dispatcher.BeginInvoke(UpdateExposurePresentation);
+        }
+
+        private void UpdateExposurePresentation()
+        {
+            if (_isDisposed) return;
+            bool needsExposure = _observedCalibration != null && CalibrationSlotDefinitions.ColorSlots.Any(slot => slot.ParamGetter(_observedCalibration).IsSelected);
+            ExposurePanel.Visibility = _exposureFileExists && needsExposure ? Visibility.Visible : Visibility.Collapsed;
+            // Recorded RGB values must remain visible without changing the user's manual exposure mode.
+            bool rgb = _fileExposure != null ? _fileExposure[0] != _fileExposure[1] || _fileExposure[0] != _fileExposure[2] : Device.DisplayConfig.IsAdvancedExposure;
+            SingleExposurePanel.Visibility = rgb ? Visibility.Collapsed : Visibility.Visible;
+            RgbExposurePanel.Visibility = rgb ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void ImageFile_TextChanged(object sender, TextChangedEventArgs e) => UpdateFileExposureInfo(ImageFile.Text);
@@ -401,6 +459,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 return;
 
             _isDisposed = true;
+            ObserveCalibrationTemplate(null);
             Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
             Device.ConfigChanged -= Device_ConfigChanged;
             PhyCameraManager.GetInstance().Loaded -= PhyCameraManager_Loaded;

@@ -191,6 +191,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private bool TryStart(string startNodeName, string sn)
         {
+            sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(sn);
             lock (lifecycleLock)
             {
                 if (IsFlowRun)

@@ -38,11 +38,6 @@ public static class MQTTRCServiceTypeConst
 		return "MQTTRCService/Admin/" + nodeName;
 	}
 
-	public static string BuildArchivedTopic(string nodeName)
-	{
-		return "MQTTRCService/Archived/" + nodeName;
-	}
-
 	public static string BuildSysConfigTopic(string nodeName)
 	{
 		return "SysRes/config/" + nodeName;

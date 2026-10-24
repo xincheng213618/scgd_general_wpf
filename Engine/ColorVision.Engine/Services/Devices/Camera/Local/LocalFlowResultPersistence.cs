@@ -150,7 +150,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentException.ThrowIfNullOrWhiteSpace(result);
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
-            return new AlgResultMasterModel
+            var model = new AlgResultMasterModel
             {
                 TId = templateId,
                 TName = templateName ?? string.Empty,
@@ -166,6 +166,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 TotalTime = totalTime,
                 CreateDate = DateTime.Now
             };
+            // Preserve this execution's upstream measurement; live IVL must not infer it from row counts.
+            if (action.Data.TryGetValue("SMUResult", out var value) && value is FlowEngineLib.SMUResultData { MasterId: > 0, MasterResultType: 200 } smu)
+            {
+                model.SMUDataID = smu.MasterId;
+                model.VResult = double.IsFinite(smu.V) ? (float)smu.V : null;
+                model.IResult = double.IsFinite(smu.I) ? (float)smu.I : null;
+            }
+            return model;
         }
 
         private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

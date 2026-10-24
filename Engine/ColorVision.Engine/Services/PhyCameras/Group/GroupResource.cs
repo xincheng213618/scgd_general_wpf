@@ -270,6 +270,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             // 赋值到当前组的对应槽位
             slot.GroupSetter(this, calibrationResource);
             Save();
+            if (serviceType == ServiceTypes.Distortion) phyCamera.RefreshOpticalCenter([desFile]);
             return calibrationResource;
         }
 

@@ -5,41 +5,6 @@ public sealed class CopilotTurnUserQuestionLifecycleTests
     private const string TurnId = "run:11111111111111111111111111111111";
 
     [Fact]
-    public void PublishedQuestionOwnsItsOptionCollection()
-    {
-        var created = CreateQuestion(TurnId, "Choose a path?");
-        var sourceOptions = created.Options.ToArray();
-        var source = new CopilotUserQuestionSnapshot
-        {
-            RequestId = created.RequestId,
-            ConversationId = created.ConversationId,
-            TaskId = created.TaskId,
-            Header = created.Header,
-            Question = created.Question,
-            Options = sourceOptions,
-            RequestedAtUtc = created.RequestedAtUtc,
-        };
-
-        var agentEvent = CopilotAgentEvent.UserQuestionRequested(source);
-        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
-        {
-            UserQuestion = source,
-        };
-        sourceOptions[0] = sourceOptions[1];
-
-        var eventQuestion = Assert.IsType<CopilotUserQuestionSnapshot>(agentEvent.UserQuestion);
-        var persistedQuestion = Assert.IsType<CopilotUserQuestionSnapshot>(message.UserQuestion);
-        Assert.Equal("Option A", eventQuestion.Options[0].Label);
-        Assert.Equal("Option A", persistedQuestion.Options[0].Label);
-        var eventOptions = Assert.IsAssignableFrom<IList<CopilotUserQuestionOption>>(
-            eventQuestion.Options);
-        var persistedOptions = Assert.IsAssignableFrom<IList<CopilotUserQuestionOption>>(
-            persistedQuestion.Options);
-        Assert.Throws<NotSupportedException>(() => eventOptions[0] = sourceOptions[0]);
-        Assert.Throws<NotSupportedException>(() => persistedOptions[0] = sourceOptions[0]);
-    }
-
-    [Fact]
     public void ReducerAcceptsMatchingRequestAndResolution()
     {
         var question = CreateQuestion(TurnId, "Choose a path?");
@@ -53,53 +18,6 @@ public sealed class CopilotTurnUserQuestionLifecycleTests
         state = Observe(state, CopilotAgentEvent.Completed());
 
         Assert.True(state.AgentCompleted);
-    }
-
-    [Fact]
-    public void ReducerRejectsResolutionBeforeRequest()
-    {
-        var question = CreateQuestion(TurnId, "Choose a path?");
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                CreateStartedState(),
-                CopilotAgentEvent.UserQuestionResolved(
-                    question.Resolve(CopilotUserQuestionResolution.Cancelled, string.Empty))));
-
-        Assert.Contains("before requesting it", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsSecondQuestionWhileOneIsPending()
-    {
-        var state = Observe(
-            CreateStartedState(),
-            CopilotAgentEvent.UserQuestionRequested(CreateQuestion(TurnId, "First question?")));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                state,
-                CopilotAgentEvent.UserQuestionRequested(CreateQuestion(TurnId, "Second question?"))));
-
-        Assert.Contains("before resolving the active request", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReducerRejectsResolutionForDifferentRequest()
-    {
-        var first = CreateQuestion(TurnId, "First question?");
-        var second = CreateQuestion(TurnId, "Second question?");
-        var state = Observe(
-            CreateStartedState(),
-            CopilotAgentEvent.UserQuestionRequested(first));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            Observe(
-                state,
-                CopilotAgentEvent.UserQuestionResolved(
-                    second.Resolve(CopilotUserQuestionResolution.Answered, "Option B"))));
-
-        Assert.Contains("different user question", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

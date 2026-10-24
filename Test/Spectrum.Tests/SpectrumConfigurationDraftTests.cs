@@ -89,12 +89,18 @@ public sealed class SpectrumConfigurationDraftTests
         draft.Config.SN = "SN-2";
         draft.Config.WavelengthFile = "edited.dat";
         draft.Config.ShutterCfg.BaudRate = 115200;
+        draft.Config.ShutterCfg.UseFilterWheel = true;
+        draft.Config.ShutterCfg.FilterWheelDeviceCode = "ND-1";
+        draft.Config.ShutterCfg.DarkPort = 2;
         draft.Config.NDConfig.NDRate[0] = 9;
         draft.Config.NDConfig.NDCaliNameGroups.Clear();
         draft.Config.CalibrationGroups.Add(new SpectrumCalibrationGroup { GroupName = "Other" });
         Assert.Equal("SN-1", config.SN);
         Assert.Equal("original.dat", config.ActiveCalibrationGroup.WavelengthFile);
         Assert.Equal(9600, config.ShutterCfg.BaudRate);
+        Assert.False(config.ShutterCfg.UseFilterWheel);
+        Assert.Equal(string.Empty, config.ShutterCfg.FilterWheelDeviceCode);
+        Assert.Equal(0, config.ShutterCfg.DarkPort);
         Assert.Equal(2, Assert.Single(config.NDConfig.NDRate));
         Assert.Single(config.NDConfig.NDCaliNameGroups);
         Assert.Single(config.CalibrationGroups);
@@ -131,5 +137,52 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.True(draft.TryApply(config, out _));
         Assert.Equal(bound ? "ND-1" : "", config.NDConfig.NDBindDeviceCode);
         Assert.Equal(bound ? "" : "COM5", config.NDConfig.SzComName);
+    }
+
+    [Theory]
+    [InlineData("", 5, 0)]
+    [InlineData("ND-1", 5, 5)]
+    [InlineData("ND-1", -1, 0)]
+    [InlineData("ND-1", 5, -1)]
+    public void EnabledFilterWheelRequiresBindingAndDistinctNonNegativePositions(string code, int measurementPort, int darkPort)
+    {
+        var config = new ConfigSpectrum();
+        var draft = new SpectrumConfigurationDraft(config);
+        draft.Config.IsShutterEnable = true;
+        draft.Config.ShutterCfg.UseFilterWheel = true;
+        draft.Config.ShutterCfg.FilterWheelDeviceCode = code;
+        draft.Config.ShutterCfg.MeasurementPort = measurementPort;
+        draft.Config.ShutterCfg.DarkPort = darkPort;
+        Assert.False(draft.TryApply(config, out string error));
+        Assert.NotEmpty(error);
+        Assert.False(config.IsShutterEnable);
+        // Disabled configurations can retain incomplete settings without affecting shutter behavior.
+        draft.Config.IsShutterEnable = false;
+        Assert.True(draft.TryApply(config, out _));
+    }
+
+    [Fact]
+    public void FilterWheelSettingsStayInsideShutterAndRoundTripWithLegacyDefaults()
+    {
+        var config = JObject.Parse("{\"ShutterCfg\":{\"Addr\":\"COM7\",\"OpenCmd\":\"OPEN\"}}").ToObject<ConfigSpectrum>()!;
+        Assert.False(config.ShutterCfg.UseFilterWheel);
+        Assert.Equal(5, config.ShutterCfg.MeasurementPort);
+        Assert.Equal(0, config.ShutterCfg.DarkPort);
+        var draft = new SpectrumConfigurationDraft(config);
+        draft.Config.IsShutterEnable = true;
+        draft.Config.ShutterCfg.UseFilterWheel = true;
+        draft.Config.ShutterCfg.FilterWheelDeviceCode = "ND-1";
+        draft.Config.ShutterCfg.MeasurementPort = 3;
+        draft.Config.ShutterCfg.DarkPort = 2;
+        Assert.True(draft.TryApply(config, out _));
+        var payload = JObject.FromObject(config);
+        Assert.Null(payload["UseFilterWheel"]);
+        var restored = payload.ToObject<ConfigSpectrum>()!;
+        Assert.True(restored.ShutterCfg.UseFilterWheel);
+        Assert.Equal("ND-1", restored.ShutterCfg.FilterWheelDeviceCode);
+        Assert.Equal(3, restored.ShutterCfg.MeasurementPort);
+        Assert.Equal(2, restored.ShutterCfg.DarkPort);
+        Assert.Equal("COM7", restored.ShutterCfg.Addr);
+        Assert.Equal("OPEN", restored.ShutterCfg.OpenCmd);
     }
 }

@@ -17,8 +17,6 @@ namespace ColorVision.Copilot
         {
             state = new CopilotChatState();
             schemaVersion = 0;
-            if (!File.Exists(filePath))
-                return StateFileReadStatus.Missing;
 
             try
             {
@@ -38,7 +36,13 @@ namespace ColorVision.Copilot
                     detectEncodingFromByteOrderMarks: true,
                     bufferSize: 8192,
                     leaveOpen: false);
-                using var jsonReader = new JsonTextReader(textReader) { CloseInput = false };
+                using var jsonReader = new JsonTextReader(textReader)
+                {
+                    CloseInput = false,
+                    // Preserve DateTimeOffset text until typed deserialization; journal event IDs
+                    // include the original offset and must survive loading in another time zone.
+                    DateParseHandling = DateParseHandling.None,
+                };
                 if (JToken.Load(jsonReader) is not JObject document || jsonReader.Read())
                     return StateFileReadStatus.Invalid;
 
@@ -73,7 +77,15 @@ namespace ColorVision.Copilot
                 state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
                 return StateFileReadStatus.Valid;
             }
-            catch
+            catch (FileNotFoundException)
+            {
+                return StateFileReadStatus.Missing;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return StateFileReadStatus.Missing;
+            }
+            catch (Exception exception) when (exception is not IOException and not UnauthorizedAccessException)
             {
                 return StateFileReadStatus.Invalid;
             }

@@ -241,7 +241,7 @@ namespace ColorVision.Engine.Templates
             => Task.FromResult(SwapTemplateOrder(index1, index2));
     }
 
-    public class ITemplate<T> : ITemplate where T : ParamModBase, new() 
+    public class ITemplate<T> : ITemplate, ITemplateCreatePresetProvider where T : ParamModBase, new()
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ITemplate<T>));
 
@@ -275,6 +275,21 @@ namespace ColorVision.Engine.Templates
         public override string GetTemplateName(int index) => TemplateParams[index].Key;
 
         public T? CreateTemp { get; set; }
+
+        public virtual IEnumerable<TemplateCreatePreset> GetCreatePresets() => ParameterTemplatePresets.Read(Code, ParameterTemplatePresets.DetailsKind).Select(preset => preset.Source);
+
+        public virtual bool ApplyCreatePreset(string presetId)
+        {
+            var preset = ParameterTemplatePresets.Read(Code, ParameterTemplatePresets.DetailsKind).FirstOrDefault(item => item.Source.Id == presetId);
+            if (preset == null) return false;
+            var definitions = SysDictionaryModDetailDao.Instance.GetAllByPid(TemplateDicId);
+            var details = ParameterTemplatePresets.CreateDetails(preset, definitions);
+            var master = new ModMasterModel { Id = -1, Pid = TemplateDicId, Name = string.Empty, TenantId = 0 };
+            ImportTemp = (T)Activator.CreateInstance(typeof(T), [master, details]);
+            CreateTemp = null;
+            ImportName = preset.Source.SuggestedName;
+            return true;
+        }
 
         public override object CreateDefault()
         {

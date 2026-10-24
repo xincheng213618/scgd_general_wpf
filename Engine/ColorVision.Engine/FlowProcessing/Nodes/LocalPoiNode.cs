@@ -23,7 +23,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public object? POIResult { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "POI", CategoryOrder = 9900)]
+    [STNode("Flow_LocalDevices", "POI", CategoryOrder = 9900, NodeOrder = 50)]
     public sealed class LocalPoiNode : LocalFlowNodeBase
     {
         private string _POITempName = string.Empty;
@@ -98,7 +98,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         action.SetRuntimeResource(LocalPoiCalculator.ResultResourceKey(masterId), result);
                         action.Data["LocalPoiCount"] = result.Points.Count;
                         action.MasterValue(null, masterId, (int)resultType);
-                        ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
+                        ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, ExecutionNodeId, ZIndex, masterId, (int)resultType);
                         action.SetCurrentFrame(currentFrame);
                         loadedFromFile = false;
                         return new LocalNodeExecutionResult

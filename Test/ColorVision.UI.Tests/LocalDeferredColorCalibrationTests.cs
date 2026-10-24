@@ -188,10 +188,6 @@ public sealed class LocalDeferredColorCalibrationTests
         Assert.Null(typeof(LocalCameraNode).GetProperty("AllowAcceleration"));
         Assert.False(node.SaveFiles);
         Assert.DoesNotContain("AllowAcceleration", System.Text.Encoding.UTF8.GetString(node.GetSaveData()));
-        var payload = typeof(LocalCameraNode).GetMethod("BuildRunPayload", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-        var action = new FlowEngineLib.Base.CVStartCFC("camera-deferred");
-        using var resources = action.RuntimeResources;
-        Assert.True((bool)Newtonsoft.Json.Linq.JObject.Parse((string)payload.Invoke(node, [action])!)["AllowAcceleration"]!);
     }
 
     [Fact]

@@ -154,7 +154,7 @@ public sealed class CopilotConfigWebPageNetworkTests
                 configPath,
                 $$"""
                 {
-                  "CopilotConfig": {
+                  "{{typeof(CopilotConfig).FullName}}": {
                     "SchemaVersion": {{CopilotConfig.CurrentSchemaVersion}},
                     "WebPagePref64Prefixes": "{{prefix}}"
                   }

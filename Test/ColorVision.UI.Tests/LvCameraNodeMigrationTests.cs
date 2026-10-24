@@ -58,11 +58,13 @@ public sealed class LvCameraNodeMigrationTests
     });
 
     [Fact]
-    public void UnknownNodeNameStillFailsToLoad() => StaTest.Run(() =>
+    public void UnknownNodeNameLoadsPlaceholdersButCannotCompile() => StaTest.Run(() =>
     {
         byte[] canvas = ReadLegacyCanvas("Unknown.dll|MissingCameraNode");
         using var container = new CVNodeContainer();
-        Assert.ThrowsAny<Exception>(() => container.LoadCanvas(canvas));
+        container.LoadCanvas(canvas);
+        Assert.All(container.Nodes.Cast<STNode>(), node => Assert.IsType<STMissingNode>(node));
+        Assert.NotNull(STMissingNode.GetExecutionBlockReason(container.Nodes.Cast<STNode>()));
         Assert.Equal(FlowCompilationError.UnknownNodeType,
             Assert.Throws<FlowCompilationException>(() => StnV1NeutralCodec.Decode(canvas, new())).Error);
     });
@@ -78,9 +80,9 @@ public sealed class LvCameraNodeMigrationTests
         Assert.Equal(17, first.Gain);
         Assert.Equal(3, first.AvgCount);
         Assert.Equal("calibration-legacy", first.CaliTempName);
-        Assert.Equal("poi-legacy", first.POITempName);
-        Assert.Equal("filter-legacy", first.POIFilterTempName);
-        Assert.Equal("revise-legacy", first.POIReviseTempName);
+        Assert.Null(typeof(LVCameraNode).GetProperty("POITempName"));
+        Assert.Null(typeof(LVCameraNode).GetProperty("POIFilterTempName"));
+        Assert.Null(typeof(LVCameraNode).GetProperty("POIReviseTempName"));
         Assert.Equal(CVImageFlipMode.Y, first.FlipMode);
         Assert.True(first.SaveFiles);
         Assert.Equal(ColorVision.FileIO.CVFileSaveMode.Synchronous, first.SaveMode);
@@ -132,7 +134,8 @@ public sealed class LvCameraNodeMigrationTests
         Assert.False(STNodeTypeRegistry.TryGetNodeType(unknownGuid, "Old.dll|DuplicatedNode", out _));
         byte[] canvas = ReadLegacyCanvas("Old.dll|Old.Namespace.DuplicatedNode");
         using var container = new CVNodeContainer();
-        Assert.ThrowsAny<Exception>(() => container.LoadCanvas(canvas));
+        container.LoadCanvas(canvas);
+        Assert.All(container.Nodes.Cast<STNode>(), node => Assert.IsType<STMissingNode>(node));
         Assert.Equal(FlowCompilationError.UnknownNodeType,
             Assert.Throws<FlowCompilationException>(() => StnV1NeutralCodec.Decode(canvas, new())).Error);
     });

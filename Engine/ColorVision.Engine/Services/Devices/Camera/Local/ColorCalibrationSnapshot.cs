@@ -1,10 +1,12 @@
 using ColorVision.Core;
 using ColorVision.FileIO;
 using Newtonsoft.Json;
+using ColorVision.ImageEditor.Tif;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -28,6 +30,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         // An original sensor RAW may precede the basic stages that produced the color input.
         // Its parameters are still recorded, but replay requires the corrected RAW payload.
         public bool CanReplay { get; init; } = true;
+        public ImageCalibrationSummary? Provenance { get; init; }
+
+        internal ImageCalibrationSummary ToSummary() => (Provenance ?? new ImageCalibrationSummary()) with
+        {
+            Template = Template, CalibratedUtc = CalibratedUtc, CalibrationType = CalibrationType,
+            TransformKind = TransformKind,
+            ReferenceCorrection = SpectrumCorrection == null ? null : $"{SpectrumCorrection.Mode} / {SpectrumCorrection.PointName}"
+        };
 
         internal static ColorCalibrationSnapshot Create(RawColorTransformV1 transform, int width, int height, int bpp, float[] exposure, string template)
         {
@@ -67,7 +77,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal void Save(string filePath, bool canReplay)
         {
             Validate();
-            CVFileMetadata.SetProperty(filePath, PropertyKind, 1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this with { CanReplay = canReplay })));
+            CVFileMetadata.SetProperties(filePath, new Dictionary<string, CVFileProperty>
+            {
+                [PropertyKind] = new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this with { CanReplay = canReplay }))),
+                [CameraFileMetadata.ProvenanceKind] = new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ToSummary())))
+            });
         }
 
         internal static ColorCalibrationSnapshot? Read(string filePath, CVCIEFile header)

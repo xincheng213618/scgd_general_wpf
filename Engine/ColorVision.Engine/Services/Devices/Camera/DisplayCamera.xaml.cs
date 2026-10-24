@@ -22,6 +22,7 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -49,13 +50,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
     public class DisplayCameraConfig : IDisplayConfigBase
     {
         [Category("AcquisitionDisplay"), DisplayName("使用本地相机")]
-        [Description("默认关闭；下次打开相机时生效。修改此项不切换当前会话，取图、自动曝光和关闭始终使用当前已打开的相机。")]
+        [Description("默认开启；修改后下次打开相机时生效，当前连接、取图、自动曝光、电机和关闭方式不变。")]
         public bool UseLocalCamera
         {
             get => _useLocalCamera;
             set { if (_useLocalCamera == value) return; _useLocalCamera = value; OnPropertyChanged(); }
         }
-        private bool _useLocalCamera;
+        private bool _useLocalCamera = true;
 
         [Category("AcquisitionDisplay"), LocalizedDisplayName("Camera_UseHikMvs")]
         [LocalizedDescription("Camera_UseHikMvsHint")]
@@ -150,14 +151,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
         private Rect _CrossGuideRoi = Rect.Empty;
-
-        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterX))]
-        public double CrossGuideStandardCenterX { get => _CrossGuideStandardCenterX; set { _CrossGuideStandardCenterX = value; OnPropertyChanged(); } }
-        private double _CrossGuideStandardCenterX;
-
-        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterY))]
-        public double CrossGuideStandardCenterY { get => _CrossGuideStandardCenterY; set { _CrossGuideStandardCenterY = value; OnPropertyChanged(); } }
-        private double _CrossGuideStandardCenterY;
 
         [LocalizedDisplayName(nameof(Properties.Resources.Camera_TolerancePx))]
         public double CrossGuideTolerancePx { get => _CrossGuideTolerancePx; set { _CrossGuideTolerancePx = Math.Max(0, value); OnPropertyChanged(); } }
@@ -566,8 +559,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private static bool IsCrossGuideConfigProperty(string? propertyName) => string.IsNullOrEmpty(propertyName)
             || propertyName == nameof(DisplayCameraConfig.IsCrossGuideEnabled)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideRoi)
-            || propertyName == nameof(DisplayCameraConfig.CrossGuideStandardCenterX)
-            || propertyName == nameof(DisplayCameraConfig.CrossGuideStandardCenterY)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideTolerancePx)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideIntervalMs)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideThresholdRatio)
@@ -929,7 +920,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             int transform = Device.DisplayConfig.LocalVideoTransform;
             RoiRect sourceRoi = VideoCrossGuideDetector.TransformDisplayRoiToSource(Device.DisplayConfig.LocalVideoRoi, width, height, transform);
-            Point standardCenter = new(Device.DisplayConfig.CrossGuideStandardCenterX, Device.DisplayConfig.CrossGuideStandardCenterY);
+            ImageOpticalCenter? opticalCenter = Device.PhyCamera?.OpticalCenter;
+            Point standardCenter = opticalCenter is { } center ? new Point(center.X, center.Y) : new Point(width / 2.0, height / 2.0);
+            if (opticalCenter != null)
+                standardCenter = VideoCrossGuideDetector.TransformPointToDisplay(standardCenter, width, height, transform);
             request = new VideoCrossGuideRequest(
                 sourceRoi,
                 standardCenter,
@@ -1046,6 +1040,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (!ReferenceEquals(_panelOperation, sender)) return;
                 _panelOperation = null;
                 RefreshPanelState();
+                if (!IsDisposed && state == MsgRecordState.Fail && sender is MsgRecord failed
+                    && failed.MsgSend.EventName is "Move" or "MoveDiaphragm" or "GoHome" or "GetPosition" or "AutoFocus")
+                    MessageBox.Show(Application.Current.GetActiveWindow(), failed.MsgReturn.Message, "ColorVision");
             });
         }
 
@@ -1490,15 +1487,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
             MsgRecord msgRecord = DService.AutoFocus(param);
-            msgRecord.MsgRecordStateChanged += (s, e) =>
-            {
-                if (IsDisposed) return;
-
-                if (e == MsgRecordState.Fail)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
-                }
-            };
+            TrackPanelOperation(msgRecord);
             ServicesHelper.SendCommand(sender, msgRecord);
 
         }
@@ -1580,6 +1569,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (int.TryParse(Capture.TextPos.Text, out int pos))
                 {
                     var msgRecord = DService.Move(pos, Capture.CheckBoxIsAbs.IsChecked ?? true);
+                    TrackPanelOperation(msgRecord);
                     ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
@@ -1588,19 +1578,25 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void GoHome_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.GoHome);
+            MsgRecord record = DService.GoHome();
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(sender, record);
         }
 
         private void GetPosition_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.GetPosition);
+            MsgRecord record = DService.GetPosition();
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(sender, record);
         }
 
         private void Move1_Click(object sender, RoutedEventArgs e)
         {
             if (double.TryParse(Capture.TextDiaphragm.Text, out double pos))
             {
-                ServicesHelper.SendCommandEx(sender, () => DService.MoveDiaphragm(pos));
+                MsgRecord record = DService.MoveDiaphragm(pos);
+                TrackPanelOperation(record);
+                ServicesHelper.SendCommand(sender, record);
             }
         }
 

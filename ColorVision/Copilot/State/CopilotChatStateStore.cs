@@ -235,12 +235,16 @@ namespace ColorVision.Copilot
                 ThrowIfStatePersistenceBlocked();
                 EnsureDirectory();
 
+                var temporaryStream = OpenTemporaryStateStream(TemporaryStateFilePath, asynchronous: true);
                 try
                 {
-                    await WriteDurableTemporaryStateAsync(
-                        TemporaryStateFilePath,
-                        serializedState,
-                        cancellationToken).ConfigureAwait(false);
+                    await using (temporaryStream.ConfigureAwait(false))
+                    {
+                        await WriteDurableTemporaryStateAsync(
+                            temporaryStream,
+                            serializedState,
+                            cancellationToken).ConfigureAwait(false);
+                    }
                     cancellationToken.ThrowIfCancellationRequested();
                     ValidateStateFile(TemporaryStateFilePath);
                     ReplaceStateFile(TemporaryStateFilePath);
@@ -260,11 +264,11 @@ namespace ColorVision.Copilot
         {
             EnsureDirectory();
 
+            var temporaryStream = OpenTemporaryStateStream(TemporaryStateFilePath, asynchronous: false);
             try
             {
-                WriteDurableTemporaryState(
-                    TemporaryStateFilePath,
-                    serializedState);
+                using (temporaryStream)
+                    WriteDurableTemporaryState(temporaryStream, serializedState);
                 ValidateStateFile(TemporaryStateFilePath);
                 ReplaceStateFile(TemporaryStateFilePath);
             }
@@ -275,12 +279,9 @@ namespace ColorVision.Copilot
         }
 
         private static void WriteDurableTemporaryState(
-            string filePath,
+            FileStream stream,
             string serializedState)
         {
-            using var stream = OpenTemporaryStateStream(
-                filePath,
-                asynchronous: false);
             using var writer = new StreamWriter(
                 stream,
                 Utf8WithoutBom,
@@ -292,13 +293,10 @@ namespace ColorVision.Copilot
         }
 
         private static async Task WriteDurableTemporaryStateAsync(
-            string filePath,
+            FileStream stream,
             string serializedState,
             CancellationToken cancellationToken)
         {
-            await using var stream = OpenTemporaryStateStream(
-                filePath,
-                asynchronous: true);
             await using var writer = new StreamWriter(
                 stream,
                 Utf8WithoutBom,

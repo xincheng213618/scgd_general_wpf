@@ -64,6 +64,7 @@ public class CVFlowContainer : CVNodeContainer
 		if (e.Node is BaseStartNode)
 		{
 			BaseStartNode baseStartNode = e.Node as BaseStartNode;
+			baseStartNode.ExecutionBlockReasonProvider = () => STMissingNode.GetExecutionBlockReason(Nodes.Cast<STNode>());
 			if (IsAutoStartName)
 			{
 				baseStartNode.NodeName = DateTime.Now.Ticks.ToString();

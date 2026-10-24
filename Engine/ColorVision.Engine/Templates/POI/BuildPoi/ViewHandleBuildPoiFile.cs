@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1725,CS8603,CS8604
-using ColorVision.Common.MVVM;
 using ImageUtils = ColorVision.Common.Utilities.ImageUtils;
 using ColorVision.Engine.Services;
 using ColorVision.Database;
@@ -116,7 +115,6 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 {
                     result.ViewResults.Add(item);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBuildPoi), ImageFilePath = result.FilePath })) });
 
             }
         }

@@ -316,7 +316,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);
             if (previous != null)
             {
-                if (previous.FileUrl == model.FileUrl) return;
+                if (previous.FileUrl == (model.FileUrl ?? string.Empty)) return;
                 ViewResults.Remove(previous);
             }
             ViewResultImage result = new(model);

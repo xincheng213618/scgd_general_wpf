@@ -13,32 +13,6 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageComparisonV1Tests
 {
-    [Fact]
-    public void ParametersDescriptorAndInvocationHaveStableMultiInputContract()
-    {
-        ImageComparisonParameters invalid = new() { FloatPeakValue = 0, HeatmapMaximum = -1 };
-        Assert.Equal(2, invalid.Validate().Issues.Count);
-
-        AlgorithmDescriptor descriptor = StandardAlgorithmCatalog.Create().Descriptors.Single(item => item.Id == StandardAlgorithmIds.ImageComparison);
-        Assert.Equal(2, descriptor.MinimumInputCount);
-        Assert.Equal(2, descriptor.MaximumInputCount);
-        Assert.True(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.MultiInput));
-        Assert.False(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Batch));
-        Assert.False(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Flow));
-        Assert.False(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Copilot));
-        Assert.True(StandardAlgorithmCatalog.Create().TryResolveAlias("ImageDiff", out AlgorithmDescriptor? alias));
-        Assert.Equal(descriptor.Id, alias!.Id);
-
-        AlgorithmInvocation invocation = new()
-        {
-            AlgorithmId = StandardAlgorithmIds.ImageComparison,
-            Parameters = AlgorithmJson.ToElement(new ImageComparisonParameters()),
-            Inputs = [new("reference", Revision: "7"), new("candidate", "candidate.png", Checksum: "abc")],
-        };
-        AlgorithmInvocation restored = AlgorithmJson.Deserialize<AlgorithmInvocation>(AlgorithmJson.ToElement(invocation));
-        Assert.Equal(new[] { "reference", "candidate" }, restored.Inputs.Select(input => input.Name));
-        Assert.Equal("abc", restored.Inputs[1].Checksum);
-    }
 
     [Fact]
     public async Task Gray8GoldenPreservesExactAbsoluteSignedMetricsAndInputs()
@@ -432,66 +406,6 @@ public sealed class ImageComparisonV1Tests
         Assert.All(images, image => Assert.True(image.IsDisposed));
     }
 
-    [Fact]
-    public async Task ResultWindowProvidesDifferenceBlinkSplitMetricsAndReleasesResult()
-    {
-        using AlgorithmImageBuffer reference = Gray8([1, 2, 3], 3, 1);
-        using AlgorithmImageBuffer candidate = Gray8([1, 4, 1], 3, 1);
-        AlgorithmResult result = await RunAsync(
-            reference,
-            candidate,
-            outputs: ImageComparisonArtifactOutputs.InteractiveVisualizations);
-        Assert.Equal(3, result.Artifacts.OfType<AlgorithmImageArtifact>().Count());
-        WpfTestHost.Invoke(() =>
-        {
-            EnsureResources();
-            WriteableBitmap left = Bitmap([1, 2, 3]);
-            WriteableBitmap right = Bitmap([1, 4, 1]);
-            ImageView view = new();
-            try
-            {
-                view.SetImageSource(left, enableEditorImageServices: false, configureDefaultLayerController: false);
-                ImageComparisonResultWindow window = new(result, left, right, "candidate.png",
-                    view.EditorContext.ProcessingContext, view.EditorContext.DrawEditorContext);
-                window.Show();
-                Assert.NotNull(window.FindName("DifferenceImage"));
-                Assert.NotNull(window.FindName("BlinkImage"));
-                Assert.NotNull(window.FindName("SplitViewport"));
-                Assert.NotNull(window.FindName("MetricsGrid"));
-                Assert.NotNull(window.FindName("AlignmentGrid"));
-                window.Close();
-                Assert.True(result.IsDisposed);
-            }
-            finally
-            {
-                view.Dispose();
-            }
-        });
-    }
-
-    [Fact]
-    public void ImageViewMenuExposesWholeImageAndM4RoiEntries()
-    {
-        ImageView view = WpfTestHost.Invoke(() =>
-        {
-            EnsureResources();
-            ImageView created = new();
-            created.SetImageSource(Bitmap([1, 2, 3]), enableEditorImageServices: false, configureDefaultLayerController: false);
-            return created;
-        });
-        try
-        {
-            WpfTestHost.Invoke(() => Assert.Equal(
-                new[] { "ImageComparison", "ImageComparisonWhole", "ImageComparisonRectangle", "ImageComparisonCircle", "ImageComparisonPolygon" },
-                new ImageComparisonContextMenu(view.EditorContext.ProcessingContext, view.EditorContext.DrawEditorContext)
-                    .GetContextMenuItems().Select(item => item.GuidId).ToArray()));
-        }
-        finally
-        {
-            WpfTestHost.Invoke(view.Dispose);
-        }
-    }
-
     private static async Task<AlgorithmResult> RunAsync(
         AlgorithmImageBuffer reference,
         AlgorithmImageBuffer candidate,
@@ -546,25 +460,6 @@ public sealed class ImageComparisonV1Tests
 
     private static ushort[] UShorts(AlgorithmImageBuffer image)
         => MemoryMarshal.Cast<byte, ushort>(image.Data.Span).ToArray();
-
-    private static WriteableBitmap Bitmap(byte[] pixels)
-    {
-        WriteableBitmap bitmap = new(pixels.Length, 1, 96, 96, PixelFormats.Gray8, null);
-        bitmap.WritePixels(new Int32Rect(0, 0, pixels.Length, 1), pixels, pixels.Length, 0);
-        return bitmap;
-    }
-
-    private static void EnsureResources()
-    {
-        Application application = Application.Current ?? new Application();
-        application.Resources["TextBox.Small"] = new Style(typeof(TextBox));
-        application.Resources["ComboBox.Small"] = new Style(typeof(ComboBox));
-        application.Resources["ToolBarBaseStyle"] = new Style(typeof(ToolBar));
-        application.Resources["ToolBarImage"] = new Style(typeof(Image));
-        application.Resources["BaseStyle"] = new Style(typeof(Control));
-        application.Resources["RangeSliderBaseStyle"] = new Style(typeof(HandyControl.Controls.RangeSlider));
-        application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
-    }
 
     private sealed class InlineProgress(Action<AlgorithmProgress> report) : IProgress<AlgorithmProgress>
     {

@@ -49,10 +49,10 @@ namespace ColorVision.ImageEditor
 
         // Replacement intentionally clears the previous source before validating the new format.
         // The callback projects the cleared state to the UI at the historical handoff point.
-        internal bool TryReplaceSource(ImageSource source, bool enableEditorImageServices, Action sourceCleared)
+        internal bool TryReplaceSource(ImageSource source, bool enableEditorImageServices, Action sourceCleared, ImageDocumentMutationKind mutationKind)
         {
             ImageProcessingContext context = Context;
-            Invalidate(ImageDocumentMutationKind.ImageSourceReplaced);
+            Invalidate(mutationKind);
             context.DisplayEffects.ResetForSourceChange();
             _document.AssignSource(null);
             context.Presentation.Publish(null, null);

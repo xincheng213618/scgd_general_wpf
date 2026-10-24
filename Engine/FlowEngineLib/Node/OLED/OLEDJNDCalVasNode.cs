@@ -122,17 +122,16 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeHub
 		case Algorithm2Type.JND:
 			operatorCode = "OLED.JND.CalVas";
 			break;
-		case Algorithm2Type.图像裁剪:
-			operatorCode = "OLED.GetRIAand";
-			break;
 		default:
-			operatorCode = "OLED.JND.CalVas";
+			operatorCode = System.Enum.IsDefined(_Algorithm) ? "OLED.JND.CalVas" : string.Empty;
 			break;
 		}
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		if (!System.Enum.IsDefined(_Algorithm))
+			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		AlgorithmCalVasParam algorithmCalVasParam = new AlgorithmCalVasParam(_TempId, _TempName, _IsAdd, -1, _OrderIndex, _BufferLen);
 		getPreStepParam(0, algorithmCalVasParam);

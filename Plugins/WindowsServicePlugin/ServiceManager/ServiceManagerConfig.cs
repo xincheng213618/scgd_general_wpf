@@ -4,13 +4,12 @@ using ColorVision.UI.Marketplace;
 using Microsoft.Win32;
 using System.ComponentModel;
 using System.IO;
-using System.Xml.Linq;
 using WindowsServicePlugin.Properties;
 
 namespace WindowsServicePlugin.ServiceManager
 {
     /// <summary>
-    /// 服务管理器配置，从CVWinSMS的App.config读取或从注册表获取
+    /// 服务管理器配置，可从已注册的注册中心服务检测安装路径
     /// </summary>
     public class ServiceManagerConfig : ViewModelBase, IConfig
     {
@@ -124,38 +123,5 @@ namespace WindowsServicePlugin.ServiceManager
             return false;
         }
 
-        /// <summary>
-        /// 从CVWinSMS的App.config中读取配置
-        /// </summary>
-        public bool ReadFromCVWinSMSConfig(string cvWinSMSPath)
-        {
-            try
-            {
-                string configDir = Path.Combine(Directory.GetParent(cvWinSMSPath)?.FullName ?? "", "config");
-                string configPath = Path.Combine(configDir, "App.config");
-                if (!File.Exists(configPath)) return false;
-
-                var doc = XDocument.Load(configPath);
-                var settings = doc.Element("configuration")?.Element("appSettings")?.Elements("add");
-                if (settings == null) return false;
-
-                var dic = new Dictionary<string, string>();
-                foreach (var setting in settings)
-                {
-                    var k = setting.Attribute("key")?.Value;
-                    var v = setting.Attribute("value")?.Value;
-                    if (k != null && v != null)
-                        dic[k] = v;
-                }
-
-                if (dic.TryGetValue("BaseLocation", out var baseLoc))
-                    BaseLocation = baseLoc;
-                if (dic.TryGetValue("MysqlPort", out var portStr) && int.TryParse(portStr, out int port))
-                    MySqlPort = port;
-
-                return true;
-            }
-            catch { return false; }
-        }
     }
 }

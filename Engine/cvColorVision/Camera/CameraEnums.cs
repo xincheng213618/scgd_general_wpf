@@ -68,9 +68,11 @@ namespace cvColorVision
     public enum  FOCUS_COMMUN
     {
         VID_SERIAL = 0,
-        CANON_SERIAL,
-        NED_SERIAL,
-        LONGFOOT_SERIAL,
+        CANON_SERIAL = 1,
+        NED_SERIAL = 2,
+        LONGFOOT_SERIAL = 3,
+        TSM_SERIAL = 4,
+        SV6100 = 5,
     };
     public enum ImageChannelType
     {
@@ -141,15 +143,4 @@ namespace cvColorVision
         bpp16 = 16,
     }
 
-    public enum FovPattern
-    {
-        FovCircle = 0,
-        FovRectangle,
-    };
-    public enum FovType
-    {
-        Horizontal = 0,
-        Vertical,
-        Leaning,
-    };
 }

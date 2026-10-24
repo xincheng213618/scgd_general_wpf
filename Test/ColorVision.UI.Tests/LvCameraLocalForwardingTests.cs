@@ -83,20 +83,22 @@ public sealed class LvCameraLocalForwardingTests
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
     });
 
-    [Fact]
-    public void LocalPreferenceAloneKeepsLvServiceRequestAndPoiParameters() => Run(async () =>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LocalPreferenceAloneKeepsServiceCaptureRequestWithoutPoi(bool cv) => Run(async () =>
     {
         using var scope = new CaptureScope(localOpen: false, preferLocal: true);
         scope.Backend.ObserveService(DeviceStatusType.Opened);
-        using var graph = new Graph(scope.CreateNode());
+        using var graph = new Graph(cv ? scope.CreateCvNode() : scope.CreateNode());
+        if (cv) ((CVCameraNode)graph.Nodes[0]).CV2LVChannel = CV2LVChannelMode.GREEN;
         graph.Start.OnPublish = message =>
         {
             var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
             var data = (JObject)request.Data;
-            Assert.Equal("missing-poi", data["POIParam"]!["POI"]!["Name"]);
-            Assert.Equal("missing-filter", data["POIParam"]!["Filter"]!["Name"]);
-            Assert.Equal("missing-revise", data["POIParam"]!["Revise"]!["Name"]);
-            Assert.Equal(42, data["ExpTime"]![0]);
+            Assert.Null(data.Property("POIParam"));
+            Assert.Equal(cv ? new[] { 283f, 467f, 100f } : new[] { 42f }, data["ExpTime"]!.ToObject<float[]>());
+            if (cv) Assert.Equal((int)CV2LVChannelMode.GREEN, (int?)data["CV2LVChannel"]);
             Respond(graph.Nodes[0], request);
         };
         Assert.Equal(StatusTypeEnum.Completed, (await graph.StartAsync()).Status);
@@ -129,15 +131,112 @@ public sealed class LvCameraLocalForwardingTests
         }
     });
 
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void CvNodeReusesLocalCaptureAndPreservesIndependentExposures(bool localOpen, bool saveFiles) => Run(async () =>
+    {
+        using var scope = new CaptureScope(localOpen: localOpen, preferLocal: !localOpen);
+        var node = scope.CreateCvNode();
+        node.SaveFiles = saveFiles;
+        using var graph = new Graph(node);
+        graph.End.Inspect = action =>
+        {
+            Assert.True(action.TryAcquireCurrentFrame(out var lease));
+            using (lease!)
+            {
+                Assert.Equal(3, lease!.Metadata.Channels);
+                Assert.Equal(new[] { 283f, 467f, 100f }, lease.Metadata.Exposure);
+                Assert.Equal(new byte[] { 11, 22, 11, 22, 11, 22 }, lease.CopyRawToArray());
+            }
+        };
+        Assert.Equal(StatusTypeEnum.Completed, (await graph.StartAsync()).Status);
+        await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(0, graph.Start.PublishCount);
+        LocalCameraCaptureRequest request = Assert.Single(scope.Services.Requests);
+        Assert.Equal(283f, request.CameraParameters!.ExpTimeR);
+        Assert.Equal(467f, request.CameraParameters.ExpTimeG);
+        Assert.Equal(100f, request.CameraParameters.ExpTimeB);
+        Assert.Equal(17f, request.CameraParameters.Gain);
+        Assert.Equal(3, request.CameraParameters.AvgCount);
+        Assert.Equal(CVImageFlipMode.Y, request.FlipMode);
+        Assert.Equal(Graph.Serial, Assert.Single(scope.Services.Saved).SerialNumber);
+        Assert.Equal(node.ZIndex, Assert.Single(scope.Services.Saved).ZIndex);
+        Assert.Equal(node.NodeID, Assert.Single(scope.Services.PublishedNodeIds));
+        Assert.Equal(saveFiles, File.Exists(Assert.Single(scope.Services.Frames).CvRawFilePath));
+        JObject result = JObject.Parse(Assert.Single(graph.Ends).RecvPayload);
+        Assert.Equal("Local", (string?)result["Backend"]);
+        Assert.Equal(new[] { 283f, 467f, 100f }, result["Exposure"]!.ToObject<float[]>());
+        Assert.Equal(101, (int?)result["MasterId"]);
+        Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
+    });
+
     [Fact]
-    public void CvNodeRemainsOnServiceEvenWhenLocalCameraIsOpen() => Run(async () =>
+    public void CvSingleChannelConversionIsRejectedLocallyWithoutSendingAServiceRequest() => Run(async () =>
     {
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
-        using var graph = new Graph(new CVCameraNode());
-        graph.Start.OnPublish = message => Respond(graph.Nodes[0], JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!);
-        Assert.Equal(StatusTypeEnum.Completed, (await graph.StartAsync()).Status);
-        Assert.Equal(1, graph.Start.PublishCount);
+        var node = scope.CreateCvNode();
+        node.CV2LVChannel = CV2LVChannelMode.GREEN;
+        using var graph = new Graph(node);
+        Assert.Equal(StatusTypeEnum.Failed, (await graph.StartAsync()).Status);
+        Assert.Equal(0, graph.Start.PublishCount);
         Assert.Empty(scope.Services.Requests);
+        scope.Backend.BeginLocalCommand();
+        scope.Backend.EndLocalCommand();
+    });
+
+    [Fact]
+    public void ProductionCvNodeFindsTheLoadedLocalCameraAndRoundTripsItsOriginalIdentity() => Run(() =>
+    {
+        using var scope = new CaptureScope(localOpen: true, preferLocal: false);
+        scope.Camera.Config.CameraMode = cvColorVision.CameraMode.CV_MODE;
+        scope.Camera.Config.Channel = cvColorVision.ImageChannel.Three;
+        FieldInfo managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? previousManager = managerField.GetValue(null);
+        var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+        manager.DeviceServices = [scope.Camera];
+        managerField.SetValue(null, manager);
+        try
+        {
+            using var canvas = new CVNodeContainer();
+            var node = new CVCameraNode();
+            node.Create();
+            node.DeviceCode = scope.Camera.Code;
+            node.TempR = 283; node.TempG = 467; node.TempB = 100;
+            Assert.True(node.SaveFiles);
+            node.SaveFiles = false;
+            Assert.True(node.ShowLocalCameraSettings);
+            Assert.Equal("FlowEngineLib.dll|FlowEngineLib.CVCameraNode", STNodeTypeRegistry.GetModelByType(typeof(CVCameraNode)));
+            canvas.Nodes.Add(node);
+            canvas.LoadCanvas(canvas.GetCanvasData());
+            var restored = Assert.IsType<CVCameraNode>(canvas.Nodes[0]);
+            Assert.Equal(scope.Camera.Code, restored.DeviceCode);
+            Assert.False(restored.SaveFiles);
+            Assert.Equal(new[] { 283f, 467f, 100f }, new[] { restored.TempR, restored.TempG, restored.TempB });
+            var parameters = (CameraData)typeof(CVCameraNode).GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(restored, [null])!;
+            CVMQTTRequest request = new() { DeviceCode = restored.DeviceCode, EventName = "GetData", Data = parameters };
+            using var execution = (FlowLocalExecution?)typeof(CVCameraNode).GetMethod("CreateLocalExecution", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(restored, [request]);
+            Assert.IsType<LocalCameraFlowExecution>(execution);
+        }
+        finally { managerField.SetValue(null, previousManager); }
+        scope.Backend.BeginLocalCommand();
+        scope.Backend.EndLocalCommand();
+        return Task.CompletedTask;
+    });
+
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    public void InvalidCvChannelExposureDoesNotReachCapture(float greenExposure) => Run(() =>
+    {
+        using var scope = new CaptureScope(localOpen: true, preferLocal: true);
+        scope.Camera.Config.CameraMode = cvColorVision.CameraMode.CV_MODE;
+        scope.Camera.Config.Channel = cvColorVision.ImageChannel.Three;
+        var parameters = new CVCameraData(CVImageFlipMode.None, CV2LVChannelMode.None, false, 0, 0, 1, 10, [283, greenExposure, 100], "");
+        Assert.Throws<InvalidOperationException>(() => LocalCameraFlowExecution.BuildCaptureRequest(scope.Camera, parameters));
+        Assert.Empty(scope.Services.Requests);
+        return Task.CompletedTask;
     });
 
     [Fact]
@@ -149,7 +248,7 @@ public sealed class LvCameraLocalForwardingTests
         {
             var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
             var data = (JObject)request.Data;
-            Assert.Equal("missing-poi", data["POIParam"]!["POI"]!["Name"]);
+            Assert.Null(data.Property("POIParam"));
             Assert.Equal(42, data["ExpTime"]![0]);
             Respond(graph.Nodes[0], request);
         };
@@ -168,7 +267,7 @@ public sealed class LvCameraLocalForwardingTests
         using var scope = new CaptureScope(localOpen: localOpen, preferLocal: true);
         scope.Services.FailCapture = !failSave;
         scope.Services.FailSave = failSave;
-        using var graph = new Graph(scope.CreateNode());
+        using var graph = new Graph(localOpen ? scope.CreateNode() : scope.CreateCvNode());
         Assert.Equal(StatusTypeEnum.Failed, (await graph.StartAsync()).Status);
         await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(0, graph.Start.PublishCount);
@@ -184,7 +283,7 @@ public sealed class LvCameraLocalForwardingTests
     {
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
         scope.Services.BlockCapture = true;
-        using var graph = new Graph(scope.CreateNode(immediateTimeout: true));
+        using var graph = new Graph(scope.CreateCvNode(immediateTimeout: true));
         Task<FlowEngineEventArgs> completion = graph.StartAsync();
         await scope.Services.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
         // Changing the next-open preference does not change this in-flight request.
@@ -233,8 +332,8 @@ public sealed class LvCameraLocalForwardingTests
         Assert.Equal(StatusTypeEnum.Failed, (await graph.StartAsync()).Status);
         Assert.Equal(0, graph.Start.PublishCount);
         Assert.Empty(scope.Services.Requests);
-        CameraData parameters = new(CVImageFlipMode.None, false, 0, 0, 1, 2, [10], "", "missing-poi", "missing-filter", "missing-revise", "");
-        Assert.False(LocalLvCameraExecution.BuildCaptureRequest(scope.Camera, parameters).SaveFiles);
+        CameraData parameters = new(CVImageFlipMode.None, false, 0, 0, 1, 2, [10], "");
+        Assert.False(LocalCameraFlowExecution.BuildCaptureRequest(scope.Camera, parameters).SaveFiles);
     });
 
     private static void Respond(CVBaseServerNode node, CVMQTTRequest request) => Assert.True(node.DoServerStatusRecv(new CVBaseDataFlowResp
@@ -247,6 +346,12 @@ public sealed class LvCameraLocalForwardingTests
     private static void Run(Func<Task> test) => StaTest.Run(() => test().GetAwaiter().GetResult());
 
     private sealed class TestLvNode(CaptureScope scope, bool immediateTimeout) : LVCameraNode
+    {
+        protected override int GetMaxDelay() => immediateTimeout ? 0 : base.GetMaxDelay();
+        protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request, SaveMode);
+    }
+
+    private sealed class TestCvNode(CaptureScope scope, bool immediateTimeout) : CVCameraNode
     {
         protected override int GetMaxDelay() => immediateTimeout ? 0 : base.GetMaxDelay();
         protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request, SaveMode);
@@ -287,8 +392,18 @@ public sealed class LvCameraLocalForwardingTests
                 if (node is LVCameraNode lv)
                 {
                     lv.ExpTime = 42; lv.Gain = 17; lv.AvgCount = 3; lv.FlipMode = CVImageFlipMode.Y;
-                    lv.POITempName = "missing-poi"; lv.POIFilterTempName = "missing-filter"; lv.POIReviseTempName = "missing-revise";
                 }
+                if (node is CVCameraNode cv)
+                {
+                    cv.TempR = 283; cv.TempG = 467; cv.TempB = 100;
+                    cv.Gain = 17; cv.AvgCount = 3; cv.FlipMode = CVImageFlipMode.Y;
+                }
+                node.OnLoadNode(new Dictionary<string, byte[]>
+                {
+                    ["POITempName"] = System.Text.Encoding.UTF8.GetBytes("missing-poi"),
+                    ["POIFilterTempName"] = System.Text.Encoding.UTF8.GetBytes("missing-filter"),
+                    ["POIReviseTempName"] = System.Text.Encoding.UTF8.GetBytes("missing-revise")
+                });
                 container.Nodes.Add(node);
                 Assert.Equal(ConnectionStatus.Connected, output.ConnectOption(node.GetAllInputOptions()[0], false));
                 output = node.GetAllOutputOptions()[0];
@@ -341,9 +456,16 @@ public sealed class LvCameraLocalForwardingTests
 
         public LVCameraNode CreateNode(bool immediateTimeout = false) => new TestLvNode(this, immediateTimeout);
 
+        public CVCameraNode CreateCvNode(bool immediateTimeout = false)
+        {
+            Camera.Config.CameraMode = cvColorVision.CameraMode.CV_MODE;
+            Camera.Config.Channel = cvColorVision.ImageChannel.Three;
+            return new TestCvNode(this, immediateTimeout);
+        }
+
         public FlowLocalExecution? CreateExecution(CVMQTTRequest request, CVFileSaveMode saveMode)
         {
-            FlowLocalExecution? execution = LocalLvCameraExecution.CreateForDevice(Camera, request, Services, saveMode);
+            FlowLocalExecution? execution = LocalCameraFlowExecution.CreateForDevice(Camera, request, Services, saveMode);
             return execution == null ? null : new TrackedExecution(execution, () =>
             {
                 if (System.Threading.Interlocked.Increment(ref disposedExecutions) == expectedExecutions)
@@ -370,7 +492,7 @@ public sealed class LvCameraLocalForwardingTests
         public override void Dispose() { inner.Dispose(); disposed(); }
     }
 
-    private sealed class FakeServices : ILocalLvCameraServices
+    private sealed class FakeServices : ILocalCameraFlowServices
     {
         public bool FailCapture, FailSave, BlockCapture;
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -385,8 +507,15 @@ public sealed class LvCameraLocalForwardingTests
             Started.TrySetResult();
             if (BlockCapture) Release.Task.GetAwaiter().GetResult();
             if (FailCapture) throw new InvalidOperationException("capture failed");
-            var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 2, Height = 1, SourceBpp = 8, Channels = 1 }, 2, 0);
-            using (var lease = frame.Acquire()) Marshal.Copy(new byte[] { 11, 22 }, 0, lease.RawPointer, 2);
+            bool cv = request.Device.Config.CameraMode == cvColorVision.CameraMode.CV_MODE;
+            int channels = cv ? 3 : 1;
+            var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 2, Height = 1, SourceBpp = 8, Channels = channels,
+                Exposure = cv ? [request.CameraParameters!.ExpTimeR, request.CameraParameters.ExpTimeG, request.CameraParameters.ExpTimeB] : [request.CameraParameters!.ExpTime]
+            }, 2 * channels, 0);
+            byte[] bytes = Enumerable.Range(0, channels).SelectMany(_ => new byte[] { 11, 22 }).ToArray();
+            using (var lease = frame.Acquire()) Marshal.Copy(bytes, 0, lease.RawPointer, bytes.Length);
             Frames.Add(frame);
             return new LocalCameraCaptureResult { Frame = frame };
         }

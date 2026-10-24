@@ -752,6 +752,9 @@ namespace ProjectARVRPro.Process
 
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (e.PropertyName is nameof(ProcessMeta.IsFlowTemplateMissing) or nameof(ProcessMeta.FlowTemplateError))
+                return;
+
             SavePersistedGroups();
 
             if (sender is ProcessMeta meta
@@ -939,7 +942,7 @@ namespace ProjectARVRPro.Process
 
             if (dialog.ShowDialog() != true) return;
 
-            if (dialog.SelectedTemplate == null) return;
+            if (dialog.SelectedTemplate == null && editTarget != ProcessMetaEditTarget.Process) return;
 
             if (HasDuplicateMetaName(dialog.MetaName, meta))
             {
@@ -947,12 +950,13 @@ namespace ProjectARVRPro.Process
                 return;
             }
 
+            string flowTemplate = editTarget == ProcessMetaEditTarget.Process ? meta.FlowTemplate : dialog.SelectedTemplate!.Key;
             IProcess newProcessInstance = CreateConfiguredProcess(dialog.SelectedProcess, out string configJson);
-            if (!string.Equals(meta.FlowTemplate, dialog.SelectedTemplate.Key, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(meta.FlowTemplate, flowTemplate, StringComparison.OrdinalIgnoreCase))
                 meta.FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig();
 
             meta.Name = dialog.MetaName;
-            meta.FlowTemplate = dialog.SelectedTemplate.Key;
+            meta.FlowTemplate = flowTemplate;
             meta.IsEnabled = dialog.IsMetaEnabled;
             meta.ConfigJson = configJson;
             meta.Process = newProcessInstance;
@@ -969,7 +973,7 @@ namespace ProjectARVRPro.Process
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    LocalizedText.Format($"未找到流程模板 \"{meta.FlowTemplate}\"。"),
+                    meta.FlowTemplateError,
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

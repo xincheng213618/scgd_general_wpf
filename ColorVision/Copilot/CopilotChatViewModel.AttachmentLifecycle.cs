@@ -12,6 +12,39 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
+        private readonly Dictionary<CopilotNonBlockingCancellationSource, (string ConversationId, string? HostedRunId)> _imagePreparationCancellations = new();
+
+        private bool HasSelectedImagePreparation => SelectedConversation != null
+            && _imagePreparationCancellations.Any(item => !item.Key.IsCancellationRequested
+                && string.Equals(item.Value.ConversationId, SelectedConversation.Id, StringComparison.Ordinal));
+
+        private bool TryCancelSelectedImagePreparation()
+        {
+            var pending = _imagePreparationCancellations
+                .Where(item => !item.Key.IsCancellationRequested
+                    && string.Equals(item.Value.ConversationId, SelectedConversation?.Id, StringComparison.Ordinal))
+                .ToArray();
+            foreach (var preparation in pending)
+            {
+                preparation.Key.RequestCancellation();
+                if (preparation.Value.HostedRunId is { } runId)
+                    _taskHost.RequestCancel(runId);
+            }
+            if (pending.Length > 0)
+            {
+                LocalCommandResultTitle = "请求准备已取消";
+                LocalCommandResultText = "尚未发送新请求，输入和附件均已保留。";
+                NotifyImagePreparationChanged();
+            }
+            return pending.Length > 0;
+        }
+
+        private void NotifyImagePreparationChanged()
+        {
+            OnPropertyChanged(nameof(PrimaryActionGlyph));
+            OnPropertyChanged(nameof(PrimaryActionToolTip));
+        }
+
         private void UpdateAttachmentsState(CopilotConversationRecord conversation)
         {
             conversation.RefreshSummary();
@@ -113,20 +146,44 @@ namespace ColorVision.Copilot
 
         private async Task<IReadOnlyList<CopilotAttachmentItem>?> TryPersistImageAttachmentsAsync(
             IReadOnlyList<CopilotAttachmentItem> attachments,
-            CopilotManagedImageAttachmentLease imageLease)
+            CopilotManagedImageAttachmentLease imageLease,
+            CopilotConversationRecord conversation,
+            CopilotHostedAgentRun? hostedRun)
         {
+            if (!attachments.Any(attachment => attachment.Type == CopilotAttachmentType.Image))
+                return attachments;
+
+            var cancellation = BeginAuxiliaryOperation();
+            using var queuedCancellation = hostedRun?.CancellationToken.Register(cancellation.RequestCancellation);
+            _imagePreparationCancellations.Add(cancellation, (conversation.Id, hostedRun?.Id));
+            NotifyImagePreparationChanged();
             try
             {
-                return await CopilotImageAttachmentAdmission.PersistAsync(
+                var admitted = await CopilotImageAttachmentAdmission.PersistAsync(
                     attachments,
                     _stateStore.AttachmentDirectoryPath,
-                    CancellationToken.None,
+                    cancellation.Token,
                     imageLease);
+                cancellation.Token.ThrowIfCancellationRequested();
+                return admitted;
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                // The stop action already reported cancellation. A late continuation
+                // must not overwrite feedback from a newer request or another conversation.
+                return null;
             }
             catch (CopilotImageAttachmentAdmissionException ex)
             {
-                ReportImageAttachmentAdmissionFailure(ex);
+                if (!cancellation.IsCancellationRequested && CanApplyAuxiliaryConversationResult(conversation))
+                    ReportImageAttachmentAdmissionFailure(ex);
                 return null;
+            }
+            finally
+            {
+                _imagePreparationCancellations.Remove(cancellation);
+                CompleteAuxiliaryOperation(cancellation);
+                NotifyImagePreparationChanged();
             }
         }
 

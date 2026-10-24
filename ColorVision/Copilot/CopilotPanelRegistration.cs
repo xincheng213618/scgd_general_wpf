@@ -1,9 +1,13 @@
 #pragma warning disable CA1822
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Copilot
 {
@@ -58,12 +62,59 @@ namespace ColorVision.Copilot
                 if (_panel != null)
                     return _panel;
 
-                _panel = new CopilotChatPanel
-                {
-                    DataContext = GetOrCreateViewModel(),
-                };
+                var panel = new CopilotChatPanel();
+                InitializePanel(panel, GetOrCreateViewModel);
+                _panel = panel;
                 return _panel;
             }, fallback: null) ?? throw new InvalidOperationException("The Copilot UI is shutting down.");
+        }
+
+        internal static void InitializePanel(CopilotChatPanel panel, Func<CopilotChatViewModel> viewModelFactory)
+        {
+            var originalContent = panel.Content;
+            StackPanel? failureContent = null;
+
+            void TryInitialize()
+            {
+                CopilotChatViewModel viewModel;
+                try
+                {
+                    viewModel = viewModelFactory();
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    System.Diagnostics.Trace.TraceError(
+                        $"Copilot conversation state could not be read: {CopilotUserFacingErrorFormatter.Sanitize(exception.Message)}");
+                    if (failureContent == null)
+                    {
+                        failureContent = new StackPanel { Margin = new Thickness(24) };
+                        var explanation = new TextBlock
+                        {
+                            Text = LocalizedText.Get("暂时无法读取 Copilot 会话记录。记录未被覆盖，请确认文件未被占用且具有读取权限，然后重试。"),
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(0, 0, 0, 16),
+                        };
+                        explanation.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                        var retry = new Button
+                        {
+                            Content = LocalizedText.Get("重试"),
+                            HorizontalAlignment = HorizontalAlignment.Left,
+                            MinWidth = 80,
+                            Padding = new Thickness(16, 6, 16, 6),
+                        };
+                        retry.Click += (_, _) => TryInitialize();
+                        failureContent.Children.Add(explanation);
+                        failureContent.Children.Add(retry);
+                    }
+                    panel.Content = failureContent;
+                    return;
+                }
+
+                panel.DataContext = viewModel;
+                panel.Content = originalContent;
+            }
+
+            TryInitialize();
         }
 
         public void ShowPanel()

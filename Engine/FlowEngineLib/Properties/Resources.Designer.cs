@@ -95,6 +95,33 @@ namespace FlowEngineLib.Properties {
                 return ResourceManager.GetString("AI算法2", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 AOI 定位+提取相机 的本地化字符串。
+        /// </summary>
+        internal static string AOILocAndRegPixels {
+            get {
+                return ResourceManager.GetString("AOILocAndRegPixels", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 AOI 定位相机（参数） 的本地化字符串。
+        /// </summary>
+        internal static string AOILocatePixels {
+            get {
+                return ResourceManager.GetString("AOILocatePixels", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 AOI 提取相机（参数） 的本地化字符串。
+        /// </summary>
+        internal static string AOIRegisterPixels {
+            get {
+                return ResourceManager.GetString("AOIRegisterPixels", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 算法 的本地化字符串。
@@ -588,15 +615,6 @@ namespace FlowEngineLib.Properties {
         internal static string KB算法 {
             get {
                 return ResourceManager.GetString("KB算法", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 KB输出 的本地化字符串。
-        /// </summary>
-        internal static string KB输出 {
-            get {
-                return ResourceManager.GetString("KB输出", resourceCulture);
             }
         }
         
@@ -1402,29 +1420,11 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关注点分析-IVL 的本地化字符串。
-        /// </summary>
-        internal static string 关注点分析_SMU {
-            get {
-                return ResourceManager.GetString("关注点分析_SMU", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 关注点布点 的本地化字符串。
         /// </summary>
         internal static string 关注点布点 {
             get {
                 return ResourceManager.GetString("关注点布点", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 关注点布点2 的本地化字符串。
-        /// </summary>
-        internal static string 关注点布点2 {
-            get {
-                return ResourceManager.GetString("关注点布点2", resourceCulture);
             }
         }
         
@@ -2071,15 +2071,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 校正+实时POI 的本地化字符串。
-        /// </summary>
-        internal static string 校正2 {
-            get {
-                return ResourceManager.GetString("校正2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 校正ROI 的本地化字符串。
         /// </summary>
         internal static string 校正ROI {
@@ -2719,7 +2710,7 @@ namespace FlowEngineLib.Properties {
         }
 
         /// <summary>
-        ///   查找类似 通用AOI相机 的本地化字符串。
+        ///   查找类似 AOI 定位相机（模板） 的本地化字符串。
         /// </summary>
         internal static string 通用AOI相机 {
             get {
@@ -2728,7 +2719,7 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 通用AOI相机2 的本地化字符串。
+        ///   查找类似 AOI 提取相机（模板） 的本地化字符串。
         /// </summary>
         internal static string 通用AOI相机2 {
             get {

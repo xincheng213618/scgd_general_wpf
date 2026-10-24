@@ -94,7 +94,7 @@ internal static class LocalRingGhostResultPersistence
             master, ViewResultAlgType.Ghost, id => new[] { CreateDetail(id, file) }, transactions);
 }
 
-[STNode("Flow_CustomNodes", "圆环鬼影", CategoryOrder = 9900)]
+[STNode("Flow_LocalAlgorithms", "圆环鬼影", CategoryOrder = 9910, NodeOrder = 80)]
 public sealed class LocalRingGhostNode : LocalFlowNodeBase
 {
     private readonly ILocalRingGhostNodeServices services;

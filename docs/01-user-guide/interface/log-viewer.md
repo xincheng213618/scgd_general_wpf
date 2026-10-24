@@ -5,7 +5,7 @@ status: "current"
 summary: "区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。"
 aliases: ["日志查看器","查看日志","日志搜索","日志等级","历史日志","日志丢失","原生日志","开始捕获","暂停显示","AllToday","SinceStartup","正则变红","自动刷新","自动滚动","WindowLog","LogOutput","LogLocalOutput","LogLoadState","LogHistoryReader","LogSearchHelper","LogViewerAppender","NativeLogWindow"]
 code_paths: ["UI/ColorVision.UI/LogImp","ColorVision/log4net.config","ColorVision/EntryClass.cs","ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/NativeLogging","UI/ColorVision.Core/NativeLogBridge.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/LogViewConfigTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"]
 related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 ---
 
@@ -102,7 +102,6 @@ native 的“暂停显示”仅暂停显示队列取出，采集仍继续；“�
 
 - `LogHistoryReaderTests` 用合成文本验证启动时间边界、续行与顺/倒序字符裁剪；`LogEntryParserTests` 验证部分等级识别和多行归组。
 - `LogSearchHelperTests` 验证普通词 AND、正则、非法语法、行/对象匹配；没有据此证明 UI 防抖、变红、超时后的可见状态或大小写规范化都已验证。
-- `LogViewConfigTests` 验证主面板与实时实例的默认条目限制和配置独立性，包含 STA 构造检查；不等于验证刷新丢弃、关闭释放或大文件性能。
 - `ContextualFindRouterTests` 使用独立控件与日志搜索控制器检查标准 Find 显示搜索栏及 Detach 解绑；不挂接生产日志 appender，不读取现场日志。
 - `NativeLogPendingBufferTests` 验证容量淘汰、批量读取、清空和 fake controller 会话暂停；`NativeLogWindowTests` 只验证菜单与编译 XAML 存在，不是 native DLL 或真实窗口交互验收。
 

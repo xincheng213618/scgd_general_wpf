@@ -1,4 +1,4 @@
-﻿using ColorVision.UI;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -20,19 +20,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         [LocalizedDisplayName(nameof(Resources.ShowList)), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
+
+        [LocalizedDisplayName("Engine_PG_ShowSpectrumFill"), Category("View")]
+        [LocalizedDescription("Engine_PG_ShowSpectrumFill_Description")]
+        public bool IsShowSpectrumFill { get => _IsShowSpectrumFill; set { _IsShowSpectrumFill = value; OnPropertyChanged(); } }
+        private bool _IsShowSpectrumFill = true;
+
         [Browsable(false)]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 
-        [LocalizedDisplayName(nameof(Resources.ShowSidebar)), Category("View")]
+        [Browsable(false)] // Retained only for old serialized configurations.
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 
-        [Display(Name = "Engine_PG_NegativeLuminanceGuard", GroupName = "Spectrum", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Resources.Engine_PG_NegativeLuminanceGuard), GroupName = nameof(Resources.Spectrometer), ResourceType = typeof(Properties.Resources))]
         public bool EnableNegativeLuminanceGuard { get => _EnableNegativeLuminanceGuard; set { _EnableNegativeLuminanceGuard = value; OnPropertyChanged(); } }
         private bool _EnableNegativeLuminanceGuard = true;
 
-        [Display(Name = "Engine_PG_MinLuminanceValue", GroupName = "Spectrum", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Resources.Engine_PG_MinLuminanceValue), GroupName = nameof(Resources.Spectrometer), ResourceType = typeof(Properties.Resources))]
         public double MinLuminanceValue { get => _MinLuminanceValue; set { _MinLuminanceValue = value; OnPropertyChanged(); } }
         private double _MinLuminanceValue = 0.0001;
     }

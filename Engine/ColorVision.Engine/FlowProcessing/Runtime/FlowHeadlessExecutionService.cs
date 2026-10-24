@@ -60,7 +60,7 @@ public sealed class FlowHeadlessExecutionRequest
         _stnSnapshot = (byte[])stnSnapshot.Clone();
         _services = CloneServices(services);
         StartNodeName = startNodeName;
-        SerialNumber = serialNumber;
+        SerialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
         ReadinessTimeout = readinessTimeout;
         ExecutionTimeout = executionTimeout;
         ContentHash = Convert.ToHexString(

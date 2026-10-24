@@ -3650,4 +3650,29 @@ ORB 特徵上限: {6:N0}    最少匹配/內點: {7}/{8}    重投影閾值: {9:
     <value>Sharma、Wu、Dalal：CIEDE2000 實現說明與 34 組驗證數據</value>
   </data>
   <data name="Algorithm_RingGhostMetrology" xml:space="preserve"><value>圓環鬼影亮度比…</value></data>
+  <data name="相对值" xml:space="preserve"><value>相對值</value></data>
+  <data name="绝对值" xml:space="preserve"><value>絕對值</value></data>
+  <data name="显色性 R1～R15" xml:space="preserve"><value>顯色性 R1～R15</value></data>
+  <data name="Ra 为 R1～R8 的平均值；R9 单独强调，负指数保留。" xml:space="preserve"><value>Ra 為 R1～R8 的平均值；R9 單獨強調，負指數保留。</value></data>
+  <data name="光通量" xml:space="preserve"><value>光通量</value></data>
+  <data name="亮度" xml:space="preserve"><value>亮度</value></data>
+  <data name="峰值波长" xml:space="preserve"><value>峰值波長</value></data>
+  <data name="平均波长" xml:space="preserve"><value>平均波長</value></data>
+  <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>在光譜圖上移動滑鼠讀取取樣值</value></data>
+  <data name="导出测量结果 CSV" xml:space="preserve"><value>匯出測量結果 CSV</value></data>
+  <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>匯出完整原始光譜 CSV</value></data>
+  <data name="保留全部采样点和负值，可能包含采集时的平滑处理" xml:space="preserve"><value>保留全部取樣點和負值，可能包含採集時的平滑處理</value></data>
+  <data name="请先选择要导出的数据。" xml:space="preserve"><value>請先選擇要匯出的資料。</value></data>
+  <data name="导出失败：{0}" xml:space="preserve"><value>匯出失敗：{0}</value></data>
+  <data name="显示或隐藏测量列表" xml:space="preserve"><value>顯示或隱藏測量列表</value></data>
+  <data name="分析" xml:space="preserve"><value>分析</value></data>
+  <data name="分析选中的光谱" xml:space="preserve"><value>分析選取的光譜</value></data>
+  <data name="分析此光谱" xml:space="preserve"><value>分析此光譜</value></data>
+  <data name="导出此条测量结果 CSV" xml:space="preserve"><value>匯出此筆測量結果 CSV</value></data>
+  <data name="导出此条完整原始光谱 CSV" xml:space="preserve"><value>匯出此筆完整原始光譜 CSV</value></data>
+  <data name="光谱分析" xml:space="preserve"><value>光譜分析</value></data>
+  <data name="波长" xml:space="preserve"><value>波長</value></data>
+  <data name="相对光谱" xml:space="preserve"><value>相對光譜</value></data>
+  <data name="绝对光谱" xml:space="preserve"><value>絕對光譜</value></data>
+  <data name="无有效光谱数据" xml:space="preserve"><value>無有效光譜資料</value></data>
 </root>

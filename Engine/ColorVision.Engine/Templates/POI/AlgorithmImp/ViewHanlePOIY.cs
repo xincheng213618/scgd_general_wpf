@@ -33,7 +33,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     PoiResultCIEYData poiResultCIExyuvData = new(item);
                     result.ViewResults.Add(poiResultCIExyuvData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
             }
         }
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)

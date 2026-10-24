@@ -8,6 +8,7 @@ public class MenuDiscoveryExclusionTests
     [Theory]
     [InlineData("ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.MenuThirdPartyAlgorithms")]
     [InlineData("ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.MenuItemProviderSensor")]
+    [InlineData("ColorVision.Engine.Services.Devices.Sensor.Templates.MenuItemProviderSensor")]
     [InlineData("ColorVision.Engine.Templates.Menus.MenuITemplateAlgorithm")]
     [InlineData("ColorVision.Engine.Templates.Menus.MenuITemplateAlgorithmBase")]
     [InlineData("ColorVision.Engine.Templates.FocusPoints.ExportFocusPoints")]
@@ -56,6 +57,7 @@ public class MenuDiscoveryExclusionTests
 
         Assert.True(Assert.IsType<bool>(candidateCheck.Invoke(null, [typeof(ColorVision.Database.ExportMySqlTool)])));
         Assert.True(Assert.IsType<bool>(candidateCheck.Invoke(null, [typeof(ColorVision.Solution.Workspace.MenuResetLayout)])));
+        Assert.True(Assert.IsType<bool>(candidateCheck.Invoke(null, [typeof(ColorVision.Engine.Services.Devices.Sensor.Templates.MenuTemplateSensor)])));
 
         var mySqlTool = new ColorVision.Database.ExportMySqlTool();
         Assert.Equal(ColorVision.UI.Menus.MenuItemConstants.View, mySqlTool.OwnerGuid);

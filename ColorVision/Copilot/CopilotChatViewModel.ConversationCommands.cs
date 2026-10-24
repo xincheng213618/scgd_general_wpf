@@ -352,7 +352,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var profile = CopilotConversationService.FindUniqueProfileTarget(Profiles, normalizedQuery);
+            var profile = CopilotConversationService.FindUniqueProfileTarget(Profiles.Where(profile => profile.IsAvailable), normalizedQuery);
             if (profile == null)
             {
                 ShowLocalCommandResult(

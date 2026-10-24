@@ -171,4 +171,30 @@
                 </ControlTemplate.Triggers>
             </ControlTemplate></Setter.Value></Setter>
         </Style>
+        <Style x:Key="SettingsIconButtonStyle" TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" /><Setter Property="FontSize" Value="14" />
+            <Setter Property="Width" Value="30" /><Setter Property="Height" Value="30" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+        <Style x:Key="SettingsModelBadgeStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="6" /><Setter Property="Padding" Value="5,3" /><Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+            <Setter Property="Opacity" Value="0.65" /><Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="SettingsToggleStyle" TargetType="CheckBox">
+            <Setter Property="Width" Value="34" /><Setter Property="Height" Value="20" /><Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox">
+                <Border x:Name="Track" Background="#AAAAAA" CornerRadius="10" BorderBrush="Transparent" BorderThickness="1" Padding="1">
+                    <Ellipse x:Name="Thumb" Width="16" Height="16" Fill="White" HorizontalAlignment="Left" />
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsChecked" Value="True"><Setter TargetName="Track" Property="Background" Value="{DynamicResource GlobalTextBrush}" /><Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" /><Setter TargetName="Thumb" Property="Fill" Value="{DynamicResource GlobalBackground}" /></Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /></Trigger>
+                    <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Track" Property="Opacity" Value="0.4" /></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
         </ResourceDictionary>

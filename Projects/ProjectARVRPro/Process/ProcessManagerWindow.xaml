@@ -17,6 +17,39 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
 
+        <DataTemplate x:Key="FlowTemplateCellTemplate">
+            <DockPanel ToolTip="{Binding FlowTemplateError}">
+                <TextBlock x:Name="MissingTemplateIcon" Text="⚠" Foreground="{DynamicResource DangerBrush}"
+                           FontWeight="Bold" Margin="0 0 5 0" Visibility="Collapsed"/>
+                <TextBlock x:Name="FlowTemplateText" Text="{Binding FlowTemplate}"/>
+            </DockPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsFlowTemplateMissing}" Value="True">
+                    <Setter TargetName="MissingTemplateIcon" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="FlowTemplateText" Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                    <Setter TargetName="FlowTemplateText" Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="FlowTemplateWarningTemplate">
+            <Border BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1" CornerRadius="4"
+                    Padding="8" Margin="0 6 0 0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFlowTemplateMissing}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Text="{Binding FlowTemplateError}" Foreground="{DynamicResource DangerBrush}"
+                           TextWrapping="Wrap" TextTrimming="None"/>
+            </Border>
+        </DataTemplate>
+
         <Style x:Key="SideEditButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Width" Value="25"/>
             <Setter Property="Height" Value="23"/>
@@ -123,7 +156,8 @@
                                             </GridViewColumn.CellTemplate>
                                         </GridViewColumn>
                                         <GridViewColumn Header="{display:DisplayText Key='名称'}" Width="175" DisplayMemberBinding="{Binding Name}"/>
-                                        <GridViewColumn Header="{display:DisplayText Key='流程模板'}" Width="205" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                                        <GridViewColumn Header="{display:DisplayText Key='流程模板'}" Width="205"
+                                                        CellTemplate="{StaticResource FlowTemplateCellTemplate}"/>
                                         <GridViewColumn Header="{display:DisplayText Key='处理类型'}" Width="215"
                                                         DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
                                     </GridView>
@@ -224,6 +258,10 @@
                                 </Grid>
 
                                 <Grid Grid.Row="2" Margin="0 3 0 0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
@@ -233,8 +271,18 @@
                                     <TextBlock Text="{display:DisplayText Key='流程模板：'}" Foreground="{DynamicResource SecondaryTextBrush}"
                                                VerticalAlignment="Center"/>
                                     <TextBox Grid.Column="1"
-                                             Text="{Binding SelectedProcessMeta.FlowTemplate, Mode=OneWay, TargetNullValue=—}"
-                                             Style="{StaticResource CopyableTextBoxStyle}"/>
+                                             Text="{Binding SelectedProcessMeta.FlowTemplate, Mode=OneWay, TargetNullValue=—}">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox" BasedOn="{StaticResource CopyableTextBoxStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedProcessMeta.IsFlowTemplateMissing}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                                        <Setter Property="ToolTip" Value="{Binding SelectedProcessMeta.FlowTemplateError}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
                                     <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="{display:DisplayText Key='编辑当前流程模板'}"
                                             Command="{Binding OpenFlowTemplateEditorCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
@@ -245,6 +293,23 @@
                                             CommandParameter="{Binding SelectedProcessMeta}">
                                         <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
                                     </Button>
+                                    <StackPanel Grid.Row="1" Grid.ColumnSpan="4">
+                                        <ContentControl Content="{Binding SelectedProcessMeta}" ContentTemplate="{StaticResource FlowTemplateWarningTemplate}"/>
+                                        <Button Content="{display:DisplayText Key='重新选择流程模板'}" HorizontalAlignment="Left"
+                                                Margin="0 6 0 0" Padding="8 3" Command="{Binding EditMetaTemplateCommand}"
+                                                CommandParameter="{Binding SelectedProcessMeta}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedProcessMeta.IsFlowTemplateMissing}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
                                 </Grid>
 
                                 <CheckBox x:Name="CameraOverrideCheckBox" Grid.Row="3"
@@ -335,7 +400,8 @@
                                             <Setter Property="Background" Value="Transparent"/>
                                         </Style>
                                     </GridView.ColumnHeaderContainerStyle>
-                                    <GridViewColumn Header="{display:DisplayText Key='流程模板'}" Width="240" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                                    <GridViewColumn Header="{display:DisplayText Key='流程模板'}" Width="240"
+                                                    CellTemplate="{StaticResource FlowTemplateCellTemplate}"/>
                                     <GridViewColumn Header="{display:DisplayText Key='处理模板'}" Width="240" DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
                                 </GridView>
                             </ListView.View>
@@ -365,6 +431,7 @@
                                 <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" Margin="0 4 0 0">
                                     <Run Text="{display:DisplayText Key='处理类: '}"/><Run Text="{Binding SelectedResultParserMeta.ProcessTypeName, Mode=OneWay}"/>
                                 </TextBlock>
+                                <ContentControl Content="{Binding SelectedResultParserMeta}" ContentTemplate="{StaticResource FlowTemplateWarningTemplate}"/>
                             </StackPanel>
                             <Button Grid.Column="1" Content="{display:DisplayText Key='编辑映射'}" Padding="12 4"
                                     VerticalAlignment="Center" Command="{Binding UpdateResultParserCommand}"/>

@@ -96,6 +96,7 @@ namespace ColorVision.ImageEditor
         public void NotifyImageSourceLoaded()
         {
             Dispatcher.VerifyAccess();
+            if (_publishingDecodedContent) return;
             ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
             if (source == null)
                 return;
@@ -182,6 +183,17 @@ namespace ColorVision.ImageEditor
         {
             _algorithmRuntime = algorithmRuntime ?? throw new ArgumentNullException(nameof(algorithmRuntime));
             _document = new ImageDocument(Dispatcher);
+            _document.CapabilityRetired += retirementVersion =>
+            {
+                void RefreshRetiredTools()
+                {
+                    if (_document.Capability != null || _document.ContentVersion != retirementVersion) return;
+                    SetLayerController(null);
+                    IEditorToolFactory?.ApplyImageOpenTools(null);
+                }
+                if (Dispatcher.CheckAccess()) RefreshRetiredTools();
+                else Dispatcher.BeginInvoke(RefreshRetiredTools);
+            };
             _session = new ImageEditorSession(_document, (previous, current) => ImageDocumentRevisionAdvancedHook?.Invoke(previous, current));
             _imageGroup = new ImageGroupNavigation(path => OpenImageCore(path));
             _imageGroup.Changed += (_, _) => UpdateImageGroupNavigator();
@@ -869,6 +881,7 @@ namespace ColorVision.ImageEditor
             long? cachedLength = imageOpen?.GetCachedFileLength(filePath);
             bool fileExists = cachedLength.HasValue || File.Exists(filePath);
             ReleaseImageContent(fileExists ? imageOpen : null);
+            ImageOpenCompletion = fileExists ? Task.CompletedTask : Task.FromException(new FileNotFoundException("Image file was not found.", filePath));
             Config.ClearProperties();
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
@@ -883,7 +896,12 @@ namespace ColorVision.ImageEditor
                     if (imageOpen != null)
                     {
                         EditorContext.IImageOpen = imageOpen;
-                        EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
+                        if (imageOpen is IAsyncImageOpen asyncOpen)
+                        {
+                            _staticOpenCancellation = new CancellationTokenSource();
+                            ImageOpenCompletion = OpenStaticImageAsync(asyncOpen, filePath, _staticOpenCancellation.Token);
+                        }
+                        else EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
                         IEditorToolFactory.ApplyImageOpenTools(imageOpen);
                         return;
                     }
@@ -906,6 +924,11 @@ namespace ColorVision.ImageEditor
         public void ReleaseImageContent(IImageOpen? nextOpener = null)
         {
             Dispatcher.VerifyAccess();
+            _staticOpenCancellation?.Cancel();
+            _staticOpenCancellation?.Dispose();
+            _staticOpenCancellation = null;
+            _document.RetireCapability(true);
+            _document.ParameterRecord = null;
             var opener = EditorContext.IImageOpen;
             EditorContext.IImageOpen = null;
             if (opener is IImageOpenContentLifetime lifetime)
@@ -992,10 +1015,13 @@ namespace ColorVision.ImageEditor
 
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
+            => SetImageSourceCore(imageSource, enableEditorImageServices, configureDefaultLayerController, ImageDocumentMutationKind.ImageSourceReplaced);
+
+        private void SetImageSourceCore(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController, ImageDocumentMutationKind mutationKind)
         {
             _drawing.CancelPendingZoom();
             _channels.CancelPending();
-            if (!_session.TryReplaceSource(imageSource, enableEditorImageServices, () => _isLayerSelectorEnabled = enableEditorImageServices))
+            if (!_session.TryReplaceSource(imageSource, enableEditorImageServices, () => _isLayerSelectorEnabled = enableEditorImageServices, mutationKind))
             {
                 PixelFormat unsupportedFormat = ((WriteableBitmap)imageSource).Format;
                 WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedPixelFormat, unsupportedFormat));
@@ -1011,7 +1037,7 @@ namespace ColorVision.ImageEditor
             {
                 UpdateLayerSelectorVisibility();
             }
-            NotifyImageSourceLoaded();
+            if (!_publishingDecodedContent) NotifyImageSourceLoaded();
             CommandManager.InvalidateRequerySuggested();
 
             // 图像加载完成后通知状态栏刷新

@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Compile Include="..\Shared\StaTest.cs" Link="StaTest.cs" />
+    <Compile Include="..\..\Projects\ProjectARVRPro.IntegrationDemo\JsonStreamMessageReader.cs" Link="IntegrationDemo\JsonStreamMessageReader.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

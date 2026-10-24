@@ -1,4 +1,4 @@
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
@@ -19,9 +19,6 @@ public partial class DeviceSpectrum
     internal SpectrumBackendState SpectrumBackend { get; private set; } = null!;
     internal LocalSpectrumSession LocalSession { get; }
     private LocalSpectrumWindow? localWindow;
-    private readonly object continuousSync = new();
-    private CancellationTokenSource? continuousCancellation;
-    private Task? continuousTask;
     private bool localDisposed;
     public event Action<LocalSpectrumCapture, bool>? LocalResultAvailable;
     public event Action<string>? LocalCaptureFailed;
@@ -30,7 +27,6 @@ public partial class DeviceSpectrum
 
     private void InitializeLocalSpectrum()
     {
-        if (SysResourceDao.IsLocalId(SysResourceModel.Id)) DisplayConfig.UseLocalSpectrum = true;
         SpectrumBackend = new SpectrumBackendState(DisplayConfig.UseLocalSpectrum);
         SpectrumBackend.Changed += RefreshLocalSpectrumStatus;
         DisplayConfig.PropertyChanged += LocalDisplayConfigChanged;
@@ -101,17 +97,13 @@ public partial class DeviceSpectrum
         catch { SpectrumBackend.SetLocalStatus(LocalSession.IsQuarantined ? DeviceStatusType.Unknown : DeviceStatusType.Closed); throw; }
     }
 
-    internal LocalSpectrumCapture CaptureLocalSpectrum(LocalSpectrumParameters parameters, ConfigSpectrum config, bool autoConnect, bool continuous = false)
+    internal LocalSpectrumCapture CaptureLocalSpectrum(LocalSpectrumParameters parameters, ConfigSpectrum config, bool autoConnect, CancellationToken cancellationToken = default)
     {
         EnsureLocalSpectrumConnected(autoConnect, config);
-        if (!continuous) SpectrumBackend.SetLocalStatus(DeviceStatusType.Busy);
-        try
-        {
-            LocalSpectrumCapture result = LocalSession.Capture(parameters, config);
-            result.DeviceCode = Code;
-            return result;
-        }
-        finally { if (!continuous) SpectrumBackend.SetLocalStatus(DeviceStatusType.Opened); }
+        CancellationToken token = cancellationToken.CanBeCanceled ? cancellationToken : SpectrumBackend.LocalCancellationToken;
+        LocalSpectrumCapture result = LocalSession.Capture(parameters, config, token);
+        result.DeviceCode = Code;
+        return result;
     }
 
     internal void PublishLocalSpectrum(LocalSpectrumCapture result)
@@ -122,15 +114,20 @@ public partial class DeviceSpectrum
     private void DisplayLocalSpectrum(LocalSpectrumCapture result, bool continuous)
     {
         if (localDisposed) return;
+        if (result.NDPort.HasValue) ApplyLocalNdState(result.NDPort.Value, result.NdCalibration);
         DisplayConfig.IntTime = result.IntegralTime;
-        if (continuous) View.SetLocalPreview(CreateLocalSpectrumView(result));
-        else View.AddViewResultSpectrum(CreateLocalSpectrumView(result));
+        View.AddViewResultSpectrum(CreateLocalSpectrumView(result));
         LocalResultAvailable?.Invoke(result, continuous);
     }
 
     internal static ViewResultSpectrum CreateLocalSpectrumView(LocalSpectrumCapture result)
     {
-        var view = new ViewResultSpectrum(result.Data) { CreateTime = result.CapturedAt };
+        var view = new ViewResultSpectrum(result.Data)
+        {
+            CreateTime = result.CapturedAt, IntTime = result.IntegralTime, AcquisitionFluxMode = result.EqeData.HasValue,
+            AcquisitionDeviceCode = result.DeviceCode, AcquisitionParametersJson = result.AcquisitionParametersJson
+        };
+        if (result.MeasurementId > 0) view.Id = result.MeasurementId;
         if (result.EqeData is { } eqe)
         {
             view.Eqe = eqe.dEqe; view.V = (float)eqe.dVoltage; view.I = (float)eqe.dCurrent;
@@ -141,10 +138,12 @@ public partial class DeviceSpectrum
 
     internal MsgRecord RunLocalSpectrumCommand(string eventName)
     {
+        if (eventName is "SetPort" or "GetPort")
+            return RunLocalNdCommand(eventName, eventName == "SetPort" ? DisplayConfig.PortNum : null);
         // Snapshot UI settings before leaving the dispatcher; continuous runs keep their starting parameters.
         LocalSpectrumParameters parameters = BuildLocalSpectrumParameters(eventName.StartsWith("EQE", StringComparison.Ordinal) ? true : null);
         ConfigSpectrum config = SnapshotLocalConfiguration();
-        if (eventName == "GetDataAutoStop" || eventName == "Close") return FinishLocalContinuousCommand(eventName);
+        if (eventName == "GetDataAutoStop" || eventName == "Close") return FinishLocalCommand(eventName);
         if (eventName is "GetDataAuto" or "EQE.GetDataAuto") return StartLocalContinuous(parameters, config);
         return RunLocalSpectrumWork(eventName, () =>
         {
@@ -159,9 +158,67 @@ public partial class DeviceSpectrum
             EnsureLocalSpectrumConnected(false, config);
             if (eventName == "InitDark") LocalSession.Dark(parameters, config);
             else if (eventName == "InitAutoDark") LocalSession.InitAutoDark(config);
+            else if (eventName is "ShutterConnect" or "ShutterDisconnect" or "ShutterDoOpen" or "ShutterDoClose") LocalSession.ControlShutter(eventName, config);
             else throw new NotSupportedException($"本地光谱仪暂不支持 {eventName} 操作。");
             return null;
         });
+    }
+
+    internal bool UsesLocalNd => SpectrumBackend.OpensLocally || (Config.NDConfig.IsBingNDDevice && GetBoundCfwPort()?.CfwBackend.OpensLocally == true);
+
+    internal MsgRecord RunLocalNdCommand(string eventName, int? port)
+    {
+        ConfigSpectrum config = SnapshotLocalConfiguration();
+        bool reserveSpectrum = SpectrumBackend.OpensLocally;
+        Exception? reservationError = null;
+        try
+        {
+            if (!config.NDConfig.IsNDPort) throw new InvalidOperationException("请先在光谱仪配置中启用 ND。");
+            if (reserveSpectrum) SpectrumBackend.BeginLocalCommand();
+            else if (DService.DeviceStatus is DeviceStatusType.Busy or DeviceStatusType.SP_Continuous_Mode)
+                throw new InvalidOperationException("光谱仪正在采集，请完成或停止后再切换 ND。");
+        }
+        catch (Exception ex) { reservationError = ex; }
+        return StartLocalRecord(eventName, async () =>
+        {
+            if (reservationError != null) throw reservationError;
+            try
+            {
+                var result = await Task.Run(() => ExecuteLocalNd(config, port, reserveSpectrum ? SpectrumBackend.LocalCancellationToken : CancellationToken.None));
+                if (Application.Current?.Dispatcher is { } dispatcher) await dispatcher.InvokeAsync(() => ApplyLocalNdState(result.Port, result.Calibration));
+                else ApplyLocalNdState(result.Port, result.Calibration);
+                return new { result.Port };
+            }
+            finally { if (reserveSpectrum) SpectrumBackend.EndLocalCommand(); }
+        });
+    }
+
+    internal (int Port, LocalSpectrumNd.Calibration Calibration) ExecuteLocalNd(ConfigSpectrum config, int? port, CancellationToken token)
+    {
+        if (!config.NDConfig.IsNDPort) throw new InvalidOperationException("请先在光谱仪配置中启用 ND。");
+        // Validate the destination before moving, then commit files only after the SDK confirms its position.
+        LocalSpectrumNd.Calibration? calibration = port.HasValue ? LocalSpectrumNd.ResolveCalibration(config, port.Value) : null;
+        int actual = LocalSession.ControlNd(config, port, token);
+        return (actual, calibration ?? LocalSpectrumNd.ResolveCalibration(config, actual));
+    }
+
+    internal void ApplyLocalNdState(int port, LocalSpectrumNd.Calibration? calibration)
+    {
+        if (localDisposed) return;
+        DisplayConfig.PortNum = port;
+        if (calibration == null) return;
+        if (calibration.GroupName is { } name)
+            ApplyCalibrationGroup(new SpectrumCalibrationGroup { GroupName = name, NDHoleIndex = port,
+                WavelengthFile = calibration.WavelengthFile, MaguideFile = calibration.MagnitudeFile }, true);
+        else
+        {
+            if (string.Equals(Config.WavelengthFile, calibration.WavelengthFile, StringComparison.Ordinal)
+                && string.Equals(Config.MaguideFile, calibration.MagnitudeFile, StringComparison.Ordinal)) return;
+            using var scope = CalibrationGroupChangeGuard.EnterApply();
+            Config.WavelengthFile = calibration.WavelengthFile;
+            Config.MaguideFile = calibration.MagnitudeFile;
+            SaveConfig();
+        }
     }
 
     private MsgRecord RunLocalSpectrumWork(string eventName, Func<object?> work)
@@ -172,7 +229,7 @@ public partial class DeviceSpectrum
         return StartLocalRecord(eventName, async () =>
         {
             if (reservationError != null) throw reservationError;
-            try { return await Task.Run(() => { ObjectDisposedException.ThrowIf(localDisposed, this); return work(); }); }
+            try { return await Task.Run(() => { ObjectDisposedException.ThrowIf(localDisposed, this); SpectrumBackend.LocalCancellationToken.ThrowIfCancellationRequested(); return work(); }); }
             finally { SpectrumBackend.EndLocalCommand(); }
         });
     }
@@ -186,6 +243,7 @@ public partial class DeviceSpectrum
             object? data = null;
             Exception? failure = null;
             try { data = await work(); }
+            catch (OperationCanceledException ex) { failure = new OperationCanceledException("光谱仪操作已停止。", ex); LocalCaptureFailed?.Invoke(failure.Message); }
             catch (Exception ex) { failure = ex; log.Error(ex); LocalCaptureFailed?.Invoke(ex.Message); }
             record.ReciveTime = DateTime.Now;
             record.MsgReturn = new MsgReturn { MsgID = record.MsgID, EventName = eventName, DeviceCode = Code,
@@ -203,30 +261,18 @@ public partial class DeviceSpectrum
         try { parameters.Validate(); SpectrumBackend.BeginLocalCommand(); }
         catch (Exception ex) { reservationError = ex; }
         if (reservationError != null) return StartLocalRecord("GetDataAuto", () => Task.FromException<object?>(reservationError));
-        var cancellation = new CancellationTokenSource();
-        var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        lock (continuousSync)
-        {
-            continuousCancellation = cancellation;
-            continuousTask = stopped.Task;
-        }
+        CancellationToken cancellation = SpectrumBackend.LocalCancellationToken;
         void Release()
         {
-            SpectrumBackend.EndLocalCommand();
-            if (!localDisposed) SpectrumBackend.SetLocalStatus(LocalSession.IsOpen ? DeviceStatusType.Opened : DeviceStatusType.Closed);
-            lock (continuousSync)
-            {
-                if (ReferenceEquals(continuousCancellation, cancellation)) continuousCancellation = null;
-            }
-            cancellation.Dispose();
-            stopped.TrySetResult();
+            try { if (!localDisposed) SpectrumBackend.SetLocalStatus(LocalSession.IsOpen ? DeviceStatusType.Opened : DeviceStatusType.Closed); }
+            finally { SpectrumBackend.EndLocalCommand(); }
         }
         return StartLocalRecord("GetDataAuto", async () =>
         {
             try
             {
-                await Task.Run(() => EnsureLocalSpectrumConnected(false, config));
-                cancellation.Token.ThrowIfCancellationRequested();
+                await Task.Run(() => { cancellation.ThrowIfCancellationRequested(); EnsureLocalSpectrumConnected(false, config); });
+                cancellation.ThrowIfCancellationRequested();
                 SpectrumBackend.SetLocalStatus(DeviceStatusType.SP_Continuous_Mode);
                 _ = Task.Run(async () =>
                 {
@@ -234,10 +280,12 @@ public partial class DeviceSpectrum
                     {
                         while (!cancellation.IsCancellationRequested)
                         {
-                            var result = CaptureLocalSpectrum(parameters, config, false, continuous: true);
-                            if (!cancellation.IsCancellationRequested && Application.Current?.Dispatcher is { } dispatcher)
-                                await dispatcher.InvokeAsync(() => { if (!cancellation.IsCancellationRequested) DisplayLocalSpectrum(result, true); });
-                            await Task.Delay(100, cancellation.Token);
+                            var result = CaptureLocalSpectrum(parameters, config, false);
+                            LocalSpectrumResultService.Save(result, parameters);
+                            // A completed capture is a result even if stop was requested while the SDK was running.
+                            if (Application.Current?.Dispatcher is { } dispatcher)
+                                await dispatcher.InvokeAsync(() => DisplayLocalSpectrum(result, true));
+                            await Task.Delay(100, cancellation);
                         }
                     }
                     catch (OperationCanceledException) { }
@@ -250,11 +298,9 @@ public partial class DeviceSpectrum
         });
     }
 
-    private MsgRecord FinishLocalContinuousCommand(string eventName) => StartLocalRecord(eventName, async () =>
+    private MsgRecord FinishLocalCommand(string eventName) => StartLocalRecord(eventName, async () =>
     {
-        Task? task;
-        lock (continuousSync) { continuousCancellation?.Cancel(); task = continuousTask; }
-        if (task != null) await task;
+        await SpectrumBackend.StopLocalCommandAsync();
         if (eventName == "Close")
         {
             SpectrumBackend.BeginLocalCommand();
@@ -281,7 +327,7 @@ public partial class DeviceSpectrum
         localDisposed = true;
         DisplayConfig.PropertyChanged -= LocalDisplayConfigChanged;
         SpectrumBackend.Changed -= RefreshLocalSpectrumStatus;
-        lock (continuousSync) continuousCancellation?.Cancel();
+        _ = SpectrumBackend.StopLocalCommandAsync();
         try { LocalSession.Dispose(); }
         catch (Exception ex) { log.Error(ex); }
         DService.Dispose();

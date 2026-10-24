@@ -27,10 +27,14 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition x:Name="VideoColumn" Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Content="{engine:EngineLang CameraPanel_Connect}" x:Name="OpenButton"/>
             <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Background="Red" Foreground="White" Content="{engine:EngineLang CameraPanel_Disconnect}" x:Name="CloseButton"/>
             <Button Grid.Column="1" x:Name="LocalVideoButton" Content="{engine:EngineLang CameraPanel_StartPreview}" HorizontalAlignment="Stretch" Margin="0,0,2,0"/>
+            <Button Grid.Column="2" Width="24" Height="24" Padding="2" VerticalAlignment="Center" Command="{Binding OpenPhyCameraMangerCommand}" ToolTip="{x:Static properties:Resources.MenuPhyCameraManager}" AutomationProperties.Name="{x:Static properties:Resources.MenuPhyCameraManager}">
+                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center"/>
+            </Button>
         </Grid>
     </StackPanel>
 </UserControl>

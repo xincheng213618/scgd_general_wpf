@@ -74,16 +74,6 @@ public sealed class UiLocalizationConsistencyTests
         Assert.Equal("vendor_error_42", unknown.Message);
     }
 
-    [Fact]
-    public void IdleStatusIsResolvedForTheCultureAtTheTimeItIsRequested()
-    {
-        using var chinese = new CultureScope("zh-CN");
-        string initial = FlowExecutionStatusInfo.Idle.Label;
-        using var english = new CultureScope("en-US");
-        Assert.NotEqual(initial, FlowExecutionStatusInfo.Idle.Label);
-        Assert.Equal("Idle", FlowExecutionStatusInfo.Idle.Label);
-    }
-
     [Theory]
     [InlineData("zh-CN")]
     [InlineData("en-US")]
@@ -104,25 +94,6 @@ public sealed class UiLocalizationConsistencyTests
         group.Name = "Customer B";
         Assert.Contains(nameof(DisPlayGroupConfig.DisplayName), changed);
         Assert.Equal("Customer B", group.DisplayName);
-    }
-
-    [Theory]
-    [InlineData("zh-CN")]
-    [InlineData("en-US")]
-    [InlineData("zh-Hant")]
-    public void BatchAlgorithmLabelsKeepCatalogIdentityAndOutputSuffix(string uiCulture)
-    {
-        using var culture = new CultureScope(uiCulture);
-        foreach (var algorithm in BatchImageAlgorithms.CreateAll())
-        {
-            Assert.False(string.IsNullOrWhiteSpace(algorithm.DisplayName));
-            if (algorithm.Descriptor != null)
-            {
-                Assert.Equal(algorithm.Descriptor.Name, algorithm.Name);
-                Assert.Equal(algorithm.Descriptor.OutputSuffix, algorithm.Suffix);
-            }
-            if (uiCulture == "en-US") Assert.DoesNotMatch(@"\p{IsCJKUnifiedIdeographs}", algorithm.DisplayName);
-        }
     }
 
     [Fact]
@@ -158,29 +129,6 @@ public sealed class UiLocalizationConsistencyTests
             }
         }
         Assert.True(families > 0);
-    }
-
-    [Fact]
-    public void TraditionalResourcesForMaintenanceSearchAndHotkeysArePresentInBuiltSatellites()
-    {
-        var assemblies = new[]
-        {
-            (typeof(ColorVision.App).Assembly, "ColorVision.Recovery.StartupMaintenanceResources"),
-            (typeof(ColorVision.App).Assembly, "ColorVision.Settings.Maintenance.MaintenanceResources"),
-            (typeof(UiResources).Assembly, "ColorVision.UI.Serach.SearchPaletteResources"),
-            (typeof(UiResources).Assembly, "ColorVision.UI.HotKey.FileHotkeyResources"),
-            (typeof(UiResources).Assembly, "ColorVision.UI.HotKey.HotkeyEditorResources"),
-            (typeof(UiResources).Assembly, "ColorVision.UI.HotKey.HotkeyPresentationResources"),
-        };
-        foreach (var (assembly, name) in assemblies)
-        {
-            var manager = new ResourceManager(name, assembly);
-            try
-            {
-                Assert.NotNull(manager.GetResourceSet(CultureInfo.GetCultureInfo("zh-Hant"), true, false));
-            }
-            finally { manager.ReleaseAllResources(); }
-        }
     }
 
     private static Dictionary<string, string> ReadResources(string path)

@@ -34,8 +34,8 @@ namespace ColorVision.Copilot
     public sealed class CopilotAgentTokenBudget
     {
         public const int MinimumContextWindowTokens = 32_768;
-        public const int MaximumContextWindowTokens = 1_048_576;
-        public const int DefaultContextWindowTokens = MaximumContextWindowTokens;
+        public const int MaximumContextWindowTokens = 2_000_000;
+        public const int DefaultContextWindowTokens = 1_048_576;
 
         public int ContextWindowTokens { get; init; }
 
@@ -49,7 +49,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(profile);
             ArgumentNullException.ThrowIfNull(runBudget);
-            var maxOutputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
+            var maxOutputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.MaximumMaxTokens);
             return new CopilotAgentTokenBudget
             {
                 ContextWindowTokens = Math.Clamp(runBudget.ContextWindowTokens, MinimumContextWindowTokens, MaximumContextWindowTokens),

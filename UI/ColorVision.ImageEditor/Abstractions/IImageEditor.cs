@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace ColorVision.ImageEditor.Abstractions
 {
@@ -12,6 +13,12 @@ namespace ColorVision.ImageEditor.Abstractions
     {
         void OpenImage(EditorContext context, string? filePath);
         long? GetCachedFileLength(string filePath) => null;
+    }
+
+    /// <summary>A static file open completes only after decoded content has been published.</summary>
+    public interface IAsyncImageOpen : IImageOpen
+    {
+        Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default);
     }
 
     /// <summary>Ends the current file's lifetime, independently of toolbar activation.

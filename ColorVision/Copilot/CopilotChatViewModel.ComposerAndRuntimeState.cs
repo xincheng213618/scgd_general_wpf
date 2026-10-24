@@ -140,7 +140,7 @@ namespace ColorVision.Copilot
             {
                 if (IsPromptHistorySearchOpen)
                     return "✓";
-                if (HasExclusiveLocalOperation)
+                if (HasExclusiveLocalOperation || HasSelectedImagePreparation)
                     return "■";
                 if (IsViewingActiveRun)
                 {
@@ -171,6 +171,8 @@ namespace ColorVision.Copilot
                     return LocalizedText.Get("停止处理附件");
                 if (_webPageAttachmentCts != null)
                     return LocalizedText.Get("停止读取网页附件");
+                if (HasSelectedImagePreparation)
+                    return LocalizedText.Get("停止准备图片附件");
                 if (IsViewingQueuedRun)
                     return LocalizedText.Get("取消这个排队任务");
                 if (IsViewingActiveRun)
@@ -574,7 +576,7 @@ namespace ColorVision.Copilot
         public bool CanSwitchConversation => !_isEndingConversation
             && (!IsBusy || IsAgentRequestActive);
 
-        public bool CanSelectProfile => !IsBusy && Profiles.Count > 0;
+        public bool CanSelectProfile => !IsBusy && Profiles.Any(profile => profile.IsAvailable);
 
         public bool IsMcpEnabled => _config.McpEnabled;
 

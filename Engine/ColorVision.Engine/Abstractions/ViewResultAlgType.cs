@@ -36,7 +36,7 @@ namespace ColorVision.Engine
         OLED_FindDotsArrayOutFile = 26,
         JND_CalVas = 27,
         POI_CAD_Mapping = 28,
-        Image_Cropping = 29,
+        // Result ID 29 retired on 2026-10-22; do not reuse it for another algorithm.
         Calibration = 30,
         POIReviseGen = 31,
         OLED_RebuildPixelsMem = 32,

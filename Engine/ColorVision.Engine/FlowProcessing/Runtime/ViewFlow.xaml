@@ -76,6 +76,36 @@
                 </Button>
                 </StackPanel>
             </flow:FlowEditorCanvas.ToolbarContent>
+            <flow:FlowEditorCanvas.RightToolbarContent>
+                <StackPanel Orientation="Horizontal">
+                    <Button MinWidth="88" Height="32" Margin="2,0" Padding="8,3"
+                            Click="PreProcessManagementButton_Click"
+                            ToolTip="{x:Static properties:Resources.PreprocessManager}"
+                            AutomationProperties.Name="{x:Static properties:Resources.PreprocessManager}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Width="18" Height="18"
+                                  Data="M 9.5,2.5 H 16.5 V 15.5 H 9.5 M 1.5,9 H 12 M 8.5,5.5 L 12,9 8.5,12.5"
+                                  Stroke="{DynamicResource GlobalTextBrush}" StrokeThickness="1.3"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <TextBlock Text="{engine:EngineLang 预处理}" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button MinWidth="88" Height="32" Margin="2,0" Padding="8,3"
+                            Click="PostProcessManagementButton_Click"
+                            ToolTip="{x:Static properties:Resources.ProcessHandlingConfig}"
+                            AutomationProperties.Name="{x:Static properties:Resources.ProcessHandlingConfig}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Width="18" Height="18"
+                                  Data="M 8.5,2.5 H 1.5 V 15.5 H 8.5 M 6,9 H 16.5 M 13,5.5 L 16.5,9 13,12.5"
+                                  Stroke="{DynamicResource GlobalTextBrush}" StrokeThickness="1.3"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <TextBlock Text="{engine:EngineLang 后处理}" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </flow:FlowEditorCanvas.RightToolbarContent>
         </flow:FlowEditorCanvas>
 
         <Grid>
@@ -153,14 +183,9 @@
                                      VerticalContentAlignment="Top" IsReadOnly="True"/>
                         </DockPanel>
 
-                        <StackPanel Grid.Column="2" HorizontalAlignment="Right">
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="{x:Static properties:Resources.FlowResultManagement}" Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
-                                <Button Content="{engine:EngineLang 执行分析}" Click="Button_Click_NodeAnalysis"/>
-                            </StackPanel>
-
-                            <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1"/>
-                            <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"/>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal">
+                            <Button Content="{x:Static properties:Resources.FlowResultManagement}" Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                            <Button Content="{engine:EngineLang 执行分析}" Click="Button_Click_NodeAnalysis"/>
                         </StackPanel>
                     </Grid>
                 </Grid>

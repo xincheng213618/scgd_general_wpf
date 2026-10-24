@@ -5,7 +5,7 @@ status: "current"
 summary: "LineFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["如何拟合直线、为什么直线拟合默认不可执行","LineFit","LineFitAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/LineFitAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LineFitV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -57,6 +57,6 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 验证范围与限制
 
-`LineFitV1Tests` 覆盖九种规范图像格式、稳健离群点 golden、垂直线、Physical/DPI、TLS/Huber、结构化拒绝、资源上限、取消、输入只读、成功/失败/取消释放、Batch/Flow 一致性，以及 ImageView 表格和实际 WPF Visual 回收。算法复杂度为 `O(iterations × points)`，内存为 `O(points)`。
+算法复杂度为 `O(iterations × points)`，内存为 `O(points)`。
 
 V1 不从图像自动提线、不隐式运行亚像素边缘、不拟合多条线，也不提供统计协方差。需要拟合圆时使用独立的[圆拟合](./circle-fit-v1.md)参数和结果契约。

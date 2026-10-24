@@ -25,6 +25,31 @@ namespace ColorVision.UI.Views
         public Dictionary<Control, string> ViewTitles { get; } = new();
 
         private readonly List<DockViewRegistration> _registrations = new();
+        private readonly Dictionary<Control, string> _viewIdentities = new();
+
+        public void SetViewIdentity(Control control, string persistenceKey)
+        {
+            ArgumentNullException.ThrowIfNull(control);
+            ArgumentException.ThrowIfNullOrWhiteSpace(persistenceKey);
+            _viewIdentities[control] = "DockView:" + persistenceKey;
+        }
+
+        public string? GetViewIdentity(Control control) => _viewIdentities.GetValueOrDefault(control);
+
+        public bool TryGetViewForLayout(string contentId, out Control? control)
+        {
+            control = null;
+            var registrations = _registrations.Where(item => !string.IsNullOrWhiteSpace(item.PersistenceKey)
+                && "DockView:" + item.PersistenceKey == contentId).ToArray();
+            if (registrations.Length > 1) return false;
+            var candidates = _viewIdentities.Where(item => item.Value == contentId).Select(item => item.Key).ToArray();
+            if (candidates.Length > 1) return false;
+            if (candidates.Length == 1) { control = candidates[0]; return true; }
+            if (registrations.Length != 1) return false;
+            control = registrations[0].GetOrCreate();
+            SetViewTitle(control, registrations[0].Title);
+            return true;
+        }
 
         public void RegisterView(DockViewRegistration registration)
         {
@@ -131,6 +156,7 @@ namespace ColorVision.UI.Views
 
             Views.Remove(control);
             ViewTitles.Remove(control);
+            _viewIdentities.Remove(control);
             if (ReferenceEquals(LastActiveView, control))
                 LastActiveView = null;
             ViewRemovedHandler?.Invoke(control);

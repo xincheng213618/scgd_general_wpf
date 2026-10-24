@@ -2,6 +2,8 @@ using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using FlowEngineLib;
+using FlowEngineLib.Base;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
@@ -12,6 +14,32 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowExecutionSessionProgressTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TimerUsesConfiguredDurationForProgressEvenWithoutHistoryOrAfterTimingChanges(bool hasHistory)
+    {
+        WithSession(fixture =>
+        {
+            Type type = typeof(CVCommonNode).Assembly.GetType("FlowEngineLib.simulator.Timer", true)!;
+            var timer = (CVCommonNode)Activator.CreateInstance(type)!;
+            timer.Create();
+            type.GetProperty("Time")!.SetValue(timer, 120000);
+            if (hasHistory) fixture.ExpectedDurations[timer.NodeID] = 250;
+            FlowEngineNodeRunEventArgs? started = null;
+            timer.nodeRunEvent += (_, args) => { started = args; fixture.StartNodeProgress(timer, args.ExpectedDurationMs); };
+            var action = new CVStartCFC("timer-progress") { FlowStatus = StatusTypeEnum.Runing };
+            try
+            {
+                timer.GetAllInputOptions()[0].ReceiveData(action);
+                Assert.NotNull(started);
+                Assert.Equal(120000, fixture.ExpectedDurations[timer.NodeID]);
+                Assert.Equal(0f, timer.TitleProgress);
+            }
+            finally { action.RuntimeResources.Dispose(); }
+        });
+    }
+
     [Fact]
     public void QueuedProgressCannotOverwriteTerminalSummaryOrCompletedPercentage()
     {
@@ -122,6 +150,7 @@ public sealed class FlowExecutionSessionProgressTests
         public FlowRunLifecycleGate Lifecycle => GetField<FlowRunLifecycleGate>("_runLifecycle");
         public Stopwatch Stopwatch => GetField<Stopwatch>("_stopwatch");
         public ConcurrentDictionary<string, string> RunningNodeNames => GetField<ConcurrentDictionary<string, string>>("_runningNodeNames");
+        public ConcurrentDictionary<string, long> ExpectedDurations => GetField<ConcurrentDictionary<string, long>>("_nodeExpectedDurations");
         public int PendingUiUpdate => GetField<int>("_pendingUiUpdate");
 
         public ProgressFixture()
@@ -143,6 +172,7 @@ public sealed class FlowExecutionSessionProgressTests
         }
 
         public void RequestProgress() => Invoke("UpdateRuntimeProgress", [null]);
+        public void StartNodeProgress(CVCommonNode node, long? duration) => Invoke("StartNodeTitleProgress", [node, duration]);
 
         public void Dispose()
         {

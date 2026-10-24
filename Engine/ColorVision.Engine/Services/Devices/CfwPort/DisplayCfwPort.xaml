@@ -3,7 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:displayUi="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.CfwPort"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
@@ -54,7 +53,8 @@
                     <DockPanel Margin="0,2">
                         <Button Click="GetPort_Click" Content="{x:Static properties:Resources.FilterWheelReadPosition}" DockPanel.Dock="Right" />
                         <Button Click="SetPort_Click" Content="{x:Static properties:Resources.FilterWheelSetPosition}" DockPanel.Dock="Right" />
-                        <hc:ComboBox x:Name="CombPort" Width="150" HorizontalAlignment="Left" hc:InfoElement.ShowClearButton="True" AutoComplete="True" IsEditable="True" Style="{StaticResource ComboBox.Small}" />
+                        <ComboBox x:Name="CombPort" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"
+                                     SelectedValuePath="HoleIndex" SelectedValue="{Binding DisplayConfig.PortNum, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </DockPanel>
                 </StackPanel>
 

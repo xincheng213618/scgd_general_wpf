@@ -1,6 +1,11 @@
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.UI;
+using cvColorVision;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using SqlSugar;
 using System.Globalization;
 using System.IO;
 
@@ -9,6 +14,52 @@ namespace Spectrum.Tests;
 [Collection("LocalSpectrumDriver")]
 public sealed class EngineSpectrumResultTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DatabaseRoundTripPreservesSpectraAndReadsLegacyQuotedJson(bool legacyQuoted)
+    {
+        var previous = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        try
+        {
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite,
+                IsAutoCloseConnection = false, InitKeyType = InitKeyType.Attribute
+            });
+            db.CodeFirst.InitTables<SpectumResultEntity>();
+            float[] samples = [1, -.25f, .5f];
+            var capture = new LocalSpectrumCapture
+            {
+                DeviceCode = "LOCAL.SPECTRUM", IntegralTime = 100,
+                Data = new COLOR_PARA
+                {
+                    fPL = samples, fRi = new float[15], fSpect1 = 500, fSpect2 = 502,
+                    fInterval = 1, fPlambda = 2, fCIEx = 1.25f, fCIEy = 2.5f, fCIEz = 3.75f
+                }
+            };
+            var model = LocalSpectrumResultService.CreateModel(capture, new());
+            if (legacyQuoted)
+            {
+                model.fPL = JsonConvert.SerializeObject(model.fPL);
+                model.fRi = JsonConvert.SerializeObject(model.fRi);
+                model.CieDataEx = JsonConvert.SerializeObject(model.CieDataEx);
+            }
+            int id = db.Insertable(model).ExecuteReturnIdentity();
+            Assert.True(id > 0);
+            var stored = db.Queryable<SpectumResultEntity>().Single(row => row.Id == id);
+            Assert.Equal(legacyQuoted ? JTokenType.String : JTokenType.Array, JToken.Parse(stored.fPL!).Type);
+            Assert.Equal(legacyQuoted ? JTokenType.String : JTokenType.Object, JToken.Parse(stored.CieDataEx!).Type);
+            var result = new ViewResultSpectrum(stored);
+            Assert.Equal(id, result.Id);
+            Assert.Equal(samples, result.fPL);
+            Assert.Equal(1.25, result.fCIEx);
+            Assert.Equal(samples, result.CreateRawExportRecord(false).Samples);
+        }
+        finally { ConfigService.SetInstance(previous); }
+    }
+
     [Theory]
     [InlineData(1f)]
     [InlineData(10f)]

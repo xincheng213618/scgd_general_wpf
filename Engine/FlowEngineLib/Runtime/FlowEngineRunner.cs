@@ -41,6 +41,7 @@ public sealed class FlowEngineRunner
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
         ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
+        serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(
             readinessTimeout,
             TimeSpan.Zero);
@@ -85,6 +86,10 @@ public sealed class FlowEngineRunner
         bool started = false;
         try
         {
+            string? blockReason = _control.ExecutionBlockReason;
+            if (blockReason != null)
+                return CreateResult(false, FlowEngineRunTermination.StartRejected, startNodeName, serialNumber,
+                    StatusTypeEnum.Failed, blockReason);
             bool ready;
             try
             {

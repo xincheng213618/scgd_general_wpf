@@ -164,9 +164,6 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.灯带检测:
 			operatorCode = "LEDStripDetection";
 			break;
-		case AlgorithmType.图像裁剪:
-			operatorCode = "OLED.GetRIAand";
-			break;
 		case AlgorithmType.双目融合:
 			operatorCode = "ARVR.BinocularFusion";
 			break;
@@ -197,7 +194,6 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.SFR:
 		case AlgorithmType.灯珠检测:
 		case AlgorithmType.灯带检测:
-		case AlgorithmType.图像裁剪:
 		case AlgorithmType.SFR_FindROI:
 		case AlgorithmType.十字计算:
 			algorithmParam = new AlgorithmParam_ROI

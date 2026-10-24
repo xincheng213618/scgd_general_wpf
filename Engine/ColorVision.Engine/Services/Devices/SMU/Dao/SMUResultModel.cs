@@ -15,6 +15,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
     [SugarTable("t_scgd_measure_result_smu")]
     public class SMUResultModel : EntityBase, IInitTables
     {
+        [SugarColumn(IsIgnore = true)]
+        public string? LocalDetails { get; set; }
         [SugarColumn(ColumnName = "device_code", Length = 255, IsNullable = true)]
         public string? DeviceCode { get; set; }
 

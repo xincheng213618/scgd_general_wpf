@@ -39,8 +39,7 @@ public partial class LocalSpectrumWindow : Window
     private void ResultAvailable(LocalSpectrumCapture result, bool continuous)
     {
         latest = result;
-        if (continuous) results.SetLocalPreview(DeviceSpectrum.CreateLocalSpectrumView(result));
-        else results.AddViewResultSpectrum(DeviceSpectrum.CreateLocalSpectrumView(result));
+        results.AddViewResultSpectrum(DeviceSpectrum.CreateLocalSpectrumView(result));
         Message.Text = LocalizedText.Format($"采集完成  {result.CapturedAt:HH:mm:ss}  积分 {result.IntegralTime:0.###} ms");
     }
     private void CaptureFailed(string error) => Dispatcher.BeginInvoke(() => Message.Text = error);
@@ -50,7 +49,8 @@ public partial class LocalSpectrumWindow : Window
         if (sender is not Button { Tag: string command }) return;
         try
         {
-            Message.Text = LocalizedText.Get("正在执行…");
+            Message.Text = command is "GetDataAutoStop" or "Close"
+                ? "正在停止，等待当前采集返回…" : LocalizedText.Get("正在执行…");
             MsgRecord record = device.RunLocalSpectrumCommand(command);
             MsgRecordState state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(record, TimeSpan.FromMinutes(20), CancellationToken.None);
             Message.Text = state == MsgRecordState.Success ? LocalizedText.Get("操作完成") : record.MsgReturn?.Message ?? LocalizedText.Get("操作失败");
@@ -64,6 +64,7 @@ public partial class LocalSpectrumWindow : Window
         node.IntegralTime = (float)device.DisplayConfig.IntTime;
         node.NumberOfAverage = device.DisplayConfig.AveNum;
         node.AutoIntegration = device.DisplayConfig.IsAutoIntTime;
+        node.IsWithND = device.DisplayConfig.IsWithND;
         node.AutoInitDark = device.DisplayConfig.IsAutoDark;
         node.SelfAdaptionInitDark = device.DisplayConfig.IsShutter;
         node.Eqe = device.DisplayConfig.IsLuminousFluxMode;

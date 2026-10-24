@@ -31,6 +31,8 @@ public class FlowFinalizedExecutionApiTests
             typeof(ViewFlow)
                 .GetEvent(nameof(ViewFlow.RunFinalized))!
                 .EventHandlerType);
+        Assert.Equal(typeof(EventHandler<FlowNodeExecutionCompletedEventArgs>),
+            typeof(ViewFlow).GetEvent(nameof(ViewFlow.NodeExecutionCompleted))!.EventHandlerType);
 
         MethodInfo legacyManagerMethod = typeof(FlowEngineManager).GetMethod(
             nameof(FlowEngineManager.RunFlowAsync),

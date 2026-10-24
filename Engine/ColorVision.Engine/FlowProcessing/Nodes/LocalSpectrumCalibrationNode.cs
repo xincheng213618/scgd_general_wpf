@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
-[STNode("Flow_CustomNodes", "光谱参考校正", CategoryOrder = 9900)]
+[STNode("Flow_LocalDevices", "光谱参考校正", CategoryOrder = 9900, NodeOrder = 90)]
 public sealed class LocalSpectrumCalibrationNode : LocalFlowNodeBase
 {
     private string poiPointName = string.Empty;

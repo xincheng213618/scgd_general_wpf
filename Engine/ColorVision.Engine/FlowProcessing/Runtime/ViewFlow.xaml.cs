@@ -108,6 +108,13 @@ namespace ColorVision.Engine.FlowProcessing
             remove => _executionSession.RunFinalized -= value;
         }
 
+        /// <summary>Accepted node completions during this view's active run, before overall finalization.</summary>
+        public event EventHandler<FlowNodeExecutionCompletedEventArgs>? NodeExecutionCompleted
+        {
+            add => _executionSession.NodeExecutionCompleted += value;
+            remove => _executionSession.NodeExecutionCompleted -= value;
+        }
+
         private readonly bool _isStandalone;
         private readonly FlowControl? _standaloneFlowControl;
         private readonly FlowNodeManager? _standaloneNodeManager;
@@ -556,12 +563,32 @@ namespace ColorVision.Engine.FlowProcessing
 
             new FlowVersionHistoryWindow(
                 flowParam,
-                Refresh,
+                () => ReloadRestoredVersionAsync(flowParam),
                 _documentLoadedContentHash,
                 () => IsExecutionActive)
             {
                 Owner = Application.Current.GetActiveWindow()
             }.Show();
+        }
+
+        internal async Task ReloadRestoredVersionAsync(FlowParam flowParam)
+        {
+            // The history window already confirmed replacing unsaved edits.
+            // A second save prompt could overwrite the snapshot just restored.
+            if (!ReferenceEquals(GetActiveFlowParam(), flowParam))
+                return;
+            ThrowIfExecutionActive();
+            if (_isStandalone)
+            {
+                LoadStandaloneFlowParam(flowParam, _saveStandaloneFlowParam);
+                return;
+            }
+
+            FlowTemplateExecutionSnapshotResult result = await SelectFlowTemplateAsync(
+                new TemplateModel<FlowParam>(flowParam.Name, flowParam),
+                replacementMode: FlowWorkspaceReplacementMode.AlreadyConfirmed);
+            if (result.Snapshot == null)
+                throw new InvalidOperationException(result.FailureReason);
         }
 
         private void ShowIncidentManagement()
@@ -956,6 +983,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (!_isStandalone)
             {
                 var manager = DockViewManager.GetInstance();
+                manager.SetViewIdentity(this, "Flow");
                 manager.AddView(0, this);
                 manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
 
@@ -1042,12 +1070,12 @@ namespace ColorVision.Engine.FlowProcessing
         }
 
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void PostProcessManagementButton_Click(object sender, RoutedEventArgs e)
         {
             PostProcessManager.GetInstance().Edit();
         }
 
-        private void Button_Click_PreProcess(object sender, RoutedEventArgs e)
+        private void PreProcessManagementButton_Click(object sender, RoutedEventArgs e)
         {
             PreProcessManager.GetInstance().Edit();
         }

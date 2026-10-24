@@ -2,6 +2,8 @@
 #pragma warning disable CA1822,CA1859,CS8622,CS8625
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PreProcess;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
 using FlowEngineLib;
@@ -9,6 +11,8 @@ using FlowEngineLib.Start;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System.ComponentModel;
+using System.Collections.Specialized;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,6 +31,8 @@ namespace ProjectARVRPro.Process
         private const string ProcessMetaDragFormat = "ProjectARVRPro.Process.ProcessMeta";
         private ProcessMeta _currentSelectedMeta;
         private ProcessManager? _recipeImportManager;
+        private ObservableCollection<TemplateModel<FlowParam>>? _observedTemplates;
+        private readonly HashSet<TemplateModel<FlowParam>> _templateSubscriptions = new();
         private readonly List<(INotifyPropertyChanged obj, PropertyChangedEventHandler handler)> _configSubscriptions = new();
         private Point _processDragStartPoint;
         private ProcessMeta? _draggedProcessMeta;
@@ -68,6 +74,15 @@ namespace ProjectARVRPro.Process
 
         private void CleanupEventHandlers()
         {
+            if (_observedTemplates != null)
+            {
+                _observedTemplates.CollectionChanged -= FlowTemplates_CollectionChanged;
+                _observedTemplates = null;
+            }
+            foreach (var template in _templateSubscriptions)
+                template.PropertyChanged -= FlowTemplate_PropertyChanged;
+            _templateSubscriptions.Clear();
+
             if (_currentSelectedMeta != null)
             {
                 _currentSelectedMeta.PropertyChanged -= SelectedMeta_PropertyChanged;
@@ -98,6 +113,9 @@ namespace ProjectARVRPro.Process
             {
                 _recipeImportManager = manager;
                 _recipeImportManager.RecipeConfigImported += ProcessManager_RecipeConfigImported;
+                _observedTemplates = manager.templateModels;
+                _observedTemplates.CollectionChanged += FlowTemplates_CollectionChanged;
+                RefreshTemplateSubscriptions();
             }
             RefreshConfigPanels();
         }
@@ -105,6 +123,38 @@ namespace ProjectARVRPro.Process
         private void ProcessManager_RecipeConfigImported(object? sender, EventArgs e)
         {
             RefreshConfigPanels();
+        }
+
+        private void FlowTemplates_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => RefreshTemplateSubscriptions();
+
+        private void RefreshTemplateSubscriptions()
+        {
+            foreach (var template in _templateSubscriptions)
+                template.PropertyChanged -= FlowTemplate_PropertyChanged;
+            _templateSubscriptions.Clear();
+            if (_observedTemplates != null)
+            {
+                foreach (var template in _observedTemplates)
+                {
+                    _templateSubscriptions.Add(template);
+                    template.PropertyChanged += FlowTemplate_PropertyChanged;
+                }
+            }
+            RefreshFlowTemplateValidation();
+        }
+
+        private void FlowTemplate_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(TemplateBase.Key))
+                RefreshFlowTemplateValidation();
+        }
+
+        private void RefreshFlowTemplateValidation()
+        {
+            if (_recipeImportManager == null) return;
+            foreach (ProcessMeta meta in _recipeImportManager.ProcessGroups.SelectMany(group => group.ProcessMetas)
+                         .Concat(_recipeImportManager.ResultParserMetas))
+                meta.RefreshFlowTemplateValidation();
         }
 
         private void MetaNameEditTextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)

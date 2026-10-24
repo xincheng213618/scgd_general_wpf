@@ -1,6 +1,7 @@
 using AvalonDock.Layout;
 using ColorVision.UI.Views;
 using log4net;
+using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution.Workspace
@@ -24,6 +25,7 @@ namespace ColorVision.Solution.Workspace
         /// 控件 → LayoutDocument 的映射
         /// </summary>
         private static readonly Dictionary<Control, LayoutDocument> _viewDocuments = new();
+        private static readonly ConditionalWeakTable<LayoutDocument, object> _boundDocuments = new();
 
         private static int _viewCounter;
 
@@ -51,7 +53,10 @@ namespace ColorVision.Solution.Workspace
             manager.ViewTitleChangedHandler = (control, title) =>
             {
                 if (_viewDocuments.TryGetValue(control, out var document))
+                {
                     document.Title = title;
+                    document.ContentId = manager.GetViewIdentity(control) ?? document.ContentId;
+                }
             };
 
             manager.ShowAllViewsHandler = () =>
@@ -69,6 +74,8 @@ namespace ColorVision.Solution.Workspace
         /// </summary>
         public static void ClearViewDocuments()
         {
+            foreach (var document in _viewDocuments.Values)
+                if (!ReferenceEquals(document.Root, DocumentPane.Root)) document.Content = null;
             _viewDocuments.Clear();
             _viewCounter = 0;
         }
@@ -78,10 +85,20 @@ namespace ColorVision.Solution.Workspace
         /// </summary>
         private static LayoutDocument EnsureDocument(Control control)
         {
-            if (_viewDocuments.TryGetValue(control, out var existing))
+            if (_viewDocuments.TryGetValue(control, out var existing) && ReferenceEquals(existing.Root, DocumentPane.Root))
             {
                 // 已创建，确保可见
                 return existing;
+            }
+
+            string? identity = DockViewManager.GetInstance().GetViewIdentity(control);
+            var restored = identity == null ? null : (DocumentPane.Root as LayoutRoot)?.Descendents().OfType<LayoutDocument>()
+                .FirstOrDefault(document => document.ContentId == identity && ReferenceEquals(document.Content, control));
+            if (restored != null)
+            {
+                if (DockViewManager.GetInstance().ViewTitles.TryGetValue(control, out string? title)) restored.Title = title;
+                BindDocument(control, restored);
+                return restored;
             }
 
             return CreateDocumentForView(control);
@@ -100,7 +117,7 @@ namespace ColorVision.Solution.Workspace
             if (manager.ViewTitles.TryGetValue(control, out var registeredTitle) && !string.IsNullOrEmpty(registeredTitle))
                 title = registeredTitle;
 
-            string contentId = $"DockView_{_viewCounter}";
+            string contentId = manager.GetViewIdentity(control) ?? $"DockView_{_viewCounter}";
 
             var doc = new LayoutDocument
             {
@@ -111,15 +128,32 @@ namespace ColorVision.Solution.Workspace
                 CanFloat = true
             };
 
-            // Closing can be cancelled. Retire content only after the document actually closes.
+            BindDocument(control, doc);
+            DocumentPane.Children.Add(doc);
+
+            log.Debug($"DockViewManagerHost: 创建视图文档 '{title}' (ContentId={contentId})");
+            return doc;
+        }
+
+        private static void BindDocument(Control control, LayoutDocument doc)
+        {
+            _viewDocuments[control] = doc;
+            if (_boundDocuments.TryGetValue(doc, out _)) return;
+            _boundDocuments.Add(doc, new object());
+            // Closing can be cancelled. Retire only the current document, never an old layout's model.
             void OnClosed(object? sender, EventArgs e)
             {
                 doc.Closed -= OnClosed;
-                if (_viewDocuments.TryGetValue(control, out var current) && ReferenceEquals(current, doc))
-                    _viewDocuments.Remove(control);
+                _boundDocuments.Remove(doc);
+                if (!_viewDocuments.TryGetValue(control, out var current) || !ReferenceEquals(current, doc))
+                {
+                    doc.Content = null;
+                    return;
+                }
+                _viewDocuments.Remove(control);
                 try
                 {
-                    manager.CloseView(control);
+                    DockViewManager.GetInstance().CloseView(control);
                 }
                 finally
                 {
@@ -127,12 +161,14 @@ namespace ColorVision.Solution.Workspace
                 }
             }
             doc.Closed += OnClosed;
+        }
 
-            DocumentPane.Children.Add(doc);
-            _viewDocuments[control] = doc;
-
-            log.Debug($"DockViewManagerHost: 创建视图文档 '{title}' (ContentId={contentId})");
-            return doc;
+        internal static bool TryRestoreView(string contentId, out Control? control)
+        {
+            if (!DockViewManager.GetInstance().TryGetViewForLayout(contentId, out control)) return false;
+            if (_viewDocuments.Remove(control!, out var previous)) previous.Content = null;
+            DetachFromParent(control!);
+            return true;
         }
 
         /// <summary>

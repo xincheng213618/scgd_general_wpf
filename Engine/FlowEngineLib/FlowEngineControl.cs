@@ -53,6 +53,11 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public bool PersistResults { get; set; } = true;
 
+	public string ExecutionBlockReason
+	{
+		get { lock (stateLock) return STMissingNode.GetExecutionBlockReason(attachedNodes); }
+	}
+
     // A disconnected MQTT start can dispatch a graph that contains no remote service nodes.
     // Keep transport readiness on the MQTT node itself, so external MQTT triggers still reconnect normally.
     private bool CanDispatchLocally(BaseStartNode startNode) =>
@@ -414,6 +419,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 					return;
 				}
 				attachedStartNodes.Add(baseStartNode);
+				baseStartNode.ExecutionBlockReasonProvider = () => ExecutionBlockReason;
 				baseStartNode.Finished += Start_Finished;
 				RebuildStartNodeRegistryLocked();
 			}
@@ -458,6 +464,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			if (node is BaseStartNode baseStartNode && attachedStartNodes.Remove(baseStartNode))
 			{
 				baseStartNode.Finished -= Start_Finished;
+				baseStartNode.ExecutionBlockReasonProvider = null;
 				RebuildStartNodeRegistryLocked();
 				startToStop = baseStartNode;
 			}
@@ -667,6 +674,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			foreach (BaseStartNode startNode in startNodes)
 			{
 				startNode.Finished -= Start_Finished;
+				startNode.ExecutionBlockReasonProvider = null;
 			}
 			attachedNodes.Clear();
 			attachedStartNodes.Clear();
@@ -877,6 +885,9 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public bool TryStartNode(string name, string serialNumber)
 	{
+		string blockReason = ExecutionBlockReason;
+		if (blockReason != null) { logger.Warn(blockReason); return false; }
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		BaseStartNode startNode = null;
 		lock (stateLock)
 		{
@@ -928,6 +939,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void StopNode(string name, string serialNumber)
 	{
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		BaseStartNode startNode;
 		lock (stateLock)
 		{

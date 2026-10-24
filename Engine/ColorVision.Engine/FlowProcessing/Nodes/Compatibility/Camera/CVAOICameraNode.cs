@@ -9,7 +9,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Camera;
 
-[STNode("相机", CategoryOrder = 200)]
+[STNode("相机", CategoryOrder = 200, NodeOrder = 100, SeparatorBefore = true)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Camera.CVAOICameraNode")]
 public class CVAOICameraNode : CVBaseServerNode
 {

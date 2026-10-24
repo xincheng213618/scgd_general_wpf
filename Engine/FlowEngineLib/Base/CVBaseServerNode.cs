@@ -391,6 +391,13 @@ public class CVBaseServerNode : CVDeviceNode
 
 	protected void DoTransferToServer(CVStartCFC action, STNodeOptionEventArgs e)
 	{
+		if (action.IsRunning)
+		{
+			// A branch owns its request and response data; sibling branches retain the upstream result.
+			action = new CVStartCFC(action);
+			var source = new STNodeOption(e.TargetOption.Text, typeof(CVStartCFC), false) { Data = action };
+			e = new STNodeOptionEventArgs(e.IsSponsor, source, e.Status);
+		}
 		CVTransAction cVTransAction = null;
 		if (m_trans_action.TryGetValue(action.SerialNumber, out cVTransAction))
 		{
@@ -441,8 +448,6 @@ public class CVBaseServerNode : CVDeviceNode
 		catch (Exception ex) { localSelectionError = ex; }
 		if (localExecution != null || localSelectionError != null)
 		{
-			// Local results must not modify the input shared with sibling branches.
-			trans.trans_action = new CVStartCFC(trans.trans_action);
 			if (publishNodeRun) PublishNodeRun(CreateNodeRunEventArgs(trans, act));
 			trans.ResetStartTime();
 			if (localExecution == null || localExecution.UseNodeTimeout)

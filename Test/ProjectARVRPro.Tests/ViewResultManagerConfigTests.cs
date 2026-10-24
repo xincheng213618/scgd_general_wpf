@@ -5,6 +5,29 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ViewResultManagerConfigTests
 {
+    [Theory]
+    [InlineData(true, "P5QD0L??GLJ002Q", "P5QD0L__GLJ002Q_20261023T190236.0000000")]
+    [InlineData(false, "P5QD0L??GLJ002Q", "20261023T190236.0000000")]
+    [InlineData(true, "SN-123", "SN-123_20261023T190236.0000000")]
+    public void FlowCodeIsSafeBeforeBatchCreationAndLeavesProductSerialNumberUnchanged(bool useSn, string serialNumber, string expected)
+    {
+        var config = new ViewResultManagerConfig { CodeUseSN = useSn };
+        var result = new ProjectARVRReuslt { SN = serialNumber };
+
+        result.Code = config.CreateFlowCode(result.SN, new DateTime(2026, 10, 23, 19, 2, 36));
+
+        Assert.Equal(expected, result.Code);
+        Assert.Equal(serialNumber, result.SN);
+    }
+
+    [Fact]
+    public void FlowCodeAlsoSanitizesTheConfiguredDateFormat()
+    {
+        var config = new ViewResultManagerConfig { CodeUseSN = false, CodeDateFormat = "yyyy/MM/dd HH:mm:ss" };
+
+        Assert.Equal("2026_10_23 19_02_36", config.CreateFlowCode("SN", new DateTime(2026, 10, 23, 19, 2, 36)));
+    }
+
     [Fact]
     public void RuntimeUiState_IsBoundButNotUserEditable()
     {

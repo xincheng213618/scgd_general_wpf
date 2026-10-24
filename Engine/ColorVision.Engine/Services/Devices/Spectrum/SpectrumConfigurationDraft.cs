@@ -58,6 +58,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Config.ComPort = port.ToString(CultureInfo.InvariantCulture);
             try { cvColorVision.SpectrumSmoothing.Validate(Config.GetDataConfig.SmoothingMethod, Config.GetDataConfig.FilterBW); }
             catch (InvalidOperationException ex) { error = ex.Message; return false; }
+            if (Config.IsShutterEnable && Config.ShutterCfg.UseFilterWheel)
+            {
+                if (string.IsNullOrWhiteSpace(Config.ShutterCfg.FilterWheelDeviceCode))
+                {
+                    error = "请选择用于校零的滤色轮设备。";
+                    return false;
+                }
+                if (Config.ShutterCfg.DarkPort < 0 || Config.ShutterCfg.MeasurementPort < 0 || Config.ShutterCfg.DarkPort == Config.ShutterCfg.MeasurementPort)
+                {
+                    error = "滤色轮测量位和校零位必须是不同的非负孔位索引。";
+                    return false;
+                }
+            }
             error = string.Empty;
             return true;
         }

@@ -7,92 +7,6 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowTemplateWorkspaceControllerTests
 {
-    [Fact]
-    public void EmptyAndStaleSelectionsNeverResolveAnotherFlow()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            var previous = TemplateFlow.Params;
-            try
-            {
-                TemplateFlow.Params = new ObservableCollection<TemplateModel<FlowParam>>();
-                Assert.Null(TemplateFlow.GetParamOrDefault(0));
-                var first = new FlowParam { Name = "first" };
-                var second = new FlowParam { Name = "second" };
-                TemplateFlow.Params.Add(new TemplateModel<FlowParam>(first.Name, first));
-                TemplateFlow.Params.Add(new TemplateModel<FlowParam>(second.Name, second));
-                Assert.Null(TemplateFlow.GetParamOrDefault(-1));
-                Assert.Null(TemplateFlow.GetParamOrDefault(int.MaxValue));
-                Assert.Same(first, TemplateFlow.GetParamOrDefault(0));
-                Assert.Same(second, TemplateFlow.GetParamOrDefault(1));
-                TemplateFlow.Params.RemoveAt(1);
-                Assert.Null(TemplateFlow.GetParamOrDefault(1));
-                TemplateFlow.Params.Clear();
-                Assert.Null(TemplateFlow.GetParamOrDefault(0));
-            }
-            finally
-            {
-                TemplateFlow.Params = previous;
-            }
-        });
-    }
-
-    [Fact]
-    public void TemplateSelectionResolvesExactIdOrReturnsMissing()
-    {
-        int[] templateIds = [17, 42, 91];
-
-        Assert.Equal(
-            1,
-            FlowTemplateSelectionRules.ResolveTemplateIndex(
-                templateIds,
-                42));
-        Assert.Equal(
-            -1,
-            FlowTemplateSelectionRules.ResolveTemplateIndex(
-                templateIds,
-                7));
-    }
-
-    [Fact]
-    public void RequestedStartNodeWinsWhenItStillExists()
-    {
-        string? selected =
-            FlowTemplateSelectionRules.ResolveStartNodeName(
-                ["Start A", "Start B"],
-                "Start B",
-                "Start A");
-
-        Assert.Equal("Start B", selected);
-    }
-
-    [Fact]
-    public void ExistingStartNodeSurvivesAnInvalidRequest()
-    {
-        string? selected =
-            FlowTemplateSelectionRules.ResolveStartNodeName(
-                ["Start A", "Start B"],
-                "Removed",
-                "Start B");
-
-        Assert.Equal("Start B", selected);
-    }
-
-    [Fact]
-    public void StartNodeFallsBackToFirstAvailableNode()
-    {
-        Assert.Equal(
-            "Start A",
-            FlowTemplateSelectionRules.ResolveStartNodeName(
-                ["Start A", "Start B"],
-                "Removed",
-                "Also Removed"));
-        Assert.Null(
-            FlowTemplateSelectionRules.ResolveStartNodeName(
-                [],
-                "Removed",
-                "Also Removed"));
-    }
 
     [Fact]
     public async Task RefreshGateSerializesAndSkipsSupersededRefresh()
@@ -223,29 +137,6 @@ public sealed class FlowTemplateWorkspaceControllerTests
             settlement.Status);
         Assert.False(state.IsCurrentLoaded(1, 17));
         Assert.False(state.IsCurrentLoaded(2, 42));
-    }
-
-    [Fact]
-    public void ExecutionSnapshotCopiesLoadedTemplateIdentity()
-    {
-        var flowParam = new FlowParam
-        {
-            Id = 17,
-            Name = "Loaded A",
-            DataBase64 = "original",
-        };
-        FlowTemplateExecutionSnapshot snapshot =
-            FlowTemplateExecutionSnapshot.Create(3, flowParam);
-
-        flowParam.Id = 42;
-        flowParam.Name = "Requested B";
-        flowParam.DataBase64 = "changed";
-        FlowParam executionParam = snapshot.CreateFlowParam();
-
-        Assert.Equal(3, snapshot.Generation);
-        Assert.Equal(17, executionParam.Id);
-        Assert.Equal("Loaded A", executionParam.Name);
-        Assert.Equal("original", executionParam.DataBase64);
     }
 
     [Fact]

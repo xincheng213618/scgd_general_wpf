@@ -9,8 +9,10 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowHeadlessExecutionServiceTests
 {
-    [Fact]
-    public void RequestOwnsImmutableStnSnapshot()
+    [Theory]
+    [InlineData("SN-IMMUTABLE", "SN-IMMUTABLE")]
+    [InlineData("SN?IMMUTABLE", "SN_IMMUTABLE")]
+    public void RequestOwnsImmutableStnSnapshot(string requestedSerialNumber, string executionSerialNumber)
     {
         RunInSta(async () =>
         {
@@ -18,7 +20,7 @@ public sealed class FlowHeadlessExecutionServiceTests
             var request = new FlowHeadlessExecutionRequest(
                 canvas,
                 "HeadlessStart",
-                "SN-IMMUTABLE");
+                requestedSerialNumber);
             Array.Fill(canvas, (byte)0x5a);
 
             FlowHeadlessExecutionResult result =
@@ -26,6 +28,8 @@ public sealed class FlowHeadlessExecutionServiceTests
                     request);
 
             Assert.True(result.Succeeded);
+            Assert.Equal(executionSerialNumber, request.SerialNumber);
+            Assert.Equal(executionSerialNumber, result.Data.SerialNumber);
             Assert.Equal(
                 request.ContentHash,
                 result.ContentHash);

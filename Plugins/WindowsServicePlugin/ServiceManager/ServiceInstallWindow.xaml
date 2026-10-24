@@ -132,32 +132,18 @@
                         <TextBlock Text="{x:Static res:Resources.InstallOptions}" Style="{StaticResource ServiceSectionTitle}" Margin="0,0,24,0" />
                         <CheckBox Content="{x:Static res:Resources.UpdateDatabaseLatest}" IsChecked="{Binding AutoUpdateDatabase}" VerticalAlignment="Center" />
                     </DockPanel>
-                    <Grid Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,20,0">
-                            <CheckBox Content="{x:Static res:Resources.BackupDatabaseBeforeInstall}" IsChecked="{Binding BackupBeforeInstall}" />
-                            <TextBlock Text="{x:Static res:Resources.DatabaseBackupLocationHint}" Style="{StaticResource ServiceSubtitle}" FontSize="12" Margin="22,5,0,0" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                            <Button Content="{x:Static res:Resources.BackupNow}" Command="{Binding BackupNowCommand}" Margin="0,0,8,0" />
-                            <Button Content="{x:Static res:Resources.RestoreBackup}" Command="{Binding RestoreBackupCommand}" />
-                        </StackPanel>
-                    </Grid>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Margin="0,0,20,0">
-                            <CheckBox Content="{x:Static res:Resources.BackupServiceBeforeInstall}" IsChecked="{Binding BackupServiceBeforeInstall}" />
-                            <TextBlock Text="{x:Static res:Resources.ServiceBackupLocationHint}" Style="{StaticResource ServiceSubtitle}" FontSize="12" Margin="22,5,0,0" />
+                            <TextBlock Text="{x:Static res:Resources.DatabaseBackup}" />
+                            <TextBlock Text="{x:Static res:Resources.DatabaseBackupLocationHint}" Style="{StaticResource ServiceSubtitle}" FontSize="12" Margin="0,5,0,0" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                            <Button Content="{x:Static res:Resources.BackupServiceNow}" Command="{Binding BackupServiceNowCommand}" Margin="0,0,8,0" />
-                            <Button Content="{x:Static res:Resources.RestoreServiceBackup}" Command="{Binding RestoreServiceBackupCommand}" />
+                            <Button Content="{x:Static res:Resources.BackupNow}" Command="{Binding BackupNowCommand}" Margin="0,0,8,0" />
+                            <Button Content="{x:Static res:Resources.RestoreBackup}" Command="{Binding RestoreBackupCommand}" />
                         </StackPanel>
                     </Grid>
                 </StackPanel>

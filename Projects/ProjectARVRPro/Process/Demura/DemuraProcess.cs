@@ -86,6 +86,7 @@ namespace ProjectARVRPro.Process.Demura
         {
             if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;
 
+            ctx.ObjectiveTestResult.DemuraTestResults.Remove(Config.Name);
             var log = ctx.Log;
             DemuraViewTestResult testResult = new DemuraViewTestResult();
 
@@ -96,6 +97,13 @@ namespace ProjectARVRPro.Process.Demura
                 var candidates = CollectImageConvertCandidates(masters, Config.ImageConvertResultType);
 
                 ApplyCandidate(testResult.W128, FindCandidate(candidates, Config.W128Keyword, Prepared128FileName));
+                DemuraTestResult? fileResult = await ReadW128FileAsync(testResult.W128).ConfigureAwait(false);
+                if (fileResult != null)
+                {
+                    ctx.ObjectiveTestResult.DemuraTestResults[Config.Name] = fileResult;
+                    testResult.FileName = fileResult.FileName;
+                    testResult.Data = fileResult.Data;
+                }
                 ApplyCandidate(testResult.W255, FindCandidate(candidates, Config.W255Keyword, Prepared255FileName));
 
                 bool hasRequiredCsv = testResult.W128.SourceExists && testResult.W255.SourceExists;
@@ -132,7 +140,18 @@ namespace ProjectARVRPro.Process.Demura
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
-            GetObjectiveCsvRows<DemuraTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "Demura" : Config.Name.Trim());
+            GetObjectiveCsvRows<DemuraViewTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "Demura" : Config.Name.Trim());
+
+        internal static async Task<DemuraTestResult?> ReadW128FileAsync(DemuraCsvFileResult file)
+        {
+            if (!file.SourceExists) return null;
+
+            return new DemuraTestResult
+            {
+                FileName = Path.GetFileName(file.SourceFile),
+                Data = await File.ReadAllTextAsync(file.SourceFile, Encoding.UTF8).ConfigureAwait(false)
+            };
+        }
 
         public override void Render(IProcessExecutionContext ctx)
         {
@@ -144,7 +163,7 @@ namespace ProjectARVRPro.Process.Demura
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
 
-            DemuraTestResult? testResult = JsonConvert.DeserializeObject<DemuraTestResult>(ctx.Result.ViewResultJson);
+            DemuraViewTestResult? testResult = JsonConvert.DeserializeObject<DemuraViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
             AppendCsvOutput(paragraph, "W128", testResult.W128, foreground, fontSize);
@@ -537,7 +556,7 @@ namespace ProjectARVRPro.Process.Demura
             return CommandExchange.FromFailure(command.Name, finalText, finalHex, message);
         }
 
-        private string ResolveBurnSourceFile(DemuraTestResult testResult)
+        private string ResolveBurnSourceFile(DemuraViewTestResult testResult)
         {
             string configured = Config.BurnSourceBinName?.Trim() ?? string.Empty;
             if (Path.IsPathRooted(configured))
@@ -636,7 +655,7 @@ namespace ProjectARVRPro.Process.Demura
             return string.Join(" | ", exchanges.Select(exchange => $"{exchange.Name}:{exchange.Hex}"));
         }
 
-        private static void SetBurnFailure(DemuraTestResult testResult, string message, ILog? log)
+        private static void SetBurnFailure(DemuraViewTestResult testResult, string message, ILog? log)
         {
             testResult.BurnSucceeded = false;
             testResult.BurnMessage = message;
@@ -958,7 +977,7 @@ flash_address = 0x00003000
             }
         }
 
-        private static string GetPreviewFileName(DemuraTestResult result)
+        private static string GetPreviewFileName(DemuraViewTestResult result)
         {
             if (!string.IsNullOrWhiteSpace(result.PreviewImageFile)) return result.PreviewImageFile;
 
@@ -971,7 +990,7 @@ flash_address = 0x00003000
             return string.Empty;
         }
 
-        private static void AppendMessage(DemuraTestResult result, string message)
+        private static void AppendMessage(DemuraViewTestResult result, string message)
         {
             if (string.IsNullOrWhiteSpace(message)) return;
 
@@ -981,7 +1000,7 @@ flash_address = 0x00003000
                 result.Message += Environment.NewLine + message;
         }
 
-        private static string BuildBurnStatusText(DemuraTestResult result)
+        private static string BuildBurnStatusText(DemuraViewTestResult result)
         {
             if (!result.BurnEnabled)
                 return "未启用自动烧录。";

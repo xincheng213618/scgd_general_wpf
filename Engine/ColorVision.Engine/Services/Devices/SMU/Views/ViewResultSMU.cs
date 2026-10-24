@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.SMU.Dao;
 using Newtonsoft.Json;
 using ScottPlot;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
@@ -14,25 +13,29 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
     {
         public ViewResultSMU(SmuScanModel item)
         {
+            LocalDetails = item.LocalDetails;
+            Type = "Scan";
             Id = item.Id;
             CreateTime = item.CreateDate;
+            TotalTime = item.TotalTime;
             BatchID = item.BatchId;
+            ChannelType = item.ChannelType;
             if (item.IsSourceV!=null)
                 MeasurementType = item.IsSourceV ==true ? MeasurementType.Voltage : MeasurementType.Current;
             LimitStart = item.SrcBegin ?? 0;
             LimitEnd = item.SrcEnd??0;
+            ProtectionLimit = item.LimitValue;
 
             VList = JsonConvert.DeserializeObject<double[]>(item.VResult??string.Empty)?? Array.Empty<Double>();
             IList = JsonConvert.DeserializeObject<double[]>(item.IResult ?? string.Empty) ?? Array.Empty<Double>();
             if (VList != null && IList != null)
             {
-                for (int i = 0; i < VList.Length; i++)
+                for (int i = 0; i < Math.Min(VList.Length, IList.Length); i++)
                 {
-                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = IList[i] });
+                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = DisplayCurrent(IList[i]) });
                 }
             }
             Gen();
-            Type = "Scan";
         }
 
 
@@ -43,12 +46,17 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         /// </summary>
         public ViewResultSMU(SMUResultModel item)
         {
+            LocalDetails = item.LocalDetails;
+            Type = "GetData";
             Id = item.Id;
             CreateTime = item.CreateDate;
+            TotalTime = item.TotalTime;
             BatchID = item.BatchId;
             ChannelType = item.ChannelType;
             MeasurementType = item.IsSourceV == true ? MeasurementType.Voltage : MeasurementType.Current;
+            LimitStart = item.SrcValue ?? 0;
             LimitEnd = item.LimitValue ?? 0;
+            ProtectionLimit = item.LimitValue;
             VResult = item.VResult ?? 0;
             IResult = item.IResult ?? 0;
             // For single-point measurement (SMUResultModel), use actual VResult/IResult as the single data point
@@ -56,12 +64,12 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             IList = new double[] { IResult };
             SMUDatas.Add(new SMUData() { Voltage = VResult, Current = IResult });
             Gen();
-            Type = "GetData";
         }
 
 
         public ViewResultSMU(MeasurementType measurementType , float LimitEnd ,double[] VList, double[] IList)
         {
+            Type = "Scan";
             Id = 0;
 
             this.VList = VList;
@@ -70,17 +78,31 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             this.LimitEnd = LimitEnd;
             if (VList != null && IList != null)
             {
-                for (int i = 0; i < VList.Length; i++)
+                for (int i = 0; i < Math.Min(VList.Length, IList.Length); i++)
                 {
-                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = IList[i] });
+                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = DisplayCurrent(IList[i]) });
                 }
             }
             Gen();
-            Type = "Scan";
         }
 
         public string Type { get; set; }
 
+        public string? LocalDetails { get; private set; }
+        private Local.LocalSmuSettings? localSettings;
+        private void ApplyLocalDetails()
+        {
+            if (string.IsNullOrWhiteSpace(LocalDetails)) return;
+            try
+            {
+                var details = JsonConvert.DeserializeObject<Local.LocalSmuDetails>(LocalDetails);
+                localSettings = details?.Settings;
+                if (details?.Settings?.Measurement != Local.SmuMeasurement.Resistance || details.Resistance == null) return;
+                for (int index = 0; index < Math.Min(SMUDatas.Count, details.Resistance.Length); index++)
+                { SMUDatas[index].HasNativeResistance = true; SMUDatas[index].NativeResistance = details.Resistance[index]; }
+            }
+            catch (JsonException ex) { log4net.LogManager.GetLogger(typeof(ViewResultSMU)).Warn("无法读取源表历史结果的本地模式信息", ex); }
+        }
         public double VResult { get; set; }
         public double IResult { get; set; }
 
@@ -97,88 +119,42 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public void Gen()
         {
-
-            List<double> listV = new();
-            List<double> listI = new();
-            double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
-            for (int i = 0; i < VList.Length; i++)
+            ApplyLocalDetails();
+            int count = Math.Min(VList?.Length ?? 0, IList?.Length ?? 0);
+            double[] xs = new double[count], ys = new double[count];
+            double minimumX = double.PositiveInfinity, maximumX = double.NegativeInfinity;
+            double minimumY = double.PositiveInfinity, maximumY = double.NegativeInfinity;
+            for (int index = 0; index < count; index++)
             {
-                if (VList[i] > VMax) VMax = VList[i];
-                if (IList[i] > IMax) IMax = IList[i];
-                if (VList[i] < VMin) VMin = VList[i];
-                if (IList[i] < IMin) IMin = IList[i];
-
-                listV.Add(VList[i]);
-                listI.Add(IList[i]);
+                if (index < SMUDatas.Count) SMUDatas[index].Index = index + 1;
+                double current = DisplayCurrent(IList![index]);
+                xs[index] = MeasurementType == MeasurementType.Voltage ? VList![index] : current;
+                ys[index] = MeasurementType == MeasurementType.Voltage ? current : VList![index];
+                if (!double.IsFinite(xs[index]) || !double.IsFinite(ys[index])) continue;
+                minimumX = Math.Min(minimumX, xs[index]); maximumX = Math.Max(maximumX, xs[index]);
+                minimumY = Math.Min(minimumY, ys[index]); maximumY = Math.Max(maximumY, ys[index]);
             }
-            double endVal = LimitEnd;
-            int step = 10;
-            xMin = 0;
-            xMax = VMax + VMax / step;
-            yMin = 0 - IMax / step;
-            yMax = IMax + IMax / step;
-            double[] xs, ys;
-            if (MeasurementType == MeasurementType.Voltage)
+            (xMin, xMax) = PaddedRange(minimumX, maximumX);
+            (yMin, yMax) = PaddedRange(minimumY, maximumY);
+            ScatterPlot = new Scatter(new ScatterSourceDoubleArray(xs, ys))
             {
-                xMin = VMin - VMin / step;
-                xMax = endVal + VMax / step;
-                yMin = IMin - IMin / step;
-                yMax = IMax + IMax / step;
-                if (VMax < endVal)
-                {
-                    double addPointStep = (endVal - VMax) / 2.0;
-                    listV.Add(VMax + addPointStep);
-                    listV.Add(endVal);
-                    listI.Add(IMax);
-                    listI.Add(IMax);
-                }
-                xs = listV.ToArray();
-                ys = listI.ToArray();
-
-                ScatterSourceDoubleArray source = new(xs, ys);
-                ScatterPlot = new Scatter(source)
-                {
-                    Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
-                    LineWidth = 1,
-                    MarkerSize = 1,
-                    LegendText = string.Empty,
-                    MarkerShape = MarkerShape.None,
-                };
-
-
-
-
-            }
-            else
-            {
-                xMin = IMin - IMin / step;
-                xMax = endVal + IMax / step;
-                yMin = VMin - VMin / step;
-                yMax = VMax + VMax / step;
-                if (IMax < endVal)
-                {
-                    double addPointStep = (endVal - IMax) / 2.0;
-                    listI.Add(IMax + addPointStep);
-                    listI.Add(endVal);
-                    listV.Add(VMax);
-                    listV.Add(VMax);
-                }
-                xs = listV.ToArray();
-                ys = listI.ToArray();
-
-                ScatterSourceDoubleArray source = new(xs, ys);
-                ScatterPlot = new Scatter(source)
-                {
-                    Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
-                    LineWidth = 1,
-                    MarkerSize = 1,
-                    LegendText = string.Empty,
-                    MarkerShape = MarkerShape.None,
-                };
-
-            }
+                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
+                LineWidth = 1,
+                MarkerSize = 1,
+                LegendText = string.Empty,
+                MarkerShape = MarkerShape.None,
+            };
         }
 
+        // Scan storage/payloads retain A; the chart and table use mA, like single-point results.
+        private double DisplayCurrent(double current) => Type == "Scan" ? current * 1000 : current;
+
+        private static (double Minimum, double Maximum) PaddedRange(double minimum, double maximum)
+        {
+            if (!double.IsFinite(minimum) || !double.IsFinite(maximum)) return (0, 1);
+            double padding = minimum < maximum ? (maximum - minimum) * 0.1 : minimum == 0 ? 1 : Math.Abs(minimum) * 0.1;
+            return (minimum - padding, maximum + padding);
+        }
 
         public Scatter ScatterPlot { get; set; }
 
@@ -186,6 +162,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public int Id { get => _ID; set { _ID = value; OnPropertyChanged(); } }
         private int _ID;
         public DateTime? CreateTime { get; set; }
+        public int? TotalTime { get; set; }
         public string? Batch { get; set; }
         public int? BatchID { get; set; }
         public ObservableCollection<SMUData> SMUDatas { get; set; } = new ObservableCollection<SMUData>();
@@ -198,6 +175,17 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public float LimitStart { get; set; }
         public float LimitEnd { get; set; }
+        public float? ProtectionLimit { get; private set; }
+        public bool HasCurve => Type == "Scan" && SMUDatas.Count > 1;
+        public int PointCount => SMUDatas.Count;
+        public string ResultKind => localSettings?.Waveform == Local.SmuWaveform.Pulse ? "脉冲" : Type == "Scan" ? "扫描" : "单点";
+        public string SourceMode => IsSourceV ? "电压源" : "电流源";
+        public double? LastVoltage => SMUDatas.Count > 0 ? SMUDatas[^1].Voltage : null;
+        public double? LastCurrent => SMUDatas.Count > 0 ? SMUDatas[^1].Current : null;
+        public double? LastResistance => SMUDatas.Count > 0 ? SMUDatas[^1].Resistance : null;
+        public double? LastPower => SMUDatas.Count > 0 ? SMUDatas[^1].Power : null;
+        public string SourceDescription => Type == "Scan" ? $"{LimitStart:G6} → {LimitEnd:G6} {(IsSourceV ? "V" : "mA")}" : $"{LimitStart:G6} {(IsSourceV ? "V" : "mA")}";
+        public string ProtectionDescription => ProtectionLimit is { } limit ? $"{(IsSourceV ? "限流" : "限压")} {limit:G6} {(IsSourceV ? "mA" : "V")}" : "保护限值未记录";
 
 
 

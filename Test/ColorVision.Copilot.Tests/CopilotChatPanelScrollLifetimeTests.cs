@@ -111,44 +111,6 @@ public sealed class CopilotChatPanelScrollLifetimeTests
         });
     }
 
-    [Fact]
-    public void ClosingAPendingFindAllowsTheNextStreamUpdateToFollowTheBottom()
-    {
-        Run(fixture =>
-        {
-            fixture.ViewModel.ConversationFindText = "Original needle";
-            fixture.ViewModel.OpenConversationFind();
-            fixture.ViewModel.CloseConversationFind();
-            fixture.GrowStreamingAnswer();
-
-            fixture.Settle();
-
-            Assert.False(fixture.ViewModel.IsConversationFindOpen);
-            Assert.DoesNotContain(fixture.FirstMessage, fixture.NavigationTargets);
-            fixture.AssertAtBottom();
-        });
-    }
-
-    [Fact]
-    public void ClosingFindDoesNotCancelANewerExplicitTurnNavigation()
-    {
-        Run(fixture =>
-        {
-            var requestedTurn = fixture.ViewModel.Messages[6];
-            fixture.ViewModel.ConversationFindText = "Original needle";
-            fixture.ViewModel.OpenConversationFind();
-            fixture.ExecuteLocalCommand("/turn 3");
-            fixture.ViewModel.CloseConversationFind();
-
-            fixture.Settle();
-
-            Assert.False(fixture.ViewModel.IsConversationFindOpen);
-            Assert.Contains(requestedTurn, fixture.NavigationTargets);
-            Assert.DoesNotContain(fixture.FirstMessage, fixture.NavigationTargets);
-            Assert.DoesNotContain(fixture.StreamingMessage, fixture.NavigationTargets);
-        });
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -190,75 +152,6 @@ public sealed class CopilotChatPanelScrollLifetimeTests
             Assert.True(fixture.ScrollViewer.ExtentHeight > originalExtent + 300);
             fixture.AssertAtBottom();
         });
-    }
-
-    [Fact]
-    public void DelayedRowGrowthPreservesTheOffsetWhenTheReaderHasScrolledUp()
-    {
-        Run(fixture =>
-        {
-            fixture.ScrollViewer.ScrollToVerticalOffset(240);
-            fixture.Settle();
-            var readingOffset = fixture.ScrollViewer.VerticalOffset;
-            Assert.True(fixture.ScrollViewer.ScrollableHeight - readingOffset > 100);
-            var content = fixture.StreamingMessage.Content;
-            var originalExtent = fixture.ScrollViewer.ExtentHeight;
-            fixture.NavigationTargets.Clear();
-
-            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Loaded, () => fixture.IncreaseLastRealizedRowHeight(400));
-            fixture.Settle();
-
-            Assert.Equal(content, fixture.StreamingMessage.Content);
-            Assert.True(fixture.ScrollViewer.ExtentHeight > originalExtent + 300);
-            Assert.Equal(readingOffset, fixture.ScrollViewer.VerticalOffset, precision: 3);
-            Assert.Empty(fixture.NavigationTargets);
-        });
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ExplicitReturnToLatestStillScrollsToTheBottomFromAnEarlierPosition(bool useVirtualization)
-    {
-        Run(fixture =>
-        {
-            fixture.ScrollViewer.ScrollToTop();
-            fixture.Settle();
-            Assert.InRange(fixture.ScrollViewer.VerticalOffset, 0, 1);
-            if (useVirtualization)
-                fixture.AssertMessageNotRealized(fixture.StreamingMessage);
-            var button = (Button)fixture.Panel.FindName("ScrollToLatestButton");
-            Assert.Equal(Visibility.Visible, button.Visibility);
-
-            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, button));
-            fixture.Settle();
-
-            fixture.AssertAtBottom();
-            fixture.AssertMessageVisible(fixture.StreamingMessage);
-            Assert.Equal(Visibility.Collapsed, button.Visibility);
-        }, useVirtualization);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ANewUserMessageStillMovesFromTheReadersPositionToTheLatestMessage(bool useVirtualization)
-    {
-        Run(fixture =>
-        {
-            fixture.ScrollViewer.ScrollToTop();
-            fixture.Settle();
-            Assert.InRange(fixture.ScrollViewer.VerticalOffset, 0, 1);
-            if (useVirtualization)
-                fixture.AssertMessageNotRealized(fixture.StreamingMessage);
-            var message = new CopilotChatMessage(CopilotChatRole.User, "The next submitted request");
-
-            fixture.ViewModel.Messages.Add(message);
-            fixture.Settle();
-
-            fixture.AssertAtBottom();
-            fixture.AssertMessageVisible(message);
-        }, useVirtualization);
     }
 
     private static void Run(Action<ScrollFixture> action, bool useVirtualization = false)

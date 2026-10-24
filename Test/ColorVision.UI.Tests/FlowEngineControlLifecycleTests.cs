@@ -13,6 +13,32 @@ namespace ColorVision.UI.Tests;
 public class FlowEngineControlLifecycleTests
 {
     [Fact]
+    public void UnsafeSerialNumberUsesOneIdentityForStartLookupAndStop()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("SafeSN");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+
+            Assert.True(control.TryStartByName("SafeSN", "P5QD0L??GLJ002Q"));
+            CVStartCFC action = Assert.IsType<CVStartCFC>(start.GetCFC("P5QD0L__GLJ002Q"));
+            Assert.Equal("P5QD0L__GLJ002Q", action.SerialNumber);
+            Assert.Same(action, start.GetCFC("P5QD0L??GLJ002Q"));
+
+            control.StopNode("SafeSN", "P5QD0L??GLJ002Q");
+
+            Assert.False(start.Running);
+            Assert.False(control.IsRunning);
+        });
+    }
+
+    [Fact]
     public void LocalStartNodeDoesNotRequireConnectionReady()
     {
         StaTest.Run(() =>

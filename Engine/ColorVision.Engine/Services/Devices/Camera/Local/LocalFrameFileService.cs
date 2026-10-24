@@ -115,7 +115,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     }
                 });
                 frame.CvRawFilePath = rawPath;
+                if (lease.Metadata.Acquisition != null)
+                    CameraFileMetadata.Save(rawPath, CameraFileMetadata.AcquisitionKind, lease.Metadata.Acquisition);
                 frame.ColorCalibration?.Save(rawPath, canReplay: true);
+                if (frame.ColorCalibration == null && frame.CalibrationProvenance != null)
+                    CameraFileMetadata.Save(rawPath, CameraFileMetadata.ProvenanceKind, frame.CalibrationProvenance);
             }
             saveStage?.Complete();
         }
@@ -140,6 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
             fileInfo.FileExtType = isCie ? CVType.CIE : CVType.Raw;
             ColorCalibrationSnapshot? snapshot = isCie ? null : ColorCalibrationSnapshot.Read(filePath, fileInfo);
+            var records = CameraFileMetadata.Read(filePath);
             LocalFrameMetadata metadata = new()
             {
                 Width = fileInfo.Cols,
@@ -152,9 +157,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 SourceFilePath = filePath,
                 CalibrationTemplate = snapshot?.Template ?? string.Empty,
                 CaptureTime = captureTime,
+                Acquisition = records.Acquisition,
                 PrimaryBufferKind = isCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
             };
             LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, isCie ? 0 : (int)dataLength, isCie ? (int)dataLength : 0);
+            frame.CalibrationProvenance = records.Provenance;
             try
             {
                 using LocalFlowFrameLease lease = frame.Acquire();

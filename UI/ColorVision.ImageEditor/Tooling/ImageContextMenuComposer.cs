@@ -108,7 +108,7 @@ namespace ColorVision.ImageEditor.Tooling
         private void CreateStandardContextMenu()
         {
             List<MenuItemMetadata> menuItemMetadatas = new();
-            if (_context.IImageOpen is IIEditorToolContextMenu contentMenuProvider)
+            if ((_context.ImageView.ImageContentCapability ?? (object?)_context.IImageOpen) is IIEditorToolContextMenu contentMenuProvider)
             {
                 menuItemMetadatas.AddRange(contentMenuProvider.GetContextMenuItems());
             }

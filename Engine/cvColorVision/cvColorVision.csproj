@@ -22,6 +22,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Include="Devices\Spectrometer\ColorRenderingData\*.csv" LogicalName="cvColorVision.ColorRenderingData.%(Filename)%(Extension)" />
+		<None Update="Devices\Spectrometer\ColorRenderingData\NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="ThirdPartyNotices\Colour-Science.txt" Pack="true" PackagePath="contentFiles/any/any/ThirdPartyNotices/Colour-Science.txt" />
+	</ItemGroup>
+	<ItemGroup>
 		<PackageReference Include="log4net" Version="3.5.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="OpenCvSharp5" Version="5.0.0.20261011" />
@@ -31,93 +35,129 @@
 	<ItemGroup>
 		<None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="runtimes\win-x64\native\cvCamera.dll">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\CommLibrary.dll" Link="runtimes\win-x64\native\CommLibrary.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="runtimes\win-x64\native\opencv_world401.dll">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>	
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="runtimes\win-x64\native\pthreadVC2.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\msvcr100.dll" Link="runtimes\win-x64\native\msvcr100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="qhyccd.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="runtimes\win-x64\native\qhyccd.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="SCBase.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="runtimes\win-x64\native\SCBase.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="SCGDCamLayer.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="runtimes\win-x64\native\SCGDCamLayer.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="SCGDDataProcess.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="runtimes\win-x64\native\SCGDDataProcess.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="SCGDMilCam.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="runtimes\win-x64\native\SCGDMilCam.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="toupcam.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="runtimes\win-x64\native\toupcam.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\nncam.dll" Link="nncam.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\nncam.dll" Link="runtimes\win-x64\native\nncam.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\IKapC.dll" Link="IKapC.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\IKapC.dll" Link="runtimes\win-x64\native\IKapC.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\libusb0.dll" Link="libusb0.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\libusb0.dll" Link="runtimes\win-x64\native\libusb0.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\SpectraArsenal.dll" Link="SpectraArsenal.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\SpectraArsenal.dll" Link="runtimes\win-x64\native\SpectraArsenal.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\USB_Driver.dll" Link="USB_Driver.dll">
+		<None Include="..\..\DLL\scgd_internal_dll\USB_Driver.dll" Link="runtimes\win-x64\native\USB_Driver.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\glaDevSys64.dll" Link="glaDevSys64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\glaDevSys64.dll')">
+		<None Include="..\..\DLL\scgd_internal_dll\glaDevSys64.dll" Link="runtimes\win-x64\native\glaDevSys64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\glaDevSys64.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\xGUSB64.dll" Link="xGUSB64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xGUSB64.dll')">
+		<None Include="..\..\DLL\scgd_internal_dll\xGUSB64.dll" Link="runtimes\win-x64\native\xGUSB64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xGUSB64.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\xGCOM64.dll" Link="xGCOM64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xGCOM64.dll')">
+		<None Include="..\..\DLL\scgd_internal_dll\xGCOM64.dll" Link="runtimes\win-x64\native\xGCOM64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xGCOM64.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\xserial64.dll" Link="xserial64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xserial64.dll')">
+		<None Include="..\..\DLL\scgd_internal_dll\xserial64.dll" Link="runtimes\win-x64\native\xserial64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xserial64.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\FTD2XX.dll" Link="FTD2XX.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\FTD2XX.dll')">
+		<None Include="..\..\DLL\scgd_internal_dll\FTD2XX.dll" Link="runtimes\win-x64\native\FTD2XX.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\FTD2XX.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 	</ItemGroup>
 

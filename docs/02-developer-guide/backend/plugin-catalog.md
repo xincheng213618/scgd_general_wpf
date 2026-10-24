@@ -33,6 +33,8 @@ related: ["delivery.backend", "delivery.artifact-delivery", "plugins.model", "pl
 
 查询先拿完整目录，再在 Python 中过滤、排序和分页，不是数据库 LIMIT 查询。关键词在 name/id/description/author 中做不区分大小写的包含匹配，category 为不区分大小写的相等匹配，author 为包含匹配。超过末页会夹到最后一页；无结果时 page=1、totalPages=0。`categories` 来自未过滤目录，不只包含本页或当前关键词命中的分类。
 
+网页 `/plugins` 的每张插件卡片提供“下载最新版”，使用列表中的 `pluginId` 和 `latestVersion` 直接链接既有 `/api/packages/<plugin_id>/<version>` 下载入口，无需进入详情页；缺少版本时禁用下载。按钮下载的是当前列表所显示的版本，页面打开后新发布的版本需刷新列表取得。详情入口继续用于说明、更新日志和历史版本。
+
 ## full、compact、update 是不同响应投影
 
 `GET /api/plugins/<id>` 先执行完整 `get_plugin_info`，之后才按 `view` 构造响应。未指定或未知 view 沿 full 分支，并不因未知 view 返回400。

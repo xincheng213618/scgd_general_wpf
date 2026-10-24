@@ -88,38 +88,11 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 安装前备份数据库 的本地化字符串。
-        /// </summary>
-        public static string BackupDatabaseBeforeInstall {
-            get {
-                return ResourceManager.GetString("BackupDatabaseBeforeInstall", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 立即备份 的本地化字符串。
         /// </summary>
         public static string BackupNow {
             get {
                 return ResourceManager.GetString("BackupNow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装前备份服务文件夹 的本地化字符串。
-        /// </summary>
-        public static string BackupServiceBeforeInstall {
-            get {
-                return ResourceManager.GetString("BackupServiceBeforeInstall", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 立即备份服务 的本地化字符串。
-        /// </summary>
-        public static string BackupServiceNow {
-            get {
-                return ResourceManager.GetString("BackupServiceNow", resourceCulture);
             }
         }
         
@@ -232,24 +205,6 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 CVWinSMS 路径 的本地化字符串。
-        /// </summary>
-        public static string CVWinSMSPath {
-            get {
-                return ResourceManager.GetString("CVWinSMSPath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 CVWinSMS 服务程序的可执行文件路径。 的本地化字符串。
-        /// </summary>
-        public static string CVWinSMSPathDescription {
-            get {
-                return ResourceManager.GetString("CVWinSMSPathDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 数据库 的本地化字符串。
         /// </summary>
         public static string Database {
@@ -294,23 +249,7 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 导入配置 的本地化字符串。
-        /// </summary>
-        public static string ImportConfig {
-            get {
-                return ResourceManager.GetString("ImportConfig", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 定位旧版 CVWinSMS 并读取 App.config 的本地化字符串。
-        /// </summary>
-        public static string ImportConfigDescription {
-            get {
-                return ResourceManager.GetString("ImportConfigDescription", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 安装 的本地化字符串。
@@ -327,24 +266,6 @@ namespace WindowsServicePlugin.Properties {
         public static string InstallAndUpdate {
             get {
                 return ResourceManager.GetString("InstallAndUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 所选组件已安装完成。 的本地化字符串。
-        /// </summary>
-        public static string InstallCompletedMessage {
-            get {
-                return ResourceManager.GetString("InstallCompletedMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装完成 的本地化字符串。
-        /// </summary>
-        public static string InstallCompletedTitle {
-            get {
-                return ResourceManager.GetString("InstallCompletedTitle", resourceCulture);
             }
         }
         
@@ -384,23 +305,7 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 检测到旧版配置：{0} 的本地化字符串。
-        /// </summary>
-        public static string LegacyConfigDetectedFormat {
-            get {
-                return ResourceManager.GetString("LegacyConfigDetectedFormat", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 未检测到旧版配置。导入时可以选择旧版 CVWinSMS.exe，手动配置可直接填写 MySQL 和 MQTT。 的本地化字符串。
-        /// </summary>
-        public static string LegacyConfigNotDetected {
-            get {
-                return ResourceManager.GetString("LegacyConfigNotDetected", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 日志输出 的本地化字符串。
@@ -408,15 +313,6 @@ namespace WindowsServicePlugin.Properties {
         public static string LogOutput {
             get {
                 return ResourceManager.GetString("LogOutput", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 管理服务 的本地化字符串。
-        /// </summary>
-        public static string ManagementService {
-            get {
-                return ResourceManager.GetString("ManagementService", resourceCulture);
             }
         }
         
@@ -429,23 +325,7 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 手动配置 的本地化字符串。
-        /// </summary>
-        public static string ManualConfig {
-            get {
-                return ResourceManager.GetString("ManualConfig", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 配置 MySQL 和 MQTT 的本地化字符串。
-        /// </summary>
-        public static string ManualConfigDescription {
-            get {
-                return ResourceManager.GetString("ManualConfigDescription", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 更多操作 的本地化字符串。
@@ -656,6 +536,24 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 移除归档服务检测 的本地化字符串。
+        /// </summary>
+        public static string RemoveArchiveServiceMonitoring {
+            get {
+                return ResourceManager.GetString("RemoveArchiveServiceMonitoring", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 从注册中心监控列表移除 CVArchService；运行中的注册中心会短暂停止并恢复 的本地化字符串。
+        /// </summary>
+        public static string RemoveArchiveServiceMonitoringToolTip {
+            get {
+                return ResourceManager.GetString("RemoveArchiveServiceMonitoringToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 重置数据库 的本地化字符串。
         /// </summary>
         public static string ResetDatabase {
@@ -688,15 +586,6 @@ namespace WindowsServicePlugin.Properties {
         public static string RestoreBackup {
             get {
                 return ResourceManager.GetString("RestoreBackup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 恢复服务备份 的本地化字符串。
-        /// </summary>
-        public static string RestoreServiceBackup {
-            get {
-                return ResourceManager.GetString("RestoreServiceBackup", resourceCulture);
             }
         }
         
@@ -796,24 +685,6 @@ namespace WindowsServicePlugin.Properties {
         public static string Service {
             get {
                 return ResourceManager.GetString("Service", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务备份 的本地化字符串。
-        /// </summary>
-        public static string ServiceBackup {
-            get {
-                return ResourceManager.GetString("ServiceBackup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 (保存至：我的文档\ColorVision\ServiceBackup) 的本地化字符串。
-        /// </summary>
-        public static string ServiceBackupLocationHint {
-            get {
-                return ResourceManager.GetString("ServiceBackupLocationHint", resourceCulture);
             }
         }
         
@@ -1105,32 +976,8 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 选择初始化配置方式 的本地化字符串。
-        /// </summary>
-        public static string SetupConfigChoiceTitle {
-            get {
-                return ResourceManager.GetString("SetupConfigChoiceTitle", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 服务管理器配置 的本地化字符串。
-        /// </summary>
-        public static string SetupConfigTitle {
-            get {
-                return ResourceManager.GetString("SetupConfigTitle", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 跳过配置 的本地化字符串。
-        /// </summary>
-        public static string SkipConfig {
-            get {
-                return ResourceManager.GetString("SkipConfig", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 光谱仪日志 的本地化字符串。

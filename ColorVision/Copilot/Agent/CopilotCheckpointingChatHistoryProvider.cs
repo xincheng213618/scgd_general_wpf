@@ -87,11 +87,11 @@ namespace ColorVision.Copilot
     internal sealed class CopilotCheckpointingChatHistoryProvider : ChatHistoryProvider
     {
         private readonly InMemoryChatHistoryProvider _inner;
-        private readonly Func<AIAgent, AgentSession, CopilotProviderToolHistoryDelta, CancellationToken, ValueTask> _checkpointStored;
+        private readonly Func<AIAgent, AgentSession, CopilotProviderToolHistoryDelta, IReadOnlyList<string>, CancellationToken, ValueTask> _checkpointStored;
 
         public CopilotCheckpointingChatHistoryProvider(
             InMemoryChatHistoryProviderOptions options,
-            Func<AIAgent, AgentSession, CopilotProviderToolHistoryDelta, CancellationToken, ValueTask> checkpointStored)
+            Func<AIAgent, AgentSession, CopilotProviderToolHistoryDelta, IReadOnlyList<string>, CancellationToken, ValueTask> checkpointStored)
         {
             _inner = new InMemoryChatHistoryProvider(options ?? throw new ArgumentNullException(nameof(options)));
             _checkpointStored = checkpointStored ?? throw new ArgumentNullException(nameof(checkpointStored));
@@ -116,10 +116,15 @@ namespace ColorVision.Copilot
                 var toolHistoryDelta = CopilotProviderToolHistoryDelta.Capture(
                     context.RequestMessages,
                     context.ResponseMessages);
+                var storedUserMessageIds = context.RequestMessages
+                    .Where(message => message.Role == ChatRole.User && !string.IsNullOrEmpty(message.MessageId))
+                    .Select(message => message.MessageId!)
+                    .ToArray();
                 await _checkpointStored(
                     context.Agent,
                     context.Session,
                     toolHistoryDelta,
+                    storedUserMessageIds,
                     cancellationToken);
             }
         }

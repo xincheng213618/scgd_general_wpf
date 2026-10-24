@@ -1,4 +1,4 @@
----
+﻿---
 knowledge_id: "plugins.spectrum-socket"
 knowledge_type: "topic"
 status: "current"
@@ -84,9 +84,11 @@ Socket 校零不回退到人工遮光。自动校零参数选择 Shutter 时，M
 | --- | --- |
 | `Lv` | `ViewResultSpectrum.Lv`，字符串；由安全亮度值 `ToString()` 生成，不是 JSON 数值 |
 | `x` / `y` / `u` / `v` | `fx` / `fy` / `fu` / `fv`，数值 |
-| `CCT` / `Duv` | `fCCT` / `dC`，数值 |
-| `DominantWavelength` / `PeakWavelength` / `HalfBandwidth` | `fLd` / `fLp` / `fHW`，数值 |
-| `ColorPurity` / `Ra` | `fPur` / `fRa`，数值 |
+| `CCT` / `Duv` | 共用 Robertson 1968 从 CIE 1931 xy 计算，数值或 null；Duv 使用 CIE 1960 UCS |
+| `DominantWavelength` / `ComplementaryWavelength` | 主波长与补色波长分别输出正数 nm，白点/无效色度为 null；紫红色只有补色波长 |
+| `WavelengthStatus` / `TemperatureStatus` | 共享色度计算的枚举状态名称字符串，含有效、白点、补色及不可用原因 |
+| `PeakWavelength` / `HalfBandwidth` | `fLp` / `fHW`，数值 |
+| `ColorPurity` / `Ra` | D65 参考白点的兴奋纯度（0～1）、CIE 13.3 Ra，数值或 null |
 | `IP` | 字符串，带 `%` 后缀 |
 | `Blue` | 字符串，比例乘 `100` 后取两位小数的文本，**不带 `%`**；分母为零时为 `"0"` |
 | `IntTime` | 响应构造时的 `SpectrometerManager.IntTime`，数值；不是从本次结果的不可变快照读取 |

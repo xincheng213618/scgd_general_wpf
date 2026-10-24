@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Chessboard;
+using ProjectARVRPro.Process.Demura;
 using ProjectARVRPro.Process.Distortion;
 using ProjectARVRPro.Process.KeyedResults.FieldOfView;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
@@ -36,6 +37,10 @@ namespace ProjectARVRPro
         /// <summary>黑场测试结果，主要包含 FOFO 对比度。</summary>
         [DisplayName("Black")]
         public BlackTestResult BlackTestResult { get; set; }
+
+        /// <summary>Demura W128 源文件的文件名和文本内容。</summary>
+        [DisplayName("Demura")]
+        public Dictionary<string, DemuraTestResult> DemuraTestResults { get; set; } = new Dictionary<string, DemuraTestResult>();
 
         /// <summary>按配置名称输出的视场角测试结果。</summary>
         [DisplayName("视场角测试")]

@@ -5,7 +5,7 @@ status: "current"
 summary: "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。"
 aliases: ["本机 Codex","Codex 桌面版接入","LocalCodex","有效配置诊断","/debug-config","/debug config","/context","/memory","Copilot配置","Copilot 设置 Save / Apply / Cancel","聊天配置","模型设置","Test Model","Apply to Chat","CopilotSettingsViewModel","CopilotConfig","推理模式保存失败","MCP连接测试","config.toml不生效"]
 code_paths: ["ColorVision/Copilot/Codex","ColorVision/Copilot/Config/CopilotEffectiveConfigDiagnostics.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotContextDiagnostics.cs","ColorVision/Copilot/CopilotProjectInstructionDiagnostics.cs","ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs","ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs","ColorVision/Copilot/Config","ColorVision/Copilot/CopilotSettingsWindow.xaml","ColorVision/Copilot/CopilotSettingsWindow.xaml.cs","ColorVision/Copilot/CopilotSettingsViewModel.cs","ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs","ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs","ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs","ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs","ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs","ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs","ColorVision/Copilot/CopilotMcpConnectionDiagnostic.cs","ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs","UI/ColorVision.UI/ConfigHandler.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotCodexTests.cs","Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs","Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotCodexTests.cs","Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs","Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
 related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copilot.extensions", "copilot.mcp-server", "copilot.view-model", "ui.configuration"]
 ---
 
@@ -50,16 +50,20 @@ Profile 模型与提示主体来自 ColorVision 配置，本机 Codex 的空模�
 
 打开模型设置时会异步检测 Windows Codex 桌面版自带的运行时、PATH 中的原生 CLI 和 npm 包内的原生可执行程序。桌面版的版本目录动态发现；不依赖终端已注册 `codex` 命令，不执行 `.cmd` / `.ps1` 包装脚本。仅安装 Store 应用但尚未完成首次启动时，可能需要先打开 Codex，使其释放可执行运行时。
 
-- 检测到运行时后显示“本机 Codex”卡片；通过 App Server 握手、账户查询及历史接口兼容性检查后才允许使用。已有 API Key 配置保留，检测本身不会切换当前 Profile。
-- 已登录时点击“使用本机 Codex”，加入窗口草稿后再点击应用或保存；页面内添加也遵守同一保存边界。没有安装时仍使用原来的 Key 配置，也可在模型列表上方重新检测。
-- 未登录时点击“登录 Codex”，通过 Codex 管理的官方浏览器登录完成认证；也可先在桌面版登录，再重新检测。关闭设置会取消等待。登录只改变 Codex 自己的登录状态，不在 ColorVision 配置中保存密码或 token。
+- “添加供应商”中始终提供“本地 Codex”选项，可以先加入草稿，再在右侧检测运行时和登录。通过 App Server 握手、账户查询及历史接口兼容性检查后才能实际请求；已有 API Key 配置保留，检测本身不会切换当前 Profile。
+- 本地 Codex 和 API 供应商使用同一列表、启用开关和模型编辑入口。没有安装时显示检测结果，仍可配置 API 供应商；页面右上方和本地供应商详情都可重新检测。
+- 未登录时点击“登录 Codex”，通过 Codex 管理的官方浏览器登录完成认证；也可先在桌面版登录，再重新检测。重新检测或登录时先清空上次的账户与模型列表，失败不会留下过期的已登录状态。关闭设置会取消等待，随后到达的结果不再回写或继续发起登录请求。登录只改变 Codex 自己的登录状态，不在 ColorVision 配置中保存密码或 token。`CopilotLocalCodexSettingsLifecycleTests` 使用合成协议响应覆盖刷新失败、退出登录和关闭后的迟到结果，不启动真实 Codex。
 - 本机 Profile 不需要 API Key 或 Base URL。模型可从 Codex 返回的列表选择，留空使用其默认值；图片能力仍按模型声明。连接测试会发送一条短请求并消耗该账户额度，普通检测不启动模型推理。
 
 该接入使用实验性的 `codex app-server` stdio 协议，要求运行时支持动态工具及 `thread/inject_items`。`thread/start` 和 `turn/start` 返回的会话、回合标识缺失或为空白时，立即报错并释放连接，不读取后续输出，避免失去通知筛选依据。不兼容、未登录、连接退出或额度不足时明确报错，不自动切换到另一账户或 Key。运行时文件路径和账户凭据不随 Profile 保存；本机 Codex Profile 只保存在本机配置中。
 
-ColorVision 在分块读取 stdout 时检查单行协议消息上限：最多 `16 × 1024 × 1024` 个 UTF-16 字符，换行不计；超限立即报错，不等待完整行或换行。连续消息共用一个读取器保留预读内容，支持 LF、CRLF 和非空的 EOF 末行；取消也会阻止交付已经缓存的下一行。stderr 按固定 4 KiB 字节块读取并直接丢弃；进程收尾显式关闭自有读取器，后台读取异常经过观察，不覆盖当前调用的结果。
+每轮设置检测只扫描一次候选路径，并把本轮结果交给连接工厂；下一次检测和登录仍重新发现。连接初始化已经读取的登录状态仅保存在该连接实例中，聊天与检测复用这个布尔快照，不重复查询或跨连接缓存账户。登录完成后强制重新读取账户。初始化握手、历史接口探测和失败候选回退仍执行，减少查询不代表跳过兼容性检查。
 
-停止自有进程时，stdin 关闭的预期异常不会跳过后续等待和终止：仍等待最多 500 毫秒，未退出则终止自有进程树。`CopilotCodexTests` 用分块流验证分帧、上限、EOF、取消和错误流关闭，并用测试创建的本地子进程验证 stdin 关闭失败和已退出的收尾分支；不启动真实 Codex 或模型请求。
+运行时报告 `error.willRetry=true` 时继续等待同一回合，由 Codex 完成自己的重试。宿主仅在 `turn/completed` 失败后按结构化 `codexErrorInfo` 分类，不依据错误正文推断权限、重试或上下文限制，也不透出可能含凭据的附加详情。Agent 路径沿用现有的有界重试及一次上下文压缩恢复；已输出文字、推理或工具请求后不重放原请求。额度、认证和权限失败不会按临时服务错误重试。普通 Chat 路径仍只有现有的不活跃超时保护，没有额外增加自动重试。
+
+ColorVision 在分块读取 stdout 时检查单行协议消息上限：最多 `16 × 1024 × 1024` 个 UTF-16 字符，换行不计；超限立即报错，不等待完整行或换行。连续消息共用一个读取器保留预读内容，支持 LF、CRLF 和非空的 EOF 末行；RPC 等待期间夹杂的通知按接收顺序保留。取消会阻止交付预读行和已排队通知。适配器在连接、设置请求和通知返回后复查取消；同一完成消息包含多段文本时，每次恢复枚举也复查，不再产生后续文本、工具事件或正常结束标记。stderr 按固定 4 KiB 字节块读取并直接丢弃；进程收尾显式关闭自有读取器，后台读取异常经过观察，不覆盖当前调用的结果。
+
+停止自有进程时，直接关闭启动后、首次写入前取得的 stdin 句柄，不调用可能向满管道同步刷新的 `StreamWriter.Close`，也不在后台遗留关闭任务。先等待最多 500 毫秒让进程因 EOF 正常退出；未退出时尝试终止自有进程树，再最多等待 2 秒确认根进程退出。重复释放共享同一收尾任务，聊天和设置入口异步等待，避免阻塞 UI；进程控制失败时也不会无限等待或按名称寻找其它 Codex 进程。`CopilotCodexTests` 用分块流验证分帧、上限、EOF、取消和错误流关闭，并用自建子进程验证正常 EOF、满管道、在途写入、重复释放和自有进程树边界；不启动真实 Codex 或模型请求。
 
 `CopilotCodexChatClient` 将模型输出转换成现有聊天事件，将动态工具调用交回 Agent Framework 和 ColorVision 的权限、审批、预算与执行链；不会调用 Codex 中的工具来代替宿主审批。独立子进程关闭内置 Shell、外部 MCP、插件、Hook 和网页搜索，并使用只读沙箱。收到独立权限申请或非宿主管理的工具事件时停止本次调用。
 
@@ -73,9 +77,11 @@ ColorVision 在分块读取 stdout 时检查单行协议消息上限：最多 `1
 
 ### 通用设置操作
 
-聊天面板标题栏的齿轮打开独立 Copilot 设置模块。左侧按模型与连接、Agent 与工具、网页与网络、MCP 服务导航；原有 `/settings` 页面路由保持可用。模型与连接页保留现有 Profile 配置，每个连接独立编辑，不按供应商名称自动合并账户或密钥。
+聊天面板标题栏的齿轮打开独立 Copilot 设置模块。左侧按模型设置、Agent 与工具、网页与网络、MCP 服务导航；原有 `/settings` 页面路由保持可用。模型设置页左侧列出供应商，右侧编辑共用的 Base URL、API 格式、API Key 和模型列表；供应商菜单支持重命名与删除。旧 Profile 按原 ID 保持独立连接，不按供应商名称、地址或密钥自动合并。新建供应商的模型以 `ConnectionId` 关联，保留各自 Profile ID，历史记录继续引用模型 ID。
 
-添加模型在同一页面内完成：选择供应商预设，再填写 API Key、模型与接口地址；自定义连接从空地址、空模型开始，完整后才可添加。切换供应商清空上一供应商的密钥；返回模型列表会丢弃尚未添加的表单。添加只进入设置草稿，最终应用或保存仍提交整个设置候选；正在添加时先完成或取消表单，再使用窗口底部保存按钮。
+添加供应商在同一页面内选择卡片后进入详情，可先添加再填写密钥。预设带入模型列表，默认只启用第一个模型；自定义连接从空地址、空模型开始，保存后仍保留自定义类型，不根据模型名称改成内置供应商。只有没有连接分组 ID 的旧 Profile 继续按原规则推断供应商。本地 Codex 不要求 API Key。模型行提供视觉与上下文标记、测试连接、编辑和启用开关；供应商停用会保留其模型开关，但这些模型不能用于聊天选择、命令补全或发送。删除最后一个供应商后允许保存空列表，重新打开不会补回默认连接。
+
+添加或编辑模型使用独立弹窗草稿，取消不会更改模型；弹窗保存只更新设置窗口草稿，最终仍需应用或保存。智能配置按精确模型 ID 填写已确认的视觉、上下文和输出参数，未知字段保留手动入口，不根据模型名前缀猜能力。重复选择相同模型或相同智能配置状态不重置已编辑字段。上下文 `0` 继承 Agent 默认值；手动输出上限必须小于实际上下文（包括继承值），保存窗口时也重新校验。高级配置的首段内容超时、流式响应间隔接受 `15–3600` 秒整数，无效输入保留在表单中并阻止保存，不静默沿用旧值。API 模型的输出上限用于请求与历史预算；本地 Codex 实际输出上限由运行时管理，编辑器禁用该项并说明宿主预算预留用途。
 
 `/settings [models|agent|web|mcp]` 由 `Config/CopilotSettingsCommand.cs` 路由到同一个 `CopilotSettingsWindow`；聊天 ViewModel 的 `OpenSettings` 在 `IsBusy` 时不打开窗口。窗口创建 `CopilotSettingsViewModel`，从配置克隆 Profiles，并将其它字段复制为草稿。选择、添加、复制、删除 Profile 或编辑字段，通常只改变这份窗口草稿。
 
@@ -83,13 +89,13 @@ ColorVision 在分块读取 stdout 时检查单行协议消息上限：最多 `1
 
 | 入口 | 实际结果 |
 | --- | --- |
-| 普通 Add / Duplicate / Delete | 更改草稿；最后一个 Profile 被删除时补一个默认草稿；需后续保存 |
+| 添加供应商 / 添加或编辑模型 / 删除供应商 | 更改草稿，需后续保存；每个供应商至少保留一个模型，删除整个连接使用供应商菜单 |
 | Apply | 调用 `Save()`，不关窗 |
 | Save | 调用同一个 `Save()`；只有返回 `true` 才以成功结果关闭 |
-| 页面内添加到列表 / 使用本机 Codex | 只添加或选择窗口草稿；点击应用或保存后生效 |
+| 本地 Codex 供应商 | 加入窗口草稿；检测与登录独立于应用或保存 |
 | Cancel / Close / 关闭窗口 | 不调用该按钮保存，也不回滚之前 Apply 或初始化已经产生的写入；关闭时取消窗口持有的异步操作 |
 
-保存按钮的前置有效性主要约束 MCP 端口、外部 MCP 文本和 Web Pref64 语法，不要求每个 Profile 都能连接。API Profile 的 `CopilotProfileConfig.IsConfigured` 检查 API Key、Base URL、Model 和端点规则；本机 Codex Profile 不要求这些字段，调用时重新验证运行时与登录状态。“Ready”不是网络测试结果。模型的图像输入声明也不是自动探测：改变模型、地址或协议会清除 `SupportsImageInput`，不能把旧端点能力沿用给新端点。
+保存校验约束模型预算、MCP 端口、外部 MCP 文本和 Web Pref64 语法，不要求每个 Profile 都能连接。API Profile 的 `CopilotProfileConfig.IsConfigured` 检查供应商及模型启用状态、API Key、Base URL、Model 和端点规则；本地 Codex 不要求 API 字段，调用时重新验证运行时与登录状态。“已配置”不是网络测试结果。旧模型的视觉声明保持原值；手动模式改变模型、地址或协议仍清除旧声明，智能配置在明确编辑时重填已知模型能力。输入密钥不会重置手动输出额度。`CopilotProviderSettingsTests` 覆盖分组隔离、停用恢复、弹窗草稿、预算继承、加密保存与重载，以及空列表持久化；这不替代真实供应商请求或登录验收。
 
 第三方服务需要 Responses 协议时，选择 `OpenAI Compatible` 并在 `Base URL` 填写完整的 `/responses` 端点，例如 `https://api.deepseek.com/responses`；路径前缀会原样保留。普通兼容 Base URL 仍选择 Chat Completions，官方 OpenAI 地址仍自动使用 Responses。该选择同时用于普通聊天、Agent 和连接诊断；服务是否支持对应模型、工具和输入类型仍需实际验证，不能只凭 URL 判断。
 
@@ -136,7 +142,9 @@ DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官
 
 `/model` 选择一个已经存在的 Profile，不改写其 provider、模型地址或凭据。`SelectModelProfile` 通过 `SelectedProfile` → `CopilotConversationSession.SelectProfile` 更新运行期选择、`ActiveProfileId` 和当前会话的 `ProfileId`，再由 `PersistState()` 请求保存会话状态。选择先在内存生效，状态保存由 `CopilotChatStatePersistenceCoordinator` 异步完成；命令的“后续请求将使用”不是耐久化回执，保存故障也没有在此选择方法中回滚。会话保存通知、重试与 Flush 属于[状态所有权](./copilot-view-model-architecture.md)。
 
-`/reasoning`（兼容 `/effort`）才会修改当前 Profile 的 `ReasoningMode`。只接受 `CopilotReasoningCapabilities` 为该 Profile 声明的级别；本机 Codex 返回并显式选择的 GPT 推理模型也使用这些档位，选择值经 Agent Framework 传给 App Server。归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
+聊天输入框的模型菜单按连接分组；顶部供应商入口展开连接列表和“管理模型”，仅浏览连接不更改当前模型，点击模型或按 Enter 才应用选择。停用的供应商及模型不出现在列表中，旧 Profile 仍按自身 ID 独立分组。模型行仅按能力声明显示“视觉”标记。
+
+模型菜单底部的推理滑杆与 `/reasoning`（兼容 `/effort`）都会修改当前 Profile 的 `ReasoningMode`。滑杆只使用 `CopilotReasoningCapabilities` 为该 Profile 声明的离散档位，拖动时预览、释放时保存；也可用方向键选择，菜单内 Ctrl+T 循环档位。不支持推理配置的模型不显示滑杆。本机 Codex 返回并显式选择的 GPT 推理模型也使用这些档位，选择值经 Agent Framework 传给 App Server。归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，滑杆恢复原档位；`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
 
 官方 `api.openai.com` 上的 GPT-6 Astra 与 GPT-6.1 Sol 提供 `Default/Low/Medium/High/XHigh/Max`，不提供 `Disabled/Enabled`；历史 `Disabled` 配置或 Codex `none/minimal` 覆盖发送前收敛为 `low`，`ultra` 收敛为 `max`。本机 Codex 显式选择这两个模型时也不提供关闭档位；动态模型列表仍由本机运行时决定。枚举新增值追加在已有数值之后，避免改变旧 JSON 中 `Default/Disabled/Enabled/High/Max` 的数字含义。伪装成 OpenAI vendor 的第三方兼容端点不会因此获得官方推理档位。
 
@@ -163,7 +171,7 @@ DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官
 
 Test Model 的结果记录耗时、可显示字符和重试；“Connected”也可能带“没有可显示文本”或“响应提前结束”的提示。它没有验证答案必须精确等于 OK，更不能证明工具调用、图像输入、业务正确性或账户额度可用。窗口关闭会请求取消诊断，但已经发送的请求和供应商用量不能由取消撤回。
 
-诊断期间仍可切换和编辑 Profile；这些动作会使原诊断失效并请求取消。结果只允许回写到始终未切换、未编辑的原 Profile，切换后再切回或编辑后改回原值也不能沿用旧结果。成功与失败都在 UI 续体中复查 Profile 修订、取消和窗口寿命，避免已经完成的请求在取消或关窗后覆盖状态。
+诊断期间仍可切换和编辑 Profile；这些动作会使原诊断失效并请求取消。点击另一模型的测试会等待前一项完成取消清理后启动，始终只运行一项诊断；等待期间再次点击待测试模型、切换或编辑模型、取消或关闭窗口会撤销待启动请求。结果只允许回写到始终未切换、未编辑的原 Profile，切换后再切回或编辑后改回原值也不能沿用旧结果。成功与失败都在 UI 续体中复查 Profile 修订、取消和窗口寿命，避免已经完成的请求在取消或关窗后覆盖状态。
 
 Profile 未变时，模型测试仍将成功或失败写入该模型的诊断区域；全局设置提示只有仍显示本轮测试提示时才被替换。测试期间用户编辑其它设置或保存校验失败产生的较新提示会保留，避免连接成功掩盖“设置尚未保存”或端口错误。回归在 HTTP 已完成但 UI 续体尚未执行时更改设置，分别验证成功、失败、普通未保存提示与保存校验错误。
 
@@ -177,7 +185,7 @@ Local MCP 测试由 `CopilotMcpConnectionDiagnostic` 依次发送 `initialize`�
 
 ## 实现与验证入口
 
-- `Config/CopilotEffectiveConfigDiagnostics.cs`、`CopilotContextDiagnostics.cs`、`CopilotProjectInstructionDiagnostics.cs`：分别生成配置来源、上下文提交预览和指令发现报告。`CopilotEffectiveConfigDiagnosticsTests` 覆盖当前设置／会话变更、在途快照边界、脱敏、文件缺失／损坏／超限和未来 schema；`CopilotContextDiagnosticsTests`、`CopilotProjectInstructionDiagnosticsTests` 覆盖模式、实际策略与指令展示边界。
+- `Config/CopilotEffectiveConfigDiagnostics.cs`、`CopilotContextDiagnostics.cs`、`CopilotProjectInstructionDiagnostics.cs`：分别生成配置来源、上下文提交预览和指令发现报告。`CopilotEffectiveConfigDiagnosticsTests` 覆盖当前设置／会话变更、在途快照边界、脱敏、文件缺失／损坏／超限和未来 schema。
 - `CopilotSettingsViewModel.ProfileManagement.cs`、`CopilotSettingsWindow.xaml.cs`：按钮保存、Profile 草稿和模型诊断入口；`Config/CopilotConfig.cs`：规范化、候选发布、schema 与凭据边界。
 - `CopilotChatViewModel.ConfigPersistence.cs`、`Composer.cs`、`ConversationCommands.cs`：聊天中配置变更、三态反馈及命令回显；`State/CopilotConversationSession.cs`：只选择 Profile 的会话状态变化。
 - `CopilotModelConnectionDiagnostic.cs`、`CopilotMcpConnectionDiagnostic.cs`、`CopilotSettingsViewModel.ExternalMcp.cs` / `McpOperations.cs`：真实联网入口。

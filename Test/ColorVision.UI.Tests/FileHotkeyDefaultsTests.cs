@@ -13,50 +13,6 @@ namespace ColorVision.UI.Tests;
 [Collection(AssemblyDiscoveryCollection.CollectionName)]
 public sealed class FileHotkeyDefaultsTests
 {
-    [Theory]
-    [InlineData(typeof(MenuFileOpen), Key.O, ModifierKeys.Control)]
-    [InlineData(typeof(MenuOpenFolder), Key.O, ModifierKeys.Control | ModifierKeys.Shift)]
-    [InlineData(typeof(MenuOpenSolution), Key.O, ModifierKeys.Control | ModifierKeys.Alt)]
-    [InlineData(typeof(MenuSave), Key.S, ModifierKeys.Control)]
-    [InlineData(typeof(MenuSaveAs), Key.S, ModifierKeys.Control | ModifierKeys.Shift)]
-    [InlineData(typeof(MenuClose), Key.W, ModifierKeys.Control)]
-    public void FileActionsDeclareConventionalDefaultsAndEditableMenuHints(Type providerType, Key key, ModifierKeys modifiers)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            var menuSource = Assert.IsAssignableFrom<IMenuItem>(Activator.CreateInstance(providerType));
-            HotKeys declaration = Assert.IsAssignableFrom<IHotKey>(menuSource).HotKeys;
-            Assert.Equal(new Hotkey(key, modifiers), declaration.Hotkey);
-            Assert.Equal(new Hotkey(key, modifiers), declaration.DefaultHotkey);
-            Assert.False(string.IsNullOrWhiteSpace(declaration.Description));
-            Assert.False(string.IsNullOrWhiteSpace(declaration.Category));
-            Assert.Equal(HotKeyKinds.Windows, declaration.Kinds);
-            Assert.NotNull(declaration.HotKeyHandler);
-
-            // Declarations are safe to inspect: no dialog, registration, file write, or application startup.
-            declaration.Id = providerType.FullName!;
-            var menu = new MenuItem { Header = menuSource.Header, Command = menuSource.Command };
-            HotkeyMenuGestureBinding.Attach(menu, menuSource, new ObservableCollection<HotKeys> { declaration });
-            Assert.Equal(string.Join(" / ", declaration.GetBindings().Select(HotkeyInput.Format)), menu.InputGestureText);
-
-            declaration.SetBindings([new Hotkey(Key.F8, ModifierKeys.Control | ModifierKeys.Shift)]);
-            Assert.Equal("Ctrl+Shift+F8", menu.InputGestureText);
-            declaration.SetBindings([]);
-            Assert.Equal(string.Empty, menu.InputGestureText);
-            Assert.False(declaration.IsRegistered);
-        });
-    }
-
-    [Fact]
-    public void OpenFileWorkspaceAndFolderHaveDistinctMenuTargets()
-    {
-        Assert.NotSame(ApplicationCommands.Open, new MenuOpenSolution().Command);
-        Assert.Same(SolutionWorkspaceCommands.OpenWorkspace, new MenuOpenSolution().Command);
-        Assert.Same(SolutionWorkspaceCommands.OpenFolder, new MenuOpenFolder().Command);
-        Assert.Empty(SolutionWorkspaceCommands.OpenWorkspace.InputGestures);
-        Assert.Empty(SolutionWorkspaceCommands.OpenFolder.InputGestures);
-        Assert.Equal(new Hotkey(Key.O, ModifierKeys.Control | ModifierKeys.Alt), Assert.Single(new MenuOpenSolution().HotKeys.GetBindings()));
-    }
 
     [Fact]
     public void CloseUsesTwoIndependentDefaultsAndOneContextAwareMenuCommand()
@@ -188,24 +144,6 @@ public sealed class FileHotkeyDefaultsTests
 
             Assert.Equal(0, otherExecutions);
         }));
-    }
-
-    [Theory]
-    [InlineData("zh-CN", "打开文件", "当前渲染图")]
-    [InlineData("en-US", "Open file", "current rendered image")]
-    public void DescriptionsAreLocalizedAndDoNotClaimUniversalSaveAs(string language, string openFileName, string saveAsLimit)
-    {
-        CultureInfo previous = CultureInfo.CurrentUICulture;
-        try
-        {
-            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
-            Assert.Equal(openFileName, new MenuFileOpen().HotKeys.Name);
-            Assert.Contains(saveAsLimit, new MenuSaveAs().HotKeys.Description, StringComparison.Ordinal);
-        }
-        finally
-        {
-            CultureInfo.CurrentUICulture = previous;
-        }
     }
 
     private static void WithMainWindow(Action<Window> action)

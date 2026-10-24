@@ -1,37 +1,68 @@
 using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.simulator;
 
-internal class MyTimer : System.Timers.Timer
+internal sealed class MyTimer : IDisposable
 {
-	public STNodeOption OutputOption;
+    private readonly int interval;
+    private readonly STNodeOption output;
+    private readonly DateTime startTime = DateTime.Now;
+    private readonly long startedAt = Stopwatch.GetTimestamp();
+    private readonly Action<MyTimer, FlowFailureKind?, string> onCompleted;
+    private readonly CancellationTokenSource stopped;
+    private readonly CancellationToken token;
+    private int disposed;
+    private int completed;
 
-	public string sn;
+    internal CVStartCFC Action { get; }
+    internal string MessageId { get; } = Guid.NewGuid().ToString("N");
+    internal int Interval => interval;
+    internal long ElapsedMs => (long)Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
 
-	public DateTime startTime;
+    internal MyTimer(int interval, STNodeOption output, CVStartCFC action, Action<MyTimer, FlowFailureKind?, string> onCompleted)
+    {
+        this.interval = interval;
+        this.output = output;
+        Action = action;
+        this.onCompleted = onCompleted;
+        stopped = CancellationTokenSource.CreateLinkedTokenSource(action.RuntimeResources.StopToken);
+        token = stopped.Token;
+    }
 
-	public MyTimer(double interval, STNodeOption outputOption)
-		: base(interval)
-	{
-		startTime = DateTime.Now;
-		OutputOption = outputOption;
-		CVStartCFC cVStartCFC = (CVStartCFC)OutputOption.Data;
-		sn = cVStartCFC.SerialNumber;
-	}
+    internal Task WaitAsync() => Task.Delay(interval, token);
 
-	internal void TransferData(ActionTypeEnum actionType)
-	{
-		CVStartCFC obj = (CVStartCFC)OutputOption.Data;
-		obj.SetActionType(actionType);
-		obj.AddTTL(startTime);
-		OutputOption.TransferData();
-	}
+    internal void TransferData()
+    {
+        lock (output)
+        {
+            if (token.IsCancellationRequested || Action.RuntimeResources.IsDisposed) return;
+            Action.NormalizeStopStatus();
+            if (!Action.IsRunning) return;
+            // Finish the timer before forwarding, so downstream work is not charged to the delay.
+            if (!Complete()) return;
+            Action.AddTTL(startTime);
+            output.TransferData(Action);
+        }
+    }
 
-	internal void TransferData()
-	{
-		((CVStartCFC)OutputOption.Data)?.AddTTL(startTime);
-		OutputOption.TransferData();
-	}
+    internal bool Complete(FlowFailureKind? failureKind = null, string message = "Finish")
+    {
+        if (Interlocked.Exchange(ref completed, 1) != 0) return false;
+        onCompleted(this, failureKind, message);
+        return true;
+    }
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+        stopped.Cancel();
+        stopped.Dispose();
+        Complete(FlowFailureKind.Canceled, "Timer canceled");
+    }
 }

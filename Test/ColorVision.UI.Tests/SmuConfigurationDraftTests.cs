@@ -94,7 +94,7 @@ public sealed class SmuConfigurationDraftTests
     public void CombinedEditorAppliesBothClassesWithoutMovingStorageOrReplacingLiveChannelState()
     {
         var config = new ConfigSMU { DevName = "COM7", DevType = Pss_Type.Keithley_2600 };
-        var display = new DisplaySMUConfig { LocalBaudRate = SMUSerialBaudRate.Baud115200 };
+        var display = new DisplaySMUConfig { UseLocalSmu = false, LocalBaudRate = SMUSerialBaudRate.Baud115200 };
         var channel = display.ChannelA;
         var source = channel.VoltageSource;
         var draft = new SmuConfigurationDraft(config, display);
@@ -137,7 +137,7 @@ public sealed class SmuConfigurationDraftTests
     public void InvalidDeviceAddressDoesNotApplyDisplayEdits()
     {
         var config = new ConfigSMU { DevName = "COM7", DevType = Pss_Type.Keithley_2600 };
-        var display = new DisplaySMUConfig();
+        var display = new DisplaySMUConfig { UseLocalSmu = false };
         var draft = new SmuConfigurationDraft(config, display) { SerialPortName = "invalid" };
         draft.DisplayConfig.UseLocalSmu = true;
         draft.DisplayConfig.LocalBaudRate = SMUSerialBaudRate.Baud115200;

@@ -30,7 +30,7 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
-        public const int CurrentSchemaVersion = 9;
+        public const int CurrentSchemaVersion = 10;
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
@@ -137,7 +137,7 @@ namespace ColorVision.Copilot
 
             changed |= CopilotTemporaryProfileSource.Sync(Profiles);
 
-            if (Profiles.Count == 0)
+            if (Profiles.Count == 0 && SchemaVersion < 10)
             {
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
                 changed = true;
@@ -201,7 +201,7 @@ namespace ColorVision.Copilot
         public CopilotProfileConfig? GetPreferredDefaultProfile()
         {
             return Profiles.FirstOrDefault(profile => profile.IsConfigured)
-                ?? Profiles.FirstOrDefault();
+                ?? Profiles.FirstOrDefault(profile => profile.IsAvailable);
         }
 
         internal CopilotConfig CreatePersistenceSnapshot(

@@ -26,10 +26,12 @@ internal sealed record LocalSmuConnection(bool IsNet, string DeviceName, Pss_Typ
 // Parameters and session captures use V / mA. Legacy scan payloads/storage retain A in the result adapter.
 internal sealed record LocalSmuParameters
 {
+    public LocalSmuSettings? AdvancedSettings { get; init; }
     public SMUChannelType Channel { get; init; }
     public bool IsSourceV { get; init; } = true;
     public double MeasureValue { get; init; }
     public double LimitValue { get; init; }
+    public double? MeasureDelayMs { get; init; }
     public bool IsAutoRng { get; init; } = true;
     public double SrcRng { get; init; }
     public double LmtRng { get; init; }
@@ -37,6 +39,8 @@ internal sealed record LocalSmuParameters
     public double EndValue { get; init; }
     public int Points { get; init; }
     public bool IsCloseOutput { get; init; }
+    public double[]? SourceValues { get; init; }
+    public bool IsListSweep { get; init; }
 
     internal static LocalSmuParameters FromTemplate(SMUParam template, SMUChannelType channel, bool closeOutput) => new()
     {
@@ -48,12 +52,18 @@ internal sealed record LocalSmuParameters
     internal void Validate(Pss_Type type, bool scan, bool checkLimits)
     {
         if (!Enum.IsDefined(Channel)) throw new ArgumentException("源表通道无效。");
+        if (MeasureDelayMs is { } delay && (!double.IsFinite(delay) || delay < 0)) throw new ArgumentException("源表测量延时必须是非负有限值。");
         if (!double.IsFinite(LimitValue) || LimitValue == 0) throw new ArgumentException("源表保护限值必须是非零有限值。");
         if (!double.IsFinite(MeasureValue) || !double.IsFinite(BeginValue) || !double.IsFinite(EndValue)) throw new ArgumentException("源表设置值必须为有限值。");
         if (scan && Points is < 2 or > 100000) throw new ArgumentException("源表扫描点数必须在 2 到 100000 之间。");
+        if (scan && (IsListSweep && SourceValues == null || SourceValues != null
+            && (SourceValues.Length != Points || Array.Exists(SourceValues, value => !double.IsFinite(value)))))
+            throw new ArgumentException("源表扫描数组必须包含与扫描点数一致的有限值。");
         if (!IsAutoRng && (!double.IsFinite(SrcRng) || !double.IsFinite(LmtRng) || SrcRng <= 0 || LmtRng <= 0)) throw new ArgumentException("手动源量程和限量程必须大于零。");
         if (!checkLimits) return;
         double source = scan ? Math.Max(Math.Abs(BeginValue), Math.Abs(EndValue)) : Math.Abs(MeasureValue);
+        if (scan && SourceValues != null)
+            foreach (double value in SourceValues) source = Math.Max(source, Math.Abs(value));
         double voltage = IsSourceV ? source : Math.Abs(LimitValue);
         double current = (IsSourceV ? Math.Abs(LimitValue) : source) / 1000;
         bool valid = type switch
@@ -71,7 +81,9 @@ internal sealed record LocalSmuParameters
 
 internal sealed record LocalSmuCapture(LocalSmuParameters Parameters, double[] Voltages, double[] Currents, int TotalTime, bool IsScan)
 {
-    internal DateTime CapturedAt { get; } = DateTime.Now;
+    internal LocalSmuDetails? Details { get; init; }
+    internal bool HasMeasurements => Voltages.Length != 0;
+    internal DateTime CapturedAt { get; init; } = DateTime.Now;
     internal long Generation { get; init; }
     internal double V => Voltages[^1];
     internal double I => Currents[^1];

@@ -49,13 +49,14 @@
                     <UniformGrid Margin="0,0,0,3" Columns="2">
                         <DockPanel Margin="0,0,3,0">
                             <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CenterlX}"/>
-                            <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterX}"/>
+                            <TextBox x:Name="OpticalCenterX" IsReadOnly="True" Text="{Binding PhyCamera.OpticalCenter.X, Mode=OneWay, FallbackValue={engine:EngineLang 图像中心}}"/>
                         </DockPanel>
                         <DockPanel Margin="3,0,0,0">
                             <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CentralY}"/>
-                            <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterY}"/>
+                            <TextBox x:Name="OpticalCenterY" IsReadOnly="True" Text="{Binding PhyCamera.OpticalCenter.Y, Mode=OneWay, FallbackValue={engine:EngineLang 图像中心}}"/>
                         </DockPanel>
                     </UniformGrid>
+                    <Button x:Name="EditCameraConfigButton" Margin="0,0,0,3" Content="{x:Static properties:Resources.TitleEditCameraConfig}" Command="{Binding EditPhyCameraConfigCommand}"/>
                     <UniformGrid Margin="0,0,0,3" Columns="2">
                         <DockPanel Margin="0,0,3,0">
                             <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Threshold}"/>

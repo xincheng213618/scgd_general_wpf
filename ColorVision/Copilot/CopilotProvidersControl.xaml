@@ -1,0 +1,138 @@
+<UserControl x:Class="ColorVision.Copilot.CopilotProvidersControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:display="clr-namespace:ColorVision" xmlns:local="clr-namespace:ColorVision.Copilot">
+    <UserControl.Resources><ResourceDictionary Source="CopilotSettingsStyles.xaml" /></UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,16">
+            <Button Command="{Binding DetectLocalCodexCommand}" ToolTip="{display:DisplayText Key='刷新本地 Codex 状态'}" Style="{StaticResource SettingsIconButtonStyle}" Content="&#xE72C;" AutomationProperties.Name="刷新本地 Codex 状态" Margin="0,0,10,0" />
+            <Button Content="{display:DisplayText Key='+ 添加供应商'}" Click="AddProvider_Click" Style="{StaticResource PrimaryActionButtonStyle}" Padding="14,7" />
+        </StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource SettingsSurfaceBorderStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="214" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="0,0,1,0" Padding="8,16">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="{display:DisplayText Key='供应商'}" Style="{StaticResource SettingsHintTextStyle}" Margin="12,0,0,14" />
+                        <ListBox ItemsSource="{Binding Providers}" SelectedItem="{Binding SelectedProvider}" PreviewMouseLeftButtonUp="ProviderList_Click" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemContainerStyle="{StaticResource SettingsModelItemStyle}">
+                            <ListBox.ItemTemplate><DataTemplate>
+                                <Grid MinHeight="26">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" Margin="0,0,10,0" />
+                                    <Ellipse Grid.Column="1" Width="7" Height="7" VerticalAlignment="Center" ToolTip="{Binding StatusText}">
+                                        <Ellipse.Style><Style TargetType="Ellipse"><Setter Property="Fill" Value="#D98218" /><Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsReady}" Value="True"><Setter Property="Fill" Value="#218A48" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLocalCodex}" Value="True"><Setter Property="Fill" Value="#D98218" /></DataTrigger>
+                                            <MultiDataTrigger><MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsLocalCodex}" Value="True" /><Condition Binding="{Binding DataContext.IsLocalCodexSignedIn, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True" />
+                                            </MultiDataTrigger.Conditions><Setter Property="Fill" Value="#218A48" /></MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding IsEnabled}" Value="False"><Setter Property="Fill" Value="#A5A5A5" /></DataTrigger>
+                                        </Style.Triggers></Style></Ellipse.Style>
+                                    </Ellipse>
+                                </Grid>
+                            </DataTemplate></ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+                <Grid Grid.Column="1">
+                    <TextBlock Text="{display:DisplayText Key='添加供应商以开始配置模型'}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6">
+                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                            <MultiDataTrigger><MultiDataTrigger.Conditions><Condition Binding="{Binding HasSelectedProvider}" Value="False" /><Condition Binding="{Binding IsAddingModel}" Value="False" /></MultiDataTrigger.Conditions><Setter Property="Visibility" Value="Visible" /></MultiDataTrigger>
+                        </Style.Triggers></Style></TextBlock.Style>
+                    </TextBlock>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsAddingModel, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Margin="24">
+                            <DockPanel Margin="0,0,0,22">
+                                <Button Content="&#xE72B;" Style="{StaticResource SettingsIconButtonStyle}" Click="Back_Click" ToolTip="返回" DockPanel.Dock="Left" Margin="0,0,12,0" />
+                                <TextBlock Text="{display:DisplayText Key='添加供应商'}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBox Text="{Binding ConnectProviderSearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="搜索供应商" AutomationProperties.Name="搜索供应商" Margin="0,0,0,16" />
+                            <ItemsControl ItemsSource="{Binding VisibleConnectProviderOptions}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate><DataTemplate>
+                                    <Button Click="ChooseProvider_Click" Tag="{Binding}" HorizontalContentAlignment="Stretch" Margin="0,0,10,10" Padding="14" MinHeight="80">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel><TextBlock Text="{Binding Label}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" /><TextBlock Text="{Binding Description}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" Margin="0,6,0,0" /></StackPanel>
+                                            <TextBlock Grid.Column="1" FontFamily="Segoe MDL2 Assets" Text="&#xE76C;" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.5" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsEditingModel, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Margin="24" Visibility="{Binding HasSelectedProvider, Converter={StaticResource BoolToVisibility}}">
+                            <DockPanel Margin="0,0,0,22">
+                                <Button DockPanel.Dock="Right" Content="&#xE712;" Style="{StaticResource SettingsIconButtonStyle}" Click="ProviderMenu_Click" ToolTip="供应商操作" AutomationProperties.Name="供应商操作" Margin="12,0,0,0">
+                                    <Button.ContextMenu><ContextMenu>
+                                        <MenuItem Header="重命名" Click="RenameProvider_Click" />
+                                        <Separator />
+                                        <MenuItem Header="删除" Click="DeleteProvider_Click" Foreground="{DynamicResource DangerBrush}" />
+                                    </ContextMenu></Button.ContextMenu>
+                                </Button>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding SelectedProvider.IsEnabled}" Style="{StaticResource SettingsToggleStyle}" ToolTip="启用供应商" AutomationProperties.Name="启用供应商" />
+                                <TextBlock Text="{Binding SelectedProvider.Name}" FontSize="21" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,14,0" />
+                            </DockPanel>
+                            <StackPanel x:Name="RenamePanel" Visibility="Collapsed" Margin="0,0,0,16">
+                                <TextBlock Text="{display:DisplayText Key='供应商名称'}" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <TextBox x:Name="ProviderNameBox" Text="{Binding SelectedProvider.Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding SelectedProvider.IsApiProvider, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Base URL" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <TextBox Text="{Binding SelectedProvider.BaseUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,16" />
+                                <TextBlock Text="{display:DisplayText Key='API 格式'}" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <ComboBox ItemsSource="{Binding ProviderOptions}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding SelectedProvider.ProviderType}" Margin="0,8,0,16" />
+                                <TextBlock Text="API Key" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <Grid Margin="0,8,0,8">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <PasswordBox local:PasswordBoxBinding.BindPassword="True" local:PasswordBoxBinding.BoundPassword="{Binding SelectedProvider.ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsSelectedProfileApiKeyHidden, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBox Text="{Binding SelectedProvider.ApiKey, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsSelectedProfileApiKeyVisible, Converter={StaticResource BoolToVisibility}}" />
+                                    <Button Grid.Column="1" Content="&#xE890;" Command="{Binding ToggleSelectedProfileApiKeyVisibilityCommand}" Style="{StaticResource SettingsIconButtonStyle}" ToolTip="{Binding SelectedProfileApiKeyVisibilityText}" AutomationProperties.Name="显示或隐藏 API Key" Margin="8,0,0,0" />
+                                </Grid>
+                                <TextBlock Text="{display:DisplayText Key='当前 Windows 用户无法解密已保存的密钥，请重新输入。'}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Visibility="{Binding SelectedProvider.Connection.CredentialNeedsReentry, Converter={StaticResource BoolToVisibility}}" />
+
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding SelectedProvider.IsLocalCodex, Converter={StaticResource BoolToVisibility}}" Margin="0,0,0,20">
+                                <TextBlock Text="{display:DisplayText Key='使用本机 Codex 账户，无需填写 API Key。'}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding LocalCodexStatus}" TextWrapping="Wrap" Margin="0,12,0,12" />
+                                <WrapPanel><Button Command="{Binding DetectLocalCodexCommand}" Content="重新检测" Padding="12,6" Margin="0,0,10,0" /><Button Command="{Binding LoginLocalCodexCommand}" Content="登录 Codex" Padding="12,6" /></WrapPanel>
+                            </StackPanel>
+                            <DockPanel Margin="0,8,0,10">
+                                <Button DockPanel.Dock="Right" Content="{display:DisplayText Key='+ 添加模型'}" Click="AddModel_Click" Padding="10,5" />
+                                <TextBlock Text="{display:DisplayText Key='模型列表'}" Style="{StaticResource SettingsFieldLabelStyle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="10">
+                                <ItemsControl ItemsSource="{Binding SelectedProvider.Models}">
+                                    <ItemsControl.ItemTemplate><DataTemplate>
+                                        <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+                                            <Grid MinHeight="24">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                <WrapPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding ModelIdLabel}" FontFamily="Consolas" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" TextTrimming="CharacterEllipsis" MaxWidth="230" ToolTip="{Binding Model}" />
+                                                    <Border Style="{StaticResource SettingsModelBadgeStyle}"><TextBlock Text="{Binding ContextWindowLabel}" FontSize="10" /></Border>
+                                                    <Border Style="{StaticResource SettingsModelBadgeStyle}" Visibility="{Binding SupportsImageInput, Converter={StaticResource BoolToVisibility}}"><TextBlock Text="视觉" FontSize="10" /></Border>
+                                                </WrapPanel>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                                                    <Button Content="&#xE774;" Style="{StaticResource SettingsIconButtonStyle}" Click="TestModel_Click" Tag="{Binding}" IsEnabled="{Binding IsConfigured}" ToolTip="测试连接（启用模型并填写连接信息后可用，会使用模型额度）" AutomationProperties.Name="测试连接" />
+                                                    <Button Content="&#xE70F;" Style="{StaticResource SettingsIconButtonStyle}" Click="EditModel_Click" Tag="{Binding}" ToolTip="编辑模型" AutomationProperties.Name="编辑模型" />
+                                                    <CheckBox IsChecked="{Binding IsEnabled}" Style="{StaticResource SettingsToggleStyle}" Margin="8,0,0,0" ToolTip="启用模型" AutomationProperties.Name="启用模型" />
+                                                </StackPanel>
+                                            </Grid>
+                                            <Border.ContextMenu><ContextMenu Opened="ModelMenu_Opened"><MenuItem Header="删除模型" Click="DeleteModel_Click" Tag="{Binding}" /></ContextMenu></Border.ContextMenu>
+                                        </Border>
+                                    </DataTemplate></ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                                <Expander Header="{display:DisplayText Key='连接选项'}" Margin="0,16,0,0" Visibility="{Binding SelectedProvider.IsApiProvider, Converter={StaticResource BoolToVisibility}}"><StackPanel Margin="0,10">
+                                    <TextBlock Text="{Binding SelectedProvider.Connection.EndpointStatusText}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                    <CheckBox Content="{display:DisplayText Key='允许向非本机 HTTP 服务发送密钥'}" IsChecked="{Binding SelectedProvider.AllowInsecureHttp}" />
+                                </StackPanel></Expander>
+                            <TextBlock Text="{Binding SelectedProfileConnectionTestText}" Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

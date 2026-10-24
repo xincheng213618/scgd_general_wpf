@@ -16,8 +16,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BaseStartNode));
 
-	private int _FlowTimeout = 300;
-
 	public STNodeOption m_op_start;
 
 	protected STNodeOption[] m_op_loop;
@@ -53,7 +51,10 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public virtual bool IsExecutionReady => !RequiresConnectionReady || Ready;
 
-	public bool CanAcceptStart => m_op_start != null && m_op_start.ConnectionCount > 0;
+	internal Func<string> ExecutionBlockReasonProvider { get; set; }
+
+	public bool CanAcceptStart => m_op_start != null && m_op_start.ConnectionCount > 0
+		&& ExecutionBlockReasonProvider?.Invoke() == null;
 
 	protected int TopicSubscriptionVersion => Volatile.Read(ref topicSubscriptionVersion);
 
@@ -64,20 +65,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 	}
 
 	private volatile bool running;
-
-	[STNodeProperty("FlowALL.Timeout", "FlowALL.Timeout")]
-	public int FlowTimeout
-	{
-		get
-		{
-			return _FlowTimeout;
-		}
-		set
-		{
-			setTimeout(value);
-			OnPropertyChanged();
-		}
-	}
 
 	public event FlowStartEventHandler Finished;
 
@@ -112,22 +99,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 		}
 		m_op_start.Connected += m_op_start_Connected;
 		m_op_start.DisConnected += m_op_start_DisConnected;
-	}
-
-	private void setTimeout(int value)
-	{
-		if (value <= 0)
-		{
-			_FlowTimeout = 5;
-		}
-		else if (value > 1800)
-		{
-			_FlowTimeout = 1800;
-		}
-		else
-		{
-			_FlowTimeout = value;
-		}
 	}
 
 	public void DoLoopNextAction(CVLoopCFC next)
@@ -246,6 +217,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	private bool TryStartup(CVStartCFC action)
 	{
+		string blockReason = ExecutionBlockReasonProvider?.Invoke();
+		if (blockReason != null) { logger.Warn(blockReason); return false; }
 		lock (startActionsLock)
 		{
 			if (stopAllDepth > 0 || startActions.Count != 0)
@@ -263,6 +236,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	protected virtual void DoStartTransferData(CVStartCFC action)
 	{
+		if (action != null)
+			action.SerialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(action.SerialNumber);
 		if (m_op_start.ConnectionCount <= 0 && (action == null || !action.IsStop))
 		{
 			return;
@@ -349,6 +324,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public CVStartCFC GetCFC(string serialNumber)
 	{
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		lock (startActionsLock)
 		{
 			if (startActions.TryGetValue(serialNumber, out CVStartCFC action))
@@ -461,6 +437,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public bool TryStart(string serialNumber)
 	{
+		serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
 		if (!CanAcceptStart)
 		{
 			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);
@@ -524,6 +501,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public virtual void Dispose()
 	{
+		ExecutionBlockReasonProvider = null;
 		lock (topicSubscriptionsLock)
 		{
 			topicServer.Clear();

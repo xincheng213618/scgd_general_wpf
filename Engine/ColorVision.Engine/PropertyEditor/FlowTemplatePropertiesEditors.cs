@@ -2,7 +2,6 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
@@ -97,11 +96,6 @@ public sealed class BlackMuraTemplatePropertiesEditor : IPropertyEditor
 public sealed class PoiAnalysisTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplatePoiAnalysis());
-}
-
-public sealed class ImageCroppingTemplatePropertiesEditor : IPropertyEditor
-{
-    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateImageCropping());
 }
 
 public sealed class LedCheck2TemplatePropertiesEditor : IPropertyEditor

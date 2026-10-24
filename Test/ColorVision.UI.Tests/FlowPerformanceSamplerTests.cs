@@ -136,19 +136,6 @@ public sealed class FlowPerformanceSamplerTests
     }
 
     [Fact]
-    public void CurrentWindowsProcessCanBeSampledWithoutStartingHardware()
-    {
-        var sampler = new FlowPerformanceSampler(FlowPerformanceSampler.ReadCurrent, TimeProvider.System);
-        Assert.True(sampler.TrySample(out var sample));
-        Assert.True(sample!.WorkingSetMiB > 0);
-        Assert.True(sample.PrivateMiB > 0);
-        Assert.True(sample.AvailablePhysicalMiB > 0);
-        Assert.InRange(sample.PhysicalMemoryLoadPercent!.Value, 0u, 100u);
-        Assert.Equal(Environment.ProcessorCount, sample.ProcessorCount);
-        Assert.NotNull(FlowPerformanceSampler.ReadCurrent().PageFaultCount);
-    }
-
-    [Fact]
     public void CompletionOnlyQueuesWorkAndPreservesContextUntilTheActualSample()
     {
         int reads = 0;

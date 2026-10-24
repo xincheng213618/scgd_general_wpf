@@ -56,6 +56,8 @@ Common 中的 `AssemblyService`、`ConfigService`、`MenuService` 是可由宿�
 
 `Interfaces/Window/WindowConfig.cs` 在 `SourceInitialized` 恢复保存的 DIP 位置、正常尺寸与窗口状态；保存的最小化状态按正常窗口恢复。选屏优先保存的设备名，其次与保存矩形相交最多的屏幕，最后主屏；无有效保存边界时居中，并将正常窗口边界适配到工作区域。最大化窗口保存 `RestoreBounds`，关闭事件只更新内存配置，持久化仍由配置宿主负责。
 
+无保存尺寸时使用各窗口配置的 `DefaultWindowSize`；公共缺省为 `800 × 600` DIP，派生配置可覆盖默认尺寸而不影响其它窗口。已有正常尺寸仍优先恢复，默认尺寸也会受目标屏幕工作区域限制。
+
 窗口的 `Width`、`Height`、`Left`、`Top`、状态和屏幕设备名属于运行时维护的布局快照：继续参与配置序列化和下次恢复，但不在通用属性编辑器中显示。用户可见的“启动时恢复窗口布局”开关仍保留；业务尺寸（例如图像、ROI、图案输出尺寸）不属于这条隐藏规则。
 
 窗口尚无 HWND 时，`SetWindow` 只登记 `SourceInitialized`，恢复完成后才订阅位置、尺寸与关闭事件的配置回写。创建 HWND 期间的 `LocationChanged` 可能早于恢复事件，不能让它用临时普通窗口状态覆盖保存的最大化状态和边界；未创建 HWND 就关闭的窗口也保留原保存值。对已有 HWND 调用 `SetWindow` 只登记后续回写，不补做恢复；重复调用会先移除本配置已有订阅。

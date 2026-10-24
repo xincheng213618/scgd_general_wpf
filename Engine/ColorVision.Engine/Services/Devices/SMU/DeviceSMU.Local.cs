@@ -9,6 +9,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.Devices.SMU;
 
@@ -17,17 +20,32 @@ public partial class DeviceSMU
     internal SmuBackendState SmuBackend { get; private set; } = null!;
     internal LocalSmuSession LocalSession { get; }
     private bool localDisposed;
+    private LocalSmuWindow? localWindow;
+    internal event Action<LocalSmuCapture>? LocalResultAvailable;
+    [CommandDisplay("本地源表", Order = -2, CategoryOrder = 0), Category("DeviceConnection")]
+    public RelayCommand OpenLocalSmuManagerCommand { get; private set; } = null!;
     public string LocalDeviceIdentity { get => localDeviceIdentity; private set { localDeviceIdentity = value; OnPropertyChanged(); } }
     private string localDeviceIdentity = string.Empty;
 
     private void InitializeLocalSmu()
     {
-        if (SysResourceDao.IsLocalId(SysResourceModel.Id)) DisplayConfig.UseLocalSmu = true;
+        OpenLocalSmuManagerCommand = new RelayCommand(_ => OpenLocalSmuWindow());
+        ContextMenu.Items.Add(new System.Windows.Controls.MenuItem { Header = "本地源表", Command = OpenLocalSmuManagerCommand });
         SmuBackend = new SmuBackendState(DisplayConfig.UseLocalSmu);
         SmuBackend.Changed += RefreshSmuBackendStatus;
         LocalSession.StatusChanged += LocalSmuStatusChanged;
         DisplayConfig.PropertyChanged += LocalSmuPreferenceChanged;
         LocalSmuFlowExecution.Register();
+    }
+    public void OpenLocalSmuWindow(LocalSmuNode? node = null)
+    {
+        if (localWindow != null) { localWindow.AttachNode(node); localWindow.Activate(); return; }
+        localWindow = new LocalSmuWindow(this);
+        Window? owner = Application.Current?.GetActiveWindow();
+        if (owner?.IsVisible == true) localWindow.Owner = owner;
+        localWindow.AttachNode(node);
+        localWindow.Closed += (_, _) => localWindow = null;
+        localWindow.Show();
     }
     private void LocalSmuPreferenceChanged(object? sender, PropertyChangedEventArgs args)
     {
@@ -79,21 +97,32 @@ public partial class DeviceSMU
     }
 
     internal async Task<LocalSmuCapture?> ExecuteLocalSmuAsync(string operation, LocalSmuConnection config, LocalSmuParameters parameters,
-        bool autoConnect, bool checkLimits, CancellationToken token)
+        bool autoConnect, bool checkLimits, CancellationToken token, object? flowOwner = null)
     {
         ObjectDisposedException.ThrowIf(localDisposed, this);
-        lock (SmuBackend.Sync) { EnsureOtherSmuBackends(true, config); SmuBackend.BeginLocalCommand(); }
+        lock (SmuBackend.Sync)
+        {
+            if (operation is not ("Close" or "CloseOutput")) EnsureOtherSmuBackends(true, config);
+            SmuBackend.BeginLocalCommand();
+        }
         try
         {
-            if (operation == "Close") { await LocalSession.CloseAsync().ConfigureAwait(false); return null; }
-            if (operation == "Reopen") await LocalSession.CloseAsync().ConfigureAwait(false);
+            if (operation == "Close") { await LocalSession.CloseAsync(flowOwner).ConfigureAwait(false); return null; }
+            if (operation == "Reopen") await LocalSession.CloseAsync(flowOwner).ConfigureAwait(false);
             if (operation is "Open" or "Reopen" || (autoConnect && !LocalSession.IsOpen))
-                await LocalSession.OpenAsync(config, token).ConfigureAwait(false);
+                await LocalSession.OpenAsync(config, token, flowOwner).ConfigureAwait(false);
             if (operation is "Open" or "Reopen") return null;
-            if (operation == "CloseOutput") { await LocalSession.CloseOutputAsync(parameters.Channel, token).ConfigureAwait(false); return null; }
+            if (operation == "CloseOutput")
+            {
+                if (parameters.AdvancedSettings is { } settings) await LocalSession.CloseAdvancedOutputAsync(settings, token, flowOwner).ConfigureAwait(false);
+                else await LocalSession.CloseOutputAsync(parameters.Channel, token, flowOwner: flowOwner).ConfigureAwait(false);
+                return null;
+            }
+            if (operation == "Advanced") return await LocalSession.CaptureAdvancedAsync(config,
+                parameters.AdvancedSettings ?? throw new ArgumentException("缺少本地源表参数。"), checkLimits, token, flowOwner).ConfigureAwait(false);
             if (operation is not ("GetData" or "StepData" or "Scan" or "SMU.MeasureResult")) throw new NotSupportedException($"本地源表暂不支持 {operation}。");
             return await LocalSession.CaptureAsync(config, parameters, operation == "Scan", operation != "GetData", checkLimits,
-                read: operation == "SMU.MeasureResult", token: token).ConfigureAwait(false);
+                read: operation == "SMU.MeasureResult", token: token, flowOwner: flowOwner).ConfigureAwait(false);
         }
         finally { SmuBackend.EndLocalCommand(); }
     }
@@ -150,8 +179,10 @@ public partial class DeviceSMU
         void Update()
         {
             if (localDisposed) return;
+            LocalResultAvailable?.Invoke(capture);
+            if (!capture.HasMeasurements) { ClearLocalSmuReadings(capture.Parameters.Channel, false); return; }
             View.AddViewResultSMU(LocalSmuResultService.CreateView(capture, Code, id));
-            if (!capture.IsScan)
+            if (!capture.IsScan || capture.Parameters.SourceValues != null)
             {
                 var channel = capture.Parameters.Channel == SMUChannelType.A ? DisplayConfig.ChannelA : DisplayConfig.ChannelB;
                 channel.V = capture.V; channel.I = capture.I;
@@ -167,7 +198,7 @@ public partial class DeviceSMU
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Update);
         else Update();
     }
-    private void ClearLocalSmuReadings(SMUChannelType channel, bool all)
+    internal void ClearLocalSmuReadings(SMUChannelType channel, bool all)
     {
         if (all || channel == SMUChannelType.A) { DisplayConfig.ChannelA.V = null; DisplayConfig.ChannelA.I = null; }
         if (all || channel == SMUChannelType.B) { DisplayConfig.ChannelB.V = null; DisplayConfig.ChannelB.I = null; }
@@ -182,6 +213,7 @@ public partial class DeviceSMU
     {
         if (localDisposed) return;
         localDisposed = true;
+        localWindow?.Close();
         DisplayConfig.PropertyChanged -= LocalSmuPreferenceChanged;
         SmuBackend.Changed -= RefreshSmuBackendStatus;
         LocalSession.StatusChanged -= LocalSmuStatusChanged;

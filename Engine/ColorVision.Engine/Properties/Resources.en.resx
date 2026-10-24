@@ -622,24 +622,6 @@
 
   
   
-  <data name="Archive" xml:space="preserve">
-    <value>Archive</value>
-  </data>
-  <data name="ArchiveServerConfig" xml:space="preserve">
-    <value>Archive server configuration</value>
-  </data>
-  <data name="ArchiveServerConfigNotFound_Resetting" xml:space="preserve">
-    <value>Archive server configuration not found, resetting</value>
-  </data>
-  <data name="ArchiveConfiguration" xml:space="preserve">
-    <value>Archive configuration</value>
-  </data>
-  <data name="RcConfigInfoNotFound" xml:space="preserve">
-    <value>RC configuration information not found</value>
-  </data>
-  <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
-    <value>Archive configuration information not found</value>
-  </data>
   
   <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
     <value>Unauthorized or expired license</value>
@@ -1406,9 +1388,6 @@
   <data name="ImportFlow" xml:space="preserve">
     <value>Import process</value>
   </data>
-  <data name="ImageCroppingTemplateSettings" xml:space="preserve">
-    <value>Illumination area cutting template</value>
-  </data>
   
   <data name="ImageEdit" xml:space="preserve">
     <value>Image Edit</value>
@@ -1561,9 +1540,6 @@
   <data name="ParamInput" xml:space="preserve">
     <value>Input parameters</value>
   </data>
-  <data name="ArchiveDate" xml:space="preserve">
-    <value>Archived date</value>
-  </data>
   <data name="CreationDate" xml:space="preserve">
     <value>Creation Date</value>
   </data>
@@ -1665,29 +1641,8 @@
   <data name="SelectExportFileLocation" xml:space="preserve">
     <value>Select the export file location</value>
   </data>
-  <data name="DataRetentionDays" xml:space="preserve">
-    <value>Data Retention Days</value>
-  </data>
-  <data name="DataRetentionHours" xml:space="preserve">
-    <value>Data Retention Hours</value>
-  </data>
-  <data name="ClearDatabaseOnly" xml:space="preserve">
-    <value>Clear the database only</value>
-  </data>
-  <data name="DeleteLocalFiles" xml:space="preserve">
-    <value>Delete Local Files</value>
-  </data>
   <data name="DataBaseConfig" xml:space="preserve">
     <value>Database configuration</value>
-  </data>
-  <data name="RESTAddress" xml:space="preserve">
-    <value>REST Address</value>
-  </data>
-  <data name="ServerMonitorConfig" xml:space="preserve">
-    <value>Service monitoring configuration</value>
-  </data>
-  <data name="MqttConfigId" xml:space="preserve">
-    <value>MQTT Configuration ID</value>
   </data>
   <data name="TenantId" xml:space="preserve">
     <value>Tenant ID</value>
@@ -1854,9 +1809,6 @@
     <value>Template editing</value>
   </data>
   
-  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
-    <value>Service Registry Configuration</value>
-  </data>
   <data name="ExportSucceeded" xml:space="preserve">
     <value>Export successful</value>
   </data>
@@ -2140,9 +2092,6 @@
   </data>
   <data name="UpdateSuccess" xml:space="preserve">
     <value>Updated successfully</value>
-  </data>
-  <data name="PropertyEditorFallback" xml:space="preserve">
-    <value>Property Editor (Fallback)</value>
   </data>
   <data name="ClearDatabaseItems" xml:space="preserve">
     <value>Clear database related items?</value>
@@ -3060,9 +3009,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Engine_Msg_FileProcessError" xml:space="preserve">
     <value>Error processing file: {0}</value>
   </data>
-  <data name="Engine_Msg_RCConfigInfoNotFound" xml:space="preserve">
-    <value>{0} configuration info not found</value>
-  </data>
   <data name="Engine_Msg_ConfirmDeleteAllRecords" xml:space="preserve">
     <value>Are you sure you want to delete all records in the database? This action cannot be undone.</value>
   </data>
@@ -3215,12 +3161,33 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Engine_PG_AutoIntegration" xml:space="preserve">
     <value>Auto Integration</value>
   </data>
+  <data name="Engine_PG_MaxAveragingCount" xml:space="preserve">
+    <value>Max Averaging Count</value>
+  </data>
+  <data name="Engine_PG_SingleSpectrumTest" xml:space="preserve">
+    <value>Single Spectrum Test</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceName" xml:space="preserve">
+    <value>Spectrometer Device Name</value>
+  </data>
+  <data name="Engine_PG_SpectrometerDeviceNameDesc" xml:space="preserve">
+    <value>Select the spectrometer device for the single test.</value>
+  </data>
+  <data name="Engine_PG_SpectrometerSettings" xml:space="preserve">
+    <value>Spectrometer Settings</value>
+  </data>
   <data name="Engine_PG_MaxIntegrationTime" xml:space="preserve">
     <value>Max Integration Time</value>
   </data>
 
   <data name="Engine_PG_NegativeLuminanceGuard" xml:space="preserve">
     <value>Negative Luminance Guard</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill" xml:space="preserve">
+    <value>Show Spectrum Color Fill</value>
+  </data>
+  <data name="Engine_PG_ShowSpectrumFill_Description" xml:space="preserve">
+    <value>Fill the area under a single spectrum curve with wavelength colors. Disable to show only the curve. Applies to relative and absolute spectra; comparison mode uses no fill.</value>
   </data>
   <data name="Engine_PG_MinLuminanceValue" xml:space="preserve">
     <value>Min Luminance Value</value>
@@ -3851,7 +3818,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>Brightness is too low; cross not found</value></data>
   <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>No sufficiently bright cross lines were found</value></data>
   <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>Insufficient bright-line coverage. Row: {0:P0}; column: {1:P0}</value></data>
-  <data name="Flow_CustomNodes" xml:space="preserve"><value>Custom Nodes</value></data>
+  <data name="Flow_CustomNodes" xml:space="preserve"><value>Custom Nodes</value></data><data name="Flow_LocalDevices" xml:space="preserve"><value>Local Devices</value></data><data name="Flow_LocalAlgorithms" xml:space="preserve"><value>Local Algorithms</value></data>
   <data name="Flow_OtherNodes" xml:space="preserve"><value>Other</value></data>
   <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>Path to the local image file</value></data>
   <data name="LocalImage_PathEmpty" xml:space="preserve"><value>The local image path is empty</value></data>
@@ -4674,7 +4641,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CommandEditConfigHint" xml:space="preserve"><value>Connection, device and runtime settings</value></data>
   <data name="CommandRestartHint" xml:space="preserve"><value>Save current settings and restart the device service</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>Delete the current device resource</value></data>
-  <data name="CommandCameraLogHint" xml:space="preserve"><value>View camera service logs</value></data>
+  <data name="CommandCameraLogHint" xml:space="preserve"><value>View local camera or camera service logs for the active backend</value></data>
   <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>Inspect and release calibration and image file caches</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>Configure associated calibration files</value></data>
   <data name="CommandAutoExposureHint" xml:space="preserve"><value>Manage auto exposure templates</value></data>
@@ -4723,7 +4690,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="亚像素模板" xml:space="preserve"><value>Subpixel Template</value></data>
   <data name="参数模板名称" xml:space="preserve"><value>Parameter template name</value></data>
   <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>Enable ND Filter Wheel (Auto Exposure)</value></data>
-  <data name="图像裁剪2" xml:space="preserve"><value>Image Cropping 2</value></data>
   <data name="布点ROI(区域)" xml:space="preserve"><value>Point Placement ROI (Region)</value></data>
   <data name="自动曝光模板" xml:space="preserve"><value>Auto Exposure Template</value></data>
   <data name="电压量程（V）" xml:space="preserve"><value>Voltage Range (V)</value></data>
@@ -6090,9 +6056,6 @@ Open the spectrum log?</value>
   <data name="灯条Poi中心计算" xml:space="preserve">
     <value>LED Strip POI Center</value>
   </data>
-  <data name="发光区裁剪" xml:space="preserve">
-    <value>Emitting Area Crop</value>
-  </data>
   <data name="AA布点" xml:space="preserve">
     <value>AA Point Layout</value>
   </data>
@@ -6143,9 +6106,6 @@ Open the spectrum log?</value>
   </data>
   <data name="灯珠检测模板" xml:space="preserve">
     <value>LED Detection Template</value>
-  </data>
-  <data name="发光区裁剪模板" xml:space="preserve">
-    <value>Emitting Area Crop Template</value>
   </data>
   <data name="关注点模板" xml:space="preserve">
     <value>POI Template</value>
@@ -6215,9 +6175,6 @@ Open the spectrum log?</value>
   </data>
   <data name="请先选择灯珠检测模板" xml:space="preserve">
     <value>Select an LED detection template first</value>
-  </data>
-  <data name="请先选择发光区裁剪模板" xml:space="preserve">
-    <value>Select an emitting area crop template first</value>
   </data>
   <data name="请先选择黑画面检测模板" xml:space="preserve">
     <value>Select a black screen template first</value>
@@ -6579,15 +6536,17 @@ Files on disk are kept. Active buffers follow each module’s completion or retu
   </data>
   <data name="内存缓存管理" xml:space="preserve"><value>Memory cache management</value></data>
   <data name="Camera_LocalOpenFailure" xml:space="preserve"><value>Local camera connection failed. Requested ID: {0}; failed step: {1}</value></data>
-  <data name="Camera_LocalOpenNoDevices" xml:space="preserve"><value>No cameras of the configured model were detected after opening failed. Check the camera power, connection, driver, and model setting.</value></data>
+  <data name="Camera_LocalOpenNoDevices" xml:space="preserve"><value>No cameras of the configured model were detected on this computer. Connect a camera, or check the model and binding in physical camera management.</value></data>
   <data name="Camera_LocalOpenIdMismatch" xml:space="preserve"><value>The requested camera ID {0} was not found when checked after opening failed. Detected IDs: {1}. Check the physical camera binding and CameraID.</value></data>
   <data name="Camera_LocalOpenDetected" xml:space="preserve"><value>Camera {0} is still detected after opening failed. Use the native error below to check the connection and whether another program or service is using the camera.</value></data>
-  <data name="Camera_LocalOpenDiscoveryFailed" xml:space="preserve"><value>Camera detection after opening failed also failed: {0}. Continue investigating with the original error below.</value></data>
+  <data name="Camera_LocalOpenDiscoveryFailed" xml:space="preserve"><value>Camera detection could not be completed after opening failed: {0}
+Continue investigating with the original error below.</value></data>
   <data name="Camera_PhysicalBindingInUse" xml:space="preserve"><value>The current camera is still in use by a local session, video, or service. Close it before switching physical cameras.</value></data>
   <data name="{0} 迁移状态检查失败：{1}" xml:space="preserve"><value>{0} migration status check failed: {1}</value></data>
   <data name="切换画布拖动/框选" xml:space="preserve"><value>Toggle canvas panning / box selection</value></data>
   <data name="双击打开测量结果 · 右键查看更多操作" xml:space="preserve"><value>Double-click to open measurement results · Right-click for more actions</value></data>
   <data name="可重置查询条件，或使用高级查询查找历史记录" xml:space="preserve"><value>Reset the search criteria or use advanced search to find historical records</value></data>
+  <data name="预处理" xml:space="preserve"><value>Pre-processing</value></data>
   <data name="后处理" xml:space="preserve"><value>Post-processing</value></data>
   <data name="将当前数据库中的流程节点标识更新为当前版本，保留参数和连线" xml:space="preserve"><value>Update flow node identities in the current database to the current version, preserving parameters and connections</value></data>
   <data name="已完成" xml:space="preserve"><value>Completed</value></data>
@@ -6620,4 +6579,67 @@ Files on disk are kept. Active buffers follow each module’s completion or retu
   <data name="预览增益；测量使用校正组增益" xml:space="preserve"><value>Preview gain; measurements use the calibration group's gain</value></data>
   <data name="高级查询失败或未完成，当前列表可能保留旧数据。" xml:space="preserve"><value>Advanced search failed or did not complete; the list may retain previous data.</value></data>
   <data name="高级查询：{0} 条；概览仅统计本次查询结果。" xml:space="preserve"><value>Advanced search: {0} records; the overview covers only these query results.</value></data>
+  <data name="平均波长 (nm)" xml:space="preserve"><value>Mean wavelength (nm)</value></data>
+  <data name="显色性状态" xml:space="preserve"><value>CRI status</value></data>
+  <data name="有效（CIE 13.3；R15 为扩展色样）" xml:space="preserve"><value>Valid (CIE 13.3; R15 extended sample)</value></data>
+  <data name="显色性不可用：光谱未覆盖 380–780 nm" xml:space="preserve"><value>CRI unavailable: spectrum does not cover 380–780 nm</value></data>
+  <data name="显色性不可用：采样间隔超过 5 nm" xml:space="preserve"><value>CRI unavailable: sampling interval exceeds 5 nm</value></data>
+  <data name="显色性不可用：色温超出计算范围" xml:space="preserve"><value>CRI unavailable: color temperature outside supported range</value></data>
+  <data name="显色性不可用：与参考光源色度距离超过 0.0054" xml:space="preserve"><value>CRI unavailable: reference chromaticity distance exceeds 0.0054</value></data>
+  <data name="显色性不可用：光谱为空、全零、负值或非有限值" xml:space="preserve"><value>CRI unavailable: spectrum is empty, zero, negative or non-finite</value></data>
+  <data name="有效（D65 白点；CIE 1931 2°）" xml:space="preserve">
+    <value>Valid (D65 white; CIE 1931 2 degrees)</value>
+  </data>
+  <data name="白点附近：主波长未定义，纯度为 0" xml:space="preserve">
+    <value>Near white: dominant wavelength undefined, purity 0</value>
+  </data>
+  <data name="紫红色：显示补色波长" xml:space="preserve">
+    <value>Purple: complementary wavelength shown</value>
+  </data>
+  <data name="参考白点无效" xml:space="preserve">
+    <value>Invalid reference white</value>
+  </data>
+  <data name="色度无效或超出光谱轨迹，波长和纯度不可用" xml:space="preserve">
+    <value>Invalid or out-of-locus chromaticity; wavelength and purity unavailable</value>
+  </data>
+  <data name="Robertson 1968；Duv 使用 CIE 1960 UCS" xml:space="preserve">
+    <value>Robertson 1968; Duv in CIE 1960 UCS</value>
+  </data>
+  <data name="色温不可用：超出 1667–25000 K" xml:space="preserve">
+    <value>CCT unavailable: outside 1667-25000 K</value>
+  </data>
+  <data name="色温不可用：距黑体轨迹过远（|Duv| &gt; 0.05）" xml:space="preserve">
+    <value>CCT unavailable: too far from Planckian locus (|Duv| &gt; 0.05)</value>
+  </data>
+  <data name="色温不可用：色度无效" xml:space="preserve">
+    <value>CCT unavailable: invalid chromaticity</value>
+  </data>
+  <data name="显示或隐藏光谱数据" xml:space="preserve">
+    <value>Show or hide spectral data</value>
+  </data>
+  <data name="补色波长(nm)" xml:space="preserve">
+    <value>Complementary wavelength (nm)</value>
+  </data>
+  <data name="色度状态" xml:space="preserve">
+    <value>Chromaticity status</value>
+  </data>
+  <data name="兴奋纯度(%)" xml:space="preserve"><value>Excitation purity (%)</value></data>
+  <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>Move over the spectrum to read measured samples</value></data>
+  <data name="导出测量结果 CSV" xml:space="preserve"><value>Export measurement results CSV</value></data>
+  <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>Export full spectrum CSV</value></data>
+  <data name="保留全部采样点和负值，可能包含采集时的平滑处理" xml:space="preserve"><value>Preserves all stored samples and negative values, including any acquisition smoothing</value></data>
+  <data name="请先选择要导出的数据。" xml:space="preserve"><value>Select measurements to export first.</value></data>
+  <data name="导出失败：{0}" xml:space="preserve"><value>Export failed: {0}</value></data>
+  <data name="显示或隐藏测量列表" xml:space="preserve"><value>Show or hide measurement list</value></data>
+  <data name="分析" xml:space="preserve"><value>Analyze</value></data>
+  <data name="分析选中的光谱" xml:space="preserve"><value>Analyze selected spectrum</value></data>
+  <data name="分析此光谱" xml:space="preserve"><value>Analyze this spectrum</value></data>
+  <data name="导出此条测量结果 CSV" xml:space="preserve"><value>Export this measurement as CSV</value></data>
+  <data name="导出此条完整原始光谱 CSV" xml:space="preserve"><value>Export this full stored spectrum as CSV</value></data>
+  <data name="光谱分析" xml:space="preserve"><value>Spectrum analysis</value></data>
+  <data name="多曲线比较" xml:space="preserve"><value>Compare multiple spectra</value></data>
+<data name="LocalCleanup_NodeName" xml:space="preserve"><value>Cache Cleanup</value></data><data name="LocalCleanup_NodeDescription" xml:space="preserve"><value>Delete the oldest files above the size limit while protecting the current input image.</value></data><data name="LocalCleanup_FoldersRequired" xml:space="preserve"><value>Configure at least one cache cleanup folder.</value></data><data name="LocalCleanup_InvalidThresholds" xml:space="preserve"><value>The cache limit must be positive, and the cleanup target must be nonnegative and smaller than the limit.</value></data><data name="LocalCleanup_Completed" xml:space="preserve"><value>Cache cleanup completed</value></data><data name="LocalCleanup_Stopped" xml:space="preserve"><value>The flow stopped; cache cleanup was canceled.</value></data><data name="清理目录必须使用绝对路径：{0}" xml:space="preserve"><value>Cleanup folders must use absolute paths: {0}</value></data><data name="清理目录不能是磁盘或共享根目录：{0}" xml:space="preserve"><value>A cleanup folder cannot be a drive or share root: {0}</value></data><data name="清理文件超出指定目录：{0}" xml:space="preserve"><value>The cleanup file is outside the configured folder: {0}</value></data><data name="清理时不访问链接或联接点：{0}" xml:space="preserve"><value>Cleanup does not access symbolic links or junctions: {0}</value></data><data name="LocalCleanup_CompletedWithFailures" xml:space="preserve"><value>Cache cleanup completed; some files could not be cleaned</value></data>
+  <data name="SpectrumUseFilterWheelShutter" xml:space="preserve"><value>Use filter wheel for dark calibration</value></data>
+  <data name="SpectrumFilterWheelMeasurementPort" xml:space="preserve"><value>Measurement position</value></data>
+  <data name="SpectrumFilterWheelDarkPort" xml:space="preserve"><value>Dark position</value></data>
 </root>

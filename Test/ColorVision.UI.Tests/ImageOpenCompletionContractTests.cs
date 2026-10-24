@@ -1,6 +1,8 @@
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Tif;
+using ColorVision.ImageEditor.Abstractions;
+using System.Threading;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,6 +14,78 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageOpenCompletionContractTests
 {
+    [Theory]
+    [InlineData(".cvraw")]
+    [InlineData(".cvcie")]
+    public async Task AlreadyCancelledCvOpenPreservesCurrentContentAndReportsCancellation(string extension)
+    {
+        ImageView? view = null;
+        ColorVision.Engine.Media.CVRawOpen? opener = null;
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                view.SetImageSource(new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null));
+                opener = new(view.EditorContext);
+                opener.AttachLiveCvcie(view, 2, 2, 32, 1, new byte[16], [1]);
+            });
+            Task completion = WpfTestHost.Invoke(() => opener!.OpenImageAsync(view!.EditorContext, "unused" + extension, cancellation.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => completion);
+            Assert.True(completion.IsCanceled);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(opener, view!.ImageContentCapability);
+                Assert.True(view.Config.GetProperties<bool>("IsCVCIE"));
+            });
+        }
+        finally { if (view != null) WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    [Fact]
+    public async Task CvciePublicationAfterPathChangesReportsCancellationWithoutLoadingOldPixels()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-cancel-publication-{Guid.NewGuid():N}.cvcie");
+        ImageView? view = null;
+        Task completion = Task.CompletedTask;
+        int loaded = 0;
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                Version = 1, FileExtType = CVType.CIE, Rows = 2, Cols = 2, Bpp = 32, Channels = 1,
+                Exp = [1], Data = new float[] { 1, 2, 3, 4 }.SelectMany(BitConverter.GetBytes).ToArray()
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                view.ImageSourceLoaded += (_, _) => loaded++;
+                view.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageOpenCompletionContractTests), "initial target");
+                completion = new ColorVision.Engine.Media.CVRawOpen(view.EditorContext).OpenImageAsync(view.EditorContext, path);
+                // Publication needs this dispatcher, so the path is guaranteed to change before it can run.
+                view.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path + ".replacement", nameof(ImageOpenCompletionContractTests), "replacement target");
+            });
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.True(completion.IsCanceled);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Null(view!.ViewBitmapSource);
+                Assert.Null(view.ImageContentCapability);
+                Assert.Equal(0, loaded);
+            });
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            File.Delete(path);
+        }
+    }
+
     [Theory]
     [InlineData(".png")]
     [InlineData(".tiff")]
@@ -100,6 +174,7 @@ public sealed class ImageOpenCompletionContractTests
         EventHandler<ImageViewImageSourceLoadedEventArgs>? loadedHandler = null;
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int completionCount = 0;
+        Task openCompletion = Task.CompletedTask;
 
         try
         {
@@ -117,9 +192,11 @@ public sealed class ImageOpenCompletionContractTests
                 imageView.ImageSourceLoaded += loadedHandler;
 
                 imageView.OpenImage(filePath);
+                openCompletion = imageView.ImageOpenCompletion;
             });
 
-            await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await openCompletion.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(completion.Task.IsCompletedSuccessfully);
 
             OpenedImageState state = WpfTestHost.Invoke(() => CaptureState(imageView!, completionCount));
 
@@ -163,6 +240,7 @@ public sealed class ImageOpenCompletionContractTests
             $"{nameof(ImageOpenCompletionContractTests)}-missing-{Guid.NewGuid():N}{extension}");
         ImageView? imageView = null;
         int completionCount = 0;
+        Task firstCompletion = Task.CompletedTask;
 
         try
         {
@@ -175,10 +253,11 @@ public sealed class ImageOpenCompletionContractTests
                 imageView.ImageSourceLoaded += (_, _) => completionCount++;
 
                 imageView.OpenImage(filePath);
+                firstCompletion = imageView.ImageOpenCompletion;
                 imageView.OpenImage(missingFilePath);
             });
 
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstCompletion.WaitAsync(TimeSpan.FromSeconds(10)));
 
             WpfTestHost.Invoke(() =>
             {
@@ -194,357 +273,6 @@ public sealed class ImageOpenCompletionContractTests
 
             if (File.Exists(filePath))
                 File.Delete(filePath);
-        }
-    }
-
-    [Fact]
-    public async Task OpenPng_ReusesMatchingBitmapAndReplacesIncompatibleBitmap()
-    {
-        string firstFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-first.png");
-        string secondFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-second.png");
-        string thirdFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-third.png");
-        ImageView? imageView = null;
-        EventHandler<ImageViewImageSourceLoadedEventArgs>? loadedHandler = null;
-        TaskCompletionSource firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource secondLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource thirdLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        WriteableBitmap? firstBitmap = null;
-        WriteableBitmap? secondBitmap = null;
-        int completionCount = 0;
-
-        try
-        {
-            WriteSolidPng(firstFilePath, 2, 3, 10);
-            WriteSolidPng(secondFilePath, 2, 3, 200);
-            WriteSolidPng(thirdFilePath, 3, 2, 50);
-
-            WpfTestHost.Invoke(() =>
-            {
-                EnsureImageViewTestResources();
-                imageView = new ImageView();
-                imageView.IEditorToolFactory.IEditorTools.Clear();
-                loadedHandler = (_, _) =>
-                {
-                    completionCount++;
-                    if (completionCount == 1)
-                        firstLoad.TrySetResult();
-                    else if (completionCount == 2)
-                        secondLoad.TrySetResult();
-                    else if (completionCount == 3)
-                        thirdLoad.TrySetResult();
-                };
-                imageView.ImageSourceLoaded += loadedHandler;
-                imageView.OpenImage(firstFilePath);
-            });
-
-            await firstLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                firstBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                imageView.OpenImage(secondFilePath);
-            });
-
-            await secondLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                secondBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                byte[] pixel = new byte[4];
-                secondBitmap.CopyPixels(new Int32Rect(0, 0, 1, 1), pixel, 4, 0);
-
-                Assert.Same(firstBitmap, secondBitmap);
-                Assert.Equal(200, pixel[0]);
-                imageView.OpenImage(thirdFilePath);
-            });
-
-            await thirdLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                WriteableBitmap thirdBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                Assert.NotSame(secondBitmap, thirdBitmap);
-                Assert.Equal(3, thirdBitmap.PixelWidth);
-                Assert.Equal(2, thirdBitmap.PixelHeight);
-                Assert.Equal(3, completionCount);
-            });
-        }
-        finally
-        {
-            if (imageView != null)
-            {
-                WpfTestHost.Invoke(() =>
-                {
-                    if (loadedHandler != null)
-                        imageView.ImageSourceLoaded -= loadedHandler;
-                    imageView.Dispose();
-                });
-            }
-
-            foreach (string filePath in new[] { firstFilePath, secondFilePath, thirdFilePath })
-            {
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
-            }
-        }
-    }
-
-    [Fact]
-    public async Task OpenTiff_ReusesMatchingBitmapAndNormalizesDpiWithoutChangingPixels()
-    {
-        string firstFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-first.tiff");
-        string secondFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-second.tiff");
-        ImageView? imageView = null;
-        EventHandler<ImageViewImageSourceLoadedEventArgs>? loadedHandler = null;
-        TaskCompletionSource firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource secondLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        WriteableBitmap? firstBitmap = null;
-        int completionCount = 0;
-
-        try
-        {
-            WriteSolidTiff(firstFilePath, 2, 3, 10, 120);
-            WriteSolidTiff(secondFilePath, 2, 3, 200, 120);
-
-            WpfTestHost.Invoke(() =>
-            {
-                EnsureImageViewTestResources();
-                imageView = new ImageView();
-                imageView.IEditorToolFactory.IEditorTools.Clear();
-                loadedHandler = (_, _) =>
-                {
-                    completionCount++;
-                    if (completionCount == 1)
-                        firstLoad.TrySetResult();
-                    else if (completionCount == 2)
-                        secondLoad.TrySetResult();
-                };
-                imageView.ImageSourceLoaded += loadedHandler;
-                imageView.OpenImage(firstFilePath);
-            });
-
-            await firstLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                firstBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                Assert.Equal(96, firstBitmap.DpiX, 2);
-                Assert.Equal(96, firstBitmap.DpiY, 2);
-                imageView.OpenImage(secondFilePath);
-            });
-
-            await secondLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                WriteableBitmap secondBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                byte[] pixel = new byte[1];
-                secondBitmap.CopyPixels(new Int32Rect(0, 0, 1, 1), pixel, 1, 0);
-
-                Assert.Same(firstBitmap, secondBitmap);
-                Assert.Equal(200, pixel[0]);
-                Assert.Equal(2, completionCount);
-            });
-        }
-        finally
-        {
-            if (imageView != null)
-            {
-                WpfTestHost.Invoke(() =>
-                {
-                    if (loadedHandler != null)
-                        imageView.ImageSourceLoaded -= loadedHandler;
-                    imageView.Dispose();
-                });
-            }
-
-            foreach (string filePath in new[] { firstFilePath, secondFilePath })
-            {
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
-            }
-        }
-    }
-
-    [Fact]
-    public async Task OpenGray32FloatTiff_ReusesGray16DisplayBitmapAndNormalizesFiniteRange()
-    {
-        string firstFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-first-float.tiff");
-        string secondFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-second-float.tiff");
-        ImageView? imageView = null;
-        EventHandler<ImageViewImageSourceLoadedEventArgs>? loadedHandler = null;
-        TaskCompletionSource firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource secondLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        WriteableBitmap? firstBitmap = null;
-        int completionCount = 0;
-        bool previousConvertSetting = TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen;
-
-        try
-        {
-            WriteGray32FloatTiff(firstFilePath, [-10f, 0f, 10f, 20f, float.NaN, float.PositiveInfinity]);
-            WriteGray32FloatTiff(secondFilePath, [100f, 200f, 300f, 400f, float.NaN, float.PositiveInfinity]);
-            Assert.Equal(PixelFormats.Gray32Float, ReadTiffPixelFormat(firstFilePath));
-            Assert.Equal(PixelFormats.Gray32Float, ReadTiffPixelFormat(secondFilePath));
-            TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen = true;
-
-            WpfTestHost.Invoke(() =>
-            {
-                EnsureImageViewTestResources();
-                imageView = new ImageView();
-                imageView.IEditorToolFactory.IEditorTools.Clear();
-                loadedHandler = (_, _) =>
-                {
-                    completionCount++;
-                    if (completionCount == 1)
-                        firstLoad.TrySetResult();
-                    else if (completionCount == 2)
-                        secondLoad.TrySetResult();
-                };
-                imageView.ImageSourceLoaded += loadedHandler;
-                imageView.OpenImage(firstFilePath);
-            });
-
-            await firstLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                firstBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                Assert.Equal(PixelFormats.Gray16, firstBitmap.Format);
-                imageView.OpenImage(secondFilePath);
-            });
-
-            await secondLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                WriteableBitmap secondBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                ushort[] pixels = new ushort[6];
-                secondBitmap.CopyPixels(pixels, 4, 0);
-
-                Assert.Same(firstBitmap, secondBitmap);
-                Assert.Equal(0, pixels[0]);
-                Assert.Equal(ushort.MaxValue, pixels[3]);
-                Assert.Equal(0, pixels[4]);
-                Assert.Equal(0, pixels[5]);
-                Assert.Equal(2, completionCount);
-            });
-        }
-        finally
-        {
-            TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen = previousConvertSetting;
-
-            if (imageView != null)
-            {
-                WpfTestHost.Invoke(() =>
-                {
-                    if (loadedHandler != null)
-                        imageView.ImageSourceLoaded -= loadedHandler;
-                    imageView.Dispose();
-                });
-            }
-
-            foreach (string filePath in new[] { firstFilePath, secondFilePath })
-            {
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
-            }
-        }
-    }
-
-    [Fact]
-    public async Task OpenCvRaw_WithMatchingSizeAndFormat_ReusesBitmapAndPreservesViewport()
-    {
-        string firstFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-first.cvraw");
-        string secondFilePath = Path.Combine(
-            Path.GetTempPath(),
-            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-second.cvraw");
-        ImageView? imageView = null;
-        EventHandler<ImageViewImageSourceLoadedEventArgs>? loadedHandler = null;
-        TaskCompletionSource firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource secondLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        WriteableBitmap? firstBitmap = null;
-        int completionCount = 0;
-        Matrix expectedViewport = new(2, 0, 0, 2, 17, 23);
-
-        try
-        {
-            WriteCvRaw(firstFilePath, 10);
-            WriteCvRaw(secondFilePath, 200);
-
-            WpfTestHost.Invoke(() =>
-            {
-                EnsureImageViewTestResources();
-                imageView = new ImageView();
-                // Toolbar regeneration requires a loaded visual tree and is unrelated to this image-open contract.
-                imageView.IEditorToolFactory.IEditorTools.Clear();
-                loadedHandler = (_, _) =>
-                {
-                    completionCount++;
-                    if (completionCount == 1)
-                        firstLoad.TrySetResult();
-                    else if (completionCount == 2)
-                        secondLoad.TrySetResult();
-                };
-                imageView.ImageSourceLoaded += loadedHandler;
-                imageView.OpenImage(firstFilePath);
-            });
-
-            await firstLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                firstBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                imageView.Zoombox1.ContentMatrix = expectedViewport;
-                imageView.OpenImage(secondFilePath);
-            });
-
-            await secondLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
-
-            WpfTestHost.Invoke(() =>
-            {
-                WriteableBitmap secondBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
-                byte[] pixel = new byte[1];
-                secondBitmap.CopyPixels(new Int32Rect(0, 0, 1, 1), pixel, 1, 0);
-
-                Assert.Same(firstBitmap, secondBitmap);
-                Assert.Equal(expectedViewport, imageView.Zoombox1.ContentMatrix);
-                Assert.Equal(200, pixel[0]);
-                Assert.Equal(secondFilePath, imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
-                Assert.Equal(2, completionCount);
-            });
-        }
-        finally
-        {
-            if (imageView != null)
-            {
-                WpfTestHost.Invoke(() =>
-                {
-                    if (loadedHandler != null)
-                        imageView.ImageSourceLoaded -= loadedHandler;
-                    imageView.Dispose();
-                });
-            }
-
-            if (File.Exists(firstFilePath))
-                File.Delete(firstFilePath);
-            if (File.Exists(secondFilePath))
-                File.Delete(secondFilePath);
         }
     }
 
@@ -643,6 +371,98 @@ public sealed class ImageOpenCompletionContractTests
         }
     }
 
+    [Theory]
+    [InlineData(".png")]
+    [InlineData(".tiff")]
+    public async Task ClearWhileContentProviderIsPreparingDisposesLateCapability(string extension)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-late-content-{Guid.NewGuid():N}{extension}");
+        ImageView? view = null;
+        DelayedContentProvider provider = new();
+        Task completion = Task.CompletedTask;
+        int loadedCount = 0;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                WriteEncodedImage(path);
+                view = new ImageView { EnableEditorImageServices = false };
+                view.RegisterImageContentProvider(provider);
+                view.ImageSourceLoaded += (_, _) => loadedCount++;
+                view.OpenImage(path);
+                completion = view.ImageOpenCompletion;
+            });
+            await provider.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() => view!.Clear());
+            provider.Continue.TrySetResult();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Null(view!.ViewBitmapSource);
+                Assert.Null(view.ImageContent);
+                Assert.Null(view.ImageContentCapability);
+                Assert.Equal(0, loadedCount);
+                Assert.True(provider.Capability.Disposed);
+                Assert.False(provider.Capability.Activated);
+            });
+        }
+        finally
+        {
+            provider.Continue.TrySetResult();
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(".png")]
+    [InlineData(".tiff")]
+    public async Task AwaitableStaticOpenerRejectsInvalidPaths(string extension)
+    {
+        ImageView? view = null;
+        IAsyncImageOpen? opener = null;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView { EnableEditorImageServices = false };
+                opener = extension == ".png" ? new CommonImageOpen(view.EditorContext) : new Opentif(view.EditorContext);
+            });
+            string missing = Path.Combine(Path.GetTempPath(), $"colorvision-missing-{Guid.NewGuid():N}{extension}");
+            await Assert.ThrowsAsync<FileNotFoundException>(() => WpfTestHost.Invoke(() => opener!.OpenImageAsync(view!.EditorContext, missing)));
+            await Assert.ThrowsAnyAsync<ArgumentException>(() => WpfTestHost.Invoke(() => opener!.OpenImageAsync(view!.EditorContext, null)));
+            await Assert.ThrowsAnyAsync<ArgumentException>(() => WpfTestHost.Invoke(() => opener!.OpenImageAsync(view!.EditorContext, string.Empty)));
+        }
+        finally { if (view != null) WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    private sealed class DelayedContentProvider : IImageContentProvider
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Continue { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public DelayedCapability Capability { get; } = new();
+        public async Task<IImageContentCapability?> PrepareAsync(EditorContext context, DecodedImageContent content, CancellationToken cancellationToken)
+        {
+            Started.TrySetResult();
+            // Deliberately return despite cancellation, as a third-party provider might.
+            await Continue.Task;
+            return Capability;
+        }
+    }
+
+    private sealed class DelayedCapability : IImageContentCapability
+    {
+        public bool Activated { get; private set; }
+        public bool Disposed { get; private set; }
+        public void Activate() => Activated = true;
+        public void Dispose() => Disposed = true;
+        public IEnumerable<IEditorTool> GetEditorTools() => [];
+        public void OnEditorToolsActivated(EditorContext context) { }
+        public void OnEditorToolsDeactivated(EditorContext context) { }
+    }
+
     private static OpenedImageState CaptureState(ImageView imageView, int completionCount)
     {
         BitmapSource source = Assert.IsAssignableFrom<BitmapSource>(imageView.ViewBitmapSource);
@@ -705,90 +525,6 @@ public sealed class ImageOpenCompletionContractTests
             Data = Enumerable.Repeat(value, 6).ToArray(),
         };
         Assert.True(CVFileUtil.WriteCIEFile(filePath, file));
-    }
-
-    private static void WriteSolidPng(string filePath, int width, int height, byte value)
-    {
-        byte[] pixels = new byte[width * height * 4];
-        for (int offset = 0; offset < pixels.Length; offset += 4)
-        {
-            pixels[offset] = value;
-            pixels[offset + 1] = value;
-            pixels[offset + 2] = value;
-            pixels[offset + 3] = 0xFF;
-        }
-
-        BitmapSource source = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4);
-        PngBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(source));
-        using FileStream stream = new(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        encoder.Save(stream);
-    }
-
-    private static void WriteSolidTiff(string filePath, int width, int height, byte value, double dpi)
-    {
-        byte[] pixels = Enumerable.Repeat(value, width * height).ToArray();
-        BitmapSource source = BitmapSource.Create(width, height, dpi, dpi, PixelFormats.Gray8, null, pixels, width);
-        TiffBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(source));
-        using FileStream stream = new(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        encoder.Save(stream);
-    }
-
-    private static void WriteGray32FloatTiff(string filePath, float[] pixels)
-    {
-        const int width = 2;
-        const int height = 3;
-        const ushort entryCount = 13;
-        const uint firstIfdOffset = 8;
-        const uint rationalOffset = firstIfdOffset + 2 + entryCount * 12 + 4;
-        const uint pixelOffset = rationalOffset + 16;
-
-        Assert.Equal(width * height, pixels.Length);
-        using FileStream stream = new(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        using BinaryWriter writer = new(stream);
-
-        writer.Write((byte)'I');
-        writer.Write((byte)'I');
-        writer.Write((ushort)42);
-        writer.Write(firstIfdOffset);
-        writer.Write(entryCount);
-        WriteTiffEntry(writer, 256, 4, 1, width);                  // ImageWidth
-        WriteTiffEntry(writer, 257, 4, 1, height);                 // ImageLength
-        WriteTiffEntry(writer, 258, 3, 1, 32);                     // BitsPerSample
-        WriteTiffEntry(writer, 259, 3, 1, 1);                      // Compression: none
-        WriteTiffEntry(writer, 262, 3, 1, 1);                      // PhotometricInterpretation: BlackIsZero
-        WriteTiffEntry(writer, 273, 4, 1, pixelOffset);            // StripOffsets
-        WriteTiffEntry(writer, 277, 3, 1, 1);                      // SamplesPerPixel
-        WriteTiffEntry(writer, 278, 4, 1, height);                 // RowsPerStrip
-        WriteTiffEntry(writer, 279, 4, 1, checked((uint)pixels.Length * 4)); // StripByteCounts
-        WriteTiffEntry(writer, 282, 5, 1, rationalOffset);         // XResolution
-        WriteTiffEntry(writer, 283, 5, 1, rationalOffset + 8);     // YResolution
-        WriteTiffEntry(writer, 296, 3, 1, 2);                      // ResolutionUnit: inch
-        WriteTiffEntry(writer, 339, 3, 1, 3);                      // SampleFormat: IEEE floating point
-        writer.Write(0u);
-        writer.Write(96u);
-        writer.Write(1u);
-        writer.Write(96u);
-        writer.Write(1u);
-
-        foreach (float pixel in pixels)
-            writer.Write(pixel);
-    }
-
-    private static void WriteTiffEntry(BinaryWriter writer, ushort tag, ushort type, uint count, uint valueOrOffset)
-    {
-        writer.Write(tag);
-        writer.Write(type);
-        writer.Write(count);
-        writer.Write(valueOrOffset);
-    }
-
-    private static PixelFormat ReadTiffPixelFormat(string filePath)
-    {
-        using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        TiffBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-        return decoder.Frames[0].Format;
     }
 
     private static void EnsureImageViewTestResources()

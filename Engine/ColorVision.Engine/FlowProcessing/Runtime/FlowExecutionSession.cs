@@ -176,6 +176,8 @@ namespace ColorVision.Engine.FlowProcessing
         /// </summary>
         public event EventHandler<FlowRunFinalizedData>? RunFinalized;
 
+        public event EventHandler<FlowNodeExecutionCompletedEventArgs>? NodeExecutionCompleted;
+
         /// <summary>
         /// 启动流程并等待执行完成，返回流程执行结果。
         /// 如果流程未能启动（验证失败、已在运行等），返回 null。
@@ -629,6 +631,14 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
+        private void StartNodeTitleProgress(CVCommonNode node, long? expectedDurationMs)
+        {
+            _nodeStartedAt[node.NodeID] = Environment.TickCount64;
+            if (expectedDurationMs is > 0) _nodeExpectedDurations[node.NodeID] = expectedDurationMs.Value;
+            node.TitleProgressColor = System.Drawing.Color.DeepSkyBlue;
+            node.TitleProgress = _nodeExpectedDurations.TryGetValue(node.NodeID, out long duration) && duration > 0 ? 0f : -1f;
+        }
+
         private void ResetNodeTitleProgress()
         {
             foreach (CVCommonNode node in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
@@ -646,6 +656,7 @@ namespace ColorVision.Engine.FlowProcessing
 
             if (sender is CVCommonNode algorithmNode)
             {
+                MeasureBatchModel? nodeBatch = CurrentBatch;
                 string writeKey = GetNodeExecutionKey(algorithmNode, e.RecvMsgId, e.SerialNumber);
                 if (!TryTakePendingNodeExecution(writeKey, algorithmNode, e.SerialNumber, out PendingNodeExecution? execution))
                     return;
@@ -801,6 +812,13 @@ namespace ColorVision.Engine.FlowProcessing
                         }
                     }
                 }
+                var completed = new FlowNodeExecutionCompletedEventArgs(nodeBatch?.Id ?? 0,
+                    e.SerialNumber, algorithmNode.NodeID, algorithmNode.Title, e.RecvStatusCode);
+                foreach (EventHandler<FlowNodeExecutionCompletedEventArgs> handler in NodeExecutionCompleted?.GetInvocationList() ?? Array.Empty<Delegate>())
+                {
+                    try { handler(this, completed); }
+                    catch (Exception ex) { log.Error("流程节点完成订阅者处理失败。", ex); }
+                }
                 _pendingNodeExecutionDrain.Complete(generation);
             }
         }
@@ -891,10 +909,7 @@ namespace ColorVision.Engine.FlowProcessing
                 _currentNodeName = algorithmNode.Title;
                 _runningNodeNames[algorithmNode.NodeID] = algorithmNode.Title;
                 _runningNodes[algorithmNode.NodeID] = algorithmNode;
-                _nodeStartedAt[algorithmNode.NodeID] = Environment.TickCount64;
-                algorithmNode.TitleProgressColor = System.Drawing.Color.DeepSkyBlue;
-                algorithmNode.TitleProgress = _nodeExpectedDurations.TryGetValue(algorithmNode.NodeID, out long expectedDuration)
-                    && expectedDuration > 0 ? 0f : -1f;
+                StartNodeTitleProgress(algorithmNode, e.ExpectedDurationMs);
                 UpdateRuntimeProgress(sender);
 
                 int batchId = CurrentBatch?.Id ?? 0;
@@ -1107,6 +1122,13 @@ namespace ColorVision.Engine.FlowProcessing
             }
 
             string flowName = executionSnapshot.FlowName;
+            string? missingNodeReason = STMissingNode.GetExecutionBlockReason(View.STNodeEditorMain.Nodes.Cast<STNode>());
+            if (missingNodeReason != null)
+            {
+                View.ShowExecutionSummary(missingNodeReason);
+                log.Warn(missingNodeReason);
+                return default;
+            }
             FlowParam selectedFlowParam =
                 executionSnapshot.CreateFlowParam();
             bool requiresServices = View.STNodeEditorMain.Nodes
@@ -1134,7 +1156,7 @@ namespace ColorVision.Engine.FlowProcessing
                 return default;
             }
 
-            string sn = requestedSerialNumber ?? CreateFlowSerialNumber();
+            string sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(requestedSerialNumber ?? CreateFlowSerialNumber());
             using CancellationTokenSource flowRunCts = new CancellationTokenSource();
             if (!_runLifecycle.TryBegin(
                     sn,

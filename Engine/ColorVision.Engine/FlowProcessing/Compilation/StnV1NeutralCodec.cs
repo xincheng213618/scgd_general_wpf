@@ -34,13 +34,14 @@ internal static class StnV1NeutralCodec
 
     internal static NeutralCanvas Decode(
         byte[] canvasData,
-        StnV1CodecOptions options)
+        StnV1CodecOptions options,
+        bool allowMissingNodes = false)
     {
         ArgumentNullException.ThrowIfNull(canvasData);
         ArgumentNullException.ThrowIfNull(options);
         try
         {
-            return DecodeCore(canvasData, options);
+            return DecodeCore(canvasData, options, allowMissingNodes);
         }
         catch (FlowCompilationException)
         {
@@ -151,7 +152,8 @@ internal static class StnV1NeutralCodec
 
     private static NeutralCanvas DecodeCore(
         byte[] canvasData,
-        StnV1CodecOptions options)
+        StnV1CodecOptions options,
+        bool allowMissingNodes)
     {
         if (canvasData.Length > MaximumCompressedLength)
             throw new InvalidDataException("压缩流程数据超过限制。");
@@ -209,7 +211,7 @@ internal static class StnV1NeutralCodec
 
             NeutralNode node = ParseNode(
                 ReadBytes(body, payloadLength),
-                ref remainingPortCount);
+                ref remainingPortCount, allowMissingNodes);
             if (!nodeIds.Add(node.NodeId))
             {
                 throw new InvalidDataException(
@@ -228,11 +230,22 @@ internal static class StnV1NeutralCodec
             options.MaximumConnectionCount,
             "连接");
         var packedConnections = new HashSet<long>();
+        bool skipLegacyConnections = allowMissingNodes
+            && canvas.Nodes.Any(node => node.Schema.NodeType == typeof(STMissingNode)
+                && STNodeSavedState.ReadPortLayout(STNodeSavedState.Parse(node.Payload).Properties) == null
+                && !STNodeSavedState.Parse(node.Payload).Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey))
+            && !canvas.Nodes.Any(node => STNodeSavedState.Parse(node.Payload).Properties.ContainsKey("__STNode.LegacyConnections"));
         for (int i = 0; i < connectionCount; i++)
         {
             long packed = ReadInt64(body);
             long outputIndex = packed >> 32;
             long inputIndex = unchecked((uint)packed);
+            if (skipLegacyConnections)
+            {
+                if (outputIndex < 0 || outputIndex >= MaximumTotalPortCount || inputIndex >= MaximumTotalPortCount
+                    || !packedConnections.Add(packed)) throw new InvalidDataException("旧流程连接编号无效或重复。");
+                continue;
+            }
             if (!optionsByIndex.TryGetValue(
                     outputIndex,
                     out NeutralPort? output)
@@ -260,7 +273,7 @@ internal static class StnV1NeutralCodec
         return canvas;
     }
 
-    private static NeutralNode ParseNode(byte[] payload, ref int remainingPortCount)
+    private static NeutralNode ParseNode(byte[] payload, ref int remainingPortCount, bool allowMissingNodes)
     {
         int offset = 0;
         string modelKey = ReadByteLengthString(
@@ -319,7 +332,28 @@ internal static class StnV1NeutralCodec
         if (guidValueOffset < 0 || nodeId == Guid.Empty)
             throw new InvalidDataException("节点缺少有效 Guid。");
 
-        Type type = ResolveNodeType(typeKey, modelKey);
+        Type type;
+        try { type = ResolveNodeType(typeKey, modelKey); }
+        catch (FlowCompilationException ex) when (allowMissingNodes && ex.Error == FlowCompilationError.UnknownNodeType)
+        {
+            var layout = STNodeSavedState.ReadPortLayout(STNodeSavedState.Parse(payload).Properties);
+            NeutralPortSchema[] MissingPorts(STNodeSavedPort[]? ports, bool input) => (ports ?? [])
+                .Select((port, index) => new NeutralPortSchema(input, index, typeof(object), port.Name ?? string.Empty, port.IsEmpty)).ToArray();
+            var missingSchema = new NeutralNodeSchema(typeof(STMissingNode), MissingPorts(layout?.Inputs, true),
+                MissingPorts(layout?.Outputs, false), false, false, -1, -1);
+            remainingPortCount -= missingSchema.Inputs.Length + missingSchema.Outputs.Length;
+            if (remainingPortCount < 0) throw new InvalidDataException("流程端口总数量超过限制。");
+            return new NeutralNode(payload, guidValueOffset, nodeId, modelKey, typeKey, missingSchema);
+        }
+        if (propertyNames.Contains(STNodeSavedState.LegacyPlaceholderKey))
+        {
+            if (!allowMissingNodes)
+                throw new InvalidDataException("旧占位结点的组件已恢复，请在编辑器中打开并重新保存后再编译。");
+            // These are the ports present in the saved graph, not the newly
+            // available implementation's ports. The editor rebuilds them on save.
+            var savedSchema = new NeutralNodeSchema(type, [], [], false, false, -1, -1);
+            return new NeutralNode(payload, guidValueOffset, nodeId, modelKey, typeKey, savedSchema);
+        }
         NeutralNodeSchema schema;
         try
         {
@@ -352,7 +386,7 @@ internal static class StnV1NeutralCodec
         byte[]? countData,
         int remainingPortCount)
     {
-        bool pairedHub = typeof(STNodeHub).IsAssignableFrom(schema.NodeType);
+        bool pairedHub = typeof(ISTNodeHub).IsAssignableFrom(schema.NodeType);
         bool inputHub = typeof(STNodeInHub).IsAssignableFrom(schema.NodeType);
         bool outputHub = typeof(STNodeOutHub).IsAssignableFrom(schema.NodeType);
         int inputCount = schema.Inputs.Length;
@@ -454,7 +488,7 @@ internal static class StnV1NeutralCodec
         {
             throw new FlowCompilationException(
                 FlowCompilationError.UnknownNodeType,
-                $"无法解析节点类型：{modelKey} ({typeKey})。");
+                $"无法解析节点类型：{modelKey} ({typeKey})。请恢复组件或删除、替换缺失结点后再运行。");
         }
         return resolved;
     }

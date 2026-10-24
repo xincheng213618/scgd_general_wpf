@@ -1592,6 +1592,7 @@ body.cv-home-light .workflow-icon {
 
 .card-footer-link {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
@@ -2148,6 +2149,18 @@ body.cv-home-light .workflow-icon {
   color: #0b1020;
   background: #fff;
   border-color: #fff;
+}
+
+.windows-download-actions {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.windows-download-actions .windows-download-toggle.ant-btn {
+  flex: 0 0 40px;
+  width: 40px;
+  border-inline-start-color: rgba(127, 127, 127, 0.35);
 }
 
 .windows-download-menu {
@@ -3149,6 +3162,17 @@ body.cv-home-light .workflow-icon {
   .landing-hero-actions .ant-btn {
     justify-content: center;
     min-height: 44px;
+  }
+
+  .landing-hero-actions .windows-download-actions {
+    display: flex;
+    width: 100%;
+  }
+
+  .landing-hero-actions .windows-download-actions > .ant-btn:first-child {
+    flex: 1;
+    width: auto;
+    min-width: 0;
   }
 
   .landing-hero-actions .hero-action-android {

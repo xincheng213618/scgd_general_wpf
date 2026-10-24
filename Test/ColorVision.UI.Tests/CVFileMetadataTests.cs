@@ -6,6 +6,30 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CVFileMetadataTests
 {
+    [Fact]
+    public void RelatedRecordsUpdateTogetherAndValidationFailureLeavesTheOldTail()
+    {
+        string path = CreateFile(1, false);
+        try
+        {
+            CVFileMetadata.SetProperty(path, "future", 99, [9]);
+            CVFileMetadata.SetProperties(path, new Dictionary<string, CVFileProperty>
+            {
+                ["color"] = new(1, [1]), ["summary"] = new(1, [2])
+            });
+            byte[] original = File.ReadAllBytes(path);
+            Assert.Throws<ArgumentException>(() => CVFileMetadata.SetProperties(path, new Dictionary<string, CVFileProperty>
+            {
+                ["color"] = new(1, [7]), [""] = new(1, [8])
+            }));
+            Assert.Equal(original, File.ReadAllBytes(path));
+            var properties = CVFileMetadata.Read(path);
+            Assert.Equal(99u, properties["future"].Version);
+            Assert.Equal(new byte[] { 1 }, properties["color"].Value);
+            Assert.Equal(new byte[] { 2 }, properties["summary"].Value);
+        }
+        finally { File.Delete(path); }
+    }
     [Theory]
     [InlineData(1, false)]
     [InlineData(2, false)]

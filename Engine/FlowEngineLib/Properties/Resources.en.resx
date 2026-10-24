@@ -124,10 +124,19 @@
     <value>CVCamera</value>
   </data>
   <data name="通用AOI相机" xml:space="preserve">
-    <value>GeneralCamera-AOI</value>
+    <value>AOI Locate Camera (Template)</value>
   </data>
   <data name="通用AOI相机2" xml:space="preserve">
-    <value>GeneralCamera-AOI2</value>
+    <value>AOI Extract Camera (Template)</value>
+  </data>
+  <data name="AOILocatePixels" xml:space="preserve">
+    <value>AOI Locate Camera (Parameters)</value>
+  </data>
+  <data name="AOIRegisterPixels" xml:space="preserve">
+    <value>AOI Extract Camera (Parameters)</value>
+  </data>
+  <data name="AOILocAndRegPixels" xml:space="preserve">
+    <value>AOI Locate+Extract Camera</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
     <value>Camera+ND</value>
@@ -261,14 +270,8 @@
   <data name="关注点布点" xml:space="preserve">
     <value>POI-Layout</value>
   </data>
-  <data name="关注点布点2" xml:space="preserve">
-    <value>POI-Layout2</value>
-  </data>
   <data name="关注点修正标定" xml:space="preserve">
     <value>POI-Calibration</value>
-  </data>
-  <data name="关注点分析_SMU" xml:space="preserve">
-    <value>POI-Analysis-IVL</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
     <value>Real-POI</value>
@@ -377,9 +380,6 @@
   </data>
   <data name="KB算法" xml:space="preserve">
     <value>KB</value>
-  </data>
-  <data name="KB输出" xml:space="preserve">
-    <value>KB-Output</value>
   </data>
   <data name="ARVR算法" xml:space="preserve">
     <value>ARVR</value>
@@ -515,9 +515,6 @@
   </data>
   <data name="校正" xml:space="preserve">
     <value>Calibration</value>
-  </data>
-  <data name="校正2" xml:space="preserve">
-    <value>Calibration+Real-POI</value>
   </data>
   <data name="校正ROI" xml:space="preserve">
     <value>ROI-Calibration</value>
@@ -960,8 +957,8 @@
   <data name="取消重复框" xml:space="preserve">
     <value>Remove repeat region</value>
   </data>
-  <data name="请选择连续连接的一段流程，重复框内不能包含分支、开始、结束或旧循环节点。" xml:space="preserve">
-    <value>Select a connected linear sequence. A repeat region cannot contain branches, Start, End, or legacy loop nodes.</value>
+  <data name="请选择单入口、单出口的完整流程区域，分流必须在框内汇合，不能包含环、开始、结束或旧循环节点。" xml:space="preserve">
+    <value>Select a complete single-entry, single-exit region. Branches must rejoin inside it; cycles, Start, End, and legacy loop nodes are not supported.</value>
   </data>
   <data name="重复框的节点或次数已改变，请取消该框后重新框选。" xml:space="preserve">
     <value>The repeat region is incomplete or inconsistent. Remove it and select the nodes again.</value>

@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.Engine.Media
 {
@@ -57,35 +59,8 @@ namespace ColorVision.Engine.Media
             }
 
             fileName = Path.ChangeExtension(fileName.TrimEnd('.'), GetFileExtension(export.ExportImageFormat));
-            export.CoverFilePath = fileName;
-            using Mat image = src.Clone();
-            if (IsFormat(export.ExportImageFormat, ImageFormat.Tiff))
-            {
-                Cv2.ImWrite(fileName, image, [new ImageEncodingParam(ImwriteFlags.TiffCompression, export.TiffCompression)]);
-                if (parameters != null)
-                    TiffImageDescriptionWriter.Write(fileName, parameters.ToJson());
-            }
-            else if (IsFormat(export.ExportImageFormat, ImageFormat.Bmp))
-            {
-                using Mat bmpImage = CreateBmpCompatibleMat(image);
-                Cv2.ImWrite(fileName, bmpImage);
-            }
-            else if (IsFormat(export.ExportImageFormat, ImageFormat.Png))
-            {
-                if (export.PngCompressionLevel == AutomaticPngCompressionLevel)
-                    Cv2.ImWrite(fileName, image);
-                else
-                    Cv2.ImWrite(fileName, image, [new ImageEncodingParam(ImwriteFlags.PngCompression, export.PngCompressionLevel)]);
-            }
-            else if (IsFormat(export.ExportImageFormat, ImageFormat.Jpeg))
-            {
-                using Mat jpegImage = CreateBmpCompatibleMat(image);
-                Cv2.ImWrite(fileName, jpegImage, [new ImageEncodingParam(ImwriteFlags.JpegQuality, export.JpegQuality)]);
-            }
-            else
-            {
-                throw new NotSupportedException($"Unsupported export image format: {export.ExportImageFormat}.");
-            }
+            export.CoverFilePath = CalibratedImageExport.SaveCore(src, parameters, fileName, export.ExportImageFormat,
+                export.TiffCompression, export.PngCompressionLevel, export.JpegQuality);
         }
 
         private static bool IsFormat(ImageFormat value, ImageFormat expected)
@@ -131,10 +106,31 @@ namespace ColorVision.Engine.Media
             return dst;
         }
 
-        private static Mat CreateMatFromCVCIEFile(CVCIEFile fileInfo)
+        internal static Mat CreateMatFromCVCIEFile(CVCIEFile fileInfo)
         {
             ValidateImageBuffer(fileInfo, fileInfo.Channels, fileInfo.Data);
             return Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+        }
+
+        internal static Mat CreateSourceMat(CVCIEFile fileInfo, ColorCalibrationSnapshot? calibration)
+        {
+            if (calibration == null || calibration.InterleavedBgr || fileInfo.Channels != 3)
+                return CreateMatFromCVCIEFile(fileInfo);
+            ValidateImageBuffer(fileInfo, fileInfo.Channels, fileInfo.Data);
+            int planeBytes = GetSingleChannelByteCount(fileInfo);
+            GCHandle pin = GCHandle.Alloc(fileInfo.Data, GCHandleType.Pinned);
+            try
+            {
+                IntPtr start = pin.AddrOfPinnedObject();
+                MatType type = MatType.MakeType(fileInfo.Depth, 1);
+                using Mat red = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, start);
+                using Mat green = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, IntPtr.Add(start, planeBytes));
+                using Mat blue = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, IntPtr.Add(start, checked(planeBytes * 2)));
+                Mat output = new();
+                try { Cv2.Merge([blue, green, red], output); return output; }
+                catch { output.Dispose(); throw; }
+            }
+            finally { pin.Free(); }
         }
 
         private static Mat CreateSingleChannelMat(CVCIEFile fileInfo, byte[] data)
@@ -215,9 +211,9 @@ namespace ColorVision.Engine.Media
             return File.Exists(fallback) ? fallback : null;
         }
 
-        private static ColorVisionTiffParameters CreateTiffParameters(CVCIEFile fileInfo, string exportedChannel)
+        internal static ColorVisionTiffParameters CreateTiffParameters(CVCIEFile fileInfo, string exportedChannel)
         {
-            return new ColorVisionTiffParameters
+            ColorVisionTiffParameters parameters = new()
             {
                 SourceType = fileInfo.FileExtType switch
                 {
@@ -238,13 +234,22 @@ namespace ColorVision.Engine.Media
                 Gain = fileInfo.Gain,
                 Exposure = fileInfo.Exp == null ? [] : (float[])fileInfo.Exp.Clone(),
             };
+            if (!string.IsNullOrWhiteSpace(fileInfo.FilePath)) CameraFileMetadata.ApplyStored(parameters, fileInfo.FilePath);
+            return parameters;
         }
 
-        private static ColorCalibrationSnapshot? ReadReplayableCalibration(string filePath, CVCIEFile header)
+        internal static ColorCalibrationSnapshot? ReadCalibration(string filePath, CVCIEFile header)
         {
             if (header.FileExtType != CVType.Raw) return null;
-            ColorCalibrationSnapshot? snapshot = ColorCalibrationSnapshot.Read(filePath, header);
-            return snapshot?.CanReplay == true ? snapshot : null;
+            try
+            {
+                return ColorCalibrationSnapshot.Read(filePath, header);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Acquisition parameters cannot be replayed; exporting source pixels only.", ex);
+                return null;
+            }
         }
 
         public static int SaveToTif(VExportCIE export)
@@ -302,7 +307,8 @@ namespace ColorVision.Engine.Media
                     ? CVType.Src
                     : CVType.CIE;
 
-            ColorCalibrationSnapshot? calibration = ReadReplayableCalibration(fileName, cvcie);
+            ColorCalibrationSnapshot? recordedCalibration = ReadCalibration(fileName, cvcie);
+            ColorCalibrationSnapshot? calibration = recordedCalibration?.CanReplay == true ? recordedCalibration : null;
             string? associatedSourcePath = cvcie.FileExtType == CVType.CIE
                 ? ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName)
                 : null;
@@ -320,18 +326,30 @@ namespace ColorVision.Engine.Media
                     (cvcie.Channels == 3 && export.IsExportChannelZ ? 1 : 0),
                 _ => 0,
             };
+            bool includesMeasurementChannels = (cvcie.FileExtType == CVType.CIE || calibration != null)
+                && (export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ);
+            if (export.IsPng && includesMeasurementChannels)
+                throw new NotSupportedException("PNG cannot preserve floating point XYZ samples; select source pixels only or export TIFF.");
             bool includeImageSuffix = selectedImageCount > 1;
 
             Mat src;
             int exportedCount = 0;
-            void SaveImage(Mat image, string suffix, CVCIEFile parameterSource, string exportedChannel)
+            void SaveImage(Mat image, string suffix, CVCIEFile parameterSource, string exportedChannel, ColorCalibrationSnapshot? sourceCalibrationOverride = null)
             {
                 string outputFileName = name + (includeImageSuffix ? suffix : string.Empty) + GetFileExtension(export.ExportImageFormat);
-                SaveTo(
-                    export,
-                    image,
-                    Path.Combine(savePath, outputFileName),
-                    CreateTiffParameters(parameterSource, exportedChannel));
+                ColorVisionTiffParameters parameters = CreateTiffParameters(parameterSource, exportedChannel);
+                ColorCalibrationSnapshot? sourceCalibration = ReferenceEquals(parameterSource, cvcie) || exportedChannel != "Src"
+                    ? recordedCalibration : sourceCalibrationOverride;
+                parameters.PixelRole = exportedChannel == "Src" ? "calibration-input" : "xyz-channel";
+                parameters.MeasurementChannel = exportedChannel == "Src" ? null : exportedChannel;
+                if (sourceCalibration != null)
+                {
+                    parameters.CalibrationSummary = sourceCalibration.ToSummary();
+                    parameters.Calibration = JToken.FromObject(exportedChannel == "Src"
+                        ? sourceCalibration with { InterleavedBgr = true } : sourceCalibration);
+                    parameters.Exposure = (float[])sourceCalibration.Exposure.Clone();
+                }
+                SaveTo(export, image, Path.Combine(savePath, outputFileName), parameters);
                 exportedCount++;
             }
 
@@ -344,7 +362,7 @@ namespace ColorVision.Engine.Media
                         throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                     if (export.IsExportSrc)
                     {
-                        using (src = CreateMatFromCVCIEFile(cvcie))
+                        using (src = CreateSourceMat(cvcie, recordedCalibration))
                         {
                             SaveImage(src, "_Src", cvcie, "Src");
                         }
@@ -377,9 +395,10 @@ namespace ColorVision.Engine.Media
                         {
                             if (CVFileUtil.Read(associatedSourcePath, out CVCIEFile cvraw))
                             {
-                                using (src = CreateMatFromCVCIEFile(cvraw))
+                                ColorCalibrationSnapshot? sourceCalibration = ReadCalibration(associatedSourcePath, cvraw);
+                                using (src = CreateSourceMat(cvraw, sourceCalibration))
                                 {
-                                    SaveImage(src, "_Src", cvraw, "Src");
+                                    SaveImage(src, "_Src", cvraw, "Src", sourceCalibration);
                                 }
                             }
                         }
@@ -478,7 +497,7 @@ namespace ColorVision.Engine.Media
             {
                 IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(filePath, out _CVCIEFile) > 0;
                 _CVCIEFile.FileExtType = FileExtType;
-                HasCieChannels = IsCanExportSrc && ReadReplayableCalibration(filePath, _CVCIEFile) != null;
+                HasCieChannels = IsCanExportSrc && ReadCalibration(filePath, _CVCIEFile)?.CanReplay == true;
                 IsExportChannelX = IsExportChannelZ = HasCieChannels && Channels == 3;
                 IsExportChannelY = HasCieChannels;
                 IsChannelOne = CVCIEFile.Channels == 0;
@@ -538,7 +557,7 @@ namespace ColorVision.Engine.Media
 
         public bool HasCieChannels { get; }
 
-        public IReadOnlyDictionary<string, ImageFormat> AvailableImageFormats => HasCieChannels
+        public IReadOnlyDictionary<string, ImageFormat> AvailableImageFormats => IsCVCIE
             ? CvcieExportImageFormats
             : CvRawExportImageFormats;
 
@@ -547,7 +566,7 @@ namespace ColorVision.Engine.Media
         public string ExportFormatHint => IsTiff
             ? $"TIFF · {Bpp}-bit{(IsCVRaw && HasCieChannels ? " / CIE 32-bit" : string.Empty)} · LZW / ZIP"
             : IsPng
-                ? $"PNG · Auto · {(Bpp is 8 or 16 ? $"{Bpp}-bit" : "8-bit")}"
+                ? $"PNG · Auto · {(Bpp is 8 or 16 ? $"{Bpp}-bit" : "8-bit")} · XYZ: TIFF"
                 : "JPEG · Quality 100 · 8-bit";
 
         public ImageFormat ExportImageFormat

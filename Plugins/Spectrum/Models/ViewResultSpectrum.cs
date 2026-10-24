@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1711
+﻿using ColorVision.ImageEditor.Draw;
+#pragma warning disable CA1711
 using ColorVision.Common.MVVM;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -58,9 +59,52 @@ namespace Spectrum.Models
         [Browsable(false)]
         public int SpectrumPointCount => fPL.Length;
 
+        private SpectrumRawExportRecord rawSpectrum = new();
+        private float[]? generatedSpectrum;
+        [Browsable(false), JsonIgnore]
+        public string? AcquisitionParametersJson { get; set; }
+        [Browsable(false), JsonIgnore]
+        public string? AcquisitionDeviceCode { get; set; }
+        [Browsable(false), JsonIgnore]
+        public bool? AcquisitionFluxMode { get; set; }
+
+        private void CaptureStoredSpectrum()
+        {
+            if (!ReferenceEquals(generatedSpectrum, fPL))
+                rawSpectrum = SpectrumRawExporter.CaptureStoredSpectrum(fPL, fSpect1, fSpect2, fInterval, fPlambda);
+        }
+
+        [Browsable(false), JsonIgnore]
+        public SpectrumAnalysisSummary AnalysisSummary => new()
+        {
+            ColorTemperature = Chromaticity.ColorTemperature, Duv = Chromaticity.Duv,
+            Ra = ColorRendering.Ra, RenderingIndices = RenderingIndices,
+            Luminance = double.TryParse(Lv, out double luminance) && double.IsFinite(luminance) ? luminance : null,
+            LuminousFlux = LuminousFlux, PeakWavelength = float.IsFinite(fLp) && fLp > 0 ? fLp : null,
+            Fwhm = float.IsFinite(fHW) && fHW > 0 ? fHW : null, MeanWavelength = ColorRendering.MeanWavelength,
+            RenderingStatus = RenderingStatusText, TemperatureStatus = TemperatureStatusText
+        };
+
+        public SpectrumRawExportRecord CreateRawExportRecord(bool fluxMode)
+        {
+            bool capturedFlux = AcquisitionFluxMode ?? fluxMode;
+            return rawSpectrum with
+            {
+                Samples = (float[])rawSpectrum.Samples.Clone(),
+                MeasurementId = Id, MeasuredAt = CreateTime, DeviceCode = AcquisitionDeviceCode,
+                Mode = capturedFlux ? "LuminousFlux" : "Luminance", ModeSource = AcquisitionFluxMode.HasValue ? "SavedEqeContext" : "ExportContext",
+                AbsoluteUnit = capturedFlux ? "W/nm" : "W/(sr*m^2*nm)",
+                AcquisitionParametersJson = AcquisitionParametersJson,
+                ColorTemperature = Chromaticity.ColorTemperature, Duv = Chromaticity.Duv,
+                Ra = ColorRendering.Ra, RenderingIndices = (double?[])RenderingIndices.Clone(), RenderingStatus = ColorRendering.Status.ToString()
+            };
+        }
+
         public void Gen()
         {
+            CaptureStoredSpectrum();
             NormalizeSpectrumData();
+            generatedSpectrum = fPL;
             _spectralDatas = null;
             _scatterPlot = null;
             _absoluteScatterPlot = null;
@@ -77,19 +121,33 @@ namespace Spectrum.Models
                 sum2 += GetSpectrumValue(fSpect1 + i);
             Blue = sum2 == 0 ? "0" : Math.Round(sum1 / sum2 * 100, 2).ToString();
 
-            // Compute dominant wavelength color
-            DominantWavelengthColor = WavelengthToColor.ToBrush(fLd);
-            DominantWavelengthHex = WavelengthToColor.ToHex(fLd);
-
-            // Compute excitation purity
-            ComputeExcitationPurity();
-
-            // Compute Ra if C++ didn't calculate it
-            if (fRa == 0 && fPL != null && fPL.Length > 0 && fCCT > 0)
-            {
-                fRa = RaCalculator.ComputeRa(fPL, fSpect1, fInterval, fCCT);
-            }
+            UpdateRenderingMetrics();
         }
+
+        private void UpdateRenderingMetrics()
+        {
+            ComputeExcitationPurity();
+            ColorRendering = SpectrumColorRendering.Calculate(fPL, fSpect1, fInterval);
+            fLav = (float)(ColorRendering.MeanWavelength ?? double.NaN);
+            fRa = (float)(ColorRendering.Ra ?? double.NaN);
+            fRi = ColorRendering.Ri.Select(value => (float)value).ToArray();
+            RenderingIndices = Enumerable.Range(0, 15).Select(i => i < fRi.Length ? (double?)fRi[i] : null).ToArray();
+            OnPropertyChanged(nameof(AnalysisSummary));
+        }
+
+        [Browsable(false), JsonIgnore]
+        public SpectrumColorRenderingResult ColorRendering { get; private set; } = new();
+        [Browsable(false), JsonIgnore]
+        public double?[] RenderingIndices { get; private set; } = new double?[15];
+        public string RenderingStatusText => DisplayText.Get(ColorRendering.Status switch
+        {
+            ColorRenderingStatus.Valid => "有效（CIE 13.3；R15 为扩展色样）",
+            ColorRenderingStatus.InsufficientWavelengthRange => "显色性不可用：光谱未覆盖 380–780 nm",
+            ColorRenderingStatus.SamplingTooCoarse => "显色性不可用：采样间隔超过 5 nm",
+            ColorRenderingStatus.UnsupportedColorTemperature => "显色性不可用：色温超出计算范围",
+            ColorRenderingStatus.FarFromReference => "显色性不可用：与参考光源色度距离超过 0.0054",
+            _ => "显色性不可用：光谱为空、全零、负值或非有限值"
+        });
 
         internal static COLOR_PARA NormalizeColorParam(COLOR_PARA colorParam)
         {
@@ -238,6 +296,7 @@ namespace Spectrum.Models
 
         public ViewResultSpectrum(SprectrumModel sprectrumModel)
         {
+            AcquisitionFluxMode = sprectrumModel.Eqe.HasValue || sprectrumModel.EqeVoltage.HasValue || sprectrumModel.EqeCurrentMA.HasValue;
             Id = sprectrumModel.Id;
             CreateTime = sprectrumModel.CreateTime;
             TotalDurationMs = sprectrumModel.TotalDurationMs;
@@ -253,13 +312,10 @@ namespace Spectrum.Models
             IsRecalculated = sprectrumModel.IsRecalculated ?? false;
             Gen();
 
-            if (sprectrumModel.ExcitationPurity.HasValue)
-                ExcitationPurity = sprectrumModel.ExcitationPurity.Value;
         }
 
         private void ApplyColorParam(COLOR_PARA colorParam)
         {
-            colorParam = NormalizeColorParam(colorParam);
             fCIEx = colorParam.fCIEx;
             fCIEy = colorParam.fCIEy;
             fCIEz = colorParam.fCIEz;
@@ -352,6 +408,7 @@ namespace Spectrum.Models
 
         public void CalculateEqeParams(float voltage, float currentMA)
         {
+            AcquisitionFluxMode = true;
             V = voltage;
             I = currentMA;
             RadiantFlux = 0;
@@ -393,6 +450,7 @@ namespace Spectrum.Models
             OnPropertyChanged(nameof(Eqe));
             OnPropertyChanged(nameof(EqePercent));
             OnPropertyChanged(nameof(LuminousFlux));
+            OnPropertyChanged(nameof(AnalysisSummary));
             OnPropertyChanged(nameof(RadiantFlux));
             OnPropertyChanged(nameof(LuminousEfficacy));
             OnPropertyChanged(nameof(V));
@@ -406,7 +464,8 @@ namespace Spectrum.Models
             LuminousFlux,
             RadiantFlux,
             LuminousEfficacy,
-            IsRecalculated);
+            IsRecalculated,
+            AcquisitionFluxMode);
 
         internal void RestoreEqeState(EqeState state)
         {
@@ -417,9 +476,11 @@ namespace Spectrum.Models
             RadiantFlux = state.RadiantFlux;
             LuminousEfficacy = state.LuminousEfficacy;
             IsRecalculated = state.IsRecalculated;
+            AcquisitionFluxMode = state.AcquisitionFluxMode;
             OnPropertyChanged(nameof(Eqe));
             OnPropertyChanged(nameof(EqePercent));
             OnPropertyChanged(nameof(LuminousFlux));
+            OnPropertyChanged(nameof(AnalysisSummary));
             OnPropertyChanged(nameof(RadiantFlux));
             OnPropertyChanged(nameof(LuminousEfficacy));
             OnPropertyChanged(nameof(V));
@@ -433,7 +494,8 @@ namespace Spectrum.Models
             float? LuminousFlux,
             double? RadiantFlux,
             double? LuminousEfficacy,
-            bool IsRecalculated);
+            bool IsRecalculated,
+            bool? AcquisitionFluxMode);
 
         private static float GetSafeLuminanceValue(float rawLuminance)
         {
@@ -637,11 +699,35 @@ namespace Spectrum.Models
         /// </summary>
         public void ComputeExcitationPurity()
         {
-            // 使用辅助类，代码十分干净
-            // 注意如果传入 fLd 之前没算或者算错了，这里可以直接重新算一次 wave : ColorimetryHelper.CalculateDominantWavelength(fx, fy)
-            double wave = ColorimetryHelper.CalculateDominantWavelength(fx, fy);
-            ExcitationPurity = ColorimetryHelper.CalculateExcitationPurity(fx, fy, wave);
+            Chromaticity = SpectrumChromaticity.Calculate(fx, fy);
+            fCCT = (float)(Chromaticity.ColorTemperature ?? double.NaN);
+            dC = (float)(Chromaticity.Duv ?? double.NaN);
+            fLd = (float)(Chromaticity.DominantWavelength ?? -Chromaticity.ComplementaryWavelength ?? double.NaN);
+            fPur = (float)(Chromaticity.ExcitationPurity ?? double.NaN);
+            ExcitationPurity = Chromaticity.ExcitationPurity ?? double.NaN;
+            DominantWavelengthColor = WavelengthToColor.ToBrush(Chromaticity.DominantWavelength ?? double.NaN);
+            DominantWavelengthHex = Chromaticity.DominantWavelength.HasValue ? WavelengthToColor.ToHex(fLd) : string.Empty;
         }
+
+        [Browsable(false), JsonIgnore]
+        public SpectrumChromaticityResult Chromaticity { get; private set; } = new();
+        [Browsable(false), JsonIgnore]
+        public double? PurityPercent => Chromaticity.ExcitationPurity * 100;
+        public string ChromaticityStatusText => DisplayText.Get(Chromaticity.WavelengthStatus switch
+        {
+            SpectrumWavelengthStatus.Valid => "有效（D65 白点；CIE 1931 2°）",
+            SpectrumWavelengthStatus.Achromatic => "白点附近：主波长未定义，纯度为 0",
+            SpectrumWavelengthStatus.Complementary => "紫红色：显示补色波长",
+            SpectrumWavelengthStatus.InvalidReferenceWhite => "参考白点无效",
+            _ => "色度无效或超出光谱轨迹，波长和纯度不可用"
+        });
+        public string TemperatureStatusText => DisplayText.Get(Chromaticity.TemperatureStatus switch
+        {
+            SpectrumTemperatureStatus.Valid => "Robertson 1968；Duv 使用 CIE 1960 UCS",
+            SpectrumTemperatureStatus.OutOfRange => "色温不可用：超出 1667–25000 K",
+            SpectrumTemperatureStatus.FarFromPlanckianLocus => "色温不可用：距黑体轨迹过远（|Duv| > 0.05）",
+            _ => "色温不可用：色度无效"
+        });
 
         /// <summary>
         /// 验证从 C++ 计算传来的相关色温 CCT 和 主波长。

@@ -15,6 +15,8 @@ namespace ColorVision
     {
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
 
+        protected override Size DefaultWindowSize => new(1920, 1280);
+
 
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; OnPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;

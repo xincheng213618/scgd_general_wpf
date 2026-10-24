@@ -87,7 +87,7 @@ namespace ColorVision.Copilot
                     DateParseHandling = DateParseHandling.None,
                 };
                 var document = JObject.Load(jsonReader);
-                if (document.GetValue(nameof(CopilotConfig), StringComparison.OrdinalIgnoreCase) is not JObject section)
+                if (document.GetValue(typeof(CopilotConfig).FullName!, StringComparison.OrdinalIgnoreCase) is not JObject section)
                     return CreateProbe(normalizedPath, CopilotConfigFileProbeState.SectionMissing);
 
                 var schemaToken = section.GetValue(
@@ -189,6 +189,7 @@ namespace ColorVision.Copilot
             AppendAgent(
                 builder,
                 defaults,
+                profile,
                 configProbe,
                 context.ComposerMode,
                 context.CodexConfigOptions);
@@ -269,6 +270,7 @@ namespace ColorVision.Copilot
         private static void AppendAgent(
             StringBuilder builder,
             CopilotAgentDefaultsConfig defaults,
+            CopilotProfileConfig? profile,
             CopilotConfigFileProbe configProbe,
             CopilotAgentMode composerMode,
             CopilotProjectInstructionDiscoveryOptions runtimeOptions)
@@ -284,7 +286,8 @@ namespace ColorVision.Copilot
                 .Append(composerMode)
                 .AppendLine(" · 来源 会话草稿")
                 .Append("- 预算：context ")
-                .Append(FormatNumber(defaults.ContextWindowTokens))
+                .Append(FormatNumber(profile?.ContextWindowTokens > 0 ? profile.ContextWindowTokens : defaults.ContextWindowTokens))
+                .Append(profile?.ContextWindowTokens > 0 ? "（模型配置）" : "（Agent 默认）")
                 .Append(" · request ")
                 .Append(FormatNumber(defaults.RequestTokenBudget))
                 .Append(" tokens · tools ")

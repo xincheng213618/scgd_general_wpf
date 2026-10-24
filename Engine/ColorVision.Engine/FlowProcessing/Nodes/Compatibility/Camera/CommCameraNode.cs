@@ -7,12 +7,10 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Camera;
 
-[STNode("相机", CategoryOrder = 200)]
+[STNode("相机", CategoryOrder = 200, NodeOrder = 30)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Camera.CommCameraNode")]
 public class CommCameraNode : CVBaseServerNode
 {
-	protected string _GlobalVariableName;
-
 	protected bool _IsHDR;
 
 	private string _CamTempName;
@@ -28,12 +26,6 @@ public class CommCameraNode : CVBaseServerNode
 	private string _FocusTempName;
 
 	protected string _CalibTempName;
-
-	private string _POITempName;
-
-	protected string _POIFilterTempName;
-
-	protected string _POIReviseTempName;
 
 	private STNodeEditText<string> m_ctrl_camTemp;
 
@@ -141,51 +133,6 @@ public class CommCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("POI模板", "POI算法模板", true)]
-	[PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
-	public string POITempName
-	{
-		get
-		{
-			return _POITempName;
-		}
-		set
-		{
-			_POITempName = value;
-			OnPropertyChanged();
-		}
-	}
-
-	[STNodeProperty("POI过滤", "POI过滤模板", true)]
-	[PropertyEditorType(typeof(PoiFilterTemplatePropertiesEditor))]
-	public string POIFilterTempName
-	{
-		get
-		{
-			return _POIFilterTempName;
-		}
-		set
-		{
-			_POIFilterTempName = value;
-			OnPropertyChanged();
-		}
-	}
-
-	[STNodeProperty("POI修正", "POI修正模板", true)]
-	[PropertyEditorType(typeof(PoiReviseTemplatePropertiesEditor))]
-	public string POIReviseTempName
-	{
-		get
-		{
-			return _POIReviseTempName;
-		}
-		set
-		{
-			_POIReviseTempName = value;
-			OnPropertyChanged();
-		}
-	}
-
 	public CommCameraNode()
 		: base("通用相机", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
 	{
@@ -194,8 +141,6 @@ public class CommCameraNode : CVBaseServerNode
 		_CalibTempName = "";
 		_CamTempName = "";
 		_TempName = "";
-		_POITempName = "";
-		_POIFilterTempName = "";
 		_FlipMode = CVImageFlipMode.None;
 		_IsAutoFocus = false;
 		_FocusTempName = string.Empty;
@@ -220,6 +165,6 @@ public class CommCameraNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new CommCameraData(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, _POITempName, _POIFilterTempName, _POIReviseTempName, _GlobalVariableName, _IsHDR, _FlipMode);
+		return new CommCameraData(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, _IsHDR, _FlipMode);
 	}
 }

@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("OLED", CategoryOrder = 350)]
+[STNode("Algorithm/OLED", CategoryOrder = 320)]
 public class AlgorithmOLEDImgNode : CVBaseServerNode
 {
 	private AlgorithmOLEDImgType _Algorithm;

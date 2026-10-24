@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Draw;
 using LocalizedText = global::Spectrum.DisplayText;
 #pragma warning disable CA1805,CA1822,CA1863,CS8604,CS8625
 using AvalonDock.Layout;
@@ -34,6 +35,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -825,6 +827,8 @@ namespace Spectrum
             }
 
             disposed = true;
+            relativeCursor?.Dispose();
+            absoluteCursor?.Dispose();
             DisposeWindowAppearance();
             ContentRendered -= Window_ContentRendered;
             CancelWindowLifetime();
@@ -1004,11 +1008,11 @@ namespace Spectrum
             wpfplot1.Plot.Axes.Left.Label.FontName = fontName;
             wpfplot1.Plot.Axes.Bottom.Label.FontName = fontName;
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1.05);
             wpfplot1.Plot.Axes.Bottom.Min = 380;
             wpfplot1.Plot.Axes.Bottom.Max = 780;
             wpfplot1.Plot.Axes.Left.Min = -0.05;
-            wpfplot1.Plot.Axes.Left.Max = 1;
+            wpfplot1.Plot.Axes.Left.Max = 1.05;
         }
 
         private void EnsureAbsoluteSpectrumPlotInitialized()
@@ -1021,17 +1025,17 @@ namespace Spectrum
             string title = SpectrumResources.AbsoluteSpectrumCurve;
             string fontName = Fonts.Detect(title);
             wpfplot2.Plot.XLabel(SpectrumResources.波长Nm);
-            wpfplot2.Plot.YLabel(SpectrumResources.AbsoluteSpectrum);
+            wpfplot2.Plot.YLabel(SpectrumResources.AbsoluteSpectrum + (Config.EqeEnabled ? " (W/nm)" : " (W/(sr·m²·nm))"));
             wpfplot2.Plot.Axes.Title.Label.Text = title;
             wpfplot2.Plot.Axes.Title.Label.FontName = fontName;
             wpfplot2.Plot.Axes.Left.Label.FontName = fontName;
             wpfplot2.Plot.Axes.Bottom.Label.FontName = fontName;
             wpfplot2.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot2.Plot.Axes.SetLimitsY(-0.05, 1);
+            wpfplot2.Plot.Axes.SetLimitsY(-0.05, 1.05);
             wpfplot2.Plot.Axes.Bottom.Min = 380;
             wpfplot2.Plot.Axes.Bottom.Max = 780;
             wpfplot2.Plot.Axes.Left.Min = -0.05;
-            wpfplot2.Plot.Axes.Left.Max = 1;
+            wpfplot2.Plot.Axes.Left.Max = 1.05;
             absoluteSpectrumPlotInitialized = true;
         }
 
@@ -1601,12 +1605,13 @@ namespace Spectrum
             }
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1.05);
             wpfplot1.Plot.Axes.Bottom.Min = selectedResult.fSpect1;
             wpfplot1.Plot.Axes.Bottom.Max = selectedResult.fSpect2;
             wpfplot1.Plot.Axes.Left.Min = -0.05;
-            wpfplot1.Plot.Axes.Left.Max = 1;
+            wpfplot1.Plot.Axes.Left.Max = 1.05;
 
+            UpdateSpectrumCursors(selectedResult, false);
             Scatter selectedPlot = selectedResult.ScatterPlot;
             ClearSpectrumFill(wpfplot1);
             if (MulComparison)
@@ -1629,7 +1634,7 @@ namespace Spectrum
             {
                 wpfplot1.Plot.Remove(LastMulSelectComparsion);
                 wpfplot1.Plot.Remove(selectedPlot);
-                AddSpectrumFill(wpfplot1, selectedResult.SpectralDatas, useAbsoluteSpectrum: false);
+                AddSpectrumFill(wpfplot1, selectedPlot);
                 selectedPlot.Color = spectrumCurveColor;
                 selectedPlot.LineWidth = 1;
                 selectedPlot.MarkerSize = 1;
@@ -1651,6 +1656,7 @@ namespace Spectrum
             wpfplot2.Plot.Axes.Left.Min = -0.05;
             wpfplot2.Plot.Axes.Left.Max = double.NaN;
 
+            UpdateSpectrumCursors(selectedResult, true);
             Scatter selectedPlot = selectedResult.AbsoluteScatterPlot;
             ClearSpectrumFill(wpfplot2);
             if (MulComparison)
@@ -1673,7 +1679,7 @@ namespace Spectrum
             {
                 wpfplot2.Plot.Remove(LastMulSelectComparsion);
                 wpfplot2.Plot.Remove(selectedPlot);
-                AddSpectrumFill(wpfplot2, selectedResult.SpectralDatas, useAbsoluteSpectrum: true);
+                AddSpectrumFill(wpfplot2, selectedPlot);
                 selectedPlot.Color = spectrumCurveColor;
                 selectedPlot.LineWidth = 1;
                 selectedPlot.MarkerSize = 1;
@@ -1713,7 +1719,6 @@ namespace Spectrum
             {
                 ClearSpectrumSeries(wpfplot2);
                 LastMulSelectComparsion = null;
-                spectrumPointMarker = null;
                 if (MulComparison)
                 {
                     ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
@@ -1727,14 +1732,12 @@ namespace Spectrum
                         wpfplot2.Plot.PlottableList.Add(plot);
                     }
                 }
-                UpdateSpectrumPointMarker(refresh: false);
                 DrawAbsolutePlot();
             }
             else
             {
                 ClearSpectrumSeries(wpfplot1);
                 LastMulSelectComparsion = null;
-                spectrumPointMarker = null;
                 if (MulComparison)
                 {
                     ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
@@ -1748,7 +1751,6 @@ namespace Spectrum
                         wpfplot1.Plot.PlottableList.Add(plot);
                     }
                 }
-                UpdateSpectrumPointMarker(refresh: false);
                 DrawPlot();
             }
         }
@@ -1762,33 +1764,16 @@ namespace Spectrum
                 plotControl.Plot.Remove(plot);
         }
 
-        private static void ClearSpectrumFill(ScottPlot.WPF.WpfPlot plotControl)
-        {
-            Polygon[] fills = plotControl.Plot.PlottableList.OfType<Polygon>().ToArray();
-            foreach (Polygon fill in fills)
-                plotControl.Plot.Remove(fill);
-        }
+        private static void ClearSpectrumFill(ScottPlot.WPF.WpfPlot control) => SpectrumPlotStyle.ClearFill(control.Plot);
 
-        private static void AddSpectrumFill(
-            ScottPlot.WPF.WpfPlot plotControl,
-            IReadOnlyList<SpectralData> samples,
-            bool useAbsoluteSpectrum)
-        {
-            foreach (SpectrumFillSegment segment in SpectrumPlotFill.CreateSegments(samples, useAbsoluteSpectrum))
+        private static void AddSpectrumFill(ScottPlot.WPF.WpfPlot control, Scatter curve)
+            => SpectrumPlotStyle.AddFill(control.Plot, curve, wavelength =>
             {
-                ScottPlot.Color fillColor = new(segment.Color.R, segment.Color.G, segment.Color.B, 220);
-                Polygon fill = plotControl.Plot.Add.Polygon([
-                    new Coordinates(segment.StartWavelength, 0),
-                    new Coordinates(segment.StartWavelength, segment.StartValue),
-                    new Coordinates(segment.EndWavelength, segment.EndValue),
-                    new Coordinates(segment.EndWavelength, 0),
-                ]);
-                fill.FillColor = fillColor;
-                fill.LineColor = fillColor;
-                fill.LineWidth = 0;
-                fill.MarkerSize = 0;
-            }
-        }
+                var rgb = SpectrumChromaticity.DisplayRgb(wavelength);
+                return new Color(rgb.red, rgb.green, rgb.blue);
+            });
+
+
 
         private void ButtonMul_Click(object sender, RoutedEventArgs e)
         {
@@ -1842,7 +1827,6 @@ namespace Spectrum
                     QueueComparisonRedraw();
                 else
                     DrawPlot();
-                listView2.ItemsSource = selected.SpectralDatas;
                 // Keep the optional CIE window synced with the selected result.
                 UpdateCieSelection(selected.fx, selected.fy, selected.fu, selected.fv);
             }
@@ -1861,43 +1845,17 @@ namespace Spectrum
             }
         }
 
-        private Marker? spectrumPointMarker;
-
-        private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
-            => UpdateSpectrumPointMarker(refresh: true);
-
-        private void UpdateSpectrumPointMarker(bool refresh)
-        {
-            if (spectrumPointMarker != null)
-            {
-                if (wpfplot1.Plot.PlottableList.Contains(spectrumPointMarker))
-                    wpfplot1.Plot.Remove(spectrumPointMarker);
-                if (wpfplot2.Plot.PlottableList.Contains(spectrumPointMarker))
-                    wpfplot2.Plot.Remove(spectrumPointMarker);
-                spectrumPointMarker = null;
-            }
-
-            ScottPlot.WPF.WpfPlot targetPlot = IsShowingAbsoluteSpectrum ? wpfplot2 : wpfplot1;
-            if (listView2.SelectedItem is SpectralData spectralData)
-            {
-                spectrumPointMarker = new Marker
-                {
-                    X = spectralData.Wavelength,
-                    Y = IsShowingAbsoluteSpectrum ? spectralData.AbsoluteSpectrum : spectralData.RelativeSpectrum,
-                    MarkerShape = MarkerShape.FilledCircle,
-                    MarkerSize = 10f,
-                    Color = ScottPlot.Color.FromColor(System.Drawing.Color.Orange),
-                };
-                targetPlot.Plot.PlottableList.Add(spectrumPointMarker);
-            }
-            if (refresh)
-                targetPlot.Refresh();
-        }
-
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ViewResultList.View is GridView gridView)
+            if (sender is not ContextMenu contextMenu || ViewResultList.View is not GridView gridView) return;
+            if (contextMenu.Items.Count == 0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+            foreach (var item in contextMenu.Items.OfType<MenuItem>())
+            {
+                if (BindingOperations.GetBinding(item, MenuItem.IsCheckedProperty)?.Source is GridViewColumnVisibility column
+                    && (column.GridViewColumn == ColVoltage || column.GridViewColumn == ColCurrent))
+                    item.Visibility = Config.EqeEnabled ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
@@ -1908,7 +1866,6 @@ namespace Spectrum
         private void Cleartable_Click(object sender, RoutedEventArgs e)
         {
             ViewResultManager.ViewReslutsClear();
-            listView2.ItemsSource = Array.Empty<SpectralData>();
             if (ViewResultSpectrums.Count > 0)
             {
                 ViewResultList.SelectedIndex = 0;
@@ -1941,9 +1898,9 @@ namespace Spectrum
 
         private void ClearResultView()
         {
-            listView2.ItemsSource = Array.Empty<SpectralData>();
+            relativeCursor?.Clear();
+            absoluteCursor?.Clear();
             LastMulSelectComparsion = null;
-            spectrumPointMarker = null;
             ClearSpectrumSeries(wpfplot1);
             wpfplot1.Refresh();
             ClearSpectrumSeries(wpfplot2);
@@ -2037,17 +1994,15 @@ namespace Spectrum
 
         private async void Export_Click(object sender, RoutedEventArgs e)
         {
-            List<ViewResultSpectrum> selectedResults = ViewResultList.SelectedItems
-                .OfType<ViewResultSpectrum>()
-                .ToList();
-            if (selectedResults.Count == 0)
+            var selectedResults = GetSpectrumExportResults(sender);
+            if (selectedResults.Length == 0)
             {
                 MessageBox.Show(this, LocalizedText.Get("请先选择要导出的数据。"), SpectrumResources.PromptTitle,
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            bool isEqeMode = MainWindowConfig.Instance.EqeEnabled;
+            bool isEqeMode = selectedResults.Any(result => result.AcquisitionFluxMode ?? Config.EqeEnabled);
             using System.Windows.Forms.SaveFileDialog dialog = new()
             {
                 Filter = "CSV files (*.csv)|*.csv",
@@ -2062,7 +2017,7 @@ namespace Spectrum
             try
             {
                 await SpectrumCsvExporter.WriteAsync(dialog.FileName, selectedResults, isEqeMode);
-                log.Info($"光谱 CSV 导出成功: {dialog.FileName}, count={selectedResults.Count}, eqe={isEqeMode}");
+                log.Info($"光谱 CSV 导出成功: {dialog.FileName}, count={selectedResults.Length}, eqe={isEqeMode}");
             }
             catch (Exception ex)
             {
@@ -2150,19 +2105,20 @@ namespace Spectrum
         {
             if (!IsInitialized) return;
 
+            wpfplot2.Plot.YLabel(SpectrumResources.AbsoluteSpectrum + (eqeEnabled ? " (W/nm)" : " (W/(sr·m²·nm))"));
             EqePanel.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
             EqeGroupBox.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
-            // double.NaN = auto-size (visible), 0 = hidden
-            double width = eqeEnabled ? double.NaN : 0;
-            ColEqe.Width = width;
-            ColLuminousFlux.Width = width;
-            ColRadiantFlux.Width = width;
-            ColLuminousEfficacy.Width = width;
-            ColVoltage.Width = width;
-            ColCurrent.Width = width;
-            ColRecalculated.Width = width;
-            // Hide brightness column in 光通量模式
-            ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
+            var eqeColumns = new[] { ColEqe, ColLuminousFlux, ColRadiantFlux, ColLuminousEfficacy, ColVoltage, ColCurrent, ColRecalculated };
+            foreach (var column in GridViewColumnVisibilitys)
+            {
+                if (eqeColumns.Contains(column.GridViewColumn)) column.IsVisible = eqeEnabled;
+                else if (column.GridViewColumn == ColBrightness) column.IsVisible = !eqeEnabled;
+            }
+            if (ViewResultList.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
             // Update measurement mode
             Manager.MeasurementMode = eqeEnabled ? SpectrumResources.LuminousFluxMode : SpectrumResources.BrightnessChromaticityMode;
         }

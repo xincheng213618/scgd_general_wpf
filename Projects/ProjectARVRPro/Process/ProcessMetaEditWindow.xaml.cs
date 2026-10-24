@@ -367,8 +367,8 @@ namespace ProjectARVRPro.Process
 
             _metaName = metaName;
             _isEnabled = isEnabled;
-            _selectedTemplate = _allTemplates.FirstOrDefault(template => template.Key == flowTemplate)
-                ?? (_allTemplates.Count > 0 ? _allTemplates[0] : null);
+            _selectedTemplate = _allTemplates.FirstOrDefault(template => string.Equals(template.Key, flowTemplate, StringComparison.OrdinalIgnoreCase))
+                ?? (!isEdit && string.IsNullOrWhiteSpace(flowTemplate) ? _allTemplates.FirstOrDefault() : null);
             _selectedOption = ProcessTypeCatalog.IsBlankProcess(process)
                 ? null
                 : _allOptions.FirstOrDefault(option => option.FullTypeName == process?.GetType().FullName);

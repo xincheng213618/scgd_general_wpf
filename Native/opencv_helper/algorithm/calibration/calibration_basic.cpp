@@ -3,6 +3,7 @@
 #include <opencv2/core/utility.hpp>
 
 #include <algorithm>
+#include <bit>
 #include <cctype>
 #include <cerrno>
 #include <cmath>
@@ -293,12 +294,12 @@ bool validateSpan(
 }
 
 struct DsnuOperation {
-    template <typename TPixel>
+    template <typename TPixel, typename TCorrection>
     static void apply(
         const TPixel* sourcePixels,
         TPixel* destinationPixels,
         std::size_t count,
-        const std::uint16_t* __restrict correction,
+        const TCorrection* __restrict correction,
         std::size_t correctionStride)
     {
         if (correctionStride == 1) {
@@ -345,6 +346,165 @@ struct UniformityOperation {
     }
 };
 
+// Store exact IEEE float bits as 24-bit deltas within small blocks. Blocks with
+// a wider bit range stay 32-bit; this never quantizes gains or changes arithmetic.
+class PackedUniformity {
+public:
+    static std::unique_ptr<PackedUniformity> create(const std::vector<float>& values)
+    {
+        if (values.size() < 16ULL * 1024 * 1024
+            || values.size() > (UINT32_MAX - sizeof(std::uint32_t)) / sizeof(float)) return nullptr;
+        auto result = std::make_unique<PackedUniformity>();
+        result->count_ = values.size();
+        result->blocks_.resize((values.size() + blockSize - 1) / blockSize);
+        const auto blockCount = static_cast<std::uint32_t>(result->blocks_.size());
+        parallelRows(blockCount, [&](std::uint32_t first, std::uint32_t end) {
+            for (auto block = first; block < end; ++block) {
+                const auto begin = static_cast<std::size_t>(block) * blockSize;
+                const auto limit = (std::min)(begin + blockSize, values.size());
+                std::uint32_t low = UINT32_MAX, high = 0;
+                for (auto index = begin; index < limit; ++index) {
+                    const auto bits = std::bit_cast<std::uint32_t>(values[index]);
+                    low = (std::min)(low, bits);
+                    high = (std::max)(high, bits);
+                }
+                result->blocks_[block].base = high - low <= 0xFFFFFFU && low != UINT32_MAX ? low : UINT32_MAX;
+            }
+        });
+        std::size_t bytes = 0;
+        for (std::size_t block = 0; block < result->blocks_.size(); ++block) {
+            auto& header = result->blocks_[block];
+            header.offset = static_cast<std::uint32_t>(bytes);
+            bytes += (std::min)(blockSize, values.size() - block * blockSize)
+                * (header.base == UINT32_MAX ? sizeof(float) : 3);
+        }
+        const auto originalBytes = values.size() * sizeof(float);
+        // Limit decoding to large maps with at least 20% less table traffic.
+        if (bytes + result->blocks_.size() * sizeof(Block) > originalBytes - originalBytes / 5) return nullptr;
+        // The last packed sample uses an unaligned 32-bit read, masked to 24 bits.
+        result->bytes_.resize(bytes + sizeof(std::uint32_t));
+        parallelRows(blockCount, [&](std::uint32_t first, std::uint32_t end) {
+            for (auto block = first; block < end; ++block) {
+                const auto header = result->blocks_[block];
+                const auto begin = static_cast<std::size_t>(block) * blockSize;
+                const auto count = (std::min)(blockSize, values.size() - begin);
+                auto* destination = result->bytes_.data() + header.offset;
+                if (header.base == UINT32_MAX) {
+                    std::memcpy(destination, values.data() + begin, count * sizeof(float));
+                }
+                else {
+                    for (std::size_t index = 0; index < count; ++index) {
+                        const auto delta = std::bit_cast<std::uint32_t>(values[begin + index]) - header.base;
+                        std::memcpy(destination + index * 3, &delta, 3);
+                    }
+                }
+            }
+        });
+        return result;
+    }
+
+    std::size_t size() const noexcept { return count_; }
+    std::uint64_t footprintBytes() const noexcept
+    {
+        return sizeof(*this) + bytes_.capacity() + static_cast<std::uint64_t>(blocks_.capacity()) * sizeof(Block);
+    }
+
+    float at(std::size_t index) const noexcept
+    {
+        const auto header = blocks_[index / blockSize];
+        const bool packed = header.base != UINT32_MAX;
+        std::uint32_t bits;
+        std::memcpy(&bits, bytes_.data() + header.offset + (index % blockSize) * (packed ? 3 : 4), sizeof(bits));
+        if (packed) bits = (bits & 0xFFFFFFU) + header.base;
+        return std::bit_cast<float>(bits);
+    }
+
+    template<bool Fused, typename Pixel, typename Offset = std::uint8_t>
+    void apply(const Pixel* source, Pixel* destination, std::size_t count, std::size_t first,
+        std::size_t stride, const Offset* offsets = nullptr) const
+    {
+        if (stride != 1) {
+            constexpr auto maximum = (std::numeric_limits<Pixel>::max)();
+            for (std::size_t index = 0; index < count; ++index) {
+                auto value = source[index];
+                if constexpr (Fused) value = value < offsets[index] ? Pixel{} : static_cast<Pixel>(value - offsets[index]);
+                const float corrected = at(first + index * stride) * value;
+                destination[index] = corrected > static_cast<float>(maximum) ? maximum : static_cast<Pixel>(corrected);
+            }
+            return;
+        }
+        for (std::size_t done = 0; done < count;) {
+            const auto index = first + done;
+            const auto header = blocks_[index / blockSize];
+            const auto offset = index % blockSize;
+            const auto length = (std::min)(blockSize - offset, count - done);
+            const auto* dark = offsets;
+            if constexpr (Fused) dark += done;
+            if (header.base == UINT32_MAX) {
+                applyBlock<Fused, false>(source + done, destination + done, length,
+                    bytes_.data() + header.offset + offset * 4, 0, dark);
+            }
+            else {
+                applyBlock<Fused, true>(source + done, destination + done, length,
+                    bytes_.data() + header.offset + offset * 3, header.base, dark);
+            }
+            done += length;
+        }
+    }
+
+    template<bool Fused, typename Offset = std::uint8_t>
+    void applyVertical(const ImageView& raw, const Offset* offsets = nullptr) const
+    {
+        auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
+        const auto rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+        parallelRows(raw.height / 2 + raw.height % 2, [&](std::uint32_t first, std::uint32_t end) {
+            std::uint16_t topValues[blockSize];
+            for (auto row = first; row < end; ++row) {
+                const auto top = static_cast<std::size_t>(row) * rowSamples;
+                const auto bottom = static_cast<std::size_t>(raw.height - 1 - row) * rowSamples;
+                for (std::size_t column = 0; column < rowSamples; column += blockSize) {
+                    const auto count = (std::min)(blockSize, rowSamples - column);
+                    const auto* topOffsets = offsets;
+                    const auto* bottomOffsets = offsets;
+                    if constexpr (Fused) {
+                        topOffsets += top + column;
+                        bottomOffsets += bottom + column;
+                    }
+                    // Decode contiguous blocks once, preserving the top samples
+                    // until the bottom samples have been corrected into their place.
+                    apply<Fused>(pixels + top + column, topValues, count, top + column, 1, topOffsets);
+                    if (top != bottom)
+                        apply<Fused>(pixels + bottom + column, pixels + top + column, count, bottom + column, 1, bottomOffsets);
+                    std::memcpy(pixels + bottom + column, topValues, count * sizeof(std::uint16_t));
+                }
+            }
+        });
+    }
+
+private:
+    template<bool Fused, bool Packed, typename Pixel, typename Offset>
+    static void applyBlock(const Pixel* source, Pixel* destination, std::size_t count,
+        const std::uint8_t* factors, std::uint32_t base, const Offset* offsets)
+    {
+        constexpr auto maximum = (std::numeric_limits<Pixel>::max)();
+        for (std::size_t index = 0; index < count; ++index) {
+            std::uint32_t bits;
+            std::memcpy(&bits, factors + index * (Packed ? 3 : 4), sizeof(bits));
+            if constexpr (Packed) bits = (bits & 0xFFFFFFU) + base;
+            auto value = source[index];
+            if constexpr (Fused) value = value < offsets[index] ? Pixel{} : static_cast<Pixel>(value - offsets[index]);
+            const float corrected = std::bit_cast<float>(bits) * value;
+            destination[index] = corrected > static_cast<float>(maximum) ? maximum : static_cast<Pixel>(corrected);
+        }
+    }
+
+    static constexpr std::size_t blockSize = 256;
+    struct Block { std::uint32_t base, offset; };
+    std::size_t count_ = 0;
+    std::vector<Block> blocks_;
+    std::vector<std::uint8_t> bytes_;
+};
+
 template <typename TCorrection, typename TOperation, typename TPixel>
 bool applyRows(
     const TPixel* sourcePixels,
@@ -358,6 +518,7 @@ bool applyRows(
     std::size_t correctionBase,
     std::size_t correctionRowStride,
     std::size_t correctionElementStride,
+    const PackedUniformity* packed,
     std::string& error)
 {
     if (!validateSpan<TPixel>(
@@ -365,7 +526,7 @@ bool applyRows(
         || !validateSpan<TPixel>(
             pixelCount, pixelBase, pixelRowStride, rows, rowWidth, 1, "RAW destination buffer", error)
         || !validateSpan<TCorrection>(
-            correction.size(), correctionBase, correctionRowStride, rows, rowWidth,
+            packed ? packed->size() : correction.size(), correctionBase, correctionRowStride, rows, rowWidth,
             correctionElementStride, "Calibration map", error)) {
         return false;
     }
@@ -374,9 +535,9 @@ bool applyRows(
         for (auto row = startRow; row < endRow; ++row) {
             const auto* sourceRow = sourcePixels + pixelBase + static_cast<std::size_t>(row) * pixelRowStride;
             auto* destinationRow = destinationPixels + pixelBase + static_cast<std::size_t>(row) * pixelRowStride;
-            const auto* correctionRow = correction.data() + correctionBase
-                + static_cast<std::size_t>(row) * correctionRowStride;
-            TOperation::apply(sourceRow, destinationRow, rowWidth, correctionRow, correctionElementStride);
+            const auto correctionIndex = correctionBase + static_cast<std::size_t>(row) * correctionRowStride;
+            if (packed) packed->apply<false>(sourceRow, destinationRow, rowWidth, correctionIndex, correctionElementStride);
+            else TOperation::apply(sourceRow, destinationRow, rowWidth, correction.data() + correctionIndex, correctionElementStride);
         }
     });
     return true;
@@ -389,6 +550,27 @@ struct MapHeader {
     std::uint32_t sourceBitsPerChannel = 0;
     std::uint32_t channels = 0;
 };
+
+// Each worker owns a pair of rows. Read both corrected values before swapping
+// them, including the middle row of an odd-height image. No scratch RAW is needed.
+template <typename TCorrect>
+void applyVerticalMapFlip(const ImageView& raw, const TCorrect& correct)
+{
+    auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
+    const auto rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
+    parallelRows(raw.height / 2 + raw.height % 2, [&](std::uint32_t first, std::uint32_t end) {
+        for (auto row = first; row < end; ++row) {
+            const auto top = static_cast<std::size_t>(row) * rowSamples;
+            const auto bottom = static_cast<std::size_t>(raw.height - 1 - row) * rowSamples;
+            for (std::size_t column = 0; column < rowSamples; ++column) {
+                const auto topValue = correct(top + column);
+                const auto bottomValue = correct(bottom + column);
+                pixels[top + column] = bottomValue;
+                pixels[bottom + column] = topValue;
+            }
+        }
+    });
+}
 
 template <typename TCorrection>
 bool loadMap(
@@ -495,6 +677,26 @@ public:
         , header_(header)
         , correction_(std::move(correction))
     {
+        if constexpr (std::is_same_v<TOperation, UniformityOperation>) {
+            if (header_.version == 1 && header_.sourceBitsPerChannel == 16 && header_.channels == 3) {
+                // Zero gains at the optical field's edges always produce zero,
+                // including after DSNU. Find their bounds once, not per frame.
+                const auto rowSamples = static_cast<std::size_t>(header_.width) * header_.channels;
+                std::vector<NonzeroSpan> spans(header_.height);
+                bool hasZeroEdges = false;
+                for (std::uint32_t row = 0; row < header_.height; ++row) {
+                    const auto* factors = correction_.data() + row * rowSamples;
+                    std::size_t first = 0, end = rowSamples;
+                    while (first < end && factors[first] == 0.0F) ++first;
+                    while (end > first && factors[end - 1] == 0.0F) --end;
+                    spans[row] = {first, end};
+                    hasZeroEdges = hasZeroEdges || first != 0 || end != rowSamples;
+                }
+                if (hasZeroEdges) nonzeroSpans_ = std::move(spans);
+                packedUniformity_ = PackedUniformity::create(correction_);
+                if (packedUniformity_) std::vector<TCorrection>().swap(correction_);
+            }
+        }
     }
 
     [[nodiscard]] CalibrationType type() const noexcept override { return type_; }
@@ -503,13 +705,31 @@ public:
     [[nodiscard]] std::uint64_t cacheFootprintBytes() const noexcept override
     {
         return sizeof(*this)
-            + static_cast<std::uint64_t>(correction_.capacity()) * sizeof(TCorrection);
+            + static_cast<std::uint64_t>(correction_.capacity()) * sizeof(TCorrection)
+            + static_cast<std::uint64_t>(nonzeroSpans_.capacity()) * sizeof(NonzeroSpan)
+            + (packedUniformity_ ? packedUniformity_->footprintBytes() : 0);
     }
 
     bool tryApplyWithNext(
         const CalibrationItem& next,
         const ImageView& raw,
         const ExecutionOptions& options) const override;
+
+    bool tryApplyWithFlip(const ImageView& raw, const ExecutionOptions& options) const override
+    {
+        if (options.rawOutputFlip != 0 || !matchesFullBgr16(raw, options)) return false;
+        const auto* pixels = reinterpret_cast<const std::uint16_t*>(raw.data);
+        if (packedUniformity_) {
+            packedUniformity_->applyVertical<false>(raw);
+            return true;
+        }
+        applyVerticalMapFlip(raw, [&](std::size_t index) {
+            std::uint16_t corrected;
+            TOperation::apply(pixels + index, &corrected, 1, correction_.data() + index, 1);
+            return corrected;
+        });
+        return true;
+    }
 
     bool apply(
         const ImageView& raw,
@@ -585,6 +805,16 @@ public:
 
 private:
     template <typename, typename> friend class MapCalibration;
+
+    bool matchesFullBgr16(const ImageView& raw, const ExecutionOptions& options) const
+    {
+        return raw.bitsPerChannel == 16 && raw.channels == 3
+            && options.interleavedBgr && options.rgbType == 0
+            && std::all_of(options.roi.begin(), options.roi.end(), [](auto value) { return value == 0; })
+            && header_.version == 1 && header_.sourceBitsPerChannel == 16
+            && header_.channels == raw.channels
+            && header_.width == raw.width && header_.height == raw.height;
+    }
 
     template <typename TPixel>
     bool applyTyped(
@@ -668,7 +898,7 @@ private:
 
         return applyRows<TCorrection, TOperation>(
             sourcePixels, destinationPixels, pixelCount, 0, pixelRowStride, rows, rowWidth, correction_,
-            correctionBase, header_.width, 1, error);
+            correctionBase, header_.width, 1, packedUniformity_.get(), error);
     }
 
     template <typename TPixel>
@@ -693,9 +923,32 @@ private:
                 + static_cast<std::size_t>(options.roi[0]) * raw.channels
             : 0;
 
+        if constexpr (std::is_same_v<TOperation, UniformityOperation> && std::is_same_v<TPixel, std::uint16_t>) {
+            if (matchesFullBgr16(raw, options) && !nonzeroSpans_.empty()) {
+                parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
+                    for (auto row = first; row < end; ++row) {
+                        const auto base = static_cast<std::size_t>(row) * rowWidth;
+                        const auto span = nonzeroSpans_[row];
+                        auto* destination = destinationPixels + base;
+                        std::memset(destination, 0, span.first * sizeof(TPixel));
+                        std::memset(destination + span.end, 0, (rowWidth - span.end) * sizeof(TPixel));
+                        if (packedUniformity_) {
+                            packedUniformity_->apply<false>(sourcePixels + base + span.first, destination + span.first,
+                                span.end - span.first, base + span.first, 1);
+                        }
+                        else {
+                            TOperation::apply(sourcePixels + base + span.first, destination + span.first,
+                                span.end - span.first, correction_.data() + base + span.first, 1);
+                        }
+                    }
+                });
+                return true;
+            }
+        }
+
         return applyRows<TCorrection, TOperation>(
             sourcePixels, destinationPixels, pixelCount, 0, rowWidth, raw.height, rowWidth, correction_,
-            correctionBase, correctionRowStride, 1, error);
+            correctionBase, correctionRowStride, 1, packedUniformity_.get(), error);
     }
 
     template <typename TPixel>
@@ -724,7 +977,7 @@ private:
 
         return applyRows<TCorrection, TOperation>(
             sourcePixels, destinationPixels, pixelCount, 0, rowWidth, rows, rowWidth, correction_,
-            correctionBase, correctionRowStride, 3, error);
+            correctionBase, correctionRowStride, 3, packedUniformity_.get(), error);
     }
 
     template <typename TPixel>
@@ -756,7 +1009,7 @@ private:
             if (!applyRows<TCorrection, TOperation>(
                     sourcePixels, destinationPixels, pixelCount, plane * pixelsPerPlane, rowWidth, rows, rowWidth,
                     correction_, correctionPixelBase + correctionChannel,
-                    correctionRowStride, 3, error)) {
+                    correctionRowStride, 3, packedUniformity_.get(), error)) {
                 return false;
             }
         }
@@ -766,6 +1019,9 @@ private:
     CalibrationType type_;
     MapHeader header_;
     std::vector<TCorrection> correction_;
+    struct NonzeroSpan { std::size_t first, end; };
+    std::vector<NonzeroSpan> nonzeroSpans_;
+    std::unique_ptr<PackedUniformity> packedUniformity_;
 };
 
 template <typename TCorrection, typename TOperation>
@@ -779,28 +1035,48 @@ bool MapCalibration<TCorrection, TOperation>::tryApplyWithNext(
     }
     else {
         const auto* uniformity = dynamic_cast<const MapCalibration<float, UniformityOperation>*>(&next);
-        if (uniformity == nullptr || raw.bitsPerChannel != 16 || raw.channels != 3
-            || !options.interleavedBgr || options.rgbType != 0
-            || std::any_of(options.roi.begin(), options.roi.end(), [](auto value) { return value != 0; })) {
+        if (uniformity == nullptr || !matchesFullBgr16(raw, options)
+            || !uniformity->matchesFullBgr16(raw, options)
+            || (options.rawOutputFlip != -99 && options.rawOutputFlip != 0)) {
             return false;
         }
-        const auto matches = [&](const MapHeader& header) {
-            return header.version == 1 && header.sourceBitsPerChannel == 16
-                && header.channels == raw.channels
-                && header.width == raw.width && header.height == raw.height;
-        };
-        if (!matches(header_) || !matches(uniformity->header_)) return false;
 
         const std::size_t rowSamples = static_cast<std::size_t>(raw.width) * raw.channels;
         auto* pixels = reinterpret_cast<std::uint16_t*>(raw.data);
         const auto* offsets = correction_.data();
         const auto* factors = uniformity->correction_.data();
+        const auto* packed = uniformity->packedUniformity_.get();
         // Keep DSNU's zero clamp and Uniformity's float multiply, saturation,
         // and truncation in order, without storing/reloading the intermediate RAW.
+        if (options.rawOutputFlip == 0) {
+            if (packed) {
+                packed->applyVertical<true>(raw, offsets);
+                return true;
+            }
+            applyVerticalMapFlip(raw, [&](std::size_t index) {
+                const auto source = pixels[index];
+                const auto offset = offsets[index];
+                const std::uint16_t darkCorrected = source < offset
+                    ? 0 : static_cast<std::uint16_t>(source - offset);
+                const float corrected = factors[index] * darkCorrected;
+                return corrected > 65535.0F ? std::uint16_t{65535} : static_cast<std::uint16_t>(corrected);
+            });
+            return true;
+        }
         parallelRows(raw.height, [&](std::uint32_t first, std::uint32_t end) {
             for (auto row = first; row < end; ++row) {
                 const auto base = static_cast<std::size_t>(row) * rowSamples;
-                for (std::size_t column = 0; column < rowSamples; ++column) {
+                const auto span = uniformity->nonzeroSpans_.empty()
+                    ? MapCalibration<float, UniformityOperation>::NonzeroSpan{0, rowSamples}
+                    : uniformity->nonzeroSpans_[row];
+                std::memset(pixels + base, 0, span.first * sizeof(std::uint16_t));
+                std::memset(pixels + base + span.end, 0, (rowSamples - span.end) * sizeof(std::uint16_t));
+                if (packed) {
+                    packed->apply<true>(pixels + base + span.first, pixels + base + span.first,
+                        span.end - span.first, base + span.first, 1, offsets + base + span.first);
+                    continue;
+                }
+                for (std::size_t column = span.first; column < span.end; ++column) {
                     const auto index = base + column;
                     const auto source = pixels[index];
                     const auto offset = offsets[index];
@@ -1234,6 +1510,16 @@ std::unique_ptr<CalibrationItem> loadDsnu(
     std::vector<std::uint16_t> values;
     if (!loadMap(file, 16, header, values, error)) {
         return nullptr;
+    }
+    // Keep the file format and every offset unchanged. Small dark offsets need
+    // only one byte in the shared cache and in the per-frame memory stream.
+    if (std::all_of(values.begin(), values.end(), [](auto value) { return value <= 255; })) {
+        std::vector<std::uint8_t> compact(values.size());
+        std::transform(values.begin(), values.end(), compact.begin(), [](auto value) {
+            return static_cast<std::uint8_t>(value);
+        });
+        return std::make_unique<MapCalibration<std::uint8_t, DsnuOperation>>(
+            CalibrationType::Dsnu, header, std::move(compact));
     }
     return std::make_unique<MapCalibration<std::uint16_t, DsnuOperation>>(
         CalibrationType::Dsnu, header, std::move(values));

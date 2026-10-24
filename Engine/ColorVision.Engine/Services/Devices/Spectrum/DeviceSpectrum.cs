@@ -48,9 +48,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public class DisplaySpectrumConfig : IDisplayConfigBase
     {
         [DisplayName("启用本地光谱仪")]
-        [Description("下次打开时直接连接本机光谱仪；已打开的连接在关闭前保持当前模式。")]
+        [Description("默认开启；下次打开时直接连接本机光谱仪；已打开的连接在关闭前保持当前模式。")]
         public bool UseLocalSpectrum { get => _useLocalSpectrum; set { _useLocalSpectrum = value; OnPropertyChanged(); } }
-        private bool _useLocalSpectrum;
+        private bool _useLocalSpectrum = true;
         /// <summary>
         /// 是否光通量模式
         /// </summary>
@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private double _Divisor = 1.0;
 
 
-        [Display(Name = "Engine_PG_AutoIntegration", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Properties.Resources.Engine_PG_AutoIntegration), ResourceType = typeof(Properties.Resources))]
         public bool IsAutoIntTime { get => _IsAutoIntTime; set { _IsAutoIntTime = value; OnPropertyChanged(); } }
         private bool _IsAutoIntTime;
 
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private double _IntTime = 100;
 
-        [Display(Name = "Engine_PG_MaxIntegrationTime", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Properties.Resources.Engine_PG_MaxIntegrationTime), ResourceType = typeof(Properties.Resources))]
         public double MaxIntTime { get => _MaxIntTime; set { _MaxIntTime = value; OnPropertyChanged(); } }
         private double _MaxIntTime = 6000;
 
@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public int AveNum { get => _AveNum; set { _AveNum = value; OnPropertyChanged(); } }
         private int _AveNum = 1;
 
-        [Display(Name = "Engine_PG_MaxAveragingCount", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = nameof(Properties.Resources.Engine_PG_MaxAveragingCount), ResourceType = typeof(Properties.Resources))]
         public int MaxAveNum { get => _MaxAveNum; set { _MaxAveNum = value; OnPropertyChanged(); } }
         private int _MaxAveNum = 10;
 
@@ -438,7 +438,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     DeviceStatusType.Opening => "光谱仪服务正在连接，请连接完成后再采集。",
                     DeviceStatusType.Closing => "光谱仪服务正在关闭，请稍后重试。",
-                    DeviceStatusType.Busy => "光谱仪正在执行其他测量，请完成后再采集。",
                     DeviceStatusType.SP_Continuous_Mode => "光谱仪正在连续测量，请先停止连续测量。",
                     DeviceStatusType.Closed or DeviceStatusType.UnInit => "光谱仪尚未连接，请先打开服务连接。",
                     DeviceStatusType.OffLine => "光谱仪服务离线，暂时不能采集。",
@@ -520,7 +519,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     {
                         string reason = deviceStatus switch
                         {
-                            DeviceStatusType.Busy => "光谱仪正在测量，不能应用幅值标定文件。",
                             DeviceStatusType.SP_Continuous_Mode => "光谱仪正在连续测量，请先停止连续测量再应用幅值标定文件。",
                             _ => $"光谱仪当前状态为 {deviceStatus}，不能安全应用幅值标定文件。",
                         };
@@ -1033,12 +1031,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             msgRecord = null;
             error = null;
-            if (SpectrumBackend?.OpensLocally == true)
+            if (Config.NDConfig.IsNDPort && UsesLocalNd)
             {
-                error = "本地光谱仪暂不支持 ND 轮自动切换，请选择不关联 ND 端口的校正组。";
-                return false;
+                msgRecord = RunLocalNdCommand("SetPort", holeIndex);
+                return true;
             }
-
             if (Config.NDConfig.IsBingNDDevice)
             {
                 DeviceCfwPort? cfwPort = GetBoundCfwPort();

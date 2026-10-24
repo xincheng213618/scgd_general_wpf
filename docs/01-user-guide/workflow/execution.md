@@ -13,6 +13,8 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 
 从“工作流程”面板或“流程编辑器”点击“执行流程”，运行对应工作区的节点图。本页说明启动前提、停止行为，以及如何区分引擎结束、后处理完成和结果落库。共享业务链由 `FlowExecutionSession` 编排；项目窗口直接持有 `FlowControl` 的入口可能使用自己的完成规则。
 
+`ViewFlow.NodeExecutionCompleted` 在会话接受当前运行的一次节点结束通知后发布，携带批次 ID、SN、节点身份和状态码；旧 SN、未匹配的节点尝试及重复结束通知不会发布。它用于 IV/IVL 等执行中结果观察，不表示整图或后处理完成，也不保证诊断写入已经结束。订阅者须快速返回，将数据库查询和绘图转交后台与 Dispatcher；订阅者异常会被隔离记录，不中断流程节点收尾。
+
 编辑与保存见[工作区](./design.md)，数据库/包格式见[模板持久化](../../04-api-reference/engine-components/template-flow-chain.md)。不需要 UI 批次和前后处理的裸图运行见[无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md)。
 
 ## 启动前提
@@ -79,6 +81,8 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 引擎成功时，必需后处理失败使 `FinalOutcome` 为 `Failed`；仅警告级失败为 `SucceededWithWarnings`；没有失败则为 `Succeeded`。引擎本身失败、取消或超时时，后处理不会将其提升为成功。后处理调度整体抛错会作为一项警告结果返回，需查看 `PostProcessResults`，不能只读取引擎状态。
 
 共享默认后处理按流程名称匹配配置，不区分大小写，依次调用处理器；单项返回失败或抛错会被记录，并继续后续项。完成只覆盖这些处理器返回的工作，不保证它们自行启动的后台任务或外部交付已经结束。
+
+新增或编辑后处理项时，IVL 和数据导出类型在处理配置下方显示 **CSV 保存目录**，可复制完整路径或点击 **打开目录**。该目录读取共享后处理配置，默认是当前用户的桌面 `Batch` 文件夹，可在外层“后处理配置”窗口工具栏的齿轮中修改。目录尚未生成时，打开入口提示等待导出创建；保存后处理项只保存配置，CSV 在实际后处理执行时写入。
 
 | 调用入口 | 返回边界 |
 | --- | --- |

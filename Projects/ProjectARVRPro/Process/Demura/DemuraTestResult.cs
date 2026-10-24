@@ -5,10 +5,6 @@ namespace ProjectARVRPro.Process.Demura
 {
     public class DemuraViewTestResult : DemuraTestResult
     {
-    }
-
-    public class DemuraTestResult : ViewModelBase
-    {
         public ObservableCollection<ObjectiveTestItem> Items { get; set; } = new ObservableCollection<ObjectiveTestItem>();
 
         public DemuraCsvFileResult W128 { get; set; } = new DemuraCsvFileResult { Gray = "128" };
@@ -68,6 +64,14 @@ namespace ProjectARVRPro.Process.Demura
         public string BurnMessage { get; set; } = string.Empty;
 
         public string Message { get; set; } = string.Empty;
+    }
+
+    public class DemuraTestResult : ViewModelBase
+    {
+        public string FileName { get; set; } = string.Empty;
+
+        /// <summary>W128 源文件的文本内容，JSON 序列化时自动转义。</summary>
+        public string Data { get; set; } = string.Empty;
     }
 
     public class DemuraCsvFileResult : ViewModelBase

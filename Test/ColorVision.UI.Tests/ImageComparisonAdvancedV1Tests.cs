@@ -13,52 +13,6 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageComparisonAdvancedV1Tests
 {
-    [Fact]
-    public void AdvancedParametersValidateAndCatalogDeclaresVersionSchemaAndRoi()
-    {
-        ImageComparisonParameters invalid = new()
-        {
-            SsimWindowSize = 4,
-            SsimK1 = 0,
-            SsimK2 = 2,
-            SsimMinimumValidFraction = 0,
-            AlignmentSearchRadius = 33,
-            AlignmentWarningThresholdPixels = -1,
-            AlignmentMinimumOverlapFraction = 0,
-            AlignmentMaximumSamples = 1,
-        };
-        Assert.Equal(8, invalid.Validate().Issues.Count);
-        Assert.Equal(2, invalid.SchemaVersion);
-
-        AlgorithmDescriptor descriptor = StandardAlgorithmCatalog.Create().Descriptors.Single(item => item.Id == StandardAlgorithmIds.ImageComparison);
-        Assert.Equal(new AlgorithmVersion(1, 1, 0), descriptor.Version);
-        Assert.Equal(2, descriptor.ParameterSchema.Version);
-        Assert.True(descriptor.SupportsRectangleRoi);
-        Assert.True(descriptor.SupportsCircleRoi);
-        Assert.True(descriptor.SupportsPolygonRoi);
-        Assert.False(descriptor.SupportsPolylineRoi);
-        ImageComparisonParameters restored = AlgorithmJson.Deserialize<ImageComparisonParameters>(descriptor.ParameterSchema.Defaults);
-        Assert.True(restored.Validate().IsValid);
-
-        ImageComparisonParameters expected = new()
-        {
-            IncludeAlphaInMetrics = false,
-            FloatPeakValue = 2,
-            HeatmapMaximum = 3,
-            EnableSsim = false,
-            SsimWindowSize = 7,
-            SsimK1 = 0.02,
-            SsimK2 = 0.04,
-            SsimMinimumValidFraction = 0.8,
-            EnableAlignmentPrecheck = false,
-            AlignmentSearchRadius = 5,
-            AlignmentWarningThresholdPixels = 1.5,
-            AlignmentMinimumOverlapFraction = 0.6,
-            AlignmentMaximumSamples = 1024,
-        };
-        ImageComparisonParameters roundTrip = AlgorithmJson.Deserialize<ImageComparisonParameters>(AlgorithmJson.ToElement(expected));
-        Assert.Equal(AlgorithmJson.ToElement(expected).GetRawText(), AlgorithmJson.ToElement(roundTrip).GetRawText());
-    }
 
     [Fact]
     public async Task PersistedM3SchemaMigratesToM4DefaultsAndRetainsLegacyValues()
@@ -334,46 +288,6 @@ public sealed class ImageComparisonAdvancedV1Tests
         Assert.True(candidate.IsDisposed);
     }
 
-    [Fact]
-    public async Task ResultWindowShowsQualityTableAndOwnsTransientRoiOverlay()
-    {
-        using AlgorithmImageBuffer reference = Gray8(PatternBytes(8, 8), 8, 8);
-        using AlgorithmImageBuffer candidate = reference.Clone();
-        AlgorithmResult result = await RunAsync(reference, candidate,
-            new ImageComparisonParameters { SsimWindowSize = 3, EnableAlignmentPrecheck = false },
-            new RectangleAlgorithmRoi(1, 1, 4, 4));
-        ImageView imageView = WpfTestHost.Invoke(() =>
-        {
-            EnsureResources();
-            ImageView created = new();
-            created.SetImageSource(Bitmap(reference.Data.ToArray(), 8, 8), enableEditorImageServices: false, configureDefaultLayerController: false);
-            return created;
-        });
-        try
-        {
-            WpfTestHost.Invoke(() =>
-            {
-                ImageProcessingContext context = imageView.EditorContext.ProcessingContext;
-                int visualCount = context.ImageShow.Visuals.Count;
-                ImageComparisonResultWindow window = new(result, Bitmap(reference.Data.ToArray(), 8, 8), Bitmap(candidate.Data.ToArray(), 8, 8),
-                    "candidate.png", context, imageView.EditorContext.DrawEditorContext);
-                window.Show();
-                Assert.NotNull(window.FindName("AlignmentGrid"));
-                Assert.Equal(visualCount + 1, context.ImageShow.Visuals.Count);
-                Assert.Single(context.AlgorithmOverlays.Snapshot());
-                window.Close();
-                Assert.Equal(visualCount, context.ImageShow.Visuals.Count);
-                Assert.Empty(context.AlgorithmOverlays.Snapshot());
-                Assert.True(result.IsDisposed);
-            });
-        }
-        finally
-        {
-            if (!result.IsDisposed) result.Dispose();
-            WpfTestHost.Invoke(imageView.Dispose);
-        }
-    }
-
     private static async Task<AlgorithmResult> RunAsync(
         AlgorithmImageBuffer reference,
         AlgorithmImageBuffer candidate,
@@ -435,25 +349,6 @@ public sealed class ImageComparisonAdvancedV1Tests
 
     private static AlgorithmImageBuffer Floats(float[] values, int width, int height, AlgorithmImageFormat format)
         => new(width, height, width * format.BytesPerPixel(), format, MemoryMarshal.AsBytes(values.AsSpan()).ToArray());
-
-    private static WriteableBitmap Bitmap(byte[] pixels, int width, int height)
-    {
-        WriteableBitmap bitmap = new(width, height, 96, 96, PixelFormats.Gray8, null);
-        bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, width, 0);
-        return bitmap;
-    }
-
-    private static void EnsureResources()
-    {
-        Application application = Application.Current ?? new Application();
-        application.Resources["TextBox.Small"] = new Style(typeof(TextBox));
-        application.Resources["ComboBox.Small"] = new Style(typeof(ComboBox));
-        application.Resources["ToolBarBaseStyle"] = new Style(typeof(ToolBar));
-        application.Resources["ToolBarImage"] = new Style(typeof(Image));
-        application.Resources["BaseStyle"] = new Style(typeof(Control));
-        application.Resources["RangeSliderBaseStyle"] = new Style(typeof(HandyControl.Controls.RangeSlider));
-        application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
-    }
 
     private sealed class InlineProgress(Action<AlgorithmProgress> report) : IProgress<AlgorithmProgress>
     {

@@ -7,8 +7,10 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
@@ -51,6 +53,17 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public ConfigPhyCamera Config { get; set; }
 
+        private bool _opticalCenterResolved;
+        private ImageOpticalCenter? _opticalCenter;
+        public ImageOpticalCenter? OpticalCenter
+        {
+            get
+            {
+                if (!_opticalCenterResolved) RefreshOpticalCenter();
+                return _opticalCenter;
+            }
+        }
+
         [CommandDisplay("UploadCalibrationFiles", Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
         [CommandDisplay("CalibrationEditCommand", Order =102)]
@@ -73,9 +86,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ResetCommand { get; set; }
         [CommandDisplay("ModifyConfiguration", Order = -99)]
         public RelayCommand EditCommand { get; set; }
-        [CommandDisplay("PropertyEditorWindow", Order = -98)]
-        public RelayCommand PropertyEditorEditCommand { get; set; }
-        public RelayCommand CopyConfigCommand { get; set; }
         [CommandDisplay("OpenConfigFile")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
 
@@ -114,9 +124,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             });
 
-            PropertyEditorEditCommand = new RelayCommand(a => OpenPropertyEditor());
-
-            CopyConfigCommand = new RelayCommand(a => Common.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a), a => !_calibrationUploadRunner.IsRunning);
@@ -167,26 +174,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
-        }
-
-        private void OpenPropertyEditor()
-        {
-            var editConfig = Config.Clone();
-            editConfig.CFW = Config.CFW.CloneForEdit();
-            editConfig.CFW.EnsureChannelCfgsForEdit();
-
-            var propertyEditorWindow = new PropertyEditorWindow(editConfig)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            propertyEditorWindow.Submitted += (s, e) =>
-            {
-                editConfig.CFW.NormalizeChannelCfgsForSave();
-                editConfig.CopyTo(Config);
-                Save();
-            };
-            propertyEditorWindow.ShowDialog();
         }
 
         public async void CreateRestore()
@@ -1144,6 +1131,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(ReadCalibrationPackageText(Calibrationcfg));
 
                     Dictionary<string, CalibrationResource> keyValuePairs2 = new();
+                    List<string> importedDistortionFiles = new();
 
                     var uniqueItems = AllCalFiles.SelectMany(item => item.Value)
                              .GroupBy(x => new { x.CalibrationType, x.Title })
@@ -1304,6 +1292,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                             }
 
                             keyValuePairs2.TryAdd(item.Title, calibrationResource);
+                            if (item.CalibrationType == CalibrationType.Distortion)
+                                importedDistortionFiles.Add(DesFilePath);
                             uploadMeta.UploadStatus = UploadStatus.Completed;
                         }
                         catch (Exception ex)
@@ -1376,6 +1366,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     bool completed = !UploadList.Any(a => a.UploadStatus == UploadStatus.Failed);
                     if (completed)
                     {
+                        Application.Current.Dispatcher.Invoke(() => RefreshOpticalCenter(
+                            importedDistortionFiles.Count > 0 ? importedDistortionFiles : null));
                         await Task.Delay(500);
                         NotifyUploadClosed();
                         if (restoreCameraSettings)
@@ -1471,12 +1463,47 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.PropertyEditorFallback, Command = PropertyEditorEditCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuCopy, Command = CopyConfigCommand });
         }
 
         public event EventHandler<ConfigPhyCamera> ConfigChanged;
+
+        public void RefreshOpticalCenter(IEnumerable<string>? importedDistortionFiles = null)
+        {
+            if (importedDistortionFiles != null || Config.CameraCfg.GetOpticalCenter() == null)
+            {
+                var candidate = new PhyCameraCfg();
+                foreach (string file in importedDistortionFiles ?? EnumerateDistortionFiles(this).Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    try { candidate.TryImportOpticalCenter(ReadCalibrationPackageText(file)); }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                    {
+                        log.Warn("无法读取畸变校正的光心参数。", error);
+                    }
+                }
+                if (candidate.GetOpticalCenter() is { } center && center != Config.CameraCfg.GetOpticalCenter())
+                {
+                    Config.CameraCfg.OpticalCenterX = center.X;
+                    Config.CameraCfg.OpticalCenterY = center.Y;
+                    // Optical metadata refresh does not reset exposure/gain or restart the bound service.
+                    PersistConfig();
+                }
+            }
+            _opticalCenter = Config.CameraCfg.GetOpticalCenter();
+            _opticalCenterResolved = true;
+            OnPropertyChanged(nameof(OpticalCenter));
+        }
+
+        private static IEnumerable<string> EnumerateDistortionFiles(ServiceObjectBase parent)
+        {
+            foreach (ServiceObjectBase child in parent.VisualChildren)
+            {
+                if (child is CalibrationResource resource && resource.SysResourceModel.Type == (int)ServiceTypes.Distortion
+                    && resource.TryGetFilePath(out string file)) yield return file;
+                else if (child is GroupResource group)
+                    foreach (string nestedFile in EnumerateDistortionFiles(group)) yield return nestedFile;
+            }
+        }
 
         public void SaveConfig()
         {
@@ -1500,16 +1527,22 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Config.CFW.NDBindDeviceCode = string.Empty;
             }
 
-            SysResourceModel.Name = Config.CameraID;
-            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
-                throw new InvalidOperationException($"保存物理相机 {Code} 的配置失败。");
+            PersistConfig();
+            RefreshOpticalCenter();
 
             OnPropertyChanged(nameof(DeviceModeDisplayText));
             OnPropertyChanged(nameof(CameraInfoMetaText));
             OnPropertyChanged(nameof(CameraListMetaText));
 
             ConfigChanged?.Invoke(this, Config);
+        }
+
+        private void PersistConfig()
+        {
+            SysResourceModel.Name = Config.CameraID;
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
+            if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
+                throw new InvalidOperationException($"保存物理相机 {Code} 的配置失败。");
         }
         public override void Save()
         {

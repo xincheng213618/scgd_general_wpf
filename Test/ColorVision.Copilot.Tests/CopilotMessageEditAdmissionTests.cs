@@ -17,6 +17,156 @@ public sealed class CopilotMessageEditAdmissionTests
     private const string SubmittedEdit = "The edited request submitted before admission.";
     private const string NewerText = "A later edit or draft that must not be consumed.";
 
+    [Theory]
+    [InlineData(false, "keyboard")]
+    [InlineData(false, "button")]
+    [InlineData(false, "command")]
+    [InlineData(false, "dispose")]
+    [InlineData(true, "button")]
+    public void CancelImagePreparationPreservesDraftAndDoesNotSchedule(bool retry, string cancellationAction)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var context = new CopilotPausedAdmissionContext(TestTimeout, "Cancelled image preparation did not drain.");
+            var previousContext = SynchronizationContext.Current;
+            Task? send = null;
+            Task StartRequest() => retry
+                ? InvokeTask(fixture.ViewModel, "RetryMessageAsync", [fixture.OriginalUser, false], [typeof(CopilotChatMessage), typeof(bool)])
+                : InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+            try
+            {
+                fixture.Conversation.Attachments.Add(Assert.Single(fixture.OriginalUser.Attachments).CreateSnapshot());
+                fixture.ViewModel.InputText = SubmittedEdit;
+                SynchronizationContext.SetSynchronizationContext(context);
+                send = StartRequest();
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(send.IsCompleted);
+                Assert.Empty(fixture.Runtime.Requests);
+                Assert.Equal("■", fixture.ViewModel.PrimaryActionGlyph);
+
+                if (cancellationAction == "keyboard")
+                {
+                    fixture.ViewModel.SelectedConversation = fixture.OtherConversation;
+                    Assert.False(fixture.ViewModel.TryStopCurrentReplyFromKeyboard());
+                    fixture.ViewModel.SelectedConversation = fixture.Conversation;
+                }
+                // A newer draft is not owned by the suspended request either.
+                fixture.ViewModel.InputText = NewerText;
+                fixture.Conversation.Attachments.Add(CopilotAttachmentItem.CreateContext("Newer attachment"));
+                var retainedAttachments = fixture.Conversation.Attachments.ToArray();
+                switch (cancellationAction)
+                {
+                    case "keyboard":
+                        Assert.True(fixture.ViewModel.TryStopCurrentReplyFromKeyboard());
+                        break;
+                    case "button":
+                        fixture.ViewModel.PrimaryActionCommand.Execute(null);
+                        break;
+                    case "command":
+                        Assert.True((bool)typeof(CopilotChatViewModel).GetMethod("TryExecuteLocalCommand",
+                            BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(fixture.ViewModel, ["/stop", false, null])!);
+                        break;
+                    default:
+                        fixture.ViewModel.Dispose();
+                        break;
+                }
+
+                // A cancelled preparation must not consume another stop while its UI continuation drains.
+                Assert.False(fixture.ViewModel.TryStopCurrentReplyFromKeyboard());
+                context.Complete(send);
+                send.GetAwaiter().GetResult();
+                Assert.Empty(fixture.Runtime.Requests);
+                Assert.Empty(fixture.Host.ScheduledRuns);
+                Assert.Equal([fixture.OriginalUser, fixture.OriginalAssistant], fixture.Conversation.Messages.ToArray());
+                Assert.Equal(NewerText, fixture.ViewModel.InputText);
+                Assert.Equal(retainedAttachments, fixture.Conversation.Attachments.ToArray());
+                Assert.False(fixture.ViewModel.TryStopCurrentReplyFromKeyboard());
+                Assert.NotEqual("■", fixture.ViewModel.PrimaryActionGlyph);
+
+                if (cancellationAction != "dispose")
+                {
+                    // Cancellation releases admission ownership, so the user can submit again.
+                    send = StartRequest();
+                    context.Complete(send);
+                    send.GetAwaiter().GetResult();
+                    Assert.Single(fixture.Runtime.Requests);
+                }
+            }
+            finally
+            {
+                if (send is { IsCompleted: false })
+                {
+                    fixture.ViewModel.Dispose();
+                    context.Complete(send);
+                }
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+        }, TimeSpan.FromSeconds(40), "The image preparation cancellation test did not finish.");
+    }
+
+    [Fact]
+    public void CancelImagePreparationCancelsItsQueuedCommandOwnerAndLeavesLaterFollowUpQueued()
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var context = new CopilotPausedAdmissionContext(TestTimeout, "The cancelled command image preparation did not drain.");
+            using var imageLease = new CopilotManagedImageAttachmentLease();
+            var previousContext = SynchronizationContext.Current;
+            Task<IReadOnlyList<CopilotAttachmentItem>?>? preparation = null;
+            var followUpCalls = 0;
+            Assert.True(fixture.Host.TryRestoreQueuedLocalCommand(
+                "image-preparation-command", fixture.Conversation.Id, CopilotAgentMode.Auto, null,
+                run => preparation = Assert.IsAssignableFrom<Task<IReadOnlyList<CopilotAttachmentItem>?>>(
+                    InvokeTask(fixture.ViewModel, "TryPersistImageAttachmentsAsync",
+                        [fixture.OriginalUser.Attachments.ToArray(), imageLease, fixture.Conversation, run],
+                        [typeof(IReadOnlyList<CopilotAttachmentItem>), typeof(CopilotManagedImageAttachmentLease),
+                            typeof(CopilotConversationRecord), typeof(CopilotHostedAgentRun)])),
+                out var owner));
+            Assert.True(fixture.Host.TryRestoreQueuedFollowUp(
+                "later-image-preparation-follow-up", fixture.Conversation.Id, CopilotAgentMode.Auto, null,
+                _ =>
+                {
+                    Interlocked.Increment(ref followUpCalls);
+                    return Task.CompletedTask;
+                },
+                out var followUp));
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                Assert.True(fixture.Host.TryStartQueuedRun(owner!.Id));
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.NotNull(preparation);
+                Assert.False(preparation.IsCompleted);
+                Assert.Same(owner, fixture.Host.ActiveRun);
+                Assert.True(owner.IsQueuedLocalCommand);
+
+                fixture.ViewModel.PrimaryActionCommand.Execute(null);
+
+                Assert.True(owner.CancellationToken.IsCancellationRequested);
+                Assert.Equal(CopilotHostedRunState.CancelRequested, owner.State);
+                context.Complete(preparation);
+                Assert.Null(preparation.GetAwaiter().GetResult());
+                context.Complete(owner.Completion);
+                Assert.ThrowsAny<OperationCanceledException>(() => owner.Completion.GetAwaiter().GetResult());
+                Assert.Equal(0, Volatile.Read(ref followUpCalls));
+                Assert.Same(followUp, Assert.Single(fixture.Host.QueuedRuns));
+                Assert.False(followUp!.HasStarted);
+                Assert.Empty(fixture.Runtime.Requests);
+            }
+            finally
+            {
+                fixture.Host.Shutdown();
+                if (preparation is { IsCompleted: false })
+                    context.Complete(preparation);
+                if (owner is { Completion.IsCompleted: false })
+                    context.Complete(owner.Completion);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+        }, TimeSpan.FromSeconds(40), "The queued command image preparation cancellation test did not finish.");
+    }
+
     [Fact]
     public void EditingLatestMessageClosesHistorySearchAndSubmitsTheEditedComposer()
     {

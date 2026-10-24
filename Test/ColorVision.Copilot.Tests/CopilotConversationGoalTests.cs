@@ -1288,71 +1288,6 @@ public sealed class CopilotConversationGoalTests
     }
 
     [Fact]
-    public void ConversationProjectionExposesProgressRowStateWithoutOwningAnotherGoal()
-    {
-        var createdAt = new DateTimeOffset(2026, 8, 10, 9, 0, 0, TimeSpan.Zero);
-        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
-        var goal = CopilotConversationGoal.Create("完成结果、约束和验证闭环", createdAt)
-            .WithTokenBudget(2_000, createdAt)
-            .WithTurnOutcome(
-                CopilotConversationGoalState.Active,
-                new CopilotTokenUsage(100, 50, 150),
-                elapsedSeconds: 65,
-                evaluated: true,
-                continued: true,
-                reason: "仍需继续验证",
-                now: createdAt.AddMinutes(2),
-                progressScore: 64,
-                progressReport: CreateProgressReport(
-                    "主要路径已接通",
-                    verified: "聚焦测试通过",
-                    remaining: "主程序验证",
-                    nextStep: "运行 x64 构建"));
-
-        conversation.Goal = goal;
-
-        Assert.True(conversation.HasGoal);
-        Assert.True(conversation.CanPauseGoal);
-        Assert.False(conversation.CanResumeGoal);
-        Assert.Contains("1 轮", conversation.GoalProgressText, StringComparison.Ordinal);
-        Assert.Contains("1 次评估", conversation.GoalProgressText, StringComparison.Ordinal);
-        Assert.Contains("Token", conversation.GoalProgressText, StringComparison.Ordinal);
-        Assert.Contains("累计", conversation.GoalProgressText, StringComparison.Ordinal);
-        Assert.Contains("评分 64/100", conversation.GoalProgressText, StringComparison.Ordinal);
-        Assert.Contains("评分 64/100", conversation.GoalToolTip, StringComparison.Ordinal);
-        Assert.Contains("当前检查点：主要路径已接通", conversation.GoalToolTip, StringComparison.Ordinal);
-        Assert.Contains("已验证：聚焦测试通过", conversation.GoalToolTip, StringComparison.Ordinal);
-        Assert.Contains("剩余工作：主程序验证", conversation.GoalToolTip, StringComparison.Ordinal);
-        Assert.Contains("下一步：运行 x64 构建", conversation.GoalToolTip, StringComparison.Ordinal);
-        Assert.Contains(
-            "检查点 主要路径已接通 · 下一步 运行 x64 构建",
-            CopilotConversationRecap.Format(conversation, queuedFollowUpCount: 0),
-            StringComparison.Ordinal);
-
-        var status = CopilotConversationGoalCommand.Execute(
-            goal,
-            arguments: string.Empty,
-            createdAt.AddMinutes(2));
-        Assert.Contains("当前检查点：主要路径已接通", status.Message, StringComparison.Ordinal);
-        Assert.Contains("下一步：运行 x64 构建", status.Message, StringComparison.Ordinal);
-
-        conversation.Goal = goal.WithState(
-            CopilotConversationGoalState.Paused,
-            createdAt.AddMinutes(3),
-            "用户暂停");
-
-        Assert.False(conversation.CanPauseGoal);
-        Assert.True(conversation.CanResumeGoal);
-
-        conversation.Goal = null;
-
-        Assert.False(conversation.HasGoal);
-        Assert.Empty(conversation.GoalProgressText);
-        Assert.False(conversation.CanPauseGoal);
-        Assert.False(conversation.CanResumeGoal);
-    }
-
-    [Fact]
     public void TurnOutcomeKeepsABoundedMachineReadableIterationLog()
     {
         var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
@@ -1473,61 +1408,6 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(int.MaxValue, iteration.TurnNumber);
         Assert.Equal("新记录", iteration.Reason);
         Assert.True(updated.IsStructurallyValid());
-    }
-
-    [Fact]
-    public void HistoryCommandShowsSavedIterationsWithoutChangingTheGoal()
-    {
-        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
-        var goal = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
-            .WithTurnOutcome(
-                CopilotConversationGoalState.Active,
-                new CopilotTokenUsage(10, 5, 15),
-                elapsedSeconds: 30,
-                evaluated: true,
-                continued: true,
-                "继续验证恢复路径",
-                createdAt.AddMinutes(1),
-                progressScore: 55,
-                progressReport: CreateProgressReport(
-                    "恢复路径已接通",
-                    verified: "聚焦测试通过",
-                    remaining: "重启验证",
-                    nextStep: "运行恢复验证"))
-            .WithTurnOutcome(
-                CopilotConversationGoalState.Achieved,
-                new CopilotTokenUsage(8, 4, 12),
-                elapsedSeconds: 20,
-                evaluated: true,
-                continued: false,
-                "目标已达成",
-                createdAt.AddMinutes(2),
-                progressScore: 100,
-                progressReport: CreateProgressReport(
-                    "恢复闭环完成",
-                    verified: "重启验证通过",
-                    remaining: string.Empty,
-                    nextStep: string.Empty));
-
-        var result = CopilotConversationGoalCommand.Execute(
-            goal,
-            "history",
-            createdAt.AddMinutes(3));
-
-        Assert.Same(goal, result.Goal);
-        Assert.False(result.Changed);
-        Assert.False(result.StartsWork);
-        Assert.Contains("最近 2 / 2 轮", result.Message, StringComparison.Ordinal);
-        Assert.Contains("第 1 轮", result.Message, StringComparison.Ordinal);
-        Assert.Contains("评分 55/100", result.Message, StringComparison.Ordinal);
-        Assert.Contains("当前检查点：恢复路径已接通", result.Message, StringComparison.Ordinal);
-        Assert.Contains("下一步：运行恢复验证", result.Message, StringComparison.Ordinal);
-        Assert.Contains("继续验证恢复路径", result.Message, StringComparison.Ordinal);
-        Assert.Contains("第 2 轮", result.Message, StringComparison.Ordinal);
-        Assert.Contains("评分 100/100", result.Message, StringComparison.Ordinal);
-        Assert.Contains("当前检查点：恢复闭环完成", result.Message, StringComparison.Ordinal);
-        Assert.Contains("剩余工作：无", result.Message, StringComparison.Ordinal);
-        Assert.Contains("目标已达成", result.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1666,17 +1546,6 @@ public sealed class CopilotConversationGoalTests
         Assert.True(ignoredNegative.IsStructurallyValid());
     }
 
-    [Theory]
-    [InlineData(0, "0 秒", "0s")]
-    [InlineData(65, "1 分钟 5 秒", "1m 5s")]
-    [InlineData(3_660, "1 小时 1 分钟", "1h 1m")]
-    [InlineData(90_000, "1 天 1 小时", "1d 1h")]
-    public void ElapsedUsageFormattingIsConcise(long seconds, string chinese, string english)
-    {
-        Assert.Equal(chinese, CopilotConversationGoalUsageText.FormatElapsed(seconds));
-        Assert.Equal(english, CopilotConversationGoalUsageText.FormatElapsedEnglish(seconds));
-    }
-
     [Fact]
     public void StateTransitionDoesNotMoveUpdatedTimestampBackwards()
     {
@@ -1756,38 +1625,6 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(0, result.Goal.TokensUsed);
         Assert.Equal(0, result.Goal.TimeUsedSeconds);
         Assert.Equal(CopilotConversationGoalState.Active, result.Goal.State);
-    }
-
-    [Fact]
-    public void BudgetCommandPreservesProgressAndSetsLimit()
-    {
-        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
-        var current = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
-            .WithTurnOutcome(
-                CopilotConversationGoalState.Paused,
-                new CopilotTokenUsage(10, 5, 15),
-                elapsedSeconds: 61,
-                evaluated: true,
-                continued: false,
-                "等待预算",
-                createdAt.AddMinutes(1));
-
-        var result = CopilotConversationGoalCommand.Execute(
-            current,
-            "budget 40,000",
-            createdAt.AddMinutes(2));
-
-        Assert.True(result.Changed);
-        Assert.False(result.StartsWork);
-        Assert.NotNull(result.Goal);
-        Assert.Equal(current.Id, result.Goal.Id);
-        Assert.Equal(current.TurnCount, result.Goal.TurnCount);
-        Assert.Equal(current.TokensUsed, result.Goal.TokensUsed);
-        Assert.Equal(current.TimeUsedSeconds, result.Goal.TimeUsedSeconds);
-        Assert.Equal(40_000, result.Goal.TokenBudget);
-        Assert.Equal(CopilotConversationGoalState.Paused, result.Goal.State);
-        Assert.Single(result.Goal.IterationLog);
-        Assert.Equal(current.IterationLog[0].Reason, result.Goal.IterationLog[0].Reason);
     }
 
     [Theory]

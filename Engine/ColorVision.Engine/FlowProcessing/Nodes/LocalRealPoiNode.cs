@@ -13,6 +13,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using FlowEngineLib.Node.POI;
+using FlowPoiPointTypes = FlowEngineLib.Node.POI.POIPointTypes;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
 {
@@ -106,10 +108,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public object? POIResult { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "实时 POI", CategoryOrder = 9900)]
+    [STNode("Flow_LocalDevices", "实时 POI", CategoryOrder = 9900, NodeOrder = 60)]
     public sealed class LocalRealPoiNode : LocalFlowNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_CIE", "IN_POI" };
+        internal string? DeviceCodeOverride { get; init; }
+        internal POITypeData? PointTypeOverride { get; init; }
 
         public LocalRealPoiNode() : base("实时 POI", "LocalRealPOI", "Real_POI", InputPortNames)
         {
@@ -131,15 +135,17 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 string? imagePath = string.IsNullOrWhiteSpace(currentFrame!.CvCieFilePath) ? currentFrame.CvRawFilePath : currentFrame.CvCieFilePath;
                 _ = TryGetInputMasterResult(action, 1, out int poiInputMasterId, out int poiInputResultType, out _);
                 LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(poiInputMasterId, poiInputResultType, InputPortNames[0]);
+                PoiParam poi = PointTypeOverride.HasValue ? ApplyPointType(parameters.Poi, PointTypeOverride.Value) : parameters.Poi;
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalPoiResultSet result;
                 using (LocalFlowFrameLease frame = currentFrame.Acquire())
                 {
-                    result = LocalPoiCalculator.Calculate(frame, parameters.Poi);
+                    result = LocalPoiCalculator.Calculate(frame, poi);
                 }
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
+                action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(currentFrame.Metadata.Channels);
                 int masterId = -1;
                 try
@@ -147,10 +153,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                         action,
                         resultType,
-                        parameters.Poi.Id,
-                        parameters.Poi.Name,
+                        poi.Id,
+                        poi.Name,
                         imagePath,
-                        null,
+                        DeviceCodeOverride,
                         ZIndex,
                         totalTime,
                         new
@@ -158,7 +164,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                             CieMasterId = currentFrame.MasterId,
                             POISourceMasterId = parameters.SourceMasterId > 0 ? (int?)parameters.SourceMasterId : null,
                             CalibrationTemplate = currentFrame.Metadata.CalibrationTemplate,
-                            POITemplate = parameters.Poi.Name,
+                            POITemplate = poi.Name,
                             FlipMode = currentFrame.Metadata.FlipMode.ToString(),
                             FlipApplied = currentFrame.IsFlipApplied,
                             ImageRead = loadedFromFile,
@@ -168,10 +174,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     LocalPoiCalculator.SaveDetails(masterId, result);
 
                     action.SetRuntimeResource(LocalFlowFrameRuntime.GetPoiResultResourceKey(currentFrame.FrameId), result);
+                    action.SetRuntimeResource(LocalPoiCalculator.ResultResourceKey(masterId), result);
                     action.Data["LocalPoiCount"] = result.Points.Count;
                     action.Data["LocalPoiSourceMasterId"] = parameters.SourceMasterId;
                     action.MasterValue(null, masterId, (int)resultType);
-                    ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
+                    ResultMessageBus.Default.PublishPersisted(DeviceCodeOverride == null ? ResultRoutes.LocalFlow : ResultRoutes.Algorithm,
+                        ResultKinds.Algorithm, DeviceCodeOverride ?? string.Empty, OperatorCode, action.SerialNumber, ExecutionNodeId, ZIndex, masterId, (int)resultType);
                     action.SetCurrentFrame(currentFrame);
                     loadedFromFile = false;
                     return new LocalNodeExecutionResult
@@ -201,6 +209,25 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 if (loadedFromFile) currentFrame?.Dispose();
             }
+        }
+
+        internal static PoiParam ApplyPointType(PoiParam source, POITypeData definition)
+        {
+            if (definition.PointType is FlowPoiPointTypes.None or FlowPoiPointTypes.SubPixel or FlowPoiPointTypes.SolidPoint_KB) return source;
+            PoiShape shape = definition.PointType switch
+            {
+                FlowPoiPointTypes.SolidPoint => PoiShape.Point,
+                FlowPoiPointTypes.Circle => PoiShape.Circle,
+                FlowPoiPointTypes.Rect => PoiShape.Rect,
+                _ => throw new NotSupportedException($"本地实时关注点不支持类型：{definition.PointType}")
+            };
+            if (shape != PoiShape.Point && (!float.IsFinite(definition.Width) || !float.IsFinite(definition.Height)
+                || definition.Width <= 0 || definition.Height <= 0)) throw new InvalidOperationException("POI 宽度和高度必须是有限正数。");
+            PoiParam output = new() { Id = source.Id, Name = source.Name };
+            foreach (PoiPoint point in source.PoiPoints)
+                output.PoiPoints.Add(new PoiPoint { Id = point.Id, Name = point.Name, PointType = shape, PixX = point.PixX, PixY = point.PixY,
+                    PixWidth = shape == PoiShape.Point ? 1 : definition.Width, PixHeight = shape == PoiShape.Point ? 1 : definition.Height });
+            return output;
         }
 
         protected override string BuildRunPayload(CVStartCFC action)

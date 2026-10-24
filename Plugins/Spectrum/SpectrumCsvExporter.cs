@@ -1,4 +1,4 @@
-using Spectrum.Models;
+﻿using Spectrum.Models;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -23,13 +23,13 @@ public static class SpectrumCsvExporter
         new("Cy", result => result.fy),
         new("u'", result => result.fu),
         new("v'", result => result.fv),
-        new("Correlated Color Temperature(CCT)(K)", result => result.fCCT),
-        new("DW(Ld)(nm)", result => result.fLd),
-        new("Color Purity(%)", result => result.ColorPurityPercent),
+        new("Correlated Color Temperature(CCT)(K)", result => result.Chromaticity.ColorTemperature),
+        new("DW(Ld)(nm)", result => result.Chromaticity.DominantWavelength),
+        new("Color Purity(%)", result => result.PurityPercent),
         new("Peak Wavelength(Lp)(nm)", result => result.fLp),
-        new("Color Rendering(Ra)", result => result.fRa),
+        new("Color Rendering(Ra)", result => result.ColorRendering.Ra),
         new("FWHM", result => result.fHW),
-        new("Excitation Purity(%)", result => result.ExcitationPurityPercent),
+        new("Excitation Purity(%)", result => result.PurityPercent),
         new("CIE2015X", result => result.fCIEx2015),
         new("CIE2015Y", result => result.fCIEy2015),
         new("CIE2015Z", result => result.fCIEz2015),
@@ -37,6 +37,18 @@ public static class SpectrumCsvExporter
         new("CIE2015y", result => result.fy2015),
         new("CIE2015u", result => result.fu2015),
         new("CIE2015v", result => result.fv2015)
+    ];
+
+    private static readonly CsvColumn[] RenderingColumns =
+    [
+        new("Mean Wavelength(nm)", result => result.ColorRendering.MeanWavelength),
+        .. Enumerable.Range(0, 15).Select(index => new CsvColumn($"R{index + 1}", result => result.RenderingIndices[index])),
+        new("Color Rendering Status", result => result.ColorRendering.Status.ToString()),
+        new("Duv", result => result.Chromaticity.Duv),
+        new("Complementary Wavelength(nm)", result => result.Chromaticity.ComplementaryWavelength),
+        new("Wavelength Status", result => result.Chromaticity.WavelengthStatus.ToString()),
+        new("Temperature Status", result => result.Chromaticity.TemperatureStatus.ToString()),
+        new("Purity Reference White", _ => "D65 (0.3127; 0.3290)")
     ];
 
     private static readonly CsvColumn[] EqeColumns =
@@ -49,11 +61,11 @@ public static class SpectrumCsvExporter
         new("LuminousEfficacy(lm/W)", result => result.LuminousEfficacy),
         new("Cx", result => result.fx),
         new("Cy", result => result.fy),
-        new("Correlated Color Temperature(CCT)(K)", result => result.fCCT),
+        new("Correlated Color Temperature(CCT)(K)", result => result.Chromaticity.ColorTemperature),
         new("Peak Wavelength(Lp)(nm)", result => result.fLp),
-        new("Excitation Purity(%)", result => result.ExcitationPurityPercent),
-        new("Voltage(V)", result => result.V),
-        new("Current(mA)", result => result.I),
+        new("Excitation Purity(%)", result => result.PurityPercent),
+        new("Voltage(V)", result => result.AcquisitionFluxMode == false ? null : result.V),
+        new("Current(mA)", result => result.AcquisitionFluxMode == false ? null : result.I),
         new("CIE2015X", result => result.fCIEx2015),
         new("CIE2015Y", result => result.fCIEy2015),
         new("CIE2015Z", result => result.fCIEz2015),
@@ -99,7 +111,9 @@ public static class SpectrumCsvExporter
         bool isEqeMode,
         CancellationToken cancellationToken)
     {
-        CsvColumn[] resultColumns = isEqeMode ? EqeColumns : NormalColumns;
+        CsvColumn[] resultColumns = (isEqeMode
+            ? EqeColumns.Concat([new CsvColumn("Color Rendering(Ra)", result => result.ColorRendering.Ra), new CsvColumn("DW(Ld)(nm)", result => result.Chromaticity.DominantWavelength), new CsvColumn("Color Purity(%)", result => result.PurityPercent)])
+            : NormalColumns).Concat(RenderingColumns).ToArray();
         CsvResultSnapshot[] resultSnapshots = new CsvResultSnapshot[results.Count];
         HashSet<double> wavelengths = [];
 

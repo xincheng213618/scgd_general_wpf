@@ -150,6 +150,7 @@ public class LocalCameraOwnershipTests
         public IReadOnlyList<string> GetCameraIds() => [];
         public IntPtr Initialize() { Initializations++; return new IntPtr(42); }
         public bool IsOpen(IntPtr handle) => opened;
+        public void PrepareMeasurement(IntPtr handle) { }
         public int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp) => cvErrorDefine.CV_ERR_CAM_TYPE_NOT;
         public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr) { Opens++; opened = OpenResult == cvErrorDefine.CV_ERR_SUCCESS; return OpenResult; }
         public void Close(IntPtr handle) { if (!FailClose) opened = false; }

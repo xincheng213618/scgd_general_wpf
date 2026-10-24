@@ -141,6 +141,7 @@ internal static class SpectrumRawCalibrationService
             throw;
         }
         frame.ColorCalibration = corrected;
+        frame.CalibrationProvenance = corrected.ToSummary();
         frame.MasterId = masterId;
         return masterId;
     }

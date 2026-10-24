@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -46,13 +47,27 @@ namespace ColorVision.Database
                 .Where(type => typeof(IInitTables).IsAssignableFrom(type) && !type.IsAbstract);
             InitTableTypes(tableTypes, type =>
             {
-                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var DB = CreateInitializationClient(MySqlControl.GetConnectionString());
                 DB.CodeFirst.InitTables(type);
             });
 
             stopwatch.Stop();
             log.Info($"InitTables：{stopwatch.Elapsed.TotalSeconds} 秒");
         }
+
+        internal static SqlSugarClient CreateInitializationClient(string connectionString)
+        {
+            var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = connectionString, DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            // SqlSugar wraps timestamp defaults in an expression, which MySQL 5.7 rejects.
+            // Restrict the compatibility rewrite to the standalone DDL emitted by AddDefaultValue.
+            db.Aop.OnExecutingChangeSql = (sql, parameters) => new KeyValuePair<string, SugarParameter[]>(
+                NormalizeInitializationSql(sql), parameters);
+            return db;
+        }
+
+        internal static string NormalizeInitializationSql(string sql) => Regex.Replace(sql,
+            @"\A(?<prefix>\s*ALTER\s+TABLE\s+`[^`]+`\s+ALTER\s+COLUMN\s+`[^`]+`\s+SET\s+DEFAULT\s+)\(\s*(?<value>CURRENT_TIMESTAMP(?:\([0-6]?\))?)\s*\)(?<suffix>\s*;?\s*)\z",
+            "${prefix}${value}${suffix}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         internal static void InitTableTypes(IEnumerable<Type> tableTypes, Action<Type> initializer)
         {

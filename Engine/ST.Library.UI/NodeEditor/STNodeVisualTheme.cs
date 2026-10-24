@@ -8,7 +8,7 @@ public sealed class STNodeVisualTheme
 	public static STNodeVisualTheme Light { get; } = new STNodeVisualTheme(false);
 	public static STNodeVisualTheme Dark { get; } = new STNodeVisualTheme(true);
 
-	private STNodeVisualTheme(bool isDark)
+	public STNodeVisualTheme(bool isDark)
 	{
 		IsDark = isDark;
 		Canvas = ColorTranslator.FromHtml(isDark ? "#222426" : "#E7EBF0");
@@ -22,20 +22,26 @@ public sealed class STNodeVisualTheme
 		Success = ColorTranslator.FromHtml(isDark ? "#47A36D" : "#328355");
 		Error = ColorTranslator.FromHtml(isDark ? "#D45C5C" : "#C44949");
 		Warning = ColorTranslator.FromHtml(isDark ? "#B68B2D" : "#A47A21");
+		TitleAccent = ColorTranslator.FromHtml(isDark ? "#286FB2" : "#2676BF");
+		TitleSuccess = ColorTranslator.FromHtml(isDark ? "#328657" : "#287B4D");
+		ProgressAccent = ColorTranslator.FromHtml(isDark ? "#4389C8" : "#438CC9");
 	}
 
 	public bool IsDark { get; }
-	public Color Canvas { get; }
-	public Color Surface { get; }
-	public Color GridMajor { get; }
-	public Color GridMinor { get; }
-	public Color Text { get; }
-	public Color SecondaryText { get; }
-	public Color Border { get; }
-	public Color Accent { get; }
-	public Color Success { get; }
-	public Color Error { get; }
-	public Color Warning { get; }
+	public Color Canvas { get; init; }
+	public Color Surface { get; init; }
+	public Color GridMajor { get; init; }
+	public Color GridMinor { get; init; }
+	public Color Text { get; init; }
+	public Color SecondaryText { get; init; }
+	public Color Border { get; init; }
+	public Color Accent { get; init; }
+	public Color Success { get; init; }
+	public Color Error { get; init; }
+	public Color Warning { get; init; }
+	public Color TitleAccent { get; init; }
+	public Color TitleSuccess { get; init; }
+	public Color ProgressAccent { get; init; }
 
 	public Color ResolveAccent(Color color)
 	{
@@ -61,9 +67,9 @@ public sealed class STNodeVisualTheme
 	{
 		int rgb = color.ToArgb() & 0xFFFFFF;
 		if (rgb == 0x1E90FF || rgb == 0x0000FF)
-			return ColorTranslator.FromHtml(IsDark ? "#286FB2" : "#2676BF");
+			return TitleAccent;
 		if (rgb == 0x006400 || rgb == 0x008000 || rgb == 0x00FF00 || rgb == 0x228B22)
-			return ColorTranslator.FromHtml(IsDark ? "#328657" : "#287B4D");
+			return TitleSuccess;
 		return ResolveAccent(color);
 	}
 
@@ -71,7 +77,7 @@ public sealed class STNodeVisualTheme
 	{
 		int rgb = color.ToArgb() & 0xFFFFFF;
 		return rgb == 0x00BFFF || rgb == 0x1E90FF
-			? ColorTranslator.FromHtml(IsDark ? "#4389C8" : "#438CC9") : ResolveAccent(color);
+			? ProgressAccent : ResolveAccent(color);
 	}
 
 	public Color ResolveText(Color color) => color.ToArgb() == Color.White.ToArgb()

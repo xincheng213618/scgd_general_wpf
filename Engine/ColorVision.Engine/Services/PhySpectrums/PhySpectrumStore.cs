@@ -91,22 +91,37 @@ namespace ColorVision.Engine.Services.PhySpectrums
             using var db = local ? null : OpenDatabase();
             var existing = local ? PhyLicenseDao.Instance.GetLocal().Where(l => string.Equals(l.MacAddress, license.MacAddress, StringComparison.OrdinalIgnoreCase)).ToList()
                 : db!.Queryable<LicenseModel>().Where(l => l.MacAddress == license.MacAddress).ToList();
-            var spectrumLicense = existing.FirstOrDefault(l => l.LiceType == 1);
             // Preserve existing IDs and associations. Never overwrite a camera license with the same SN.
             if (existing.Any(l => l.LiceType != 1))
                 throw new InvalidOperationException(Properties.Resources.SpectrumLicenseTypeConflict);
-            if (spectrumLicense == null)
+            if (existing.Count == 0)
             {
                 if (local) PhyLicenseDao.Instance.Save(license, local: true);
                 else db!.Insertable(license).ExecuteCommand();
                 return;
             }
-            spectrumLicense.LicenseValue = license.LicenseValue;
-            spectrumLicense.Model = license.Model;
-            spectrumLicense.CusTomerName = license.CusTomerName;
-            spectrumLicense.ExpiryDate = license.ExpiryDate;
-            if (local) PhyLicenseDao.Instance.Save(spectrumLicense, local: true);
-            else db!.Updateable(spectrumLicense).ExecuteCommand();
+            // Legacy databases may have several rows for a serial. Catalogs and device connections
+            // can select different rows, so renew every matching spectrum row without deleting associations.
+            if (!local) { UpdateLicenseRecords(db!, license); return; }
+            foreach (var spectrumLicense in existing)
+            {
+                spectrumLicense.LicenseValue = license.LicenseValue;
+                spectrumLicense.Model = license.Model;
+                spectrumLicense.CusTomerName = license.CusTomerName;
+                spectrumLicense.ExpiryDate = license.ExpiryDate;
+                PhyLicenseDao.Instance.Save(spectrumLicense, local: true);
+            }
         }
+
+        internal static int UpdateLicenseRecords(ISqlSugarClient db, LicenseModel license) => db.Updateable<LicenseModel>()
+            .SetColumns(item => new LicenseModel
+            {
+                LicenseValue = license.LicenseValue,
+                Model = license.Model,
+                CusTomerName = license.CusTomerName,
+                ExpiryDate = license.ExpiryDate
+            })
+            .Where(item => item.LiceType == 1 && item.MacAddress == license.MacAddress)
+            .ExecuteCommand();
     }
 }

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseWPF>true</UseWPF>
+    <TargetFrameworks>net48</TargetFrameworks>
+    <LangVersion>7.3</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <VersionPrefix>1.0.1</VersionPrefix>
+    <Product>ColorVision Flow POI Integration Demo</Product>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ColorVision.FlowPoi.Client.Net48.csproj" />
+    <None Include="..\Samples\flow-poi-response.json" Link="Samples\flow-poi-response.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

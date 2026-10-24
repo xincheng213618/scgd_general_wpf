@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.PG;
 
-[STNode("PG", CategoryOrder = 600)]
+[STNode("传感器/PG", CategoryOrder = 700)]
 public class PGGECS_DemuraNode : CVBaseServerNode
 {
 	private PGGECSDemuraCmdType _PGCmd;

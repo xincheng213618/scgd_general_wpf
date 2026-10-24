@@ -57,6 +57,7 @@
                              Text="{Binding DisplayConfig.AveNum, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"/>
                 </Grid>
                 <CheckBox Content="{display:EngineLang Key='自动积分'}" IsChecked="{Binding DisplayConfig.IsAutoIntTime}"/>
+                <CheckBox Content="{display:EngineLang Key='使用 ND'}" IsChecked="{Binding DisplayConfig.IsWithND}"/>
                 <CheckBox Content="{display:EngineLang Key='自动校零（需遮光）'}" IsChecked="{Binding DisplayConfig.IsAutoDark}"/>
                 <CheckBox Content="{display:EngineLang Key='自适应暗校正'}" IsChecked="{Binding DisplayConfig.IsShutter}"/>
                 <UniformGrid Columns="2" Margin="0,12,0,8">
@@ -68,6 +69,10 @@
                 <UniformGrid Columns="2" Margin="0,0,0,8">
                     <Button Content="{display:EngineLang Key='校零'}" Tag="InitDark" Click="Command_Click" Margin="0,0,4,0" ToolTip="{display:EngineLang Key='请先遮光，再进行校零。'}"/>
                     <Button Content="{display:EngineLang Key='自适应校零'}" Tag="InitAutoDark" Click="Command_Click" Margin="4,0,0,0"/>
+                </UniformGrid>
+                <UniformGrid Columns="2" Margin="0,0,0,8" Visibility="{Binding Config.IsShutterEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                    <Button Content="{display:EngineLang Key='打开快门'}" Tag="ShutterDoOpen" Click="Command_Click" Margin="0,0,4,0"/>
+                    <Button Content="{display:EngineLang Key='关闭快门'}" Tag="ShutterDoClose" Click="Command_Click" Margin="4,0,0,0"/>
                 </UniformGrid>
                 <UniformGrid Columns="2" Margin="0,0,0,8">
                     <Button Content="{display:EngineLang Key='设备配置'}" Command="{Binding EditCommand}" Margin="0,0,4,0"/>

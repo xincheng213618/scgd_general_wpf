@@ -7,7 +7,6 @@ using FlowEngineLib;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
-using MQTTMessageLib.Util;
 using MQTTnet;
 using Newtonsoft.Json;
 using System;
@@ -114,7 +113,6 @@ namespace ColorVision.Engine.Services.RC
         private string RCHeartbeatTopic;
         private string RCPublicTopic;
         private string RCAdminTopic;
-        private string ArchivedTopic;
         private string SysConfigTopic;
         private string SysConfigRespTopic;
         
@@ -231,7 +229,6 @@ namespace ColorVision.Engine.Services.RC
             RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
             RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
             RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
-            ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
             SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
 
             MQTTControl.SubscribeCache(SubscribeTopic);
@@ -420,7 +417,7 @@ namespace ColorVision.Engine.Services.RC
         {
             foreach (var itemService in data)
             {
-                ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(itemService.Key.ToString());
+                ServiceTypes cvSType = Enum.Parse<ServiceTypes>(itemService.Key.ToString());
                 var serviceKind = serviceManager.TypeServices.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
                 if (serviceKind == null) { continue; }
                 foreach (var serviceTerminal in serviceKind.VisualChildren.Cast<TerminalService>())
@@ -646,18 +643,6 @@ namespace ColorVision.Engine.Services.RC
             MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             await PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
             return await WaitForConnectionAsync();
-        }
-
-        public void Archived(string sn)
-        {
-            MQTTArchivedRequest request = new MQTTArchivedRequest(sn);
-            PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
-        }
-        public void ArchivedAll()
-        {
-            MQTTArchivedRequest request = new MQTTArchivedRequest();
-            request.EventName = "ArchivedAll";
-            PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
         }
 
         public Task PublishAsyncClient(string topic, string json) => MQTTControl.PublishAsyncClient(topic, json, false);

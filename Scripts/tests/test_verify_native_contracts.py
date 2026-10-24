@@ -87,13 +87,37 @@ class SourceContractTests(unittest.TestCase):
         with self.assertRaisesRegex(NativeContractError, "not declared Cdecl"):
             read_managed_dllimports(source)
 
+    def test_accepts_known_compiler_export_with_or_without_legacy_symbol(self) -> None:
+        header = frozenset(read_header_exports(
+            (REPO_ROOT / "Native/include/cuda_export.h").read_text(encoding="utf-8-sig")
+        ))
+        managed = frozenset(read_managed_dllimports(
+            (REPO_ROOT / "UI/ColorVision.Core/OpenCVCuda.cs").read_text(encoding="utf-8-sig")
+        ))
+
+        for compiler_exports in (frozenset(), frozenset({"NvOptimusEnablementCuda"})):
+            with self.subTest(compiler_exports=compiler_exports):
+                validate_cuda_export_sets(header, managed, header | compiler_exports)
+
     def test_rejects_header_export_missing_from_tracked_pe(self) -> None:
         header = frozenset({"CM_Fusion", "CM_SetLogCallback", "CM_SetLogEnabled", "CM_SetLogLevel", "CM_EnableNativeSink"})
         managed = frozenset({"CM_Fusion"})
-        binary = frozenset(header - {"CM_Fusion"}) | {"NvOptimusEnablementCuda"}
 
-        with self.assertRaisesRegex(NativeContractError, r"missing=\['CM_Fusion'\]"):
-            validate_cuda_export_sets(header, managed, binary)
+        for compiler_exports in (frozenset(), frozenset({"NvOptimusEnablementCuda"})):
+            with self.subTest(compiler_exports=compiler_exports):
+                binary = (header - {"CM_Fusion"}) | compiler_exports
+                with self.assertRaisesRegex(NativeContractError, r"missing=\['CM_Fusion'\]"):
+                    validate_cuda_export_sets(header, managed, binary)
+
+    def test_rejects_unknown_binary_export_with_or_without_legacy_symbol(self) -> None:
+        header = frozenset({"CM_Fusion", "CM_SetLogCallback", "CM_SetLogEnabled", "CM_SetLogLevel", "CM_EnableNativeSink"})
+        managed = frozenset({"CM_Fusion"})
+
+        for compiler_exports in (frozenset(), frozenset({"NvOptimusEnablementCuda"})):
+            with self.subTest(compiler_exports=compiler_exports):
+                binary = header | compiler_exports | {"UnexpectedCudaExport"}
+                with self.assertRaisesRegex(NativeContractError, r"unexpected=\['UnexpectedCudaExport'\]"):
+                    validate_cuda_export_sets(header, managed, binary)
 
     def test_rejects_conditional_or_overridden_native_export_definitions(self) -> None:
         project_source = (REPO_ROOT / "Native/opencv_cuda/opencv_cuda.vcxproj").read_text(

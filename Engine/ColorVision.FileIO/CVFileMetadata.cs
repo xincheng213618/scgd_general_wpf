@@ -57,6 +57,26 @@ namespace ColorVision.FileIO
             return new CVFileReadCache.FileTail(pixelEnd, Serialize(properties, pixelEnd));
         }
 
+        /// <summary>Replaces related records together in one validated tail update.</summary>
+        public static void SetProperties(string filePath, IReadOnlyDictionary<string, CVFileProperty> updates)
+        {
+            if (updates == null) throw new ArgumentNullException(nameof(updates));
+            var detached = new Dictionary<string, CVFileProperty>(StringComparer.Ordinal);
+            foreach (var item in updates)
+            {
+                if (string.IsNullOrWhiteSpace(item.Key)) throw new ArgumentException("Property kind is required.", nameof(updates));
+                if (item.Value == null || item.Value.Value.Length > MaximumMetadataBytes) throw new ArgumentException("Invalid metadata property.", nameof(updates));
+                detached.Add(item.Key, new CVFileProperty(item.Value.Version, item.Value.Value));
+            }
+            CVFileReadCache.UpdateMetadata(filePath, stream =>
+            {
+                long pixelEnd = GetPixelEnd(stream);
+                var properties = ReadProperties(stream, pixelEnd, true);
+                foreach (var item in detached) properties[item.Key] = item.Value;
+                return new CVFileReadCache.FileTail(pixelEnd, Serialize(properties, pixelEnd));
+            });
+        }
+
         internal static void ReplaceTail(FileStream stream, CVFileReadCache.FileTail tail)
         {
             stream.Position = tail.Offset;

@@ -3,6 +3,7 @@ using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
+using ProjectARVRPro.Process.Demura;
 using ProjectARVRPro.Process.MTF.MTF07.MTFH;
 using ProjectARVRPro.Process.MTF.MTF07.MTFV;
 using ProjectARVRPro.Process.MTF.MTFHV;
@@ -36,6 +37,9 @@ namespace ProjectARVRPro
 
         [DisplayName("Black")]
         public BlackTestResult BlackTestResult { get; set; }
+
+        [DisplayName("Demura")]
+        public Dictionary<string, DemuraTestResult> DemuraTestResults { get; set; } = new();
 
         [DisplayName("视场角测试")]
         public Dictionary<string, FieldOfViewTestResult> FieldOfViewTestResults { get; set; } = new();

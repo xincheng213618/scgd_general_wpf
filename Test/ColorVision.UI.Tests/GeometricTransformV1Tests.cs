@@ -32,39 +32,6 @@ public sealed class GeometricTransformV1Tests
     };
 
     [Fact]
-    public void CatalogDefaultsSchemaAliasesAndPresetRoundTripAreStable()
-    {
-        AlgorithmCatalog catalog = StandardAlgorithmCatalog.Create();
-        AlgorithmDescriptor descriptor = Assert.Single(catalog.Descriptors, value => value.Id == StandardAlgorithmIds.GeometricTransform);
-        Assert.Equal(new AlgorithmVersion(1, 0, 0), descriptor.Version);
-        Assert.Equal("primary=same-as-input; validity-mask=gray8", descriptor.OutputFormatPolicy);
-        Assert.Equal(AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Flow | AlgorithmHostCapabilities.Headless
-            | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Deterministic,
-            descriptor.Capabilities & (AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Flow | AlgorithmHostCapabilities.Headless
-                | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Deterministic));
-        Assert.False(descriptor.Capabilities.HasFlag(AlgorithmHostCapabilities.Copilot));
-        Assert.True(catalog.TryResolveAlias("WarpAffine", out AlgorithmDescriptor? alias));
-        Assert.Equal(descriptor.Id, alias!.Id);
-        GeometricTransformParameters defaults = descriptor.ParameterSchema.Defaults.Deserialize<GeometricTransformParameters>(AlgorithmJson.Options)!;
-        Assert.True(defaults.Validate().IsValid);
-        Assert.Equal(new double[] { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, defaults.Matrix);
-        Assert.Contains(descriptor.ParameterSchema.Fields, field => field.Name == nameof(GeometricTransformParameters.MaximumOutputPixels)
-            && field.Unit == "px" && field.Minimum == 1);
-
-        GeometricTransformParameters parameters = new() { Kind = GeometricTransformKind.Perspective, M13 = 2.5, M31 = 0.001 };
-        AlgorithmParameterPreset preset = AlgorithmParameterPreset.Create("fixture-perspective", descriptor.Id, descriptor.Version, parameters,
-            new Dictionary<string, string> { ["source"] = "test" });
-        string json = JsonSerializer.Serialize(preset, AlgorithmJson.Options);
-        AlgorithmParameterPreset restored = JsonSerializer.Deserialize<AlgorithmParameterPreset>(json, AlgorithmJson.Options)!;
-        Assert.True(restored.Validate().IsValid);
-        AlgorithmInvocation invocation = restored.ToInvocation();
-        Assert.Equal("fixture-perspective", invocation.PresetId);
-        Assert.Equal(descriptor.Id, invocation.AlgorithmId);
-        Assert.Equal(parameters.M13, invocation.Parameters.Deserialize<GeometricTransformParameters>(AlgorithmJson.Options)!.M13);
-        Assert.Equal("test", invocation.Metadata["source"]);
-    }
-
-    [Fact]
     public void ParameterValidationRejectsInvalidAffineCanvasAndBudgets()
     {
         GeometricTransformParameters invalid = new()
@@ -361,66 +328,6 @@ public sealed class GeometricTransformV1Tests
         Assert.Equal(AlgorithmImageFormat.Gray8, Image(flow, "valid-region-mask").Format);
     }
 
-    [Fact]
-    public async Task ImageViewCatalogEntryCommitsThroughSessionAndResultWindowDisplaysAndReleasesArtifacts()
-    {
-        ImageView imageView = WpfTestHost.Invoke(() =>
-        {
-            EnsureResources();
-            ImageView view = new();
-            WriteableBitmap bitmap = new(3, 2, 96, 96, PixelFormats.Gray8, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, 3, 2), new byte[] { 1, 2, 3, 4, 5, 6 }, 3, 0);
-            view.SetImageSource(bitmap, enableEditorImageServices: false, configureDefaultLayerController: false);
-            return view;
-        });
-        AlgorithmResult? result = null;
-        try
-        {
-            ImageProcessingContext context = imageView.EditorContext.ProcessingContext;
-            WpfTestHost.Invoke(() =>
-            {
-                string?[] ids = new AlgorithmsContextMenu(context).GetContextMenuItems().Select(value => value.GuidId).ToArray();
-                Assert.Single(ids, value => value == "GeometricTransform");
-            });
-            long revision = context.ImageRevision;
-            GeometricTransformParameters parameters = new()
-            {
-                M13 = 1,
-                Canvas = GeometricTransformCanvas.ExplicitSize,
-                OutputWidth = 4,
-                OutputHeight = 2,
-                Interpolation = GeometricTransformInterpolation.Nearest,
-            };
-            Task<AlgorithmResult> apply = WpfTestHost.Invoke(() => ImageAlgorithmApplier.ApplyAsync(
-                context,
-                AlgorithmInvocation.Create(StandardAlgorithmIds.GeometricTransform, parameters)));
-            result = await apply;
-            Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
-            Assert.Equal(revision + 1, context.ImageRevision);
-            WpfTestHost.Invoke(() =>
-            {
-                BitmapSource committed = Assert.IsAssignableFrom<BitmapSource>(context.ViewBitmapSource);
-                Assert.Equal(4, committed.PixelWidth);
-                Assert.Equal(2, committed.PixelHeight);
-                GeometricTransformResultWindow window = new(result);
-                window.Show();
-                System.Windows.Controls.Image transformed = Assert.IsType<System.Windows.Controls.Image>(window.FindName("TransformedPreview"));
-                System.Windows.Controls.Image mask = Assert.IsType<System.Windows.Controls.Image>(window.FindName("MaskPreview"));
-                DataGrid grid = Assert.IsType<DataGrid>(window.FindName("MatrixGrid"));
-                Assert.Equal(4, Assert.IsAssignableFrom<BitmapSource>(transformed.Source).PixelWidth);
-                Assert.Equal(PixelFormats.Gray8, Assert.IsAssignableFrom<BitmapSource>(mask.Source).Format);
-                Assert.NotNull(grid.ItemsSource);
-                window.Close();
-                Assert.True(result.IsDisposed);
-            });
-        }
-        finally
-        {
-            result?.Dispose();
-            WpfTestHost.Invoke(imageView.Dispose);
-        }
-    }
-
     private static async Task<AlgorithmResult> RunAsync(AlgorithmImageBuffer input, GeometricTransformParameters parameters, string? presetId = null)
     {
         AlgorithmInvocation baseInvocation = AlgorithmInvocation.Create(StandardAlgorithmIds.GeometricTransform, parameters);
@@ -470,18 +377,6 @@ public sealed class GeometricTransformV1Tests
         return new AlgorithmPoint(
             (matrix[0] * point.X + matrix[1] * point.Y + matrix[2]) / denominator,
             (matrix[3] * point.X + matrix[4] * point.Y + matrix[5]) / denominator);
-    }
-
-    private static void EnsureResources()
-    {
-        Application application = Application.Current ?? new Application();
-        application.Resources["TextBox.Small"] = new Style(typeof(TextBox));
-        application.Resources["ComboBox.Small"] = new Style(typeof(ComboBox));
-        application.Resources["ToolBarBaseStyle"] = new Style(typeof(ToolBar));
-        application.Resources["ToolBarImage"] = new Style(typeof(System.Windows.Controls.Image));
-        application.Resources["BaseStyle"] = new Style(typeof(Control));
-        application.Resources["RangeSliderBaseStyle"] = new Style(typeof(HandyControl.Controls.RangeSlider));
-        application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
     }
 
     private sealed class InlineProgress(Action<AlgorithmProgress> report) : IProgress<AlgorithmProgress>

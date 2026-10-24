@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -93,6 +92,9 @@ internal static class STNodeCanvasReader
         int nodeCount = ReadCount(bodyStream, MaximumNodeCount, "节点");
         var options = new Dictionary<long, STNodeOption>();
         var indexedOptions = new HashSet<STNodeOption>();
+        STNodeLegacyConnections legacyConnections = null;
+        var states = new List<STNodeSavedState>();
+        var nodeIds = new HashSet<Guid>();
         long totalNodeDataLength = 0;
         for (int i = 0; i < nodeCount; i++)
         {
@@ -109,7 +111,14 @@ internal static class STNodeCanvasReader
             STNode node;
             try
             {
-                node = CreateNode(ReadBytes(bodyStream, nodeDataLength));
+                STNodeSavedState state = STNodeSavedState.Parse(ReadBytes(bodyStream, nodeDataLength));
+                states.Add(state);
+                if (state.Properties.TryGetValue(STNodeSavedState.LegacyConnectionsKey, out byte[] archive))
+                {
+                    if (legacyConnections != null) throw new InvalidDataException("旧流程连线记录重复。");
+                    legacyConnections = STNodeLegacyConnections.Deserialize(archive);
+                }
+                node = state.CreateNode();
             }
             catch (Exception ex)
             {
@@ -118,7 +127,22 @@ internal static class STNodeCanvasReader
                     ex);
             }
             document.Nodes.Add(node);
-            AddOptions(options, indexedOptions, node);
+            if (!nodeIds.Add(node.Guid)) throw new InvalidDataException("流程中存在重复的结点标识。");
+        }
+
+        var legacyPlaceholderIds = legacyConnections?.Nodes.Where(span => span.InputCount < 0)
+            .Select(span => span.NodeId).ToHashSet();
+        for (int i = 0; i < document.Nodes.Count; i++)
+        {
+            STNode node = document.Nodes[i];
+            // A saved legacy placeholder had no visible ports. If its plugin has
+            // returned, those newly restored ports belong to the archived map,
+            // not to the current saved map's global indices.
+            bool wasLegacyPlaceholder = states[i].Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey)
+                || legacyConnections != null && !states[i].Properties.ContainsKey(STNodeSavedState.PortLayoutKey)
+                    && legacyPlaceholderIds.Contains(node.Guid);
+            if (!wasLegacyPlaceholder) AddOptions(options, indexedOptions, node);
+            if (options.Count > 1_000_000) throw new InvalidDataException("流程端口总数量超过限制。");
         }
 
         int connectionCount = ReadCount(
@@ -126,11 +150,19 @@ internal static class STNodeCanvasReader
             MaximumConnectionCount,
             "连接");
         var connectionKeys = new HashSet<long>();
+        bool archiveOriginalConnections = legacyConnections == null && document.Nodes.Select((node, index) => (node, index))
+            .Any(item => item.node is STMissingNode { HasSavedPortLayout: false }
+                && !states[item.index].Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey));
+        var packedConnections = new long[connectionCount];
         for (int i = 0; i < connectionCount; i++)
         {
             long packed = ReadInt64(bodyStream);
+            packedConnections[i] = packed;
             long outputIndex = packed >> 32;
             long inputIndex = unchecked((uint)packed);
+            if (outputIndex < 0 || outputIndex >= 1_000_000 || inputIndex >= 1_000_000 || !connectionKeys.Add(packed))
+                throw new InvalidDataException($"第 {i + 1} 条连接编号无效或重复");
+            if (archiveOriginalConnections) continue;
             if (!options.TryGetValue(outputIndex, out STNodeOption output)
                 || !options.TryGetValue(inputIndex, out STNodeOption input))
             {
@@ -142,14 +174,16 @@ internal static class STNodeCanvasReader
                 throw new InvalidDataException(
                     $"第 {i + 1} 条连接方向无效");
             }
-            if (!connectionKeys.Add(packed))
-                throw new InvalidDataException($"第 {i + 1} 条连接重复");
-
             document.Connections.Add(new Connection(output, input));
         }
 
         if (bodyStream.ReadByte() != -1)
             throw new InvalidDataException("流程数据包含未识别的尾部内容");
+
+        if (archiveOriginalConnections)
+            legacyConnections = STNodeLegacyConnections.Capture(document.Nodes, packedConnections);
+        if (legacyConnections != null && !legacyConnections.TryRestore(document.Nodes, document.Connections))
+            foreach (STMissingNode node in document.Nodes.OfType<STMissingNode>()) node.LegacyConnections = legacyConnections;
 
         return document;
     }
@@ -235,52 +269,6 @@ internal static class STNodeCanvasReader
         return table;
     }
 
-    private static STNode CreateNode(byte[] data)
-    {
-        int offset = 0;
-        string modelKey = ReadByteLengthString(
-            data,
-            ref offset,
-            "节点类型");
-        string typeKey = ReadByteLengthString(
-            data,
-            ref offset,
-            "节点类型标识");
-        var properties = new Dictionary<string, byte[]>();
-        while (offset < data.Length)
-        {
-            int keyLength = ReadInt32(data, ref offset, "属性名称长度");
-            string propertyName = Encoding.UTF8.GetString(
-                ReadBytes(data, ref offset, keyLength, "属性名称"));
-            int valueLength = ReadInt32(data, ref offset, "属性值长度");
-            byte[] propertyValue = ReadBytes(
-                data,
-                ref offset,
-                valueLength,
-                "属性值");
-            if (!properties.TryAdd(propertyName, propertyValue))
-            {
-                throw new InvalidDataException(
-                    $"节点数据包含重复属性：{propertyName}");
-            }
-        }
-
-        STNodeTypeRegistry.TryGetNodeType(
-            typeKey,
-            modelKey,
-            out Type nodeType);
-        if (nodeType == null)
-        {
-            throw new TypeLoadException(
-                $"无法找到节点类型 {{{modelKey}}}，请确认对应程序集已加载");
-        }
-
-        var node = (STNode)Activator.CreateInstance(nodeType);
-        node.Create();
-        node.OnLoadNode(properties);
-        return node;
-    }
-
     private static void AddOptions(
         Dictionary<long, STNodeOption> options,
         HashSet<STNodeOption> indexedOptions,
@@ -338,40 +326,4 @@ internal static class STNodeCanvasReader
         return buffer;
     }
 
-    private static string ReadByteLengthString(
-        byte[] data,
-        ref int offset,
-        string valueName)
-    {
-        if (offset >= data.Length)
-            throw new InvalidDataException($"{valueName}缺失");
-        int length = data[offset++];
-        return Encoding.UTF8.GetString(
-            ReadBytes(data, ref offset, length, valueName));
-    }
-
-    private static int ReadInt32(
-        byte[] data,
-        ref int offset,
-        string valueName)
-    {
-        return BitConverter.ToInt32(
-            ReadBytes(data, ref offset, sizeof(int), valueName),
-            0);
-    }
-
-    private static byte[] ReadBytes(
-        byte[] data,
-        ref int offset,
-        int length,
-        string valueName)
-    {
-        if (length < 0 || offset < 0 || offset > data.Length - length)
-            throw new InvalidDataException($"{valueName}长度无效：{length}");
-
-        byte[] value = new byte[length];
-        Buffer.BlockCopy(data, offset, value, 0, length);
-        offset += length;
-        return value;
-    }
 }

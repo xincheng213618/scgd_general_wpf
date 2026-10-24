@@ -45,9 +45,11 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
     public class DisplaySMUConfig : IDisplayConfigBase
     {
-        [Category("AcquisitionDisplay"), DisplayName("使用本地源表"), Description("由当前电脑通过串口或网口直接连接；在源表配置窗口编辑。关闭当前连接后切换生效。")]
+        [Browsable(false)]
+        public LocalSmuSettings LocalSettings { get; set; } = new();
+        [Category("AcquisitionDisplay"), DisplayName("使用本地源表"), Description("默认开启；由当前电脑通过串口或网口直接连接；在源表配置窗口编辑。关闭当前连接后切换生效。")]
         public bool UseLocalSmu { get => _useLocalSmu; set => SetProperty(ref _useLocalSmu, value); }
-        private bool _useLocalSmu;
+        private bool _useLocalSmu = true;
 
         [Category("AcquisitionDisplay"), DisplayName("本地串口波特率"), PropertyVisibility(nameof(UseLocalSmu))]
         [Description("仅本地串口连接生效，须与仪器设置一致；修改后关闭连接再重新打开。Keithley 2600/2604 支持到 115200，2400 支持到 57600。")]

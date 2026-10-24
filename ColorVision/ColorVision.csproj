@@ -181,10 +181,21 @@
     <Resource Include="Assets\png\PowerToy.png" />
   </ItemGroup>
 
-  <Target Name="CopyShellExtensionRuntimeFiles" AfterTargets="Build">
+  <Target Name="CopyShellExtensionRuntimeFiles" AfterTargets="Build" Condition="'$(IsCrossTargetingBuild)' != 'true'">
+    <MSBuild Projects="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework)"
+             RemoveProperties="OutDir;OutputPath"
+             BuildInParallel="false">
+      <Output TaskParameter="TargetOutputs" ItemName="ShellExtensionTargetPath" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <ShellExtensionOutputPath>@(ShellExtensionTargetPath->'%(RootDir)%(Directory)')</ShellExtensionOutputPath>
+    </PropertyGroup>
+
     <ItemGroup>
-      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.*"
-                                  Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll')" />
+      <ShellExtensionRuntimeFiles Include="$(ShellExtensionOutputPath)ColorVision.ShellExtension.*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ShellExtensionRuntimeFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="'@(ShellExtensionRuntimeFiles)' != ''" />
@@ -192,7 +203,13 @@
 
   <Target Name="AddShellExtensionRuntimeFilesToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyShellExtensionRuntimeFiles">
     <ItemGroup>
-      <ShellExtensionPublishFiles Include="$(OutputPath)ColorVision.ShellExtension.*" Condition="Exists('$(OutputPath)ColorVision.ShellExtension.comhost.dll')" />
+      <!-- The SDK already includes comhost.dll from the referenced project's intermediate output. -->
+      <ShellExtensionPublishFiles Include="$(OutputPath)ColorVision.ShellExtension.*"
+                                  Exclude="@(ResolvedFileToPublish->'$(OutputPath)%(RelativePath)')"
+                                  Condition="Exists('$(OutputPath)ColorVision.ShellExtension.comhost.dll')" />
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.RelativePath)' == 'ColorVision.ShellExtension.comhost.dll'">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
       <ResolvedFileToPublish Include="@(ShellExtensionPublishFiles)">
         <RelativePath>%(Filename)%(Extension)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

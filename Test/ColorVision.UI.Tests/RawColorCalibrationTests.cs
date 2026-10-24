@@ -96,7 +96,7 @@ public sealed class RawColorCalibrationTests
             Assert.True(ColorCalibrationSnapshot.Read(path, raw)!.CanReplay);
             LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [file], "final", default);
             Assert.Equal("final", ColorCalibrationSnapshot.Read(path, raw)!.Template);
-            Assert.Equal(2, CVFileMetadata.Read(path).Count);
+            Assert.Equal(3, CVFileMetadata.Read(path).Count);
             Assert.Equal(original, File.ReadAllBytes(path).Take(original.Length));
             byte[] last = File.ReadAllBytes(path);
             DeviceCameraCalibrationFile missing = file with { FullPath = calibration + ".missing" };

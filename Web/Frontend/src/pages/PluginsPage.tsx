@@ -1,4 +1,4 @@
-import { AppstoreOutlined, SearchOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, CloudDownloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, Avatar, Button, Card, Col, Empty, Form, Input, Pagination, Row, Select, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -170,12 +170,24 @@ export function PluginsPage() {
                     </Space>
                     <div className="card-footer-link">
                       <Typography.Text type="secondary">{shortDate(plugin.updatedAt)}</Typography.Text>
-                      <Button
-                        aria-label={`查看 ${plugin.name} 详情`}
-                        onClick={() => navigate(`/plugins/${plugin.pluginId}`)}
-                      >
-                        详情
-                      </Button>
+                      <Space wrap>
+                        <Button
+                          aria-label={`查看 ${plugin.name} 详情`}
+                          onClick={() => navigate(`/plugins/${plugin.pluginId}`)}
+                        >
+                          详情
+                        </Button>
+                        <Button
+                          type="primary"
+                          icon={<CloudDownloadOutlined />}
+                          aria-label={`下载 ${plugin.name} 最新版${plugin.latestVersion ? ` v${plugin.latestVersion}` : ''}`}
+                          href={plugin.latestVersion ? `/api/packages/${encodeURIComponent(plugin.pluginId)}/${encodeURIComponent(plugin.latestVersion)}` : undefined}
+                          download
+                          disabled={!plugin.latestVersion}
+                        >
+                          下载最新版
+                        </Button>
+                      </Space>
                     </div>
                   </div>
                 </Space>

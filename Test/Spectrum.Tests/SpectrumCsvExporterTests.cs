@@ -19,6 +19,8 @@ public sealed class SpectrumCsvExporterTests
         Assert.StartsWith("No,IP,Luminance(Lv)(cd/m2),Blue Light Intensity", lines[0]);
         Assert.EndsWith(",500,502,504,sp500,sp502,sp504", lines[0]);
         Assert.DoesNotContain("EQE(%)", lines[0]);
+        Assert.DoesNotContain("Voltage", lines[0]);
+        Assert.DoesNotContain("Current", lines[0]);
         Assert.EndsWith(",2.5,5,10,0.25,0.5,1", lines[1]);
     }
 
@@ -40,6 +42,18 @@ public sealed class SpectrumCsvExporterTests
         Assert.Contains("Voltage(V),Current(mA)", header);
         Assert.DoesNotContain("Luminance(Lv)(cd/m2)", header);
         Assert.Contains(",12.34,12.5,2.5,5,", csv);
+    }
+
+    [Fact]
+    public void EqeRecalculationUpdatesRecordModeAndRollbackRestoresIt()
+    {
+        var result = CreateResult(500, 2, [1f, 0.5f]);
+        result.AcquisitionFluxMode = false;
+        var previous = result.CaptureEqeState();
+        result.CalculateEqeParams(4.2f, 20);
+        Assert.True(result.AcquisitionFluxMode);
+        result.RestoreEqeState(previous);
+        Assert.False(result.AcquisitionFluxMode);
     }
 
     [Fact]

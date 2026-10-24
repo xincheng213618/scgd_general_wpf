@@ -1,6 +1,8 @@
 ﻿using LocalizedText = global::ProjectARVRPro.DisplayText;
 #pragma warning disable CS8622
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Windows;
@@ -15,11 +17,32 @@ namespace ProjectARVRPro.Process
             FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig();
         }
 
-        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); OnPropertyChanged(nameof(FlowTemplateError)); } }
         private string _Name;
 
-        public string FlowTemplate { get => _FlowTemplate; set { _FlowTemplate = value; OnPropertyChanged(); } }
+        public string FlowTemplate { get => _FlowTemplate; set { _FlowTemplate = value; OnPropertyChanged(); RefreshFlowTemplateValidation(); } }
         private string _FlowTemplate;
+
+        [JsonIgnore]
+        public bool IsFlowTemplateMissing => FindFlowTemplate() == null;
+
+        [JsonIgnore]
+        public string FlowTemplateError => !IsFlowTemplateMissing ? string.Empty
+            : string.IsNullOrWhiteSpace(FlowTemplate)
+                ? LocalizedText.Format($"流程项“{Name}”尚未选择流程模板。请在“流程处理配置”中重新选择流程模板。")
+                : LocalizedText.Format($"流程项“{Name}”找不到流程模板“{FlowTemplate}”。流程可能已改名或删除，请在“流程处理配置”中重新选择流程模板。");
+
+        internal TemplateModel<FlowParam>? FindFlowTemplate() => string.IsNullOrWhiteSpace(FlowTemplate) ? null
+            : TemplateFlow.Params.FirstOrDefault(template => string.Equals(template.Key, FlowTemplate, StringComparison.OrdinalIgnoreCase));
+
+        internal TemplateModel<FlowParam> RequireFlowTemplate() => FindFlowTemplate()
+            ?? throw new InvalidOperationException(FlowTemplateError);
+
+        internal void RefreshFlowTemplateValidation()
+        {
+            OnPropertyChanged(nameof(IsFlowTemplateMissing));
+            OnPropertyChanged(nameof(FlowTemplateError));
+        }
 
         /// <summary>
         /// Gets or sets the JSON representation of the process configuration.

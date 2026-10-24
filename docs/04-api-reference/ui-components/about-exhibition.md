@@ -5,7 +5,7 @@ status: "current"
 summary: "主程序的图像、色彩与测量展示，以及 Spectrum 的光谱关于页：独立品牌和版本、中英文与繁体资源、不透明深浅配色、原生圆角对齐与关闭释放约束。"
 aliases: ["关于页面", "关于窗口", "炫技界面", "光谱之间", "关于窗口黑边", "关于页中英文", "AboutMsg", "AboutMsgWindow", "AboutArtScene", "AboutArtwork", "AboutWindowChrome", "AboutText", "AboutResources", "VisionImageStudy", "SpectrumAboutWindow", "光谱粒子", "NOCTURNE", "OPALINE"]
 code_paths: ["ColorVision/AboutMsg.xaml", "ColorVision/AboutMsg.xaml.cs", "UI/ColorVision.UI/Views/About/AboutArtScene.cs", "UI/ColorVision.UI/Views/About/VisionImageStudy.cs", "UI/ColorVision.UI/Views/About/AboutWindowChrome.cs", "UI/ColorVision.UI/Views/About/AboutText.cs", "UI/ColorVision.UI/Views/About/AboutResources.resx", "UI/ColorVision.UI/Views/About/AboutResources.en.resx", "UI/ColorVision.UI/Views/About/AboutResources.zh-Hant.resx", "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml", "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs"]
+test_paths: []
 related: ["ui.themes", "ui.hotkeys", "plugins.spectrum"]
 ---
 
@@ -47,16 +47,6 @@ XAML 通过 `x:Static` 在窗口构造时取值，不订阅额外的即时语言
 
 ## 验证
 
-`AboutTextTests` 检查三个编译资源集各自包含完整且非空的 14 个键，禁止父资源回退掩盖缺键；还覆盖简体、繁体地区文化及多种非中文文化的文案选择，检查读取资源不改变界面文化或格式文化。
+视觉验收覆盖简体、繁体、英文与非中文界面文化，核对产品名称、窗口标题和程序集版本；本地配色切换不应修改全局主题，关闭重开后应采用应用当前主题。
 
-`AboutMsgWindowTests.RealWindowLoadsItsXamlSwitchesOnlyItsPaletteAndReleasesOnClose` 分别以简体、英文、繁体与德文界面文化构造并显示主程序关于窗口，加载真实产品 BAML 和模板，检查标题文案、英文布局边界、程序集版本、不透明表面、本地配色切换不修改全局主题，以及关闭后主题订阅恢复、窗口移出应用集合；英文用例另检查窗口可被回收。英文和德文用例检查窗口文字、按钮提示及辅助功能名称不含中文。
-
-`AboutMsgWindowTests.EachOpeningStartsFromTheResolvedApplicationThemeInsteadOfThePreviousLocalPalette` 覆盖明确浅色、明确深色及跟随系统解析为浅色或深色的四种情况，检查构造和显示时的默认配色、局部切换不改变应用主题或资源字典，以及关闭重开后恢复应用当前配色。测试使用独立主题管理器，不写入用户主题配置。
-
-`SpectrumAboutWindowTests` 检查菜单归属，并在同一个 STA `Application` 中组合简体、英文、繁体界面文化与浅色、深色主题显示插件窗口，检查窗口标题、菜单标题、主句和插件自身版本；英文用例还检查关闭按钮提示。调色验证使用不透明背景并保持全局主题不变，关闭重开后重新采用应用当前主题。
-
-`AboutSpectralSceneLifecycleTests` 在真实 WPF Dispatcher/窗口中经历显示、暂停、隐藏、再次显示、配色切换及关闭，验证两种作品、两种初始配色的场景可被回收。
-
-`AboutWindowChromeTests.NativeRegionMatchesTheVisualRadiusAfterWorkAreaScaling` 创建不激活的屏幕外窗口，读取真实 HWND 的 `GetWindowRgn`，检查原尺寸和 65% 工作区缩放下的四角内外点与中心点，并检查窗口不透明、配置圆角不会提前创建句柄。它使用当前机器的实际 DPI，不覆盖跨显示器 DPI 切换。
-
-这些测试不证明视觉质量或实际帧率。视觉验收仍需覆盖深浅配色、鼠标视差、窗口拖动、关闭/再次打开，以及不同 DPI 下原生边缘与内部构图的一致性。
+同时检查深浅配色、鼠标视差、窗口拖动、暂停与恢复、关闭后订阅释放，以及不同 DPI 下原生圆角与内部构图的一致性。资源与源码检查不能证明实际帧率或场景回收。

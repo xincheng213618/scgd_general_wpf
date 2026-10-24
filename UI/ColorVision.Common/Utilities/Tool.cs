@@ -169,12 +169,24 @@ namespace ColorVision.Common.Utilities
 
         public static string SanitizeFileName(string fileName)
         {
-            // 定义非法字符
+            ArgumentNullException.ThrowIfNull(fileName);
             char[] invalidChars = Path.GetInvalidFileNameChars();
             foreach (char c in invalidChars)
             {
-                fileName = fileName.Replace(c, '_'); // 将非法字符替换为下划线或其他合法字符
+                fileName = fileName.Replace(c, '_');
             }
+            fileName = fileName.TrimEnd(' ', '.');
+            if (string.IsNullOrWhiteSpace(fileName)) return "_";
+
+            string stem = fileName.Split('.')[0].TrimEnd(' ');
+            if (stem.Equals("CON", StringComparison.OrdinalIgnoreCase)
+                || stem.Equals("PRN", StringComparison.OrdinalIgnoreCase)
+                || stem.Equals("AUX", StringComparison.OrdinalIgnoreCase)
+                || stem.Equals("NUL", StringComparison.OrdinalIgnoreCase)
+                || (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.OrdinalIgnoreCase)
+                    || stem.StartsWith("LPT", StringComparison.OrdinalIgnoreCase))
+                    && "123456789¹²³".Contains(stem[3])))
+                fileName = "_" + fileName;
             return fileName;
         }
 

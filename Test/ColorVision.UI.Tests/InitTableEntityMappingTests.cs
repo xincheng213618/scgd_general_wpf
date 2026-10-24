@@ -42,6 +42,7 @@ public sealed class InitTableEntityMappingTests
             "id", "device_code", "batch_id", "z_index", "channel", "is_source_v", "src_begin", "src_end", "points",
             "limit_value", "v_result", "i_result", "result_code", "total_time", "create_date"
         ],
+        ["t_scgd_measure_result_smu_local_details"] = ["id", "is_scan", "result_id", "details"],
         ["t_scgd_measure_result_spectrometer"] =
         [
             "id", "data_type", "device_code", "batch_id", "z_index", "smu_data_id", "v_result", "i_result", "fIntTime",

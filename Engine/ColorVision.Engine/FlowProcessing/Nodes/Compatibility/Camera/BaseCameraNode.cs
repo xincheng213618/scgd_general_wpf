@@ -24,12 +24,6 @@ public class BaseCameraNode : CVBaseServerNode
 
 	protected CVImageFlipMode _FlipMode;
 
-	protected string _POITempName;
-
-	protected string _POIFilterTempName;
-
-	protected string _POIReviseTempName;
-
 	private STNodeEditText<float> m_ctrl_exp = null!;
 
 	[STNodeProperty("平均次数", "平均次数", true)]
@@ -104,51 +98,6 @@ public class BaseCameraNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("POI模板", "POI算法模板", true)]
-	[PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
-	public string POITempName
-	{
-		get
-		{
-			return _POITempName;
-		}
-		set
-		{
-			_POITempName = value;
-			OnPropertyChanged();
-		}
-	}
-
-	[STNodeProperty("POI过滤", "POI过滤模板", true)]
-	[PropertyEditorType(typeof(PoiFilterTemplatePropertiesEditor))]
-	public string POIFilterTempName
-	{
-		get
-		{
-			return _POIFilterTempName;
-		}
-		set
-		{
-			_POIFilterTempName = value;
-			OnPropertyChanged();
-		}
-	}
-
-	[STNodeProperty("POI修正", "POI修正模板", true)]
-	[PropertyEditorType(typeof(PoiReviseTemplatePropertiesEditor))]
-	public string POIReviseTempName
-	{
-		get
-		{
-			return _POIReviseTempName;
-		}
-		set
-		{
-			_POIReviseTempName = value;
-			OnPropertyChanged();
-		}
-	}
-
 	protected BaseCameraNode(string title, string nodeType, string nodeName, string deviceCode)
 		: base(title, nodeType, nodeName, deviceCode)
 	{
@@ -157,9 +106,6 @@ public class BaseCameraNode : CVBaseServerNode
 		_ExpTime = 100f;
 		_Gain = 10f;
 		_CaliTempName = "";
-		_POITempName = "";
-		_POIFilterTempName = "";
-		_POIReviseTempName = "";
 		_AvgCount = 1;
 		_Aperture = 0f;
 		_EnableFocus = false;
@@ -180,7 +126,7 @@ public class BaseCameraNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new CameraData(_FlipMode, _EnableFocus, _Focus, _Aperture, _AvgCount, _Gain, new float[1] { _ExpTime }, _CaliTempName, _POITempName, _POIFilterTempName, _POIReviseTempName, string.Empty);
+		return new CameraData(_FlipMode, _EnableFocus, _Focus, _Aperture, _AvgCount, _Gain, new float[1] { _ExpTime }, _CaliTempName);
 	}
 
 	protected override int GetMaxDelay()

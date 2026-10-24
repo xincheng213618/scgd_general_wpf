@@ -10,7 +10,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Job
 {
-    [Display(Name = "Engine_PG_SingleSpectrumTest", ResourceType = typeof(Properties.Resources))]
+    [Display(Name = nameof(Properties.Resources.Engine_PG_SingleSpectrumTest), ResourceType = typeof(Properties.Resources))]
     [DisallowConcurrentExecution]
     public class SpectrumGetDataJob : IJob, IConfigurableJob
     {

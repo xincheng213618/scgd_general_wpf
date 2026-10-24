@@ -38,6 +38,7 @@ namespace System.ComponentModel
             dockPanel.Children.Add(textBlock);
 
             Binding binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property, UpdateSourceTrigger.Default);
+            if (Nullable.GetUnderlyingType(property.PropertyType) != null) binding.TargetNullValue = string.Empty;
 
             var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
             if (t == typeof(float) || t == typeof(double))

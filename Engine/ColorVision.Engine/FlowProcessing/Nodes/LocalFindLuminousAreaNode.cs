@@ -206,7 +206,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     }
 
-    [STNode("Flow_CustomNodes", "发光区定位", CategoryOrder = 9900)]
+    [STNode("Flow_LocalAlgorithms", "发光区定位", CategoryOrder = 9910, NodeOrder = 10)]
     [FlowNodeDocumentation("使用上游图像定位发光区，输出四角点。",
         Usage = "将相机取图、校正或加载图片节点连接到 IN。本地图片请通过“加载图片”节点输入。")]
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase

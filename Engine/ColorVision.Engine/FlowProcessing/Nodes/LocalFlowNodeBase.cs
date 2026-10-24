@@ -1,5 +1,6 @@
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -13,6 +14,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -49,7 +51,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             public int MasterResultType { get; init; } = -1;
             public string? MasterValue { get; init; }
 
-            public static LocalFlowInputSnapshot Create(CVStartCFC action)
+            public string? ImageFilePath { get; init; }
+
+            public static LocalFlowInputSnapshot Create(CVStartCFC action, string? imageFilePath = null)
             {
                 int masterId = ReadInt(action, "MasterId");
                 int masterResultType = ReadInt(action, "MasterResultType");
@@ -57,6 +61,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return new LocalFlowInputSnapshot
                 {
                     Action = new CVStartCFC(action),
+                    ImageFilePath = imageFilePath,
                     MasterId = masterId,
                     MasterResultType = masterResultType,
                     MasterValue = masterValue?.ToString()
@@ -86,6 +91,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected const string LocalTopic = "LOCAL";
         private readonly string[] inputNames;
         private readonly object inputSync = new();
+        private readonly ConditionalWeakTable<CVStartCFC, object> executionParameters = new();
         private readonly Dictionary<string, LocalFlowInputSnapshot?[]> pendingInputSets = new(StringComparer.Ordinal);
         private readonly ConcurrentDictionary<string, LocalFlowInputSnapshot[]> activeInputSets = new(StringComparer.Ordinal);
         private STNodeOption[] flowInputOptions = Array.Empty<STNodeOption>();
@@ -225,6 +231,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex)
         {
+            if (activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
+                && inputIndex >= 0 && inputIndex < inputs.Length && !string.IsNullOrWhiteSpace(inputs[inputIndex].ImageFilePath))
+                return inputs[inputIndex].ImageFilePath!;
             if (!TryGetInputMasterResult(action, inputIndex, out int masterId, out int masterResultType, out _) || masterId <= 0)
             {
                 return string.Empty;
@@ -254,6 +263,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             masterResultType = -1;
             masterValue = null;
             if (!activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
+                || !action.IsSameExecutionIteration(inputs[0].Action)
                 || inputIndex < 0
                 || inputIndex >= inputs.Length)
             {
@@ -281,7 +291,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             start.NormalizeStopStatus();
             if (!start.IsRunning)
             {
-                ClearPendingInputs(start.SerialNumber);
+                ClearPendingInputs(start);
                 flowOutputOption.TransferData(start);
                 return;
             }
@@ -295,6 +305,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     inputs = new LocalFlowInputSnapshot?[inputNames.Length];
                     pendingInputSets.Add(start.SerialNumber, inputs);
+                }
+                else if (inputs.Any(input => input != null && !start.IsSameExecutionIteration(input.Action)))
+                {
+                    Array.Clear(inputs);
                 }
                 inputs[inputIndex] = CaptureInput(start);
                 if (inputs.All(input => input != null))
@@ -319,46 +333,119 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             CVTransAction transaction = new(start);
             activeInputSets.AddOrUpdate(start.SerialNumber, inputs, (_, _) => inputs);
+            Exception? preparationError = null;
+            string payload;
+            try
+            {
+                object? parameters = CaptureExecutionParameters(start);
+                if (parameters != null) executionParameters.Add(start, parameters);
+                payload = BuildRunPayload(start);
+            }
+            catch (Exception ex)
+            {
+                preparationError = ex;
+                payload = JsonConvert.SerializeObject(new { DeviceNodeCode = NodeID, Error = ex.Message });
+            }
             PublishNodeRun(new FlowEngineNodeRunEventArgs
             {
                 SerialNumber = start.SerialNumber,
                 SendTopic = LocalTopic,
                 SendMsgId = start.SerialNumber,
                 SendEventName = OperatorCode,
-                SendPayload = BuildRunPayload(start)
+                SendPayload = payload
             });
 
-            _ = Task.Run(() => ExecuteCore(transaction, inputs));
+            _ = Task.Run(() => ExecuteCore(transaction, inputs, preparationError));
         }
 
-        private void ClearPendingInputs(string? serialNumber = null)
+        private void ClearPendingInputs(CVStartCFC? action = null)
         {
             lock (inputSync)
             {
-                if (serialNumber == null)
+                if (action == null)
                 {
                     pendingInputSets.Clear();
                 }
                 else
                 {
-                    pendingInputSets.Remove(serialNumber);
+                    if (pendingInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot?[]? inputs)
+                        && inputs.Any(input => input != null && (action.IsSameExecutionIteration(input.Action)
+                            || ReferenceEquals(action.RuntimeResources, input.Action.RuntimeResources))))
+                        pendingInputSets.Remove(action.SerialNumber);
                 }
             }
         }
 
         protected abstract LocalNodeExecutionResult ExecuteLocal(CVStartCFC action);
 
+        private string? compatibilityNodeId;
+        protected string ExecutionNodeId => compatibilityNodeId ?? NodeID;
+
+        // Old service nodes retain their own lifecycle and delegate the work to the existing local node.
+        internal FlowLocalExecution CreateCompatibilityExecution(CVMQTTRequest request, string? imageFilePath, params CVStartCFC[] inputs)
+        {
+            compatibilityNodeId = request.DeviceNodeCode;
+            ZIndex = request.ZIndex;
+            return new CompatibilityExecution(this, request.SerialNumber, imageFilePath, inputs);
+        }
+
+        private sealed class CompatibilityExecution(LocalFlowNodeBase node, string serialNumber, string? imageFilePath, CVStartCFC[] inputs) : FlowLocalExecution
+        {
+            private CVStartCFC action = null!;
+            private LocalFlowFrameLease? imageLease;
+            private object? result;
+            public override bool UseNodeTimeout => false;
+
+            public override void Bind(CVStartCFC owner)
+            {
+                action = new CVStartCFC(owner);
+                CVStartCFC image = inputs.Length > 0 ? inputs[0] : owner;
+                action.Data.Remove(LocalFlowFrameRuntime.FrameIdDataKey);
+                if (string.IsNullOrWhiteSpace(imageFilePath) && image.TryAcquireCurrentFrame(out imageLease))
+                    action.Data[LocalFlowFrameRuntime.FrameIdDataKey] = imageLease!.FrameId.ToString("N");
+            }
+
+            public override void Execute()
+            {
+                action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+                LocalFlowInputSnapshot[] snapshots = (inputs.Length > 0 ? inputs : new[] { action })
+                    .Select((input, index) => LocalFlowInputSnapshot.Create(input, index == 0 ? imageFilePath : null)).ToArray();
+                node.activeInputSets[action.SerialNumber] = snapshots;
+                try { result = node.ExecuteLocal(action).Data; }
+                finally { node.activeInputSets.TryRemove(action.SerialNumber, out _); }
+            }
+
+            public override object? Complete(CVStartCFC owner)
+            {
+                owner.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+                if (owner.IsDel || owner.TryGetStopStatus(out _)) throw new OperationCanceledException("流程已停止，本地结果不再交接。");
+                if (owner.SerialNumber != serialNumber) throw new InvalidOperationException("本地结果与当前流程批次不匹配。");
+                owner.Data = action.Data;
+                return result;
+            }
+
+            public override void Dispose() => imageLease?.Dispose();
+        }
+
+        protected virtual object? CaptureExecutionParameters(CVStartCFC action) => null;
+
+        protected T GetExecutionParameters<T>(CVStartCFC action) where T : class
+            => executionParameters.TryGetValue(action, out object? parameters) && parameters is T typed
+                ? typed : throw new InvalidOperationException("节点的本次执行参数尚未准备。");
+
         protected virtual string BuildRunPayload(CVStartCFC action)
         {
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber });
         }
 
-        private void ExecuteCore(CVTransAction transaction, LocalFlowInputSnapshot[] inputs)
+        private void ExecuteCore(CVTransAction transaction, LocalFlowInputSnapshot[] inputs, Exception? preparationError)
         {
             var timing = new FlowNodeTiming();
             using var activation = timing.Activate();
             try
             {
+                if (transaction.trans_action.RuntimeResources.IsDisposed || transaction.trans_action.IsDel || transaction.trans_action.TryGetStopStatus(out _)) return;
+                if (preparationError != null) throw preparationError;
                 LocalNodeExecutionResult result = FlowNodeTiming.Run("ExecuteLocal", () => ExecuteLocal(transaction.trans_action));
                 if (transaction.trans_action.RuntimeResources.IsDisposed) return;
                 CVServerResponse response = new(transaction.trans_action.SerialNumber, ActionStatusEnum.Finish, result.Message, OperatorCode, result.Data);
@@ -375,6 +462,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             finally
             {
+                executionParameters.Remove(transaction.trans_action);
                 activeInputSets.TryRemove(new KeyValuePair<string, LocalFlowInputSnapshot[]>(transaction.trans_action.SerialNumber, inputs));
             }
         }

@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; OnPropertyChanged(); } }
         private CameraType _CameraType = CameraType.BV_Q;
 
-        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; OnPropertyChanged(); } }
+        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; OnPropertyChanged(); OnPropertyChanged(nameof(Channel)); } }
         private CameraMode _CameraMode = CameraMode.BV_MODE;
 
         public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; OnPropertyChanged();  } }
@@ -33,7 +33,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; OnPropertyChanged(); } }
         private ImageBpp _ImageBpp = ImageBpp.bpp16;
-        public ImageChannel Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); } }
+        [ReadOnly(true)]
+        public ImageChannel Channel { get => CameraChannels.Resolve(CameraMode, _Channel); set { _Channel = value; OnPropertyChanged(); } }
         private ImageChannel _Channel = ImageChannel.Three;
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();

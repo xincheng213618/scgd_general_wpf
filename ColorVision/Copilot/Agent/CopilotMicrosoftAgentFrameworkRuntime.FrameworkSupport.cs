@@ -94,6 +94,8 @@ namespace ColorVision.Copilot
                 CopilotReasoningMode.Low => new ReasoningOptions { Effort = ReasoningEffort.Low, Output = ReasoningOutput.Full },
                 CopilotReasoningMode.Medium => new ReasoningOptions { Effort = ReasoningEffort.Medium, Output = ReasoningOutput.Full },
                 CopilotReasoningMode.High => new ReasoningOptions { Effort = ReasoningEffort.High, Output = ReasoningOutput.Full },
+                // The shared enum has no Max. The local adapter preserves this exact profile value.
+                CopilotReasoningMode.Max when profile.IsLocalCodex => null,
                 CopilotReasoningMode.XHigh or CopilotReasoningMode.Max => new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh, Output = ReasoningOutput.Full },
                 _ => null,
             };
@@ -103,6 +105,18 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ChatOptions options)
         {
+            if (request.Profile.IsLocalCodex)
+            {
+                var effort = GetConfiguredCodexReasoningEffort(request);
+                if (effort != CopilotCodexReasoningEffort.Unspecified)
+                {
+                    options.AdditionalProperties ??= new();
+                    options.AdditionalProperties[CopilotCodexChatClient.ReasoningEffortOverrideKey] =
+                        CopilotCodexReasoningEffortSelection.GetConfigToken(effort);
+                }
+                return;
+            }
+
             if (!CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
                 return;
 
@@ -181,18 +195,7 @@ namespace ColorVision.Copilot
         private static ResponseReasoningOptions? BuildCodexResponseReasoningOptions(
             CopilotAgentRequest request)
         {
-            var configuredEffort = request.CodexReasoningEffort;
-            if (CopilotOpenAiRequestPolicy.HasMandatoryReasoning(request.Profile))
-            {
-                configuredEffort = configuredEffort switch
-                {
-                    CopilotCodexReasoningEffort.None or CopilotCodexReasoningEffort.Minimal => CopilotCodexReasoningEffort.Low,
-                    CopilotCodexReasoningEffort.Ultra => CopilotCodexReasoningEffort.Max,
-                    _ => configuredEffort,
-                };
-            }
-
-            ResponseReasoningEffortLevel? effort = configuredEffort switch
+            ResponseReasoningEffortLevel? effort = GetConfiguredCodexReasoningEffort(request) switch
             {
                 CopilotCodexReasoningEffort.None => new ResponseReasoningEffortLevel("none"),
                 CopilotCodexReasoningEffort.Minimal => ResponseReasoningEffortLevel.Minimal,
@@ -229,6 +232,22 @@ namespace ColorVision.Copilot
                     ReasoningSummaryVerbosity = summary,
                 }
                 : null;
+        }
+
+        private static CopilotCodexReasoningEffort GetConfiguredCodexReasoningEffort(CopilotAgentRequest request)
+        {
+            var effort = request.CodexReasoningEffort;
+            if (CopilotOpenAiRequestPolicy.HasMandatoryReasoning(request.Profile)
+                || request.Profile.IsLocalCodex && CopilotOpenAiRequestPolicy.HasMandatoryReasoningModelName(request.Profile.Model))
+            {
+                return effort switch
+                {
+                    CopilotCodexReasoningEffort.None or CopilotCodexReasoningEffort.Minimal => CopilotCodexReasoningEffort.Low,
+                    CopilotCodexReasoningEffort.Ultra => CopilotCodexReasoningEffort.Max,
+                    _ => effort,
+                };
+            }
+            return effort;
         }
 
         private static Microsoft.Extensions.AI.ChatMessage ToFrameworkMessage(CopilotRequestMessage message)

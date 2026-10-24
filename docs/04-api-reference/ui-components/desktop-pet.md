@@ -5,7 +5,7 @@ status: "current"
 summary: "桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。"
 aliases: ["桌面宠物","桌宠","小彩","唤醒宠物","收起宠物","选择宠物与设置","用 Codex 创建","导入精灵表","pet.json","avatar.json","spritesheetPath","DesktopPetConfig","DesktopPetAssetCatalog","DesktopPetPackageService","DesktopPetCodexService","FloatingBallWindow","OpenFloatingBall","hatch-pet","素材不可用"]
 code_paths: ["ColorVision/FloatingBall/","ColorVision/FloatingBallWindow.xaml","ColorVision/FloatingBallWindow.xaml.cs","ColorVision/MainWindowConfig.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DesktopPetPackageServiceTests.cs","Test/ColorVision.UI.Tests/DesktopPetCodexServiceTests.cs","Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DesktopPetPackageServiceTests.cs","Test/ColorVision.UI.Tests/DesktopPetCodexServiceTests.cs"]
 related: ["ui.settings","ui.configuration","copilot.interactions"]
 ---
 

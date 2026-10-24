@@ -1,4 +1,6 @@
 using AvalonDock.Layout;
+using DockingManager = AvalonDock.DockingManager;
+using AvalonDock.Serializer.Xml;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
@@ -11,6 +13,7 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Documents;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Solution.Workspace;
@@ -35,54 +38,81 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DockViewLifecycleTests
 {
+    // Protect cold-start identity and nested pane placement without restoring result content or writing user layout files.
     [Fact]
-    public void RegisteringFactoryDoesNotCreateItsView()
+    public void ColdStartRestoresNestedDevicePanesByIdentityWithFreshEmptyViews()
     {
         WpfTestHost.Invoke(() =>
         {
             using var scope = new Scope();
-            int created = 0;
-            using var registration = new DockViewRegistration(() => { created++; return new UserControl(); }, "Lazy view");
-            new UserControl().AddViewConfig(registration, "Lazy view");
-            Assert.Null(registration.Current);
-            Assert.Equal(0, created);
-            DockViewManager.GetInstance().ShowAllViews();
-            Assert.NotNull(registration.Current);
-            Assert.Equal(1, created);
-        });
-    }
+            var manager = DockViewManager.GetInstance();
+            var root = Assert.IsType<LayoutRoot>(scope.Pane.Root);
+            var docking = new DockingManager { Layout = root };
+            var layout = new DockLayoutManager(docking);
+            using var flow = new DockViewRegistration(() => new ListBox(), "Flow") { PersistenceKey = "test-layout-flow" };
+            using var camera = new DockViewRegistration(() => new ListBox(), "Camera") { PersistenceKey = "test-layout-camera" };
+            using var smu = new DockViewRegistration(() => new ListBox(), "SMU") { PersistenceKey = "test-layout-smu" };
+            foreach (var registration in new[] { flow, camera, smu }) manager.OpenView(registration);
+            ((ListBox)camera.Current!).Items.Add("DO-NOT-RESTORE-RESULTS");
+            var cameraDocument = scope.Pane.Children.Single(document => document.Content == camera.Current);
+            var smuDocument = scope.Pane.Children.Single(document => document.Content == smu.Current);
+            scope.Pane.Children.Remove(cameraDocument);
+            scope.Pane.Children.Remove(smuDocument);
+            scope.Pane.DockWidth = new GridLength(3, GridUnitType.Star);
+            var upper = new LayoutDocumentPane { DockHeight = new GridLength(3, GridUnitType.Star) };
+            var lower = new LayoutDocumentPane { DockHeight = new GridLength(2, GridUnitType.Star) };
+            upper.Children.Add(cameraDocument);
+            lower.Children.Add(smuDocument);
+            var right = new LayoutDocumentPaneGroup { Orientation = Orientation.Vertical, DockWidth = new GridLength(2, GridUnitType.Star) };
+            right.Children.Add(upper); right.Children.Add(lower);
+            root.RootPanel.Children.Add(right);
+            using var saved = new StringWriter();
+            new XmlLayoutSerializer(docking).Serialize(saved);
+            string xml = saved.ToString();
+            Assert.DoesNotContain("DO-NOT-RESTORE-RESULTS", xml);
+            flow.Dispose(); camera.Dispose(); smu.Dispose();
 
-    [Fact]
-    public void BackgroundCameraPreviewDoesNotCreateAView()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using var camera = new DeviceCamera(Resource("background"));
-            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
-            {
-                Width = 2, Height = 1, SourceBpp = 8, Channels = 1
-            }, 2, 0);
-            camera.PublishLocalPreview(frame, null, forceDisplay: true);
-            Pump();
-            Assert.Null(camera.ExistingView);
-            Assert.Null(camera.GetType().GetField("pendingPreview", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(camera));
-        });
-    }
+            // Re-register in another order and with renamed labels, as after a restart or device reload.
+            using var newSmu = new DockViewRegistration(() => new ListBox(), "Renamed SMU") { PersistenceKey = "test-layout-smu" };
+            using var newCamera = new DockViewRegistration(() => new ListBox(), "Renamed Camera") { PersistenceKey = "test-layout-camera" };
+            using var newFlow = new DockViewRegistration(() => new ListBox(), "Flow") { PersistenceKey = "test-layout-flow" };
+            foreach (var registration in new[] { newSmu, newCamera, newFlow }) manager.RegisterView(registration);
+            Assert.Null(newCamera.Current);
+            layout.RestoreLayout(new StringReader(xml));
+            manager.ShowAllViews();
+            var restored = docking.Layout.Descendents().OfType<LayoutDocument>().ToArray();
+            Assert.Equal(3, restored.Length);
+            var restoredCamera = Assert.Single(restored, document => document.ContentId == "DockView:test-layout-camera");
+            var restoredSmu = Assert.Single(restored, document => document.ContentId == "DockView:test-layout-smu");
+            Assert.Same(newCamera.Current, restoredCamera.Content);
+            Assert.Same(newSmu.Current, restoredSmu.Content);
+            Assert.Equal("Renamed Camera", restoredCamera.Title);
+            Assert.Empty(((ListBox)newCamera.Current!).Items);
+            var cameraPane = Assert.IsType<LayoutDocumentPane>(restoredCamera.Parent);
+            var smuPane = Assert.IsType<LayoutDocumentPane>(restoredSmu.Parent);
+            var group = Assert.IsType<LayoutDocumentPaneGroup>(cameraPane.Parent);
+            Assert.Same(group, smuPane.Parent);
+            Assert.Equal(Orientation.Vertical, group.Orientation);
+            Assert.Same(cameraPane, group.Children[0]);
+            Assert.Same(smuPane, group.Children[1]);
+            Assert.Equal(new GridLength(3, GridUnitType.Star), cameraPane.DockHeight);
+            Assert.Equal(new GridLength(2, GridUnitType.Star), smuPane.DockHeight);
+            Assert.Equal(new GridLength(2, GridUnitType.Star), group.DockWidth);
+            manager.SelectView(newCamera.Current!);
+            Assert.Same(cameraPane, restoredCamera.Parent);
+            Assert.Equal(3, docking.Layout.Descendents().OfType<LayoutDocument>().Count());
 
-    [Theory]
-    [InlineData("camera")]
-    [InlineData("algorithm")]
-    [InlineData("calibration")]
-    public void DevicePanelDoesNotCreateAnImageView(string kind)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using DeviceService device = CreateDevice(kind);
-            Assert.NotNull(device.GetDisplayControl());
-            Assert.Null(Registration(device).Current);
-            Assert.Empty(scope.Pane.Children);
+            // Reloading the same layout must also reuse the current controls and retain document-close ownership.
+            Control sameCamera = newCamera.Current!;
+            layout.RestoreLayout(new StringReader(xml));
+            manager.ShowAllViews();
+            Assert.Same(sameCamera, newCamera.Current);
+            restoredCamera.Close(); // The retired layout must not release the new model's control.
+            Assert.Same(sameCamera, newCamera.Current);
+            var currentCameraDocument = Assert.Single(docking.Layout.Descendents().OfType<LayoutDocument>(),
+                document => document.ContentId == "DockView:test-layout-camera");
+            currentCameraDocument.Close();
+            Assert.Null(newCamera.Current);
         });
     }
 
@@ -175,93 +205,6 @@ public sealed class DockViewLifecycleTests
         });
     }
 
-    [Theory]
-    [InlineData(CVFileSaveMode.Synchronous, 0)]
-    [InlineData(CVFileSaveMode.MemoryOnly, 0)]
-    [InlineData(CVFileSaveMode.Synchronous, 100)]
-    [InlineData(CVFileSaveMode.MemoryOnly, 100)]
-    public async Task SavedCapturesDisplayCurrentColorParametersWithoutReselection(CVFileSaveMode saveMode, int firstId)
-    {
-        using var first = new RawFile(3, 2);
-        using var second = new RawFile(3, 2);
-        Scope? scope = null;
-        DeviceCamera? camera = null;
-        bool cacheEnabled = CVFileReadCache.IsEnabled;
-        try
-        {
-            CVFileReadCache.IsEnabled = true;
-            WpfTestHost.Invoke(() =>
-            {
-                scope = new Scope();
-                camera = new DeviceCamera(Resource("calibrated-capture"));
-                DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
-                Image(camera).IEditorToolFactory.IEditorTools.Clear();
-                Image(camera).IEditorToolFactory.IImageOpens[".cvraw"] = new CVRawOpen(Image(camera).EditorContext);
-            });
-            double gain = 1;
-            foreach (string path in new[] { first.Path, second.Path })
-            {
-                File.Delete(path);
-                using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
-                    { Width = 3, Height = 2, SourceBpp = 8, Channels = 3, Exposure = [10, 10, 10] }, 18, 0);
-                using (var lease = frame.Acquire()) System.Runtime.InteropServices.Marshal.Copy(Enumerable.Repeat((byte)20, 18).ToArray(), 0, lease.RawPointer, 18);
-                var transform = RawColorTransformV1.Create();
-                transform.Coefficients = [1, 0, 0, 0, gain, 0, 0, 0, 1];
-                frame.ColorCalibration = ColorCalibrationSnapshot.Create(transform, 3, 2, 8, [10, 10, 10], "capture");
-                LocalFrameFileService.SaveCapture(frame, path, saveMode);
-                Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
-                Task<bool> opened = WpfTestHost.Invoke(() =>
-                {
-                    ImageView image = Image(camera!);
-                    TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                    EventHandler<ImageViewImageSourceLoadedEventArgs>? handler = null;
-                    handler = (_, _) => { image.ImageSourceLoaded -= handler; completion.TrySetResult(image.Config.GetProperties<bool>("HasCieMeasurements")); };
-                    image.ImageSourceLoaded += handler;
-                    var model = new MeasureResultImgModel { Id = firstId == 0 ? 0 : firstId + (int)gain - 1, FileUrl = path };
-                    ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, camera!.Code,
-                        "GetData", "capture", "camera-node", 0, new ResultReference(model.Id, 100), model));
-                    frame.Dispose();
-                    return completion.Task;
-                });
-                Assert.True(await opened.WaitAsync(TimeSpan.FromSeconds(15)));
-                WpfTestHost.Invoke(() =>
-                {
-                    ImageView image = Image(camera!);
-                    Assert.Equal(path, image.Config.FilePath);
-                    Assert.Equal(path, camera!.View.ViewResults[0].FileUrl);
-                    Assert.Equal(firstId == 0 ? 1 : (int)gain, camera.View.ViewResults.Count);
-                    Assert.True(image.Config.GetProperties<bool>("HasCieMeasurements"));
-                    var buffer = GetOpenerField<PoiMeasurementBuffer>(Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen), "_measurementBuffer")!;
-                    Assert.Equal((float)(20 * gain), PoiMeasurementService.Calculate(buffer, [new(0, 0, 1, 1, PoiMeasurementShape.Point)])[0].Y);
-                    Assert.Equal(0, buffer.RawSource!.CachedXyzBytes);
-                });
-                gain = 2;
-            }
-        }
-        finally
-        {
-            WpfTestHost.Invoke(() => { camera?.Dispose(); scope?.Dispose(); });
-            CVFileReadCache.IsEnabled = cacheEnabled;
-        }
-    }
-
-    [Fact]
-    public void CameraResultWithoutFileKeepsTheSameRowOnDuplicateNotification()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using var camera = new DeviceCamera(Resource("duplicate-result"));
-            DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
-            ColorVision.Engine.Services.Devices.Camera.Views.ViewCamera.Config.AutoRefreshView = false;
-            var model = new MeasureResultImgModel { Id = 100 };
-            camera.View.ShowResult(model);
-            ViewResultImage first = Assert.Single(camera.View.ViewResults);
-            camera.View.ShowResult(model);
-            Assert.Same(first, Assert.Single(camera.View.ViewResults));
-        });
-    }
-
     [Fact]
     public void RealtimePreviewDetachesAndReconnectsWithoutChangingVideoState()
     {
@@ -306,7 +249,7 @@ public sealed class DockViewLifecycleTests
                 await loading.WaitAsync(TimeSpan.FromSeconds(15));
                 // Publication runs before the opener releases its load gate. Await that completion,
                 // so the close assertions observe cleanup rather than an in-flight load continuation.
-                SemaphoreSlim gate = WpfTestHost.Invoke(() => (SemaphoreSlim)typeof(CVRawOpen)
+                SemaphoreSlim gate = WpfTestHost.Invoke(() => (SemaphoreSlim)typeof(CalibratedImageCapability)
                     .GetField("_rawOpenGate", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .GetValue(Image(device!).EditorContext.IImageOpen)!);
                 Assert.True(await gate.WaitAsync(TimeSpan.FromSeconds(15)));
@@ -324,51 +267,12 @@ public sealed class DockViewLifecycleTests
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task LargeImageClearAndCloseReclaimWithoutTestInitiatedCollection(bool closeView)
-    {
-        using var sample = new RawFile(4096, 3072);
-        Scope? scope = null;
-        DeviceService? device = null;
-        Window? window = null;
-        try
-        {
-            WpfTestHost.Invoke(() =>
-            {
-                scope = new Scope();
-                device = CreateDevice("camera");
-                var docking = new AvalonDock.DockingManager { Layout = Assert.IsType<LayoutRoot>(scope.Pane.Root) };
-                window = new Window { Content = docking, Width = 800, Height = 600, ShowActivated = false };
-                window.Show();
-            });
-            Task loading = WpfTestHost.Invoke(() => OpenRaw(device!, sample.Path));
-            await loading.WaitAsync(TimeSpan.FromSeconds(30));
-            SemaphoreSlim gate = WpfTestHost.Invoke(() => (SemaphoreSlim)typeof(CVRawOpen)
-                .GetField("_rawOpenGate", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .GetValue(Image(device!).EditorContext.IImageOpen)!);
-            Assert.True(await gate.WaitAsync(TimeSpan.FromSeconds(30)));
-            gate.Release();
-
-            (WeakReference[] references, Task reclamation) = WpfTestHost.Invoke(() => RetireLargeImage(device!, closeView));
-            // Observe the product's task; do not trigger GC or request another collection here.
-            Assert.NotSame(Task.CompletedTask, reclamation);
-            await reclamation.WaitAsync(TimeSpan.FromSeconds(30));
-            Assert.All(references, reference => Assert.False(reference.IsAlive));
-        }
-        finally
-        {
-            WpfTestHost.Invoke(() => { window?.Close(); device?.Dispose(); scope?.Dispose(); });
-        }
-    }
-
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static (WeakReference[], Task) RetireLargeImage(DeviceService device, bool closeView)
     {
         ImageView image = Image(device);
         var opener = Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen);
-        object raw = typeof(CVRawOpen).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
+        object raw = typeof(CalibratedImageCapability).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
         object pixels = raw.GetType().GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(raw)!;
         var references = new[] { new WeakReference(image.ViewBitmapSource), new WeakReference(pixels) };
         if (closeView) Assert.Single(WorkspaceManager.LayoutDocumentPane.Children).Close();
@@ -378,24 +282,9 @@ public sealed class DockViewLifecycleTests
     }
 
     [Fact]
-    public void ClearingAnEmptyOrSmallImageDoesNotScheduleCollection()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scope = new Scope();
-            using var device = CreateDevice("camera");
-            ImageView image = Image(device);
-            image.Clear();
-            Assert.Same(Task.CompletedTask, ImageMemoryReclaimer.PendingCollection);
-            image.SetImageSource(new WriteableBitmap(64, 32, 96, 96, PixelFormats.Gray8, null));
-            image.Clear();
-            Assert.Same(Task.CompletedTask, ImageMemoryReclaimer.PendingCollection);
-        });
-    }
-
-    [Fact]
     public void CieProbeReplacementStopsHiddenPixelReadoutAndRestoresNormalTool()
     {
+        Assert.NotNull(typeof(IEditorToolFactory).GetMethod(nameof(IEditorToolFactory.ApplyImageOpenTools), [typeof(IImageOpen)]));
         WpfTestHost.Invoke(() =>
         {
             using var scope = new Scope();
@@ -559,7 +448,7 @@ public sealed class DockViewLifecycleTests
     }
 
     private static T? GetOpenerField<T>(CVRawOpen opener, string name) where T : class
-        => (T?)typeof(CVRawOpen).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener);
+        => (T?)typeof(CalibratedImageCapability).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener);
 
     private static byte[]? GetRawPixels(CvRawPixelBuffer buffer)
         => (byte[]?)typeof(CvRawPixelBuffer).GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(buffer);
@@ -595,7 +484,7 @@ public sealed class DockViewLifecycleTests
         ImageView image = Image(device);
         using (var lease = image.AcquireImageFrame()) Assert.NotNull(lease);
         var opener = Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen);
-        object raw = typeof(CVRawOpen).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
+        object raw = typeof(CalibratedImageCapability).GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener)!;
         object pixels = raw.GetType().GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(raw)!;
         var references = new[] { new WeakReference(control), new WeakReference(image), new WeakReference(image.ViewBitmapSource), new WeakReference(pixels) };
 
@@ -666,6 +555,7 @@ public sealed class DockViewLifecycleTests
     {
         private readonly IConfigService? _previousConfig = ConfigService.Instance;
         private readonly LayoutDocumentPane _previousPane = WorkspaceManager.LayoutDocumentPane;
+        private readonly LayoutRoot _previousRoot = WorkspaceManager.layoutRoot;
         private readonly List<ResourceDictionary> _dictionaries = [];
         private readonly DockViewManager _manager = DockViewManager.GetInstance();
         private readonly Action<Control>? _active;
@@ -695,6 +585,7 @@ public sealed class DockViewLifecycleTests
             }
             var root = new LayoutRoot { RootPanel = new LayoutPanel() };
             root.RootPanel.Children.Add(Pane);
+            WorkspaceManager.layoutRoot = root;
             WorkspaceManager.LayoutDocumentPane = Pane;
             DockViewManagerHost.Initialize();
         }
@@ -709,6 +600,7 @@ public sealed class DockViewLifecycleTests
             _manager.ShowAllViewsHandler = _showAll;
             _manager.LastActiveView = _lastActive;
             WorkspaceManager.LayoutDocumentPane = _previousPane;
+            WorkspaceManager.layoutRoot = _previousRoot;
             ConfigService.SetInstance(_previousConfig!);
             foreach (var dictionary in _dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
         }

@@ -2183,6 +2183,11 @@ namespace Spectrum
                 }
             }
 
+            profile.StepDetailsJson = JsonConvert.SerializeObject(new
+            {
+                ActualIntTime = IntTime, EqeVoltage = eqeVoltage, EqeCurrentMA = eqeCurrent,
+                EqeMeasurement = eqeVoltage.HasValue && eqeCurrent.HasValue
+            });
             return new MeasurementCapture(colorParam, eqeVoltage, eqeCurrent, null, null);
         }
 
@@ -2251,6 +2256,7 @@ namespace Spectrum
         {
             return JsonConvert.SerializeObject(new
             {
+                SerialNumber, HardwareModel,
                 RequestedIntTime = IntTime,
                 Average,
                 FilterBW = filterWidth,

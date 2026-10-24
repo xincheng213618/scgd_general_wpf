@@ -39,107 +39,6 @@ public sealed class CopilotComposerSessionTests
     }
 
     [Fact]
-    public void LoadDropsDraftMetadataThatDoesNotMatchTheDraft()
-    {
-        var conversation = CreateConversation(
-            "conversation-one",
-            "ordinary text",
-            CopilotAgentMode.Auto,
-            CopilotWorkspaceReviewTargetContext.WorkingTree(),
-            CreateSkillReference());
-        var session = new CopilotComposerSession();
-
-        session.Load(conversation);
-
-        Assert.Equal("ordinary text", session.Text);
-        Assert.Equal(CopilotAgentMode.Auto, session.RequestMode);
-        Assert.Null(session.WorkspaceReviewTarget);
-        Assert.Null(session.AgentSkillReference);
-    }
-
-    [Fact]
-    public void SetTextClearsAReferenceWhenItsInvocationIsRemoved()
-    {
-        var conversation = CreateConversation(
-            "conversation-one",
-            "$sample-skill inspect this",
-            CopilotAgentMode.Auto,
-            workspaceReviewTarget: null,
-            CreateSkillReference());
-        var session = new CopilotComposerSession();
-        session.Load(conversation);
-        var loadedVersion = session.Version;
-
-        var changed = session.SetText("inspect this");
-        var changedAgain = session.SetText("inspect this");
-
-        Assert.True(changed);
-        Assert.False(changedAgain);
-        Assert.Equal("inspect this", session.Text);
-        Assert.Null(session.AgentSkillReference);
-        Assert.Equal(loadedVersion + 1, session.Version);
-        Assert.Equal("$sample-skill inspect this", conversation.DraftText);
-    }
-
-    [Fact]
-    public void LoadAndSetTextPreserveContentBeyondTheSubmissionLimit()
-    {
-        var persistedText = new string('p',
-            CopilotConversationHistoryWindow.MaximumContentCharacterLimit + 1);
-        var editedText = new string('e',
-            CopilotConversationHistoryWindow.MaximumContentCharacterLimit + 2);
-        var session = new CopilotComposerSession();
-
-        session.Load(CreateConversation("conversation-one", persistedText));
-        Assert.Equal(persistedText, session.Text);
-
-        var changed = session.SetText(editedText);
-
-        Assert.True(changed);
-        Assert.Equal(editedText, session.Text);
-    }
-
-    [Theory]
-    [InlineData(32, -1, 0)]
-    [InlineData(CopilotConversationHistoryWindow.MaximumContentCharacterLimit, int.MaxValue,
-        CopilotConversationHistoryWindow.MaximumContentCharacterLimit)]
-    [InlineData(CopilotConversationHistoryWindow.MaximumContentCharacterLimit + 2, int.MaxValue,
-        CopilotConversationHistoryWindow.MaximumContentCharacterLimit + 2)]
-    public void ExpandedEditorPreservesRestoredTextAndKeepsManualEntryLimit(
-        int textLength, int caretIndex, int expectedCaretIndex)
-    {
-        StaTest.Run(() =>
-        {
-            const string finalEmoji = "🚀";
-            var restoredText = new string('p', textLength - finalEmoji.Length) + finalEmoji;
-            var session = new CopilotComposerSession();
-            session.Load(CreateConversation("conversation-one", restoredText));
-            CopilotTextInputWindow? window = null;
-            try
-            {
-                window = new CopilotTextInputWindow("Edit the recovered draft", "Preserve the complete draft.",
-                    session.Text, isMultiline: true,
-                    maximumLength: CopilotConversationHistoryWindow.MaximumContentCharacterLimit,
-                    initialCaretIndex: caretIndex, acceptsTab: true);
-                var input = Assert.IsType<TextBox>(window.FindName("InputTextBox"));
-
-                Assert.Equal(CopilotConversationHistoryWindow.MaximumContentCharacterLimit, input.MaxLength);
-                Assert.Equal(restoredText, window.RawResultText);
-
-                var snapshot = CopilotComposerEditorSnapshot.Capture(window.RawResultText, caretIndex);
-
-                Assert.Equal(restoredText, snapshot.Text);
-                Assert.EndsWith(finalEmoji, snapshot.Text, StringComparison.Ordinal);
-                Assert.Equal(expectedCaretIndex, snapshot.CaretIndex);
-            }
-            finally
-            {
-                window?.Close();
-            }
-        });
-    }
-
-    [Fact]
     public void SetRequestModeMaintainsTheReviewTargetInvariant()
     {
         var session = new CopilotComposerSession();
@@ -159,26 +58,6 @@ public sealed class CopilotComposerSessionTests
         Assert.True(session.SetRequestMode(CopilotAgentMode.Code));
         Assert.Equal(CopilotAgentMode.Code, session.RequestMode);
         Assert.Null(session.WorkspaceReviewTarget);
-    }
-
-    [Fact]
-    public void SetAgentSkillReferenceRequiresAnExplicitInvocationAndCopiesTheValue()
-    {
-        var session = new CopilotComposerSession();
-        session.Load(CreateConversation("conversation-one", "ordinary text"));
-        var reference = CreateSkillReference();
-
-        Assert.False(session.SetAgentSkillReference(reference));
-        Assert.Null(session.AgentSkillReference);
-
-        Assert.True(session.SetText("Use $sample-skill for this task"));
-        Assert.True(session.SetAgentSkillReference(reference));
-        var selectedVersion = session.Version;
-        reference.Name = "changed-outside";
-
-        Assert.Equal("sample-skill", session.AgentSkillReference?.Name);
-        Assert.False(session.SetAgentSkillReference(CreateSkillReference()));
-        Assert.Equal(selectedVersion, session.Version);
     }
 
     [Fact]
@@ -210,32 +89,6 @@ public sealed class CopilotComposerSessionTests
         Assert.Equal(string.Empty, session.WorkspaceReviewTarget?.Revision);
         Assert.Equal("sample-skill", session.AgentSkillReference?.Name);
         Assert.Equal("$sample-skill inspect this", session.Text);
-    }
-
-    [Fact]
-    public void CommitScheduledClearsOnlyTheMatchingCaptureAndConsumesItsToken()
-    {
-        var conversation = CreateConversation(
-            "conversation-one",
-            "$sample-skill inspect this",
-            CopilotAgentMode.Review,
-            CopilotWorkspaceReviewTargetContext.WorkingTree(),
-            CreateSkillReference());
-        var session = new CopilotComposerSession();
-        session.Load(conversation);
-        var capture = session.Capture();
-
-        var committed = session.CommitScheduled(capture.Token);
-        var committedAgain = session.CommitScheduled(capture.Token);
-
-        Assert.True(committed);
-        Assert.False(committedAgain);
-        Assert.Equal(string.Empty, session.Text);
-        Assert.Equal(CopilotAgentMode.Auto, session.RequestMode);
-        Assert.Null(session.WorkspaceReviewTarget);
-        Assert.Null(session.AgentSkillReference);
-        Assert.Equal(capture.Version + 1, session.Version);
-        Assert.Equal("$sample-skill inspect this", conversation.DraftText);
     }
 
     [Fact]

@@ -341,6 +341,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord AutoFocus(AutoFocusParam param)
         {
+            if (Device.CameraBackend.OpensLocally) return Device.AutoFocusLocally(param);
             var Params = new Dictionary<string, object>() { };
 
             MsgSend msg = new()
@@ -379,6 +380,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord Move(int nPosition, bool IsbAbs = true, int dwTimeOut = 5000)
         {
+            if (Device.CameraBackend.OpensLocally) return Device.RunLocalMotorCommand("Move", motor => motor.Move(nPosition, IsbAbs));
 
             MsgSend msg = new()
             {
@@ -391,6 +393,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public MsgRecord MoveDiaphragm(double dPosition, int dwTimeOut = 5000)
         {
+            if (Device.CameraBackend.OpensLocally) return Device.RunLocalMotorCommand("MoveDiaphragm", motor => { motor.Aperture(dPosition); return null; });
 
             MsgSend msg = new()
             {
@@ -404,6 +407,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord GoHome()
         {
+            if (Device.CameraBackend.OpensLocally) return Device.RunLocalMotorCommand("GoHome", motor => motor.Home());
             MsgSend msg = new()
             {
                 EventName = "GoHome",
@@ -414,6 +418,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord GetPosition()
         {
+            if (Device.CameraBackend.OpensLocally) return Device.RunLocalMotorCommand("GetPosition", motor => motor.ReadPosition());
             MsgSend msg = new()
             {
                 EventName = "GetPosition",

@@ -150,7 +150,7 @@ public sealed class CopilotExternalMcpDiagnosticDraftTests
                 return new HttpClient(_handler, disposeHandler: false);
             });
             ViewModel = new CopilotSettingsViewModel(configHandler,
-                new CopilotChatState { ActiveProfileId = _config.Profiles[0].Id }, externalMcpToolProvider: provider, mcpHttpClient: _client);
+                new CopilotChatState(), externalMcpToolProvider: provider, mcpHttpClient: _client);
         }
 
         public void AssertNoPersistenceOrNetwork()

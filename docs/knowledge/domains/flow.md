@@ -39,7 +39,7 @@ next: false
   说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
 
 - [Flow 转换与校准节点](../../04-api-reference/engine-components/flow-conversion-calibration-nodes.md) — `flow.conversion-calibration`
-  定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。
+  定位 Flow 数据转换、图像转换、校准及属性选择器。
 
 - [ST.Library.UI](../../04-api-reference/engine-components/ST.Library.UI.md) — `flow.editor`
   说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。

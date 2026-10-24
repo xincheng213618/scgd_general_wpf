@@ -112,17 +112,8 @@
   <data name="CameraLog" xml:space="preserve">
     <value>相机日志</value>
   </data>
-  <data name="ManagementService" xml:space="preserve">
-    <value>管理服务</value>
-  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>服务管理器</value>
-  </data>
-  <data name="CVWinSMSPath" xml:space="preserve">
-    <value>CVWinSMS 路径</value>
-  </data>
-  <data name="CVWinSMSPathDescription" xml:space="preserve">
-    <value>CVWinSMS 服务程序的可执行文件路径。</value>
   </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>服务安装根目录</value>
@@ -208,9 +199,6 @@
   <data name="DatabaseBackup" xml:space="preserve">
     <value>数据库备份</value>
   </data>
-  <data name="BackupDatabaseBeforeInstall" xml:space="preserve">
-    <value>安装前备份数据库</value>
-  </data>
   <data name="BackupNow" xml:space="preserve">
     <value>立即备份</value>
   </data>
@@ -220,29 +208,8 @@
   <data name="DatabaseBackupLocationHint" xml:space="preserve">
     <value>(保存至：我的文档\ColorVision\Backup)</value>
   </data>
-  <data name="ServiceBackup" xml:space="preserve">
-    <value>服务备份</value>
-  </data>
-  <data name="BackupServiceBeforeInstall" xml:space="preserve">
-    <value>安装前备份服务文件夹</value>
-  </data>
-  <data name="BackupServiceNow" xml:space="preserve">
-    <value>立即备份服务</value>
-  </data>
-  <data name="RestoreServiceBackup" xml:space="preserve">
-    <value>恢复服务备份</value>
-  </data>
-  <data name="ServiceBackupLocationHint" xml:space="preserve">
-    <value>(保存至：我的文档\ColorVision\ServiceBackup)</value>
-  </data>
   <data name="InstallLog" xml:space="preserve">
     <value>安装日志</value>
-  </data>
-  <data name="InstallCompletedMessage" xml:space="preserve">
-    <value>所选组件已安装完成。</value>
-  </data>
-  <data name="InstallCompletedTitle" xml:space="preserve">
-    <value>安装完成</value>
   </data>
   <data name="InstallNow" xml:space="preserve">
     <value>立即安装</value>
@@ -345,33 +312,6 @@
   </data>
   <data name="LogOutput" xml:space="preserve">
     <value>日志输出</value>
-  </data>
-  <data name="SetupConfigTitle" xml:space="preserve">
-    <value>服务管理器配置</value>
-  </data>
-  <data name="SetupConfigChoiceTitle" xml:space="preserve">
-    <value>选择初始化配置方式</value>
-  </data>
-  <data name="ImportConfig" xml:space="preserve">
-    <value>导入配置</value>
-  </data>
-  <data name="ImportConfigDescription" xml:space="preserve">
-    <value>定位旧版 CVWinSMS 并读取 App.config</value>
-  </data>
-  <data name="ManualConfig" xml:space="preserve">
-    <value>手动配置</value>
-  </data>
-  <data name="ManualConfigDescription" xml:space="preserve">
-    <value>配置 MySQL 和 MQTT</value>
-  </data>
-  <data name="SkipConfig" xml:space="preserve">
-    <value>跳过配置</value>
-  </data>
-  <data name="LegacyConfigDetectedFormat" xml:space="preserve">
-    <value>检测到旧版配置：{0}</value>
-  </data>
-  <data name="LegacyConfigNotDetected" xml:space="preserve">
-    <value>未检测到旧版配置。导入时可以选择旧版 CVWinSMS.exe，手动配置可直接填写 MySQL 和 MQTT。</value>
   </data>
   <data name="MqttServiceDisplayName" xml:space="preserve">
     <value>MQTT服务</value>
@@ -500,18 +440,10 @@
   <data name="MySqlVersionUnreadable" xml:space="preserve">
     <value>无法读取所选 MySQL 的版本，已停止操作。请选择原安装目录中的 bin\mysqld.exe，或包含该程序的有效 MySQL ZIP 安装包。</value>
   </data>
-  <data name="检查旧服务管理工具更新" xml:space="preserve"><value>检查旧服务管理工具更新</value></data>
-  <data name="未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。" xml:space="preserve"><value>未找到旧服务管理工具，请先通过服务管理工具入口指定路径或下载。</value></data>
-  <data name="未发现更新，当前服务管理工具可继续使用。" xml:space="preserve"><value>未发现更新，当前服务管理工具可继续使用。</value></data>
-  <data name="无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。" xml:space="preserve"><value>无法检查服务管理工具更新，请检查本地工具、网络或更新地址后重试。</value></data>
-  <data name="检查服务管理工具更新失败：{0}" xml:space="preserve"><value>检查服务管理工具更新失败：{0}</value></data>
-  <data name="无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。" xml:space="preserve"><value>无法获取有效的服务管理工具版本，请检查网络或更新地址后重试。</value></data>
-  <data name="服务管理工具:找到新版本，是否更新" xml:space="preserve"><value>服务管理工具:找到新版本，是否更新</value></data>
-  <data name="更新失败， 找不到更新所在的文件夹" xml:space="preserve"><value>更新失败， 找不到更新所在的文件夹</value></data>
-  <data name="更新失败，" xml:space="preserve"><value>更新失败，</value></data>
-  <data name="请选择解压缩目录" xml:space="preserve"><value>请选择解压缩目录</value></data>
-  <data name="找不到管理工具，是否下载" xml:space="preserve"><value>找不到管理工具，是否下载</value></data>
-  <data name="打开或下载服务管理工具失败：{0}" xml:space="preserve"><value>打开或下载服务管理工具失败：{0}</value></data>
-  <data name="I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?" xml:space="preserve"><value>找不到 CVWinSMS（CVWinSMS.exe），是否指定其位置？</value></data>
-  <data name="Open in CVWinSMS" xml:space="preserve"><value>在 CVWinSMS 中打开</value></data>
+  <data name="RemoveArchiveServiceMonitoring" xml:space="preserve">
+    <value>移除归档服务检测</value>
+  </data>
+  <data name="RemoveArchiveServiceMonitoringToolTip" xml:space="preserve">
+    <value>从注册中心监控列表移除 CVArchService；运行中的注册中心会短暂停止并恢复</value>
+  </data>
 </root>

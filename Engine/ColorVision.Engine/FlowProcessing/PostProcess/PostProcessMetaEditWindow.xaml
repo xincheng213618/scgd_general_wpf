@@ -8,6 +8,7 @@
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
         <Style x:Key="PanelTitleStyle" TargetType="{x:Type TextBlock}">
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -225,7 +226,24 @@
                     </StackPanel>
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel x:Name="DraftProcessConfigPanel"/>
+                        <StackPanel>
+                            <StackPanel x:Name="DraftProcessConfigPanel"/>
+                            <Border Margin="0 14 0 0" Padding="10" CornerRadius="5"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                    Visibility="{Binding ShowsExportDirectory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <StackPanel>
+                                    <TextBlock Text="{engine:EngineLang Key='CSV 保存目录'}" FontWeight="SemiBold"/>
+                                    <TextBox Text="{Binding ExportConfig.SavePath, Mode=OneWay}" IsReadOnly="True"
+                                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxHeight="90"
+                                             ToolTip="{Binding ExportConfig.SavePath}" Margin="0 8 0 0"/>
+                                    <Button Content="{engine:EngineLang 打开目录}" HorizontalAlignment="Left"
+                                            Padding="10 4" Margin="0 8 0 0" Click="OpenExportDirectory_Click"/>
+                                    <TextBlock Text="{engine:EngineLang Key='共用后处理保存目录，可在外层窗口的齿轮设置中修改。'}"
+                                               TextWrapping="Wrap" FontSize="12" Margin="0 8 0 0"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
                     </ScrollViewer>
                 </Grid>
             </Grid>
