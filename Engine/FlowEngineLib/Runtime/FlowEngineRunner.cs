@@ -86,6 +86,10 @@ public sealed class FlowEngineRunner
         bool started = false;
         try
         {
+            string? blockReason = _control.ExecutionBlockReason;
+            if (blockReason != null)
+                return CreateResult(false, FlowEngineRunTermination.StartRejected, startNodeName, serialNumber,
+                    StatusTypeEnum.Failed, blockReason);
             bool ready;
             try
             {

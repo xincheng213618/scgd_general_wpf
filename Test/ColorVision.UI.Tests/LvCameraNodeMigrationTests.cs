@@ -58,11 +58,13 @@ public sealed class LvCameraNodeMigrationTests
     });
 
     [Fact]
-    public void UnknownNodeNameStillFailsToLoad() => StaTest.Run(() =>
+    public void UnknownNodeNameLoadsPlaceholdersButCannotCompile() => StaTest.Run(() =>
     {
         byte[] canvas = ReadLegacyCanvas("Unknown.dll|MissingCameraNode");
         using var container = new CVNodeContainer();
-        Assert.ThrowsAny<Exception>(() => container.LoadCanvas(canvas));
+        container.LoadCanvas(canvas);
+        Assert.All(container.Nodes.Cast<STNode>(), node => Assert.IsType<STMissingNode>(node));
+        Assert.NotNull(STMissingNode.GetExecutionBlockReason(container.Nodes.Cast<STNode>()));
         Assert.Equal(FlowCompilationError.UnknownNodeType,
             Assert.Throws<FlowCompilationException>(() => StnV1NeutralCodec.Decode(canvas, new())).Error);
     });
@@ -132,7 +134,8 @@ public sealed class LvCameraNodeMigrationTests
         Assert.False(STNodeTypeRegistry.TryGetNodeType(unknownGuid, "Old.dll|DuplicatedNode", out _));
         byte[] canvas = ReadLegacyCanvas("Old.dll|Old.Namespace.DuplicatedNode");
         using var container = new CVNodeContainer();
-        Assert.ThrowsAny<Exception>(() => container.LoadCanvas(canvas));
+        container.LoadCanvas(canvas);
+        Assert.All(container.Nodes.Cast<STNode>(), node => Assert.IsType<STMissingNode>(node));
         Assert.Equal(FlowCompilationError.UnknownNodeType,
             Assert.Throws<FlowCompilationException>(() => StnV1NeutralCodec.Decode(canvas, new())).Error);
     });

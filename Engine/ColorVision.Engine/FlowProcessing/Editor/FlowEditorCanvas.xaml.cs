@@ -284,9 +284,29 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return;
             }
 
-            NodeInspectorTitle.Text = activeNode!.GetType().Name;
+            NodeInspectorTitle.Text = activeNode is STMissingNode missingNode ? missingNode.OriginalModelKey : activeNode!.GetType().Name;
 
-            if (_showNodeDocumentation)
+            if (activeNode is STMissingNode missing)
+            {
+                signPanel.IsEnabled = true;
+                signPanel.Children.Add(new TextBlock
+                {
+                    Text = missing.MissingDescription,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(4, 4, 4, 10)
+                });
+                signPanel.Children.Add(new TextBox
+                {
+                    Text = missing.OriginalModelKey + Environment.NewLine + missing.OriginalTypeKey
+                        + Environment.NewLine + Environment.NewLine + missing.SavedContent,
+                    IsReadOnly = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    AcceptsReturn = true,
+                    BorderThickness = new Thickness(0),
+                    Margin = new Thickness(4)
+                });
+            }
+            else if (_showNodeDocumentation)
             {
                 signPanel.Children.Add(FlowNodeDocumentationPresenter.Create(activeNode!));
             }

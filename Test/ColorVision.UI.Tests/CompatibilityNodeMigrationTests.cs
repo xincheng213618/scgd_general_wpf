@@ -268,6 +268,10 @@ public sealed class CompatibilityNodeMigrationTests
             oldNode.ReadBytes(oldNode.ReadByte()); newNode.ReadBytes(newNode.ReadByte());
             var oldProperties = ReadProperties(oldNode);
             var newProperties = ReadProperties(newNode);
+            // Framework port metadata is additive; the original business bytes still match below.
+            Assert.NotNull(STNodeSavedState.ReadPortLayout(newProperties));
+            oldProperties.Remove(STNodeSavedState.PortLayoutKey);
+            newProperties.Remove(STNodeSavedState.PortLayoutKey);
             if (modelKey is "FlowEngineLib.dll|FlowEngineLib.CVCameraNode"
                 or "FlowEngineLib.dll|FlowEngineLib.LVCameraNode"
                 or "FlowEngineLib.dll|FlowEngineLib.Node.Camera.CommCameraNode")

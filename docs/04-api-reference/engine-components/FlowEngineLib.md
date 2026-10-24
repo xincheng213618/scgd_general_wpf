@@ -62,6 +62,14 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 画布保存类型 GUID 和 `程序集文件名|类型名称`。加载先匹配 GUID 和原模型标识，再尝试同程序集的短类型名；仍找不到时，先按已加载类型的完整名称、再按短名称跨程序集查找。名称必须唯一，重名时拒绝猜测。编辑器、运行容器和中立流程编译器共用 `STNodeTypeRegistry` 的名称回退，不需要逐节点映射表，也不改写输入文件。正常保存使用当前类型 GUID，以及 `STNodeSerializationModelAttribute` 声明的兼容模型标识；未声明时使用当前程序集和完整类型名。节点实例 ID、属性和连线沿用原内容。
 
+确实找不到类型时，编辑器和运行容器创建 `STMissingNode`，显示“缺失”标题及原始参数的只读内容。它不注册为可新建的业务结点，不执行原结点的构造、属性处理或算法，不接收或转发运行数据。只对类型缺失降级；已知类型的构造或参数恢复异常、损坏文件仍报错，并保留当前画布。交互式运行、引擎启动入口和开始结点本身均拒绝启动含占位的流程，提示恢复组件或删除、替换；中立执行编译继续以 `UnknownNodeType` 拒绝缺失类型。版本和搜索投影允许读取占位，保持原类型标识而不将其改写为占位类。
+
+STND v1 的结点属性新增 `__STNode.PortLayout`，保存标题、输入/输出的顺序、名称、类型名及单连接/空端口标记；旧读取器忽略该扩展，不改变文件版本。占位再次保存使用原模型标识、类型 GUID、实例 ID 和原始属性字节，移动及复制只更新相应布局或实例 ID；组件恢复后重新打开即可按原类型加载。中立编译前需对已恢复类型的旧占位重新保存，使端口索引按实际结点重建。保存和复制入口共用此记录，未知的二进制业务参数不会被当作文本重新编码。
+
+早期 STND v1 没有每结点的端口定义，全局端口编号无法唯一反推出缺失类型的端口数量。遇到这种缺失结点时整组旧连线暂不绘制，原始编号与原结点顺序封存在 `__STNode.LegacyConnections`，不会猜接其他结点。恢复全部所需组件并重新打开后可恢复旧连线；手动删除或替换占位后需自行确认并重新连线。占位存在期间仍可保存原始结点数据与封存连线。这是旧数据的信息缺口，不表示算法能被自动替代。
+
+相关实现位于 `Engine/ST.Library.UI/NodeEditor/STNodeSavedState.cs`、`STMissingNode.cs` 和 `STNodeCanvasReader.cs`。`Test/ColorVision.UI.Tests/MissingFlowNodeTests.cs` 覆盖缺失类型、二进制参数与原身份保留、保存重开、旧连线封存与恢复、复制以及阻止启动；这是持久化和执行边界的回归，不代替真实第三方插件或设备验收。
+
 普通 BV/LV 节点在 `ColorVision.Engine` 中实现，保留 `FlowEngineLib.LVCameraNode` 完整类型名，并声明稳定保存标识 `FlowEngineLib.dll|FlowEngineLib.LVCameraNode`。新宿主直接调用 Engine 的本地取图实现，未选中本地路径时沿用原服务请求。旧端继续加载自己的旧版 FlowEngineLib：GUID 不同时仍可按这个完整模型标识找到旧类，按原参数构造服务请求。只保留 namespace 而保存 Engine DLL 名不足以兼容这种旧加载器，也不应固定某一版本自动生成的 GUID。
 
 曾保存为 Engine 模型标识的画布可在新宿主中按名称回退加载，再保存或通过数据库工具“更新流程节点”写回旧端可识别的模型；旧端自身不具备跨 DLL 名称回退。这里兼容的是流程数据，并不提供 CLR 类型转发：旧端保持整套旧 DLL 不变；跟随新宿主升级且直接引用迁出节点的项目包需引用 Engine 并重新编译。需要 Engine 属性编辑器的相机、校准、POI、SMU、传感器和算法节点位于 `FlowProcessing/Nodes/Compatibility/`，保留原 namespace；普通参数节点和公共执行基类仍在 FlowEngineLib。属性编辑器元数据直接引用 Engine 实现，不属于旧流程保存契约。

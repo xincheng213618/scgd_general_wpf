@@ -46,11 +46,22 @@ public static class STNodeCanvasWriter
 			.ToDictionary(item => item.node, item => item.index);
 		var optionIndices = new Dictionary<STNodeOption, long>();
 		var nodeData = new List<byte[]>(nodeList.Count);
+		STNodeLegacyConnections legacyConnections = nodeList.OfType<STMissingNode>()
+			.Select(node => node.LegacyConnections).FirstOrDefault(archive => archive != null);
+		bool archiveWritten = false;
 		foreach (STNode node in nodeList)
 		{
 			try
 			{
-				nodeData.Add(node.GetSaveData());
+				byte[] payload = node.GetSaveData();
+				if (!archiveWritten && legacyConnections != null && node is STMissingNode)
+				{
+					STNodeSavedState saved = STNodeSavedState.Parse(payload);
+					saved.Properties[STNodeSavedState.LegacyConnectionsKey] = legacyConnections.Serialize();
+					payload = STNodeSavedState.Write(saved.ModelKey, saved.TypeKey, saved.Properties);
+					archiveWritten = true;
+				}
+				nodeData.Add(payload);
 				AddOptions(optionIndices, node.GetAllInputOptions());
 				AddOptions(optionIndices, node.GetAllOutputOptions());
 			}

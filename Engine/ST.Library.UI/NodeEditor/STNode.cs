@@ -783,29 +783,12 @@ public abstract class STNode : INotifyPropertyChanged
 		return dictionary;
 	}
 
-	public byte[] GetSaveData()
+	public virtual byte[] GetSaveData()
 	{
-		List<byte> list = new List<byte>();
 		Type type = GetType();
-		byte[] bytes = Encoding.UTF8.GetBytes(STNodeTypeRegistry.GetModelByType(type));
-		list.Add((byte)bytes.Length);
-		list.AddRange(bytes);
-		bytes = Encoding.UTF8.GetBytes(type.GUID.ToString());
-		list.Add((byte)bytes.Length);
-		list.AddRange(bytes);
 		Dictionary<string, byte[]> dictionary = OnSaveNode();
-		if (dictionary != null)
-		{
-			foreach (KeyValuePair<string, byte[]> item in dictionary)
-			{
-				bytes = Encoding.UTF8.GetBytes(item.Key);
-				list.AddRange(BitConverter.GetBytes(bytes.Length));
-				list.AddRange(bytes);
-				list.AddRange(BitConverter.GetBytes(item.Value.Length));
-				list.AddRange(item.Value);
-			}
-		}
-		return list.ToArray();
+		dictionary[STNodeSavedState.PortLayoutKey] = STNodeSavedState.CapturePortLayout(this);
+		return STNodeSavedState.Write(STNodeTypeRegistry.GetModelByType(type), type.GUID.ToString(), dictionary);
 	}
 
 	protected virtual void OnCreate()

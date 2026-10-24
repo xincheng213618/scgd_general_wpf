@@ -1122,6 +1122,13 @@ namespace ColorVision.Engine.FlowProcessing
             }
 
             string flowName = executionSnapshot.FlowName;
+            string? missingNodeReason = STMissingNode.GetExecutionBlockReason(View.STNodeEditorMain.Nodes.Cast<STNode>());
+            if (missingNodeReason != null)
+            {
+                View.ShowExecutionSummary(missingNodeReason);
+                log.Warn(missingNodeReason);
+                return default;
+            }
             FlowParam selectedFlowParam =
                 executionSnapshot.CreateFlowParam();
             bool requiresServices = View.STNodeEditorMain.Nodes

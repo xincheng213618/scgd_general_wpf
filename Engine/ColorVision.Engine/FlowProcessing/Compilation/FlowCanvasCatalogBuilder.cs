@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using ST.Library.UI.NodeEditor;
 
 namespace ColorVision.Engine.FlowProcessing.Compilation;
 
@@ -91,7 +92,7 @@ public sealed class FlowCanvasCatalogBuilder
         ArgumentNullException.ThrowIfNull(canvasData);
         NeutralCanvas canvas = StnV1NeutralCodec.Decode(
             canvasData,
-            options);
+            options, allowMissingNodes: true);
 
         var document = new FlowSemanticDocument
         {
@@ -153,6 +154,7 @@ public sealed class FlowCanvasCatalogBuilder
             .OrderBy(item => item.Key, StringComparer.Ordinal))
         {
             if (LayoutPropertyNames.Contains(property.Key)
+                || property.Key.StartsWith("__STNode.", StringComparison.Ordinal)
                 || IsSensitivePropertyName(property.Key))
             {
                 continue;
@@ -214,7 +216,8 @@ public sealed class FlowCanvasCatalogBuilder
                 "NodeName",
                 maximumLength: 256);
         string nodeTypeKey =
-            node.Schema.NodeType.FullName ?? node.TypeKey;
+            node.Schema.NodeType == typeof(STMissingNode) ? node.ModelKey.Split('|').Last()
+                : node.Schema.NodeType.FullName ?? node.TypeKey;
         nodeTypeKey = FlowSearchSafety.NormalizeRequiredSafeText(
             nodeTypeKey,
             nameof(nodeTypeKey),

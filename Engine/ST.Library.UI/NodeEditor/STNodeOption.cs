@@ -399,7 +399,8 @@ public class STNodeOption
 		{
 			return ConnectionStatus.Exists;
 		}
-		if (_IsInput && op._DataType != _DataType && !op._DataType.IsSubclassOf(_DataType))
+		if (_IsInput && _Owner is not STMissingNode && op.Owner is not STMissingNode
+			&& op._DataType != _DataType && !op._DataType.IsSubclassOf(_DataType))
 		{
 			return ConnectionStatus.ErrorType;
 		}

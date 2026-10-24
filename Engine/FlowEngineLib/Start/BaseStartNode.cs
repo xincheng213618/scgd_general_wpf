@@ -53,7 +53,10 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public virtual bool IsExecutionReady => !RequiresConnectionReady || Ready;
 
-	public bool CanAcceptStart => m_op_start != null && m_op_start.ConnectionCount > 0;
+	internal Func<string> ExecutionBlockReasonProvider { get; set; }
+
+	public bool CanAcceptStart => m_op_start != null && m_op_start.ConnectionCount > 0
+		&& ExecutionBlockReasonProvider?.Invoke() == null;
 
 	protected int TopicSubscriptionVersion => Volatile.Read(ref topicSubscriptionVersion);
 
@@ -246,6 +249,8 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	private bool TryStartup(CVStartCFC action)
 	{
+		string blockReason = ExecutionBlockReasonProvider?.Invoke();
+		if (blockReason != null) { logger.Warn(blockReason); return false; }
 		lock (startActionsLock)
 		{
 			if (stopAllDepth > 0 || startActions.Count != 0)
@@ -528,6 +533,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public virtual void Dispose()
 	{
+		ExecutionBlockReasonProvider = null;
 		lock (topicSubscriptionsLock)
 		{
 			topicServer.Clear();
