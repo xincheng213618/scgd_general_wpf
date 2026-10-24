@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.ToolPlugins.CvRawExport.CvRawExportWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="CVRAW 批量导出 TIFF" Width="800" Height="570" MinWidth="640" MinHeight="480"
+        xmlns:i18n="clr-namespace:ColorVision"
+        Title="{i18n:DisplayText Key='CVRAW 批量导出 TIFF'}" Width="800" Height="570" MinWidth="640" MinHeight="480"
         Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}"
         WindowStartupLocation="CenterOwner" Closing="Window_Closing">
     <Grid Margin="24">
@@ -15,8 +16,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,20">
-            <TextBlock Text="CVRAW 批量导出 TIFF" FontSize="23" FontWeight="SemiBold"/>
-            <TextBlock Text="检索所选文件夹及全部子文件夹，在原目录导出同名 .tif；已存在的 .tif 自动跳过。"
+            <TextBlock Text="{i18n:DisplayText Key='CVRAW 批量导出 TIFF'}" FontSize="23" FontWeight="SemiBold"/>
+            <TextBlock Text="{i18n:DisplayText Key='检索所选文件夹及全部子文件夹，在原目录导出同名 .tif；已存在的 .tif 自动跳过。'}"
                        TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
         </StackPanel>
         <Grid x:Name="OptionsPanel" Grid.Row="1">
@@ -25,36 +26,36 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Label Content="文件夹" Target="{Binding ElementName=FolderTextBox}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <Label Content="{i18n:DisplayText Key='文件夹'}" Target="{Binding ElementName=FolderTextBox}" VerticalAlignment="Center" Margin="0,0,12,0"/>
             <TextBox x:Name="FolderTextBox" Grid.Column="1" VerticalContentAlignment="Center" MinHeight="34"/>
-            <Button Grid.Column="2" Content="选择文件夹…" Click="Browse_Click" Margin="10,0,0,0" Padding="12,6"
+            <Button Grid.Column="2" Content="{i18n:DisplayText Key='选择文件夹…'}" Click="Browse_Click" Margin="10,0,0,0" Padding="12,6"
                     Style="{DynamicResource ButtonDefault}"/>
         </Grid>
         <StackPanel x:Name="ParallelismPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,14,0,18">
-            <Label Content="并发数" Target="{Binding ElementName=ParallelismComboBox}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <Label Content="{i18n:DisplayText Key='并发数'}" Target="{Binding ElementName=ParallelismComboBox}" VerticalAlignment="Center" Margin="0,0,12,0"/>
             <ComboBox x:Name="ParallelismComboBox" Width="80" VerticalContentAlignment="Center"/>
-            <TextBlock Text="大图像建议使用较少并发，降低内存占用。" VerticalAlignment="Center" Margin="12,0,0,0"
+            <TextBlock Text="{i18n:DisplayText Key='大图像建议使用较少并发，降低内存占用。'}" VerticalAlignment="Center" Margin="12,0,0,0"
                        Foreground="{DynamicResource SecondaryTextBrush}"/>
         </StackPanel>
         <StackPanel Grid.Row="3">
-            <TextBlock x:Name="StatusText" Text="选择文件夹后点击执行。" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <TextBlock x:Name="StatusText" Text="{i18n:DisplayText Key='选择文件夹后点击执行。'}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
             <ProgressBar x:Name="ExportProgressBar" Height="6" Margin="0,12,0,8" Maximum="1"/>
             <TextBlock x:Name="CurrentFileText" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SecondaryTextBrush}"/>
         </StackPanel>
-        <TextBlock Grid.Row="4" Text="失败文件" FontWeight="SemiBold" Margin="0,16,0,8"/>
+        <TextBlock Grid.Row="4" Text="{i18n:DisplayText Key='失败文件'}" FontWeight="SemiBold" Margin="0,16,0,8"/>
         <DataGrid x:Name="ErrorsGrid" Grid.Row="5" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                   EnableRowVirtualization="True" HeadersVisibility="Column" SelectionMode="Single">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="文件" Binding="{Binding SourcePath}" Width="*"/>
-                <DataGridTextColumn Header="原因" Binding="{Binding Error}" Width="*"/>
+                <DataGridTextColumn Header="{i18n:DisplayText Key='文件'}" Binding="{Binding SourcePath}" Width="*"/>
+                <DataGridTextColumn Header="{i18n:DisplayText Key='原因'}" Binding="{Binding Error}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>
         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-            <Button x:Name="ExecuteButton" Content="执行" Click="Execute_Click" Style="{DynamicResource ButtonPrimary}"
+            <Button x:Name="ExecuteButton" Content="{i18n:DisplayText Key='执行'}" Click="Execute_Click" Style="{DynamicResource ButtonPrimary}"
                     MinWidth="88" Padding="16,6"/>
-            <Button x:Name="CancelButton" Content="取消任务" Click="Cancel_Click" IsEnabled="False" Style="{DynamicResource ButtonDefault}"
+            <Button x:Name="CancelButton" Content="{i18n:DisplayText Key='取消任务'}" Click="Cancel_Click" IsEnabled="False" Style="{DynamicResource ButtonDefault}"
                     MinWidth="88" Padding="16,6" Margin="10,0,0,0"/>
-            <Button Content="关闭" Click="Close_Click" Style="{DynamicResource ButtonDefault}" MinWidth="88" Padding="16,6" Margin="10,0,0,0"/>
+            <Button Content="{i18n:DisplayText Key='关闭'}" Click="Close_Click" Style="{DynamicResource ButtonDefault}" MinWidth="88" Padding="16,6" Margin="10,0,0,0"/>
         </StackPanel>
     </Grid>
 </Window>

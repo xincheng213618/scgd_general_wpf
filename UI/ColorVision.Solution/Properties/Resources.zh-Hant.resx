@@ -1380,4 +1380,8 @@
   <data name="正在打开：{0}" xml:space="preserve">
     <value>正在開啟：{0}</value>
   </data>
+  <data name="字号" xml:space="preserve"><value>字號</value></data>
+  <data name="文本编辑器" xml:space="preserve"><value>文本編輯器</value></data>
+  <data name="显示" xml:space="preserve"><value>顯示</value></data>
+  <data name="保存当前文件并在下方运行终端中执行" xml:space="preserve"><value>保存當前文件並在下方運行終端中執行</value></data>
 </root>

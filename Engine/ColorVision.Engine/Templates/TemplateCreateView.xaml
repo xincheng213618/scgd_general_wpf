@@ -1,6 +1,7 @@
 <UserControl x:Class="ColorVision.Engine.Templates.TemplateCreateView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i18n="clr-namespace:ColorVision.Engine"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -139,7 +140,7 @@
                                     Padding="9,1"
                                     VerticalContentAlignment="Center"
                                     BorderBrush="{DynamicResource BorderBrush}"
-                                    hc:InfoElement.Placeholder="搜索"
+                                    hc:InfoElement.Placeholder="{i18n:EngineLang Key='搜索'}"
                                     hc:InfoElement.ShowClearButton="True"
                                     TextChanged="SourceSearchTextBox_TextChanged"/>
                     </Grid>
@@ -189,9 +190,9 @@
                                 </StackPanel.Resources>
                                 <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
                                 <TextBlock Text="{Binding Guide.Purpose}" Margin="0,6,0,12" TextWrapping="Wrap"/>
-                                <TextBlock Text="用哪个模块" FontWeight="SemiBold"/>
+                                <TextBlock Text="{i18n:EngineLang Key='用哪个模块'}" FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding Guide.ModuleGuide}" Margin="0,4,0,10" TextWrapping="Wrap"/>
-                                <TextBlock Text="适用条件" FontWeight="SemiBold"/>
+                                <TextBlock Text="{i18n:EngineLang Key='适用条件'}" FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding Guide.DeviceGuide}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </ScrollViewer>

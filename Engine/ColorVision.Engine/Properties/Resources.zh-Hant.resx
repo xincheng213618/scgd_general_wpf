@@ -1644,9 +1644,6 @@
   <data name="CurrentCurrentMA" xml:space="preserve">
     <value>目前電流(mA)</value>
   </data>
-  <data name="ImageCrop" xml:space="preserve">
-    <value>影像裁切</value>
-  </data>
 
   <data name="EmittingAreaLocation" xml:space="preserve">
     <value>發光區定位</value>
@@ -3060,9 +3057,6 @@
   <data name="修正模板" xml:space="preserve"><value>修正範本</value></data>
   <data name="输出模板" xml:space="preserve"><value>輸出範本</value></data>
   <data name="请先选择关注点模板" xml:space="preserve"><value>請先選擇關注點範本</value></data>
-  <data name="需要选择关注点过滤模板" xml:space="preserve"><value>請選擇關注點篩選範本</value></data>
-  <data name="需要选择关注点修正模板" xml:space="preserve"><value>請選擇關注點修正範本</value></data>
-  <data name="需要选择关注点输出模板" xml:space="preserve"><value>請選擇關注點輸出範本</value></data>
   <data name="Db" xml:space="preserve"><value>資料庫</value></data>
   <data name="启用 CVRAW 文件缓存" xml:space="preserve"><value>啟用 CVRAW 檔案快取</value></data>
   <data name="存储类型" xml:space="preserve"><value>儲存類型</value></data>
@@ -3121,9 +3115,6 @@
   <data name="TemplateBrowserOpenEditor" xml:space="preserve">
     <value>打開編輯器</value>
   </data>
-  <data name="TemplateBrowserLegacyManager" xml:space="preserve">
-    <value>舊版管理</value>
-  </data>
   <data name="TemplateBrowserSwap" xml:space="preserve">
     <value>交換位置</value>
   </data>
@@ -3136,20 +3127,11 @@
   <data name="TemplateBrowserSearch" xml:space="preserve">
     <value>搜索{0}名稱</value>
   </data>
-  <data name="TemplateBrowserCoverTiles" xml:space="preserve">
-    <value>封面平鋪</value>
-  </data>
-  <data name="TemplateBrowserIconTiles" xml:space="preserve">
-    <value>圖標平鋪</value>
-  </data>
   <data name="TemplateBrowserImportHint" xml:space="preserve">
     <value>導入模板文件</value>
   </data>
   <data name="TemplateBrowserExportHint" xml:space="preserve">
     <value>導出選中或勾選的模板</value>
-  </data>
-  <data name="TemplateBrowserMore" xml:space="preserve">
-    <value>更多操作</value>
   </data>
   <data name="TemplateBrowserTemplates" xml:space="preserve">
     <value>模板</value>
@@ -3159,18 +3141,6 @@
   </data>
   <data name="TemplateBrowserClearSearch" xml:space="preserve">
     <value>清空搜索</value>
-  </data>
-  <data name="TemplateBrowserTiles" xml:space="preserve">
-    <value>平鋪</value>
-  </data>
-  <data name="TemplateBrowserList" xml:space="preserve">
-    <value>列表</value>
-  </data>
-  <data name="TemplateBrowserSelect" xml:space="preserve">
-    <value>選擇</value>
-  </data>
-  <data name="TemplateBrowserNumber" xml:space="preserve">
-    <value>序號</value>
   </data>
   <data name="TemplateBrowserDeleteHint" xml:space="preserve">
     <value>刪除選中或勾選的模板</value>
@@ -3213,12 +3183,6 @@
   </data>
   <data name="TemplateBrowserDeleteCount" xml:space="preserve">
     <value>刪除 ({0})</value>
-  </data>
-  <data name="TemplateBrowserLegacyPrompt" xml:space="preserve">
-    <value>是否保存重命名後打開舊版管理？選擇“否”將放棄未保存的重命名。</value>
-  </data>
-  <data name="TemplateBrowserLegacyFailed" xml:space="preserve">
-    <value>打開舊版管理失敗</value>
   </data>
   <data name="TemplateBrowserEmpty" xml:space="preserve">
     <value>暫無{0}模板</value>
@@ -7029,9 +6993,6 @@
   <data name="SFR寻边" xml:space="preserve">
     <value>SFR 尋邊</value>
   </data>
-  <data name="EmittingAreaLocation," xml:space="preserve">
-    <value>發光區定位</value>
-  </data>
   <data name="定位算法" xml:space="preserve">
     <value>定位演算法</value>
   </data>
@@ -7585,4 +7546,804 @@
   <data name="SpectrumUseFilterWheelShutter" xml:space="preserve"><value>使用濾色輪校零</value></data>
   <data name="SpectrumFilterWheelMeasurementPort" xml:space="preserve"><value>測量位</value></data>
   <data name="SpectrumFilterWheelDarkPort" xml:space="preserve"><value>校零位</value></data>
+  <data name="0 条" xml:space="preserve"><value>0 條</value></data>
+  <data name="I-L：电流 → 亮度" xml:space="preserve"><value>I-L：電流 → 亮度</value></data>
+  <data name="I-t：电流随时间" xml:space="preserve"><value>I-t：電流隨時間</value></data>
+  <data name="IP / 主机名" xml:space="preserve"><value>IP / 主機名</value></data>
+  <data name="IP 地址" xml:space="preserve"><value>IP 地址</value></data>
+  <data name="IV / IVL 实时曲线" xml:space="preserve"><value>IV / IVL 實時曲線</value></data>
+  <data name="IV 曲线" xml:space="preserve"><value>IV 曲線</value></data>
+  <data name="IV：电压 → 电流" xml:space="preserve"><value>IV：電壓 → 電流</value></data>
+  <data name="I²C 通信速率" xml:space="preserve"><value>I²C 通信速率</value></data>
+  <data name="I–V 特性" xml:space="preserve"><value>I–V 特性</value></data>
+  <data name="L-t：亮度随时间" xml:space="preserve"><value>L-t：亮度隨時間</value></data>
+  <data name="P-L：功率 → 亮度" xml:space="preserve"><value>P-L：功率 → 亮度</value></data>
+  <data name="PG IP 地址或主机名" xml:space="preserve"><value>PG IP 地址或主機名</value></data>
+  <data name="PG 类型" xml:space="preserve"><value>PG 類型</value></data>
+  <data name="PG 配置" xml:space="preserve"><value>PG 配置</value></data>
+  <data name="USB 转串口也选择串口；本地波特率须与仪器设置一致。" xml:space="preserve"><value>USB 轉串口也選擇串口；本地波特率須與儀器設置一致。</value></data>
+  <data name="V-L：电压 → 亮度" xml:space="preserve"><value>V-L：電壓 → 亮度</value></data>
+  <data name="V-t：电压随时间" xml:space="preserve"><value>V-t：電壓隨時間</value></data>
+  <data name="V/I 曲线" xml:space="preserve"><value>V/I 曲線</value></data>
+  <data name="X / 列" xml:space="preserve"><value>X / 列</value></data>
+  <data name="Y / 行" xml:space="preserve"><value>Y / 行</value></data>
+  <data name="[LF] = 换行， [CR] = 回车。图案文件名、大小写及结束符需与设备协议一致。" xml:space="preserve"><value>[LF] = 換行， [CR] = 回車。圖案文件名、大小寫及結束符需與設備協議一致。</value></data>
+  <data name="串口名按服务电脑填写，例如 COM7。" xml:space="preserve"><value>串口名按服務電腦填寫，例如 COM7。</value></data>
+  <data name="二进制校正" xml:space="preserve"><value>二進制校正</value></data>
+  <data name="亮度 (cd/m²)" xml:space="preserve"><value>亮度 (cd/m²)</value></data>
+  <data name="仅测量采用源表的电压表/电流表接法：源 0 A 测电压，或源 0 V 测电流，仍需接通输出。仅输出不会生成虚构的测量结果。" xml:space="preserve"><value>僅測量採用源表的電壓表/電流表接法：源 0 A 測電壓，或源 0 V 測電流，仍需接通輸出。僅輸出不會生成虛構的測量結果。</value></data>
+  <data name="从第" xml:space="preserve"><value>從第</value></data>
+  <data name="仪器状态" xml:space="preserve"><value>儀器狀態</value></data>
+  <data name="传感器 IP 地址" xml:space="preserve"><value>傳感器 IP 地址</value></data>
+  <data name="传感器类型" xml:space="preserve"><value>傳感器類型</value></data>
+  <data name="传感器配置" xml:space="preserve"><value>傳感器配置</value></data>
+  <data name="保存参数" xml:space="preserve"><value>保存參數</value></data>
+  <data name="保存曲线图片" xml:space="preserve"><value>保存曲線圖片</value></data>
+  <data name="保留未显示的扩展字段。保存前会检查字段、数组长度与数值。" xml:space="preserve"><value>保留未顯示的擴展字段。保存前會檢查字段、數組長度與數值。</value></data>
+  <data name="修改传感器配置" xml:space="preserve"><value>修改傳感器配置</value></data>
+  <data name="修改源表配置" xml:space="preserve"><value>修改源表配置</value></data>
+  <data name="修改连接参数后请重新连接。" xml:space="preserve"><value>修改連接參數後請重新連接。</value></data>
+  <data name="停止 / 取消等待" xml:space="preserve"><value>停止 / 取消等待</value></data>
+  <data name="停止会取消排队或拒绝迟到结果；已进入原生 SDK 的调用仍需等返回后才能关闭输出。窗口读数和命令成功均不能替代实际输出状态确认。" xml:space="preserve"><value>停止會取消排隊或拒絕遲到結果；已進入原生 SDK 的調用仍需等返回後才能關閉輸出。窗口讀數和命令成功均不能替代實際輸出狀態確認。</value></data>
+  <data name="停止流程" xml:space="preserve"><value>停止流程</value></data>
+  <data name="关闭输出" xml:space="preserve"><value>關閉輸出</value></data>
+  <data name="内容" xml:space="preserve"><value>內容</value></data>
+  <data name="创建此类校正" xml:space="preserve"><value>創建此類校正</value></data>
+  <data name="删除选中坐标" xml:space="preserve"><value>刪除選中座標</value></data>
+  <data name="删除选中轮次" xml:space="preserve"><value>刪除選中輪次</value></data>
+  <data name="到" xml:space="preserve"><value>到</value></data>
+  <data name="功率 (W)" xml:space="preserve"><value>功率 (W)</value></data>
+  <data name="功率 P" xml:space="preserve"><value>功率 P</value></data>
+  <data name="功能与型号" xml:space="preserve"><value>功能與型號</value></data>
+  <data name="十六进制" xml:space="preserve"><value>十六進制</value></data>
+  <data name="单点测量直接显示读数；扫描结果显示 I–V 特性。" xml:space="preserve"><value>單點測量直接顯示讀數；掃描結果顯示 I–V 特性。</value></data>
+  <data name="原文" xml:space="preserve"><value>原文</value></data>
+  <data name="参数编辑" xml:space="preserve"><value>參數編輯</value></data>
+  <data name="发送" xml:space="preserve"><value>發送</value></data>
+  <data name="发送什么（可读指令）" xml:space="preserve"><value>發送什麼（可讀指令）</value></data>
+  <data name="叠加所选扫描" xml:space="preserve"><value>疊加所選掃描</value></data>
+  <data name="只填写仪器 IP；Keithley 使用固定端口 5025。" xml:space="preserve"><value>只填寫儀器 IP；Keithley 使用固定端口 5025。</value></data>
+  <data name="可编辑的节点" xml:space="preserve"><value>可編輯的節點</value></data>
+  <data name="可读回显" xml:space="preserve"><value>可讀回顯</value></data>
+  <data name="固定值脉冲的源值是峰值，点数是脉冲次数；每次保持目标脉宽后返回基线，周期是相邻脉冲起点间隔。有测量时每个脉冲返回一组 V/I。整组执行结束后才进入后续节点；相机若需在峰值期间曝光，须另行安排硬件触发同步。" xml:space="preserve"><value>固定值脈衝的源值是峯值，點數是脈衝次數；每次保持目標脈寬後返回基線，週期是相鄰脈衝起點間隔。有測量時每個脈衝返回一組 V/I。整組執行結束後才進入後續節點；相機若需在峯值期間曝光，須另行安排硬件觸發同步。</value></data>
+  <data name="填充选定范围" xml:space="preserve"><value>填充選定範圍</value></data>
+  <data name="填写服务电脑上的串口名，例如 COM7。" xml:space="preserve"><value>填寫服務電腦上的串口名，例如 COM7。</value></data>
+  <data name="增加一轮" xml:space="preserve"><value>增加一輪</value></data>
+  <data name="复制 Hex" xml:space="preserve"><value>複製 Hex</value></data>
+  <data name="复制原文" xml:space="preserve"><value>複製原文</value></data>
+  <data name="实测电压" xml:space="preserve"><value>實測電壓</value></data>
+  <data name="实测电流" xml:space="preserve"><value>實測電流</value></data>
+  <data name="导出当前数据 CSV" xml:space="preserve"><value>導出當前數據 CSV</value></data>
+  <data name="导出所选" xml:space="preserve"><value>導出所選</value></data>
+  <data name="导出结果 JSON" xml:space="preserve"><value>導出結果 JSON</value></data>
+  <data name="尚未连接。连接只查询型号；点击执行才会开启输出。" xml:space="preserve"><value>尚未連接。連接只查詢型號；點擊執行纔會開啓輸出。</value></data>
+  <data name="就绪" xml:space="preserve"><value>就緒</value></data>
+  <data name="应用到表单" xml:space="preserve"><value>應用到表單</value></data>
+  <data name="应用次数" xml:space="preserve"><value>應用次數</value></data>
+  <data name="我已核对手工参数的来源和适用条件；默认模板不代表实测校正" xml:space="preserve"><value>我已覈對手工參數的來源和適用條件；默認模板不代表實測校正</value></data>
+  <data name="执行" xml:space="preserve"><value>執行</value></data>
+  <data name="执行流程" xml:space="preserve"><value>執行流程</value></data>
+  <data name="执行测量后，单点读数或扫描曲线会显示在这里。" xml:space="preserve"><value>執行測量後，單點讀數或掃描曲線會顯示在這裏。</value></data>
+  <data name="扫描数据在仪器返回整批结果后显示；时间趋势使用实际记录时间。" xml:space="preserve"><value>掃描數據在儀器返回整批結果後顯示；時間趨勢使用實際記錄時間。</value></data>
+  <data name="指令 / 事件" xml:space="preserve"><value>指令 / 事件</value></data>
+  <data name="按 Ctrl 选择多条扫描记录进行比较" xml:space="preserve"><value>按 Ctrl 選擇多條掃描記錄進行比較</value></data>
+  <data name="接收" xml:space="preserve"><value>接收</value></data>
+  <data name="搜索指令、内容、地址或十六进制" xml:space="preserve"><value>搜索指令、內容、地址或十六進制</value></data>
+  <data name="搜索指令或消息内容" xml:space="preserve"><value>搜索指令或消息內容</value></data>
+  <data name="搜索通信记录" xml:space="preserve"><value>搜索通信記錄</value></data>
+  <data name="收发消息" xml:space="preserve"><value>收發消息</value></data>
+  <data name="方向" xml:space="preserve"><value>方向</value></data>
+  <data name="时间" xml:space="preserve"><value>時間</value></data>
+  <data name="显示数据系列" xml:space="preserve"><value>顯示數據系列</value></data>
+  <data name="暂无收发消息" xml:space="preserve"><value>暫無收發消息</value></data>
+  <data name="暂无测量结果" xml:space="preserve"><value>暫無測量結果</value></data>
+  <data name="曲线模式" xml:space="preserve"><value>曲線模式</value></data>
+  <data name="更新曲线" xml:space="preserve"><value>更新曲線</value></data>
+  <data name="更新预览" xml:space="preserve"><value>更新預覽</value></data>
+  <data name="最大半径(px)" xml:space="preserve"><value>最大半徑(px)</value></data>
+  <data name="最近 500 条 · 控制字符如 0D/0A 显示为 [CR]/[LF] · 接收按分片记录，完整回包见运行日志 · Ctrl+F 搜索 · Ctrl+C 复制" xml:space="preserve"><value>最近 500 條 · 控制字符如 0D/0A 顯示爲 [CR]/[LF] · 接收按分片記錄，完整回包見運行日誌 · Ctrl+F 搜索 · Ctrl+C 複製</value></data>
+  <data name="本地传感器 · 通信调试" xml:space="preserve"><value>本地傳感器 · 通信調試</value></data>
+  <data name="本地源表" xml:space="preserve"><value>本地源表</value></data>
+  <data name="本地连接" xml:space="preserve"><value>本地連接</value></data>
+  <data name="查看本地传感器收发消息与运行日志" xml:space="preserve"><value>查看本地傳感器收發消息與運行日誌</value></data>
+  <data name="查询历史" xml:space="preserve"><value>查詢歷史</value></data>
+  <data name="校正参数编辑" xml:space="preserve"><value>校正參數編輯</value></data>
+  <data name="格式化 JSON" xml:space="preserve"><value>格式化 JSON</value></data>
+  <data name="横轴：电压 (V)" xml:space="preserve"><value>橫軸：電壓 (V)</value></data>
+  <data name="横轴：电流 (mA)" xml:space="preserve"><value>橫軸：電流 (mA)</value></data>
+  <data name="每一行是一轮；框内整段执行完成后进入下一轮。参数随流程保存。" xml:space="preserve"><value>每一行是一輪；框內整段執行完成後進入下一輪。參數隨流程保存。</value></data>
+  <data name="每轮增加" xml:space="preserve"><value>每輪增加</value></data>
+  <data name="波特率" xml:space="preserve"><value>波特率</value></data>
+  <data name="测量时间" xml:space="preserve"><value>測量時間</value></data>
+  <data name="测量记录" xml:space="preserve"><value>測量記錄</value></data>
+  <data name="测量设置" xml:space="preserve"><value>測量設置</value></data>
+  <data name="添加坐标" xml:space="preserve"><value>添加座標</value></data>
+  <data name="清空" xml:space="preserve"><value>清空</value></data>
+  <data name="清空列表" xml:space="preserve"><value>清空列表</value></data>
+  <data name="清空此设备的窗口记录，已写入的应用日志保留" xml:space="preserve"><value>清空此設備的窗口記錄，已寫入的應用日誌保留</value></data>
+  <data name="源值 (V/mA)" xml:space="preserve"><value>源值 (V/mA)</value></data>
+  <data name="源值 / 扫描范围" xml:space="preserve"><value>源值 / 掃描範圍</value></data>
+  <data name="源模式" xml:space="preserve"><value>源模式</value></data>
+  <data name="源表 IP 地址" xml:space="preserve"><value>源表 IP 地址</value></data>
+  <data name="源表测量结果" xml:space="preserve"><value>源表測量結果</value></data>
+  <data name="源表配置" xml:space="preserve"><value>源表配置</value></data>
+  <data name="灰色网格表示输出坐标，彩色网格表示对应的源采样位置。用于核对参数方向和形变，实际效果需使用图像验证。" xml:space="preserve"><value>灰色網格表示輸出座標，彩色網格表示對應的源採樣位置。用於覈對參數方向和形變，實際效果需使用圖像驗證。</value></data>
+  <data name="点数" xml:space="preserve"><value>點數</value></data>
+  <data name="用哪个模块" xml:space="preserve"><value>用哪個模塊</value></data>
+  <data name="用时 (ms)" xml:space="preserve"><value>用時 (ms)</value></data>
+  <data name="电压 (V)" xml:space="preserve"><value>電壓 (V)</value></data>
+  <data name="电流 (mA)" xml:space="preserve"><value>電流 (mA)</value></data>
+  <data name="电阻 (Ω)" xml:space="preserve"><value>電阻 (Ω)</value></data>
+  <data name="电阻 R" xml:space="preserve"><value>電阻 R</value></data>
+  <data name="电阻：2600 按设置的测试电压或电流及保护限值输出，用实测 V/I 得到 Ω；例如实测 1 V、1 mA，对应 1000 Ω。LED 等非线性器件的比值随工作点变化。2400 还可由仪器自动选择测试电流，并返回原生 Ω。HighImpedance 是关闭输出时的高阻状态，高电容模式用于电容负载稳定，均不表示交流阻抗或电容量测量。" xml:space="preserve"><value>電阻：2600 按設置的測試電壓或電流及保護限值輸出，用實測 V/I 得到 Ω；例如實測 1 V、1 mA，對應 1000 Ω。LED 等非線性器件的比值隨工作點變化。2400 還可由儀器自動選擇測試電流，並返回原生 Ω。HighImpedance 是關閉輸出時的高阻狀態，高電容模式用於電容負載穩定，均不表示交流阻抗或電容量測量。</value></data>
+  <data name="直接修改单元格可设置任意跳变；增量填 0 可统一赋值，负数可递减。平均次数表示设备单轮内部平均。" xml:space="preserve"><value>直接修改單元格可設置任意跳變；增量填 0 可統一賦值，負數可遞減。平均次數表示設備單輪內部平均。</value></data>
+  <data name="移除所选" xml:space="preserve"><value>移除所選</value></data>
+  <data name="空间预览" xml:space="preserve"><value>空間預覽</value></data>
+  <data name="端口" xml:space="preserve"><value>端口</value></data>
+  <data name="等待已保存的源表、相机 POI 或光谱结果" xml:space="preserve"><value>等待已保存的源表、相機 POI 或光譜結果</value></data>
+  <data name="等待流程批次…" xml:space="preserve"><value>等待流程批次…</value></data>
+  <data name="系列" xml:space="preserve"><value>系列</value></data>
+  <data name="系数" xml:space="preserve"><value>係數</value></data>
+  <data name="系数曲线" xml:space="preserve"><value>係數曲線</value></data>
+  <data name="索引" xml:space="preserve"><value>索引</value></data>
+  <data name="索引从 0 开始；设备地址填写十进制数值。" xml:space="preserve"><value>索引從 0 開始；設備地址填寫十進制數值。</value></data>
+  <data name="编辑指令与通信参数" xml:space="preserve"><value>編輯指令與通信參數</value></data>
+  <data name="网口" xml:space="preserve"><value>網口</value></data>
+  <data name="脉冲使用固定源/测量量程，关闭滤波、自动调零和高电容模式。采样延时与 V/I 积分窗口必须落在脉冲内。原始无 A/B 后缀的 2600 不使用 A/B 定时器协议。" xml:space="preserve"><value>脈衝使用固定源/測量量程，關閉濾波、自動調零和高電容模式。採樣延時與 V/I 積分窗口必須落在脈衝內。原始無 A/B 後綴的 2600 不使用 A/B 定時器協議。</value></data>
+  <data name="脉冲：2600 A/B 使用仪器内部定时器，返回基线后结束。2430 使用专用脉冲模式。普通 2400 使用 SDM 间接脉冲，目标脉宽包含积分时间估计，实际波形需示波器校准；不提供精密脉冲时序承诺。" xml:space="preserve"><value>脈衝：2600 A/B 使用儀器內部定時器，返回基線後結束。2430 使用專用脈衝模式。普通 2400 使用 SDM 間接脈衝，目標脈寬包含積分時間估計，實際波形需示波器校準；不提供精密脈衝時序承諾。</value></data>
+  <data name="自动滚动" xml:space="preserve"><value>自動滾動</value></data>
+  <data name="自动适应坐标范围" xml:space="preserve"><value>自動適應座標範圍</value></data>
+  <data name="视图设置" xml:space="preserve"><value>視圖設置</value></data>
+  <data name="记录 ID" xml:space="preserve"><value>記錄 ID</value></data>
+  <data name="设备与连接" xml:space="preserve"><value>設備與連接</value></data>
+  <data name="设备参数" xml:space="preserve"><value>設備參數</value></data>
+  <data name="起始值" xml:space="preserve"><value>起始值</value></data>
+  <data name="跟随最新" xml:space="preserve"><value>跟隨最新</value></data>
+  <data name="跳转" xml:space="preserve"><value>跳轉</value></data>
+  <data name="输入通道编号（从 1 开始）" xml:space="preserve"><value>輸入通道編號（從 1 開始）</value></data>
+  <data name="运行传感器指令后，记录会自动显示在这里。" xml:space="preserve"><value>運行傳感器指令後，記錄會自動顯示在這裏。</value></data>
+  <data name="运行前配置" xml:space="preserve"><value>運行前配置</value></data>
+  <data name="运行日志" xml:space="preserve"><value>運行日誌</value></data>
+  <data name="连接方式" xml:space="preserve"><value>連接方式</value></data>
+  <data name="连接方式（IsNet）" xml:space="preserve"><value>連接方式（IsNet）</value></data>
+  <data name="连接设置" xml:space="preserve"><value>連接設置</value></data>
+  <data name="适用条件" xml:space="preserve"><value>適用條件</value></data>
+  <data name="适用设备 / 协议" xml:space="preserve"><value>適用設備 / 協議</value></data>
+  <data name="选择一条记录查看可读回显、原文和字节内容。" xml:space="preserve"><value>選擇一條記錄查看可讀回顯、原文和字節內容。</value></data>
+  <data name="选择一条记录查看测量详情" xml:space="preserve"><value>選擇一條記錄查看測量詳情</value></data>
+  <data name="选择左侧内置业务流程可查看节点与连线；创建后双击打开流程编辑器。" xml:space="preserve"><value>選擇左側內置業務流程可查看節點與連線；創建後雙擊打開流程編輯器。</value></data>
+  <data name="选择并执行流程，节点完成后自动更新右侧曲线。" xml:space="preserve"><value>選擇並執行流程，節點完成後自動更新右側曲線。</value></data>
+  <data name="逐点数据" xml:space="preserve"><value>逐點數據</value></data>
+  <data name="通信调试" xml:space="preserve"><value>通信調試</value></data>
+  <data name="通道" xml:space="preserve"><value>通道</value></data>
+  <data name="重复执行与逐轮参数" xml:space="preserve"><value>重複執行與逐輪參數</value></data>
+  <data name="重新加载" xml:space="preserve"><value>重新加載</value></data>
+  <data name="重新读取结果" xml:space="preserve"><value>重新讀取結果</value></data>
+  <data name="重置坐标范围" xml:space="preserve"><value>重置座標範圍</value></data>
+  <data name="预期返回什么" xml:space="preserve"><value>預期返回什麼</value></data>
+  <data name="预览宽 × 高(px)" xml:space="preserve"><value>預覽寬 × 高(px)</value></data>
+  <data name="高级 JSON" xml:space="preserve"><value>高級 JSON</value></data>
+  <data name="模板文件" xml:space="preserve"><value>模板文件</value></data>
+  <data name="
+仅保留前 {0} 字节，复制内容同样已截断。" xml:space="preserve"><value>
+僅保留前 {0} 字節，複製內容同樣已截斷。</value></data>
+  <data name="
+编码 {0} · {1} 字节" xml:space="preserve"><value>
+編碼 {0} · {1} 字節</value></data>
+  <data name=" · 已达到显示上限，仅显示最近记录" xml:space="preserve"><value> · 已達到顯示上限，僅顯示最近記錄</value></data>
+  <data name=" · 校正参数" xml:space="preserve"><value> · 校正參數</value></data>
+  <data name=" · 通信调试" xml:space="preserve"><value> · 通信調試</value></data>
+  <data name="/ {0} 页 · {1:N0} 项" xml:space="preserve"><value>/ {0} 頁 · {1:N0} 項</value></data>
+  <data name="0 → {0:G5} px       位移范围 {1:G5} → {2:G5} px" xml:space="preserve"><value>0 → {0:G5} px       位移範圍 {1:G5} → {2:G5} px</value></data>
+  <data name="2400：V/I、直流电阻（自动/手动/偏置补偿）、线性/对数/列表/源记忆扫描、2/4 线及 Ohms Guard、SDM 间接脉冲、高阻/零/Guard 关闭状态。" xml:space="preserve"><value>2400：V/I、直流電阻（自動/手動/偏置補償）、線性/對數/列表/源記憶掃描、2/4 線及 Ohms Guard、SDM 間接脈衝、高阻/零/Guard 關閉狀態。</value></data>
+  <data name="2430：2400 系列的直流测量与扫描，以及专用脉冲输出（当前仅输出，脉宽 0.15～5 ms）。专用脉冲不能并发测量 V/I。" xml:space="preserve"><value>2430：2400 系列的直流測量與掃描，以及專用脈衝輸出（當前僅輸出，脈寬 0.15～5 ms）。專用脈衝不能併發測量 V/I。</value></data>
+  <data name="2600 A/B：V/I、直流电阻、功率、线性/对数/列表扫描、仪器定时脉冲、2/4 线及高电容模式。通道数、量程和脉冲指标取决于实际型号。" xml:space="preserve"><value>2600 A/B：V/I、直流電阻、功率、線性/對數/列表掃描、儀器定時脈衝、2/4 線及高電容模式。通道數、量程和脈衝指標取決於實際型號。</value></data>
+  <data name="CSV 文件|*.csv" xml:space="preserve"><value>CSV 文件|*.csv</value></data>
+  <data name="I-L 曲线" xml:space="preserve"><value>I-L 曲線</value></data>
+  <data name="JSON 已修改，应用或保存时会检查。" xml:space="preserve"><value>JSON 已修改，應用或保存時會檢查。</value></data>
+  <data name="P-L 曲线" xml:space="preserve"><value>P-L 曲線</value></data>
+  <data name="PNG 图片|*.png" xml:space="preserve"><value>PNG 圖片|*.png</value></data>
+  <data name="RGB 三组系数和多项式阶数会同步调整。" xml:space="preserve"><value>RGB 三組係數和多項式階數會同步調整。</value></data>
+  <data name="RGB 系数数组长度不一致，请先核对。" xml:space="preserve"><value>RGB 係數數組長度不一致，請先覈對。</value></data>
+  <data name="V-L 曲线" xml:space="preserve"><value>V-L 曲線</value></data>
+  <data name="{0:N0} 个数据点 · {1} 个系列 · 更新于 {2:HH:mm:ss}" xml:space="preserve"><value>{0:N0} 個數據點 · {1} 個系列 · 更新於 {2:HH:mm:ss}</value></data>
+  <data name="{0} / {1} 点" xml:space="preserve"><value>{0} / {1} 點</value></data>
+  <data name="{0} · V{1} · {2} × {3} · {4} 通道 · 源位深 {5}
+范围 {6:G8} 至 {7:G8}；映射仅查看，预览为采样热力图，V1 按像素交错通道。" xml:space="preserve"><value>{0} · V{1} · {2} × {3} · {4} 通道 · 源位深 {5}
+範圍 {6:G8} 至 {7:G8}；映射僅查看，預覽爲採樣熱力圖，V1 按像素交錯通道。</value></data>
+  <data name="{0} · 第 {1} 轮的{2}无效。" xml:space="preserve"><value>{0} · 第 {1} 輪的{2}無效。</value></data>
+  <data name="{0} · 通道 {1} · {2} · {3} · 用时 {4} ms" xml:space="preserve"><value>{0} · 通道 {1} · {2} · {3} · 用時 {4} ms</value></data>
+  <data name="{0} 个节点支持逐轮参数；其它节点按自身配置执行。" xml:space="preserve"><value>{0} 個節點支持逐輪參數；其它節點按自身配置執行。</value></data>
+  <data name="{0} 条" xml:space="preserve"><value>{0} 條</value></data>
+  <data name="串口 {0} / {1} baud" xml:space="preserve"><value>串口 {0} / {1} baud</value></data>
+  <data name="亮度随时间变化" xml:space="preserve"><value>亮度隨時間變化</value></data>
+  <data name="仅显示脉冲采样点，不代表完整时域波形。" xml:space="preserve"><value>僅顯示脈衝採樣點，不代表完整時域波形。</value></data>
+  <data name="从 JSON 或模板文件创建" xml:space="preserve"><value>從 JSON 或模板文件創建</value></data>
+  <data name="从原始图像生成…" xml:space="preserve"><value>從原始圖像生成…</value></data>
+  <data name="从现有模板创建独立副本" xml:space="preserve"><value>從現有模板創建獨立副本</value></data>
+  <data name="位移跨度超出预览范围，请核对系数和半径。" xml:space="preserve"><value>位移跨度超出預覽範圍，請覈對係數和半徑。</value></data>
+  <data name="使用刚复制或导入的模板内容" xml:space="preserve"><value>使用剛複製或導入的模板內容</value></data>
+  <data name="使用已选择的模板文件创建" xml:space="preserve"><value>使用已選擇的模板文件創建</value></data>
+  <data name="保存校正参数" xml:space="preserve"><value>保存校正參數</value></data>
+  <data name="保留采集顺序；选择右侧数据点可定位读数。" xml:space="preserve"><value>保留採集順序；選擇右側數據點可定位讀數。</value></data>
+  <data name="修改尚未保存。是否保存后关闭？" xml:space="preserve"><value>修改尚未保存。是否保存後關閉？</value></data>
+  <data name="先核对控制器型号和通信协议；PG 文本、GECS 帧、SA 灯控的指令不同。未知设备请根据厂家协议填写，或导入已验证的模板。" xml:space="preserve"><value>先覈對控制器型號和通信協議；PG 文本、GECS 幀、SA 燈控的指令不同。未知設備請根據廠家協議填寫，或導入已驗證的模板。</value></data>
+  <data name="关闭中" xml:space="preserve"><value>關閉中</value></data>
+  <data name="内置基础模板暂不可用，请修复软件安装。仍可使用默认模板、已有模板或导入文件。" xml:space="preserve"><value>內置基礎模板暫不可用，請修復軟件安裝。仍可使用默認模板、已有模板或導入文件。</value></data>
+  <data name="创建或登记校正失败" xml:space="preserve"><value>創建或登記校正失敗</value></data>
+  <data name="删除末项" xml:space="preserve"><value>刪除末項</value></data>
+  <data name="剪贴板正在使用，请稍后再试。" xml:space="preserve"><value>剪貼板正在使用，請稍後再試。</value></data>
+  <data name="单点测量 · 上方为本次实测值，下方可查看和比较历史读数。" xml:space="preserve"><value>單點測量 · 上方爲本次實測值，下方可查看和比較歷史讀數。</value></data>
+  <data name="历史采集信息" xml:space="preserve"><value>歷史採集信息</value></data>
+  <data name="原始 2600：V/I、直流电阻、功率、线性/对数/列表扫描、2/4 线和关闭状态。本协议不在此型号上启用 A/B 定时脉冲。" xml:space="preserve"><value>原始 2600：V/I、直流電阻、功率、線性/對數/列表掃描、2/4 線和關閉狀態。本協議不在此型號上啓用 A/B 定時脈衝。</value></data>
+  <data name="参数已修改，尚未保存。" xml:space="preserve"><value>參數已修改，尚未保存。</value></data>
+  <data name="参数检查通过。" xml:space="preserve"><value>參數檢查通過。</value></data>
+  <data name="发送 {0} · 接收 {1} · 日志 {2}" xml:space="preserve"><value>發送 {0} · 接收 {1} · 日誌 {2}</value></data>
+  <data name="取消勾选后使用节点自身的固定值。" xml:space="preserve"><value>取消勾選後使用節點自身的固定值。</value></data>
+  <data name="坐标 {0} 必须为非负 32 位整数。" xml:space="preserve"><value>座標 {0} 必須爲非負 32 位整數。</value></data>
+  <data name="增加高阶项" xml:space="preserve"><value>增加高階項</value></data>
+  <data name="复制消息" xml:space="preserve"><value>複製消息</value></data>
+  <data name="存在无效输入，关闭将放弃编辑。继续关闭？" xml:space="preserve"><value>存在無效輸入，關閉將放棄編輯。繼續關閉？</value></data>
+  <data name="完成：{0} 点，{1} ms，结果 ID {2}。" xml:space="preserve"><value>完成：{0} 點，{1} ms，結果 ID {2}。</value></data>
+  <data name="导入已有文件…" xml:space="preserve"><value>導入已有文件…</value></data>
+  <data name="尚无可导出的数据。" xml:space="preserve"><value>尚無可導出的數據。</value></data>
+  <data name="尚未识别到支持高级功能的仪器。可先编辑参数；连接后按 IDN 和原生 SDK 判断能力。未知型号或旧 DLL 会明确拒绝执行。" xml:space="preserve"><value>尚未識別到支持高級功能的儀器。可先編輯參數；連接後按 IDN 和原生 SDK 判斷能力。未知型號或舊 DLL 會明確拒絕執行。</value></data>
+  <data name="展开查看原文件信息（不参与当前转换）" xml:space="preserve"><value>展開查看原文件信息（不參與當前轉換）</value></data>
+  <data name="已保存，原文件备份：" xml:space="preserve"><value>已保存，原文件備份：</value></data>
+  <data name="已保存：" xml:space="preserve"><value>已保存：</value></data>
+  <data name="已保存；原文件备份：" xml:space="preserve"><value>已保存；原文件備份：</value></data>
+  <data name="已创建并选用于校正组「{0}」的{1}。" xml:space="preserve"><value>已創建並選用於校正組「{0}」的{1}。</value></data>
+  <data name="已取消。" xml:space="preserve"><value>已取消。</value></data>
+  <data name="已取消；输出清理未完成：{0}" xml:space="preserve"><value>已取消；輸出清理未完成：{0}</value></data>
+  <data name="已另存为 " xml:space="preserve"><value>已另存爲 </value></data>
+  <data name="已暂停" xml:space="preserve"><value>已暫停</value></data>
+  <data name="已请求停止；等待 SDK 返回后关闭输出并释放连接。" xml:space="preserve"><value>已請求停止；等待 SDK 返回後關閉輸出並釋放連接。</value></data>
+  <data name="已请求取消；等待正在执行的 SDK 调用返回后清理输出。" xml:space="preserve"><value>已請求取消；等待正在執行的 SDK 調用返回後清理輸出。</value></data>
+  <data name="已超时" xml:space="preserve"><value>已超時</value></data>
+  <data name="已达到逐轮参数编辑的最大轮数。" xml:space="preserve"><value>已達到逐輪參數編輯的最大輪數。</value></data>
+  <data name="已连接" xml:space="preserve"><value>已連接</value></data>
+  <data name="当前批次显示数据已导出。" xml:space="preserve"><value>當前批次顯示數據已導出。</value></data>
+  <data name="当前显示 {0} 条 / 保留 {1} 条" xml:space="preserve"><value>當前顯示 {0} 條 / 保留 {1} 條</value></data>
+  <data name="当前显示脉冲采样读数；不代表示波器采集的完整时域波形。" xml:space="preserve"><value>當前顯示脈衝採樣讀數；不代表示波器採集的完整時域波形。</value></data>
+  <data name="当前流程没有已保存的批次，请启用流程结果保存并连接 MySQL。" xml:space="preserve"><value>當前流程沒有已保存的批次，請啓用流程結果保存並連接 MySQL。</value></data>
+  <data name="当前系数在所选半径内溢出，请减小半径或核对参数。" xml:space="preserve"><value>當前係數在所選半徑內溢出，請減小半徑或覈對參數。</value></data>
+  <data name="手工填写参数…" xml:space="preserve"><value>手工填寫參數…</value></data>
+  <data name="执行中" xml:space="preserve"><value>執行中</value></data>
+  <data name="执行次数必须是 1 到 {0:N0} 的整数。" xml:space="preserve"><value>執行次數必須是 1 到 {0:N0} 的整數。</value></data>
+  <data name="批次 #{0}" xml:space="preserve"><value>批次 #{0}</value></data>
+  <data name="批次 #{0} · {1}
+状态：{2}" xml:space="preserve"><value>批次 #{0} · {1}
+狀態：{2}</value></data>
+  <data name="按设备协议填写发送指令和预期回包，也可以从左侧选择已有业务预设。" xml:space="preserve"><value>按設備協議填寫發送指令和預期回包，也可以從左側選擇已有業務預設。</value></data>
+  <data name="操作完成。" xml:space="preserve"><value>操作完成。</value></data>
+  <data name="数值" xml:space="preserve"><value>數值</value></data>
+  <data name="新建手工参数文件：请填写实际参数并核对后保存。" xml:space="preserve"><value>新建手工參數文件：請填寫實際參數並覈對後保存。</value></data>
+  <data name="时间未记录" xml:space="preserve"><value>時間未記錄</value></data>
+  <data name="暂无运行日志" xml:space="preserve"><value>暫無運行日誌</value></data>
+  <data name="曲线图片已保存。" xml:space="preserve"><value>曲線圖片已保存。</value></data>
+  <data name="最大半径必须是大于零的有限数值。" xml:space="preserve"><value>最大半徑必須是大於零的有限數值。</value></data>
+  <data name="服务模式（此窗口仅记录本地通信）" xml:space="preserve"><value>服務模式（此窗口僅記錄本地通信）</value></data>
+  <data name="未连接" xml:space="preserve"><value>未連接</value></data>
+  <data name="未配置" xml:space="preserve"><value>未配置</value></data>
+  <data name="本地模式" xml:space="preserve"><value>本地模式</value></data>
+  <data name="本地源表 · {0}" xml:space="preserve"><value>本地源表 · {0}</value></data>
+  <data name="本地源表参数已保存。" xml:space="preserve"><value>本地源表參數已保存。</value></data>
+  <data name="本地通信调试" xml:space="preserve"><value>本地通信調試</value></data>
+  <data name="本机存在" xml:space="preserve"><value>本機存在</value></data>
+  <data name="本次扫描少于两个点，直接显示读数。" xml:space="preserve"><value>本次掃描少於兩個點，直接顯示讀數。</value></data>
+  <data name="查询源表历史失败：{0}" xml:space="preserve"><value>查詢源表歷史失敗：{0}</value></data>
+  <data name="校正参数尚未保存。是否保存后关闭？" xml:space="preserve"><value>校正參數尚未保存。是否保存後關閉？</value></data>
+  <data name="校正文件|*.dat;*.json|所有文件|*.*" xml:space="preserve"><value>校正文件|*.dat;*.json|所有文件|*.*</value></data>
+  <data name="校正文件|*.dat|所有文件|*.*" xml:space="preserve"><value>校正文件|*.dat|所有文件|*.*</value></data>
+  <data name="校正编辑" xml:space="preserve"><value>校正編輯</value></data>
+  <data name="模板来源加载失败，请重新选择。" xml:space="preserve"><value>模板來源加載失敗，請重新選擇。</value></data>
+  <data name="模板来源加载失败：{0}" xml:space="preserve"><value>模板來源加載失敗：{0}</value></data>
+  <data name="模板预览加载失败：{0}" xml:space="preserve"><value>模板預覽加載失敗：{0}</value></data>
+  <data name="横轴为放大图中距光学中心的半径（原图半径 × 放大倍率），纵轴为径向位移。" xml:space="preserve"><value>橫軸爲放大圖中距光學中心的半徑（原圖半徑 × 放大倍率），縱軸爲徑向位移。</value></data>
+  <data name="横轴为距光学中心的像素半径，纵轴为距离比例修正后的径向位移。" xml:space="preserve"><value>橫軸爲距光學中心的像素半徑，縱軸爲距離比例修正後的徑向位移。</value></data>
+  <data name="正在执行，完成后再切换节点。" xml:space="preserve"><value>正在執行，完成後再切換節點。</value></data>
+  <data name="正在监控 · 未配对亮度 {0} · 无效记录 {1}" xml:space="preserve"><value>正在監控 · 未配對亮度 {0} · 無效記錄 {1}</value></data>
+  <data name="正在等待 SDK 返回并清理输出，完成后可关闭窗口。" xml:space="preserve"><value>正在等待 SDK 返回並清理輸出，完成後可關閉窗口。</value></data>
+  <data name="此校正使用偏移或矩阵参数，不包含径向多项式。" xml:space="preserve"><value>此校正使用偏移或矩陣參數，不包含徑向多項式。</value></data>
+  <data name="没有匹配的记录" xml:space="preserve"><value>沒有匹配的記錄</value></data>
+  <data name="流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。连接参数在设备配置中设置。" xml:space="preserve"><value>流程選擇“本地設備 → 本地通用傳感器”，選擇目標傳感器設備和本模板。連接參數在設備配置中設置。</value></data>
+  <data name="源表结果 (*.json)|*.json" xml:space="preserve"><value>源表結果 (*.json)|*.json</value></data>
+  <data name="源设置：{0}   ·   {1}" xml:space="preserve"><value>源設置：{0}   ·   {1}</value></data>
+  <data name="电压随时间变化" xml:space="preserve"><value>電壓隨時間變化</value></data>
+  <data name="电流随时间变化" xml:space="preserve"><value>電流隨時間變化</value></data>
+  <data name="矩阵后的扩展数据会保留，可在高级 JSON 中查看。" xml:space="preserve"><value>矩陣後的擴展數據會保留，可在高級 JSON 中查看。</value></data>
+  <data name="第 1 列" xml:space="preserve"><value>第 1 列</value></data>
+  <data name="第 1 行" xml:space="preserve"><value>第 1 行</value></data>
+  <data name="第 2 列" xml:space="preserve"><value>第 2 列</value></data>
+  <data name="第 2 行" xml:space="preserve"><value>第 2 行</value></data>
+  <data name="第 3 列" xml:space="preserve"><value>第 3 列</value></data>
+  <data name="第 3 行" xml:space="preserve"><value>第 3 行</value></data>
+  <data name="等待读取已保存结果…" xml:space="preserve"><value>等待讀取已保存結果…</value></data>
+  <data name="系数 / 位置" xml:space="preserve"><value>係數 / 位置</value></data>
+  <data name="系数 {0} 必须是有限浮点数。" xml:space="preserve"><value>係數 {0} 必須是有限浮點數。</value></data>
+  <data name="线性度逐像素乘数表 · {0:N0} 项 · 每页 {1} 项；曲线横轴为像素位置索引，采样最多 800 点。文件没有尺寸信息，需核对图像尺寸及适用条件。" xml:space="preserve"><value>線性度逐像素乘數表 · {0:N0} 項 · 每頁 {1} 項；曲線橫軸爲像素位置索引，採樣最多 800 點。文件沒有尺寸信息，需覈對圖像尺寸及適用條件。</value></data>
+  <data name="编辑重复框" xml:space="preserve"><value>編輯重複框</value></data>
+  <data name="缺陷点坐标 · 文件按 Y / X 顺序保存；坐标必须为非负 32 位整数。当前没有图像尺寸，无法检查是否越过图像边界。" xml:space="preserve"><value>缺陷點座標 · 文件按 Y / X 順序保存；座標必須爲非負 32 位整數。當前沒有圖像尺寸，無法檢查是否越過圖像邊界。</value></data>
+  <data name="脉冲采样点 · V–I" xml:space="preserve"><value>脈衝採樣點 · V–I</value></data>
+  <data name="自定义传感器指令" xml:space="preserve"><value>自定義傳感器指令</value></data>
+  <data name="至少保留一轮执行。" xml:space="preserve"><value>至少保留一輪執行。</value></data>
+  <data name="请修正输入框中的无效数值。" xml:space="preserve"><value>請修正輸入框中的無效數值。</value></data>
+  <data name="请先修正参数编辑器中的错误输入。" xml:space="preserve"><value>請先修正參數編輯器中的錯誤輸入。</value></data>
+  <data name="请先在表格中选中需要删除的轮次。" xml:space="preserve"><value>請先在表格中選中需要刪除的輪次。</value></data>
+  <data name="请先在高级 JSON 中补全系数数组。" xml:space="preserve"><value>請先在高級 JSON 中補全係數數組。</value></data>
+  <data name="请先执行一次测量或输出操作。" xml:space="preserve"><value>請先執行一次測量或輸出操作。</value></data>
+  <data name="请先选择或添加校正组。" xml:space="preserve"><value>請先選擇或添加校正組。</value></data>
+  <data name="请填写有效的轮次、起始值和增量。" xml:space="preserve"><value>請填寫有效的輪次、起始值和增量。</value></data>
+  <data name="请检查数值及允许范围。" xml:space="preserve"><value>請檢查數值及允許範圍。</value></data>
+  <data name="请输入 1 至 {0} 的页码。" xml:space="preserve"><value>請輸入 1 至 {0} 的頁碼。</value></data>
+  <data name="请输入有效的正整数。" xml:space="preserve"><value>請輸入有效的正整數。</value></data>
+  <data name="请选择创建来源。" xml:space="preserve"><value>請選擇創建來源。</value></data>
+  <data name="读取失败，下一节点完成时重试，也可重新读取：{0}" xml:space="preserve"><value>讀取失敗，下一節點完成時重試，也可重新讀取：{0}</value></data>
+  <data name="轮次" xml:space="preserve"><value>輪次</value></data>
+  <data name="输出设置完成；本次未执行测量。" xml:space="preserve"><value>輸出設置完成；本次未執行測量。</value></data>
+  <data name="连接中" xml:space="preserve"><value>連接中</value></data>
+  <data name="通道编号必须在 1 至 {0} 之间。" xml:space="preserve"><value>通道編號必須在 1 至 {0} 之間。</value></data>
+  <data name="重新加载会放弃尚未保存的修改，是否继续？" xml:space="preserve"><value>重新加載會放棄尚未保存的修改，是否繼續？</value></data>
+  <data name="需先取得实测响应表；可导入后编辑" xml:space="preserve"><value>需先取得實測響應表；可導入後編輯</value></data>
+  <data name="需要传感器指令模板。" xml:space="preserve"><value>需要傳感器指令模板。</value></data>
+  <data name="需要流程模板。" xml:space="preserve"><value>需要流程模板。</value></data>
+  <data name="预览宽高必须是正整数。" xml:space="preserve"><value>預覽寬高必須是正整數。</value></data>
+  <data name="；系数按常数项、一次项、二次项排列。曲线展示参数函数，不代表实测标定质量。" xml:space="preserve"><value>；係數按常數項、一次項、二次項排列。曲線展示參數函數，不代表實測標定質量。</value></data>
+  <data name="2400 Auto 根据电阻量程选择测试电流；2600 使用 Manual，设置测试电压或电流。" xml:space="preserve"><value>2400 Auto 根據電阻量程選擇測試電流；2600 使用 Manual，設置測試電壓或電流。</value></data>
+  <data name="2400 Guard，配合四线接线进行六线保护电阻测量；需要相应实物接线。" xml:space="preserve"><value>2400 Guard，配合四線接線進行六線保護電阻測量；需要相應實物接線。</value></data>
+  <data name="2400 Trigger Link 1～4；2600 数字 I/O 1～14，需要实际接线。" xml:space="preserve"><value>2400 Trigger Link 1～4；2600 數字 I/O 1～14，需要實際接線。</value></data>
+  <data name="2400 电阻测量的仪器偏置补偿。" xml:space="preserve"><value>2400 電阻測量的儀器偏置補償。</value></data>
+  <data name="2400 的前/后面板端子选择。" xml:space="preserve"><value>2400 的前/後面板端子選擇。</value></data>
+  <data name="2450 使用 Keithley_2400 驱动时，请在仪器端选择 SCPI 2400 命令集并重启；2604 使用 Keithley_2600。" xml:space="preserve"><value>2450 使用 Keithley_2400 驅動時，請在儀器端選擇 SCPI 2400 命令集並重啓；2604 使用 Keithley_2600。</value></data>
+  <data name="2600 A/B 使用仪器定时器。普通 2400 使用 SDM 间接脉冲，实际脉宽需示波器校准；2430 使用专用脉冲模式。" xml:space="preserve"><value>2600 A/B 使用儀器定時器。普通 2400 使用 SDM 間接脈衝，實際脈寬需示波器校準；2430 使用專用脈衝模式。</value></data>
+  <data name="2600 A/B 每次脉冲采样前的等待，须与 V/I 积分窗口一起落在脉宽内；每个脉冲返回一组 V/I，不是完整波形。2400 的采样位置由 SDM 决定；2430 当前仅输出。" xml:space="preserve"><value>2600 A/B 每次脈衝採樣前的等待，須與 V/I 積分窗口一起落在脈寬內；每個脈衝返回一組 V/I，不是完整波形。2400 的採樣位置由 SDM 決定；2430 當前僅輸出。</value></data>
+  <data name="2600 电阻为当前激励下的实测 V/I 比值；2400 保留仪器原生 Ω，可使用自动电阻和偏置补偿。LED 等非线性器件的比值随工作点变化，不是微分电阻或交流阻抗。所有测量同时保留实测 V/I，功率为 V×I。" xml:space="preserve"><value>2600 電阻爲當前激勵下的實測 V/I 比值；2400 保留儀器原生 Ω，可使用自動電阻和偏置補償。LED 等非線性器件的比值隨工作點變化，不是微分電阻或交流阻抗。所有測量同時保留實測 V/I，功率爲 V×I。</value></data>
+  <data name="2600 脉冲间返回此值；2400/2430 脉冲只支持零基线。" xml:space="preserve"><value>2600 脈衝間返回此值；2400/2430 脈衝只支持零基線。</value></data>
+  <data name="2600 采样延时（ms）" xml:space="preserve"><value>2600 採樣延時（ms）</value></data>
+  <data name="2600B 高电容负载稳定模式，会增加稳定时间；此项不测量电容量。" xml:space="preserve"><value>2600B 高電容負載穩定模式，會增加穩定時間；此項不測量電容量。</value></data>
+  <data name="CVCIE 显示" xml:space="preserve"><value>CVCIE 顯示</value></data>
+  <data name="HighImpedance 为高阻断开；Zero 为零输出。Guard 关闭状态仅适用于 2400。" xml:space="preserve"><value>HighImpedance 爲高阻斷開；Zero 爲零輸出。Guard 關閉狀態僅適用於 2400。</value></data>
+  <data name="IsSrcA 是保留的兼容配置项；手动测量和流程的通道分别由显示配置和节点参数决定。" xml:space="preserve"><value>IsSrcA 是保留的兼容配置項；手動測量和流程的通道分別由顯示配置和節點參數決定。</value></data>
+  <data name="SourceMeasure：输出并测量；SourceOnly：仅输出；MeasureOnly：电压表/电流表接法，使用 0 A/0 V 源，仍会接通仪器输出。" xml:space="preserve"><value>SourceMeasure：輸出並測量；SourceOnly：僅輸出；MeasureOnly：電壓表/電流表接法，使用 0 A/0 V 源，仍會接通儀器輸出。</value></data>
+  <data name="SourceMemory：2400 源记忆扫描，使用列表值与可选的逐点保护限值；覆盖本次使用的仪器源记忆槽。" xml:space="preserve"><value>SourceMemory：2400 源記憶掃描，使用列表值與可選的逐點保護限值；覆蓋本次使用的儀器源記憶槽。</value></data>
+  <data name="一次" xml:space="preserve"><value>一次</value></data>
+  <data name="与 CVCIE 的 Y 使用相同单位（通常为 cd/m²）。此亮度的 D65 白映射到 sRGB 白；必须大于 0。" xml:space="preserve"><value>與 CVCIE 的 Y 使用相同單位（通常爲 cd/m²）。此亮度的 D65 白映射到 sRGB 白；必須大於 0。</value></data>
+  <data name="主网格线" xml:space="preserve"><value>主網格線</value></data>
+  <data name="主题" xml:space="preserve"><value>主題</value></data>
+  <data name="仅测量（0 V / 0 A 接法）" xml:space="preserve"><value>僅測量（0 V / 0 A 接法）</value></data>
+  <data name="仅用于 2400 自动电阻，0 表示自动量程，仪器按此选择测试电流。2600 请设置测试源值及 V/A 量程，此项不参与其 V/I 计算。" xml:space="preserve"><value>僅用於 2400 自動電阻，0 表示自動量程，儀器按此選擇測試電流。2600 請設置測試源值及 V/A 量程，此項不參與其 V/I 計算。</value></data>
+  <data name="仅输出" xml:space="preserve"><value>僅輸出</value></data>
+  <data name="位深" xml:space="preserve"><value>位深</value></data>
+  <data name="使用 A 通道" xml:space="preserve"><value>使用 A 通道</value></data>
+  <data name="使用前面板端子" xml:space="preserve"><value>使用前面板端子</value></data>
+  <data name="使用本地传感器" xml:space="preserve"><value>使用本地傳感器</value></data>
+  <data name="使用深色控件" xml:space="preserve"><value>使用深色控件</value></data>
+  <data name="使用英文逗号、分号或空白分隔；小数点使用英文句点。保留重复、递减和跳变。" xml:space="preserve"><value>使用英文逗號、分號或空白分隔；小數點使用英文句點。保留重複、遞減和跳變。</value></data>
+  <data name="保护限值（mA / V）" xml:space="preserve"><value>保護限值（mA / V）</value></data>
+  <data name="修正方式" xml:space="preserve"><value>修正方式</value></data>
+  <data name="偏置补偿" xml:space="preserve"><value>偏置補償</value></data>
+  <data name="停止位" xml:space="preserve"><value>停止位</value></data>
+  <data name="列表值（V / mA）" xml:space="preserve"><value>列表值（V / mA）</value></data>
+  <data name="列表扫描" xml:space="preserve"><value>列表掃描</value></data>
+  <data name="前面板端子" xml:space="preserve"><value>前面板端子</value></data>
+  <data name="功率（W）" xml:space="preserve"><value>功率（W）</value></data>
+  <data name="原图（CVRAW）" xml:space="preserve"><value>原圖（CVRAW）</value></data>
+  <data name="原始采样点数。均值滤波沿用原规则：小于等于 2 时使用 5 点，支持偶数窗口；SG 必须使用 3～2047 的奇数，且不超过实际采样点数。" xml:space="preserve"><value>原始採樣點數。均值濾波沿用原規則：小於等於 2 時使用 5 點，支持偶數窗口；SG 必須使用 3～2047 的奇數，且不超過實際採樣點數。</value></data>
+  <data name="参考白亮度" xml:space="preserve"><value>參考白亮度</value></data>
+  <data name="启用后，新打开的 CVCIE 默认显示 XYZ 真彩 sRGB；关闭后默认显示原图。图层临时切换不改变此开关，转换异常只记日志并回退原图或 Y 灰度。" xml:space="preserve"><value>啓用後，新打開的 CVCIE 默認顯示 XYZ 真彩 sRGB；關閉後默認顯示原圖。圖層臨時切換不改變此開關，轉換異常只記日誌並回退原圖或 Y 灰度。</value></data>
+  <data name="启用真彩显示" xml:space="preserve"><value>啓用真彩顯示</value></data>
+  <data name="周期（ms）" xml:space="preserve"><value>週期（ms）</value></data>
+  <data name="四线制" xml:space="preserve"><value>四線制</value></data>
+  <data name="四线制测量" xml:space="preserve"><value>四線制測量</value></data>
+  <data name="固定值" xml:space="preserve"><value>固定值</value></data>
+  <data name="固定参考白亮度" xml:space="preserve"><value>固定參考白亮度</value></data>
+  <data name="固定直流时为输出值，固定值脉冲时为峰值；扫描脉冲的峰值来自扫描数组。2400 自动电阻由仪器按电阻量程决定测试电流，此源值不参与激励。" xml:space="preserve"><value>固定直流時爲輸出值，固定值脈衝時爲峯值；掃描脈衝的峯值來自掃描數組。2400 自動電阻由儀器按電阻量程決定測試電流，此源值不參與激勵。</value></data>
+  <data name="垂直" xml:space="preserve"><value>垂直</value></data>
+  <data name="基线（V / mA）" xml:space="preserve"><value>基線（V / mA）</value></data>
+  <data name="填写仪器 LAN 页面显示的 IP 地址，例如 192.168.1.100；不含协议或端口。Keithley 使用 TCP 5025，当前连接所在电脑须能访问该地址。" xml:space="preserve"><value>填寫儀器 LAN 頁面顯示的 IP 地址，例如 192.168.1.100；不含協議或端口。Keithley 使用 TCP 5025，當前連接所在電腦須能訪問該地址。</value></data>
+  <data name="外部下降沿" xml:space="preserve"><value>外部下降沿</value></data>
+  <data name="外部触发：2400 Trigger Link 逐点触发；2600 直流逐点触发，脉冲为整组起始触发。等待受整次超时限制。" xml:space="preserve"><value>外部觸發：2400 Trigger Link 逐點觸發；2600 直流逐點觸發，脈衝爲整組起始觸發。等待受整次超時限制。</value></data>
+  <data name="完成后关闭输出" xml:space="preserve"><value>完成後關閉輸出</value></data>
+  <data name="实时新增结果时，列表最多保留的条数，默认 500，至少 1 条。搜索按查询设置完整加载；之后有新实时结果时，旧搜索记录也可被淘汰。不删除数据库记录。" xml:space="preserve"><value>實時新增結果時，列表最多保留的條數，默認 500，至少 1 條。搜索按查詢設置完整加載；之後有新實時結果時，舊搜索記錄也可被淘汰。不刪除數據庫記錄。</value></data>
+  <data name="实时结果保留上限" xml:space="preserve"><value>實時結果保留上限</value></data>
+  <data name="对数扫描" xml:space="preserve"><value>對數掃描</value></data>
+  <data name="工作方式" xml:space="preserve"><value>工作方式</value></data>
+  <data name="工作流程设置" xml:space="preserve"><value>工作流程設置</value></data>
+  <data name="平滑算法" xml:space="preserve"><value>平滑算法</value></data>
+  <data name="建立本地连接的最长等待时间；指令超时仍使用原模板设置。" xml:space="preserve"><value>建立本地連接的最長等待時間；指令超時仍使用原模板設置。</value></data>
+  <data name="开启后填写源表 IP 地址；Keithley 网口连接使用固定 TCP 5025 端口。修改后关闭连接再重新打开。" xml:space="preserve"><value>開啓後填寫源表 IP 地址；Keithley 網口連接使用固定 TCP 5025 端口。修改後關閉連接再重新打開。</value></data>
+  <data name="开启：源值 V、保护限值 mA；关闭：源值 mA、保护限值 V。" xml:space="preserve"><value>開啓：源值 V、保護限值 mA；關閉：源值 mA、保護限值 V。</value></data>
+  <data name="强调颜色" xml:space="preserve"><value>強調顏色</value></data>
+  <data name="成功颜色" xml:space="preserve"><value>成功顏色</value></data>
+  <data name="手动激励" xml:space="preserve"><value>手動激勵</value></data>
+  <data name="打开本地源表窗口，编辑测量、扫描、脉冲和接线参数并应用到此节点。" xml:space="preserve"><value>打開本地源表窗口，編輯測量、掃描、脈衝和接線參數並應用到此節點。</value></data>
+  <data name="扫描" xml:space="preserve"><value>掃描</value></data>
+  <data name="扫描方式" xml:space="preserve"><value>掃描方式</value></data>
+  <data name="拖动节点时显示对齐辅助线，并吸附到相邻节点的对齐位置。" xml:space="preserve"><value>拖動節點時顯示對齊輔助線，並吸附到相鄰節點的對齊位置。</value></data>
+  <data name="接线与关闭状态" xml:space="preserve"><value>接線與關閉狀態</value></data>
+  <data name="控制工具栏、菜单和属性编辑器的基础明暗；下方颜色只在自定义配色模式生效。" xml:space="preserve"><value>控制工具欄、菜單和屬性編輯器的基礎明暗；下方顏色只在自定義配色模式生效。</value></data>
+  <data name="数据位" xml:space="preserve"><value>數據位</value></data>
+  <data name="整次操作超时（s）" xml:space="preserve"><value>整次操作超時（s）</value></data>
+  <data name="文字颜色" xml:space="preserve"><value>文字顏色</value></data>
+  <data name="显示网格" xml:space="preserve"><value>顯示網格</value></data>
+  <data name="显示节点阴影" xml:space="preserve"><value>顯示節點陰影</value></data>
+  <data name="景深融合" xml:space="preserve"><value>景深融合</value></data>
+  <data name="本地串口" xml:space="preserve"><value>本地串口</value></data>
+  <data name="本地模板匹配" xml:space="preserve"><value>本地模板匹配</value></data>
+  <data name="本地采集使用；默认均值滤波保持原有测量数据。SG 为二阶试验算法，会改变光谱结果，尚未通过真实光谱数据验证。远程服务不使用此选项。" xml:space="preserve"><value>本地採集使用；默認均值濾波保持原有測量數據。SG 爲二階試驗算法，會改變光譜結果，尚未通過真實光譜數據驗證。遠程服務不使用此選項。</value></data>
+  <data name="查询" xml:space="preserve"><value>查詢</value></data>
+  <data name="查询数量" xml:space="preserve"><value>查詢數量</value></data>
+  <data name="校正参数" xml:space="preserve"><value>校正參數</value></data>
+  <data name="校验位" xml:space="preserve"><value>校驗位</value></data>
+  <data name="次网格线" xml:space="preserve"><value>次網格線</value></data>
+  <data name="正常" xml:space="preserve"><value>正常</value></data>
+  <data name="每次脉冲峰值的目标持续时间。2600 A/B 使用仪器定时器；普通 2400 的实际波形需示波器校准。" xml:space="preserve"><value>每次脈衝峯值的目標持續時間。2600 A/B 使用儀器定時器；普通 2400 的實際波形需示波器校準。</value></data>
+  <data name="水平" xml:space="preserve"><value>水平</value></data>
+  <data name="波形" xml:space="preserve"><value>波形</value></data>
+  <data name="浅色" xml:space="preserve"><value>淺色</value></data>
+  <data name="测量延时（ms）" xml:space="preserve"><value>測量延時（ms）</value></data>
+  <data name="测量量" xml:space="preserve"><value>測量量</value></data>
+  <data name="测量量程（A / V，0 自动）" xml:space="preserve"><value>測量量程（A / V，0 自動）</value></data>
+  <data name="深色" xml:space="preserve"><value>深色</value></data>
+  <data name="源值（V / mA）" xml:space="preserve"><value>源值（V / mA）</value></data>
+  <data name="源记忆扫描（2400）" xml:space="preserve"><value>源記憶掃描（2400）</value></data>
+  <data name="源记忆逐点保护限值" xml:space="preserve"><value>源記憶逐點保護限值</value></data>
+  <data name="源量程（V / A，0 自动）" xml:space="preserve"><value>源量程（V / A，0 自動）</value></data>
+  <data name="滤波" xml:space="preserve"><value>濾波</value></data>
+  <data name="滤波次数" xml:space="preserve"><value>濾波次數</value></data>
+  <data name="点数 / 固定值脉冲次数" xml:space="preserve"><value>點數 / 固定值脈衝次數</value></data>
+  <data name="用于选中边框、蓝色节点标题和对应端口连线。" xml:space="preserve"><value>用於選中邊框、藍色節點標題和對應端口連線。</value></data>
+  <data name="电压 / 电流" xml:space="preserve"><value>電壓 / 電流</value></data>
+  <data name="电压源" xml:space="preserve"><value>電壓源</value></data>
+  <data name="电阻" xml:space="preserve"><value>電阻</value></data>
+  <data name="电阻测量方式" xml:space="preserve"><value>電阻測量方式</value></data>
+  <data name="电阻量程（Ω）" xml:space="preserve"><value>電阻量程（Ω）</value></data>
+  <data name="电阻（Ω）" xml:space="preserve"><value>電阻（Ω）</value></data>
+  <data name="画布" xml:space="preserve"><value>畫布</value></data>
+  <data name="画布主题" xml:space="preserve"><value>畫布主題</value></data>
+  <data name="画布背景" xml:space="preserve"><value>畫布背景</value></data>
+  <data name="留空时共用保护限值，否则数量必须与列表相同；单位沿用保护限值。" xml:space="preserve"><value>留空時共用保護限值，否則數量必須與列表相同；單位沿用保護限值。</value></data>
+  <data name="直流" xml:space="preserve"><value>直流</value></data>
+  <data name="相机型号" xml:space="preserve"><value>相機型號</value></data>
+  <data name="相机模式" xml:space="preserve"><value>相機模式</value></data>
+  <data name="相邻脉冲起点之间的目标间隔，必须大于脉宽；2600 脉冲间的基线时间约为周期减去脉宽。普通 2400/2430 的逐点主机通信还会影响实际间隔。" xml:space="preserve"><value>相鄰脈衝起點之間的目標間隔，必須大於脈寬；2600 脈衝間的基線時間約爲週期減去脈寬。普通 2400/2430 的逐點主機通信還會影響實際間隔。</value></data>
+  <data name="真彩亮度映射" xml:space="preserve"><value>真彩亮度映射</value></data>
+  <data name="积分时间（NPLC）" xml:space="preserve"><value>積分時間（NPLC）</value></data>
+  <data name="移动平均" xml:space="preserve"><value>移動平均</value></data>
+  <data name="稳定延时（ms）" xml:space="preserve"><value>穩定延時（ms）</value></data>
+  <data name="立即执行" xml:space="preserve"><value>立即執行</value></data>
+  <data name="线性扫描" xml:space="preserve"><value>線性掃描</value></data>
+  <data name="终点（V / mA）" xml:space="preserve"><value>終點（V / mA）</value></data>
+  <data name="网口连接" xml:space="preserve"><value>網口連接</value></data>
+  <data name="脉冲" xml:space="preserve"><value>脈衝</value></data>
+  <data name="脉宽（ms）" xml:space="preserve"><value>脈寬（ms）</value></data>
+  <data name="自动电阻（2400）" xml:space="preserve"><value>自動電阻（2400）</value></data>
+  <data name="自动调零" xml:space="preserve"><value>自動調零</value></data>
+  <data name="自动适配" xml:space="preserve"><value>自動適配</value></data>
+  <data name="自动适配对整幅图使用同一个亮度系数；固定参考白亮度用于跨图比较。" xml:space="preserve"><value>自動適配對整幅圖使用同一個亮度係數；固定參考白亮度用於跨圖比較。</value></data>
+  <data name="自定义配色" xml:space="preserve"><value>自定義配色</value></data>
+  <data name="节点圆角" xml:space="preserve"><value>節點圓角</value></data>
+  <data name="节点对齐辅助" xml:space="preserve"><value>節點對齊輔助</value></data>
+  <data name="节点背景" xml:space="preserve"><value>節點背景</value></data>
+  <data name="节点边框" xml:space="preserve"><value>節點邊框</value></data>
+  <data name="范围 0–1，0 为直线。" xml:space="preserve"><value>範圍 0–1，0 爲直線。</value></data>
+  <data name="触发源" xml:space="preserve"><value>觸發源</value></data>
+  <data name="触发输入线" xml:space="preserve"><value>觸發輸入線</value></data>
+  <data name="警示颜色" xml:space="preserve"><value>警示顏色</value></data>
+  <data name="设备默认的测量前等待时间，以毫秒传给驱动。本地模式修改后在下一次普通点测或扫描生效，无需重连；普通本地源表节点可单独覆盖，高级操作使用本地窗口的延时。" xml:space="preserve"><value>設備默認的測量前等待時間，以毫秒傳給驅動。本地模式修改後在下一次普通點測或掃描生效，無需重連；普通本地源表節點可單獨覆蓋，高級操作使用本地窗口的延時。</value></data>
+  <data name="起点（V / mA）" xml:space="preserve"><value>起點（V / mA）</value></data>
+  <data name="跟随软件主题" xml:space="preserve"><value>跟隨軟件主題</value></data>
+  <data name="辅助文字" xml:space="preserve"><value>輔助文字</value></data>
+  <data name="输入" xml:space="preserve"><value>輸入</value></data>
+  <data name="输出与测量" xml:space="preserve"><value>輸出與測量</value></data>
+  <data name="输出关闭状态" xml:space="preserve"><value>輸出關閉狀態</value></data>
+  <data name="输出并测量" xml:space="preserve"><value>輸出並測量</value></data>
+  <data name="输出文件" xml:space="preserve"><value>輸出文件</value></data>
+  <data name="连接超时(ms)" xml:space="preserve"><value>連接超時(ms)</value></data>
+  <data name="连线弯曲度" xml:space="preserve"><value>連線彎曲度</value></data>
+  <data name="连续" xml:space="preserve"><value>連續</value></data>
+  <data name="重复平均" xml:space="preserve"><value>重複平均</value></data>
+  <data name="量程与采样" xml:space="preserve"><value>量程與採樣</value></data>
+  <data name="错误颜色" xml:space="preserve"><value>錯誤顏色</value></data>
+  <data name="零输出" xml:space="preserve"><value>零輸出</value></data>
+  <data name="颜色" xml:space="preserve"><value>顏色</value></data>
+  <data name="驱动类型" xml:space="preserve"><value>驅動類型</value></data>
+  <data name="高电容模式" xml:space="preserve"><value>高電容模式</value></data>
+  <data name="高级直流测量在采样前的等待。2600 A/B 脉冲改用“2600 采样延时”，普通 2400 脉冲由目标脉宽和积分窗口确定源延时。" xml:space="preserve"><value>高級直流測量在採樣前的等待。2600 A/B 脈衝改用“2600 採樣延時”，普通 2400 脈衝由目標脈寬和積分窗口確定源延時。</value></data>
+  <data name="高阻断开" xml:space="preserve"><value>高阻斷開</value></data>
+  <data name="鬼影" xml:space="preserve"><value>鬼影</value></data>
+  <data name="默认开启；下次打开时直接连接 TCP 或串口。已打开的连接在关闭前保持当前模式。" xml:space="preserve"><value>默認開啓；下次打開時直接連接 TCP 或串口。已打開的連接在關閉前保持當前模式。</value></data>
+  <data name="默认跟随软件主题。选择浅色、深色或自定义配色后，仅改变流程编辑器的显示。" xml:space="preserve"><value>默認跟隨軟件主題。選擇淺色、深色或自定義配色後，僅改變流程編輯器的顯示。</value></data>
+  <data name="
+字段：" xml:space="preserve"><value>
+字段：</value></data>
+  <data name="B 通道径向位移系数（从常数项开始）" xml:space="preserve"><value>B 通道徑向位移係數（從常數項開始）</value></data>
+  <data name="G 通道径向位移系数（从常数项开始）" xml:space="preserve"><value>G 通道徑向位移係數（從常數項開始）</value></data>
+  <data name="GB 通道径向位移系数（从常数项开始）" xml:space="preserve"><value>GB 通道徑向位移係數（從常數項開始）</value></data>
+  <data name="GB 通道空间偏移" xml:space="preserve"><value>GB 通道空間偏移</value></data>
+  <data name="GR 通道径向位移系数（从常数项开始）" xml:space="preserve"><value>GR 通道徑向位移係數（從常數項開始）</value></data>
+  <data name="GR 通道空间偏移" xml:space="preserve"><value>GR 通道空間偏移</value></data>
+  <data name="GR/GB 通道空间对齐的径向多项式和偏移。" xml:space="preserve"><value>GR/GB 通道空間對齊的徑向多項式和偏移。</value></data>
+  <data name="JSON 后存在额外内容。" xml:space="preserve"><value>JSON 後存在額外內容。</value></data>
+  <data name="MeasDis 不可为零。" xml:space="preserve"><value>MeasDis 不可爲零。</value></data>
+  <data name="R 通道径向位移系数（从常数项开始）" xml:space="preserve"><value>R 通道徑向位移係數（從常數項開始）</value></data>
+  <data name="R/G/B 通道增益" xml:space="preserve"><value>R/G/B 通道增益</value></data>
+  <data name="RGB 转 XYZ 矩阵；按实际采集曝光和文件通道增益归一化。" xml:space="preserve"><value>RGB 轉 XYZ 矩陣；按實際採集曝光和文件通道增益歸一化。</value></data>
+  <data name="RGB 转 XYZ 矩阵；转换使用实际采集曝光。历史文件中的曝光和增益仅保留兼容信息。" xml:space="preserve"><value>RGB 轉 XYZ 矩陣；轉換使用實際採集曝光。歷史文件中的曝光和增益僅保留兼容信息。</value></data>
+  <data name="RGB 通道径向多项式；并非旋转角度。" xml:space="preserve"><value>RGB 通道徑向多項式；並非旋轉角度。</value></data>
+  <data name="X 偏移（px）" xml:space="preserve"><value>X 偏移（px）</value></data>
+  <data name="X=aR+dB，Y=bG，Z=cB；按实际采集曝光和文件通道增益归一化。" xml:space="preserve"><value>X=aR+dB，Y=bG，Z=cB；按實際採集曝光和文件通道增益歸一化。</value></data>
+  <data name="XYZ 修正倍率" xml:space="preserve"><value>XYZ 修正倍率</value></data>
+  <data name="Y 偏移（px）" xml:space="preserve"><value>Y 偏移（px）</value></data>
+  <data name="a：亮度比例" xml:space="preserve"><value>a：亮度比例</value></data>
+  <data name="cameraMatrix[{0}] 超出鱼眼中心的整数范围。" xml:space="preserve"><value>cameraMatrix[{0}] 超出魚眼中心的整數範圍。</value></data>
+  <data name="interpolate_ratio 必须大于零。" xml:space="preserve"><value>interpolate_ratio 必須大於零。</value></data>
+  <data name="offset 必须包含三个通道。" xml:space="preserve"><value>offset 必須包含三個通道。</value></data>
+  <data name="{0} · #{1} / 第 {2} 次" xml:space="preserve"><value>{0} · #{1} / 第 {2} 次</value></data>
+  <data name="{0} · 第 {1} 轮：{2}" xml:space="preserve"><value>{0} · 第 {1} 輪：{2}</value></data>
+  <data name="{0} 不可为零、缺失或小到转换为零，否则运行时会除以零。" xml:space="preserve"><value>{0} 不可爲零、缺失或小到轉換爲零，否則運行時會除以零。</value></data>
+  <data name="{0} 含有当前版本不支持的参数：{1}。请取消原重复框后重新框选。" xml:space="preserve"><value>{0} 含有當前版本不支持的參數：{1}。請取消原重複框後重新框選。</value></data>
+  <data name="{0} 必须在 {1} 至 {2} 范围内。" xml:space="preserve"><value>{0} 必須在 {1} 至 {2} 範圍內。</value></data>
+  <data name="{0} 必须是布尔值。" xml:space="preserve"><value>{0} 必須是布爾值。</value></data>
+  <data name="{0} 必须是有效的{1}值。" xml:space="preserve"><value>{0} 必須是有效的{1}值。</value></data>
+  <data name="{0} 必须是有限数值。" xml:space="preserve"><value>{0} 必須是有限數值。</value></data>
+  <data name="{0} 数组长度无效（至少 {1}" xml:space="preserve"><value>{0} 數組長度無效（至少 {1}</value></data>
+  <data name="{0} 的数组长度与执行次数不一致。" xml:space="preserve"><value>{0} 的數組長度與執行次數不一致。</value></data>
+  <data name="{0} 超出运行算法的 32 位浮点数范围。" xml:space="preserve"><value>{0} 超出運行算法的 32 位浮點數範圍。</value></data>
+  <data name="{0} 通道增益（倍率）" xml:space="preserve"><value>{0} 通道增益（倍率）</value></data>
+  <data name="{0}：兼容参数" xml:space="preserve"><value>{0}：兼容參數</value></data>
+  <data name="中心 X（px）" xml:space="preserve"><value>中心 X（px）</value></data>
+  <data name="中心 Y（px）" xml:space="preserve"><value>中心 Y（px）</value></data>
+  <data name="亮度/单色系数" xml:space="preserve"><value>亮度/單色系數</value></data>
+  <data name="亮度校正系数" xml:space="preserve"><value>亮度校正係數</value></data>
+  <data name="保存目录尚未生成，导出 CSV 时会自动创建。" xml:space="preserve"><value>保存目錄尚未生成，導出 CSV 時會自動創建。</value></data>
+  <data name="保护限值未记录" xml:space="preserve"><value>保護限值未記錄</value></data>
+  <data name="像素布局" xml:space="preserve"><value>像素佈局</value></data>
+  <data name="光学中心 X（px）" xml:space="preserve"><value>光學中心 X（px）</value></data>
+  <data name="光学中心 Y（px）" xml:space="preserve"><value>光學中心 Y（px）</value></data>
+  <data name="光谱参考修正" xml:space="preserve"><value>光譜參考修正</value></data>
+  <data name="光谱查询失败，当前列表已保留。详情请查看日志。" xml:space="preserve"><value>光譜查詢失敗，當前列表已保留。詳情請查看日誌。</value></data>
+  <data name="共用 X (px)" xml:space="preserve"><value>共用 X (px)</value></data>
+  <data name="共用 Y (px)" xml:space="preserve"><value>共用 Y (px)</value></data>
+  <data name="共用空间偏移（Y / X）" xml:space="preserve"><value>共用空間偏移（Y / X）</value></data>
+  <data name="兼容旧算法：暗噪声采用倍率修正；原文件 Texp_x 为浮点数时比例才生效。" xml:space="preserve"><value>兼容舊算法：暗噪聲採用倍率修正；原文件 Texp_x 爲浮點數時比例才生效。</value></data>
+  <data name="半径 {0} 次项" xml:space="preserve"><value>半徑 {0} 次項</value></data>
+  <data name="单色" xml:space="preserve"><value>單色</value></data>
+  <data name="单色校正系数" xml:space="preserve"><value>單色校正係數</value></data>
+  <data name="单通道亮度比例，按实际采集曝光归一化。" xml:space="preserve"><value>單通道亮度比例，按實際採集曝光歸一化。</value></data>
+  <data name="原图插值放大的倍数，必须大于零；实际输入图像放大后的尺寸需要符合算法限制。" xml:space="preserve"><value>原圖插值放大的倍數，必須大於零；實際輸入圖像放大後的尺寸需要符合算法限制。</value></data>
+  <data name="参数允许重放" xml:space="preserve"><value>參數允許重放</value></data>
+  <data name="发送指令" xml:space="preserve"><value>發送指令</value></data>
+  <data name="否（仅记录参数，当前像素未绑定测量能力）" xml:space="preserve"><value>否（僅記錄參數，當前像素未綁定測量能力）</value></data>
+  <data name="四色" xml:space="preserve"><value>四色</value></data>
+  <data name="四色 3×3 系数（行 X/Y/Z，列 R/G/B）" xml:space="preserve"><value>四色 3×3 係數（行 X/Y/Z，列 R/G/B）</value></data>
+  <data name="增益 X（倍率）" xml:space="preserve"><value>增益 X（倍率）</value></data>
+  <data name="增益 Y（倍率）" xml:space="preserve"><value>增益 Y（倍率）</value></data>
+  <data name="增益 Z（倍率）" xml:space="preserve"><value>增益 Z（倍率）</value></data>
+  <data name="多色" xml:space="preserve"><value>多色</value></data>
+  <data name="多色 3×3 系数（行 X/Y/Z，列 R/G/B；前九项）" xml:space="preserve"><value>多色 3×3 係數（行 X/Y/Z，列 R/G/B；前九項）</value></data>
+  <data name="多项式阶数" xml:space="preserve"><value>多項式階數</value></data>
+  <data name="工作流程设置保存失败" xml:space="preserve"><value>工作流程設置保存失敗</value></data>
+  <data name="布尔" xml:space="preserve"><value>布爾</value></data>
+  <data name="常数项" xml:space="preserve"><value>常數項</value></data>
+  <data name="当前可测量" xml:space="preserve"><value>當前可測量</value></data>
+  <data name="径向位移多项式的最高幂次；每个通道需提供阶数加一项系数，从常数项开始。" xml:space="preserve"><value>徑向位移多項式的最高冪次；每個通道需提供階數加一項係數，從常數項開始。</value></data>
+  <data name="接收分片" xml:space="preserve"><value>接收分片</value></data>
+  <data name="插值放大倍数" xml:space="preserve"><value>插值放大倍數</value></data>
+  <data name="数" xml:space="preserve"><value>數</value></data>
+  <data name="整数" xml:space="preserve"><value>整數</value></data>
+  <data name="文件内记录的实际执行参数；查看和复制不会修改文件。系数已包含校正时的曝光、增益等归一化因素，不应再次叠加。" xml:space="preserve"><value>文件內記錄的實際執行參數；查看和複製不會修改文件。係數已包含校正時的曝光、增益等歸一化因素，不應再次疊加。</value></data>
+  <data name="无等待指令" xml:space="preserve"><value>無等待指令</value></data>
+  <data name="日志" xml:space="preserve"><value>日誌</value></data>
+  <data name="暗噪声" xml:space="preserve"><value>暗噪聲</value></data>
+  <data name="暗噪声乘法比例；兼容旧文件，曝光 X 为 JSON 浮点数时才生效。" xml:space="preserve"><value>暗噪聲乘法比例；兼容舊文件，曝光 X 爲 JSON 浮點數時才生效。</value></data>
+  <data name="暗噪声比例" xml:space="preserve"><value>暗噪聲比例</value></data>
+  <data name="曝光 Texp_x" xml:space="preserve"><value>曝光 Texp_x</value></data>
+  <data name="曝光 X（ms）" xml:space="preserve"><value>曝光 X（ms）</value></data>
+  <data name="曝光 Y（ms）" xml:space="preserve"><value>曝光 Y（ms）</value></data>
+  <data name="曝光 Z（ms）" xml:space="preserve"><value>曝光 Z（ms）</value></data>
+  <data name="标定距离" xml:space="preserve"><value>標定距離</value></data>
+  <data name="标定距离，与测量距离使用相同单位。" xml:space="preserve"><value>標定距離，與測量距離使用相同單位。</value></data>
+  <data name="校正 JSON 不支持注释。" xml:space="preserve"><value>校正 JSON 不支持註釋。</value></data>
+  <data name="校正 JSON 根节点必须是对象。" xml:space="preserve"><value>校正 JSON 根節點必須是對象。</value></data>
+  <data name="校正 JSON 语法无效。" xml:space="preserve"><value>校正 JSON 語法無效。</value></data>
+  <data name="校正时间（UTC）" xml:space="preserve"><value>校正時間（UTC）</value></data>
+  <data name="校正曝光" xml:space="preserve"><value>校正曝光</value></data>
+  <data name="校正输入" xml:space="preserve"><value>校正輸入</value></data>
+  <data name="此校正不是 JSON 参数校正。" xml:space="preserve"><value>此校正不是 JSON 參數校正。</value></data>
+  <data name="测量距离" xml:space="preserve"><value>測量距離</value></data>
+  <data name="测量距离，不可为零；与标定距离使用相同单位。" xml:space="preserve"><value>測量距離，不可爲零；與標定距離使用相同單位。</value></data>
+  <data name="电流源" xml:space="preserve"><value>電流源</value></data>
+  <data name="畸变" xml:space="preserve"><value>畸變</value></data>
+  <data name="畸变系数" xml:space="preserve"><value>畸變係數</value></data>
+  <data name="目标宽度（px）" xml:space="preserve"><value>目標寬度（px）</value></data>
+  <data name="目标高度（px）" xml:space="preserve"><value>目標高度（px）</value></data>
+  <data name="相机内参 3×3（按行排列）" xml:space="preserve"><value>相機內參 3×3（按行排列）</value></data>
+  <data name="矩阵含义" xml:space="preserve"><value>矩陣含義</value></data>
+  <data name="第 {0} 行，第 {1} 列" xml:space="preserve"><value>第 {0} 行，第 {1} 列</value></data>
+  <data name="第 {0} 轮：{1}" xml:space="preserve"><value>第 {0} 輪：{1}</value></data>
+  <data name="系数含义" xml:space="preserve"><value>係數含義</value></data>
+  <data name="编辑校正参数；新建参数须结合实测标定。" xml:space="preserve"><value>編輯校正參數；新建參數須結合實測標定。</value></data>
+  <data name="缺少字段 {0}；请在高级 JSON 中补全结构。" xml:space="preserve"><value>缺少字段 {0}；請在高級 JSON 中補全結構。</value></data>
+  <data name="色偏" xml:space="preserve"><value>色偏</value></data>
+  <data name="色度校正参数" xml:space="preserve"><value>色度校正參數</value></data>
+  <data name="色度校正矩阵" xml:space="preserve"><value>色度校正矩陣</value></data>
+  <data name="角度偏移" xml:space="preserve"><value>角度偏移</value></data>
+  <data name="请先启用此参数的逐轮编辑。" xml:space="preserve"><value>請先啓用此參數的逐輪編輯。</value></data>
+  <data name="轮次范围无效。" xml:space="preserve"><value>輪次範圍無效。</value></data>
+  <data name="输入宽度（px）" xml:space="preserve"><value>輸入寬度（px）</value></data>
+  <data name="输入高度（px）" xml:space="preserve"><value>輸入高度（px）</value></data>
+  <data name="输出宽度（px）" xml:space="preserve"><value>輸出寬度（px）</value></data>
+  <data name="输出视场参数 α" xml:space="preserve"><value>輸出視場參數 α</value></data>
+  <data name="输出高度（px）" xml:space="preserve"><value>輸出高度（px）</value></data>
+  <data name="边缘填充" xml:space="preserve"><value>邊緣填充</value></data>
+  <data name="通道 {0} X (px)" xml:space="preserve"><value>通道 {0} X (px)</value></data>
+  <data name="通道 {0} Y (px)" xml:space="preserve"><value>通道 {0} Y (px)</value></data>
+  <data name="通道平移后是否按现有校正算法填充边缘。" xml:space="preserve"><value>通道平移後是否按現有校正算法填充邊緣。</value></data>
+  <data name="通道空间偏移，单位为像素。" xml:space="preserve"><value>通道空間偏移，單位爲像素。</value></data>
+  <data name="限压" xml:space="preserve"><value>限壓</value></data>
+  <data name="限流" xml:space="preserve"><value>限流</value></data>
+  <data name="鱼眼模式" xml:space="preserve"><value>魚眼模式</value></data>
+  <data name="鱼眼模式下用于计算输出相机矩阵的视场参数。" xml:space="preserve"><value>魚眼模式下用於計算輸出相機矩陣的視場參數。</value></data>
+  <data name="，必须 {0}" xml:space="preserve"><value>，必須 {0}</value></data>
+  <data name="16位自动曝光·2秒" xml:space="preserve"><value>16位自動曝光·2秒</value></data>
+  <data name="16位自动曝光·60秒" xml:space="preserve"><value>16位自動曝光·60秒</value></data>
+  <data name="AA 区域 3×3 布点" xml:space="preserve"><value>AA 區域 3×3 布點</value></data>
+  <data name="AA 定位" xml:space="preserve"><value>AA 定位</value></data>
+  <data name="AA 布点" xml:space="preserve"><value>AA 布點</value></data>
+  <data name="APL10 图" xml:space="preserve"><value>APL10 圖</value></data>
+  <data name="APL25 图" xml:space="preserve"><value>APL25 圖</value></data>
+  <data name="MTF" xml:space="preserve"><value>MTF</value></data>
+  <data name="MTF 分辨率" xml:space="preserve"><value>MTF 分辨率</value></data>
+  <data name="MTF 基础定位（图案 4）" xml:space="preserve"><value>MTF 基礎定位（圖案 4）</value></data>
+  <data name="MTF 水平／垂直图案（5）" xml:space="preserve"><value>MTF 水平／垂直圖案（5）</value></data>
+  <data name="MTF：默认四部横竖条纹，可打开算法参数选择单独 H/V；按图案位置设置测量区域，无需数据库 MTF 参数模板。" xml:space="preserve"><value>MTF：默認四部橫豎條紋，可打開算法參數選擇單獨 H/V；按圖案位置設置測量區域，無需數據庫 MTF 參數模板。</value></data>
+  <data name="MTF：默认四部横竖条纹，按实际图案修改算法参数和测量区域。" xml:space="preserve"><value>MTF：默認四部橫豎條紋，按實際圖案修改算法參數和測量區域。</value></data>
+  <data name="PG 上电" xml:space="preserve"><value>PG 上電</value></data>
+  <data name="PG 下电" xml:space="preserve"><value>PG 下電</value></data>
+  <data name="PG 切图" xml:space="preserve"><value>PG 切圖</value></data>
+  <data name="PG 电源" xml:space="preserve"><value>PG 電源</value></data>
+  <data name="PG,IMAGE,1by4.png；切换到设备已有的 1by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,1by4.png；切換到設備已有的 1by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,2by4.png；切换到设备已有的 2by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,2by4.png；切換到設備已有的 2by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,3by4.png；切换到设备已有的 3by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,3by4.png；切換到設備已有的 3by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,4by4.png；切换到设备已有的 4by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,4by4.png；切換到設備已有的 4by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,apl10.png；切换到设备已有的 apl10.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,apl10.png；切換到設備已有的 apl10.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,apl25.png；切换到设备已有的 apl25.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,apl25.png；切換到設備已有的 apl25.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,w0.png；切换到设备已有的 w0.png 黑图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,w0.png；切換到設備已有的 w0.png 黑圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,w128.png；切换到设备已有的 w128.png 灰阶图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,w128.png；切換到設備已有的 w128.png 灰階圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,IMAGE,w255.png；切换到设备已有的 w255.png 全白图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>PG,IMAGE,w255.png；切換到設備已有的 w255.png 全白圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="PG,POWER,OFF；下电熄屏。" xml:space="preserve"><value>PG,POWER,OFF；下電熄屏。</value></data>
+  <data name="PG,POWER,ON；上电点屏；用于支持此文本协议的 PG 或驱动板。" xml:space="preserve"><value>PG,POWER,ON；上電點屏；用於支持此文本協議的 PG 或驅動板。</value></data>
+  <data name="POI 分析" xml:space="preserve"><value>POI 分析</value></data>
+  <data name="POI 分析：选择本机算法设备，并在 POI 分析模板中创建“亮度均匀性 min/max”，然后在分析节点选择该参数模板。" xml:space="preserve"><value>POI 分析：選擇本機算法設備，並在 POI 分析模板中創建“亮度均勻性 min/max”，然後在分析節點選擇該參數模板。</value></data>
+  <data name="POI 分析：选择本机算法设备，并在 POI 分析模板中创建“色度均匀性（uv）”，然后在分析节点选择该参数模板。" xml:space="preserve"><value>POI 分析：選擇本機算法設備，並在 POI 分析模板中創建“色度均勻性（uv）”，然後在分析節點選擇該參數模板。</value></data>
+  <data name="POI 分析：选择本机算法设备，并在 POI 分析模板中创建“首格白 · 4×4 对比度 或 首格黑 · 4×4 对比度”，然后在分析节点选择该参数模板。" xml:space="preserve"><value>POI 分析：選擇本機算法設備，並在 POI 分析模板中創建“首格白 · 4×4 對比度 或 首格黑 · 4×4 對比度”，然後在分析節點選擇該參數模板。</value></data>
+  <data name="POI 布点" xml:space="preserve"><value>POI 布點</value></data>
+  <data name="POI 测量" xml:space="preserve"><value>POI 測量</value></data>
+  <data name="SA 灯控" xml:space="preserve"><value>SA 燈控</value></data>
+  <data name="Start → 加载图片 → 本地 MTF → 结束，适合先用已有图片确认算法。" xml:space="preserve"><value>Start → 加載圖片 → 本地 MTF → 結束，適合先用已有圖片確認算法。</value></data>
+  <data name="Start → 加载图片 → 本地发光区定位 → 结束。输出四角定位结果。" xml:space="preserve"><value>Start → 加載圖片 → 本地發光區定位 → 結束。輸出四角定位結果。</value></data>
+  <data name="Start → 本地通用传感器 → 结束。可选择 PG 上下电、切图或灯控参数模板。" xml:space="preserve"><value>Start → 本地通用傳感器 → 結束。可選擇 PG 上下電、切圖或燈控參數模板。</value></data>
+  <data name="Start → 相机取图 → POI → 亮度均匀性分析 → 结束。" xml:space="preserve"><value>Start → 相機取圖 → POI → 亮度均勻性分析 → 結束。</value></data>
+  <data name="Start → 相机取图 → POI → 棋盘格对比度分析 → 结束。" xml:space="preserve"><value>Start → 相機取圖 → POI → 棋盤格對比度分析 → 結束。</value></data>
+  <data name="Start → 相机取图 → POI → 结束。采集、校正与关注点测量按顺序执行。" xml:space="preserve"><value>Start → 相機取圖 → POI → 結束。採集、校正與關注點測量按順序執行。</value></data>
+  <data name="Start → 相机取图 → POI → 色度均匀性分析 → 结束。" xml:space="preserve"><value>Start → 相機取圖 → POI → 色度均勻性分析 → 結束。</value></data>
+  <data name="Start → 相机取图 → 本地 MTF → 结束，使用四部横竖条纹参数。" xml:space="preserve"><value>Start → 相機取圖 → 本地 MTF → 結束，使用四部橫豎條紋參數。</value></data>
+  <data name="Start → 相机取图 → 结束。先建立最小采集流程，再增加校正或测量步骤。" xml:space="preserve"><value>Start → 相機取圖 → 結束。先建立最小採集流程，再增加校正或測量步驟。</value></data>
+  <data name="Start：使用软件统一的 MQTT 连接，运行前确认服务就绪；POI 分析请求通过该连接发送。" xml:space="preserve"><value>Start：使用軟件統一的 MQTT 連接，運行前確認服務就緒；POI 分析請求通過該連接發送。</value></data>
+  <data name="Start：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。" xml:space="preserve"><value>Start：在流程編輯器使用運行命令啓動，無需爲開始節點配置 MQTT 連接。</value></data>
+  <data name="三通道一致曝光的拍照起点。" xml:space="preserve"><value>三通道一致曝光的拍照起點。</value></data>
+  <data name="三通道一致曝光的拍照起点。 相机设备的曝光模板，或流程的拍照节点 → 曝光模板。选择目标相机后使用本模板。" xml:space="preserve"><value>三通道一致曝光的拍照起點。 相機設備的曝光模板，或流程的拍照節點 → 曝光模板。選擇目標相機後使用本模板。</value></data>
+  <data name="上电点屏；用于支持此文本协议的 PG 或驱动板。" xml:space="preserve"><value>上電點屏；用於支持此文本協議的 PG 或驅動板。</value></data>
+  <data name="下电熄屏。" xml:space="preserve"><value>下電熄屏。</value></data>
+  <data name="串口灯控 SA0000# + LF，应答 A" xml:space="preserve"><value>串口燈控 SA0000# + LF，應答 A</value></data>
+  <data name="串口灯控 SA0200#，应答 A" xml:space="preserve"><value>串口燈控 SA0200#，應答 A</value></data>
+  <data name="亮度均匀性 min/max" xml:space="preserve"><value>亮度均勻性 min/max</value></data>
+  <data name="亮度均匀性流程" xml:space="preserve"><value>亮度均勻性流程</value></data>
+  <data name="仅启用 X、Y、Z 通道，使用 X.tif、Y.tif、Z.tif。" xml:space="preserve"><value>僅啓用 X、Y、Z 通道，使用 X.tif、Y.tif、Z.tif。</value></data>
+  <data name="仅启用 X、Y、Z 通道，使用 X.tif、Y.tif、Z.tif。 选择 POI 文件输出（PoiOutput）的参数模板；流程执行到文件输出时使用，输出目录沿原流程设置。" xml:space="preserve"><value>僅啓用 X、Y、Z 通道，使用 X.tif、Y.tif、Z.tif。 選擇 POI 文件輸出（PoiOutput）的參數模板；流程執行到文件輸出時使用，輸出目錄沿原流程設置。</value></data>
+  <data name="仅启用 Y 通道，文件名 Y.tif。" xml:space="preserve"><value>僅啓用 Y 通道，文件名 Y.tif。</value></data>
+  <data name="仅启用 Y 通道，文件名 Y.tif。 选择 POI 文件输出（PoiOutput）的参数模板；流程执行到文件输出时使用，输出目录沿原流程设置。" xml:space="preserve"><value>僅啓用 Y 通道，文件名 Y.tif。 選擇 POI 文件輸出（PoiOutput）的參數模板；流程執行到文件輸出時使用，輸出目錄沿原流程設置。</value></data>
+  <data name="以 10 ms 起步，允许在 0.2–2000 ms 内寻找目标曝光。" xml:space="preserve"><value>以 10 ms 起步，允許在 0.2–2000 ms 內尋找目標曝光。</value></data>
+  <data name="以 10 ms 起步，允许在 0.2–2000 ms 内寻找目标曝光。 相机设备 → 自动曝光模板；流程中选择相机的自动曝光功能，再选此模板。" xml:space="preserve"><value>以 10 ms 起步，允許在 0.2–2000 ms 內尋找目標曝光。 相機設備 → 自動曝光模板；流程中選擇相機的自動曝光功能，再選此模板。</value></data>
+  <data name="使用亮区图案 1；阈值和腐蚀参数需按实际图像调整。" xml:space="preserve"><value>使用亮區圖案 1；閾值和腐蝕參數需按實際圖像調整。</value></data>
+  <data name="使用对比度法计算 MTF，自动定位测试图案。" xml:space="preserve"><value>使用對比度法計算 MTF，自動定位測試圖案。</value></data>
+  <data name="使用对比度法计算 MTF，自动定位测试图案。 选择 MTF V2（MTF）的参数模板；将测试图像连接到 MTF 算法输入。" xml:space="preserve"><value>使用對比度法計算 MTF，自動定位測試圖案。 選擇 MTF V2（MTF）的參數模板；將測試圖像連接到 MTF 算法輸入。</value></data>
+  <data name="先从传感器模板新建适用协议的指令模板，再在流程节点选择；PG 文本与 SA 灯控等协议须与设备匹配。" xml:space="preserve"><value>先從傳感器模板新建適用協議的指令模板，再在流程節點選擇；PG 文本與 SA 燈控等協議須與設備匹配。</value></data>
+  <data name="全白图 w255" xml:space="preserve"><value>全白圖 w255</value></data>
+  <data name="内置 · {0}" xml:space="preserve"><value>內置 · {0}</value></data>
+  <data name="切换到设备已有的 1by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 1by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 2by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 2by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 3by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 3by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 4by4.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 4by4.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 apl10.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 apl10.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 apl25.png 测试图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 apl25.png 測試圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 w0.png 黑图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 w0.png 黑圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 w128.png 灰阶图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 w128.png 灰階圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="切换到设备已有的 w255.png 全白图片。 需先在设备上准备同名图片。" xml:space="preserve"><value>切換到設備已有的 w255.png 全白圖片。 需先在設備上準備同名圖片。</value></data>
+  <data name="创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。" xml:space="preserve"><value>創建的是已連線、可編輯的業務流程。設備代碼、校正模板、參數模板和圖片路徑留待本機配置；選擇和預覽僅準備草稿，運行依賴對應節點需要的設備、數據庫或算法服務。</value></data>
+  <data name="加载图片：选择实际存在的图片文件，核对图像位深、方向和尺寸。" xml:space="preserve"><value>加載圖片：選擇實際存在的圖片文件，覈對圖像位深、方向和尺寸。</value></data>
+  <data name="发光区定位：检查搜索区域和最小置信度；需要保存四角 POI 时再选择 POI 保存模板。" xml:space="preserve"><value>發光區定位：檢查搜索區域和最小置信度；需要保存四角 POI 時再選擇 POI 保存模板。</value></data>
+  <data name="发送已有模板中的关灯示例值，保留指令末尾的 LF。" xml:space="preserve"><value>發送已有模板中的關燈示例值，保留指令末尾的 LF。</value></data>
+  <data name="发送已有模板中的开灯示例值；可在下方编辑具体值。" xml:space="preserve"><value>發送已有模板中的開燈示例值；可在下方編輯具體值。</value></data>
+  <data name="只导出 Y 亮度图" xml:space="preserve"><value>只導出 Y 亮度圖</value></data>
+  <data name="四角区域 3×3 采样" xml:space="preserve"><value>四角區域 3×3 採樣</value></data>
+  <data name="图像定位" xml:space="preserve"><value>圖像定位</value></data>
+  <data name="图像输出" xml:space="preserve"><value>圖像輸出</value></data>
+  <data name="图片发光区定位" xml:space="preserve"><value>圖片發光區定位</value></data>
+  <data name="图片条纹 MTF" xml:space="preserve"><value>圖片條紋 MTF</value></data>
+  <data name="在亮区范围内生成 3×3 点，四侧偏移为 0。" xml:space="preserve"><value>在亮區範圍內生成 3×3 點，四側偏移爲 0。</value></data>
+  <data name="在亮区范围内生成 3×3 点，四侧偏移为 0。 选择 AA 布点（BuildPOI，JSON 参数）的模板；与四角区域 POI 布点使用不同的参数格式。" xml:space="preserve"><value>在亮區範圍內生成 3×3 點，四側偏移爲 0。 選擇 AA 布點（BuildPOI，JSON 參數）的模板；與四角區域 POI 布點使用不同的參數格式。</value></data>
+  <data name="在四角区域内生成 3×3 矩形采样点，点宽高 30，边距 10%。" xml:space="preserve"><value>在四角區域內生成 3×3 矩形採樣點，點寬高 30，邊距 10%。</value></data>
+  <data name="在四角区域内生成 3×3 矩形采样点，点宽高 30，边距 10%。 选择 POI 布点（BuildPOI）的参数模板；先提供四角区域，再将生成的 POI 交给测量和分析。" xml:space="preserve"><value>在四角區域內生成 3×3 矩形採樣點，點寬高 30，邊距 10%。 選擇 POI 布點（BuildPOI）的參數模板；先提供四角區域，再將生成的 POI 交給測量和分析。</value></data>
+  <data name="均匀性" xml:space="preserve"><value>均勻性</value></data>
+  <data name="对 POI 亮度计算 min/max 均匀性。" xml:space="preserve"><value>對 POI 亮度計算 min/max 均勻性。</value></data>
+  <data name="对 POI 亮度计算 min/max 均匀性。 选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。" xml:space="preserve"><value>對 POI 亮度計算 min/max 均勻性。 選擇 POI 分析（PoiAnalysis）的參數模板；先測量 POI，再將 POI 測量結果連接到分析輸入。</value></data>
+  <data name="对比度" xml:space="preserve"><value>對比度</value></data>
+  <data name="导出 XYZ 三刺激值图" xml:space="preserve"><value>導出 XYZ 三刺激值圖</value></data>
+  <data name="拍照与 POI 测量" xml:space="preserve"><value>拍照與 POI 測量</value></data>
+  <data name="拍照与条纹 MTF" xml:space="preserve"><value>拍照與條紋 MTF</value></data>
+  <data name="按 4×4 棋盘格计算对比度。" xml:space="preserve"><value>按 4×4 棋盤格計算對比度。</value></data>
+  <data name="按 4×4 棋盘格计算对比度。 选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。" xml:space="preserve"><value>按 4×4 棋盤格計算對比度。 選擇 POI 分析（PoiAnalysis）的參數模板；先測量 POI，再將 POI 測量結果連接到分析輸入。</value></data>
+  <data name="按反馈使用的 uv 方差最大值计算色度均匀性。" xml:space="preserve"><value>按反饋使用的 uv 方差最大值計算色度均勻性。</value></data>
+  <data name="按反馈使用的 uv 方差最大值计算色度均匀性。 选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。" xml:space="preserve"><value>按反饋使用的 uv 方差最大值計算色度均勻性。 選擇 POI 分析（PoiAnalysis）的參數模板；先測量 POI，再將 POI 測量結果連接到分析輸入。</value></data>
+  <data name="曝光 133.33 ms" xml:space="preserve"><value>曝光 133.33 ms</value></data>
+  <data name="曝光 15.67 ms" xml:space="preserve"><value>曝光 15.67 ms</value></data>
+  <data name="曝光单位为 ms，各通道相同曝光、单次平均、零增益。需按相机支持范围和实际亮度调整；" xml:space="preserve"><value>曝光單位爲 ms，各通道相同曝光、單次平均、零增益。需按相機支持範圍和實際亮度調整；</value></data>
+  <data name="棋盘格对比度" xml:space="preserve"><value>棋盤格對比度</value></data>
+  <data name="棋盘格对比度流程" xml:space="preserve"><value>棋盤格對比度流程</value></data>
+  <data name="棋盘格：配置按顺序排列的 16 个采样点，并核对首格黑白；调整棋盘数量时同时修改采样点与分析参数。" xml:space="preserve"><value>棋盤格：配置按順序排列的 16 個採樣點，並覈對首格黑白；調整棋盤數量時同時修改採樣點與分析參數。</value></data>
+  <data name="模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。" xml:space="preserve"><value>模板 → 流程 → 新建，選擇本業務；創建後雙擊流程，按下方清單綁定設備和參數，再使用運行命令。</value></data>
+  <data name="流程选择“本地设备 → 本地通用传感器”，选择目标传感器设备和本模板。TCP 地址、端口或串口参数在设备配置中设置。" xml:space="preserve"><value>流程選擇“本地設備 → 本地通用傳感器”，選擇目標傳感器設備和本模板。TCP 地址、端口或串口參數在設備配置中設置。</value></data>
+  <data name="测试图 1by4" xml:space="preserve"><value>測試圖 1by4</value></data>
+  <data name="测试图 2by4" xml:space="preserve"><value>測試圖 2by4</value></data>
+  <data name="测试图 3by4" xml:space="preserve"><value>測試圖 3by4</value></data>
+  <data name="测试图 4by4" xml:space="preserve"><value>測試圖 4by4</value></data>
+  <data name="灯控关灯（SA）" xml:space="preserve"><value>燈控關燈（SA）</value></data>
+  <data name="灯控开灯（SA）" xml:space="preserve"><value>燈控開燈（SA）</value></data>
+  <data name="灰阶图 w128" xml:space="preserve"><value>灰階圖 w128</value></data>
+  <data name="相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。" xml:space="preserve"><value>相機取圖：選擇屬於該相機的有效校正模板；POI：選擇與圖像尺寸和採樣位置相符的 POI 模板。</value></data>
+  <data name="相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。" xml:space="preserve"><value>相機取圖：選擇本機相機設備，覈對曝光、增益和平均次數；初始曝光爲 15.67 ms。</value></data>
+  <data name="相机拍照" xml:space="preserve"><value>相機拍照</value></data>
+  <data name="相机设备 → 自动曝光模板；流程中选择相机的自动曝光功能，再选此模板。" xml:space="preserve"><value>相機設備 → 自動曝光模板；流程中選擇相機的自動曝光功能，再選此模板。</value></data>
+  <data name="相机设备的曝光模板，或流程的拍照节点 → 曝光模板。选择目标相机后使用本模板。" xml:space="preserve"><value>相機設備的曝光模板，或流程的拍照節點 → 曝光模板。選擇目標相機後使用本模板。</value></data>
+  <data name="相机采集" xml:space="preserve"><value>相機採集</value></data>
+  <data name="矩形亮区九点定位" xml:space="preserve"><value>矩形亮區九點定位</value></data>
+  <data name="矩形亮区定位并生成 3×3 点，四侧边距初始为 0，可按图像调整。" xml:space="preserve"><value>矩形亮區定位並生成 3×3 點，四側邊距初始爲 0，可按圖像調整。</value></data>
+  <data name="矩形亮区定位并生成 3×3 点，四侧边距初始为 0，可按图像调整。 选择发光区定位（FindLightArea）的参数模板，将亮屏图像连接到算法输入。" xml:space="preserve"><value>矩形亮區定位並生成 3×3 點，四側邊距初始爲 0，可按圖像調整。 選擇發光區定位（FindLightArea）的參數模板，將亮屏圖像連接到算法輸入。</value></data>
+  <data name="色度均匀性流程" xml:space="preserve"><value>色度均勻性流程</value></data>
+  <data name="色度均匀性（uv）" xml:space="preserve"><value>色度均勻性（uv）</value></data>
+  <data name="较宽曝光范围：0.2–60000 ms，适合低亮度时作为配置起点。" xml:space="preserve"><value>較寬曝光範圍：0.2–60000 ms，適合低亮度時作爲配置起點。</value></data>
+  <data name="较宽曝光范围：0.2–60000 ms，适合低亮度时作为配置起点。 相机设备 → 自动曝光模板；流程中选择相机的自动曝光功能，再选此模板。" xml:space="preserve"><value>較寬曝光範圍：0.2–60000 ms，適合低亮度時作爲配置起點。 相機設備 → 自動曝光模板；流程中選擇相機的自動曝光功能，再選此模板。</value></data>
+  <data name="较长曝光的拍照起点，曝光不足时可继续调整。" xml:space="preserve"><value>較長曝光的拍照起點，曝光不足時可繼續調整。</value></data>
+  <data name="较长曝光的拍照起点，曝光不足时可继续调整。 相机设备的曝光模板，或流程的拍照节点 → 曝光模板。选择目标相机后使用本模板。" xml:space="preserve"><value>較長曝光的拍照起點，曝光不足時可繼續調整。 相機設備的曝光模板，或流程的拍照節點 → 曝光模板。選擇目標相機後使用本模板。</value></data>
+  <data name="适用于 16 位原始图像，AD 上限 65000、目标饱和度 70%；曝光单位 ms。8 位数据需先修改 AD 上限，曝光范围需符合相机能力。" xml:space="preserve"><value>適用於 16 位原始圖像，AD 上限 65000、目標飽和度 70%；曝光單位 ms。8 位數據需先修改 AD 上限，曝光範圍需符合相機能力。</value></data>
+  <data name="适用于支持 PG,POWER / PG,IMAGE 文本协议的 PG 或驱动板；发送以 LF 结束，回包以 END、CR/LF 结束。请核对设备协议，GECS 的 STX/ETX 帧指令需另行配置。" xml:space="preserve"><value>適用於支持 PG,POWER / PG,IMAGE 文本協議的 PG 或驅動板；發送以 LF 結束，回包以 END、CR/LF 結束。請覈對設備協議，GECS 的 STX/ETX 幀指令需另行配置。</value></data>
+  <data name="适用于支持 SA…# 且应答 A 的串口灯控器；SA0200# 是已有模板中的开灯示例值，亮度范围和通道含义需按控制器协议核对。" xml:space="preserve"><value>適用於支持 SA…# 且應答 A 的串口燈控器；SA0200# 是已有模板中的開燈示例值，亮度範圍和通道含義需按控制器協議覈對。</value></data>
+  <data name="选择 AA 布点（BuildPOI，JSON 参数）的模板；与四角区域 POI 布点使用不同的参数格式。" xml:space="preserve"><value>選擇 AA 布點（BuildPOI，JSON 參數）的模板；與四角區域 POI 布點使用不同的參數格式。</value></data>
+  <data name="选择 MTF V2（MTF）的参数模板；将测试图像连接到 MTF 算法输入。" xml:space="preserve"><value>選擇 MTF V2（MTF）的參數模板；將測試圖像連接到 MTF 算法輸入。</value></data>
+  <data name="选择 POI 分析（PoiAnalysis）的参数模板；先测量 POI，再将 POI 测量结果连接到分析输入。" xml:space="preserve"><value>選擇 POI 分析（PoiAnalysis）的參數模板；先測量 POI，再將 POI 測量結果連接到分析輸入。</value></data>
+  <data name="选择 POI 布点（BuildPOI）的参数模板；先提供四角区域，再将生成的 POI 交给测量和分析。" xml:space="preserve"><value>選擇 POI 布點（BuildPOI）的參數模板；先提供四角區域，再將生成的 POI 交給測量和分析。</value></data>
+  <data name="选择 POI 文件输出（PoiOutput）的参数模板；流程执行到文件输出时使用，输出目录沿原流程设置。" xml:space="preserve"><value>選擇 POI 文件輸出（PoiOutput）的參數模板；流程執行到文件輸出時使用，輸出目錄沿原流程設置。</value></data>
+  <data name="选择发光区定位（FindLightArea）的参数模板，将亮屏图像连接到算法输入。" xml:space="preserve"><value>選擇發光區定位（FindLightArea）的參數模板，將亮屏圖像連接到算法輸入。</value></data>
+  <data name="通用传感器控制" xml:space="preserve"><value>通用傳感器控制</value></data>
+  <data name="通用传感器：选择本机传感器设备，核对 TCP/串口连接参数。" xml:space="preserve"><value>通用傳感器：選擇本機傳感器設備，覈對 TCP/串口連接參數。</value></data>
+  <data name="阈值使用图像原始灰度；需根据位深、曝光、亮区尺寸调整。使用图案 1、拟合定位（aaLocationWay=1）。" xml:space="preserve"><value>閾值使用圖像原始灰度；需根據位深、曝光、亮區尺寸調整。使用圖案 1、擬合定位（aaLocationWay=1）。</value></data>
+  <data name="需要含色度的 POI 测量结果；该计算不是 CIE x/y 极差或色差 ΔE。" xml:space="preserve"><value>需要含色度的 POI 測量結果；該計算不是 CIE x/y 極差或色差 ΔE。</value></data>
+  <data name="需要四角区域输入，不能把任意图像直接当成四角坐标。点尺寸以像素为单位，需按实际图像调整。" xml:space="preserve"><value>需要四角區域輸入，不能把任意圖像直接當成四角座標。點尺寸以像素爲單位，需按實際圖像調整。</value></data>
+  <data name="需要对应图案；图案号、阈值、ROI 尺寸随实际图像核对。" xml:space="preserve"><value>需要對應圖案；圖案號、閾值、ROI 尺寸隨實際圖像覈對。</value></data>
+  <data name="需要已有测量图像/POI 输入。输出目录由流程指定，文件名为相对名称；核对实际尺寸及是否允许同名覆盖。" xml:space="preserve"><value>需要已有測量圖像/POI 輸入。輸出目錄由流程指定，文件名爲相對名稱；覈對實際尺寸及是否允許同名覆蓋。</value></data>
+  <data name="需要按棋盘格顺序排列的 16 个采样结果；核对横纵数量及第一个采样点的黑白顺序。" xml:space="preserve"><value>需要按棋盤格順序排列的 16 個採樣結果；覈對橫縱數量及第一個採樣點的黑白順序。</value></data>
+  <data name="需要有效 POI 亮度测量结果。不同均匀性公式不能混用，结果以 min/max 定义解释。" xml:space="preserve"><value>需要有效 POI 亮度測量結果。不同均勻性公式不能混用，結果以 min/max 定義解釋。</value></data>
+  <data name="首格白 · 4×4 对比度" xml:space="preserve"><value>首格白 · 4×4 對比度</value></data>
+  <data name="首格黑 · 4×4 对比度" xml:space="preserve"><value>首格黑 · 4×4 對比度</value></data>
+  <data name="黑图 w0" xml:space="preserve"><value>黑圖 w0</value></data>
+  <data name="同步频率模式会调整实际积分时间和平均次数，请先在光谱仪设置中关闭同步频率。" xml:space="preserve"><value>同步頻率模式會調整實際積分時間和平均次數，請先在光譜儀設置中關閉同步頻率。</value></data>
+  <data name="源表保护限值必须是非零有限值。" xml:space="preserve"><value>源表保護限值必須是非零有限值。</value></data>
+  <data name="电压上限" xml:space="preserve"><value>電壓上限</value></data>
+  <data name="电流上限" xml:space="preserve"><value>電流上限</value></data>
+  <data name="自动积分已启用，请先关闭自动积分后设置逐轮积分时间。" xml:space="preserve"><value>自動積分已啓用，請先關閉自動積分後設置逐輪積分時間。</value></data>
+  <data name="设定电压" xml:space="preserve"><value>設定電壓</value></data>
+  <data name="设定电流" xml:space="preserve"><value>設定電流</value></data>
+  <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>請先關閉相機節點的自動曝光，再設置逐輪曝光。</value></data>
 </root>

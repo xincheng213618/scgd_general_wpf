@@ -132,4 +132,5 @@
   <data name="ExitFullScreen" xml:space="preserve">
     <value>Exit full screen</value>
   </data>
+  <data name="搜索引擎" xml:space="preserve"><value>Search Engine</value></data>
 </root>

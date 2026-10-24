@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -12,9 +13,9 @@ public partial class FlowTemplateCreatePreview : UserControl, ITemplateUserContr
 
     public void SetParam(object param)
     {
-        if (param is not FlowParam flow) throw new ArgumentException("需要流程模板。", nameof(param));
+        if (param is not FlowParam flow) throw new ArgumentException(EngineLocalization.Get("需要流程模板。"), nameof(param));
         CanvasImage.Source = null;
-        SetupItems.ItemsSource = flow.CreationPreset?.Setup;
+        SetupItems.ItemsSource = flow.CreationPreset?.Setup.Select(EngineLocalization.Get).ToArray();
         SetupTitle.Visibility = flow.CreationPreset != null ? Visibility.Visible : Visibility.Collapsed;
         EmptyHint.Visibility = string.IsNullOrEmpty(flow.DataBase64) ? Visibility.Visible : Visibility.Collapsed;
         if (string.IsNullOrEmpty(flow.DataBase64)) return;

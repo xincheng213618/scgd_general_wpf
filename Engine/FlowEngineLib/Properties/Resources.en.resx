@@ -951,9 +951,6 @@
   <data name="重复执行…" xml:space="preserve">
     <value>Repeat…</value>
   </data>
-  <data name="修改重复次数…" xml:space="preserve">
-    <value>Change repeat count…</value>
-  </data>
   <data name="取消重复框" xml:space="preserve">
     <value>Remove repeat region</value>
   </data>
@@ -978,4 +975,8 @@
   <data name="失败 · 第 {0} / {1} 次" xml:space="preserve">
     <value>Failed · Run {0} / {1}</value>
   </data>
+  <data name="{0}必须在 {1} 到 {2} {3} 范围内。" xml:space="preserve"><value>{0} must be from {1} to {2} {3}.</value></data>
+  <data name="{0}必须是整数。" xml:space="preserve"><value>{0} must be an integer.</value></data>
+  <data name="{0}必须是有限数值。" xml:space="preserve"><value>{0} must be a finite number.</value></data>
+  <data name="次" xml:space="preserve"><value>Times</value></data>
 </root>

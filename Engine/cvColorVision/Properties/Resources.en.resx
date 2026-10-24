@@ -12,4 +12,5 @@
   <data name="CameraParameters" xml:space="preserve"><value>Camera Parameters</value></data>
   <data name="CalibrationParameters" xml:space="preserve"><value>Calibration Parameters</value></data>
   <data name="ChannelParameters" xml:space="preserve"><value>Channel Parameters</value></data>
+  <data name="均值滤波" xml:space="preserve"><value>Blur</value></data>
 </root>

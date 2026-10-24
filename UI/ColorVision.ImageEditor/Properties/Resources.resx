@@ -3675,4 +3675,76 @@ ORB 特征上限: {6:N0}    最少匹配/内点: {7}/{8}    重投影阈值: {9:
   <data name="相对光谱" xml:space="preserve"><value>相对光谱</value></data>
   <data name="绝对光谱" xml:space="preserve"><value>绝对光谱</value></data>
   <data name="无有效光谱数据" xml:space="preserve"><value>无有效光谱数据</value></data>
+  <data name="中心 X" xml:space="preserve"><value>中心 X</value></data>
+  <data name="中心 Y" xml:space="preserve"><value>中心 Y</value></data>
+  <data name="分数" xml:space="preserve"><value>分数</value></data>
+  <data name="匹配结果" xml:space="preserve"><value>匹配结果</value></data>
+  <data name="导入参考图…" xml:space="preserve"><value>导入参考图…</value></data>
+  <data name="导入模板…" xml:space="preserve"><value>导入模板…</value></data>
+  <data name="导出模板…" xml:space="preserve"><value>导出模板…</value></data>
+  <data name="新建模板" xml:space="preserve"><value>新建模板</value></data>
+  <data name="本地模板匹配" xml:space="preserve"><value>本地模板匹配</value></data>
+  <data name="模板名称" xml:space="preserve"><value>模板名称</value></data>
+  <data name="清除结果" xml:space="preserve"><value>清除结果</value></data>
+  <data name="角度(°)" xml:space="preserve"><value>角度(°)</value></data>
+  <data name="运行匹配" xml:space="preserve"><value>运行匹配</value></data>
+  <data name="重置参数" xml:space="preserve"><value>重置参数</value></data>
+  <data name="{0} × {1} · {2} 位 · {3} 通道" xml:space="preserve"><value>{0} × {1} · {2} 位 · {3} 通道</value></data>
+  <data name="参考图与参数随流程节点保存" xml:space="preserve"><value>参考图与参数随流程节点保存</value></data>
+  <data name="可导入参考图进行试匹配；导出 .cvtm 后可在流程节点中导入使用。" xml:space="preserve"><value>可导入参考图进行试匹配；导出 .cvtm 后可在流程节点中导入使用。</value></data>
+  <data name="图像文件|*.png;*.tif;*.tiff;*.bmp;*.jpg;*.jpeg|所有文件|*.*" xml:space="preserve"><value>图像文件|*.png;*.tif;*.tiff;*.bmp;*.jpg;*.jpeg|所有文件|*.*</value></data>
+  <data name="在图像编辑器中打开模板匹配，可对当前图像试运行。" xml:space="preserve"><value>在图像编辑器中打开模板匹配，可对当前图像试运行。</value></data>
+  <data name="导入参考图，或在图像中框选目标并设为模板。" xml:space="preserve"><value>导入参考图，或在图像中框选目标并设为模板。</value></data>
+  <data name="尚未导出" xml:space="preserve"><value>尚未导出</value></data>
+  <data name="应用到节点" xml:space="preserve"><value>应用到节点</value></data>
+  <data name="当前图像 · 搜索区域：{0}" xml:space="preserve"><value>当前图像 · 搜索区域：{0}</value></data>
+  <data name="成功" xml:space="preserve"><value>成功</value></data>
+  <data name="未匹配" xml:space="preserve"><value>未匹配</value></data>
+  <data name="模板已导出。点击“应用到节点”才会更新当前节点。" xml:space="preserve"><value>模板已导出。点击“应用到节点”才会更新当前节点。</value></data>
+  <data name="模板已导出，可在本地模板匹配节点中导入。" xml:space="preserve"><value>模板已导出，可在本地模板匹配节点中导入。</value></data>
+  <data name="正在匹配…" xml:space="preserve"><value>正在匹配…</value></data>
+  <data name="没有可用源图像。" xml:space="preserve"><value>没有可用源图像。</value></data>
+  <data name="源图已变化，请重新打开模板匹配窗口以核对搜索区域。" xml:space="preserve"><value>源图已变化，请重新打开模板匹配窗口以核对搜索区域。</value></data>
+  <data name="编辑完成后点击“应用到节点”，再保存流程；取消或关闭不会修改节点。" xml:space="preserve"><value>编辑完成后点击“应用到节点”，再保存流程；取消或关闭不会修改节点。</value></data>
+  <data name="计算期间源图已变化，结果已丢弃。" xml:space="preserve"><value>计算期间源图已变化，结果已丢弃。</value></data>
+  <data name="请修正参数中的错误输入。" xml:space="preserve"><value>请修正参数中的错误输入。</value></data>
+  <data name="位置" xml:space="preserve"><value>位置</value></data>
+  <data name="几何" xml:space="preserve"><value>几何</value></data>
+  <data name="列数" xml:space="preserve"><value>列数</value></data>
+  <data name="启用物理单位" xml:space="preserve"><value>启用物理单位</value></data>
+  <data name="增益" xml:space="preserve"><value>增益</value></data>
+  <data name="字体" xml:space="preserve"><value>字体</value></data>
+  <data name="定位" xml:space="preserve"><value>定位</value></data>
+  <data name="序号" xml:space="preserve"><value>序号</value></data>
+  <data name="文本" xml:space="preserve"><value>文本</value></data>
+  <data name="显示" xml:space="preserve"><value>显示</value></data>
+  <data name="显示文字" xml:space="preserve"><value>显示文字</value></data>
+  <data name="显示消息" xml:space="preserve"><value>显示消息</value></data>
+  <data name="曝光 (EV)" xml:space="preserve"><value>曝光 (EV)</value></data>
+  <data name="标准中心 X" xml:space="preserve"><value>标准中心 X</value></data>
+  <data name="标准中心 Y" xml:space="preserve"><value>标准中心 Y</value></data>
+  <data name="模式" xml:space="preserve"><value>模式</value></data>
+  <data name="测量" xml:space="preserve"><value>测量</value></data>
+  <data name="滤波" xml:space="preserve"><value>滤波</value></data>
+  <data name="焦距 (mm)" xml:space="preserve"><value>焦距 (mm)</value></data>
+  <data name="物理单位" xml:space="preserve"><value>物理单位</value></data>
+  <data name="矩形" xml:space="preserve"><value>矩形</value></data>
+  <data name="笔宽" xml:space="preserve"><value>笔宽</value></data>
+  <data name="算法" xml:space="preserve"><value>算法</value></data>
+  <data name="线宽" xml:space="preserve"><value>线宽</value></data>
+  <data name="结果" xml:space="preserve"><value>结果</value></data>
+  <data name="绘制文字大小" xml:space="preserve"><value>绘制文字大小</value></data>
+  <data name="背景" xml:space="preserve"><value>背景</value></data>
+  <data name="自动刷新" xml:space="preserve"><value>自动刷新</value></data>
+  <data name="行数" xml:space="preserve"><value>行数</value></data>
+  <data name="角度" xml:space="preserve"><value>角度</value></data>
+  <data name="计算方式" xml:space="preserve"><value>计算方式</value></data>
+  <data name="输入" xml:space="preserve"><value>输入</value></data>
+  <data name="输出" xml:space="preserve"><value>输出</value></data>
+  <data name="采样间距" xml:space="preserve"><value>采样间距</value></data>
+  <data name="金字塔层数" xml:space="preserve"><value>金字塔层数</value></data>
+  <data name="阈值" xml:space="preserve"><value>阈值</value></data>
+  <data name="预处理" xml:space="preserve"><value>预处理</value></data>
+  <data name="颜色" xml:space="preserve"><value>颜色</value></data>
+  <data name="高级设置" xml:space="preserve"><value>高级设置</value></data>
 </root>

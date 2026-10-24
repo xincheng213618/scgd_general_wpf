@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.Engine.Services.Devices.SMU.Local.LocalSmuWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="本地源表" Width="1280" Height="820" MinWidth="980" MinHeight="640"
+        xmlns:i18n="clr-namespace:ColorVision.Engine"
+        Title="{i18n:EngineLang Key='本地源表'}" Width="1280" Height="820" MinWidth="980" MinHeight="640"
         Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
@@ -20,59 +21,59 @@
         <DockPanel Margin="0,0,0,10">
             <TextBlock x:Name="DeviceTitle" FontSize="22" FontWeight="SemiBold"/>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="连接设置" Click="ConnectionSettings_Click"/>
-                <Button Content="连接" Tag="Open" Click="Command_Click"/>
-                <Button Content="关闭输出" Tag="CloseOutput" Click="Command_Click"/>
-                <Button Content="断开" Tag="Close" Click="Command_Click"/>
+                <Button Content="{i18n:EngineLang Key='连接设置'}" Click="ConnectionSettings_Click"/>
+                <Button Content="{i18n:EngineLang Key='连接'}" Tag="Open" Click="Command_Click"/>
+                <Button Content="{i18n:EngineLang Key='关闭输出'}" Tag="CloseOutput" Click="Command_Click"/>
+                <Button Content="{i18n:EngineLang Key='断开'}" Tag="Close" Click="Command_Click"/>
             </StackPanel>
         </DockPanel>
         <Border Grid.Row="1" Background="{DynamicResource SecondaryRegionBrush}" Padding="10" Margin="0,0,0,10" CornerRadius="4">
-            <TextBlock x:Name="Identity" TextWrapping="Wrap" Text="尚未连接。连接只查询型号；点击执行才会开启输出。"/>
+            <TextBlock x:Name="Identity" TextWrapping="Wrap" Text="{i18n:EngineLang Key='尚未连接。连接只查询型号；点击执行才会开启输出。'}"/>
         </Border>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions><ColumnDefinition Width="450"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <DockPanel>
                 <WrapPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
-                    <Button x:Name="ExecuteButton" Content="执行" Tag="Advanced" Click="Command_Click"/>
-                    <Button Content="停止 / 取消等待" Click="Stop_Click"/>
-                    <Button Content="保存参数" Click="SaveSettings_Click"/>
-                    <Button x:Name="ApplyNodeButton" Content="应用到节点" Click="ApplyNode_Click" Visibility="Collapsed"/>
+                    <Button x:Name="ExecuteButton" Content="{i18n:EngineLang Key='执行'}" Tag="Advanced" Click="Command_Click"/>
+                    <Button Content="{i18n:EngineLang Key='停止 / 取消等待'}" Click="Stop_Click"/>
+                    <Button Content="{i18n:EngineLang Key='保存参数'}" Click="SaveSettings_Click"/>
+                    <Button x:Name="ApplyNodeButton" Content="{i18n:EngineLang Key='应用到节点'}" Click="ApplyNode_Click" Visibility="Collapsed"/>
                 </WrapPanel>
                 <TabControl x:Name="ParameterTabs"/>
             </DockPanel>
             <TabControl Grid.Column="2">
-                <TabItem Header="测量结果">
+                <TabItem Header="{i18n:EngineLang Key='测量结果'}">
                     <DataGrid x:Name="Readings" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" EnableRowVirtualization="True">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding Index}"/>
-                            <DataGridTextColumn Header="源值 (V/mA)" Binding="{Binding Source, StringFormat=G7}"/>
+                            <DataGridTextColumn Header="{i18n:EngineLang Key='源值 (V/mA)'}" Binding="{Binding Source, StringFormat=G7}"/>
                             <DataGridTextColumn Header="V" Binding="{Binding Voltage, StringFormat=G9}"/>
                             <DataGridTextColumn Header="mA" Binding="{Binding Current, StringFormat=G9}"/>
                             <DataGridTextColumn Header="Ω" Binding="{Binding Resistance, StringFormat=G9}"/>
                             <DataGridTextColumn Header="W" Binding="{Binding Power, StringFormat=G9}"/>
-                            <DataGridTextColumn Header="仪器状态" Binding="{Binding Status}"/>
+                            <DataGridTextColumn Header="{i18n:EngineLang Key='仪器状态'}" Binding="{Binding Status}"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </TabItem>
-                <TabItem Header="V/I 曲线"><ContentControl x:Name="CurveHost"/></TabItem>
-                <TabItem Header="功能与型号">
+                <TabItem Header="{i18n:EngineLang Key='V/I 曲线'}"><ContentControl x:Name="CurveHost"/></TabItem>
+                <TabItem Header="{i18n:EngineLang Key='功能与型号'}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="16">
                             <TextBlock x:Name="Capabilities" TextWrapping="Wrap" Margin="0,0,0,16"/>
-                            <TextBlock TextWrapping="Wrap" Text="电阻：2600 按设置的测试电压或电流及保护限值输出，用实测 V/I 得到 Ω；例如实测 1 V、1 mA，对应 1000 Ω。LED 等非线性器件的比值随工作点变化。2400 还可由仪器自动选择测试电流，并返回原生 Ω。HighImpedance 是关闭输出时的高阻状态，高电容模式用于电容负载稳定，均不表示交流阻抗或电容量测量。" Margin="0,0,0,14"/>
-                            <TextBlock TextWrapping="Wrap" Text="脉冲：2600 A/B 使用仪器内部定时器，返回基线后结束。2430 使用专用脉冲模式。普通 2400 使用 SDM 间接脉冲，目标脉宽包含积分时间估计，实际波形需示波器校准；不提供精密脉冲时序承诺。" Margin="0,0,0,14"/>
-                            <TextBlock TextWrapping="Wrap" Text="固定值脉冲的源值是峰值，点数是脉冲次数；每次保持目标脉宽后返回基线，周期是相邻脉冲起点间隔。有测量时每个脉冲返回一组 V/I。整组执行结束后才进入后续节点；相机若需在峰值期间曝光，须另行安排硬件触发同步。" Margin="0,0,0,14"/>
-                            <TextBlock TextWrapping="Wrap" Text="脉冲使用固定源/测量量程，关闭滤波、自动调零和高电容模式。采样延时与 V/I 积分窗口必须落在脉冲内。原始无 A/B 后缀的 2600 不使用 A/B 定时器协议。" Margin="0,0,0,14"/>
-                            <TextBlock TextWrapping="Wrap" Text="仅测量采用源表的电压表/电流表接法：源 0 A 测电压，或源 0 V 测电流，仍需接通输出。仅输出不会生成虚构的测量结果。" Margin="0,0,0,14"/>
-                            <TextBlock TextWrapping="Wrap" Text="停止会取消排队或拒绝迟到结果；已进入原生 SDK 的调用仍需等返回后才能关闭输出。窗口读数和命令成功均不能替代实际输出状态确认。"/>
+                            <TextBlock TextWrapping="Wrap" Text="{i18n:EngineLang Key='电阻：2600 按设置的测试电压或电流及保护限值输出，用实测 V/I 得到 Ω；例如实测 1 V、1 mA，对应 1000 Ω。LED 等非线性器件的比值随工作点变化。2400 还可由仪器自动选择测试电流，并返回原生 Ω。HighImpedance 是关闭输出时的高阻状态，高电容模式用于电容负载稳定，均不表示交流阻抗或电容量测量。'}" Margin="0,0,0,14"/>
+                            <TextBlock TextWrapping="Wrap" Text="{i18n:EngineLang Key='脉冲：2600 A/B 使用仪器内部定时器，返回基线后结束。2430 使用专用脉冲模式。普通 2400 使用 SDM 间接脉冲，目标脉宽包含积分时间估计，实际波形需示波器校准；不提供精密脉冲时序承诺。'}" Margin="0,0,0,14"/>
+                            <TextBlock TextWrapping="Wrap" Text="{i18n:EngineLang Key='固定值脉冲的源值是峰值，点数是脉冲次数；每次保持目标脉宽后返回基线，周期是相邻脉冲起点间隔。有测量时每个脉冲返回一组 V/I。整组执行结束后才进入后续节点；相机若需在峰值期间曝光，须另行安排硬件触发同步。'}" Margin="0,0,0,14"/>
+                            <TextBlock TextWrapping="Wrap" Text="{i18n:EngineLang Key='脉冲使用固定源/测量量程，关闭滤波、自动调零和高电容模式。采样延时与 V/I 积分窗口必须落在脉冲内。原始无 A/B 后缀的 2600 不使用 A/B 定时器协议。'}" Margin="0,0,0,14"/>
+                            <TextBlock TextWrapping="Wrap" Text="{i18n:EngineLang Key='仅测量采用源表的电压表/电流表接法：源 0 A 测电压，或源 0 V 测电流，仍需接通输出。仅输出不会生成虚构的测量结果。'}" Margin="0,0,0,14"/>
+                            <TextBlock TextWrapping="Wrap" Text="{i18n:EngineLang Key='停止会取消排队或拒绝迟到结果；已进入原生 SDK 的调用仍需等返回后才能关闭输出。窗口读数和命令成功均不能替代实际输出状态确认。'}"/>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
             </TabControl>
         </Grid>
         <DockPanel Grid.Row="3" Margin="0,12,0,0">
-            <Button DockPanel.Dock="Right" Content="导出结果 JSON" Click="Export_Click"/>
-            <TextBox x:Name="Message" TextWrapping="Wrap" Text="就绪" IsReadOnly="True" BorderThickness="0"
+            <Button DockPanel.Dock="Right" Content="{i18n:EngineLang Key='导出结果 JSON'}" Click="Export_Click"/>
+            <TextBox x:Name="Message" TextWrapping="Wrap" Text="{i18n:EngineLang Key='就绪'}" IsReadOnly="True" BorderThickness="0"
                      Background="Transparent" MaxHeight="140" VerticalScrollBarVisibility="Auto"/>
         </DockPanel>
     </Grid>

@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Templates
                 {
                     Kind = TemplateCreateSourceKind.Prepared,
                     Title = string.IsNullOrWhiteSpace(_template.ImportName) ? LocalizedText.Get("已准备来源") : _template.ImportName,
-                    Description = "使用刚复制或导入的模板内容",
+                    Description = EngineLocalization.Get("使用刚复制或导入的模板内容"),
                     SourceLabel = LocalizedText.Get("当前")
                 });
             }
@@ -133,8 +133,8 @@ namespace ColorVision.Engine.Templates
                         _templateSources.Add(new TemplateCreateSource
                         {
                             Kind = TemplateCreateSourceKind.Preset,
-                            Title = preset.Title,
-                            Description = preset.Description,
+                            Title = EngineLocalization.Get(preset.Title),
+                            Description = EngineLocalization.Get(preset.Description),
                             SourceLabel = preset.SourceLabel,
                             Preset = preset
                         });
@@ -143,7 +143,7 @@ namespace ColorVision.Engine.Templates
                 catch (Exception ex)
                 {
                     log4net.LogManager.GetLogger(typeof(TemplateCreateView)).Warn("基础模板库加载失败", ex);
-                    PresetLoadStatus.Text = "内置基础模板暂不可用，请修复软件安装。仍可使用默认模板、已有模板或导入文件。";
+                    PresetLoadStatus.Text = EngineLocalization.Get("内置基础模板暂不可用，请修复软件安装。仍可使用默认模板、已有模板或导入文件。");
                     PresetLoadStatus.Visibility = Visibility.Visible;
                 }
             }
@@ -168,7 +168,7 @@ namespace ColorVision.Engine.Templates
                         Kind = TemplateCreateSourceKind.Existing,
                         TemplateIndex = index,
                         Title = templateName,
-                        Description = "从现有模板创建独立副本",
+                        Description = EngineLocalization.Get("从现有模板创建独立副本"),
                         SourceLabel = LocalizedText.Get("现有")
                     });
                 }
@@ -181,7 +181,7 @@ namespace ColorVision.Engine.Templates
                 {
                     Kind = TemplateCreateSourceKind.File,
                     Title = LocalizedText.Get("导入文件"),
-                    Description = "从 JSON 或模板文件创建",
+                    Description = EngineLocalization.Get("从 JSON 或模板文件创建"),
                     SourceLabel = LocalizedText.Get("文件")
                 });
             }
@@ -284,7 +284,7 @@ namespace ColorVision.Engine.Templates
                         if (applied)
                         {
                             source.Title = string.IsNullOrWhiteSpace(_template.ImportName) ? LocalizedText.Get("已导入文件") : _template.ImportName;
-                            source.Description = "使用已选择的模板文件创建";
+                            source.Description = EngineLocalization.Get("使用已选择的模板文件创建");
                             SourceListBox.Items.Refresh();
                         }
                         break;
@@ -295,7 +295,7 @@ namespace ColorVision.Engine.Templates
             }
             catch (Exception ex)
             {
-                ShowValidation($"模板来源加载失败：{ex.Message}");
+                ShowValidation(EngineLocalization.Format($"模板来源加载失败：{ex.Message}"));
                 _appliedSource = null;
                 return false;
             }
@@ -303,7 +303,7 @@ namespace ColorVision.Engine.Templates
             if (!applied)
             {
                 if (source.Kind != TemplateCreateSourceKind.File)
-                    ShowValidation("模板来源加载失败，请重新选择。");
+                    ShowValidation(EngineLocalization.Get("模板来源加载失败，请重新选择。"));
                 _appliedSource = null;
                 return false;
             }
@@ -316,7 +316,12 @@ namespace ColorVision.Engine.Templates
 
         private void UpdateCreatePreview()
         {
-            PresetGuide.DataContext = _appliedSource?.Preset;
+            TemplateCreatePreset? preset = _appliedSource?.Preset;
+            PresetGuide.DataContext = preset == null ? null : preset with
+            {
+                Guide = preset.Guide == null ? null : new(EngineLocalization.Get(preset.Guide.Purpose),
+                    EngineLocalization.Get(preset.Guide.ModuleGuide), EngineLocalization.Get(preset.Guide.DeviceGuide))
+            };
             PresetGuide.Visibility = _appliedSource?.Preset?.Guide != null ? Visibility.Visible : Visibility.Collapsed;
             if (_template == null || _template.IsSideHide)
             {
@@ -360,7 +365,7 @@ namespace ColorVision.Engine.Templates
                 SourceColumn.Width = new GridLength(1, GridUnitType.Star);
                 PropertyColumn.Width = new GridLength(0);
                 PropertyPreviewBorder.Visibility = Visibility.Collapsed;
-                ShowValidation($"模板预览加载失败：{ex.Message}");
+                ShowValidation(EngineLocalization.Format($"模板预览加载失败：{ex.Message}"));
             }
         }
 
@@ -410,7 +415,7 @@ namespace ColorVision.Engine.Templates
 
             if (_selectedSource == null)
             {
-                ShowValidation("请选择创建来源。");
+                ShowValidation(EngineLocalization.Get("请选择创建来源。"));
                 return;
             }
 
@@ -419,7 +424,7 @@ namespace ColorVision.Engine.Templates
 
             if (CustomPreviewHost.Children.OfType<ITemplateEditorValidation>().Any(editor => !editor.TryCommitPendingEdits()))
             {
-                ShowValidation("请先修正参数编辑器中的错误输入。");
+                ShowValidation(EngineLocalization.Get("请先修正参数编辑器中的错误输入。"));
                 return;
             }
 

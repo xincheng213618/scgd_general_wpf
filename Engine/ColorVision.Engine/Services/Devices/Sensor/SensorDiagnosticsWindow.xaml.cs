@@ -24,14 +24,14 @@ public partial class SensorDiagnosticsWindow : Window
     private long revision = -1;
 
     public SensorDiagnosticsWindow(DeviceSensor device) : this(device.Config.Name, device.LocalSession,
-        () => $"{(device.SensorBackend.OpensLocally ? "本地模式" : "服务模式（此窗口仅记录本地通信）")} · {device.LocalSession.EndpointIdentity ?? (device.Config.IsNet ? $"TCP {device.Config.Addr}:{device.Config.Port}" : $"串口 {device.Config.Addr} / {device.Config.Port} baud")}") { }
+        () => $"{(device.SensorBackend.OpensLocally ? EngineLocalization.Get("本地模式") : EngineLocalization.Get("服务模式（此窗口仅记录本地通信）"))} · {device.LocalSession.EndpointIdentity ?? (device.Config.IsNet ? $"TCP {device.Config.Addr}:{device.Config.Port}" : EngineLocalization.Format($"串口 {device.Config.Addr} / {device.Config.Port} baud"))}") { }
 
     internal SensorDiagnosticsWindow(string deviceName, LocalSensorSession session, Func<string> connectionSummary)
     {
         this.session = session;
         this.connectionSummary = connectionSummary;
         InitializeComponent();
-        DeviceTitle.Text = deviceName + " · 通信调试";
+        DeviceTitle.Text = deviceName + EngineLocalization.Get(" · 通信调试");
         view = CollectionViewSource.GetDefaultView(entries);
         view.Filter = MatchesFilter;
         MessageGrid.ItemsSource = view;
@@ -59,8 +59,8 @@ public partial class SensorDiagnosticsWindow : Window
         ConnectionText.Text = connectionSummary();
         StatusText.Text = session.Status switch
         {
-            DeviceStatusType.Opened => "已连接", DeviceStatusType.Busy => "执行中", DeviceStatusType.Opening => "连接中",
-            DeviceStatusType.Closing => "关闭中", _ => "未连接"
+            DeviceStatusType.Opened => EngineLocalization.Get("已连接"), DeviceStatusType.Busy => EngineLocalization.Get("执行中"), DeviceStatusType.Opening => EngineLocalization.Get("连接中"),
+            DeviceStatusType.Closing => EngineLocalization.Get("关闭中"), _ => EngineLocalization.Get("未连接")
         };
         var snapshot = session.Diagnostics.GetSnapshot(revision, out revision);
         if (snapshot != null)
@@ -68,7 +68,7 @@ public partial class SensorDiagnosticsWindow : Window
             while (entries.Count > 0 && (snapshot.Length == 0 || entries[0].Sequence < snapshot[0].Sequence)) entries.RemoveAt(0);
             long last = entries.Count == 0 ? 0 : entries[^1].Sequence;
             foreach (var entry in snapshot) if (entry.Sequence > last) entries.Add(entry);
-            CountText.Text = $"发送 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Sent)} · 接收 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Received)} · 日志 {entries.Count(entry => entry.Kind is LocalSensorDiagnosticKind.Log or LocalSensorDiagnosticKind.Error)}";
+            CountText.Text = EngineLocalization.Format($"发送 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Sent)} · 接收 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Received)} · 日志 {entries.Count(entry => entry.Kind is LocalSensorDiagnosticKind.Log or LocalSensorDiagnosticKind.Error)}");
             if (AutoScroll.IsChecked == true && view.Cast<object>().LastOrDefault() is { } latest) MessageGrid.ScrollIntoView(latest);
         }
         UpdateEmptyState();
@@ -78,8 +78,8 @@ public partial class SensorDiagnosticsWindow : Window
     {
         int count = view.Cast<object>().Count();
         EmptyState.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyTitle.Text = SearchBox.Text.Length > 0 ? "没有匹配的记录" : RecordTabs.SelectedIndex == 0 ? "暂无收发消息" : "暂无运行日志";
-        VisibleCount.Text = $"当前显示 {count} 条 / 保留 {entries.Count} 条";
+        EmptyTitle.Text = SearchBox.Text.Length > 0 ? EngineLocalization.Get("没有匹配的记录") : RecordTabs.SelectedIndex == 0 ? EngineLocalization.Get("暂无收发消息") : EngineLocalization.Get("暂无运行日志");
+        VisibleCount.Text = EngineLocalization.Format($"当前显示 {count} 条 / 保留 {entries.Count} 条");
     }
 
     private void Search_Changed(object sender, TextChangedEventArgs e) => RefreshFilter();
@@ -101,15 +101,15 @@ public partial class SensorDiagnosticsWindow : Window
     {
         if (MessageGrid.SelectedItem is not LocalSensorDiagnosticEntry entry)
         {
-            DetailMeta.Text = "选择一条记录查看可读回显、原文和字节内容。";
+            DetailMeta.Text = EngineLocalization.Get("选择一条记录查看可读回显、原文和字节内容。");
             DetailText.Text = DetailOriginalText.Text = DetailHex.Text = "";
             CopyTextButton.IsEnabled = CopyHexButton.IsEnabled = false;
             return;
         }
-        DetailMeta.Text = $"{entry.Time:yyyy-MM-dd HH:mm:ss.fff} · {entry.Direction}\n{entry.Endpoint}\n{entry.EventName}";
+        DetailMeta.Text = $"{entry.Time:yyyy-MM-dd HH:mm:ss.fff} · {entry.Direction}\n{entry.Endpoint}\n{EngineLocalization.Get(entry.EventName)}";
         if (entry.CommandDisplay.Length > 0) DetailMeta.Text += " · " + entry.CommandDisplay;
-        if (entry.ByteCount > 0) DetailMeta.Text += $"\n编码 {entry.Encoding} · {entry.ByteCount} 字节";
-        if (entry.IsTruncated) DetailMeta.Text += $"\n仅保留前 {entry.CapturedByteCount} 字节，复制内容同样已截断。";
+        if (entry.ByteCount > 0) DetailMeta.Text += EngineLocalization.Format($"\n编码 {entry.Encoding} · {entry.ByteCount} 字节");
+        if (entry.IsTruncated) DetailMeta.Text += EngineLocalization.Format($"\n仅保留前 {entry.CapturedByteCount} 字节，复制内容同样已截断。");
         string text = entry.DisplayText;
         if (FormatJson.IsChecked == true && !entry.IsTruncated)
         {
@@ -129,7 +129,7 @@ public partial class SensorDiagnosticsWindow : Window
     private void Copy(string text)
     {
         try { Clipboard.SetText(text); }
-        catch (ExternalException) { MessageBox.Show(this, "剪贴板正在使用，请稍后再试。", "复制消息"); }
+        catch (ExternalException) { MessageBox.Show(this, EngineLocalization.Get("剪贴板正在使用，请稍后再试。"), EngineLocalization.Get("复制消息")); }
     }
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {

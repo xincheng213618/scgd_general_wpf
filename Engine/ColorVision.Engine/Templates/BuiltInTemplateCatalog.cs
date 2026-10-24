@@ -33,7 +33,7 @@ public static class BuiltInTemplateCatalog
         using var reader = command.ExecuteReader();
         var presets = new List<BuiltInTemplatePreset>();
         while (reader.Read())
-            presets.Add(new(new(reader.GetString(0), reader.GetString(1), reader.GetString(2), "内置 · " + reader.GetString(3), reader.GetString(4))
+            presets.Add(new(new(reader.GetString(0), reader.GetString(1), reader.GetString(2), EngineLocalization.Format($"内置 · {EngineLocalization.Get(reader.GetString(3))}"), reader.GetString(4))
                 { Guide = new(reader.GetString(7), reader.GetString(5), reader.GetString(6)) },
                 reader.GetString(5), reader.GetString(6), reader.GetString(7), reader.GetString(8)));
         return presets.AsReadOnly();

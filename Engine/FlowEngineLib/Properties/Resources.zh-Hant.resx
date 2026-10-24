@@ -951,9 +951,6 @@
   <data name="重复执行…" xml:space="preserve">
     <value>重複執行…</value>
   </data>
-  <data name="修改重复次数…" xml:space="preserve">
-    <value>修改重複次數…</value>
-  </data>
   <data name="取消重复框" xml:space="preserve">
     <value>取消重複框</value>
   </data>
@@ -978,4 +975,8 @@
   <data name="失败 · 第 {0} / {1} 次" xml:space="preserve">
     <value>失敗 · 第 {0} / {1} 次</value>
   </data>
+  <data name="{0}必须在 {1} 到 {2} {3} 范围内。" xml:space="preserve"><value>{0}必須在 {1} 到 {2} {3} 範圍內。</value></data>
+  <data name="{0}必须是整数。" xml:space="preserve"><value>{0}必須是整數。</value></data>
+  <data name="{0}必须是有限数值。" xml:space="preserve"><value>{0}必須是有限數值。</value></data>
+  <data name="次" xml:space="preserve"><value>次</value></data>
 </root>

@@ -24,7 +24,7 @@ namespace ColorVision.Engine.FlowProcessing.Monitoring;
 public sealed class LiveIvlMenuItem : MenuItemBase
 {
     public override string OwnerGuid => MenuItemConstants.Tool;
-    public override string Header => "IV / IVL 实时曲线";
+    public override string Header => EngineLocalization.Get("IV / IVL 实时曲线");
     public override int Order => 20;
     public override void Execute()
     {
@@ -103,18 +103,18 @@ public partial class LiveIvlWindow : Window
     {
         SelectBatch(manager?.Batch?.Id ?? 0);
         if (manager?.Batch is { Id: <= 0 })
-            Status.Text = "当前流程没有已保存的批次，请启用流程结果保存并连接 MySQL。";
+            Status.Text = EngineLocalization.Get("当前流程没有已保存的批次，请启用流程结果保存并连接 MySQL。");
     }
 
     private void SelectBatch(int id)
     {
         if (id == session.BatchId) return;
         session.SelectBatch(id);
-        BatchInfo.Text = id > 0 ? $"批次 #{id}" : "等待流程批次…";
-        Status.Text = "等待读取已保存结果…";
+        BatchInfo.Text = id > 0 ? EngineLocalization.Format($"批次 #{id}") : EngineLocalization.Get("等待流程批次…");
+        Status.Text = EngineLocalization.Get("等待读取已保存结果…");
         series.Clear();
         Values.ItemsSource = null;
-        Summary.Text = "等待已保存的源表、相机 POI 或光谱结果";
+        Summary.Text = EngineLocalization.Get("等待已保存的源表、相机 POI 或光谱结果");
         Draw();
     }
 
@@ -123,7 +123,7 @@ public partial class LiveIvlWindow : Window
     private void Session_Updated(object? sender, EventArgs e)
     {
         if (closed) return;
-        if (session.Error != null) { Status.Text = $"读取失败，下一节点完成时重试，也可重新读取：{session.Error}"; return; }
+        if (session.Error != null) { Status.Text = EngineLocalization.Format($"读取失败，下一节点完成时重试，也可重新读取：{session.Error}"); return; }
         var snapshot = session.Snapshot!;
         foreach (string name in snapshot.Points.Select(p => p.Series).Distinct())
             if (!series.Any(s => s.Name == name)) series.Add(new() { Name = name });
@@ -132,13 +132,13 @@ public partial class LiveIvlWindow : Window
             batchStatus = FlowStatus.Runing;
         string state = batchStatus switch
         {
-            FlowStatus.Ready => "就绪", FlowStatus.Runing => "执行中", FlowStatus.Paused => "已暂停",
-            FlowStatus.Completed => "已完成", FlowStatus.Canceled => "已取消", FlowStatus.OverTime => "已超时", _ => "失败"
+            FlowStatus.Ready => EngineLocalization.Get("就绪"), FlowStatus.Runing => EngineLocalization.Get("执行中"), FlowStatus.Paused => EngineLocalization.Get("已暂停"),
+            FlowStatus.Completed => EngineLocalization.Get("已完成"), FlowStatus.Canceled => EngineLocalization.Get("已取消"), FlowStatus.OverTime => EngineLocalization.Get("已超时"), _ => EngineLocalization.Get("失败")
         };
-        BatchInfo.Text = $"批次 #{snapshot.BatchId} · {snapshot.Name}\n状态：{state}";
-        Summary.Text = $"{snapshot.Points.Count:N0} 个数据点 · {series.Count} 个系列 · 更新于 {DateTime.Now:HH:mm:ss}";
-        Status.Text = $"正在监控 · 未配对亮度 {snapshot.Unpaired} · 无效记录 {snapshot.Invalid}"
-            + (snapshot.Truncated ? " · 已达到显示上限，仅显示最近记录" : "");
+        BatchInfo.Text = EngineLocalization.Format($"批次 #{snapshot.BatchId} · {snapshot.Name}\n状态：{state}");
+        Summary.Text = EngineLocalization.Format($"{snapshot.Points.Count:N0} 个数据点 · {series.Count} 个系列 · 更新于 {DateTime.Now:HH:mm:ss}");
+        Status.Text = EngineLocalization.Format($"正在监控 · 未配对亮度 {snapshot.Unpaired} · 无效记录 {snapshot.Invalid}")
+            + (snapshot.Truncated ? EngineLocalization.Get(" · 已达到显示上限，仅显示最近记录") : "");
         Draw();
     }
 
@@ -146,7 +146,7 @@ public partial class LiveIvlWindow : Window
     {
         if (Chart == null) return;
         int mode = Mode?.SelectedIndex ?? 0;
-        string[] titles = ["IV 曲线", "I-L 曲线", "V-L 曲线", "P-L 曲线", "电流随时间变化", "电压随时间变化", "亮度随时间变化"];
+        string[] titles = [EngineLocalization.Get("IV 曲线"), EngineLocalization.Get("I-L 曲线"), EngineLocalization.Get("V-L 曲线"), EngineLocalization.Get("P-L 曲线"), EngineLocalization.Get("电流随时间变化"), EngineLocalization.Get("电压随时间变化"), EngineLocalization.Get("亮度随时间变化")];
         string[] xLabels = ["Voltage (V)", "Current (mA)", "Voltage (V)", "Power (mW)", "Elapsed time (s)", "Elapsed time (s)", "Elapsed time (s)"];
         string[] yLabels = ["Current (mA)", "Luminance (cd/m²)", "Luminance (cd/m²)", "Luminance (cd/m²)", "Current (mA)", "Voltage (V)", "Luminance (cd/m²)"];
         Chart.Plot.Clear();
@@ -208,8 +208,8 @@ public partial class LiveIvlWindow : Window
 
     private void Export_Click(object sender, RoutedEventArgs e)
     {
-        if (session.Snapshot is not { } snapshot) { Status.Text = "尚无可导出的数据。"; return; }
-        var dialog = new SaveFileDialog { Filter = "CSV 文件|*.csv", FileName = $"Live_IVL_{snapshot.BatchId}.csv" };
+        if (session.Snapshot is not { } snapshot) { Status.Text = EngineLocalization.Get("尚无可导出的数据。"); return; }
+        var dialog = new SaveFileDialog { Filter = EngineLocalization.Get("CSV 文件|*.csv"), FileName = $"Live_IVL_{snapshot.BatchId}.csv" };
         if (dialog.ShowDialog(this) != true) return;
         try
         {
@@ -217,16 +217,16 @@ public partial class LiveIvlWindow : Window
             foreach (var p in snapshot.Points)
                 csv.AppendLine(FormattableString.Invariant($"{snapshot.BatchId},\"{p.Series.Replace("\"", "\"\"")}\",{p.Time:O},{p.Voltage:R},{p.Current:R},{p.Luminance:R},{p.IsScan}"));
             File.WriteAllText(dialog.FileName, csv.ToString(), new UTF8Encoding(true));
-            Status.Text = "当前批次显示数据已导出。";
+            Status.Text = EngineLocalization.Get("当前批次显示数据已导出。");
         }
-        catch (Exception ex) { Status.Text = $"导出失败：{ex.Message}"; }
+        catch (Exception ex) { Status.Text = EngineLocalization.Format($"导出失败：{ex.Message}"); }
     }
     private void SavePlot_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SaveFileDialog { Filter = "PNG 图片|*.png", FileName = $"Live_IVL_{session.BatchId}.png" };
+        var dialog = new SaveFileDialog { Filter = EngineLocalization.Get("PNG 图片|*.png"), FileName = $"Live_IVL_{session.BatchId}.png" };
         if (dialog.ShowDialog(this) != true) return;
-        try { Chart.Plot.SavePng(dialog.FileName, Math.Max(640, (int)Chart.ActualWidth), Math.Max(400, (int)Chart.ActualHeight)); Status.Text = "曲线图片已保存。"; }
-        catch (Exception ex) { Status.Text = $"保存失败：{ex.Message}"; }
+        try { Chart.Plot.SavePng(dialog.FileName, Math.Max(640, (int)Chart.ActualWidth), Math.Max(400, (int)Chart.ActualHeight)); Status.Text = EngineLocalization.Get("曲线图片已保存。"); }
+        catch (Exception ex) { Status.Text = EngineLocalization.Format($"保存失败：{ex.Message}"); }
     }
 
     private void Window_Closed(object? sender, EventArgs e)

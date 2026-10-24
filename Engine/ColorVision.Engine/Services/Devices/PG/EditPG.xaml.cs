@@ -63,7 +63,7 @@ public partial class EditPG : Window
         Keyboard.ClearFocus();
         if (HasInvalidInput(EditorContent))
         {
-            error = "请修正输入框中的无效数值。";
+            error = EngineLocalization.Get("请修正输入框中的无效数值。");
             return false;
         }
         return Draft.TryApply(target, out error);

@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Sensor.Local;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using MQTTMessageLib.Sensor;
 using System.Net;
+using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
@@ -19,8 +20,11 @@ namespace ColorVision.UI.Tests;
 // These regressions protect framing, cancellation and persisted template compatibility.
 public sealed class LocalSensorSessionTests
 {
-    [Fact]
-    public async Task DiagnosticWindowViewsExistingRecordsAndClosingOrClearingDoesNotControlConnection()
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("en-US")]
+    [InlineData("zh-Hant")]
+    public async Task DiagnosticWindowViewsExistingRecordsAndClosingOrClearingDoesNotControlConnection(string uiCulture)
     {
         var transport = new FakeTransport { Reply = _ => "{\"ok\":true}" };
         using var session = new LocalSensorSession(_ => transport);
@@ -30,9 +34,11 @@ public sealed class LocalSensorSessionTests
         WpfTestHost.Invoke(() =>
         {
             var previous = Application.Current.Resources;
+            CultureInfo previousCulture = CultureInfo.CurrentUICulture;
             SensorDiagnosticsWindow? window = null;
             try
             {
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(uiCulture);
                 var resources = new ResourceDictionary();
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                     resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) });
@@ -41,6 +47,8 @@ public sealed class LocalSensorSessionTests
                 window.Show(); window.UpdateLayout();
                 var grid = (DataGrid)window.FindName("MessageGrid");
                 Assert.Equal(2, grid.Items.Count);
+                Assert.Equal(ColorVision.Engine.Properties.Resources.ResourceManager.GetString("本地传感器 · 通信调试", CultureInfo.CurrentUICulture), window.Title);
+                Assert.Equal(ColorVision.Engine.Properties.Resources.ResourceManager.GetString("发送", CultureInfo.CurrentUICulture), ((LocalSensorDiagnosticEntry)grid.Items[0]).Direction);
                 grid.SelectedIndex = 0;
                 var detail = (TextBox)window.FindName("DetailText");
                 Assert.Contains(Environment.NewLine, detail.Text);
@@ -90,7 +98,7 @@ public sealed class LocalSensorSessionTests
                 Assert.Equal(1, transport.Opens);
                 Assert.Equal(1, transport.Writes);
             }
-            finally { window?.Close(); Application.Current.Resources = previous; }
+            finally { window?.Close(); Application.Current.Resources = previous; CultureInfo.CurrentUICulture = previousCulture; }
         });
     }
 

@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public GroupResource Group { get; }
         public ObservableCollection<CalibrationResource> Resources { get; }
         public string Title { get; }
-        public string FileStatus => SelectedResource == null ? "未配置" : SelectedResource.IsValid ? "本机存在" : "本机缺失";
+        public string FileStatus => SelectedResource == null ? EngineLocalization.Get("未配置") : SelectedResource.IsValid ? EngineLocalization.Get("本机存在") : EngineLocalization.Get("本机缺失");
         public bool CanCorrect => slot.ServiceType == ServiceTypes.LumFourColor;
 
         public CalibrationResource? SelectedResource
@@ -221,7 +221,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             if (sender is not Button button || !AccessControl.Check(PermissionMode.Administrator)) return;
             if (ListView1.SelectedItem is not GroupResource group)
             {
-                MessageBox.Show(this, "请先选择或添加校正组。", Properties.Resources.CalibrationFileManagement);
+                MessageBox.Show(this, EngineLocalization.Get("请先选择或添加校正组。"), Properties.Resources.CalibrationFileManagement);
                 return;
             }
             var menu = new ContextMenu();
@@ -246,20 +246,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if (CalibrationCreationWindow.SupportsType(slot.ServiceType.ToCalibrationType()))
             {
-                var measured = new MenuItem { Header = "从原始图像生成…" };
+                var measured = new MenuItem { Header = EngineLocalization.Get("从原始图像生成…") };
                 measured.Click += (_, _) => CreateCalibration(slot, group, measured: true);
                 items.Add(measured);
             }
             if (CalibrationResource.SupportsTextEditing(slot.ServiceType))
             {
-                var manual = new MenuItem { Header = "手工填写参数…" };
+                var manual = new MenuItem { Header = EngineLocalization.Get("手工填写参数…") };
                 manual.Click += (_, _) => CreateCalibration(slot, group, measured: false);
                 items.Add(manual);
             }
             if (items.Count == 0)
             {
-                items.Add(new MenuItem { Header = "需先取得实测响应表；可导入后编辑", IsEnabled = false });
-                items.Add(new MenuItem { Header = "导入已有文件…", Command = group.UploadCalibrationItemCommand, CommandParameter = slot.Key });
+                items.Add(new MenuItem { Header = EngineLocalization.Get("需先取得实测响应表；可导入后编辑"), IsEnabled = false });
+                items.Add(new MenuItem { Header = EngineLocalization.Get("导入已有文件…"), Command = group.UploadCalibrationItemCommand, CommandParameter = slot.Key });
             }
         }
 
@@ -286,11 +286,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 if (createdPath == null) return;
                 if (group.ImportCalibrationFile(slot.Key, createdPath) == null) return;
                 ShowGroup(group);
-                MessageBox.Show(this, $"已创建并选用于校正组「{group.Name}」的{CalibrationSlotPresentation.GetTitle(slot.Key)}。", Properties.Resources.CalibrationFileManagement, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, EngineLocalization.Format($"已创建并选用于校正组「{group.Name}」的{CalibrationSlotPresentation.GetTitle(slot.Key)}。"), Properties.Resources.CalibrationFileManagement, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "创建或登记校正失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, EngineLocalization.Get("创建或登记校正失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -406,7 +406,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                  zipFilePath = saveFileDialog.FileName;
             }
 
-            SetExporting(true, "正在准备导出…");
+            SetExporting(true, EngineLocalization.Get("正在准备导出…"));
             await Dispatcher.Yield(DispatcherPriority.Background);
 
             try

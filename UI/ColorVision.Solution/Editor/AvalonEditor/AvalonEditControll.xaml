@@ -185,7 +185,7 @@
                         Command="{x:Static local:AvalonEditControll.RunPythonCommand}"
                         ToolTip="{display:DisplayText Key='运行 Python (F5)'}"
                         AutomationProperties.Name="{display:DisplayText Key='运行 Python'}"
-                        AutomationProperties.HelpText="保存当前文件并在下方运行终端中执行">
+                        AutomationProperties.HelpText="{display:DisplayText Key='保存当前文件并在下方运行终端中执行'}">
                     <StackPanel Orientation="Horizontal">
                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DIRun}"/>
                         <TextBlock Margin="6,0,0,0" Text="{display:DisplayText Key='运行 Python'}"/>

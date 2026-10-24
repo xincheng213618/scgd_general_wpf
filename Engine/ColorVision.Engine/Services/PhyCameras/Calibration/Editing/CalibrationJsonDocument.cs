@@ -37,18 +37,18 @@ public sealed class CalibrationCoefficientTable
 public sealed class CalibrationJsonDocument
 {
     public ServiceTypes Type { get; }
-    public string Title => Type switch { ServiceTypes.DarkNoise => "暗噪声", ServiceTypes.ColorShift => "色偏", ServiceTypes.Distortion => "畸变", ServiceTypes.Luminance => "亮度", ServiceTypes.LumOneColor => "单色", ServiceTypes.LumFourColor => "四色", ServiceTypes.LumMultiColor => "多色", ServiceTypes.ColorDiff => "ColorDiff", ServiceTypes.AngleShift => "角度偏移", _ => throw new NotSupportedException() };
+    public string Title => Type switch { ServiceTypes.DarkNoise => EngineLocalization.Get("暗噪声"), ServiceTypes.ColorShift => EngineLocalization.Get("色偏"), ServiceTypes.Distortion => EngineLocalization.Get("畸变"), ServiceTypes.Luminance => EngineLocalization.Get("亮度"), ServiceTypes.LumOneColor => EngineLocalization.Get("单色"), ServiceTypes.LumFourColor => EngineLocalization.Get("四色"), ServiceTypes.LumMultiColor => EngineLocalization.Get("多色"), ServiceTypes.ColorDiff => "ColorDiff", ServiceTypes.AngleShift => EngineLocalization.Get("角度偏移"), _ => throw new NotSupportedException() };
     public string Description => Type switch
     {
-        ServiceTypes.ColorShift => "通道空间偏移，单位为像素。",
-        ServiceTypes.ColorDiff => "GR/GB 通道空间对齐的径向多项式和偏移。",
-        ServiceTypes.AngleShift => "RGB 通道径向多项式；并非旋转角度。",
-        ServiceTypes.DarkNoise => "兼容旧算法：暗噪声采用倍率修正；原文件 Texp_x 为浮点数时比例才生效。",
-        ServiceTypes.Luminance => "单通道亮度比例，按实际采集曝光归一化。",
-        ServiceTypes.LumOneColor => "X=aR+dB，Y=bG，Z=cB；按实际采集曝光和文件通道增益归一化。",
-        ServiceTypes.LumFourColor => "RGB 转 XYZ 矩阵；转换使用实际采集曝光。历史文件中的曝光和增益仅保留兼容信息。",
-        ServiceTypes.LumMultiColor => "RGB 转 XYZ 矩阵；按实际采集曝光和文件通道增益归一化。",
-        _ => "编辑校正参数；新建参数须结合实测标定。"
+        ServiceTypes.ColorShift => EngineLocalization.Get("通道空间偏移，单位为像素。"),
+        ServiceTypes.ColorDiff => EngineLocalization.Get("GR/GB 通道空间对齐的径向多项式和偏移。"),
+        ServiceTypes.AngleShift => EngineLocalization.Get("RGB 通道径向多项式；并非旋转角度。"),
+        ServiceTypes.DarkNoise => EngineLocalization.Get("兼容旧算法：暗噪声采用倍率修正；原文件 Texp_x 为浮点数时比例才生效。"),
+        ServiceTypes.Luminance => EngineLocalization.Get("单通道亮度比例，按实际采集曝光归一化。"),
+        ServiceTypes.LumOneColor => EngineLocalization.Get("X=aR+dB，Y=bG，Z=cB；按实际采集曝光和文件通道增益归一化。"),
+        ServiceTypes.LumFourColor => EngineLocalization.Get("RGB 转 XYZ 矩阵；转换使用实际采集曝光。历史文件中的曝光和增益仅保留兼容信息。"),
+        ServiceTypes.LumMultiColor => EngineLocalization.Get("RGB 转 XYZ 矩阵；按实际采集曝光和文件通道增益归一化。"),
+        _ => EngineLocalization.Get("编辑校正参数；新建参数须结合实测标定。")
     };
     public JObject Json { get; }
     public ObservableCollection<CalibrationScalarParameter> Parameters { get; } = new();
@@ -66,12 +66,12 @@ public sealed class CalibrationJsonDocument
     internal static JObject ParseObject(string json)
     {
         try { using var strict = System.Text.Json.JsonDocument.Parse(json); }
-        catch (System.Text.Json.JsonException ex) { throw new JsonReaderException("校正 JSON 语法无效。", ex); }
+        catch (System.Text.Json.JsonException ex) { throw new JsonReaderException(EngineLocalization.Get("校正 JSON 语法无效。"), ex); }
         using var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
         var token = JToken.Load(reader, new JsonLoadSettings { DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error, CommentHandling = CommentHandling.Load });
-        if (reader.Read()) throw new JsonReaderException("JSON 后存在额外内容。");
-        if (token is not JObject root) throw new JsonReaderException("校正 JSON 根节点必须是对象。");
-        if (root.Descendants().Any(x => x.Type == JTokenType.Comment)) throw new JsonReaderException("校正 JSON 不支持注释。");
+        if (reader.Read()) throw new JsonReaderException(EngineLocalization.Get("JSON 后存在额外内容。"));
+        if (token is not JObject root) throw new JsonReaderException(EngineLocalization.Get("校正 JSON 根节点必须是对象。"));
+        if (root.Descendants().Any(x => x.Type == JTokenType.Comment)) throw new JsonReaderException(EngineLocalization.Get("校正 JSON 不支持注释。"));
         return root;
     }
 
@@ -86,7 +86,7 @@ public sealed class CalibrationJsonDocument
             ServiceTypes.ColorDiff => JObject.Parse("{\"w\":1920,\"h\":1080,\"CenterCol\":960,\"CenterRow\":540,\"MeasDis\":1.0,\"CalibDis\":1.0,\"ColorDiffCoeffs_GR\":[0,0],\"ColorDiffCoeffs_GB\":[0,0],\"ColRowCoeffs_GR\":[0,0],\"ColRowCoeffs_GB\":[0,0]}"),
             ServiceTypes.AngleShift => JObject.Parse("{\"optical_center_x\":960,\"optical_center_y\":540,\"interpolate_ratio\":1.0,\"coefficient_order\":1,\"target_row\":1080,\"target_col\":1920,\"coeff_r\":[0,0],\"coeff_g\":[0,0],\"coeff_b\":[0,0],\"rowColShift\":[0,0]}"),
             ServiceTypes.Luminance or ServiceTypes.LumOneColor or ServiceTypes.LumFourColor => JObject.Parse("{\"bpp\":16,\"Texp_x\":1.0,\"Texp_y\":1.0,\"Texp_z\":1.0,\"Gain_x\":1.0,\"Gain_y\":1.0,\"Gain_z\":1.0,\"a\":1.0,\"b\":0.0,\"c\":0.0,\"d\":0.0}"),
-            _ => throw new NotSupportedException("此校正不是 JSON 参数校正。")
+            _ => throw new NotSupportedException(EngineLocalization.Get("此校正不是 JSON 参数校正。"))
         };
         if (type == ServiceTypes.LumFourColor) { root["e"] = 1.0; root["f"] = 0.0; root["g"] = 0.0; root["h"] = 0.0; root["i"] = 1.0; }
         if (type == ServiceTypes.LumOneColor) { root["b"] = 1.0; root["c"] = 1.0; }
@@ -99,26 +99,26 @@ public sealed class CalibrationJsonDocument
         string text = token == null || token.Type == JTokenType.Null ? "" : token.ToString(Formatting.None);
         label = path switch
         {
-            "Texp_x" => "曝光 X（ms）", "Texp_y" => "曝光 Y（ms）", "Texp_z" => "曝光 Z（ms）",
-            "Gain_x" => "增益 X（倍率）", "Gain_y" => "增益 Y（倍率）", "Gain_z" => "增益 Z（倍率）",
-            "w" => "输入宽度（px）", "h" => "输入高度（px）", "s_w" => "输出宽度（px）", "s_h" => "输出高度（px）",
-            "CenterCol" => "中心 X（px）", "CenterRow" => "中心 Y（px）",
-            "optical_center_x" => "光学中心 X（px）", "optical_center_y" => "光学中心 Y（px）",
-            "interpolate_ratio" => "插值放大倍数", "coefficient_order" => "多项式阶数",
-            "target_row" => "目标高度（px）", "target_col" => "目标宽度（px）", "alpha" => "输出视场参数 α", _ => label
+            "Texp_x" => EngineLocalization.Get("曝光 X（ms）"), "Texp_y" => EngineLocalization.Get("曝光 Y（ms）"), "Texp_z" => EngineLocalization.Get("曝光 Z（ms）"),
+            "Gain_x" => EngineLocalization.Get("增益 X（倍率）"), "Gain_y" => EngineLocalization.Get("增益 Y（倍率）"), "Gain_z" => EngineLocalization.Get("增益 Z（倍率）"),
+            "w" => EngineLocalization.Get("输入宽度（px）"), "h" => EngineLocalization.Get("输入高度（px）"), "s_w" => EngineLocalization.Get("输出宽度（px）"), "s_h" => EngineLocalization.Get("输出高度（px）"),
+            "CenterCol" => EngineLocalization.Get("中心 X（px）"), "CenterRow" => EngineLocalization.Get("中心 Y（px）"),
+            "optical_center_x" => EngineLocalization.Get("光学中心 X（px）"), "optical_center_y" => EngineLocalization.Get("光学中心 Y（px）"),
+            "interpolate_ratio" => EngineLocalization.Get("插值放大倍数"), "coefficient_order" => EngineLocalization.Get("多项式阶数"),
+            "target_row" => EngineLocalization.Get("目标高度（px）"), "target_col" => EngineLocalization.Get("目标宽度（px）"), "alpha" => EngineLocalization.Get("输出视场参数 α"), _ => label
         };
         string description = path switch
         {
-            "interpolate_ratio" => "原图插值放大的倍数，必须大于零；实际输入图像放大后的尺寸需要符合算法限制。",
-            "coefficient_order" => "径向位移多项式的最高幂次；每个通道需提供阶数加一项系数，从常数项开始。",
-            "MeasDis" => "测量距离，不可为零；与标定距离使用相同单位。",
-            "CalibDis" => "标定距离，与测量距离使用相同单位。",
-            "alpha" => "鱼眼模式下用于计算输出相机矩阵的视场参数。",
-            "DarkNoiseRatio" => "暗噪声乘法比例；兼容旧文件，曝光 X 为 JSON 浮点数时才生效。",
-            "fillOffset" => "通道平移后是否按现有校正算法填充边缘。",
+            "interpolate_ratio" => EngineLocalization.Get("原图插值放大的倍数，必须大于零；实际输入图像放大后的尺寸需要符合算法限制。"),
+            "coefficient_order" => EngineLocalization.Get("径向位移多项式的最高幂次；每个通道需提供阶数加一项系数，从常数项开始。"),
+            "MeasDis" => EngineLocalization.Get("测量距离，不可为零；与标定距离使用相同单位。"),
+            "CalibDis" => EngineLocalization.Get("标定距离，与测量距离使用相同单位。"),
+            "alpha" => EngineLocalization.Get("鱼眼模式下用于计算输出相机矩阵的视场参数。"),
+            "DarkNoiseRatio" => EngineLocalization.Get("暗噪声乘法比例；兼容旧文件，曝光 X 为 JSON 浮点数时才生效。"),
+            "fillOffset" => EngineLocalization.Get("通道平移后是否按现有校正算法填充边缘。"),
             _ => label
         };
-        Parameters.Add(new() { Path = path, Label = label, Group = group, Description = description + "\n字段：" + path, Kind = kind, Value = text, InitialValue = text });
+        Parameters.Add(new() { Path = path, Label = label, Group = group, Description = description + EngineLocalization.Get("\n字段：") + path, Kind = kind, Value = text, InitialValue = text });
     }
 
     private void Table(string key, string title, IEnumerable<string> paths)
@@ -132,15 +132,15 @@ public sealed class CalibrationJsonDocument
             {
                 "matrix" or "pa" when index < 9 => $"{"XYZ"[index / 3]} ← {"RGB"[index % 3]}",
                 "coefficients" when Type == ServiceTypes.LumOneColor => new[] { "a：X ← R", "b：Y ← G", "c：Z ← B", "d：X ← B" }[index],
-                "coefficients" when Type == ServiceTypes.Luminance => index == 0 ? "a：亮度比例" : $"{path}：兼容参数",
-                "cameraMatrix" when index < 9 => $"第 {index / 3 + 1} 行，第 {index % 3 + 1} 列",
-                "Gain" when index < 3 => $"{"RGB"[index]} 通道增益（倍率）",
-                "coeff_r" or "coeff_g" or "coeff_b" or "ColorDiffCoeffs_GR" or "ColorDiffCoeffs_GB" => index == 0 ? "常数项" : $"半径 {index} 次项",
-                "ColRowCoeffs_GR" or "ColRowCoeffs_GB" => index == 0 ? "X 偏移（px）" : "Y 偏移（px）",
-                "rowColShift" => index == 0 ? "Y 偏移（px）" : "X 偏移（px）",
+                "coefficients" when Type == ServiceTypes.Luminance => index == 0 ? EngineLocalization.Get("a：亮度比例") : EngineLocalization.Format($"{path}：兼容参数"),
+                "cameraMatrix" when index < 9 => EngineLocalization.Format($"第 {index / 3 + 1} 行，第 {index % 3 + 1} 列"),
+                "Gain" when index < 3 => EngineLocalization.Format($"{"RGB"[index]} 通道增益（倍率）"),
+                "coeff_r" or "coeff_g" or "coeff_b" or "ColorDiffCoeffs_GR" or "ColorDiffCoeffs_GB" => index == 0 ? EngineLocalization.Get("常数项") : EngineLocalization.Format($"半径 {index} 次项"),
+                "ColRowCoeffs_GR" or "ColRowCoeffs_GB" => index == 0 ? EngineLocalization.Get("X 偏移（px）") : EngineLocalization.Get("Y 偏移（px）"),
+                "rowColShift" => index == 0 ? EngineLocalization.Get("Y 偏移（px）") : EngineLocalization.Get("X 偏移（px）"),
                 _ => path
             };
-            table.Rows.Add(new() { Path = path, Label = label, Group = title, Description = label + "\n字段：" + path, Kind = CalibrationParameterKind.Number, Value = text, InitialValue = text });
+            table.Rows.Add(new() { Path = path, Label = label, Group = title, Description = label + EngineLocalization.Get("\n字段：") + path, Kind = CalibrationParameterKind.Number, Value = text, InitialValue = text });
             index++;
         }
         Tables.Add(table);
@@ -149,13 +149,13 @@ public sealed class CalibrationJsonDocument
     {
         title = key switch
         {
-            "ColorDiffCoeffs_GR" => "GR 通道径向位移系数（从常数项开始）",
-            "ColorDiffCoeffs_GB" => "GB 通道径向位移系数（从常数项开始）",
-            "ColRowCoeffs_GR" => "GR 通道空间偏移", "ColRowCoeffs_GB" => "GB 通道空间偏移",
-            "coeff_r" => "R 通道径向位移系数（从常数项开始）",
-            "coeff_g" => "G 通道径向位移系数（从常数项开始）",
-            "coeff_b" => "B 通道径向位移系数（从常数项开始）",
-            "rowColShift" => "共用空间偏移（Y / X）", _ => title
+            "ColorDiffCoeffs_GR" => EngineLocalization.Get("GR 通道径向位移系数（从常数项开始）"),
+            "ColorDiffCoeffs_GB" => EngineLocalization.Get("GB 通道径向位移系数（从常数项开始）"),
+            "ColRowCoeffs_GR" => EngineLocalization.Get("GR 通道空间偏移"), "ColRowCoeffs_GB" => EngineLocalization.Get("GB 通道空间偏移"),
+            "coeff_r" => EngineLocalization.Get("R 通道径向位移系数（从常数项开始）"),
+            "coeff_g" => EngineLocalization.Get("G 通道径向位移系数（从常数项开始）"),
+            "coeff_b" => EngineLocalization.Get("B 通道径向位移系数（从常数项开始）"),
+            "rowColShift" => EngineLocalization.Get("共用空间偏移（Y / X）"), _ => title
         };
         Table(key, title, Enumerable.Range(0, (Json[key] as JArray)?.Count ?? 0).Select(i => $"{key}[{i}]"));
     }
@@ -164,24 +164,24 @@ public sealed class CalibrationJsonDocument
     {
         switch (Type)
         {
-            case ServiceTypes.DarkNoise: Add("Texp_x", "曝光 Texp_x"); Add("DarkNoiseRatio", "暗噪声比例"); break;
+            case ServiceTypes.DarkNoise: Add("Texp_x", EngineLocalization.Get("曝光 Texp_x")); Add("DarkNoiseRatio", EngineLocalization.Get("暗噪声比例")); break;
             case ServiceTypes.ColorShift:
-                Add("fillOffset", "边缘填充", kind: CalibrationParameterKind.Boolean);
-                if (Json["offset"] is JArray offsets) for (int i = 0; i < offsets.Count; i++) { Add($"offset[{i}].X", $"通道 {i + 1} X (px)"); Add($"offset[{i}].Y", $"通道 {i + 1} Y (px)"); }
-                else { Add("offset.X", "共用 X (px)"); Add("offset.Y", "共用 Y (px)"); } break;
+                Add("fillOffset", EngineLocalization.Get("边缘填充"), kind: CalibrationParameterKind.Boolean);
+                if (Json["offset"] is JArray offsets) for (int i = 0; i < offsets.Count; i++) { Add($"offset[{i}].X", EngineLocalization.Format($"通道 {i + 1} X (px)")); Add($"offset[{i}].Y", EngineLocalization.Format($"通道 {i + 1} Y (px)")); }
+                else { Add("offset.X", EngineLocalization.Get("共用 X (px)")); Add("offset.Y", EngineLocalization.Get("共用 Y (px)")); } break;
             case ServiceTypes.Distortion:
                 foreach (string k in new[] { "w", "h", "s_w", "s_h" }) Add(k, k + " (px)", kind: CalibrationParameterKind.WholeNumber);
-                Add("useFisheye", "鱼眼模式", kind: CalibrationParameterKind.Boolean); Add("alpha", "alpha"); Array("cameraMatrix", "相机内参 3×3（按行排列）"); Array("distCoeffs", "畸变系数"); break;
+                Add("useFisheye", EngineLocalization.Get("鱼眼模式"), kind: CalibrationParameterKind.Boolean); Add("alpha", "alpha"); Array("cameraMatrix", EngineLocalization.Get("相机内参 3×3（按行排列）")); Array("distCoeffs", EngineLocalization.Get("畸变系数")); break;
             case ServiceTypes.Luminance:
             case ServiceTypes.LumOneColor:
             case ServiceTypes.LumFourColor:
-                Add("bpp", "位深", kind: CalibrationParameterKind.WholeNumber);
+                Add("bpp", EngineLocalization.Get("位深"), kind: CalibrationParameterKind.WholeNumber);
                 foreach (string k in new[] { "Texp_x", "Texp_y", "Texp_z", "Gain_x", "Gain_y", "Gain_z" }) Add(k, k, "采集参数");
-                Table(Type == ServiceTypes.LumFourColor ? "matrix" : "coefficients", Type == ServiceTypes.LumFourColor ? "四色 3×3 系数（行 X/Y/Z，列 R/G/B）" : "亮度/单色系数", (Type == ServiceTypes.LumFourColor ? "abcdefghi" : "abcd").Select(c => c.ToString())); break;
-            case ServiceTypes.LumMultiColor: Add("bpp", "位深", kind: CalibrationParameterKind.WholeNumber); Array("pa", "多色 3×3 系数（行 X/Y/Z，列 R/G/B；前九项）"); Array("Gain", "R/G/B 通道增益"); break;
+                Table(Type == ServiceTypes.LumFourColor ? "matrix" : "coefficients", Type == ServiceTypes.LumFourColor ? EngineLocalization.Get("四色 3×3 系数（行 X/Y/Z，列 R/G/B）") : EngineLocalization.Get("亮度/单色系数"), (Type == ServiceTypes.LumFourColor ? "abcdefghi" : "abcd").Select(c => c.ToString())); break;
+            case ServiceTypes.LumMultiColor: Add("bpp", EngineLocalization.Get("位深"), kind: CalibrationParameterKind.WholeNumber); Array("pa", EngineLocalization.Get("多色 3×3 系数（行 X/Y/Z，列 R/G/B；前九项）")); Array("Gain", EngineLocalization.Get("R/G/B 通道增益")); break;
             case ServiceTypes.ColorDiff:
                 foreach (string k in new[] { "w", "h", "CenterCol", "CenterRow" }) Add(k, k + " (px)", kind: CalibrationParameterKind.WholeNumber);
-                Add("MeasDis", "测量距离"); Add("CalibDis", "标定距离"); foreach (string k in new[] { "ColorDiffCoeffs_GR", "ColorDiffCoeffs_GB", "ColRowCoeffs_GR", "ColRowCoeffs_GB" }) Array(k, k); break;
+                Add("MeasDis", EngineLocalization.Get("测量距离")); Add("CalibDis", EngineLocalization.Get("标定距离")); foreach (string k in new[] { "ColorDiffCoeffs_GR", "ColorDiffCoeffs_GB", "ColRowCoeffs_GR", "ColRowCoeffs_GB" }) Array(k, k); break;
             case ServiceTypes.AngleShift:
                 foreach (string k in new[] { "optical_center_x", "optical_center_y", "interpolate_ratio" }) Add(k, k);
                 foreach (string k in new[] { "coefficient_order", "target_row", "target_col" }) Add(k, k, kind: CalibrationParameterKind.WholeNumber);
@@ -199,11 +199,11 @@ public sealed class CalibrationJsonDocument
             if (p.Kind == CalibrationParameterKind.Boolean && bool.TryParse(p.Value, out bool boolean)) value = new JValue(boolean);
             else if (p.Kind == CalibrationParameterKind.WholeNumber && int.TryParse(p.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int integer)) value = new JValue(integer);
             else if (p.Kind == CalibrationParameterKind.Number && double.TryParse(p.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double number) && double.IsFinite(number)) value = new JValue(number);
-            else throw new FormatException($"{p.Label} 必须是有效的{(p.Kind == CalibrationParameterKind.WholeNumber ? "整数" : p.Kind == CalibrationParameterKind.Boolean ? "布尔" : "数")}值。");
+            else throw new FormatException(EngineLocalization.Format($"{p.Label} 必须是有效的{(p.Kind == CalibrationParameterKind.WholeNumber ? EngineLocalization.Get("整数") : p.Kind == CalibrationParameterKind.Boolean ? EngineLocalization.Get("布尔") : EngineLocalization.Get("数"))}值。"));
             var target = root.SelectToken(p.Path);
             if (target != null) target.Replace(value);
             else if (!p.Path.Contains('.') && !p.Path.Contains('[')) root[p.Path] = value;
-            else throw new FormatException($"缺少字段 {p.Path}；请在高级 JSON 中补全结构。");
+            else throw new FormatException(EngineLocalization.Format($"缺少字段 {p.Path}；请在高级 JSON 中补全结构。"));
         }
         return root;
     }
@@ -232,27 +232,27 @@ public sealed class CalibrationJsonDocument
             var v = root.SelectToken(path);
             if (!required && (v == null || v.Type == JTokenType.Null)) return true;
             if (legacy && v?.Type == JTokenType.Boolean) return true;
-            if (v?.Type is not (JTokenType.Integer or JTokenType.Float) || !double.IsFinite(v.Value<double>())) { errors.Add($"{path} 必须是有限数值。"); return false; }
+            if (v?.Type is not (JTokenType.Integer or JTokenType.Float) || !double.IsFinite(v.Value<double>())) { errors.Add(EngineLocalization.Format($"{path} 必须是有限数值。")); return false; }
             return true;
         }
         // Existing native files may encode an integer field as a real; native truncates it.
-        void Integer(string path, double min, double max, bool required = true) { if (Number(path, required) && root.SelectToken(path) is JToken v && (v.Value<double>() < int.MinValue || v.Value<double>() > int.MaxValue || Math.Truncate(v.Value<double>()) < min || Math.Truncate(v.Value<double>()) > max)) errors.Add($"{path} 必须在 {min} 至 {max} 范围内。"); }
-        void Boolean(string key) { if (root[key] != null && root[key]!.Type != JTokenType.Boolean) errors.Add($"{key} 必须是布尔值。"); }
+        void Integer(string path, double min, double max, bool required = true) { if (Number(path, required) && root.SelectToken(path) is JToken v && (v.Value<double>() < int.MinValue || v.Value<double>() > int.MaxValue || Math.Truncate(v.Value<double>()) < min || Math.Truncate(v.Value<double>()) > max)) errors.Add(EngineLocalization.Format($"{path} 必须在 {min} 至 {max} 范围内。")); }
+        void Boolean(string key) { if (root[key] != null && root[key]!.Type != JTokenType.Boolean) errors.Add(EngineLocalization.Format($"{key} 必须是布尔值。")); }
         void FloatValue(string path)
         {
             var v = root.SelectToken(path);
-            if ((v?.Type is JTokenType.Integer or JTokenType.Float) && !float.IsFinite((float)v.Value<double>())) errors.Add($"{path} 超出运行算法的 32 位浮点数范围。");
+            if ((v?.Type is JTokenType.Integer or JTokenType.Float) && !float.IsFinite((float)v.Value<double>())) errors.Add(EngineLocalization.Format($"{path} 超出运行算法的 32 位浮点数范围。"));
         }
         void NonzeroGain(string path, bool usesFloat = false)
         {
             var v = root.SelectToken(path);
             double n = v == null || v.Type == JTokenType.Null ? 0 : v.Type == JTokenType.Boolean ? (v.Value<bool>() ? 1 : 0) : v.Type is JTokenType.Integer or JTokenType.Float ? v.Value<double>() : double.NaN;
-            if (n == 0 || (usesFloat && (float)n == 0)) errors.Add($"{path} 不可为零、缺失或小到转换为零，否则运行时会除以零。");
+            if (n == 0 || (usesFloat && (float)n == 0)) errors.Add(EngineLocalization.Format($"{path} 不可为零、缺失或小到转换为零，否则运行时会除以零。"));
         }
         void ArrayValues(string key, int min, int? exact = null, bool optional = false, bool legacy = false, int? consumed = null)
         {
             if (optional && (root[key] == null || root[key]!.Type == JTokenType.Null)) return;
-            if (root[key] is not JArray a || a.Count < min || (exact.HasValue && a.Count != exact.Value)) { errors.Add($"{key} 数组长度无效（至少 {min}" + (exact.HasValue ? $"，必须 {exact}" : "") + "）。"); return; }
+            if (root[key] is not JArray a || a.Count < min || (exact.HasValue && a.Count != exact.Value)) { errors.Add(EngineLocalization.Format($"{key} 数组长度无效（至少 {min}") + (exact.HasValue ? EngineLocalization.Format($"，必须 {exact}") : "") + "）。"); return; }
             for (int i = 0; i < Math.Min(a.Count, consumed ?? a.Count); i++) Number($"{key}[{i}]", !legacy, legacy);
         }
         switch (Type)
@@ -267,7 +267,7 @@ public sealed class CalibrationJsonDocument
                 break;
             case ServiceTypes.ColorShift:
                 Boolean("fillOffset");
-                if (root["offset"] is JArray a) { if (a.Count != 3) errors.Add("offset 必须包含三个通道。"); for (int i = 0; i < a.Count; i++) { Integer($"offset[{i}].X", int.MinValue, int.MaxValue); Integer($"offset[{i}].Y", int.MinValue, int.MaxValue); } }
+                if (root["offset"] is JArray a) { if (a.Count != 3) errors.Add(EngineLocalization.Get("offset 必须包含三个通道。")); for (int i = 0; i < a.Count; i++) { Integer($"offset[{i}].X", int.MinValue, int.MaxValue); Integer($"offset[{i}].Y", int.MinValue, int.MaxValue); } }
                 else { Integer("offset.X", int.MinValue, int.MaxValue); Integer("offset.Y", int.MinValue, int.MaxValue); } break;
             case ServiceTypes.Distortion:
                 Integer("w", 1, int.MaxValue); Integer("h", 1, int.MaxValue); Integer("s_w", 1, int.MaxValue, false); Integer("s_h", 1, int.MaxValue, false); Boolean("useFisheye"); Number("alpha", false); ArrayValues("cameraMatrix", 9); ArrayValues("distCoeffs", 4);
@@ -277,7 +277,7 @@ public sealed class CalibrationJsonDocument
                     foreach (int i in new[] { 2, 5 })
                     {
                         var v = root.SelectToken($"cameraMatrix[{i}]");
-                        if ((v?.Type is JTokenType.Integer or JTokenType.Float) && ((double)(float)v.Value<double>() < int.MinValue || (double)(float)v.Value<double>() > int.MaxValue)) errors.Add($"cameraMatrix[{i}] 超出鱼眼中心的整数范围。");
+                        if ((v?.Type is JTokenType.Integer or JTokenType.Float) && ((double)(float)v.Value<double>() < int.MinValue || (double)(float)v.Value<double>() > int.MaxValue)) errors.Add(EngineLocalization.Format($"cameraMatrix[{i}] 超出鱼眼中心的整数范围。"));
                     }
                 break;
             case ServiceTypes.Luminance:
@@ -294,9 +294,9 @@ public sealed class CalibrationJsonDocument
                 break;
             case ServiceTypes.ColorDiff:
                 Integer("w", 3, 65535); Integer("h", 3, 65535); Integer("CenterCol", int.MinValue, int.MaxValue); Integer("CenterRow", int.MinValue, int.MaxValue);
-                if (Number("MeasDis") && root["MeasDis"]!.Value<double>() == 0) errors.Add("MeasDis 不可为零。"); Number("CalibDis"); ArrayValues("ColorDiffCoeffs_GR", 1); ArrayValues("ColorDiffCoeffs_GB", 1); ArrayValues("ColRowCoeffs_GR", 2, 2); ArrayValues("ColRowCoeffs_GB", 2, 2); break;
+                if (Number("MeasDis") && root["MeasDis"]!.Value<double>() == 0) errors.Add(EngineLocalization.Get("MeasDis 不可为零。")); Number("CalibDis"); ArrayValues("ColorDiffCoeffs_GR", 1); ArrayValues("ColorDiffCoeffs_GB", 1); ArrayValues("ColRowCoeffs_GR", 2, 2); ArrayValues("ColRowCoeffs_GB", 2, 2); break;
             case ServiceTypes.AngleShift:
-                Number("optical_center_x"); Number("optical_center_y"); if (Number("interpolate_ratio") && root["interpolate_ratio"]!.Value<double>() <= 0) errors.Add("interpolate_ratio 必须大于零。");
+                Number("optical_center_x"); Number("optical_center_y"); if (Number("interpolate_ratio") && root["interpolate_ratio"]!.Value<double>() <= 0) errors.Add(EngineLocalization.Get("interpolate_ratio 必须大于零。"));
                 Integer("coefficient_order", 0, int.MaxValue - 1); Integer("target_row", 1, int.MaxValue); Integer("target_col", 1, int.MaxValue);
                 int? count = (root["coefficient_order"]?.Type is JTokenType.Integer or JTokenType.Float) && root["coefficient_order"]!.Value<double>() is >= 0 and < int.MaxValue ? (int)root["coefficient_order"]!.Value<double>() + 1 : null;
                 foreach (string key in new[] { "coeff_r", "coeff_g", "coeff_b" }) ArrayValues(key, 1, count); ArrayValues("rowColShift", 2, 2); break;

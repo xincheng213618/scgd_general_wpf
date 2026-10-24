@@ -21,10 +21,10 @@ public partial class FlowRepeatRegionWindow : Window
     {
         InitializeComponent();
         this.ApplyCaption();
-        Title = "编辑重复框";
+        Title = EngineLocalization.Get("编辑重复框");
         Session = new RepeatRegionEditSession(members, count);
         RepeatCountBox.Text = count.ToString(CultureInfo.CurrentCulture);
-        NodeCountText.Text = $"{Session.Nodes.Count} 个节点支持逐轮参数；其它节点按自身配置执行。";
+        NodeCountText.Text = EngineLocalization.Format($"{Session.Nodes.Count} 个节点支持逐轮参数；其它节点按自身配置执行。");
         NodeList.ItemsSource = Session.Nodes;
         NodeList.SelectedIndex = 0;
     }
@@ -57,7 +57,7 @@ public partial class FlowRepeatRegionWindow : Window
             {
                 var option = new CheckBox { Content = parameter.Header, IsChecked = parameter.Enabled, Margin = new Thickness(0, 0, 18, 3),
                     IsEnabled = string.IsNullOrEmpty(parameter.Definition.UnavailableReason) || parameter.Enabled,
-                    ToolTip = string.IsNullOrEmpty(parameter.Definition.UnavailableReason) ? "取消勾选后使用节点自身的固定值。" : parameter.Definition.UnavailableReason };
+                    ToolTip = string.IsNullOrEmpty(parameter.Definition.UnavailableReason) ? EngineLocalization.Get("取消勾选后使用节点自身的固定值。") : parameter.Definition.UnavailableReason };
                 option.Click += (_, _) =>
                 {
                     ParameterGrid.CommitEdit(DataGridEditingUnit.Cell, true);
@@ -73,7 +73,7 @@ public partial class FlowRepeatRegionWindow : Window
             table = new DataTable { Locale = CultureInfo.CurrentCulture };
             table.Columns.Add("Round", typeof(int));
             ParameterGrid.Columns.Clear();
-            ParameterGrid.Columns.Add(new DataGridTextColumn { Header = "轮次", Binding = new Binding("[Round]"), IsReadOnly = true, Width = 65 });
+            ParameterGrid.Columns.Add(new DataGridTextColumn { Header = EngineLocalization.Get("轮次"), Binding = new Binding("[Round]"), IsReadOnly = true, Width = 65 });
             foreach (var parameter in selectedNode.Parameters)
             {
                 table.Columns.Add(parameter.Definition.Key, typeof(string));
@@ -123,8 +123,8 @@ public partial class FlowRepeatRegionWindow : Window
                     || parameter.Enabled && !parameter.Definition.TryValidate(value, out _))
                 {
                     if (!parameter.Enabled) { valid = false; break; }
-                    ErrorText.Text = $"{selectedNode.Title} · 第 {indices[index] + 1} 轮的{parameter.Definition.DisplayName}无效。"
-                        + (!string.IsNullOrEmpty(parameter.Definition.UnavailableReason) ? parameter.Definition.UnavailableReason : parameter.Definition.IsInteger ? "请输入有效的正整数。" : "请检查数值及允许范围。");
+                    ErrorText.Text = EngineLocalization.Format($"{selectedNode.Title} · 第 {indices[index] + 1} 轮的{parameter.Definition.DisplayName}无效。")
+                        + (!string.IsNullOrEmpty(parameter.Definition.UnavailableReason) ? parameter.Definition.UnavailableReason : parameter.Definition.IsInteger ? EngineLocalization.Get("请输入有效的正整数。") : EngineLocalization.Get("请检查数值及允许范围。"));
                     return false;
                 }
                 values[index] = value;
@@ -150,7 +150,7 @@ public partial class FlowRepeatRegionWindow : Window
     private bool ApplyCount()
     {
         if (!int.TryParse(RepeatCountBox.Text, out int count) || count < 1 || count > RepeatRegionEditSession.MaximumEditableRounds)
-        { ErrorText.Text = $"执行次数必须是 1 到 {RepeatRegionEditSession.MaximumEditableRounds:N0} 的整数。"; return false; }
+        { ErrorText.Text = EngineLocalization.Format($"执行次数必须是 1 到 {RepeatRegionEditSession.MaximumEditableRounds:N0} 的整数。"); return false; }
         var excluded = Enumerable.Range(Math.Min(count, Session.Count), Math.Max(0, Session.Count - count)).ToHashSet();
         if (!TryReadGrid(out var parsed, excluded)) return false;
         foreach (var pair in parsed) pair.Key.Replace(pair.Value);
@@ -167,7 +167,7 @@ public partial class FlowRepeatRegionWindow : Window
     private void AddRound_Click(object sender, RoutedEventArgs e)
     {
         if (!ApplyCount()) return;
-        if (Session.Count == RepeatRegionEditSession.MaximumEditableRounds) { ErrorText.Text = "已达到逐轮参数编辑的最大轮数。"; return; }
+        if (Session.Count == RepeatRegionEditSession.MaximumEditableRounds) { ErrorText.Text = EngineLocalization.Get("已达到逐轮参数编辑的最大轮数。"); return; }
         Session.Resize(Session.Count + 1);
         RepeatCountBox.Text = Session.Count.ToString(CultureInfo.CurrentCulture);
         RefreshTable();
@@ -176,8 +176,8 @@ public partial class FlowRepeatRegionWindow : Window
     private void RemoveRounds_Click(object sender, RoutedEventArgs e)
     {
         int[] indices = ParameterGrid.SelectedItems.OfType<DataRowView>().Select(row => (int)row["Round"] - 1).ToArray();
-        if (indices.Length == 0) { ErrorText.Text = "请先在表格中选中需要删除的轮次。"; return; }
-        if (indices.Length == Session.Count) { ErrorText.Text = "至少保留一轮执行。"; return; }
+        if (indices.Length == 0) { ErrorText.Text = EngineLocalization.Get("请先在表格中选中需要删除的轮次。"); return; }
+        if (indices.Length == Session.Count) { ErrorText.Text = EngineLocalization.Get("至少保留一轮执行。"); return; }
         if (!TryReadGrid(out var parsed, indices.ToHashSet())) return;
         try { Session.RemoveRounds(indices); }
         catch (InvalidOperationException ex) { ErrorText.Text = ex.Message; return; }
@@ -208,7 +208,7 @@ public partial class FlowRepeatRegionWindow : Window
         ParameterGrid.CommitEdit(DataGridEditingUnit.Row, true);
         if (!int.TryParse(FirstRoundBox.Text, out int first) || !int.TryParse(LastRoundBox.Text, out int last)
             || !TryNumber(StartValueBox.Text, out double start) || !TryNumber(IncrementBox.Text, out double increment))
-        { ErrorText.Text = "请填写有效的轮次、起始值和增量。"; return; }
+        { ErrorText.Text = EngineLocalization.Get("请填写有效的轮次、起始值和增量。"); return; }
         try
         {
             double[] generated = parameter.GenerateFill(first - 1, last - 1, start, increment);

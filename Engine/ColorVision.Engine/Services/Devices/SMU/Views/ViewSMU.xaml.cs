@@ -1,4 +1,4 @@
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Themes.Controls;
@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             listView1.ItemsSource = ViewResults;
             ViewResults.CollectionChanged += (_, _) =>
             {
-                RecordCount.Text = $"{ViewResults.Count} 条";
+                RecordCount.Text = EngineLocalization.Format($"{ViewResults.Count} 条");
                 EmptyState.Visibility = ViewResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
                 if (_activeResult != null && !ViewResults.Contains(_activeResult)) PresentResult(null);
             };
@@ -117,9 +117,9 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             _activeResult = result;
             bool scan = result?.HasCurve == true;
-            ChartTitle.Text = result?.ResultKind == "脉冲" ? "脉冲采样点 · V–I" : "I–V 特性";
-            PlotNote.Text = result == null ? string.Empty : $"{result.SourceDescription} · {result.ProtectionDescription} · " +
-                (result.ResultKind == "脉冲" ? "仅显示脉冲采样点，不代表完整时域波形。" : "保留采集顺序；选择右侧数据点可定位读数。");
+            ChartTitle.Text = result?.ResultKind == "脉冲" ? EngineLocalization.Get("脉冲采样点 · V–I") : EngineLocalization.Get("I–V 特性");
+            PlotNote.Text = result == null ? string.Empty : $"{result.SourceDescription} · {result.ProtectionDisplay} · " +
+                (result.ResultKind == "脉冲" ? EngineLocalization.Get("仅显示脉冲采样点，不代表完整时域波形。") : EngineLocalization.Get("保留采集顺序；选择右侧数据点可定位读数。"));
             ScanPanel.Visibility = scan ? Visibility.Visible : Visibility.Collapsed;
             PointInfo.Visibility = scan ? Visibility.Collapsed : Visibility.Visible;
             HistorySplitter.Visibility = scan && ViewSMUConfig.Instance.IsShowListView ? Visibility.Visible : Visibility.Collapsed;
@@ -129,13 +129,13 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             listView2.SelectedIndex = result?.SMUDatas.Count > 0 ? result.SMUDatas.Count - 1 : -1;
             if (listView2.SelectedItem != null) listView2.ScrollIntoView(listView2.SelectedItem);
             _updatingPoints = false;
-            string time = result?.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "时间未记录";
-            SelectionCaption.Text = result == null ? "选择一条记录查看测量详情" :
-                $"{result.ResultKind} · 通道 {result.ChannelType} · {result.SourceMode} · {time} · 用时 {result.TotalTime?.ToString() ?? "—"} ms";
-            PointExplanation.Text = result == null ? "单点测量直接显示读数；扫描结果显示 I–V 特性。" :
-                result.ResultKind == "脉冲" ? "当前显示脉冲采样读数；不代表示波器采集的完整时域波形。" :
-                result.Type == "Scan" ? "本次扫描少于两个点，直接显示读数。" : "单点测量 · 上方为本次实测值，下方可查看和比较历史读数。";
-            SettingsCaption.Text = result == null ? string.Empty : $"源设置：{result.SourceDescription}   ·   {result.ProtectionDescription}";
+            string time = result?.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? EngineLocalization.Get("时间未记录");
+            SelectionCaption.Text = result == null ? EngineLocalization.Get("选择一条记录查看测量详情") :
+                EngineLocalization.Format($"{result.ResultKindDisplay} · 通道 {result.ChannelType} · {result.SourceModeDisplay} · {time} · 用时 {result.TotalTime?.ToString() ?? "—"} ms");
+            PointExplanation.Text = result == null ? EngineLocalization.Get("单点测量直接显示读数；扫描结果显示 I–V 特性。") :
+                result.ResultKind == "脉冲" ? EngineLocalization.Get("当前显示脉冲采样读数；不代表示波器采集的完整时域波形。") :
+                result.Type == "Scan" ? EngineLocalization.Get("本次扫描少于两个点，直接显示读数。") : EngineLocalization.Get("单点测量 · 上方为本次实测值，下方可查看和比较历史读数。");
+            SettingsCaption.Text = result == null ? string.Empty : EngineLocalization.Format($"源设置：{result.SourceDescription}   ·   {result.ProtectionDisplay}");
             UpdateReadings();
             DrawPlot();
         }
@@ -143,7 +143,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         private void UpdateReadings()
         {
             MetricBand.DataContext = listView2.SelectedItem as SMUData;
-            PointPosition.Text = _activeResult == null ? string.Empty : $"{listView2.SelectedIndex + 1} / {_activeResult.PointCount} 点";
+            PointPosition.Text = _activeResult == null ? string.Empty : EngineLocalization.Format($"{listView2.SelectedIndex + 1} / {_activeResult.PointCount} 点");
         }
 
         private void Point_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -174,8 +174,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 curve.LegendText = $"{result.CreateTime:HH:mm:ss} · {result.ChannelType} · {result.SourceMode}";
             }
             wpfplot1.Plot.Legend.IsVisible = results.Length > 1;
-            wpfplot1.Plot.XLabel(currentAxis ? "电流 (mA)" : "电压 (V)");
-            wpfplot1.Plot.YLabel(currentAxis ? "电压 (V)" : "电流 (mA)");
+            wpfplot1.Plot.XLabel(currentAxis ? EngineLocalization.Get("电流 (mA)") : EngineLocalization.Get("电压 (V)"));
+            wpfplot1.Plot.YLabel(currentAxis ? EngineLocalization.Get("电压 (V)") : EngineLocalization.Get("电流 (mA)"));
             string font = Fonts.Detect("电压 电流");
             wpfplot1.Plot.Axes.Left.Label.FontName = font;
             wpfplot1.Plot.Axes.Bottom.Label.FontName = font;
@@ -276,7 +276,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             };
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             try { ExportToCsv(selected, dialog.FileName); MessageBox1.Show(Properties.Resources.ExportSucceeded); }
-            catch (Exception ex) { MessageBox1.Show($"导出失败：{ex.Message}"); }
+            catch (Exception ex) { MessageBox1.Show(EngineLocalization.Format($"导出失败：{ex.Message}")); }
         }
 
         internal static void ExportToCsv(ViewResultSMU[] results, string fileName)
@@ -310,7 +310,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 _latestResult = results.LastOrDefault();
                 listView1.SelectedItem = _latestResult;
             }
-            catch (Exception ex) { MessageBox1.Show($"查询源表历史失败：{ex.Message}"); }
+            catch (Exception ex) { MessageBox1.Show(EngineLocalization.Format($"查询源表历史失败：{ex.Message}")); }
         }
     }
 }

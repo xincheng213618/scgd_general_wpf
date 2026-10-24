@@ -3944,14 +3944,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发光区定位 的本地化字符串。
-        /// </summary>
-        public static string EmittingAreaLocation_ {
-            get {
-                return ResourceManager.GetString("EmittingAreaLocation,", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 启用发光区4个角点 的本地化字符串。
@@ -7267,14 +7259,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 图像裁剪 的本地化字符串。
-        /// </summary>
-        public static string ImageCrop {
-            get {
-                return ResourceManager.GetString("ImageCrop", resourceCulture);
-            }
-        }
         
         
         /// <summary>
@@ -13635,14 +13619,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 封面平铺 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserCoverTiles {
-            get {
-                return ResourceManager.GetString("TemplateBrowserCoverTiles", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 新建失败 的本地化字符串。
@@ -13736,14 +13712,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 图标平铺 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserIconTiles {
-            get {
-                return ResourceManager.GetString("TemplateBrowserIconTiles", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 导入失败 的本地化字符串。
@@ -13772,50 +13740,10 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 打开旧版管理失败 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserLegacyFailed {
-            get {
-                return ResourceManager.GetString("TemplateBrowserLegacyFailed", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 旧版管理 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserLegacyManager {
-            get {
-                return ResourceManager.GetString("TemplateBrowserLegacyManager", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 是否保存重命名后打开旧版管理？选择“否”将放弃未保存的重命名。 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserLegacyPrompt {
-            get {
-                return ResourceManager.GetString("TemplateBrowserLegacyPrompt", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 列表 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserList {
-            get {
-                return ResourceManager.GetString("TemplateBrowserList", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 更多操作 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserMore {
-            get {
-                return ResourceManager.GetString("TemplateBrowserMore", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 名称已保存 的本地化字符串。
@@ -13853,14 +13781,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 序号 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserNumber {
-            get {
-                return ResourceManager.GetString("TemplateBrowserNumber", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 已选择 1 项 的本地化字符串。
@@ -13961,14 +13881,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 选择 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserSelect {
-            get {
-                return ResourceManager.GetString("TemplateBrowserSelect", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 交换位置 的本地化字符串。
@@ -13988,14 +13900,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 平铺 的本地化字符串。
-        /// </summary>
-        public static string TemplateBrowserTiles {
-            get {
-                return ResourceManager.GetString("TemplateBrowserTiles", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 名称有修改，点击保存应用 的本地化字符串。
@@ -18148,32 +18052,8 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 需要选择关注点修正模板 的本地化字符串。
-        /// </summary>
-        public static string 需要选择关注点修正模板 {
-            get {
-                return ResourceManager.GetString("需要选择关注点修正模板", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 需要选择关注点输出模板 的本地化字符串。
-        /// </summary>
-        public static string 需要选择关注点输出模板 {
-            get {
-                return ResourceManager.GetString("需要选择关注点输出模板", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 需要选择关注点过滤模板 的本地化字符串。
-        /// </summary>
-        public static string 需要选择关注点过滤模板 {
-            get {
-                return ResourceManager.GetString("需要选择关注点过滤模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 预览不可用 的本地化字符串。

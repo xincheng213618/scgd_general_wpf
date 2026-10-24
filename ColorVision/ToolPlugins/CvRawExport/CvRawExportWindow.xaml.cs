@@ -21,7 +21,7 @@ namespace ColorVision.ToolPlugins.CvRawExport
         {
             yield return new ThirdPartyAppInfo
             {
-                Name = "CVRAW 批量导出 TIFF",
+                Name = DisplayText.Get("CVRAW 批量导出 TIFF"),
                 Group = ThirdPartyAppGroupNames.CommonTools,
                 Category = ThirdPartyAppCategory.Internal,
                 RequiredPermission = PermissionMode.Guest,
@@ -60,7 +60,7 @@ namespace ColorVision.ToolPlugins.CvRawExport
 
         private void Browse_Click(object sender, RoutedEventArgs e)
         {
-            OpenFolderDialog dialog = new() { Title = "选择包含 CVRAW 文件的文件夹", Multiselect = false };
+            OpenFolderDialog dialog = new() { Title = DisplayText.Get("选择包含 CVRAW 文件的文件夹"), Multiselect = false };
             if (dialog.ShowDialog(this) == true) FolderTextBox.Text = dialog.FolderName;
         }
 
@@ -70,7 +70,7 @@ namespace ColorVision.ToolPlugins.CvRawExport
             string folder = FolderTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(folder))
             {
-                StatusText.Text = "请先选择文件夹。";
+                StatusText.Text = DisplayText.Get("请先选择文件夹。");
                 return;
             }
             int parallelism = (int)ParallelismComboBox.SelectedItem;
@@ -81,7 +81,7 @@ namespace ColorVision.ToolPlugins.CvRawExport
             CancelButton.IsEnabled = true;
             ErrorsGrid.ItemsSource = null;
             CurrentFileText.Text = string.Empty;
-            StatusText.Text = "正在检索 CVRAW 文件…";
+            StatusText.Text = DisplayText.Get("正在检索 CVRAW 文件…");
             ExportProgressBar.Value = 0;
             ExportProgressBar.IsIndeterminate = true;
             // Poll a single snapshot so large batches cannot flood the UI dispatcher.
@@ -94,11 +94,11 @@ namespace ColorVision.ToolPlugins.CvRawExport
                     progress => Interlocked.Exchange(ref _latestProgress, progress), cancellation.Token));
                 RefreshProgress();
                 ErrorsGrid.ItemsSource = result.Files.Where(file => file.Status == CvRawExportStatus.Failed).ToArray();
-                StatusText.Text = $"{(result.Cancelled ? "已取消" : "已完成")}：共 {result.Total} 个，已处理 {result.Files.Count} 个，成功 {result.Exported} 个，跳过 {result.Skipped} 个，失败 {result.Failed} 个。";
+                StatusText.Text = DisplayText.Format($"{(result.Cancelled ? DisplayText.Get("已取消") : DisplayText.Get("已完成"))}：共 {result.Total} 个，已处理 {result.Files.Count} 个，成功 {result.Exported} 个，跳过 {result.Skipped} 个，失败 {result.Failed} 个。");
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"执行失败：{ex.Message}";
+                StatusText.Text = DisplayText.Format($"执行失败：{ex.Message}");
             }
             finally
             {
@@ -120,8 +120,8 @@ namespace ColorVision.ToolPlugins.CvRawExport
             ExportProgressBar.Value = progress.Completed;
             CurrentFileText.Text = progress.CurrentFile;
             StatusText.Text = _cancellation?.IsCancellationRequested == true
-                ? "正在取消，等待当前文件处理结束…"
-                : $"已处理 {progress.Completed} / {progress.Total}，成功 {progress.Exported}，跳过 {progress.Skipped}，失败 {progress.Failed}。";
+                ? DisplayText.Get("正在取消，等待当前文件处理结束…")
+                : DisplayText.Format($"已处理 {progress.Completed} / {progress.Total}，成功 {progress.Exported}，跳过 {progress.Skipped}，失败 {progress.Failed}。");
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e) => CancelRun();
@@ -131,7 +131,7 @@ namespace ColorVision.ToolPlugins.CvRawExport
         {
             _cancellation?.Cancel();
             CancelButton.IsEnabled = false;
-            StatusText.Text = "正在取消，等待当前文件处理结束…";
+            StatusText.Text = DisplayText.Get("正在取消，等待当前文件处理结束…");
         }
 
         private void Window_Closing(object? sender, CancelEventArgs e)

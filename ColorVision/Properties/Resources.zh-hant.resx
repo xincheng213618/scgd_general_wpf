@@ -205,9 +205,6 @@
     <value>更新失敗</value>
   </data>
 
-  <data name="DownloadLocal" xml:space="preserve">
-    <value>本地下載</value>
-  </data>
 
 
   <data name="FullScreen" xml:space="preserve">
@@ -392,22 +389,13 @@
   <data name="Rename" xml:space="preserve">
     <value>重新命名</value>
   </data>
-  <data name="CopilotLanguageModel" xml:space="preserve">
-    <value>語言模型</value>
-  </data>
 
   <data name="CopilotAddModel" xml:space="preserve">
     <value>+ 新增模型</value>
   </data>
 
-  <data name="CopilotName" xml:space="preserve">
-    <value>名稱</value>
-  </data>
   <data name="CopilotVendor" xml:space="preserve">
     <value>廠商</value>
-  </data>
-  <data name="CopilotProtocol" xml:space="preserve">
-    <value>協議</value>
   </data>
   <data name="CopilotModel" xml:space="preserve">
     <value>模型</value>
@@ -738,9 +726,6 @@
 
 
 
-  <data name="CopilotApiKey" xml:space="preserve">
-    <value>API Key</value>
-  </data>
 
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>允許程序多開</value>
@@ -761,17 +746,8 @@
     <value>強制更新</value>
   </data>
 
-<data name="MenuRegisterThumbnail" xml:space="preserve">
-    <value>註冊縮圖預覽</value>
-  </data>
 
-<data name="MenuUnregisterThumbnail" xml:space="preserve">
-    <value>卸載縮圖預覽</value>
-  </data>
 
-<data name="MenuFileAssociation" xml:space="preserve">
-    <value>檔案關聯</value>
-  </data>
   <data name="ServiceHostWizardHeader" xml:space="preserve">
     <value>ColorVision 背景服務</value>
   </data>
@@ -950,9 +926,6 @@
   <data name="Agent 任务" xml:space="preserve">
     <value>Agent 任務</value>
   </data>
-  <data name="Codex 模型" xml:space="preserve">
-    <value>Codex 模型</value>
-  </data>
   <data name="ColorVision 启动恢复" xml:space="preserve">
     <value>ColorVision 啟動恢復</value>
   </data>
@@ -967,9 +940,6 @@
   </data>
   <data name="Responses 兼容服务可填写以 /responses 结尾的完整地址。" xml:space="preserve">
     <value>Responses 兼容服務可填寫以 /responses 結尾的完整地址。</value>
-  </data>
-  <data name="Responses 兼容服务可填写以 /responses 结尾的完整地址；普通兼容地址使用 Chat Completions。" xml:space="preserve">
-    <value>Responses 兼容服務可填寫以 /responses 結尾的完整地址；普通兼容地址使用 Chat Completions。</value>
   </data>
   <data name="Tab/→ 补全" xml:space="preserve">
     <value>Tab/→ 補全</value>
@@ -1013,12 +983,6 @@
   <data name="仅在排障时使用；卸载服务会使更新和系统维护功能不可用。" xml:space="preserve">
     <value>僅在排障時使用；卸載服務會使更新和系統維護功能不可用。</value>
   </data>
-  <data name="仅在此模型和接口支持图片时开启。" xml:space="preserve">
-    <value>僅在此模型和接口支持圖片時開啟。</value>
-  </data>
-  <data name="仅影响当前模型连接；响应较慢时可增加等待时间。" xml:space="preserve">
-    <value>僅影響當前模型連接；響應較慢時可增加等待時間。</value>
-  </data>
   <data name="仅用于受信的内网服务；HTTP 不加密密钥和对话内容。" xml:space="preserve">
     <value>僅用於受信的內網服務；HTTP 不加密密鑰和對話內容。</value>
   </data>
@@ -1048,9 +1012,6 @@
   </data>
   <data name="使用本机 Codex" xml:space="preserve">
     <value>使用本機 Codex</value>
-  </data>
-  <data name="供应商预设" xml:space="preserve">
-    <value>供應商預設</value>
   </data>
   <data name="修复文件关联" xml:space="preserve">
     <value>修復文件關聯</value>
@@ -1484,9 +1445,6 @@
   <data name="模型" xml:space="preserve">
     <value>模型</value>
   </data>
-  <data name="模型与连接" xml:space="preserve">
-    <value>模型與連接</value>
-  </data>
   <data name="模型可见 Diff" xml:space="preserve">
     <value>模型可見 Diff</value>
   </data>
@@ -1513,9 +1471,6 @@
   </data>
   <data name="正在读取服务日志…" xml:space="preserve">
     <value>正在讀取服務日誌…</value>
-  </data>
-  <data name="此模型支持图片输入" xml:space="preserve">
-    <value>此模型支持圖片輸入</value>
   </data>
   <data name="没有匹配的会话" xml:space="preserve">
     <value>沒有匹配的會話</value>
@@ -1565,9 +1520,6 @@
   <data name="状态与日志" xml:space="preserve">
     <value>狀態與日誌</value>
   </data>
-  <data name="留空使用 Codex 默认模型；账户、可用模型与额度由本机 Codex 管理。" xml:space="preserve">
-    <value>留空使用 Codex 默認模型；賬戶、可用模型與額度由本機 Codex 管理。</value>
-  </data>
   <data name="疑似" xml:space="preserve">
     <value>疑似</value>
   </data>
@@ -1579,12 +1531,6 @@
   </data>
   <data name="确认受保护操作" xml:space="preserve">
     <value>確認受保護操作</value>
-  </data>
-  <data name="秒 · 15–3,600 · 默认 120" xml:space="preserve">
-    <value>秒 · 15–3,600 · 默認 120</value>
-  </data>
-  <data name="秒 · 15–3,600 · 默认 180" xml:space="preserve">
-    <value>秒 · 15–3,600 · 默認 180</value>
   </data>
   <data name="移除附件" xml:space="preserve">
     <value>移除附件</value>
@@ -1735,9 +1681,6 @@
   </data>
   <data name="验证写入权限" xml:space="preserve">
     <value>驗證寫入權限</value>
-  </data>
-  <data name="高级 · 超时设置" xml:space="preserve">
-    <value>高級 · 超時設置</value>
   </data>
   <data name="高级维护" xml:space="preserve">
     <value>高級維護</value>
@@ -3689,4 +3632,45 @@
   <data name="详细错误已写入操作记录。" xml:space="preserve">
     <value>詳細錯誤已寫入操作記錄。</value>
   </data>
+  <data name="CVRAW 批量导出 TIFF" xml:space="preserve"><value>CVRAW 批量導出 TIFF</value></data>
+  <data name="两项超时均支持 15–3600 秒。" xml:space="preserve"><value>兩項超時均支持 15–3600 秒。</value></data>
+  <data name="供应商操作" xml:space="preserve"><value>供應商操作</value></data>
+  <data name="删除模型" xml:space="preserve"><value>刪除模型</value></data>
+  <data name="刷新本地 Codex 状态" xml:space="preserve"><value>刷新本地 Codex 狀態</value></data>
+  <data name="原因" xml:space="preserve"><value>原因</value></data>
+  <data name="取消任务" xml:space="preserve"><value>取消任務</value></data>
+  <data name="启用供应商" xml:space="preserve"><value>啓用供應商</value></data>
+  <data name="启用模型" xml:space="preserve"><value>啓用模型</value></data>
+  <data name="大图像建议使用较少并发，降低内存占用。" xml:space="preserve"><value>大圖像建議使用較少併發，降低內存佔用。</value></data>
+  <data name="失败文件" xml:space="preserve"><value>失敗文件</value></data>
+  <data name="并发数" xml:space="preserve"><value>併發數</value></data>
+  <data name="文件夹" xml:space="preserve"><value>文件夾</value></data>
+  <data name="显示或隐藏 API Key" xml:space="preserve"><value>顯示或隱藏 API Key</value></data>
+  <data name="智能配置" xml:space="preserve"><value>智能配置</value></data>
+  <data name="检索所选文件夹及全部子文件夹，在原目录导出同名 .tif；已存在的 .tif 自动跳过。" xml:space="preserve"><value>檢索所選文件夾及全部子文件夾，在原目錄導出同名 .tif；已存在的 .tif 自動跳過。</value></data>
+  <data name="模型 ID" xml:space="preserve"><value>模型 ID</value></data>
+  <data name="测试连接" xml:space="preserve"><value>測試連接</value></data>
+  <data name="测试连接（启用模型并填写连接信息后可用，会使用模型额度）" xml:space="preserve"><value>測試連接（啓用模型並填寫連接信息後可用，會使用模型額度）</value></data>
+  <data name="编辑模型" xml:space="preserve"><value>編輯模型</value></data>
+  <data name="编辑模型配置" xml:space="preserve"><value>編輯模型配置</value></data>
+  <data name="视觉" xml:space="preserve"><value>視覺</value></data>
+  <data name="返回" xml:space="preserve"><value>返回</value></data>
+  <data name="选择文件夹…" xml:space="preserve"><value>選擇文件夾…</value></data>
+  <data name="选择文件夹后点击执行。" xml:space="preserve"><value>選擇文件夾後點擊執行。</value></data>
+  <data name="重命名" xml:space="preserve"><value>重命名</value></data>
+  <data name="{0}：共 {1} 个，已处理 {2} 个，成功 {3} 个，跳过 {4} 个，失败 {5} 个。" xml:space="preserve"><value>{0}：共 {1} 個，已處理 {2} 個，成功 {3} 個，跳過 {4} 個，失敗 {5} 個。</value></data>
+  <data name="供应商至少保留一个模型；可从供应商菜单删除整个连接。" xml:space="preserve"><value>供應商至少保留一個模型；可從供應商菜單刪除整個連接。</value></data>
+  <data name="删除此模型" xml:space="preserve"><value>刪除此模型</value></data>
+  <data name="已取消" xml:space="preserve"><value>已取消</value></data>
+  <data name="已处理 {0} / {1}，成功 {2}，跳过 {3}，失败 {4}。" xml:space="preserve"><value>已處理 {0} / {1}，成功 {2}，跳過 {3}，失敗 {4}。</value></data>
+  <data name="已完成" xml:space="preserve"><value>已完成</value></data>
+  <data name="执行失败：{0}" xml:space="preserve"><value>執行失敗：{0}</value></data>
+  <data name="正在取消，等待当前文件处理结束…" xml:space="preserve"><value>正在取消，等待當前文件處理結束…</value></data>
+  <data name="正在检索 CVRAW 文件…" xml:space="preserve"><value>正在檢索 CVRAW 文件…</value></data>
+  <data name="请先选择文件夹。" xml:space="preserve"><value>請先選擇文件夾。</value></data>
+  <data name="选择包含 CVRAW 文件的文件夹" xml:space="preserve"><value>選擇包含 CVRAW 文件的文件夾</value></data>
+  <data name="停止准备图片附件" xml:space="preserve"><value>停止準備圖片附件</value></data>
+  <data name="暂时无法读取 Copilot 会话记录。记录未被覆盖，请确认文件未被占用且具有读取权限，然后重试。" xml:space="preserve"><value>暫時無法讀取 Copilot 會話記錄。記錄未被覆蓋，請確認文件未被佔用且具有讀取權限，然後重試。</value></data>
+  <data name="本地" xml:space="preserve"><value>本地</value></data>
+  <data name="重试" xml:space="preserve"><value>重試</value></data>
 </root>

@@ -2,6 +2,7 @@
         x:Name="RootWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i18n="clr-namespace:ColorVision.Engine"
              xmlns:display="clr-namespace:ColorVision.Engine"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -85,7 +86,7 @@
                         </StackPanel>
                     </Grid>
                     <StackPanel Grid.Column="3" Orientation="Horizontal">
-                        <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE710;" AutomationProperties.Name="创建此类校正" ToolTip="创建此类校正" Click="CreateCalibrationRow_Click" />
+                        <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE710;" AutomationProperties.Name="{i18n:EngineLang Key='创建此类校正'}" ToolTip="{i18n:EngineLang Key='创建此类校正'}" Click="CreateCalibrationRow_Click" />
                         <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE898;" AutomationProperties.Name="{display:EngineLang Key='上传校正文件'}" Command="{Binding Group.UploadCalibrationItemCommand}" CommandParameter="{Binding SlotKey}" ToolTip="{display:EngineLang Key='上传此类型的校正文件'}" />
                         <Button Content="&#xE9D2;" ToolTip="{display:EngineLang Key='用户校正'}" AutomationProperties.Name="{display:EngineLang Key='用户校正'}" Click="CorrectFourColor_Click">
                             <Button.Style>

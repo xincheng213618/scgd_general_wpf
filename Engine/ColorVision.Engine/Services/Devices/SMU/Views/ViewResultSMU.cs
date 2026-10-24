@@ -180,6 +180,13 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public int PointCount => SMUDatas.Count;
         public string ResultKind => localSettings?.Waveform == Local.SmuWaveform.Pulse ? "脉冲" : Type == "Scan" ? "扫描" : "单点";
         public string SourceMode => IsSourceV ? "电压源" : "电流源";
+        [JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
+        public string ResultKindDisplay => EngineLocalization.Get(ResultKind);
+        [JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
+        public string SourceModeDisplay => EngineLocalization.Get(SourceMode);
+        [JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
+        public string ProtectionDisplay => ProtectionLimit is { } limit
+            ? $"{EngineLocalization.Get(IsSourceV ? "限流" : "限压")} {limit:G6} {(IsSourceV ? "mA" : "V")}" : EngineLocalization.Get("保护限值未记录");
         public double? LastVoltage => SMUDatas.Count > 0 ? SMUDatas[^1].Voltage : null;
         public double? LastCurrent => SMUDatas.Count > 0 ? SMUDatas[^1].Current : null;
         public double? LastResistance => SMUDatas.Count > 0 ? SMUDatas[^1].Resistance : null;

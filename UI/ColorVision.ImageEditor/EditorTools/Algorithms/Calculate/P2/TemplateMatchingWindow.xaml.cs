@@ -36,7 +36,7 @@ public partial class TemplateMatchingWindow : Window
             isNodeEditor = true,
             document = draft
         };
-        window.ApplyButton.Content = "应用到节点";
+        window.ApplyButton.Content = DisplayText.Get("应用到节点");
         window.ExportButton.Visibility = window.CancelButton.Visibility = Visibility.Visible;
         window.ShowDocument();
         return window;
@@ -69,11 +69,11 @@ public partial class TemplateMatchingWindow : Window
         NameText.Text = document.Name;
         ParameterEditor.Content = PropertyEditorHelper.GenPropertyEditorControl(document.Options);
         TemplatePreview.Source = document.Image.Pixels.Length == 0 ? null : document.Image.CreatePreview();
-        ImageInfo.Text = document.Image.Pixels.Length == 0 ? "导入参考图，或在图像中框选目标并设为模板。" :
-            $"{document.Image.Width} × {document.Image.Height} · {document.Image.Depth} 位 · {document.Image.Channels} 通道";
-        FileText.Text = isNodeEditor ? "参考图与参数随流程节点保存" : string.IsNullOrEmpty(SelectedPath) ? "尚未导出" : SelectedPath;
-        SearchInfo.Text = imageContext == null ? "在图像编辑器中打开模板匹配，可对当前图像试运行。" : $"当前图像 · 搜索区域：{P2RoiHelper.Describe(searchRegion)}";
-        StatusText.Text = isNodeEditor ? "编辑完成后点击“应用到节点”，再保存流程；取消或关闭不会修改节点。" : "可导入参考图进行试匹配；导出 .cvtm 后可在流程节点中导入使用。";
+        ImageInfo.Text = document.Image.Pixels.Length == 0 ? DisplayText.Get("导入参考图，或在图像中框选目标并设为模板。") :
+            DisplayText.Format($"{document.Image.Width} × {document.Image.Height} · {document.Image.Depth} 位 · {document.Image.Channels} 通道");
+        FileText.Text = isNodeEditor ? DisplayText.Get("参考图与参数随流程节点保存") : string.IsNullOrEmpty(SelectedPath) ? DisplayText.Get("尚未导出") : SelectedPath;
+        SearchInfo.Text = imageContext == null ? DisplayText.Get("在图像编辑器中打开模板匹配，可对当前图像试运行。") : DisplayText.Format($"当前图像 · 搜索区域：{P2RoiHelper.Describe(searchRegion)}");
+        StatusText.Text = isNodeEditor ? DisplayText.Get("编辑完成后点击“应用到节点”，再保存流程；取消或关闭不会修改节点。") : DisplayText.Get("可导入参考图进行试匹配；导出 .cvtm 后可在流程节点中导入使用。");
     }
 
     internal void LoadTemplate(string path)
@@ -98,7 +98,7 @@ public partial class TemplateMatchingWindow : Window
     private static void CommitEditor(DependencyObject control)
     {
         if (control is TextBox textBox) textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-        if (Validation.GetHasError(control)) throw new InvalidOperationException("请修正参数中的错误输入。");
+        if (Validation.GetHasError(control)) throw new InvalidOperationException(DisplayText.Get("请修正参数中的错误输入。"));
         for (int i = 0; i < VisualTreeHelper.GetChildrenCount(control); i++) CommitEditor(VisualTreeHelper.GetChild(control, i));
     }
 
@@ -118,7 +118,7 @@ public partial class TemplateMatchingWindow : Window
 
     private void Import_Click(object sender, RoutedEventArgs e) => TryAction(() =>
     {
-        OpenFileDialog dialog = new() { Filter = "图像文件|*.png;*.tif;*.tiff;*.bmp;*.jpg;*.jpeg|所有文件|*.*" };
+        OpenFileDialog dialog = new() { Filter = DisplayText.Get("图像文件|*.png;*.tif;*.tiff;*.bmp;*.jpg;*.jpeg|所有文件|*.*") };
         if (dialog.ShowDialog(this) != true) return;
         using P2ImageSnapshot source = P2ImageSnapshot.FromBitmap(P2BitmapLoader.Load(dialog.FileName));
         TemplateMatchingImage reference = TemplateMatchingImage.Capture(source.Image, default);
@@ -148,7 +148,7 @@ public partial class TemplateMatchingWindow : Window
         document.Name = snapshot.Name;
         SelectedPath = Path.GetFullPath(path);
         if (!isNodeEditor) FileText.Text = SelectedPath;
-        StatusText.Text = isNodeEditor ? "模板已导出。点击“应用到节点”才会更新当前节点。" : "模板已导出，可在本地模板匹配节点中导入。";
+        StatusText.Text = isNodeEditor ? DisplayText.Get("模板已导出。点击“应用到节点”才会更新当前节点。") : DisplayText.Get("模板已导出，可在本地模板匹配节点中导入。");
     }
 
     private string ExistingDirectory() => !string.IsNullOrEmpty(SelectedPath) ? Path.GetDirectoryName(SelectedPath)! : TemplateMatchingFile.DefaultDirectory;
@@ -168,16 +168,16 @@ public partial class TemplateMatchingWindow : Window
         try
         {
             TemplateMatchingDocument snapshot = Snapshot();
-            if (!imageContext.IsCurrentImageRevision(sourceRevision)) throw new InvalidOperationException("源图已变化，请重新打开模板匹配窗口以核对搜索区域。");
-            using ImageFrameLease lease = imageContext.AcquireImageFrame() ?? throw new InvalidOperationException("没有可用源图像。");
+            if (!imageContext.IsCurrentImageRevision(sourceRevision)) throw new InvalidOperationException(DisplayText.Get("源图已变化，请重新打开模板匹配窗口以核对搜索区域。"));
+            using ImageFrameLease lease = imageContext.AcquireImageFrame() ?? throw new InvalidOperationException(DisplayText.Get("没有可用源图像。"));
             running = true;
             SetEditingEnabled(false);
-            StatusText.Text = "正在匹配…";
+            StatusText.Text = DisplayText.Get("正在匹配…");
             TemplateMatchingResult result = await Task.Run(() => TemplateMatching.Run(lease.Image, snapshot, searchRegion));
             if (closed) return;
-            if (!imageContext.IsCurrentImageRevision(sourceRevision)) throw new InvalidOperationException("计算期间源图已变化，结果已丢弃。");
+            if (!imageContext.IsCurrentImageRevision(sourceRevision)) throw new InvalidOperationException(DisplayText.Get("计算期间源图已变化，结果已丢弃。"));
             ResultText.Text = result.RawJson;
-            StatusText.Text = $"{(result.Success ? "成功" : "未匹配")} · {result.StatusCode} · {result.Message} {string.Join("；", result.Warnings)}";
+            StatusText.Text = $"{(result.Success ? DisplayText.Get("成功") : DisplayText.Get("未匹配"))} · {result.StatusCode} · {result.Message} {string.Join("；", result.Warnings)}";
             if (!result.Success) return;
             MatchesGrid.ItemsSource = result.Matches;
             overlay = new P2ResultOverlayVisual(JObject.Parse(result.RawJson), P2OverlayKind.TemplateMatching, imageConfig!);

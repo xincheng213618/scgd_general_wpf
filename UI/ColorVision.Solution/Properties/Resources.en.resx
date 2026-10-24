@@ -1380,4 +1380,8 @@
   <data name="正在打开：{0}" xml:space="preserve">
     <value>Opening: {0}</value>
   </data>
+  <data name="字号" xml:space="preserve"><value>Font size</value></data>
+  <data name="文本编辑器" xml:space="preserve"><value>Text Editor</value></data>
+  <data name="显示" xml:space="preserve"><value>Display</value></data>
+  <data name="保存当前文件并在下方运行终端中执行" xml:space="preserve"><value>Save the current file and execute it in the terminal below</value></data>
 </root>

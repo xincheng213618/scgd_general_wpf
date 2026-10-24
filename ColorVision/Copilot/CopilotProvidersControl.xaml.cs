@@ -50,7 +50,7 @@ namespace ColorVision.Copilot
         {
             if (sender is not ContextMenu menu || menu.Items[0] is not MenuItem item) return;
             item.IsEnabled = ViewModel.SelectedProvider?.Models.Count > 1;
-            item.ToolTip = item.IsEnabled ? "删除此模型" : "供应商至少保留一个模型；可从供应商菜单删除整个连接。";
+            item.ToolTip = item.IsEnabled ? DisplayText.Get("删除此模型") : DisplayText.Get("供应商至少保留一个模型；可从供应商菜单删除整个连接。");
         }
     }
 }
