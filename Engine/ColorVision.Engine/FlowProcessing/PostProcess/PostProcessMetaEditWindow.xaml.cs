@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -7,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -105,6 +107,17 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
             DialogResult = true;
         }
+
+        private void OpenExportDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            string path = _viewModel.ExportConfig.SavePath;
+            if (!Directory.Exists(path))
+            {
+                MessageBox.Show(this, EngineLocalization.Get("保存目录尚未生成，导出 CSV 时会自动创建。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            PlatformHelper.OpenFolder(path);
+        }
     }
 
     internal sealed class PostProcessMetaEditViewModel : ViewModelBase
@@ -120,6 +133,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             Enum.GetValues<PostProcessFailurePolicy>();
 
         public string PageTitle { get; }
+        public PostProcessConfig ExportConfig => PostProcessConfig.Instance;
+        public bool ShowsExportDirectory => SelectedOption?.CategoryKey is PostProcessTypeCatalog.IvlCategory or PostProcessTypeCatalog.DataExportCategory;
 
         public string MetaName
         {
@@ -214,6 +229,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 _selectedProcessDraft = value == null ? null : CreateProcessDraft(value.Process);
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(SelectedProcess));
+                OnPropertyChanged(nameof(ShowsExportDirectory));
             }
         }
         private PostProcessTypeOption? _selectedOption;

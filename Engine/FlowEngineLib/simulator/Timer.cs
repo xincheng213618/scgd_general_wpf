@@ -4,6 +4,9 @@ using System.Drawing;
 using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.Repeat;
+using FlowEngineLib.Runtime;
+using log4net;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.simulator;
@@ -11,6 +14,7 @@ namespace FlowEngineLib.simulator;
 [STNode("全局", CategoryOrder = 0)]
 internal class Timer : CVCommonNode, ISTNodeHub
 {
+    private static readonly ILog log = LogManager.GetLogger(typeof(Timer));
     private readonly STNodeHubPorts ports;
     private readonly object timerSync = new();
     private readonly Dictionary<(STNodeOption, FlowRuntimeResources), MyTimer> timers = new();
@@ -47,9 +51,10 @@ internal class Timer : CVCommonNode, ISTNodeHub
         lock (timerSync)
         {
             if (timers.Remove(key, out MyTimer previous)) previous.Dispose();
-            if (action.IsRunning && !action.RuntimeResources.IsDisposed && Time > 0)
+            if (action.IsRunning && !action.RuntimeResources.IsDisposed)
             {
-                delay = new MyTimer(Time, output, action);
+                delay = new MyTimer(Math.Max(0, Time), output, action, PublishCompleted);
+                PublishStarted(delay, index);
                 timers.Add(key, delay);
             }
         }
@@ -77,6 +82,7 @@ internal class Timer : CVCommonNode, ISTNodeHub
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
+            delay.Complete(FlowFailureKind.Technical, ex.Message);
             if (!delay.Action.RuntimeResources.IsDisposed) FlowRepeatRegion.Fail(delay.Action, this, ex.Message);
         }
         finally
@@ -84,6 +90,37 @@ internal class Timer : CVCommonNode, ISTNodeHub
             lock (timerSync)
                 if (timers.TryGetValue(key, out MyTimer current) && ReferenceEquals(current, delay)) timers.Remove(key);
             delay.Dispose();
+        }
+    }
+
+    private void PublishStarted(MyTimer delay, int index)
+    {
+        var args = new FlowEngineNodeRunEventArgs
+        {
+            SerialNumber = delay.Action.SerialNumber, ExpectedDurationMs = delay.Interval,
+            SendTopic = "LOCAL", SendMsgId = delay.MessageId, SendEventName = "Delay",
+            SendPayload = JsonConvert.SerializeObject(new { TimeMs = delay.Interval, InputPort = index, OutputPort = index })
+        };
+        foreach (FlowEngineNodeRunEvent handler in nodeRunEvent?.GetInvocationList() ?? Array.Empty<Delegate>())
+        {
+            try { handler(this, args); }
+            catch (Exception ex) { log.Warn("Timer start diagnostics failed.", ex); }
+        }
+    }
+
+    private void PublishCompleted(MyTimer delay, FlowFailureKind? failureKind, string message)
+    {
+        int code = failureKind.HasValue ? -1 : 0;
+        var args = new FlowEngineNodeEndEventArgs
+        {
+            SerialNumber = delay.Action.SerialNumber, RecvTopic = "LOCAL", RecvMsgId = delay.MessageId,
+            RecvEventName = "Delay", RecvStatusCode = code, RecvStatusMessage = message, FailureKind = failureKind,
+            RecvPayload = JsonConvert.SerializeObject(new { Code = code, Message = message, TimeMs = delay.Interval, ElapsedMs = delay.ElapsedMs })
+        };
+        foreach (FlowEngineNodeEndEvent handler in nodeEndEvent?.GetInvocationList() ?? Array.Empty<Delegate>())
+        {
+            try { handler(this, args); }
+            catch (Exception ex) { log.Warn("Timer completion diagnostics failed.", ex); }
         }
     }
 

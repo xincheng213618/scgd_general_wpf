@@ -116,7 +116,9 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.XmlLayoutSerializer`。它可读取 AvalonDock 4.x 布局，包括旧版大写布尔值；新版保存的布局不保证能被 4.x 读取，回退至 4.x 宿主前应保留原布局副本。Spectrum 对无法绑定内容的工具面板显式使用 `UnresolvedContentHandling.Hide`，保留旧版隐藏面板的行为。
 
-`LoadLayout()` 文件不存在或异常时返回 false。序列化回调只按注册 ContentId 绑定内容，其余项取消，包括未注册的动态编辑器标签；不会从 XML 中的路径重新调用编辑器。成功后刷新注册标题，替换 `WorkspaceManager` 的布局/文档窗格引用，必要时补建文档窗格，并清除 DockView 缓存。方法自身失败时不保证回滚反序列化的中间状态；主窗口调用方在 false 后执行 `ResetLayout()`。
+`LoadLayout()` 文件不存在或异常时返回 false。序列化回调按面板/文档注册 ContentId 或已登记视图的稳定身份绑定内容；其它项取消，包括未注册的动态编辑器标签，不会从 XML 中的路径重新调用编辑器。成功后刷新注册标题，替换 `WorkspaceManager` 的布局/文档窗格引用，必要时补建文档窗格，并清除旧 DockView 缓存。后续 `ShowAllViews()` 接管已经恢复的文档模型，不重新添加或移动这些文档；布局中没有的新视图才加入默认文档窗格。方法自身失败时不保证回滚反序列化的中间状态；主窗口调用方在 false 后执行 `ResetLayout()`。
+
+设备结果页由 `AddViewConfig` 使用 `IDisPlayControl.PersistenceKey` 登记稳定身份，设备 Code 不变时，改显示名称或加载顺序不影响匹配；主工作流程页使用固定 `Flow` 身份。`DockViewRegistration` 可按此身份创建新的延迟视图壳，恢复左右/上下分栏、窗格尺寸比例、标签顺序及选中状态。恢复分栏不恢复图像、曲线或测量记录，也不触发采集。设备未加载或身份重复时不猜测替代视图；没有稳定身份的旧 `DockView_序号` 项仍无法可靠恢复，需要升级后重新排列一次并正常退出保存。设备页恢复及再次加载后沿用当前文档的关闭/释放责任，旧布局的关闭事件不能释放新布局中的内容。`DockViewLifecycleTests.ColdStartRestoresNestedDevicePanesByIdentityWithFreshEmptyViews` 在内存中序列化实际布局、替换视图实例及顺序后验证分栏、比例、空记录和关闭所有权，不读写用户布局文件。
 
 `ResetLayout()` 先删除现有布局文件，再按面板默认位置和 `IsDefaultVisible`、已注册文档重建布局，最后清 DockView 缓存并调用 `ShowAllViews()`。它不保留未注册动态编辑器标签，也没有调用文档保存、关闭预审或逐项 Close。重置菜单及其默认 Ctrl+Alt+Shift+R 快捷键先弹出警告，默认选择“否”；只有用户确认后才调用它，启动失败恢复的直接调用不经过该提示。确认不等于自动保存或逐文档关闭授权，仍须先保存文档，不能把重置描述为保护未保存内容、触发编辑器释放或仅改变窗口位置的动作。失败捕获后只记警告，不恢复已删除的 XML 或之前的布局，也不立即另存新布局。
 

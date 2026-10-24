@@ -93,6 +93,8 @@ namespace ColorVision.UI
         public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
         {
             var manager = DockViewManager.GetInstance();
+            if (userControl is IDisPlayControl display && !string.IsNullOrWhiteSpace(display.PersistenceKey))
+                manager.SetViewIdentity(viewControl, display.PersistenceKey);
             if (!string.IsNullOrEmpty(title))
                 manager.SetViewTitle(viewControl, title);
             manager.AddView(viewControl);
@@ -114,6 +116,11 @@ namespace ColorVision.UI
         {
             var manager = DockViewManager.GetInstance();
             registration.Title = title;
+            if (userControl is IDisPlayControl display && !string.IsNullOrWhiteSpace(display.PersistenceKey))
+            {
+                registration.PersistenceKey = display.PersistenceKey;
+                if (registration.Current is { } current) manager.SetViewIdentity(current, display.PersistenceKey);
+            }
             manager.RegisterView(registration);
             userControl.MouseDoubleClick += (s, e) =>
             {

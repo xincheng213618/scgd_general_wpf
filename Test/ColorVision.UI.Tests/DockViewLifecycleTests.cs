@@ -1,4 +1,6 @@
 using AvalonDock.Layout;
+using DockingManager = AvalonDock.DockingManager;
+using AvalonDock.Serializer.Xml;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
@@ -36,6 +38,83 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DockViewLifecycleTests
 {
+    // Protect cold-start identity and nested pane placement without restoring result content or writing user layout files.
+    [Fact]
+    public void ColdStartRestoresNestedDevicePanesByIdentityWithFreshEmptyViews()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            var manager = DockViewManager.GetInstance();
+            var root = Assert.IsType<LayoutRoot>(scope.Pane.Root);
+            var docking = new DockingManager { Layout = root };
+            var layout = new DockLayoutManager(docking);
+            using var flow = new DockViewRegistration(() => new ListBox(), "Flow") { PersistenceKey = "test-layout-flow" };
+            using var camera = new DockViewRegistration(() => new ListBox(), "Camera") { PersistenceKey = "test-layout-camera" };
+            using var smu = new DockViewRegistration(() => new ListBox(), "SMU") { PersistenceKey = "test-layout-smu" };
+            foreach (var registration in new[] { flow, camera, smu }) manager.OpenView(registration);
+            ((ListBox)camera.Current!).Items.Add("DO-NOT-RESTORE-RESULTS");
+            var cameraDocument = scope.Pane.Children.Single(document => document.Content == camera.Current);
+            var smuDocument = scope.Pane.Children.Single(document => document.Content == smu.Current);
+            scope.Pane.Children.Remove(cameraDocument);
+            scope.Pane.Children.Remove(smuDocument);
+            scope.Pane.DockWidth = new GridLength(3, GridUnitType.Star);
+            var upper = new LayoutDocumentPane { DockHeight = new GridLength(3, GridUnitType.Star) };
+            var lower = new LayoutDocumentPane { DockHeight = new GridLength(2, GridUnitType.Star) };
+            upper.Children.Add(cameraDocument);
+            lower.Children.Add(smuDocument);
+            var right = new LayoutDocumentPaneGroup { Orientation = Orientation.Vertical, DockWidth = new GridLength(2, GridUnitType.Star) };
+            right.Children.Add(upper); right.Children.Add(lower);
+            root.RootPanel.Children.Add(right);
+            using var saved = new StringWriter();
+            new XmlLayoutSerializer(docking).Serialize(saved);
+            string xml = saved.ToString();
+            Assert.DoesNotContain("DO-NOT-RESTORE-RESULTS", xml);
+            flow.Dispose(); camera.Dispose(); smu.Dispose();
+
+            // Re-register in another order and with renamed labels, as after a restart or device reload.
+            using var newSmu = new DockViewRegistration(() => new ListBox(), "Renamed SMU") { PersistenceKey = "test-layout-smu" };
+            using var newCamera = new DockViewRegistration(() => new ListBox(), "Renamed Camera") { PersistenceKey = "test-layout-camera" };
+            using var newFlow = new DockViewRegistration(() => new ListBox(), "Flow") { PersistenceKey = "test-layout-flow" };
+            foreach (var registration in new[] { newSmu, newCamera, newFlow }) manager.RegisterView(registration);
+            Assert.Null(newCamera.Current);
+            layout.RestoreLayout(new StringReader(xml));
+            manager.ShowAllViews();
+            var restored = docking.Layout.Descendents().OfType<LayoutDocument>().ToArray();
+            Assert.Equal(3, restored.Length);
+            var restoredCamera = Assert.Single(restored, document => document.ContentId == "DockView:test-layout-camera");
+            var restoredSmu = Assert.Single(restored, document => document.ContentId == "DockView:test-layout-smu");
+            Assert.Same(newCamera.Current, restoredCamera.Content);
+            Assert.Same(newSmu.Current, restoredSmu.Content);
+            Assert.Equal("Renamed Camera", restoredCamera.Title);
+            Assert.Empty(((ListBox)newCamera.Current!).Items);
+            var cameraPane = Assert.IsType<LayoutDocumentPane>(restoredCamera.Parent);
+            var smuPane = Assert.IsType<LayoutDocumentPane>(restoredSmu.Parent);
+            var group = Assert.IsType<LayoutDocumentPaneGroup>(cameraPane.Parent);
+            Assert.Same(group, smuPane.Parent);
+            Assert.Equal(Orientation.Vertical, group.Orientation);
+            Assert.Same(cameraPane, group.Children[0]);
+            Assert.Same(smuPane, group.Children[1]);
+            Assert.Equal(new GridLength(3, GridUnitType.Star), cameraPane.DockHeight);
+            Assert.Equal(new GridLength(2, GridUnitType.Star), smuPane.DockHeight);
+            Assert.Equal(new GridLength(2, GridUnitType.Star), group.DockWidth);
+            manager.SelectView(newCamera.Current!);
+            Assert.Same(cameraPane, restoredCamera.Parent);
+            Assert.Equal(3, docking.Layout.Descendents().OfType<LayoutDocument>().Count());
+
+            // Reloading the same layout must also reuse the current controls and retain document-close ownership.
+            Control sameCamera = newCamera.Current!;
+            layout.RestoreLayout(new StringReader(xml));
+            manager.ShowAllViews();
+            Assert.Same(sameCamera, newCamera.Current);
+            restoredCamera.Close(); // The retired layout must not release the new model's control.
+            Assert.Same(sameCamera, newCamera.Current);
+            var currentCameraDocument = Assert.Single(docking.Layout.Descendents().OfType<LayoutDocument>(),
+                document => document.ContentId == "DockView:test-layout-camera");
+            currentCameraDocument.Close();
+            Assert.Null(newCamera.Current);
+        });
+    }
 
     [Theory]
     [InlineData("camera")]
@@ -476,6 +555,7 @@ public sealed class DockViewLifecycleTests
     {
         private readonly IConfigService? _previousConfig = ConfigService.Instance;
         private readonly LayoutDocumentPane _previousPane = WorkspaceManager.LayoutDocumentPane;
+        private readonly LayoutRoot _previousRoot = WorkspaceManager.layoutRoot;
         private readonly List<ResourceDictionary> _dictionaries = [];
         private readonly DockViewManager _manager = DockViewManager.GetInstance();
         private readonly Action<Control>? _active;
@@ -505,6 +585,7 @@ public sealed class DockViewLifecycleTests
             }
             var root = new LayoutRoot { RootPanel = new LayoutPanel() };
             root.RootPanel.Children.Add(Pane);
+            WorkspaceManager.layoutRoot = root;
             WorkspaceManager.LayoutDocumentPane = Pane;
             DockViewManagerHost.Initialize();
         }
@@ -519,6 +600,7 @@ public sealed class DockViewLifecycleTests
             _manager.ShowAllViewsHandler = _showAll;
             _manager.LastActiveView = _lastActive;
             WorkspaceManager.LayoutDocumentPane = _previousPane;
+            WorkspaceManager.layoutRoot = _previousRoot;
             ConfigService.SetInstance(_previousConfig!);
             foreach (var dictionary in _dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
         }

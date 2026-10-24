@@ -631,6 +631,14 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
+        private void StartNodeTitleProgress(CVCommonNode node, long? expectedDurationMs)
+        {
+            _nodeStartedAt[node.NodeID] = Environment.TickCount64;
+            if (expectedDurationMs is > 0) _nodeExpectedDurations[node.NodeID] = expectedDurationMs.Value;
+            node.TitleProgressColor = System.Drawing.Color.DeepSkyBlue;
+            node.TitleProgress = _nodeExpectedDurations.TryGetValue(node.NodeID, out long duration) && duration > 0 ? 0f : -1f;
+        }
+
         private void ResetNodeTitleProgress()
         {
             foreach (CVCommonNode node in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
@@ -901,10 +909,7 @@ namespace ColorVision.Engine.FlowProcessing
                 _currentNodeName = algorithmNode.Title;
                 _runningNodeNames[algorithmNode.NodeID] = algorithmNode.Title;
                 _runningNodes[algorithmNode.NodeID] = algorithmNode;
-                _nodeStartedAt[algorithmNode.NodeID] = Environment.TickCount64;
-                algorithmNode.TitleProgressColor = System.Drawing.Color.DeepSkyBlue;
-                algorithmNode.TitleProgress = _nodeExpectedDurations.TryGetValue(algorithmNode.NodeID, out long expectedDuration)
-                    && expectedDuration > 0 ? 0f : -1f;
+                StartNodeTitleProgress(algorithmNode, e.ExpectedDurationMs);
                 UpdateRuntimeProgress(sender);
 
                 int batchId = CurrentBatch?.Id ?? 0;

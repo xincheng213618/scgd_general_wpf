@@ -1,9 +1,13 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 using ColorVision.Engine.FlowProcessing.Compilation;
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
+using FlowEngineLib;
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 using FlowEngineLib.Node.Spectrum;
 using FlowEngineLib.Repeat;
 using ST.Library.UI.NodeContainer;
@@ -53,10 +57,22 @@ public sealed class TimerRepeatTests
         string id = Guid.NewGuid().ToString();
         foreach (var node in members) node.SetRepeatRegion(id, 3, members.Length);
         int delays = 0;
+        var runs = new ConcurrentQueue<FlowEngineNodeRunEventArgs>();
+        var ends = new ConcurrentQueue<FlowEngineNodeEndEventArgs>();
+        timer.nodeRunEvent += (_, args) => runs.Enqueue(args);
+        timer.nodeEndEvent += (_, args) => ends.Enqueue(args);
+        var records = new ConcurrentBag<FlowNodeRecord>();
+        var messages = new ConcurrentBag<FlowNodeMessage>();
+        int nextRecord = 0, nextMessage = 0;
+        using var recorder = new FlowNodeExecutionRecorder(record =>
+        { record.Id = Interlocked.Increment(ref nextRecord); records.Add(record); return record.Id; }, _ => { }, message =>
+        { message.Id = Interlocked.Increment(ref nextMessage); messages.Add(message); return message.Id; }, _ => { }, _ => true, _ => { });
+        recorder.AttachNodes([timer]);
         FlowInput(timer).DataTransfer += (_, _) => Interlocked.Increment(ref delays);
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         after.Work = _ => completed.TrySetResult();
         var action = Action("repeat");
+        recorder.StartRun(1, action.SerialNumber);
         try
         {
             source.Input.ReceiveData(action);
@@ -65,6 +81,16 @@ public sealed class TimerRepeatTests
             Assert.Equal(timerOnly ? 1 : 3, source.Count);
             Assert.Equal(timerOnly ? 1 : 3, spectrum.Count);
             Assert.Equal(1, after.Count);
+            Assert.True(await recorder.CompleteRunAsync(action.SerialNumber));
+            Assert.Equal(3, runs.Count);
+            Assert.Equal(runs.Select(run => run.SendMsgId), ends.Select(end => end.RecvMsgId));
+            Assert.Equal(3, runs.Select(run => run.SendMsgId).Distinct().Count());
+            Assert.All(runs, run => { Assert.Equal(milliseconds, run.ExpectedDurationMs); Assert.Equal("LOCAL", run.SendTopic); });
+            Assert.All(ends, end => Assert.Equal(0, end.RecvStatusCode));
+            Assert.Equal(3, records.Count);
+            Assert.All(records, record => { Assert.NotNull(record.EndTime); Assert.Equal(timer.NodeID, record.NodeId); });
+            Assert.Equal(3, messages.Count);
+            Assert.All(messages, message => Assert.Equal(FlowMessageState.Success, message.State));
             Assert.All(members, node => Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)node).GroupState));
         }
         finally { action.RuntimeResources.Dispose(); }
@@ -109,6 +135,11 @@ public sealed class TimerRepeatTests
             var after = Probe();
             Connect(timer.GetAllOutputOptions()[0], after.Input);
             var action = Action("stop");
+            var runs = new ConcurrentQueue<FlowEngineNodeRunEventArgs>();
+            var ends = new ConcurrentQueue<FlowEngineNodeEndEventArgs>();
+            var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            timer.nodeRunEvent += (_, args) => runs.Enqueue(args);
+            timer.nodeEndEvent += (_, args) => { ends.Enqueue(args); canceled.TrySetResult(); };
             try
             {
                 FlowInput(timer).ReceiveData(action);
@@ -120,7 +151,33 @@ public sealed class TimerRepeatTests
                     FlowInput(timer).ReceiveData(stopped);
                 }
                 CompleteDelay(delay);
+                canceled.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+                Assert.Equal(Assert.Single(runs).SendMsgId, Assert.Single(ends).RecvMsgId);
+                Assert.Equal(FlowFailureKind.Canceled, Assert.Single(ends).FailureKind);
                 Assert.Equal(0, after.Count);
+            }
+            finally { action.RuntimeResources.Dispose(); }
+        });
+
+    [Fact]
+    public void TimerDiagnosticsFailuresDoNotBlockOutputOrOtherObservers()
+        => StaTest.Run(() =>
+        {
+            CVCommonNode timer = Timer(0);
+            var after = Probe();
+            Connect(timer.GetAllOutputOptions()[0], after.Input);
+            int started = 0, ended = 0;
+            timer.nodeRunEvent += (_, _) => throw new InvalidOperationException("start observer failed");
+            timer.nodeRunEvent += (_, _) => started++;
+            timer.nodeEndEvent += (_, _) => throw new InvalidOperationException("end observer failed");
+            timer.nodeEndEvent += (_, _) => { Assert.Equal(0, after.Count); ended++; };
+            var action = Action("timer-observer-failure");
+            try
+            {
+                FlowInput(timer).ReceiveData(action);
+                Assert.Equal(1, started);
+                Assert.Equal(1, ended);
+                Assert.Equal(1, after.Count);
             }
             finally { action.RuntimeResources.Dispose(); }
         });

@@ -983,6 +983,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (!_isStandalone)
             {
                 var manager = DockViewManager.GetInstance();
+                manager.SetViewIdentity(this, "Flow");
                 manager.AddView(0, this);
                 manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
 

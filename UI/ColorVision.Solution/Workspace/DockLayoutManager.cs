@@ -122,40 +122,8 @@ namespace ColorVision.Solution.Workspace
             if (!File.Exists(LayoutFilePath)) return false;
             try
             {
-                var serializer = new XmlLayoutSerializer(_dockingManager);
-                serializer.LayoutSerializationCallback += (s, args) =>
-                {
-                    if (args.Model.ContentId != null && TryGetRegisteredLayoutContent(args.Model.ContentId, out object? content))
-                        args.Content = content;
-                    else
-                        args.Cancel = true; // 取消未注册的项（如动态编辑器标签页），防止出现空内容
-                };
-                using var stream = new StreamReader(LayoutFilePath);
-                serializer.Deserialize(stream);
-
-                // 使用注册表中的本地化标题刷新面板/文档标题，
-                // 因为序列化的 XML 可能包含旧语言环境的标题。
-                RefreshTitlesFromRegistry();
-
-                // 更新 WorkspaceManager 的引用
-                WorkspaceManager.layoutRoot = _dockingManager.Layout;
-                var docPane = _dockingManager.Layout.Descendents()
-                    .OfType<LayoutDocumentPane>().FirstOrDefault();
-                if (docPane != null)
-                {
-                    WorkspaceManager.LayoutDocumentPane = docPane;
-                }
-                else
-                {
-                    // 当所有动态文档被取消后，LayoutDocumentPane 可能被移除。
-                    // 创建一个新的 LayoutDocumentPane 以确保视图标签页有地方添加。
-                    log.Warn("The saved layout did not contain a LayoutDocumentPane; creating a replacement pane.");
-                    EnsureDocumentPane();
-                }
-
-                // 清除旧的视图文档缓存，以便 ShowAllViews 能重新创建
-                DockViewManagerHost.ClearViewDocuments();
-
+                using var reader = new StreamReader(LayoutFilePath);
+                RestoreLayout(reader);
                 return true;
             }
             catch (Exception ex)
@@ -163,6 +131,34 @@ namespace ColorVision.Solution.Workspace
                 log.Warn("Failed to load the saved main-window layout; the default layout will be used.", ex);
                 return false;
             }
+        }
+
+        internal void RestoreLayout(TextReader reader)
+        {
+            var serializer = new XmlLayoutSerializer(_dockingManager);
+            serializer.LayoutSerializationCallback += (s, args) =>
+            {
+                if (args.Model.ContentId != null && TryGetRegisteredLayoutContent(args.Model.ContentId, out object? content))
+                    args.Content = content;
+                else if (args.Model is LayoutDocument && args.Model.ContentId is { } id && DockViewManagerHost.TryRestoreView(id, out var view))
+                    args.Content = view;
+                else
+                    args.Cancel = true; // Ignore unregistered dynamic editor tabs instead of restoring empty content.
+            };
+            serializer.Deserialize(reader);
+
+            RefreshTitlesFromRegistry();
+            WorkspaceManager.layoutRoot = _dockingManager.Layout;
+            var docPane = _dockingManager.Layout.Descendents().OfType<LayoutDocumentPane>().FirstOrDefault();
+            if (docPane != null) WorkspaceManager.LayoutDocumentPane = docPane;
+            else
+            {
+                log.Warn("The saved layout did not contain a LayoutDocumentPane; creating a replacement pane.");
+                EnsureDocumentPane();
+            }
+
+            // ShowAllViews adopts restored documents in their original panes, adding only missing views.
+            DockViewManagerHost.ClearViewDocuments();
         }
 
         /// <summary>

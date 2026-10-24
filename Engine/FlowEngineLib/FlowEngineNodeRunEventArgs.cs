@@ -6,6 +6,9 @@ public class FlowEngineNodeRunEventArgs : EventArgs
 {
     public string SerialNumber { get; set; }
 
+    /// <summary>Known duration for this invocation, in milliseconds; otherwise the host may use historical timing.</summary>
+    public long? ExpectedDurationMs { get; set; }
+
     /// <summary>
     /// 发送的MQTT消息Topic
     /// </summary>
