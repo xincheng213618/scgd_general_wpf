@@ -1,9 +1,12 @@
 using ColorVision.Engine;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -20,6 +23,60 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CompatibilityLocalCalibrationFlowTests
 {
+    [Fact]
+    public void TemplatePoiFollowsCameraOwnershipAndConsumesItsMemoryFrame() => StaTest.Run(() =>
+    {
+        using var scope = new DeviceScope();
+        var camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        camera.Config = new ConfigCamera { Code = "synthetic-template-poi-camera" };
+        camera.SysResourceModel = new SysResourceModel { Code = camera.Config.Code };
+        var backend = new CameraBackendState(false);
+        typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(camera, backend);
+        scope.Manager.DeviceServices.Add(camera);
+        scope.First.DisplayConfig.UseLocalCalibration = false;
+        using var canvas = new CVNodeContainer();
+        var source = new CVCameraNode { DeviceCode = camera.Code };
+        var calibration = new CalibrationNode { DeviceCode = scope.First.Code };
+        var poi = new POINode();
+        foreach (STNode node in new STNode[] { source, calibration, poi }) { node.Create(); canvas.Nodes.Add(node); }
+        source.GetAllOutputOptions()[0].ConnectOption(calibration.GetAllInputOptions()[0], false);
+        calibration.GetAllOutputOptions()[0].ConnectOption(poi.GetAllInputOptions()[0], false);
+
+        var template = new TemplateModel<PoiParam>("memory-only-poi-contract", new PoiParam { Id = -1, Name = "memory-only-poi-contract" });
+        var data = new POIDataParam("saved-filter", "saved-revise", "saved-output", new AlgorithmPreStepParam(), true, true)
+            { TemplateParam = new CVTemplateParam { Name = template.Key } };
+        var request = new CVMQTTRequest { SerialNumber = "memory-only-poi", EventName = "POI", DeviceNodeCode = poi.NodeID, Data = data };
+        Assert.True(poi.RequiresRemoteService);
+        Assert.Null(CreateExecution(poi, request));
+        backend.SetPreference(true);
+        Assert.False(poi.RequiresRemoteService);
+        TemplatePoi.Params.Add(template);
+        try
+        {
+            var action = new CVStartCFC(request.SerialNumber);
+            using var resources = action.RuntimeResources;
+            action.SetCurrentFrame(CreateCieFrame(7));
+            using var execution = CreateExecution(poi, request)!;
+            Assert.NotNull(execution);
+            Assert.False(execution.UseNodeTimeout);
+            execution.Bind(action);
+            // Reaching template validation proves the selected template and fileless frame reached LocalPoiNode.
+            Assert.Equal($"POI 模板没有关注点：{template.Value.Name}", Assert.Throws<InvalidOperationException>(execution.Execute).Message);
+        }
+        finally { TemplatePoi.Params.Remove(template); }
+
+        backend.ObserveService(DeviceStatusType.Opened);
+        Assert.True(poi.RequiresRemoteService);
+        Assert.Null(CreateExecution(poi, request));
+        backend.ObserveService(DeviceStatusType.Closed);
+        backend.BeginLocalOpen();
+        backend.SetLocalStatus(DeviceStatusType.Opened);
+        backend.SetPreference(false);
+        Assert.False(poi.RequiresRemoteService);
+        source.DeviceCode = "missing-camera";
+        Assert.True(poi.RequiresRemoteService);
+    });
+
     // Protect old canvas routing, image ownership and result identities across the backend switch.
     [Fact]
     public void BothNodesFollowTheirImageBranchCalibrationPreference() => StaTest.Run(() =>

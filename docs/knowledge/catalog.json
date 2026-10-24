@@ -5305,7 +5305,6 @@
         "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs",
         "Engine/cvColorVision/MQTTMessageLib/NodeToken.cs",
         "Engine/cvColorVision/MQTTMessageLib/MQTTRCServiceTypeConst.cs",
-        "Engine/cvColorVision/MQTTMessageLib/Util/EnumTool.cs",
         "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
         "Engine/ColorVision.Engine/MQTT/MQTTControl.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",

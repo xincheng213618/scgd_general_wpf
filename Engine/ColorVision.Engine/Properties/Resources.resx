@@ -3635,6 +3635,7 @@
   <data name="切换画布拖动/框选" xml:space="preserve"><value>切换画布拖动/框选</value></data>
   <data name="双击打开测量结果 · 右键查看更多操作" xml:space="preserve"><value>双击打开测量结果 · 右键查看更多操作</value></data>
   <data name="可重置查询条件，或使用高级查询查找历史记录" xml:space="preserve"><value>可重置查询条件，或使用高级查询查找历史记录</value></data>
+  <data name="预处理" xml:space="preserve"><value>预处理</value></data>
   <data name="后处理" xml:space="preserve"><value>后处理</value></data>
   <data name="将当前数据库中的流程节点标识更新为当前版本，保留参数和连线" xml:space="preserve"><value>将当前数据库中的流程节点标识更新为当前版本，保留参数和连线</value></data>
   <data name="已完成" xml:space="preserve"><value>已完成</value></data>

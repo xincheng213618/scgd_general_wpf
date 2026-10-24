@@ -1070,12 +1070,12 @@ namespace ColorVision.Engine.FlowProcessing
         }
 
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void PostProcessManagementButton_Click(object sender, RoutedEventArgs e)
         {
             PostProcessManager.GetInstance().Edit();
         }
 
-        private void Button_Click_PreProcess(object sender, RoutedEventArgs e)
+        private void PreProcessManagementButton_Click(object sender, RoutedEventArgs e)
         {
             PreProcessManager.GetInstance().Edit();
         }

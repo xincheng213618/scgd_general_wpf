@@ -21,7 +21,7 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 | 复制/导入后覆盖旧点位 | 模板和点明细 `Id` 是否重置为 `-1` |
 | POI 运行没带过滤/修正/输出 | 请求里是否出现 `FilterTemplate`、`ReviseTemplate`、`OutputTemplate` |
 | 文件模式找不到点 | `POIStorageType` 和 `POIPointFileName` |
-| BuildPOI 和 POI 参数混用 | `Event_Build_POI` 与 `Event_POI_GetData` 是否分清 |
+| BuildPOI 和 POI 参数混用 | `BuildPOI` 布点事件与 `POI` 取值事件是否分清 |
 | Flow 节点模板下拉不对 | 常规字段检查 PropertyEditor 注册；BuildPOI 多模板选择再查 `POINodeConfigurators.cs` |
 | UI 展示和导出不一致 | `ViewResultAlgType` 命中了哪个 result handler |
 

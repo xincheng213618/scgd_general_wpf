@@ -6546,6 +6546,7 @@ Continue investigating with the original error below.</value></data>
   <data name="切换画布拖动/框选" xml:space="preserve"><value>Toggle canvas panning / box selection</value></data>
   <data name="双击打开测量结果 · 右键查看更多操作" xml:space="preserve"><value>Double-click to open measurement results · Right-click for more actions</value></data>
   <data name="可重置查询条件，或使用高级查询查找历史记录" xml:space="preserve"><value>Reset the search criteria or use advanced search to find historical records</value></data>
+  <data name="预处理" xml:space="preserve"><value>Pre-processing</value></data>
   <data name="后处理" xml:space="preserve"><value>Post-processing</value></data>
   <data name="将当前数据库中的流程节点标识更新为当前版本，保留参数和连线" xml:space="preserve"><value>Update flow node identities in the current database to the current version, preserving parameters and connections</value></data>
   <data name="已完成" xml:space="preserve"><value>Completed</value></data>

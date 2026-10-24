@@ -1,15 +1,64 @@
 #nullable disable
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Camera;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FlowEngineLib;
 
 [STNode("关注点", CategoryOrder = 310)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.POINode")]
+[FlowNodeDocumentation("按 POI 模板测量图像；上游相机使用本地后端时复用本地 POI 节点，否则使用原算法服务。",
+    Notes = "本地分支读取当前内存帧或带校正参数的 RAW，不要求生成 CVCIE 文件；过滤、修正、亚像素和文件输出设置保留但不参与本地测量。")]
 public class POINode : CVBaseServerNode
 {
+	public override bool RequiresRemoteService => !UsesLocalCamera();
+
+	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request)
+	{
+		if (!UsesLocalCamera()) return null;
+		POIDataParam data = (POIDataParam)request.Data;
+		return new LocalPoiNode { POITempName = data.TemplateParam?.Name ?? string.Empty }
+			.CreateCompatibilityExecution(request, data.ImgFileName);
+	}
+
+	private bool UsesLocalCamera()
+	{
+		HashSet<STNode> visited = new();
+		STNode[] current = GetAllInputOptions().Take(1).SelectMany(option => option.GetConnectedOption()).Select(option => option.Owner).ToArray();
+		while (current.Length > 0)
+		{
+			List<STNode> next = new();
+			Dictionary<string, bool> cameras = new();
+			foreach (STNode upstream in current)
+			{
+				if (!visited.Add(upstream)) continue;
+				if (upstream is LocalCameraNode localCamera)
+				{
+					cameras[localCamera.DeviceCode] = true;
+					continue;
+				}
+				if (upstream is CVBaseServerNode { NodeType: "Camera" } camera)
+				{
+					DeviceCamera device = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+						.FirstOrDefault(item => item.Code == camera.DeviceCode);
+					if (device == null) return false;
+					cameras[device.Code] = device.CameraBackend.OpensLocally;
+					continue;
+				}
+				next.AddRange(upstream.GetAllInputOptions().SelectMany(option => option.GetConnectedOption()).Select(option => option.Owner));
+			}
+			if (cameras.Count > 0) return cameras.Count == 1 && cameras.Values.Single();
+			current = next.ToArray();
+		}
+		return false;
+	}
+
 	private string _FilterTemplateName;
 
 	private string _ReviseTemplateName;

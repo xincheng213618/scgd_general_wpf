@@ -45,6 +45,12 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             typeof(FlowEditorCanvas),
             new PropertyMetadata(null));
 
+        public static readonly DependencyProperty RightToolbarContentProperty = DependencyProperty.Register(
+            nameof(RightToolbarContent),
+            typeof(object),
+            typeof(FlowEditorCanvas),
+            new PropertyMetadata(null));
+
         public static readonly DependencyProperty PropertyPanelMarginProperty = DependencyProperty.Register(
             nameof(PropertyPanelMargin),
             typeof(Thickness),
@@ -55,6 +61,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         {
             get => GetValue(ToolbarContentProperty);
             set => SetValue(ToolbarContentProperty, value);
+        }
+
+        /// <summary>Host-provided actions displayed before the canvas theme and settings buttons.</summary>
+        public object? RightToolbarContent
+        {
+            get => GetValue(RightToolbarContentProperty);
+            set => SetValue(RightToolbarContentProperty, value);
         }
 
         public Thickness PropertyPanelMargin

@@ -7,7 +7,6 @@ using FlowEngineLib;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
-using MQTTMessageLib.Util;
 using MQTTnet;
 using Newtonsoft.Json;
 using System;
@@ -418,7 +417,7 @@ namespace ColorVision.Engine.Services.RC
         {
             foreach (var itemService in data)
             {
-                ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(itemService.Key.ToString());
+                ServiceTypes cvSType = Enum.Parse<ServiceTypes>(itemService.Key.ToString());
                 var serviceKind = serviceManager.TypeServices.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
                 if (serviceKind == null) { continue; }
                 foreach (var serviceTerminal in serviceKind.VisualChildren.Cast<TerminalService>())

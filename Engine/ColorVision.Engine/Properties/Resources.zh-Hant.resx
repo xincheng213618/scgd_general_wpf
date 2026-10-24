@@ -7489,6 +7489,7 @@
   <data name="切换画布拖动/框选" xml:space="preserve"><value>切換畫布拖曳/框選</value></data>
   <data name="双击打开测量结果 · 右键查看更多操作" xml:space="preserve"><value>雙擊開啟測量結果 · 右鍵查看更多操作</value></data>
   <data name="可重置查询条件，或使用高级查询查找历史记录" xml:space="preserve"><value>可重設查詢條件，或使用進階查詢尋找歷史記錄</value></data>
+  <data name="预处理" xml:space="preserve"><value>預處理</value></data>
   <data name="后处理" xml:space="preserve"><value>後處理</value></data>
   <data name="将当前数据库中的流程节点标识更新为当前版本，保留参数和连线" xml:space="preserve"><value>將目前資料庫中的流程節點識別碼更新為目前版本，保留參數和連線</value></data>
   <data name="已完成" xml:space="preserve"><value>已完成</value></data>
