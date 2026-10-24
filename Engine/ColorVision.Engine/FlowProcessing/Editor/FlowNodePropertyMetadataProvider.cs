@@ -51,6 +51,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
 
             Type? nodeType = GetNodeType(propertyInfo);
+            if (nodeType != null
+                && (typeof(FlowEngineLib.Start.BaseStartNode).IsAssignableFrom(nodeType)
+                    || typeof(FlowEngineLib.End.CVEndNode).IsAssignableFrom(nodeType)))
+            {
+                return propertyInfo.Name == nameof(STNode.Title);
+            }
+
             if (propertyInfo.Name == nameof(FlowEngineLib.Base.CVCommonNode.NodeID))
             {
                 return false;

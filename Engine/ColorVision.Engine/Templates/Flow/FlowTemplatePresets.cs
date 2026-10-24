@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.MQTT;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Node.POI;
@@ -40,7 +41,7 @@ public static class FlowTemplatePresets
         var nodes = new List<STNode>();
         try
         {
-            nodes.Add(preset.Start == "manual" ? new ManualFlowStartNode() : new MQTTStartNode { Server = string.Empty, DeviceCode = string.Empty });
+            nodes.Add(new MQTTStartNode { Server = MQTTControl.Host, Port = MQTTControl.Port, DeviceCode = string.Empty });
             foreach (var stage in preset.Stages) nodes.Add(CreateNode(stage));
             nodes.Add(new CVEndNode { DeviceCode = string.Empty });
             for (int index = 0; index < nodes.Count; index++)

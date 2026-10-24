@@ -1165,12 +1165,12 @@
       "id": "flow-camera-capture",
       "template_code": "flow",
       "title": "相机取图",
-      "description": "手动开始 → 相机取图 → 结束。先建立最小采集流程，再增加校正或测量步骤。",
+      "description": "Start → 相机取图 → 结束。先建立最小采集流程，再增加校正或测量步骤。",
       "category": "相机采集",
       "suggested_name": "Camera_Capture",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "手动开始 → 相机取图 → 结束。先建立最小采集流程，再增加校正或测量步骤。",
+      "purpose": "Start → 相机取图 → 结束。先建立最小采集流程，再增加校正或测量步骤。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1182,22 +1182,22 @@
           }
         ],
         "setup": [
-          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "Start：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
           "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。"
         ],
-        "start": "manual"
+        "start": "mqtt"
       }
     },
     {
       "id": "flow-camera-poi",
       "template_code": "flow",
       "title": "拍照与 POI 测量",
-      "description": "手动开始 → 相机取图 → POI → 结束。采集、校正与关注点测量按顺序执行。",
+      "description": "Start → 相机取图 → POI → 结束。采集、校正与关注点测量按顺序执行。",
       "category": "POI 测量",
       "suggested_name": "Camera_POI",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "手动开始 → 相机取图 → POI → 结束。采集、校正与关注点测量按顺序执行。",
+      "purpose": "Start → 相机取图 → POI → 结束。采集、校正与关注点测量按顺序执行。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1213,23 +1213,23 @@
           }
         ],
         "setup": [
-          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "Start：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
           "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
           "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。"
         ],
-        "start": "manual"
+        "start": "mqtt"
       }
     },
     {
       "id": "flow-luminance-uniformity",
       "template_code": "flow",
       "title": "亮度均匀性流程",
-      "description": "MQTT 开始 → 相机取图 → POI → 亮度均匀性分析 → 结束。",
+      "description": "Start → 相机取图 → POI → 亮度均匀性分析 → 结束。",
       "category": "均匀性",
       "suggested_name": "Luminance_Uniformity_Flow",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "MQTT 开始 → 相机取图 → POI → 亮度均匀性分析 → 结束。",
+      "purpose": "Start → 相机取图 → POI → 亮度均匀性分析 → 结束。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1249,7 +1249,7 @@
           }
         ],
         "setup": [
-          "MQTT 开始：配置本机使用的 MQTT 服务地址和端口，确认连接正常；POI 分析请求通过该连接发送。",
+          "Start：使用软件统一的 MQTT 连接，运行前确认服务就绪；POI 分析请求通过该连接发送。",
           "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
           "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。",
           "POI 分析：选择本机算法设备，并在 POI 分析模板中创建“亮度均匀性 min/max”，然后在分析节点选择该参数模板。"
@@ -1261,12 +1261,12 @@
       "id": "flow-color-uniformity",
       "template_code": "flow",
       "title": "色度均匀性流程",
-      "description": "MQTT 开始 → 相机取图 → POI → 色度均匀性分析 → 结束。",
+      "description": "Start → 相机取图 → POI → 色度均匀性分析 → 结束。",
       "category": "均匀性",
       "suggested_name": "Color_Uniformity_Flow",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "MQTT 开始 → 相机取图 → POI → 色度均匀性分析 → 结束。",
+      "purpose": "Start → 相机取图 → POI → 色度均匀性分析 → 结束。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1286,7 +1286,7 @@
           }
         ],
         "setup": [
-          "MQTT 开始：配置本机使用的 MQTT 服务地址和端口，确认连接正常；POI 分析请求通过该连接发送。",
+          "Start：使用软件统一的 MQTT 连接，运行前确认服务就绪；POI 分析请求通过该连接发送。",
           "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
           "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。",
           "POI 分析：选择本机算法设备，并在 POI 分析模板中创建“色度均匀性（uv）”，然后在分析节点选择该参数模板。"
@@ -1298,12 +1298,12 @@
       "id": "flow-checkerboard-contrast",
       "template_code": "flow",
       "title": "棋盘格对比度流程",
-      "description": "MQTT 开始 → 相机取图 → POI → 棋盘格对比度分析 → 结束。",
+      "description": "Start → 相机取图 → POI → 棋盘格对比度分析 → 结束。",
       "category": "对比度",
       "suggested_name": "Checkerboard_Contrast_Flow",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "MQTT 开始 → 相机取图 → POI → 棋盘格对比度分析 → 结束。",
+      "purpose": "Start → 相机取图 → POI → 棋盘格对比度分析 → 结束。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1323,7 +1323,7 @@
           }
         ],
         "setup": [
-          "MQTT 开始：配置本机使用的 MQTT 服务地址和端口，确认连接正常；POI 分析请求通过该连接发送。",
+          "Start：使用软件统一的 MQTT 连接，运行前确认服务就绪；POI 分析请求通过该连接发送。",
           "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
           "相机取图：选择属于该相机的有效校正模板；POI：选择与图像尺寸和采样位置相符的 POI 模板。",
           "POI 分析：选择本机算法设备，并在 POI 分析模板中创建“首格白 · 4×4 对比度 或 首格黑 · 4×4 对比度”，然后在分析节点选择该参数模板。",
@@ -1336,12 +1336,12 @@
       "id": "flow-camera-mtf",
       "template_code": "flow",
       "title": "拍照与条纹 MTF",
-      "description": "手动开始 → 相机取图 → 本地 MTF → 结束，使用四部横竖条纹参数。",
+      "description": "Start → 相机取图 → 本地 MTF → 结束，使用四部横竖条纹参数。",
       "category": "MTF",
       "suggested_name": "Camera_MTF_Flow",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "手动开始 → 相机取图 → 本地 MTF → 结束，使用四部横竖条纹参数。",
+      "purpose": "Start → 相机取图 → 本地 MTF → 结束，使用四部横竖条纹参数。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1357,23 +1357,23 @@
           }
         ],
         "setup": [
-          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "Start：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
           "相机取图：选择本机相机设备，核对曝光、增益和平均次数；初始曝光为 15.67 ms。",
           "MTF：默认四部横竖条纹，可打开算法参数选择单独 H/V；按图案位置设置测量区域，无需数据库 MTF 参数模板。"
         ],
-        "start": "manual"
+        "start": "mqtt"
       }
     },
     {
       "id": "flow-image-mtf",
       "template_code": "flow",
       "title": "图片条纹 MTF",
-      "description": "手动开始 → 加载图片 → 本地 MTF → 结束，适合先用已有图片确认算法。",
+      "description": "Start → 加载图片 → 本地 MTF → 结束，适合先用已有图片确认算法。",
       "category": "MTF",
       "suggested_name": "Image_MTF_Flow",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "手动开始 → 加载图片 → 本地 MTF → 结束，适合先用已有图片确认算法。",
+      "purpose": "Start → 加载图片 → 本地 MTF → 结束，适合先用已有图片确认算法。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1388,23 +1388,23 @@
           }
         ],
         "setup": [
-          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "Start：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
           "加载图片：选择实际存在的图片文件，核对图像位深、方向和尺寸。",
           "MTF：默认四部横竖条纹，按实际图案修改算法参数和测量区域。"
         ],
-        "start": "manual"
+        "start": "mqtt"
       }
     },
     {
       "id": "flow-image-luminous-area",
       "template_code": "flow",
       "title": "图片发光区定位",
-      "description": "手动开始 → 加载图片 → 本地发光区定位 → 结束。输出四角定位结果。",
+      "description": "Start → 加载图片 → 本地发光区定位 → 结束。输出四角定位结果。",
       "category": "图像定位",
       "suggested_name": "Image_LightArea_Flow",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "手动开始 → 加载图片 → 本地发光区定位 → 结束。输出四角定位结果。",
+      "purpose": "Start → 加载图片 → 本地发光区定位 → 结束。输出四角定位结果。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1419,23 +1419,23 @@
           }
         ],
         "setup": [
-          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "Start：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
           "加载图片：选择实际存在的图片文件，核对图像位深、方向和尺寸。",
           "发光区定位：检查搜索区域和最小置信度；需要保存四角 POI 时再选择 POI 保存模板。"
         ],
-        "start": "manual"
+        "start": "mqtt"
       }
     },
     {
       "id": "flow-sensor-command",
       "template_code": "flow",
       "title": "通用传感器控制",
-      "description": "手动开始 → 本地通用传感器 → 结束。可选择 PG 上下电、切图或灯控参数模板。",
+      "description": "Start → 本地通用传感器 → 结束。可选择 PG 上下电、切图或灯控参数模板。",
       "category": "设备控制",
       "suggested_name": "Sensor_Command_Flow",
       "module_guide": "模板 → 流程 → 新建，选择本业务；创建后双击流程，按下方清单绑定设备和参数，再使用运行命令。",
       "device_guide": "创建的是已连线、可编辑的业务流程。设备代码、校正模板、参数模板和图片路径留待本机配置；选择和预览仅准备草稿，运行依赖对应节点需要的设备、数据库或算法服务。",
-      "purpose": "手动开始 → 本地通用传感器 → 结束。可选择 PG 上下电、切图或灯控参数模板。",
+      "purpose": "Start → 本地通用传感器 → 结束。可选择 PG 上下电、切图或灯控参数模板。",
       "payload": {
         "version": 1,
         "kind": "flow-recipe",
@@ -1446,11 +1446,11 @@
           }
         ],
         "setup": [
-          "手动开始：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
+          "Start：在流程编辑器使用运行命令启动，无需为开始节点配置 MQTT 连接。",
           "通用传感器：选择本机传感器设备，核对 TCP/串口连接参数。",
           "先从传感器模板新建适用协议的指令模板，再在流程节点选择；PG 文本与 SA 灯控等协议须与设备匹配。"
         ],
-        "start": "manual"
+        "start": "mqtt"
       }
     }
   ]

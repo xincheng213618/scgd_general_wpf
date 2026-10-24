@@ -12,7 +12,7 @@ namespace ColorVision.UI.Tests;
 public sealed class FlowNodeContextMenuTests
 {
     [Fact]
-    public void CameraMenuSeparatesAcquisitionFromAoiAndUsesWorkflowOrder()
+    public void DeviceCreationMenusKeepWorkflowOrderAndPgSubmenu()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -32,10 +32,41 @@ public sealed class FlowNodeContextMenuTests
                     "AOI 定位相机（模板）", "AOI 提取相机（模板）",
                     "AOI 定位相机（参数）", "AOI 提取相机（参数）", "AOI 定位+提取相机"
                 }, camera.Items.Cast<object>().Select(item => item is Separator ? "---" : Assert.IsType<MenuItem>(item).Header));
+
+                MenuItem sensor = Assert.Single(creationMenu.Items.OfType<MenuItem>(), item => Equals(item.Header, "传感器"));
+                MenuItem pg = Assert.Single(sensor.Items.OfType<MenuItem>(), item => Equals(item.Header, "PG"));
+                Assert.Equal(4, pg.Items.OfType<MenuItem>().Count());
+                Assert.DoesNotContain(creationMenu.Items.OfType<MenuItem>(), item => Equals(item.Header, "PG"));
             }
             finally { CultureInfo.CurrentUICulture = previousCulture; }
         });
     }
+
+    [Theory]
+    [InlineData(typeof(FlowEngineLib.RealCommonSensorNode))]
+    [InlineData(typeof(FlowEngineLib.Start.ManualFlowStartNode))]
+    public void HiddenCreationNodesStillLoadAndPreserveExistingFlowData(Type type) => WpfTestHost.Invoke(() =>
+    {
+        Assert.DoesNotContain(type, FlowNodeContextMenuService.GetNodeCreationMenuPaths().Keys);
+        using var original = new STNodeEditor();
+        var node = (STNode)Activator.CreateInstance(type)!;
+        node.Create();
+        node.Title = "已有流程节点";
+        ((CVCommonNode)node).NodeName = "legacy-hidden-node";
+        ((IFlowDeviceNode)node).DeviceCode = "legacy-device";
+        if (node is FlowEngineLib.RealCommonSensorNode sensor)
+        {
+            sensor.CmdSend = "514D";
+            sensor.CmdReceive = "4F4B";
+            sensor.CmdTimeout = 456;
+        }
+        original.Nodes.Add(node);
+        using var restored = new STNodeEditor();
+        restored.LoadCanvas(original.GetCanvasData());
+        STNode restoredNode = Assert.Single(restored.Nodes.Cast<STNode>());
+        Assert.Equal(type, restoredNode.GetType());
+        Assert.Equal(node.GetSaveData(), restoredNode.GetSaveData());
+    });
 
     [Theory]
     [InlineData(true)]

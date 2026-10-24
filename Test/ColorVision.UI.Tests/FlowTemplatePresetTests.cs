@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor.Algorithms.Mtf;
@@ -43,18 +44,10 @@ public sealed class FlowTemplatePresetTests
             Assert.Equal(expectedCount, editor.Nodes.Count);
             Assert.Equal(expectedCount - 1, editor.GetConnectionInfo().Length);
             Assert.IsType<CVEndNode>(editor.Nodes[expectedCount - 1]);
-            var start = Assert.IsAssignableFrom<BaseStartNode>(editor.Nodes[0]);
-            if (preset.Start == "mqtt")
-            {
-                Assert.Empty(Assert.IsType<MQTTStartNode>(start).Server);
-                Assert.True(start.RequiresConnectionReady);
-            }
-            else
-            {
-                Assert.IsType<ManualFlowStartNode>(start);
-                Assert.False(start.RequiresConnectionReady);
-                Assert.True(start.IsExecutionReady);
-            }
+            var start = Assert.IsType<MQTTStartNode>(editor.Nodes[0]);
+            Assert.Equal(MQTTControl.Host, start.Server);
+            Assert.Equal(MQTTControl.Port, start.Port);
+            Assert.True(start.RequiresConnectionReady);
             Assert.All(editor.Nodes.OfType<IFlowDeviceNode>(), node => Assert.Empty(node.DeviceCode));
             foreach (STNode node in editor.Nodes)
             {
@@ -144,17 +137,18 @@ public sealed class FlowTemplatePresetTests
     }
 
     [Fact]
-    public void ManualStartCompletesALocalGraphWithoutMqttReadiness() => StaTest.Run(() =>
+    public void StartCompletesALocalGraphWithoutMqttReadiness() => StaTest.Run(() =>
     {
         using var canvas = new CVNodeContainer();
-        var start = new ManualFlowStartNode { PersistResults = false };
+        var start = new MQTTStartNode { Server = string.Empty, PersistResults = false };
         var end = new CVEndNode();
         foreach (STNode node in new STNode[] { start, end }) { node.Create(); canvas.Nodes.Add(node); }
         start.m_op_start.ConnectOption(end.m_in_start, false);
         using var control = new FlowEngineControl(canvas, false, new FlowNodeManager()) { PersistResults = false };
         var completed = new TaskCompletionSource<FlowEngineEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
         control.Finished += (_, result) => completed.TrySetResult(result);
-        Assert.True(control.TryStartNode(start.NodeName, "preset-manual-contract"));
+        Assert.False(start.IsExecutionReady);
+        Assert.True(control.TryStartNode(start.NodeName, "preset-local-contract"));
         Assert.Equal(StatusTypeEnum.Completed, completed.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult().Status);
     });
 }

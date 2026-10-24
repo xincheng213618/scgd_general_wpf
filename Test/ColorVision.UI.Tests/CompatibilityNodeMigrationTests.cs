@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Compilation;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.Flow;
@@ -15,6 +16,48 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CompatibilityNodeMigrationTests
 {
+    [Theory]
+    [InlineData(typeof(FlowEngineLib.Start.MQTTStartNode))]
+    [InlineData(typeof(FlowEngineLib.Start.ManualFlowStartNode))]
+    [InlineData(typeof(FlowEngineLib.End.CVEndNode))]
+    public void TerminalNodesOnlyExposeTitleAndPreserveStoredConnectionIdentity(Type type) => StaTest.Run(() =>
+    {
+        var node = (STNode)Activator.CreateInstance(type)!;
+        try
+        {
+            node.Create();
+            var legacy = new Dictionary<string, byte[]>
+            {
+                ["Title"] = Encoding.UTF8.GetBytes("旧节点名称"),
+                ["NodeName"] = Encoding.UTF8.GetBytes("legacy-terminal"),
+                ["DeviceCode"] = Encoding.UTF8.GetBytes("legacy-device")
+            };
+            if (node is FlowEngineLib.Start.BaseStartNode)
+                legacy["FlowTimeout"] = Encoding.UTF8.GetBytes("300");
+            if (node is FlowEngineLib.Start.MQTTStartNode)
+            {
+                legacy["Server"] = Encoding.UTF8.GetBytes("192.0.2.10");
+                legacy["Port"] = Encoding.UTF8.GetBytes("2883");
+            }
+            node.OnLoadNode(legacy);
+            var metadata = FlowNodePropertyMetadataProvider.Instance;
+            Assert.Equal(new[] { nameof(STNode.Title) }, type.GetProperties()
+                .Where(metadata.IsPropertyManaged).Where(metadata.IsBrowsable).Select(property => property.Name));
+            Assert.Null(type.GetProperty("FlowTimeout"));
+            Assert.Equal("旧节点名称", node.Title);
+            node.Title = "新节点名称";
+
+            using var reader = new BinaryReader(new MemoryStream(node.GetSaveData()));
+            reader.ReadBytes(reader.ReadByte()); reader.ReadBytes(reader.ReadByte());
+            var saved = ReadProperties(reader);
+            Assert.Equal(Encoding.UTF8.GetBytes(node.Title), saved["Title"]);
+            Assert.DoesNotContain("FlowTimeout", saved.Keys);
+            foreach (string key in legacy.Keys.Where(key => key is not "Title" and not "FlowTimeout"))
+                Assert.Equal(legacy[key], saved[key]);
+        }
+        finally { (node as IDisposable)?.Dispose(); }
+    });
+
     [Theory]
     [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), 7)]
     [InlineData(typeof(FlowEngineLib.Algorithm.AlgorithmNode), 8)]
@@ -121,6 +164,11 @@ public sealed class CompatibilityNodeMigrationTests
             ["POIFilterTempName"] = Encoding.UTF8.GetBytes("旧过滤模板"),
             ["POIReviseTempName"] = Encoding.UTF8.GetBytes("旧修正模板")
         };
+        if (type == typeof(LocalCalibrationRealPoiNode))
+        {
+            legacy["UseROI"] = Encoding.UTF8.GetBytes(bool.TrueString);
+            Assert.Null(type.GetProperty("UseROI"));
+        }
         node.OnLoadNode(legacy);
         Assert.Equal("自定义测量", node.Title);
         Assert.Equal(new[] { imageInput, "IN_POI" }, node.GetAllInputOptions().Select(input => input.Text));

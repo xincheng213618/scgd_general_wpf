@@ -1,20 +1,14 @@
-using ColorVision.Engine.PropertyEditor;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -29,107 +23,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int PointCount { get; init; }
         public bool LoadedFromFile { get; init; }
         public object? POIResult { get; init; }
-        public bool UseROI { get; init; }
-        public int? RoiOffsetX { get; init; }
-        public int? RoiOffsetY { get; init; }
-    }
-
-    internal readonly record struct LocalPoiRoiAdjustment(PoiParam Poi, int OffsetX, int OffsetY);
-
-    internal static class LocalPoiRoiCoordinateTransformer
-    {
-        public static LocalPoiRoiAdjustment Transform(PoiParam source, PhyCameraCfg cameraConfig, LocalFrameMetadata frameMetadata)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(cameraConfig);
-            ArgumentNullException.ThrowIfNull(frameMetadata);
-            bool hasRoiValues = cameraConfig.PointX != 0
-                || cameraConfig.PointY != 0
-                || cameraConfig.Width != 0
-                || cameraConfig.Height != 0;
-            if (!cameraConfig.IsRoiConfigured && hasRoiValues)
-            {
-                throw new InvalidOperationException($"物理相机 ROI 配置不完整：ROI=({cameraConfig.PointX},{cameraConfig.PointY},{cameraConfig.Width},{cameraConfig.Height})。");
-            }
-            if (cameraConfig.IsRoiConfigured
-                && (cameraConfig.PointX < 0 || cameraConfig.PointY < 0
-                    || (long)cameraConfig.PointX + cameraConfig.Width > cameraConfig.SensorWidth
-                    || (long)cameraConfig.PointY + cameraConfig.Height > cameraConfig.SensorHeight))
-            {
-                throw new InvalidOperationException($"物理相机 ROI 超出传感器范围：ROI=({cameraConfig.PointX},{cameraConfig.PointY},{cameraConfig.Width},{cameraConfig.Height})，Sensor={cameraConfig.SensorWidth}x{cameraConfig.SensorHeight}。");
-            }
-            if (cameraConfig.IsRoiConfigured
-                && (frameMetadata.Width != cameraConfig.Width || frameMetadata.Height != cameraConfig.Height))
-            {
-                throw new InvalidOperationException($"已启用“使用 ROI”，但当前图像尺寸 {frameMetadata.Width}x{frameMetadata.Height} 与物理相机 ROI {cameraConfig.Width}x{cameraConfig.Height} 不一致。全幅或历史图像请关闭此选项。");
-            }
-            if (source.PoiPoints.Count == 0 && source.Id > 0)
-            {
-                PoiParam.LoadPoiDetailFromDB(source);
-            }
-            if (source.PoiPoints.Count == 0)
-            {
-                throw new InvalidOperationException($"POI 模板没有关注点：{source.Name}");
-            }
-
-            LocalFrameMirrorService.ValidateFlipMode(frameMetadata.FlipMode);
-            int offsetX = cameraConfig.IsRoiConfigured
-                ? frameMetadata.FlipMode is CVImageFlipMode.Y or CVImageFlipMode.XY
-                    ? checked(cameraConfig.SensorWidth - cameraConfig.PointX - cameraConfig.Width)
-                    : cameraConfig.PointX
-                : 0;
-            int offsetY = cameraConfig.IsRoiConfigured
-                ? frameMetadata.FlipMode is CVImageFlipMode.X or CVImageFlipMode.XY
-                    ? checked(cameraConfig.SensorHeight - cameraConfig.PointY - cameraConfig.Height)
-                    : cameraConfig.PointY
-                : 0;
-            PoiParam transformed = new()
-            {
-                Id = source.Id,
-                Name = source.Name,
-                Type = source.Type,
-                Width = source.Width,
-                Height = source.Height,
-                CfgJson = source.CfgJson,
-                LeftTopX = Offset(source.LeftTopX, offsetX),
-                LeftTopY = Offset(source.LeftTopY, offsetY),
-                RightTopX = Offset(source.RightTopX, offsetX),
-                RightTopY = Offset(source.RightTopY, offsetY),
-                RightBottomX = Offset(source.RightBottomX, offsetX),
-                RightBottomY = Offset(source.RightBottomY, offsetY),
-                LeftBottomX = Offset(source.LeftBottomX, offsetX),
-                LeftBottomY = Offset(source.LeftBottomY, offsetY)
-            };
-            foreach (PoiPoint point in source.PoiPoints)
-            {
-                transformed.PoiPoints.Add(new PoiPoint
-                {
-                    Id = point.Id,
-                    Pid = point.Pid,
-                    Name = point.Name,
-                    PointType = point.PointType,
-                    PixX = point.PixX - offsetX,
-                    PixY = point.PixY - offsetY,
-                    PixWidth = point.PixWidth,
-                    PixHeight = point.PixHeight
-                });
-            }
-            return new LocalPoiRoiAdjustment(transformed, offsetX, offsetY);
-        }
-
-        private static int? Offset(int? value, int offset) => value.HasValue ? checked(value.Value - offset) : null;
     }
 
     [STNode("Flow_LocalDevices", "校正+实时 POI", CategoryOrder = 9900, NodeOrder = 70)]
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
-        private bool useROI;
-
-        [Category("高级")]
-        [Display(Order = 1)]
-        [STNodeProperty("使用 ROI", "输入 POI 为全幅坐标且当前图像来自物理相机 ROI 时，将 POI 临时转换为 ROI 图像坐标；全幅或历史图像保持关闭", true)]
-        public bool UseROI { get => useROI; set { useROI = value; OnPropertyChanged(); } }
 
         public LocalCalibrationRealPoiNode() : base("校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
         {
@@ -184,16 +83,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 throw new InvalidOperationException("实时 POI 需要 CIE 或带色度校正参数的 RAW，请在校正模板中选择一个亮度或颜色校正文件。");
             }
-            LocalPoiRoiAdjustment? roiAdjustment = null;
-            PoiParam calculationPoi = parameters.Poi;
-            if (UseROI)
-            {
-                DeviceCamera device = ResolveDevice(execution.Frame.Metadata.DeviceCode);
-                PhyCameraCfg cameraConfig = device.PhyCamera?.Config?.CameraCfg
-                    ?? throw new InvalidOperationException("已启用“使用 ROI”，但当前相机没有关联物理相机配置。");
-                roiAdjustment = LocalPoiRoiCoordinateTransformer.Transform(parameters.Poi, cameraConfig, execution.Frame.Metadata);
-                calculationPoi = roiAdjustment.Value.Poi;
-            }
             int calibrationMasterId = -1;
             int poiMasterId = -1;
             try
@@ -206,7 +95,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalPoiResultSet result;
                 using (LocalFlowFrameLease frame = execution.Frame.Acquire())
                 {
-                    result = LocalPoiCalculator.Calculate(frame, calculationPoi);
+                    result = LocalPoiCalculator.Calculate(frame, parameters.Poi);
                 }
                 stopwatch.Stop();
                 int poiTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
@@ -227,9 +116,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         POISourceMasterId = parameters.SourceMasterId > 0 ? (int?)parameters.SourceMasterId : null,
                         CalibrationTemplate = execution.Calibration?.Name ?? execution.Frame.Metadata.CalibrationTemplate,
                         POITemplate = parameters.Poi.Name,
-                        UseROI = UseROI,
-                        RoiOffsetX = roiAdjustment?.OffsetX,
-                        RoiOffsetY = roiAdjustment?.OffsetY,
                         AllowAcceleration,
                         MemoryOnly = string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath) && string.IsNullOrWhiteSpace(execution.Frame.CvRawFilePath)
                     });
@@ -265,10 +151,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         CvCieFilePath = NullIfEmpty(execution.Frame.CvCieFilePath),
                         PoiTemplateName = result.TemplateName,
                         PointCount = result.Points.Count,
-                        POIResult = result.Points,
-                        UseROI = UseROI,
-                        RoiOffsetX = roiAdjustment?.OffsetX,
-                        RoiOffsetY = roiAdjustment?.OffsetY
+                        POIResult = result.Points
                     }
                 };
             }
@@ -289,7 +172,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 EventName = OperatorCode,
                 action.SerialNumber,
                 CalibTempName,
-                UseROI,
                 AllowAcceleration,
                 InputPriority = "CurrentFrameThenInputFile",
                 InputPorts = InputPortNames

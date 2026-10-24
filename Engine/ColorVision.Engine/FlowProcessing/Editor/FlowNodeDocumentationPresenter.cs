@@ -1,4 +1,5 @@
 using FlowEngineLib;
+using FlowEngineLib.Base;
 using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -21,7 +22,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         IReadOnlyList<FlowNodePortDocumentation> Outputs,
         IReadOnlyList<FlowNodePropertyDocumentation> Properties);
 
-    internal sealed record FlowNodePortDocumentation(string Name, string DataType);
+    internal sealed record FlowNodePortDocumentation(string Name);
 
     internal sealed record FlowNodePropertyDocumentation(string Name, string Description);
 
@@ -80,7 +81,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         {
             return options
                 .Where(option => option != null && !ReferenceEquals(option, STNodeOption.Empty) && !string.IsNullOrWhiteSpace(option.Text))
-                .Select(option => new FlowNodePortDocumentation(option.Text, GetFriendlyTypeName(option.DataType)))
+                .Where(option => option.Text is not ("IN" or "OUT" or "OUT_START")
+                    || (!typeof(CVStartCFC).IsAssignableFrom(option.DataType) && !typeof(CVLoopCFC).IsAssignableFrom(option.DataType)))
+                .Select(option => new FlowNodePortDocumentation(option.Text))
                 .ToArray();
         }
 
@@ -134,7 +137,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             {
                 var text = new TextBlock
                 {
-                    Text = $"{direction} · {port.Name}    {port.DataType}",
+                    Text = $"{direction} · {port.Name}",
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 1, 0, 3)
                 };
@@ -189,17 +192,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             };
             SetTextBrush(heading);
             return heading;
-        }
-
-        private static string GetFriendlyTypeName(Type? type)
-        {
-            if (type == null || type == typeof(object))
-                return string.Empty;
-            if (!type.IsGenericType)
-                return type.Name;
-
-            string genericName = type.Name.Split('`')[0];
-            return $"{genericName}<{string.Join(", ", type.GetGenericArguments().Select(GetFriendlyTypeName))}>";
         }
 
         private static string Localize(string? value)

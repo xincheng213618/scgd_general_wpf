@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Drawing;
 using FlowEngineLib.Base;
 using log4net;
@@ -138,6 +139,7 @@ public class SpectrumNode : CVBaseServerNode
 		}
 	}
 
+	[Category("高级")]
 	[STNodeProperty("输出文件", "输出文件", true)]
 	public string OutputDataFilename
 	{

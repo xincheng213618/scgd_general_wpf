@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("传感器", CategoryOrder = 700)]
+[System.Obsolete("Retained for loading existing flows; use sensor templates for new flows.")]
 public class RealCommonSensorNode : CVBaseServerNode
 {
 	private CommSensorCmdType _CmdType;

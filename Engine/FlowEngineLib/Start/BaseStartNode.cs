@@ -16,8 +16,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BaseStartNode));
 
-	private int _FlowTimeout = 300;
-
 	public STNodeOption m_op_start;
 
 	protected STNodeOption[] m_op_loop;
@@ -68,20 +66,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	private volatile bool running;
 
-	[STNodeProperty("FlowALL.Timeout", "FlowALL.Timeout")]
-	public int FlowTimeout
-	{
-		get
-		{
-			return _FlowTimeout;
-		}
-		set
-		{
-			setTimeout(value);
-			OnPropertyChanged();
-		}
-	}
-
 	public event FlowStartEventHandler Finished;
 
 	protected BaseStartNode(string title, int loopNum = 2)
@@ -115,22 +99,6 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 		}
 		m_op_start.Connected += m_op_start_Connected;
 		m_op_start.DisConnected += m_op_start_DisConnected;
-	}
-
-	private void setTimeout(int value)
-	{
-		if (value <= 0)
-		{
-			_FlowTimeout = 5;
-		}
-		else if (value > 1800)
-		{
-			_FlowTimeout = 1800;
-		}
-		else
-		{
-			_FlowTimeout = value;
-		}
 	}
 
 	public void DoLoopNextAction(CVLoopCFC next)
