@@ -71,6 +71,9 @@ next: false
 - [Copilot 扩展、MCP 与 Hook](../../02-developer-guide/core-concepts/copilot-agent-extensions.md) — `copilot.extensions`
   业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。
 
+- [Copilot 工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md) — `copilot.tool-contracts`
+  Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。
+
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
 

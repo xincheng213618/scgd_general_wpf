@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。"
 aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate","AlgorithmsContextMenu","ImageAlgorithmPreviewSession","ImageAlgorithmApplier","BasicAdjustmentWindow","WhiteBalanceWindow","ThresholdWindow","算法预览","应用与保存","基础调整","图像反相","白平衡","图像阈值","ConvertBatchImages","OpenBatchImageProcessing","colorvision-batch-image-conversion","批量图片处理","本地算法扩展","StandardAlgorithmCatalog","IImageAlgorithmProvider"]
-code_paths: ["UI/ColorVision.Algorithms/", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs", "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py"]
+code_paths: ["ColorVision/Copilot/Agent/Tools/Application/CopilotBatchImageSourceResolver.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessingWindow.xaml.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.Evidence.cs","UI/ColorVision.Algorithms/", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs", "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotOpenBatchImageInputTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageSourceResolverTests.cs","Test/ColorVision.UI.Tests/BatchImageWindowInputTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageApprovalTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageCancellationEvidenceTests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py"]
 related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","ui.image-editor-context","engine.results","engine.cv-image-export"]
 ---
 
@@ -132,17 +132,25 @@ Copilot 仅能看到显式白名单中同时声明 `Headless | Local | Determini
 
 `ConvertBatchImages` 执行转换或获准的图像算法；`OpenBatchImageProcessing` 只打开交互窗口，不产生转换完成证据。
 
+`OpenBatchImageProcessing` 可选传 `sources`（1–32 个已授权文件或目录）及 `recursive`（默认 `false`），预填最多 500 个图像；省略参数仍只打开或激活窗口。源展开在后台完成，确认授权、取消状态和数量后才一次提交 UI，不解码图像；相同格式的 PNG 等也保留在待处理列表。已有窗口按路径去重追加，保留原项的源根目录、算法及输出设置，处理期间或关闭后的窗口拒绝添加。目录来源保留 `SourceRoot`，供用户启动处理时维持子目录结构；工具响应中的“已准备／已加入”数量不是转换结果。
+
+预填与直接转换复用源解析器及其取消、数量和链接限制。目录读取范围来自当前请求的搜索根和可读目录；只有精确文件授权时，只允许该文件，不由工具自行扩展到父目录或兄弟文件。请求工厂已经显式加入搜索根的目录继续按该目录范围处理。
+
+批处理审批的 `ReviewDetails` 展示全部源选择器、输出位置、格式、原始及有效算法参数、解析后的算法与版本、参数 Schema 版本、递归和目录布局、请求及有效后缀、数量上限与不覆盖规则。简要描述仍只列前五个输入，完整详情使用既有审查编码且不静默截断；编码后超过 128K 字符时不创建待审批动作，应缩小本次请求。审批准备与执行使用同一个注入的算法 Runtime 校验白名单、provider 和参数，非法请求在待审前拒绝；目录范围和逐图格式约束仍在执行时核对。这里的源目录选择器允许读取其范围内的当前图像，不是已展开文件清单或图像内容快照。
+
 | 输入 | 当前约束 |
 | --- | --- |
 | `sources` | 必填，1–32 个当前授权范围内的文件或目录；展开后最多 500 个支持的图像文件 |
-| `outputDirectory`、`preserveFolderStructure` | 目录必须位于可写范围；省略目录时输出在源文件旁，提供目录时默认保留源根下的子目录 |
+| `outputDirectory`、`preserveFolderStructure` | 省略目录时输出在源文件旁，提供目录时默认保留源根下的子目录；基目录及每项最终子目录都必须位于可写范围，拒绝重解析点 |
 | `format` | `same-as-source`（默认）、`tiff`、`png`、`jpeg`、`bmp`、`webp`；CVRAW/CVCIE 的 `same-as-source` 输出 `.tiff` |
 | `algorithm`、`parameters` | 可选的 Catalog ID/兼容别名及对应参数；省略算法表示仅格式转换 |
 | `recursive`、`suffix` | 默认不递归；可指定文件名后缀，算法存在且未给后缀时可使用算法默认后缀 |
 
 批量路径通过 `CVRawBatchImageLoader` 为每个专有源文件加载一个图像，再由 `BatchImageOutput` 生成一个输出；它不拆分 CVCIE 的 X/Y/Z 通道集合。需要原生通道导出或显式 Python/CLI 包装器时，使用 [CVRAW / CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md)，按该路径核对参数、覆盖和退出码。
 
-工具使用 `AvoidOverwrite = true`，已存在或本批次已占用的路径追加 `_2`、`_3` 等编号。编码先写入目标目录内保留真实扩展名的唯一临时文件，再原子移动到最终路径；无覆盖落位若发现该名称刚被其他写入者占用，会重新编号并重试，不删除或覆盖竞争者的文件。临时文件在成功或失败后尽力清理。无算法、输出目录和后缀，且目标扩展名与源相同时记入 `skipped_identity`，不把无变化文件算成重新转换。响应提供总计和最多 100 条 `results`；`results_truncated` 表示逐文件列表被截断，完整数量仍以 `requested`、`processed`、`succeeded`、`failed`、`skipped_identity` 与 `cancelled` 为准。某项失败可继续处理后续项，取消或部分失败的整体结果不是成功。工具结果范围不等于用户最初发现的全部目录，汇报前应核对选定输入。
+目录准备阶段逐文件检查取消和 500 项上限，超限拒绝整批而不开始转换。输出预检复用 `BatchImageOutput.ResolveOutputDirectory` 的实际布局规则；保留子目录结构不能把授权扩大到链接目标。`BatchImageProcessingRequest.ValidateOutputPath` 是可选的中性宿主校验回调，Copilot 在每次保存前再次核对最终目录，重新编号后也会校验；处理期间目录变成重解析点时，该项记录 `output_not_authorized`，保留已经完成的逐文件结果。
+
+工具使用 `AvoidOverwrite = true`，已存在或本批次已占用的路径追加 `_2`、`_3` 等编号。编码先写入目标目录内保留真实扩展名的唯一临时文件，再原子移动到最终路径；无覆盖落位若发现该名称刚被其他写入者占用，会重新编号并重试，不删除或覆盖竞争者的文件。临时文件在成功或失败后尽力清理。无算法、输出目录和后缀，且目标扩展名与源相同时记入 `skipped_identity`，不把无变化文件算成重新转换。响应提供总计和最多 100 条 `results`，失败项含 `error` 和稳定的 `error_code`；`results_truncated` 表示逐文件列表被截断，完整数量仍以 `requested`、`processed`、`succeeded`、`failed`、`skipped_identity` 与 `cancelled` 为准。某项失败可继续处理后续项，取消或部分失败的整体结果不是成功。工具结果范围不等于用户最初发现的全部目录，汇报前应核对选定输入。
 
 ### Flow 与发布适配
 

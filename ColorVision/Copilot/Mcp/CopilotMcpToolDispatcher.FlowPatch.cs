@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,10 +24,14 @@ namespace ColorVision.Copilot.Mcp
             if (!TryBuildFlowPatchRequest(arguments, out var request, out var error))
                 return CopilotMcpToolCallResult.Fail("invalid_flow_patch", error);
 
+            if (request.InheritCameraDefaults && string.IsNullOrEmpty(request.CameraDefaultsFingerprint))
+                return CopilotMcpToolCallResult.Fail("invalid_flow_patch", "Applying inherited camera settings requires camera_defaults_fingerprint from preview_flow_patch. Preview the camera node first.");
+
             if (IsInAppAgentFrameworkApproved(executionScope))
                 return await _environment.ApplyFlowPatchHandler(request, cancellationToken);
 
             var preview = await _environment.PreviewFlowPatchHandler(request, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!preview.Success)
                 return preview;
 
@@ -39,7 +44,8 @@ namespace ColorVision.Copilot.Mcp
                 preview.Text + Environment.NewLine + "Does not save or run the flow.",
                 token => _environment.ApplyFlowPatchHandler(request, token),
                 executeOnApproval: IsInAppAgent(executionScope),
-                executionScope: executionScope);
+                executionScope: executionScope,
+                reviewDetails: request.InheritCameraDefaults ? CopilotApprovalReviewTextEncoder.Encode(preview.Text) : null);
         }
 
         private static bool TryBuildFlowPatchRequest(
@@ -63,6 +69,8 @@ namespace ColorVision.Copilot.Mcp
                 TypeKey = GetString(arguments, "type_key").Trim(),
                 Left = GetInt(arguments, "left") ?? 0,
                 Top = GetInt(arguments, "top") ?? 0,
+                InheritCameraDefaults = GetBool(arguments, "inherit_camera_defaults") ?? false,
+                CameraDefaultsFingerprint = GetString(arguments, "camera_defaults_fingerprint").Trim().ToLowerInvariant(),
                 NodeId = GetString(arguments, "node_id").Trim(),
                 PropertyName = GetString(arguments, "property_name").Trim(),
                 Value = GetString(arguments, "value"),
@@ -74,6 +82,9 @@ namespace ColorVision.Copilot.Mcp
 
             error = operation switch
             {
+                _ when operation != "add_node" && arguments != null && (arguments.ContainsKey("inherit_camera_defaults") || arguments.ContainsKey("camera_defaults_fingerprint")) => "Camera defaults arguments are only supported by add_node.",
+                _ when !request.InheritCameraDefaults && !string.IsNullOrEmpty(request.CameraDefaultsFingerprint) => "camera_defaults_fingerprint requires inherit_camera_defaults=true.",
+                _ when !string.IsNullOrEmpty(request.CameraDefaultsFingerprint) && (request.CameraDefaultsFingerprint.Length != 64 || !request.CameraDefaultsFingerprint.All(Uri.IsHexDigit)) => "camera_defaults_fingerprint must be the 64-character hexadecimal fingerprint returned by preview_flow_patch.",
                 "add_node" when string.IsNullOrWhiteSpace(request.TypeKey) => "add_node requires type_key.",
                 "add_node" when GetInt(arguments, "left") == null || GetInt(arguments, "top") == null => "add_node requires integer left and top coordinates.",
                 "set_property" when string.IsNullOrWhiteSpace(request.NodeId) => "set_property requires node_id.",
@@ -101,6 +112,11 @@ namespace ColorVision.Copilot.Mcp
                 arguments["type_key"] = JsonSerializer.SerializeToElement(request.TypeKey);
                 arguments["left"] = JsonSerializer.SerializeToElement(request.Left);
                 arguments["top"] = JsonSerializer.SerializeToElement(request.Top);
+                if (request.InheritCameraDefaults)
+                {
+                    arguments["inherit_camera_defaults"] = JsonSerializer.SerializeToElement(true);
+                    arguments["camera_defaults_fingerprint"] = JsonSerializer.SerializeToElement(request.CameraDefaultsFingerprint);
+                }
             }
             else if (request.Operation == "set_property")
             {
@@ -122,7 +138,7 @@ namespace ColorVision.Copilot.Mcp
         {
             return request.Operation switch
             {
-                "add_node" => $"Add Flow node {request.TypeKey} at ({request.Left}, {request.Top}).",
+                "add_node" => $"Add Flow node {request.TypeKey} at ({request.Left}, {request.Top}).{(request.InheritCameraDefaults ? " Inherit the previewed camera acquisition settings." : string.Empty)}",
                 "set_property" => $"Set Flow node {request.NodeId} property {request.PropertyName} to the previewed value.",
                 "connect" => $"Connect {request.SourceNodeId}/{request.SourcePortId} to {request.TargetNodeId}/{request.TargetPortId}.",
                 _ => "Apply Flow graph change.",

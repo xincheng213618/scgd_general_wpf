@@ -1,4 +1,5 @@
 using System;
+using ColorVision.Copilot.Mcp;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
@@ -111,12 +112,27 @@ namespace ColorVision.Copilot
         Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            return _service.ExecuteApprovedAsync(toolInput, cancellationToken);
+            var invocation = CopilotToolInvocationContext.Current;
+            var actionId = invocation?.ApprovalActionId;
+            var expectedTargetFingerprint = string.Empty;
+            if (!string.IsNullOrEmpty(actionId))
+            {
+                if (!CopilotMcpConfirmationStore.Instance.TryGetExecutionTargetFingerprint(invocation!, out expectedTargetFingerprint))
+                {
+                    return Task.FromResult(new CopilotToolResult
+                    {
+                        ToolName = Name, Success = false, FailureKind = CopilotToolFailureKind.Authorization,
+                        FailureCode = "database_target_approval_missing", Summary = "The database approval target could not be verified.",
+                        ErrorMessage = "Request a new SQL approval for the current database target.",
+                    });
+                }
+            }
+            return _service.ExecuteApprovedAsync(toolInput, cancellationToken, expectedTargetFingerprint);
         }
 
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)
         {
-            return CopilotDatabaseSqlService.CreateApprovalPresentation(toolInput);
+            return _service.CreateApprovalPresentation(toolInput);
         }
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => "database:configured-mysql";

@@ -328,6 +328,9 @@ namespace ColorVision.Copilot.Mcp
         private static string Redact(string? value)
         {
             var text = RedactArchiveSource(value);
+            // Preserve quoted-value boundaries until the archive parser has
+            // hidden their complete contents, including internal delimiters.
+            text = CopilotTemporaryRedactedOutputArchive.RedactQuotedAssignments(text);
             return SensitiveInlineRegex.Replace(text, match => $"{match.Groups["name"].Value}<redacted>");
         }
 

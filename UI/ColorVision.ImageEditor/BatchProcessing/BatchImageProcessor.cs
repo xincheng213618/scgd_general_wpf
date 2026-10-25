@@ -22,6 +22,9 @@ namespace ColorVision.ImageEditor.BatchProcessing
         public bool PreserveFolderStructure { get; init; } = true;
 
         public bool AvoidOverwrite { get; init; } = true;
+
+        /// <summary>Checks each resolved destination immediately before saving; throw to reject that file.</summary>
+        public Action<string>? ValidateOutputPath { get; init; }
     }
 
     public sealed class BatchImageFileResult
@@ -127,6 +130,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
                 var sourceRead = false;
                 var outputPath = string.Empty;
+                var validatingOutputPath = false;
                 try
                 {
                     var loader = GetLoader(item.FilePath)
@@ -147,6 +151,9 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     while (true)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+                        validatingOutputPath = true;
+                        request.ValidateOutputPath?.Invoke(outputPath);
+                        validatingOutputPath = false;
                         try
                         {
                             BatchImageOutput.Save(result, outputPath, overwrite: !request.AvoidOverwrite);
@@ -208,7 +215,12 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         SourcePath = item.FilePath,
                         OutputPath = outputPath,
                         SourceRead = sourceRead,
-                        ErrorCode = ex is BatchImageAlgorithmContractException contract ? contract.Code : "processing_failed",
+                        ErrorCode = ex switch
+                        {
+                            UnauthorizedAccessException when validatingOutputPath => "output_not_authorized",
+                            BatchImageAlgorithmContractException contract => contract.Code,
+                            _ => "processing_failed",
+                        },
                         ErrorMessage = ex.Message,
                     });
                     reportProgress?.Invoke(new BatchImageProgress

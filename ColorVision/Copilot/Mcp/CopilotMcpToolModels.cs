@@ -181,6 +181,10 @@ namespace ColorVision.Copilot.Mcp
 
         public int Top { get; init; }
 
+        public bool InheritCameraDefaults { get; init; }
+
+        public string CameraDefaultsFingerprint { get; init; } = string.Empty;
+
         public string NodeId { get; init; } = string.Empty;
 
         public string PropertyName { get; init; } = string.Empty;
@@ -357,7 +361,7 @@ namespace ColorVision.Copilot.Mcp
                     "add_node" => new
                     {
                         operation = request.Operation,
-                        node = manager.PreviewCopilotFlowNodeAddition(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
+                        node = manager.PreviewCopilotFlowNodeAddition(request.TypeKey, request.Left, request.Top, request.ExpectedRevision, request.InheritCameraDefaults, request.CameraDefaultsFingerprint),
                     },
                     "set_property" => BuildPropertyPreview(manager, request),
                     "connect" => new
@@ -397,7 +401,7 @@ namespace ColorVision.Copilot.Mcp
             {
                 var snapshot = request.Operation switch
                 {
-                    "add_node" => manager.AddCopilotFlowNode(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
+                    "add_node" => manager.AddCopilotFlowNode(request.TypeKey, request.Left, request.Top, request.ExpectedRevision, request.InheritCameraDefaults, request.CameraDefaultsFingerprint),
                     "set_property" => manager.SetCopilotFlowNodeProperty(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision),
                     "connect" => manager.ConnectCopilotFlowNodes(request.SourceNodeId, request.SourcePortId, request.TargetNodeId, request.TargetPortId, request.ExpectedRevision),
                     _ => throw new InvalidOperationException($"Unsupported Flow patch operation: {request.Operation}"),

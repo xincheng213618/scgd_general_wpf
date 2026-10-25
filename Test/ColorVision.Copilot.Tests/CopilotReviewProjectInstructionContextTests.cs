@@ -80,7 +80,10 @@ public sealed class CopilotReviewProjectInstructionContextTests : IDisposable
                 },
             },
             CancellationToken.None);
-        Assert.True(submitted.Success, submitted.ErrorMessage);
+        // The staged-only inspection discovers instructions, but cannot complete
+        // the default Review target, which requires the complete working tree.
+        Assert.False(submitted.Success);
+        Assert.Contains("InspectGitDiff", submitted.ErrorMessage, StringComparison.Ordinal);
 
         var second = await executor.ExecuteAsync(
             CreateInvocation(tool, request, "second"),

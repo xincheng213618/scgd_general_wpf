@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -305,42 +306,72 @@ namespace ColorVision.Copilot
             {
                 string oldPath = string.Empty;
                 string newPath = string.Empty;
-                foreach (var line in section.Patch.Split('\n'))
+                var inHunk = false;
+                long oldLine = 0, newLine = 0, oldRemaining = 0, newRemaining = 0;
+                var visibleRangeStarted = false;
+                var lines = section.Patch.Split('\n');
+                for (var index = 0; index < lines.Length; index++)
                 {
-                    var normalizedLine = line.TrimEnd('\r');
-                    if (normalizedLine.StartsWith("--- ", StringComparison.Ordinal))
+                    var normalizedLine = lines[index].TrimEnd('\r');
+                    // Truncators can insert a newline after a partial prefix row.
+                    // Neither that row nor the unlocated tail has reliable coverage.
+                    if (IsTruncationMarker(normalizedLine, section)
+                        || index + 1 < lines.Length && IsTruncationMarker(lines[index + 1].TrimEnd('\r'), section)
+                        || index == lines.Length - 1 && section.PatchTruncated)
+                    {
+                        inHunk = false;
+                        visibleRangeStarted = false;
+                        continue;
+                    }
+                    if (normalizedLine.StartsWith("diff --git ", StringComparison.Ordinal))
+                    {
+                        oldPath = newPath = string.Empty;
+                        inHunk = false;
+                    }
+                    if (!inHunk && normalizedLine.StartsWith("--- ", StringComparison.Ordinal))
                     {
                         oldPath = ParsePatchPath(normalizedLine[4..], "a/");
                         continue;
                     }
-                    if (normalizedLine.StartsWith("+++ ", StringComparison.Ordinal))
+                    if (!inHunk && normalizedLine.StartsWith("+++ ", StringComparison.Ordinal))
                     {
                         newPath = ParsePatchPath(normalizedLine[4..], "b/");
                         continue;
                     }
-                    if (!normalizedLine.StartsWith("@@ ", StringComparison.Ordinal))
-                        continue;
-
-                    var match = HunkHeader.Match(normalizedLine);
-                    if (!match.Success)
-                        continue;
-                    var sidePath = finding.Side == "old" ? oldPath : newPath;
-                    if (!string.Equals(sidePath, finding.Path, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    var startName = finding.Side == "old" ? "oldStart" : "newStart";
-                    var countName = finding.Side == "old" ? "oldCount" : "newCount";
-                    if (!int.TryParse(match.Groups[startName].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var start))
-                        continue;
-                    var count = match.Groups[countName].Success
-                        && int.TryParse(match.Groups[countName].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedCount)
-                            ? parsedCount
-                            : 1;
-                    if (count > 0
-                        && finding.LineStart >= start
-                        && finding.LineEnd < start + count)
+                    if (normalizedLine.StartsWith("@@ ", StringComparison.Ordinal))
                     {
-                        return true;
+                        var match = HunkHeader.Match(normalizedLine);
+                        inHunk = match.Success
+                            && TryReadHunkNumber(match, "oldStart", out oldLine)
+                            && TryReadHunkNumber(match, "newStart", out newLine)
+                            && TryReadHunkNumber(match, "oldCount", out oldRemaining)
+                            && TryReadHunkNumber(match, "newCount", out newRemaining);
+                        visibleRangeStarted = false;
+                        continue;
                     }
+                    if (!inHunk || normalizedLine.Length == 0 || normalizedLine[0] == '\\')
+                        continue;
+                    var consumesOld = normalizedLine[0] is ' ' or '-';
+                    var consumesNew = normalizedLine[0] is ' ' or '+';
+                    if (!consumesOld && !consumesNew
+                        || consumesOld && oldRemaining == 0
+                        || consumesNew && newRemaining == 0)
+                    {
+                        inHunk = false;
+                        continue;
+                    }
+                    var sidePath = finding.Side == "old" ? oldPath : newPath;
+                    var sideLine = finding.Side == "old" ? oldLine : newLine;
+                    if ((finding.Side == "old" ? consumesOld : consumesNew)
+                        && string.Equals(sidePath, finding.Path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        visibleRangeStarted |= sideLine == finding.LineStart;
+                        if (visibleRangeStarted && sideLine == finding.LineEnd)
+                            return true;
+                    }
+                    if (consumesOld) { oldLine++; oldRemaining--; }
+                    if (consumesNew) { newLine++; newRemaining--; }
+                    inHunk = oldRemaining > 0 || newRemaining > 0;
                 }
             }
 
@@ -350,9 +381,74 @@ namespace ColorVision.Copilot
         private static string ParsePatchPath(string value, string prefix)
         {
             var path = value.Split('\t', 2)[0].Trim();
+            if (path.StartsWith('"'))
+            {
+                if (!TryDecodeQuotedPath(path, out path))
+                    return string.Empty;
+            }
             if (string.Equals(path, "/dev/null", StringComparison.Ordinal))
                 return string.Empty;
             return path.StartsWith(prefix, StringComparison.Ordinal) ? path[prefix.Length..] : string.Empty;
+        }
+
+        private static bool TryReadHunkNumber(Match match, string name, out long value)
+        {
+            value = 1;
+            return !match.Groups[name].Success
+                || long.TryParse(match.Groups[name].Value, NumberStyles.None, CultureInfo.InvariantCulture, out value);
+        }
+
+        private static bool IsTruncationMarker(string line, CopilotGitDiffSection section) =>
+            line is "...<Git diff excerpt truncated>..." or "...<shell output truncated>..."
+            || section.Scope == "untracked" && section.PatchTruncated
+                && line is "+...<untracked file content truncated>..." or "+...<untracked file became unavailable during review>...";
+
+        private static bool TryDecodeQuotedPath(string value, out string path)
+        {
+            path = string.Empty;
+            if (value.Length < 2 || value[^1] != '"')
+                return false;
+            var builder = new StringBuilder();
+            for (var index = 1; index < value.Length - 1; index++)
+            {
+                var character = value[index];
+                if (character != '\\') { builder.Append(character); continue; }
+                if (++index >= value.Length - 1)
+                    return false;
+                character = value[index];
+                if (character is >= '0' and <= '7')
+                {
+                    var bytes = new List<byte>();
+                    do
+                    {
+                        var octal = character - '0';
+                        for (var digit = 1; digit < 3 && index + 1 < value.Length - 1
+                            && value[index + 1] is >= '0' and <= '7'; digit++)
+                            octal = octal * 8 + value[++index] - '0';
+                        if (octal > byte.MaxValue)
+                            return false;
+                        bytes.Add((byte)octal);
+                        if (index + 2 >= value.Length - 1 || value[index + 1] != '\\'
+                            || value[index + 2] is < '0' or > '7')
+                            break;
+                        index += 2;
+                        character = value[index];
+                    } while (true);
+                    try { builder.Append(new UTF8Encoding(false, true).GetString(bytes.ToArray())); }
+                    catch (DecoderFallbackException) { return false; }
+                    continue;
+                }
+                var decoded = character switch
+                {
+                    'a' => '\a', 'b' => '\b', 't' => '\t', 'n' => '\n',
+                    'v' => '\v', 'f' => '\f', 'r' => '\r', '\\' => '\\', '"' => '"', _ => '\0',
+                };
+                if (decoded == '\0')
+                    return false;
+                builder.Append(decoded);
+            }
+            path = builder.ToString();
+            return true;
         }
     }
 
@@ -360,6 +456,12 @@ namespace ColorVision.Copilot
     {
         private readonly object _sync = new();
         private CopilotCodeReviewSnapshot? _latestEvidence;
+
+        public void InvalidateEvidence()
+        {
+            lock (_sync)
+                _latestEvidence = null;
+        }
 
         public void RecordEvidence(CopilotCodeReviewSnapshot snapshot)
         {

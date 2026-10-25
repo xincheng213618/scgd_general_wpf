@@ -23,6 +23,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         private readonly BatchImageProcessor _processor;
         private readonly IReadOnlyList<BatchImageAlgorithmDefinition> _algorithms;
         private CancellationTokenSource? _cancellationTokenSource;
+        private bool _isClosed;
 
         public BatchImageProcessingWindow()
             : this(ImageAlgorithmPlatform.Runtime)
@@ -70,6 +71,56 @@ namespace ColorVision.ImageEditor.BatchProcessing
         public ObservableCollection<BatchImageItem> Files { get; } = new();
 
         internal IReadOnlyList<BatchImageAlgorithmDefinition> Algorithms => _algorithms;
+
+        /// <summary>Adds an already expanded input list without loading images or changing processing settings.</summary>
+        public int AddPreparedInputs(IReadOnlyList<BatchImageItem> items)
+        {
+            Dispatcher.VerifyAccess();
+            if (_isClosed || _cancellationTokenSource != null)
+            {
+                throw new InvalidOperationException("Batch inputs cannot be added while processing or after the window is closed.");
+            }
+            ArgumentNullException.ThrowIfNull(items);
+
+            List<BatchImageItem> prepared = new(items.Count);
+            foreach (BatchImageItem item in items)
+            {
+                ArgumentNullException.ThrowIfNull(item);
+                ArgumentException.ThrowIfNullOrWhiteSpace(item.FilePath);
+                string fullPath = Path.GetFullPath(item.FilePath);
+                string? sourceRoot = null;
+                if (item.SourceRoot != null)
+                {
+                    ArgumentException.ThrowIfNullOrWhiteSpace(item.SourceRoot);
+                    sourceRoot = Path.GetFullPath(item.SourceRoot);
+                    string relativePath = Path.GetRelativePath(sourceRoot, fullPath);
+                    if (relativePath == "." || relativePath == ".." || Path.IsPathRooted(relativePath)
+                        || relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                        || relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal))
+                    {
+                        throw new ArgumentException("Each prepared input must be inside its source root.", nameof(items));
+                    }
+                }
+                if (!IsSupportedFile(fullPath))
+                {
+                    throw new NotSupportedException(string.Format(Properties.Resources.BatchUnsupportedFormat, Path.GetExtension(fullPath)));
+                }
+                prepared.Add(new BatchImageItem(fullPath, sourceRoot));
+            }
+
+            HashSet<string> existing = Files.Select(item => item.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            int added = 0;
+            foreach (BatchImageItem item in prepared)
+            {
+                if (existing.Add(item.FilePath))
+                {
+                    Files.Add(item);
+                    added++;
+                }
+            }
+            UpdateFileCount();
+            return added;
+        }
 
         private static IBatchImageLoader[] LoadImageLoaders()
         {
@@ -329,6 +380,12 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
 
             base.OnClosing(e);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _isClosed = true;
+            base.OnClosed(e);
         }
     }
 }

@@ -117,14 +117,14 @@ namespace ColorVision.Copilot
                                 reservation.EffectiveApprovalPromptCategory);
                             var useConfiguredAutomaticReview = useAutomaticReview
                                 && CopilotCodexApprovalsReviewerSelection.IsExplicitAutoReview(request);
-                            var handle = _approvalCoordinator.RequestApproval(
+                            var handle = await _approvalCoordinator.RequestApprovalAsync(
                                 reservation.Tool,
                                 request,
                                 reservation.ToolInput,
                                 reservation.CallId,
                                 cancellationToken,
                                 reservation.ExecutionScope,
-                                userReviewVisible: !useConfiguredAutomaticReview);
+                                userReviewVisible: !useConfiguredAutomaticReview).ConfigureAwait(false);
                             await bridge.PublishAwaitingApprovalAsync(
                                 reservation,
                                 handle.Action,

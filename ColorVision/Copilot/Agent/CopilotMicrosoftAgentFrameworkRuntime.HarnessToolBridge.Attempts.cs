@@ -230,6 +230,7 @@ namespace ColorVision.Copilot
                 state.InProgress = false;
                 state.LastOutcome = outcome;
                 _toolBudgetCompletionGate.CompleteRound(outcome.Invocation.Round);
+                InvalidateSupersededReviewAttempts(signature, outcome);
 
                 // The executor releases its read lease before this bridge records the result.
                 // A write can be recorded first: keep deduplication until the read completes,
@@ -279,6 +280,35 @@ namespace ColorVision.Copilot
                 }
             }
 
+            private void InvalidateSupersededReviewAttempts(string signature, CopilotToolExecutionOutcome outcome)
+            {
+                if (_request.Mode != CopilotAgentMode.Review
+                    || outcome.Invocation.Tool is not CopilotInspectGitDiffTool
+                    || !outcome.Result.Success
+                    || outcome.Execution.State != CopilotToolExecutionState.Completed
+                    || !CopilotGitDiffResultProtocol.TryParse(outcome.Result.Content, out var latest, out _))
+                    return;
+
+                // Review without explicit target metadata uses the same WorkingTree
+                // default as its execution contract and snapshot capture.
+                var stale = _attemptsBySignature.Where(entry => entry.Key != signature
+                    && !entry.Value.InProgress && entry.Value.LastOutcome is { } previous
+                    && (previous.Invocation.Tool is CopilotSubmitCodeReviewFindingsTool
+                        || previous.Invocation.Tool is CopilotInspectGitDiffTool
+                            && previous.Result.Success
+                            && CopilotGitDiffResultProtocol.TryParse(previous.Result.Content, out var earlier, out _)
+                            && (!string.Equals(earlier.RepositoryRoot, latest.RepositoryRoot, StringComparison.OrdinalIgnoreCase)
+                                || !string.Equals(earlier.Target, latest.Target, StringComparison.Ordinal)
+                                || !string.Equals(earlier.Revision, latest.Revision,
+                                    earlier.Target == "commit" ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
+                                || !string.Equals(earlier.ResolvedRevision, latest.ResolvedRevision, StringComparison.OrdinalIgnoreCase)
+                                || !string.Equals(earlier.Scope, latest.Scope, StringComparison.Ordinal)
+                                || !string.Equals(earlier.PathFilter, latest.PathFilter, StringComparison.OrdinalIgnoreCase))))
+                    .Select(entry => entry.Key).ToArray();
+                foreach (var key in stale)
+                    _attemptsBySignature.Remove(key);
+            }
+
             private static bool IsLocalObservationTool(ICopilotTool tool) =>
                 tool.Capability.Access == CopilotToolAccess.ReadOnly
                 && tool is CopilotReadLocalFileTool or CopilotReadAttachedFileTool
@@ -318,16 +348,19 @@ namespace ColorVision.Copilot
                 if (!IsLocalObservationTool(outcome.Invocation.Tool))
                     return false;
                 if (outcome.Invocation.Tool is CopilotReadLocalFileTool or CopilotReadAttachedFileTool)
-                    return outcome.Result.SuccessfullyReadLocalFilePaths.Any(changedPaths.Contains);
+                    return outcome.Result.SuccessfullyReadLocalFilePaths.Any(path =>
+                        changedPaths.Contains(path) || changedPaths.Any(changedPath => IsPathBelow(path, changedPath)));
 
                 // Scopes were resolved and authorized by the observation itself.
                 // Match lexically: deleted files no longer pass existence checks,
                 // and a sibling with the same name prefix is outside this scope.
                 return outcome.Result.LocalObservationScopePaths.Any(scope =>
-                    changedPaths.Contains(scope) || changedPaths.Any(path => path.StartsWith(
-                        scope.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                        StringComparison.OrdinalIgnoreCase)));
+                    changedPaths.Contains(scope) || changedPaths.Any(path => IsPathBelow(path, scope) || IsPathBelow(scope, path)));
             }
+
+            private static bool IsPathBelow(string path, string parent) => path.StartsWith(
+                parent.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase);
 
             private string FormatToolResult(CopilotToolExecutionOutcome outcome)
             {

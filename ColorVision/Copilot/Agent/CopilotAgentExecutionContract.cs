@@ -90,12 +90,19 @@ namespace ColorVision.Copilot
             if (!IsRequired)
                 return string.Empty;
 
-            var orderedGroups = _requiredToolGroups.Select(group => group.Length == 1
+            var orderedGroups = _requiredToolGroups
+                .Where(group => !IsIndependentReviewWorkingTreeGroup(group))
+                .Select(group => group.Length == 1
                 ? group[0]
-                : $"({string.Join(" or ", group)})");
-            var instruction = "\n\nCurrent-turn execution contract: obtain successful tool evidence in this exact order before giving the final answer: "
-                + string.Join(" -> ", orderedGroups)
-                + ". Do not claim a step completed before its successful tool result. If an earlier required step fails, report the concrete blocker instead of continuing with a dependent action.";
+                : $"({string.Join(" or ", group)})")
+                .ToArray();
+            var instruction = orderedGroups.Length > 0
+                ? "\n\nCurrent-turn execution contract: obtain successful tool evidence in this exact order before giving the final answer: "
+                    + string.Join(" -> ", orderedGroups) + "."
+                : "\n\nCurrent-turn execution contract: obtain successful tool evidence before giving the final answer.";
+            instruction += " Do not claim a step completed before its successful tool result. If an earlier required step fails, report the concrete blocker instead of continuing with a dependent action.";
+            if (_requiredToolGroups.Any(IsIndependentReviewWorkingTreeGroup))
+                instruction += "\nAlso obtain successful InspectGitWorkingTree evidence for the review repository before the final answer. This independent observation may precede or follow the diff and findings, but must follow any required current-turn file reads. Correcting its repository does not require repeating an accepted diff or findings submission.";
             if (_requiredAttachedFilePaths.Length > 0)
             {
                 instruction += "\nReadAttachedFile evidence is complete only after successful results cover every current-turn file attachment. Start with its bounded batch form, then select any remaining path reported by the result:\n"
@@ -193,12 +200,28 @@ namespace ColorVision.Copilot
                     missingGroup = group;
                     break;
                 }
-                cursor = matchedIndex;
+                // Repository status is an independent Review observation. A later
+                // correction must not discard an already accepted diff and submission.
+                if (!IsIndependentReviewWorkingTreeGroup(group))
+                    cursor = matchedIndex;
                 if (group.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase))
                     TryReadReviewEvidenceId(relevant[matchedIndex], out reviewEvidenceId);
             }
             var reviewFindingsGroup = _requiredToolGroups.FirstOrDefault(group =>
                 group.Contains("SubmitCodeReviewFindings", StringComparer.OrdinalIgnoreCase));
+            var latestReviewDiffIndex = _requiredWorkspaceReviewTarget != null
+                ? Array.FindLastIndex(relevant, step =>
+                    string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)
+                    && IsAcceptedEvidence(step))
+                : -1;
+            if (latestReviewDiffIndex >= 0
+                && (!MatchesRequiredReviewTarget(relevant[latestReviewDiffIndex])
+                    || !TryReadReviewEvidenceId(relevant[latestReviewDiffIndex], out _)))
+            {
+                missingGroup = _requiredToolGroups.First(group =>
+                    group.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase));
+                cursor = latestReviewDiffIndex - 1;
+            }
             if (missingGroup == null
                 && reviewFindingsGroup != null
                 && !TryFindSubmissionForLatestReviewDiff(relevant, out cursor))
@@ -207,7 +230,7 @@ namespace ColorVision.Copilot
                 cursor = Array.FindLastIndex(relevant, step =>
                     string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)
                     && IsAcceptedEvidence(step)
-                    && MatchesRequiredReviewTarget(step.ToolCall.ToolInput)
+                    && MatchesRequiredReviewTarget(step)
                     && TryReadReviewEvidenceId(step, out _));
             }
             if (missingGroup == null)
@@ -251,16 +274,24 @@ namespace ColorVision.Copilot
                 : Array.Empty<CopilotAgentStepRecord>();
             var hasReviewTargetMismatch = reviewDiffAttempts.Any(step =>
                     IsAcceptedEvidence(step)
-                    && !MatchesRequiredReviewTarget(step.ToolCall.ToolInput))
-                && !reviewDiffAttempts.Any(step => MatchesRequiredReviewTarget(step.ToolCall.ToolInput));
+                    && !MatchesRequiredReviewTarget(step))
+                && !reviewDiffAttempts.Any(step => IsAcceptedEvidence(step)
+                    ? MatchesRequiredReviewTarget(step)
+                    : MatchesRequiredReviewTarget(step.ToolCall.ToolInput));
+            var hasReviewWorkingTreeMismatch = latestMissingGroupAttempt != null
+                && string.Equals(latestMissingGroupAttempt.Execution.ToolName, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase)
+                && IsAcceptedEvidence(latestMissingGroupAttempt)
+                && !MatchesRequiredReviewWorkingTree(latestMissingGroupAttempt);
             return new CopilotAgentExecutionContractEvaluation
             {
                 IsRequired = true,
                 IsSatisfied = false,
-                ShouldReinvoke = untriedNames.Length > 0
+                ShouldReinvoke = _requiredWorkspaceReviewTarget?.BoundRepositoryRoot != string.Empty
+                    && (untriedNames.Length > 0
                     || hasUnattemptedFilePath
                     || hasReviewTargetMismatch
-                    || canRetryLatestReadFailure,
+                    || hasReviewWorkingTreeMismatch
+                    || canRetryLatestReadFailure),
                 Feedback = BuildFeedback(missingGroup, untriedNames, missingAttachedFilePaths, missingLocalFilePaths),
                 LastRelevantStep = relevant.LastOrDefault(),
                 MissingToolNames = missingGroup,
@@ -314,7 +345,8 @@ namespace ColorVision.Copilot
             }
             if (missingGroup.Contains("InspectGitWorkingTree", StringComparer.OrdinalIgnoreCase))
             {
-                return "Execution contract: Review mode requires current working-tree evidence before a code-review conclusion. Call InspectGitWorkingTree now and use its bounded status as evidence. If inspection fails or approval is denied, report the concrete blocker instead of claiming the repository state was inspected.";
+                return "Execution contract: Review mode requires current working-tree evidence before a code-review conclusion. Call InspectGitWorkingTree now and use its bounded status as evidence. If inspection fails or approval is denied, report the concrete blocker instead of claiming the repository state was inspected."
+                    + BuildRequiredReviewRepositoryInstruction();
             }
             if (missingGroup.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase))
             {
@@ -516,10 +548,15 @@ namespace ColorVision.Copilot
         {
             if (!IsAcceptedEvidence(step))
                 return false;
+            if (group.Contains("InspectGitWorkingTree", StringComparer.OrdinalIgnoreCase)
+                && string.Equals(step.Execution.ToolName, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
+            {
+                return MatchesRequiredReviewWorkingTree(step);
+            }
             if (group.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase)
                 && string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
             {
-                return MatchesRequiredReviewTarget(step.ToolCall.ToolInput)
+                return MatchesRequiredReviewTarget(step)
                     && TryReadReviewEvidenceId(step, out _);
             }
             if (group.Contains("SubmitCodeReviewFindings", StringComparer.OrdinalIgnoreCase)
@@ -537,6 +574,11 @@ namespace ColorVision.Copilot
             }
             return true;
         }
+
+        private bool IsIndependentReviewWorkingTreeGroup(string[] group) =>
+            (Requirement is CopilotAgentExecutionRequirement.GitReviewEvidence
+                or CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation)
+            && group.Contains("InspectGitWorkingTree", StringComparer.OrdinalIgnoreCase);
 
         private static bool TryReadReviewEvidenceId(
             CopilotAgentStepRecord step,
@@ -567,10 +609,9 @@ namespace ColorVision.Copilot
             submissionIndex = -1;
             var diffIndex = Array.FindLastIndex(relevant, step =>
                 string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)
-                && IsAcceptedEvidence(step)
-                && MatchesRequiredReviewTarget(step.ToolCall.ToolInput)
-                && TryReadReviewEvidenceId(step, out _));
+                && IsAcceptedEvidence(step));
             if (diffIndex < 0
+                || !MatchesRequiredReviewTarget(relevant[diffIndex])
                 || !TryReadReviewEvidenceId(relevant[diffIndex], out var latestEvidenceId))
             {
                 return false;
@@ -616,12 +657,23 @@ namespace ColorVision.Copilot
             };
         }
 
+        private bool MatchesRequiredReviewTarget(CopilotAgentStepRecord step) =>
+            MatchesRequiredReviewTarget(step.ToolCall.ToolInput)
+            && CopilotGitDiffResultProtocol.TryParse(step.Observation.Content, out var snapshot, out _)
+            && (_requiredWorkspaceReviewTarget == null
+                || CopilotTurnCodeReviewSnapshotCapture.MatchesTarget(_requiredWorkspaceReviewTarget, snapshot));
+
+        private bool MatchesRequiredReviewWorkingTree(CopilotAgentStepRecord step) =>
+            _requiredWorkspaceReviewTarget?.BoundRepositoryRoot == null
+            || CopilotGitWorkingTreeInspectionService.TryReadRepositoryRoot(step.Observation.Content, out var repositoryRoot)
+                && _requiredWorkspaceReviewTarget.MatchesRepository(repositoryRoot);
+
         private string BuildRequiredReviewTargetInstruction()
         {
             if (_requiredWorkspaceReviewTarget == null)
                 return "Call InspectGitDiff with the target named by the request.";
 
-            return _requiredWorkspaceReviewTarget.Target switch
+            var instruction = _requiredWorkspaceReviewTarget.Target switch
             {
                 CopilotWorkspaceReviewTarget.BaseBranch =>
                     "Call InspectGitDiff with exactly target=\"base_branch\" and revision="
@@ -634,7 +686,17 @@ namespace ColorVision.Copilot
                 _ =>
                     "Call InspectGitDiff with exactly target=\"working_tree\" and scope=\"both\"; omit revision. This scope includes staged, unstaged, and untracked review evidence.",
             };
+            return instruction + BuildRequiredReviewRepositoryInstruction();
         }
+
+        private string BuildRequiredReviewRepositoryInstruction() =>
+            _requiredWorkspaceReviewTarget?.BoundRepositoryRoot switch
+            {
+                null => string.Empty,
+                "" => " The current workspace's Git repository could not be resolved within the allowed roots. Report that blocker; another repository cannot complete this review.",
+                var repositoryRoot => " Review repository root " + JsonSerializer.Serialize(repositoryRoot)
+                    + ". A diff from another allowed repository cannot complete this review; file and directory filters within this repository remain available.",
+            };
 
         private static bool HasArgument(CopilotAgentToolInput input, string name) =>
             input.Arguments.Keys.Any(key => string.Equals(key, name, StringComparison.OrdinalIgnoreCase));

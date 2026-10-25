@@ -221,6 +221,8 @@ namespace ColorVision.Copilot
                 ["type_key"] = new { type = "string", description = "add_node: exact type key from SearchFlowNodeCatalog." },
                 ["left"] = new { type = "integer", minimum = -100000, maximum = 100000, description = "add_node: canvas X coordinate." },
                 ["top"] = new { type = "integer", minimum = -100000, maximum = 100000, description = "add_node: canvas Y coordinate." },
+                ["inherit_camera_defaults"] = new { type = "boolean", description = "add_node only: explicitly copy current camera acquisition settings for a catalog type with canInheritCameraDefaults. Defaults to false. Preview returns the effective settings and cameraDefaultsFingerprint." },
+                ["camera_defaults_fingerprint"] = new { type = "string", description = "add_node with inherit_camera_defaults=true: copy the exact cameraDefaultsFingerprint from the preview into apply. Required when applying; changed camera settings require a new preview." },
                 ["node_id"] = new { type = "string", description = "set_property: stable node instance id." },
                 ["property_name"] = new { type = "string", description = "set_property: exact writable propertyName from the node catalog." },
                 ["value"] = new { type = "string", description = "set_property: new value accepted by the existing STNodeProperty descriptor; an empty string is valid." },
@@ -459,8 +461,8 @@ namespace ColorVision.Copilot
                 dispatcher => (arguments, _, token) => dispatcher.PreviewFlowPatchAsync(arguments, token),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.",
-                mcpDescription: "Validate one bounded Flow graph change without editing: add_node, set_property, or connect. Use exact ids/type keys from the Flow graph and node catalog.",
+                agentDescription: "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. For supported camera nodes, explicitly set inherit_camera_defaults=true to preview current acquisition settings and obtain cameraDefaultsFingerprint for apply. This never edits, saves, or runs the flow.",
+                mcpDescription: "Validate one bounded Flow graph change without editing: add_node, set_property, or connect. Use exact ids/type keys from the Flow graph and node catalog. Optional inherit_camera_defaults=true previews effective camera settings and their cameraDefaultsFingerprint.",
                 mcpMetadata: McpMetadata("context", "Call preview_flow_patch with one exact operation and the current graph revision."),
                 presentation: FlowPreviewPresentation,
                 executionRoute: CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime);
@@ -475,8 +477,8 @@ namespace ColorVision.Copilot
                 CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite,
                 CopilotToolIdempotency.NonIdempotent,
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-                agentDescription: "Apply one previously previewed add_node, set_property, or connect operation to the active Flow editor. Rechecks the revision, requires explicit approval, and never saves or runs the flow.",
-                mcpDescription: "Apply one previously previewed add_node, set_property, or connect change after explicit approval. Rechecks the graph revision and never saves or runs the flow.",
+                agentDescription: "Apply one previously previewed add_node, set_property, or connect operation to the active Flow editor. Rechecks the revision, requires explicit approval, and never saves or runs the flow. When inheriting camera settings, also pass the preview's exact camera_defaults_fingerprint; changed settings are rejected before adding the node.",
+                mcpDescription: "Apply one previously previewed add_node, set_property, or connect change after explicit approval. Rechecks the graph revision and, for inherit_camera_defaults=true, the required camera_defaults_fingerprint. Never saves or runs the flow.",
                 approvalMetadata: ManualApproval(
                     "修改不会自动保存或运行流程；如需恢复，必须在编辑器中手动撤销。"),
                 mcpMetadata: McpMetadata(

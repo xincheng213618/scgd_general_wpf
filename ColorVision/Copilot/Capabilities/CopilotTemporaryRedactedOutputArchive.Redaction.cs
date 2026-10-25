@@ -353,6 +353,11 @@ namespace ColorVision.Copilot
                     ConsumePendingPrefix(_pendingRaw.Length);
                     return true;
                 }
+                if (_redactOnlyQuotedAssignments && valueQuote == '\0')
+                {
+                    ReleaseRejectedCandidateCharacter();
+                    return true;
+                }
                 if (valueQuote != '\0' && pending[index] == valueQuote)
                 {
                     WritePendingPrefix(pending, index + 1);
@@ -380,6 +385,7 @@ namespace ColorVision.Copilot
                     marker,
                     "bearer",
                     StringComparison.OrdinalIgnoreCase)
+                && !_redactOnlyQuotedAssignments
                 && !hadQuote
                 && index > whitespaceStart
                 && !IsBearerValueDelimiter(pending[index]))
@@ -421,7 +427,7 @@ namespace ColorVision.Copilot
             if (value.Length == 0
                 || !_available
                 || _disposed
-                || _stream == null)
+                || _stream == null && _redactedText == null)
             {
                 return;
             }
@@ -446,10 +452,12 @@ namespace ColorVision.Copilot
             {
                 if (writeLength > 0)
                 {
-                    _stream.Write(MemoryMarshal.AsBytes(
-                        value[..writeLength]));
+                    if (_redactedText != null)
+                        _redactedText.Append(value[..writeLength]);
+                    else
+                        _stream!.Write(MemoryMarshal.AsBytes(value[..writeLength]));
                 }
-                _stream.Flush();
+                _stream?.Flush();
                 _archivedCharacters += writeLength;
                 if (writeLength < value.Length)
                     _isTruncated = true;
@@ -490,7 +498,7 @@ namespace ColorVision.Copilot
             {
                 return value.Length > 0
                     && char.IsHighSurrogate(value[^1])
-                    ? value[..^1]
+                    ? value[..^1] + '\uFFFD'
                     : value;
             }
 

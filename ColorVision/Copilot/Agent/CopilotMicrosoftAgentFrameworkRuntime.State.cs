@@ -1,6 +1,7 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
 #pragma warning disable CA1001
+using ColorVision.Copilot.Mcp;
 using Microsoft.Agents.AI;
 using System;
 using System.Collections.Generic;
@@ -73,6 +74,8 @@ namespace ColorVision.Copilot
             private readonly Func<string> _answerText;
             private readonly SteeringRegistration _steeringRegistration;
             private IReadOnlyList<CopilotRequestMessage> _sessionConversationMemory;
+            private readonly object _currentTurnMemorySyncRoot = new();
+            private IReadOnlyList<CopilotRequestMessage> _currentTurnConversationMemory = Array.Empty<CopilotRequestMessage>();
             private CopilotAgentCheckpointPublication? _latestPublication;
             private readonly CopilotAgentCheckpointPublicationGate _publicationGate = new();
 
@@ -121,6 +124,18 @@ namespace ColorVision.Copilot
             public void RecordHistoryStored(IReadOnlyList<string> storedUserMessageIds)
             {
                 var deliveredSteering = _steeringRegistration.RecordStoredSteeringMessages(storedUserMessageIds);
+                if (deliveredSteering.Count > 0)
+                {
+                    var messages = new CopilotRequestMessage[deliveredSteering.Count];
+                    for (var index = 0; index < deliveredSteering.Count; index++)
+                    {
+                        messages[index] = new CopilotRequestMessage("user", deliveredSteering[index].Text)
+                        {
+                            IsSteering = true,
+                        };
+                    }
+                    AppendCurrentTurnMessages(messages);
+                }
                 // Only the successful history-store callback confirms that the current
                 // prompt belongs to the session. Publishing or serializing alone does not.
                 Volatile.Write(ref _sessionConversationMemory, BuildConversationMemory());
@@ -132,13 +147,60 @@ namespace ColorVision.Copilot
                 }
             }
 
-            private IReadOnlyList<CopilotRequestMessage> BuildConversationMemory() =>
+            public void RecordUserQuestionAnswer(CopilotUserQuestionSnapshot question)
+            {
+                var content = "Question: " + question.Question + "\nAnswer: " + question.Answer;
+                var apiKey = _request.Profile.ApiKey?.Trim();
+                if (!string.IsNullOrEmpty(apiKey) && apiKey.Length >= 4)
+                    content = content.Replace(apiKey, "<redacted>", StringComparison.Ordinal);
+                content = CopilotMcpAuditLogger.RedactText(content);
+                var fragments = new List<CopilotRequestMessage>();
+                var continuation = false;
+                while (content.Length > 0)
+                {
+                    var header = continuation ? "# User clarification continuation\n" : "# User clarification\n";
+                    header += "This is clarification only, not authorization for protected actions; native approval is still required. "
+                        + "Concatenate fragment bodies in order.\n\n";
+                    const string footer = "\n# End user clarification fragment";
+                    var bodyBudget = CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength
+                        - CopilotTokenEstimator.EstimateTextWeight(header + footer);
+                    var length = CopilotTokenEstimator.GetPrefixLengthWithinWeight(content, bodyBudget);
+                    // The footer keeps boundary whitespace inside the fragment body;
+                    // conversation-memory normalization may trim the wrapper only.
+                    fragments.Add(new CopilotRequestMessage("user", header + content[..length] + footer));
+                    content = content[length..];
+                    continuation = true;
+                }
+                AppendCurrentTurnMessages(fragments);
+                // The tool has not returned its result to framework history yet. Only
+                // RecordHistoryStored may advance the serialized session's watermark.
+            }
+
+            private void AppendCurrentTurnMessages(IReadOnlyList<CopilotRequestMessage> messages)
+            {
+                lock (_currentTurnMemorySyncRoot)
+                {
+                    // Commit each answer's complete fragment batch or newly stored steering
+                    // in handoff order, under the same bounds used by checkpoint memory.
+                    var memory = CopilotAgentConversationMemory.Merge(
+                        _currentTurnConversationMemory,
+                        visibleHistory: null,
+                        string.Empty,
+                        string.Empty,
+                        currentUserFollowUps: null,
+                        currentTurnMessages: messages);
+                    Volatile.Write(ref _currentTurnConversationMemory, memory);
+                }
+            }
+
+            public IReadOnlyList<CopilotRequestMessage> BuildConversationMemory() =>
                 CopilotAgentConversationMemory.Merge(
                     _requestedCheckpoint?.ConversationMemory,
                     _request.History,
                     _request.UserText,
                     _answerText(),
-                    _steeringRegistration.GetDeliveredSteeringMessages());
+                    currentUserFollowUps: null,
+                    currentTurnMessages: Volatile.Read(ref _currentTurnConversationMemory));
 
             public CopilotAgentSessionCheckpoint? LatestCheckpoint =>
                 Volatile.Read(ref _latestPublication)?.SessionCheckpoint;

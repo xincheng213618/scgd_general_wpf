@@ -65,6 +65,7 @@ namespace ColorVision.Copilot
 
             var conversation = EnsureConversation();
             var messageEditSnapshot = _composerDraftBeforeMessageEdit;
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
             var cancellation = BeginAuxiliaryOperation();
             _fileAttachmentCts = cancellation;
             IsBusy = true;
@@ -80,7 +81,7 @@ namespace ColorVision.Copilot
                     || !ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit))
                     return 0;
 
-                return AddResolvedFileAttachments(existingPaths, conversation);
+                return AddResolvedFileAttachments(existingPaths, conversation, feedbackRevision);
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
@@ -88,8 +89,13 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                LocalCommandResultTitle = "附加文件 · 失败";
-                LocalCommandResultText = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                if (!cancellation.IsCancellationRequested
+                    && ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit)
+                    && CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                {
+                    LocalCommandResultTitle = "附加文件 · 失败";
+                    LocalCommandResultText = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                }
                 return 0;
             }
             finally
@@ -104,7 +110,8 @@ namespace ColorVision.Copilot
 
         private int AddResolvedFileAttachments(
             IReadOnlyList<string> filePaths,
-            CopilotConversationRecord? conversation = null)
+            CopilotConversationRecord? conversation = null,
+            long? feedbackRevision = null)
         {
             if (filePaths.Count == 0)
                 return 0;
@@ -138,7 +145,8 @@ namespace ColorVision.Copilot
 
             if (addedCount > 0)
                 UpdateAttachmentsState(conversation);
-            ReportFileAttachmentLimits(conversation, addedCount, attachmentLimitReached, imageLimitReached);
+            if (feedbackRevision == null || CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision.Value))
+                ReportFileAttachmentLimits(conversation, addedCount, attachmentLimitReached, imageLimitReached);
             return addedCount;
         }
 

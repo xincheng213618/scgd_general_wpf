@@ -1,4 +1,5 @@
 #pragma warning disable CA1822,CA1859,CS8602
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
@@ -10,6 +11,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -181,6 +183,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                         Description = attribute.DisplayDescription ?? string.Empty,
                         NodeType = node is CVCommonNode commonNode ? commonNode.NodeType ?? string.Empty : string.Empty,
                         DefaultDeviceCode = node is IFlowDeviceNode commonNode1 ? commonNode1.DeviceCode ?? string.Empty : string.Empty,
+                        CanInheritCameraDefaults = node != null && CameraNodeCreationDefaults.SupportsDirectParameters(node),
                         Properties = BuildNodePropertySchemas(type),
                     });
                 }
@@ -248,18 +251,22 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             return result;
         }
 
-        public CopilotFlowNodeContextSnapshot PreviewCopilotFlowNodeAddition(string typeKey, int left, int top, string? expectedRevision)
+        public CopilotFlowNodeContextSnapshot PreviewCopilotFlowNodeAddition(string typeKey, int left, int top, string? expectedRevision,
+            bool inheritCameraDefaults = false, string? cameraDefaultsFingerprint = null)
         {
             EnsureCopilotFlowMutationAllowed(expectedRevision);
             var node = CreateCopilotFlowNode(typeKey, left, top);
-            return BuildNodeSnapshot(node, isActive: false);
+            var cameraDefaults = InitializeCopilotCameraDefaults(node, inheritCameraDefaults, cameraDefaultsFingerprint, requireFingerprint: false);
+            return BuildNodeSnapshot(node, isActive: false, cameraDefaults.Defaults, cameraDefaults.Fingerprint);
         }
 
-        public CopilotFlowContextSnapshot AddCopilotFlowNode(string typeKey, int left, int top, string? expectedRevision)
+        public CopilotFlowContextSnapshot AddCopilotFlowNode(string typeKey, int left, int top, string? expectedRevision,
+            bool inheritCameraDefaults = false, string? cameraDefaultsFingerprint = null)
         {
             EnsureCopilotFlowMutationAllowed(expectedRevision);
             var editor = View?.STNodeEditorMain ?? throw new InvalidOperationException("No active Flow editor is available.");
             var node = CreateCopilotFlowNode(typeKey, left, top);
+            InitializeCopilotCameraDefaults(node, inheritCameraDefaults, cameraDefaultsFingerprint, requireFingerprint: true);
             try
             {
                 if (node is CVBaseServerNode serverNode)
@@ -525,7 +532,41 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             return node;
         }
 
-        private static CopilotFlowNodeContextSnapshot BuildNodeSnapshot(STNode node, bool isActive)
+        private static (CopilotFlowCameraDefaults? Defaults, string? Fingerprint) InitializeCopilotCameraDefaults(
+            STNode node, bool inheritCameraDefaults, string? expectedFingerprint, bool requireFingerprint)
+        {
+            if (!inheritCameraDefaults)
+            {
+                if (!string.IsNullOrEmpty(expectedFingerprint))
+                    throw new InvalidOperationException("A camera defaults fingerprint requires inheritCameraDefaults=true.");
+                return (null, null);
+            }
+            if (!CameraNodeCreationDefaults.SupportsDirectParameters(node))
+                throw new InvalidOperationException("This Flow node does not support inheriting camera acquisition defaults.");
+            if (requireFingerprint && string.IsNullOrWhiteSpace(expectedFingerprint))
+                throw new InvalidOperationException("Preview the current camera acquisition defaults and provide their fingerprint before adding this node.");
+            if (!CameraNodeCreationDefaults.InitializeFromCurrentCamera(node))
+                throw new InvalidOperationException("No available camera has valid acquisition defaults for this node. Check the camera selection, exposure, gain, average count, and flip mode.");
+
+            var defaults = CameraNodeCreationDefaults.CaptureEffectiveDefaults(node);
+            var canonical = new StringBuilder();
+            AppendCanonical(canonical, GetNodeTypeKey(node.GetType()));
+            AppendCanonical(canonical, defaults.DeviceCode);
+            AppendCanonical(canonical, defaults.ExposureMilliseconds.Count.ToString(CultureInfo.InvariantCulture));
+            foreach (float exposure in defaults.ExposureMilliseconds)
+                AppendCanonical(canonical, exposure.ToString("R", CultureInfo.InvariantCulture));
+            AppendCanonical(canonical, defaults.Gain.ToString("R", CultureInfo.InvariantCulture));
+            AppendCanonical(canonical, defaults.AverageCount.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(canonical, defaults.FlipMode);
+            AppendCanonical(canonical, defaults.CalibrationTemplateName);
+            string fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())));
+            if (!string.IsNullOrEmpty(expectedFingerprint) && !string.Equals(expectedFingerprint, fingerprint, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The camera acquisition defaults changed after preview. Preview and approve the updated defaults before adding this node.");
+            return (defaults, fingerprint);
+        }
+
+        private static CopilotFlowNodeContextSnapshot BuildNodeSnapshot(STNode node, bool isActive,
+            CopilotFlowCameraDefaults? cameraDefaults = null, string? cameraDefaultsFingerprint = null)
         {
             var runtimeType = node.GetType();
             var instanceId = node.Guid.ToString();
@@ -553,6 +594,8 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 InputPorts = BuildPortSnapshots(node.GetAllInputOptions(), "in"),
                 OutputPorts = BuildPortSnapshots(node.GetAllOutputOptions(), "out"),
                 Parameters = BuildNodeParameterSummary(node),
+                CameraDefaults = cameraDefaults,
+                CameraDefaultsFingerprint = cameraDefaultsFingerprint,
             };
         }
 

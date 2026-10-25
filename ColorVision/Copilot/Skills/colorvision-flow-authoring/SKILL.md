@@ -14,6 +14,7 @@ Use ColorVision's structured Flow tools. Never parse or edit a `.stn` file as te
 3. For `set_property`, use the exact stable node id and writable `propertyName` exposed by the graph and catalog. Pass the value in the node descriptor's string form.
 4. For `connect`, use the exact source `out:N` and target `in:N` port ids from the graph. Do not infer ports from display order or names.
 5. Call `PreviewFlowPatch` with exactly one operation and the current revision. Describe the validated change, then call `ApplyFlowPatch` only when the request clearly asks for it; wait for explicit approval.
+   When the user asks to inherit the current camera acquisition settings, choose a catalog type with `canInheritCameraDefaults`, set `inherit_camera_defaults=true` in the preview, and copy the returned node's exact `cameraDefaultsFingerprint` into `camera_defaults_fingerprint` on apply. Review the complete `cameraDefaults` with the user. Without this explicit option, new nodes retain their constructor defaults. A settings mismatch requires a new preview and approval.
 6. Call `InspectFlowGraph` again. Verify that the revision changed and that the node, property, or edge now matches the request.
 
 ## Safety boundary

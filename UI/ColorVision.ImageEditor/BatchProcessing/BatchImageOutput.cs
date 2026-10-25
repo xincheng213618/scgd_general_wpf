@@ -117,7 +117,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
         }
 
-        private static string ResolveOutputDirectory(BatchImageItem item, string? outputDirectory, bool preserveFolderStructure)
+        /// <summary>Resolves the destination layout without creating directories or files.</summary>
+        public static string ResolveOutputDirectory(BatchImageItem item, string? outputDirectory, bool preserveFolderStructure)
         {
             if (string.IsNullOrWhiteSpace(outputDirectory))
             {

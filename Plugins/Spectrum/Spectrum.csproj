@@ -9,6 +9,7 @@
     <Company>Spectromer</Company>
 	<ApplicationIcon>pic.ico</ApplicationIcon>
 	<VersionPrefix>2.3.3.26</VersionPrefix>
+	  <CETCompat>false</CETCompat>
   </PropertyGroup>
 
   <ItemGroup>

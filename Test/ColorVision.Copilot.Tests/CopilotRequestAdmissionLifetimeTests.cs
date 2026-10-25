@@ -223,6 +223,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     [InlineData("unchanged")]
     [InlineData("switch")]
     [InlineData("switch-profile")]
+    [InlineData("switch-feedback")]
     [InlineData("select-profile")]
     [InlineData("edit-model")]
     [InlineData("clear-key")]
@@ -295,6 +296,9 @@ public sealed class CopilotRequestAdmissionLifetimeTests
             using var context = new PausedAdmissionSynchronizationContext();
             var previousContext = SynchronizationContext.Current;
             Task? operation = null;
+            var expectedOtherDraft = other.DraftText;
+            (string Title, string Text)? expectedOtherFeedback = null;
+            (string Title, string Text)? feedbackWhenCompactionStarted = null;
             try
             {
                 SynchronizationContext.SetSynchronizationContext(context);
@@ -311,6 +315,17 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                     profile.Model = "changed-model";
                 else if (transition == "clear-key")
                     profile.ApiKey = string.Empty;
+                if (transition == "switch-feedback")
+                {
+                    viewModel.InputText = "/help";
+                    Assert.True(viewModel.SendCommand.CanExecute(null));
+                    viewModel.SendCommand.Execute(null);
+                    Assert.StartsWith("/help", viewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+                    expectedOtherDraft = other.DraftText;
+                    expectedOtherFeedback = (viewModel.LocalCommandResultTitle, viewModel.LocalCommandResultText);
+                    handler.RequestObserved = () => feedbackWhenCompactionStarted =
+                        (viewModel.LocalCommandResultTitle, viewModel.LocalCommandResultText);
+                }
 
                 context.Complete(operation);
                 operation.GetAwaiter().GetResult();
@@ -329,11 +344,11 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                 Assert.Equal("origin-model", request.Profile.Model);
                 Assert.Contains(request.HostContext.ConversationHistory.ModelMessages,
                     message => message.Content.Contains("Captured origin summary", StringComparison.Ordinal));
-                Assert.Equal("Unrelated draft", other.DraftText);
+                Assert.Equal(expectedOtherDraft, other.DraftText);
                 if (transition.StartsWith("switch", StringComparison.Ordinal))
                 {
                     Assert.Same(other, viewModel.SelectedConversation);
-                    Assert.Equal("Unrelated draft", viewModel.InputText);
+                    Assert.Equal(expectedOtherDraft, viewModel.InputText);
                 }
                 else if (transition == "select-profile")
                 {
@@ -344,6 +359,12 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                     Assert.True(viewModel.TrySelectConversation(other.Id));
                     Assert.True(viewModel.TrySelectConversation(origin.Id));
                     Assert.Same(otherProfile, viewModel.SelectedProfile);
+                }
+                if (expectedOtherFeedback.HasValue)
+                {
+                    Assert.Equal(expectedOtherFeedback, feedbackWhenCompactionStarted);
+                    Assert.Equal(expectedOtherFeedback.Value,
+                        (viewModel.LocalCommandResultTitle, viewModel.LocalCommandResultText));
                 }
             }
             finally
@@ -439,7 +460,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
             {
                 SynchronizationContext.SetSynchronizationContext(context);
                 operation = Assert.IsAssignableFrom<Task<bool>>(compact.Invoke(viewModel,
-                    [command, string.Empty, true, null, null, null, null, null]));
+                    [command, string.Empty, true, null, null, null, null, null, null]));
                 context.Complete(operation);
                 applied = operation.GetAwaiter().GetResult();
             }
@@ -481,11 +502,13 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     private sealed class CompactionHandler(string summary = "Captured origin summary") : HttpMessageHandler
     {
         public List<string> Payloads { get; } = [];
+        public Action? RequestObserved { get; set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Payloads.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
+            RequestObserved?.Invoke();
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(new JObject

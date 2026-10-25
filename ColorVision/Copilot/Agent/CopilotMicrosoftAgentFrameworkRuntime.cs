@@ -142,6 +142,8 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(onEvent);
 
+            request.GetEffectiveWorkspaceReviewTarget();
+
             var emitEvent = CreateEventEmitter(onEvent);
             var runBudget = CopilotAgentRunBudget.Resolve(request);
             var stopwatch = Stopwatch.StartNew();

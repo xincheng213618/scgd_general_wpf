@@ -82,6 +82,7 @@ namespace ColorVision.Copilot.Mcp
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var query = GetString(arguments, "query");
             if (string.IsNullOrWhiteSpace(query))
                 return CopilotMcpToolCallResult.Fail("missing_query", "The execute_menu tool requires a non-empty query argument.");
@@ -90,11 +91,12 @@ namespace ColorVision.Copilot.Mcp
             var frameworkApproved = IsInAppAgentFrameworkApproved(executionScope);
             var inAppAgent = IsInAppAgent(executionScope);
 
-            if (inAppAgent && !dryRun)
+            if (inAppAgent && !dryRun && !frameworkApproved)
             {
                 if (_environment.ExecuteMenuHandler != null)
                 {
                     var handlerPreview = await _environment.ExecuteMenuHandler(query, true, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!handlerPreview.Success)
                         return handlerPreview;
 
@@ -113,6 +115,7 @@ namespace ColorVision.Copilot.Mcp
                     return CopilotMcpToolCallResult.Fail("application_unavailable", "The WPF application is not available.");
 
                 var applicationPreview = await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: true, allowConfirmationRequired: false, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!applicationPreview.Success)
                     return ToMcpResult(applicationPreview, "menu_preview_failed");
 
@@ -130,11 +133,9 @@ namespace ColorVision.Copilot.Mcp
             if (_environment.ExecuteMenuHandler != null)
             {
                 var handlerResult = await _environment.ExecuteMenuHandler(query, dryRun, cancellationToken);
-                if (!dryRun && IsConfirmationRequiredResult(handlerResult))
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!dryRun && !frameworkApproved && IsConfirmationRequiredResult(handlerResult))
                 {
-                    if (frameworkApproved)
-                        return await _environment.ExecuteMenuHandler(query, false, cancellationToken);
-
                     return CreateConfirmableActionResult(
                         "Confirm menu command",
                         $"Execute ColorVision menu command: {query}",
@@ -153,7 +154,8 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Fail("application_unavailable", "The WPF application is not available.");
 
             var result = await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun, allowConfirmationRequired: frameworkApproved, cancellationToken);
-            if (!dryRun && IsConfirmationRequiredResult(result))
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!dryRun && !frameworkApproved && IsConfirmationRequiredResult(result))
             {
                 return CreateConfirmableActionResult(
                     "Confirm menu command",

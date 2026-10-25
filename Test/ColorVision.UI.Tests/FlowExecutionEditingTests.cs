@@ -1,12 +1,14 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
@@ -166,6 +168,138 @@ public sealed class FlowExecutionEditingTests
             view.STNodeEditorMain.EnableEdit = false;
             Assert.Contains("read-only", Assert.Throws<InvalidOperationException>(() =>
                 fixture.Manager.Copilot.AddCopilotFlowNode("must-not-be-created", 0, 0, null)).Message);
+        });
+    }
+
+    [Fact]
+    public void CopilotCameraAdditionKeepsConstructorDefaultsUnlessInheritanceIsRequested()
+    {
+        WithFixture(fixture =>
+        {
+            using var camera = new CurrentCameraDefaultsScope();
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.LoadAssembly(typeof(LocalCameraNode).Assembly);
+            string typeKey = $"{typeof(LocalCameraNode).Module.Name}|{nameof(LocalCameraNode)}";
+            string revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+
+            var preview = fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 31, 47, revision);
+
+            Assert.Null(preview.CameraDefaults);
+            Assert.Null(preview.CameraDefaultsFingerprint);
+            Assert.Empty(editor.Nodes.Cast<STNode>());
+            var applied = fixture.Manager.Copilot.AddCopilotFlowNode(typeKey, 31, 47, revision);
+            var node = Assert.Single(editor.Nodes.OfType<LocalCameraNode>());
+            Assert.Equal(100f, node.ExpTime);
+            Assert.Equal(0f, node.Gain);
+            Assert.Equal(1, node.AvgCount);
+            Assert.Equal(CVImageFlipMode.None, node.FlipMode);
+            Assert.Empty(node.CalibTempName);
+            Assert.All(applied.Nodes, item =>
+            {
+                Assert.Null(item.CameraDefaults);
+                Assert.Null(item.CameraDefaultsFingerprint);
+            });
+        });
+    }
+
+    [Fact]
+    public void CopilotCameraAdditionPreviewsEffectiveDefaultsAndAppliesOnlyTheReviewedValues()
+    {
+        WithFixture(fixture =>
+        {
+            using var camera = new CurrentCameraDefaultsScope();
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.LoadAssembly(typeof(LocalCameraNode).Assembly);
+            string typeKey = $"{typeof(LocalCameraNode).Module.Name}|{nameof(LocalCameraNode)}";
+            string revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+            byte[] canvas = editor.GetCanvasData();
+            var catalog = fixture.Manager.Copilot.CaptureCopilotFlowNodeCatalog(nameof(LocalCameraNode), 100);
+            Assert.True(Assert.Single(catalog.NodeTypes.Where(item => item.TypeKey == typeKey)).CanInheritCameraDefaults);
+
+            var preview = fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 31, 47, revision, inheritCameraDefaults: true);
+            var defaults = Assert.IsType<CopilotFlowCameraDefaults>(preview.CameraDefaults);
+            Assert.Equal(camera.Camera.Code, defaults.DeviceCode);
+            Assert.Equal(new[] { 800f }, defaults.ExposureMilliseconds);
+            Assert.Equal(7f, defaults.Gain);
+            Assert.Equal(4, defaults.AverageCount);
+            Assert.Equal("XY", defaults.FlipMode);
+            Assert.Equal("calibration-template", defaults.CalibrationTemplateName);
+            Assert.False(string.IsNullOrWhiteSpace(preview.CameraDefaultsFingerprint));
+            Assert.Equal(canvas, editor.GetCanvasData());
+            Assert.Equal(revision, fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision);
+
+            // These source values do not affect the single-exposure node or the calibration group's effective gain.
+            camera.Display.ExpTimeR = 999;
+            camera.Display.Gain = 99;
+            var repeatedPreview = fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 90, 120, revision, inheritCameraDefaults: true);
+            Assert.Equal(preview.CameraDefaultsFingerprint, repeatedPreview.CameraDefaultsFingerprint);
+            fixture.Manager.Copilot.AddCopilotFlowNode(typeKey, 31, 47, revision,
+                inheritCameraDefaults: true, cameraDefaultsFingerprint: preview.CameraDefaultsFingerprint);
+
+            var node = Assert.Single(editor.Nodes.OfType<LocalCameraNode>());
+            Assert.Equal(camera.Camera.Code, node.DeviceCode);
+            Assert.Equal(800f, node.ExpTime);
+            Assert.Equal(7f, node.Gain);
+            Assert.Equal(4, node.AvgCount);
+            Assert.Equal(CVImageFlipMode.XY, node.FlipMode);
+            Assert.Equal("calibration-template", node.CalibTempName);
+            Assert.Equal(31, node.Left);
+            Assert.Equal(47, node.Top);
+        });
+    }
+
+    [Fact]
+    public void CopilotCameraAdditionRejectsCameraChangesDuringApprovalWithoutChangingTheCanvas()
+    {
+        WithFixture(fixture =>
+        {
+            using var camera = new CurrentCameraDefaultsScope();
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.LoadAssembly(typeof(LocalCameraNode).Assembly);
+            string typeKey = $"{typeof(LocalCameraNode).Module.Name}|{nameof(LocalCameraNode)}";
+            string revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+            byte[] canvas = editor.GetCanvasData();
+            var preview = fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 31, 47, revision, inheritCameraDefaults: true);
+            camera.Display.ExpTime = 1600;
+
+            Assert.Equal(revision, fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision);
+            Assert.Contains("changed after preview", Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.AddCopilotFlowNode(typeKey, 31, 47, revision,
+                    inheritCameraDefaults: true, cameraDefaultsFingerprint: preview.CameraDefaultsFingerprint)).Message);
+            Assert.Equal(canvas, editor.GetCanvasData());
+            Assert.Empty(editor.Nodes.Cast<STNode>());
+        });
+    }
+
+    [Fact]
+    public void CopilotCameraAdditionRejectsMissingApprovalAndUnavailableOrInvalidDefaults()
+    {
+        WithFixture(fixture =>
+        {
+            using var camera = new CurrentCameraDefaultsScope();
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.LoadAssembly(typeof(LocalCameraNode).Assembly);
+            string typeKey = $"{typeof(LocalCameraNode).Module.Name}|{nameof(LocalCameraNode)}";
+            string revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+            byte[] canvas = editor.GetCanvasData();
+
+            Assert.Contains("provide their fingerprint", Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.AddCopilotFlowNode(typeKey, 0, 0, revision, inheritCameraDefaults: true)).Message);
+            Assert.Contains("requires inheritCameraDefaults=true", Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.AddCopilotFlowNode(typeKey, 0, 0, revision, cameraDefaultsFingerprint: "unexpected")).Message);
+            Assert.Contains("requires inheritCameraDefaults=true", Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 0, 0, revision, cameraDefaultsFingerprint: "unexpected")).Message);
+            string imageTypeKey = $"{typeof(LocalImageNode).Module.Name}|{nameof(LocalImageNode)}";
+            Assert.Contains("does not support", Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(imageTypeKey, 0, 0, revision, inheritCameraDefaults: true)).Message);
+            camera.Display.ExpTime = double.NaN;
+            Assert.Contains("valid acquisition defaults", Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 0, 0, revision, inheritCameraDefaults: true)).Message);
+            camera.Manager.DeviceServices.Clear();
+            Assert.Contains("No available camera", Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 0, 0, revision, inheritCameraDefaults: true)).Message);
+            Assert.Equal(canvas, editor.GetCanvasData());
+            Assert.Empty(editor.Nodes.Cast<STNode>());
         });
     }
 

@@ -227,7 +227,13 @@ namespace ColorVision.Copilot
 
         public bool TryRestore(
             CopilotQueuedFollowUp item,
-            Func<CopilotHostedAgentRun, CopilotQueuedFollowUp, Task> executeAsync)
+            Func<CopilotHostedAgentRun, CopilotQueuedFollowUp, Task> executeAsync) =>
+            TryRestore(item, executeAsync, allowAutomaticDispatch: true);
+
+        internal bool TryRestore(
+            CopilotQueuedFollowUp item,
+            Func<CopilotHostedAgentRun, CopilotQueuedFollowUp, Task> executeAsync,
+            bool allowAutomaticDispatch)
         {
             ArgumentNullException.ThrowIfNull(item);
             ArgumentNullException.ThrowIfNull(executeAsync);
@@ -250,6 +256,7 @@ namespace ColorVision.Copilot
                     item.Mode,
                     item.QueuedAtUtc,
                     ExecuteAsync,
+                    allowAutomaticDispatch,
                     out restoredRun)
                 : _taskHost.TryRestoreQueuedFollowUp(
                     item.RunId,
@@ -257,6 +264,7 @@ namespace ColorVision.Copilot
                     item.Mode,
                     item.QueuedAtUtc,
                     ExecuteAsync,
+                    allowAutomaticDispatch,
                     out restoredRun);
             if (!restored)
             {

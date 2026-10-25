@@ -271,6 +271,55 @@ public sealed class CopilotToolOutputArchiveTests
         Assert.DoesNotContain(secret, page.Content, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("\"", "synthetic-before,synthetic-after")]
+    [InlineData("\"", "synthetic-before;synthetic-after")]
+    [InlineData("\"", "synthetic-before synthetic-after")]
+    [InlineData("\"", "synthetic-before\\\"synthetic-after")]
+    [InlineData("'", "synthetic-before;synthetic-after")]
+    public async Task FailedQuotedCredentialIsHiddenBeforeCaptureAndArchivePaging(string quote, string credential)
+    {
+        // Exercise the same capture boundary that precedes runtime archiving;
+        // redacting only the archive cannot recover quotes removed by capture.
+        using var registry = new CopilotToolOutputArchiveRegistry();
+        var request = new CopilotAgentRequest { ConversationId = "quoted-failure-archive" };
+        var tool = new LargeOutputTool(string.Empty);
+        var publicDiagnostic = "; public-diagnostic\n" + new string('x', 30_000) + "\nfull-error-tail";
+        var original = CreateFailedOutcome(request, tool, $"token={quote}{credential}{quote}" + publicDiagnostic);
+        var outcome = new CopilotToolExecutionOutcome
+        {
+            Invocation = original.Invocation,
+            Result = CopilotToolResultContract.Capture(tool.Name, original.Result),
+            Execution = original.Execution,
+        };
+        var expected = "token=<redacted>" + publicDiagnostic;
+
+        Assert.Equal(expected, outcome.Result.ErrorMessage);
+        var formatted = CopilotToolOutputArchivePolicy.Format(outcome, SmallTokenLimit, registry);
+        Assert.DoesNotContain("synthetic-before", formatted, StringComparison.Ordinal);
+        Assert.DoesNotContain("synthetic-after", formatted, StringComparison.Ordinal);
+        using var document = JsonDocument.Parse(formatted);
+        var archiveId = document.RootElement.GetProperty("content_archive").GetProperty("archive_id").GetString()!;
+        var readTool = new CopilotReadToolOutputTool(registry);
+        var combined = new StringBuilder();
+        var offset = 0;
+        while (true)
+        {
+            var read = await readTool.ExecuteAsync(request, CreateReadInput(archiveId, offset), CancellationToken.None);
+            Assert.True(read.Success);
+            var page = Assert.IsType<CopilotToolOutputArchiveReadResult>(read.ToolOutputArchiveRead).Page!;
+            Assert.True(page.NextOffsetCharacters > offset);
+            Assert.DoesNotContain("synthetic-before", read.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain("synthetic-after", read.Content, StringComparison.Ordinal);
+            combined.Append(page.Content);
+            offset = page.NextOffsetCharacters;
+            if (page.EndOfAvailableOutput)
+                break;
+        }
+
+        Assert.Equal("[Tool Error]" + Environment.NewLine + expected, combined.ToString());
+    }
+
     [Fact]
     public void ArchiveIsNotCreatedWhenItsReferenceCannotFitTheProviderBudget()
     {
@@ -519,6 +568,43 @@ public sealed class CopilotToolOutputArchiveTests
         Assert.Equal(2, interiorOffset.OffsetCharacters);
         Assert.Empty(interiorOffset.Content);
         Assert.True(interiorOffset.EndOfAvailableOutput);
+    }
+
+    [Fact]
+    public void CompletedArchiveWithAnIsolatedHighSurrogateStillReachesItsEnd()
+    {
+        using var archive = CopilotTemporaryRedactedOutputArchive.TryCreate("ToolOutput", "content");
+        Assert.NotNull(archive);
+        archive.Append("abc\uD800");
+        archive.Complete();
+
+        var first = archive.Read(0, 3, CancellationToken.None);
+        Assert.Equal("abc", first.Content);
+        Assert.Equal(3, first.NextOffsetCharacters);
+        Assert.False(first.EndOfAvailableOutput);
+        var last = archive.Read(first.NextOffsetCharacters, 1, CancellationToken.None);
+        Assert.Equal("\uFFFD", last.Content);
+        Assert.Equal(1, last.ReturnedCharacters);
+        Assert.Equal(4, last.NextOffsetCharacters);
+        Assert.Equal(4, last.ArchivedCharacters);
+        Assert.True(last.EndOfAvailableOutput);
+        Assert.False(last.ArchiveTruncated);
+    }
+
+    [Fact]
+    public void QuotedCredentialRedactionKeepsStateAcrossLargeInputChunks()
+    {
+        var publicPrefix = new string('p', 4090);
+        var secretMiddle = new string('x', 12_000);
+        var text = publicPrefix + " token=\"synthetic-head;" + secretMiddle + ";synthetic-tail\"; public-tail";
+
+        var redacted = ColorVision.Copilot.Mcp.CopilotMcpAuditLogger.RedactText(text);
+
+        Assert.StartsWith(publicPrefix, redacted, StringComparison.Ordinal);
+        Assert.DoesNotContain("synthetic-head", redacted, StringComparison.Ordinal);
+        Assert.DoesNotContain(new string('x', 50), redacted, StringComparison.Ordinal);
+        Assert.DoesNotContain("synthetic-tail", redacted, StringComparison.Ordinal);
+        Assert.EndsWith("; public-tail", redacted, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -231,11 +231,7 @@ namespace ColorVision.Copilot
                 WorkspaceReviewTarget = request.WorkspaceReviewTarget,
                 AgentSkillReference = request.AgentSkillReference,
             });
-            var reviewTarget = request.Mode == CopilotAgentMode.Review
-                ? request.WorkspaceReviewTarget?.IsStructurallyValid() == true
-                    ? request.WorkspaceReviewTarget.CreateSnapshot()
-                    : CopilotWorkspaceReviewTargetContext.WorkingTree()
-                : null;
+            var reviewTarget = agentRequest.GetEffectiveWorkspaceReviewTarget();
             if (reviewTarget != null)
                 eventSink.OnReviewEntered(reviewTarget);
 

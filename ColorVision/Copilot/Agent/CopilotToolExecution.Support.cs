@@ -337,7 +337,7 @@ namespace ColorVision.Copilot
             Content = workspaceRecheckPaths.Count == 0 ? string.Empty
                 : "[Workspace Write Outcome Unknown]\nPotentially affected paths (not proof of completed writes):\n"
                     + string.Join("\n", workspaceRecheckPaths)
-                    + "\nWait for the operation to settle and re-read these files before describing their final state. Do not automatically repeat the write.",
+                    + "\nWait for the operation to settle and inspect these paths before describing their final state. Do not automatically repeat the write.",
         };
 
         private static bool HasUnknownOutcomeAfterExecutionBoundary(CopilotToolInvocation invocation)

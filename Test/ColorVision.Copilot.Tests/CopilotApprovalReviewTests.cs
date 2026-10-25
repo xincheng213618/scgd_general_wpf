@@ -1,5 +1,8 @@
 using ColorVision.Copilot.Mcp;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using System.Windows.Controls;
 
 namespace ColorVision.Copilot.Tests;
@@ -13,6 +16,147 @@ public sealed class CopilotApprovalReviewTestGroup
 [Collection(CopilotApprovalReviewTestGroup.CollectionName)]
 public sealed class CopilotApprovalReviewTests
 {
+    [Fact]
+    public async Task IdenticalPendingArgumentsKeepIndependentPrivateExecutionTargets()
+    {
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        var handles = new List<CopilotFrameworkApprovalHandle>();
+        var input = new CopilotAgentToolInput
+        {
+            Arguments = new Dictionary<string, object?> { ["sql"] = "UPDATE measurements SET reviewed = 1 WHERE id = 42" },
+        };
+        var fingerprints = new[] { "first-execution-target", "second-execution-target" };
+        try
+        {
+            foreach (var fingerprint in fingerprints)
+            {
+                var presentation = new CopilotToolApprovalPresentation("Review target", "Review the requested operation.")
+                {
+                    ExecutionTargetFingerprint = fingerprint,
+                    ReviewDetails = "Complete operation review.",
+                };
+                handles.Add(coordinator.RequestApproval(
+                    new TargetBoundApprovalTool(presentation), CreateRequest(), input,
+                    $"call-{Guid.NewGuid():N}", CancellationToken.None));
+                var action = handles[^1].Action;
+                Assert.Equal(fingerprint, action.ExecutionTargetFingerprint);
+                Assert.Equal(presentation.ReviewDetails, action.ReviewDetails);
+                foreach (var serialized in new[] { JsonSerializer.Serialize(presentation), JsonSerializer.Serialize(action), action.ConfirmActionPayloadJson })
+                {
+                    Assert.DoesNotContain(nameof(CopilotToolApprovalPresentation.ExecutionTargetFingerprint), serialized, StringComparison.Ordinal);
+                    Assert.DoesNotContain(fingerprint, serialized, StringComparison.Ordinal);
+                }
+            }
+
+            Assert.NotEqual(handles[0].Action.ActionId, handles[1].Action.ActionId);
+            Assert.Equal(handles[0].Action.ArgumentsDigest, handles[1].Action.ArgumentsDigest);
+            Assert.Equal(fingerprints[0], handles[0].Action.ExecutionTargetFingerprint);
+            Assert.Equal(fingerprints[1], handles[1].Action.ExecutionTargetFingerprint);
+        }
+        finally
+        {
+            foreach (var handle in handles)
+            {
+                coordinator.Cancel(handle);
+                var decision = await handle.Decision.WaitAsync(TimeSpan.FromSeconds(2));
+                Assert.Equal(CopilotFrameworkApprovalDecisionKind.Cancelled, decision.Kind);
+                Assert.Empty(handle.Action.ReviewDetails);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancelledAsyncPresentationCannotPublishALateApproval(bool failLate)
+    {
+        var tool = new HeldAsyncApprovalTool();
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        using var cancellation = new CancellationTokenSource();
+        var createdActions = 0;
+        EventHandler<ConfirmableActionChangedEventArgs> changed = (_, args) =>
+        {
+            if (args.Action.ToolName == tool.Name)
+                Interlocked.Increment(ref createdActions);
+        };
+        CopilotMcpConfirmationStore.Instance.ActionStatusChanged += changed;
+        try
+        {
+            var pending = coordinator.RequestApprovalAsync(
+                tool, CreateRequest(), CopilotAgentToolInput.Empty,
+                $"call-{Guid.NewGuid():N}", cancellation.Token);
+            await tool.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.False(pending.IsCompleted);
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => pending.WaitAsync(TimeSpan.FromSeconds(2)));
+
+            if (failLate)
+                tool.Presentation.SetException(new InvalidOperationException("Late presentation failure."));
+            else
+                tool.Presentation.SetResult(new CopilotToolApprovalPresentation("Late approval", "Must never be published."));
+
+            Assert.Equal(0, Volatile.Read(ref createdActions));
+            Assert.DoesNotContain(CopilotMcpConfirmationStore.Instance.GetPendingActions(), action => action.ToolName == tool.Name);
+        }
+        finally
+        {
+            CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= changed;
+            tool.Presentation.TrySetResult(new CopilotToolApprovalPresentation("Cleanup", "Cleanup"));
+        }
+    }
+
+    [Fact]
+    public async Task AsyncPresentationFreezesInputsBeforeWaitingAndPreservesReviewDetails()
+    {
+        var tool = new HeldDualApprovalTool();
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        var nested = new Dictionary<string, object?> { ["setting"] = "original setting" };
+        var arguments = new Dictionary<string, object?> { ["value"] = "original value", ["nested"] = nested };
+        var input = new CopilotAgentToolInput { Arguments = arguments };
+        var originalBinding = CopilotAgentToolInputExactBinding.Create(input);
+        var pending = coordinator.RequestApprovalAsync(
+            tool, CreateRequest(), input, $"call-{Guid.NewGuid():N}", CancellationToken.None);
+        var frozenInput = await tool.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        arguments["value"] = "changed value";
+        nested["setting"] = "changed setting";
+
+        Assert.Equal("original value", frozenInput.GetStringArgument("value"));
+        Assert.Equal("original setting", Assert.IsType<JsonElement>(frozenInput.Arguments["nested"]).GetProperty("setting").GetString());
+        const string reviewDetails = "Complete inherited settings: original value, original setting.";
+        tool.Presentation.SetResult(new CopilotToolApprovalPresentation("Prepared approval", "Prepared settings")
+        {
+            ReviewDetails = reviewDetails,
+        });
+        var handle = await pending.WaitAsync(TimeSpan.FromSeconds(2));
+        try
+        {
+            Assert.Equal("Prepared approval", handle.Action.Title);
+            Assert.Equal(reviewDetails, handle.Action.ReviewDetails);
+            Assert.Contains("original value", handle.Action.ArgumentsSummary, StringComparison.Ordinal);
+            Assert.DoesNotContain("changed value", handle.Action.ArgumentsSummary, StringComparison.Ordinal);
+            Assert.Equal(Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(originalBinding))).ToLowerInvariant(), handle.Action.ArgumentsDigest);
+        }
+        finally
+        {
+            coordinator.Cancel(handle);
+            var decision = await handle.Decision.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Equal(CopilotFrameworkApprovalDecisionKind.Cancelled, decision.Kind);
+        }
+    }
+
+    [Fact]
+    public void SynchronousApprovalEntryRejectsAsyncOnlyPresenters()
+    {
+        var tool = new HeldAsyncApprovalTool();
+        var exception = Assert.Throws<InvalidOperationException>(() => new CopilotFrameworkApprovalCoordinator().RequestApproval(
+            tool, CreateRequest(), CopilotAgentToolInput.Empty, $"call-{Guid.NewGuid():N}", CancellationToken.None));
+
+        Assert.Contains("RequestApprovalAsync", exception.Message, StringComparison.Ordinal);
+        Assert.False(tool.Started.Task.IsCompleted);
+        Assert.DoesNotContain(CopilotMcpConfirmationStore.Instance.GetPendingActions(), action => action.ToolName == tool.Name);
+    }
+
     [Fact]
     public async Task SharedAgentApprovalUsesCatalogReversibilityMetadata()
     {
@@ -346,5 +490,41 @@ public sealed class CopilotApprovalReviewTests
                 ["timeoutSeconds"] = 60,
             },
         };
+    }
+
+    private sealed class TargetBoundApprovalTool(CopilotToolApprovalPresentation presentation) : ICopilotTool, ICopilotFrameworkApprovalPresentation
+    {
+        public string Name => "TargetBoundApproval";
+        public string Description => "Review a protected execution target.";
+        public bool CanHandle(CopilotAgentRequest request) => true;
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput) => presentation;
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("Approval presentation must not execute the tool.");
+    }
+
+    private class HeldAsyncApprovalTool : ICopilotTool, ICopilotFrameworkAsyncApprovalPresentation
+    {
+        public string Name { get; } = "HeldAsyncApproval-" + Guid.NewGuid().ToString("N");
+        public string Description => "Prepare a protected operation without executing it.";
+        public TaskCompletionSource<CopilotAgentToolInput> Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<CopilotToolApprovalPresentation> Presentation { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolApprovalPresentation> CreateApprovalPresentationAsync(
+            CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            Started.TrySetResult(toolInput);
+            return Presentation.Task;
+        }
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("Approval presentation must not execute the tool.");
+    }
+
+    private sealed class HeldDualApprovalTool : HeldAsyncApprovalTool, ICopilotFrameworkApprovalPresentation
+    {
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput) =>
+            throw new InvalidOperationException("The asynchronous presenter must take precedence.");
     }
 }

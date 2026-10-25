@@ -10,7 +10,6 @@ namespace ColorVision.Copilot
     {
         private async Task<CopilotAgentSessionCheckpoint?> SaveFinalSessionCheckpointAsync(
             CopilotAgentRequest request,
-            CopilotAgentSessionCheckpoint? requestedCheckpoint,
             AIAgent agent,
             AgentSession session,
             CopilotAgentRunFinalizationScope finalization,
@@ -20,9 +19,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> availableToolNames,
             CopilotAgentEnvironmentContext? checkpointEnvironmentContext,
             CopilotToolExecutionHookRegistrySnapshot hookSurfaceSnapshot,
-            SteeringRegistration steeringRegistration,
             LiveCheckpointPublisher liveCheckpointPublisher,
-            string answerText,
             CopilotAgentControlIntent controlIntent,
             Action<CopilotAgentEvent> emit)
         {
@@ -35,12 +32,7 @@ namespace ColorVision.Copilot
                     var serializedSession = await agent.SerializeSessionAsync(session, null, finalization.Token)
                         .AsTask()
                         .WaitAsync(finalization.Token);
-                    var conversationMemory = CopilotAgentConversationMemory.Merge(
-                        requestedCheckpoint?.ConversationMemory,
-                        request.History,
-                        request.UserText,
-                        answerText,
-                        steeringRegistration.GetDeliveredSteeringMessages());
+                    var conversationMemory = liveCheckpointPublisher.BuildConversationMemory();
                     sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(
                         request.Profile,
                         serializedSession.GetRawText(),

@@ -379,6 +379,75 @@ public sealed class CopilotMessageEditAdmissionTests
         }, TimeSpan.FromSeconds(40), "The changed-attachment admission test did not finish.");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedImageAdmissionDoesNotOverwriteNewerLocalCommandFeedback(bool switchConversation)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var context = new CopilotPausedAdmissionContext(TestTimeout, "The failed image admission did not drain.");
+            var previousContext = SynchronizationContext.Current;
+            Task? send = null;
+            try
+            {
+                const string prompt = "Inspect this image before the newer local command.";
+                const string newerDraft = "A newer draft after viewing local command help.";
+                fixture.ViewModel.InputText = "/help";
+                InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes).GetAwaiter().GetResult();
+                var image = Assert.Single(fixture.OriginalUser.Attachments).CreateSnapshot();
+                fixture.Conversation.Attachments.Add(image);
+                fixture.ViewModel.InputText = prompt;
+                File.WriteAllText(fixture.StoragePath, "This file blocks the fixture's attachment directory.");
+
+                SynchronizationContext.SetSynchronizationContext(context);
+                send = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(send.IsCompleted);
+                Assert.False(fixture.ViewModel.IsBusy);
+                if (switchConversation)
+                    Assert.True(fixture.ViewModel.TrySelectConversation(fixture.OtherConversation.Id));
+                var feedbackOwner = fixture.ViewModel.SelectedConversation;
+
+                // Repeating the same help still owns newer feedback, even when its text is unchanged.
+                fixture.ViewModel.InputText = "/help";
+                InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes).GetAwaiter().GetResult();
+                var newerTitle = fixture.ViewModel.LocalCommandResultTitle;
+                var newerText = fixture.ViewModel.LocalCommandResultText;
+                Assert.StartsWith("/help", newerTitle, StringComparison.Ordinal);
+                Assert.NotEmpty(newerText);
+                fixture.ViewModel.InputText = newerDraft;
+
+                context.Complete(send);
+                send.GetAwaiter().GetResult();
+
+                Assert.Equal(newerTitle, fixture.ViewModel.LocalCommandResultTitle);
+                Assert.Equal(newerText, fixture.ViewModel.LocalCommandResultText);
+                Assert.Same(feedbackOwner, fixture.ViewModel.SelectedConversation);
+                Assert.Equal(newerDraft, fixture.ViewModel.InputText);
+                Assert.Equal(switchConversation ? prompt : newerDraft, fixture.Conversation.DraftText);
+                Assert.Same(image, Assert.Single(fixture.Conversation.Attachments));
+                Assert.Equal([fixture.OriginalUser, fixture.OriginalAssistant], fixture.Conversation.Messages.ToArray());
+                Assert.Empty(fixture.Runtime.Requests);
+                Assert.Empty(fixture.Host.ScheduledRuns);
+            }
+            finally
+            {
+                try
+                {
+                    SynchronizationContext.SetSynchronizationContext(context);
+                    if (send is { IsCompleted: false })
+                        context.Complete(send);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }
+        }, TimeSpan.FromSeconds(40), "The stale image admission feedback test did not finish.");
+    }
+
     [Fact]
     public void FailedImageAdmissionAllowsTheUnchangedDraftAndAttachmentToBeSentAgain()
     {
@@ -648,6 +717,168 @@ public sealed class CopilotMessageEditAdmissionTests
                 SynchronizationContext.SetSynchronizationContext(previousContext);
             }
         }, TimeSpan.FromSeconds(40), "The edit admission test did not finish.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FileAttachmentLimitFeedbackPreservesNewerLocalCommandFeedback(bool showNewerFeedback)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var context = new CopilotPausedAdmissionContext(TestTimeout, "The file attachment operation did not drain.");
+            var previousContext = SynchronizationContext.Current;
+            Task<int>? addFiles = null;
+            var filePaths = Enumerable.Range(0, CopilotComposerAttachmentService.MaximumAttachmentCount + 1)
+                .Select(index => Path.Combine(Path.GetDirectoryName(fixture.StoragePath)!, $"attachment-{index}.txt"))
+                .ToArray();
+            foreach (var filePath in filePaths)
+                File.WriteAllText(filePath, "A file from the over-capacity attachment batch.");
+
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                addFiles = fixture.ViewModel.AddFileAttachmentsAsync(filePaths);
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(addFiles.IsCompleted);
+                Assert.True(fixture.ViewModel.IsBusy);
+                Assert.False(fixture.ViewModel.CanSwitchConversation);
+
+                string? newerTitle = null;
+                string? newerText = null;
+                if (showNewerFeedback)
+                {
+                    fixture.ViewModel.InputText = "/help";
+                    Assert.True(fixture.ViewModel.SendCommand.CanExecute(null));
+                    fixture.ViewModel.SendCommand.Execute(null);
+                    newerTitle = fixture.ViewModel.LocalCommandResultTitle;
+                    newerText = fixture.ViewModel.LocalCommandResultText;
+                    Assert.StartsWith("/help", newerTitle, StringComparison.Ordinal);
+                }
+
+                const string newerDraft = "The draft written while the earlier file batch is resolving.";
+                fixture.ViewModel.InputText = newerDraft;
+                context.Complete(addFiles);
+                Assert.Equal(CopilotComposerAttachmentService.MaximumAttachmentCount, addFiles.GetAwaiter().GetResult());
+                Assert.Equal(filePaths.Take(CopilotComposerAttachmentService.MaximumAttachmentCount),
+                    fixture.Conversation.Attachments.Select(attachment => attachment.Value));
+                Assert.Equal(newerDraft, fixture.ViewModel.InputText);
+                Assert.Equal([fixture.OriginalUser, fixture.OriginalAssistant], fixture.Conversation.Messages.ToArray());
+                Assert.Empty(fixture.Runtime.Requests);
+                Assert.False(fixture.ViewModel.IsBusy);
+                if (showNewerFeedback)
+                {
+                    Assert.Equal(newerTitle, fixture.ViewModel.LocalCommandResultTitle);
+                    Assert.Equal(newerText, fixture.ViewModel.LocalCommandResultText);
+                }
+                else
+                {
+                    Assert.Equal("部分文件未添加", fixture.ViewModel.LocalCommandResultTitle);
+                    Assert.NotEmpty(fixture.ViewModel.LocalCommandResultText);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    SynchronizationContext.SetSynchronizationContext(context);
+                    if (addFiles is { IsCompleted: false })
+                        context.Complete(addFiles);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }
+        }, TimeSpan.FromSeconds(40), "The file attachment feedback test did not finish.");
+    }
+
+    [Theory]
+    [InlineData("newer-feedback", true)]
+    [InlineData("newer-feedback", false)]
+    [InlineData("switch-conversation", true)]
+    [InlineData("unchanged", true)]
+    [InlineData("unchanged", false)]
+    public void ClipboardExportPreservesNewerFeedbackWithoutAbandoningTheCopy(string transition, bool copySucceeds)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            var command = Assert.IsType<CopilotLocalCommand>(CopilotLocalCommandCatalog.FindExact("/export"));
+            var copiedText = string.Empty;
+            var copyCalls = 0;
+            string? retainedTitle = null;
+            string? retainedText = null;
+            CopilotConversationRecord? selectedAfterCopy = null;
+
+            // The fake clipboard records the real generated export, then exercises actual UI commands
+            // before the export publishes its completion. No system clipboard or dialog is involved.
+            Func<string, (bool Succeeded, string ErrorMessage)> writeClipboard = text =>
+            {
+                copiedText = text;
+                copyCalls++;
+                Assert.False(fixture.ViewModel.ExportConversationCommand.CanExecute(fixture.Conversation));
+                Assert.False(fixture.ViewModel.IsBusy);
+                Assert.True(fixture.ViewModel.CanSwitchConversation);
+                if (transition == "switch-conversation")
+                    Assert.True(fixture.ViewModel.TrySelectConversation(fixture.OtherConversation.Id));
+                if (transition == "newer-feedback")
+                {
+                    fixture.ViewModel.InputText = "/help";
+                    Assert.True(fixture.ViewModel.SendCommand.CanExecute(null));
+                    fixture.ViewModel.SendCommand.Execute(null);
+                    Assert.StartsWith("/help", fixture.ViewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+                }
+                retainedTitle = fixture.ViewModel.LocalCommandResultTitle;
+                retainedText = fixture.ViewModel.LocalCommandResultText;
+                selectedAfterCopy = fixture.ViewModel.SelectedConversation;
+                return (copySucceeds, copySucceeds ? string.Empty : "The fixture clipboard rejected the copy.");
+            };
+
+            using var context = new CopilotPausedAdmissionContext(TestTimeout, "The clipboard export did not drain.");
+            var previousContext = SynchronizationContext.Current;
+            Task? export = null;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                export = fixture.ViewModel.ExportConversationToClipboardAsync(fixture.Conversation, command, writeClipboard);
+                context.Complete(export);
+                export.GetAwaiter().GetResult();
+            }
+            finally
+            {
+                try
+                {
+                    SynchronizationContext.SetSynchronizationContext(context);
+                    if (export is { IsCompleted: false })
+                        context.Complete(export);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }
+
+            Assert.Equal(1, copyCalls);
+            Assert.Contains(OriginalPrompt, copiedText, StringComparison.Ordinal);
+            Assert.Contains("Original completed answer.", copiedText, StringComparison.Ordinal);
+            Assert.DoesNotContain("Other conversation request", copiedText, StringComparison.Ordinal);
+            Assert.True(fixture.ViewModel.ExportConversationCommand.CanExecute(fixture.Conversation));
+            Assert.Same(selectedAfterCopy, fixture.ViewModel.SelectedConversation);
+            Assert.Empty(fixture.Runtime.Requests);
+            Assert.Empty(fixture.Host.ScheduledRuns);
+            if (transition != "unchanged")
+            {
+                Assert.Equal(retainedTitle, fixture.ViewModel.LocalCommandResultTitle);
+                Assert.Equal(retainedText, fixture.ViewModel.LocalCommandResultText);
+            }
+            else
+            {
+                Assert.StartsWith("/export", fixture.ViewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+                Assert.Contains(copySucceeds ? "已复制" : "复制失败", fixture.ViewModel.LocalCommandResultText, StringComparison.Ordinal);
+            }
+        }, TimeSpan.FromSeconds(40), "The clipboard export feedback test did not finish.");
     }
 
     private sealed class Fixture : IDisposable

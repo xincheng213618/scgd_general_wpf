@@ -449,7 +449,7 @@ namespace ColorVision.Copilot
 
                 using var executionCancellation = new CopilotNonBlockingCancellationSource();
                 Task<CopilotToolResult>? executionTask = null;
-                var toolBodyEntered = 0;
+                var dispatchWindow = new CopilotToolDispatchWindow();
                 IReadOnlyList<string> workspaceRecheckPaths = Array.Empty<string>();
                 var executionProgress = new CopilotToolProgressContext();
                 using var progressCancellation = new CancellationTokenSource();
@@ -548,7 +548,8 @@ namespace ColorVision.Copilot
                             // Publish the path snapshot before this last cancellation check.
                             // Either the boundary sees it or the write body cannot start.
                             executionCancellation.Token.ThrowIfCancellationRequested();
-                            Volatile.Write(ref toolBodyEntered, 1);
+                            if (!dispatchWindow.TryEnter())
+                                throw new OperationCanceledException(executionCancellation.Token);
                             return await ExecuteToolAsync(invocation, executionProgress, executionCancellation.Token).ConfigureAwait(false);
                         },
                         executionCancellation.Token);
@@ -562,6 +563,7 @@ namespace ColorVision.Copilot
                 }
                 catch (TimeoutException)
                 {
+                    dispatchWindow.TryClose();
                     executionCancellation.RequestCancellation();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
                     CopilotCancellationBoundary.ObserveLateFault(executionTask);
@@ -569,7 +571,8 @@ namespace ColorVision.Copilot
                         invocation,
                         timeout,
                         wasCancelled: false,
-                        outcomeUnknown: HasUnknownOutcomeAfterExecutionBoundary(invocation),
+                        outcomeUnknown: dispatchWindow.HasEntered
+                            && HasUnknownOutcomeAfterExecutionBoundary(invocation),
                         Volatile.Read(ref workspaceRecheckPaths));
                     var outcome = CreateOutcome(
                         invocation,
@@ -583,12 +586,14 @@ namespace ColorVision.Copilot
                 }
                 catch (OperationCanceledException)
                 {
+                    dispatchWindow.TryClose();
                     executionCancellation.RequestCancellation();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
                     CopilotCancellationBoundary.ObserveLateFault(executionTask);
-                    // A cancelled task has no authoritative result, even when its local work
-                    // has settled: writes may already exist or continue on a remote server.
-                    var outcomeUnknown = HasUnknownOutcomeAfterExecutionBoundary(invocation);
+                    // An entered tool body can leave side effects without a final result.
+                    // Cancellation during metadata or its checkpoint cannot dispatch that body.
+                    var outcomeUnknown = dispatchWindow.HasEntered
+                        && HasUnknownOutcomeAfterExecutionBoundary(invocation);
                     var outcome = CreateOutcome(
                         invocation,
                         outcomeUnknown
@@ -618,7 +623,7 @@ namespace ColorVision.Copilot
                     throw;
                 }
                 catch (Exception ex) when (executionTask?.IsFaulted == true
-                    && Volatile.Read(ref toolBodyEntered) != 0
+                    && dispatchWindow.HasEntered
                     && HasUnknownOutcomeAfterExecutionBoundary(invocation))
                 {
                     var outcome = CreateOutcome(

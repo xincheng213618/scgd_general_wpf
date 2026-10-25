@@ -28,6 +28,99 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
     [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task CompactionKeepsNewerLocalFeedbackWhileApplyingItsOwnResultAndUsage(bool newerHelp, bool replySucceeds)
+    {
+        const string summary = "Earlier context remains relevant.";
+        var profile = CreateProfile("compaction-feedback-profile", "Compaction feedback", "compaction-feedback-model");
+        var conversation = CreateConversation(profile, "compaction-feedback-conversation", string.Empty);
+        conversation.SetCustomTitle("Compaction feedback fixture");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, new string('u', 3_000)));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, new string('a', 3_000)));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Keep this recent request verbatim."));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Keep this recent answer verbatim."));
+        var originalMessages = conversation.Messages.ToArray();
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id,
+            Conversations = [conversation],
+        };
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var handler = new GatedCompactionHandler();
+        using var client = new HttpClient(handler);
+        var service = new CopilotChatService(client);
+        using var viewModel = new CopilotChatViewModel(service, new InMemoryStateStore(state),
+            CreateConfig(profile, "compaction-feedback-test-token"), new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        System.ComponentModel.PropertyChangedEventHandler observeCompletion = (_, args) =>
+        {
+            if (args.PropertyName == nameof(viewModel.IsBusy) && !viewModel.IsBusy)
+                finished.TrySetResult();
+        };
+        viewModel.PropertyChanged += observeCompletion;
+        var responseReleased = false;
+        var response = JObject.FromObject(new
+        {
+            choices = new[] { new { message = new { role = "assistant", content = summary }, finish_reason = replySucceeds ? "stop" : "length" } },
+            usage = new { prompt_tokens = 12, completion_tokens = 8, total_tokens = 20, prompt_tokens_details = new { cached_tokens = 3 } },
+        }).ToString(Newtonsoft.Json.Formatting.None);
+        try
+        {
+            viewModel.InputText = "/compact";
+            Assert.True(viewModel.SendCommand.CanExecute(null));
+            viewModel.SendCommand.Execute(null);
+            await handler.Entered.Task.WaitAsync(TestTimeout);
+            Assert.True(viewModel.IsBusy);
+            var expectedTitle = string.Empty;
+            var expectedText = string.Empty;
+            if (newerHelp)
+            {
+                viewModel.InputText = "/help";
+                Assert.True(viewModel.SendCommand.CanExecute(null));
+                viewModel.SendCommand.Execute(null);
+                expectedTitle = viewModel.LocalCommandResultTitle;
+                expectedText = viewModel.LocalCommandResultText;
+                Assert.StartsWith("/help", expectedTitle, StringComparison.Ordinal);
+                Assert.NotEmpty(expectedText);
+            }
+
+            handler.Respond(response);
+            responseReleased = true;
+            await finished.Task.WaitAsync(TestTimeout);
+
+            Assert.Equal(originalMessages, conversation.Messages.ToArray());
+            var usage = Assert.IsType<CopilotConversationAuxiliaryUsage>(conversation.CompactionUsage);
+            Assert.Equal(1, usage.RequestCount);
+            Assert.Equal(new CopilotTokenUsage(12, 8, 20, 3), usage.Usage);
+            if (replySucceeds)
+                Assert.Equal(summary, Assert.IsType<CopilotConversationCompaction>(conversation.Compaction).Summary);
+            else
+                Assert.Null(conversation.Compaction);
+            if (newerHelp)
+            {
+                Assert.Equal(expectedTitle, viewModel.LocalCommandResultTitle);
+                Assert.Equal(expectedText, viewModel.LocalCommandResultText);
+            }
+            else
+            {
+                Assert.StartsWith("/compact", viewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+                Assert.Contains("延续摘要", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+            }
+            Assert.Equal(1, handler.RequestCount);
+        }
+        finally
+        {
+            if (!responseReleased)
+                handler.Respond(response);
+            if (viewModel.IsBusy)
+                await finished.Task.WaitAsync(TestTimeout);
+            viewModel.PropertyChanged -= observeCompletion;
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task ChatSendCommitsStateBeforeTheProviderAndRejectsPersistenceFailure(bool persistFails)

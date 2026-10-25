@@ -662,6 +662,183 @@ public sealed class CopilotBatchImageProcessingTests
         }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CopilotBatchConversionValidatesOnlyTheResolvedOutputDirectoriesBeforeLoadingSources(bool preserveFolderStructure)
+    {
+        using var fixture = new BatchOutputScopeFixture();
+        File.WriteAllBytes(Path.Combine(fixture.InputDirectory, "a.png"), [0]);
+        File.WriteAllBytes(Path.Combine(fixture.NestedInputDirectory, "b.png"), [0]);
+        fixture.RedirectNestedOutputOutsideWorkspace();
+        var loader = new BoundaryImageLoader();
+        var tool = new CopilotConvertBatchImagesTool(new BatchImageProcessor([loader]));
+        CopilotAgentRequest request = fixture.CreateRequest();
+        CopilotAgentToolInput input = fixture.CreateInput(tool, preserveFolderStructure);
+
+        CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, CancellationToken.None);
+
+        if (preserveFolderStructure)
+        {
+            Assert.False(result.Success);
+            Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+            Assert.Contains("reparse point", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(0, loader.LoadCalls);
+            Assert.Empty(Directory.GetFiles(fixture.OutputDirectory));
+        }
+        else
+        {
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(2, loader.LoadCalls);
+            Assert.True(File.Exists(Path.Combine(fixture.OutputDirectory, "a.tiff")));
+            Assert.True(File.Exists(Path.Combine(fixture.OutputDirectory, "b.tiff")));
+            Assert.Equal(2, Directory.GetFiles(fixture.OutputDirectory).Length);
+        }
+        fixture.AssertOutsideUnchanged();
+    }
+
+    [Fact]
+    public async Task CopilotBatchConversionRechecksTheOutputDirectoryAfterLoadingTheSource()
+    {
+        using var fixture = new BatchOutputScopeFixture();
+        string sourcePath = Path.Combine(fixture.NestedInputDirectory, "sample.png");
+        File.WriteAllBytes(sourcePath, [0]);
+        var loader = new BoundaryImageLoader(onLoad: fixture.RedirectNestedOutputOutsideWorkspace);
+        var tool = new CopilotConvertBatchImagesTool(new BatchImageProcessor([loader]));
+        CopilotAgentRequest request = fixture.CreateRequest();
+        CopilotAgentToolInput input = fixture.CreateInput(tool);
+
+        CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(1, loader.LoadCalls);
+        Assert.Contains(sourcePath, result.SuccessfullyReadLocalFilePaths, StringComparer.OrdinalIgnoreCase);
+        using JsonDocument evidence = JsonDocument.Parse(result.Content);
+        Assert.Equal(0, evidence.RootElement.GetProperty("succeeded").GetInt32());
+        Assert.Equal(1, evidence.RootElement.GetProperty("failed").GetInt32());
+        Assert.Equal("output_not_authorized", evidence.RootElement.GetProperty("results")[0].GetProperty("error_code").GetString());
+        Assert.Contains("reparse point", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        fixture.AssertOutsideUnchanged();
+    }
+
+    [Fact]
+    public async Task CopilotBatchConversionStopsDirectoryDiscoveryWhenCancelled()
+    {
+        using var fixture = new BatchOutputScopeFixture();
+        for (int index = 0; index < 20; index++)
+            File.WriteAllBytes(Path.Combine(fixture.InputDirectory, $"sample-{index:D2}.png"), [0]);
+        using var cancellation = new CancellationTokenSource();
+        int extensionsRead = 0;
+        var loader = new BoundaryImageLoader(onExtensions: () =>
+        {
+            if (++extensionsRead == 2)
+                cancellation.Cancel();
+        });
+        var tool = new CopilotConvertBatchImagesTool(new BatchImageProcessor([loader]));
+        CopilotAgentRequest request = fixture.CreateRequest();
+        CopilotAgentToolInput input = fixture.CreateInput(tool);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, cancellation.Token));
+
+        Assert.Equal(2, extensionsRead);
+        Assert.Equal(0, loader.LoadCalls);
+        Assert.Empty(Directory.GetFiles(fixture.OutputDirectory));
+        fixture.AssertOutsideUnchanged();
+    }
+
+    private sealed class BatchOutputScopeFixture : IDisposable
+    {
+        private const string TemporaryPrefix = "colorvision-copilot-output-boundary-";
+        private readonly string _root = Directory.CreateTempSubdirectory(TemporaryPrefix).FullName;
+        private readonly string _sentinelPath;
+        private string WorkspaceDirectory => Path.Combine(_root, "workspace");
+        public string InputDirectory => Path.Combine(WorkspaceDirectory, "input");
+        public string NestedInputDirectory => Path.Combine(InputDirectory, "nested");
+        public string OutputDirectory => Path.Combine(WorkspaceDirectory, "output");
+        private string NestedOutputDirectory => Path.Combine(OutputDirectory, "nested");
+        private string OutsideDirectory => Path.Combine(_root, "outside");
+
+        public BatchOutputScopeFixture()
+        {
+            Directory.CreateDirectory(NestedInputDirectory);
+            Directory.CreateDirectory(NestedOutputDirectory);
+            Directory.CreateDirectory(OutsideDirectory);
+            _sentinelPath = Path.Combine(OutsideDirectory, "sentinel.txt");
+            File.WriteAllText(_sentinelPath, "unchanged");
+        }
+
+        public CopilotAgentRequest CreateRequest() => new()
+        {
+            UserText = "批量转换图片为 TIFF",
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [WorkspaceDirectory],
+            ReadableLocalDirectoryPaths = [WorkspaceDirectory],
+            WritableLocalRootPaths = [WorkspaceDirectory],
+        };
+
+        public CopilotAgentToolInput CreateInput(CopilotConvertBatchImagesTool tool, bool preserveFolderStructure = true)
+        {
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { InputDirectory },
+                    ["outputDirectory"] = OutputDirectory,
+                    ["format"] = "tiff",
+                    ["recursive"] = true,
+                    ["preserveFolderStructure"] = preserveFolderStructure,
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+            return input;
+        }
+
+        public void RedirectNestedOutputOutsideWorkspace()
+        {
+            Directory.Delete(NestedOutputDirectory);
+            Directory.CreateSymbolicLink(NestedOutputDirectory, OutsideDirectory);
+        }
+
+        public void AssertOutsideUnchanged()
+        {
+            Assert.Equal([_sentinelPath], Directory.GetFiles(OutsideDirectory));
+            Assert.Equal("unchanged", File.ReadAllText(_sentinelPath));
+        }
+
+        public void Dispose()
+        {
+            // Remove the link itself before recursive cleanup, so cleanup never follows it.
+            if (Directory.Exists(NestedOutputDirectory)
+                && (File.GetAttributes(NestedOutputDirectory) & FileAttributes.ReparsePoint) != 0)
+                Directory.Delete(NestedOutputDirectory);
+            string fullPath = Path.GetFullPath(_root);
+            Assert.StartsWith(Path.GetFullPath(Path.GetTempPath()), fullPath, StringComparison.OrdinalIgnoreCase);
+            Assert.StartsWith(TemporaryPrefix, Path.GetFileName(fullPath), StringComparison.Ordinal);
+            Directory.Delete(fullPath, recursive: true);
+        }
+    }
+
+    private sealed class BoundaryImageLoader(Action? onLoad = null, Action? onExtensions = null) : IBatchImageLoader
+    {
+        public int LoadCalls { get; private set; }
+
+        public IReadOnlyCollection<string> Extensions
+        {
+            get
+            {
+                onExtensions?.Invoke();
+                return [".png"];
+            }
+        }
+
+        public Mat Load(string filePath)
+        {
+            LoadCalls++;
+            onLoad?.Invoke();
+            return new Mat(2, 2, MatType.CV_8UC1, Scalar.All(42));
+        }
+    }
+
     private sealed class InjectedProvider(Action onExecute) : IImageAlgorithmProvider
     {
         public AlgorithmProviderMetadata Metadata { get; } = new(

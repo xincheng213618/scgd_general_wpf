@@ -69,7 +69,7 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken);
     }
 
-    public static class CopilotDatabaseSqlPolicy
+    public static partial class CopilotDatabaseSqlPolicy
     {
         public const int MaximumSqlLength = 20_000;
         private static readonly HashSet<string> ReadKeywords = new(StringComparer.OrdinalIgnoreCase)
@@ -276,7 +276,7 @@ namespace ColorVision.Copilot
             return tableName.Length > 0;
         }
 
-        private static bool TryTokenize(string sql, out List<SqlToken> tokens, out string error)
+        private static bool TryTokenize(string sql, out List<SqlToken> tokens, out string error, List<SqlApprovalRedactionSpan>? approvalRedactions = null)
         {
             tokens = new List<SqlToken>();
             error = string.Empty;
@@ -291,15 +291,19 @@ namespace ColorVision.Copilot
                 }
                 if (current == '-' && index + 1 < sql.Length && sql[index + 1] == '-')
                 {
+                    var start = index;
                     index += 2;
                     while (index < sql.Length && sql[index] is not '\r' and not '\n')
                         index++;
+                    approvalRedactions?.Add(new(start, index - start, "-- <redacted>"));
                     continue;
                 }
                 if (current == '#')
                 {
+                    var start = index;
                     while (index < sql.Length && sql[index] is not '\r' and not '\n')
                         index++;
+                    approvalRedactions?.Add(new(start, index - start, "# <redacted>"));
                     continue;
                 }
                 if (current == '/' && index + 1 < sql.Length && sql[index + 1] == '*')
@@ -315,6 +319,7 @@ namespace ColorVision.Copilot
                         error = "SQL contains an unterminated comment.";
                         return false;
                     }
+                    approvalRedactions?.Add(new(index, end + 2 - index, "/* <redacted> */"));
                     index = end + 2;
                     continue;
                 }
@@ -350,6 +355,7 @@ namespace ColorVision.Copilot
                 }
                 if (current is '\'' or '"')
                 {
+                    var start = index;
                     var quote = current;
                     index++;
                     var closed = false;
@@ -378,6 +384,17 @@ namespace ColorVision.Copilot
                         error = "SQL contains an unterminated quoted value.";
                         return false;
                     }
+                    approvalRedactions?.Add(new(start, index - start, quote + "<redacted>" + quote));
+                    continue;
+                }
+                if (approvalRedactions != null
+                    && (char.IsDigit(current) || current == '.' && index + 1 < sql.Length && char.IsDigit(sql[index + 1])))
+                {
+                    var start = index++;
+                    while (index < sql.Length && (char.IsLetterOrDigit(sql[index]) || sql[index] is '.' or '_' or '$'
+                        || (sql[index] is '+' or '-') && (sql[index - 1] is 'e' or 'E')))
+                        index++;
+                    approvalRedactions.Add(new(start, index - start, "<redacted-number>"));
                     continue;
                 }
                 if (current == '(')
@@ -507,8 +524,22 @@ namespace ColorVision.Copilot
         private sealed record SqlToken(string Text, int Depth, int Index, bool IsFunction = false);
     }
 
-    internal sealed class CopilotMySqlDatabaseSqlExecutor : ICopilotDatabaseSqlExecutor
+    internal sealed partial class CopilotMySqlDatabaseSqlExecutor : ICopilotBoundDatabaseSqlExecutor
     {
+        private readonly Func<string> _connectionStringProvider;
+
+        public CopilotMySqlDatabaseSqlExecutor()
+            : this(MySqlControl.GetConnectionString)
+        {
+        }
+
+        internal CopilotMySqlDatabaseSqlExecutor(Func<string> connectionStringProvider)
+        {
+            _connectionStringProvider = connectionStringProvider ?? throw new ArgumentNullException(nameof(connectionStringProvider));
+        }
+
+        public CopilotDatabaseSqlTarget CaptureTarget() => CopilotDatabaseSqlTarget.FromConnectionString(_connectionStringProvider());
+
         private static readonly string[] SensitiveColumnMarkers =
         {
             "password", "passwd", "pwd", "secret", "token", "api_key", "apikey", "authorization",
@@ -523,7 +554,7 @@ namespace ColorVision.Copilot
             int timeoutSeconds,
             CancellationToken cancellationToken)
         {
-            await using var connection = new MySqlConnection(MySqlControl.GetConnectionString());
+            await using var connection = new MySqlConnection(_connectionStringProvider());
             await connection.OpenAsync(cancellationToken);
             await using var transaction = await connection.BeginTransactionAsync(
                 IsolationLevel.RepeatableRead,
@@ -558,78 +589,6 @@ namespace ColorVision.Copilot
                 ColumnsTruncated = columnsTruncated,
                 TruncatedCellCount = truncatedCellCount,
             };
-        }
-
-        public async Task<CopilotDatabaseMutationResult> ExecuteAsync(
-            string sql,
-            CopilotDatabaseSqlAnalysis analysis,
-            int timeoutSeconds,
-            CancellationToken cancellationToken)
-        {
-            await using var connection = new MySqlConnection(MySqlControl.GetConnectionString());
-            await connection.OpenAsync(cancellationToken);
-            MySqlTransaction? transaction = null;
-            var commandStarted = false;
-            var commitStarted = false;
-            try
-            {
-                if (analysis.IsTransactional)
-                    transaction = await connection.BeginTransactionAsync(cancellationToken);
-                await using var command = new MySqlCommand(sql, connection, transaction) { CommandTimeout = timeoutSeconds };
-                commandStarted = true;
-                var affectedRows = await command.ExecuteNonQueryAsync(cancellationToken);
-                if (transaction != null)
-                {
-                    commitStarted = true;
-                    await transaction.CommitAsync(cancellationToken);
-                }
-                return new CopilotDatabaseMutationResult(affectedRows, transaction != null);
-            }
-            catch (OperationCanceledException ex)
-            {
-                var rollbackConfirmed = false;
-                if (transaction != null && !commitStarted)
-                {
-                    try
-                    {
-                        await transaction.RollbackAsync(CancellationToken.None);
-                        rollbackConfirmed = true;
-                    }
-                    catch
-                    {
-                        // The transaction outcome cannot be proven after rollback also fails.
-                    }
-                }
-
-                if (commandStarted && (!analysis.IsTransactional || commitStarted || !rollbackConfirmed))
-                    throw new CopilotDatabaseMutationOutcomeUnknownException(ex);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                var rollbackConfirmed = false;
-                if (transaction != null && !commitStarted)
-                {
-                    try
-                    {
-                        await transaction.RollbackAsync(CancellationToken.None);
-                        rollbackConfirmed = true;
-                    }
-                    catch
-                    {
-                        // The transaction outcome cannot be proven after rollback also fails.
-                    }
-                }
-
-                if (commandStarted && (!analysis.IsTransactional || commitStarted || !rollbackConfirmed))
-                    throw new CopilotDatabaseMutationOutcomeUnknownException(ex);
-                throw;
-            }
-            finally
-            {
-                if (transaction != null)
-                    await transaction.DisposeAsync();
-            }
         }
 
         private static bool IsSensitiveColumn(string name)
@@ -722,7 +681,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        public async Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentToolInput input, CancellationToken cancellationToken)
+        public async Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentToolInput input, CancellationToken cancellationToken, string expectedTargetFingerprint = "")
         {
             var validation = Validate("ExecuteDatabaseSql", input, false, out var sql, out var analysis);
             if (!validation.Success)
@@ -732,7 +691,22 @@ namespace ColorVision.Copilot
             var timeout = ReadInt(input, "timeoutSeconds", 30, 1, 60);
             try
             {
-                var result = await _executor.ExecuteAsync(sql, analysis!, timeout, cancellationToken);
+                CopilotDatabaseMutationResult result;
+                if (_executor is ICopilotBoundDatabaseSqlExecutor boundExecutor)
+                {
+                    var target = boundExecutor.CaptureTarget();
+                    if (!string.IsNullOrEmpty(expectedTargetFingerprint)
+                        && !string.Equals(target.Fingerprint, expectedTargetFingerprint, StringComparison.Ordinal))
+                        throw new CopilotDatabaseTargetChangedException();
+                    result = await boundExecutor.ExecuteBoundAsync(sql, analysis!, timeout,
+                        string.IsNullOrEmpty(expectedTargetFingerprint) ? target.Fingerprint : expectedTargetFingerprint, cancellationToken);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(expectedTargetFingerprint))
+                        throw new CopilotDatabaseTargetChangedException();
+                    result = await _executor.ExecuteAsync(sql, analysis!, timeout, cancellationToken);
+                }
                 return new CopilotToolResult
                 {
                     ToolName = "ExecuteDatabaseSql",
@@ -744,6 +718,11 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException)
             {
                 throw;
+            }
+            catch (CopilotDatabaseTargetChangedException ex)
+            {
+                return Failure("ExecuteDatabaseSql", CopilotToolFailureKind.Authorization,
+                    "The approved database target no longer matches.", ex.Message, "database_target_changed");
             }
             catch (CopilotDatabaseMutationOutcomeUnknownException ex)
             {
@@ -762,12 +741,16 @@ namespace ColorVision.Copilot
             }
         }
 
-        public static CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput input)
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput input)
         {
             var validation = Validate("ExecuteDatabaseSql", input, false, out var sql, out var analysis);
             if (!validation.Success || analysis == null)
-                return new CopilotToolApprovalPresentation("Reject invalid database SQL", validation.ErrorMessage);
-            var excerpt = CopilotMcpAuditLogger.RedactText(sql).Replace('\r', ' ').Replace('\n', ' ').Trim();
+                throw new InvalidOperationException(validation.ErrorMessage);
+            if (_executor is not ICopilotBoundDatabaseSqlExecutor boundExecutor)
+                throw new InvalidOperationException("The database executor must declare its target before SQL approval.");
+            var target = boundExecutor.CaptureTarget();
+            var redactedSql = CopilotDatabaseSqlPolicy.RedactForApproval(sql);
+            var excerpt = redactedSql.Replace('\r', ' ').Replace('\n', ' ').Trim();
             if (excerpt.Length > 1000)
                 excerpt = excerpt[..1000] + "…";
             var warning = analysis.IsUnboundedChange
@@ -782,7 +765,12 @@ namespace ColorVision.Copilot
                 $"Execute one {analysis.RootKeyword} statement on the configured ColorVision MySQL database. Fingerprint: {analysis.Fingerprint}.{warning}\n\nSQL preview: {excerpt}",
                 ImpactSummary: $"将在配置的 ColorVision MySQL 数据库执行一条 {analysis.RootKeyword} 语句。{warning}".Trim(),
                 Reversibility: CopilotApprovalReversibility.ManualOnly,
-                ReversibilitySummary: "Copilot 不会自动回滚数据库变更；部分 DDL 可能隐式提交，只能通过后续数据库操作恢复。");
+                ReversibilitySummary: "Copilot 不会自动回滚数据库变更；部分 DDL 可能隐式提交，只能通过后续数据库操作恢复。")
+            {
+                ExecutionTargetFingerprint = target.Fingerprint,
+                ReviewDetails = CopilotApprovalReviewTextEncoder.Encode(
+                    $"Database target:\n{target.DisplayText}\ntarget fingerprint: {target.Fingerprint}\nSQL fingerprint: {analysis.Fingerprint}\nSQL characters: {sql.Length}\ntimeoutSeconds: {ReadInt(input, "timeoutSeconds", 30, 1, 60)}\ntransactional: {analysis.IsTransactional.ToString().ToLowerInvariant()}\n{warning}\nComplete SQL (redacted):\n{redactedSql}"),
+            };
         }
 
         private static (string Content, int RowsDisplayed, bool IsTruncated) BuildQueryOutput(CopilotDatabaseSqlAnalysis analysis, CopilotDatabaseQueryResult result)

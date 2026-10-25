@@ -1,5 +1,6 @@
 using ColorVision.Copilot.Mcp;
 using System.ComponentModel;
+using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -323,6 +324,80 @@ public sealed class CopilotApprovalCoordinatorTests
         Assert.Equal("action-map", trace.ApprovalActionId);
         if (approvalStatus == ConfirmableActionStatus.Executing)
             Assert.True(message.IsExecutionInProgress);
+    }
+
+    [Theory]
+    [InlineData(CopilotToolExecutionState.Interrupted, ConfirmableActionStatus.Cancelled)]
+    [InlineData(CopilotToolExecutionState.Interrupted, ConfirmableActionStatus.Executed)]
+    [InlineData(CopilotToolExecutionState.TimedOut, ConfirmableActionStatus.Cancelled)]
+    [InlineData(CopilotToolExecutionState.TimedOut, ConfirmableActionStatus.Executed)]
+    public void LateApprovalNotificationPreservesClosedUnknownOutcomeEvidenceAcrossRestart(
+        CopilotToolExecutionState terminalState,
+        ConfirmableActionStatus approvalStatus)
+    {
+        var (state, conversation, message, _) = CreateTraceState(ConversationId, "rollback-boundary-call");
+        const string actionId = "rollback-boundary-action";
+        const string warning = "The rollback may still be completing. Inspect the affected path before retrying; do not repeat the write automatically.";
+        var path = Path.Combine(Path.GetTempPath(), "rollback-boundary-candidate.txt");
+        var completedAt = DateTimeOffset.UtcNow.AddSeconds(-1);
+        CopilotAssistantMessagePresenter.ApplyAgentEvent(message, CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "RollbackWorkspacePatchEnvelope", Success = false,
+                Summary = "The rollback crossed its execution boundary without a final result.",
+                ErrorMessage = warning, FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+                FailureCode = CopilotToolFailureCode.OutcomeUnknown, WorkspaceRecheckPaths = [path],
+            }, new CopilotToolExecutionInfo
+            {
+                CallId = "rollback-boundary-call", ApprovalActionId = actionId,
+                ToolName = "RollbackWorkspacePatchEnvelope", Access = CopilotToolAccess.Write,
+                Idempotency = CopilotToolIdempotency.NonIdempotent, State = terminalState,
+                FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+                StartedAtUtc = completedAt.AddSeconds(-1), CompletedAtUtc = completedAt,
+            }));
+        message.IsExecutionInProgress = false;
+        message.MarkThinkingCompleted();
+        var trace = Assert.Single(message.AgentTraceEntries);
+        using var coordinator = new CopilotApprovalCoordinator(new FakeApprovalStore(), state);
+
+        var update = coordinator.ApplyTransition(new CopilotApprovalActionTransition(
+            actionId, "rollback-boundary-call", CopilotApprovalSourceKind.ColorVisionUi, ConversationId,
+            approvalStatus, ResumesAgentOnApproval: false, ExecutionSucceeded: false,
+            ExecutionResultText: "A generic late approval notification.", CompletedAt: DateTimeOffset.UtcNow,
+            ObservedAtUtc: DateTimeOffset.UtcNow));
+
+        var root = Directory.CreateTempSubdirectory("CopilotApprovalTerminalEvidence-").FullName;
+        try
+        {
+            var profile = CopilotProfileConfig.CreateDefault();
+            conversation.ProfileId = profile.Id;
+            state.ActiveProfileId = profile.Id;
+            state.ActiveConversationId = conversation.Id;
+            var store = new CopilotChatStateStore(root);
+            store.Save(state);
+            var restored = new CopilotChatStateStore(root).Load();
+            restored.EnsureInitializedAfterRestore(new CopilotConfig { Profiles = [profile] });
+            var restoredTrace = Assert.Single(Assert.Single(restored.Conversations).Messages).AgentTraceEntries.Single();
+
+            Assert.False(update.StateChanged);
+            foreach (var evidence in new[] { trace, restoredTrace })
+            {
+                Assert.Equal(terminalState, evidence.State);
+                Assert.Equal(completedAt, evidence.CompletedAtUtc);
+                Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, evidence.FailureKind);
+                Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, evidence.FailureCode);
+                Assert.Equal(new[] { path }, evidence.WorkspaceRecheckPaths);
+                Assert.Equal(warning, evidence.ErrorMessage);
+            }
+        }
+        finally
+        {
+            var resolvedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+            var temp = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+            Assert.True(string.Equals(Path.GetDirectoryName(resolvedRoot), temp, StringComparison.OrdinalIgnoreCase)
+                && Path.GetFileName(resolvedRoot).StartsWith("CopilotApprovalTerminalEvidence-", StringComparison.Ordinal));
+            Directory.Delete(resolvedRoot, recursive: true);
+        }
     }
 
     [Fact]

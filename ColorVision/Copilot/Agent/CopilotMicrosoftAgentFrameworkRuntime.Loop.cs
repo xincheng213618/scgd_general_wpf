@@ -40,6 +40,7 @@ namespace ColorVision.Copilot
                 .Where(snapshot => snapshot?.IsActive == true)
                 .ToArray();
             var answerText = new StringBuilder();
+            LiveCheckpointPublisher? liveCheckpointPublisher = null;
             var emit = CreateEventEmitter(agentEvent =>
             {
                 if (ShouldResetAnswerBeforeEvent(agentEvent.Type, answerText.Length))
@@ -80,6 +81,11 @@ namespace ColorVision.Copilot
                             activeBackgroundCommands);
                 }
                 taskEventJournalBuilder.Observe(agentEvent);
+                if (agentEvent is { Type: CopilotAgentEventType.UserQuestionResolved,
+                    UserQuestion.Resolution: CopilotUserQuestionResolution.Answered })
+                {
+                    liveCheckpointPublisher?.RecordUserQuestionAnswer(agentEvent.UserQuestion);
+                }
                 onEvent(agentEvent);
             });
             taskEventJournalBuilder.RecordRunStarted(
@@ -226,7 +232,6 @@ namespace ColorVision.Copilot
             chatClient = providerPipeline.ChatClient;
             var contextRecoveryChatClient = providerPipeline.ContextRecoveryChatClient;
             var trackingChatClient = providerPipeline.TrackingChatClient;
-            LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(
                 AIAgent checkpointAgent,
                 AgentSession checkpointSession,
@@ -721,7 +726,6 @@ namespace ColorVision.Copilot
             {
                 sessionCheckpoint = await SaveFinalSessionCheckpointAsync(
                     request,
-                    requestedCheckpoint,
                     agent,
                     session,
                     finalization,
@@ -731,9 +735,7 @@ namespace ColorVision.Copilot
                     checkpointToolNames,
                     checkpointEnvironmentContext,
                     hookSurfaceSnapshot,
-                    steeringRegistration,
                     liveCheckpointPublisher,
-                    answerText.ToString(),
                     controlIntent,
                     emit);
             }

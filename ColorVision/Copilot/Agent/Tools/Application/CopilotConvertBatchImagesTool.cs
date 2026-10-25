@@ -7,28 +7,21 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotConvertBatchImagesTool :
+    public sealed partial class CopilotConvertBatchImagesTool :
         ICopilotFrameworkApprovedTool,
         ICopilotFrameworkApprovedProgressReportingTool,
         ICopilotFrameworkApprovalPresentation,
         ICopilotAgentDrivenTool
     {
-        private const int MaximumFiles = 500;
         private const int MaximumResultRows = 100;
         private static readonly JsonSerializerOptions ResultJsonOptions = new() { WriteIndented = true };
-        private static readonly EnumerationOptions DirectoryEnumerationOptions = new()
-        {
-            AttributesToSkip = FileAttributes.ReparsePoint,
-            IgnoreInaccessible = true,
-            RecurseSubdirectories = false,
-            ReturnSpecialDirectories = false,
-        };
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
             {
@@ -202,23 +195,13 @@ namespace ColorVision.Copilot
             {
                 return Failure("Batch image conversion inputs are invalid.", resolveError, CopilotToolFailureKind.Validation);
             }
-            if (!TryResolveOutputDirectory(request, options.OutputDirectory, items, out var outputDirectory, out var outputError))
+            if (!TryResolveOutputDirectory(request, options.OutputDirectory, options.PreserveFolderStructure, items, out var outputDirectory, out var outputError))
             {
                 return Failure("Batch image conversion output is outside the approved local scope.", outputError, CopilotToolFailureKind.Authorization);
             }
-            BatchImageAlgorithmDefinition algorithm;
-            if (string.IsNullOrWhiteSpace(options.Algorithm))
-            {
-                algorithm = BatchImageAlgorithms.CreateFormatOnly();
-            }
-            else if (!BatchImageAlgorithms.TryCreateForCopilot(_algorithmRuntime, options.Algorithm, options.Parameters, out BatchImageAlgorithmDefinition? selected, out string algorithmError)
-                     || selected == null)
+            if (!TryResolveAlgorithm(options, out var algorithm, out var algorithmError))
             {
                 return Failure("The requested image algorithm is unavailable to Copilot.", algorithmError, CopilotToolFailureKind.Authorization);
-            }
-            else
-            {
-                algorithm = selected;
             }
 
             progress?.Report(
@@ -243,6 +226,7 @@ namespace ColorVision.Copilot
                                 : options.Suffix,
                             PreserveFolderStructure = options.PreserveFolderStructure,
                             AvoidOverwrite = true,
+                            ValidateOutputPath = outputPath => ValidateOutputPath(request, outputPath),
                         },
                         reportProgress: batchProgress => progress?.Report(CreateProgressUpdate(batchProgress)),
                         cancellationToken: cancellationToken), cancellationToken);
@@ -264,6 +248,7 @@ namespace ColorVision.Copilot
                 success = file.Success,
                 cancelled = file.Cancelled,
                 error = string.IsNullOrWhiteSpace(file.ErrorMessage) ? null : file.ErrorMessage,
+                error_code = string.IsNullOrWhiteSpace(file.ErrorCode) ? null : file.ErrorCode,
             });
             var content = JsonSerializer.Serialize(new
             {
@@ -325,9 +310,9 @@ namespace ColorVision.Copilot
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)
         {
             if (!TryParseOptions(toolInput, out var options, out var error))
-            {
-                return new CopilotToolApprovalPresentation("执行批量图像转换", $"参数无效：{error}");
-            }
+                throw new InvalidOperationException($"Batch image conversion arguments are invalid: {error}");
+            if (!TryResolveAlgorithm(options, out var resolvedAlgorithm, out error))
+                throw new InvalidOperationException(error);
 
             var sources = options.Sources.Take(5).ToArray();
             var sourceText = string.Join(Environment.NewLine, sources.Select(source => $"• {source}"));
@@ -337,9 +322,46 @@ namespace ColorVision.Copilot
             }
             var destination = string.IsNullOrWhiteSpace(options.OutputDirectory) ? "源文件所在目录" : options.OutputDirectory;
             var algorithm = string.IsNullOrWhiteSpace(options.Algorithm) ? "仅格式转换" : options.Algorithm;
+            var review = new StringBuilder("Complete batch image request (review-escaped):").AppendLine();
+            for (var index = 0; index < options.Sources.Count; index++)
+                review.AppendLine($"sources[{index}]: {options.Sources[index]}");
+            review.AppendLine($"outputDirectory: {(string.IsNullOrWhiteSpace(options.OutputDirectory) ? "(beside each source)" : options.OutputDirectory)}");
+            review.AppendLine($"format: {options.Format}");
+            review.AppendLine($"algorithm (requested): {(string.IsNullOrWhiteSpace(options.Algorithm) ? "format-only" : options.Algorithm)}");
+            review.AppendLine($"algorithm (resolved): {resolvedAlgorithm.Descriptor?.Id.Value ?? "format-only"}");
+            review.AppendLine($"algorithm version: {resolvedAlgorithm.Descriptor?.Version.ToString() ?? "(not applicable)"}");
+            review.AppendLine($"parameter schema version: {resolvedAlgorithm.Descriptor?.ParameterSchema.Version.ToString() ?? "(not applicable)"}");
+            review.AppendLine($"parameters (provided JSON): {options.Parameters?.GetRawText() ?? "(Catalog defaults)"}");
+            review.AppendLine($"parameters (effective JSON): {(resolvedAlgorithm.IsFormatOnly ? "{}" : JsonSerializer.Serialize(resolvedAlgorithm.Options, resolvedAlgorithm.Options.GetType(), AlgorithmJson.Options))}");
+            review.AppendLine($"recursive: {options.Recursive.ToString().ToLowerInvariant()}");
+            review.AppendLine($"preserveFolderStructure: {options.PreserveFolderStructure.ToString().ToLowerInvariant()}");
+            review.AppendLine($"suffix (requested): {(string.IsNullOrWhiteSpace(options.Suffix) ? "(default)" : options.Suffix)}");
+            review.AppendLine($"suffix (effective): {(string.IsNullOrWhiteSpace(options.Suffix) && resolvedAlgorithm.Descriptor != null ? resolvedAlgorithm.Suffix : options.Suffix)}");
+            review.AppendLine($"maximumFiles: {CopilotBatchImageSourceResolver.MaximumFiles}");
+            review.Append("avoidOverwrite: true");
             return new CopilotToolApprovalPresentation(
                 "执行批量图像处理",
-                $"输入：{Environment.NewLine}{sourceText}{Environment.NewLine}算法：{algorithm}{Environment.NewLine}输出：{destination}{Environment.NewLine}格式：{FormatName(options.Format)}{Environment.NewLine}递归：{options.Recursive}{Environment.NewLine}最多处理 {MaximumFiles} 个文件；已有文件不会被覆盖。");
+                $"输入：{Environment.NewLine}{sourceText}{Environment.NewLine}算法：{algorithm}{Environment.NewLine}输出：{destination}{Environment.NewLine}格式：{FormatName(options.Format)}{Environment.NewLine}递归：{options.Recursive}{Environment.NewLine}最多处理 {CopilotBatchImageSourceResolver.MaximumFiles} 个文件；已有文件不会被覆盖。")
+            {
+                ReviewDetails = CopilotApprovalReviewTextEncoder.Encode(review.ToString()),
+            };
+        }
+
+        private bool TryResolveAlgorithm(ConversionOptions options, out BatchImageAlgorithmDefinition algorithm, out string error)
+        {
+            if (string.IsNullOrWhiteSpace(options.Algorithm))
+            {
+                algorithm = BatchImageAlgorithms.CreateFormatOnly();
+                error = string.Empty;
+                return true;
+            }
+            if (BatchImageAlgorithms.TryCreateForCopilot(_algorithmRuntime, options.Algorithm, options.Parameters, out var selected, out error) && selected != null)
+            {
+                algorithm = selected;
+                return true;
+            }
+            algorithm = null!;
+            return false;
         }
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
@@ -357,78 +379,11 @@ namespace ColorVision.Copilot
             out string[] skippedIdentityPaths,
             out string error)
         {
-            var allowedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
-                request.SearchRootPaths
-                    .Concat(request.ReadableLocalDirectoryPaths)
-                    .Concat(request.ReadableLocalFilePaths.Select(Path.GetDirectoryName).Where(path => !string.IsNullOrWhiteSpace(path))!));
-            var resolved = new List<BatchImageItem>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var source in options.Sources)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!CopilotWorkspaceSearchSupport.TryResolveExistingPathWithinRoots(source, allowedRoots, out var fullPath, out error))
-                {
-                    items = Array.Empty<BatchImageItem>();
-                    skippedIdentityPaths = Array.Empty<string>();
-                    return false;
-                }
-
-                if (File.Exists(fullPath))
-                {
-                    if (!_processor.IsSupported(fullPath))
-                    {
-                        items = Array.Empty<BatchImageItem>();
-                        skippedIdentityPaths = Array.Empty<string>();
-                        error = $"Unsupported image extension: {fullPath}";
-                        return false;
-                    }
-                    if (seen.Add(fullPath))
-                    {
-                        resolved.Add(new BatchImageItem(fullPath, Path.GetDirectoryName(fullPath)));
-                    }
-                }
-                else
-                {
-                    var sourceRoot = fullPath;
-                    var enumerationOptions = new EnumerationOptions
-                    {
-                        AttributesToSkip = DirectoryEnumerationOptions.AttributesToSkip,
-                        IgnoreInaccessible = DirectoryEnumerationOptions.IgnoreInaccessible,
-                        RecurseSubdirectories = options.Recursive,
-                        ReturnSpecialDirectories = DirectoryEnumerationOptions.ReturnSpecialDirectories,
-                    };
-                    foreach (var file in Directory.EnumerateFiles(fullPath, "*", enumerationOptions)
-                                 .Where(_processor.IsSupported)
-                                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        if (seen.Add(file))
-                        {
-                            resolved.Add(new BatchImageItem(Path.GetFullPath(file), sourceRoot));
-                        }
-                        if (resolved.Count > MaximumFiles)
-                        {
-                            items = Array.Empty<BatchImageItem>();
-                            skippedIdentityPaths = Array.Empty<string>();
-                            error = $"The batch exceeds the {MaximumFiles}-file safety limit. Narrow the sources and retry.";
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            if (resolved.Count == 0)
+            if (!CopilotBatchImageSourceResolver.TryResolveItems(request, options.Sources, options.Recursive, _processor,
+                cancellationToken, out var resolved, out error))
             {
                 items = Array.Empty<BatchImageItem>();
                 skippedIdentityPaths = Array.Empty<string>();
-                error = "No supported image files were found in the approved sources.";
-                return false;
-            }
-            if (resolved.Count > MaximumFiles)
-            {
-                items = Array.Empty<BatchImageItem>();
-                skippedIdentityPaths = Array.Empty<string>();
-                error = $"The batch exceeds the {MaximumFiles}-file safety limit. Narrow the sources and retry.";
                 return false;
             }
 
@@ -457,6 +412,7 @@ namespace ColorVision.Copilot
         private static bool TryResolveOutputDirectory(
             CopilotAgentRequest request,
             string requestedOutputDirectory,
+            bool preserveFolderStructure,
             IReadOnlyList<BatchImageItem> items,
             out string? outputDirectory,
             out string error)
@@ -465,37 +421,46 @@ namespace ColorVision.Copilot
             error = string.Empty;
             var writableRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
                 request.WritableLocalRootPaths);
-            if (string.IsNullOrWhiteSpace(requestedOutputDirectory))
+            if (!string.IsNullOrWhiteSpace(requestedOutputDirectory))
             {
-                foreach (var item in items)
+                try
                 {
-                    var sourceDirectory = Path.GetDirectoryName(item.FilePath) ?? string.Empty;
-                    if (IsPotentialOutputPathWithinRoots(sourceDirectory, writableRoots))
-                        continue;
-
-                    error = $"The source directory is read-only for this request: {sourceDirectory}";
+                    outputDirectory = Path.GetFullPath(requestedOutputDirectory);
+                }
+                catch (Exception ex)
+                {
+                    error = $"The output directory is invalid: {ex.Message}";
                     return false;
                 }
-                return true;
+                if (!IsPotentialOutputPathWithinRoots(outputDirectory, writableRoots))
+                {
+                    error = $"The output directory is outside the writable roots: {outputDirectory}";
+                    outputDirectory = null;
+                    return false;
+                }
             }
+            foreach (var item in items)
+            {
+                var itemOutputDirectory = BatchImageOutput.ResolveOutputDirectory(item, outputDirectory, preserveFolderStructure);
+                if (IsPotentialOutputPathWithinRoots(itemOutputDirectory, writableRoots))
+                    continue;
 
-            try
-            {
-                outputDirectory = Path.GetFullPath(requestedOutputDirectory);
-            }
-            catch (Exception ex)
-            {
-                error = $"The output directory is invalid: {ex.Message}";
-                return false;
-            }
-
-            if (!IsPotentialOutputPathWithinRoots(outputDirectory, writableRoots))
-            {
-                error = $"The output directory is outside the writable roots: {outputDirectory}";
+                error = outputDirectory == null
+                    ? $"The source directory is read-only for this request: {itemOutputDirectory}"
+                    : $"The resolved output directory is outside the writable roots or crosses a reparse point: {itemOutputDirectory}";
                 outputDirectory = null;
                 return false;
             }
             return true;
+        }
+
+        private static void ValidateOutputPath(CopilotAgentRequest request, string outputPath)
+        {
+            var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputPath)) ?? string.Empty;
+            if (!IsPotentialOutputPathWithinRoots(outputDirectory, request.WritableLocalRootPaths))
+            {
+                throw new UnauthorizedAccessException($"The resolved output directory is outside the writable roots or crosses a reparse point: {outputDirectory}");
+            }
         }
 
         private static bool IsPotentialOutputPathWithinRoots(string outputPath, IEnumerable<string> roots)

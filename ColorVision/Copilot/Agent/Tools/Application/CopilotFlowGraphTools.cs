@@ -49,7 +49,7 @@ namespace ColorVision.Copilot
         public override bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.CanUseFlowPatch(request);
     }
 
-    public sealed class CopilotApplyFlowPatchTool : ICopilotFrameworkApprovedTool, ICopilotAgentDrivenTool, ICopilotFrameworkApprovalPresentation, ICopilotApplicationCapabilityClient
+    public sealed class CopilotApplyFlowPatchTool : ICopilotFrameworkApprovedTool, ICopilotAgentDrivenTool, ICopilotFrameworkApprovalPresentation, ICopilotFrameworkAsyncApprovalPresentation, ICopilotApplicationCapabilityClient
     {
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
@@ -89,6 +89,47 @@ namespace ColorVision.Copilot
         }
 
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)
+        {
+            if (InheritsCameraDefaults(toolInput))
+                throw new InvalidOperationException("Inherited camera settings require asynchronous preview validation before approval.");
+            return BuildApprovalPresentation(toolInput);
+        }
+
+        public async Task<CopilotToolApprovalPresentation> CreateApprovalPresentationAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(toolInput);
+            cancellationToken.ThrowIfCancellationRequested();
+            var presentation = BuildApprovalPresentation(toolInput);
+            if (!InheritsCameraDefaults(toolInput))
+                return presentation;
+            if (string.IsNullOrWhiteSpace(toolInput.GetStringArgument("camera_defaults_fingerprint")))
+                throw new InvalidOperationException("Preview the camera node and pass its camera_defaults_fingerprint before requesting approval.");
+
+            var preview = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                _capabilityInvoker,
+                CopilotSharedCapabilityCatalog.PreviewFlowPatch.McpToolName,
+                CopilotFlowReadToolBase.ToJsonArguments(toolInput),
+                request,
+                frameworkApprovalGranted: false,
+                cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!preview.Success || preview.IsApprovalRequired)
+                throw new InvalidOperationException($"Camera settings preview failed: {preview.Content}");
+            return presentation with
+            {
+                Description = presentation.Description + "\n将继承预览中的相机采集参数；参数变化后需要重新预览。",
+                ReviewDetails = CopilotApprovalReviewTextEncoder.Encode(preview.Content),
+            };
+        }
+
+        private static bool InheritsCameraDefaults(CopilotAgentToolInput? toolInput)
+        {
+            var arguments = CopilotFlowReadToolBase.ToJsonArguments(toolInput);
+            return arguments.TryGetValue("inherit_camera_defaults", out var value) && value.ValueKind == JsonValueKind.True;
+        }
+
+        private static CopilotToolApprovalPresentation BuildApprovalPresentation(CopilotAgentToolInput toolInput)
         {
             var arguments = toolInput?.Arguments ?? new Dictionary<string, object?>();
             arguments.TryGetValue("operation", out var operation);

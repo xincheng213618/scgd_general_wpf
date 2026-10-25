@@ -194,14 +194,14 @@ namespace ColorVision.Copilot
             var paths = displayPaths.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
             if (paths.Length == 0)
                 return string.Empty;
-            var builder = new StringBuilder($"文件状态待核查 · {paths.Length} 个文件\n文件操作未确认完成，已有差异可能不完整。请核查以下文件：");
+            var builder = new StringBuilder($"文件状态待核查 · {paths.Length} 个路径\n文件操作未确认完成，已有差异可能不完整。请核查以下路径：");
             foreach (var displayPath in paths.Take(8))
             {
                 var length = AvoidSplittingSurrogateAtEnd(displayPath, Math.Min(displayPath.Length, 320));
                 builder.Append("\n• ").Append(displayPath.AsSpan(0, length));
                 if (length < displayPath.Length) builder.Append('…');
             }
-            if (paths.Length > 8) builder.Append($"\n另有 {paths.Length - 8} 个文件，详见工具记录。");
+            if (paths.Length > 8) builder.Append($"\n另有 {paths.Length - 8} 个路径，详见工具记录。");
             return builder.ToString();
         }
 

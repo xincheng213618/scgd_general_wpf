@@ -62,6 +62,8 @@ namespace ColorVision.Copilot
         private readonly string _path;
         private readonly int _maximumCharacters;
         private readonly StringBuilder _pendingRaw = new();
+        private readonly StringBuilder? _redactedText;
+        private readonly bool _redactOnlyQuotedAssignments;
         private FileStream? _stream;
         private long _observedCharacters;
         private int _archivedCharacters;
@@ -79,6 +81,30 @@ namespace ColorVision.Copilot
             _path = path;
             _stream = stream;
             _maximumCharacters = maximumCharacters;
+        }
+
+        private CopilotTemporaryRedactedOutputArchive(StringBuilder redactedText)
+        {
+            _path = string.Empty;
+            _maximumCharacters = int.MaxValue;
+            _redactedText = redactedText;
+            _redactOnlyQuotedAssignments = true;
+        }
+
+        internal static string RedactQuotedAssignments(string value)
+        {
+            if (!value.Contains('"') && !value.Contains('\''))
+                return value;
+
+            var redactedText = new StringBuilder(value.Length);
+            using var redactor = new CopilotTemporaryRedactedOutputArchive(redactedText);
+            // The parser retains marker/quote state across appends. Bounded chunks
+            // avoid rescanning and copying a large remaining suffix per assignment.
+            const int chunkCharacters = 4096;
+            for (var offset = 0; offset < value.Length; offset += chunkCharacters)
+                redactor.Append(value.Substring(offset, Math.Min(chunkCharacters, value.Length - offset)));
+            redactor.Complete();
+            return redactedText.ToString();
         }
 
         public bool Available
@@ -211,14 +237,15 @@ namespace ColorVision.Copilot
                     observed.Length);
                 if (!_available
                     || _disposed
-                    || _stream == null
+                    || _stream == null && _redactedText == null
                     || _completed)
                 {
                     return;
                 }
 
-                _pendingRaw.Append(
-                    observed.Replace(
+                _pendingRaw.Append(_redactOnlyQuotedAssignments
+                    ? observed
+                    : observed.Replace(
                         "\0",
                         string.Empty,
                         StringComparison.Ordinal));

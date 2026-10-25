@@ -126,8 +126,6 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 
 专用流程诊断和 `preview_flow_action` 拒绝 start/stop/run，图补丁也不运行流程；这些限制不能推广为通用菜单绝不会触发流程。接口没有接受任意 Shell/PowerShell/Python 文本的专用命令工具。
 
-**已知提示不一致：**`get_server_status` 的固定 `Safety boundary` 文本仍声称不修改配置、不控制设备、不执行流程等，与主题保存及通用菜单的实际执行路径不一致。该文本不是权限门禁，应依据本页的工具效果和具体处理器判断；文档核验不代表这一运行时提示已修复。
-
 ### 从预览到执行
 
 先读状态与工作区，再取得相关上下文和预览。模板与 Flow 使用不同的预览凭据：
@@ -135,7 +133,7 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 | 操作 | 调用顺序与条件 |
 | --- | --- |
 | 模板 JSON | 可先用 `suggest_template_patch`，然后 `preview_template_patch` → `apply_template_patch { preview_id }` → ColorVision 批准 → `confirm_action`。预览默认有效 `10` 分钟；只有绑定活动编辑器的预览能应用，显式传非空 `current_json` 仅供离线预览 |
-| Flow 图 | `get_flow_graph` 取得 revision；按需要查询 `get_flow_node_catalog`；`preview_flow_patch` → `apply_flow_patch` → 批准 → `confirm_action`。apply 使用操作参数和 `expected_revision`，会自行重新预览，不接收模板的 `preview_id` |
+| Flow 图 | `get_flow_graph` 取得 revision；按需要查询 `get_flow_node_catalog`；`preview_flow_patch` → `apply_flow_patch` → 批准 → `confirm_action`。apply 使用操作参数和 `expected_revision`，会自行重新预览，不接收模板的 `preview_id`；显式继承相机设置时还必须传回预览的 `camera_defaults_fingerprint` |
 | 语言、创建流程、需确认菜单 | 调用目标工具取得待批准动作 → 在 ColorVision 核对效果并批准 → `confirm_action` |
 
 模板冲突校验、内存修改与保存边界见[模板 JSON 预览与应用](./copilot-agent-tool-contracts.md#模板-json-预览与应用)；Flow 节点类型、属性、端口和 revision 契约见[Flow 图语义与受保护编辑](./copilot-agent-tool-contracts.md#flow-图语义与受保护编辑)。预览是审查数据，不是授权，也不能跨表面复用批准。

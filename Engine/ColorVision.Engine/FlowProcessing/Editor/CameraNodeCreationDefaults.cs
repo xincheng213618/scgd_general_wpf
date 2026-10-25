@@ -3,6 +3,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -28,24 +29,25 @@ namespace ColorVision.Engine.FlowProcessing.Editor
     {
         private const string DefaultCameraCode = "DEV.Camera.Default";
 
-        internal static void InitializeFromCurrentCamera(STNode node)
+        internal static bool InitializeFromCurrentCamera(STNode node)
         {
             if (!SupportsDirectParameters(node) || node is not IFlowDeviceNode deviceNode)
-                return;
+                return false;
 
             DeviceCamera[] cameras = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>().ToArray() ?? [];
             DeviceCamera? camera = cameras.FirstOrDefault(item => string.Equals(item.Code, deviceNode.DeviceCode, StringComparison.Ordinal));
             if (camera == null && (string.IsNullOrWhiteSpace(deviceNode.DeviceCode) || deviceNode.DeviceCode == DefaultCameraCode))
                 camera = cameras.FirstOrDefault();
             if (camera == null)
-                return;
+                return false;
 
             CameraAcquisitionDefaults defaults = Capture(camera.DisplayConfig, camera.Config.IsExpThree,
                 camera.PhyCamera?.CalibrationParams, camera.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? []);
             if (!TryApply(node, defaults))
-                return;
+                return false;
 
             deviceNode.DeviceCode = camera.Code;
+            return true;
         }
 
         internal static CameraAcquisitionDefaults Capture(
@@ -73,7 +75,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         internal static bool TryApply(STNode node, CameraAcquisitionDefaults defaults)
         {
-            if (!float.IsFinite(defaults.Gain) || defaults.Gain < 0 || defaults.AvgCount < 1)
+            if (!float.IsFinite(defaults.Gain) || defaults.Gain < 0 || defaults.AvgCount < 1 || !Enum.IsDefined(defaults.FlipMode))
                 return false;
 
             if (node is CVCameraNode cvNode)
@@ -140,9 +142,25 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
         }
 
-        private static bool SupportsDirectParameters(STNode node) => node is LVCameraNode or CVCameraNode or LocalCameraNode
+        internal static CopilotFlowCameraDefaults CaptureEffectiveDefaults(STNode node)
+        {
+            (float[] exposures, float gain, int averageCount, CVImageFlipMode flipMode, string calibrationName) values = node switch
+            {
+                CVCameraNode camera => ([camera.TempR, camera.TempG, camera.TempB], camera.Gain, camera.AvgCount, camera.FlipMode, camera.CalibTempName),
+                LVCameraNode camera => ([camera.ExpTime], camera.Gain, camera.AvgCount, camera.FlipMode, camera.CaliTempName),
+                LocalCameraNode camera => ([camera.ExpTime], camera.Gain, camera.AvgCount, camera.FlipMode, camera.CalibTempName),
+                AOILocatePixelsCameraNode camera => ([camera.ExpTime], camera.Gain, camera.AvgCount, camera.FlipMode, camera.CaliTempName),
+                AOIRegisterPixelsCameraNode camera => ([camera.ExpTime], camera.Gain, camera.AvgCount, camera.FlipMode, camera.CaliTempName),
+                AOILocAndRegPixelsCameraNode camera => ([camera.ExpTime], camera.Gain, camera.AvgCount, camera.FlipMode, camera.CaliTempName),
+                _ => throw new InvalidOperationException("This Flow node does not support camera acquisition defaults."),
+            };
+            return new CopilotFlowCameraDefaults(((IFlowDeviceNode)node).DeviceCode ?? string.Empty,
+                Array.AsReadOnly(values.exposures), values.gain, values.averageCount, values.flipMode.ToString(), values.calibrationName);
+        }
+
+        internal static bool SupportsDirectParameters(STNode node) => node is LVCameraNode or CVCameraNode or LocalCameraNode
             or AOILocatePixelsCameraNode or AOIRegisterPixelsCameraNode or AOILocAndRegPixelsCameraNode;
 
-        private static bool IsValidExposure(double exposure) => double.IsFinite(exposure) && exposure > 0 && exposure <= float.MaxValue;
+        private static bool IsValidExposure(double exposure) => double.IsFinite(exposure) && exposure > 0 && exposure <= float.MaxValue && (float)exposure > 0;
     }
 }

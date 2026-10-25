@@ -45,6 +45,14 @@ namespace ColorVision.UI
         public IReadOnlyList<string> AnnotationSummaries { get; init; } = Array.Empty<string>();
     }
 
+    public sealed record CopilotFlowCameraDefaults(
+        string DeviceCode,
+        IReadOnlyList<float> ExposureMilliseconds,
+        float Gain,
+        int AverageCount,
+        string FlipMode,
+        string CalibrationTemplateName);
+
     public sealed class CopilotFlowNodeContextSnapshot
     {
         public string InstanceId { get; init; } = string.Empty;
@@ -90,6 +98,10 @@ namespace ColorVision.UI
         public IReadOnlyList<CopilotFlowPortContextSnapshot> OutputPorts { get; init; } = Array.Empty<CopilotFlowPortContextSnapshot>();
 
         public IReadOnlyList<CopilotContextProperty> Parameters { get; init; } = Array.Empty<CopilotContextProperty>();
+
+        public CopilotFlowCameraDefaults? CameraDefaults { get; init; }
+
+        public string? CameraDefaultsFingerprint { get; init; }
     }
 
     public sealed class CopilotFlowPortContextSnapshot
@@ -150,6 +162,8 @@ namespace ColorVision.UI
         public string NodeType { get; init; } = string.Empty;
 
         public string DefaultDeviceCode { get; init; } = string.Empty;
+
+        public bool CanInheritCameraDefaults { get; init; }
 
         public IReadOnlyList<CopilotFlowPortContextSnapshot> InputPorts { get; init; } = Array.Empty<CopilotFlowPortContextSnapshot>();
 

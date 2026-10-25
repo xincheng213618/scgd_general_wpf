@@ -1234,6 +1234,9 @@
         "IImageAlgorithmProvider"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotBatchImageSourceResolver.cs",
+        "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessingWindow.xaml.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.Evidence.cs",
         "UI/ColorVision.Algorithms",
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
@@ -1258,6 +1261,11 @@
         "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotOpenBatchImageInputTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotBatchImageSourceResolverTests.cs",
+        "Test/ColorVision.UI.Tests/BatchImageWindowInputTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotBatchImageApprovalTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotBatchImageCancellationEvidenceTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs",
         "Scripts/tests/test_algorithm_package_contract.py"
@@ -1818,7 +1826,12 @@
         "子 Agent 有哪些权限",
         "CopilotAgentTaskHost",
         "CopilotToolRegistry",
-        "CopilotAgentExecutionContract"
+        "CopilotAgentExecutionContract",
+        "ReadToolOutput",
+        "工具输出归档",
+        "SubmitCodeReviewFindings",
+        "代码审查findings",
+        "CopilotCodeReviewSnapshot"
       ],
       "code_paths": [
         "ColorVision/Copilot/Agent/CopilotWebEvidenceSourceLedger.cs",
@@ -1841,6 +1854,8 @@
         "ColorVision/Copilot/Agent/Tools/Application/CopilotFlowGraphTools.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
         "ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs",
+        "ColorVision/Copilot/Agent/CopilotProviderConnectionRecoveryChatClient.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FrameworkSupport.cs",
         "ColorVision/Copilot/Agent/CopilotAnthropicHttpErrorHandler.cs",
@@ -1866,7 +1881,17 @@
         "ColorVision/Copilot/CopilotProviderRequestId.cs",
         "ColorVision/Copilot/Context/CopilotConversationCompactionPlanner.cs",
         "ColorVision/Copilot/Context/CopilotConversationCompactionPrompt.cs",
-        "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"
+        "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpAuditLogger.cs",
+        "ColorVision/Copilot/Capabilities/CopilotTemporaryRedactedOutputArchive.cs",
+        "ColorVision/Copilot/Capabilities/CopilotTemporaryRedactedOutputArchive.Redaction.cs",
+        "ColorVision/Copilot/CopilotCodeReviewFindings.cs",
+        "ColorVision/Copilot/Runtime/CopilotTurnCodeReviewSnapshotCapture.cs",
+        "ColorVision/Copilot/Agent/CopilotToolExecution.ReviewInstructions.cs",
+        "ColorVision/Copilot/CopilotWorkspaceReviewRequest.cs",
+        "ColorVision/Copilot/Agent/CopilotToolModels.cs",
+        "ColorVision/Copilot/Runtime/CopilotTurnRuntime.cs",
+        "ColorVision/Copilot/Capabilities/CopilotGitWorkingTreeInspectionCapability.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotConversationFullAccessTests.cs",
@@ -1875,6 +1900,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotPatchToolAvailabilityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotProviderConnectionRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpFailureTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpErrorBoundaryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotHostedTurnCompletionTests.cs",
@@ -1895,7 +1921,13 @@
         "Test/ColorVision.Copilot.Tests/CopilotContextWindowRecoveryCancellationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotCompactionTerminalEvidenceRequestTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationCompactionIntegrityTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotLocalReadFollowUpAdmissionTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotLocalReadFollowUpAdmissionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotToolOutputArchiveTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotSecretRedactionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotCodeReviewEvidenceBoundaryTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotReviewTargetRefreshTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceReviewExecutionContractTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotReviewRepositoryBindingTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2038,12 +2070,18 @@
         "ColorVision/Copilot/Context/CopilotImageInputBudget.cs",
         "ColorVision/Copilot/Context/CopilotImageUnderstandingService.cs",
         "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs",
+        "ColorVision/Copilot/CopilotLocalGitDiffService.cs",
         "ColorVision/Copilot/CopilotChatPanel.xaml",
-        "ColorVision/Copilot/CopilotChatPanel.AttachmentsAndScroll.cs"
+        "ColorVision/Copilot/CopilotChatPanel.AttachmentsAndScroll.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.ComposerAndRuntimeState.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotWebPageRenderingTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotGitDiffFeedbackTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLocalGitDiffConsistencyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotBackgroundStopFeedbackTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotExpandedComposerEditorTests.cs",
@@ -2273,15 +2311,21 @@
         "RunShellCommand"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Capabilities/CopilotDatabaseSqlPolicy.Approval.cs",
+        "ColorVision/Copilot/Capabilities/CopilotDatabaseSqlTarget.cs",
+        "ColorVision/Copilot/Capabilities/CopilotDatabaseMutationRunner.cs",
+        "ColorVision/Copilot/Capabilities/CopilotMySqlDatabaseSqlExecutor.Mutation.cs",
         "ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.Builder.cs",
         "ColorVision/Copilot/State",
         "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs",
+        "ColorVision/Copilot/Runtime/CopilotWorkspaceRollbackCoordinator.cs",
         "ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs",
         "ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs",
         "ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs",
+        "ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Permissions.cs",
         "ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
@@ -2293,15 +2337,23 @@
         "ColorVision/Copilot/Capabilities/CopilotFlowExecutionStatisticsCapability.cs",
         "ColorVision/Copilot/Agent/Tools/Application/CopilotDatabaseSqlTools.cs",
         "ColorVision/Copilot/Skills/colorvision-database-operations",
+        "ColorVision/Copilot/Agent/CopilotToolDispatchWindow.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs",
         "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs",
         "ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTraceEntry.WorkspaceState.cs",
         "ColorVision/Copilot/CopilotChatMessage.Validation.cs",
-        "ColorVision/Copilot/CopilotChatMessage.WorkspaceDiff.cs"
+        "ColorVision/Copilot/CopilotChatMessage.WorkspaceDiff.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentConversationMemory.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.State.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalCheckpoint.cs",
+        "ColorVision/Copilot/Agent/CopilotUserQuestion.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlApprovalTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDatabaseMutationRunnerTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotCancelledToolJournalTests.cs",
@@ -2310,7 +2362,13 @@
         "Test/ColorVision.Copilot.Tests/CopilotRecentLogCoverageTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotToolDispatchWindowTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceRollbackExecutionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceRollbackAdmissionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpRestartDispatchTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotQueuedProfileRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotSteeringCancellationRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotGoalQueueRecoveryTests.cs",
@@ -2323,7 +2381,8 @@
         "Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlPolicyTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWorkspaceCancellationEvidenceTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceRestartRecoveryTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceRestartRecoveryTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotUserQuestionCheckpointTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2437,6 +2496,11 @@
         "colorvision-flow-authoring"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.ApplicationPanels.cs",
+        "ColorVision/Copilot/Agent/ICopilotTool.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs",
         "ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspacePatchEnvelopeTools.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs",
         "ColorVision/Copilot/State/CopilotChatState.cs",
@@ -2467,10 +2531,19 @@
         "ColorVision/Copilot/Skills/colorvision-flow-authoring",
         "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatch.cs",
         "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatchSupport.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotApplyTemplatePatchTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.Confirmation.cs",
         "ColorVision/Copilot/Mcp/CopilotMcpToolModels.cs",
         "Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotBatchImageCancellationEvidenceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotExecuteMenuApprovalTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowCameraDefaultsApprovalTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowCameraDefaultsMcpTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotApprovalReviewTests.cs",
+        "Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotTemplatePatchReviewTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWorkspaceCancellationEvidenceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWorkspaceRecoveryEvidenceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWriteToolAdmissionTests.cs",
@@ -2493,7 +2566,8 @@
       ],
       "code_scopes": [
         "ColorVision/Copilot",
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Common"
       ],
       "domain": "copilot",
       "title": "Copilot 工具契约",
@@ -6707,6 +6781,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/CameraRunParamTests.cs",

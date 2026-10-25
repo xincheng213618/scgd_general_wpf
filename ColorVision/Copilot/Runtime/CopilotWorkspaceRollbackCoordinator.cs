@@ -12,7 +12,10 @@ namespace ColorVision.Copilot
     internal sealed record CopilotWorkspaceRollbackActionRequest(
         string ConversationId,
         string WorkspacePath,
-        string ChangeSetId);
+        string ChangeSetId)
+    {
+        internal Func<CancellationToken, Task>? StatePersistenceBarrier { get; init; }
+    }
 
     internal sealed record CopilotWorkspaceRollbackActionResult(
         ConfirmableAction? Action,
@@ -66,6 +69,8 @@ namespace ColorVision.Copilot
                 return CopilotWorkspaceRollbackActionResult.Failed("The current workspace is unavailable or no longer exists.");
             if (!TryNormalizeChangeSetId(request.ChangeSetId, out var changeSetId))
                 return CopilotWorkspaceRollbackActionResult.Failed("The workspace change-set identifier is missing or invalid.");
+            if (request.StatePersistenceBarrier == null)
+                return CopilotWorkspaceRollbackActionResult.Failed("The workspace rollback requires a durable host state checkpoint before writing files.");
 
             var tool = _toolRegistry.Tools.SingleOrDefault(candidate =>
                 string.Equals(candidate.Name, ToolName, StringComparison.Ordinal));
@@ -99,6 +104,7 @@ namespace ColorVision.Copilot
                 TrustedProjectRootPaths = [workspacePath],
                 WritableLocalRootPaths = [workspacePath],
                 Mode = CopilotAgentMode.Auto,
+                StatePersistenceBarrier = request.StatePersistenceBarrier,
             };
             var executionSignature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(
                 tool.Name,
@@ -158,11 +164,15 @@ namespace ColorVision.Copilot
                         action.ActionId,
                         permissionOutcome.HookRuns,
                         permissionOutcome.HookBindings);
-                    var outcome = await _toolExecutor.ExecuteAsync(
-                        approvedInvocation,
-                        onEvent,
-                        token).ConfigureAwait(false);
-                    return ToMcpResult(outcome.Result);
+                    try
+                    {
+                        var outcome = await _toolExecutor.ExecuteAsync(approvedInvocation, onEvent, token).ConfigureAwait(false);
+                        return ToMcpResult(outcome.Result);
+                    }
+                    catch (CopilotToolExecutionCancellationException exception)
+                    {
+                        return ToMcpResult(exception.Outcome.Result);
+                    }
                 },
                 executeOnApproval: true,
                 requestContext: new CopilotConfirmationRequestContext
@@ -242,6 +252,13 @@ namespace ColorVision.Copilot
                 ApprovalActionId = approvalActionId,
                 InitialHookRuns = hookRuns,
                 InitialHookBindings = hookBindings,
+                PreDispatchCheckpoint = async token =>
+                {
+                    if (request.StatePersistenceBarrier is not { } barrier)
+                        return false;
+                    await barrier(token).ConfigureAwait(false);
+                    return true;
+                },
             };
         }
 

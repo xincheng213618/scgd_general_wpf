@@ -38,7 +38,8 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Active Copilot runs: {runtimeActivity.ActiveRuns}");
             builder.AppendLine($"Queued Copilot runs: {runtimeActivity.QueuedRuns}");
             builder.AppendLine($"Pending actions: {GetPendingActionsForScope(executionScope).Count}");
-            builder.AppendLine("Safety boundary: no shell, no device control, no flow execution, no config mutation, no file deletion, and no arbitrary file read.");
+            builder.AppendLine("File access: limited to the current authorized roots; no arbitrary shell tool is exposed.");
+            builder.AppendLine("Application effects: theme changes save configuration; flow/template writes and language changes require confirmation. Generic menu commands can trigger device, flow, configuration, or file operations according to the selected command and its confirmation policy.");
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
         }
 

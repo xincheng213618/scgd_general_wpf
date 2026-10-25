@@ -448,21 +448,27 @@ namespace ColorVision.Copilot
             }
 
             _isInspectingGitDiff = true;
+            var conversation = SelectedConversation;
             var cancellation = BeginAuxiliaryOperation();
             ShowLocalCommandResult(command, "正在读取本地 Git 变更…不会调用模型，也不会修改文件。");
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
             try
             {
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
                 var searchRoots = CopilotAgentRequestFactory.BuildSearchRootPaths(turnSnapshot, Array.Empty<string>());
                 var result = await _localGitDiffService.ExecuteAsync(searchRoots, scope, cancellation.Token);
-                ShowLocalCommandResult(command, result.Report);
+                if (CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                    ShowLocalCommandResult(command, result.Report);
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                ShowLocalCommandResult(command, "Git 变更快照失败：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+                var message = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                System.Diagnostics.Trace.TraceError($"Copilot Git diff snapshot failed: {message}");
+                if (CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                    ShowLocalCommandResult(command, "Git 变更快照失败：" + message);
             }
             finally
             {
@@ -479,19 +485,32 @@ namespace ColorVision.Copilot
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
             CopilotConversationRecord? targetConversation = null,
             CopilotProfileConfig? requestProfile = null,
-            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null,
+            Action<long>? onFeedbackPublished = null)
         {
             agentDefaults ??= _config.AgentDefaults;
             var conversation = targetConversation ?? SelectedConversation;
             var profile = requestProfile ?? SelectedProfile;
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
+            void ReportCompactionResult(string report)
+            {
+                var canApply = conversation == null
+                    ? Volatile.Read(ref _disposeState) == 0 && SelectedConversation == null
+                        && feedbackRevision == Volatile.Read(ref _localCommandResultRevision)
+                    : CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision);
+                if (!canApply) return;
+                ShowLocalCommandResult(command, report);
+                feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
+                onFeedbackPublished?.Invoke(feedbackRevision);
+            }
             if ((IsBusy && queuedCommandExecution == null) || _isCompactingConversation)
             {
-                ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再压缩上下文。");
+                ReportCompactionResult("当前有请求正在执行，请完成或停止后再压缩上下文。");
                 return false;
             }
             if (conversation == null || profile?.IsConfigured != true)
             {
-                ShowLocalCommandResult(command, "请先选择并配置可用模型。");
+                ReportCompactionResult("请先选择并配置可用模型。");
                 return false;
             }
             if (queuedCommandExecution != null
@@ -517,8 +536,7 @@ namespace ColorVision.Copilot
             {
                 var latestAssistant = conversation.Messages.LastOrDefault(message => message != null && !message.IsUser);
                 var isFinalAnswerRecovery = latestAssistant?.HasRecoverableFinalAnswer == true;
-                ShowLocalCommandResult(
-                    command,
+                ReportCompactionResult(
                     isFinalAnswerRecovery
                         ? "当前会话的 Agent 工作已完成，但最终回答尚未完整返回。请先使用“重试最终回答”，或在任务列表中明确放弃这条恢复项，再压缩上下文；本次压缩未开始，checkpoint 已保留。"
                         : $"当前会话还有可安全继续的 Agent 任务。请先使用“{latestAssistant?.AgentRecoveryActionLabel ?? "继续任务"}”处理它，或在任务列表中明确放弃它，再压缩上下文；本次压缩未开始，checkpoint 已保留。");
@@ -534,7 +552,7 @@ namespace ColorVision.Copilot
                 var reason = conversation.Compaction == null
                     ? "至少需要一轮完整对话后才能压缩。"
                     : "上次压缩后还没有足够的新对话，不需要重复压缩。";
-                ShowLocalCommandResult(command, reason);
+                ReportCompactionResult(reason);
                 return false;
             }
 
@@ -565,7 +583,7 @@ namespace ColorVision.Copilot
             catch (Exception ex)
             {
                 queuedCommandExecution?.HostedRun.SuppressAutomaticFollowUpDispatch();
-                ShowLocalCommandResult(command, "压缩未开始：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+                ReportCompactionResult("压缩未开始：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
                 return false;
             }
             var request = compactionPlan.SourceMessages
@@ -577,7 +595,7 @@ namespace ColorVision.Copilot
             _compactConversationCts = cancellation;
             _isCompactingConversation = true;
             IsBusy = true;
-            ShowLocalCommandResult(command, "正在压缩当前对话…完整聊天记录会继续保留在本地。");
+            ReportCompactionResult("正在压缩当前对话…完整聊天记录会继续保留在本地。");
             var usageRecorded = false;
             void RecordReportedFailureUsage(Exception exception)
             {
@@ -633,8 +651,7 @@ namespace ColorVision.Copilot
                 PersistState();
 
                 var retainedAfterBoundary = CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation);
-                ShowLocalCommandResult(
-                    command,
+                ReportCompactionResult(
                     $"已将最早 {compactionPlan.NewSourceMessageCount:N0} 条完整上下文、{compactionPlan.NewSourceCharacters:N0} 个字符合并进延续摘要。\n"
                     + $"后续请求将使用 {summary.Length:N0} 字符摘要，并保留边界后的 {retainedAfterBoundary:N0} 条新消息；界面中的完整对话未删除。\n"
                     + FormatCompactionUsage(reply.Usage)
@@ -648,15 +665,16 @@ namespace ColorVision.Copilot
                 || queuedCommandExecution?.HostedRun.CancellationToken.IsCancellationRequested == true)
             {
                 RecordReportedFailureUsage(ex);
-                ShowLocalCommandResult(
-                    command,
+                ReportCompactionResult(
                     "上下文压缩已取消，原有对话和压缩摘要均未改变；Provider 已经报告的 Token 用量仍会计入本会话。");
             }
             catch (Exception ex)
             {
                 queuedCommandExecution?.HostedRun.SuppressAutomaticFollowUpDispatch();
                 RecordReportedFailureUsage(ex);
-                ShowLocalCommandResult(command, "压缩失败：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+                var message = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                System.Diagnostics.Trace.TraceError($"Copilot conversation compaction failed: {message}");
+                ReportCompactionResult("压缩失败：" + message);
             }
             finally
             {
@@ -708,6 +726,7 @@ namespace ColorVision.Copilot
                 return CopilotAutomaticCompactionOutcome.Failed;
 
             var previousCompaction = conversation.Compaction;
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
             var continueAfterCompaction = await CompactConversationAsync(
                 command,
                 CopilotConversationCompactionPrompt.BuildAutomaticFocus(
@@ -716,23 +735,31 @@ namespace ColorVision.Copilot
                 agentDefaults,
                 codexConfigOptions,
                 targetConversation: conversation,
-                requestProfile: requestProfile);
+                requestProfile: requestProfile,
+                onFeedbackPublished: revision => feedbackRevision = revision);
+            var canApplyFeedback = CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision);
             var applied = !ReferenceEquals(previousCompaction, conversation.Compaction)
                 && conversation.Compaction?.IsStructurallyValid() == true;
             if (!applied)
             {
-                LocalCommandResultTitle = "自动压缩未完成";
-                LocalCommandResultText = (LocalCommandResultText ?? string.Empty).Trim()
-                    + Environment.NewLine
-                    + "原请求尚未发送，输入和附件均已保留；请重试 /compact，或在设置中调整自动压缩策略。";
+                if (canApplyFeedback)
+                {
+                    LocalCommandResultTitle = "自动压缩未完成";
+                    LocalCommandResultText = (LocalCommandResultText ?? string.Empty).Trim()
+                        + Environment.NewLine
+                        + "原请求尚未发送，输入和附件均已保留；请重试 /compact，或在设置中调整自动压缩策略。";
+                }
                 return CopilotAutomaticCompactionOutcome.Failed;
             }
             if (!continueAfterCompaction)
             {
-                LocalCommandResultTitle = "/compact · Hook 已停止后续请求";
-                LocalCommandResultText = (LocalCommandResultText ?? string.Empty).Trim()
-                    + Environment.NewLine
-                    + "原请求尚未发送，输入和附件均已保留。";
+                if (canApplyFeedback)
+                {
+                    LocalCommandResultTitle = "/compact · Hook 已停止后续请求";
+                    LocalCommandResultText = (LocalCommandResultText ?? string.Empty).Trim()
+                        + Environment.NewLine
+                        + "原请求尚未发送，输入和附件均已保留。";
+                }
                 return CopilotAutomaticCompactionOutcome.Failed;
             }
 
@@ -747,12 +774,15 @@ namespace ColorVision.Copilot
             var customFocusText = agentDefaults.AutoCompactInstructions.Length > 0
                 ? $"已应用 {agentDefaults.AutoCompactInstructions.Length:N0} 字符的自定义长期重点。"
                 : "已应用内置默认保留重点。";
-            LocalCommandResultTitle = "/compact · 自动压缩";
-            LocalCommandResultText = $"{triggerText}，已在发送前自动压缩早期对话。"
-                + Environment.NewLine
-                + customFocusText
-                + Environment.NewLine
-                + LocalCommandResultText;
+            if (canApplyFeedback)
+            {
+                LocalCommandResultTitle = "/compact · 自动压缩";
+                LocalCommandResultText = $"{triggerText}，已在发送前自动压缩早期对话。"
+                    + Environment.NewLine
+                    + customFocusText
+                    + Environment.NewLine
+                    + LocalCommandResultText;
+            }
             return CopilotAutomaticCompactionOutcome.Applied;
         }
 

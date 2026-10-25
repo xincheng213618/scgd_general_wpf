@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace ColorVision.Copilot
 {
@@ -15,6 +16,10 @@ namespace ColorVision.Copilot
 
         public string Revision { get; set; } = string.Empty;
 
+        // This binding belongs to one running request, not persisted review preferences.
+        // Null preserves requests without a workspace; empty means workspace discovery failed.
+        internal string? BoundRepositoryRoot { get; set; }
+
         public bool ShouldSerializeRevision() => !string.IsNullOrEmpty(Revision);
 
         internal static CopilotWorkspaceReviewTargetContext WorkingTree() => new();
@@ -23,7 +28,14 @@ namespace ColorVision.Copilot
         {
             Target = Target,
             Revision = Revision,
+            BoundRepositoryRoot = BoundRepositoryRoot,
         };
+
+        internal bool MatchesRepository(string repositoryRoot) => BoundRepositoryRoot == null
+            || BoundRepositoryRoot.Length > 0 && string.Equals(
+                Path.TrimEndingDirectorySeparator(BoundRepositoryRoot),
+                Path.TrimEndingDirectorySeparator(repositoryRoot),
+                StringComparison.OrdinalIgnoreCase);
 
         internal bool IsStructurallyValid()
         {

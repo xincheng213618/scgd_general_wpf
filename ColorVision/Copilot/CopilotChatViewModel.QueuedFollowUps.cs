@@ -610,7 +610,7 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            if (_queuedLocalCommandExecution != null)
+            if (_taskHost.ActiveRun?.IsQueuedLocalCommand == true)
             {
                 if (!_followUpQueue.TryPromote(queuedFollowUp.RunId))
                     return false;
@@ -780,7 +780,7 @@ namespace ColorVision.Copilot
                 var conversation = Conversations.FirstOrDefault(candidate =>
                     string.Equals(candidate.Id, conversationId, StringComparison.Ordinal));
                 var profile = _config.FindProfile(record.ProfileId);
-                if (conversation == null || profile == null)
+                if (conversation == null || profile?.IsConfigured != true)
                 {
                     blockedConversationIds.Add(conversationId);
                     draftRecoveries.Add(record);
@@ -842,9 +842,11 @@ namespace ColorVision.Copilot
                     queuedAtUtc: record.QueuedAtUtc,
                     automaticGoalContinuation: record.IsAutomaticGoalContinuation,
                     isLocalCommand: record.IsLocalCommand);
+                var canAutoDispatch = CopilotQueuedFollowUpRecovery.CanAutoDispatch(conversation);
                 if (!_followUpQueue.TryRestore(
                     queuedFollowUp,
-                    ExecuteQueuedFollowUpAsync))
+                    ExecuteQueuedFollowUpAsync,
+                    allowAutomaticDispatch: canAutoDispatch))
                 {
                     blockedConversationIds.Add(conversationId);
                     draftRecoveries.Add(record);
@@ -852,7 +854,7 @@ namespace ColorVision.Copilot
                 }
 
                 if (firstAutoDispatchRunId.Length == 0
-                    && CopilotQueuedFollowUpRecovery.CanAutoDispatch(conversation))
+                    && canAutoDispatch)
                 {
                     firstAutoDispatchRunId = runId;
                 }

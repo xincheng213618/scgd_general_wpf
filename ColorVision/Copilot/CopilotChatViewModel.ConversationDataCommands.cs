@@ -45,27 +45,55 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var snapshot = CopilotConversationMarkdownExporter.Capture(conversation!);
+            await ExportConversationToClipboardAsync(conversation!, command, text =>
+            {
+                var succeeded = TrySetClipboardText(text, out var errorMessage);
+                return (succeeded, errorMessage);
+            });
+        }
+
+        internal async Task ExportConversationToClipboardAsync(
+            CopilotConversationRecord conversation,
+            CopilotLocalCommand command,
+            Func<string, (bool Succeeded, string ErrorMessage)> writeClipboard)
+        {
+            ArgumentNullException.ThrowIfNull(conversation);
+            ArgumentNullException.ThrowIfNull(command);
+            ArgumentNullException.ThrowIfNull(writeClipboard);
+            var snapshot = CopilotConversationMarkdownExporter.Capture(conversation);
             var cancellation = BeginAuxiliaryOperation();
             _isExportingConversation = true;
             ShowLocalCommandResult(command, "正在生成当前会话的可见 Markdown 快照。");
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
             CommandManager.InvalidateRequerySuggested();
             try
             {
-                var markdown = await Task.Run(
-                    () => CopilotConversationMarkdownExporter.BuildMarkdown(snapshot, cancellation.Token),
-                    cancellation.Token);
-                if (Volatile.Read(ref _disposeState) == 1)
-                    return;
-                if (!TrySetClipboardText(markdown, out var errorMessage))
+                await CopilotUiTaskObserver.ObserveAsync(async () =>
                 {
-                    ShowLocalCommandResult(command, "复制失败：" + errorMessage);
-                    return;
-                }
+                    var markdown = await Task.Run(
+                        () => CopilotConversationMarkdownExporter.BuildMarkdown(snapshot, cancellation.Token),
+                        cancellation.Token);
+                    if (Volatile.Read(ref _disposeState) == 1)
+                        return;
+                    var copied = writeClipboard(markdown);
+                    if (!CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                        return;
+                    if (!copied.Succeeded)
+                    {
+                        ShowLocalCommandResult(command, "复制失败：" + copied.ErrorMessage);
+                        return;
+                    }
 
-                ShowLocalCommandResult(
-                    command,
-                    $"已复制当前会话的可见 Markdown（{snapshot.Messages.Count:N0} 条消息，{markdown.Length:N0} 个字符）。");
+                    ShowLocalCommandResult(
+                        command,
+                        $"已复制当前会话的可见 Markdown（{snapshot.Messages.Count:N0} 条消息，{markdown.Length:N0} 个字符）。");
+                }, "导出会话", message =>
+                {
+                    if (!CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                        return;
+                    LocalCommandResultTitle = "导出会话 · 失败";
+                    LocalCommandResultText = message;
+                });
             }
             finally
             {
@@ -149,18 +177,28 @@ namespace ColorVision.Copilot
             _isExportingConversation = true;
             LocalCommandResultTitle = "正在导出会话";
             LocalCommandResultText = dialog.FileName;
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
             CommandManager.InvalidateRequerySuggested();
             try
             {
-                var markdown = await Task.Run(
-                    () => CopilotConversationMarkdownExporter.BuildMarkdown(snapshot, cancellation.Token),
-                    cancellation.Token);
-                await WriteConversationExportAsync(dialog.FileName, markdown, cancellation.Token);
-                if (Volatile.Read(ref _disposeState) == 1)
-                    return;
+                await CopilotUiTaskObserver.ObserveAsync(async () =>
+                {
+                    var markdown = await Task.Run(
+                        () => CopilotConversationMarkdownExporter.BuildMarkdown(snapshot, cancellation.Token),
+                        cancellation.Token);
+                    await WriteConversationExportAsync(dialog.FileName, markdown, cancellation.Token);
+                    if (!CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                        return;
 
-                LocalCommandResultTitle = "会话已导出";
-                LocalCommandResultText = dialog.FileName;
+                    LocalCommandResultTitle = "会话已导出";
+                    LocalCommandResultText = dialog.FileName;
+                }, "导出会话", message =>
+                {
+                    if (!CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                        return;
+                    LocalCommandResultTitle = "导出会话 · 失败";
+                    LocalCommandResultText = message;
+                });
             }
             finally
             {

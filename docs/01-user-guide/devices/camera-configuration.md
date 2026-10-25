@@ -5,7 +5,7 @@ status: "current"
 summary: "相机参数的编辑入口、同步覆盖与保存；CameraID统一以物理配置为准，搜索保存身份并同步逻辑镜像，路径移动失败或被拒绝不等于取消路径变更。"
 aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","应用设置","相机数据路径","光心","畸变光心","十字寻引"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs","Test/ColorVision.UI.Tests/CameraOpticalCenterTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs","Test/ColorVision.UI.Tests/CameraOpticalCenterTests.cs"]
 related: ["operations.camera","operations.physical-camera","operations.device-configuration"]
 ---
 
@@ -59,7 +59,9 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 `CameraRunParam.SetAllExposure(value)` 同时写四个曝光字段；`LocalCameraNode.BuildCameraParameters()` 用它构造节点参数，并拒绝非有限/非正曝光、非有限/负增益以及小于 1 的平均次数。这是该节点的检查，不能扩展成所有配置入口都有同样数值校验。改参数模板、显示面板和节点字段是三件不同的事。
 
-流程编辑器右键新建 L/BV、CV、本地“相机取图”和三个直接填写参数的 AOI 相机节点时，会从节点对应逻辑相机的当前显示配置读取一次曝光、翻转、平均次数、增益和所选校正模板。CV 节点保留 R/G/B 三路曝光；其余节点使用单路 `ExpTime`。若校正模板绑定的校正组指定增益，以组增益作为初值。节点设备代码还是默认占位值且找不到同名相机时，使用首个可用的逻辑相机并写入其设备代码；没有可用相机或源参数无效时保留节点原有默认值。已保存流程的加载、复制、导入、拖拽及 Copilot 加节点不执行这次同步；创建后更改手动面板也不会回写已有节点。通用/模板型相机和循环取图节点继续按自身的模板或循环参数运行。
+流程编辑器右键新建 L/BV、CV、本地“相机取图”和三个直接填写参数的 AOI 相机节点时，会从节点对应逻辑相机的当前显示配置读取一次曝光、翻转、平均次数、增益和所选校正模板。CV 节点保留 R/G/B 三路曝光；其余节点使用单路 `ExpTime`。若校正模板绑定的校正组指定增益，以组增益作为初值。节点设备代码还是默认占位值且找不到同名相机时，使用首个可用的逻辑相机并写入其设备代码；没有可用相机或源参数无效时保留节点原有默认值。已保存流程的加载、复制、导入和拖拽不执行这次同步；创建后更改手动面板也不会回写已有节点。通用/模板型相机和循环取图节点继续按自身的模板或循环参数运行。
+
+Copilot 加节点默认保留节点构造初值；只有显式要求继承当前相机设置时才读取同一组参数。预览与审批展示实际生效的参数，应用时再次核对，来源已变化或没有有效相机时拒绝添加，须重新预览。选项和指纹协议见[Flow 图语义与受保护编辑](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md#flow-图语义与受保护编辑)。
 
 ## 两种 ROI 与物理保存约束
 

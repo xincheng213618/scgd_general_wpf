@@ -237,7 +237,12 @@ namespace ColorVision.Copilot
                             string.IsNullOrWhiteSpace(entry.ApprovalActionId)
                             && entry.State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running or CopilotToolExecutionState.AwaitingApproval
                             && string.Equals(entry.CallId, transition.AgentCallId, StringComparison.Ordinal));
-                    if (trace == null)
+                    // A completed execution result carries more evidence than a later approval notification.
+                    if (trace == null
+                        || trace.CompletedAtUtc.HasValue && trace.State is
+                            CopilotToolExecutionState.Completed or CopilotToolExecutionState.Failed
+                            or CopilotToolExecutionState.TimedOut or CopilotToolExecutionState.Denied
+                            or CopilotToolExecutionState.Cancelled or CopilotToolExecutionState.Interrupted)
                         continue;
 
                     ApplyTransition(message, trace, transition);

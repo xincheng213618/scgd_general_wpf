@@ -159,6 +159,60 @@ public sealed class CopilotWorkspaceRecoveryEvidenceTests : IDisposable
     }
 
     [Fact]
+    public async Task DirectoryRecheckScopeRefreshesDescendantReadsAndListingsWithoutReopeningSiblingPaths()
+    {
+        string directory = Directory.CreateDirectory(Path.Combine(_workspace, "outputs")).FullName;
+        string nestedDirectory = Directory.CreateDirectory(Path.Combine(directory, "nested")).FullName;
+        string siblingDirectory = Directory.CreateDirectory(Path.Combine(_workspace, "outputs-sibling")).FullName;
+        string path = Path.Combine(directory, "existing.txt");
+        string siblingPath = Path.Combine(siblingDirectory, "existing.txt");
+        File.WriteAllText(path, "before");
+        File.WriteAllText(siblingPath, "unchanged");
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "directory-recheck", WorkspacePath = _workspace, Mode = CopilotAgentMode.Code,
+            UserText = "修改输出并检查目录及文件", SearchRootPaths = [_workspace],
+            WritableLocalRootPaths = [_workspace], ReadableLocalDirectoryPaths = [_workspace],
+            ReadableLocalFilePaths = [path, siblingPath], CodexHooksEnabled = false,
+        };
+        var writer = new RecoveryTool("DirectoryOutcomeUnknown", () =>
+        {
+            File.WriteAllText(path, "after");
+            File.WriteAllText(Path.Combine(nestedDirectory, "created.txt"), "new output");
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = "DirectoryOutcomeUnknown", Success = false, Summary = "Inspect the possible output directory.",
+                ErrorMessage = "The write outcome must be checked.", FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+                FailureCode = CopilotToolFailureCode.OutcomeUnknown, WorkspaceRecheckPaths = [directory],
+            });
+        });
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(request,
+            CopilotExecutionScope.ForAgentRun(request), [new CopilotReadLocalFileTool(), new CopilotListDirectoryTool(), writer], 12,
+            new CopilotToolExecutor(hooks: []), new CopilotFrameworkApprovalCoordinator(), _ => { }, () => 1);
+        var functions = bridge.CreateFunctions().OfType<AIFunction>().ToArray();
+        var read = Assert.Single(functions, f => f.Name == "colorvision_read_local_file");
+        var list = Assert.Single(functions, f => f.Name == "colorvision_list_directory");
+        var write = Assert.Single(functions, f => f.Name != read.Name && f.Name != list.Name);
+        await read.InvokeAsync(new AIFunctionArguments { ["path"] = path });
+        Assert.True(bridge.StepRecords.Last().Observation.Success);
+        await read.InvokeAsync(new AIFunctionArguments { ["path"] = siblingPath });
+        Assert.True(bridge.StepRecords.Last().Observation.Success);
+        await list.InvokeAsync(new AIFunctionArguments { ["path"] = nestedDirectory });
+        Assert.True(bridge.StepRecords.Last().Observation.Success);
+        await write.InvokeAsync(new AIFunctionArguments());
+        Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, bridge.StepRecords.Last().Observation.FailureKind);
+        await read.InvokeAsync(new AIFunctionArguments { ["path"] = path });
+        Assert.True(bridge.StepRecords.Last().Observation.Success);
+        Assert.Contains("after", bridge.StepRecords.Last().Observation.Content, StringComparison.Ordinal);
+        await list.InvokeAsync(new AIFunctionArguments { ["path"] = nestedDirectory });
+        Assert.True(bridge.StepRecords.Last().Observation.Success);
+        Assert.Contains("created.txt", bridge.StepRecords.Last().Observation.Content, StringComparison.Ordinal);
+        await read.InvokeAsync(new AIFunctionArguments { ["path"] = siblingPath });
+        Assert.Equal(CopilotToolFailureKind.Conflict, bridge.StepRecords.Last().Observation.FailureKind);
+        Assert.Equal(1, writer.Calls);
+    }
+
+    [Fact]
     public async Task FailureBeforeAnyWriteDoesNotClaimRecoveryOrReopenObservations()
     {
         var path = Path.Combine(_workspace, "single.txt");

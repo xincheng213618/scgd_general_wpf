@@ -115,9 +115,7 @@ namespace ColorVision.Copilot
             }
             if (request.Mode == CopilotAgentMode.Review)
             {
-                var requiredReviewTarget = request.WorkspaceReviewTarget?.IsStructurallyValid() == true
-                    ? request.WorkspaceReviewTarget.CreateSnapshot()
-                    : CopilotWorkspaceReviewTargetContext.WorkingTree();
+                var requiredReviewTarget = request.GetEffectiveWorkspaceReviewTarget();
                 var gitWorkingTreeTools = availableTools
                     .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
                     .Select(tool => tool.Name)

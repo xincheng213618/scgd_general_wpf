@@ -52,7 +52,7 @@ public sealed class CopilotWorkspaceCancellationEvidenceTests : IDisposable
             var accumulator = new CopilotTurnWorkspaceDiffAccumulator(_workspace);
             Assert.True(accumulator.Observe(terminal, out var snapshot));
             Assert.Empty(snapshot.Diff);
-            Assert.Contains("2 个文件", snapshot.VerificationWarning, StringComparison.Ordinal);
+            Assert.Contains("2 个路径", snapshot.VerificationWarning, StringComparison.Ordinal);
             var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
             CopilotAssistantMessagePresenter.ApplyWorkspaceDiffUpdated(assistant, snapshot);
             Assert.True(assistant.HasWorkspaceDiffWarning);
@@ -250,8 +250,10 @@ public sealed class CopilotWorkspaceCancellationEvidenceTests : IDisposable
                 cancellation.Cancel();
                 outcome = (await Assert.ThrowsAsync<CopilotToolExecutionCancellationException>(() => execution.WaitAsync(TestTimeout))).Outcome;
             }
-            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, outcome.Result.FailureKind);
-            Assert.Equal(paths.Order(), outcome.Result.WorkspaceRecheckPaths.Order());
+            Assert.Equal(timeout ? CopilotToolExecutionState.TimedOut : CopilotToolExecutionState.Cancelled, outcome.Execution.State);
+            Assert.Equal(timeout ? CopilotToolFailureKind.Transient : CopilotToolFailureKind.Cancelled, outcome.Result.FailureKind);
+            Assert.NotEqual(CopilotToolFailureCode.OutcomeUnknown, outcome.Result.FailureCode);
+            Assert.Empty(outcome.Result.WorkspaceRecheckPaths);
             Assert.False(checkpointRelease.Task.IsCompleted);
             checkpointRelease.TrySetResult(true);
             var read = await executor.ExecuteAsync(new()

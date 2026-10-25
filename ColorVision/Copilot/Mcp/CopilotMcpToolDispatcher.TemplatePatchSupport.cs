@@ -337,7 +337,7 @@ namespace ColorVision.Copilot.Mcp
         }
 
         private static InvalidOperationException TemplatePatchReviewDetailsTooLarge() =>
-            new($"Complete template patch review details exceed the {CopilotMcpConfirmationStore.MaximumReviewDetailsCharacters}-character approval limit. Split the patch into smaller changes and preview again.");
+            new($"Complete template patch review details exceed the {CopilotMcpConfirmationStore.MaximumReviewDetailsCharacters}-character approval limit. Change fewer fields per patch, or edit an oversized value in the template editor.");
 
         private static bool JsonSemanticallyEquals(string leftJson, string rightJson, out string error)
         {
