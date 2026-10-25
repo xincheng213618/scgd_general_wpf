@@ -380,6 +380,62 @@ public sealed class CopilotApprovalCoordinatorTests
         Assert.Equal(CopilotToolExecutionState.TimedOut, second.Trace.State);
     }
 
+    [Theory]
+    [InlineData("previous-action")]
+    [InlineData("")]
+    public void ReusedCallIdDoesNotRebindACompletedHistoricalTrace(string previousActionId)
+    {
+        var (state, conversation, previousMessage, previousTrace) = CreateTraceState(ConversationId, "reused-call");
+        previousTrace.ApprovalActionId = previousActionId;
+        previousTrace.State = CopilotToolExecutionState.Completed;
+        previousTrace.StartedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-2);
+        previousTrace.CompletedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1);
+        previousTrace.ResultSummary = "The previous operation completed.";
+        previousMessage.IsExecutionInProgress = false;
+        var previousCompletion = previousTrace.CompletedAtUtc;
+        var current = CreateTraceState(ConversationId, "reused-call");
+        conversation.Messages.Add(current.Message);
+        using var coordinator = new CopilotApprovalCoordinator(new FakeApprovalStore(), state);
+
+        var result = coordinator.ApplyTransition(new CopilotApprovalActionTransition(
+            "current-action", "reused-call", CopilotApprovalSourceKind.InAppAgent, ConversationId,
+            ConfirmableActionStatus.Rejected, ResumesAgentOnApproval: true, ExecutionSucceeded: false,
+            ExecutionResultText: string.Empty, CompletedAt: DateTimeOffset.UtcNow, ObservedAtUtc: DateTimeOffset.UtcNow));
+
+        Assert.Equal(1, result.UpdatedMessageCount);
+        Assert.Equal(1, result.UpdatedTraceCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, previousTrace.State);
+        Assert.Equal(previousActionId, previousTrace.ApprovalActionId);
+        Assert.Equal(previousCompletion, previousTrace.CompletedAtUtc);
+        Assert.Equal("The previous operation completed.", previousTrace.ResultSummary);
+        Assert.False(previousMessage.IsExecutionInProgress);
+        Assert.Equal(CopilotToolExecutionState.Denied, current.Trace.State);
+        Assert.Equal("current-action", current.Trace.ApprovalActionId);
+    }
+
+    [Fact]
+    public void ExactApprovalIdentityWinsOverAnUnboundReusedCallId()
+    {
+        var (state, _, message, boundTrace) = CreateTraceState(ConversationId, "bound-call");
+        boundTrace.ApprovalActionId = "bound-action";
+        var unboundTrace = new CopilotAgentTraceEntry
+        {
+            CallId = "reused-call", ToolName = "approval_test", State = CopilotToolExecutionState.Running,
+        };
+        message.AgentTraceEntries.Insert(0, unboundTrace);
+        using var coordinator = new CopilotApprovalCoordinator(new FakeApprovalStore(), state);
+
+        var result = coordinator.ApplyTransition(new CopilotApprovalActionTransition(
+            "bound-action", "reused-call", CopilotApprovalSourceKind.InAppAgent, ConversationId,
+            ConfirmableActionStatus.Rejected, ResumesAgentOnApproval: true, ExecutionSucceeded: false,
+            ExecutionResultText: string.Empty, CompletedAt: DateTimeOffset.UtcNow, ObservedAtUtc: DateTimeOffset.UtcNow));
+
+        Assert.Equal(1, result.UpdatedTraceCount);
+        Assert.Equal(CopilotToolExecutionState.Denied, boundTrace.State);
+        Assert.Equal(CopilotToolExecutionState.Running, unboundTrace.State);
+        Assert.Empty(unboundTrace.ApprovalActionId);
+    }
+
     [Fact]
     public void ExecutedAgentResumeTransitionDoesNotPrematurelyCompleteTrace()
     {

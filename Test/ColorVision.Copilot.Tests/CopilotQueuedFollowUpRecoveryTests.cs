@@ -1,9 +1,50 @@
 using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotQueuedFollowUpRecoveryTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RestartDispatchRejectsAnUnavailableCapturedSolutionEvenWhenTheActiveDocumentStillExists(bool replacedByFile)
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-recovery-root-{Guid.NewGuid():N}");
+        var solutionDirectory = Path.Combine(root, "solution");
+        var activeDocument = Path.Combine(root, "reference.txt");
+        Directory.CreateDirectory(solutionDirectory);
+        File.WriteAllText(activeDocument, "captured document");
+        try
+        {
+            var captured = CopilotQueuedFollowUpHostContext.Capture(
+                new CopilotAgentHostContextSnapshot(activeDocument, solutionDirectory, []));
+            var restored = Assert.IsType<CopilotQueuedFollowUpHostContext>(
+                JObject.FromObject(captured).ToObject<CopilotQueuedFollowUpHostContext>());
+            Assert.True(restored.TryCreateHostContext([], string.Empty, out _));
+
+            Directory.Delete(solutionDirectory);
+            if (replacedByFile)
+                File.WriteAllText(solutionDirectory, "replaced workspace");
+
+            Assert.False(restored.TryCreateHostContext([], string.Empty, out var unavailableContext));
+            Assert.Null(unavailableContext);
+
+            restored.SolutionDirectoryPath = string.Empty;
+            Assert.True(restored.TryCreateHostContext([], string.Empty, out var documentOnlyContext));
+            Assert.Equal(activeDocument, documentOnlyContext?.ActiveDocumentPath);
+        }
+        finally
+        {
+            File.Delete(activeDocument);
+            if (File.Exists(solutionDirectory))
+                File.Delete(solutionDirectory);
+            if (Directory.Exists(solutionDirectory))
+                Directory.Delete(solutionDirectory);
+            Directory.Delete(root);
+        }
+    }
+
     [Fact]
     public void PersistedComposerStatesOwnDeepSnapshots()
     {

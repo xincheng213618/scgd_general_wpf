@@ -97,8 +97,38 @@ namespace ColorVision.Copilot
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
             && !string.IsNullOrWhiteSpace(_editingUserMessageId);
 
+        internal bool IsComposerEditorSessionAvailable =>
+            Volatile.Read(ref _disposeState) == 0
+            && SelectedConversation is { IsArchived: false } conversation
+            && Conversations.Contains(conversation)
+            && !IsPromptHistorySearchOpen;
+
         public bool CanOpenExpandedComposerEditor =>
-            !IsPromptHistorySearchOpen && !IsComposerReferenceMentionActive;
+            IsComposerEditorSessionAvailable && !IsComposerReferenceMentionActive;
+
+        internal CopilotComposerEditorCapture CaptureComposerEditorSession() => new(
+            _composerSession.Capture(),
+            _editingConversationId,
+            _editingUserMessageId,
+            _composerDraftBeforeMessageEdit);
+
+        internal bool TryApplyComposerEditor(CopilotComposerEditorCapture capture, string? text)
+        {
+            ArgumentNullException.ThrowIfNull(capture);
+            var conversation = SelectedConversation;
+            if (conversation == null || !IsComposerEditorSessionAvailable
+                || !string.Equals(capture.ConversationId, conversation.Id, StringComparison.Ordinal)
+                || capture.Composer.Version != _composerSession.Version
+                || !string.Equals(capture.EditingConversationId, _editingConversationId, StringComparison.Ordinal)
+                || !string.Equals(capture.EditingUserMessageId, _editingUserMessageId, StringComparison.Ordinal)
+                || !ReferenceEquals(capture.MessageEditLifetime, _composerDraftBeforeMessageEdit))
+            {
+                return false;
+            }
+
+            InputText = text ?? string.Empty;
+            return true;
+        }
 
         public string EditingMessageStatusText => "正在编辑上一条请求；发送后将替换原回复";
 

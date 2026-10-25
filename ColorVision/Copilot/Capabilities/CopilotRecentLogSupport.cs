@@ -453,6 +453,7 @@ namespace ColorVision.Copilot
             private readonly Queue<LogLineEntry> _filteredLines = new();
             private int _fullDayTailCharacters;
             private bool _fullDayTailWasTruncated;
+            private bool _fullDayHadTruncatedLines;
 
             public LogScanAccumulator(CopilotRecentLogMode mode, string? query, int maxRecentLines, int maxTailCharacters)
             {
@@ -485,6 +486,7 @@ namespace ColorVision.Copilot
                 }
 
                 AddFullDayTailLine(entry);
+                _fullDayHadTruncatedLines |= lineWasTruncated;
                 if (string.IsNullOrWhiteSpace(_query)
                     || !line.Contains(_query, StringComparison.OrdinalIgnoreCase))
                 {
@@ -507,17 +509,18 @@ namespace ColorVision.Copilot
                         selected.Select(entry => entry.Text).ToArray(),
                         FilteredLineCount,
                         selected.Any(entry => entry.WasTruncated) || (useFiltered
-                            ? FilteredLineCount > _filteredLines.Count
+                            ? _fullDayHadTruncatedLines || FilteredLineCount > _filteredLines.Count
                             : _fullDayTailWasTruncated));
                 }
 
+                var recentWindowWasTruncated = _recentLines.Any(entry => entry.WasTruncated)
+                    || (!TotalLineCountIsExact && _recentLines.Count < _maxRecentLines);
                 if (string.IsNullOrWhiteSpace(_query))
                 {
                     return new LogSelection(
                         _recentLines.Select(entry => entry.Text).ToArray(),
                         0,
-                        _recentLines.Any(entry => entry.WasTruncated)
-                            || (!TotalLineCountIsExact && _recentLines.Count < _maxRecentLines));
+                        recentWindowWasTruncated);
                 }
 
                 var filtered = new Queue<LogLineEntry>();
@@ -535,12 +538,11 @@ namespace ColorVision.Copilot
                     ? new LogSelection(
                         filtered.Select(entry => entry.Text).ToArray(),
                         filteredCount,
-                        filtered.Any(entry => entry.WasTruncated) || filteredCount > filtered.Count)
+                        recentWindowWasTruncated || filteredCount > filtered.Count)
                     : new LogSelection(
                         _recentLines.Select(entry => entry.Text).ToArray(),
                         0,
-                        _recentLines.Any(entry => entry.WasTruncated)
-                            || (!TotalLineCountIsExact && _recentLines.Count < _maxRecentLines));
+                        recentWindowWasTruncated);
             }
 
             private void AddFullDayTailLine(LogLineEntry entry)

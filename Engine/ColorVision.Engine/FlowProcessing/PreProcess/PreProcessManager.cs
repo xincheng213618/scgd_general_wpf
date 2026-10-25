@@ -24,7 +24,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         public string? ConfigJson { get; set; }
         public string? ActionName { get; set; }
         public bool? IsEnabled { get; set; }
-        public string? TemplateNames { get; set; }
     }
 
     public class PreProcessTypeOption
@@ -45,8 +44,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
     public class PreProcessAction : ViewModelBase
     {
-        private static readonly char[] TemplateSeparators = { ',', ';', '，', '；' };
-
         public IPreProcessor Process { get; }
         public PreProcessMetadata Metadata { get; }
 
@@ -74,20 +71,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         }
         private bool _IsEnabled;
 
-        public string TemplateNames
-        {
-            get => _TemplateNames;
-            set
-            {
-                _TemplateNames = value ?? string.Empty;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(TemplateSummary));
-            }
-        }
-        private string _TemplateNames = string.Empty;
-
         public string DisplayName => string.IsNullOrWhiteSpace(ActionName) ? Metadata.DisplayName : ActionName.Trim();
-        public string TemplateSummary => string.IsNullOrWhiteSpace(TemplateNames) ? Properties.Resources.Flow_PreProcess_AllTemplates : TemplateNames;
         public string EnabledText => IsEnabled ? Properties.Resources.Flow_PreProcess_EnabledStatus : Properties.Resources.Flow_PreProcess_DisabledStatus;
 
         public PreProcessAction(IPreProcessor process)
@@ -95,19 +79,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             Process = process;
             Metadata = PreProcessMetadata.FromProcess(process);
             _ActionName = Metadata.DisplayName;
-        }
-
-        public bool AppliesToTemplate(string templateName)
-        {
-            if (string.IsNullOrWhiteSpace(TemplateNames))
-            {
-                return true;
-            }
-
-            return TemplateNames.Split(TemplateSeparators, StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t.Trim())
-                .Where(t => !string.IsNullOrEmpty(t))
-                .Any(t => string.Equals(t, templateName, StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -122,6 +93,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         private static PreProcessManager _instance;
         private static readonly object _locker = new();
         private readonly Dictionary<string, Type> _processTypesByFullName = new(StringComparer.Ordinal);
+        private readonly string _persistFilePath;
         private bool _isLoading;
 
         public static PreProcessManager GetInstance() { lock (_locker) { _instance ??= new PreProcessManager(); return _instance; } }
@@ -142,15 +114,20 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         public PreProcessAction SelectedProcess { get => _SelectedProcess; set { _SelectedProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private PreProcessAction _SelectedProcess;
 
-        public string PersistPath => PersistFilePath;
+        public string PersistPath => _persistFilePath;
         public int ProcessCount => Processes.Count;
         public int EnabledCount => Processes.Count(p => p.IsEnabled);
 
         public string LastSaveStatus { get => _LastSaveStatus; private set { _LastSaveStatus = value; OnPropertyChanged(); } }
         private string _LastSaveStatus = Properties.Resources.Flow_PreProcess_NotSaved;
 
-        public PreProcessManager()
+        public PreProcessManager() : this(PersistFilePath)
         {
+        }
+
+        internal PreProcessManager(string persistFilePath)
+        {
+            _persistFilePath = Path.GetFullPath(persistFilePath);
             LoadAvailableProcessTypes();
             Processes.CollectionChanged += Processes_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
@@ -223,7 +200,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                 return;
             }
 
-            var action = new PreProcessAction(process) { IsEnabled = false };
+            var action = new PreProcessAction(process) { IsEnabled = true };
             Processes.Add(action);
             SelectedProcess = action;
         }
@@ -402,14 +379,13 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             _isLoading = true;
             try
             {
-                if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
-                if (!File.Exists(PersistFilePath))
+                if (!File.Exists(PersistPath))
                 {
                     LastSaveStatus = Properties.Resources.Flow_PreProcess_ConfigNotFound;
                     return false;
                 }
 
-                string json = File.ReadAllText(PersistFilePath);
+                string json = File.ReadAllText(PersistPath);
                 var list = JsonConvert.DeserializeObject<List<PreProcessPersist>>(json) ?? new List<PreProcessPersist>();
 
                 Processes.Clear();
@@ -474,7 +450,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             }
 
             action.IsEnabled = item.IsEnabled ?? false;
-            action.TemplateNames = item.TemplateNames ?? string.Empty;
             return action;
         }
 
@@ -482,7 +457,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         {
             try
             {
-                if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
+                Directory.CreateDirectory(Path.GetDirectoryName(PersistPath)!);
 
                 var list = new List<PreProcessPersist>();
                 foreach (var action in Processes)
@@ -494,8 +469,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                             ProcessTypeFullName = action.Process.GetType().FullName,
                             ConfigJson = JsonConvert.SerializeObject(action.Process.GetConfig()),
                             ActionName = action.ActionName,
-                            IsEnabled = action.IsEnabled,
-                            TemplateNames = action.TemplateNames
+                            IsEnabled = action.IsEnabled
                         };
                         list.Add(persist);
                     }
@@ -506,7 +480,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                 }
 
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
-                File.WriteAllText(PersistFilePath, json);
+                File.WriteAllText(PersistPath, json);
                 LastSaveStatus = string.Format(Properties.Resources.Flow_PreProcess_AutoSaved, DateTime.Now.ToString("HH:mm:ss"));
             }
             catch (Exception ex)
@@ -518,19 +492,20 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         public List<IPreProcessor> GetEnabledProcesses(string flowName)
         {
-            return GetEnabledActions(flowName).Select(a => a.Process).ToList();
+            // Retain the flowName parameter for existing callers; preprocessing is shared by all flows.
+            return GetEnabledActions().Select(a => a.Process).ToList();
         }
 
-        private List<PreProcessAction> GetEnabledActions(string flowName)
+        private List<PreProcessAction> GetEnabledActions()
         {
-            return Processes.Where(a => a.IsEnabled && a.AppliesToTemplate(flowName)).ToList();
+            return Processes.Where(a => a.IsEnabled).ToList();
         }
 
         public async Task<bool> ExecuteAsync(string flowName, string serialNumber, ObservableCollection<CVBaseServerNode>? serverNodes = null)
         {
             try
             {
-                var matchingActions = GetEnabledActions(flowName);
+                var matchingActions = GetEnabledActions();
                 if (matchingActions.Count == 0)
                 {
                     return true;

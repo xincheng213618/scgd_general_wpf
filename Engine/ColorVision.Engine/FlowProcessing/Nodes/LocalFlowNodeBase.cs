@@ -35,13 +35,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             ["本地发光区定位(V2)"] = "发光区定位",
             ["本地FOV计算(V2)"] = "FOV计算",
             ["本地点阵畸变(V2)"] = "点阵畸变",
+            ["本地模板匹配"] = "模板匹配",
             ["本地 POI"] = "POI",
             ["Local POI Layout (Remap)"] = "关注点布点(Re)",
             ["Local POI Layout (Parameters)"] = "关注点布点(参数)",
             ["Local Calibration"] = "校正",
             ["Local Calibration + Real-time POI"] = "校正+实时 POI",
             ["Local Camera Capture"] = "相机取图",
-            ["Local POI"] = "POI"
+            ["Local POI"] = "POI",
+            ["Local Template Matching"] = "模板匹配"
         };
 
         private sealed class LocalFlowInputSnapshot

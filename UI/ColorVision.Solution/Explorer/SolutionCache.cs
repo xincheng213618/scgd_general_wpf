@@ -53,7 +53,36 @@ namespace ColorVision.Solution.Explorer
                 IsAutoCloseConnection = true
             });
 
-            _db.CodeFirst.InitTables<FileTreeCacheEntry>();
+            EnsureSchema();
+        }
+
+        private void EnsureSchema()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA table_info(file_tree_cache)";
+            var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool hasPrimaryKey = false;
+            using (SqliteDataReader reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    string name = reader.GetString(1);
+                    columns.Add(name);
+                    if (name.Equals(nameof(FileTreeCacheEntry.FullPath), StringComparison.OrdinalIgnoreCase))
+                        hasPrimaryKey = reader.GetInt64(5) != 0;
+                }
+            }
+
+            // Reuse an existing cache without repeating ORM schema discovery on every startup.
+            // Keep CodeFirst for first creation and for older schemas with missing columns/keys.
+            if (!hasPrimaryKey || !columns.IsSupersetOf([
+                nameof(FileTreeCacheEntry.FullPath), nameof(FileTreeCacheEntry.ParentPath),
+                nameof(FileTreeCacheEntry.Name), nameof(FileTreeCacheEntry.IsDirectory),
+                nameof(FileTreeCacheEntry.Extension), nameof(FileTreeCacheEntry.FileSize),
+                nameof(FileTreeCacheEntry.LastWriteTicks)]))
+                _db.CodeFirst.InitTables<FileTreeCacheEntry>();
         }
 
         /// <summary>
@@ -67,7 +96,12 @@ namespace ColorVision.Solution.Explorer
                 if (_disposed) return false;
                 try
                 {
-                    return File.Exists(_dbPath) && _db.Queryable<FileTreeCacheEntry>().Any();
+                    if (!File.Exists(_dbPath)) return false;
+                    using var connection = new SqliteConnection(_connectionString);
+                    connection.Open();
+                    using var command = connection.CreateCommand();
+                    command.CommandText = "SELECT EXISTS(SELECT 1 FROM file_tree_cache)";
+                    return Convert.ToInt64(command.ExecuteScalar()) != 0;
                 }
                 catch
                 {
@@ -87,11 +121,7 @@ namespace ColorVision.Solution.Explorer
                 if (_disposed) return new List<FileTreeCacheEntry>();
                 try
                 {
-                    return _db.Queryable<FileTreeCacheEntry>()
-                        .Where(e => e.ParentPath == parentPath)
-                        .OrderBy(e => e.IsDirectory, OrderByType.Desc)
-                        .OrderBy(e => e.Name)
-                        .ToList();
+                    return ReadChildren(parentPath);
                 }
                 catch (Exception ex)
                 {
@@ -99,6 +129,31 @@ namespace ColorVision.Solution.Explorer
                     return new List<FileTreeCacheEntry>();
                 }
             }
+        }
+
+        private List<FileTreeCacheEntry> ReadChildren(string parentPath)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT FullPath, ParentPath, Name, IsDirectory, Extension, FileSize, LastWriteTicks FROM file_tree_cache WHERE ParentPath = $parent ORDER BY IsDirectory DESC, Name";
+            command.Parameters.AddWithValue("$parent", parentPath);
+            using SqliteDataReader reader = command.ExecuteReader();
+            var entries = new List<FileTreeCacheEntry>();
+            while (reader.Read())
+            {
+                entries.Add(new FileTreeCacheEntry
+                {
+                    FullPath = reader.GetString(0),
+                    ParentPath = reader.GetString(1),
+                    Name = reader.GetString(2),
+                    IsDirectory = reader.GetBoolean(3),
+                    Extension = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                    FileSize = reader.IsDBNull(5) ? 0 : reader.GetInt64(5),
+                    LastWriteTicks = reader.IsDBNull(6) ? 0 : reader.GetInt64(6),
+                });
+            }
+            return entries;
         }
 
         public List<FileTreeCacheEntry> Search(
@@ -238,9 +293,18 @@ namespace ColorVision.Solution.Explorer
                     var dirInfo = new DirectoryInfo(directoryPath);
                     if (!dirInfo.Exists) return false;
 
-                    var cachedChildren = _db.Queryable<FileTreeCacheEntry>()
-                        .Where(e => e.ParentPath == directoryPath)
+                    var cachedChildren = ReadChildren(directoryPath);
+                    // Older incremental writers could cache solution/backup files. Repair only
+                    // those derived rows so a nonempty legacy cache can become valid again.
+                    List<string> internalPaths = cachedChildren
+                        .Where(entry => !entry.IsDirectory && SolutionNodeFactory.IsInternalFile(entry.Name))
+                        .Select(entry => entry.FullPath)
                         .ToList();
+                    if (internalPaths.Count > 0)
+                    {
+                        _db.Deleteable<FileTreeCacheEntry>().Where(entry => internalPaths.Contains(entry.FullPath)).ExecuteCommand();
+                        cachedChildren.RemoveAll(entry => internalPaths.Contains(entry.FullPath));
+                    }
                     var actualDirs = dirInfo.GetDirectories()
                         .Where(d => (d.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
                         .ToList();
@@ -285,7 +349,7 @@ namespace ColorVision.Solution.Explorer
                 try
                 {
                     var fileInfo = new FileInfo(fullPath);
-                    if (!fileInfo.Exists) return;
+                    if (!fileInfo.Exists || SolutionNodeFactory.IsInternalFile(fileInfo.Name)) return;
 
                     FileTreeCacheEntry entry = CreateFileEntry(fileInfo, parentPath);
 

@@ -22,7 +22,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                     "Category" => action.Metadata.Category,
                     "Enabled" => action.EnabledText,
                     "IsEnabled" => action.IsEnabled,
-                    "Templates" => action.TemplateSummary,
                     "TypeName" => action.Metadata.TypeName,
                     "MetadataName" => action.Metadata.DisplayName,
                     _ => action.DisplayName,
@@ -69,7 +68,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                 {
                     text += $"\n\n{action.Metadata.Description}";
                 }
-                text += $"\n\n{string.Format(Properties.Resources.Flow_PreProcess_AppliedTemplatesFormat, action.TemplateSummary)}";
                 return text;
             }
             return string.Empty;
@@ -115,7 +113,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            PreProcessManager.GetInstance().SavePersisted();
+            (DataContext as PreProcessManager)?.SavePersisted();
         }
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -162,7 +160,6 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             AddSectionHeader(stack, Properties.Resources.Flow_PreProcess_ActionSettings);
             AddBoundTextBox(stack, Properties.Resources.Flow_PreProcess_ActionName, action, nameof(PreProcessAction.ActionName), null);
             AddBoundCheckBox(stack, Properties.Resources.IsEnable, action, nameof(PreProcessAction.IsEnabled));
-            AddBoundTextBox(stack, Properties.Resources.Flow_PreProcess_AppliedTemplates, action, nameof(PreProcessAction.TemplateNames), Properties.Resources.Flow_PreProcess_AllTemplatesHint);
 
             PropertyPanel.Children.Add(border);
         }
@@ -264,10 +261,13 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private void AddProcessButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.ContextMenu != null)
+            if (DataContext is not PreProcessManager manager) return;
+
+            var picker = new PreProcessTypeWindow(manager) { Owner = this };
+            if (picker.ShowDialog() == true && picker.SelectedProcessType is { } option)
             {
-                button.ContextMenu.PlacementTarget = button;
-                button.ContextMenu.IsOpen = true;
+                manager.AddProcessCommand.Execute(option);
+                lvProcesses.ScrollIntoView(manager.SelectedProcess);
             }
         }
 

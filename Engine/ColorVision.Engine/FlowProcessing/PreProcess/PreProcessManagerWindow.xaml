@@ -75,20 +75,7 @@
                                 Background="{DynamicResource PrimaryBrush}"
                                 BorderBrush="{DynamicResource PrimaryBrush}"
                                 Foreground="White"
-                                Click="AddProcessButton_Click">
-                            <Button.ContextMenu>
-                                <ContextMenu ItemsSource="{Binding PlacementTarget.DataContext.AvailableProcessTypes, RelativeSource={RelativeSource Self}}">
-                                    <ContextMenu.ItemContainerStyle>
-                                        <Style TargetType="{x:Type MenuItem}">
-                                            <Setter Property="Header" Value="{Binding DisplayName}"/>
-                                            <Setter Property="ToolTip" Value="{Binding Description}"/>
-                                            <Setter Property="Command" Value="{Binding PlacementTarget.DataContext.AddProcessCommand, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
-                                            <Setter Property="CommandParameter" Value="{Binding}"/>
-                                        </Style>
-                                    </ContextMenu.ItemContainerStyle>
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                        </Button>
+                                Click="AddProcessButton_Click"/>
                     </DockPanel>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,12">
@@ -163,11 +150,6 @@
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
                                                        MaxHeight="36"/>
-                                            <TextBlock Text="{Binding TemplateSummary}"
-                                                       Margin="0,7,0,0"
-                                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                                       Opacity="0.58"
-                                                       TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
 
                                         <CheckBox Grid.Column="2"

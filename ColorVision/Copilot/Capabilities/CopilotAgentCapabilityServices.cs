@@ -89,7 +89,7 @@ namespace ColorVision.Copilot
             return ToCapabilityResult(snapshot);
         }
 
-        private static CopilotCapabilityResult ToCapabilityResult(CopilotRecentLogSnapshot snapshot)
+        internal static CopilotCapabilityResult ToCapabilityResult(CopilotRecentLogSnapshot snapshot)
         {
             if (!snapshot.Success)
             {
@@ -105,6 +105,9 @@ namespace ColorVision.Copilot
             {
                 Success = true,
                 Summary = snapshot.Summary,
+                PartialResultMessage = snapshot.ContentWasTruncated
+                    ? "Log output is incomplete. Inspect the source log for complete coverage of the requested range."
+                    : string.Empty,
                 Content = string.Join(Environment.NewLine, new[]
                 {
                     $"[Log File] {snapshot.FilePath}",

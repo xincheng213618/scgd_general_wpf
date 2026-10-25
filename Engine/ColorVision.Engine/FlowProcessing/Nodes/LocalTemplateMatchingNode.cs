@@ -17,7 +17,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes;
 internal sealed record LocalTemplateMatchingNodeResult(string TemplateName, string TemplateFingerprint, string FrameId,
     string? ImageFilePath, TemplateMatchingOptions Options, TemplateMatchingResult Result, long ElapsedMilliseconds);
 
-[STNode("Flow_LocalAlgorithms", "本地模板匹配", CategoryOrder = 9910, NodeOrder = 70)]
+[STNode("Flow_LocalAlgorithms", "模板匹配", CategoryOrder = 9910, NodeOrder = 70)]
 public sealed class LocalTemplateMatchingNode : LocalFlowNodeBase
 {
     private readonly ILocalTemplateMatchingServices services;
@@ -33,7 +33,7 @@ public sealed class LocalTemplateMatchingNode : LocalFlowNodeBase
     public Int32Rect SearchRegion { get => searchRegion; set { searchRegion = value; OnPropertyChanged(); } }
 
     public LocalTemplateMatchingNode() : this(LocalTemplateMatchingService.Instance) { }
-    internal LocalTemplateMatchingNode(ILocalTemplateMatchingServices services) : base("本地模板匹配", "LocalTemplateMatching", "LocalTemplateMatching") =>
+    internal LocalTemplateMatchingNode(ILocalTemplateMatchingServices services) : base("模板匹配", "LocalTemplateMatching", "LocalTemplateMatching") =>
         this.services = services ?? throw new ArgumentNullException(nameof(services));
 
     protected override string GetCompactSummaryValue() => string.IsNullOrWhiteSpace(ParameterJson) ? "未配置" : "节点内置配置";

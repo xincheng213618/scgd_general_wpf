@@ -300,20 +300,11 @@ namespace ColorVision.Copilot
                 var boundary = wasCancelled
                     ? "cancellation"
                     : $"its {FormatTimeout(timeout)} execution timeout";
-                return new CopilotToolResult
-                {
-                    ToolName = invocation.Tool.Name,
-                    Success = false,
-                    Summary = $"{invocation.Tool.Name} crossed {boundary} before its final outcome was known.",
-                    ErrorMessage = "The operation may still be completing or may already have completed. Verify the current external state before retrying.",
-                    FailureKind = CopilotToolFailureKind.OutcomeUnknown,
-                    FailureCode = CopilotToolFailureCode.OutcomeUnknown,
-                    WorkspaceRecheckPaths = workspaceRecheckPaths,
-                    Content = workspaceRecheckPaths.Count == 0 ? string.Empty
-                        : "[Workspace Write Outcome Unknown]\nPotentially affected paths (not proof of completed writes):\n"
-                            + string.Join("\n", workspaceRecheckPaths)
-                            + "\nWait for the operation to settle and re-read these files before describing their final state. Do not automatically repeat the write.",
-                };
+                return CreateUnknownExecutionResult(
+                    invocation,
+                    $"{invocation.Tool.Name} crossed {boundary} before its final outcome was known.",
+                    workspaceRecheckPaths,
+                    string.Empty);
             }
 
             return wasCancelled
@@ -328,6 +319,26 @@ namespace ColorVision.Copilot
                     $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.",
                     CopilotToolFailureKind.Transient);
         }
+
+        private static CopilotToolResult CreateUnknownExecutionResult(
+            CopilotToolInvocation invocation,
+            string summary,
+            IReadOnlyList<string> workspaceRecheckPaths,
+            string failureDetail) => new()
+        {
+            ToolName = invocation.Tool.Name,
+            Success = false,
+            Summary = summary,
+            ErrorMessage = "The operation may still be completing or may already have completed. Verify the current external state before retrying."
+                + (string.IsNullOrWhiteSpace(failureDetail) ? string.Empty : " " + failureDetail),
+            FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+            FailureCode = CopilotToolFailureCode.OutcomeUnknown,
+            WorkspaceRecheckPaths = workspaceRecheckPaths,
+            Content = workspaceRecheckPaths.Count == 0 ? string.Empty
+                : "[Workspace Write Outcome Unknown]\nPotentially affected paths (not proof of completed writes):\n"
+                    + string.Join("\n", workspaceRecheckPaths)
+                    + "\nWait for the operation to settle and re-read these files before describing their final state. Do not automatically repeat the write.",
+        };
 
         private static bool HasUnknownOutcomeAfterExecutionBoundary(CopilotToolInvocation invocation)
         {

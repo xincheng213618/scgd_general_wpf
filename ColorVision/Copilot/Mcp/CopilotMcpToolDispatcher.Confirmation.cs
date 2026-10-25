@@ -20,7 +20,8 @@ namespace ColorVision.Copilot.Mcp
             string previewText,
             Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor,
             bool executeOnApproval = false,
-            CopilotExecutionScope? executionScope = null)
+            CopilotExecutionScope? executionScope = null,
+            string? reviewDetails = null)
         {
             executionScope ??= CopilotExecutionScope.ForInProcess("in-process-external");
             if (ContainsSensitiveArgumentValues(arguments))
@@ -43,7 +44,8 @@ namespace ColorVision.Copilot.Mcp
                 executor,
                 executeOnApproval,
                 requestContext: requestContext,
-                exactArgumentsBinding: exactArgumentsBinding);
+                exactArgumentsBinding: exactArgumentsBinding,
+                reviewDetails: reviewDetails);
 
             var builder = new StringBuilder();
             builder.AppendLine("confirmation_required");

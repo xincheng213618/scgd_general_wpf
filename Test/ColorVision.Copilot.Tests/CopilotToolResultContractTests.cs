@@ -1,3 +1,6 @@
+using System.IO;
+using System.Text.Json;
+
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotToolResultContractTests
@@ -287,6 +290,98 @@ public sealed class CopilotToolResultContractTests
             Assert.IsType<CopilotToolResult>(terminal.ToolResult).FailureCode);
     }
 
+    [Theory]
+    [InlineData(CopilotToolIdempotency.Idempotent)]
+    [InlineData(CopilotToolIdempotency.NonIdempotent)]
+    public async Task WriteThenThrowPreservesUnknownOutcomeAndWorkspaceEvidence(CopilotToolIdempotency idempotency)
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            var tool = new ExceptionalResultTool(path, writeCapable: true, idempotency: idempotency);
+            var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+            var outcome = await new CopilotToolExecutor(hooks: []).ExecuteAsync(
+                CreateExceptionalInvocation(tool),
+                agentEvent => CopilotAssistantMessagePresenter.ApplyAgentEvent(message, agentEvent),
+                CancellationToken.None);
+
+            Assert.Equal("written before response failure", File.ReadAllText(path));
+            Assert.Equal(1, tool.ExecutionCount);
+            Assert.Equal(CopilotToolExecutionState.Failed, outcome.Execution.State);
+            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, outcome.Result.FailureKind);
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, outcome.Result.FailureCode);
+            Assert.False(outcome.Execution.RetryEligible);
+            Assert.Equal([path], outcome.Result.WorkspaceRecheckPaths);
+            Assert.Contains("The tool response was lost.", outcome.Result.ErrorMessage, StringComparison.Ordinal);
+            var trace = Assert.Single(message.AgentTraceEntries);
+            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, trace.FailureKind);
+            Assert.Equal([path], trace.WorkspaceRecheckPaths);
+            using var modelResult = JsonDocument.Parse(CopilotFrameworkToolResultFormatter.Format(outcome));
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, modelResult.RootElement.GetProperty("failure_code").GetString());
+            Assert.False(modelResult.RootElement.GetProperty("retry_allowed").GetBoolean());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task KnownFailureBeforeDispatchOrFromStructuredResultRemainsAuthoritative(bool failBeforeDispatch)
+    {
+        var tool = new ExceptionalResultTool(
+            @"C:\workspace\unchanged.txt",
+            writeCapable: true,
+            failDuringMetadata: failBeforeDispatch,
+            returnStructuredFailure: !failBeforeDispatch);
+        var outcome = await new CopilotToolExecutor(hooks: []).ExecuteAsync(
+            CreateExceptionalInvocation(tool), _ => { }, CancellationToken.None);
+
+        Assert.Equal(failBeforeDispatch ? 0 : 1, tool.ExecutionCount);
+        Assert.Equal(CopilotToolFailureKind.Transient, outcome.Result.FailureKind);
+        Assert.NotEqual(CopilotToolFailureCode.OutcomeUnknown, outcome.Result.FailureCode);
+        Assert.True(outcome.Execution.RetryEligible);
+        Assert.Empty(outcome.Result.WorkspaceRecheckPaths);
+        if (!failBeforeDispatch)
+            Assert.Equal("explicit_failure", outcome.Result.FailureCode);
+    }
+
+    [Theory]
+    [InlineData(CopilotToolIdempotency.Idempotent, CopilotToolFailureKind.Transient, true)]
+    [InlineData(CopilotToolIdempotency.NonIdempotent, CopilotToolFailureKind.OutcomeUnknown, false)]
+    public async Task ReadOnlyExceptionRespectsDeclaredIdempotency(
+        CopilotToolIdempotency idempotency,
+        CopilotToolFailureKind expectedFailure,
+        bool retryEligible)
+    {
+        var tool = new ExceptionalResultTool(string.Empty, writeCapable: false, idempotency: idempotency);
+        var outcome = await new CopilotToolExecutor(hooks: []).ExecuteAsync(
+            CreateExceptionalInvocation(tool), _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(expectedFailure, outcome.Result.FailureKind);
+        Assert.Equal(retryEligible, outcome.Execution.RetryEligible);
+        Assert.Empty(outcome.Result.WorkspaceRecheckPaths);
+    }
+
+    private static CopilotToolInvocation CreateExceptionalInvocation(ICopilotTool tool) => new()
+    {
+        CallId = "exceptional-output-call",
+        Round = 1,
+        Attempt = 1,
+        MaxAttempts = 2,
+        RuntimeName = "result-contract-test",
+        Tool = tool,
+        FrameworkApprovalGranted = tool.Capability.Access == CopilotToolAccess.Write,
+        AgentRequest = new CopilotAgentRequest
+        {
+            Mode = CopilotAgentMode.Auto,
+            UserText = "Run the result contract test.",
+        },
+    };
+
     private static void AssertInvalid(CopilotToolResult result, string expectedToolName)
     {
         Assert.False(result.Success);
@@ -329,6 +424,52 @@ public sealed class CopilotToolResultContractTests
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken) => Task.FromResult(result);
+    }
+
+    private sealed class ExceptionalResultTool(
+        string path,
+        bool writeCapable,
+        CopilotToolIdempotency idempotency = CopilotToolIdempotency.Idempotent,
+        bool failDuringMetadata = false,
+        bool returnStructuredFailure = false) : ICopilotFrameworkApprovedTool, ICopilotWorkspaceMutationEvidenceSource
+    {
+        public int ExecutionCount { get; private set; }
+
+        public string Name => "ExceptionalResultTool";
+
+        public string Description => "Exercises execution failures before and after the tool body starts.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } = writeCapable
+            ? CopilotToolCapabilityDescriptor.ProtectedWrite(idempotency)
+            : CopilotToolCapabilityDescriptor.ReadOnly() with { Idempotency = idempotency };
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public IReadOnlyList<string> GetWorkspaceRecheckPaths(CopilotAgentRequest request, CopilotAgentToolInput input) =>
+            failDuringMetadata ? throw new IOException("Workspace metadata could not be read.") : [path];
+
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput input, CancellationToken cancellationToken) =>
+            ExecuteApprovedAsync(request, input, cancellationToken);
+
+        public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput input, CancellationToken cancellationToken)
+        {
+            ExecutionCount++;
+            if (returnStructuredFailure)
+            {
+                return Task.FromResult(new CopilotToolResult
+                {
+                    ToolName = Name,
+                    Success = false,
+                    Summary = "The operation was rejected before any change.",
+                    ErrorMessage = "The destination was temporarily unavailable.",
+                    FailureKind = CopilotToolFailureKind.Transient,
+                    FailureCode = "explicit_failure",
+                });
+            }
+            if (writeCapable)
+                File.WriteAllText(path, "written before response failure");
+            throw new IOException("The tool response was lost.");
+        }
     }
 
     private sealed class AlternatingPathCollection(

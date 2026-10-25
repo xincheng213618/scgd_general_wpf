@@ -4,8 +4,13 @@ using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
 
@@ -784,6 +789,213 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             if (!activeRun.Completion.IsCompleted)
                 await activeRun.Completion.WaitAsync(TestTimeout);
         }
+    }
+
+    [Fact]
+    public void ExpandedComposerChangesOnlyTheCapturedDraftText()
+    {
+        var profile = CreateProfile("editor-profile", "Editor", "editor-model");
+        var conversation = CreateConversation(profile, "editor-conversation", "Original draft");
+        conversation.DraftRequestMode = CopilotAgentMode.Review;
+        conversation.DraftWorkspaceReviewTarget = CopilotWorkspaceReviewTargetContext.WorkingTree();
+        var attachment = CopilotAttachmentItem.CreateContext("Keep this attachment");
+        conversation.Attachments.Add(attachment);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, CreateConfig(profile, "editor-test-token"),
+            new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+        conversation.ComposerStash = CopilotComposerStash.Capture("Existing stash", 4, CopilotAgentMode.Auto, []);
+        var stash = conversation.ComposerStash;
+        var capture = viewModel.CaptureComposerEditorSession();
+        const string editedText = "  Edited draft\nwith preserved whitespace  ";
+
+        Assert.True(viewModel.TryApplyComposerEditor(capture, editedText));
+
+        Assert.Equal(editedText, viewModel.InputText);
+        Assert.Equal(editedText, conversation.DraftText);
+        Assert.Equal(CopilotAgentMode.Review, conversation.DraftRequestMode);
+        Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, conversation.DraftWorkspaceReviewTarget?.Target);
+        Assert.Same(attachment, Assert.Single(conversation.Attachments));
+        Assert.Same(stash, conversation.ComposerStash);
+        Assert.Equal("Original draft", capture.Text);
+    }
+
+    [Fact]
+    public void ExpandedComposerRejectsQueuedRecoveryUntilTheRecoveredDraftIsReviewed()
+    {
+        var profile = CreateProfile("editor-recovery-profile", "Editor recovery", "editor-model");
+        var conversation = CreateConversation(profile, "editor-recovery-conversation", "Draft before opening the editor");
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id,
+            Conversations = [conversation],
+        };
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = new CopilotChatViewModel(new CopilotChatService(), new InMemoryStateStore(state),
+            CreateConfig(profile, "editor-recovery-test-token"), new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+        var capture = viewModel.CaptureComposerEditorSession();
+        state.QueuedFollowUpRecoveries.Add(new CopilotQueuedFollowUpRecoveryRecord
+        {
+            RunId = "editor-recovery-run", ConversationId = conversation.Id,
+            Prompt = "Recover the queued request without losing it",
+        });
+        Assert.True(CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(state, "editor-recovery-run"));
+        typeof(CopilotChatViewModel).GetMethod("SynchronizeSelectedDraftAfterQueuedRecovery", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(viewModel, null);
+        var recoveredText = viewModel.InputText;
+        Assert.Contains("Recover the queued request without losing it", recoveredText, StringComparison.Ordinal);
+        Assert.Empty(state.QueuedFollowUpRecoveries);
+
+        Assert.False(viewModel.TryApplyComposerEditor(capture, "Edits made in the open editor"));
+        Assert.Equal(recoveredText, viewModel.InputText);
+        Assert.Equal(recoveredText, conversation.DraftText);
+
+        var reviewedCapture = viewModel.CaptureComposerEditorSession();
+        var mergedText = "Edits made in the open editor\n\n" + reviewedCapture.Text;
+        Assert.True(viewModel.TryApplyComposerEditor(reviewedCapture, mergedText));
+        Assert.Equal(mergedText, conversation.DraftText);
+        Assert.Empty(conversation.Messages);
+    }
+
+    [Fact]
+    public void ExpandedComposerCannotOverwriteAnotherConversationOrReuseASwitchedBackCapture()
+    {
+        var profile = CreateProfile("editor-switch-profile", "Editor switch", "editor-model");
+        var conversation = CreateConversation(profile, "editor-origin", "Origin draft");
+        var other = CreateConversation(profile, "editor-other", "Other draft");
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, CreateConfig(profile, "editor-switch-test-token"),
+            new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+        viewModel.Conversations.Add(other);
+        var capture = viewModel.CaptureComposerEditorSession();
+
+        Assert.True(viewModel.TrySelectConversation(other.Id));
+        Assert.False(viewModel.TryApplyComposerEditor(capture, "Stale editor text"));
+        Assert.Equal("Other draft", viewModel.InputText);
+        Assert.True(viewModel.TrySelectConversation(conversation.Id));
+        Assert.False(viewModel.TryApplyComposerEditor(capture, "Stale editor text"));
+        Assert.Equal("Origin draft", conversation.DraftText);
+        Assert.Equal("Other draft", other.DraftText);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExpandedComposerDoesNotWriteIntoHistorySearchOrADisposedViewModel(bool dispose)
+    {
+        var profile = CreateProfile("editor-lifetime-profile", "Editor lifetime", "editor-model");
+        var conversation = CreateConversation(profile, "editor-lifetime-conversation", "Preserved draft");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Visible request to search"));
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, CreateConfig(profile, "editor-lifetime-test-token"),
+            new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+        var capture = viewModel.CaptureComposerEditorSession();
+        if (dispose)
+            viewModel.Dispose();
+        else
+        {
+            Assert.True(viewModel.TryOpenPromptHistorySearch());
+            viewModel.InputText = "Visible request";
+        }
+
+        Assert.False(viewModel.TryApplyComposerEditor(capture, "Stale editor text"));
+        Assert.Equal("Preserved draft", conversation.DraftText);
+        if (!dispose)
+            Assert.Equal("Visible request", viewModel.InputText);
+    }
+
+    [Fact]
+    public void ExpandedComposerDoesNotReuseThePreviousAttachmentOnlyMessageEditLifetime()
+    {
+        var profile = CreateProfile("editor-message-profile", "Editor message", "editor-model");
+        var conversation = CreateConversation(profile, "editor-message-conversation", string.Empty);
+        var user = new CopilotChatMessage(CopilotChatRole.User, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AttachmentSnapshotCaptured = true,
+        };
+        user.Attachments.Add(CopilotAttachmentItem.CreateContext("Attachment-only request"));
+        conversation.Messages.Add(user);
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Completed answer"));
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, CreateConfig(profile, "editor-message-test-token"),
+            new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+        Assert.True(viewModel.EditMessageCommand.CanExecute(user));
+        viewModel.EditMessageCommand.Execute(user);
+        var capture = viewModel.CaptureComposerEditorSession();
+
+        viewModel.CancelMessageEditCommand.Execute(null);
+        viewModel.EditMessageCommand.Execute(user);
+        var reopenedCapture = viewModel.CaptureComposerEditorSession();
+        Assert.Equal(capture.Composer.Version, reopenedCapture.Composer.Version);
+        Assert.Equal(capture.EditingUserMessageId, reopenedCapture.EditingUserMessageId);
+        Assert.True(viewModel.IsEditingMessage);
+
+        Assert.False(viewModel.TryApplyComposerEditor(capture, "Editor text from the previous edit"));
+        Assert.Empty(viewModel.InputText);
+        Assert.Single(conversation.Attachments);
+        Assert.True(viewModel.TryApplyComposerEditor(reopenedCapture, "Text for the current edit"));
+        Assert.Equal("Text for the current edit", conversation.DraftText);
+    }
+
+    [Theory]
+    [InlineData(ModifierKeys.None, true)]
+    [InlineData(ModifierKeys.Shift, false)]
+    [InlineData(ModifierKeys.Control, false)]
+    public void OnlyPlainTabCompletesTheComposerCommandWithoutSubmittingIt(ModifierKeys modifiers, bool completes)
+    {
+        StaTest.Run(() =>
+        {
+            using var solutionManagerScope = new IsolatedSolutionManagerScope();
+            var profile = CreateProfile("tab-profile", "Tab completion", "tab-model");
+            var conversation = CreateConversation(profile, "tab-conversation", "/mod");
+            var host = new CopilotAgentTaskHost();
+            var viewModel = CreateViewModel(conversation, CreateConfig(profile, "tab-test-token"),
+                new GatedFailingTurnRuntime(), host);
+            var panel = new CopilotChatPanel { DataContext = viewModel };
+            var window = new Window { Content = panel, ShowActivated = false, ShowInTaskbar = false };
+            try
+            {
+                var source = Assert.IsType<HwndSource>(HwndSource.FromHwnd(new WindowInteropHelper(window).EnsureHandle()));
+                Assert.False(window.IsVisible);
+                var prompt = Assert.IsType<TextBox>(panel.FindName("PromptTextBox"));
+                prompt.GetBindingExpression(TextBox.TextProperty)!.UpdateTarget();
+                var completion = Assert.Single(viewModel.LocalCommandSuggestions).CompletionText;
+                Assert.Equal("/model ", completion);
+                var keyboard = new ComposerTestKeyboardDevice(modifiers);
+                Assert.Equal(modifiers, keyboard.Modifiers);
+                var keyEvent = new KeyEventArgs(keyboard, source, Environment.TickCount, Key.Tab)
+                {
+                    RoutedEvent = Keyboard.PreviewKeyDownEvent,
+                };
+
+                prompt.RaiseEvent(keyEvent);
+
+                Assert.Equal(completes, keyEvent.Handled);
+                Assert.Equal(completes ? completion : "/mod", viewModel.InputText);
+                Assert.Equal(viewModel.InputText, conversation.DraftText);
+                Assert.Empty(conversation.Messages);
+                Assert.Equal(profile.Id, viewModel.SelectedProfile?.Id);
+            }
+            finally
+            {
+                panel.DataContext = null;
+                window.Content = null;
+                window.Close();
+                host.Shutdown();
+                viewModel.Dispose();
+                Dispatcher.CurrentDispatcher.InvokeShutdown();
+            }
+        });
+    }
+
+    private sealed class ComposerTestKeyboardDevice(ModifierKeys modifiers) : KeyboardDevice(InputManager.Current)
+    {
+        protected override KeyStates GetKeyStatesFromSystem(Key key) =>
+            key == Key.Tab
+                || key == Key.LeftShift && modifiers.HasFlag(ModifierKeys.Shift)
+                || key == Key.LeftCtrl && modifiers.HasFlag(ModifierKeys.Control)
+                || key == Key.LeftAlt && modifiers.HasFlag(ModifierKeys.Alt)
+                    ? KeyStates.Down : KeyStates.None;
     }
 
     private static CopilotConfig CreateConfig(CopilotProfileConfig profile, string bearerToken) => new()

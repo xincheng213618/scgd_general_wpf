@@ -1099,8 +1099,6 @@
       "summary": "说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。",
       "aliases": [
         "模板匹配用错模板怎么查",
-        "MatchingDisplayAlgorithmConfig",
-        "AlgorithmMatching",
         "AlgorithmTMNode",
         "ViewHandleMatching",
         "本地模板匹配",
@@ -1109,7 +1107,6 @@
         "TemplateMatchingWindow"
       ],
       "code_paths": [
-        "Engine/ColorVision.Engine/Templates/Matching/AlgorithmMatching.cs",
         "Engine/ColorVision.Engine/Templates/Matching/TemplateMatch.cs",
         "Engine/ColorVision.Engine/Templates/Matching/ViewHandleMatching.cs",
         "Engine/ColorVision.Engine/Templates/Matching/AlgResultAoiDao.cs",
@@ -2018,6 +2015,9 @@
         "ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs",
         "ColorVision/Copilot/Context/CopilotImageAttachmentAdmission.cs",
         "ColorVision/Copilot/CopilotChatPanel.Composer.cs",
+        "ColorVision/Copilot/CopilotTextInputWindow.xaml",
+        "ColorVision/Copilot/CopilotTextInputWindow.xaml.cs",
+        "ColorVision/Copilot/State/CopilotComposerEditorSnapshot.cs",
         "ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs",
         "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs",
         "ColorVision/Copilot/Presentation",
@@ -2046,6 +2046,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotExpandedComposerEditorTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs",
@@ -2306,6 +2307,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotCancelledToolJournalTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotRetrySourceLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecentLogCoverageTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs",
@@ -5846,7 +5848,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs",
-        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"
+        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs"
       ],
       "related": [
         "flow.architecture",

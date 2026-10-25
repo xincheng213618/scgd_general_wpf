@@ -299,7 +299,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             clone.Create();
             clone.OnLoadNode(ParseNodeSaveData(node.GetSaveData()));
             var oldValue = FormatFlowPropertyValue(property.GetValue(clone));
-            clone.OnLoadNode(new Dictionary<string, byte[]> { [property.Name] = Encoding.UTF8.GetBytes(value ?? string.Empty) });
+            clone.SetPropertyValueFromString(property.Name, value);
             return (BuildNodeSnapshot(clone, isActive: false), property.Name, oldValue, FormatFlowPropertyValue(property.GetValue(clone)));
         }
 
@@ -316,7 +316,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             var oldValue = property.GetValue(node);
             try
             {
-                node.OnLoadNode(new Dictionary<string, byte[]> { [property.Name] = Encoding.UTF8.GetBytes(value ?? string.Empty) });
+                node.SetPropertyValueFromString(property.Name, value);
                 editor.Invalidate();
                 return CaptureCopilotFlowSnapshot();
             }

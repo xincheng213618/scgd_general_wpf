@@ -3703,4 +3703,8 @@
   <data name="暂时无法读取 Copilot 会话记录。记录未被覆盖，请确认文件未被占用且具有读取权限，然后重试。" xml:space="preserve"><value>暂时无法读取 Copilot 会话记录。记录未被覆盖，请确认文件未被占用且具有读取权限，然后重试。</value></data>
   <data name="本地" xml:space="preserve"><value>本地</value></data>
   <data name="重试" xml:space="preserve"><value>重试</value></data>
+  <data name="当前输入框草稿（只读，可复制）" xml:space="preserve"><value>当前输入框草稿（只读，可复制）</value></data>
+  <data name="聊天界面已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>聊天界面已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。</value></data>
+  <data name="当前会话或编辑状态已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>当前会话或编辑状态已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。</value></data>
+  <data name="输入框草稿已变化，尚未覆盖。上方编辑内容仍保留；请先复制合并下方草稿，再次保存会以上方内容替换下方草稿。取消则保留下方草稿。" xml:space="preserve"><value>输入框草稿已变化，尚未覆盖。上方编辑内容仍保留；请先复制合并下方草稿，再次保存会以上方内容替换下方草稿。取消则保留下方草稿。</value></data>
 </root>

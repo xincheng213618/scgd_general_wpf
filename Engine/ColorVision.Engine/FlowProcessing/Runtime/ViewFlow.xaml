@@ -13,6 +13,13 @@
              d:DesignHeight="600" d:DesignWidth="1000"
              Background="{DynamicResource GlobalBackground}"
              Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style x:Key="ExecutionActionButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Margin" Value="2,0"/>
+        </Style>
+    </UserControl.Resources>
     <Grid x:Name="Grid1">
         <flow:FlowEditorCanvas x:Name="EditorCanvas"
                                PropertyPanelMargin="0,54,10,108">
@@ -112,7 +119,7 @@
             <!-- Compact execution details float above the progress bar. -->
             <Grid Margin="10,0,10,10"
                   HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
-                  Panel.ZIndex="25" Opacity="0.8">
+                  Panel.ZIndex="25">
                 <Grid.Style>
                     <Style TargetType="Grid">
                         <Setter Property="Height" Value="75"/>
@@ -165,28 +172,52 @@
                             </Button>
                         </Grid>
 
-                        <DockPanel Grid.Column="1" LastChildFill="True">
-                            <Button x:Name="ErrorNodeDetailsButton"
-                                    DockPanel.Dock="Right"
-                                    Margin="6,0,4,0"
-                                    Padding="8,2"
-                                    VerticalAlignment="Top"
-                                    Visibility="Collapsed"
-                                    Content="{x:Static properties:Resources.Flow_NodeExecutionDetails}"
-                                    Click="ErrorNodeDetailsButton_Click"/>
-                            <TextBox x:FieldModifier="public" x:Name="logTextBox"
-                                     Padding="2" Background="Transparent"
-                                     Foreground="{DynamicResource GlobalTextBrush}"
-                                     BorderThickness="0" TextWrapping="WrapWithOverflow"
-                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                     VerticalContentAlignment="Top" IsReadOnly="True"/>
-                        </DockPanel>
+                        <TextBox Grid.Column="1" x:FieldModifier="public" x:Name="logTextBox"
+                                 Padding="2" Background="Transparent"
+                                 Foreground="{DynamicResource GlobalTextBrush}"
+                                 BorderThickness="0" TextWrapping="WrapWithOverflow"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 VerticalContentAlignment="Top" IsReadOnly="True"/>
 
-                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal">
-                            <Button Content="{x:Static properties:Resources.FlowResultManagement}" Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
-                            <Button Content="{engine:EngineLang 执行分析}" Click="Button_Click_NodeAnalysis"/>
-                        </StackPanel>
+                        <Border Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Margin="10,0,0,0" Padding="5" CornerRadius="7"
+                                Background="{DynamicResource GlobalBackground}"
+                                BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="1">
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="FlowResultManagementButton" Style="{StaticResource ExecutionActionButtonStyle}"
+                                        Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"
+                                        ToolTip="{x:Static properties:Resources.FlowResultManagement}"
+                                        AutomationProperties.Name="{x:Static properties:Resources.FlowResultManagement}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{x:Static properties:Resources.FlowResultManagement}" Margin="6,0,0,0"
+                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="ExecutionAnalysisButton" Style="{StaticResource ExecutionActionButtonStyle}"
+                                        Click="Button_Click_NodeAnalysis" ToolTip="{engine:EngineLang 执行分析}"
+                                        AutomationProperties.Name="{engine:EngineLang 执行分析}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{engine:EngineLang 执行分析}" Margin="6,0,0,0"
+                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="ErrorNodeDetailsButton" Style="{StaticResource ExecutionActionButtonStyle}"
+                                        Visibility="Collapsed" Click="ErrorNodeDetailsButton_Click"
+                                        AutomationProperties.Name="{x:Static properties:Resources.Flow_NodeExecutionDetails}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{x:Static properties:Resources.Flow_NodeExecutionDetails}" Margin="6,0,0,0"
+                                                   Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </Grid>
             </Grid>

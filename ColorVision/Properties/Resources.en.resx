@@ -3703,4 +3703,8 @@ Workspace: {2}</value>
   <data name="暂时无法读取 Copilot 会话记录。记录未被覆盖，请确认文件未被占用且具有读取权限，然后重试。" xml:space="preserve"><value>Copilot session history is temporarily unavailable. Records have not been overwritten. Check file locks and read permissions, then retry.</value></data>
   <data name="本地" xml:space="preserve"><value>Local</value></data>
   <data name="重试" xml:space="preserve"><value>Retry</value></data>
+  <data name="当前输入框草稿（只读，可复制）" xml:space="preserve"><value>Current composer draft (read-only; copyable)</value></data>
+  <data name="聊天界面已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>The chat view has changed. Your edits have not been saved. Copy the text you want to keep, cancel, then reopen the editor in the intended conversation.</value></data>
+  <data name="当前会话或编辑状态已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>The conversation or editing state has changed. Your edits have not been saved. Copy the text you want to keep, cancel, then reopen the editor in the intended conversation.</value></data>
+  <data name="输入框草稿已变化，尚未覆盖。上方编辑内容仍保留；请先复制合并下方草稿，再次保存会以上方内容替换下方草稿。取消则保留下方草稿。" xml:space="preserve"><value>The composer draft has changed and has not been overwritten. Your edits remain above. Copy and merge the draft below before saving again; saving replaces the draft below with the text above. Cancel keeps the draft below.</value></data>
 </root>

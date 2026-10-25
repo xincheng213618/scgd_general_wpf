@@ -2471,7 +2471,7 @@
     <value>黑画面检测</value>
   </data>
   <data name="键盘检测1" xml:space="preserve">
-    <value>键盘检测1</value>
+    <value>键盘检测</value>
   </data>
   <data name="关注点布点" xml:space="preserve">
     <value>关注点布点</value>
@@ -4495,4 +4495,6 @@
   <data name="设定电压" xml:space="preserve"><value>设定电压</value></data>
   <data name="设定电流" xml:space="preserve"><value>设定电流</value></data>
   <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>请先关闭相机节点的自动曝光，再设置逐轮曝光。</value></data>
+  <data name="Flow_PreProcess_AddAction" xml:space="preserve"><value>添加预处理动作</value></data>
+  <data name="Flow_PreProcess_ChooseActionHint" xml:space="preserve"><value>选择要添加的动作，添加后在右侧设置参数。已启用的动作会在流程启动前按列表顺序执行。</value></data>
 </root>

@@ -6039,7 +6039,7 @@ Open the spectrum log?</value>
     <value>Black Screen Detection</value>
   </data>
   <data name="键盘检测1" xml:space="preserve">
-    <value>Keyboard Detection 1</value>
+    <value>Keyboard Detection</value>
   </data>
   <data name="关注点布点" xml:space="preserve">
     <value>POI Layout</value>
@@ -7403,4 +7403,6 @@ Field: </value></data>
   <data name="设定电压" xml:space="preserve"><value>Set Voltage</value></data>
   <data name="设定电流" xml:space="preserve"><value>Set Current</value></data>
   <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>Disable auto exposure on the camera node before setting per-round exposure.</value></data>
+  <data name="Flow_PreProcess_AddAction" xml:space="preserve"><value>Add Preprocessing Action</value></data>
+  <data name="Flow_PreProcess_ChooseActionHint" xml:space="preserve"><value>Choose an action, then configure it in the panel on the right. Enabled actions run in list order before the flow starts.</value></data>
 </root>

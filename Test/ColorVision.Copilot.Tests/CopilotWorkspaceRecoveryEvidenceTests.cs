@@ -1,6 +1,7 @@
 using System.Collections;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using Microsoft.Extensions.AI;
 
 namespace ColorVision.Copilot.Tests;
@@ -8,6 +9,56 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotWorkspaceRecoveryEvidenceTests : IDisposable
 {
     private readonly string _workspace = Directory.CreateTempSubdirectory("CopilotRecoveryEvidence-").FullName;
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public async Task UpdatePreviewEnforcesEncodedSizeWithoutLosingRollback(int excessBytes)
+    {
+        const int maximumFileBytes = 1_000_000;
+        var path = Path.Combine(_workspace, "size-boundary.txt");
+        var originalBytes = Encoding.UTF8.GetBytes(new string('a', maximumFileBytes - 3) + "X");
+        File.WriteAllBytes(path, originalBytes);
+        var replacement = "汉" + new string('b', excessBytes);
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "encoded-size-boundary", WorkspacePath = _workspace, WritableLocalRootPaths = [_workspace],
+        };
+        var store = new CopilotWorkspacePatchStore();
+        var preview = await store.PreviewPatchEnvelopeAsync(request, new()
+        {
+            Arguments = new Dictionary<string, object?>
+            {
+                ["operations"] = new[] { new
+                {
+                    operation = "update", path, replacements = new[] { new { oldText = "X", newText = replacement } },
+                } },
+            },
+        }, CancellationToken.None);
+
+        Assert.Equal(originalBytes, File.ReadAllBytes(path));
+        Assert.Equal(new[] { path }, Directory.GetFileSystemEntries(_workspace));
+        if (excessBytes > 0)
+        {
+            Assert.False(preview.Success);
+            Assert.Equal(CopilotToolFailureKind.Validation, preview.FailureKind);
+            Assert.Contains($"{maximumFileBytes}-byte workspace file limit", preview.ErrorMessage, StringComparison.Ordinal);
+            foreach (var field in new[] { "_records", "_changeSets" })
+                Assert.Empty((IDictionary)typeof(CopilotWorkspacePatchStore).GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(store)!);
+            return;
+        }
+
+        Assert.True(preview.Success, preview.ErrorMessage);
+        var id = preview.Content.Split('\n').Single(line => line.StartsWith("change_set_id:", StringComparison.Ordinal))["change_set_id:".Length..].Trim();
+        var input = new CopilotAgentToolInput { Arguments = new Dictionary<string, object?> { ["changeSetId"] = id } };
+        var applied = await store.ApplyPatchEnvelopeAsync(request, input, CancellationToken.None);
+        Assert.True(applied.Success, applied.ErrorMessage);
+        Assert.Equal(maximumFileBytes, new FileInfo(path).Length);
+        Assert.EndsWith(replacement, File.ReadAllText(path), StringComparison.Ordinal);
+        var rolledBack = await store.RollbackPatchEnvelopeAsync(request, input, CancellationToken.None);
+        Assert.True(rolledBack.Success, rolledBack.ErrorMessage);
+        Assert.Equal(originalBytes, File.ReadAllBytes(path));
+    }
 
     [Theory]
     [InlineData(false, false)]

@@ -45,7 +45,6 @@ public sealed class CopilotChatViewModelApprovalCoordinatorTests
             StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-1),
         };
         message.AgentTraceEntries.Add(trace);
-        conversation.Messages.Add(message);
         var state = new CopilotChatState
         {
             ActiveConversationId = conversation.Id,
@@ -64,6 +63,11 @@ public sealed class CopilotChatViewModelApprovalCoordinatorTests
         ConfirmableAction? afterDisposeAction = null;
         try
         {
+            // This trace belongs to a live invocation. Persisted in-progress
+            // traces are correctly interrupted by the ViewModel's startup recovery.
+            conversation.Messages.Add(message);
+            Assert.True(message.IsExecutionInProgress);
+            Assert.Equal(CopilotToolExecutionState.Pending, trace.State);
             Assert.IsType<ObservableCollection<ConfirmableAction>>(viewModel.PendingActions);
             Assert.Empty(viewModel.PendingActions);
 

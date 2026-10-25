@@ -33,6 +33,8 @@ related: ["copilot.runtime","copilot.execution","copilot.session-tools","copilot
 Agent `CopilotToolInputSchema.TryBind` 与本机 MCP dispatcher 共用 `CopilotToolInputContractValidator`，递归执行同一组 JSON Schema 关键字，包括封闭对象、必填字段、类型、枚举、字符串/数字/数组范围、正则格式和数组唯一性。Agent registry、MCP dispatcher 与 capability catalog 的所有来源都在注册时验证 Schema；内置、业务模块扩展或外部 MCP 工具只要声明不支持或内部矛盾的约束，就不会进入活动工具面。不能出现 Agent 只校验顶层而 MCP 校验嵌套，或目录已经发布运行时并未执行的约束。工具体返回后，`CopilotToolResultContract` 在统一执行边界核对注册身份、成功/失败/待审批终态、进程 evidence 与非空字段，并复制所有可变集合；违约结果归一为不可重试的 `Internal + invalid_tool_output`，原始伪造内容不会进入 Hook、事件、审计或模型结果。该边界不要求每个工具声明 DeepSeek 式输出 Schema，保留 ColorVision 的 operational result、模型可见结果和 Hook 投影。
 共享 capability 的 `CopilotCapabilityResult.ToToolResult` 将未分类的失败映射为 `Unspecified`，保留原始原因及已经明确的失败分类，不凭异常文本猜测可重试性。成功结果携带失败字段仍属于违约，不由适配器自动掩盖。批量文件读取只要有有效文件，就在正文中列出逐文件 `[Read Error]` 并保留成功读取范围；只有全部失败才填写终态 `ErrorMessage`。这样部分读取不会被丢弃为 `invalid_tool_output`，失败文件也不会进入成功证据列表。
 
+写入或非幂等工具进入执行后直接抛出普通异常、没有返回结构化结果时，执行器记录 `Failed + OutcomeUnknown`，禁止自动重试，并保留执行前已冻结的 `WorkspaceRecheckPaths`，供模型重新核查可能已发生的副作用。异常不证明写入未发生，也不证明所有候选路径均已改变；取消和超时继续使用各自终态。工具体尚未进入时，元数据读取抛出的普通异常仍按普通失败处理；只读幂等工具的异常和工具明确返回的结构化失败继续使用原有失败分类。外部 MCP 适配器把有效 JSON-RPC 错误回复转为明确的结构化失败，避免执行器把服务端拒绝误判为结果未知。
+
 成功调用的覆盖限制通过可选 `PartialResultMessage` 传递到 observation、运行快照和持久化活动记录，失败结果不能携带该提示。它由工具根据分页、扫描上限、未检查路径、读取失败、内容截断或未读附件生成，不从文件正文推断状态；空值只表示工具未报告限制，不证明整个任务已经完成。普通指定行范围和任务聚焦窗口本身不算截断。附件读取复用共享结果适配器并保留逐文件 `LocalFileReadScopes`，只有本批次仍有附件未读或实际读取不完整时才显示提示。结果捕获会脱敏提示，活动记录保存时按既有摘要上限截断；旧记录缺省为空，不追溯猜测历史覆盖情况。`CopilotPartialEvidencePresentationTests` 覆盖真实文件搜索／读取、结果快照、附件续读和会话恢复；模型可见的具体范围、游标与逐文件错误仍由原工具正文提供。
 
 模型请求本轮工具面中不存在的函数时，`FunctionInvokingChatClient` 仍负责生成带原 CallId 的 not-found 结果并交回模型纠错；ColorVision 在其下游 provider 响应处做只读观察，不改写框架消息协议。未知调用消耗工具预算，并按保守的高风险、不可重试、无 evidence 策略记录 `Failed + NotFound` step、任务事件和字段名审计，但绝不会创建审批或进入执行器。观察器按 CallId 去重，并忽略 `InformationalOnly` 或同一 provider 响应中已有匹配 FunctionResult 的服务端已处理调用。
@@ -161,9 +163,11 @@ Agent 执行期间允许切换或新建会话，事件和最终结果仍写回�
 
 `TemplatePatch` / `preview_template_patch` 只计算差异，不修改或保存模板。要获得可应用的 `preview_id`，应从活动模板 JSON 编辑器读取当前内容：不传非空 `current_json`，由 `CopilotMcpToolDispatcher` 绑定该编辑器的 `source_id`。显式提供 `current_json` 只供离线预览，不绑定活动编辑器，也不生成可应用预览；`template_identifier` 不是按名称写入任意已保存模板的入口。
 
+差异按完整 JSON 值比较；摘要中的截断或脱敏不会把实际变化误判为未变化。字段值摘要标明截断和脱敏，前后摘要相同而完整值不同时另行说明；摘要最多展示 80 项变化和 80 项警告，并显示省略数量。原生 Agent 与外部 MCP 的应用审批都通过既有 `ReviewDetails` 展示所有变化字段的名称、原值和新值，使用审查编码保留完整内容，不包含未变化字段或整个模板正文。敏感字段限制也覆盖原值含敏感子字段的父对象整体替换，避免借省略子字段删除敏感值或把旧敏感值送入审批详情；无关且未修改的字段不影响补丁。编码后的详情超过 131,072 字符时拒绝应用且不创建待审批动作，须拆分补丁后重新预览；已有自动复核的更小详情上限与动作结束时清除详情的规则继续适用。
+
 `ApplyTemplatePatch` / `apply_template_patch` 必须引用有效预览，并通过所在表面的当前审批链。创建受保护动作前和真正执行时都会复核活动编辑器来源、预览时的原 JSON、补丁 JSON 根对象和敏感字段限制；切换编辑器或内容发生冲突时须重新预览。默认 handler 再通过 `EditTemplateJson.TryApplyCopilotJsonPatchAsync` 定位仍加载的编辑器，在 UI 线程复核当前 JSON 后，只更新 `textEditor.Text`、绑定的 `IEditTemplateJson.JsonValue` 及属性编辑器显示。成功不调用模板 `Save` 或 DAO，不代表数据库已持久化；这是对编辑器及其绑定内存参数的修改，不承诺另有隔离副本或自动回滚。保存仍由模板编辑/持久化流程负责，动态来源生命周期见[业务上下文](./copilot-agent-extensions.md)。
 
-`CopilotSharedCapabilityInputContractTests` 验证预览参数和 `preview_id` 经包装器传给共享能力；`CopilotPlanModeTests` 验证 Plan 模式保留预览而拒绝应用。这些测试不是实际 WPF 编辑器冲突、应用失败、取消或数据库未写入的端到端验证，也不表示本轮已运行测试。
+`CopilotSharedCapabilityInputContractTests` 验证预览参数和 `preview_id` 经包装器传给共享能力；`CopilotPlanModeTests` 验证 Plan 模式保留预览而拒绝应用。`Test/ColorVision.Copilot.Tests/CopilotTemplatePatchReviewTests.cs` 覆盖完整值差异、摘要省略、两条审批链的完整详情及其超限拒绝。这些测试不是实际 WPF 编辑器冲突、应用失败、取消或数据库未写入的端到端验证，也不表示本轮已运行测试。
 
 ## Flow 图语义与受保护编辑
 

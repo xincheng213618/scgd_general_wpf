@@ -1157,6 +1157,33 @@ public abstract class STNode : INotifyPropertyChanged
 
 	protected internal virtual bool OnOutputDataTransfer(STNodeOption output) => true;
 
+	public void SetPropertyValueFromString(string propertyName, string value)
+	{
+		PropertyInfo property = GetType().GetProperty(propertyName ?? string.Empty, BindingFlags.Public | BindingFlags.Instance);
+		STNodePropertyAttribute attribute = property?.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true)
+			.OfType<STNodePropertyAttribute>().FirstOrDefault();
+		if (property == null || property.GetIndexParameters().Length != 0 || attribute == null || attribute.IsHide
+			|| attribute.IsReadOnly || property.SetMethod?.IsPublic != true)
+		{
+			throw new InvalidOperationException($"The node property is not writable: {propertyName}");
+		}
+		if (Activator.CreateInstance(attribute.DescriptorType) is not STNodePropertyDescriptor descriptor)
+			throw new InvalidOperationException("The node property descriptor must derive from STNodePropertyDescriptor.");
+		descriptor.Node = this;
+		descriptor.PropertyInfo = property;
+		descriptor.Name = attribute.Name;
+		descriptor.Description = attribute.Description;
+		try
+		{
+			descriptor.SetValue(value ?? string.Empty);
+			SetOptionsLocation();
+		}
+		catch (Exception exception)
+		{
+			throw new InvalidOperationException($"The node property could not be set: {Title}.{property.Name}. {exception.GetBaseException().Message}", exception);
+		}
+	}
+
 	public virtual void OnLoadNode(Dictionary<string, byte[]> dic)
 	{
 		if (dic.ContainsKey("AutoSize"))

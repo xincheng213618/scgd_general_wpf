@@ -65,7 +65,7 @@ namespace ColorVision.Copilot.Mcp
                         if (proposedDocument.RootElement.ValueKind != JsonValueKind.Object)
                             return CopilotMcpToolCallResult.Fail("invalid_proposed_changes", $"The proposed_changes root must be an object, but was {proposedDocument.RootElement.ValueKind}.");
 
-                        if (TryFindSensitiveJsonProperty(proposedDocument.RootElement, out var sensitivePath))
+                        if (TryFindSensitiveTemplatePatchField(currentDocument.RootElement, proposedDocument.RootElement, out var sensitivePath))
                             return CopilotMcpToolCallResult.Fail("sensitive_template_field_not_allowed", $"suggest_template_patch refuses to suggest sensitive fields: {sensitivePath}.");
                     }
 
@@ -98,15 +98,13 @@ namespace ColorVision.Copilot.Mcp
                         builder.AppendLine("## Change Summary");
                         if (changes.Count == 0)
                             builder.AppendLine("- No top-level changes detected.");
-                        foreach (var change in changes.Take(80))
-                            builder.AppendLine(change);
+                        AppendTemplatePatchSummaryLines(builder, changes, "changed fields");
 
                         builder.AppendLine();
                         builder.AppendLine("## Safety Warnings");
                         if (warnings.Count == 0)
                             builder.AppendLine("- No type-change, null, or unknown-key warnings were detected.");
-                        foreach (var warning in warnings.Take(80))
-                            builder.AppendLine(warning);
+                        AppendTemplatePatchSummaryLines(builder, warnings, "warnings");
 
                         builder.AppendLine();
                         builder.AppendLine("## Next MCP Call");
@@ -158,6 +156,16 @@ namespace ColorVision.Copilot.Mcp
             if (!validationResult.Success)
                 return validationResult;
 
+            string reviewDetails;
+            try
+            {
+                reviewDetails = BuildTemplatePatchReviewDetails(preview);
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                return CopilotMcpToolCallResult.Fail("template_patch_review_too_large", ex.Message);
+            }
+
             if (IsInAppAgentFrameworkApproved(executionScope))
                 return await ExecuteTemplatePatchPreviewAsync(preview.PreviewId, cancellationToken);
 
@@ -169,7 +177,8 @@ namespace ColorVision.Copilot.Mcp
                 BuildTemplatePatchConfirmationPreview(preview),
                 token => ExecuteTemplatePatchPreviewAsync(preview.PreviewId, token),
                 executeOnApproval: IsInAppAgent(executionScope),
-                executionScope: executionScope);
+                executionScope: executionScope,
+                reviewDetails: reviewDetails);
         }
 
         private async Task<CopilotMcpToolCallResult> ExecuteTemplatePatchPreviewAsync(string previewId, CancellationToken cancellationToken)

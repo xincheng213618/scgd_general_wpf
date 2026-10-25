@@ -87,7 +87,7 @@ namespace ColorVision.Copilot.Mcp
                     return false;
                 }
 
-                if (TryFindSensitiveJsonProperty(proposedDocument.RootElement, out var sensitivePath))
+                if (TryFindSensitiveTemplatePatchField(currentDocument.RootElement, proposedDocument.RootElement, out var sensitivePath))
                 {
                     errorCode = "sensitive_template_field_not_allowed";
                     errorMessage = $"preview_template_patch refuses to modify sensitive fields: {sensitivePath}.";
@@ -132,8 +132,9 @@ namespace ColorVision.Copilot.Mcp
 
             try
             {
+                using var currentDocument = JsonDocument.Parse(preview.CurrentJson);
                 using var proposedDocument = JsonDocument.Parse(preview.ProposedChangesJson);
-                if (TryFindSensitiveJsonProperty(proposedDocument.RootElement, out var sensitivePath))
+                if (TryFindSensitiveTemplatePatchField(currentDocument.RootElement, proposedDocument.RootElement, out var sensitivePath))
                     return CopilotMcpToolCallResult.Fail("sensitive_template_field_not_allowed", $"apply_template_patch refuses to modify sensitive fields: {sensitivePath}.");
 
                 using var patchedDocument = JsonDocument.Parse(preview.PatchedJson);
@@ -175,13 +176,16 @@ namespace ColorVision.Copilot.Mcp
             var changes = new List<string>();
             foreach (var proposedProperty in proposedRoot.EnumerateObject())
             {
-                currentRoot.TryGetProperty(proposedProperty.Name, out var currentValue);
-                var currentText = currentValue.ValueKind == JsonValueKind.Undefined ? "(missing)" : DescribeJsonValue(currentValue);
-                var proposedText = DescribeJsonValue(proposedProperty.Value);
-                if (string.Equals(currentText, proposedText, StringComparison.Ordinal))
+                var hasCurrentValue = currentRoot.TryGetProperty(proposedProperty.Name, out var currentValue);
+                if (hasCurrentValue && JsonElement.DeepEquals(currentValue, proposedProperty.Value))
                     continue;
 
-                changes.Add($"- {proposedProperty.Name}: {currentText} -> {proposedText}");
+                var currentText = currentValue.ValueKind == JsonValueKind.Undefined ? "(missing)" : DescribeJsonValue(currentValue);
+                var proposedText = DescribeJsonValue(proposedProperty.Value);
+                var summaryCollision = string.Equals(currentText, proposedText, StringComparison.Ordinal)
+                    ? " (complete values differ; summary is truncated or redacted)"
+                    : string.Empty;
+                changes.Add($"- {proposedProperty.Name}: {currentText} -> {proposedText}{summaryCollision}");
             }
 
             return changes;
@@ -244,10 +248,8 @@ namespace ColorVision.Copilot.Mcp
                 builder.AppendLine("Next step: open the target template JSON editor and call preview_template_patch without current_json before applying.");
             }
             builder.AppendLine($"Changed key fields: {computation.Changes.Count}");
-            foreach (var change in computation.Changes.Take(80))
-                builder.AppendLine(change);
-            foreach (var warning in BuildTemplatePatchWarnings(computation).Take(80))
-                builder.AppendLine(warning);
+            AppendTemplatePatchSummaryLines(builder, computation.Changes, "changed fields");
+            AppendTemplatePatchSummaryLines(builder, BuildTemplatePatchWarnings(computation), "warnings");
             builder.AppendLine("No template file was saved or mutated.");
             return builder.ToString().TrimEnd();
         }
@@ -275,11 +277,67 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"source_id: {preview.SourceId}");
             builder.AppendLine($"current_json_hash: {preview.CurrentJsonHash}");
             builder.AppendLine($"changed_key_fields: {preview.Changes.Count}");
-            foreach (var change in preview.Changes.Take(80))
-                builder.AppendLine(change);
+            AppendTemplatePatchSummaryLines(builder, preview.Changes, "changed fields");
+            builder.AppendLine("Review the complete changed values in the approval details before approving.");
             builder.AppendLine("The active template JSON will be revalidated and conflict-checked again when confirm_action executes.");
             return builder.ToString().TrimEnd();
         }
+
+        private static void AppendTemplatePatchSummaryLines(StringBuilder builder, IReadOnlyList<string> lines, string itemLabel)
+        {
+            if (lines.Count > 80)
+                builder.AppendLine($"... {lines.Count - 80} additional {itemLabel} omitted from this summary.");
+            foreach (var line in lines.Take(80))
+                builder.AppendLine(line);
+        }
+
+        internal static string BuildTemplatePatchReviewDetails(CopilotMcpTemplatePatchPreview preview)
+        {
+            using var currentDocument = JsonDocument.Parse(preview.CurrentJson);
+            using var proposedDocument = JsonDocument.Parse(preview.ProposedChangesJson);
+            if (TryFindSensitiveTemplatePatchField(currentDocument.RootElement, proposedDocument.RootElement, out var sensitivePath))
+                throw new InvalidOperationException($"Template patch refuses to modify sensitive fields: {sensitivePath}.");
+            var builder = new StringBuilder();
+            builder.AppendLine("Complete template patch details (review-escaped)");
+            builder.Append("preview_id: ");
+            AppendTemplatePatchReviewValue(builder, preview.PreviewId);
+            builder.Append("template_identifier: ");
+            AppendTemplatePatchReviewValue(builder, preview.TemplateIdentifier);
+            builder.Append("source_id: ");
+            AppendTemplatePatchReviewValue(builder, preview.SourceId);
+            builder.AppendLine("Each changed top-level value is replaced in full. The template is not saved.");
+            builder.AppendLine("Review encoding: backslashes are doubled; line endings, tabs and invisible characters are escaped.");
+            foreach (var proposedProperty in proposedDocument.RootElement.EnumerateObject())
+            {
+                var hasCurrentValue = currentDocument.RootElement.TryGetProperty(proposedProperty.Name, out var currentValue);
+                if (hasCurrentValue && JsonElement.DeepEquals(currentValue, proposedProperty.Value))
+                    continue;
+
+                builder.AppendLine();
+                builder.Append("Field: ");
+                AppendTemplatePatchReviewValue(builder, proposedProperty.Name);
+                builder.Append("Before JSON: ");
+                AppendTemplatePatchReviewValue(builder, hasCurrentValue ? currentValue.GetRawText() : "(missing)");
+                builder.Append("After JSON: ");
+                AppendTemplatePatchReviewValue(builder, proposedProperty.Value.GetRawText());
+            }
+
+            return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendTemplatePatchReviewValue(StringBuilder builder, string value)
+        {
+            const int maximum = CopilotMcpConfirmationStore.MaximumReviewDetailsCharacters;
+            if (value.Length > maximum - builder.Length)
+                throw TemplatePatchReviewDetailsTooLarge();
+            CopilotApprovalReviewTextEncoder.Append(builder, value);
+            builder.AppendLine();
+            if (builder.Length > maximum)
+                throw TemplatePatchReviewDetailsTooLarge();
+        }
+
+        private static InvalidOperationException TemplatePatchReviewDetailsTooLarge() =>
+            new($"Complete template patch review details exceed the {CopilotMcpConfirmationStore.MaximumReviewDetailsCharacters}-character approval limit. Split the patch into smaller changes and preview again.");
 
         private static bool JsonSemanticallyEquals(string leftJson, string rightJson, out string error)
         {
@@ -327,6 +385,24 @@ namespace ColorVision.Copilot.Mcp
             return TryFindSensitiveJsonProperty(element, "$", out path);
         }
 
+        private static bool TryFindSensitiveTemplatePatchField(JsonElement currentRoot, JsonElement proposedRoot, out string path)
+        {
+            if (TryFindSensitiveJsonProperty(proposedRoot, out path))
+                return true;
+            foreach (var property in proposedRoot.EnumerateObject())
+            {
+                if (currentRoot.TryGetProperty(property.Name, out var currentValue)
+                    && !JsonElement.DeepEquals(currentValue, property.Value)
+                    && TryFindSensitiveJsonProperty(currentValue, $"$.{property.Name}", out path))
+                {
+                    return true;
+                }
+            }
+
+            path = string.Empty;
+            return false;
+        }
+
         private static bool TryFindSensitiveJsonProperty(JsonElement element, string pathPrefix, out string path)
         {
             if (element.ValueKind == JsonValueKind.Object)
@@ -364,7 +440,12 @@ namespace ColorVision.Copilot.Mcp
             if (value.ValueKind == JsonValueKind.Undefined)
                 return "(missing)";
 
-            return RedactForDisplay(TrimLong(value.GetRawText(), 240));
+            var rawText = value.GetRawText();
+            var summary = TrimLong(rawText, 240);
+            var redactedSummary = RedactForDisplay(summary);
+            return redactedSummary
+                + (rawText.Length > 240 ? " [truncated]" : string.Empty)
+                + (!string.Equals(summary, redactedSummary, StringComparison.Ordinal) ? " [redacted]" : string.Empty);
         }
     }
 }

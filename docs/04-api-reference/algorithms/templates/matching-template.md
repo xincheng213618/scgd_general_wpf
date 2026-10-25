@@ -3,15 +3,15 @@ knowledge_id: "algorithms.matching"
 knowledge_type: "topic"
 status: "current"
 summary: "说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。"
-aliases: ["模板匹配用错模板怎么查","MatchingDisplayAlgorithmConfig","AlgorithmMatching","AlgorithmTMNode","ViewHandleMatching","本地模板匹配","LocalTemplateMatchingNode","cvtm","TemplateMatchingWindow"]
-code_paths: ["Engine/ColorVision.Engine/Templates/Matching/AlgorithmMatching.cs","Engine/ColorVision.Engine/Templates/Matching/TemplateMatch.cs","Engine/ColorVision.Engine/Templates/Matching/ViewHandleMatching.cs","Engine/ColorVision.Engine/Templates/Matching/AlgResultAoiDao.cs","Engine/FlowEngineLib/Node/Algorithm/AlgorithmTMNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalTemplateMatchingNode.cs","Engine/ColorVision.Engine/Services/Algorithms/LocalTemplateMatchingService.cs","Engine/ColorVision.Engine/PropertyEditor/LocalMatchingTemplatePropertiesEditor.cs","UI/ColorVision.Core/TemplateMatching.cs","UI/ColorVision.Core/TemplateMatchingFile.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2/TemplateMatchingWindow.xaml.cs"]
+aliases: ["模板匹配用错模板怎么查","AlgorithmTMNode","ViewHandleMatching","本地模板匹配","LocalTemplateMatchingNode","cvtm","TemplateMatchingWindow"]
+code_paths: ["Engine/ColorVision.Engine/Templates/Matching/TemplateMatch.cs","Engine/ColorVision.Engine/Templates/Matching/ViewHandleMatching.cs","Engine/ColorVision.Engine/Templates/Matching/AlgResultAoiDao.cs","Engine/FlowEngineLib/Node/Algorithm/AlgorithmTMNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalTemplateMatchingNode.cs","Engine/ColorVision.Engine/Services/Algorithms/LocalTemplateMatchingService.cs","Engine/ColorVision.Engine/PropertyEditor/LocalMatchingTemplatePropertiesEditor.cs","UI/ColorVision.Core/TemplateMatching.cs","UI/ColorVision.Core/TemplateMatchingFile.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2/TemplateMatchingWindow.xaml.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/LocalTemplateMatchingTests.cs","Test/opencv_helper_test/test_p2_algorithms.cpp"]
 related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 ---
 
 # Matching 模板匹配
 
-本地模板匹配用参考图在输入图像中搜索相似目标，支持旋转、尺度、多目标、分数阈值和距离抑制。它与依赖亮暗边界的发光区定位用途不同，仍需具有可区分结构的参考图。现有 `AlgorithmMatching` / `AlgorithmTMNode` 继续向服务发送 `Event_MatchTemplate`；不能据此推断远端内核与本地算法相同，两种模板格式也不能互换。
+节点库“本地算法”中的 **模板匹配** 使用本机算法，用参考图在输入图像中搜索相似目标，支持旋转、尺度、多目标、分数阈值和距离抑制。它与依赖亮暗边界的发光区定位用途不同，仍需具有可区分结构的参考图。旧服务流程节点 `AlgorithmTMNode` 向服务发送 `Event_MatchTemplate`，仅用于兼容已有流程，不出现在新增节点菜单；两种模板格式不能互换，也不会自动迁移。业务使用的 [AA 发光区定位](./find-light-area.md) 走独立的 `FindLightArea` 请求链。
 
 ## 本地模板、参数与使用步骤
 
@@ -28,7 +28,9 @@ related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 
 ## 本地流程节点
 
-在流程编辑器“本地算法”选择“本地模板匹配”（`NodeType=LocalTemplateMatching`），连接 `IN → OUT`。在“匹配配置”旁点击“编辑…”调整节点内的参考图与参数，或导入其他人分享的 `.cvtm`；待测图片通过上游相机取图、校正或“加载图片”节点传入；“搜索区域”采用像素 `X,Y,Width,Height`，空值或全零代表全图，越界时报错。
+在流程编辑器“本地算法”选择“模板匹配”（`NodeType=LocalTemplateMatching`），连接 `IN → OUT`。在“匹配配置”旁点击“编辑…”调整节点内的参考图与参数，或导入其他人分享的 `.cvtm`；待测图片通过上游相机取图、校正或“加载图片”节点传入；“搜索区域”采用像素 `X,Y,Width,Height`，空值或全零代表全图，越界时报错。已有本地节点保留保存格式和连接；旧默认标题“本地模板匹配”加载时更新为“模板匹配”，自定义标题保留。
+
+替换旧服务节点时需重新配置本地参考图与参数，并确认上游提供内存帧。旧服务的 AOI 数据库结果与本地 `LocalTemplateMatchingResult` 不同，下游依赖 AOI 结果 ID 的流程需要调整，不能直接交换节点类型或沿用服务参数模板。
 
 每次运行从节点内的 JSON 建立本次快照，执行期间编辑配置不会改变该次匹配。输入为上游本地内存帧；仅传入旧图像记录 ID 而没有内存帧时明确报错，不查询数据库。RAW 使用交错 8/16 位灰度或 RGB，CIE 使用 32 位 Y 平面；方向变换未完成时拒绝执行。节点不改变源像素或上游帧的所有权，原帧继续交给下游。
 
@@ -42,8 +44,6 @@ related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 | --- | --- |
 | 模板 / 参数 | `TemplateMatch : ITemplate<MatchParam>, IITemplateLoad` / `MatchParam` |
 | 字典 / 编码 | `TemplateDicId = 34` / `MatchTemplate` |
-| 手动入口 | `AlgorithmMatching : DisplayAlgorithmBase<MatchingDisplayAlgorithmConfig>` |
-| 配置宿主 | `Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs` |
 | Flow | `Engine/FlowEngineLib/Node/Algorithm/AlgorithmTMNode.cs` |
 | 结果 | `ViewResultAlgType.AOI`、`ViewHandleMatching`、`AlgResultAoiDao` |
 | 明细表 | `t_scgd_algorithm_result_detail_aoi` |
@@ -60,21 +60,11 @@ related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 | `MaxOverlapRatio` | `0` | 交叠比例，描述范围 0–0.8 |
 | `TargetNumber` | `70` | 目标数量 |
 
-这些范围来自参数描述，不等于服务或编辑器已经强制校验。匹配用 `TemplateFile` 属于 `MatchingDisplayAlgorithmConfig` 的运行时输入，不是 `MatchParam` 字段。
-
-## 手动请求
-
-`DisplayAlgorithmControl` 根据 `Configuration` 生成输入控件，执行按钮调用 `Execute()`：
-
-1. 从 `Config.Template` 解析当前 `MatchParam`，从 `Config.ImageFilePath` 解析图像输入和文件类型。
-2. `SendCommand` 发送 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateFile`、`TemplateParam`。
-3. 当前手动 `Execute` 传入空设备 code/type；其他调用方可显式传值。图像路径对服务是否可访问仍须单独确认。
-
-选择链是 `Config.Template.SelectedIndex → SelectedValue → MatchParam`；排查模板选错时检查该配置对象和实际请求。
+这些范围来自参数描述，不等于服务或编辑器已经强制校验。匹配用 `TemplateFile` 属于流程节点的运行时输入，不是 `MatchParam` 字段。
 
 ## Flow 请求
 
-`AlgorithmTMNode` 使用 `TempName` 选择参数模板，`TemplateFile` 表示匹配文件，`ImgFileName` 表示输入；`operatorCode = MatchTemplate`。节点构造 `TMParam(TemplateFile)`，再通过 `BuildImageParam(...)` 补全图像参数。它与手动入口共享服务语义，但参数来源不同，应分别验证。
+`AlgorithmTMNode` 使用 `TempName` 选择参数模板，`TemplateFile` 表示匹配文件，`ImgFileName` 表示输入；`operatorCode = MatchTemplate`。节点构造 `TMParam(TemplateFile)`，再通过 `BuildImageParam(...)` 补全图像参数。图像和参考模板文件须对服务可访问；服务生成 AOI 结果，不会进入 AA 找点链。
 
 ## AOI 结果
 
@@ -87,11 +77,11 @@ related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 | 现象 | 证据入口 |
 | --- | --- |
 | 没有执行或路径无效 | 服务连接、请求事件、输入图/模板文件在服务端的可访问性 |
-| 参数模板不生效 | `Config.Template` 的类型与选中值、实际 `TemplateParam.ID/Name` |
+| 参数模板不生效 | 节点 `TempName` 与实际 `TemplateParam.ID/Name` |
 | 结果表为空 | 主结果类型 AOI、`Id/pid` 对应关系、`ViewResults` 是否已缓存 |
 | overlay 不对应原图 | 四角坐标系、输入图尺寸、当前展示源 |
 
-改参数或结果字段时保留固定输入、模板文件和预期 AOI 四角样例；同时检查手动路径、Flow 路径及受影响的项目导出。参数范围、编译成功或类名存在均不能代替算法正确性验证。
+改参数或结果字段时保留固定输入、模板文件和预期 AOI 四角样例；同时检查旧 Flow 路径及受影响的项目导出。参数范围、编译成功或类名存在均不能代替算法正确性验证。
 
 ## 验证入口与缺口
 

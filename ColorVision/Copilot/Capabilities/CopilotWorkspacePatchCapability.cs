@@ -126,6 +126,12 @@ namespace ColorVision.Copilot
                     .Insert(match.StartIndex, match.Replacement.NewText);
             }
             var patchedBytes = EncodeText(patchedText, encodingInfo);
+            if (patchedBytes.Length > MaxFileBytes)
+            {
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
+                    "The encoded workspace file exceeds the allowed size.",
+                    $"The patched content exceeds the {MaxFileBytes}-byte workspace file limit.");
+            }
             var now = DateTimeOffset.UtcNow;
             var record = new WorkspacePatchRecord
             {

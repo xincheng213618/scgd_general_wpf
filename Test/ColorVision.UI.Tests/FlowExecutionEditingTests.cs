@@ -11,6 +11,7 @@ using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -165,6 +166,78 @@ public sealed class FlowExecutionEditingTests
             view.STNodeEditorMain.EnableEdit = false;
             Assert.Contains("read-only", Assert.Throws<InvalidOperationException>(() =>
                 fixture.Manager.Copilot.AddCopilotFlowNode("must-not-be-created", 0, 0, null)).Message);
+        });
+    }
+
+    [Fact]
+    public void CopilotPropertyEditingPreservesTimerStateWithoutReloadingTheNode()
+    {
+        WithFixture(fixture =>
+        {
+            var timer = (CVCommonNode)Activator.CreateInstance(typeof(CVCommonNode).Assembly.GetType("FlowEngineLib.simulator.Timer", true)!)!;
+            timer.Create();
+            timer.Mark = "Keep this timer annotation";
+            timer.SetRepeatRegion("copilot-timer-repeat", 3, 1);
+            timer.SetRepeatParameterValues(new Dictionary<string, double[]> { ["Time"] = [100, 200, 300] });
+            var time = timer.GetType().GetProperty("Time")!;
+            time.SetValue(timer, 100);
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.Nodes.Add(timer);
+            byte[] originalCanvas = editor.GetCanvasData();
+            var originalRevision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+            var inputCount = timer.GetAllInputOptions().Length;
+            var outputCount = timer.GetAllOutputOptions().Length;
+
+            var preview = fixture.Manager.Copilot.PreviewCopilotFlowNodePropertyChange(timer.NodeID, "Time", "250", originalRevision);
+
+            Assert.Equal("100", preview.OldValue);
+            Assert.Equal("250", preview.NewValue);
+            Assert.Equal(timer.NodeID, preview.Node.InstanceId);
+            Assert.Equal(timer.Mark, preview.Node.Mark);
+            Assert.Equal(originalCanvas, editor.GetCanvasData());
+            Assert.Equal(100, time.GetValue(timer));
+
+            fixture.Manager.Copilot.SetCopilotFlowNodeProperty(timer.NodeID, "Time", "250", originalRevision);
+
+            Assert.Equal(250, time.GetValue(timer));
+            Assert.Equal("Keep this timer annotation", timer.Mark);
+            Assert.Equal("copilot-timer-repeat", timer.RepeatRegionId);
+            Assert.Equal(3, timer.RepeatCount);
+            Assert.Equal(1, timer.RepeatMemberCount);
+            Assert.Equal(new double[] { 100, 200, 300 }, timer.RepeatParameterValues["Time"]);
+            Assert.Equal(inputCount, timer.GetAllInputOptions().Length);
+            Assert.Equal(outputCount, timer.GetAllOutputOptions().Length);
+        });
+    }
+
+    [Fact]
+    public void CopilotPropertyEditingUsesTheTextDescriptorAndRollsBackAFailedSetter()
+    {
+        WithFixture(fixture =>
+        {
+            var node = new DescriptorEditingNode();
+            node.Create();
+            node.Value = 7;
+            node.Mark = "Preserve custom node annotation";
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.Nodes.Add(node);
+            var revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+
+            var preview = fixture.Manager.Copilot.PreviewCopilotFlowNodePropertyChange(node.NodeID, nameof(node.Value), "units:42", revision);
+            Assert.Equal("7", preview.OldValue);
+            Assert.Equal("42", preview.NewValue);
+            Assert.Equal(7, node.Value);
+            fixture.Manager.Copilot.SetCopilotFlowNodeProperty(node.NodeID, nameof(node.Value), "units:42", revision);
+            Assert.Equal(42, node.Value);
+            byte[] appliedCanvas = editor.GetCanvasData();
+
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                fixture.Manager.Copilot.SetCopilotFlowNodeProperty(node.NodeID, nameof(node.Value), "units:13", null));
+
+            Assert.Contains("The test setter rejected its new value", exception.Message, StringComparison.Ordinal);
+            Assert.Equal(42, node.Value);
+            Assert.Equal("Preserve custom node annotation", node.Mark);
+            Assert.Equal(appliedCanvas, editor.GetCanvasData());
         });
     }
 
@@ -661,6 +734,32 @@ public sealed class FlowExecutionEditingTests
     {
         public void ApplyRequiredPostProcessFailure(MeasureBatchModel batch, IReadOnlyList<PostProcessExecutionResult> results) { }
         public void RecordFallbackRun(MeasureBatchModel batch, string flowName, FlowControlData result, FlowStatus status, long elapsedMilliseconds) { }
+    }
+
+    public sealed class DescriptorEditingNode : CVCommonNode
+    {
+        private int _value;
+        public DescriptorEditingNode() : base("Descriptor editing test", "Descriptor test", "Descriptor test") { }
+
+        [STNodeProperty("Value", "A value with distinct text and persistence encodings", DescriptorType = typeof(UnitsPropertyDescriptor))]
+        public int Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                if (value == 13) throw new InvalidOperationException("The test setter rejected its new value");
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public sealed class UnitsPropertyDescriptor : STNodePropertyDescriptor
+    {
+        protected override object GetValueFromString(string text) => text.StartsWith("units:", StringComparison.Ordinal)
+            ? int.Parse(text[6..], CultureInfo.InvariantCulture) : throw new FormatException("Expected units:<integer>");
+        protected override byte[] GetBytesFromValue() => BitConverter.GetBytes((int)PropertyInfo.GetValue(Node)!);
+        protected override object GetValueFromBytes(byte[] data) => BitConverter.ToInt32(data, 0);
     }
 
     private sealed class TestStartNode : BaseStartNode

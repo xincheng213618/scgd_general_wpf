@@ -231,12 +231,12 @@ namespace ColorVision.Copilot
                 foreach (var message in conversation.Messages ?? new ObservableCollection<CopilotChatMessage>())
                 {
                     var trace = message.AgentTraceEntries?.FirstOrDefault(entry =>
-                        string.Equals(entry.CallId, transition.AgentCallId, StringComparison.Ordinal)
-                        || (!string.IsNullOrWhiteSpace(entry.ApprovalActionId)
-                            && string.Equals(
-                                entry.ApprovalActionId,
-                                transition.ActionId,
-                                StringComparison.OrdinalIgnoreCase)));
+                        !string.IsNullOrWhiteSpace(entry.ApprovalActionId)
+                        && string.Equals(entry.ApprovalActionId, transition.ActionId, StringComparison.OrdinalIgnoreCase))
+                        ?? message.AgentTraceEntries?.FirstOrDefault(entry =>
+                            string.IsNullOrWhiteSpace(entry.ApprovalActionId)
+                            && entry.State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running or CopilotToolExecutionState.AwaitingApproval
+                            && string.Equals(entry.CallId, transition.AgentCallId, StringComparison.Ordinal));
                     if (trace == null)
                         continue;
 

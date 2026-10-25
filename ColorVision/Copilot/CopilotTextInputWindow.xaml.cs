@@ -9,6 +9,7 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotTextInputWindow : Window
     {
+        internal static readonly RoutedCommand ConfirmInputCommand = new(nameof(ConfirmInputCommand), typeof(CopilotTextInputWindow));
         private readonly int _maximumLength;
         private readonly int _initialCaretIndex;
 
@@ -51,13 +52,45 @@ namespace ColorVision.Copilot
 
             Loaded += CopilotTextInputWindow_Loaded;
             PreviewKeyDown += CopilotTextInputWindow_PreviewKeyDown;
+            CommandBindings.Add(new CommandBinding(ConfirmInputCommand, (_, e) =>
+            {
+                ConfirmInput();
+                e.Handled = true;
+            }, (_, e) =>
+            {
+                e.CanExecute = true;
+                e.Handled = true;
+            }));
+            if (isMultiline)
+                InputBindings.Add(new KeyBinding(ConfirmInputCommand, Key.Enter, ModifierKeys.Control));
         }
+
+        internal Func<bool>? TryAcceptInput { get; set; }
 
         public string ResultText => InputTextBox.Text.Trim();
 
         public string RawResultText => InputTextBox.Text;
 
         public int ResultCaretIndex => InputTextBox.CaretIndex;
+
+        internal void ShowAcceptanceFeedback(string message, string? currentText)
+        {
+            AcceptanceFeedbackTextBlock.Text = LocalizedText.Get(message);
+            AcceptanceFeedbackPanel.Visibility = Visibility.Visible;
+            ComparisonLabelTextBlock.Text = LocalizedText.Get("当前输入框草稿（只读，可复制）");
+            ComparisonLabelTextBlock.Visibility = currentText == null ? Visibility.Collapsed : Visibility.Visible;
+            ComparisonTextBox.Text = currentText ?? string.Empty;
+            ComparisonTextBox.Visibility = currentText == null ? Visibility.Collapsed : Visibility.Visible;
+            if (currentText != null)
+                Height = Math.Max(Height, Math.Min(640, SystemParameters.WorkArea.Height));
+            InputTextBox.Focus();
+        }
+
+        private void ConfirmInput()
+        {
+            if (TryAcceptInput?.Invoke() != false)
+                DialogResult = true;
+        }
 
         private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateCharacterCount();
 
@@ -93,20 +126,14 @@ namespace ColorVision.Copilot
             if (!InputTextBox.AcceptsReturn && e.Key == Key.Enter)
             {
                 e.Handled = true;
-                DialogResult = true;
+                ConfirmInput();
                 return;
-            }
-
-            if (InputTextBox.AcceptsReturn && e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-            {
-                e.Handled = true;
-                DialogResult = true;
             }
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = true;
+            ConfirmInput();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

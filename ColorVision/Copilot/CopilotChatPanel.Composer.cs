@@ -216,7 +216,7 @@ namespace ColorVision.Copilot
             }
 
             if (DataContext is CopilotChatViewModel completionViewModel
-                && (e.Key == Key.Tab || IsRightArrowCompletionGesture(e))
+                && (e.Key == Key.Tab && e.KeyboardDevice.Modifiers == ModifierKeys.None || IsRightArrowCompletionGesture(e))
                 && completionViewModel.TryCompleteLocalCommand())
             {
                 MovePromptCaretToEnd();
@@ -408,11 +408,15 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            var openingCapture = viewModel.CaptureComposerEditorSession();
+            var capture = openingCapture;
+            var originalConversationId = capture.ConversationId;
             var initialCaretIndex = PromptTextBox.CaretIndex;
+            CopilotComposerEditorSnapshot? acceptedSnapshot = null;
             var window = new CopilotTextInputWindow(
                 "编辑 Copilot 提示词",
                 "编辑当前未发送内容；Ctrl+Enter 保存，Esc 或取消保持原内容。附件和请求模式不会改变。",
-                viewModel.InputText,
+                capture.Text,
                 isMultiline: true,
                 maximumLength: viewModel.ComposerMaximumCharacters,
                 initialCaretIndex: initialCaretIndex,
@@ -425,18 +429,49 @@ namespace ColorVision.Copilot
                 Owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
+            window.TryAcceptInput = () =>
+            {
+                if (!ReferenceEquals(DataContext, viewModel))
+                {
+                    window.ShowAcceptanceFeedback("聊天界面已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。", null);
+                    return false;
+                }
+
+                var edited = CopilotComposerEditorSnapshot.Capture(window.RawResultText, window.ResultCaretIndex);
+                if (viewModel.TryApplyComposerEditor(capture, edited.Text))
+                {
+                    acceptedSnapshot = edited;
+                    return true;
+                }
+
+                var current = viewModel.CaptureComposerEditorSession();
+                if (!string.Equals(originalConversationId, current.ConversationId, StringComparison.Ordinal)
+                    || viewModel.SelectedConversation?.Id != originalConversationId
+                    || !viewModel.IsComposerEditorSessionAvailable
+                    || !string.Equals(openingCapture.EditingConversationId, current.EditingConversationId, StringComparison.Ordinal)
+                    || !string.Equals(openingCapture.EditingUserMessageId, current.EditingUserMessageId, StringComparison.Ordinal)
+                    || !ReferenceEquals(openingCapture.MessageEditLifetime, current.MessageEditLifetime))
+                {
+                    window.ShowAcceptanceFeedback("当前会话或编辑状态已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。", null);
+                    return false;
+                }
+
+                // The next attempt may replace only the exact draft displayed here.
+                // Further recovery while this window remains open must be reviewed again.
+                capture = current;
+                window.ShowAcceptanceFeedback("输入框草稿已变化，尚未覆盖。上方编辑内容仍保留；请先复制合并下方草稿，再次保存会以上方内容替换下方草稿。取消则保留下方草稿。", current.Text);
+                return false;
+            };
 
             if (window.ShowDialog() != true)
             {
-                FocusPromptInput(initialCaretIndex);
+                if (ReferenceEquals(DataContext, viewModel))
+                    FocusPromptInput(initialCaretIndex);
                 return true;
             }
 
-            var snapshot = CopilotComposerEditorSnapshot.Capture(
-                window.RawResultText,
-                window.ResultCaretIndex);
-            viewModel.InputText = snapshot.Text;
-            FocusPromptInput(snapshot.CaretIndex);
+            if (acceptedSnapshot is { } snapshot && ReferenceEquals(DataContext, viewModel))
+                FocusPromptInput(snapshot.CaretIndex);
             return true;
         }
 

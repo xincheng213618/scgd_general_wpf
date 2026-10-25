@@ -449,6 +449,7 @@ namespace ColorVision.Copilot
 
                 using var executionCancellation = new CopilotNonBlockingCancellationSource();
                 Task<CopilotToolResult>? executionTask = null;
+                var toolBodyEntered = 0;
                 IReadOnlyList<string> workspaceRecheckPaths = Array.Empty<string>();
                 var executionProgress = new CopilotToolProgressContext();
                 using var progressCancellation = new CancellationTokenSource();
@@ -547,6 +548,7 @@ namespace ColorVision.Copilot
                             // Publish the path snapshot before this last cancellation check.
                             // Either the boundary sees it or the write body cannot start.
                             executionCancellation.Token.ThrowIfCancellationRequested();
+                            Volatile.Write(ref toolBodyEntered, 1);
                             return await ExecuteToolAsync(invocation, executionProgress, executionCancellation.Token).ConfigureAwait(false);
                         },
                         executionCancellation.Token);
@@ -614,6 +616,24 @@ namespace ColorVision.Copilot
                 catch (CopilotToolResultEventDispatchException)
                 {
                     throw;
+                }
+                catch (Exception ex) when (executionTask?.IsFaulted == true
+                    && Volatile.Read(ref toolBodyEntered) != 0
+                    && HasUnknownOutcomeAfterExecutionBoundary(invocation))
+                {
+                    var outcome = CreateOutcome(
+                        invocation,
+                        CopilotToolExecutionState.Failed,
+                        startedAt,
+                        timeout,
+                        stopwatch,
+                        CreateUnknownExecutionResult(
+                            invocation,
+                            $"{invocation.Tool.Name} failed after execution started without a final result.",
+                            Volatile.Read(ref workspaceRecheckPaths),
+                            CopilotUserFacingErrorFormatter.Sanitize(ex.Message)),
+                        queueDurationMs);
+                    return await PublishExecutionOutcomeAsync(outcome);
                 }
                 catch (Exception ex)
                 {

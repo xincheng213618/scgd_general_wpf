@@ -6982,7 +6982,7 @@
     <value>黑畫面檢測</value>
   </data>
   <data name="键盘检测1" xml:space="preserve">
-    <value>鍵盤檢測 1</value>
+    <value>鍵盤檢測</value>
   </data>
   <data name="关注点布点" xml:space="preserve">
     <value>關注點布點</value>
@@ -8346,4 +8346,6 @@
   <data name="设定电压" xml:space="preserve"><value>設定電壓</value></data>
   <data name="设定电流" xml:space="preserve"><value>設定電流</value></data>
   <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>請先關閉相機節點的自動曝光，再設置逐輪曝光。</value></data>
+  <data name="Flow_PreProcess_AddAction" xml:space="preserve"><value>新增預處理動作</value></data>
+  <data name="Flow_PreProcess_ChooseActionHint" xml:space="preserve"><value>選擇要新增的動作，新增後在右側設定參數。已啟用的動作會在流程啟動前按清單順序執行。</value></data>
 </root>

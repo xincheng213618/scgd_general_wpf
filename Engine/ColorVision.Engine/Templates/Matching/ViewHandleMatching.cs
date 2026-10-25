@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1725
 using ColorVision.Common.Algorithms;
 using ColorVision.Engine.Services;
-using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
@@ -22,7 +21,6 @@ namespace ColorVision.Engine.Templates.Matching
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>(AlgResultAoiDao.Instance.GetAllByPid(result.Id));
-                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMatching), ImageFilePath = result.FilePath })) });
             }
         }
 

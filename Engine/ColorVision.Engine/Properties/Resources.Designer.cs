@@ -6109,6 +6109,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加预处理动作 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_AddAction {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_AddAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 选择要添加的动作，添加后在右侧设置参数。已启用的动作会在流程启动前按列表顺序执行。 的本地化字符串。
+        /// </summary>
+        public static string Flow_PreProcess_ChooseActionHint {
+            get {
+                return ResourceManager.GetString("Flow_PreProcess_ChooseActionHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 动作配置 的本地化字符串。
         /// </summary>
         public static string Flow_PreProcess_ActionConfig {
@@ -18035,7 +18053,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 键盘检测1 的本地化字符串。
+        ///   查找类似 键盘检测 的本地化字符串。
         /// </summary>
         public static string 键盘检测1 {
             get {
