@@ -3,10 +3,15 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
+using FlowEngineLib.Base;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Threading;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -35,6 +40,54 @@ namespace ColorVision.Engine.Templates.POI
     internal static class LocalPoiCalculator
     {
         internal static string ResultResourceKey(int masterId) => $"ColorVision.LocalPoi.Result.{masterId}";
+
+        internal static (string Handle, string? CsvFile) StoreRuntimeResult(CVStartCFC action, LocalPoiResultSet result, ViewResultAlgType resultType, string resultDirectory)
+        {
+            action.RuntimeResources.StopToken.ThrowIfCancellationRequested();
+            string handle = "local-poi-result:" + Guid.NewGuid().ToString("N");
+            string? file = ExportCsv(result, resultDirectory, action.RuntimeResources.StopToken);
+            try
+            {
+                action.SetRuntimeResource(handle, result);
+                action.SetRuntimeResource(LocalFlowFrameRuntime.PoiResultResourceKeyPrefix + result.FrameId, result);
+                action.Data["LocalPoiCount"] = result.Points.Count;
+                action.MasterValue(handle, 0, (int)resultType);
+                return (handle, file);
+            }
+            catch
+            {
+                if (file != null) File.Delete(file);
+                throw;
+            }
+        }
+
+        private static string? ExportCsv(LocalPoiResultSet result, string directory, CancellationToken cancellation)
+        {
+            if (string.IsNullOrWhiteSpace(directory)) return null;
+            if (!Path.IsPathFullyQualified(directory)) throw new ArgumentException("本地 POI 结果目录必须是绝对路径。", nameof(directory));
+            cancellation.ThrowIfCancellationRequested();
+            Directory.CreateDirectory(directory);
+            string file = Path.Combine(directory, $"POI_{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.csv");
+            try
+            {
+                using var writer = new StreamWriter(new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.Read), new UTF8Encoding(true));
+                writer.WriteLine("PoiId,Name,PixelX,PixelY,Width,Height,X,Y,Z,x,y,u,v,CCT,Wave");
+                foreach (LocalPoiPointResult point in result.Points)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    string name = "\"" + point.Name.Replace("\"", "\"\"") + "\"";
+                    writer.Write(FormattableString.Invariant($"{point.PoiId},{name},{point.X},{point.Y},{point.Width},{point.Height},"));
+                    if (point.Value is POIResultDataCIExyuv xyz)
+                        writer.WriteLine(FormattableString.Invariant($"{xyz.X},{xyz.Y},{xyz.Z},{xyz.x},{xyz.y},{xyz.u},{xyz.v},{xyz.CCT},{xyz.Wave}"));
+                    else if (point.Value is POIResultDataCIEY luminance)
+                        writer.WriteLine("," + luminance.Y.ToString("R", CultureInfo.InvariantCulture) + ",,,,,,,");
+                    else throw new InvalidOperationException("无法导出未知的 POI 测量类型。");
+                }
+                cancellation.ThrowIfCancellationRequested();
+                return file;
+            }
+            catch { File.Delete(file); throw; }
+        }
 
         public static ViewResultAlgType ResolveResultType(int channels)
             => channels == 1 ? ViewResultAlgType.POI_Y : ViewResultAlgType.POI_XYZ;

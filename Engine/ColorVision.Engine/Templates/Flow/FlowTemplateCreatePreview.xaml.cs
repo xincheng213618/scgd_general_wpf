@@ -20,7 +20,7 @@ public partial class FlowTemplateCreatePreview : UserControl, ITemplateUserContr
         EmptyHint.Visibility = string.IsNullOrEmpty(flow.DataBase64) ? Visibility.Visible : Visibility.Collapsed;
         if (string.IsNullOrEmpty(flow.DataBase64)) return;
         // Render directly without touching the user's flow/cover databases.
-        using var stream = new MemoryStream(FlowTemplateCoverService.Render(Convert.FromBase64String(flow.DataBase64)));
+        using var stream = new MemoryStream(FlowTemplateCoverRenderer.Render(Convert.FromBase64String(flow.DataBase64), FlowTemplateCoverStyle.Current));
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
         bitmap.CacheOption = BitmapCacheOption.OnLoad;

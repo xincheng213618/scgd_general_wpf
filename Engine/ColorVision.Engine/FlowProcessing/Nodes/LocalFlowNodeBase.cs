@@ -279,6 +279,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return true;
         }
 
+        protected CVStartCFC? GetInputActionSnapshot(CVStartCFC action, int inputIndex)
+            => activeInputSets.TryGetValue(action.SerialNumber, out LocalFlowInputSnapshot[]? inputs)
+                && inputIndex >= 0 && inputIndex < inputs.Length && action.IsSameExecutionIteration(inputs[inputIndex].Action)
+                ? inputs[inputIndex].Action : null;
+
         private void HandleMultiInput(STNodeOption? sender, STNodeOptionEventArgs e)
         {
             if (sender == null || e.Status != ConnectionStatus.Connected) return;

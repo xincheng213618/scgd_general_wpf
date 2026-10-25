@@ -11,6 +11,13 @@ namespace ColorVision.Themes;
 /// </summary>
 public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPaneTabPanel
 {
+    private static readonly DependencyPropertyKey IsSelectedTabAtStartPropertyKey = DependencyProperty.RegisterReadOnly(
+        nameof(IsSelectedTabAtStart), typeof(bool), typeof(StableDocumentPaneTabPanel), new PropertyMetadata(false));
+
+    public static readonly DependencyProperty IsSelectedTabAtStartProperty = IsSelectedTabAtStartPropertyKey.DependencyProperty;
+
+    public bool IsSelectedTabAtStart => (bool)GetValue(IsSelectedTabAtStartProperty);
+
     private int _firstVisibleIndex;
 
     public StableDocumentPaneTabPanel()
@@ -44,6 +51,7 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
         if (tabs.Length == 0)
         {
             _firstVisibleIndex = 0;
+            SetValue(IsSelectedTabAtStartPropertyKey, false);
             return finalSize;
         }
 
@@ -79,6 +87,7 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
 
         double offset = 0;
         bool overflowed = false;
+        bool selectedTabAtStart = false;
         for (int index = 0; index < tabs.Length; index++)
         {
             TabItem tab = tabs[index];
@@ -93,11 +102,15 @@ public sealed class StableDocumentPaneTabPanel : AvalonDock.Controls.DocumentPan
             }
 
             tab.Visibility = Visibility.Visible;
+            selectedTabAtStart |= offset == 0 && IsSelectedDocument(tab);
             double arrangedWidth = Math.Min(width, Math.Max(0, availableWidth - offset));
             tab.Arrange(new Rect(offset, 0, arrangedWidth, finalSize.Height));
             offset += arrangedWidth;
         }
 
+        // Only the visible selection can join the pane's left edge; overflow may
+        // place a later document here without changing the model's item order.
+        SetValue(IsSelectedTabAtStartPropertyKey, selectedTabAtStart);
         return finalSize;
     }
 

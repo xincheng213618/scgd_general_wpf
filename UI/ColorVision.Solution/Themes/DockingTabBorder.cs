@@ -37,7 +37,13 @@ public sealed class DockingTabBorder : Border
         bool track = IsLoaded && IsSelected && TemplatedParent is TabItem;
         if (trackingLayout == track) return;
         trackingLayout = track;
-        if (track) LayoutUpdated += UpdateEdgeJoins;
+        if (track)
+        {
+            LayoutUpdated += UpdateEdgeJoins;
+            // Loaded may follow the final layout pass. Initialize the join before
+            // the first paint instead of waiting for an unrelated layout change.
+            UpdateEdgeJoins(this, EventArgs.Empty);
+        }
         else LayoutUpdated -= UpdateEdgeJoins;
     }
 

@@ -7405,4 +7405,25 @@ Field: </value></data>
   <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>Disable auto exposure on the camera node before setting per-round exposure.</value></data>
   <data name="Flow_PreProcess_AddAction" xml:space="preserve"><value>Add Preprocessing Action</value></data>
   <data name="Flow_PreProcess_ChooseActionHint" xml:space="preserve"><value>Choose an action, then configure it in the panel on the right. Enabled actions run in list order before the flow starts.</value></data>
+  <data name="TemplateBrowserCards" xml:space="preserve"><value>Cards</value></data>
+  <data name="TemplateBrowserList" xml:space="preserve"><value>List</value></data>
+  <data name="TemplateBrowserPreview" xml:space="preserve"><value>Preview</value></data>
+  <data name="TemplateBrowserSelectPreview" xml:space="preserve"><value>Select a template to see its preview and details</value></data>
+  <data name="TemplateBrowserStorage" xml:space="preserve"><value>Storage</value></data>
+  <data name="TemplateBrowserLocal" xml:space="preserve"><value>Local</value></data>
+  <data name="TemplateBrowserNodeCount" xml:space="preserve"><value>Nodes</value></data>
+  <data name="TemplateBrowserEdgeCount" xml:space="preserve"><value>Connections</value></data>
+  <data name="TemplateBrowserRevision" xml:space="preserve"><value>Revision</value></data>
+  <data name="TemplateBrowserCanvasSize" xml:space="preserve"><value>Canvas size</value></data>
+  <data name="TemplateBrowserPointCount" xml:space="preserve"><value>Points</value></data>
+  <data name="TemplateBrowserCircleCount" xml:space="preserve"><value>Circles</value></data>
+  <data name="TemplateBrowserRectangleCount" xml:space="preserve"><value>Rectangles</value></data>
+  <data name="TemplateBrowserPoiLayout" xml:space="preserve"><value>Saved point layout; background image is not included</value></data>
+  <data name="TemplateBrowserDynamicPoi" xml:space="preserve"><value>Dynamic points: saved points only; runtime points may differ</value></data>
+  <data name="TemplateBrowserPreviewFailed" xml:space="preserve"><value>Preview unavailable. Double-click to open the editor.</value></data>
+  <data name="TemplateBrowserExecutionCount" xml:space="preserve"><value>Executions</value></data>
+  <data name="TemplateBrowserExpectedTime" xml:space="preserve"><value>Estimated duration</value></data>
+  <data name="TemplateBrowserNoData" xml:space="preserve"><value>No data</value></data>
+  <data name="TemplateBrowserEstimateBasis" xml:space="preserve"><value>Count uses retained local records. Duration averages the latest {0} normally completed runs of the saved version.</value></data>
+  <data name="TemplateBrowserUsageScope" xml:space="preserve"><value>Execution count covers retained local runs. No estimate is shown without normally completed runs matching the saved version.</value></data>
 </root>

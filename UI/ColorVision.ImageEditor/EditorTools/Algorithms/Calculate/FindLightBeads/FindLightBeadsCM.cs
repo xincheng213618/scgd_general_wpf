@@ -3,120 +3,71 @@ using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBeads
 {
     public record FindLightBeads(ImageProcessingContext ImageContext, DrawEditorContext DrawContext)
     {
-        public void Execute(FindLightBeadsConfig config, RoiRect roiRect)
+        public async Task ExecuteAsync(FindLightBeadsConfig config, RoiRect roiRect)
         {
-            ImageFrameLease? lease = ImageContext.AcquireImageFrame();
-            if (lease == null) return;
-
-            string configJson = config.ToJsonN();
-            long revision = lease.Revision;
-            _ = Task.Run(() =>
+            long revision = ImageContext.ImageRevision;
+            int threshold = config.Threshold, minSize = config.MinSize, maxSize = Math.Max(0, config.MaxSize);
+            int rows = Math.Max(0, config.Rows), columns = Math.Max(0, config.Cols), radius = config.Radius;
+            bool inspectDefects = config.InspectDefects;
+            double dimRatio = config.DimRatio;
+            try
             {
-                int length;
-                IntPtr resultPtr;
-                using (lease)
+                if (radius <= 0) throw new ArgumentOutOfRangeException(nameof(config), LocalizedText.Get("标注半径必须大于零。"));
+                BitmapSource source = ImageContext.ViewBitmapSource as BitmapSource
+                    ?? throw new InvalidOperationException(LocalizedText.Get("当前没有可检测的图像。"));
+                // Reuse the format-aware boundary: RGB48 must not be passed as BGR48.
+                // Copy the WPF source once instead of creating another full-sized cached HImage.
+                using AlgorithmImageBuffer snapshot = ImageAlgorithmInputFactory.Copy(source);
+                var (result, inspection) = await Task.Run(() =>
+                    InspectSnapshot(snapshot, roiRect, threshold, minSize, maxSize, rows, columns, dimRatio, inspectDefects));
+                if (!ImageContext.IsCurrentImageRevision(revision)) return;
+                var visual = inspection == null
+                    ? new DensePointVisual(result.Centers.Select(point => new Point(point.X, point.Y)),
+                        result.DarkCandidates.Select(point => new Point(point.X, point.Y)), radius, DrawContext.DrawCanvas.Scale)
+                    : new DensePointVisual(inspection.Points.Where(point => point.Status == LightBeadStatus.Normal).Select(point => new Point(point.X, point.Y)),
+                        inspection.Points.Where(point => point.Status != LightBeadStatus.Normal).Select(point => new Point(point.X, point.Y)),
+                        radius, DrawContext.DrawCanvas.Scale, Brushes.LimeGreen, Brushes.Red);
+                DrawContext.DrawCanvas.AddVisualCommand(visual);
+                if (inspection != null) new LightBeadsResultWindow(inspection)
                 {
-                    length = OpenCVMediaHelper.M_FindLightBeads(lease.Image, roiRect, configJson, out resultPtr);
-                }
-                if (length > 0)
-                {
-                    string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
-
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (!ImageContext.IsCurrentImageRevision(revision)) return;
-
-                        var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
-                        
-                        // 获取检测到的灯珠中心点
-                        var centers = jObj["Centers"].ToObject<List<List<int>>>();
-                        int centerCount = jObj["CenterCount"].ToObject<int>();
-
-                        // 获取缺失的灯珠位置
-                        var blackCenters = jObj["BlackCenters"].ToObject<List<List<int>>>();
-                        int blackCenterCount = jObj["BlackCenterCount"].ToObject<int>();
-
-                        foreach (var center in centers)
-                        {
-                            int cx = roiRect.X + center[0];
-                            int cy = roiRect.Y + center[1];
-
-                            AddCircleOverlay(new Point(cx, cy), config.Radius, Brushes.Red);
-                        }
-
-                        foreach (var blackCenter in blackCenters)
-                        {
-                            int cx = roiRect.X + blackCenter[0];
-                            int cy = roiRect.Y + blackCenter[1];
-
-                            AddCircleOverlay(new Point(cx, cy), config.Radius, Brushes.Yellow);
-                        }
-
-                        // 显示统计信息
-                        //int expectedCount = jObj["ExpectedCount"].ToObject<int>();
-                        //int missingCount = jObj["MissingCount"].ToObject<int>();
-                        
-                        //MessageBox.Show(
-                        //    $"检测结果:\n" +
-                        //    $"检测到的灯珠: {centerCount}\n" +
-                        //    $"缺失的灯珠: {blackCenterCount}\n" +
-                        //    $"预期总数: {expectedCount}\n" +
-                        //    $"实际缺失: {missingCount}",
-                        //    "灯珠检测结果",
-                        //    MessageBoxButton.OK,
-                        //    MessageBoxImage.Information);
-                    });
-                }
-                else
-                {
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (!ImageContext.IsCurrentImageRevision(revision)) return;
-
-                        MessageBox.Show(
-                            LocalizedText.Format($"灯珠检测失败，错误代码: {length}\n请检查图像格式和参数设置。"),
-                            LocalizedText.Get("错误"),
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
-                    });
-                }
-            });
+                    Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner
+                }.Show();
+            }
+            catch (Exception ex)
+            {
+                if (ImageContext.IsCurrentImageRevision(revision))
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, LocalizedText.Get("灯珠定位"), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void AddCircleOverlay(Point center, double radius, Brush stroke)
+        private static unsafe (LightBeadsDetectionResult, LightBeadsInspectionResult?) InspectSnapshot(AlgorithmImageBuffer snapshot,
+            RoiRect roi, int threshold, int minSize, int maxSize, int rows, int columns, double dimRatio, bool inspect)
         {
-            double zoom = Math.Abs(DrawContext.Zoombox.ContentMatrix.M11);
-            double strokeThickness = double.IsFinite(zoom) && zoom > 0 ? 1.0 / zoom : 1.0;
-            if (!double.IsFinite(strokeThickness))
-                strokeThickness = 1.0;
-
-            DVCircle circle = new(new CircleProperties
-            {
-                Center = center,
-                Radius = radius,
-                Pen = new Pen(stroke, strokeThickness),
-                Brush = Brushes.Transparent,
-            });
-            circle.Render();
-            DrawContext.DrawCanvas.AddVisualCommand(circle);
+            using var pin = snapshot.Data.Pin();
+            var image = new HImage { cols = snapshot.Width, rows = snapshot.Height, channels = snapshot.Format.Channels(),
+                depth = snapshot.Format.BitsPerChannel(), stride = snapshot.Stride, pData = (IntPtr)pin.Pointer, isDispose = true };
+            LightBeadsDetectionResult detection = LightBeadsDetector.Detect(image, roi, threshold, minSize, maxSize);
+            return (detection, inspect ? LightBeadsInspector.Inspect(image, detection.Centers, rows, columns, dimRatio, threshold) : null);
         }
     }
-
     public class DVCMFindLightBeads : IDVContextMenu
     {
         private readonly ImageProcessingContext _imageContext;
@@ -185,9 +136,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
             {
                 FindLightBeadsConfig config = new FindLightBeadsConfig();
                 var PropertyEditorWindow = new PropertyEditorWindow(config) { Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLightBeads, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                PropertyEditorWindow.Submitted += (_, _) =>
+                PropertyEditorWindow.Submitted += async (_, _) =>
                 {
-                    new FindLightBeads(_imageContext, _drawContext).Execute(config, new RoiRect(roiX, roiY, roiW, roiH));
+                    await new FindLightBeads(_imageContext, _drawContext).ExecuteAsync(config, new RoiRect(roiX, roiY, roiW, roiH));
                 };
                 PropertyEditorWindow.ShowDialog();
             };
@@ -206,9 +157,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
             {
                 FindLightBeadsConfig config = new FindLightBeadsConfig();
                 var PropertyEditorWindow = new PropertyEditorWindow(config) { Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLightBeads, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                PropertyEditorWindow.Submitted += (_, _) =>
+                PropertyEditorWindow.Submitted += async (_, _) =>
                 {
-                    new FindLightBeads(ImageContext, DrawContext).Execute(config, new RoiRect());
+                    await new FindLightBeads(ImageContext, DrawContext).ExecuteAsync(config, new RoiRect());
                 };
                 PropertyEditorWindow.ShowDialog();
             });

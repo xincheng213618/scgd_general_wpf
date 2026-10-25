@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
@@ -9,6 +10,9 @@ namespace FlowEngineLib;
 
 public class STNodeEditText<T> : STNodeControl
 {
+    public override STNodePreviewText CapturePreviewText(IReadOnlyDictionary<string, byte[]> savedProperties)
+        => new(DisplayRectangle, Text, Owner?.ReadPreviewValue(Text, savedProperties) ?? "—");
+
 	private T _Value;
 
 	private bool _IsLang;

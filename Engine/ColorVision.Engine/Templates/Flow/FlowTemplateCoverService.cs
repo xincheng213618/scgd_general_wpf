@@ -1,15 +1,11 @@
 using ColorVision.Database;
-using ColorVision.Engine.FlowProcessing.Compilation;
 using log4net;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
@@ -21,26 +17,27 @@ internal sealed class FlowTemplateCoverService
 {
     private static readonly ILog log = LogManager.GetLogger(typeof(FlowTemplateCoverService));
     private static readonly SemaphoreSlim RenderGate = new(1, 1);
-    private const int RendererVersion = 1;
+    private const int RendererVersion = 2;
     private const int MemoryCoverLimit = 64;
     internal const int PixelWidth = 640;
     internal const int PixelHeight = 360;
     internal static FlowTemplateCoverService Shared { get; } = new(LocalTemplateStore.DefaultDatabasePath);
     private readonly string databasePath;
     private readonly object memoryLock = new();
-    private readonly Dictionary<string, LinkedListNode<(string Data, BitmapSource Image)>> memoryCovers = new(StringComparer.Ordinal);
-    private readonly LinkedList<(string Data, BitmapSource Image)> memoryOrder = new();
+    private readonly Dictionary<(string Data, string Style), LinkedListNode<((string Data, string Style) Key, BitmapSource Image)>> memoryCovers = new();
+    private readonly LinkedList<((string Data, string Style) Key, BitmapSource Image)> memoryOrder = new();
     internal string DatabasePath => databasePath;
 
     internal FlowTemplateCoverService(string databasePath) => this.databasePath = Path.GetFullPath(databasePath);
 
-    internal bool TryGetCached(string dataBase64, out BitmapSource? image)
+    internal bool TryGetCached(string dataBase64, out BitmapSource? image, FlowTemplateCoverStyle? style = null)
     {
         image = null;
         if (string.IsNullOrEmpty(dataBase64)) return true;
+        var key = (dataBase64, (style ?? FlowTemplateCoverStyle.Current).CacheKey);
         lock (memoryLock)
         {
-            if (!memoryCovers.TryGetValue(dataBase64, out var entry)) return false;
+            if (!memoryCovers.TryGetValue(key, out var entry)) return false;
             memoryOrder.Remove(entry);
             memoryOrder.AddFirst(entry);
             image = entry.Value.Image;
@@ -48,26 +45,28 @@ internal sealed class FlowTemplateCoverService
         }
     }
 
-    private BitmapSource Remember(string dataBase64, BitmapSource image)
+    private BitmapSource Remember(string dataBase64, BitmapSource image, FlowTemplateCoverStyle style)
     {
+        var key = (dataBase64, style.CacheKey);
         lock (memoryLock)
         {
-            if (memoryCovers.Remove(dataBase64, out var previous)) memoryOrder.Remove(previous);
-            memoryCovers.Add(dataBase64, memoryOrder.AddFirst((dataBase64, image)));
+            if (memoryCovers.Remove(key, out var previous)) memoryOrder.Remove(previous);
+            memoryCovers.Add(key, memoryOrder.AddFirst((key, image)));
             if (memoryCovers.Count > MemoryCoverLimit)
             {
-                memoryCovers.Remove(memoryOrder.Last!.Value.Data);
+                memoryCovers.Remove(memoryOrder.Last!.Value.Key);
                 memoryOrder.RemoveLast();
             }
         }
         return image;
     }
 
-    internal async Task<BitmapSource?> LoadAsync(string dataBase64, CancellationToken cancellationToken)
+    internal async Task<BitmapSource?> LoadAsync(string dataBase64, CancellationToken cancellationToken, FlowTemplateCoverStyle? style = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(dataBase64)) return null;
-        if (TryGetCached(dataBase64, out var image)) return image;
+        style ??= FlowTemplateCoverStyle.Current;
+        if (TryGetCached(dataBase64, out var image, style)) return image;
         await RenderGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -75,10 +74,13 @@ internal sealed class FlowTemplateCoverService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 // Another visible tile may have finished the same content while this request waited.
-                if (TryGetCached(dataBase64, out var ready)) return ready;
+                if (TryGetCached(dataBase64, out var ready, style)) return ready;
                 byte[] data = Convert.FromBase64String(dataBase64);
                 if (data.Length == 0) return null;
-                string hash = Convert.ToHexString(SHA256.HashData(data));
+                using var keyHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                keyHash.AppendData(data);
+                keyHash.AppendData(Encoding.UTF8.GetBytes(style.CacheKey));
+                string hash = Convert.ToHexString(keyHash.GetHashAndReset());
                 try
                 {
                     using var db = Open();
@@ -86,12 +88,12 @@ internal sealed class FlowTemplateCoverService
                     command.CommandText = "SELECT png FROM flow_template_covers WHERE content_hash=$hash AND renderer_version=$version";
                     command.Parameters.AddWithValue("$hash", hash);
                     command.Parameters.AddWithValue("$version", RendererVersion);
-                    if (command.ExecuteScalar() is byte[] cached) return Remember(dataBase64, Decode(cached));
+                    if (command.ExecuteScalar() is byte[] cached) return Remember(dataBase64, Decode(cached), style);
                 }
                 catch (Exception ex) { log.Warn("Reading flow cover cache failed; regenerating the preview.", ex); }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                byte[] png = Render(data);
+                byte[] png = FlowTemplateCoverRenderer.Render(data, style);
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
@@ -111,7 +113,7 @@ internal sealed class FlowTemplateCoverService
                     command.ExecuteNonQuery();
                 }
                 catch (Exception ex) { log.Warn("Writing flow cover cache failed; showing the in-memory preview.", ex); }
-                return Remember(dataBase64, Decode(png));
+                return Remember(dataBase64, Decode(png), style);
             }, cancellationToken).ConfigureAwait(false);
         }
         finally { RenderGate.Release(); }
@@ -149,62 +151,4 @@ internal sealed class FlowTemplateCoverService
         return image;
     }
 
-    internal static byte[] Render(byte[] data)
-    {
-        // The catalog projection reads saved geometry and edges without restoring node
-        // properties, connecting live options, or calling OnEditorLoadCompleted.
-        var projection = new FlowCanvasCatalogBuilder().Build(data);
-        var layout = projection.SemanticDocument.Layout.Nodes;
-        using var bitmap = new Bitmap(PixelWidth, PixelHeight);
-        using var graphics = Graphics.FromImage(bitmap);
-        graphics.Clear(Color.FromArgb(29, 32, 37));
-        graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        using var gridPen = new Pen(Color.FromArgb(38, 42, 48));
-        for (int x = 0; x < PixelWidth; x += 20) graphics.DrawLine(gridPen, x, 0, x, PixelHeight);
-        for (int y = 0; y < PixelHeight; y += 20) graphics.DrawLine(gridPen, 0, y, PixelWidth, y);
-        if (layout.Count > 0)
-        {
-            double left = layout.Min(node => node.X), top = layout.Min(node => node.Y);
-            double width = Math.Max(1, layout.Max(node => node.X + node.Width) - left);
-            double height = Math.Max(1, layout.Max(node => node.Y + node.Height) - top);
-            double scale = Math.Min(1.5, Math.Min((PixelWidth - 40) / width, (PixelHeight - 40) / height));
-            var rectangles = layout.ToDictionary(node => node.NodeId, node => new RectangleF(
-                (float)((node.X - left) * scale + (PixelWidth - width * scale) / 2),
-                (float)((node.Y - top) * scale + (PixelHeight - height * scale) / 2),
-                (float)(node.Width * scale), (float)(node.Height * scale)));
-            using var edgePen = new Pen(Color.FromArgb(104, 182, 114), 1.5f);
-            foreach (var edge in projection.SemanticDocument.Edges)
-            {
-                var source = rectangles[edge.SourceNodeId];
-                var target = rectangles[edge.TargetNodeId];
-                var a = new PointF(source.Right, source.Top + source.Height / 2);
-                var b = new PointF(target.Left, target.Top + target.Height / 2);
-                float bend = Math.Max(12, Math.Abs(b.X - a.X) / 2);
-                graphics.DrawBezier(edgePen, a, new PointF(a.X + bend, a.Y), new PointF(b.X - bend, b.Y), b);
-            }
-            var labels = projection.SearchDocuments.ToDictionary(node => node.SourceNodeGuid.ToString("D"));
-            using var bodyBrush = new SolidBrush(Color.FromArgb(59, 63, 70));
-            using var font = new Font("Microsoft YaHei UI", Math.Max(7, (float)(10 * scale)), GraphicsUnit.Pixel);
-            using var format = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap, LineAlignment = StringAlignment.Center };
-            foreach (var node in projection.SemanticDocument.Nodes)
-            {
-                var rect = rectangles[node.NodeId];
-                graphics.FillRectangle(bodyBrush, rect);
-                Color color = node.TypeKey.Contains("Start", StringComparison.OrdinalIgnoreCase) ? Color.FromArgb(168, 130, 29)
-                    : node.TypeKey.Contains("End", StringComparison.OrdinalIgnoreCase) ? Color.FromArgb(53, 137, 73)
-                    : Color.FromArgb(48, 111, 177);
-                using var titleBrush = new SolidBrush(color);
-                var titleRect = new RectangleF(rect.X, rect.Y, rect.Width, Math.Min(rect.Height, Math.Max(10, (float)(22 * scale))));
-                graphics.FillRectangle(titleBrush, titleRect);
-                if (rect.Width < 14) continue;
-                labels.TryGetValue(node.NodeId, out var label);
-                string title = label?.DisplayName ?? label?.Title ?? node.TypeKey.Split('.').Last();
-                titleRect.Inflate(-3, 0);
-                graphics.DrawString(title, font, Brushes.White, titleRect, format);
-            }
-        }
-        using var output = new MemoryStream();
-        bitmap.Save(output, ImageFormat.Png);
-        return output.ToArray();
-    }
 }

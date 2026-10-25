@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.UI;
 using log4net;
 using System;
@@ -31,6 +32,9 @@ public partial class TemplateBrowserWindow : Window
     private const string DragFormat = "ColorVision.TemplateBrowser.Template";
     private readonly ITemplate template;
     private readonly TemplateBrowserOptions options;
+    private readonly TemplateSetting settings;
+    private readonly ThemeManager themeManager;
+    private readonly FlowEditorSettings? editorSettings;
     private IEnumerable<TemplateBase> SourceItems => template.ItemsSource.Cast<TemplateBase>();
     private readonly ListCollectionView items;
     private readonly ObservableCollection<TemplateBase> browserItems;
@@ -43,11 +47,15 @@ public partial class TemplateBrowserWindow : Window
     private Point dragStart;
     private TemplateBase? dragItem;
     internal FlowTemplateCoverService CoverService { get; }
+    internal Task PreviewTask { get; private set; } = Task.CompletedTask;
 
-    internal TemplateBrowserWindow(ITemplate template, int selectedIndex, TemplateBrowserOptions options, FlowTemplateCoverService coverService)
+    internal TemplateBrowserWindow(ITemplate template, int selectedIndex, TemplateBrowserOptions options, FlowTemplateCoverService coverService, TemplateSetting? settings = null)
     {
         this.options = options;
         this.template = template;
+        this.settings = settings ?? TemplateSetting.Instance;
+        themeManager = ThemeManager.Current;
+        editorSettings = ConfigService.Instance?.GetRequiredService<FlowEditorSettings>();
         CoverService = coverService;
         template.Load();
         // Reverse only the browser projection; shared picker indexes and local negative IDs retain their meaning.
@@ -62,9 +70,11 @@ public partial class TemplateBrowserWindow : Window
         SearchPlaceholder.Text = string.Format(EngineResources.TemplateBrowserSearch, options.Label);
         System.Windows.Automation.AutomationProperties.SetName(SearchBox, SearchPlaceholder.Text);
         Title = template.Title;
-        TemplateList.ItemTemplate = (DataTemplate)Resources[options.HasCovers ? "FlowTile" : "PoiTile"];
         TemplateList.ItemsSource = items;
         TemplateList.SelectedItem = SourceItems.ElementAtOrDefault(selectedIndex);
+        ApplyViewMode(options.HasCovers ? this.settings.FlowBrowserListView : this.settings.PoiBrowserListView);
+        PreviewButton.IsChecked = false;
+        ApplyPreviewVisibility();
         ((INotifyCollectionChanged)items).CollectionChanged += Items_CollectionChanged;
         ((INotifyCollectionChanged)template.ItemsSource).CollectionChanged += Source_CollectionChanged;
         foreach (var item in browserItems) item.PropertyChanged += Item_PropertyChanged;
@@ -84,13 +94,13 @@ public partial class TemplateBrowserWindow : Window
             if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control) { SearchBox.Focus(); e.Handled = true; }
         };
         TemplateList.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((_, _) => { UpdateTileSize(); QueueCoverRefresh(); }));
-        TemplateList.SelectionChanged += (_, _) => UpdateStatus();
+        TemplateList.SelectionChanged += (_, _) => { UpdateStatus(); RefreshPreview(); };
         TemplateList.SizeChanged += (_, _) =>
         {
             UpdateTileSize();
             QueueCoverRefresh();
         };
-        Activated += (_, _) => QueueCoverRefresh();
+        Activated += (_, _) => { QueueCoverRefresh(); RefreshPreview(); };
         Loaded += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
         {
             if (isClosed) return;
@@ -98,29 +108,104 @@ public partial class TemplateBrowserWindow : Window
             QueueCoverRefresh();
         });
         Closing += Window_Closing;
+        themeManager.CurrentUIThemeChanged += PreviewThemeChanged;
+        if (editorSettings != null) editorSettings.PropertyChanged += PreviewSettingsChanged;
         Closed += (_, _) =>
         {
             isClosed = true;
+            themeManager.CurrentUIThemeChanged -= PreviewThemeChanged;
+            if (editorSettings != null) editorSettings.PropertyChanged -= PreviewSettingsChanged;
             ((INotifyCollectionChanged)items).CollectionChanged -= Items_CollectionChanged;
             ((INotifyCollectionChanged)template.ItemsSource).CollectionChanged -= Source_CollectionChanged;
             foreach (var item in browserItems) item.PropertyChanged -= Item_PropertyChanged;
             foreach (var item in renamed) item.IsEditMode = false;
             foreach (var cover in covers.ToArray()) cover.Cancel();
+            PreviewContent.Cancel();
             // Reload shared templates after the manager closes.
             try { template.Load(); }
             catch (Exception ex) { log.Warn("Reloading templates after closing the manager failed.", ex); }
         };
     }
 
+    private void PreviewThemeChanged(Theme _) => RefreshPreviewStyle();
+    private void PreviewSettingsChanged(object? sender, PropertyChangedEventArgs e) => RefreshPreviewStyle();
+    private void RefreshPreviewStyle()
+    {
+        if (!options.HasCovers || isClosed) return;
+        if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(RefreshPreviewStyle); return; }
+        QueueCoverRefresh();
+        if (PreviewButton.IsChecked == true) RefreshPreview();
+    }
+
     private void UpdateTileSize()
     {
         double available = FindChild<ScrollContentPresenter>(TemplateList)?.ActualWidth ?? TemplateList.ActualWidth;
         if (available <= 0) return;
+        if (TemplateList.View is GridView view)
+        {
+            view.Columns[2].Width = Math.Max(140, available - 150);
+            return;
+        }
         int columns = Math.Max(1, (int)(available / (options.HasCovers ? 220 : 144)));
         double width = Math.Floor(available / columns) - 8;
         if (Math.Abs(TileWidth - width) < 0.5) return;
         TileWidth = Math.Max(options.HasCovers ? 160 : 120, width);
         CoverHeight = (TileWidth - 14) * 9 / 16;
+    }
+
+    private void ViewMode_Click(object sender, RoutedEventArgs e) => ApplyViewMode(ReferenceEquals(sender, ListViewButton));
+
+    private void ApplyViewMode(bool useList)
+    {
+        var selected = Selected;
+        SetDropTarget(null);
+        CardsViewButton.IsChecked = !useList;
+        ListViewButton.IsChecked = useList;
+        if (options.HasCovers) settings.FlowBrowserListView = useList;
+        else settings.PoiBrowserListView = useList;
+        if (useList)
+        {
+            TemplateList.ClearValue(TemplateProperty);
+            TemplateList.ClearValue(ItemsControl.ItemsPanelProperty);
+            TemplateList.ClearValue(ItemsControl.ItemTemplateProperty);
+            TemplateList.ItemContainerStyle = (Style)Resources["TemplateRowItem"];
+            TemplateList.View = (GridView)Resources["TemplateDetailsView"];
+        }
+        else
+        {
+            TemplateList.View = null;
+            TemplateList.ItemContainerStyle = (Style)Resources["TemplateTileItem"];
+            TemplateList.ItemTemplate = (DataTemplate)Resources[options.HasCovers ? "FlowTile" : "PoiTile"];
+            TemplateList.ItemsPanel = (ItemsPanelTemplate)Resources["TemplateTilePanel"];
+            TemplateList.Template = (ControlTemplate)Resources["TemplateTileList"];
+        }
+        ScrollViewer.SetCanContentScroll(TemplateList, useList);
+        ScrollViewer.SetHorizontalScrollBarVisibility(TemplateList, useList ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled);
+        TemplateList.SelectedItem = selected;
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+        {
+            if (isClosed) return;
+            UpdateTileSize();
+            if (Selected != null) TemplateList.ScrollIntoView(Selected);
+            QueueCoverRefresh();
+        });
+    }
+
+    private void Preview_Click(object sender, RoutedEventArgs e) => ApplyPreviewVisibility();
+
+    private void ApplyPreviewVisibility()
+    {
+        bool show = PreviewButton.IsChecked == true;
+        PreviewPane.Visibility = PreviewSplitter.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        PreviewColumn.MinWidth = show ? 220 : 0;
+        PreviewColumn.Width = show ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        RefreshPreview();
+    }
+
+    private void RefreshPreview()
+    {
+        if (isClosed || PreviewButton.IsChecked != true) { PreviewContent.Cancel(); return; }
+        PreviewTask = PreviewContent.ShowAsync(Selected, CoverService);
     }
 
     private async void Window_Closing(object? sender, CancelEventArgs e)
@@ -168,6 +253,8 @@ public partial class TemplateBrowserWindow : Window
     private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(TemplateBase.IsSelected) or nameof(TemplateBase.Key)) UpdateStatus();
+        if (e.PropertyName == nameof(TemplateBase.Key) && ReferenceEquals(sender, Selected)) PreviewContent.SetTitle(Selected?.Key);
+        if (e.PropertyName == nameof(TemplateBase.Id) && ReferenceEquals(sender, Selected)) RefreshPreview();
     }
 
     private void UpdateStatus()

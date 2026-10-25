@@ -4,6 +4,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Browser"
         xmlns:flow="clr-namespace:ColorVision.Engine.Templates.Flow"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         xmlns:commands="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
         Width="940" Height="660" MinWidth="640" MinHeight="420" ShowInTaskbar="False"
         Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
@@ -12,6 +13,28 @@
             <Setter Property="Height" Value="32"/>
             <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Margin" Value="6,0,0,0"/>
+        </Style>
+        <Style x:Key="BrowserViewToggle" TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonDefault}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <DataTemplate x:Key="TemplateName">
             <Grid>
@@ -29,6 +52,21 @@
             <MenuItem Header="{x:Static properties:Resources.CreateCopy}" Click="Copy_Click"/>
             <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete"/>
         </ContextMenu>
+        <Style x:Key="TemplateRowItem" TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ContextMenu" Value="{StaticResource TemplateContextMenu}"/>
+            <Style.Triggers>
+                <Trigger Property="Tag" Value="SwapTarget"><Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
+            </Style.Triggers>
+        </Style>
+        <GridView x:Key="TemplateDetailsView" AllowsColumnReorder="False">
+            <GridViewColumn Header="{x:Static properties:Resources.Choice}" Width="54">
+                <GridViewColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsSelected}" ToolTip="{x:Static properties:Resources.Choice}"/></DataTemplate></GridViewColumn.CellTemplate>
+            </GridViewColumn>
+            <GridViewColumn Header="{x:Static properties:Resources.SerialNumber1}" Width="80" DisplayMemberBinding="{Binding Id}"/>
+            <GridViewColumn Header="{x:Static properties:Resources.Name}" Width="360" CellTemplate="{StaticResource TemplateName}"/>
+        </GridView>
         <Style x:Key="TemplateTileItem" TargetType="ListViewItem">
             <Setter Property="Width" Value="{Binding TileWidth,RelativeSource={RelativeSource AncestorType=local:TemplateBrowserWindow}}"/>
             <Setter Property="Margin" Value="4,4,4,8"/>
@@ -157,7 +195,8 @@
             </StackPanel>
         </DockPanel>
         <Grid Grid.Row="1" Margin="0,0,0,12">
-            <Border Height="34" MaxWidth="420" HorizontalAlignment="Left" Width="{Binding ActualWidth,RelativeSource={RelativeSource AncestorType=Grid}}"
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <Border Height="34" HorizontalAlignment="Stretch" Margin="0,0,8,0"
                     Background="{DynamicResource ButtonBackground}" BorderThickness="1" CornerRadius="5">
                 <Border.Style><Style TargetType="Border"><Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
                     <Style.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger></Style.Triggers>
@@ -180,8 +219,24 @@
                     </Button>
                 </Grid>
             </Border>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ToggleButton x:Name="CardsViewButton" Style="{StaticResource BrowserViewToggle}" Click="ViewMode_Click"
+                              ToolTip="{engine:EngineLang TemplateBrowserCards}" AutomationProperties.Name="{engine:EngineLang TemplateBrowserCards}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang TemplateBrowserCards}"/></StackPanel>
+                </ToggleButton>
+                <ToggleButton x:Name="ListViewButton" Style="{StaticResource BrowserViewToggle}" Click="ViewMode_Click"
+                              ToolTip="{engine:EngineLang TemplateBrowserList}" AutomationProperties.Name="{engine:EngineLang TemplateBrowserList}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang TemplateBrowserList}"/></StackPanel>
+                </ToggleButton>
+                <ToggleButton x:Name="PreviewButton" Style="{StaticResource BrowserViewToggle}" Click="Preview_Click"
+                              ToolTip="{engine:EngineLang TemplateBrowserPreview}" AutomationProperties.Name="{engine:EngineLang TemplateBrowserPreview}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang TemplateBrowserPreview}"/></StackPanel>
+                </ToggleButton>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="2*" MinWidth="200"/><ColumnDefinition Width="Auto"/><ColumnDefinition x:Name="PreviewColumn" Width="0"/></Grid.ColumnDefinitions>
+            <Grid>
             <ListView x:Name="TemplateList" Style="{StaticResource ListView.Small}" ItemContainerStyle="{StaticResource TemplateTileItem}"
                       Template="{StaticResource TemplateTileList}" ItemsPanel="{StaticResource TemplateTilePanel}"
                       BorderThickness="0" ScrollViewer.CanContentScroll="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -189,6 +244,11 @@
                       PreviewMouseLeftButtonDown="TemplateList_MouseDown" PreviewMouseMove="TemplateList_MouseMove" DragOver="TemplateList_DragOver" DragLeave="TemplateList_DragLeave" Drop="TemplateList_Drop"/>
             <TextBlock x:Name="EmptyText" Text="{x:Static properties:Resources.TemplateBrowserNoMatches}" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource GlobalTextBrush}" IsHitTestVisible="False"/>
+            </Grid>
+            <GridSplitter x:Name="PreviewSplitter" Grid.Column="1" Width="8" HorizontalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Visibility="Collapsed" Background="Transparent"/>
+            <Border x:Name="PreviewPane" Grid.Column="2" Visibility="Collapsed" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="1,0,0,0" Padding="14,0,0,0">
+                <local:TemplateBrowserPreview x:Name="PreviewContent"/>
+            </Border>
         </Grid>
         <Border Grid.Row="3" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
             <Grid>

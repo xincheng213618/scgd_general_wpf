@@ -17,11 +17,14 @@ namespace FlowEngineLib;
     Notes = "本地分支读取当前内存帧或带校正参数的 RAW，不要求生成 CVCIE 文件；过滤、修正、亚像素和文件输出设置保留但不参与本地测量。")]
 public class POINode : CVBaseServerNode
 {
-	public override bool RequiresRemoteService => !UsesLocalCamera();
+	private bool HasLocalPointSource => GetAllInputOptions().FirstOrDefault()?.GetConnectedOption()
+		.Any(option => option.Owner is LocalLightBeadsNode) == true;
+
+	public override bool RequiresRemoteService => !HasLocalPointSource && !UsesLocalCamera();
 
 	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request)
 	{
-		if (!UsesLocalCamera()) return null;
+		if (!HasLocalPointSource && !UsesLocalCamera()) return null;
 		POIDataParam data = (POIDataParam)request.Data;
 		return new LocalPoiNode { POITempName = data.TemplateParam?.Name ?? string.Empty }
 			.CreateCompatibilityExecution(request, data.ImgFileName);

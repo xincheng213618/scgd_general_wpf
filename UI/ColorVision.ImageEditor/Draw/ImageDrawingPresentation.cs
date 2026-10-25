@@ -96,7 +96,7 @@ namespace ColorVision.ImageEditor.Draw
             _oldZoomRatio = zoomRatio;
             double scale = GetScale();
             _canvas.Scale = scale;
-            if (_config.IsLayoutUpdated)
+            if (_config.IsLayoutUpdated && _canvas.Visuals.Any(visual => visual is ILayoutScaleDrawingVisual))
             {
                 _layoutTimer.Stop();
                 _layoutTimer.Start();

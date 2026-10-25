@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.UI.Tests;
 
@@ -32,9 +33,10 @@ public sealed class FlowTemplateBrowserOrderTests
             template.Items.Add(last);
             var service = new FlowTemplateCoverService(Path.Combine(Directory.CreateTempSubdirectory("ColorVision-browser-order-").FullName, "covers.db"));
             TemplateBrowserWindow? window = null;
+            var settings = new TemplateSetting();
             try
             {
-                window = new TemplateBrowserWindow(template, 0, new TemplateBrowserOptions("Test", covers, _ => { }), service);
+                window = new TemplateBrowserWindow(template, 0, new TemplateBrowserOptions("Test", covers, _ => { }), service, settings);
                 var list = (ListView)window.FindName("TemplateList");
                 var search = (TextBox)window.FindName("SearchBox");
                 Assert.Equal(new[] { last, middle, first }, list.Items.Cast<TemplateBase>());
@@ -44,6 +46,13 @@ public sealed class FlowTemplateBrowserOrderTests
                 search.Text = "Match";
                 Assert.Equal(new[] { last, first }, list.Items.Cast<TemplateBase>());
                 list.SelectedItem = last;
+                first.IsSelected = true;
+                ((ToggleButton)window.FindName("ListViewButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.IsType<GridView>(list.View);
+                Assert.Same(last, list.SelectedItem);
+                Assert.True(first.IsSelected);
+                Assert.Equal("Match", search.Text);
+                Assert.Equal(new[] { last, first }, list.Items.Cast<TemplateBase>());
                 window.OpenSelected();
                 Assert.Same(last, template.Opened);
 
@@ -61,9 +70,15 @@ public sealed class FlowTemplateBrowserOrderTests
                 Assert.Equal(new[] { added, first, middle }, list.Items.Cast<TemplateBase>());
 
                 window.Close();
-                window = new TemplateBrowserWindow(template, 0, new TemplateBrowserOptions("Test", covers, _ => { }), service);
+                window = new TemplateBrowserWindow(template, 0, new TemplateBrowserOptions("Test", covers, _ => { }), service, settings);
                 list = (ListView)window.FindName("TemplateList");
+                Assert.IsType<GridView>(list.View);
                 Assert.Equal(new[] { added, first, middle }, list.Items.Cast<TemplateBase>());
+                var selected = list.SelectedItem;
+                ((ToggleButton)window.FindName("CardsViewButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Assert.Null(list.View);
+                Assert.Same(selected, list.SelectedItem);
+                Assert.True(first.IsSelected);
             }
             finally
             {

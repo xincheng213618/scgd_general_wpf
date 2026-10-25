@@ -58,7 +58,7 @@ public sealed class FlowTemplatePresetTests
                 if (node is LocalFindLuminousAreaNode luminous) Assert.Empty(luminous.SavePOITempName);
                 if (node is LocalMtfNode mtf) Assert.Equal(StripeMtfPattern.FourPart, StripeMtfParameters.FromJson(mtf.ParameterJson).Pattern);
             }
-            byte[] png = FlowTemplateCoverService.Render(Convert.FromBase64String(draft.DataBase64));
+            byte[] png = FlowTemplateCoverRenderer.Render(Convert.FromBase64String(draft.DataBase64), FlowTemplateCoverStyle.Current);
             Assert.Equal(new byte[] { 137, 80, 78, 71 }, png.Take(4));
             Assert.NotEmpty(preset.Setup);
         });

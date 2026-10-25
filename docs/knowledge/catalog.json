@@ -1026,8 +1026,13 @@
       "knowledge_id": "algorithms.local-native-analysis",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。",
+      "summary": "本地灯珠完整网格、不亮/偏暗坐标、Flow 内存 POI 与批量绘制；以及 Ghost、旋转模板和双目标定融合的操作与限制。",
       "aliases": [
+        "灯珠不良",
+        "坏点坐标",
+        "LightBeadsInspector",
+        "LocalLightBeadsNode",
+        "DensePointVisual",
         "FindLightBeads",
         "M_FindLightBeads",
         "FindLightBeadsConfig",
@@ -1054,6 +1059,15 @@
         "缺失数量"
       ],
       "code_paths": [
+        "UI/ColorVision.Core/LightBeadsDetection.cs",
+        "UI/ColorVision.Core/LightBeadsInspection.cs",
+        "UI/ColorVision.ImageEditor/Draw/DensePointVisual.cs",
+        "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/LightBeadsResultWindow.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalLightBeadsNode.cs",
+        "Engine/ColorVision.Engine/Services/POI/LocalFlowPoiPointSet.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalPoiNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2",
@@ -1072,6 +1086,8 @@
         "Native/opencv_helper/exports/p2_export.cpp"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalLightBeadsTests.cs",
+        "Test/ColorVision.UI.Tests/LightBeadsInspectionTests.cs",
         "Test/opencv_helper_test/test_p2_algorithms.cpp"
       ],
       "related": [
@@ -1081,6 +1097,7 @@
         "algorithms.led"
       ],
       "code_scopes": [
+        "Engine/ColorVision.Engine",
         "Native/include",
         "Native/opencv_helper",
         "UI/ColorVision.Core",

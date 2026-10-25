@@ -11,7 +11,7 @@ using System.Windows.Input;
 
 namespace ST.Library.UI.NodeEditor;
 
-public abstract class STNode : INotifyPropertyChanged
+public abstract partial class STNode : INotifyPropertyChanged
 {
 	private const int DefaultTitleHeight = 26;
 	private const int TitleHorizontalPadding = 40;

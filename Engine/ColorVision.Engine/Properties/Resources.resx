@@ -4497,4 +4497,25 @@
   <data name="请先关闭相机节点的自动曝光，再设置逐轮曝光。" xml:space="preserve"><value>请先关闭相机节点的自动曝光，再设置逐轮曝光。</value></data>
   <data name="Flow_PreProcess_AddAction" xml:space="preserve"><value>添加预处理动作</value></data>
   <data name="Flow_PreProcess_ChooseActionHint" xml:space="preserve"><value>选择要添加的动作，添加后在右侧设置参数。已启用的动作会在流程启动前按列表顺序执行。</value></data>
+  <data name="TemplateBrowserCards" xml:space="preserve"><value>卡片</value></data>
+  <data name="TemplateBrowserList" xml:space="preserve"><value>列表</value></data>
+  <data name="TemplateBrowserPreview" xml:space="preserve"><value>预览</value></data>
+  <data name="TemplateBrowserSelectPreview" xml:space="preserve"><value>选择模板以查看预览和详细信息</value></data>
+  <data name="TemplateBrowserStorage" xml:space="preserve"><value>存储位置</value></data>
+  <data name="TemplateBrowserLocal" xml:space="preserve"><value>本地</value></data>
+  <data name="TemplateBrowserNodeCount" xml:space="preserve"><value>节点数</value></data>
+  <data name="TemplateBrowserEdgeCount" xml:space="preserve"><value>连接数</value></data>
+  <data name="TemplateBrowserRevision" xml:space="preserve"><value>修订版本</value></data>
+  <data name="TemplateBrowserCanvasSize" xml:space="preserve"><value>画布尺寸</value></data>
+  <data name="TemplateBrowserPointCount" xml:space="preserve"><value>点位数</value></data>
+  <data name="TemplateBrowserCircleCount" xml:space="preserve"><value>圆形区域</value></data>
+  <data name="TemplateBrowserRectangleCount" xml:space="preserve"><value>矩形区域</value></data>
+  <data name="TemplateBrowserPoiLayout" xml:space="preserve"><value>已保存的点位布局，不含背景图像</value></data>
+  <data name="TemplateBrowserDynamicPoi" xml:space="preserve"><value>动态点集：仅显示已保存点位，运行时点位可能不同</value></data>
+  <data name="TemplateBrowserPreviewFailed" xml:space="preserve"><value>预览暂不可用，仍可双击打开编辑器</value></data>
+  <data name="TemplateBrowserExecutionCount" xml:space="preserve"><value>执行次数</value></data>
+  <data name="TemplateBrowserExpectedTime" xml:space="preserve"><value>预计耗时</value></data>
+  <data name="TemplateBrowserNoData" xml:space="preserve"><value>暂无数据</value></data>
+  <data name="TemplateBrowserEstimateBasis" xml:space="preserve"><value>次数来自本机保留记录；预计耗时取当前版本最近 {0} 次正常完成记录的平均值。</value></data>
+  <data name="TemplateBrowserUsageScope" xml:space="preserve"><value>执行次数仅统计本机保留的运行记录。没有匹配当前版本的正常完成记录时，不估算耗时。</value></data>
 </root>

@@ -1,4 +1,5 @@
 using System;
+using ColorVision.ImageEditor.Draw;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -156,7 +157,7 @@ namespace ColorVision.ImageEditor.Output
             }
 
             DrawingGroup drawing = new();
-            DrawingGroup? visualDrawing = drawingVisual.Drawing;
+            DrawingGroup? visualDrawing = drawingVisual is DensePointVisual dense ? dense.FrozenDrawing : drawingVisual.Drawing;
             if (visualDrawing != null)
                 drawing.Children.Add(visualDrawing.CloneCurrentValue());
 

@@ -115,6 +115,8 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 `DockingTabBorder` 为顶部文档标签与底部工具标签绘制同一轮廓的上下镜像：远离面板的一端为凸圆角，连接面板的两侧为凹肩，选中标签与面板接缝处不重复描边。未选中标签绘制时，在连接面板的一侧留出 1 DIP 的主线区域，启用布局舍入时按当前 DPI 舍入该厚度，防止悬停底色覆盖主线；这只裁切装饰绘制，不缩小原生标签布局或命中区，也不改变选中标签的凹肩。标签贴靠标签栏首/尾边缘时，对应一侧不再向外绘制凹肩。关闭前方相邻标签或重排可能只移动标签而不改变其尺寸，因此仅已加载且选中的真实 `TabItem` 跟踪布局事件，比对贴边状态变化后才调用 `InvalidateVisual`，不在每次布局时重绘。凹肩可以绘制到布局矩形之外，但 `HitTestCore` 将命中范围限制在自身布局矩形内，不抢相邻标签的点击。
 
+文档内容外框的顶部两角默认使用 4 DIP 圆角，标签栏主线由同一外框绘制，避免直线覆盖圆角。`StableDocumentPaneTabPanel.IsSelectedTabAtStart` 根据实际可见标签的位置更新：选中标签贴靠左边时，只取消内容外框的左上圆角，让标签与外框连续衔接；选中其他位置的标签时，露出的左上角恢复圆角。标签溢出、关闭或重排后仍按可见位置判断，不依赖文档在模型中的索引。
+
 WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内容。`DockingSurfaceBorder` 在布局时按边框厚度、内边距、DPI 与圆角计算内轮廓，只裁切模板拥有的 `ContentPresenter` 或 `Grid`，避免方形内容覆盖面板圆角；不直接改写实际编辑器的 `Clip`。尺寸或圆角变化后重新计算该裁切。标题和浮窗按钮使用 Windows 系统字体 `Segoe Fluent Icons`，以 `Segoe MDL2 Assets` 为回退，图标字号为 12 DIP；停靠标题按钮提供 24×24 DIP 命中区，工具浮窗标题高度为 32 DIP、标题按钮为 28×28 DIP，均使用透明默认背景并只在悬停/按下时显示状态底色，文档标签关闭按钮单独使用 22×22 DIP。
 
 `ColorVision.Solution.Themes.AvalonDockTheme` 是主程序与 Spectrum 共用的主题入口，实际字典和三个标签/边框控件位于 `UI/ColorVision.Solution/Themes/`。主程序保留 `ColorVision.AvalonDockTheme` 包装、旧 `/ColorVision;component/Themes/` 字典入口及公开控件的类型转发，既有调用无需改成依赖 Spectrum；Spectrum 直接引用 Solution 公共库，不依赖主程序 EXE。该入口按“VS2013 基础字典 → `AvalonDockModernLight.xaml` / `AvalonDockModernDark.xaml` 调色板 → `AvalonDockModernTemplates.xaml` 模板”合并资源。VS2013 基础仍提供停靠菜单、命令和图标，不是更换停靠引擎。现代模板内合并保留原文件名的 `AvalonDockGripTemplates.xaml`；该文件现在承载无点状握柄的工具浮动窗口模板，并先合并上游 `Generic.xaml`。不要在现代模板之后再次合并上游通用字典，否则同名浮动窗口样式可能覆盖自定义模板。

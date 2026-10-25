@@ -10,6 +10,43 @@ namespace ColorVision.UI.Tests;
 public sealed class FlowTemplateCoverTests
 {
     [Fact]
+    public async Task ThemeSpecificCoversKeepSavedControlValuesAndPortGeometryWithoutLoadingRuntimeNodes()
+    {
+        string data = WpfTestHost.Invoke(() =>
+        {
+            using var editor = new STNodeEditor();
+            var first = new FlowCoverVisualTestNode();
+            var second = new FlowCoverVisualTestNode();
+            first.Create(); second.Create();
+            first.Left = 20; first.Top = 160;
+            second.Left = 330; second.Top = 20;
+            editor.Nodes.AddRange([first, second]);
+            Assert.Equal(ConnectionStatus.Connected, first.Output.ConnectOption(second.Inputs[1]));
+            var appearance = first.CapturePreviewAppearance(STNodeSavedState.Parse(first.GetSaveData()).Properties);
+            Assert.Equal("400", Assert.Single(appearance.Texts).Value);
+            Assert.True(appearance.Inputs[0].IsSingle);
+            Assert.False(appearance.Outputs[0].IsSingle);
+            Assert.Equal(System.Drawing.Color.Goldenrod, appearance.TitleColor);
+            return Convert.ToBase64String(editor.GetCanvasData());
+        });
+        var service = new FlowTemplateCoverService(NewCachePath());
+        var darkStyle = new FlowTemplateCoverStyle(STNodeVisualTheme.Dark, true, 10, 0.3f);
+        var lightStyle = darkStyle with { Theme = STNodeVisualTheme.Light };
+        var dark = await service.LoadAsync(data, CancellationToken.None, darkStyle);
+        var light = await service.LoadAsync(data, CancellationToken.None, lightStyle);
+        Assert.NotSame(dark, light);
+        Assert.True(service.TryGetCached(data, out var darkCached, darkStyle));
+        Assert.True(service.TryGetCached(data, out var lightCached, lightStyle));
+        Assert.Same(dark, darkCached);
+        Assert.Same(light, lightCached);
+        using var db = new SqliteConnection($"Data Source={service.DatabasePath};Pooling=False");
+        db.Open();
+        using var command = db.CreateCommand();
+        command.CommandText = "SELECT COUNT(DISTINCT hex(png)) FROM flow_template_covers";
+        Assert.Equal(2L, command.ExecuteScalar());
+    }
+
+    [Fact]
     public async Task CoverIsBoundedCachedAndChangesWhenSavedLayoutChangesWithoutLoadingRuntimeNodes()
     {
         string path = NewCachePath();
@@ -132,6 +169,25 @@ public sealed class FlowCoverTestNode : STNode
     {
         Input = InputOptions.Add("IN", typeof(string), true);
         Output = OutputOptions.Add("OUT", typeof(string), false);
+    }
+    public override void OnLoadNode(Dictionary<string, byte[]> properties) => throw new InvalidOperationException("Covers must not restore live node properties.");
+    protected override void OnEditorLoadCompleted() => throw new InvalidOperationException("Covers must not load a runtime editor.");
+}
+
+public sealed class FlowCoverVisualTestNode : STNode
+{
+    public STNodeOption[] Inputs { get; private set; } = [];
+    public STNodeOption Output { get; private set; } = null!;
+    [STNodeProperty("曝光", "曝光时间", true)]
+    public float ExpTime { get => 400; set => throw new InvalidOperationException("Preview must not call saved property setters."); }
+    protected override void OnCreate()
+    {
+        Title = "L/BV相机";
+        TitleColor = System.Drawing.Color.Goldenrod;
+        SetFixedSize(160, 90);
+        Inputs = [InputOptions.Add("IN_IMG", typeof(FlowEngineLib.Base.CVStartCFC), true), InputOptions.Add("IN_ROI", typeof(FlowEngineLib.Base.CVStartCFC), true)];
+        Output = OutputOptions.Add("OUT", typeof(FlowEngineLib.Base.CVStartCFC), false);
+        Controls.Add(new FlowEngineLib.STNodeEditText<float> { Text = "曝光:", Value = 100, DisplayRectangle = new System.Drawing.Rectangle(5, 42, 150, 18) });
     }
     public override void OnLoadNode(Dictionary<string, byte[]> properties) => throw new InvalidOperationException("Covers must not restore live node properties.");
     protected override void OnEditorLoadCompleted() => throw new InvalidOperationException("Covers must not load a runtime editor.");

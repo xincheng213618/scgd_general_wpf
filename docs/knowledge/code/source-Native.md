@@ -34,7 +34,7 @@ next: false
   本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
 - [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
+  本地灯珠完整网格、不亮/偏暗坐标、Flow 内存 POI 与批量绘制；以及 Ghost、旋转模板和双目标定融合的操作与限制。
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
   景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
@@ -65,7 +65,7 @@ next: false
   本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
 - [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
+  本地灯珠完整网格、不亮/偏暗坐标、Flow 内存 POI 与批量绘制；以及 Ghost、旋转模板和双目标定融合的操作与限制。
 
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
   CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。

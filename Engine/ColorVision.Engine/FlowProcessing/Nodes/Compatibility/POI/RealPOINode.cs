@@ -3,6 +3,7 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Calibration;
 using System;
+using System.Linq;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
@@ -18,11 +19,14 @@ namespace FlowEngineLib.Node.POI;
     Notes = "本地分支接收 CIE 或带校正参数的 RAW，保留 POI 类型和尺寸设置；忽略过滤、修正、二次修正文件、亚像素、文件输出、POI 新增和色温/波长开关，始终计算可用的色度指标。原服务分支仍发送全部原参数。")]
 public class RealPOINode : CVBaseServerNodeHub
 {
-	public override bool RequiresRemoteService => LocalCalibrationFlowRouting.FindForPoi(this)?.DisplayConfig.UseLocalCalibration != true;
+	private bool HasLocalPointSource => GetAllInputOptions().Skip(1).FirstOrDefault()?.GetConnectedOption()
+		.Any(option => option.Owner is LocalLightBeadsNode) == true;
+
+	public override bool RequiresRemoteService => !HasLocalPointSource && LocalCalibrationFlowRouting.FindForPoi(this)?.DisplayConfig.UseLocalCalibration != true;
 
 	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request)
 	{
-		if (LocalCalibrationFlowRouting.FindForPoi(this)?.DisplayConfig.UseLocalCalibration != true) return null;
+		if (!HasLocalPointSource && LocalCalibrationFlowRouting.FindForPoi(this)?.DisplayConfig.UseLocalCalibration != true) return null;
 		RealPOIData data = (RealPOIData)request.Data;
 		return new LocalRealPoiNode { DeviceCodeOverride = request.DeviceCode, PointTypeOverride = data.POITypeData }
 			.CreateCompatibilityExecution(request, data.ImgFileName, GetInputAction(0), GetInputAction(1));

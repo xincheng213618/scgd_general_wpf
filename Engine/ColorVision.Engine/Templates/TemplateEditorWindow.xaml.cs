@@ -24,6 +24,10 @@ namespace ColorVision.Engine.Templates
         private string _DefaultCreateTemplateName = Properties.Resources.DefaultCreateTemplateName;
 
         [Browsable(false)]
+        public bool FlowBrowserListView { get; set; }
+        [Browsable(false)]
+        public bool PoiBrowserListView { get; set; }
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 
