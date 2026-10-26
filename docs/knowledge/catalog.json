@@ -7,14 +7,8 @@
       "knowledge_id": "algorithms.arvr",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。",
+      "summary": "ARVR 远端模板与请求对应关系、结果版本及 SFR 曲线与 CSV 范围；本地条纹 MTF 另有独立主题。",
       "aliases": [
-        "条纹MTF",
-        "StripeMtfAnalyzer",
-        "ImageView MTF",
-        "H/V条纹",
-        "本地MTF",
-        "LocalMtfNode",
         "CV_Ali_calcMtf",
         "ARVR算法",
         "MTF SFR FOV模板对应哪个结果",
@@ -37,11 +31,6 @@
         "Sfr2PlotWindow"
       ],
       "code_paths": [
-        "UI/ColorVision.ImageEditor/Algorithms/Mtf",
-        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf",
-        "Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf",
         "Engine/ColorVision.Engine/Templates/Jsons/SFR2",
         "Engine/ColorVision.Engine/Templates/Jsons/Ghost2",
         "Engine/ColorVision.Engine/Templates/Jsons/MTF2",
@@ -62,7 +51,6 @@
         "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/StripeMtfLocatorTests.cs",
         "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"
       ],
       "related": [
@@ -71,13 +59,13 @@
         "algorithms.template-menus",
         "algorithms.find-cross",
         "algorithms.grid-distortion",
-        "engine.results"
+        "engine.results",
+        "algorithms.stripe-mtf"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
-        "Engine/cvColorVision",
-        "UI/ColorVision.ImageEditor"
+        "Engine/cvColorVision"
       ],
       "domain": "algorithms",
       "title": "ARVR 算法与模板",
@@ -182,12 +170,10 @@
       "knowledge_id": "algorithms.display-metrology",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。",
+      "summary": "本地显示图案计量的入口、共享输入与 RGB 套色、外部鬼影、屏体缺陷、灰尘、双目和 Eyebox 等口径；十字 RGB 与圆环鬼影另有独立主题。",
       "aliases": [
         "RGB套色",
         "RGB分通道",
-        "九点十字",
-        "RGB分离",
         "横向色差",
         "Eyebox",
         "眼盒",
@@ -199,33 +185,25 @@
         "全视场清晰度",
         "左右眼对准",
         "DisplayMetrologyProvider",
-        "generate_display_metrology_samples",
-        "圆环鬼影",
-        "LocalRingGhostNode",
-        "GMR1",
-        "GMR2"
+        "generate_display_metrology_samples"
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
-        "UI/ColorVision.ImageEditor/Algorithms/RingGhostOverlayRenderer.cs",
-        "Scripts/generate_display_metrology_samples.py",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRingGhostNode.cs",
-        "Engine/ColorVision.Engine/Templates/Jsons/RingGhost"
+        "Scripts/generate_display_metrology_samples.py"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs",
-        "Test/ColorVision.UI.Tests/RingGhostMeasurementTests.cs",
-        "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"
+        "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
       ],
       "related": [
         "algorithms.platform",
         "algorithms.local-native-analysis",
-        "algorithms.fov-local"
+        "algorithms.fov-local",
+        "algorithms.rgb-cross",
+        "algorithms.ring-ghost"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine",
         "Scripts",
         "UI/ColorVision.ImageEditor"
       ],
@@ -992,6 +970,69 @@
       "searchable": true
     },
     {
+      "knowledge_id": "algorithms.light-beads",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "灯珠亮点定位、完整规则网格与不亮偏暗判定，覆盖运行内存 POI、可选 CSV 及旧 native 暗区候选的限制。",
+      "aliases": [
+        "灯珠不良",
+        "坏点坐标",
+        "LightBeadsInspector",
+        "LocalLightBeadsNode",
+        "DensePointVisual",
+        "FindLightBeads",
+        "M_FindLightBeads",
+        "FindLightBeadsConfig",
+        "BlackCenters",
+        "MissingCount",
+        "本地灯珠检测",
+        "灯珠数量统计",
+        "缺失数量",
+        "灯珠定位算法原理",
+        "偏暗比例",
+        "标准行列数"
+      ],
+      "code_paths": [
+        "UI/ColorVision.Core/LightBeadsDetection.cs",
+        "UI/ColorVision.Core/LightBeadsInspection.cs",
+        "UI/ColorVision.ImageEditor/Draw/DensePointVisual.cs",
+        "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/LightBeadsResultWindow.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalLightBeadsNode.cs",
+        "Engine/ColorVision.Engine/Services/POI/LocalFlowPoiPointSet.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalPoiNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md",
+        "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs",
+        "Native/opencv_helper/algorithm.cpp",
+        "Native/opencv_helper/opencv_media_export.cpp",
+        "Native/include/opencv_media_export.h"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalLightBeadsTests.cs",
+        "Test/ColorVision.UI.Tests/LightBeadsInspectionTests.cs"
+      ],
+      "related": [
+        "flow.node-extension",
+        "algorithms.led",
+        "ui.image-editor",
+        "engine.native-integration"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Native/include",
+        "Native/opencv_helper",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "灯珠定位与完整网格判定",
+      "source": "docs/04-api-reference/algorithms/detectors/light-beads.md",
+      "url": "/04-api-reference/algorithms/detectors/light-beads",
+      "searchable": true
+    },
+    {
       "knowledge_id": "algorithms.line-fit",
       "knowledge_type": "reference",
       "status": "current",
@@ -1026,19 +1067,8 @@
       "knowledge_id": "algorithms.local-native-analysis",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "本地灯珠完整网格、不亮/偏暗坐标、Flow 内存 POI 与批量绘制；以及 Ghost、旋转模板和双目标定融合的操作与限制。",
+      "summary": "本地 Ghost、旋转模板匹配和双目标定融合的直接 native 操作、结果显示与生命周期限制；灯珠定位由独立主题维护。",
       "aliases": [
-        "灯珠不良",
-        "坏点坐标",
-        "LightBeadsInspector",
-        "LocalLightBeadsNode",
-        "DensePointVisual",
-        "FindLightBeads",
-        "M_FindLightBeads",
-        "FindLightBeadsConfig",
-        "BlackCenters",
-        "MissingCount",
-        "本地灯珠检测",
         "直接native分析",
         "P2",
         "GhostLocalAnalysis",
@@ -1054,24 +1084,10 @@
         "Ghost 本地分析",
         "设为旋转匹配模板",
         "运行融合",
-        "P2 复制结果",
-        "灯珠数量统计",
-        "缺失数量"
+        "P2 复制结果"
       ],
       "code_paths": [
-        "UI/ColorVision.Core/LightBeadsDetection.cs",
-        "UI/ColorVision.Core/LightBeadsInspection.cs",
-        "UI/ColorVision.ImageEditor/Draw/DensePointVisual.cs",
-        "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs",
-        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/LightBeadsResultWindow.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalLightBeadsNode.cs",
-        "Engine/ColorVision.Engine/Services/POI/LocalFlowPoiPointSet.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalPoiNode.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRealPoiNode.cs",
-        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs",
-        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2",
-        "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/EditorToolFactory.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
@@ -1081,30 +1097,27 @@
         "Native/include/algorithm.h",
         "Native/include/opencv_media_export.h",
         "Native/include/custom_structs.h",
-        "Native/opencv_helper/algorithm.cpp",
         "Native/opencv_helper/opencv_media_export.cpp",
         "Native/opencv_helper/exports/p2_export.cpp"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/LocalLightBeadsTests.cs",
-        "Test/ColorVision.UI.Tests/LightBeadsInspectionTests.cs",
         "Test/opencv_helper_test/test_p2_algorithms.cpp"
       ],
       "related": [
         "algorithms.platform",
         "ui.image-editor",
         "engine.native-integration",
-        "algorithms.led"
+        "algorithms.led",
+        "algorithms.light-beads"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine",
         "Native/include",
         "Native/opencv_helper",
         "UI/ColorVision.Core",
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "本地灯珠与 P2 分析",
+      "title": "本地 P2 分析",
       "source": "docs/04-api-reference/algorithms/local-native-analysis.md",
       "url": "/04-api-reference/algorithms/local-native-analysis",
       "searchable": true
@@ -1133,7 +1146,9 @@
         "Engine/ColorVision.Engine/PropertyEditor/LocalMatchingTemplatePropertiesEditor.cs",
         "UI/ColorVision.Core/TemplateMatching.cs",
         "UI/ColorVision.Core/TemplateMatchingFile.cs",
-        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2/TemplateMatchingWindow.xaml.cs"
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2/TemplateMatchingWindow.xaml.cs",
+        "Native/opencv_helper/algorithm/matching/rotated_template_matching.cpp",
+        "Native/opencv_helper/algorithm/matching/rotated_template_matching.h"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalTemplateMatchingTests.cs",
@@ -1147,6 +1162,7 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
+        "Native/opencv_helper",
         "UI/ColorVision.Core",
         "UI/ColorVision.ImageEditor"
       ],
@@ -1405,6 +1421,96 @@
       "searchable": true
     },
     {
+      "knowledge_id": "algorithms.rgb-cross",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地十字 RGB 三通道边缘测量、G 参考偏移、原图坐标与独立有效状态；像素结果不等同于已标定角度色差。",
+      "aliases": [
+        "十字RGB分离",
+        "九点十字",
+        "RGB分离",
+        "LocalRgbCrossNode",
+        "RgbCrossRegistrationParameters",
+        "RgbCrossMeasurementExporter",
+        "rToGMaximumEdge_px",
+        "bToGMaximumEdge_px"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRgbCross.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/RgbCrossMeasurementExporter.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationDraft.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationWindow.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRgbCrossNode.cs",
+        "Scripts/validate_rgb_cross.ps1"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalRgbCrossNodeTests.cs",
+        "Test/ColorVision.UI.Tests/LocalRgbCrossConfigurationTests.cs",
+        "Test/ColorVision.UI.Tests/RgbCrossProfileTests.cs",
+        "Test/ColorVision.UI.Tests/RgbCrossPoolingTests.cs",
+        "Test/ColorVision.UI.Tests/RgbCrossLocatorStatisticsTests.cs"
+      ],
+      "related": [
+        "algorithms.display-metrology",
+        "algorithms.find-cross",
+        "engine.results",
+        "flow.node-extension"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Scripts",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "十字 RGB 分离",
+      "source": "docs/04-api-reference/algorithms/detectors/rgb-cross.md",
+      "url": "/04-api-reference/algorithms/detectors/rgb-cross",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "algorithms.ring-ghost",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "完整圆环与偏心弱环的区域平均信号比、GMR 阶次及 Flow 正常未检出零值约定；不自动证明光路阶次或现场精度。",
+      "aliases": [
+        "圆环鬼影",
+        "LocalRingGhostNode",
+        "GMR1",
+        "GMR2",
+        "RingGhostMeasurementParameters",
+        "ring-ghost/1.0",
+        "平均信号比"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRingGhost.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRingGhostRefinement.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/DisplayRingGhostSaturation.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology/RingGhostMeasurementParameters.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/RingGhostOverlayRenderer.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRingGhostNode.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/RingGhost"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/RingGhostMeasurementTests.cs",
+        "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"
+      ],
+      "related": [
+        "algorithms.display-metrology",
+        "projects.arvr-pro-processes",
+        "engine.results",
+        "flow.node-extension"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "圆环鬼影",
+      "source": "docs/04-api-reference/algorithms/detectors/ring-ghost.md",
+      "url": "/04-api-reference/algorithms/detectors/ring-ghost",
+      "searchable": true
+    },
+    {
       "knowledge_id": "algorithms.roi-routes",
       "knowledge_type": "index",
       "status": "current",
@@ -1509,6 +1615,46 @@
       "title": "ROI 统计：区域、直方图与坏点候选",
       "source": "docs/02-developer-guide/core-concepts/roi-statistics-v1.md",
       "url": "/02-developer-guide/core-concepts/roi-statistics-v1",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "algorithms.stripe-mtf",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "ImageView 与 Flow 共用的本地条纹亮暗对比度：取样、四部定位、比例与百分数、输入限制及 MTF 2.0 结果兼容。",
+      "aliases": [
+        "条纹MTF",
+        "StripeMtfAnalyzer",
+        "ImageView MTF",
+        "H/V条纹",
+        "本地MTF",
+        "LocalMtfNode",
+        "MTF计算(V2)",
+        "StripeMtf.TrimmedHistogram/1"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/Mtf",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf",
+        "Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/StripeMtfLocatorTests.cs"
+      ],
+      "related": [
+        "algorithms.arvr",
+        "engine.results",
+        "flow.node-extension"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "本地条纹 MTF",
+      "source": "docs/04-api-reference/algorithms/detectors/stripe-mtf.md",
+      "url": "/04-api-reference/algorithms/detectors/stripe-mtf",
       "searchable": true
     },
     {
@@ -6084,7 +6230,10 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs",
         "Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs",
         "Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility",
+        "Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs",
+        "UI/ColorVision.UI.Desktop/Help"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
@@ -6093,7 +6242,8 @@
         "Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs",
         "Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs",
-        "Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs"
+        "Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs",
+        "Test/ColorVision.UI.Tests/AlgorithmHelpTests.cs"
       ],
       "related": [
         "platform.extensibility",
@@ -6104,7 +6254,8 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
-        "Engine/ST.Library.UI"
+        "Engine/ST.Library.UI",
+        "UI/ColorVision.UI.Desktop"
       ],
       "domain": "flow",
       "title": "FlowEngineLib 节点扩展",

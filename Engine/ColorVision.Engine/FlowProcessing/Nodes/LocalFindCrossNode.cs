@@ -433,6 +433,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_LocalAlgorithms", "十字定位", CategoryOrder = 9910, NodeOrder = 50)]
+    [FlowEngineLib.FlowNodeDocumentation("识别单个十字，输出中心、双轴旋转角及相对标准中心的水平和垂直倾角。",
+        Usage = "接入相机取图、校正或加载图片，配置名义方向、允许旋转偏差及焦距和像元尺寸；用搜索区域限定唯一十字。",
+        Notes = "标准中心默认取整幅图像中心，ROI 不改变光学基准。多候选、裁边或四臂证据不足时拒绝；兼容中心字段取整，倾角使用取整前的校正补偿中心。",
+        TopicId = "algorithms.find-cross")]
     public sealed class LocalFindCrossNode : LocalFlowNodeBase
     {
         internal const int DetectionFailureResultCode = -1;

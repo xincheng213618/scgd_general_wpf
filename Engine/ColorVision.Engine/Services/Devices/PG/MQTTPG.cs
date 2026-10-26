@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.PG
     };
 
 
-    public class MQTTPG : MQTTDeviceService<ConfigPG>
+    public partial class MQTTPG : MQTTDeviceService<ConfigPG>
     {
         public Dictionary<string, Dictionary<string, string>> PGCategoryLib { get; }
 

@@ -4,8 +4,8 @@ knowledge_type: "guide"
 status: "current"
 summary: "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。"
 aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode"]
-code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs","Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs","Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowLocalizationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs","Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs"]
+code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs","Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs","Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility","Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs","UI/ColorVision.UI.Desktop/Help"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowLocalizationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs","Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs","Test/ColorVision.UI.Tests/AlgorithmHelpTests.cs"]
 related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
 
@@ -34,6 +34,14 @@ Flow 节点建立在 `STNode` 和 `FlowEngineLib` 基类上。服务节点负责
 新建流程使用 Start（`MQTTStartNode`）。旧“手动开始”（`ManualFlowStartNode`）保留类型及端口用于已有流程加载和运行，不提供新建入口；Start 在纯本地流程中可由运行命令直接启动，外部 MQTT 触发和远端服务仍遵循各自的连接就绪要求。
 
 节点说明省略通用执行端口 `IN`、`OUT`、`OUT_START`，保留 `IN_IMG`、`IN_POI` 等具名数据入口；端口列表只显示方向和名称，不显示内部托管类型。此过滤仅用于说明，节点实际端口、连接和执行数据保持原样。
+
+需要公式、图示或交互讲解的节点，可在 `FlowNodeDocumentationAttribute.TopicId` 中填写既有知识主题 ID。说明页据此增加“查看算法原理”，由宿主打开可复用的离线帮助窗口；未设置 ID 的节点继续使用原说明。此元数据不进入节点运行参数或流程保存数据，FlowEngineLib 不依赖桌面浏览器实现。
+
+帮助内容维护在对应算法主题，生成的 HTML、公式和静态资源随 `Assets/Help/` 交付，节点仅保存主题关联，不复制长篇正文。窗口按需初始化 WebView2，在本地展示内容，并提供网站链接和打印入口；缺少主题或帮助文件时显示明确错误。此入口用于本地计算节点；同分类下的命令行脚本和资源清理继续使用各自的操作说明。
+
+接入新算法时，在权威主题中以 `<!-- algorithm-help:start -->` 与 `<!-- algorithm-help:end -->` 划定一段可独立阅读的说明，首个二级标题使用 `{#algorithm-principles}`。说明应交代输入、计算步骤、指标单位、关键参数及无效条件，并配上与实际口径一致的图示。将该 Markdown 路径加入 `docs/.vitepress/algorithm-help/sources.json`；导出器从原文读取 `knowledge_id` 和说明标题，生成同一份交付索引。节点的 `TopicId` 必须与该 `knowledge_id` 相同。宽泛主题包含多项独立能力时，先将算法事实迁入专用主题，再链接原位置，避免创建第二份手册。
+
+在仓库根运行 `npm run docs:help` 更新离线产物，运行 `npm run docs:help:check` 检查多主题导出与交付新鲜度；普通 .NET 构建直接复制已生成内容，不要求 Node。内联 SVG 图和公式离线可读，交互组件需要显式注册本地资源；未支持的组件或外部图片会使导出失败。帮助片段之间的有效链接导向本地页面，未导出的章节保留为网站链接。网站正文仍由同一 Markdown 构建，需按网站交付流程发布后才包含新主题。完整示例见[点阵畸变测量原理](../algorithms/detectors/grid-distortion-v2.md#algorithm-principles)。
 
 迁入 Engine、仍保留旧流程名称和保存标识的节点集中在 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/`，再按设备或功能分组。其中需要 Engine 模板或量程编辑器的相机、校准、POI、SMU、传感器和算法节点分别放在对应子目录，保留各自原 namespace、类名和保存标识；目录名不参与流程序列化。只有普通字符串、数值或枚举属性的节点，以及通用执行基类，继续由 FlowEngineLib 提供。迁移范围以属性编辑器依赖为准，无需整体搬迁节点库。
 

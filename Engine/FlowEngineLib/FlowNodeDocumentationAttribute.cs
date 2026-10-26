@@ -21,4 +21,7 @@ public sealed class FlowNodeDocumentationAttribute : Attribute
     public string Processing { get; set; } = string.Empty;
 
     public string Notes { get; set; } = string.Empty;
+
+    /// <summary>Stable knowledge topic ID for an optional packaged algorithm explanation.</summary>
+    public string TopicId { get; set; } = string.Empty;
 }

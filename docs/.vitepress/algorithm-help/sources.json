@@ -1,0 +1,15 @@
+[
+  "docs/04-api-reference/algorithms/templates/find-light-area.md",
+  "docs/04-api-reference/algorithms/detectors/light-beads.md",
+  "docs/04-api-reference/algorithms/detectors/fov-v2-local.md",
+  {
+    "sourcePath": "docs/04-api-reference/algorithms/detectors/grid-distortion-v2.md",
+    "onlineAnchor": "计算口径"
+  },
+  "docs/04-api-reference/algorithms/detectors/rgb-cross.md",
+  "docs/04-api-reference/algorithms/detectors/find-cross.md",
+  "docs/04-api-reference/algorithms/detectors/stripe-mtf.md",
+  "docs/04-api-reference/algorithms/templates/matching-template.md",
+  "docs/04-api-reference/algorithms/detectors/ring-ghost.md",
+  "docs/04-api-reference/ui-components/image-fusion.md"
+]

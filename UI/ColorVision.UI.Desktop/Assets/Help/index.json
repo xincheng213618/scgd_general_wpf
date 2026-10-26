@@ -1,0 +1,72 @@
+[
+  {
+    "id": "algorithms.find-light-area",
+    "title": "发光区定位原理",
+    "relativePath": "algorithms.find-light-area.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/templates/find-light-area#algorithm-principles",
+    "sourceSha256": "ad174d4ac92d6cf0c29d80fa109bc574111fc7b9612ccc91cfde809f72f8cb3b"
+  },
+  {
+    "id": "algorithms.light-beads",
+    "title": "灯珠定位算法原理",
+    "relativePath": "algorithms.light-beads.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/light-beads#algorithm-principles",
+    "sourceSha256": "5c6a107dd9f3d966f2407075c15582b3380df88984acfe4061947ba168964fe3"
+  },
+  {
+    "id": "algorithms.fov-local",
+    "title": "FOV 测量原理",
+    "relativePath": "algorithms.fov-local.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/fov-v2-local#algorithm-principles",
+    "sourceSha256": "220c9a145e67a62b6739d00c40e22c0ebdacf19fedf2f7a2999ccd7133a04464"
+  },
+  {
+    "id": "algorithms.grid-distortion",
+    "title": "点阵畸变测量原理",
+    "relativePath": "algorithms.grid-distortion.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/grid-distortion-v2#%E8%AE%A1%E7%AE%97%E5%8F%A3%E5%BE%84",
+    "sourceSha256": "0265ea1d425ac3772f2fc3c15dc270c9c63761febb4cebd3a74ab4b2f008bf10"
+  },
+  {
+    "id": "algorithms.rgb-cross",
+    "title": "十字 RGB 分离测量原理",
+    "relativePath": "algorithms.rgb-cross.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/rgb-cross#algorithm-principles",
+    "sourceSha256": "58303661899101c30aa890e370e9773dae6079499bc85a6e7225e29e57810fad"
+  },
+  {
+    "id": "algorithms.find-cross",
+    "title": "十字中心与倾角原理",
+    "relativePath": "algorithms.find-cross.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/find-cross#algorithm-principles",
+    "sourceSha256": "fb34e72896d98dac908fff5f40022bc00d32f983ca4a9ef2c300bf25fc7ec1f3"
+  },
+  {
+    "id": "algorithms.stripe-mtf",
+    "title": "本地条纹 MTF 测量原理",
+    "relativePath": "algorithms.stripe-mtf.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/stripe-mtf#algorithm-principles",
+    "sourceSha256": "6e4ac7533fdf613f41674ccc9ce8082f479d9fbc433595baa34a2d60e4232cd9"
+  },
+  {
+    "id": "algorithms.matching",
+    "title": "模板匹配算法原理",
+    "relativePath": "algorithms.matching.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/templates/matching-template#algorithm-principles",
+    "sourceSha256": "0dc58f744d0e11c2dcc04a40b48c56979edc082b8c45ee586984dab88c428c92"
+  },
+  {
+    "id": "algorithms.ring-ghost",
+    "title": "圆环鬼影测量原理",
+    "relativePath": "algorithms.ring-ghost.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/ring-ghost#algorithm-principles",
+    "sourceSha256": "b5aaacc2a68d7d54121ecac869ced3965db195125c273a4a95d8a49b2dd7f2f6"
+  },
+  {
+    "id": "ui.image-fusion",
+    "title": "景深融合算法原理",
+    "relativePath": "ui.image-fusion.html",
+    "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/ui-components/image-fusion#algorithm-principles",
+    "sourceSha256": "c3d95232095dad3d0a7aaffef1f681ce24df1a371575358df365fa6651999f42"
+  }
+]

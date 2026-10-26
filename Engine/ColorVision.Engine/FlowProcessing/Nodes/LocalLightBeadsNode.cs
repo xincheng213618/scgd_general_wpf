@@ -19,7 +19,9 @@ public enum LocalLightBeadsPoiShape { Point, Circle, Rectangle }
 
 [STNode("Flow_LocalAlgorithms", "灯珠定位", CategoryOrder = 9910, NodeOrder = 15)]
 [FlowEngineLib.FlowNodeDocumentation("本地定位灯珠，输出本次流程内存中的 POI 点集；不创建模板或逐点写入数据库。",
-    Notes = "可直接连接本地 POI，或把 OUT 接到本地实时 POI 的 IN_POI；同方向的校正图像接 IN_CIE。测量结果随运行释放，不进入历史结果表。")]
+    Usage = "输入完成方向校正的图像，按目标设置阈值和尺寸；规则阵列可开启不良检测并填写已知标准行列数。",
+    Notes = "可直接连接本地 POI，或把 OUT 接到本地实时 POI 的 IN_POI；同方向的校正图像接 IN_CIE。测量结果随运行释放，不进入历史结果表。",
+    TopicId = "algorithms.light-beads")]
 public sealed class LocalLightBeadsNode : LocalFlowNodeBase
 {
     private int threshold = 20, minSize = 2, maxSize;

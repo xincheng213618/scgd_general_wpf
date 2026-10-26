@@ -4518,4 +4518,6 @@
   <data name="TemplateBrowserNoData" xml:space="preserve"><value>暂无数据</value></data>
   <data name="TemplateBrowserEstimateBasis" xml:space="preserve"><value>次数来自本机保留记录；预计耗时取当前版本最近 {0} 次正常完成记录的平均值。</value></data>
   <data name="TemplateBrowserUsageScope" xml:space="preserve"><value>执行次数仅统计本机保留的运行记录。没有匹配当前版本的正常完成记录时，不估算耗时。</value></data>
+  <data name="Flow_NodeInspector_AlgorithmHelp" xml:space="preserve"><value>查看算法原理</value></data>
+  <data name="Flow_NodeInspector_AlgorithmHelpTooltip" xml:space="preserve"><value>查看测量原理、计算公式和交互示意，离线可用</value></data>
 </root>

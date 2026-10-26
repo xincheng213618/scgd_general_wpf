@@ -17,6 +17,30 @@ public sealed class EngineSpectrumResultTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void EqeHistoryStoresMilliampsAndTheActualSourceAssociation(bool upstream)
+    {
+        var parameters = new LocalSpectrumParameters { Eqe = true, Voltage = 5, Current = .025f };
+        if (upstream) parameters.ApplySmuData(new FlowEngineLib.SMUResultData(FlowEngineLib.SMUChannelType.A, 4.5, 25, 123, 200));
+        var capture = new LocalSpectrumCapture
+        {
+            DeviceCode = "EQE.TEST", IntegralTime = 100,
+            Data = new COLOR_PARA { fPL = [], fRi = [] },
+            EqeData = new COLOR_PARA_EQE { dVoltage = parameters.Voltage, dCurrent = parameters.Current, dEqe = .2 }
+        };
+        var model = LocalSpectrumResultService.CreateModel(capture, parameters);
+        Assert.Equal(upstream ? 4.5f : 5f, model.VResult);
+        Assert.Equal(25f, model.IResult);
+        var view = ColorVision.Engine.Services.Devices.Spectrum.DeviceSpectrum.CreateLocalSpectrumView(capture);
+        Assert.Equal(model.VResult, view.V);
+        Assert.Equal(model.IResult, view.I);
+        Assert.Equal(upstream ? 123 : (int?)null, model.SmuDataId);
+        Assert.Equal(.025f, JObject.Parse(model.Params!)["Current"]!.Value<float>());
+        if (upstream) Assert.Equal(25, JObject.Parse(model.Params!)["SMUData"]!["I"]!.Value<double>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DatabaseRoundTripPreservesSpectraAndReadsLegacyQuotedJson(bool legacyQuoted)
     {
         var previous = ConfigService.Instance;

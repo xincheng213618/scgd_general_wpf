@@ -20,6 +20,7 @@ AR 波导、Micro OLED/Micro LED 与双目整机的 RGB 套色、鬼影候选、
 | 问题 | 主题 | 主要源码 |
 | --- | --- | --- |
 | 新算法如何定义输入、参数、结果、overlay 与执行入口 | [统一图像算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) | `UI/ColorVision.Algorithms/` |
+| 本地节点的公式、图示与离线原理如何维护和交付 | [节点帮助接入](../extensions/flow-node.md) | `FlowNodeDocumentationAttribute.TopicId`、`Assets/Help` |
 | FindLightBeads、GhostLocalAnalysis、旋转模板和双目调试实际走哪里 | [ImageEditor 本地 native 分析](./local-native-analysis.md) | `UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/` |
 | 本地十字定位如何设置参数、解释中心/倾角并诊断失败 | [本地 FindCross](./detectors/find-cross.md) | `FindCrossLocal.cs`、`LocalFindCrossNode.cs` |
 | ONNX 应接在哪里，是否已经实现 | [ONNX 接入方案](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) | 以该页状态和实际源码为准 |

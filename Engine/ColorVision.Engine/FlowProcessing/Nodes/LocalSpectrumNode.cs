@@ -25,6 +25,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
     private bool isWithNd;
     private bool autoConnect = true;
     private bool eqe;
+    private bool useUpstreamVI;
     private float voltage = 5, current = 1;
     private double factor = 1;
     [STNodeProperty("积分时间(ms)", "本次测量的积分时间", true)]
@@ -43,6 +44,8 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
     public bool AutoConnect { get => autoConnect; set { autoConnect = value; OnPropertyChanged(); } }
     [STNodeProperty("光通量/EQE", "使用设置的电压、电流和修正系数测量 EQE", true)]
     public bool Eqe { get => eqe; set { eqe = value; OnPropertyChanged(); } }
+    [STNodeProperty("使用上游源表电压/流", "EQE 使用本次流程前面 SMU 测量的 V/I；关闭时使用手填值。上游电流 mA 会转换为 A。", true)]
+    public bool UseUpstreamVI { get => useUpstreamVI; set { useUpstreamVI = value; OnPropertyChanged(); } }
     [STNodeProperty("修正系数", "EQE 修正系数，必须大于 0", true)]
     public double AFactor { get => factor; set { factor = value; OnPropertyChanged(); } }
     [STNodeProperty("电压(V)", "EQE 的电压输入", true)]
@@ -107,6 +110,11 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             IsWithND = IsWithND,
             Eqe = Eqe, AFactor = AFactor, Voltage = Voltage, Current = Current
         };
+        if (parameters.Eqe && UseUpstreamVI)
+        {
+            action.Data.TryGetValue("SMUResult", out object? smu);
+            parameters.ApplySmuData(smu);
+        }
         parameters.Validate();
         if (parameters.IntegralTime > MaximumIntegralTime)
             throw new InvalidOperationException($"积分时间不能超过 {MaximumIntegralTime:0.###} ms。");
@@ -132,7 +140,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             snapshot.DeviceCode, parameters.IntegralTime, parameters.NumberOfAverage, parameters.AutoIntegration,
             parameters.AutoInitDark, parameters.SelfAdaptionInitDark, snapshot.AutoConnect,
             parameters.IsWithND,
-            parameters.Eqe, parameters.AFactor, parameters.Voltage, parameters.Current
+            parameters.Eqe, parameters.AFactor, parameters.Voltage, parameters.Current, parameters.SMUData
         });
     }
 }

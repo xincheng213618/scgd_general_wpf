@@ -1084,4 +1084,10 @@
   <data name="LanRemote_SecureDisabledStatus" xml:space="preserve"><value>安全运维通道已关闭。</value></data>
   <data name="LanRemote_SecureRunningStatus" xml:space="preserve"><value>安全运维通道运行中，HTTPS 端口 {0}。</value></data>
   <data name="LanRemote_SecureFailedStatus" xml:space="preserve"><value>安全运维通道启动失败：{0}</value></data>
+  <data name="AlgorithmHelp_Title" xml:space="preserve"><value>算法原理</value></data>
+  <data name="AlgorithmHelp_Online" xml:space="preserve"><value>在网站中打开</value></data>
+  <data name="AlgorithmHelp_CopyLink" xml:space="preserve"><value>复制网站链接</value></data>
+  <data name="AlgorithmHelp_Print" xml:space="preserve"><value>打印或保存 PDF</value></data>
+  <data name="AlgorithmHelp_Version" xml:space="preserve"><value>离线说明 · 随软件版本 {0}</value></data>
+  <data name="AlgorithmHelp_Failed" xml:space="preserve"><value>离线说明暂不可用：{0}</value></data>
 </root>

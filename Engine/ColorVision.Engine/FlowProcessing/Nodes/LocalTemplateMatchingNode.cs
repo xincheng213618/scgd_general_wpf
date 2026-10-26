@@ -18,6 +18,10 @@ internal sealed record LocalTemplateMatchingNodeResult(string TemplateName, stri
     string? ImageFilePath, TemplateMatchingOptions Options, TemplateMatchingResult Result, long ElapsedMilliseconds);
 
 [STNode("Flow_LocalAlgorithms", "模板匹配", CategoryOrder = 9910, NodeOrder = 70)]
+[FlowEngineLib.FlowNodeDocumentation("使用节点内的参考图，在输入图像中搜索旋转、缩放后的相似目标，返回中心、角度、尺度、分数和四角。",
+    Usage = "在匹配配置中设置参考图与参数并应用到节点，连接提供本地内存图像的上游节点；需要时设置搜索区域。",
+    Notes = "无匹配或无效配置按节点失败处理；分数不是命中概率。匹配不创建 AOI 数据库结果，源图继续交给下游。",
+    TopicId = "algorithms.matching")]
 public sealed class LocalTemplateMatchingNode : LocalFlowNodeBase
 {
     private readonly ILocalTemplateMatchingServices services;

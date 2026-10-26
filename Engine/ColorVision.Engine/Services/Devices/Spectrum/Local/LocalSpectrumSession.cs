@@ -1,6 +1,7 @@
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,6 +24,18 @@ public sealed class LocalSpectrumParameters
     public double AFactor { get; set; } = 1;
     public float Voltage { get; set; }
     public float Current { get; set; }
+    // The service/flow contract stores SMU current in mA; native EQE accepts A.
+    public FlowEngineLib.SMUResultData? SMUData { get; set; }
+
+    internal void ApplySmuData(object? value)
+    {
+        var data = value switch { null => null, JObject json => json, JToken => null, _ => JObject.FromObject(value) };
+        if (data?["V"] == null || data["V"]!.Type == JTokenType.Null || data["I"] == null || data["I"]!.Type == JTokenType.Null)
+            throw new InvalidOperationException("EQE 缺少上游源表的电压、电流，请先执行源表测量或启用自定义电压/流。");
+        SMUData = data.ToObject<FlowEngineLib.SMUResultData>()!;
+        Voltage = (float)SMUData.V;
+        Current = (float)(SMUData.I / 1000.0);
+    }
 
     public void Validate()
     {

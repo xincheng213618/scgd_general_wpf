@@ -7426,4 +7426,6 @@ Field: </value></data>
   <data name="TemplateBrowserNoData" xml:space="preserve"><value>No data</value></data>
   <data name="TemplateBrowserEstimateBasis" xml:space="preserve"><value>Count uses retained local records. Duration averages the latest {0} normally completed runs of the saved version.</value></data>
   <data name="TemplateBrowserUsageScope" xml:space="preserve"><value>Execution count covers retained local runs. No estimate is shown without normally completed runs matching the saved version.</value></data>
+  <data name="Flow_NodeInspector_AlgorithmHelp" xml:space="preserve"><value>View algorithm principles</value></data>
+  <data name="Flow_NodeInspector_AlgorithmHelpTooltip" xml:space="preserve"><value>Read measurement principles, formulas and interactive diagrams offline</value></data>
 </root>

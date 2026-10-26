@@ -46,7 +46,10 @@ internal static class LocalSpectrumResultService
         model.DataType = parameters.Eqe;
         if (capture.EqeData is { } eqe)
         {
-            model.Eqe = eqe.dEqe; model.VResult = (float)eqe.dVoltage; model.IResult = (float)eqe.dCurrent;
+            model.Eqe = eqe.dEqe;
+            model.VResult = (float)(parameters.SMUData?.V ?? parameters.Voltage);
+            model.IResult = (float)(parameters.SMUData?.I ?? parameters.Current * 1000.0);
+            if (parameters.SMUData is { MasterId: > 0, MasterResultType: 200 } smu) model.SmuDataId = smu.MasterId;
             model.AFactor = (float)parameters.AFactor; model.LuminousFlux = eqe.dIm; model.RadiantFlux = eqe.dW;
         }
         return model;

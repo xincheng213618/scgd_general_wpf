@@ -53,6 +53,7 @@
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel>
                         <TextBlock Text="{i18n:EngineLang Key='连接'}" Style="{StaticResource SectionTitleStyle}"/>
+                        <StackPanel x:Name="LocalFields"/>
                         <DockPanel x:Name="ConnectionMode" Margin="0,6,0,10" Visibility="{Binding IsStandardConnection, Converter={StaticResource VisibleWhen}}">
                             <TextBlock Text="{i18n:EngineLang Key='连接方式'}" Style="{StaticResource FieldLabel}"/>
                             <WrapPanel>
@@ -73,13 +74,13 @@
                         <StackPanel x:Name="SerialSection" Visibility="{Binding IsSerialConnection, Converter={StaticResource VisibleWhen}}">
                             <DockPanel Margin="0,3">
                                 <TextBlock Text="{i18n:EngineLang Key='串口'}" Style="{StaticResource FieldLabel}"/>
-                                <TextBox x:Name="SerialPortName" Text="{Binding SerialPortName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" ToolTip="{i18n:EngineLang Key='填写服务电脑上的串口名，例如 COM7。'}"/>
+                                <TextBox x:Name="SerialPortName" Text="{Binding SerialPortName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" ToolTip="{i18n:EngineLang Key='填写运行 PG 连接的电脑上的串口名，例如 COM7。'}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
                                 <TextBlock Text="{x:Static properties:Resources.BaudRate}" Style="{StaticResource FieldLabel}"/>
                                 <hc:ComboBox x:Name="SerialBaudRate" IsEditable="True" Text="{Binding SerialBaudRate, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}" Style="{StaticResource ComboBox.Small}"/>
                             </DockPanel>
-                            <TextBlock Text="{i18n:EngineLang Key='串口名按服务电脑填写，例如 COM7。'}" Style="{StaticResource LabelTextStyle}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                            <TextBlock Text="{i18n:EngineLang Key='本地模式填写本机串口；服务模式填写服务电脑串口。例如 COM7。'}" Style="{StaticResource LabelTextStyle}" TextWrapping="Wrap" Margin="0,8,0,0"/>
                         </StackPanel>
                         <StackPanel x:Name="I2CSection" Visibility="{Binding IsI2C, Converter={StaticResource VisibleWhen}}">
                             <DockPanel Margin="0,3">
@@ -99,7 +100,8 @@
                         <TextBlock Text="{i18n:EngineLang Key='设备参数'}" Style="{StaticResource SectionTitleStyle}"/>
                         <DockPanel Margin="0,3">
                             <TextBlock Text="{Binding RegisterAddressLabel}" Style="{StaticResource FieldLabel}"/>
-                            <TextBox x:Name="RegisterAddress" Text="{Binding Config.RegisterAddress, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}" Style="{StaticResource TextBox.Small}"/>
+                            <TextBox x:Name="RegisterAddress" Text="{Binding Config.RegisterAddress, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}" Style="{StaticResource TextBox.Small}" Visibility="{Binding IsI2C, Converter={StaticResource VisibleWhen}}"/>
+                            <TextBox x:Name="GecsChannel" Text="{Binding Config.Channel, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Visibility="{Binding IsGecs, Converter={StaticResource VisibleWhen}}"/>
                         </DockPanel>
                         <DockPanel Margin="0,3" Visibility="{Binding IsI2C, Converter={StaticResource VisibleWhen}}">
                             <TextBlock Text="{i18n:EngineLang Key='I²C 通信速率'}" Style="{StaticResource FieldLabel}"/>

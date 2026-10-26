@@ -330,8 +330,9 @@ internal sealed class LocalSensorSession : IDisposable
         private readonly object receiveSync = new();
         private readonly List<byte> received = [];
         private readonly byte[] expected = command.Encode(command.Response);
+        private readonly ILocalSensorResponseParser? parser = command.CreateResponseParser?.Invoke();
         public TaskCompletionSource<byte[]> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public bool IsReceiveWindow => expected.Length == 0;
+        public bool IsReceiveWindow => parser == null && expected.Length == 0;
         public int Count { get { lock (receiveSync) return received.Count; } }
         public byte[] Bytes { get { lock (receiveSync) return received.ToArray(); } }
 
@@ -342,12 +343,17 @@ internal sealed class LocalSensorSession : IDisposable
                 if (Completion.Task.IsCompleted || command.Timeout <= 0) return;
                 if (received.Count + bytes.Length > MaxResponseBytes) throw new IOException("传感器回包超过 1048576 字节限制。");
                 received.AddRange(bytes.ToArray());
+                if (parser != null)
+                {
+                    if (parser.Receive(bytes) is { } response) Completion.TrySetResult(response);
+                    return;
+                }
                 byte[] buffer = Bytes;
                 int length = expected.Length;
                 if (length > 0 && buffer.Length >= length) Completion.TrySetResult(buffer[..length]);
             }
         }
 
-        public bool Matches(byte[] bytes) => command.Timeout <= 0 || expected.Length == 0 || bytes.AsSpan().SequenceEqual(expected);
+        public bool Matches(byte[] bytes) => parser != null || command.Timeout <= 0 || expected.Length == 0 || bytes.AsSpan().SequenceEqual(expected);
     }
 }

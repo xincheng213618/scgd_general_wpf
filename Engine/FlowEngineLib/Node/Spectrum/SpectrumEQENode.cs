@@ -68,7 +68,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("电压", "电压", true)]
+	[STNodeProperty("电压", "自定义电压，单位 V", true)]
 	public float Voltage
 	{
 		get
@@ -82,7 +82,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("电流", "电流", true)]
+	[STNodeProperty("电流", "自定义电流，单位 mA，与服务请求保持一致", true)]
 	public float Current
 	{
 		get

@@ -99,6 +99,7 @@ export default withMermaid(
     // Markdown configuration
     markdown: {
       lineNumbers: true,
+      math: { svg: { fontCache: 'none' } },
       theme: {
         light: 'github-light',
         dark: 'github-dark'

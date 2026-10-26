@@ -3,6 +3,7 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Repeat;
 using Newtonsoft.Json.Linq;
@@ -13,6 +14,57 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalSpectrumRepeatParameterTests
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void EqeResolvesOnlyTheSelectedElectricalInputWithoutChangingSavedValues(bool upstream, bool available)
+    {
+        StaTest.Run(() =>
+        {
+            using var scope = new SpectrumScope();
+            var node = new LocalSpectrumNode { Eqe = true, UseUpstreamVI = upstream, Voltage = 5, Current = .1f };
+            node.Create();
+            var action = new CVStartCFC("eqe-electrical-input") { PersistResults = false };
+            using var resources = action.RuntimeResources;
+            if (available) action.Data["SMUResult"] = new SMUResultData(SMUChannelType.A, 4.5, 25, 123, 200);
+            JObject? payload = null;
+            node.nodeRunEvent += (_, args) => { payload = JObject.Parse(args.SendPayload); resources.Dispose(); };
+            node.GetAllInputOptions().Single().ReceiveData(action);
+            Assert.NotNull(payload);
+            Assert.Equal(upstream ? 4.5f : 5, payload["Voltage"]!.Value<float>());
+            Assert.Equal(upstream ? .025f : .1f, payload["Current"]!.Value<float>());
+            if (upstream) Assert.Equal(123, payload["SMUData"]!["MasterId"]!.Value<int>());
+            else Assert.Equal(JTokenType.Null, payload["SMUData"]!.Type);
+            Assert.Equal(5, node.Voltage);
+            Assert.Equal(.1f, node.Current);
+        });
+    }
+
+    [Fact]
+    public void EqeWithMissingUpstreamFailsBeforeNativeWorkAndStoresTheSelection()
+    {
+        StaTest.Run(() =>
+        {
+            using var scope = new SpectrumScope();
+            var node = new LocalSpectrumNode { Eqe = true, UseUpstreamVI = true };
+            node.Create();
+            var action = new CVStartCFC("eqe-missing-input") { PersistResults = false };
+            using var resources = action.RuntimeResources;
+            JObject? payload = null;
+            var completion = new TaskCompletionSource<FlowEngineNodeEndEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+            node.nodeRunEvent += (_, args) => payload = JObject.Parse(args.SendPayload);
+            node.nodeEndEvent += (_, args) => completion.TrySetResult(args);
+            node.GetAllInputOptions().Single().ReceiveData(action);
+            Assert.Contains("上游源表", payload!.Value<string>("Error"));
+            var result = completion.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            Assert.Equal(-1, result.RecvStatusCode);
+            Assert.Contains("上游源表", result.RecvStatusMessage);
+            string saved = System.Text.Encoding.UTF8.GetString(node.GetSaveData());
+            Assert.Contains(nameof(LocalSpectrumNode.UseUpstreamVI), saved);
+        });
+    }
+
     [Theory]
     [InlineData(false, false, true, true)]
     [InlineData(true, false, false, true)]

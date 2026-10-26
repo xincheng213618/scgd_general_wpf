@@ -38,13 +38,18 @@ internal sealed class LocalSpectrumFlowExecution : FlowLocalExecution
                     return null!;
                 }
             }
-            var data = JObject.FromObject(request.Data);
-            LocalSpectrumParameters parameters = data.ToObject<LocalSpectrumParameters>()!;
-            parameters.Eqe = request.EventName == "EQE.GetData";
-            parameters.Voltage = data["SMUData"]?["V"]?.Value<float>() ?? 0;
-            parameters.Current = data["SMUData"]?["I"]?.Value<float>() ?? 0;
+            LocalSpectrumParameters parameters = ReadLegacyParameters(request);
             return new LocalSpectrumFlowExecution(device, parameters, request.EventName, true, request.ZIndex, request.DeviceNodeCode);
         });
+    }
+
+    internal static LocalSpectrumParameters ReadLegacyParameters(CVMQTTRequest request)
+    {
+        var data = JObject.FromObject(request.Data);
+        var parameters = data.ToObject<LocalSpectrumParameters>()!;
+        parameters.Eqe = request.EventName == "EQE.GetData";
+        if (parameters.Eqe) parameters.ApplySmuData(data["SMUData"]);
+        return parameters;
     }
 
     private readonly int zIndex;

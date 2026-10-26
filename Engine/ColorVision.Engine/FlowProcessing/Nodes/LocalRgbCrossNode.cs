@@ -82,6 +82,10 @@ internal static class LocalRgbCrossResultPersistence
 }
 
 [STNode("Flow_LocalAlgorithms", "十字 RGB 分离", CategoryOrder = 9910, NodeOrder = 40)]
+[FlowEngineLib.FlowNodeDocumentation("分别测量十字的 R、G、B 原图边缘，以 G 为参考给出两组最大边缘偏移。",
+    Usage = "连接彩色图像，按实际图案设置行列数；需要限定目标时配置搜索区域关注点或固定区域。",
+    Notes = "使用独立算法参数，不读取 FindCross 模板；无效通道对保留为空，产品判定由 ARVRPro 配方负责。",
+    TopicId = "algorithms.rgb-cross")]
 public sealed class LocalRgbCrossNode : LocalFlowNodeBase
 {
     private readonly ILocalRgbCrossNodeServices services;

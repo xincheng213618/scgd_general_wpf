@@ -1,0 +1,96 @@
+:root {
+  color-scheme: light dark;
+  --help-bg: #fff;
+  --help-text: #22252b;
+  --help-muted: #626970;
+  --help-border: #e1e5e9;
+  --help-soft: #f4f6f8;
+  --help-link: #266fbd;
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  background: var(--help-bg);
+  color: var(--help-text);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --help-bg: #18181b;
+    --help-text: #e6e8ec;
+    --help-muted: #a8afb8;
+    --help-border: #393e46;
+    --help-soft: #24272d;
+    --help-link: #88baff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: var(--help-link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--help-link); outline-offset: 3px; }
+.help-layout { display: grid; grid-template-columns: 186px minmax(0, 1fr); gap: 32px; max-width: 1260px; margin: 0 auto; padding: 28px 30px 56px; }
+.help-toc { position: sticky; top: 24px; align-self: start; font-size: 13px; }
+.help-toc p { margin: 0 0 10px; font-weight: 600; }
+.help-toc a { display: block; margin: 0 0 8px; color: var(--help-muted); text-decoration: none; line-height: 1.6; }
+.help-toc a:hover { color: var(--help-link); }
+.help-toc .toc-sub { padding-left: 12px; }
+.help-content { min-width: 0; }
+.help-kicker { color: var(--help-muted); margin: 0 0 12px; font-size: 12px; }
+article > :first-child { margin-top: 0; }
+h1, h2, h3, h4 { line-height: 1.4; font-weight: 600; scroll-margin-top: 20px; }
+h1 { font-size: 28px; margin: 0 0 18px; }
+h2 { font-size: 23px; margin: 36px 0 16px; }
+article > h2:first-child { font-size: 28px; margin-bottom: 18px; }
+h3 { font-size: 18px; margin: 26px 0 12px; }
+h4 { font-size: 16px; margin: 22px 0 10px; }
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 24px; }
+li { margin-bottom: 6px; }
+strong { font-weight: 600; }
+code { font-family: Consolas, "Microsoft YaHei", monospace; font-size: .88em; background: var(--help-soft); padding: 2px 4px; border-radius: 3px; overflow-wrap: anywhere; }
+pre { overflow-x: auto; padding: 14px 18px; background: var(--help-soft); border-radius: 5px; line-height: 1.6; }
+pre code { padding: 0; background: none; }
+/* VitePress' website runtime wires these controls; the offline page has no such handler. */
+.help-content div[class*="language-"] > button.copy,
+.help-content div[class*="language-"] > span.lang { display: none; }
+.table-scroll { overflow-x: auto; margin: 18px 0 22px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; line-height: 1.7; }
+th, td { border: 1px solid var(--help-border); padding: 9px 12px; text-align: left; vertical-align: middle; }
+th { background: var(--help-soft); font-weight: 600; }
+td code { white-space: normal; }
+blockquote { margin: 18px 0; padding: 0 0 0 16px; border-left: 3px solid var(--help-border); color: var(--help-muted); }
+img { max-width: 100%; height: auto; }
+mjx-container[display="true"] { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 5px 0; }
+mjx-container svg { max-width: none; }
+.header-anchor { margin-left: 7px; color: var(--help-muted); font-size: .75em; opacity: 0; text-decoration: none; }
+h2:hover .header-anchor, h3:hover .header-anchor, .header-anchor:focus { opacity: 1; }
+.help-footer { color: var(--help-muted); font-size: 12px; margin-top: 34px; }
+@media (max-width: 850px) {
+  .help-layout { display: block; padding: 22px 20px 40px; }
+  .help-toc { position: static; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--help-border); }
+  .help-toc a { display: inline-block; margin: 0 16px 8px 0; }
+  .help-toc .toc-sub { padding-left: 0; }
+}
+@media (max-width: 460px) {
+  :root { font-size: 14px; }
+  .help-layout { padding: 18px 14px 32px; }
+  article > h2:first-child { font-size: 24px; }
+  th, td { padding: 8px; }
+}
+@media print {
+  :root { color-scheme: light; --help-bg: #fff; --help-text: #000; --help-muted: #555; }
+  .help-layout { display: block; max-width: none; padding: 0; }
+  .help-toc, .help-kicker, .help-footer, .header-anchor { display: none; }
+  h2, h3 { break-after: avoid; }
+  tr, svg { break-inside: avoid; }
+  .table-scroll { overflow: visible; }
+  a { color: inherit; }
+  section[data-grid-distortion-demo] select, section[data-grid-distortion-demo] input { pointer-events: none; }
+}
+
+/* The same scientific diagrams are embedded in the website and offline help. */
+figure.algorithm-figure { margin: 22px 0; overflow-x: auto; border: 1px solid #d8e0e8; border-radius: 8px; background: #fff; }
+figure.algorithm-figure > svg { display: block; width: 100%; min-width: 560px; height: auto; color: #25364a; background: #fff; }
+figure.algorithm-figure > figcaption { min-width: 280px; margin: 0; padding: 12px 16px; color: #46556a; font-size: 13px; line-height: 1.7; border-top: 1px solid #e4eaf0; }
+@media print {
+  figure.algorithm-figure { overflow: visible; break-inside: avoid; }
+  figure.algorithm-figure > svg { min-width: 0; }
+}

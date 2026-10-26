@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
@@ -11,6 +12,69 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalSpectrumFlowTests
 {
+    // Keep the historical SMU mA request contract separate from the native EQE A input.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LegacyEqeUsesUpstreamOrCustomVIAndConvertsCurrentExactlyOnce(bool custom)
+    {
+        StaTest.Run(() =>
+        {
+            var action = new CVStartCFC();
+            using var resources = action.RuntimeResources;
+            var upstream = new SMUResultData(SMUChannelType.B, 4.5, 25, 123, 200);
+            action.Data["SMUResult"] = upstream;
+            var node = new EqeProbe();
+            node.Create();
+            node.IsCustomVI = custom;
+            node.Voltage = 3.25f;
+            node.Current = 12.5f;
+            var data = node.Build(action);
+            Assert.Equal(custom ? 3.25 : 4.5, data.SMUData.V);
+            Assert.Equal(custom ? 12.5 : 25, data.SMUData.I);
+            var parameters = LocalSpectrumFlowExecution.ReadLegacyParameters(new CVMQTTRequest("sp", "sp", "EQE.GetData", "eqe", data, "", 1));
+            parameters.Validate();
+            Assert.True(parameters.Eqe);
+            Assert.Equal(custom ? 3.25f : 4.5f, parameters.Voltage);
+            Assert.Equal(custom ? .0125f : .025f, parameters.Current);
+            Assert.Equal(123, parameters.SMUData!.MasterId);
+            Assert.Equal(25, upstream.I);
+            Assert.Equal(4.5, upstream.V);
+            Assert.NotSame(upstream, parameters.SMUData);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LegacyEqeWithoutSourceRequiresExplicitCustomVI(bool custom)
+    {
+        StaTest.Run(() =>
+        {
+            var action = new CVStartCFC();
+            using var resources = action.RuntimeResources;
+            var node = new EqeProbe();
+            node.Create();
+            node.IsCustomVI = custom;
+            node.Voltage = 5;
+            node.Current = 10;
+            var request = new CVMQTTRequest("sp", "sp", "EQE.GetData", "eqe", node.Build(action), "", 1);
+            if (custom)
+            {
+                var parameters = LocalSpectrumFlowExecution.ReadLegacyParameters(request);
+                parameters.Validate();
+                Assert.Equal(.01f, parameters.Current);
+                Assert.Equal(0, parameters.SMUData!.MasterId);
+            }
+            else Assert.Contains("上游源表", Assert.Throws<InvalidOperationException>(() => LocalSpectrumFlowExecution.ReadLegacyParameters(request)).Message);
+        });
+    }
+
+    private sealed class EqeProbe : SpectrumEQENode
+    {
+        internal SpectrumEQEParamData Build(CVStartCFC action) => (SpectrumEQEParamData)getBaseEventData(action);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

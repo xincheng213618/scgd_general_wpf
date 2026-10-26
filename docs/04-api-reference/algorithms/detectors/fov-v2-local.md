@@ -11,11 +11,39 @@ related: ["algorithms.find-light-area","algorithms.roi-routes","engine.results",
 
 # 本地 FOV V2
 
+<!-- algorithm-help:start -->
+
+## FOV 测量原理 {#algorithm-principles}
+
 本地 FOV V2 在 ColorVision 进程内完成发光区定位和水平、垂直、对角视场角计算，不依赖 `CV_algorithm.dll` 或远端算法服务。原有 FOV 2.0 模板和远端链路继续保留；本地流程节点以相同结果类型、版本和 JSON 字段写入现有结果链，供历史结果及 ProjectARVRPro 继续读取。
+
+FOV 节点把所选几何跨度换算为角度，单位为 **°**。四角模式可以复用上游定位的四角；轮廓模式必须读取同源图像，重新寻找真实外边界。两者使用相同相机参数，但选取跨度的方式不同。
+
+<figure class="algorithm-figure" style="overflow-x:auto">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 310" role="img" aria-labelledby="fov-principle-title fov-principle-desc" style="display:block;min-width:720px;width:100%;height:auto;color:#1f2937">
+    <title id="fov-principle-title">FOV 四角模式与轮廓模式的跨度取法</title>
+    <desc id="fov-principle-desc">左图四角模式对上下边、左右边和两条对角线换算角度，再分别平均，方向视场使用对边中点连线。右图轮廓模式使用实测轮廓的包络与通过包络中心的实际截线端点，不把包络框角当作实测角点。</desc>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="17"><text x="35" y="29">四角模式</text><text x="515" y="29">轮廓模式</text></g>
+    <polygon points="65,76 350,94 326,241 85,246" fill="#e8f2ff" stroke="#2175d9" stroke-width="2" />
+    <g stroke="#8b6ec6" stroke-width="1.5" stroke-dasharray="6 4"><path d="M65 76 L326 241 M85 246 L350 94" /></g>
+    <path d="M75 161 L338 167.5" fill="none" stroke="#dc8b19" stroke-width="3" />
+    <path d="M207.5 85 L205.5 243.5" fill="none" stroke="#26805a" stroke-width="3" />
+    <g fill="#2175d9"><circle cx="65" cy="76" r="4" /><circle cx="350" cy="94" r="4" /><circle cx="326" cy="241" r="4" /><circle cx="85" cy="246" r="4" /></g>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="15"><text x="43" y="61">LT</text><text x="347" y="78">RT</text><text x="327" y="265">RB</text><text x="63" y="270">LB</text><text x="120" y="155">方向 H</text><text x="218" y="130">方向 V</text></g>
+    <rect x="525" y="70" width="300" height="175" fill="none" stroke="#94a3b8" stroke-dasharray="6 4" />
+    <polygon points="525,160 570,70 740,85 825,155 760,245 580,225" fill="#e8f2ff" stroke="#2175d9" stroke-width="2" />
+    <path d="M526.25 157.5 L823.194 157.5" fill="none" stroke="#dc8b19" stroke-width="3" />
+    <path d="M675 79.265 L675 235.556" fill="none" stroke="#26805a" stroke-width="3" />
+    <circle cx="675" cy="157.5" r="4.5" fill="#1f2937" />
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="15"><text x="545" y="56">X 包络</text><text x="835" y="160">Y 包络</text><text x="686" y="181">中心 O</text><text x="551" y="151">真实截线 H</text><text x="686" y="112">真实截线 V</text></g>
+    <g fill="currentColor" font-family="Segoe UI,Microsoft YaHei,sans-serif" font-size="14"><text x="35" y="298">对边中点连线与单条边、对角线分别使用</text><text x="515" y="298">灰框只提供包络和中心，不生成四角</text></g>
+  </svg>
+  <figcaption>橙色为方向水平跨度，绿色为方向垂直跨度；非四边形轮廓使用实际截线交点。</figcaption>
+</figure>
 
 ## 参数归属
 
-`FovDist` 和 `cameraDegrees` 都是与相机及镜头标定相关的 FOV 运行参数。Flow 和 ImageView 均直接展示并允许调整，默认值分别为 `9410` 和 `74.2`；不从物理相机配置隐式覆盖。
+`FovDist` 和 `cameraDegrees` 都是与相机及镜头标定相关的 FOV 运行参数。`FovDist` 是参考像素跨度（px），`cameraDegrees` 是该参考跨度对应的标定角度（°），两者必须配对使用。Flow 和 ImageView 均直接展示并允许调整，默认值分别为 `9410` 和 `74.2`；不从物理相机配置隐式覆盖。
 
 本地 FOV 默认测量稳定发光区四角对应的几何视场。`LuminanceBoundaryRatio` 仅保留旧配置读取兼容，不显示为 FOV 参数，也不参与定位或计算。画面内部亮度下降不能自动改写几何边界；若产品规范要求亮度或对比度限定的有效视场，应另行确认参考量、阈值、扫描方向和测量条件，不能将任意等亮度线的四边拟合视为标准测量。
 
@@ -29,9 +57,11 @@ Flow 与 ImageView 增加“测量模式”：`FourCorners`（四角，默认）
 
 `cameraDegrees` 输入框右侧提供统一的计算入口，Flow 和 ImageView 使用同一个属性编辑器。计算窗口可输入传感器有效宽度、有效高度和镜头有效焦距，并按水平、垂直或对角方向选择回填值：
 
-\[
-cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
-\]
+$$
+cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)\times\frac{180}{\pi}
+$$
+
+这里传感器有效长度和焦距使用相同的 mm 单位，计算结果为度。
 
 输入变化后，窗口立即显示水平、垂直和对角 FOV，并根据“参考方向”显示将写回的 `cameraDegrees`；确认后只回填 `cameraDegrees`，不会修改 `FovDist`。传感器宽度和高度各保留一个：分别用于水平、垂直计算，并共同用于对角计算。所选传感器方向必须与 `FovDist` 代表的参考像素跨度一致；使用相机 ROI 或裁图时，应填写有效成像区域的传感器尺寸，而不是未经裁切的名义尺寸。
 
@@ -49,7 +79,7 @@ cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 4. 相机优先取上游图像记录的设备编码；旧发光区结果没有 `SourceMasterId` 时，会按其图像路径反查最近的图像记录。这个相机关联只用于流程结果追溯，不改写节点中的两项 FOV 参数。
 5. 成功后写入现有 FOV 2.0 结果并将本次主结果传给后续节点。
 
-发光区明细只有有效数据库角点，没有可用内存帧或图像文件时仍可计算。需要自行定位但没有图像、`RobustV2` 拒绝结果、角点不是四个、顺序无效或 FOV 参数无效时拒绝执行。`MinimumConfidence` 只约束自动运行的 `RobustV2`，不会用图像中的亮度再次筛选有效上游角点。
+发光区明细只有有效数据库角点，没有可用内存帧或图像文件时仍可计算。需要自行定位但没有图像、`RobustV2` 拒绝结果、角点不是四个、顺序无效或 FOV 参数无效时拒绝执行。Flow 的自动定位最低可信度固定为 `0.25`；四角模式只约束自动运行的 `RobustV2`，不会用图像中的亮度再次筛选有效上游角点。
 
 选择轮廓模式时应直接接取图/图像节点，始终重新定位。若接入发光区结果，只用主记录追溯对应图像，不读取四角明细，也不要求明细存在四角。优先复用匹配该源图记录的内存帧，否则读取对应图像文件；禁止借用其他图像的当前帧。只有角点、没有对应像素时失败，不回退到四角模式。
 
@@ -74,11 +104,13 @@ ImageView 的 FOV 选项包含 `FovDist`、`cameraDegrees`、“测量模式”�
 
 独立保留的 `FovLuminanceBoundary` 仅是实验等亮度线拟合：内部暗角低于中心亮度比例时，外沿可能根本没有该比例交点，算法会命中内部渐变并产生倾斜边。增加交点数量或放宽置信度不能修复测量对象的改变。它不是本地 FOV 的默认路径，也不代表 IEC/IDMS 符合性。
 
-像素线段长度为 `L`，相机标定距离为 `FovDist`，相机参考角为 `cameraDegrees` 时，使用针孔模型换算式：
+像素线段长度为 $L$，参考像素跨度为 $D=FovDist$，相机参考角为 $C=cameraDegrees$ 时，使用针孔模型换算式：
 
-```text
-angle(L) = 2 * atan((L / FovDist) * tan(cameraDegrees / 2 * PI / 180)) * 180 / PI
-```
+$$
+\alpha(L)=2\arctan\left(\frac{L}{D}\tan\frac{C\pi}{360}\right)\times\frac{180}{\pi}
+$$
+
+这里 $L$、$D$ 均为 px，$C$ 和结果均为度。长度相同但参考标定不同，角度也会不同；不能把 `FovDist` 当作相机到目标的物理距离。若 $L=D$，换算角恰为 $C$，例如跨度 9410 px 配对参考角 74.2° 时，对应 74.2°。
 
 弧度到角度使用精确的 `180 / PI`，不保留旧实现的 `57.3` 近似常量。因此相同角点和标定参数下，本地结果会比旧 DLL 数值低约 `0.00737%`；这属于换算精度修正，不应用参数补偿。四角顺序固定为 LT、RT、RB、LB：
 
@@ -94,9 +126,9 @@ angle(L) = 2 * atan((L / FovDist) * tan(cameraDegrees / 2 * PI / 180)) * 180 / P
 
 后两个字段保留历史拼写和存储位置，但本地用对边中点，旧 DLL 另有中心方向边界定位，两者不能宣称数值或测量方法等价。ProjectARVRPro 的 W51 正是读取这两个字段及 `D_Fov`，经过 Recipe 修正后比较上下限；角度合格阈值不定义像素边界的亮度阈值。替换前应在固定曝光、测试图案和相机标定下用现场图集比较这三项及单独对角线，确认原 Recipe 的适用性；不能调整 `FovDist` 或放宽出厂限值吸收定位差异。
 
-轮廓模式的中心为实测轮廓外接框中心，水平/垂直方向固定为图像 X/Y，不从不存在的四边恢复旋转。`clolorVisionH_Fov` / `clolorVisionV_Fov` 使用通过此中心的真实左右/上下交点；`H_Fov` / `V_FOV` 使用整个实测轮廓的 X/Y 包络跨度。两个历史对角字段使用通过中心、平行于轮廓外接框两条对角方向的**真实轮廓交点**，`D_Fov` 仍为两项角度均值；这些交点不是角点，该均值也不是任意形状的最大跨度。圆形斜向跨度是圆的截线直径，不是外接正方形的对角线。轮廓模式的七个字段是明确约定的形状摘要，不能仅凭这七项等同整个二维角域；完整轮廓及截线端点保存在 `Boundary` 中。客户规格使用最大跨角、固体角或亮度/对比度有效视场时，应另定指标，不能默默套用上述中心斜向定义。
+四角模式对上下边、左右边、两条对角线均**先分别换算角度，再求角度均值**。例如示意矩形宽 800 px、高 600 px，采用示例参考跨度 1000 px、参考角 90°，得到水平约 77.32°、垂直约 61.93°、对角 90°；这些示例参数不是设备默认值。
 
-非矩形视场需要适配其形状的描述，参见 [IEC TR 63145-1-1:2018 公开预览第 6.4.3 节](https://webstore.ansi.org/preview-pages/DS/preview_M323246CURES.pdf)。[IDMS 第 19.8 节目录](https://www.sid.org/Portals/sid/Files/ICDM/idms1p3_toc.html)区分基于亮度和 Michelson 对比度的 FOV；这两类规范方法不应与本地几何外沿混称。
+轮廓模式的中心为实测轮廓外接框中心，水平/垂直方向固定为图像 X/Y，不从不存在的四边恢复旋转。`clolorVisionH_Fov` / `clolorVisionV_Fov` 使用通过此中心的真实左右/上下交点；`H_Fov` / `V_FOV` 使用整个实测轮廓的 X/Y 包络跨度。两个历史对角字段使用通过中心、平行于轮廓外接框两条对角方向的**真实轮廓交点**，`D_Fov` 仍为两项角度均值；这些交点不是角点，该均值也不是任意形状的最大跨度。圆形斜向跨度是圆的截线直径，不是外接正方形的对角线。轮廓模式的七个字段是明确约定的形状摘要，不能仅凭这七项等同整个二维角域；完整轮廓及截线端点保存在 `Boundary` 中。客户规格使用最大跨角、固体角或亮度/对比度有效视场时，应另定指标，不能默默套用上述中心斜向定义。
 
 ## 结果兼容
 
@@ -110,6 +142,10 @@ leftDownToRightUp, leftUpToRightDown, message
 流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`MeasurementMode`、`BoundaryMode`（`UpstreamCorners`、`RobustV2` 或 `CurvedBoundary`）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 `Boundary`（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接；ImageView 不进入这条持久化链。
 
 内存帧若直接来自普通图片且未经过校正或翻转，主记录 `ImgFile` 会保存该原始图片路径，结果列表的“文件”列可正常关联原图。若当前主缓冲区已校正或翻转，只使用与当前缓冲区严格对应的 `CvRawFilePath` / `CvCieFilePath`；没有这类已保存文件时保持为空，避免历史叠图错误加载变换前的源图。
+
+<!-- algorithm-help:end -->
+
+非矩形视场需要适配其形状的描述，参见 [IEC TR 63145-1-1:2018 公开预览第 6.4.3 节](https://webstore.ansi.org/preview-pages/DS/preview_M323246CURES.pdf)。[IDMS 第 19.8 节目录](https://www.sid.org/Portals/sid/Files/ICDM/idms1p3_toc.html)区分基于亮度和 Michelson 对比度的 FOV；这两类规范方法不应与本地几何外沿混称。
 
 ## 验证边界
 

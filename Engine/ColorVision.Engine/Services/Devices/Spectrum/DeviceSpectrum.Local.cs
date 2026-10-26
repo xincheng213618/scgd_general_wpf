@@ -130,7 +130,7 @@ public partial class DeviceSpectrum
         if (result.MeasurementId > 0) view.Id = result.MeasurementId;
         if (result.EqeData is { } eqe)
         {
-            view.Eqe = eqe.dEqe; view.V = (float)eqe.dVoltage; view.I = (float)eqe.dCurrent;
+            view.Eqe = eqe.dEqe; view.V = (float)eqe.dVoltage; view.I = (float)(eqe.dCurrent * 1000.0);
             view.LuminousFlux = eqe.dIm; view.RadiantFlux = eqe.dW;
         }
         return view;

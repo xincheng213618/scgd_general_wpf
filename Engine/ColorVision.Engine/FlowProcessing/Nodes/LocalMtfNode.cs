@@ -107,6 +107,10 @@ internal static class LocalMtfResultPersistence
 }
 
 [STNode("Flow_LocalAlgorithms", "MTF计算(V2)", CategoryOrder = 9910, NodeOrder = 60)]
+[FlowEngineLib.FlowNodeDocumentation("在原始灰度测量框内计算条纹亮暗对比度，支持单独 H、V 与四部图案。",
+    Usage = "图像连接 IN_IMG，布点结果或 Start 连接 IN_POI；直接编辑算法参数并核对输出比例或百分数。",
+    Notes = "只接收方向已确定的 8/16 位 RAW。此条纹对比度不生成斜边 SFR 曲线或 MTF50。",
+    TopicId = "algorithms.stripe-mtf")]
 public sealed class LocalMtfNode : LocalFlowNodeBase
 {
     private readonly ILocalMtfNodeServices services;

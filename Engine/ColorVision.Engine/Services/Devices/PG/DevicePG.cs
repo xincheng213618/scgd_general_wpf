@@ -5,14 +5,15 @@ using ColorVision.UI.Authorizations;
 using ColorVision.Engine.Services.Devices.PG.Templates;
 using ColorVision.Engine.Templates;
 using System.ComponentModel;
+using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {
-    public class DevicePG : DeviceService<ConfigPG>
+    public partial class DevicePG : DeviceService<ConfigPG>
     {
         public MQTTPG DService { get; set; }
 
-        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
+        public DisplayPGConfig DisplayConfig { get; }
 
         [CommandDisplayAttribute("PgTemplateConfig",Order =100, CategoryOrder = 2)]
         [Category("AcquisitionDisplay")]
@@ -22,14 +23,21 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         public DevicePG(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTPG(Config);
+            DisplayConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayPGConfig>(Config.Code);
+            InitializeLocalPG();
+            DService = new MQTTPG(Config) { Device = this };
+            DService.RefreshBackendStatus();
 
             EditCommand = new RelayCommand(a =>
             {
                 EditPG window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                if (window.ShowDialog() == true) Save();
+                if (window.ShowDialog() == true)
+                {
+                    ConfigService.Instance.Save<DisplayConfigManager>();
+                    Save();
+                }
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             EditPGTemplateCommand = new RelayCommand(a => EditPGTemplate());

@@ -1039,4 +1039,10 @@ Continue?</value></data>
   <data name="MarketplaceBulkUpdatePackageDownloadFailed" xml:space="preserve">
     <value>Some plugin packages could not be downloaded. This bulk update has been canceled.</value>
   </data>
+  <data name="AlgorithmHelp_Title" xml:space="preserve"><value>Algorithm principles</value></data>
+  <data name="AlgorithmHelp_Online" xml:space="preserve"><value>Open website</value></data>
+  <data name="AlgorithmHelp_CopyLink" xml:space="preserve"><value>Copy website link</value></data>
+  <data name="AlgorithmHelp_Print" xml:space="preserve"><value>Print or save PDF</value></data>
+  <data name="AlgorithmHelp_Version" xml:space="preserve"><value>Offline help · App version {0}</value></data>
+  <data name="AlgorithmHelp_Failed" xml:space="preserve"><value>Offline help is currently unavailable: {0}</value></data>
 </root>

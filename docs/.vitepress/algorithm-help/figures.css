@@ -1,0 +1,8 @@
+/* The same scientific diagrams are embedded in the website and offline help. */
+figure.algorithm-figure { margin: 22px 0; overflow-x: auto; border: 1px solid #d8e0e8; border-radius: 8px; background: #fff; }
+figure.algorithm-figure > svg { display: block; width: 100%; min-width: 560px; height: auto; color: #25364a; background: #fff; }
+figure.algorithm-figure > figcaption { min-width: 280px; margin: 0; padding: 12px 16px; color: #46556a; font-size: 13px; line-height: 1.7; border-top: 1px solid #e4eaf0; }
+@media print {
+  figure.algorithm-figure { overflow: visible; break-inside: avoid; }
+  figure.algorithm-figure > svg { min-width: 0; }
+}

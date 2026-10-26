@@ -8369,4 +8369,6 @@
   <data name="TemplateBrowserNoData" xml:space="preserve"><value>暫無資料</value></data>
   <data name="TemplateBrowserEstimateBasis" xml:space="preserve"><value>次數來自本機保留紀錄；預計耗時取目前版本最近 {0} 次正常完成紀錄的平均值。</value></data>
   <data name="TemplateBrowserUsageScope" xml:space="preserve"><value>執行次數僅統計本機保留的執行紀錄。沒有符合目前版本的正常完成紀錄時，不估算耗時。</value></data>
+  <data name="Flow_NodeInspector_AlgorithmHelp" xml:space="preserve"><value>檢視演算法原理</value></data>
+  <data name="Flow_NodeInspector_AlgorithmHelpTooltip" xml:space="preserve"><value>檢視量測原理、計算公式及互動示意，離線可用</value></data>
 </root>

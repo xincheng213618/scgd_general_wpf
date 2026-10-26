@@ -10,8 +10,10 @@
     "docs:knowledge": "node docs/.vitepress/scripts/knowledge.mjs generate",
     "docs:check": "node --test docs/.vitepress/scripts/knowledge.test.mjs docs/.vitepress/scripts/readme-links.test.mjs && node docs/.vitepress/scripts/knowledge.mjs check",
     "docs:check:html": "node --test docs/.vitepress/scripts/html-links.test.mjs",
+    "docs:help": "node docs/.vitepress/scripts/algorithm-help.mjs generate",
+    "docs:help:check": "node --test docs/.vitepress/scripts/algorithm-help.test.mjs && node docs/.vitepress/scripts/algorithm-help.mjs check",
     "docs:dev": "node docs/.vitepress/scripts/knowledge.mjs check && vitepress dev docs",
-    "docs:build": "npm run docs:check && npm run docs:check:html && vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs && npm run docs:validate:dist",
+    "docs:build": "npm run docs:check && npm run docs:check:html && npm run docs:help:check && vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs && npm run docs:validate:dist",
     "docs:validate": "npm run docs:build",
     "docs:validate:dist": "node docs/.vitepress/scripts/validate-docs.mjs",
     "docs:preview": "vitepress preview docs"
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@vue/compiler-dom": "^3.5.31",
+    "markdown-it-mathjax3": "^4.3.2",
     "mermaid": "^11.17.2",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17",

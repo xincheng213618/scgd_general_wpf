@@ -21,6 +21,10 @@ namespace ColorVision.Engine.Services.Devices.PG
         public string Category { get => _Category; set { _Category = value; OnPropertyChanged(); } }
         private string _Category = "SkyCode";
 
+        [Display(Name = "Channel", ResourceType = typeof(Properties.Resources))]
+        public string Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); } }
+        private string _Channel = "01";
+
         [Display(Name = "Engine_PG_RegisterAddress", ResourceType = typeof(Properties.Resources))]
         public int RegisterAddress { get => _RegisterAddress; set { _RegisterAddress = value; OnPropertyChanged(); } }
         private int _RegisterAddress = 0x1b;
