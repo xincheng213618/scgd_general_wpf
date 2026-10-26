@@ -41,7 +41,7 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 本地 EQE 沿用服务的电气输入契约：旧 `SpectrumEQENode` 默认读取本次流程前面的 `SMUResult`，其中电压为 V、电流为 mA；开启“自定义电压/流”时以节点填写值覆盖 V/I，保留原有测量关联，且不修改上游测量对象。转交原生 EQE 之前电流只转换一次为 A（例如 25 mA → 0.025 A）。缺少上游且未启用自定义时明确失败，不使用设备界面中的上次值或 PG 九路数据。PG 的 `POWER.MEASURE` 没有服务默认的多路合成规则，不自动转成 `SMUResult`。
 
-新“本地光谱采集”节点的“使用上游源表电压/流”默认关闭，保留已有流程的手填 V/A；开启且使用 EQE 时，读取本次流程的 SMU 测量并按相同规则转换。普通光谱不因此要求 SMU。节点保存值不被上游覆盖，执行日志和结果参数记录实际使用的 V/A 及原始 `SMUData`（mA）。手动窗口的 V/I 继续为 V/A。历史表 `VResult` / `IResult` 按服务约定保存 V/mA，并关联有效的上游 SMU 结果 ID，不把原生返回的 A 直接写入 mA 字段。`LocalSpectrumFlowTests`、`LocalSpectrumRepeatParameterTests` 与 `Test/Spectrum.Tests/EngineSpectrumResultTests.cs` 保护上游/自定义选择、单位转换、缺失输入和结果关联边界。
+新“本地光谱采集”节点的“使用上游源表电压/流”默认开启，启用 EQE 后读取本次流程实际执行过的上游 SMU 测量并按相同规则转换；仅存在节点却没有有效测量结果时明确报错，不自动回退到手填值。需要手动输入时关闭该选项，再填写 V/A；输入框只在 EQE 手动输入时显示。旧流程缺少该选项时采用上游默认值，已经明确保存的开启或关闭值继续保留。普通光谱不因此要求 SMU。节点保存值不被上游覆盖，执行日志和结果参数记录实际使用的 V/A 及原始 `SMUData`（mA）。手动窗口的 V/I 继续为 V/A。历史表 `VResult` / `IResult` 按服务约定保存 V/mA，并关联有效的上游 SMU 结果 ID，不把原生返回的 A 直接写入 mA 字段。`LocalSpectrumFlowTests`、`LocalSpectrumRepeatParameterTests` 与 `Test/Spectrum.Tests/EngineSpectrumResultTests.cs` 保护上游/自定义选择、单位转换、缺失输入、默认值、已保存的手动选择和结果关联边界。
 
 本地 EQE 暂不支持同步频率模式。启用 `NDConfig.IsNDPort` 后，ND 与光谱仪组成同一测量链：绑定已有滤轮时复用其本地会话，不要求再打开“使用本地滤色轮”开关；未绑定设备时使用 ND 配置的串口、波特率，由光谱仪会话持有连接。打开光谱仪时检查 ND 连接和实际孔位，关闭时只关闭自己创建的 ND 连接，不关闭共享滤轮。已知服务占用、并发指令、配置变化或定位读回不符均明确失败；服务失联不视为已释放串口。
 

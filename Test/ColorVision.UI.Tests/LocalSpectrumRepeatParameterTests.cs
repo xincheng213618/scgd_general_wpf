@@ -14,16 +14,40 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalSpectrumRepeatParameterTests
 {
+    // Protect the new default and explicit manual selections in saved flows.
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void EqeResolvesOnlyTheSelectedElectricalInputWithoutChangingSavedValues(bool upstream, bool available)
+    [InlineData(null)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SavedEqeInputSelectionPreservesExplicitValuesAndDefaultsMissingValuesToUpstream(bool? saved)
     {
         StaTest.Run(() =>
         {
             using var scope = new SpectrumScope();
-            var node = new LocalSpectrumNode { Eqe = true, UseUpstreamVI = upstream, Voltage = 5, Current = .1f };
+            var node = new LocalSpectrumNode();
+            node.Create();
+            Assert.True(node.UseUpstreamVI);
+            var state = new Dictionary<string, byte[]>();
+            if (saved.HasValue) state[nameof(LocalSpectrumNode.UseUpstreamVI)] = System.Text.Encoding.UTF8.GetBytes(saved.Value.ToString());
+            node.OnLoadNode(state);
+            node.Eqe = true;
+            Assert.Equal(saved ?? true, node.UseUpstreamVI);
+        });
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(null, true)]
+    public void EqeResolvesOnlyTheSelectedElectricalInputWithoutChangingSavedValues(bool? upstream, bool available)
+    {
+        StaTest.Run(() =>
+        {
+            using var scope = new SpectrumScope();
+            var node = new LocalSpectrumNode { Eqe = true, Voltage = 5, Current = .1f };
+            if (upstream.HasValue) node.UseUpstreamVI = upstream.Value;
+            bool usesUpstream = upstream ?? true;
             node.Create();
             var action = new CVStartCFC("eqe-electrical-input") { PersistResults = false };
             using var resources = action.RuntimeResources;
@@ -32,9 +56,9 @@ public sealed class LocalSpectrumRepeatParameterTests
             node.nodeRunEvent += (_, args) => { payload = JObject.Parse(args.SendPayload); resources.Dispose(); };
             node.GetAllInputOptions().Single().ReceiveData(action);
             Assert.NotNull(payload);
-            Assert.Equal(upstream ? 4.5f : 5, payload["Voltage"]!.Value<float>());
-            Assert.Equal(upstream ? .025f : .1f, payload["Current"]!.Value<float>());
-            if (upstream) Assert.Equal(123, payload["SMUData"]!["MasterId"]!.Value<int>());
+            Assert.Equal(usesUpstream ? 4.5f : 5, payload["Voltage"]!.Value<float>());
+            Assert.Equal(usesUpstream ? .025f : .1f, payload["Current"]!.Value<float>());
+            if (usesUpstream) Assert.Equal(123, payload["SMUData"]!["MasterId"]!.Value<int>());
             else Assert.Equal(JTokenType.Null, payload["SMUData"]!.Type);
             Assert.Equal(5, node.Voltage);
             Assert.Equal(.1f, node.Current);
@@ -47,7 +71,7 @@ public sealed class LocalSpectrumRepeatParameterTests
         StaTest.Run(() =>
         {
             using var scope = new SpectrumScope();
-            var node = new LocalSpectrumNode { Eqe = true, UseUpstreamVI = true };
+            var node = new LocalSpectrumNode { Eqe = true };
             node.Create();
             var action = new CVStartCFC("eqe-missing-input") { PersistResults = false };
             using var resources = action.RuntimeResources;

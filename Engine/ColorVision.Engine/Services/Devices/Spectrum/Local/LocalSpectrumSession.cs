@@ -31,7 +31,7 @@ public sealed class LocalSpectrumParameters
     {
         var data = value switch { null => null, JObject json => json, JToken => null, _ => JObject.FromObject(value) };
         if (data?["V"] == null || data["V"]!.Type == JTokenType.Null || data["I"] == null || data["I"]!.Type == JTokenType.Null)
-            throw new InvalidOperationException("EQE 缺少上游源表的电压、电流，请先执行源表测量或启用自定义电压/流。");
+            throw new InvalidOperationException("EQE 缺少本次流程上游源表的电压、电流。请先执行源表测量，或切换为手动输入：本地光谱节点关闭“使用上游源表电压/流”，旧 EQE 节点开启“自定义电压/流”。");
         SMUData = data.ToObject<FlowEngineLib.SMUResultData>()!;
         Voltage = (float)SMUData.V;
         Current = (float)(SMUData.I / 1000.0);
