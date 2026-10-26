@@ -835,6 +835,11 @@ public sealed class LumFourColorWorkflowSafetyTests
             Assert.Equal(32, calibrated.BitsPerChannel);
             Assert.Equal(new[] { 6f, -6f, 4f }, Enumerable.Range(0, 3).Select(channel => BitConverter.ToSingle(calibrated.Data, channel * sizeof(float))));
             Assert.Null(calibrated.CalibrationHash);
+            var preview = LumFourColorCieService.Render(calibrated);
+            Assert.Equal(PixelFormats.Rgb48, preview.Format);
+            byte[] previewPixels = new byte[6];
+            preview.CopyPixels(previewPixels, 6, 0);
+            Assert.Equal(new byte[] { 3, 0, 2, 0, 1, 0 }, previewPixels);
             Assert.Equal(original, File.ReadAllBytes(rawPath));
             snapshot.Save(rawPath, canReplay: false);
             Assert.Contains("XYZ", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "A")).Message);
@@ -843,6 +848,53 @@ public sealed class LumFourColorWorkflowSafetyTests
             Assert.Empty(LumFourColorRecentImages.CreateList([new MeasureResultImgModel { DeviceCode = "B" }], "A"));
         }
         finally { File.Delete(rawPath); }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CiePreviewUsesAssociatedOriginalOrYAndPreservesMeasurementData(bool hasOriginal)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            string ciePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cvcie");
+            string rawPath = Path.ChangeExtension(ciePath, ".cvraw");
+            float[] xyz = [100, 200, 10, 30, 500, 600];
+            byte[] data = new byte[xyz.Length * sizeof(float)];
+            Buffer.BlockCopy(xyz, 0, data, 0, data.Length);
+            byte[] rawPixels = [1, 25, 250, 180, 20, 5];
+            try
+            {
+                using var cie = new CVCIEFile { Version = 1, Cols = 2, Rows = 1, Bpp = 32, Channels = 3,
+                    Gain = 1, Exp = [1, 1, 1], Data = data, SrcFileName = rawPath };
+                Assert.True(CVFileUtil.WriteCIEFile(ciePath, cie));
+                if (hasOriginal)
+                {
+                    using var raw = new CVCIEFile { Version = 1, FileExtType = CVType.Raw, Cols = 2, Rows = 1,
+                        Bpp = 8, Channels = 3, Gain = 1, Exp = [1, 1, 1], Data = rawPixels };
+                    Assert.True(CVFileUtil.WriteCVRaw(rawPath, raw));
+                }
+
+                var frame = LumFourColorCieService.Load(ciePath);
+                var preview = LumFourColorCieService.Render(frame);
+                Assert.Equal(hasOriginal ? PixelFormats.Bgr24 : PixelFormats.Gray8, preview.Format);
+                byte[] pixels = new byte[hasOriginal ? 6 : 2];
+                preview.CopyPixels(pixels, pixels.Length, 0);
+                Assert.Equal(hasOriginal ? rawPixels : new byte[] { 0, 255 }, pixels);
+                Assert.True(preview.IsFrozen);
+                Assert.Equal(data, frame.Data);
+                var measurement = LumFourColorCieService.Measure(frame, new(0, 0, 1, 1, PoiMeasurementShape.Rect));
+                Assert.Equal(100, measurement.X);
+                Assert.Equal(10, measurement.Y);
+                Assert.Equal(500, measurement.Z);
+                Assert.Equal(data, frame.Data);
+            }
+            finally
+            {
+                File.Delete(ciePath);
+                File.Delete(rawPath);
+            }
+        });
     }
 
     private static DeviceCamera TestCamera(string code)

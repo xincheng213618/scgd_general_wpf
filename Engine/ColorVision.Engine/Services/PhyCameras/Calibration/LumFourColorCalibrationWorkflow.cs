@@ -29,6 +29,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
     {
         public string Source { get; init; } = string.Empty;
         public string? CalibrationHash { get; init; }
+        internal BitmapSource? SourcePreview { get; init; }
     }
 
     public sealed record LumFourColorSpectrumCapture(
@@ -90,11 +91,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 if (!lease.HasCie)
                     throw new InvalidOperationException("当前校正模板没有生成 CIE 图像。");
 
-                byte[] data = lease.CopyCieToArray();
+                LocalCameraPreview preview = LocalCameraPreview.Create(frame);
                 cancellationToken.ThrowIfCancellationRequested();
                 calibrationSource.EnsureUnchanged();
                 return new LumFourColorCieCapture(
-                    data,
+                    preview.CieData,
                     lease.Metadata.Width,
                     lease.Metadata.Height,
                     lease.Metadata.CieBpp,
@@ -104,6 +105,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 {
                     Source = $"{device.Name} · {calibration.Name}",
                     CalibrationHash = calibrationSource.Hash,
+                    SourcePreview = preview.Bitmap,
                 };
             }, cancellationToken);
         }
@@ -563,29 +565,51 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                     for (int channel = 0; channel < 3; channel++)
                         Buffer.BlockCopy(source.CreateChannel(channel), 0, xyz, channel * channelBytes, channelBytes);
                     return new LumFourColorCieCapture(xyz, file.Cols, file.Rows, 32, 3, file.Gain, snapshot.Exposure.ToArray())
-                        { Source = System.IO.Path.GetFullPath(filePath) };
+                    {
+                        Source = System.IO.Path.GetFullPath(filePath),
+                        SourcePreview = CvRawLayerController.ConvertForDisplay(file, default),
+                    };
                 }
                 if (!CvcieSrgbRenderer.Supports(file.Channels, file.Bpp))
                     throw new InvalidOperationException("用户校正需要三通道浮点 XYZ 图像。");
                 byte[] data = file.Data?.ToArray() ?? throw new InvalidOperationException("CVCIE 文件没有图像数据。");
-                return new LumFourColorCieCapture(data, file.Cols, file.Rows, file.Bpp, file.Channels, file.Gain, file.Exp?.ToArray() ?? Array.Empty<float>()) { Source = System.IO.Path.GetFullPath(filePath) };
+                using CVCIEFile sourceFile = CvRawLayerController.LoadSourceFile(filePath, out _);
+                return new LumFourColorCieCapture(data, file.Cols, file.Rows, file.Bpp, file.Channels, file.Gain, file.Exp?.ToArray() ?? Array.Empty<float>())
+                {
+                    Source = System.IO.Path.GetFullPath(filePath),
+                    SourcePreview = sourceFile.Cols == file.Cols && sourceFile.Rows == file.Rows
+                        ? CvRawLayerController.ConvertForDisplay(sourceFile, default) : null,
+                };
             }
         }
 
         public static WriteableBitmap Render(LumFourColorCieCapture frame)
         {
+            if (frame.SourcePreview is BitmapSource source)
+            {
+                WriteableBitmap preview = source as WriteableBitmap ?? new WriteableBitmap(source);
+                preview.Freeze();
+                return preview;
+            }
+
+            // Match the main view's source mode: without a matching RAW preview, show Y in grayscale.
+            if (!CvcieSrgbRenderer.Supports(frame.Channels, frame.BitsPerChannel))
+                throw new InvalidOperationException("用户校正需要三通道浮点 XYZ 图像。");
+            int planeBytes = checked(frame.Width * frame.Height * (frame.BitsPerChannel / 8));
+            if (frame.Data.Length != checked(planeBytes * 3))
+                throw new InvalidOperationException("CVCIE XYZ 数据长度与图像尺寸不匹配。");
             using CVCIEFile file = new()
             {
-                Data = frame.Data,
+                Data = frame.Data.AsSpan(planeBytes, planeBytes).ToArray(),
                 Cols = frame.Width,
                 Rows = frame.Height,
                 Bpp = frame.BitsPerChannel,
-                Channels = frame.Channels,
+                Channels = 1,
                 Gain = frame.Gain,
                 Exp = frame.Exposure,
-                FileExtType = CVType.CIE,
+                FileExtType = CVType.Raw,
             };
-            return CvcieSrgbRenderer.Render(file, CvcieBrightnessMode.Auto, 1d);
+            return MediaHelper.RenderFloatChannel(file);
         }
 
         public static PoiMeasurementResult Measure(LumFourColorCieCapture frame, PoiMeasurementPoint poi)

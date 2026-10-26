@@ -370,7 +370,7 @@ namespace ColorVision.Engine.Media
             return ConvertForDisplay(plane, token);
         }
 
-        private static WriteableBitmap ConvertForDisplay(CVCIEFile file, CancellationToken token)
+        internal static WriteableBitmap ConvertForDisplay(CVCIEFile file, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
             if (file.Channels == 1 && file.Bpp is 32 or 64) return MediaHelper.RenderFloatChannel(file, token);
