@@ -3669,6 +3669,7 @@
         "Web/Backend/test_transfer_files.py",
         "Web/Backend/test_auth_policy.py",
         "Web/Frontend/tests/transferAccess.test.ts",
+        "Web/Frontend/tests/transferUpload.test.ts",
         "Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs"
       ],
       "related": [

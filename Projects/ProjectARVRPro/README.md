@@ -8,7 +8,7 @@ ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dl
 - 宿主版本要求读取随包 `manifest.json` 的 `requires`。项目版本独立于主程序；手工修改 `ProjectARVRPro.csproj` 的 `VersionPrefix`，打包器从主 DLL 同步 manifest 版本。
 - 运行检测需要现场的 Flow 模板、设备服务、Engine MySQL 数据和匹配的 Recipe；本地结果保存在 SQLite。
 - 流程配置默认位于 `%APPDATA%\ColorVision\Config\ProjectARVRProProcessGroups.json`，结果库为同目录 `ProjectARVRPro.db`。首次升级仅在能确认旧共享 `ProcessGroups.json` 属于 ARVRPro 时复制迁移，原文件保留；Recipe 随流程或解析实例保存。
-- 真实运行可能切换图案、控制设备及写入结果。Demura 的 `BurnAfterGenerate` 默认开启，运行该类型前须核对源文件和目标设备操作范围。
+- 真实运行可能切换图案、控制设备及写入结果。Demura 默认“仅返回CSV”，W128 文件存在且可读取即通过；关闭该选项后，完整处理的 `BurnAfterGenerate` 默认开启，须核对源文件和目标设备操作范围。
 
 旧 AOI 模板升级时，将仅用于中转的通用传感器切图节点替换为「ProjectARVRPro → 外部切图」，核对等待超时及完成后延时，并保留外部客户端的主 Socket 连接。旧服务端 Flow 需改为宿主进程内执行。模板不会自动迁移；确认无其它指令引用后再清理专用传感器配置。协议事件名保持 `AoiSwitchPG` / `AOITestSwitchImageComplete`。
 

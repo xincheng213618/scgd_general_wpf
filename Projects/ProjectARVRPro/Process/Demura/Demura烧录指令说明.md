@@ -1,6 +1,6 @@
 # Demura 烧录指令说明
 
-`DemuraProcess` 直连通用传感器配置中的 PG TCP 地址，使用 GECS 命令完成文件下发、上电确认、FLASH 擦除和写入。运行前须确认目标设备、源 bin 与设备操作授权；`BurnAfterGenerate` 默认开启。
+`DemuraProcess` 默认开启“仅返回CSV”，W128 文件存在且可读取即通过，不执行工具生成、烧录或失败下电。需要烧录时先关闭该选项；完整处理直连通用传感器配置中的 PG TCP 地址，使用 GECS 命令完成文件下发、上电确认、FLASH 擦除和写入。运行前须确认目标设备、源 bin 与设备操作授权；完整处理的 `BurnAfterGenerate` 默认开启。
 
 [Demura 烧录与 PG 通信](../../../../docs/04-api-reference/projects/project-arvr-pro-demura.md)集中说明配置默认值、帧格式、成功与失败回包、HEX 生成、手工复现和故障定位。完整说明需在匹配版本的源码仓库或文档站点查看。
 

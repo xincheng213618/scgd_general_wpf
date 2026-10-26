@@ -15,6 +15,7 @@ using ImwriteFlags = OpenCvSharp.ImwriteFlags;
 using ColorConversionCodes = OpenCvSharp.ColorConversionCodes;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Buffers.Binary;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -457,7 +458,8 @@ namespace Pattern
                     SaveBitmapUsingEncoder(CreateBmpBitmapSource(source, format), fileName, new BmpBitmapEncoder());
                     break;
                 case PatternFormat.bmp24:
-                    Cv2.ImWrite(fileName, source);
+                    if (!Cv2.ImWrite(fileName, source))
+                        throw new IOException($"Failed to save bitmap: {fileName}");
                     break;
                 case PatternFormat.png:
                     Cv2.ImWrite(fileName, source, [new ImageEncodingParam(ImwriteFlags.PngCompression, 3)]);
@@ -472,6 +474,22 @@ namespace Pattern
                     Cv2.ImWrite(fileName, source);
                     break;
             }
+
+            if (format is PatternFormat.bmp1 or PatternFormat.bmp4 or PatternFormat.bmp8 or PatternFormat.bmp24)
+                CompleteBmpImageSize(fileName);
+        }
+
+        private static void CompleteBmpImageSize(string fileName)
+        {
+            // Both encoders may leave biSizeImage at zero; customer boards require an explicit length.
+            using var stream = File.Open(fileName, FileMode.Open, FileAccess.ReadWrite);
+            Span<byte> value = stackalloc byte[4];
+            stream.Position = 10;
+            stream.ReadExactly(value);
+            uint pixelOffset = BinaryPrimitives.ReadUInt32LittleEndian(value);
+            BinaryPrimitives.WriteUInt32LittleEndian(value, checked((uint)(stream.Length - pixelOffset)));
+            stream.Position = 34;
+            stream.Write(value);
         }
 
         public void Dispose()

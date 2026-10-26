@@ -3,6 +3,7 @@ using System;
 using System.ComponentModel;
 using ColorVision.Engine.Utilities;
 using ColorVision.Engine.Properties;
+using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Cache
 {
@@ -34,10 +35,11 @@ namespace ColorVision.Engine.Cache
         private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600;  return string.Format("{0}-{1}", fromPort, fromPort + 5);  }))();
 
         /// <summary>
-        /// 保存天数
+        /// 保留旧服务协议字段，固定下发 0 以禁用按天删除；文件清理由流程容量策略负责。
         /// </summary>
-        [LocalizedDisplayName(nameof(Resources.RetentionDays))]
-        public uint SaveDays { get => _SaveDays; set { _SaveDays = value; OnPropertyChanged(); } }
-        private uint _SaveDays = 365;
+        [Browsable(false), LocalizedDisplayName(nameof(Resources.RetentionDays))]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+        // 旧服务将大于 30 的值压回 30；忽略旧配置中的正值，避免重新启用按天清理。
+        public uint SaveDays { get => 0; set { } }
     }
 }

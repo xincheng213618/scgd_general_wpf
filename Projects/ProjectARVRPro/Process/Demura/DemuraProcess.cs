@@ -51,6 +51,9 @@ namespace ProjectARVRPro.Process.Demura
                 ctx.ObjectiveTestResult.Msg = failureMessage;
             }
 
+            if (Config.ReturnCsvOnly)
+                return false;
+
             var log = ctx?.Log;
             try
             {
@@ -88,7 +91,7 @@ namespace ProjectARVRPro.Process.Demura
 
             ctx.ObjectiveTestResult.DemuraTestResults.Remove(Config.Name);
             var log = ctx.Log;
-            DemuraViewTestResult testResult = new DemuraViewTestResult();
+            DemuraViewTestResult testResult = new DemuraViewTestResult { ReturnCsvOnly = Config.ReturnCsvOnly };
 
             try
             {
@@ -104,18 +107,25 @@ namespace ProjectARVRPro.Process.Demura
                     testResult.FileName = fileResult.FileName;
                     testResult.Data = fileResult.Data;
                 }
-                ApplyCandidate(testResult.W255, FindCandidate(candidates, Config.W255Keyword, Prepared255FileName));
-
-                bool hasRequiredCsv = testResult.W128.SourceExists && testResult.W255.SourceExists;
-                if (Config.PrepareDemuraTool)
+                if (Config.ReturnCsvOnly)
                 {
-                    if (hasRequiredCsv)
+                    if (fileResult == null)
+                        testResult.Message = "未找到W128 CSV。";
+                }
+                else
+                {
+                    ApplyCandidate(testResult.W255, FindCandidate(candidates, Config.W255Keyword, Prepared255FileName));
+                    bool hasRequiredCsv = testResult.W128.SourceExists && testResult.W255.SourceExists;
+                    if (Config.PrepareDemuraTool)
                     {
-                        await PrepareDemuraToolAsync(testResult, log).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        testResult.Message = "未找到完整的W128/W255 CSV，已跳过DemuraTool准备。";
+                        if (hasRequiredCsv)
+                        {
+                            await PrepareDemuraToolAsync(testResult, log).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            testResult.Message = "未找到完整的W128/W255 CSV，已跳过DemuraTool准备。";
+                        }
                     }
                 }
 
@@ -167,28 +177,31 @@ namespace ProjectARVRPro.Process.Demura
             if (testResult == null) return;
 
             AppendCsvOutput(paragraph, "W128", testResult.W128, foreground, fontSize);
-            AppendCsvOutput(paragraph, "W255", testResult.W255, foreground, fontSize);
             AppendFileLinkOutput(paragraph, "PreviewImage", testResult.PreviewImageFile, foreground, fontSize);
-            AppendFileLinkOutput(paragraph, "ToolDirectory", testResult.ToolDirectory, foreground, fontSize);
-            AppendFileLinkOutput(paragraph, "DemuraConfig", testResult.DemuraConfigFile, foreground, fontSize);
-            AppendFileLinkOutput(paragraph, "DynamicBin", testResult.DynamicBinFile, foreground, fontSize);
-            AppendFileLinkOutput(paragraph, "MergedBin", testResult.MergedBinFile, foreground, fontSize);
-            if (testResult.MergedBinExists)
-                AppendOutputLine(paragraph, "FlashAddress:0x00003000", foreground, fontSize);
-            AppendOutputLine(paragraph, $"BurnStatus:{BuildBurnStatusText(testResult)}", foreground, fontSize);
-            if (testResult.BurnEnabled)
+            if (!testResult.ReturnCsvOnly)
             {
-                AppendFileLinkOutput(paragraph, "BurnSource", testResult.BurnSourceFile, foreground, fontSize);
-                AppendOutputLine(paragraph, $"BurnTarget:{testResult.BurnTargetFileName}", foreground, fontSize);
-                AppendOutputLine(paragraph, $"BurnSensor:{testResult.BurnSensorName}({testResult.BurnSensorCode}) {testResult.BurnAddress}:{testResult.BurnPort}", foreground, fontSize);
-                AppendOutputLine(paragraph, "BurnConnectionMode:TCPIP", foreground, fontSize);
-                AppendOutputLine(paragraph, $"BurnCommand:{testResult.BurnCommand}", foreground, fontSize);
-                if (!string.IsNullOrWhiteSpace(testResult.BurnCommandHex))
-                    AppendOutputLine(paragraph, $"BurnCommandHex:{testResult.BurnCommandHex}", foreground, fontSize);
-                if (!string.IsNullOrWhiteSpace(testResult.BurnResponseText))
-                    AppendOutputLine(paragraph, $"BurnResponse:{testResult.BurnResponseText}", foreground, fontSize);
-                if (!string.IsNullOrWhiteSpace(testResult.BurnMessage))
-                    AppendOutputLine(paragraph, $"BurnMessage:{testResult.BurnMessage}", foreground, fontSize);
+                AppendCsvOutput(paragraph, "W255", testResult.W255, foreground, fontSize);
+                AppendFileLinkOutput(paragraph, "ToolDirectory", testResult.ToolDirectory, foreground, fontSize);
+                AppendFileLinkOutput(paragraph, "DemuraConfig", testResult.DemuraConfigFile, foreground, fontSize);
+                AppendFileLinkOutput(paragraph, "DynamicBin", testResult.DynamicBinFile, foreground, fontSize);
+                AppendFileLinkOutput(paragraph, "MergedBin", testResult.MergedBinFile, foreground, fontSize);
+                if (testResult.MergedBinExists)
+                    AppendOutputLine(paragraph, "FlashAddress:0x00003000", foreground, fontSize);
+                AppendOutputLine(paragraph, $"BurnStatus:{BuildBurnStatusText(testResult)}", foreground, fontSize);
+                if (testResult.BurnEnabled)
+                {
+                    AppendFileLinkOutput(paragraph, "BurnSource", testResult.BurnSourceFile, foreground, fontSize);
+                    AppendOutputLine(paragraph, $"BurnTarget:{testResult.BurnTargetFileName}", foreground, fontSize);
+                    AppendOutputLine(paragraph, $"BurnSensor:{testResult.BurnSensorName}({testResult.BurnSensorCode}) {testResult.BurnAddress}:{testResult.BurnPort}", foreground, fontSize);
+                    AppendOutputLine(paragraph, "BurnConnectionMode:TCPIP", foreground, fontSize);
+                    AppendOutputLine(paragraph, $"BurnCommand:{testResult.BurnCommand}", foreground, fontSize);
+                    if (!string.IsNullOrWhiteSpace(testResult.BurnCommandHex))
+                        AppendOutputLine(paragraph, $"BurnCommandHex:{testResult.BurnCommandHex}", foreground, fontSize);
+                    if (!string.IsNullOrWhiteSpace(testResult.BurnResponseText))
+                        AppendOutputLine(paragraph, $"BurnResponse:{testResult.BurnResponseText}", foreground, fontSize);
+                    if (!string.IsNullOrWhiteSpace(testResult.BurnMessage))
+                        AppendOutputLine(paragraph, $"BurnMessage:{testResult.BurnMessage}", foreground, fontSize);
+                }
             }
             if (!string.IsNullOrWhiteSpace(testResult.Message))
                 AppendOutputLine(paragraph, $"Message:{testResult.Message}", foreground, fontSize);
@@ -690,9 +703,15 @@ flash_address = 0x00003000
 """;
         }
 
-        private void RebuildItems(DemuraViewTestResult testResult)
+        internal void RebuildItems(DemuraViewTestResult testResult)
         {
             testResult.Items.Clear();
+            if (Config.ReturnCsvOnly)
+            {
+                AddBoolItem(testResult.Items, "W128FileExists", testResult.W128.SourceExists, testResult.W128.SourceFile);
+                return;
+            }
+
             int expectedCount = Math.Max(0, Config.InputWidth) * Math.Max(0, Config.InputHeight);
             AddCsvItems(testResult.Items, "W128", testResult.W128, expectedCount);
             AddCsvItems(testResult.Items, "W255", testResult.W255, expectedCount);
