@@ -209,17 +209,12 @@ namespace ColorVision.Copilot
             }
 
             item = request.Create(queuedRun.Id);
-            try
+            if (!TryRegister(item, queuedRun, addRecoveryRecord: true, itemReady))
             {
-                Register(item, addRecoveryRecord: true);
+                item = null;
+                admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.RequestCancelled);
+                return false;
             }
-            catch
-            {
-                itemReady.TrySetCanceled();
-                _taskHost.RequestCancel(queuedRun.Id);
-                throw;
-            }
-            itemReady.SetResult(item);
             if (runNext)
                 SynchronizeRecoveryOrder();
             return true;
@@ -266,24 +261,12 @@ namespace ColorVision.Copilot
                     ExecuteAsync,
                     allowAutomaticDispatch,
                     out restoredRun);
-            if (!restored)
+            if (!restored || restoredRun == null)
             {
                 return false;
             }
 
-            try
-            {
-                Register(item, addRecoveryRecord: false);
-            }
-            catch
-            {
-                itemReady.TrySetCanceled();
-                if (restoredRun != null)
-                    _taskHost.RequestCancel(restoredRun.Id);
-                throw;
-            }
-            itemReady.SetResult(item);
-            return true;
+            return TryRegister(item, restoredRun, addRecoveryRecord: false, itemReady);
         }
 
         public bool TryPromote(string runId)
@@ -502,6 +485,42 @@ namespace ColorVision.Copilot
                         ex.GetType().Name);
                 }
             }
+        }
+
+        private bool TryRegister(
+            CopilotQueuedFollowUp item,
+            CopilotHostedAgentRun run,
+            bool addRecoveryRecord,
+            TaskCompletionSource<CopilotQueuedFollowUp> itemReady)
+        {
+            try
+            {
+                Register(item, addRecoveryRecord);
+            }
+            catch
+            {
+                itemReady.TrySetCanceled();
+                _taskHost.RequestCancel(run.Id);
+                throw;
+            }
+
+            // Host and collection notifications can accept cancellation before registration returns.
+            // Do not publish readiness or recreate a cancelled request's durable recovery record.
+            if (run.State is CopilotHostedRunState.CancelRequested or CopilotHostedRunState.Completed)
+            {
+                itemReady.TrySetCanceled();
+                Remove(item.RunId, removeRecoveryRecord: true);
+                // A collection observer may cancel while Add is notifying other observers.
+                // Its reentrant removal can clear the registry before the collection allows editing.
+                if (Items.Remove(item))
+                    RefreshPositions();
+                if (addRecoveryRecord)
+                    RemoveRecovery(item.RunId);
+                return false;
+            }
+
+            itemReady.SetResult(item);
+            return true;
         }
 
         private void Register(CopilotQueuedFollowUp item, bool addRecoveryRecord)

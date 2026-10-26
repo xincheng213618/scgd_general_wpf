@@ -1891,6 +1891,95 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(CopilotConversationGoalState.Achieved, decision.Goal.State);
     }
 
+    [Theory]
+    [InlineData("failed")]
+    [InlineData("stale")]
+    [InlineData("current")]
+    public void CompletionPolicyRetainsLatestValidationRestrictionAfterRecentTraceLimit(string validationState)
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 11, 12, 30, 0, TimeSpan.Zero);
+        var goal = CopilotConversationGoal.Create("在最终验证通过后完成目标", createdAt);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "仍需在最终状态重新验证。")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        if (validationState != "failed")
+        {
+            assistantMessage.AgentTraceEntries.Add(CreateSuccessfulWorkspaceValidationTrace("validation-before-write"));
+            if (validationState == "stale")
+            {
+                assistantMessage.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+                {
+                    CallId = "mutation-after-validation",
+                    ToolName = "RunShellCommand",
+                    Access = CopilotToolAccess.Write,
+                    State = CopilotToolExecutionState.Completed,
+                    ProcessOperation = "shell",
+                    ProcessExitCode = 0,
+                });
+            }
+        }
+        else
+        {
+            assistantMessage.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+            {
+                CallId = "failed-final-validation",
+                ToolName = "RunWorkspaceValidation",
+                Access = CopilotToolAccess.Write,
+                State = CopilotToolExecutionState.Failed,
+                FailureCode = CopilotWorkspaceValidationService.ValidationFailedFailureCode,
+                ProcessOperation = "test",
+                ProcessExitCode = 1,
+            });
+        }
+
+        CopilotGoalTurnDecision Evaluate() => CopilotGoalContinuationPolicy.Evaluate(
+            goal,
+            CopilotAgentMode.Auto,
+            CopilotAgentStopReason.Completed,
+            wasResponseInterrupted: false,
+            CopilotTokenUsage.Empty,
+            elapsedSeconds: 30,
+            CreateAchievedEvaluation(),
+            CopilotGoalTurnEvidence.Capture(assistantMessage),
+            createdAt.AddMinutes(1));
+
+        var expectedAction = validationState == "current"
+            ? CopilotGoalTurnAction.Complete
+            : CopilotGoalTurnAction.QueueContinuation;
+        Assert.Equal(expectedAction, Evaluate().Action);
+        for (var index = 0; index < CopilotGoalTurnEvidence.MaximumToolEntries; index++)
+        {
+            assistantMessage.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+            {
+                CallId = $"read-after-validation-{index}",
+                ToolName = "ReadLocalFile",
+                Access = CopilotToolAccess.ReadOnly,
+                State = CopilotToolExecutionState.Completed,
+            });
+        }
+
+        var decision = Evaluate();
+
+        Assert.Equal(expectedAction, decision.Action);
+        Assert.Equal(validationState == "current" ? CopilotConversationGoalState.Achieved : CopilotConversationGoalState.Active, decision.Goal.State);
+        if (validationState != "current")
+            Assert.Contains("验证", decision.Goal.LastProgressReport?.Remaining, StringComparison.Ordinal);
+
+        var boundedEvidence = CopilotGoalTurnEvidence.Capture(assistantMessage);
+        Assert.Equal(CopilotGoalTurnEvidence.MaximumToolEntries, boundedEvidence.Tools.Count);
+        Assert.Single(boundedEvidence.Tools, tool => tool.ToolName == "RunWorkspaceValidation");
+        Assert.Equal("RunWorkspaceValidation", boundedEvidence.Tools[0].ToolName);
+
+        assistantMessage.AgentTraceEntries.Add(CreateSuccessfulWorkspaceValidationTrace("latest-current-validation"));
+        var revalidatedEvidence = CopilotGoalTurnEvidence.Capture(assistantMessage);
+        Assert.Equal(CopilotGoalTurnEvidence.MaximumToolEntries, revalidatedEvidence.Tools.Count);
+        var validation = Assert.Single(revalidatedEvidence.Tools, tool => tool.ToolName == "RunWorkspaceValidation");
+        Assert.Same(revalidatedEvidence.Tools[^1], validation);
+        Assert.Equal(CopilotGoalValidationFreshness.CurrentAfterRecordedTools, validation.ValidationFreshness);
+        Assert.Equal(CopilotGoalTurnAction.Complete, Evaluate().Action);
+    }
+
     [Fact]
     public void ContinuationBecomesBudgetLimitedWhenTurnReachesGoalTokenBudget()
     {

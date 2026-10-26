@@ -671,6 +671,33 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void TruncatedCompressedSessionRemainsRecoverableAcrossPersistence()
+    {
+        const string prefix = CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix;
+        var sessionJson = "{\"content\":\"" + new string('x', 10_000) + "\"}";
+        var payload = CopilotPersistedTextCodec.Encode(sessionJson, prefix, 1, 20_000);
+        var compressedBytes = Convert.FromBase64String(payload[prefix.Length..]);
+        var truncatedPayload = prefix + Convert.ToBase64String(compressedBytes[..^8]);
+        var document = JObject.FromObject(CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot()));
+        document[nameof(CopilotAgentSessionCheckpoint.SerializedSessionJson)] = payload;
+        var valid = document.ToObject<CopilotAgentSessionCheckpoint>();
+        Assert.NotNull(valid);
+        Assert.Equal(sessionJson, valid.SerializedSessionJson);
+        Assert.True(valid.IsStructurallyValid());
+
+        document[nameof(CopilotAgentSessionCheckpoint.SerializedSessionJson)] = truncatedPayload;
+        var restored = document.ToObject<CopilotAgentSessionCheckpoint>();
+        var reopened = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(JsonConvert.SerializeObject(restored));
+
+        Assert.NotNull(restored);
+        Assert.Equal(truncatedPayload, restored.SerializedSessionJson);
+        Assert.False(restored.IsStructurallyValid());
+        Assert.NotNull(reopened);
+        Assert.Equal(truncatedPayload, reopened.SerializedSessionJson);
+        Assert.False(reopened.IsStructurallyValid());
+    }
+
+    [Fact]
     public void SystemTextJsonPersistenceKeepsTheRuntimeSessionContract()
     {
         var sessionJson = "{\"content\":\"" + new string('x', 32_000) + "\"}";
@@ -707,6 +734,44 @@ public sealed class CopilotAgentSessionCheckpointTests
 
         Assert.StartsWith(prefix, payload, StringComparison.Ordinal);
         Assert.Equal(payload, rejected);
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(16)]
+    public void PersistedTextCodecKeepsTruncatedGzipPayloadForRecovery(int removedBytes)
+    {
+        const string prefix = "test-gzip:";
+        var decoded = new string('x', 10_000);
+        var payload = CopilotPersistedTextCodec.Encode(
+            decoded,
+            prefix,
+            minimumCompressionCharacters: 1,
+            maximumDecodedCharacters: decoded.Length);
+        Assert.StartsWith(prefix, payload, StringComparison.Ordinal);
+        var compressedBytes = Convert.FromBase64String(payload[prefix.Length..]);
+        var truncatedPayload = prefix + Convert.ToBase64String(compressedBytes[..^removedBytes]);
+
+        Assert.Equal(truncatedPayload, CopilotPersistedTextCodec.Decode(
+            truncatedPayload,
+            prefix,
+            maximumDecodedCharacters: decoded.Length));
+    }
+
+    [Fact]
+    public void PersistedTextCodecPreservesLegacyEncodingAndEscapesLiteralPrefixes()
+    {
+        const string prefix = "test-gzip:";
+        const string legacyPayload = prefix
+            + "H4sIAAAAAAAECspJTU9MrlQoSC0qziwuSU1RKEmtKFF4smPts2ntCh/mL1+rMKpiNDxG08dobhgtHUbLwtG6YbSuHG0ZjLaURtuFo+3k0X4DYMi9JABYXCTESA0AAA==";
+        var legacyText = string.Concat(Enumerable.Repeat("legacy persisted text 中文 🧭 ", 100));
+
+        Assert.Equal(legacyText, CopilotPersistedTextCodec.Decode(legacyPayload, prefix, 4_096));
+
+        var escapedPayload = CopilotPersistedTextCodec.Encode(legacyPayload, prefix, 1, 4_096);
+
+        Assert.NotEqual(legacyPayload, escapedPayload);
+        Assert.Equal(legacyPayload, CopilotPersistedTextCodec.Decode(escapedPayload, prefix, 4_096));
     }
 
     [Fact]

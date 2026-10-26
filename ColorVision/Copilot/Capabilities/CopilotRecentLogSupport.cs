@@ -317,6 +317,8 @@ namespace ColorVision.Copilot
         private static string CreateBoundedLine(StringBuilder builder, bool wasTruncated)
         {
             var line = builder.ToString().TrimEnd('\r');
+            if (wasTruncated && line.Length > 0 && char.IsHighSurrogate(line[^1]))
+                line = line[..^1];
             return wasTruncated ? line + TruncatedLineMarker : line;
         }
 
@@ -331,7 +333,12 @@ namespace ColorVision.Copilot
             var body = string.Join(Environment.NewLine, lines);
             var bodyWasTruncated = body.Length > safeMaxChars;
             if (bodyWasTruncated)
-                body = body[^safeMaxChars..];
+            {
+                var start = body.Length - safeMaxChars;
+                if (start > 0 && char.IsLowSurrogate(body[start]) && char.IsHighSurrogate(body[start - 1]))
+                    start++;
+                body = body[start..];
+            }
 
             contentWasTruncated = alreadyTruncated || bodyWasTruncated;
             var builder = new StringBuilder();
@@ -341,7 +348,7 @@ namespace ColorVision.Copilot
             if (alreadyTruncated)
                 builder.AppendLine("...<older or oversized log entries omitted; showing the most recent available content.>");
             if (bodyWasTruncated)
-                builder.AppendLine($"...<content truncated; kept the most recent {safeMaxChars} characters.>");
+                builder.AppendLine($"...<content truncated; kept the most recent {body.Length} characters.>");
 
             builder.Append(body);
             return builder.ToString().TrimEnd();

@@ -120,9 +120,9 @@ public sealed class CopilotMessageEditAdmissionTests
                 "image-preparation-command", fixture.Conversation.Id, CopilotAgentMode.Auto, null,
                 run => preparation = Assert.IsAssignableFrom<Task<IReadOnlyList<CopilotAttachmentItem>?>>(
                     InvokeTask(fixture.ViewModel, "TryPersistImageAttachmentsAsync",
-                        [fixture.OriginalUser.Attachments.ToArray(), imageLease, fixture.Conversation, run],
+                        [fixture.OriginalUser.Attachments.ToArray(), imageLease, fixture.Conversation, run, null],
                         [typeof(IReadOnlyList<CopilotAttachmentItem>), typeof(CopilotManagedImageAttachmentLease),
-                            typeof(CopilotConversationRecord), typeof(CopilotHostedAgentRun)])),
+                            typeof(CopilotConversationRecord), typeof(CopilotHostedAgentRun), typeof(Func<bool>)])),
                 out var owner));
             Assert.True(fixture.Host.TryRestoreQueuedFollowUp(
                 "later-image-preparation-follow-up", fixture.Conversation.Id, CopilotAgentMode.Auto, null,
@@ -504,6 +504,80 @@ public sealed class CopilotMessageEditAdmissionTests
                 }
             }
         }, TimeSpan.FromSeconds(40), "The failed-admission retry test did not finish.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedEditedImageAdmissionReportsOnlyToItsOriginalEditLifetime(bool cancelEdit)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var context = new CopilotPausedAdmissionContext(TestTimeout, "The edited image failure did not drain.");
+            var previousContext = SynchronizationContext.Current;
+            Task? send = null;
+            try
+            {
+                Assert.True(fixture.ViewModel.EditMessageCommand.CanExecute(fixture.OriginalUser));
+                fixture.ViewModel.EditMessageCommand.Execute(fixture.OriginalUser);
+                Assert.True(fixture.ViewModel.IsEditingMessage);
+                fixture.ViewModel.InputText = SubmittedEdit;
+                File.WriteAllText(fixture.StoragePath, "This file blocks the fixture's attachment directory.");
+
+                SynchronizationContext.SetSynchronizationContext(context);
+                send = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(send.IsCompleted);
+                Assert.False(fixture.ViewModel.IsBusy);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                if (cancelEdit)
+                {
+                    Assert.True(fixture.ViewModel.CancelMessageEditCommand.CanExecute(null));
+                    fixture.ViewModel.CancelMessageEditCommand.Execute(null);
+                    Assert.False(fixture.ViewModel.IsEditingMessage);
+                }
+                fixture.ViewModel.InputText = NewerText;
+                var retainedAttachments = fixture.Conversation.Attachments.ToArray();
+                var retainedTitle = fixture.ViewModel.LocalCommandResultTitle;
+                var retainedText = fixture.ViewModel.LocalCommandResultText;
+
+                SynchronizationContext.SetSynchronizationContext(context);
+                context.Complete(send);
+                send.GetAwaiter().GetResult();
+
+                Assert.Equal(!cancelEdit, fixture.ViewModel.IsEditingMessage);
+                Assert.Equal(NewerText, fixture.ViewModel.InputText);
+                Assert.Equal(NewerText, fixture.Conversation.DraftText);
+                Assert.Equal(retainedAttachments, fixture.Conversation.Attachments.ToArray());
+                Assert.Equal([fixture.OriginalUser, fixture.OriginalAssistant], fixture.Conversation.Messages.ToArray());
+                Assert.Empty(fixture.Runtime.Requests);
+                Assert.Empty(fixture.Host.ScheduledRuns);
+                if (cancelEdit)
+                {
+                    Assert.Equal(retainedTitle, fixture.ViewModel.LocalCommandResultTitle);
+                    Assert.Equal(retainedText, fixture.ViewModel.LocalCommandResultText);
+                }
+                else
+                {
+                    Assert.Equal("图片保存失败", fixture.ViewModel.LocalCommandResultTitle);
+                    Assert.NotEmpty(fixture.ViewModel.LocalCommandResultText);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    SynchronizationContext.SetSynchronizationContext(context);
+                    if (send is { IsCompleted: false })
+                        context.Complete(send);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }
+        }, TimeSpan.FromSeconds(40), "The edited image failure feedback test did not finish.");
     }
 
     [Theory]

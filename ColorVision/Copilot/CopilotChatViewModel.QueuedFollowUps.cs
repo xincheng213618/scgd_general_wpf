@@ -761,6 +761,11 @@ namespace ColorVision.Copilot
             var blockedConversationIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var record in records)
             {
+                if (_taskHost.IsShutdown)
+                    return;
+                if (!_followUpQueue.GetStartupRecoveries().Contains(record))
+                    continue;
+
                 if (!record.TryGetNormalized(
                         out var runId,
                         out var conversationId,
@@ -849,7 +854,10 @@ namespace ColorVision.Copilot
                     allowAutomaticDispatch: canAutoDispatch))
                 {
                     blockedConversationIds.Add(conversationId);
-                    draftRecoveries.Add(record);
+                    if (_taskHost.IsShutdown)
+                        return;
+                    if (_followUpQueue.GetStartupRecoveries().Contains(record))
+                        draftRecoveries.Add(record);
                     continue;
                 }
 
@@ -861,7 +869,11 @@ namespace ColorVision.Copilot
                 restoredCount++;
             }
 
-            var restoredDraftCount = _followUpQueue.RestoreRecoveriesToDraft(draftRecoveries);
+            if (_taskHost.IsShutdown)
+                return;
+            var pendingRecoveries = _followUpQueue.GetStartupRecoveries();
+            var restoredDraftCount = _followUpQueue.RestoreRecoveriesToDraft(
+                draftRecoveries.Where(pendingRecoveries.Contains).ToArray());
             _followUpQueue.RecordStartupRecovery(restoredCount, restoredDraftCount);
             if (restoredDraftCount > 0)
                 SynchronizeSelectedDraftAfterQueuedRecovery();

@@ -143,6 +143,7 @@ namespace ColorVision.Copilot
             document.LoadHtml(html ?? string.Empty);
 
             var results = new List<CopilotWebSearchHit>();
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             var nodes = document.DocumentNode.SelectNodes("//div[contains(concat(' ', normalize-space(@class), ' '), ' result ')]")
                 ?? document.DocumentNode.SelectNodes("//div[contains(concat(' ', normalize-space(@class), ' '), ' result__body ')]")
                 ?? Enumerable.Empty<HtmlNode>();
@@ -163,7 +164,7 @@ namespace ColorVision.Copilot
                     ?? node.SelectSingleNode(".//*[contains(concat(' ', normalize-space(@class), ' '), ' result__extras__url ')]");
                 var snippet = NormalizeText(HtmlEntity.DeEntitize(snippetNode?.InnerText ?? string.Empty));
 
-                if (results.Any(item => string.Equals(item.Url, url, StringComparison.OrdinalIgnoreCase)))
+                if (!visitedUrls.Add(CopilotWebPageToolSupport.NormalizeUrlComparisonKey(url)))
                     continue;
 
                 results.Add(new CopilotWebSearchHit
@@ -183,6 +184,7 @@ namespace ColorVision.Copilot
             var document = new HtmlDocument();
             document.LoadHtml(html ?? string.Empty);
             var results = new List<CopilotWebSearchHit>();
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             var links = document.DocumentNode.SelectNodes("//a[contains(concat(' ', normalize-space(@class), ' '), ' result-link ')]")
                 ?? Enumerable.Empty<HtmlNode>();
             foreach (var link in links)
@@ -190,7 +192,7 @@ namespace ColorVision.Copilot
                 var title = NormalizeText(HtmlEntity.DeEntitize(link.InnerText));
                 var url = NormalizeResultUrl(link.GetAttributeValue("href", string.Empty));
                 if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)
-                    || results.Any(item => string.Equals(item.Url, url, StringComparison.OrdinalIgnoreCase)))
+                    || !visitedUrls.Add(CopilotWebPageToolSupport.NormalizeUrlComparisonKey(url)))
                 {
                     continue;
                 }
@@ -221,12 +223,13 @@ namespace ColorVision.Copilot
             }
 
             var results = new List<CopilotWebSearchHit>();
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             foreach (var item in document.Descendants().Where(element => element.Name.LocalName == "item"))
             {
                 var title = NormalizeHtmlText(item.Elements().FirstOrDefault(element => element.Name.LocalName == "title")?.Value ?? string.Empty);
                 var url = NormalizeResultUrl(item.Elements().FirstOrDefault(element => element.Name.LocalName == "link")?.Value ?? string.Empty);
                 if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)
-                    || results.Any(hit => string.Equals(hit.Url, url, StringComparison.OrdinalIgnoreCase)))
+                    || !visitedUrls.Add(CopilotWebPageToolSupport.NormalizeUrlComparisonKey(url)))
                 {
                     continue;
                 }

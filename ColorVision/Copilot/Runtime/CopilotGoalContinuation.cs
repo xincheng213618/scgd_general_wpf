@@ -95,20 +95,28 @@ namespace ColorVision.Copilot
             var ledger = assistantMessage.AgentTaskLedger ?? new CopilotAgentTaskLedgerSnapshot();
             var traceEntries = (assistantMessage.AgentTraceEntries ?? [])
                 .Where(entry => entry != null)
-                .TakeLast(MaximumToolEntries)
                 .ToArray();
-            var tools = traceEntries
-                .Select(CreateToolEvidence)
-                .ToArray();
+            var firstRecentIndex = Math.Max(0, traceEntries.Length - MaximumToolEntries);
+            var toolIndexes = Enumerable.Range(firstRecentIndex, traceEntries.Length - firstRecentIndex).ToArray();
+            var latestValidationIndex = Array.FindLastIndex(traceEntries, entry =>
+                string.Equals(entry.ToolName, "RunWorkspaceValidation", StringComparison.Ordinal));
+            // A display limit must not hide the latest validation or the later
+            // workspace writes that invalidate it.
+            if (latestValidationIndex >= 0 && latestValidationIndex < firstRecentIndex)
+                toolIndexes[0] = latestValidationIndex;
+
+            var tools = new CopilotGoalToolEvidence[toolIndexes.Length];
             for (var index = 0; index < tools.Length; index++)
             {
-                tools[index] = tools[index] with
+                var traceIndex = toolIndexes[index];
+                var tool = CreateToolEvidence(traceEntries[traceIndex]);
+                tools[index] = tool with
                 {
                     ValidationFreshness = DetermineValidationFreshness(
                         traceEntries,
-                        tools[index],
-                        index,
-                    taskEventJournal),
+                        tool,
+                        traceIndex,
+                        taskEventJournal),
                 };
             }
             var incompleteTasks = (ledger.Items ?? Array.Empty<CopilotAgentTaskItem>())
@@ -667,12 +675,22 @@ namespace ColorVision.Copilot
             if (primary.Verdict != CopilotGoalEvaluationVerdict.Achieved)
                 return primary;
 
-            var skeptic = await EvaluateRequestAsync(
-                profile,
-                SkepticSystemPrompt,
-                evidencePrompt,
-                "完成复核",
-                cancellationToken).ConfigureAwait(false);
+            CopilotGoalEvaluationResult skeptic;
+            try
+            {
+                skeptic = await EvaluateRequestAsync(
+                    profile,
+                    SkepticSystemPrompt,
+                    evidencePrompt,
+                    "完成复核",
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception)
+            {
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception,
+                    primary.Usage.Add(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception)));
+                throw;
+            }
             return skeptic with
             {
                 Reason = skeptic.Verdict == CopilotGoalEvaluationVerdict.Continue
@@ -1071,9 +1089,11 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                return CopilotGoalEvaluationResult.Unavailable(
+                return new CopilotGoalEvaluationResult(
+                    CopilotGoalEvaluationVerdict.Unavailable,
                     $"{stageLabel}失败，目标已安全暂停："
-                    + CopilotUserFacingErrorFormatter.Sanitize(ex.Message, profile.ApiKey));
+                    + CopilotUserFacingErrorFormatter.Sanitize(ex.Message, profile.ApiKey),
+                    CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(ex));
             }
         }
 

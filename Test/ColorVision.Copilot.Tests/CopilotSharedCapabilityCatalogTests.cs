@@ -639,7 +639,7 @@ public sealed class CopilotSharedCapabilityCatalogTests
         Assert.All(
             CopilotSharedCapabilityCatalog.All.Except(surfaceSpecific),
             definition => Assert.True(string.IsNullOrWhiteSpace(definition.InputContractDifference)));
-        Assert.Equal(16, CopilotSharedCapabilityCatalog.All.Count(definition => definition.SharesInputSchema));
+        Assert.Equal(20, CopilotSharedCapabilityCatalog.All.Count(definition => definition.SharesInputSchema));
     }
 
     [Fact]
@@ -666,7 +666,7 @@ public sealed class CopilotSharedCapabilityCatalogTests
                 .OrderBy(id => id, StringComparer.Ordinal)
                 .ToArray());
         Assert.Equal(
-            12,
+            16,
             CopilotSharedCapabilityCatalog.All.Count(
                 definition => definition.SafetyClass == CopilotSharedCapabilitySafetyClass.ReadOnly));
     }

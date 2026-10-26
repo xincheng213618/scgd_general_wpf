@@ -48,6 +48,105 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancellationBeforeRegistrationCompletesCannotResurrectTheQueuedRequest(bool cancelFromCollectionNotification)
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+        var acceptedCancellations = 0;
+        if (cancelFromCollectionNotification)
+        {
+            queue.Items.CollectionChanged += (_, args) =>
+            {
+                if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add
+                    && args.NewItems?[0] is CopilotQueuedFollowUp item
+                    && busyHost.Host.RequestCancelQueued(item.RunId))
+                {
+                    acceptedCancellations++;
+                }
+            };
+            queue.Items.CollectionChanged += static (_, _) => { };
+        }
+        else
+        {
+            busyHost.Host.Changed += (_, args) =>
+            {
+                if (args.Kind == CopilotAgentTaskHostChangeKind.Queued
+                    && busyHost.Host.RequestCancelQueued(args.Run.Id))
+                {
+                    acceptedCancellations++;
+                }
+            };
+        }
+        CopilotQueuedFollowUp? queuedItem = null;
+
+        try
+        {
+            var scheduled = queue.TrySchedule(
+                CreateRequest("conversation-1", "cancelled follow-up"),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out queuedItem,
+                out var admission);
+
+            Assert.Equal(1, acceptedCancellations);
+            Assert.False(scheduled);
+            Assert.Equal(CopilotRequestAdmissionReason.RequestCancelled, admission.Reason);
+            Assert.Null(queuedItem);
+            Assert.Empty(queue.Items);
+            Assert.Empty(state.QueuedFollowUpRecoveries);
+            Assert.Empty(busyHost.Host.QueuedRuns);
+        }
+        finally
+        {
+            if (queuedItem != null)
+                busyHost.Host.RequestCancelQueued(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RestoringACancelledRequestRemovesItsProjectionAndOnlyShutdownPreservesRecovery(bool shutdown)
+    {
+        var host = new CopilotAgentTaskHost();
+        var item = CreateRequest("conversation-1", "restored follow-up").Create("persisted-run");
+        var recovery = CreateRecovery(item.RunId, item.ConversationId);
+        recovery.ResumeAfterRestart = true;
+        var state = new CopilotChatState { QueuedFollowUpRecoveries = [recovery] };
+        var queue = new CopilotQueuedFollowUpCoordinator(state, host);
+        ForwardHostChanges(host, queue);
+        host.Changed += (_, args) =>
+        {
+            if (args.Kind != CopilotAgentTaskHostChangeKind.Queued)
+                return;
+            if (shutdown)
+            {
+                queue.BeginShutdown();
+                host.Shutdown();
+            }
+            else
+            {
+                host.RequestCancelQueued(args.Run.Id);
+            }
+        };
+
+        Assert.False(queue.TryRestore(item, static (_, _) => Task.CompletedTask));
+
+        Assert.Empty(queue.Items);
+        Assert.False(queue.TryGet(item.RunId, out _));
+        Assert.Empty(host.QueuedRuns);
+        if (shutdown)
+            Assert.Same(recovery, Assert.Single(state.QueuedFollowUpRecoveries));
+        else
+            Assert.Empty(state.QueuedFollowUpRecoveries);
+    }
+
     [Fact]
     public async Task DurableRecoveryOwnsTheQueuedWorkspaceAndLiveContextSnapshot()
     {

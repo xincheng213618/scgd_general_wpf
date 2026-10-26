@@ -36,6 +36,7 @@ namespace ColorVision.Copilot
         QueueFull,
         NoActiveRun,
         FollowUpConversationMismatch,
+        RequestCancelled,
     }
 
     internal readonly record struct CopilotRequestAdmissionResult(CopilotRequestAdmissionReason Reason)

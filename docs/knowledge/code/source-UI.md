@@ -77,6 +77,9 @@ next: false
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
 
+- [Flow 运行诊断、中断恢复与 Incident 处置](../../04-api-reference/engine-components/flow-diagnostics.md) — `flow.diagnostics`
+  Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。
+
 - [开发工具管理：检测与安装 Python、Node.js](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。
 

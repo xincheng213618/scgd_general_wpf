@@ -393,6 +393,8 @@ namespace ColorVision.Copilot
                         }
                         if (actualStartLine == 0)
                         {
+                            if (char.IsLowSurrogate(character))
+                                throw new InvalidDataException($"Requested start column {startColumn} splits a Unicode surrogate pair on line {startLine}. Select the preceding column to read the complete character.");
                             actualStartLine = currentLine;
                             actualStartColumn = currentColumn;
                         }

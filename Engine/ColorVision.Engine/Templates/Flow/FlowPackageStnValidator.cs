@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
 
 namespace ColorVision.Engine.Templates.Flow;
 
@@ -30,9 +31,15 @@ internal static class FlowPackageStnValidator
     /// <exception cref="InvalidDataException">
     /// The envelope, compressed body, canvas framing, or node framing is invalid.
     /// </exception>
-    internal static byte[] ValidateAndDecompress(byte[] stnData)
+    internal static byte[] ValidateAndDecompress(
+        byte[] stnData,
+        int maximumDecompressedLength = MaximumDecompressedLength,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stnData);
+        if (maximumDecompressedLength is <= 0 or > MaximumDecompressedLength)
+            throw new ArgumentOutOfRangeException(nameof(maximumDecompressedLength));
+        cancellationToken.ThrowIfCancellationRequested();
         ValidateEnvelope(stnData);
 
         byte[] decompressed;
@@ -51,13 +58,17 @@ internal static class FlowPackageStnValidator
             byte[] buffer = new byte[81_920];
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 int read = gzip.Read(buffer, 0, buffer.Length);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (read <= 0)
                     break;
-                if (read > MaximumDecompressedLength - output.Length)
+                if (read > maximumDecompressedLength - output.Length)
                 {
                     throw new InvalidDataException(
-                        "flow.stn 解压后超过 160 MiB 限制。");
+                        maximumDecompressedLength == MaximumDecompressedLength
+                            ? "flow.stn 解压后超过 160 MiB 限制。"
+                            : $"flow.stn 解压后超过 {maximumDecompressedLength} 字节限制。");
                 }
                 output.Write(buffer, 0, read);
             }
@@ -76,8 +87,11 @@ internal static class FlowPackageStnValidator
                 ex);
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         ValidateGZipTrailer(stnData, decompressed);
+        cancellationToken.ThrowIfCancellationRequested();
         ValidateCanvasBody(decompressed);
+        cancellationToken.ThrowIfCancellationRequested();
         return decompressed;
     }
 

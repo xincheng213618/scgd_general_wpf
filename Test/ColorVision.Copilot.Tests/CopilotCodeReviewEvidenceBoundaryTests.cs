@@ -3,6 +3,59 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodeReviewEvidenceBoundaryTests
 {
     [Theory]
+    [InlineData(1, '中', true)]
+    [InlineData(6, '中', false)]
+    [InlineData(33, 'a', false)]
+    public async Task SubmittedFindingsMustFitTheSharedSerializedPayloadLimit(int findingCount, char bodyCharacter, bool expectedSuccess)
+    {
+        var patch = "--- /dev/null\n+++ b/Changed.cs\n@@ -0,0 +1," + findingCount + " @@\n"
+            + string.Join('\n', Enumerable.Range(1, findingCount).Select(line => "+visible line " + line)) + "\n";
+        var snapshot = CreateReviewSnapshot(CreateDiff(patch));
+        var context = new CopilotReviewEvidenceContext();
+        context.RecordEvidence(snapshot);
+        var body = new string(bodyCharacter, CopilotCodeReviewFindingsResultProtocol.MaximumBodyCharacters);
+        var findings = Enumerable.Range(1, findingCount)
+            .Select(line => Finding("Changed.cs", "new", line, line) with { Title = "Concrete defect " + line, Body = body })
+            .ToArray();
+        Assert.True(snapshot.TryReadStructuredModelDiff(out var modelDiff));
+        Assert.All(findings, finding =>
+        {
+            Assert.True(CopilotCodeReviewFindingsResultProtocol.TryNormalizeFinding(finding, out _, out var error), error);
+            Assert.True(CopilotGitDiffLineCoverage.Contains(modelDiff, finding));
+        });
+
+        var result = await new CopilotSubmitCodeReviewFindingsTool().ExecuteAsync(new()
+        {
+            Mode = CopilotAgentMode.Review, ReviewEvidenceContext = context,
+        }, new()
+        {
+            Arguments = new Dictionary<string, object?>
+            {
+                ["findings"] = findings.Select(finding => new
+                {
+                    priority = finding.Priority, title = finding.Title, body = finding.Body, path = finding.Path,
+                    side = finding.Side, line_start = finding.LineStart, line_end = finding.LineEnd,
+                }).ToArray(),
+            },
+        }, CancellationToken.None);
+
+        Assert.Equal(expectedSuccess, result.Success);
+        if (!expectedSuccess)
+        {
+            Assert.Equal(CopilotToolFailureKind.Validation, result.FailureKind);
+            Assert.NotEmpty(result.ErrorMessage);
+            Assert.Empty(result.Content);
+            return;
+        }
+
+        Assert.True(CopilotCodeReviewFindingsResultProtocol.TryParse(result.Content, out var parsed, out var parseError), parseError);
+        Assert.Equal(findings, parsed.Findings);
+        Assert.True(snapshot.TryApplyFindings(result.Content, out var submitted));
+        Assert.True(submitted.TryReadFindings(out var restored));
+        Assert.Equal(findings, restored);
+    }
+
+    [Theory]
     [InlineData("old", 10, 12, true)]
     [InlineData("new", 20, 23, true)]
     [InlineData("old", 13, 13, false)]

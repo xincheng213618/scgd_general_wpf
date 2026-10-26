@@ -326,9 +326,7 @@ namespace ColorVision.Copilot
                 entry.Snapshot,
                 stream,
                 page,
-                page.Available
-                    ? CopilotToolFailureKind.None
-                    : CopilotToolFailureKind.Transient,
+                page.FailureKind,
                 page.ErrorMessage);
         }
 

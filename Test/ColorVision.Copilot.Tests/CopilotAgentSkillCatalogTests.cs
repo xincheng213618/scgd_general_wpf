@@ -99,6 +99,37 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public async Task SkillDirectoryRenameNotifiesTheCatalogWithoutChangingItsFiles()
+    {
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var skillRoot = Path.Combine(applicationBaseDirectory, "Copilot", "Skills");
+        var originalDirectory = Path.Combine(skillRoot, "original");
+        var renamedDirectory = Path.Combine(skillRoot, "renamed");
+        WriteSkill(originalDirectory, "renamed-skill", "directory rename description");
+        var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var monitor = new CopilotAgentSkillCatalogMonitor(() => changed.TrySetResult());
+        try
+        {
+            monitor.UpdateRoots([skillRoot]);
+
+            var fullSkillRoot = Path.GetFullPath(skillRoot);
+            Assert.True(string.Equals(fullSkillRoot, Path.GetDirectoryName(Path.GetFullPath(originalDirectory)), StringComparison.OrdinalIgnoreCase));
+            Assert.True(string.Equals(fullSkillRoot, Path.GetDirectoryName(Path.GetFullPath(renamedDirectory)), StringComparison.OrdinalIgnoreCase));
+            Directory.Move(originalDirectory, renamedDirectory);
+
+            await changed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+                [], overrides: null, applicationBaseDirectory, userProfileDirectory: applicationBaseDirectory));
+            Assert.Equal(Path.Combine(renamedDirectory, "SKILL.md"), skill.SkillFilePath);
+        }
+        finally
+        {
+            monitor.Dispose();
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+        }
+    }
+
+    [Fact]
     public async Task CachedCatalogReloadsWhenPersonalSkillRootAppears()
     {
         var applicationBaseDirectory = CreateTemporaryDirectory();

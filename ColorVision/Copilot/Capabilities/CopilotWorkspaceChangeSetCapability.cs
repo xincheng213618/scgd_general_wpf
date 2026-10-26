@@ -331,6 +331,12 @@ namespace ColorVision.Copilot
                     return Failure(toolName, CopilotToolFailureKind.Authorization,
                         "A change-set target is no longer inside the writable workspace; no files were changed.", scopeError);
                 }
+                if (!rollback && record.Operation == WorkspacePatchOperation.Delete && !IsInsideWritableRoot(request, fullPath))
+                {
+                    return Failure(toolName, CopilotToolFailureKind.Authorization,
+                        "A deletion target is no longer inside a writable workspace root; no files were changed.",
+                        "An explicitly writable standalone file may be updated but cannot be deleted because its rollback path is not an authorized creation root.");
+                }
 
                 byte[] currentBytes;
                 try
@@ -597,7 +603,8 @@ namespace ColorVision.Copilot
 
         private void RemoveExpiredChangeSets(DateTimeOffset now)
         {
-            foreach (var changeSet in _changeSets.Values.Where(item => item.ExpiresAtUtc <= now).ToArray())
+            foreach (var changeSet in _changeSets.Values.Where(item => item.ExpiresAtUtc <= now
+                && item.State is not WorkspaceChangeSetState.Applying and not WorkspaceChangeSetState.RollingBack).ToArray())
             {
                 ReleaseReservations(changeSet);
                 _changeSets.Remove(changeSet.ChangeSetId);

@@ -11,6 +11,109 @@ public sealed class CopilotWorkspaceRecoveryEvidenceTests : IDisposable
     private readonly string _workspace = Directory.CreateTempSubdirectory("CopilotRecoveryEvidence-").FullName;
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemovingTheWritableRootGrantPreservesOnlyExactFileUpdateAuthority(bool includeDeletion)
+    {
+        var updatedPath = Path.Combine(_workspace, "updated.txt");
+        var deletedPath = Path.Combine(_workspace, "deleted.txt");
+        File.WriteAllText(updatedPath, "original update");
+        File.WriteAllText(deletedPath, "original deletion");
+        var rootRequest = new CopilotAgentRequest
+        {
+            ConversationId = "narrowed-workspace-grant", WorkspacePath = _workspace,
+            WritableLocalRootPaths = [_workspace],
+        };
+        var operations = new List<object>
+        {
+            new { operation = "update", path = updatedPath, oldText = "original update", newText = "patched update" },
+        };
+        if (includeDeletion)
+            operations.Add(new { operation = "delete", path = deletedPath });
+        var store = new CopilotWorkspacePatchStore();
+        var preview = await store.PreviewPatchEnvelopeAsync(rootRequest, new()
+        {
+            Arguments = new Dictionary<string, object?> { ["operations"] = operations.ToArray() },
+        }, CancellationToken.None);
+        Assert.True(preview.Success, preview.ErrorMessage);
+        var id = preview.Content.Split('\n').Single(line => line.StartsWith("change_set_id:", StringComparison.Ordinal))["change_set_id:".Length..].Trim();
+        var exactFileRequest = new CopilotAgentRequest
+        {
+            ConversationId = rootRequest.ConversationId, WorkspacePath = _workspace,
+            WritableLocalFilePaths = [updatedPath, deletedPath],
+        };
+
+        var result = await store.ApplyPatchEnvelopeAsync(exactFileRequest,
+            new() { Arguments = new Dictionary<string, object?> { ["changeSetId"] = id } }, CancellationToken.None);
+
+        Assert.Equal(!includeDeletion, result.Success);
+        if (includeDeletion)
+        {
+            Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+            Assert.Null(result.WorkspaceMutation);
+            Assert.Empty(result.WorkspaceRecheckPaths);
+            Assert.DoesNotContain("[Workspace Change Set Recovery]", result.Content, StringComparison.Ordinal);
+        }
+        Assert.Equal(includeDeletion ? "original update" : "patched update", File.ReadAllText(updatedPath));
+        Assert.Equal("original deletion", File.ReadAllText(deletedPath));
+        Assert.Equal(new[] { deletedPath, updatedPath }, Directory.GetFiles(_workspace).Order(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExpirationDuringAnActiveEnvelopeCannotDiscardItsPendingCompensation(bool rollback)
+    {
+        var first = Path.Combine(_workspace, "first.txt");
+        var second = Path.Combine(_workspace, "second.txt");
+        foreach (var path in new[] { first, second }) File.WriteAllText(path, "original");
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "active-envelope-expiration", WorkspacePath = _workspace, WritableLocalRootPaths = [_workspace],
+        };
+        var store = new CopilotWorkspacePatchStore();
+        var preview = await store.PreviewPatchEnvelopeAsync(request, new()
+        {
+            Arguments = new Dictionary<string, object?>
+            {
+                ["operations"] = new[] { first, second }.Select(path => new
+                {
+                    operation = "update", path, oldText = "original", newText = "patched",
+                }).ToArray(),
+            },
+        }, CancellationToken.None);
+        Assert.True(preview.Success, preview.ErrorMessage);
+        var id = preview.Content.Split('\n').Single(line => line.StartsWith("change_set_id:", StringComparison.Ordinal))["change_set_id:".Length..].Trim();
+        if (rollback)
+            Assert.True((await store.ApplyPatchEnvelopeAsync(request,
+                new() { Arguments = new Dictionary<string, object?> { ["changeSetId"] = id } }, CancellationToken.None)).Success);
+
+        // The first child really mutates its file. Expiry is then moved into the
+        // past only on this store's records, and a read-only next child forces
+        // the production compensation path without a timing-dependent wait.
+        var result = await FailRecoveryAfterOneCompletedChildAsync(
+            store, request, id, rollback, rollback ? first : second, expireDuringMutation: true);
+
+        Assert.False(result.Success);
+        foreach (var path in new[] { first, second })
+            Assert.Equal(rollback ? "patched" : "original", File.ReadAllText(path));
+        Assert.Equal(CopilotToolFailureKind.Internal, result.FailureKind);
+        Assert.Contains("recovery_result: succeeded", result.Content, StringComparison.Ordinal);
+        Assert.Contains(rollback ? "state: Applied" : "state: RolledBack", result.Content, StringComparison.Ordinal);
+
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        typeof(CopilotWorkspacePatchStore).GetMethod("RemoveExpiredEntries", flags)!.Invoke(store, [DateTimeOffset.UtcNow]);
+        foreach (var field in new[] { "_records", "_changeSets" })
+            Assert.Empty((IDictionary)typeof(CopilotWorkspacePatchStore).GetField(field, flags)!.GetValue(store)!);
+        var expiredInput = new CopilotAgentToolInput { Arguments = new Dictionary<string, object?> { ["changeSetId"] = id } };
+        var expiredOperation = rollback
+            ? await store.RollbackPatchEnvelopeAsync(request, expiredInput, CancellationToken.None)
+            : await store.ApplyPatchEnvelopeAsync(request, expiredInput, CancellationToken.None);
+        Assert.False(expiredOperation.Success);
+        Assert.Equal(CopilotToolFailureKind.NotFound, expiredOperation.FailureKind);
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     public async Task UpdatePreviewEnforcesEncodedSizeWithoutLosingRollback(int excessBytes)
@@ -238,7 +341,8 @@ public sealed class CopilotWorkspaceRecoveryEvidenceTests : IDisposable
     // Drive real child writes to a precise recovery boundary, then use a real
     // read-only file to fail compensation. No timing race or production test hook.
     private static async Task<CopilotToolResult> FailRecoveryAfterOneCompletedChildAsync(
-        CopilotWorkspacePatchStore store, CopilotAgentRequest request, string id, bool rollback, string recoveredPath)
+        CopilotWorkspacePatchStore store, CopilotAgentRequest request, string id, bool rollback, string recoveredPath,
+        bool expireDuringMutation = false)
     {
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var type = typeof(CopilotWorkspacePatchStore);
@@ -251,9 +355,21 @@ public sealed class CopilotWorkspaceRecoveryEvidenceTests : IDisposable
         for (var i = 0; i < ids.Length; i++) records.SetValue(patches[ids[i]], i);
         var completedRecord = records.GetValue(rollback ? 1 : 0)!;
         var failedRecord = records.GetValue(rollback ? 0 : 1)!;
+        if (expireDuringMutation)
+        {
+            var state = changeSet.GetType().GetProperty("State")!;
+            state.SetValue(changeSet, Enum.Parse(state.PropertyType, rollback ? "RollingBack" : "Applying"));
+        }
         var child = type.GetMethod("MutateChangeSetChildAsync", flags)!;
         var completed = await (Task<CopilotToolResult>)child.Invoke(store, [request, completedRecord, rollback, id, CancellationToken.None])!;
         Assert.True(completed.Success, completed.ErrorMessage);
+        if (expireDuringMutation)
+        {
+            var expired = DateTimeOffset.UtcNow.AddSeconds(-1);
+            changeSet.GetType().GetProperty("ExpiresAtUtc")!.SetValue(changeSet, expired);
+            foreach (var record in records)
+                recordType.GetProperty("ExpiresAtUtc")!.SetValue(record, expired);
+        }
         File.SetAttributes(recoveredPath, FileAttributes.ReadOnly);
         var failure = await (Task<CopilotToolResult>)child.Invoke(store, [request, failedRecord, rollback, id, CancellationToken.None])!;
         Assert.False(failure.Success);

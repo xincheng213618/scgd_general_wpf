@@ -327,6 +327,42 @@ public sealed class CopilotToolResultContractTests
     }
 
     [Theory]
+    [InlineData("null")]
+    [InlineData("identity")]
+    public async Task WriteThenReturnInvalidResultPreservesUnknownOutcomeAndWorkspaceEvidence(string invalidResultKind)
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            var tool = new ExceptionalResultTool(path, writeCapable: true, invalidResultKind: invalidResultKind);
+            var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+            var outcome = await new CopilotToolExecutor(hooks: []).ExecuteAsync(
+                CreateExceptionalInvocation(tool),
+                agentEvent => CopilotAssistantMessagePresenter.ApplyAgentEvent(message, agentEvent),
+                CancellationToken.None);
+
+            Assert.Equal("written before response failure", File.ReadAllText(path));
+            Assert.Equal(1, tool.ExecutionCount);
+            Assert.Equal(CopilotToolExecutionState.Failed, outcome.Execution.State);
+            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, outcome.Result.FailureKind);
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, outcome.Result.FailureCode);
+            Assert.False(outcome.Execution.RetryEligible);
+            Assert.Equal([path], outcome.Result.WorkspaceRecheckPaths);
+            Assert.DoesNotContain("untrusted-result-content", outcome.Result.Content, StringComparison.Ordinal);
+            var trace = Assert.Single(message.AgentTraceEntries);
+            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, trace.FailureKind);
+            Assert.Equal([path], trace.WorkspaceRecheckPaths);
+            using var modelResult = JsonDocument.Parse(CopilotFrameworkToolResultFormatter.Format(outcome));
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, modelResult.RootElement.GetProperty("failure_code").GetString());
+            Assert.False(modelResult.RootElement.GetProperty("retry_allowed").GetBoolean());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task KnownFailureBeforeDispatchOrFromStructuredResultRemainsAuthoritative(bool failBeforeDispatch)
@@ -431,7 +467,8 @@ public sealed class CopilotToolResultContractTests
         bool writeCapable,
         CopilotToolIdempotency idempotency = CopilotToolIdempotency.Idempotent,
         bool failDuringMetadata = false,
-        bool returnStructuredFailure = false) : ICopilotFrameworkApprovedTool, ICopilotWorkspaceMutationEvidenceSource
+        bool returnStructuredFailure = false,
+        string invalidResultKind = "") : ICopilotFrameworkApprovedTool, ICopilotWorkspaceMutationEvidenceSource
     {
         public int ExecutionCount { get; private set; }
 
@@ -468,6 +505,17 @@ public sealed class CopilotToolResultContractTests
             }
             if (writeCapable)
                 File.WriteAllText(path, "written before response failure");
+            if (invalidResultKind == "null")
+                return Task.FromResult<CopilotToolResult>(null!);
+            if (invalidResultKind == "identity")
+            {
+                return Task.FromResult(new CopilotToolResult
+                {
+                    ToolName = "UnexpectedTool",
+                    Success = true,
+                    Content = "untrusted-result-content",
+                });
+            }
             throw new IOException("The tool response was lost.");
         }
     }

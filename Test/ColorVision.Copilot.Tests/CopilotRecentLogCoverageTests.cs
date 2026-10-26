@@ -1,9 +1,39 @@
 using System.IO;
+using System.Text;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotRecentLogCoverageTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TruncatedRecentLogsPreserveUnicodeScalarBoundaries(bool lineLimit)
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            var text = new string('a', lineLimit ? 8191 : 1000) + "\U00020BB7" + new string('b', lineLimit ? 12 : 999);
+            await File.WriteAllTextAsync(path, text);
+
+            var snapshot = await CopilotRecentLogSupport.CaptureFileAsync(path, maxChars: lineLimit ? 20_000 : 1_000);
+
+            Assert.True(snapshot.Success, snapshot.ErrorMessage);
+            Assert.True(snapshot.ContentWasTruncated);
+            Assert.Equal(snapshot.Content, string.Concat(snapshot.Content.EnumerateRunes().Select(rune => rune.ToString())));
+
+            await File.WriteAllTextAsync(path, "RECOVERED \U00020BB7 suffix");
+            var complete = await CopilotRecentLogSupport.CaptureFileAsync(path, maxChars: 1_000);
+            Assert.True(complete.Success, complete.ErrorMessage);
+            Assert.False(complete.ContentWasTruncated);
+            Assert.Contains("RECOVERED \U00020BB7 suffix", complete.Content, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Theory]
     [InlineData(CopilotRecentLogMode.RecentLines)]
     [InlineData(CopilotRecentLogMode.FullDay)]

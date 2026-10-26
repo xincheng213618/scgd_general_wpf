@@ -3,10 +3,10 @@ knowledge_id: "copilot.mcp-server"
 knowledge_type: "reference"
 status: "current"
 summary: "ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。"
-aliases: ["ColorVision 本地 MCP", "Local MCP", "Codex 如何连接 ColorVision", "MCP 工具能否执行流程", "CopilotMcpServer", "CopilotMcpRequestHandler", "CopilotMcpClientSessionStore", "CopilotMcpToolDispatcher", "Mcp-Session-Id", "MCP-Protocol-Version", "MCP SSE", "MCP 会话容量", "-32013", "Safety boundary", "confirm_action", "arguments_digest", "get_enabled_tools", "get_agent_task_events", "agent_task_events_scope_required", "workspace_scope_changed", "no_allowed_roots", "execute_menu", "create_flow", "Copy Codex Config", "Copy Token Command"]
-code_paths: ["ColorVision/Copilot/Mcp/", "ColorVision/Copilot/Capabilities/", "ColorVision/Copilot/CopilotExecutionScope.cs", "ColorVision/Copilot/Config/CopilotConfig.cs", "ColorVision/Copilot/CopilotMcpSettingsControl.xaml", "ColorVision/Copilot/CopilotSettingsViewModel.cs", "ColorVision/Copilot/CopilotSettingsViewModel.McpProperties.cs", "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpRequestIdentityTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpPathSecurityTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs"]
-related: ["copilot.runtime", "copilot.extensions", "copilot.configuration", "copilot.tool-contracts"]
+aliases: ["ColorVision 本地 MCP","Local MCP","Codex 如何连接 ColorVision","MCP 工具能否执行流程","CopilotMcpServer","CopilotMcpRequestHandler","CopilotMcpClientSessionStore","CopilotMcpToolDispatcher","Mcp-Session-Id","MCP-Protocol-Version","MCP SSE","MCP 会话容量","-32013","Safety boundary","confirm_action","arguments_digest","get_enabled_tools","get_agent_task_events","agent_task_events_scope_required","workspace_scope_changed","no_allowed_roots","execute_menu","create_flow","Copy Codex Config","Copy Token Command","ListFlowIncidents","list_flow_incidents","inspect_flow_incident","InspectRecordedFlowTemplate","inspect_recorded_flow_template","InspectFlowRunHistory","inspect_flow_run_history"]
+code_paths: ["ColorVision/Copilot/Mcp/","ColorVision/Copilot/Capabilities/","ColorVision/Copilot/CopilotExecutionScope.cs","ColorVision/Copilot/Config/CopilotConfig.cs","ColorVision/Copilot/CopilotMcpSettingsControl.xaml","ColorVision/Copilot/CopilotSettingsViewModel.cs","ColorVision/Copilot/CopilotSettingsViewModel.McpProperties.cs","ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowIncidentsTool.cs","Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowIncidentInspectionReader.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectRecordedFlowTemplateTool.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunHistoryTool.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpRequestIdentityTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpPathSecurityTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentQueryServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentQueryToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowIncidentReadSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateSourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateToolTests.cs","Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateGraphTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunHistorySourceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryToolTests.cs"]
+related: ["copilot.runtime", "copilot.extensions", "copilot.configuration", "copilot.tool-contracts","flow.diagnostics"]
 ---
 
 # ColorVision 本地 MCP
@@ -73,7 +73,7 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 | 应用与模板上下文 | `get_live_context`、`get_workspace_context`、`get_active_template_context`、`get_saved_template_context`、`get_template_type_context` | 读取已发布或已加载的内存状态。已保存模板用精确 `template_code` / `template_name` 定位；类型查询只需 code，返回字段结构和已加载名称，不返回参数值，不主动查询数据库 |
 | 日志与产品文档 | `get_recent_log`、`search_docs` | 前者读取应用日志；后者检索已发布的在线文档索引，可能联网，不等于检索当前源码检出版本 |
 | 工作区文件 | `search_files`、`grep_text`、`read_allowed_file`、`list_allowed_directory` | 受允许根约束的搜索、文本读取和目录分页，见下文 |
-| 流程诊断 | `get_flow_summary`、`diagnose_flow_failure`、`get_flow_graph`、`get_flow_node_catalog`、`preview_flow_action` | 读取当前流程、节点、图 revision 与可用类型；预览动作只返回说明，即使名称是 `select_node` / `open_node_property` 也不实际选择或打开界面 |
+| 流程诊断 | `get_flow_summary`、`diagnose_flow_failure`、`list_flow_incidents`、`inspect_flow_incident`、`inspect_recorded_flow_template`、`inspect_flow_run_history`、`get_flow_graph`、`get_flow_node_catalog`、`preview_flow_action` | 发现事故并读取精确关联的正式证据、留存模板或运行历史，或读取当前流程；预览动作只返回说明，即使名称是 `select_node` / `open_node_property` 也不实际选择或打开界面 |
 | 模板建议和预览 | `suggest_template_patch`、`preview_template_patch` | 建议字段或计算差异，不修改编辑器；满足活动编辑器条件的预览会在内存保存 `preview_id` |
 | 流程预览和修改 | `preview_flow_patch`、`apply_flow_patch` | 单项 `add_node`、`set_property` 或 `connect`；应用需确认且复核 `expected_revision`，成功只修改当前编辑器，不自动保存或运行 |
 | 模板应用 | `apply_template_patch` | 需要有效 `preview_id` 和确认；修改活动编辑器及绑定内存参数，不自动保存到数据库 |
@@ -84,6 +84,14 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 | Agent 事件 | `get_agent_task_events` | 标准 HTTP 外部会话没有 Copilot conversation 绑定，返回 `agent_task_events_scope_required`；工具出现在列表中不代表可以读取进程级任务历史 |
 
 `diagnose_flow_failure` 分开呈现当前流程状态、Flow 宿主筛选出的失败相关摘录、节点／模板配置和最近应用日志，不通过关键词生成故障原因。`FailureEvidence` / `RecentFailureSummary` 也是宿主提供的文本线索，不等于结构化异常或已确认根因；`Running` 状态、`Timeout` 等配置字段及日志搜索词本身不构成故障证据。各来源独立采集，最近日志尚未按运行批次或节点关联，必须先对齐原始记录中的流程／批次、节点与时间，再提出参数调整。输出中的日志行数是请求上限；来源缺失或日志读取失败会明确报告，不能解释为流程成功。`CopilotFlowDiagnosisTests` 覆盖正常配置、真实错误摘录、旧摘要兼容和日志读取失败的区分。
+
+不知道事故编号时，先调用 `list_flow_incidents`：`state` 默认 `active`，可选 `active/open/acknowledged/resolved/all`；`max_results` 默认20，范围1–100，续页原样回传不超过4,096字符的 opaque `cursor`。再用列表中的完整 `incident_id` 调用 `inspect_flow_incident`，读取关联运行、节点尝试与按序事件。两者仅只读发现与取证，不执行控制、处置或写库；缺库或缺 schema 不能解释为无事故。
+
+事故列表每页有独立只读快照，跨页是实时 keyset 查询，不是冻结的完整历史。游标绑定数据源路径哈希、状态、锚点及日期原始排序值的指纹；换来源／状态、锚点删除、时间或其原始存储表示改变后需重新查询，即使解析后的 ticks 相同。正文保持有界完整 JSON；为输出预算缩页时，以实际交付的末条记录生成下一游标。状态的精确语义、来源和覆盖限制、当前事故窗口入口及详情输入／输出上限统一见 [Flow 运行诊断](../../04-api-reference/engine-components/flow-diagnostics.md)。当前快照和未关联日志不能替代正式证据。
+
+历史模板取证使用 `inspect_recorded_flow_template`：将事故详情给出的 `run_record_id`（必填正 Int32）传入，`max_nodes` 默认80、范围1–200；可选 `node_id` 必须是长度36的非零 GUID `D` 格式。工具只读取该运行精确关联且通过长度／hash 校验的留存模板，交付有界完整 JSON 的节点身份、属性名与可验证连线，不返回属性值、不实例化节点或执行流程。缺引用、缺表、损坏或不支持格式会明确失败；缺端口布局或被裁剪时说明覆盖限制，不猜测连接。`get_flow_graph` 仍读取当前画布，留存模板也不保证包含未保存修改；完整关联、格式和预算规则见 [Flow 运行诊断](../../04-api-reference/engine-components/flow-diagnostics.md)。
+
+历史状态／耗时对照使用 `inspect_flow_run_history`：必填精确正 Int32 `run_record_id`，`max_runs` 默认10、范围1–50；可选 `node_id` 为1–128字符的非空白精确标识，不限 GUID、不 trim 或模糊匹配。工具仅交付有界先前记录及可用的节点尝试，不读 SN、操作员或 payload。窗口按更小记录 ID 取样，不承诺实际执行先后；缺身份、缺尝试 schema 或裁剪会明确说明。确认成功参照与差值仅基于符合条件的实际交付记录，不能解释为全库成功率或客户 PASS/FAIL；完整身份、统计与覆盖规则见 [Flow 运行诊断](../../04-api-reference/engine-components/flow-diagnostics.md)。
 
 ### 只读资源
 
@@ -182,10 +190,11 @@ HTTP 工具回复只投影 `text` 与 `isError`，不单独序列化内部 `Erro
 | 工作区捕获与路径授权 | `CopilotMcpToolEnvironment`、`CopilotMcpWorkspaceSnapshotCapture`、dispatcher `Search` 分部 |
 | 确认和执行绑定 | `CopilotExecutionScope`、`CopilotMcpConfirmationStore`、dispatcher `Confirmation` 分部 |
 | 菜单解析与真实副作用 | `CopilotMenuToolSupport`、`CopilotApplicationCapability.ExecuteMenuAsync` 与具体菜单命令 |
+| 正式事故发现与详情 | `CopilotFlowIncidentQueryService`、`CopilotFlowIncidentInspectionService` 与只读 `FlowIncidentInspectionReader` |
 
 共享工具的定义、策略、路由、Schema 一致性和 Agent trace 由[共享能力契约](./copilot-agent-tool-contracts.md#agent-与-mcp-的共享能力定义)统一维护；新增本地工具仍需在 `CopilotMcpToolDefinition` 集合绑定 descriptor 与 handler。新增业务快照按[业务上下文扩展](./copilot-agent-extensions.md#业务模块-agent-扩展)接入，不另建 MCP 专属事实副本。
 
-相关测试包含：`CopilotMcpRequestIdentityTests` 的认证、会话隔离和事件拒绝；`CopilotMcpConfirmationDecisionTests` 的作用域、完整参数绑定和审计载荷；`CopilotMcpServerLifecycleTests` 的退出取消；`CopilotMcpConnectionDiagnosticTests` 的握手及状态响应校验。共享输入测试见 `CopilotSharedCapabilityInputContractTests`。
+相关测试包含：`CopilotMcpRequestIdentityTests` 的认证、会话隔离和事件拒绝；`CopilotMcpConfirmationDecisionTests` 的作用域、完整参数绑定和审计载荷；`CopilotMcpServerLifecycleTests` 的退出取消；`CopilotMcpConnectionDiagnosticTests` 的握手及状态响应校验。`CopilotFlowIncidentQueryToolTests`、`CopilotFlowIncidentToolTests` 检查事故发现／详情的 Agent 与 MCP 同协议，分页和只读源覆盖见 [Flow 运行诊断](../../04-api-reference/engine-components/flow-diagnostics.md)。共享输入测试见 `CopilotSharedCapabilityInputContractTests`。
 
 下面是实现变更后的可选验证命令，会构建测试依赖，部分用例会启动临时 loopback 监听器、WPF Dispatcher 并创建临时文件；文档修改不要求为验证文字而启动服务：
 

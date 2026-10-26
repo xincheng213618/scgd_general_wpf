@@ -100,6 +100,55 @@ public sealed class CopilotBackgroundShellCompletionObservationTests
         }
     }
 
+    [Fact]
+    public async Task BeyondTheEndBackgroundArchiveCursorIsValidationAndCannotAutomaticallyRetry()
+    {
+        const string content = "complete public background output";
+        using var archive = CopilotTemporaryRedactedOutputArchive.TryCreate("BackgroundOutput", "stdout");
+        Assert.NotNull(archive);
+        archive.Append(content);
+        var process = new ControlledBackgroundShellProcess(wakeObservationOnCompletion: true, standardOutputArchive: archive);
+        var registry = new CopilotBackgroundShellCommandRegistry(new ControlledBackgroundShellProcessLauncher(process));
+        var request = CreateRequest();
+        try
+        {
+            var started = await registry.StartAsync(request, CreateInput(), CancellationToken.None);
+            Assert.True(started.Success, started.ErrorMessage);
+            process.CompleteSuccessfully();
+            var backgroundId = started.Snapshot!.Id;
+            var tool = new CopilotReadBackgroundShellCommandOutputTool(registry);
+            CopilotAgentToolInput InputAt(int offset) => new()
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["backgroundId"] = backgroundId, ["stream"] = "stdout", ["offsetCharacters"] = offset,
+                },
+            };
+
+            var outcome = await new CopilotToolExecutor(hooks: []).ExecuteAsync(new()
+            {
+                CallId = "call:invalid-background-archive-cursor", Tool = tool, AgentRequest = request,
+                ToolInput = InputAt(content.Length + 1), Attempt = 1, MaxAttempts = 2,
+            }, _ => { }, CancellationToken.None);
+
+            Assert.False(outcome.Result.Success);
+            Assert.Equal(CopilotToolFailureKind.Validation, outcome.Result.FailureKind);
+            Assert.False(outcome.Execution.RetryEligible);
+            Assert.Contains("beyond", outcome.Result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+            var atEnd = await tool.ExecuteAsync(request, InputAt(content.Length), CancellationToken.None);
+            Assert.True(atEnd.Success, atEnd.ErrorMessage);
+            var page = atEnd.BackgroundShellOutputArchiveRead?.Page;
+            Assert.NotNull(page);
+            Assert.Empty(page.Content);
+            Assert.Equal(content.Length, page.NextOffsetCharacters);
+            Assert.True(page.EndOfAvailableOutput);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

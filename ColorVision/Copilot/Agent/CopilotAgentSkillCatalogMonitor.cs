@@ -88,16 +88,17 @@ namespace ColorVision.Copilot
                     Filter = "*",
                     IncludeSubdirectories = true,
                     NotifyFilter = NotifyFilters.FileName
+                        | NotifyFilters.DirectoryName
                         | NotifyFilters.LastWrite
                         | NotifyFilters.Size,
                 };
                 watcher.Changed += (_, args) => OnPathChanged(skillRootPath, args.FullPath);
-                watcher.Created += (_, args) => OnPathChanged(skillRootPath, args.FullPath);
-                watcher.Deleted += (_, args) => OnPathChanged(skillRootPath, args.FullPath);
+                watcher.Created += (_, args) => OnPathChanged(skillRootPath, args.FullPath, structureChanged: true);
+                watcher.Deleted += (_, args) => OnPathChanged(skillRootPath, args.FullPath, structureChanged: true);
                 watcher.Renamed += (_, args) =>
                 {
-                    OnPathChanged(skillRootPath, args.OldFullPath);
-                    OnPathChanged(skillRootPath, args.FullPath);
+                    OnPathChanged(skillRootPath, args.OldFullPath, structureChanged: true);
+                    OnPathChanged(skillRootPath, args.FullPath, structureChanged: true);
                 };
                 watcher.Error += (_, _) => ScheduleChanged();
                 watcher.EnableRaisingEvents = true;
@@ -110,9 +111,11 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void OnPathChanged(string skillRootPath, string changedPath)
+        private void OnPathChanged(string skillRootPath, string changedPath, bool structureChanged = false)
         {
-            if (IsSkillMetadataFile(changedPath) && IsPathWithinRoot(changedPath, skillRootPath))
+            var affectsSkillRoot = IsPathWithinRoot(changedPath, skillRootPath)
+                || structureChanged && IsPathWithinRoot(skillRootPath, changedPath);
+            if (affectsSkillRoot && (structureChanged || IsSkillMetadataFile(changedPath)))
                 ScheduleChanged();
         }
 

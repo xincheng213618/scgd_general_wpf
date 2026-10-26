@@ -57,7 +57,7 @@ namespace ColorVision.Copilot
                 Success = Success,
                 Summary = Summary,
                 PartialResultMessage = !Success || ResultsComplete ? string.Empty
-                    : (ScanComplete ? string.Empty : "文件扫描达到上限，请缩小搜索范围。")
+                    : (ScanComplete ? string.Empty : "文件搜索范围未完全检查，请检查路径或缩小搜索范围。")
                         + (!string.IsNullOrWhiteSpace(NextCursor)
                             ? $"本页显示 {Matches.Count} 个文件，仍有更多结果可继续读取。"
                             : string.Empty),
@@ -158,13 +158,20 @@ namespace ColorVision.Copilot
 
             var scannedFiles = 0;
             var matches = new List<CopilotFileSearchMatch>();
-            var scanComplete = true;
+            var scanLimitReached = false;
+            var scopeInspectionFailureCount = 0;
+            var scopeWarnings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var entry in CopilotWorkspaceSearchSupport.EnumerateFiles(searchRoots, textFilesOnly: false, cancellationToken))
+            foreach (var entry in CopilotWorkspaceSearchSupport.EnumerateFiles(searchRoots, textFilesOnly: false, cancellationToken, (path, reason) =>
+            {
+                scopeInspectionFailureCount++;
+                if (scopeWarnings.Count < 5)
+                    scopeWarnings.TryAdd(path, reason);
+            }))
             {
                 if (scannedFiles >= MaxFilesToScan)
                 {
-                    scanComplete = false;
+                    scanLimitReached = true;
                     break;
                 }
                 scannedFiles++;
@@ -182,6 +189,7 @@ namespace ColorVision.Copilot
                 }
             }
 
+            var scanComplete = !scanLimitReached && scopeInspectionFailureCount == 0;
             var orderedMatches = matches
                 .OrderByDescending(item => item.Score)
                 .ThenBy(item => item.FullPath, StringComparer.OrdinalIgnoreCase)
@@ -228,6 +236,7 @@ namespace ColorVision.Copilot
             builder.AppendLine($"[Search Terms] {string.Join(", ", terms)}");
             builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
             builder.AppendLine($"[Scanned Files] {scannedFiles}");
+            builder.AppendLine($"[Scope Inspection Failures] {scopeInspectionFailureCount}");
             builder.AppendLine($"[Matched Files] {orderedMatches.Length}");
             builder.AppendLine($"[Page Offset] {offset}");
             builder.AppendLine($"[Results Shown] {pageMatches.Length}");
@@ -235,13 +244,19 @@ namespace ColorVision.Copilot
             builder.AppendLine($"[Results Complete] {resultsComplete.ToString().ToLowerInvariant()}");
             if (!string.IsNullOrWhiteSpace(nextCursor))
                 builder.AppendLine($"next_cursor: {nextCursor}");
+            if (scanLimitReached)
+                builder.AppendLine($"[Search Warning] The {MaxFilesToScan}-file scan limit was reached. Narrow the path before drawing a complete conclusion.");
+            if (scopeInspectionFailureCount > 0)
+                builder.AppendLine("[Search Warning] Some directories could not be fully enumerated. The matches below are partial evidence; no absence conclusion is supported for uninspected paths.");
+            foreach (var warning in scopeWarnings)
+                builder.AppendLine($"[Search Warning] {CopilotWorkspaceSearchSupport.TruncateLine(warning.Key, 260)}: {warning.Value}");
             builder.AppendLine();
 
             if (pageMatches.Length == 0)
             {
                 builder.AppendLine(scanComplete
                     ? "[Result] No candidate files matched the literal query in the completed search scope."
-                    : "[Search Warning] No match was found before the file scan limit was reached. Narrow the path before treating this as a definitive absence.");
+                    : "[Search Warning] No match was found in the inspected files, but the search scope was not fully inspected. Narrow the path or retry before treating this as a definitive absence.");
                 return new CopilotFileSearchResult
                 {
                     Success = true,
@@ -254,7 +269,9 @@ namespace ColorVision.Copilot
                     Matches = pageMatches,
                     Summary = scanComplete
                         ? $"Scanned {scannedFiles} files; no candidate files matched the literal query."
-                        : $"Scanned the first {scannedFiles} files without a match; the result is partial because the scan limit was reached.",
+                        : scopeInspectionFailureCount > 0
+                            ? $"Scanned {scannedFiles} files without a match; the result is partial because some directories could not be inspected."
+                            : $"Scanned the first {scannedFiles} files without a match; the result is partial because the scan limit was reached.",
                     Content = builder.ToString().TrimEnd(),
                 };
             }

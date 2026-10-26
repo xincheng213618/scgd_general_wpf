@@ -142,8 +142,34 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken,
             Action<string, string>? reportIncompletePath = null)
         {
-            foreach (var root in NormalizeSearchScopes(roots))
+            cancellationToken.ThrowIfCancellationRequested();
+            var requestedRoots = (roots ?? Array.Empty<string>()).ToArray();
+            var searchScopes = NormalizeSearchScopes(requestedRoots);
+            foreach (var requestedRoot in requestedRoots)
             {
+                string candidate;
+                try { candidate = Path.GetFullPath(requestedRoot); }
+                catch
+                {
+                    reportIncompletePath?.Invoke(requestedRoot, "The search scope has an invalid path format.");
+                    continue;
+                }
+                if (searchScopes.Any(scope => string.Equals(candidate, scope, StringComparison.OrdinalIgnoreCase)
+                    || Directory.Exists(scope) && IsSubPathOf(candidate, scope)))
+                {
+                    continue;
+                }
+                // Normalization must not silently narrow a previously accepted search scope.
+                reportIncompletePath?.Invoke(candidate, "The search scope no longer exists, is inaccessible, or has become a file-system reparse point.");
+            }
+
+            foreach (var root in searchScopes)
+            {
+                if (IsReparsePoint(root))
+                {
+                    reportIncompletePath?.Invoke(root, "The search scope could not be verified safely or has become a file-system reparse point.");
+                    continue;
+                }
                 if (File.Exists(root))
                 {
                     cancellationToken.ThrowIfCancellationRequested();

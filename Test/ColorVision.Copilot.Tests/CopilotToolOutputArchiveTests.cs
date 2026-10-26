@@ -70,6 +70,55 @@ public sealed class CopilotToolOutputArchiveTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BeyondTheEndArchiveCursorIsValidationAndCannotAutomaticallyRetry(bool shell)
+    {
+        const string content = "complete public output";
+        var request = new CopilotAgentRequest { ConversationId = "archive-invalid-cursor", Mode = CopilotAgentMode.Auto };
+        using var toolRegistry = new CopilotToolOutputArchiveRegistry();
+        using var shellRegistry = new CopilotShellCommandOutputArchiveRegistry();
+        using var capture = shell ? new CopilotShellCommandOutputCapture() : null;
+        ICopilotTool tool;
+        string archiveId;
+        if (shell)
+        {
+            capture!.AppendStandardOutput(content);
+            capture.Complete();
+            var snapshot = shellRegistry.Retain(request.ConversationId, capture, new(
+                0, false, content, string.Empty, TimeSpan.Zero) { StandardOutputTruncated = true });
+            Assert.NotNull(snapshot);
+            archiveId = snapshot.Id;
+            tool = new CopilotReadShellCommandOutputTool(shellRegistry);
+        }
+        else
+        {
+            var snapshot = toolRegistry.Retain(request.ConversationId, "ReadLocalFile", "call:source", content);
+            Assert.NotNull(snapshot);
+            archiveId = snapshot.Id;
+            tool = new CopilotReadToolOutputTool(toolRegistry);
+        }
+
+        var outcome = await new CopilotToolExecutor(hooks: []).ExecuteAsync(new()
+        {
+            CallId = "call:invalid-archive-cursor", Tool = tool, AgentRequest = request,
+            ToolInput = CreateReadInput(archiveId, content.Length + 1), Attempt = 1, MaxAttempts = 2,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.False(outcome.Result.Success);
+        Assert.Equal(CopilotToolFailureKind.Validation, outcome.Result.FailureKind);
+        Assert.False(outcome.Execution.RetryEligible);
+        Assert.Contains("beyond", outcome.Result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        var atEnd = await tool.ExecuteAsync(request, CreateReadInput(archiveId, content.Length), CancellationToken.None);
+        Assert.True(atEnd.Success, atEnd.ErrorMessage);
+        var page = shell ? atEnd.ShellOutputArchiveRead?.Page : atEnd.ToolOutputArchiveRead?.Page;
+        Assert.NotNull(page);
+        Assert.Empty(page.Content);
+        Assert.Equal(content.Length, page.NextOffsetCharacters);
+        Assert.True(page.EndOfAvailableOutput);
+    }
+
+    [Theory]
     [InlineData(256, false)]
     [InlineData(256, true)]
     [InlineData(null, false)]

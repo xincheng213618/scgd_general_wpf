@@ -533,7 +533,10 @@ namespace ColorVision.Copilot
             var submission = new CopilotCodeReviewFindingsSubmission(
                 evidence.EvidenceId,
                 ordered);
-            content = CopilotCodeReviewFindingsResultProtocol.Serialize(submission);
+            var serialized = CopilotCodeReviewFindingsResultProtocol.Serialize(submission);
+            if (!CopilotCodeReviewFindingsResultProtocol.TryParse(serialized, out _, out error))
+                return false;
+            content = serialized;
             return true;
         }
     }

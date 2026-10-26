@@ -14,6 +14,88 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotChatPanelScrollLifetimeTests
 {
     [Theory]
+    [InlineData("SearchFiles", CopilotToolExecutionState.Failed, true, false)]
+    [InlineData("SearchFiles", CopilotToolExecutionState.Completed, true, true)]
+    [InlineData("ReadLocalFile", CopilotToolExecutionState.Failed, true, true)]
+    [InlineData("SearchFiles", CopilotToolExecutionState.Cancelled, true, false)]
+    [InlineData("SearchFiles", CopilotToolExecutionState.Cancelled, false, true)]
+    public void ConversationFindOnlyMatchesToolDetailsThatRemainVisible(
+        string toolName, CopilotToolExecutionState state, bool useTimeline, bool expectedMatch)
+    {
+        Run(fixture =>
+        {
+            const string needle = "tool-detail-sentinel";
+            const string runtimeNeedle = "runtime-detail-sentinel";
+            var success = state == CopilotToolExecutionState.Completed;
+            var message = fixture.StreamingMessage;
+            message.Content = string.Empty;
+            var completedAt = DateTimeOffset.UtcNow;
+            var result = new CopilotToolResult
+            {
+                ToolName = toolName, Success = success,
+                Summary = success ? "The search completed." : "The tool could not inspect its target.",
+                ErrorMessage = success ? string.Empty : "The target was unavailable: " + needle,
+                FailureKind = success ? CopilotToolFailureKind.None
+                    : state == CopilotToolExecutionState.Cancelled ? CopilotToolFailureKind.Cancelled : CopilotToolFailureKind.NotFound,
+            };
+            var toolEvent = CopilotAgentEvent.FromToolResult(result, new()
+            {
+                CallId = "find-visible-tool-detail", Round = 1, RuntimeName = runtimeNeedle, ToolName = toolName,
+                Access = CopilotToolAccess.ReadOnly, Idempotency = CopilotToolIdempotency.Idempotent,
+                ArgumentSummary = "query: " + needle,
+                State = state,
+                FailureKind = result.FailureKind, StartedAtUtc = completedAt.AddMilliseconds(-1), CompletedAtUtc = completedAt,
+                DurationMs = 1, TimeoutMs = 5_000,
+            });
+            CopilotAgentEventProtocol.Validate(toolEvent);
+            CopilotAssistantMessagePresenter.ApplyAgentEvent(message, toolEvent);
+            CopilotAssistantMessagePresenter.ApplyAgentEvent(message, CopilotAgentEvent.AnswerDelta("Inspection finished."));
+            CopilotAssistantMessagePresenter.ApplyAgentEvent(message, CopilotAgentEvent.Completed());
+            if (!useTimeline)
+            {
+                // Pre-timeline history retains its tool diagnostics in the legacy thinking region.
+                message.ResponseTimelineEvents.Clear();
+                message.UsesResponseTimeline = false;
+            }
+
+            var trace = Assert.Single(message.AgentTraceEntries);
+            Assert.Contains(needle, trace.ArgumentSummary, StringComparison.Ordinal);
+            Assert.Contains(needle, trace.DiagnosticDetails, StringComparison.Ordinal);
+            Assert.Contains(needle, message.ExecutionContent, StringComparison.Ordinal);
+            Assert.DoesNotContain(needle, message.Content, StringComparison.Ordinal);
+            var expectedVisibleTrace = success || toolName == "ReadLocalFile";
+            Assert.Equal(expectedVisibleTrace, trace.IsVisibleInActivity);
+            Assert.Equal(useTimeline, message.HasResponseTimeline);
+            Assert.Equal(useTimeline && expectedVisibleTrace, message.VisibleResponseTimelineItems.Any(item => item.IsToolGroup));
+            if (useTimeline && !expectedMatch)
+            {
+                Assert.Empty(message.VisibleAgentTraceEntries);
+                Assert.False(message.HasLegacyThinkingTrace);
+            }
+            if (!useTimeline)
+            {
+                Assert.True(message.HasLegacyThinkingTrace);
+                Assert.Contains(needle, message.LegacyThinkingContent, StringComparison.Ordinal);
+            }
+
+            foreach (var query in new[] { needle, runtimeNeedle })
+            {
+                Assert.Contains(query, trace.DiagnosticDetails, StringComparison.Ordinal);
+                fixture.ViewModel.ConversationFindText = query;
+                fixture.ViewModel.OpenConversationFind();
+
+                Assert.Equal(expectedMatch, fixture.ViewModel.HasConversationFindMatches);
+                Assert.Equal(expectedMatch, message.IsConversationFindMatch);
+                Assert.Equal(expectedMatch, message.IsCurrentConversationFindMatch);
+                if (expectedMatch)
+                    Assert.Same(message, fixture.ViewModel.CurrentConversationFindMatch);
+                else
+                    Assert.Null(fixture.ViewModel.CurrentConversationFindMatch);
+            }
+        });
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ScrollingUpBeforeThePendingFollowRunsKeepsTheReadersPosition(bool useVirtualization)

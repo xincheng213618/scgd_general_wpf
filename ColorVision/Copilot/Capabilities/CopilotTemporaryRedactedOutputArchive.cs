@@ -24,7 +24,12 @@ namespace ColorVision.Copilot
         int ArchivedCharacters,
         bool EndOfAvailableOutput,
         bool ArchiveTruncated,
-        string ErrorMessage);
+        string ErrorMessage)
+    {
+        public CopilotToolFailureKind FailureKind { get; init; } = Available
+            ? CopilotToolFailureKind.None
+            : CopilotToolFailureKind.Transient;
+    }
 
     internal sealed record CopilotRedactedOutputArchiveSearchResult(
         bool Available,
@@ -286,7 +291,8 @@ namespace ColorVision.Copilot
                 {
                     return UnavailablePage(
                         offsetCharacters,
-                        "The output archive read range is invalid.");
+                        "The output archive read range is invalid.",
+                        CopilotToolFailureKind.Validation);
                 }
 
                 if (offsetCharacters > _archivedCharacters)
@@ -294,7 +300,8 @@ namespace ColorVision.Copilot
                     return UnavailablePage(
                         offsetCharacters,
                         $"The output archive currently contains {_archivedCharacters} characters; "
-                        + $"offset {offsetCharacters} is beyond the available output.");
+                        + $"offset {offsetCharacters} is beyond the available output.",
+                        CopilotToolFailureKind.Validation);
                 }
 
                 try
@@ -487,7 +494,8 @@ namespace ColorVision.Copilot
 
         private CopilotRedactedOutputArchivePage UnavailablePage(
             int offsetCharacters,
-            string errorMessage) =>
+            string errorMessage,
+            CopilotToolFailureKind failureKind = CopilotToolFailureKind.Transient) =>
             new(
                 Available: false,
                 Content: string.Empty,
@@ -498,7 +506,10 @@ namespace ColorVision.Copilot
                 EndOfAvailableOutput:
                     offsetCharacters >= _archivedCharacters,
                 ArchiveTruncated: _isTruncated,
-                ErrorMessage: errorMessage);
+                ErrorMessage: errorMessage)
+            {
+                FailureKind = failureKind,
+            };
 
         private CopilotRedactedOutputArchiveSearchResult UnavailableSearch(
             int offsetCharacters,

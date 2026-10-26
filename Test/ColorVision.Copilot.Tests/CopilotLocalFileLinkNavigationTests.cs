@@ -147,6 +147,35 @@ public sealed class CopilotLocalFileLinkNavigationTests
     }
 
     [Fact]
+    public void ExplicitTrustedRootCanOpenAnAbsoluteReferenceWithoutAnOpenWorkspace()
+    {
+        Run(scope =>
+        {
+            var trustedRoot = Directory.CreateDirectory(Path.Combine(scope.Root, "personal-instructions")).FullName;
+            var trustedPath = Path.Combine(trustedRoot, "personal.copilotlinkprobe");
+            File.WriteAllText(trustedPath, "Personal instructions.");
+            scope.SetWorkspace(null);
+            Assert.False(CopilotLocalFileLinkNavigator.TryResolve(trustedPath, out _));
+            Assert.False(CopilotLocalFileLinkNavigator.TryResolve(scope.OtherPath, [trustedRoot], out _));
+            Assert.False(CopilotLocalFileLinkNavigator.TryResolve(Path.GetFileName(trustedPath), [trustedRoot], out _));
+            var uriWithoutDrive = "file:///" + trustedPath[Path.GetPathRoot(trustedPath)!.Length..].Replace('\\', '/');
+            Assert.False(CopilotLocalFileLinkNavigator.TryResolve(uriWithoutDrive, [trustedRoot], out _));
+            Assert.True(CopilotLocalFileLinkNavigator.TryResolve(new Uri(trustedPath).AbsoluteUri, [trustedRoot], out var uriTarget));
+            Assert.Equal(trustedPath, uriTarget.FilePath);
+            Assert.True(CopilotLocalFileLinkNavigator.TryResolve(trustedPath, [trustedRoot], out var target));
+            string? openedPath = null;
+            CopilotLinkProbeOpenAction.Open = path => { openedPath = path; return new(true, true); };
+
+            Assert.True(CopilotLocalFileLinkNavigator.TryOpen(target, [trustedRoot], out var error), error);
+
+            Assert.Equal(trustedPath, openedPath);
+            openedPath = null;
+            Assert.False(CopilotLocalFileLinkNavigator.TryOpen(new(scope.OtherPath, null, null), [trustedRoot], out _));
+            Assert.Null(openedPath);
+        });
+    }
+
+    [Fact]
     public void ClickingAReferenceRechecksTheCurrentWorkspace()
     {
         Run(scope =>
@@ -199,8 +228,13 @@ public sealed class CopilotLocalFileLinkNavigationTests
             WorkspaceManager.layoutRoot = new() { RootPanel = new LayoutPanel(WorkspaceManager.LayoutDocumentPane) };
         }
 
-        public void SetWorkspace(string path)
+        public void SetWorkspace(string? path)
         {
+            if (path == null)
+            {
+                typeof(SolutionManager).GetField("_CurrentSolutionExplorer", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(_manager, null);
+                return;
+            }
             var explorer = (SolutionExplorer)RuntimeHelpers.GetUninitializedObject(typeof(SolutionExplorer));
             typeof(SolutionExplorer).GetProperty(nameof(SolutionExplorer.DirectoryInfo))!.SetValue(explorer, new DirectoryInfo(path));
             typeof(SolutionManager).GetField("_CurrentSolutionExplorer", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(_manager, explorer);

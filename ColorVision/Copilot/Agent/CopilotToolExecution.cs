@@ -556,6 +556,16 @@ namespace ColorVision.Copilot
                     var result = CopilotToolResultContract.Capture(
                         invocation.Tool.Name,
                         await executionTask.WaitAsync(timeout, cancellationToken));
+                    if (dispatchWindow.HasEntered
+                        && HasUnknownOutcomeAfterExecutionBoundary(invocation)
+                        && result.FailureCode == CopilotToolResultContract.InvalidOutputFailureCode)
+                    {
+                        result = CreateUnknownExecutionResult(
+                            invocation,
+                            $"{invocation.Tool.Name} returned invalid output after execution started without a trustworthy final result.",
+                            Volatile.Read(ref workspaceRecheckPaths),
+                            result.ErrorMessage);
+                    }
                     var state = result.Approval != null
                         ? CopilotToolExecutionState.AwaitingApproval
                         : result.Success ? CopilotToolExecutionState.Completed : CopilotToolExecutionState.Failed;

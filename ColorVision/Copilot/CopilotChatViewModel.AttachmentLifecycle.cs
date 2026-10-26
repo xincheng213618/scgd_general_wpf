@@ -148,7 +148,8 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotAttachmentItem> attachments,
             CopilotManagedImageAttachmentLease imageLease,
             CopilotConversationRecord conversation,
-            CopilotHostedAgentRun? hostedRun)
+            CopilotHostedAgentRun? hostedRun,
+            Func<bool>? canApplyFeedback = null)
         {
             if (!attachments.Any(attachment => attachment.Type == CopilotAttachmentType.Image))
                 return attachments;
@@ -177,6 +178,7 @@ namespace ColorVision.Copilot
             catch (CopilotImageAttachmentAdmissionException ex)
             {
                 if (!cancellation.IsCancellationRequested
+                    && (canApplyFeedback?.Invoke() ?? true)
                     && CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
                     ReportImageAttachmentAdmissionFailure(ex);
                 return null;

@@ -225,6 +225,7 @@ namespace ColorVision.Copilot
             Func<string, CancellationToken, Task<CopilotFetchedWebPageContent>> loadPageAsync)
         {
             var messageEditSnapshot = _composerDraftBeforeMessageEdit;
+            var feedbackRevision = Volatile.Read(ref _localCommandResultRevision);
             var urlComparisonKey = CopilotWebPageToolSupport.NormalizeUrlComparisonKey(url);
             var existingAttachment = conversation.Attachments.FirstOrDefault(item =>
                 item.Type == CopilotAttachmentType.WebPage && string.Equals(
@@ -268,23 +269,17 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
             }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(
-                    Application.Current.GetActiveWindow(),
-                    "Failed to fetch web page: the request timed out.",
-                    "ColorVision",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    Application.Current.GetActiveWindow(),
-                    $"Failed to fetch web page: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
-                    "ColorVision",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                if (!cancellation.IsCancellationRequested
+                    && ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit)
+                    && CanApplyAuxiliaryConversationFeedback(conversation, feedbackRevision))
+                {
+                    LocalCommandResultTitle = ex is OperationCanceledException ? "附加网页 · 超时" : "附加网页 · 失败";
+                    LocalCommandResultText = ex is OperationCanceledException
+                        ? "网页读取已超时，请稍后重试。"
+                        : CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                }
             }
             finally
             {

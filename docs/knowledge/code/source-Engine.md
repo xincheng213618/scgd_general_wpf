@@ -277,6 +277,9 @@ next: false
 - [SysDictionary 系统字典兼容层](../../04-api-reference/algorithms/templates/sys-dictionary-template.md) — `algorithms.template-dictionary`
   说明保留的系统字典 DAO 与模板默认值、传感器和旧流程兼容依赖。
 
+- [ColorVision 本地 MCP](../../02-developer-guide/core-concepts/colorvision-mcp.md) — `copilot.mcp-server`
+  ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。
+
 - [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
   opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 

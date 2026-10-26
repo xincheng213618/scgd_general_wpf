@@ -89,6 +89,49 @@ public sealed class CopilotQueuedFollowUpRestartDispatchTests
         Assert.Equal(fixture.UnsafeConversationId, fixture.Runtime.Requests.ElementAt(2).ConversationId);
     }
 
+    [Fact]
+    public async Task CancellingDuringRestartRegistrationDoesNotRestoreTheCancelledPromptFromTheOldSnapshot()
+    {
+        var acceptedCancellations = 0;
+        await using var fixture = new RestartFixture(onHostChanged: (host, args) =>
+        {
+            if (args.Kind == CopilotAgentTaskHostChangeKind.Queued
+                && args.Run.Id == SafeRunId
+                && host.RequestCancelQueued(args.Run.Id))
+            {
+                acceptedCancellations++;
+            }
+        });
+        var conversation = Assert.Single(fixture.ViewModel.Conversations, item => item.Id == fixture.SafeConversationId);
+
+        Assert.Equal(1, acceptedCancellations);
+        Assert.DoesNotContain(SafePrompt, conversation.DraftText, StringComparison.Ordinal);
+        Assert.Contains(SafeSuccessorPrompt, conversation.DraftText, StringComparison.Ordinal);
+        Assert.DoesNotContain(fixture.ViewModel.QueuedFollowUps, item => item.RunId == SafeRunId);
+        Assert.Empty(fixture.Runtime.Requests);
+
+        await fixture.FlushAsync();
+        var persisted = fixture.Store.Load();
+
+        Assert.DoesNotContain(SafePrompt, Assert.Single(persisted.Conversations,
+            item => item.Id == fixture.SafeConversationId).DraftText, StringComparison.Ordinal);
+        Assert.DoesNotContain(persisted.QueuedFollowUpRecoveries, item => item.RunId == SafeRunId);
+    }
+
+    [Fact]
+    public async Task ShutdownHostLeavesRestartRecoveriesPendingInsteadOfMovingThemToDrafts()
+    {
+        await using var fixture = new RestartFixture(shutdownBeforeRestore: true);
+
+        Assert.Empty(fixture.ViewModel.QueuedFollowUps);
+        Assert.All(fixture.ViewModel.Conversations, conversation => Assert.Empty(conversation.DraftText));
+        Assert.Empty(fixture.Runtime.Requests);
+        await fixture.FlushAsync();
+
+        Assert.Equal(new[] { UnsafeRunId, SafeRunId, SafeSuccessorRunId },
+            fixture.Store.Load().QueuedFollowUpRecoveries.Select(record => record.RunId));
+    }
+
     private sealed class RestartFixture : IAsyncDisposable
     {
         private static readonly FieldInfo SolutionInstance = typeof(SolutionManager).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static)!;
@@ -97,7 +140,9 @@ public sealed class CopilotQueuedFollowUpRestartDispatchTests
         private readonly string _root = Directory.CreateTempSubdirectory("CopilotQueueRestartDispatch-").FullName;
         private readonly ConcurrentDictionary<string, TaskCompletionSource<CopilotHostedAgentRun?>> _handoffs = new(StringComparer.Ordinal);
 
-        public RestartFixture(bool queuedLocalCommand = false)
+        public RestartFixture(bool queuedLocalCommand = false,
+            Action<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>? onHostChanged = null,
+            bool shutdownBeforeRestore = false)
         {
             SolutionInstance.SetValue(null, _isolatedSolution);
             var profile = new CopilotProfileConfig
@@ -149,9 +194,12 @@ public sealed class CopilotQueuedFollowUpRestartDispatchTests
             Store = new GatedStore(new CopilotChatStateStore(_root), queuedLocalCommand ? CommandRunId : string.Empty);
             Host.Changed += (_, args) =>
             {
+                onHostChanged?.Invoke(Host, args);
                 if (args.Kind == CopilotAgentTaskHostChangeKind.Completed)
                     Handoff(args.Run.Id).TrySetResult(Host.ActiveRun);
             };
+            if (shutdownBeforeRestore)
+                Host.Shutdown();
             // The real constructor loads, classifies, and restores the durable queue.
             ViewModel = new CopilotChatViewModel(new CopilotChatService(), Store,
                 new CopilotConfig
@@ -170,6 +218,10 @@ public sealed class CopilotQueuedFollowUpRestartDispatchTests
 
         public Task<CopilotHostedAgentRun?> CompletedHandoffAsync(string runId) => Handoff(runId).Task.WaitAsync(TestTimeout);
 
+        public Task FlushAsync() => ((Task)typeof(CopilotChatViewModel)
+            .GetMethod("FlushStatePersistenceBarrierAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(ViewModel, null)!).WaitAsync(TestTimeout);
+
         private TaskCompletionSource<CopilotHostedAgentRun?> Handoff(string runId) => _handoffs.GetOrAdd(runId,
             _ => new(TaskCreationOptions.RunContinuationsAsynchronously));
 
@@ -186,9 +238,7 @@ public sealed class CopilotQueuedFollowUpRestartDispatchTests
                     var failure = await Record.ExceptionAsync(() => run.Completion.WaitAsync(TestTimeout));
                     Assert.IsNotType<TimeoutException>(failure);
                 }
-                await ((Task)typeof(CopilotChatViewModel)
-                    .GetMethod("FlushStatePersistenceBarrierAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .Invoke(ViewModel, null)!).WaitAsync(TestTimeout);
+                await FlushAsync();
             }
             finally
             {

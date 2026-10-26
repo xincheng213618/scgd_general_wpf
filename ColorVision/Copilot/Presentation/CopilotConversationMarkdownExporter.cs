@@ -35,8 +35,8 @@ namespace ColorVision.Copilot
         private static readonly HashSet<string> ReservedFileNames = new(StringComparer.OrdinalIgnoreCase)
         {
             "CON", "PRN", "AUX", "NUL",
-            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM¹", "COM²", "COM³",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT¹", "LPT²", "LPT³",
         };
 
         public static bool CanExport(CopilotConversationRecord? conversation)
@@ -54,10 +54,15 @@ namespace ColorVision.Copilot
 
             title = title.Trim(' ', '.');
             if (title.Length > 64)
-                title = title[..64].TrimEnd(' ', '.');
+            {
+                var retainedLength = 64;
+                if (char.IsHighSurrogate(title[retainedLength - 1]) && char.IsLowSurrogate(title[retainedLength]))
+                    retainedLength--;
+                title = title[..retainedLength].TrimEnd(' ', '.');
+            }
             if (string.IsNullOrWhiteSpace(title))
                 title = "Copilot 会话";
-            if (ReservedFileNames.Contains(Path.GetFileNameWithoutExtension(title)))
+            if (IsReservedFileName(title))
                 title = "_" + title;
 
             return $"{title}-{conversation.UpdatedAt:yyyyMMdd-HHmm}.md";
@@ -111,13 +116,19 @@ namespace ColorVision.Copilot
                 errorMessage = "文件名不能超过 128 个字符。";
                 return false;
             }
-            if (ReservedFileNames.Contains(Path.GetFileNameWithoutExtension(fileName)))
+            if (IsReservedFileName(fileName))
             {
                 errorMessage = "该名称是 Windows 保留文件名，请换一个名称。";
                 return false;
             }
 
             return true;
+        }
+
+        private static bool IsReservedFileName(string fileName)
+        {
+            var extensionIndex = fileName.IndexOf('.');
+            return ReservedFileNames.Contains(extensionIndex < 0 ? fileName : fileName[..extensionIndex]);
         }
 
         public static string BuildMarkdown(CopilotConversationRecord conversation)

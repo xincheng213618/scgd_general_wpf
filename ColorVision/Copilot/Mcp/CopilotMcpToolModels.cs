@@ -255,6 +255,18 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>> FlowNodeCatalogProvider { get; init; } = CreateDefaultFlowNodeCatalogAsync;
 
+        public Func<long, int, CancellationToken, Task<CopilotCapabilityResult>> FlowIncidentInspector { get; init; } =
+            (incidentId, maxEvents, token) => new CopilotFlowIncidentInspectionService().InspectAsync(incidentId, maxEvents, token);
+
+        public Func<string, int, string?, CancellationToken, Task<CopilotCapabilityResult>> FlowIncidentQueryProvider { get; init; } =
+            (state, maxResults, cursor, token) => new CopilotFlowIncidentQueryService().QueryAsync(state, maxResults, cursor, token);
+
+        public Func<int, string?, int, CancellationToken, Task<CopilotCapabilityResult>> RecordedFlowTemplateInspector { get; init; } =
+            (runId, nodeId, maxNodes, token) => new CopilotRecordedFlowTemplateInspectionService().InspectAsync(runId, nodeId, maxNodes, token);
+
+        public Func<int, string?, int, CancellationToken, Task<CopilotCapabilityResult>> FlowRunHistoryInspector { get; init; } =
+            (runId, nodeId, maxRuns, token) => new CopilotFlowRunHistoryInspectionService().InspectAsync(runId, nodeId, maxRuns, token);
+
         public Func<string?, CopilotRecentLogMode, int, int, CancellationToken, Task<CopilotCapabilityResult>> RecentLogProvider { get; init; } = CopilotRecentLogCapability.CaptureAsync;
 
         public Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>> ApplyTemplatePatchHandler { get; init; } = ApplyTemplatePatchToActiveEditorAsync;

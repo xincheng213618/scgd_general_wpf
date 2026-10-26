@@ -909,7 +909,7 @@ namespace ColorVision.UI
             return SensitiveInlineRegex.Replace(text, match => $"{match.Groups["name"].Value}=<redacted>");
         }
 
-        private static string FormatUntrustedInline(string? text)
+        internal static string FormatUntrustedInline(string? text)
         {
             var masked = MaskSensitiveText(text);
             if (string.IsNullOrWhiteSpace(masked))
@@ -1013,6 +1013,8 @@ namespace ColorVision.UI
             if (content.Length <= maxChars)
                 return content;
 
+            if (maxChars > 0 && char.IsHighSurrogate(content[maxChars - 1]) && char.IsLowSurrogate(content[maxChars]))
+                maxChars--;
             return content[..maxChars] + Environment.NewLine + $"...<content truncated; kept the first {maxChars} characters.>";
         }
     }

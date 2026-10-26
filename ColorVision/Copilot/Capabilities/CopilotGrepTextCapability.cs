@@ -252,6 +252,17 @@ namespace ColorVision.Copilot
                             LineText = line,
                         });
                     }
+                    if (fileIndex == startFileIndex && lineNumber < startLineNumber)
+                    {
+                        return new CopilotTextSearchResult
+                        {
+                            Success = false,
+                            SearchRoots = searchRoots,
+                            Patterns = patterns,
+                            Summary = "The text-search continuation cursor is invalid or stale.",
+                            ErrorMessage = "The text-search cursor is beyond the last line of its file. Restart the search without a cursor.",
+                        };
+                    }
                     // A decoding/read failure invalidates this file's tentative matches, while
                     // independently read files remain usable. A full page still stops promptly.
                     matches.AddRange(fileMatches);
