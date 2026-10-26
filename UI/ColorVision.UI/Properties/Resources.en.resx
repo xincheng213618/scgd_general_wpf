@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -109,7 +109,7 @@
     <value>Language</value>
   </data>
   <data name="LanguageDescription" xml:space="preserve">
-    <value>Select the interface display language. When following the system, the system language is used.</value>
+    <value>Application language</value>
   </data>  <data name="HotKeys" xml:space="preserve">
     <value>Hotkeys</value>
   </data>  <data name="MenuExit" xml:space="preserve">
@@ -587,12 +587,12 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>When enabled, update checks and marketplace requests connect directly to the public service. When disabled, the Windows system proxy is used. Changes apply to the next request.</value>
   </data>
-  <data name="SettingsSectionAppearance" xml:space="preserve"><value>Appearance and language</value></data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>Interface</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>Updates and network</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>Logging and diagnostics</value></data>
   <data name="CommandOtherActions" xml:space="preserve"><value>Other actions</value></data>
   <data name="StartupTheme" xml:space="preserve"><value>Startup screen theme</value></data>
-  <data name="StartupThemeDescription" xml:space="preserve"><value>Choose the startup screen color theme. Takes effect on the next launch.</value></data>
+  <data name="StartupThemeDescription" xml:space="preserve"><value>Applies on next launch.</value></data>
   <data name="StartupThemeDark" xml:space="preserve"><value>Dark</value></data>
   <data name="StartupThemeLight" xml:space="preserve"><value>Light</value></data>
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>Follow application theme</value></data>
@@ -921,4 +921,22 @@ Duration: {0:N0} ms</value>
   <data name="选择参数查看路径。未提供字段说明时，仍可编辑现有参数。" xml:space="preserve">
     <value>Select a parameter to view its path. Existing parameters remain editable when field descriptions are unavailable.</value>
   </data>
+  <data name="Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="AppearanceMode" xml:space="preserve"><value>Mode</value></data>
+  <data name="AppearanceVisualStyle" xml:space="preserve"><value>Visual style</value></data>
+  <data name="AppearanceThemeColors" xml:space="preserve"><value>Theme</value></data>
+  <data name="AppearancePreset" xml:space="preserve"><value>Theme</value></data>
+  <data name="Codex" xml:space="preserve"><value>Minimal (Codex)</value></data>
+  <data name="Warm" xml:space="preserve"><value>Warm</value></data>
+  <data name="AppearanceAccent" xml:space="preserve"><value>Accent</value></data>
+  <data name="AppearanceBackground" xml:space="preserve"><value>Background</value></data>
+  <data name="AppearanceForeground" xml:space="preserve"><value>Text</value></data>
+  <data name="AppearanceFont" xml:space="preserve"><value>Font</value></data>
+  <data name="AppearanceSystemFont" xml:space="preserve"><value>System</value></data>
+  <data name="AppearanceReset" xml:space="preserve"><value>Reset</value></data>
+  <data name="AppearanceRestoreDefaults" xml:space="preserve"><value>Restore defaults</value></data>
+  <data name="AppearanceHexColor" xml:space="preserve"><value>Hex color</value></data>
+  <data name="SearchLanguages" xml:space="preserve"><value>Search languages</value></data>
+  <data name="AppearanceDefault" xml:space="preserve"><value>ColorVision (default)</value></data>
+  <data name="LanguageAutoDetect" xml:space="preserve"><value>Auto detect</value></data>
 </root>

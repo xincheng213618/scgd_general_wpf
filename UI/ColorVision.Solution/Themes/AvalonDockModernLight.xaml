@@ -2,14 +2,14 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:reskeys="clr-namespace:AvalonDock.Themes.VS2013.Themes;assembly=AvalonDock.Themes.VS2013">
     <!-- Chrome-only palette; editor, workflow and tool content keep their own themes. -->
-    <SolidColorBrush x:Key="DockingChromeBackground" Color="#F3F3F3" />
-    <SolidColorBrush x:Key="DockingSurfaceBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="DockingBorderBrush" Color="#B8B8BD" />
-    <SolidColorBrush x:Key="DockingAccentBrush" Color="#6F55C2" />
-    <SolidColorBrush x:Key="DockingTextBrush" Color="#202020" />
-    <SolidColorBrush x:Key="DockingMutedTextBrush" Color="#636363" />
-    <SolidColorBrush x:Key="DockingHoverBrush" Color="#E5E5E8" />
-    <SolidColorBrush x:Key="DockingPressedBrush" Color="#D7D7DD" />
+    <SolidColorBrush x:Key="DockingChromeBackground" Color="{DynamicResource CV.Color.Docking.Chrome}" />
+    <SolidColorBrush x:Key="DockingSurfaceBackground" Color="{DynamicResource CV.Color.Docking.Surface}" />
+    <SolidColorBrush x:Key="DockingBorderBrush" Color="{DynamicResource CV.Color.Docking.Border}" />
+    <SolidColorBrush x:Key="DockingAccentBrush" Color="{DynamicResource CV.Color.Docking.Accent}" />
+    <SolidColorBrush x:Key="DockingTextBrush" Color="{DynamicResource CV.Color.Docking.Text}" />
+    <SolidColorBrush x:Key="DockingMutedTextBrush" Color="{DynamicResource CV.Color.Docking.MutedText}" />
+    <SolidColorBrush x:Key="DockingHoverBrush" Color="{DynamicResource CV.Color.Docking.Hover}" />
+    <SolidColorBrush x:Key="DockingPressedBrush" Color="{DynamicResource CV.Color.Docking.Pressed}" />
 
     <!-- Current Visual Studio-style docking feedback: a quiet opaque navigator
          over busy content, with blue used for direction and the active preview. -->
@@ -22,15 +22,15 @@
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PreviewBoxBackgroundBrushKey}" Color="#0078D4" Opacity="0.28" />
 
     <!-- Retained upstream surfaces (resizers, auto-hide tabs, floating documents). -->
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.Background}" Color="#F3F3F3" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PanelBorderBrush}" Color="#B8B8BD" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.TabBackground}" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBackground}" Color="#F3F3F3" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBorder}" Color="#F3F3F3" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultText}" Color="#636363" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBackground}" Color="#E5E5E8" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBorder}" Color="#6F55C2" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredText}" Color="#202020" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBackground}" Color="#F3F3F3" />
-    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBorder}" Color="#B8B8BD" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.Background}" Color="{DynamicResource CV.Color.Docking.Chrome}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PanelBorderBrush}" Color="{DynamicResource CV.Color.Docking.Border}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.TabBackground}" Color="{DynamicResource CV.Color.Docking.Surface}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBackground}" Color="{DynamicResource CV.Color.Docking.Chrome}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBorder}" Color="{DynamicResource CV.Color.Docking.Chrome}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultText}" Color="{DynamicResource CV.Color.Docking.MutedText}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBackground}" Color="{DynamicResource CV.Color.Docking.Hover}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBorder}" Color="{DynamicResource CV.Color.Docking.Accent}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredText}" Color="{DynamicResource CV.Color.Docking.Text}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBackground}" Color="{DynamicResource CV.Color.Docking.Chrome}" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBorder}" Color="{DynamicResource CV.Color.Docking.Border}" />
 </ResourceDictionary>

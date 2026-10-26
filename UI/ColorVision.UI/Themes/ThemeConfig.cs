@@ -4,15 +4,14 @@ using System.ComponentModel;
 
 namespace ColorVision.Themes
 {
-    public class ThemeConfig : ViewModelBase, IConfig
+    public partial class ThemeConfig : ViewModelBase, IConfig
     {
         public static ThemeConfig Instance => ConfigService.Instance.GetRequiredService<ThemeConfig>();
 
         /// <summary>
         /// 主题
         /// </summary>
-        [ConfigSetting(Order = -40, Section = ConfigSettingConstants.SectionAppearance, Description = "选择应用界面的颜色主题。", Layout = ConfigSettingLayout.Wide)]
-        [Description("选择应用界面的颜色主题。")]
+        [ConfigSetting(Order = -40, Group = "Appearance", Name = "AppearanceMode", Section = "VisualStyle", Layout = ConfigSettingLayout.InlineAuto)]
         [PropertyEditorType(typeof(ThemePropertiesEditor))]
         public Theme Theme
         {
@@ -23,11 +22,12 @@ namespace ColorVision.Themes
                 if (_Theme == normalizedTheme) return;
                 _Theme = normalizedTheme;
                 OnPropertyChanged();
+                RefreshAppearanceProperties();
             }
         }
         private Theme _Theme = Theme.UseSystem;
 
-        [ConfigSetting(Order = -35, Section = ConfigSettingConstants.SectionAppearance, Description = "StartupThemeDescription")]
+        [ConfigSetting(Order = -25, Group = "Appearance", Section = "AppearanceStartup", Description = "StartupThemeDescription")]
         [DisplayName("StartupTheme"), Description("StartupThemeDescription")]
         [PropertyEditorType(typeof(EnumPropertiesEditor))]
         public StartupTheme StartupTheme

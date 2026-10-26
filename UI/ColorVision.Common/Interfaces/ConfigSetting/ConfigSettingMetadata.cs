@@ -4,7 +4,8 @@ namespace ColorVision.UI
     public enum ConfigSettingLayout
     {
         Inline,
-        Wide
+        Wide,
+        InlineAuto
     }
 
     public static class ConfigSettingConstants

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -109,7 +109,7 @@
     <value>語言</value>
   </data>
   <data name="LanguageDescription" xml:space="preserve">
-    <value>選擇介面顯示語言，跟隨系統時使用系統語言。</value>
+    <value>應用程式介面語言</value>
   </data>  <data name="HotKeys" xml:space="preserve">
     <value>快捷鍵</value>
   </data>  <data name="MenuExit" xml:space="preserve">
@@ -481,12 +481,12 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>啟用後，更新檢查與外掛市集請求會直接連線到公網服務；停用時使用 Windows 系統代理。變更會從下一次請求生效。</value>
   </data>
-  <data name="SettingsSectionAppearance" xml:space="preserve"><value>外觀與語言</value></data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>介面</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新與網路</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日誌與診斷</value></data>
   <data name="CommandOtherActions" xml:space="preserve"><value>其他操作</value></data>
   <data name="StartupTheme" xml:space="preserve"><value>啟動頁主題</value></data>
-  <data name="StartupThemeDescription" xml:space="preserve"><value>選擇啟動頁的顏色主題，下次啟動生效。</value></data>
+  <data name="StartupThemeDescription" xml:space="preserve"><value>下次啟動生效。</value></data>
   <data name="StartupThemeDark" xml:space="preserve"><value>深色</value></data>
   <data name="StartupThemeLight" xml:space="preserve"><value>淺色</value></data>
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟隨軟體主題</value></data>
@@ -815,4 +815,22 @@
   <data name="选择参数查看路径。未提供字段说明时，仍可编辑现有参数。" xml:space="preserve">
     <value>選擇參數查看路徑。未提供字段說明時，仍可編輯現有參數。</value>
   </data>
+  <data name="Appearance" xml:space="preserve"><value>外觀</value></data>
+  <data name="AppearanceMode" xml:space="preserve"><value>模式</value></data>
+  <data name="AppearanceVisualStyle" xml:space="preserve"><value>視覺風格</value></data>
+  <data name="AppearanceThemeColors" xml:space="preserve"><value>主題</value></data>
+  <data name="AppearancePreset" xml:space="preserve"><value>主題</value></data>
+  <data name="Codex" xml:space="preserve"><value>簡約（Codex）</value></data>
+  <data name="Warm" xml:space="preserve"><value>暖色</value></data>
+  <data name="AppearanceAccent" xml:space="preserve"><value>強調色</value></data>
+  <data name="AppearanceBackground" xml:space="preserve"><value>背景</value></data>
+  <data name="AppearanceForeground" xml:space="preserve"><value>文字</value></data>
+  <data name="AppearanceFont" xml:space="preserve"><value>字型</value></data>
+  <data name="AppearanceSystemFont" xml:space="preserve"><value>系統</value></data>
+  <data name="AppearanceReset" xml:space="preserve"><value>重設</value></data>
+  <data name="AppearanceRestoreDefaults" xml:space="preserve"><value>還原預設值</value></data>
+  <data name="AppearanceHexColor" xml:space="preserve"><value>十六進位色彩</value></data>
+  <data name="SearchLanguages" xml:space="preserve"><value>搜尋語言</value></data>
+  <data name="AppearanceDefault" xml:space="preserve"><value>ColorVision（預設）</value></data>
+  <data name="LanguageAutoDetect" xml:space="preserve"><value>自動偵測</value></data>
 </root>

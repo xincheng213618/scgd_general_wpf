@@ -10,7 +10,7 @@ public sealed class ThemeResourceDictionary : ResourceDictionary
 {
     public ThemeResourceDictionary() : this(Theme.Light) { }
 
-    internal ThemeResourceDictionary(Theme theme)
+    internal ThemeResourceDictionary(Theme theme, ThemeAppearance? appearance = null, string? fontFamily = null)
     {
         AppliedTheme = theme;
         // Prepare the entire group before it replaces the active application resources.
@@ -18,6 +18,8 @@ public sealed class ThemeResourceDictionary : ResourceDictionary
         sources.AddRange(ThemeManager.ResourceDictionaryBase);
         foreach (string source in sources)
             MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(source, UriKind.RelativeOrAbsolute) });
+        var overrides = (appearance ?? new ThemeAppearance()).CreateResources(theme, this, fontFamily);
+        MergedDictionaries.Add(overrides);
     }
 
     internal Theme AppliedTheme { get; }

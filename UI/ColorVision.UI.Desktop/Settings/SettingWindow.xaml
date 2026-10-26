@@ -6,7 +6,7 @@
         xmlns:properties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
         mc:Ignorable="d"
         Height="720" Width="1180" MinHeight="620" MinWidth="980"
-        FontFamily="Microsoft YaHei UI, Segoe UI"
+        FontFamily="{DynamicResource CV.Font.UI}"
         FontSize="13"
         Foreground="{DynamicResource CV.Text.Primary}"
         UseLayoutRounding="True"
@@ -14,7 +14,7 @@
         TextOptions.TextFormattingMode="Display"
         Title="{x:Static properties:Resources.Options}"
         WindowStartupLocation="CenterScreen"
-        Background="{DynamicResource GlobalBorderBrush1}"
+        Background="{DynamicResource CV.Surface.Sidebar}"
         Initialized="Window_Initialized">
     <Window.Resources>
         <Style x:Key="SettingsEditorTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
@@ -28,7 +28,7 @@
             <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </Style>
 
-        <Style x:Key="SettingsEditorComboBoxStyle" TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBoxBaseStyle}">
+        <Style x:Key="SettingsEditorComboBoxStyle" TargetType="{x:Type ComboBox}" BasedOn="{StaticResource SettingsComboBoxStyle}">
             <Setter Property="MinHeight" Value="30"/>
             <Setter Property="Padding" Value="10,3"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -81,10 +81,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource CV.Surface.NavigationSelected}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource CV.Surface.NavigationSelected}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
@@ -97,14 +97,14 @@
         </Style>
     </Window.Resources>
 
-    <Grid Background="{DynamicResource GlobalBorderBrush1}">
+    <Grid Background="{DynamicResource CV.Surface.Sidebar}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="204"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0"
-                Background="{DynamicResource GlobalBorderBrush1}">
+                Background="{DynamicResource CV.Surface.Sidebar}">
             <Grid Margin="14,22,12,14">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -186,14 +186,14 @@
 
         <Border Grid.Column="1"
                 Margin="0,10,10,10"
-                Background="{DynamicResource ButtonBackground}"
+                Background="{DynamicResource CV.Surface.Page}"
                 BorderBrush="{DynamicResource GlobalBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="10">
+                BorderThickness="0"
+                CornerRadius="14">
             <ScrollViewer x:Name="SettingsScrollViewer"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel MaxWidth="800" Margin="28,24,28,28">
+                <StackPanel MaxWidth="800" Margin="40,36,40,32">
                     <TextBlock x:Name="CurrentGroupTitle"
                                FontSize="22"
                                FontWeight="SemiBold"

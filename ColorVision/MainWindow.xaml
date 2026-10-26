@@ -16,6 +16,7 @@
         Title="" Width="1920" Height="1280"
         MinWidth="800" MinHeight="600"
         Background="{DynamicResource GlobalBackground}"
+        FontFamily="{DynamicResource CV.Font.UI}"
         Initialized="Window_Initialized">
     <Window.Resources>
         <Style x:Key="MainWindowActionButtonStyle" TargetType="{x:Type Button}">

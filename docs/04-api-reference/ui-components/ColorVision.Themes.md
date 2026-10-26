@@ -18,7 +18,7 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 ## 切换应用主题
 
 1. 打开 **工具 → 选项**（默认快捷键 **Ctrl+,**）。
-2. 在 **外观与语言 → 主题** 中选择 **跟随系统**、**浅色** 或 **深色**。
+2. 在独立的 **外观 → 模式** 中选择 **跟随系统**、**浅色** 或 **深色**。
 3. 选择不同卡片后立即预览外观；关闭由上述入口打开的设置窗口时，设置入口会调用配置保存。关闭窗口不会撤销预览。
 
 默认选择“跟随系统”，使用 Windows 的应用配色。三个选择对应 `UseSystem`、`Light`、`Dark`；`UseSystem` 是选择策略，实际资源仍为浅色或深色。即时变色与配置写盘是两个步骤，设置窗口的保存边界见 [设置入口与配置编辑](./settings.md)。
@@ -37,7 +37,7 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 | 位置 | 职责 |
 | --- | --- |
-| `ThemeResourceDictionary`、`Themes/Theme.xaml` | 组装一个完整主题资源组；入口保持浅色默认值 |
+| `ThemeResourceDictionary`、`Themes/Theme.xaml` | 组装完整主题资源组及可选外观覆盖层；入口保持浅色默认值 |
 | `Themes/Palettes/Light.xaml`、`Dark.xaml` | 相同资源键、相同类型的浅深配色；包含保留的旧颜色名 |
 | `Themes/Foundations` | 语义画刷、基础尺寸和转换器资源 |
 | `Themes/Controls` | 按控件组织的公共样式、模板 |
@@ -96,15 +96,21 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 `ThemeConfig` 位于 `UI/ColorVision.UI/Themes/`，虽然命名空间是 `ColorVision.Themes`，它不属于独立 Themes 包。`Instance` 从 `ConfigService` 取得对象；`Theme` 默认 UseSystem，setter 只做归一化、赋值和 PropertyChanged，不自己应用资源或写文件。`TransparentWindow` 也只是配置值，效果由具体窗口消费者决定。
 
-`ThemePropertiesEditor` 通过 [属性编辑器契约](./property-grid.md)提供三个预览卡。卡片是固定配色的示意图，UseSystem 为浅/深两半，不是当前窗口或系统状态的截图。选择不同卡片时先写入传入对象属性，再调用 `Application.Current?.ApplyTheme`；应用不存在时仍可能已改对象，资源应用失败也不撤销属性值。
+`ThemePropertiesEditor` 通过 [属性编辑器契约](./property-grid.md)提供三个预览卡。卡片是固定配色的示意图，UseSystem 为浅/深两半，不是当前窗口或系统状态的截图。选择不同卡片时先写入传入对象属性；`ThemeConfig` 通过 `Apply` 同时应用当前明暗策略与各自外观，其它对象仍调用 `Application.Current?.ApplyTheme`；应用不存在时仍可能已改对象，资源应用失败也不撤销属性值。
 
 它没有候选副本、保存/取消事务，也不调用配置保存接口；预览即运行期外观修改，不保证关闭编辑页面会恢复。外部属性变化会同步选中状态，但属性 setter 本身不是主题应用入口。编辑器在 Unloaded 解除对象通知，未在再次 Loaded 时重新订阅。设置发现缓存还可能持有旧配置对象；配置重载后需按 [配置持久化与对象所有权](./configuration.md)重新取得/重建绑定。
+
+外观页提供 ColorVision 默认、简约（Codex）、暖色三个预设，以及强调色、背景、文字和界面字体。`LightAppearance` / `DarkAppearance` 各自保存预设及可选的六位 RGB 色值；跟随系统使用已解析模式对应的方案。切换预设清除该模式的颜色覆盖，另一模式保留；恢复默认清除两套外观和界面字体并恢复跟随系统，不修改独立的启动页策略。缺少这些字段的旧配置继续使用原有 ColorVision 配色。颜色弹窗确认后应用，取消不提交。
+
+`ThemeManager.ApplyAppearance` 对两套方案取副本，整体替换主题组；`AppearanceChanged` 在强制刷新或实际明暗变化后通知，现有 `CurrentUIThemeChanged` 仍只通知实际明暗变化。色板加载失败保留原资源与已应用方案，订阅者异常不回滚已替换资源。外观覆盖层同时提供语义颜色、旧画刷和停靠面板颜色；独立编辑器语法色、终端色和业务状态色保持各自用途。窗口局部覆盖、静态缓存、硬编码和第三方专用模板仍有自己的作用域，不能据此承诺所有页面统一换色。
+
+界面字体通过 `CV.Font.UI` 应用于主窗口、选项窗口及 BaseWindow；有自己字体设置的编辑器和图标保留局部设置。字体属性直接赋值只改配置，通过字体编辑器或 `ThemeConfig.Apply` 应用运行期资源。`ThemeAppearanceSettingsTests` 覆盖旧配置默认值、双模式序列化、恢复默认和独立外观导航；`Test/ColorVision.Themes.Tests/AppearanceTests.cs` 覆盖资源兼容、宿主优先级、系统跟随和加载失败后的方案保留。这些验证不替代所有业务窗口的桌面验收。
 
 保存时机、退出自动保存、保存失败和重载对象替换均归配置服务，不由 Themes 库承诺。“预览已变色”不能证明设置已写盘，文件重载也不自动等于所有主题消费者已重新应用。
 
 ### 启动页主题
 
-**外观与语言 → 启动页主题** 使用普通下拉框，位于应用“主题”和“语言”之间。对应配置为 `ThemeConfig.StartupTheme`，枚举定义在 `UI/ColorVision.UI/Themes/StartupTheme.cs`，与应用的 `Theme` 独立。
+**外观 → 其他 → 启动页主题** 使用下拉框；语言仍位于常规页。对应配置为 `ThemeConfig.StartupTheme`，枚举定义在 `UI/ColorVision.UI/Themes/StartupTheme.cs`，与应用的 `Theme` 独立。
 
 | 选项 | 配置值 | 启动页配色 |
 | --- | --- | --- |
@@ -114,7 +120,7 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 新建配置、缺少此字段的旧配置和枚举范围外的值都使用 `Dark`。跟随软件读取实际 Light/Dark；应用选择 `UseSystem` 时由应用主题管理器解析系统应用配色，启动页不直接根据 Windows 设置另作选择。高对比度仍优先使用系统可访问性配色。
 
-设置项采用 `SectionAppearance`、`Order = -35`，排在应用主题的 `-40` 与语言的 `-30` 之间；`EnumPropertiesEditor` 提供标准 ComboBox，标题、说明和三个选项使用公共 UI 的简英繁资源。setter 只归一化、赋值和通知属性变化，保存沿用选项窗口的正常边界，不调用应用主题预览。
+设置项采用导航组 `Appearance`、分区 `AppearanceStartup`、`Order = -25`；`EnumPropertiesEditor` 提供标准 ComboBox，标题、说明和三个选项使用公共 UI 的简英繁资源。setter 只归一化、赋值和通知属性变化，保存沿用选项窗口的正常边界，不调用应用主题预览。
 
 修改在**下次启动**生效。`StartWindow.Presentation.cs` 在窗口构造时捕获一次策略；固定深浅忽略随后应用主题变化，只有捕获的 `FollowApplication` 响应 `CurrentUIThemeChanged`。已打开的启动页不会因配置对象再次改值而改变策略。启动页本身没有主题按钮，也不写入配置；窗口呈现、语言、动画和关闭时退订的完整边界见[启动界面与动画](../../03-architecture/overview/runtime.md#启动界面与动画边界)。
 

@@ -159,7 +159,7 @@ namespace ColorVision
             ConfigHandler configHandler = ConfigHandler.GetInstance();
             configHandler.IsAutoSave = false;
             LogConfig.Instance.SetLog();
-            this.ApplyTheme(ThemeConfig.Instance.Theme);
+            ThemeConfig.Instance.Apply(this);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             log.Info($"Startup core setup completed in {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             startupPhaseStopwatch.Restart();
@@ -268,7 +268,7 @@ namespace ColorVision
                         appConfig.AllowMultipleInstances = false;
                         configHandler.Save<APPConfig>();
                         ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = LogConfig.Instance.LogLevel;
-                        this.ApplyTheme(ThemeConfig.Instance.Theme);
+                        ThemeConfig.Instance.Apply(this);
                         Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
                     }
                     catch (Exception ex)

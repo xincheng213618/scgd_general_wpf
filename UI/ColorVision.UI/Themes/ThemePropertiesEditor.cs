@@ -67,6 +67,21 @@ namespace ColorVision.Themes
                 notifyPropertyChanged.PropertyChanged += handler;
                 optionPanel.Unloaded += (_, _) => notifyPropertyChanged.PropertyChanged -= handler;
             }
+            if (obj is ThemeConfig config)
+            {
+                ThemeManager? publisher = null;
+                void Changed(Theme _) => config.RefreshAppearanceProperties();
+                optionHost.Loaded += (_, _) =>
+                {
+                    publisher = ThemeManager.Current;
+                    publisher.AppearanceChanged += Changed;
+                };
+                optionHost.Unloaded += (_, _) =>
+                {
+                    if (publisher != null) publisher.AppearanceChanged -= Changed;
+                    publisher = null;
+                };
+            }
 
             DockPanel.SetDock(optionHost, Dock.Right);
             dockPanel.Children.Add(optionHost);
@@ -79,7 +94,8 @@ namespace ColorVision.Themes
             if (ReadTheme(property, source) == theme) return;
 
             property.SetValue(source, theme);
-            Application.Current?.ApplyTheme(theme);
+            if (source is ThemeConfig config) { config.Apply(); config.RefreshAppearanceProperties(); }
+            else Application.Current?.ApplyTheme(theme);
         }
 
         private static Theme ReadTheme(PropertyInfo property, object source)

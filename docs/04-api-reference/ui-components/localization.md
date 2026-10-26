@@ -36,9 +36,9 @@ related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid",
 
 `LanguageManager.Current.Languages` 在 manager 实例初始化时取得列表，不因资源文件或系统设置变化自动刷新。Copilot 的 `GetAvailableLanguages()` 会另行调用 GetLanguages 并替换该列表，但也不负责刷新所有已创建的语言编辑器。
 
-显示为“跟随系统”的项实际使用 `CultureInfo.InstalledUICulture.Name` 这个文化字符串，不是一个独立的 UseSystem 持久化标记或持续监听系统变化的订阅。某文化因当前线程/系统项出现在下拉框中，不代表主程序及每个插件都有该文化的卫星资源。
+显示为“自动检测”（英文 Auto detect、繁体 自動偵測）的项实际使用 `CultureInfo.InstalledUICulture.Name` 这个文化字符串，不是一个独立的 UseSystem 持久化标记或持续监听系统变化的订阅。某文化因当前线程/系统项出现在下拉框中，不代表主程序及每个插件都有该文化的卫星资源。
 
-语言显示名称先查询当前界面文化中的精确文化名资源，再沿候选文化的父级查询。例如 `en-US` 使用 `en` 的译名，`zh-CN` 使用 `zh-Hans`，`zh-TW` 使用 `zh-Hant`；找不到译名时使用该文化的 `NativeName`，无效文化名保留原字符串。语言编辑器同样对空白显示名称执行这一回退，不修改保存的文化代码、语言发现范围或重启流程。
+语言显示名称先查询当前界面文化中的精确文化名资源，再沿候选文化的父级查询。例如 `en-US` 使用 `en` 的译名，`zh-CN` 使用 `zh-Hans`，`zh-TW` 使用 `zh-Hant`；找不到译名时使用该文化的 `NativeName`，无效文化名保留原字符串。语言编辑器将系统项显示为“自动检测”，英文、繁体与简体分别显示为 English、繁體中文、简体中文，其它文化沿用上述回退；不修改保存的文化代码、语言发现范围或重启流程。
 
 ## 配置值与启动应用
 
@@ -50,12 +50,12 @@ related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid",
 
 ## 设置选择与重启副作用
 
-`LanguagePropertiesEditor` 为 UICulture 建立 TwoWay、PropertyChanged 更新的 ComboBox 绑定。SelectionChanged 再调用 `LanguageManager.Current.LanguageChange(str)`，不是在普通设置关窗时才决定是否切换。
+`LanguagePropertiesEditor` 在常规页为 UICulture 建立 TwoWay、PropertyChanged 更新的 ComboBox 绑定。下拉框提供语言搜索、浅色悬停与选中勾选；搜索只改变选项可见性，不删减可选列表或改写当前配置，关闭浮层清除搜索。SelectionChanged 再调用 `LanguageManager.Current.LanguageChange(str)`，不是在普通设置关窗时才决定是否切换。
 
 | 阶段 | 实际结果与限制 |
 | --- | --- |
 | 与当前线程文化字符串相同 | LanguageChange 返回 false，不弹提示或重启；false 不唯一代表用户取消 |
-| 选择不同语言但取消确认 | LanguageChange 返回 false；编辑器将目标属性写回创建编辑器时记录的线程文化，不回滚其它设置，也不能撤销之前已保存的修改 |
+| 选择不同语言但取消确认 | LanguageChange 返回 false；编辑器将目标属性与下拉选中值恢复为上次接受的配置值，不回滚其它设置，也不能撤销之前已保存的修改 |
 | 确认 | 先创建 CultureInfo 并改当前线程文化，再写 LanguageConfig，调用 `ConfigService.SaveConfigs()`；保存的是配置服务管理的配置集合，不仅语言字段 |
 | 保存返回之后 | `Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r")`，然后 `Application.Current.Shutdown()`，最后返回 true |
 

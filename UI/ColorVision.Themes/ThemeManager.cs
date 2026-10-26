@@ -45,12 +45,16 @@ public partial class ThemeManager : IDisposable
     private bool monitoring;
     private bool monitorScheduled;
     private bool disposed;
+    private ThemeAppearance lightAppearance = new();
+    private ThemeAppearance darkAppearance = new();
+    private string? uiFontFamily;
 
     /// <summary>The requested policy. Resources are applied before either theme notification is published.</summary>
     public Theme? CurrentTheme { get; private set; } = Theme.Light;
     public Theme CurrentUITheme { get; private set; } = Theme.Light;
     public event ThemeChangedHandler? CurrentThemeChanged;
     public event ThemeChangedHandler? CurrentUIThemeChanged;
+    public event ThemeChangedHandler? AppearanceChanged;
     public event ThemeChangedHandler? AppsThemeChanged;
     public event ThemeChangedHandler? SystemThemeChanged;
 
@@ -80,6 +84,26 @@ public partial class ThemeManager : IDisposable
     }
 
     public void ApplyTheme(Application app, Theme theme) => app.Dispatcher.Invoke(() => ApplyCore(app, theme, true, false));
+    public void ApplyAppearance(Application app, Theme theme, ThemeAppearance light, ThemeAppearance dark, string? fontFamily) => app.Dispatcher.Invoke(() =>
+    {
+        ThemeAppearance previousLight = lightAppearance, previousDark = darkAppearance;
+        ThemeResourceDictionary? previousResources = appliedResources;
+        string? previousFont = uiFontFamily;
+        lightAppearance = light.Copy();
+        darkAppearance = dark.Copy();
+        uiFontFamily = fontFamily;
+        try { ApplyCore(app, theme, true, true); }
+        catch
+        {
+            if (ReferenceEquals(appliedResources, previousResources))
+            {
+                lightAppearance = previousLight;
+                darkAppearance = previousDark;
+                uiFontFamily = previousFont;
+            }
+            throw;
+        }
+    });
     /// <summary>Refresh resources, resolving UseSystem, without changing the selected policy.</summary>
     public void ApplyThemeChanged(Application app, Theme theme) => app.Dispatcher.Invoke(() => ApplyCore(app, theme, false, true));
 
@@ -92,7 +116,7 @@ public partial class ThemeManager : IDisposable
         if (force || appliedResources == null || appliedResources.AppliedTheme != resolved || !dictionaries.Contains(appliedResources))
         {
             // Loading can throw. Keep active resources and published state until preparation succeeds.
-            var replacement = new ThemeResourceDictionary(resolved);
+            var replacement = new ThemeResourceDictionary(resolved, resolved == Theme.Dark ? darkAppearance : lightAppearance, uiFontFamily);
             int first = -1;
             for (int i = 0; i < dictionaries.Count; i++)
                 if (ThemeResourceDictionary.IsThemeResource(dictionaries[i]) && first < 0) first = i;
@@ -123,6 +147,7 @@ public partial class ThemeManager : IDisposable
         }
         if (selectionChanged) CurrentThemeChanged?.Invoke(requested);
         if (actualChanged) CurrentUIThemeChanged?.Invoke(resolved);
+        if (force || actualChanged) AppearanceChanged?.Invoke(resolved);
     }
 
     private void Dispatch(Action action)

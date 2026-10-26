@@ -159,4 +159,12 @@
     <SolidColorBrush x:Key="BorderBackGroud1" Color="#F2F2F2" />
 
     <SolidColorBrush x:Key="BorderBackGroud2" Color="#F2F2F2" />
+    <Color x:Key="CV.Color.Docking.Chrome">#F3F3F3</Color>
+    <Color x:Key="CV.Color.Docking.Surface">#FFFFFF</Color>
+    <Color x:Key="CV.Color.Docking.Border">#B8B8BD</Color>
+    <Color x:Key="CV.Color.Docking.Accent">#6F55C2</Color>
+    <Color x:Key="CV.Color.Docking.Text">#202020</Color>
+    <Color x:Key="CV.Color.Docking.MutedText">#636363</Color>
+    <Color x:Key="CV.Color.Docking.Hover">#E5E5E8</Color>
+    <Color x:Key="CV.Color.Docking.Pressed">#D7D7DD</Color>
 </ResourceDictionary>

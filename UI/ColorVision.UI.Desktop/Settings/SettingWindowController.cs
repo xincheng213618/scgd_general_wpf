@@ -177,6 +177,7 @@ namespace ColorVision.UI.Desktop.Settings
 
         private static int GetNavigationOrder(string group, int order)
         {
+            if (group == "Appearance") return int.MinValue + 1;
             return string.Equals(group, ConfigSettingConstants.Universal, StringComparison.OrdinalIgnoreCase) ? int.MinValue : order;
         }
 
@@ -186,6 +187,7 @@ namespace ColorVision.UI.Desktop.Settings
                 return "\uE713";
 
             string text = $"{group} {displayName}".ToLowerInvariant();
+            if (group == "Appearance") return "\uE790";
             if (text.Contains("maintenance") || text.Contains("维护")) return "\uE74D";
             if (text.Contains("dump") || text.Contains("转储")) return "\uE9D9";
             if (text.Contains("remote") || text.Contains("局域网")) return "\uE968";

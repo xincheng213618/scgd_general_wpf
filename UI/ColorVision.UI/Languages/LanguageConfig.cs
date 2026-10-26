@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Themes;
 
 namespace ColorVision.UI.Languages
 {
@@ -18,28 +19,32 @@ namespace ColorVision.UI.Languages
             var comboBox = new ComboBox
             {
                 Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = PropertyEditorHelper.ControlMinWidth,
-                Style = PropertyEditorHelper.ComboBoxSmallStyle,
+                MinWidth = 0,
                 DisplayMemberPath = "Value",
                 SelectedValuePath = "Key",
-                ItemsSource = from e1 in LanguageManager.Current.Languages
-                              select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) && !string.IsNullOrWhiteSpace(value) ? value : LanguageManager.GetDisplayName(e1))
+                ItemsSource = LanguageManager.Current.Languages.Distinct().OrderBy(code => code == CultureInfo.InstalledUICulture.Name ? 0 : 1)
+                    .Select(code => new KeyValuePair<string, string>(code, DisplayName(code))).ToList()
             };
+            comboBox.SetResourceReference(FrameworkElement.StyleProperty, "SettingsComboBoxStyle");
+            ComboBoxSearch.SetIsEnabled(comboBox, true);
+            ComboBoxSearch.SetWatermark(comboBox, Properties.Resources.ResourceManager.GetString("SearchLanguages", CultureInfo.CurrentUICulture) ?? "Search languages");
 
+            string previousSelection = (string?)property.GetValue(obj) ?? CultureInfo.InstalledUICulture.Name;
             var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
             comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
             DockPanel.SetDock(comboBox, Dock.Right);
 
 
-            string temp = Thread.CurrentThread.CurrentUICulture.Name;
             comboBox.SelectionChanged += (s, e)=>
             {
-                if (comboBox.SelectedValue is string str)
+                if (comboBox.SelectedValue is string str && str != previousSelection)
                 {
                     if (!LanguageManager.Current.LanguageChange(str))
                     {
-                        property.SetValue(obj, temp);
+                        property.SetValue(obj, previousSelection);
+                        comboBox.SetCurrentValue(ComboBox.SelectedValueProperty, previousSelection);
                     }
+                    else previousSelection = str;
                 }
 
             };
@@ -47,6 +52,15 @@ namespace ColorVision.UI.Languages
             dockPanel.Children.Add(comboBox);
             dockPanel.Children.Add(textBlock);
             return dockPanel;
+        }
+
+        private static string DisplayName(string code)
+        {
+            if (code == CultureInfo.InstalledUICulture.Name) return LanguageManager.AutoDetectDisplayName;
+            if (code.StartsWith("en", StringComparison.OrdinalIgnoreCase)) return "English";
+            if (code is "zh-Hant" or "zh-TW" or "zh-HK") return "繁體中文";
+            if (code is "zh-Hans" or "zh-CN") return "简体中文";
+            return LanguageManager.GetDisplayName(code);
         }
     }
 

@@ -63,6 +63,9 @@ namespace ColorVision.UI.Desktop.Settings
         {
             string? sectionName = NormalizeLegacySectionKey(sectionKey) switch
             {
+                "VisualStyle" => Resources.ResourceManager.GetString("AppearanceVisualStyle", Thread.CurrentThread.CurrentUICulture),
+                "ThemeColors" => Resources.ResourceManager.GetString("AppearanceThemeColors", Thread.CurrentThread.CurrentUICulture),
+                "AppearanceStartup" => SettingResources.SectionOther,
                 ConfigSettingConstants.SectionBasic => SettingResources.SectionBasic,
                 ConfigSettingConstants.SectionAppearance => SettingResources.SectionAppearance,
                 ConfigSettingConstants.SectionUpdates => SettingResources.SectionUpdates,
@@ -85,6 +88,9 @@ namespace ColorVision.UI.Desktop.Settings
         {
             return NormalizeLegacySectionKey(sectionKey) switch
             {
+                "VisualStyle" => -40,
+                "ThemeColors" => -30,
+                "AppearanceStartup" => -20,
                 ConfigSettingConstants.SectionBasic => 0,
                 ConfigSettingConstants.SectionAppearance => -10,
                 ConfigSettingConstants.SectionUpdates => 5,

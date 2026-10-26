@@ -73,6 +73,7 @@
     </Style>
 
     <Style x:Name="basewindows" x:Key="{x:Type local:BaseWindow}" TargetType="{x:Type local:BaseWindow}">
+        <Setter Property="FontFamily" Value="{DynamicResource CV.Font.UI}"/>
         <Setter Property="UseLayoutRounding" Value="True" />
         <Setter Property="WindowChrome.WindowChrome" Value="{DynamicResource DefaultWindowChrome}" />
         <Setter Property="Template">
