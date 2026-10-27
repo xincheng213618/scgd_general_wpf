@@ -123,6 +123,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public ConfigGroup Config { get; set; }
 
+        public override string Name { get => base.Name; set { base.Name = value; OnPropertyChanged(); } }
+
         public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; OnPropertyChanged(); } }
         private bool _IsEditMode;
 

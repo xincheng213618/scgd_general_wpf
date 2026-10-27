@@ -76,7 +76,7 @@ function describeTopic(source) {
   if (!id) throw new Error(`${sourcePath} must declare a stable knowledge_id.`)
   const title = extractHelpSection(markdown).match(/^## ([^\n]+?)\s*\{#algorithm-principles\}\s*$/mu)?.[1]
   if (!title) throw new Error(`${sourcePath} must have a level-two algorithm-principles heading.`)
-  return { id, title: title.replace(/[`*_]/gu, ''), relativePath: `${id}.html`, onlineUrl: websiteRoot + sourcePath.slice('docs/'.length, -'.md'.length) + '#' + encodeURIComponent(source.onlineAnchor ?? 'algorithm-principles') }
+  return { id, title: title.replace(/[`*_]/gu, ''), relativePath: `${id}.html`, markdownRelativePath: `${id}.md`, onlineUrl: websiteRoot + sourcePath.slice('docs/'.length, -'.md'.length) + '#' + encodeURIComponent(source.onlineAnchor ?? 'algorithm-principles') }
 }
 
 /** Build one canonical excerpt. Metadata stays in its source topic instead of a second title/ID list. */
@@ -102,6 +102,7 @@ async function createTopicBundle({ source, sources, demoScript, demoCss, article
   const navigation = outline.map(heading => `      <a${heading.level === 3 ? ' class="toc-sub"' : ''} href="#${escapeHtml(heading.id)}">${heading.title}</a>`).join('\n')
   const hasDemo = article.includes('<section data-grid-distortion-demo>')
   const sourceSha256 = createHash('sha256').update(JSON.stringify([section, articleCss, ...(hasDemo ? [demoScript, demoCss, bootScript] : [])])).digest('hex')
+  const markdownSha256 = createHash('sha256').update(section, 'utf8').digest('hex')
   const html = `<!doctype html>
 <!-- Generated from ${sourcePath} by npm run docs:help. Do not edit generated files. -->
 <html lang="zh-CN">
@@ -129,8 +130,9 @@ ${navigation}
 </html>
 `
   return new Map([
-    ['index.json', JSON.stringify([{ ...topic, sourceSha256 }], null, 2) + '\n'],
+    ['index.json', JSON.stringify([{ ...topic, sourceSha256, markdownSha256 }], null, 2) + '\n'],
     [topic.relativePath, html],
+    [topic.markdownRelativePath, section],
     ['algorithm-help.css', articleCss],
     ['grid-distortion-demo.css', demoCss],
     ['grid-distortion-demo.js', demoScript],

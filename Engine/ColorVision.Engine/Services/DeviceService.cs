@@ -14,6 +14,7 @@ using SqlSugar;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -25,7 +26,20 @@ namespace ColorVision.Engine.Services
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
-        public virtual bool IsAlive { get; set; }
+        private int _observedAliveState;
+        public virtual bool IsAlive
+        {
+            get => Volatile.Read(ref _observedAliveState) == 2;
+            set => Volatile.Write(ref _observedAliveState, value ? 2 : 1);
+        }
+        internal bool? ObservedIsAlive
+        {
+            get
+            {
+                int state = Volatile.Read(ref _observedAliveState);
+                return state == 0 ? null : state == 2;
+            }
+        }
         public virtual DateTime LastAliveTime { get; set; }
         public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
 
@@ -197,8 +211,6 @@ namespace ColorVision.Engine.Services
                 ServiceName = Name ?? string.Empty,
                 ServiceCode = Code ?? string.Empty,
                 ServiceType = ServiceTypes.ToString(),
-                DeviceStatus = IsAlive ? "Online" : "Offline",
-                IsAlive = IsAlive ? "yes" : "no",
             };
             var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(bundle, CopilotBusinessContextCoordinator.BuildDeviceDiagnosisPrompt(snapshot));
             if (!result.WasSent)

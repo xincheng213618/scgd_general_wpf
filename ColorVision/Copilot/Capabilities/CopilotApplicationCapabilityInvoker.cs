@@ -17,6 +17,8 @@ namespace ColorVision.Copilot
 
         public string Content { get; init; } = string.Empty;
 
+        public string PartialResultMessage { get; init; } = string.Empty;
+
         public string ErrorCode { get; init; } = string.Empty;
 
         public CopilotToolFailureKind FailureKind { get; init; }
@@ -119,6 +121,7 @@ namespace ColorVision.Copilot
                     ? approvalSummary
                     : result.Success ? successSummary : failureSummary,
                 Content = result.Content,
+                PartialResultMessage = result.PartialResultMessage,
                 ErrorMessage = accepted ? string.Empty : result.Content,
                 FailureKind = result.FailureKind,
                 FailureCode = accepted

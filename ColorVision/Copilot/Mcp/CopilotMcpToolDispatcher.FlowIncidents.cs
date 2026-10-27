@@ -22,9 +22,7 @@ namespace ColorVision.Copilot.Mcp
                 ? rawCursor.GetString()
                 : null;
             var result = await _environment.FlowIncidentQueryProvider(state, maxResults, cursor, cancellationToken);
-            return result.Success
-                ? CopilotMcpToolCallResult.Ok(result.Content)
-                : ToMcpResult(result, "flow_incident_query_failed");
+            return ToMcpResult(result, "flow_incident_query_failed", contentOnly: true);
         }
     }
 }

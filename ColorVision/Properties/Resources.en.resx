@@ -3707,4 +3707,15 @@ Workspace: {2}</value>
   <data name="聊天界面已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>The chat view has changed. Your edits have not been saved. Copy the text you want to keep, cancel, then reopen the editor in the intended conversation.</value></data>
   <data name="当前会话或编辑状态已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>The conversation or editing state has changed. Your edits have not been saved. Copy the text you want to keep, cancel, then reopen the editor in the intended conversation.</value></data>
   <data name="输入框草稿已变化，尚未覆盖。上方编辑内容仍保留；请先复制合并下方草稿，再次保存会以上方内容替换下方草稿。取消则保留下方草稿。" xml:space="preserve"><value>The composer draft has changed and has not been overwritten. Your edits remain above. Copy and merge the draft below before saving again; saving replaces the draft below with the text above. Cancel keeps the draft below.</value></data>
+  <data name="ApplicationUpdateWizardHeader" xml:space="preserve"><value>Check for application updates</value></data>
+  <data name="ApplicationUpdateWizardIntroFormat" xml:space="preserve"><value>Current version: {0}. The installer may be out of date. You can check for updates before installing the service and configuring ColorVision. Updates are optional; click Next to continue with the current version.</value></data>
+  <data name="ApplicationUpdateWizardChecking" xml:space="preserve"><value>Checking for a newer version…</value></data>
+  <data name="ApplicationUpdateWizardUpdating" xml:space="preserve"><value>Preparing the update. ColorVision will exit and restart when ready. The setup wizard will open again on the next launch so you can install the service and continue configuration.</value></data>
+  <data name="ApplicationUpdateWizardRecheckAction" xml:space="preserve"><value>Check again</value></data>
+  <data name="ApplicationUpdateWizardUpdateActionFormat" xml:space="preserve"><value>Update to {0}</value></data>
+  <data name="ApplicationUpdateWizardOffline" xml:space="preserve"><value>No Internet connection. Click Next to continue setup, or reconnect and try again.</value></data>
+  <data name="ApplicationUpdateWizardUnavailable" xml:space="preserve"><value>The update service is currently unavailable. Click Next to continue setup, or try again later.</value></data>
+  <data name="ApplicationUpdateWizardNoUpdate" xml:space="preserve"><value>Check complete. This version does not need an update. Click Next to install the service.</value></data>
+  <data name="ApplicationUpdateWizardAvailableFormat" xml:space="preserve"><value>Version {0} is available. Click the button below to update and return to the setup wizard, or click Next to skip the update.</value></data>
+  <data name="ApplicationUpdateWizardFailed" xml:space="preserve"><value>The update could not be downloaded or started. Try again, or click Next to continue setup with the current version.</value></data>
 </root>

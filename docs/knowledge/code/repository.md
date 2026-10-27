@@ -103,6 +103,9 @@ next: false
 - [仓库知识使用约定](../../README.md) — `governance.knowledge`
   说明 AGENTS.md 的按需知识扩展、权威主题与生成资料各自的职责和入口。
 
+- [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
+
 - [知识维护规范](../maintenance.md) — `governance.maintenance`
   定义按需知识扩展的元数据、更新流程和按变更选择的验证范围。
 

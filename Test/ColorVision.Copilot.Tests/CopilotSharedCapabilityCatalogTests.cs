@@ -329,17 +329,34 @@ public sealed class CopilotSharedCapabilityCatalogTests
         Assert.False(handlerInvoked);
     }
 
-    [Fact]
-    public async Task McpRuntimeRejectsContradictoryHandlerOutcomeBeforePublication()
+    [Theory]
+    [InlineData("failure-metadata")]
+    [InlineData("partial-null")]
+    [InlineData("failure-partial")]
+    [InlineData("approval-partial")]
+    public async Task McpRuntimeRejectsContradictoryHandlerOutcomeBeforePublication(string violation)
     {
         var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
         {
-            SetThemeHandler = (_, _) => Task.FromResult(new CopilotMcpToolCallResult
+            SetThemeHandler = (_, _) => Task.FromResult(violation switch
             {
-                Success = true,
-                Text = "untrusted success payload",
-                ErrorCode = "theme_change_failed",
-                FailureKind = CopilotToolFailureKind.Internal,
+                "failure-metadata" => new CopilotMcpToolCallResult
+                {
+                    Success = true, Text = "untrusted success payload", ErrorCode = "theme_change_failed", FailureKind = CopilotToolFailureKind.Internal,
+                },
+                "partial-null" => CopilotMcpToolCallResult.Ok("untrusted success payload", null!),
+                "failure-partial" => new CopilotMcpToolCallResult
+                {
+                    Success = false, Text = "untrusted success payload", ErrorCode = "theme_change_failed",
+                    FailureKind = CopilotToolFailureKind.Validation, PartialResultMessage = "untrusted partial coverage",
+                },
+                "approval-partial" => new CopilotMcpToolCallResult
+                {
+                    Success = false, Text = "untrusted success payload", ErrorCode = "confirmation_required", RequiresApproval = true,
+                    ApprovalActionId = "action:valid", ApprovalTitle = "Confirm", ApprovalRiskLevel = "write",
+                    ApprovalExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1), PartialResultMessage = "untrusted partial coverage",
+                },
+                _ => throw new InvalidOperationException(),
             }),
         });
 
@@ -356,6 +373,7 @@ public sealed class CopilotSharedCapabilityCatalogTests
         Assert.Equal(CopilotMcpToolResultContract.InvalidOutputFailureCode, result.ErrorCode);
         Assert.Equal(CopilotToolFailureKind.Internal, result.FailureKind);
         Assert.DoesNotContain("untrusted success payload", result.Text, StringComparison.Ordinal);
+        Assert.Empty(result.PartialResultMessage);
     }
 
     [Fact]
@@ -639,7 +657,7 @@ public sealed class CopilotSharedCapabilityCatalogTests
         Assert.All(
             CopilotSharedCapabilityCatalog.All.Except(surfaceSpecific),
             definition => Assert.True(string.IsNullOrWhiteSpace(definition.InputContractDifference)));
-        Assert.Equal(20, CopilotSharedCapabilityCatalog.All.Count(definition => definition.SharesInputSchema));
+        Assert.Equal(28, CopilotSharedCapabilityCatalog.All.Count(definition => definition.SharesInputSchema));
     }
 
     [Fact]
@@ -666,7 +684,7 @@ public sealed class CopilotSharedCapabilityCatalogTests
                 .OrderBy(id => id, StringComparer.Ordinal)
                 .ToArray());
         Assert.Equal(
-            16,
+            24,
             CopilotSharedCapabilityCatalog.All.Count(
                 definition => definition.SafetyClass == CopilotSharedCapabilitySafetyClass.ReadOnly));
     }

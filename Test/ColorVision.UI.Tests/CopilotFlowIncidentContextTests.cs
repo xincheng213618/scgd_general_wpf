@@ -130,9 +130,12 @@ public sealed class CopilotFlowIncidentContextTests
             Assert.Equal(CopilotFlowIncidentAgentExtension.SourceId, request.ContextAttachmentSourceId);
             Assert.Contains("incident_id=1234567890123", request.Prompt, StringComparison.Ordinal);
             Assert.Contains("InspectFlowIncident", request.Prompt, StringComparison.Ordinal);
+            Assert.Contains("若详情 coverage.events_truncated=true 或需要更早事件，使用详情中的精确 run_record_id 调用 InspectFlowRunEvents（MCP: inspect_flow_run_events）", request.Prompt, StringComparison.Ordinal);
+            Assert.Contains("按 has_more/next_cursor 原样向更早事件续读；不从当前画布或猜测取得运行 ID", request.Prompt, StringComparison.Ordinal);
             Assert.Contains("精确 run_record_id 调用 InspectFlowRunHistory（MCP: inspect_flow_run_history）", request.Prompt, StringComparison.Ordinal);
             Assert.Contains("不将历史统计或成功参照当作客户 PASS/FAIL 判定", request.Prompt, StringComparison.Ordinal);
             Assert.Contains("从已读运行历史中选取确切的 baseline_run_record_id 与 current_run_record_id，再调用 CompareRecordedFlowTemplates（MCP: compare_recorded_flow_templates）", request.Prompt, StringComparison.Ordinal);
+            Assert.Contains("若 has_more=true，按需原样传回 next_cursor 并保持两个运行 ID 及顺序续读；首段不能当作全部差异", request.Prompt, StringComparison.Ordinal);
             Assert.Contains("先取 InspectFlowIncident 返回的 run_record_id，再调用 InspectRecordedFlowTemplate（MCP: inspect_recorded_flow_template）", request.Prompt, StringComparison.Ordinal);
             Assert.Contains("InspectFlowGraph（MCP: get_flow_graph）只显示当前画布", request.Prompt, StringComparison.Ordinal);
             Assert.Contains("不能作为该历史运行的节点参数或连线证据", request.Prompt, StringComparison.Ordinal);

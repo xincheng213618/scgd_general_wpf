@@ -224,7 +224,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 MessageBox.Show(this, EngineLocalization.Get("请先选择或添加校正组。"), Properties.Resources.CalibrationFileManagement);
                 return;
             }
-            var menu = new ContextMenu();
+            var menu = new ContextMenu { FontFamily = FontFamily, FontSize = FontSize };
             foreach (var slot in CalibrationSlotDefinitions.AllSlots)
             {
                 var item = new MenuItem { Header = CalibrationSlotPresentation.GetTitle(slot.Key) };
@@ -237,7 +237,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private void CreateCalibrationRow_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button || button.DataContext is not CalibrationEditRow row || !AccessControl.Check(PermissionMode.Administrator)) return;
-            var menu = new ContextMenu();
+            var menu = new ContextMenu { FontFamily = FontFamily, FontSize = FontSize };
             AddCreationChoices(menu.Items, CalibrationSlotDefinitions.ByKey[row.SlotKey], row.Group);
             menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true;
         }

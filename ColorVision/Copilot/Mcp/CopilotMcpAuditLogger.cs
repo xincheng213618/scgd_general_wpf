@@ -1,8 +1,8 @@
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace ColorVision.Copilot.Mcp
@@ -57,38 +57,6 @@ namespace ColorVision.Copilot.Mcp
         private static readonly object SyncRoot = new();
         private static readonly List<CopilotMcpAuditEntry> RecentEntries = new();
         private static readonly AsyncLocal<CopilotMcpAuditScope?> CurrentScope = new();
-        private static readonly Regex AuthorizationHeaderLineRegex = new(
-            "(?<name>^[ \\t]*(?:proxy-)?authorization[ \\t]*:[ \\t]*)[^\\r\\n]*",
-            RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
-
-        private static readonly Regex AuthorizationQuotedValueRegex = new(
-            @"(?<name>[""']?\bauthorization[""']?\s*[:=]\s*)(?<quote>[""'])(?:\\.|(?!\k<quote>)[^\\\r\n])*\k<quote>",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        private static readonly Regex AuthorizationInlineHeaderRegex = new(
-            @"(?<name>\bauthorization\s*[:=]\s*)[^\r\n;]*",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        private static readonly Regex AuthorizationHeaderRegex = new(
-            "(?<name>[\"']?\\bauthorization[\"']?\\s*[:=]\\s*)(?<quote>[\"']?)[^\\r\\n,;\"'}]+",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        private static readonly Regex SensitiveInlineRegex = new(
-            "(?<name>[\"']?(?:password|passwd|pwd|secret|token|api[_-]?key|apikey|access[_-]?key|private[_-]?key|bearer)[\"']?\\s*[:=]\\s*)[\"']?[^,;\\s\"'}]+[\"']?",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        private static readonly Regex BearerRegex = new(
-            "(?i:\\bBearer)[ \\t]+[A-Za-z0-9._~+/-]{16,}=*",
-            RegexOptions.Compiled);
-
-        private static readonly Regex OpenAiApiKeyRegex = new(
-            "sk-[A-Za-z0-9]{20,}",
-            RegexOptions.Compiled);
-
-        private static readonly Regex AwsAccessKeyIdRegex = new(
-            "\\bAKIA[0-9A-Z]{16}\\b",
-            RegexOptions.Compiled);
-
         public static void ToolCallStarted(string toolName, string argumentSummary, string? callerSource = null)
         {
             ToolCallStarted(
@@ -315,7 +283,7 @@ namespace ColorVision.Copilot.Mcp
 
         public static string RedactArgument(string key, string? value)
         {
-            if (IsSensitiveKey(key))
+            if (IsSensitiveArgumentName(key))
                 return "<redacted>";
 
             return Redact(value);
@@ -323,59 +291,13 @@ namespace ColorVision.Copilot.Mcp
 
         public static string RedactText(string? value) => Redact(value);
 
-        internal static bool IsSensitiveArgumentName(string? name) => IsSensitiveKey(name);
+        internal static bool IsSensitiveArgumentName(string? name) => CopilotBusinessContextBuilder.IsSensitivePropertyName(name);
 
-        private static string Redact(string? value)
-        {
-            var text = RedactArchiveSource(value);
-            // Preserve quoted-value boundaries until the archive parser has
-            // hidden their complete contents, including internal delimiters.
-            text = CopilotTemporaryRedactedOutputArchive.RedactQuotedAssignments(text);
-            return SensitiveInlineRegex.Replace(text, match => $"{match.Groups["name"].Value}<redacted>");
-        }
+        private static string Redact(string? value) => CopilotSensitiveTextRedactor.Redact(value);
 
         // Archive streaming redaction owns generic assignments, including quoted
         // values. Apply whole-text header/key rules without removing those quotes.
-        internal static string RedactArchiveSource(string? value)
-        {
-            var text = value ?? string.Empty;
-            text = AuthorizationHeaderLineRegex.Replace(
-                text,
-                "${name}<redacted>");
-            text = AuthorizationQuotedValueRegex.Replace(
-                text,
-                "${name}${quote}<redacted>${quote}");
-            text = AuthorizationInlineHeaderRegex.Replace(
-                text,
-                "${name}<redacted>");
-            text = AuthorizationHeaderRegex.Replace(
-                text,
-                "${name}${quote}<redacted>");
-            text = BearerRegex.Replace(text, "Bearer <redacted>");
-            text = OpenAiApiKeyRegex.Replace(text, "<redacted>");
-            text = AwsAccessKeyIdRegex.Replace(text, "<redacted>");
-            return text;
-        }
-
-        private static bool IsSensitiveKey(string? key)
-        {
-            if (string.IsNullOrWhiteSpace(key))
-                return false;
-
-            var normalized = key.Replace("_", string.Empty, StringComparison.Ordinal)
-                .Replace("-", string.Empty, StringComparison.Ordinal)
-                .Replace(" ", string.Empty, StringComparison.Ordinal);
-            return normalized.Contains("password", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("passwd", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("pwd", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("secret", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("token", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("authorization", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("bearer", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("apikey", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("accesskey", StringComparison.OrdinalIgnoreCase)
-                || normalized.Contains("privatekey", StringComparison.OrdinalIgnoreCase);
-        }
+        internal static string RedactArchiveSource(string? value) => CopilotSensitiveTextRedactor.RedactArchiveSource(value);
 
         private static string Sanitize(string? value)
         {

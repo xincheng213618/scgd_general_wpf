@@ -1,6 +1,8 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Editor;
+using ColorVision.Engine.FlowProcessing.Integration;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.PreProcess;
@@ -10,6 +12,8 @@ using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using FlowEngineLib.End;
+using FlowEngineLib.Logical;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -24,6 +28,149 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowExecutionEditingTests
 {
+    [Fact]
+    public void CopilotFlowSnapshotIdentityIsStableAcrossRevisionsAndDistinctForOtherHosts()
+    {
+        WithFixture(fixture =>
+        {
+            var first = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot();
+            Assert.Matches("^[0-9a-f]{32}$", first.SourceInstanceId);
+            Assert.Equal(first.SourceInstanceId, fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().SourceInstanceId);
+            using (var other = new EditingFixture())
+            {
+                var otherSnapshot = other.Manager.Copilot.CaptureCopilotFlowSnapshot();
+                Assert.Equal(first.Revision, otherSnapshot.Revision);
+                Assert.NotEqual(first.SourceInstanceId, otherSnapshot.SourceInstanceId);
+            }
+
+            var node = new FlowRerouteNode();
+            node.Create();
+            fixture.Manager.View.STNodeEditorMain.Nodes.Add(node);
+            var changed = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot();
+            Assert.NotEqual(first.Revision, changed.Revision);
+            Assert.Equal(first.SourceInstanceId, changed.SourceInstanceId);
+        });
+    }
+
+    [Fact]
+    public void CopilotValidationUsesTheWholeRevisionAndPreservesCanvasSelectionHistoryLogAndContext()
+    {
+        WithFixture(fixture =>
+        {
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            for (var index = 0; index < 205; index++)
+            {
+                var node = new FlowRerouteNode();
+                node.Create();
+                editor.Nodes.Add(node);
+            }
+            var start = new TestStartNode();
+            var end = new CVEndNode();
+            start.Create();
+            end.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(end);
+            Assert.Equal(ConnectionStatus.Connected, start.Output.ConnectOption(end.m_in_start));
+            editor.ExecuteEditTransaction("Retain existing undo history", () => start.Left += 50);
+            editor.SetActiveNode(start);
+            editor.MoveCanvas(31, 47, false, CanvasMoveArgs.All);
+            fixture.Manager.View.logTextBox.Text = "Existing diagnostic summary";
+            string revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+
+            var valid = fixture.ValidateCopilotWithoutEditing(revision.ToUpperInvariant());
+
+            Assert.True(valid.RevisionMatches);
+            Assert.True(valid.IsValid);
+            Assert.Empty(valid.Diagnostic);
+            Assert.Null(valid.InvalidNodeId);
+            Assert.Equal(207, valid.NodeCount);
+            Assert.Equal(1, valid.ConnectionCount);
+            var instance = typeof(FlowEngineManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previous = instance.GetValue(null);
+            instance.SetValue(null, fixture.Manager);
+            try
+            {
+                var environment = new ColorVision.Copilot.Mcp.CopilotMcpToolEnvironment();
+                var bound = environment.FlowGraphValidator(revision, CancellationToken.None).GetAwaiter().GetResult();
+                Assert.Equal(valid, bound);
+                var boundSnapshot = environment.FlowSnapshotProvider(CancellationToken.None).GetAwaiter().GetResult();
+                Assert.NotNull(boundSnapshot);
+                Assert.Equal(fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().SourceInstanceId, boundSnapshot.SourceInstanceId);
+                Assert.Equal(revision, boundSnapshot.Revision);
+                using var cancellation = new CancellationTokenSource();
+                cancellation.Cancel();
+                Assert.ThrowsAny<OperationCanceledException>(() => environment.FlowSnapshotProvider(cancellation.Token).GetAwaiter().GetResult());
+                instance.SetValue(null, null);
+                Assert.Null(environment.FlowGraphValidator(revision, CancellationToken.None).GetAwaiter().GetResult());
+                Assert.Null(environment.FlowSnapshotProvider(CancellationToken.None).GetAwaiter().GetResult());
+                Assert.Null(instance.GetValue(null));
+            }
+            finally { instance.SetValue(null, previous); }
+
+            start.Output.DisConnectOption(end.m_in_start);
+            var stale = fixture.ValidateCopilotWithoutEditing(revision);
+            Assert.False(stale.RevisionMatches);
+            Assert.Null(stale.IsValid);
+            Assert.Null(stale.InvalidNodeId);
+            Assert.Empty(stale.Diagnostic);
+            Assert.NotEqual(revision, stale.Revision);
+            Assert.Equal(fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision, stale.Revision);
+            var invalid = fixture.ValidateCopilotWithoutEditing(stale.Revision);
+            Assert.True(invalid.RevisionMatches);
+            Assert.False(invalid.IsValid);
+            Assert.Equal(ColorVision.Engine.Properties.Resources.Flow_NoPathFromStartToEnd, invalid.Diagnostic);
+            Assert.Equal(start.Guid, invalid.InvalidNodeId);
+            foreach (string malformed in new[] { "", new string('0', 63), new string('z', 64) })
+                Assert.Throws<ArgumentException>(() => fixture.Manager.Copilot.ValidateCopilotFlowGraph(malformed));
+            Task.Run(() => Assert.Throws<InvalidOperationException>(() => fixture.Manager.Copilot.ValidateCopilotFlowGraph(stale.Revision))).GetAwaiter().GetResult();
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CopilotValidationRemainsReadOnlyDuringPreparationPostProcessingAndStopping(bool postProcessing)
+    {
+        WithFixture(fixture =>
+        {
+            var template = new TemplateModel<FlowParam>("Validation phases", new FlowParam { Id = 709, Name = "Validation phases" });
+            var (start, sink) = fixture.CreateMainGraph(template);
+            var run = fixture.MainSession.RunFlowAndWaitForFinalizationAsync();
+            fixture.Run = run;
+            PumpUntil(Task.WhenAny(fixture.PreProcess.Entered.Task, run));
+            Assert.True(fixture.PreProcess.Entered.Task.IsCompleted);
+            if (postProcessing)
+            {
+                fixture.PreProcess.Release.SetResult(true);
+                PumpUntil(Task.WhenAny(sink.Started.Task, run));
+                Assert.True(sink.Started.Task.IsCompleted);
+                start.Complete(sink.Started.Task.Result);
+                PumpUntil(Task.WhenAny(fixture.PostProcess.Entered.Task, run));
+                Assert.True(fixture.PostProcess.Entered.Task.IsCompleted);
+            }
+            string revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
+            var active = fixture.ValidateCopilotWithoutEditing(revision);
+            Assert.True(active.RevisionMatches);
+            Assert.NotNull(active.IsValid);
+            Assert.True(active.IsExecutionActive);
+            Assert.True(active.IsEditorReadOnly);
+            Assert.False(fixture.Manager.FlowControl.IsFlowRun);
+            fixture.MainSession.StopFlow(updateSummary: false);
+            var stopping = fixture.ValidateCopilotWithoutEditing(revision);
+            Assert.True(stopping.RevisionMatches);
+            Assert.NotNull(stopping.IsValid);
+            Assert.True(stopping.IsExecutionActive);
+            Assert.True(stopping.IsEditorReadOnly);
+            Assert.True(fixture.Manager.View.IsExecutionStopping);
+            if (postProcessing) fixture.PostProcess.Release.SetResult([]);
+            else fixture.PreProcess.Release.SetResult(true);
+            PumpUntil(run);
+            var finished = fixture.ValidateCopilotWithoutEditing(fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision);
+            Assert.False(finished.IsExecutionActive);
+            Assert.False(finished.IsEditorReadOnly);
+        });
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -214,7 +361,13 @@ public sealed class FlowExecutionEditingTests
             string revision = fixture.Manager.Copilot.CaptureCopilotFlowSnapshot().Revision;
             byte[] canvas = editor.GetCanvasData();
             var catalog = fixture.Manager.Copilot.CaptureCopilotFlowNodeCatalog(nameof(LocalCameraNode), 100);
-            Assert.True(Assert.Single(catalog.NodeTypes.Where(item => item.TypeKey == typeKey)).CanInheritCameraDefaults);
+            var cameraType = Assert.Single(catalog.NodeTypes.Where(item => item.TypeKey == typeKey));
+            Assert.True(cameraType.CanInheritCameraDefaults);
+            Assert.Empty(cameraType.AlgorithmHelpTopicId);
+            var algorithmCatalog = fixture.Manager.Copilot.CaptureCopilotFlowNodeCatalog(nameof(LocalGridDistortionNode), 100);
+            var algorithmType = Assert.Single(algorithmCatalog.NodeTypes);
+            Assert.Equal(typeof(LocalGridDistortionNode).FullName, algorithmType.RuntimeType);
+            Assert.Equal("algorithms.grid-distortion", algorithmType.AlgorithmHelpTopicId);
 
             var preview = fixture.Manager.Copilot.PreviewCopilotFlowNodeAddition(typeKey, 31, 47, revision, inheritCameraDefaults: true);
             var defaults = Assert.IsType<CopilotFlowCameraDefaults>(preview.CameraDefaults);
@@ -675,6 +828,9 @@ public sealed class FlowExecutionEditingTests
         });
     }
 
+    internal static void WithCopilotGraph(Action<FlowCopilotService, STNodeEditor> action)
+        => WithFixture(fixture => action(fixture.Manager.Copilot, fixture.Manager.View.STNodeEditorMain));
+
     private static void WithFixture(Action<EditingFixture> action)
     {
         WpfTestHost.Invoke(() =>
@@ -782,6 +938,38 @@ public sealed class FlowExecutionEditingTests
             MainSession.AdoptSavedCanvas(template);
             editor.MarkSaved();
             return (start, sink);
+        }
+
+        public CopilotFlowValidationSnapshot ValidateCopilotWithoutEditing(string revision)
+        {
+            var view = Manager.View;
+            var editor = view.STNodeEditorMain;
+            var nodes = editor.Nodes.Cast<STNode>().ToArray();
+            byte[] canvas = editor.GetCanvasData();
+            var active = editor.ActiveNode;
+            var selected = nodes.Where(node => node.IsSelected).ToArray();
+            var history = (editor.IsModified, editor.CanUndo, editor.CanRedo);
+            string summary = view.logTextBox.Text;
+            var context = CopilotLiveContextRegistry.Current;
+            int publications = 0;
+            void OnContextChanged(object? _, EventArgs __) => publications++;
+            CopilotLiveContextRegistry.CurrentChanged += OnContextChanged;
+            CopilotFlowValidationSnapshot result;
+            try { result = Manager.Copilot.ValidateCopilotFlowGraph(revision); }
+            finally { CopilotLiveContextRegistry.CurrentChanged -= OnContextChanged; }
+            Assert.Equal(nodes, editor.Nodes.Cast<STNode>().ToArray());
+            Assert.Equal(canvas, editor.GetCanvasData());
+            Assert.Same(active, editor.ActiveNode);
+            Assert.Equal(selected, editor.Nodes.Cast<STNode>().Where(node => node.IsSelected).ToArray());
+            Assert.Equal(history, (editor.IsModified, editor.CanUndo, editor.CanRedo));
+            Assert.Equal(summary, view.logTextBox.Text);
+            Assert.Same(context, CopilotLiveContextRegistry.Current);
+            Assert.Equal(0, publications);
+            Assert.Equal(nodes.Length, result.NodeCount);
+            Assert.Equal(editor.GetConnectionInfo().Length, result.ConnectionCount);
+            Assert.Equal(view.IsExecutionActive, result.IsExecutionActive);
+            Assert.Equal(!editor.EnableEdit, result.IsEditorReadOnly);
+            return result;
         }
 
         public void AssertEditingBlocked()

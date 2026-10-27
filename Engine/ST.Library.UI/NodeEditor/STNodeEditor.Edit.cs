@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
@@ -409,9 +410,26 @@ internal sealed class STNodeStateEditOperation : ISTNodeEditOperation
 
 public partial class STNodeEditor
 {
+	private sealed class RestorableHistoryCollection : ObservableCollection<STNodeEditHistoryEntry>
+	{
+		internal void RestoreSilently(IEnumerable<STNodeEditHistoryEntry> entries)
+		{
+			Items.Clear();
+			foreach (STNodeEditHistoryEntry entry in entries) Items.Add(entry);
+		}
+
+		internal void NotifyRestoredBestEffort()
+		{
+			try { OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count))); } catch { }
+			try { OnPropertyChanged(new PropertyChangedEventArgs("Item[]")); } catch { }
+			try { OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)); } catch { }
+		}
+	}
+
 	private const int DefaultMaximumHistoryEntries = 100;
-	private readonly ObservableCollection<STNodeEditHistoryEntry> _undoHistory = new ObservableCollection<STNodeEditHistoryEntry>();
-	private readonly ObservableCollection<STNodeEditHistoryEntry> _redoHistory = new ObservableCollection<STNodeEditHistoryEntry>();
+	private readonly RestorableHistoryCollection _undoHistory = new RestorableHistoryCollection();
+	private readonly RestorableHistoryCollection _redoHistory = new RestorableHistoryCollection();
+	private SingleConnectionEditScope _singleConnectionEdit;
 	private readonly Dictionary<STNode, Dictionary<string, byte[]>> _nodeStateCache = new Dictionary<STNode, Dictionary<string, byte[]>>();
 	private ReadOnlyObservableCollection<STNodeEditHistoryEntry> _readOnlyUndoHistory;
 	private ReadOnlyObservableCollection<STNodeEditHistoryEntry> _readOnlyRedoHistory;
@@ -456,6 +474,7 @@ public partial class STNodeEditor
 			{
 				return;
 			}
+			RejectNestedSingleConnectionHistory();
 			_enableHistory = value;
 			ClearHistory();
 			RefreshNodeStateCache();
@@ -464,9 +483,9 @@ public partial class STNodeEditor
 
 	public int MaximumHistoryEntries { get; set; } = DefaultMaximumHistoryEntries;
 
-	public bool CanUndo => EnableEdit && _undoHistory.Count > 0 && _transactionDepth == 0;
+	public bool CanUndo => EnableEdit && _undoHistory.Count > 0 && _transactionDepth == 0 && _singleConnectionEdit == null;
 
-	public bool CanRedo => EnableEdit && _redoHistory.Count > 0 && _transactionDepth == 0;
+	public bool CanRedo => EnableEdit && _redoHistory.Count > 0 && _transactionDepth == 0 && _singleConnectionEdit == null;
 
 	public bool IsModified => _currentStateId != _savedStateId;
 
@@ -496,6 +515,7 @@ public partial class STNodeEditor
 
 	public STNodeEditTransaction BeginEditTransaction(string description)
 	{
+		RejectNestedSingleConnectionHistory();
 		if (!_enableHistory || _historySuppressionDepth > 0)
 		{
 			return new STNodeEditTransaction(this, active: false);
@@ -599,6 +619,7 @@ public partial class STNodeEditor
 
 	public IDisposable SuspendHistoryRecording()
 	{
+		RejectNestedSingleConnectionHistory();
 		_historySuppressionDepth++;
 		return new DelegateDisposable(() =>
 		{
@@ -612,6 +633,7 @@ public partial class STNodeEditor
 
 	public void Undo()
 	{
+		RejectNestedSingleConnectionHistory();
 		if (!CanUndo)
 		{
 			return;
@@ -626,6 +648,7 @@ public partial class STNodeEditor
 
 	public void Redo()
 	{
+		RejectNestedSingleConnectionHistory();
 		if (!CanRedo)
 		{
 			return;
@@ -640,6 +663,7 @@ public partial class STNodeEditor
 
 	public void ClearHistory()
 	{
+		RejectNestedSingleConnectionHistory();
 		_undoHistory.Clear();
 		_redoHistory.Clear();
 		_currentStateId = ++_nextStateId;
@@ -650,6 +674,7 @@ public partial class STNodeEditor
 
 	public void MarkSaved()
 	{
+		RejectNestedSingleConnectionHistory();
 		_savedStateId = _currentStateId;
 		NotifyHistoryChanged();
 	}
@@ -912,6 +937,11 @@ public partial class STNodeEditor
 		{
 			return;
 		}
+		if (_singleConnectionEdit != null)
+		{
+			_singleConnectionEdit.Record(operation);
+			return;
+		}
 		if (_transactionDepth > 0)
 		{
 			_transactionOperations.Add(operation);
@@ -1057,6 +1087,109 @@ public partial class STNodeEditor
 	{
 		HistoryChanged?.Invoke(this, EventArgs.Empty);
 		CommandManager.InvalidateRequerySuggested();
+	}
+
+	private void RejectNestedSingleConnectionHistory()
+	{
+		if (_singleConnectionEdit != null)
+			throw new InvalidOperationException("Another history operation cannot run inside a single-connection edit.");
+	}
+
+	internal SingleConnectionEditScope BeginSingleConnectionEdit()
+	{
+		Dispatcher.VerifyAccess();
+		if (_singleConnectionEdit != null || _transactionDepth != 0 || _historySuppressionDepth != 0
+			|| IsReplayingHistory || _pendingConnectionFirst != null)
+			throw new InvalidOperationException("A single-connection edit requires an idle editor history boundary.");
+		_singleConnectionEdit = new SingleConnectionEditScope(this);
+		return _singleConnectionEdit;
+	}
+
+	internal sealed class SingleConnectionEditScope : IDisposable
+	{
+		private STNodeEditor _editor;
+		private readonly STNodeEditHistoryEntry[] _undo;
+		private readonly STNodeEditHistoryEntry[] _redo;
+		private readonly long _nextState;
+		private readonly long _currentState;
+		private readonly long _savedState;
+		private readonly Dictionary<STNode, Dictionary<string, byte[]>> _cache;
+		private readonly List<ISTNodeEditOperation> _operations = new List<ISTNodeEditOperation>();
+		private bool _committing;
+		private bool _restoring;
+		private bool _committed;
+
+		internal SingleConnectionEditScope(STNodeEditor editor)
+		{
+			_editor = editor;
+			_undo = editor._undoHistory.ToArray();
+			_redo = editor._redoHistory.ToArray();
+			_nextState = editor._nextStateId;
+			_currentState = editor._currentStateId;
+			_savedState = editor._savedStateId;
+			_cache = new Dictionary<STNode, Dictionary<string, byte[]>>(editor._nodeStateCache);
+		}
+
+		internal void Record(ISTNodeEditOperation operation)
+		{
+			if (_committing || _restoring) throw new InvalidOperationException("The graph changed while its connection history was being committed or restored.");
+			_operations.Add(operation);
+		}
+
+		internal void Commit()
+		{
+			_committing = true;
+			try
+			{
+				if (_operations.Count > 0)
+				{
+					ISTNodeEditOperation operation = _operations.Count == 1 ? _operations[0] : new STNodeCompositeEditOperation(_operations.ToArray());
+					_editor.AddHistoryEntry("断开连接", operation, allowMerge: false);
+				}
+				_editor.RefreshNodeStateCache();
+				_committed = true;
+			}
+			finally { _committing = false; }
+		}
+
+		internal void Cancel() => _committed = false;
+
+		public void Dispose()
+		{
+			STNodeEditor editor = _editor;
+			if (editor == null) return;
+			_editor = null;
+			if (!_committed)
+			{
+				// Restore all facts before notifying incrementally cached views. Node callbacks and
+				// HistoryChanged business observers are never replayed during rollback.
+				editor._undoHistory.RestoreSilently(_undo);
+				editor._redoHistory.RestoreSilently(_redo);
+				editor._nextStateId = _nextState;
+				editor._currentStateId = _currentState;
+				editor._savedStateId = _savedState;
+				editor._nodeStateCache.Clear();
+				foreach (var pair in _cache) editor._nodeStateCache.Add(pair.Key, pair.Value);
+			}
+			editor._pendingConnectionFirst = null;
+			editor._pendingConnectionSecond = null;
+			editor._pendingConnectionOutput = null;
+			editor._pendingConnectionInput = null;
+			editor._pendingConnectionOutputState = null;
+			editor._pendingConnectionInputState = null;
+			if (!_committed)
+			{
+				_restoring = true;
+				try
+				{
+					editor._undoHistory.NotifyRestoredBestEffort();
+					editor._redoHistory.NotifyRestoredBestEffort();
+				}
+				finally { _restoring = false; }
+			}
+			editor._singleConnectionEdit = null;
+			CommandManager.InvalidateRequerySuggested();
+		}
 	}
 
 	private sealed class DelegateDisposable : IDisposable

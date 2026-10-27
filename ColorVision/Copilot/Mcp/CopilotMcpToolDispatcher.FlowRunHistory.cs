@@ -16,9 +16,7 @@ namespace ColorVision.Copilot.Mcp
             var nodeId = arguments.TryGetValue("node_id", out var rawNodeId) ? rawNodeId.GetString() : null;
             var maxRuns = arguments.TryGetValue("max_runs", out var rawMaxRuns) ? rawMaxRuns.GetInt32() : 10;
             var result = await _environment.FlowRunHistoryInspector(runId, nodeId, maxRuns, cancellationToken);
-            return result.Success
-                ? CopilotMcpToolCallResult.Ok(result.Content)
-                : ToMcpResult(result, "flow_run_history_inspection_failed");
+            return ToMcpResult(result, "flow_run_history_inspection_failed", contentOnly: true);
         }
     }
 }

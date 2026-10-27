@@ -2,8 +2,10 @@ using ColorVision.Engine.Templates.Flow;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
 
@@ -19,6 +21,15 @@ public sealed record RecordedFlowTemplateGraph(
     int TotalConnectionCount,
     bool ConnectionsComplete);
 
+internal sealed record RecordedFlowTemplatePropertyFingerprint(int Length, string Sha256);
+
+internal readonly record struct RecordedFlowTemplateCanvasView(float OffsetX, float OffsetY, float Scale);
+
+internal sealed record RecordedFlowTemplateDecodedGraph(
+    RecordedFlowTemplateGraph Graph,
+    IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, RecordedFlowTemplatePropertyFingerprint>> Properties,
+    RecordedFlowTemplateCanvasView View);
+
 /// <summary>Reads saved graph metadata without resolving or constructing any node implementation.</summary>
 public static class RecordedFlowTemplateGraphReader
 {
@@ -29,15 +40,22 @@ public static class RecordedFlowTemplateGraphReader
     private const int MaximumTotalPropertyCount = 100_000;
     private const string LegacyConnectionsKey = "__STNode.LegacyConnections";
 
-    public static RecordedFlowTemplateGraph Read(byte[] content, CancellationToken cancellationToken)
+    public static RecordedFlowTemplateGraph Read(byte[] content, CancellationToken cancellationToken) =>
+        DecodeCore(content, includePropertyFingerprints: false, cancellationToken).Graph;
+
+    internal static RecordedFlowTemplateDecodedGraph ReadForComparison(byte[] content, CancellationToken cancellationToken) =>
+        DecodeCore(content, includePropertyFingerprints: true, cancellationToken);
+
+    private static RecordedFlowTemplateDecodedGraph DecodeCore(byte[] content, bool includePropertyFingerprints, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);
         var body = FlowPackageStnValidator.ValidateAndDecompress(content, MaximumDecompressedLength, cancellationToken);
         using var reader = new BinaryReader(new MemoryStream(body, writable: false));
-        reader.BaseStream.Position = 3 * sizeof(float);
+        var view = new RecordedFlowTemplateCanvasView(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         var nodeCount = reader.ReadInt32();
         var nodes = new List<RecordedFlowTemplateNode>(nodeCount);
         var nodeIds = new HashSet<Guid>();
+        var propertyFingerprints = new Dictionary<Guid, IReadOnlyDictionary<string, RecordedFlowTemplatePropertyFingerprint>>();
         var ports = new List<SavedPort>();
         var totalPorts = 0;
         var totalProperties = 0;
@@ -55,6 +73,17 @@ public static class RecordedFlowTemplateGraphReader
             var nodeId = new Guid(guidBytes);
             if (nodeId == Guid.Empty || !nodeIds.Add(nodeId))
                 throw new InvalidDataException("Recorded flow node Guids must be nonempty and unique.");
+            if (includePropertyFingerprints)
+            {
+                var properties = new Dictionary<string, RecordedFlowTemplatePropertyFingerprint>(StringComparer.Ordinal);
+                foreach (var property in state.Properties)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    properties.Add(property.Key, new RecordedFlowTemplatePropertyFingerprint(property.Value.Length,
+                        Convert.ToHexString(SHA256.HashData(property.Value))));
+                }
+                propertyFingerprints.Add(nodeId, new ReadOnlyDictionary<string, RecordedFlowTemplatePropertyFingerprint>(properties));
+            }
 
             STNodePortLayout? layout = null;
             if (state.Properties.TryGetValue(STNodeSavedState.PortLayoutKey, out var layoutBytes))
@@ -101,8 +130,10 @@ public static class RecordedFlowTemplateGraphReader
             edges.Add(new RecordedFlowTemplateEdge(output.NodeId, output.LocalIndex, input.NodeId, input.LocalIndex));
         }
         cancellationToken.ThrowIfCancellationRequested();
-        return new RecordedFlowTemplateGraph(nodes.AsReadOnly(), edges.AsReadOnly(), connectionCount,
+        var graph = new RecordedFlowTemplateGraph(nodes.AsReadOnly(), edges.AsReadOnly(), connectionCount,
             !hasLegacyConnectionState && (layoutsComplete || connectionCount == 0));
+        return new RecordedFlowTemplateDecodedGraph(graph,
+            new ReadOnlyDictionary<Guid, IReadOnlyDictionary<string, RecordedFlowTemplatePropertyFingerprint>>(propertyFingerprints), view);
     }
 
     // Envelope validation has already checked every frame length. Count names without decoding or copying values.

@@ -560,6 +560,11 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
             contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
             contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
+            contextMenu.Items.Add(new MenuItem
+            {
+                Header = LocalizedText.Get("算法实证"),
+                Command = new RelayCommand(_ => OpenAlgorithmEvidence_Click(this, new RoutedEventArgs()), _ => listView1.SelectedItem is ProjectARVRReuslt)
+            });
 
             // 右键菜单打开时刷新 CanExecute 状态
             contextMenu.Opened += (s, e) => CommandManager.InvalidateRequerySuggested();
@@ -579,6 +584,10 @@ namespace ProjectARVRPro
 
             listView1.ContextMenu = contextMenu;
         }
+
+        private void OpenAlgorithmEvidence_Click(object sender, RoutedEventArgs e) =>
+            new AlgorithmEvidence.AlgorithmEvidenceWindow(ViewResluts.ToArray(), (listView1.SelectedItem as ProjectARVRReuslt)?.Id)
+            { Owner = this }.Show();
 
         private void ContextMenu_OpenFolderAndSelectFile()
         {

@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +19,10 @@ public sealed record FlowRecordedTemplateReadResult(
 public sealed record FlowRecordedTemplatePairReadResult(
     FlowRecordedTemplateReadResult? Baseline,
     FlowRecordedTemplateReadResult? Current,
-    string IdentityBasis);
+    string IdentityBasis)
+{
+    public string SourceKey { get; init; } = string.Empty;
+}
 
 /// <summary>Reads and verifies the exact recorded template bytes without constructing execution nodes or initializing a writer.</summary>
 public sealed class FlowRecordedTemplateReader
@@ -29,11 +33,15 @@ public sealed class FlowRecordedTemplateReader
     private static readonly string IdentityWhitespace = new(Enumerable.Range(char.MinValue, char.MaxValue + 1)
         .Select(value => (char)value).Where(char.IsWhiteSpace).ToArray());
     private readonly string _databasePath;
+    private readonly string _sourceKey;
 
     public FlowRecordedTemplateReader(string databasePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
         _databasePath = Path.GetFullPath(databasePath);
+        var normalizedPath = Path.TrimEndingDirectorySeparator(_databasePath)
+            .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar).ToUpperInvariant();
+        _sourceKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalizedPath))).ToLowerInvariant();
     }
 
     public Task<FlowRecordedTemplateReadResult?> ReadAsync(int runRecordId, CancellationToken cancellationToken)
@@ -90,7 +98,7 @@ public sealed class FlowRecordedTemplateReader
             basis = (string?)command.ExecuteScalar() ?? "unavailable";
         }
         cancellationToken.ThrowIfCancellationRequested();
-        return new(baseline, current, basis);
+        return new(baseline, current, basis) { SourceKey = _sourceKey };
     }
 
     private ReadOnlySqliteDatabase OpenDatabase()

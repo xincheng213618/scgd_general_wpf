@@ -1058,6 +1058,44 @@ bool SimilarDetection(
     return meanCornerDistance <= std::sqrt(std::max(1.0, std::min(leftArea, rightArea))) * 0.10;
 }
 
+bool HasMeasuredBoundaryReplacement(
+    const FindLuminousAreaV2Result& outer,
+    const FindLuminousAreaV2Result& inner)
+{
+    const bool innerHasInference = std::any_of(
+        inner.warnings.begin(), inner.warnings.end(),
+        [](const std::string& warning) { return warning.rfind("Inferred", 0) == 0; });
+    const bool innerHasDenseSides = std::all_of(
+        inner.sideQuality.begin(), inner.sideQuality.end(),
+        [](const LuminousSideQuality& side) {
+            return side.inlierRatio >= 0.70 && side.coverage >= 0.45 && side.confidence >= 0.35;
+        });
+    if (innerHasInference || !innerHasDenseSides) {
+        return false;
+    }
+
+    const double tolerance = std::max(2.0, std::sqrt(std::abs(SignedArea(inner.corners))) * 0.015);
+    int sharedSides = 0;
+    static constexpr std::array<const char*, 4> sideNames{ "Top", "Right", "Bottom", "Left" };
+    for (int side = 0; side < kSideCount; ++side) {
+        if (std::find(outer.warnings.begin(), outer.warnings.end(),
+            std::string("Inferred") + sideNames[side] + "Side") != outer.warnings.end()) {
+            continue;
+        }
+        const LineModel boundary = LineFromPoints(outer.corners[side], outer.corners[(side + 1) % kSideCount]);
+        for (int other = 0; other < kSideCount; ++other) {
+            if (PointLineDistance(boundary, inner.corners[other]) <= tolerance
+                && PointLineDistance(boundary, inner.corners[(other + 1) % kSideCount]) <= tolerance) {
+                ++sharedSides;
+                break;
+            }
+        }
+    }
+    // Three shared measured boundaries make the fourth measured edge a direct
+    // replacement for the inferred edge, rather than a separate nested panel.
+    return sharedSides == 3;
+}
+
 void RestoreInputScale(FindLuminousAreaV2Result& result, double processingScale)
 {
     if (processingScale >= 1.0) {
@@ -1453,7 +1491,8 @@ FindLuminousAreaV2Result FindLuminousAreaV2(
                     }
                     if (inferredSides != 1
                         || outer.areaRatio < inner.areaRatio * 1.35
-                        || outer.scaleVotes < 3) {
+                        || outer.scaleVotes < 3
+                        || HasMeasuredBoundaryReplacement(outer.result, inner.result)) {
                         return false;
                     }
                     const int measuredDenseSides = static_cast<int>(std::count_if(

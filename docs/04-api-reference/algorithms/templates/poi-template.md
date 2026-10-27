@@ -74,6 +74,8 @@ Flow 中的常规 POI 模板字段由节点上的 PropertyEditor 类型和 `Flow
 | BuildPOI | `TemplateBuildPoi` 或 `TemplateBuildPOIAA`，以及 `RePOI`、`LayoutROI`、`SavePOI` |
 | PoiAnalysis | `TemplatePoiAnalysis` |
 
+“关注点修正标定”（`POIReviseNode`）的“参数模板”选择 `POIGenCali` 标定规则；“修正输出”（英文界面 `PatchOut`，保存字段 `Output`）选择用于保存倍率的 `PoiRevise` 修正模板，可通过字段右侧设置按钮新建并保存。服务端只更新已存在的修正模板，不会按填写的名称自动创建。“POI点名称”填写上游实际测量结果中的点名，不是点集模板名；“POI修正”只控制是否修正本次 POI 结果，不会修改相机校正模板或图像。“修正输出”允许留空，此时请求仍携带名称为空的 `OutputParam` 对象，兼容会直接读取 `OutputParam.Name` 的旧服务；不保存修正模板。需要在后续测量复用生成参数时，在对应 POI 节点的“修正模板”中选择该模板。
+
 POI 也会被 `POIAnalysisNode`、SFR ROI、OLED AOI、项目包等继续消费。它是共享原语，不是某个模板私有能力。
 
 本地“光谱参考校正”（`LocalSpectrumCalibrationNode`）用于将本次光谱测量应用到整幅图像：`相机取图 → POI → IN_POI`，同一流程的光谱仪亮度结果接 `IN_SPE`，节点输出接 End。使用本地“相机取图”的按需色度路径并选择颜色校正模板；本地 POI 保留对应 RAW 帧，因此无需生成或保存 CVCIE。单个 POI 可不填点名，多个点必须明确选择与光谱仪视场对应的唯一参考区域；不取多个点的隐式平均。光谱输入可以来自本地或服务采集，但必须已入库且属于本批次，不接受光通量/EQE 数据。

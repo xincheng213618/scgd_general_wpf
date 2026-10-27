@@ -3707,4 +3707,15 @@
   <data name="聊天界面已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>聊天界面已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。</value></data>
   <data name="当前会话或编辑状态已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。" xml:space="preserve"><value>当前会话或编辑状态已变化，编辑内容尚未保存。请复制需要保留的文字，取消后在目标会话重新打开编辑器。</value></data>
   <data name="输入框草稿已变化，尚未覆盖。上方编辑内容仍保留；请先复制合并下方草稿，再次保存会以上方内容替换下方草稿。取消则保留下方草稿。" xml:space="preserve"><value>输入框草稿已变化，尚未覆盖。上方编辑内容仍保留；请先复制合并下方草稿，再次保存会以上方内容替换下方草稿。取消则保留下方草稿。</value></data>
+  <data name="ApplicationUpdateWizardHeader" xml:space="preserve"><value>检查程序更新</value></data>
+  <data name="ApplicationUpdateWizardIntroFormat" xml:space="preserve"><value>当前版本：{0}。安装包可能不是最新版本，可先检查更新，再安装服务和配置软件。更新由您选择；点击“下一步”可跳过，继续使用当前版本。</value></data>
+  <data name="ApplicationUpdateWizardChecking" xml:space="preserve"><value>正在检查新版本…</value></data>
+  <data name="ApplicationUpdateWizardUpdating" xml:space="preserve"><value>正在准备更新。完成后程序将退出并重启；下次启动会重新进入安装向导，继续安装服务和后续配置。</value></data>
+  <data name="ApplicationUpdateWizardRecheckAction" xml:space="preserve"><value>重新检查更新</value></data>
+  <data name="ApplicationUpdateWizardUpdateActionFormat" xml:space="preserve"><value>更新到 {0}</value></data>
+  <data name="ApplicationUpdateWizardOffline" xml:space="preserve"><value>未连接到 Internet，暂时无法检查更新。可直接点击“下一步”继续安装，或联网后重试。</value></data>
+  <data name="ApplicationUpdateWizardUnavailable" xml:space="preserve"><value>暂时无法连接更新服务。可直接点击“下一步”继续安装，或稍后重试。</value></data>
+  <data name="ApplicationUpdateWizardNoUpdate" xml:space="preserve"><value>检查完成，当前版本无需更新。点击“下一步”继续安装服务。</value></data>
+  <data name="ApplicationUpdateWizardAvailableFormat" xml:space="preserve"><value>发现新版本 {0}。可点击下方按钮更新，更新后仍会进入安装向导；也可点击“下一步”跳过更新。</value></data>
+  <data name="ApplicationUpdateWizardFailed" xml:space="preserve"><value>更新下载或启动失败。可重试更新，也可点击“下一步”继续使用当前版本安装。</value></data>
 </root>

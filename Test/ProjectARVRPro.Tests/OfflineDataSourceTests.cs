@@ -132,7 +132,8 @@ public sealed class OfflineDataSourceTests
                 {
                     DataGrid other = target == detailGrid ? combinedGrid : detailGrid;
                     MenuItem[] menu = target.ContextMenu.Items.OfType<MenuItem>().ToArray();
-                    Assert.Equal(5, menu.Length);
+                    // Optional history tools may grow; the offline access boundary must remain closed.
+                    MenuItem evidence = Assert.Single(menu, item => Equals(item.Header, DisplayText.Get("算法实证")));
                     Assert.Same(target, menu[0].CommandTarget);
                     target.SelectedItem = valid;
                     other.SelectedItem = unavailable;
@@ -140,10 +141,12 @@ public sealed class OfflineDataSourceTests
                     Assert.False(menu[2].Command.CanExecute(null)); // Offline MySQL history.
                     Assert.True(menu[3].Command.CanExecute(null));
                     Assert.True(menu[4].Command.CanExecute(null));
+                    Assert.False(evidence.Command.CanExecute(null));
                     target.SelectedItem = unavailable;
                     other.SelectedItem = valid;
                     Assert.False(menu[3].Command.CanExecute(null));
                     Assert.False(menu[4].Command.CanExecute(null));
+                    Assert.False(evidence.Command.CanExecute(null));
 
                     // Materialize the detail row without opening a real application window.
                     target.Measure(new Size(900, 300));

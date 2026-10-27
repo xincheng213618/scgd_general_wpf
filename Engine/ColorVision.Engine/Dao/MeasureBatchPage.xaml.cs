@@ -28,9 +28,11 @@ namespace ColorVision.Engine
         public Frame Frame { get; set; }
         public MeasureBatchModel MeasureBatchModel { get; set; }
         private CopilotDynamicContextSession? _copilotContextSession;
+        private CopilotLoadedBatchResultsReader.Registration? _copilotLoadedResultsRegistration;
         private Window? _copilotHostWindow;
         private Window? _hostWindow;
         private bool _isDisposed;
+        internal bool IsLoadedBatchResultSourceDisposed => _isDisposed;
         private string _lastSelectedResultKind = string.Empty;
         private readonly ObservableCollection<GridViewColumnVisibility> _algorithmDetailColumnVisibilitys = new();
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
@@ -312,7 +314,10 @@ namespace ColorVision.Engine
         private void EnsureCopilotContextRegistered()
         {
             if (_copilotContextSession != null)
+            {
+                EnsureLoadedResultsRegistration();
                 return;
+            }
 
             try
             {
@@ -326,6 +331,7 @@ namespace ColorVision.Engine
                     _copilotHostWindow.Closed += CopilotHostWindow_Closed;
                 }
                 _copilotContextSession.Activate();
+                EnsureLoadedResultsRegistration();
             }
             catch (Exception ex)
             {
@@ -346,6 +352,8 @@ namespace ColorVision.Engine
 
         private void ReleaseCopilotContext()
         {
+            _copilotLoadedResultsRegistration?.Dispose();
+            _copilotLoadedResultsRegistration = null;
             if (_copilotHostWindow != null)
             {
                 _copilotHostWindow.Activated -= CopilotHostWindow_Activated;
@@ -358,6 +366,13 @@ namespace ColorVision.Engine
             _copilotContextSession = null;
             if (wasCurrent)
                 CopilotLiveContextRegistry.Clear(CopilotMeasurementResultAgentExtension.SourceId);
+        }
+
+        private void EnsureLoadedResultsRegistration()
+        {
+            if (_isDisposed || _copilotLoadedResultsRegistration?.IsCurrent == true) return;
+            _copilotLoadedResultsRegistration?.Dispose();
+            _copilotLoadedResultsRegistration = CopilotLoadedBatchResultsReader.Register(this);
         }
 
         private async Task<CopilotMeasurementResultContextSnapshot?> CaptureCopilotMeasurementResultSnapshotAsync(CancellationToken cancellationToken)
@@ -377,6 +392,7 @@ namespace ColorVision.Engine
 
         private CopilotMeasurementResultContextSnapshot CaptureCopilotMeasurementResultSnapshot()
         {
+            var loadedBatchScope = _copilotLoadedResultsRegistration?.ScopeReference;
             var selectedImage = _lastSelectedResultKind == "image" ? listView1.SelectedItem as ViewResultImage : null;
             var selectedAlgorithm = _lastSelectedResultKind == "algorithm" ? listView2.SelectedItem as ViewResultAlg : null;
             selectedImage ??= selectedAlgorithm == null ? listView1.SelectedItem as ViewResultImage : null;
@@ -388,6 +404,8 @@ namespace ColorVision.Engine
             return new CopilotMeasurementResultContextSnapshot
             {
                 SourceId = CopilotMeasurementResultAgentExtension.SourceId,
+                LoadedBatchSourceInstanceId = loadedBatchScope?.RegistryInstanceId ?? string.Empty,
+                LoadedBatchSourceRef = loadedBatchScope?.SourceRef ?? string.Empty,
                 Surface = "Measurement batch details",
                 LoadedBatchCount = 1,
                 BatchId = MeasureBatchModel.Id,

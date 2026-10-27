@@ -39,7 +39,8 @@ public class POIReviseNode : CVBaseServerNodeHub
 		}
 	}
 
-	[STNodeProperty("修正输出", "修正输出", true)]
+	[STNodeProperty("修正输出", "选择保存标定参数的 POI 修正模板，可通过设置按钮新建；留空时不保存模板。", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(PoiReviseTemplatePropertiesEditor))]
 	public string Output
 	{
 		get

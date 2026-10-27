@@ -8,6 +8,8 @@ using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.UI;
 using FlowEngineLib;
+using FlowEngineLib.Node.POI;
+using ST.Library.UI.NodeEditor;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
@@ -63,10 +65,11 @@ public sealed class CompatibilityCameraPropertyEditorTests
     });
 
     [Theory]
-    [InlineData(nameof(POINode.TempName))]
-    [InlineData(nameof(POINode.FilterTemplateName))]
-    [InlineData(nameof(POINode.ReviseTemplateName))]
-    public void DirectPoiEditorsPreserveAndUpdateTheNodeProperty(string propertyName) => WpfTestHost.Invoke(() =>
+    [InlineData(typeof(POINode), nameof(POINode.TempName))]
+    [InlineData(typeof(POINode), nameof(POINode.FilterTemplateName))]
+    [InlineData(typeof(POINode), nameof(POINode.ReviseTemplateName))]
+    [InlineData(typeof(POIReviseNode), nameof(POIReviseNode.Output))]
+    public void DirectPoiEditorsPreserveAndUpdateTheNodeProperty(Type nodeType, string propertyName) => WpfTestHost.Invoke(() =>
     {
         using var resources = new EditorResources();
         (IList Templates, TemplateBase Added) data = propertyName switch
@@ -79,7 +82,7 @@ public sealed class CompatibilityCameraPropertyEditorTests
         templates.Add(added);
         try
         {
-            var node = new POINode();
+            var node = (STNode)Activator.CreateInstance(nodeType)!;
             node.Create();
             PropertyInfo property = node.GetType().GetProperty(propertyName)!;
             var direct = (IPropertyEditor)Activator.CreateInstance(property.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType!)!;
@@ -165,7 +168,7 @@ public sealed class CompatibilityCameraPropertyEditorTests
         finally { combo.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
     });
 
-    private static void VerifySelection(IPropertyEditor editor, POINode node, PropertyInfo property, TemplateBase template)
+    private static void VerifySelection(IPropertyEditor editor, STNode node, PropertyInfo property, TemplateBase template)
     {
         property.SetValue(node, "unavailable-template");
         DockPanel panel = editor.GenProperties(property, node);

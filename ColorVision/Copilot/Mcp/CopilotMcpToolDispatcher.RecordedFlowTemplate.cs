@@ -14,6 +14,6 @@ internal sealed partial class CopilotMcpToolDispatcher
         var nodeId = arguments.TryGetValue("node_id", out var node) ? node.GetString() : null;
         var maximum = arguments.TryGetValue("max_nodes", out var count) ? count.GetInt32() : 80;
         var result = await _environment.RecordedFlowTemplateInspector(runId, nodeId, maximum, cancellationToken);
-        return result.Success ? CopilotMcpToolCallResult.Ok(result.Content) : ToMcpResult(result, "recorded_flow_template_inspection_failed");
+        return ToMcpResult(result, "recorded_flow_template_inspection_failed", contentOnly: true);
     }
 }

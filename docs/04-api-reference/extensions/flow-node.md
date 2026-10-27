@@ -3,9 +3,9 @@ knowledge_id: "flow.node-extension"
 knowledge_type: "guide"
 status: "current"
 summary: "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。"
-aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode"]
-code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs","Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs","Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility","Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs","UI/ColorVision.UI.Desktop/Help"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowLocalizationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs","Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs","Test/ColorVision.UI.Tests/AlgorithmHelpTests.cs"]
+aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode","离线算法帮助","AlgorithmHelpCatalog","ReadAlgorithmHelp","read_algorithm_help","algorithmHelpTopicId","DisConnectOptionTransactional","单条连线事务"]
+code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCleanupNode.cs","Engine/ColorVision.Engine/Services/Files/FolderCleanupService.cs","Engine/ColorVision.Engine/FlowProcessing/PreProcess/FolderSizePreProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility","Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs","UI/ColorVision.UI.Desktop/Help","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","ColorVision/Copilot/Capabilities/CopilotAlgorithmHelpReadingService.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotReadAlgorithmHelpTool.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.AlgorithmHelp.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRead.cs","docs/.vitepress/scripts/algorithm-help.mjs","docs/.vitepress/algorithm-help/sources.json","Engine/ST.Library.UI/NodeEditor/STNodeOption.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.Edit.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowLocalizationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs","Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs","Test/ColorVision.UI.Tests/AlgorithmHelpTests.cs","Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpReadingServiceTests.cs","Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpToolTests.cs","Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs","docs/.vitepress/scripts/algorithm-help.test.mjs","Test/ColorVision.UI.Tests/CopilotFlowDisconnectionTests.cs","Test/ColorVision.UI.Tests/STNodeTransactionalDisconnectionTests.cs"]
 related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
 
@@ -37,17 +37,27 @@ Flow 节点建立在 `STNode` 和 `FlowEngineLib` 基类上。服务节点负责
 
 需要公式、图示或交互讲解的节点，可在 `FlowNodeDocumentationAttribute.TopicId` 中填写既有知识主题 ID。说明页据此增加“查看算法原理”，由宿主打开可复用的离线帮助窗口；未设置 ID 的节点继续使用原说明。此元数据不进入节点运行参数或流程保存数据，FlowEngineLib 不依赖桌面浏览器实现。
 
-帮助内容维护在对应算法主题，生成的 HTML、公式和静态资源随 `Assets/Help/` 交付，节点仅保存主题关联，不复制长篇正文。窗口按需初始化 WebView2，在本地展示内容，并提供网站链接和打印入口；缺少主题或帮助文件时显示明确错误。此入口用于本地计算节点；同分类下的命令行脚本和资源清理继续使用各自的操作说明。
+帮助内容维护在对应算法主题，生成的 HTML、公式、静态资源及同源 Markdown 片段随 `Assets/Help/` 交付，节点仅保存主题关联，不复制长篇正文。窗口按需初始化 WebView2，在本地展示内容，并提供网站链接和打印入口；缺少主题或帮助文件时显示明确错误。此入口用于本地计算节点；同分类下的命令行脚本和资源清理继续使用各自的操作说明。
 
-接入新算法时，在权威主题中以 `<!-- algorithm-help:start -->` 与 `<!-- algorithm-help:end -->` 划定一段可独立阅读的说明，首个二级标题使用 `{#algorithm-principles}`。说明应交代输入、计算步骤、指标单位、关键参数及无效条件，并配上与实际口径一致的图示。将该 Markdown 路径加入 `docs/.vitepress/algorithm-help/sources.json`；导出器从原文读取 `knowledge_id` 和说明标题，生成同一份交付索引。节点的 `TopicId` 必须与该 `knowledge_id` 相同。宽泛主题包含多项独立能力时，先将算法事实迁入专用主题，再链接原位置，避免创建第二份手册。
+接入新算法时，在权威主题中以 `<!-- algorithm-help:start -->` 与 `<!-- algorithm-help:end -->` 划定一段可独立阅读的说明，首个二级标题使用 `{#algorithm-principles}`。说明应交代输入、计算步骤、指标单位、关键参数及无效条件，并配上与实际口径一致的图示。将该 Markdown 路径加入 `docs/.vitepress/algorithm-help/sources.json`；导出器从原文读取 `knowledge_id` 和说明标题，生成同一份交付索引及标记区的 `.md` 原文片段。索引的 `markdownRelativePath` 指向该片段，`markdownSha256` 校验 LF 归一化后 UTF-8 文本的 SHA-256；HTML 与工具读取共用这段原文，不从 HTML 剥离文字。节点的 `TopicId` 必须与该 `knowledge_id` 相同。宽泛主题包含多项独立能力时，先将算法事实迁入专用主题，再链接原位置，避免创建第二份手册。
 
 在仓库根运行 `npm run docs:help` 更新离线产物，运行 `npm run docs:help:check` 检查多主题导出与交付新鲜度；普通 .NET 构建直接复制已生成内容，不要求 Node。内联 SVG 图和公式离线可读，交互组件需要显式注册本地资源；未支持的组件或外部图片会使导出失败。帮助片段之间的有效链接导向本地页面，未导出的章节保留为网站链接。网站正文仍由同一 Markdown 构建，需按网站交付流程发布后才包含新主题。完整示例见[点阵畸变测量原理](../algorithms/detectors/grid-distortion-v2.md#algorithm-principles)。
+
+Copilot 的 `SearchFlowNodeCatalog`／MCP `get_flow_node_catalog` 在节点类型上交付 `algorithmHelpTopicId`，来自同一个 `FlowNodeDocumentationAttribute.TopicId`，未关联帮助时为空。将这个精确值作为 `topic_id` 调用 `ReadAlgorithmHelp`／`read_algorithm_help`，即可读取当前安装包的原理与参数说明；当前参数值仍应从 `InspectFlowGraph`／`get_flow_graph` 的显式值查询取得，帮助正文不代表正在编辑或已执行的配置。
+
+读取输入的 `topic_id` 必填且不超过128字符，严格匹配 `[a-z0-9]+(?:[.-][a-z0-9]+)*`，不按名称猜测或模糊匹配；`max_characters` 默认6,000，范围256–12,000。可选 `cursor` 为不超过4,096字符的非空 opaque 游标，须原样回传。成功正文为最多18,000字符的完整 JSON，`source=installed_algorithm_help`，包含 `topic_id`、`title`、`online_url`、`content_format=markdown_source`、原文片段 `content`、完整 LF 文本的 `content_hash`，以及根对象的 `has_more`／`next_cursor`。正文预算可能少于请求字符数，只按实际交付片段推进，不能把首段当作全文。
+
+`coverage.start_offset`、`characters_returned`、`total_characters` 以 LF 原文的 UTF-16 code units 计数，调用方只回传游标，不自行计算偏移；切片保留完整 Unicode 代理对。`text_complete` 仅在单个响应从头交付全部正文时为真，末页没有 `next_cursor` 不表示该响应包含之前的片段；`metadata_truncated` 单独说明标题或链接裁剪。游标绑定精确主题和完整文本 hash，内容改变后返回 `Validation`，须去掉游标从头重读，不能混合不同正文版本。
+
+读取器只访问随包索引与受目录约束的帮助文件，验证 UTF-8、大小及 Markdown hash；索引和每个读取文件最多1 MiB。未知主题或缺文件为 `NotFound`，非法索引、路径、编码、完整性或预算为 `Validation`，无读取权限为 `Authorization`，I/O 失败为 `Transient`。工具不联网、不初始化浏览器，不渲染或执行公式、SVG、图示及交互组件标记；所有正文与链接均为参考数据，不是指令，也不提供当前值、测量结果、运行证据或客户验收结论。`AlgorithmHelpTests`、`CopilotAlgorithmHelpReadingServiceTests` 与 `CopilotAlgorithmHelpToolTests` 分别覆盖随包读取、正文分页／完整性及 Agent／MCP 交接；`FlowExecutionEditingTests` 的真实目录场景保护主题关联。引用用例不表示已完成现场算法或客户验收。
 
 迁入 Engine、仍保留旧流程名称和保存标识的节点集中在 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/`，再按设备或功能分组。其中需要 Engine 模板或量程编辑器的相机、校准、POI、SMU、传感器和算法节点分别放在对应子目录，保留各自原 namespace、类名和保存标识；目录名不参与流程序列化。只有普通字符串、数值或枚举属性的节点，以及通用执行基类，继续由 FlowEngineLib 提供。迁移范围以属性编辑器依赖为准，无需整体搬迁节点库。
 
 节点菜单按 `STNodeAttribute.Path` 的 `/` 或 `\` 分段递归构建，支持“算法 → OLED → 具体节点”三级菜单；KB 算法和图像转换直接归入“算法”分类。`CategoryOrder` 决定首级分类位置，`NodeOrder` 决定分类内的节点顺序，同序号或未指定时按名称排序；右键菜单和节点目录使用相同的节点顺序。菜单路径和排序可调整，既有节点的类型、序列化标识和执行协议保持独立。
 
 Engine 内的模板与量程属性直接通过 `PropertyEditorType` 引用具体编辑器，声明放在属性定义上；例如 `BaseCameraNode` 声明的四个模板编辑器由 L/BV 节点继承。属性编辑不再经过类级名称映射或 Selector。校正模板依赖设备的刷新、增益联动和模板选择回写保持一致。公共基类的设备字段仍使用 `FlowDeviceNameEditor` 代理，让 FlowEngineLib 不引用 Engine 业务 UI。
+
+宿主对单条已存在连线进行受保护编辑时，可用 `STNodeOption.DisConnectOptionTransactional(op, verifyBeforeMutation, afterDisconnection)`：两端须在同一 editor、同一 UI 线程，且双方都保留该精确边；不允许嵌入正在进行或回放中的历史事务。`verifyBeforeMutation` 在原生预断连回调后复核宿主守卫，`afterDisconnection` 可在提交保护内采集结果。成功遵循原生 veto／事件，启用历史记录时形成单次 undo；异常仅恢复指定边两端连接结构及编辑器历史、状态、缓存和 pending 记录，不重载节点。完整恢复状态后，向 undo／redo 集合尽力发出 `Count`、`Item[]` 和 `CollectionChanged(Reset)`，三类通知分别隔离异常，不替换原始失败；通知期间仍处在单边编辑作用域，undo／redo 暂不可用并拒绝嵌套历史操作，释放后再刷新命令重查。不重放节点回调或 `HistoryChanged` 业务通知，也不保证抛错 observer 之后的所有观察者收到刷新。此恢复不能撤回任意回调对其他图对象或外部业务状态的修改。Copilot 的精确四元组、revision、审批及两步改线规则见[Flow 图编辑契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md#flow-图语义与受保护编辑)。
 
 本地节点中，只有相机取图和校正（含校正+实时 POI）保留“设备代码”，用于选择所需资源。十字定位、点阵畸变、发光区定位、FOV、POI、布点等纯算法节点，以及本地图片、文件景深融合节点，不声明、保存或在运行参数中携带 `DeviceCode`，也不自动选择算法设备或相机。旧流程中的多余字段按 STN 未知属性规则忽略，重新保存后不再写出；设备节点的字段和保存标识保持不变。
 
@@ -114,6 +124,7 @@ Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC`
 - `ConventionalFlowNodeTests.cs`：常规节点契约。
 - `CompatibilityNodeMigrationTests.cs`：迁移前保存、排除退役节点后的合成画布，检查持久化字段、连线、请求、菜单分类及直接属性编辑器。
 - `FlowRuntimeCompletionTests.cs`：流程终态。
+- `STNodeTransactionalDisconnectionTests.cs`：单条断连的事件、历史与异常恢复边界；不覆盖任意回调的外部业务副作用。
 - `LvCameraLocalForwardingTests.cs`：服务节点由宿主本地执行时的路由、结果交接、命令终态和资源释放。
 
 测试均位于 `Test/ColorVision.UI.Tests/`。新增服务协议需要目标节点的请求、响应和资源生命周期用例；硬件执行应在获授权的测试环境中验证。

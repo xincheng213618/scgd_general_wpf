@@ -67,7 +67,8 @@ namespace ColorVision.Copilot.Mcp
             {
                 foreach (var parameter in matchedNode.Parameters)
                 {
-                    if (IsSensitiveDisplayKey(parameter.Name))
+                    if (IsSensitiveDisplayKey(parameter.Name) || IsSensitiveDisplayKey(parameter.PropertyName)
+                        || CopilotMcpAuditLogger.IsSensitiveArgumentName(parameter.Name) || CopilotMcpAuditLogger.IsSensitiveArgumentName(parameter.PropertyName))
                         continue;
 
                     var matchingTemplateField = currentRoot.EnumerateObject()
@@ -75,7 +76,7 @@ namespace ColorVision.Copilot.Mcp
                     var relation = matchingTemplateField.Value.ValueKind == JsonValueKind.Undefined
                         ? "node parameter; no same-name top-level template field detected"
                         : "node parameter; same-name top-level template field exists";
-                    lines.Add($"{parameter.Name} (node parameter, value={TrimLong(RedactForDisplay(parameter.Value), 120)}) - {relation}");
+                    lines.Add($"{parameter.Name} (node parameter, value={TrimLong(RedactForDisplay(CopilotFlowParameterRedaction.RedactValue(parameter)), 120)}) - {relation}");
                 }
             }
 

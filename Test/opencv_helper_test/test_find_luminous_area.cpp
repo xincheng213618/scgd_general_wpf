@@ -363,6 +363,29 @@ static cv::Mat createRobustLuminousFixture(
     return image16;
 }
 
+static cv::Mat createHaloLuminousFixture()
+{
+    cv::Mat image(1067, 1600, CV_32F);
+    for (int y = 0; y < image.rows; ++y) {
+        float* row = image.ptr<float>(y);
+        for (int x = 0; x < image.cols; ++x) {
+            const double haloX = (x - 810.0) / 145.0;
+            const double haloY = (y - 420.0) / 100.0;
+            double value = 100.0 + 6000.0 * std::exp(-0.5 * (haloX * haloX + haloY * haloY));
+            if (x >= 651 && x <= 930 && y >= 402 && y <= 668) {
+                const double horizontal = 0.10 + 0.90 * (x - 651.0) / 279.0;
+                const double vertical = 0.30 + 0.70 * (668.0 - y) / 266.0;
+                value += 40000.0 * horizontal * vertical;
+            }
+            row[x] = static_cast<float>(value);
+        }
+    }
+    cv::GaussianBlur(image, image, cv::Size(), 0.8);
+    cv::Mat image16;
+    image.convertTo(image16, CV_16U);
+    return image16;
+}
+
 static double signedFixtureArea(const std::array<cv::Point2f, 4>& corners)
 {
     double area = 0.0;
@@ -734,6 +757,20 @@ bool RunLuminousAreaV2SyntheticTests()
         cv::Point2f(119.0f, 558.0f)
     };
     double cleanConfidence = -1.0;
+
+    const std::array<cv::Point2f, 4> haloExpected{
+        cv::Point2f(651.0f, 402.0f), cv::Point2f(930.0f, 402.0f),
+        cv::Point2f(930.0f, 668.0f), cv::Point2f(651.0f, 668.0f)
+    };
+    json haloOutput;
+    int haloReturnCode = 0;
+    if (!callLuminousV2(createHaloLuminousFixture(), RoiRect{ 0, 0, 0, 0 }, json::object(),
+        haloOutput, haloReturnCode)
+        || !validateLuminousV2Success(haloOutput, haloExpected, 5.0)
+        || hasLuminousV2Warning(haloOutput, "InferredTopSide")) {
+        std::cerr << "V2 halo inference replaced a measured boundary: " << haloOutput.dump() << std::endl;
+        return false;
+    }
 
     for (bool severe : { false, true }) {
         cv::Mat image = createRobustLuminousFixture(920, 680, expected, severe);

@@ -17,9 +17,7 @@ namespace ColorVision.Copilot.Mcp
                 ? rawMaxEvents.GetInt32()
                 : 40;
             var result = await _environment.FlowIncidentInspector(incidentId, maxEvents, cancellationToken);
-            return result.Success
-                ? CopilotMcpToolCallResult.Ok(result.Content)
-                : ToMcpResult(result, "flow_incident_inspection_failed");
+            return ToMcpResult(result, "flow_incident_inspection_failed", contentOnly: true);
         }
     }
 }

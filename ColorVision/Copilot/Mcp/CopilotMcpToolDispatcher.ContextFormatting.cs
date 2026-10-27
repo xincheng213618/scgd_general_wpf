@@ -230,8 +230,11 @@ namespace ColorVision.Copilot.Mcp
                 && SensitiveDisplayTerms.Any(term => key.Contains(term, StringComparison.OrdinalIgnoreCase));
         }
 
-        private static CopilotMcpToolCallResult ToMcpResult(CopilotCapabilityResult result, string errorCode)
+        private static CopilotMcpToolCallResult ToMcpResult(CopilotCapabilityResult result, string errorCode, bool contentOnly = false)
         {
+            if (result.PartialResultMessage == null || !result.Success && !string.IsNullOrWhiteSpace(result.PartialResultMessage))
+                return CopilotMcpToolCallResult.Fail(CopilotMcpToolResultContract.InvalidOutputFailureCode,
+                    "The application capability returned invalid partial-result metadata.", CopilotToolFailureKind.Internal);
             var text = string.Join(Environment.NewLine, new[]
             {
                 result.Summary,
@@ -239,7 +242,7 @@ namespace ColorVision.Copilot.Mcp
             }.Where(value => !string.IsNullOrWhiteSpace(value)));
 
             if (result.Success)
-                return CopilotMcpToolCallResult.Ok(text);
+                return CopilotMcpToolCallResult.Ok(contentOnly ? result.Content : text, result.PartialResultMessage);
 
             return CopilotMcpToolCallResult.Fail(
                 errorCode,
@@ -289,13 +292,16 @@ namespace ColorVision.Copilot.Mcp
                 AppendList(builder, "- Inputs", node.Inputs);
                 AppendList(builder, "- Outputs", node.Outputs);
                 if (node.Parameters.Count > 0)
-                    builder.AppendLine($"- Parameters: {RedactForDisplay(string.Join(", ", node.Parameters.Select(item => $"{item.Name}={item.Value}")))}");
+                    builder.AppendLine($"- Parameters: {RedactForDisplay(FormatFlowParameters(node.Parameters))}");
                 if (!string.IsNullOrWhiteSpace(node.Mark))
                     builder.AppendLine($"- Mark: {node.Mark}");
             }
 
             return builder.ToString().TrimEnd();
         }
+
+        private static string FormatFlowParameters(IReadOnlyList<CopilotContextProperty> properties) => string.Join(", ",
+            properties.Select(item => $"{item.Name}={CopilotFlowParameterRedaction.RedactValue(item)}"));
 
         private static void AppendList(StringBuilder builder, string label, IReadOnlyList<string> values)
         {

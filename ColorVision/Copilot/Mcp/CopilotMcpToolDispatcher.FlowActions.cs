@@ -61,7 +61,7 @@ namespace ColorVision.Copilot.Mcp
                     AppendList(builder, "Node inputs", matchedNode.Inputs);
                     AppendList(builder, "Node outputs", matchedNode.Outputs);
                     if (matchedNode.Parameters.Count > 0)
-                        builder.AppendLine($"Node parameters: {RedactForDisplay(string.Join(", ", matchedNode.Parameters.Select(item => $"{item.Name}={item.Value}")))}");
+                        builder.AppendLine($"Node parameters: {RedactForDisplay(FormatFlowParameters(matchedNode.Parameters))}");
                 }
             }
             else if (!string.IsNullOrWhiteSpace(nodeQuery))

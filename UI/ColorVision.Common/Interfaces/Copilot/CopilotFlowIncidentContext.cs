@@ -53,8 +53,9 @@ namespace ColorVision.UI
                 throw new ArgumentException("A positive incident identifier is required.", nameof(snapshot));
             return "请只读诊断流程事故 incident_id=" + snapshot.IncidentId.ToString(CultureInfo.InvariantCulture)
                 + "。先调用 InspectFlowIncident（MCP: inspect_flow_incident），使用这个精确 ID 读取正式事故、运行、节点尝试与事件证据。"
+                + "若详情 coverage.events_truncated=true 或需要更早事件，使用详情中的精确 run_record_id 调用 InspectFlowRunEvents（MCP: inspect_flow_run_events），按 has_more/next_cursor 原样向更早事件续读；不从当前画布或猜测取得运行 ID。"
                 + "如需历史状态或耗时对照，使用正式详情中的精确 run_record_id 调用 InspectFlowRunHistory（MCP: inspect_flow_run_history）；需要节点对照时使用正式 node_id，不从 SN 或当前画布猜测。仅按实际交付的记录窗口解释结果，不将历史统计或成功参照当作客户 PASS/FAIL 判定。"
-                + "需要配置差异时，从已读运行历史中选取确切的 baseline_run_record_id 与 current_run_record_id，再调用 CompareRecordedFlowTemplates（MCP: compare_recorded_flow_templates），不从当前画布猜测历史配置差异。"
+                + "需要配置差异时，从已读运行历史中选取确切的 baseline_run_record_id 与 current_run_record_id，再调用 CompareRecordedFlowTemplates（MCP: compare_recorded_flow_templates），不从当前画布猜测历史配置差异。若 has_more=true，按需原样传回 next_cursor 并保持两个运行 ID 及顺序续读；首段不能当作全部差异。"
                 + "如需留存模板证据，先取 InspectFlowIncident 返回的 run_record_id，再调用 InspectRecordedFlowTemplate（MCP: inspect_recorded_flow_template），不要从当前画布猜测历史配置。"
                 + "InspectFlowGraph（MCP: get_flow_graph）只显示当前画布，不能作为该历史运行的节点参数或连线证据。"
                 + "留存模板快照也不保证包含运行前未保存的画布修改，不能单凭快照 ID、版本或 hash 宣称与实际运行画布一致。"

@@ -148,8 +148,11 @@ public sealed class CopilotToolResultContractTests
         AssertInvalid(captured, "WebSearch");
     }
 
-    [Fact]
-    public void CaptureKeepsTheExistingSuccessfulAwaitingApprovalShape()
+    [Theory]
+    [InlineData("", true)]
+    [InlineData(" \t", true)]
+    [InlineData("Additional evidence remains unread.", false)]
+    public void CaptureValidatesCoverageMetadataOnAwaitingApprovalResults(string partialResultMessage, bool valid)
     {
         var approval = new CopilotToolApprovalInfo
         {
@@ -166,8 +169,16 @@ public sealed class CopilotToolResultContractTests
                 Success = true,
                 Summary = "Waiting for approval.",
                 Approval = approval,
+                PartialResultMessage = partialResultMessage,
             });
 
+        if (!valid)
+        {
+            AssertInvalid(captured, "ProtectedTool");
+            Assert.Empty(captured.PartialResultMessage);
+            Assert.Null(captured.Approval);
+            return;
+        }
         Assert.True(captured.Success);
         Assert.NotNull(captured.Approval);
         Assert.Equal("action-1", captured.Approval.ActionId);

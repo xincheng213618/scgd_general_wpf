@@ -22,6 +22,7 @@ namespace ColorVision.Copilot.Mcp
             {
                 Success = result.Success,
                 Text = result.Text,
+                PartialResultMessage = CopilotMcpAuditLogger.RedactText(result.PartialResultMessage),
                 ErrorCode = result.ErrorCode,
                 FailureKind = result.FailureKind,
                 RequiresApproval = result.RequiresApproval,
@@ -39,6 +40,7 @@ namespace ColorVision.Copilot.Mcp
             out string violation)
         {
             if (result.Text == null
+                || result.PartialResultMessage == null
                 || result.ErrorCode == null
                 || result.ApprovalActionId == null
                 || result.ApprovalTitle == null
@@ -48,6 +50,8 @@ namespace ColorVision.Copilot.Mcp
             }
             if (!Enum.IsDefined(result.FailureKind))
                 return Fail("the failure kind is invalid", out violation);
+            if (!result.Success && !string.IsNullOrWhiteSpace(result.PartialResultMessage))
+                return Fail("partial-result metadata requires a completed successful result", out violation);
 
             if (result.Success)
             {

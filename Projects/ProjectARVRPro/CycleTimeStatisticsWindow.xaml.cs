@@ -1889,6 +1889,14 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
             contextMenu.Items.Add(new MenuItem { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
             contextMenu.Items.Add(new MenuItem { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
+            contextMenu.Items.Add(new MenuItem
+            {
+                Header = LocalizedText.Get("算法实证"),
+                Command = new RelayCommand(_ =>
+                    new AlgorithmEvidence.AlgorithmEvidenceWindow(detailGrid.Items.OfType<ProjectARVRReuslt>().ToArray(),
+                        (detailGrid.SelectedItem as ProjectARVRReuslt)?.Id) { Owner = this }.Show(),
+                    _ => _offlineSource == null && detailGrid.SelectedItem is ProjectARVRReuslt)
+            });
             contextMenu.Opened += (_, _) => CommandManager.InvalidateRequerySuggested();
 
             detailGrid.PreviewMouseRightButtonDown += (_, e) =>

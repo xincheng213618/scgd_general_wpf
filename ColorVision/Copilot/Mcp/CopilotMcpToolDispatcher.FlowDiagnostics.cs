@@ -82,7 +82,7 @@ namespace ColorVision.Copilot.Mcp
                 builder.AppendLine($"- Selected: {matchedNode.IsSelected}");
                 builder.AppendLine($"- Mark: {EmptyLabel(matchedNode.Mark)}");
                 if (matchedNode.Parameters.Count > 0)
-                    builder.AppendLine($"- Parameters: {RedactForDisplay(string.Join(", ", matchedNode.Parameters.Select(item => $"{item.Name}={item.Value}")))}");
+                    builder.AppendLine($"- Parameters: {RedactForDisplay(FormatFlowParameters(matchedNode.Parameters))}");
             }
 
             builder.AppendLine();

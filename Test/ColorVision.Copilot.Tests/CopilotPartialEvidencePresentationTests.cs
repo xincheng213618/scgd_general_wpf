@@ -1,3 +1,8 @@
+using ColorVision.Copilot.Mcp;
+using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.FlowProcessing.PostProcess;
+using ColorVision.Engine.Services.FlowDiagnostics;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.IO;
@@ -60,6 +65,64 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
         Assert.Equal(entry.ActivityLabel, restored.ActivityLabel);
         Assert.Contains(entry.PartialResultMessage, restored.DiagnosticDetails);
         Assert.False(restored.EnsureValid(DateTimeOffset.UtcNow));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ApplicationBusinessCoverageSurvivesTheSharedRouteAndRecoveredActivity(bool hasMore)
+    {
+        var sourcePage = new FlowRunQueryPage([new FlowRunRecord
+        {
+            Id = 42, FlowKey = "flow-a", FlowName = "Partial is an ordinary recorded label",
+            Status = FlowStatus.Completed, FinalOutcome = FlowFinalOutcome.Succeeded, ElapsedMs = 1000,
+        }], hasMore, false, new string('a', 64));
+        var service = new CopilotFlowRunQueryService((_, _, _, _) => Task.FromResult(sourcePage));
+        CopilotCapabilityResult? produced = null;
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot(),
+            FlowRunQueryProvider = async (key, maximum, cursor, token) =>
+            {
+                var page = await service.ListAsync(key, maximum, cursor, token);
+                produced = page;
+                return page;
+            },
+        });
+        var tool = new CopilotListFlowRunsTool(dispatcher);
+        var result = CopilotToolResultContract.Capture(tool.Name, await tool.ExecuteAsync(new()
+        {
+            Mode = CopilotAgentMode.Diagnose, UserText = "Inspect retained runs.",
+            ConversationId = "business-coverage", TaskId = "business-coverage-task",
+        }, CopilotAgentToolInput.Empty, CancellationToken.None));
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.NotNull(produced);
+        Assert.Equal(produced.Content, result.Content);
+        Assert.Equal(produced.PartialResultMessage, result.PartialResultMessage);
+        Assert.Equal(hasMore, !string.IsNullOrWhiteSpace(result.PartialResultMessage));
+        var observation = CopilotToolObservation.FromResult(result);
+        var snapshot = new CopilotAgentRunResult
+        {
+            StepRecords = [new() { Observation = observation, ModelObservation = observation }],
+        };
+        Assert.Equal(result.PartialResultMessage, snapshot.StepRecords[0].Observation.PartialResultMessage);
+        Assert.Equal(result.PartialResultMessage, snapshot.StepRecords[0].ModelObservation!.PartialResultMessage);
+        var entry = CreateEntry(result);
+        var restored = JsonConvert.DeserializeObject<CopilotAgentTraceEntry>(JsonConvert.SerializeObject(entry))!;
+        restored.EnsureValid(DateTimeOffset.UtcNow);
+        Assert.Equal(hasMore, restored.HasPartialResult);
+        Assert.Equal(result.PartialResultMessage, restored.PartialResultMessage);
+        if (hasMore)
+        {
+            Assert.Contains("结果不完整", restored.ActivityLabel);
+            Assert.Equal(result.PartialResultMessage, restored.ActivityDescription);
+        }
+        else
+        {
+            Assert.DoesNotContain("结果不完整", restored.ActivityLabel);
+            Assert.Equal("✓", restored.ActivityGlyph);
+        }
     }
 
     [Theory]

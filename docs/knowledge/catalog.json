@@ -2145,14 +2145,24 @@
         "Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs",
         "UI/ColorVision.ImageEditor/EditorTools/AppCommand/ZoomEditorToolContextMenu.cs",
         "UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs",
-        "ColorVision/Copilot/Agent/CopilotMcpToolAdapter.cs"
+        "ColorVision/Copilot/Agent/CopilotMcpToolAdapter.cs",
+        "Engine/ColorVision.Engine/Services/CopilotDeviceContextFactory.cs",
+        "Engine/ColorVision.Engine/Dao/MeasureBatchPage.xaml.cs",
+        "Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs",
+        "Engine/ColorVision.Engine/Dao/CopilotMeasurementResultContextProvider.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotExternalMcpRefreshTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotToolExecutionHookIntegrityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPermissionRequestHookTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatSourceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatContextTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceDiagnosisHeartbeatWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsSourceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultReferenceContextTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2384,7 +2394,24 @@
         "InspectRecordedFlowTemplate",
         "inspect_recorded_flow_template",
         "InspectFlowRunHistory",
-        "inspect_flow_run_history"
+        "inspect_flow_run_history",
+        "CompareRecordedFlowTemplates",
+        "compare_recorded_flow_templates",
+        "留存流程配置差异",
+        "ReadAlgorithmHelp",
+        "read_algorithm_help",
+        "InspectFlowRunEvents",
+        "inspect_flow_run_events",
+        "ValidateFlowGraph",
+        "validate_flow_graph",
+        "ListFlowRuns",
+        "list_flow_runs",
+        "InspectFlowRunAttempts",
+        "inspect_flow_run_attempts",
+        "InspectDeviceServices",
+        "inspect_device_services",
+        "InspectLoadedBatchResults",
+        "inspect_loaded_batch_results"
       ],
       "code_paths": [
         "ColorVision/Copilot/Mcp",
@@ -2398,7 +2425,18 @@
         "ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowIncidentsTool.cs",
         "Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowIncidentInspectionReader.cs",
         "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectRecordedFlowTemplateTool.cs",
-        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunHistoryTool.cs"
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunHistoryTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotCompareRecordedFlowTemplatesTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotReadAlgorithmHelpTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunEventsTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotValidateFlowGraphTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowRunsTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunAttemptsTool.cs",
+        "Engine/ColorVision.Engine/Services/CopilotDeviceServicesReader.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectDeviceServicesTool.cs",
+        "Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectLoadedBatchResultsTool.cs",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs",
@@ -2417,7 +2455,44 @@
         "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateGraphTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistorySourceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryServiceTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryToolTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonGraphTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpReadingServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunEventsToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunEventSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunEventServiceTests.cs",
+        "Test/ColorVision.UI.Tests/FlowValidatorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphValidationToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphValidationServiceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowNodePropertyCatalogTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowNodeCatalogMetadataToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphPaginationToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphInspectionServiceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowParameterIdentityTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowDisconnectionHostTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowDisconnectionToolTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowDisconnectionTests.cs",
+        "Test/ColorVision.UI.Tests/STNodeTransactionalDisconnectionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunDiscoveryWorkflowTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMcpPartialResultContractTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityCatalogTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptsToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsToolTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultReferenceContextTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2428,7 +2503,8 @@
       ],
       "code_scopes": [
         "ColorVision/Copilot",
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Common"
       ],
       "domain": "copilot",
       "title": "ColorVision 本地 MCP",
@@ -2689,7 +2765,13 @@
         "SearchFlowNodeCatalog",
         "PreviewFlowPatch",
         "ApplyFlowPatch",
-        "colorvision-flow-authoring"
+        "colorvision-flow-authoring",
+        "ValidateFlowGraph",
+        "validate_flow_graph",
+        "当前流程静态校验",
+        "断开连线",
+        "disconnect",
+        "改线"
       ],
       "code_paths": [
         "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.ApplicationPanels.cs",
@@ -2730,7 +2812,46 @@
         "ColorVision/Copilot/Agent/Tools/Application/CopilotApplyTemplatePatchTool.cs",
         "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.Confirmation.cs",
         "ColorVision/Copilot/Mcp/CopilotMcpToolModels.cs",
-        "Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs"
+        "Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowValidator.cs",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotFlowValidationSnapshot.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowGraphValidationService.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.FlowGraphValidation.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowGraphValidation.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotValidateFlowGraphTool.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowGraphInspectionService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowGraphInspectionService.Cursor.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRead.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowGraphInspectionService.Format.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeOption.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeEditor.Edit.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowParameterRedaction.cs",
+        "ColorVision/Copilot/Mcp/CopilotFlowPatchPreviewFormatter.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.ContextFormatting.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.DiagnosticsFormatting.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpAuditLogger.cs",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotSensitiveTextRedactor.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowRunsTool.cs",
+        "ColorVision/Copilot/Skills/colorvision-flow-diagnostics",
+        "ColorVision/Copilot/Capabilities/CopilotApplicationCapabilityInvoker.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolResultContract.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.Invocation.cs",
+        "ColorVision/Copilot/Agent/CopilotToolResultContract.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunAttemptsTool.cs",
+        "Engine/ColorVision.Engine/Services/CopilotDeviceServicesReader.cs",
+        "ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.Cursor.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectDeviceServicesTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.DeviceServices.cs",
+        "Engine/ColorVision.Engine/Services/CopilotDeviceContextFactory.cs",
+        "Engine/ColorVision.Engine/Services/DeviceService.cs",
+        "Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs",
+        "ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.Cursor.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectLoadedBatchResultsTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.LoadedBatchResults.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.LoadedBatchResults.cs",
+        "ColorVision/Copilot/Skills/colorvision-database-operations/SKILL.md"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotBatchImageCancellationEvidenceTests.cs",
@@ -2750,7 +2871,46 @@
         "Test/ColorVision.Copilot.Tests/CopilotAutomaticApprovalOverrideTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPlanModeTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs",
+        "Test/ColorVision.UI.Tests/FlowValidatorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphValidationToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphValidationServiceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowNodePropertyCatalogTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowNodeCatalogMetadataToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphPaginationToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowGraphInspectionServiceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowParameterIdentityTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowDisconnectionHostTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowDisconnectionToolTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowDisconnectionTests.cs",
+        "Test/ColorVision.UI.Tests/STNodeTransactionalDisconnectionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowPatchParameterPrivacyTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowSensitivePropertyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowParameterRedactionTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowPreviewPrivacyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowPropertyApprovalPrivacyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotCredentialNamePolicyTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotContextTextPrivacyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotSharedTextRedactionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotTextArchivePolicyTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowLogProjectionPrivacyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunDiscoveryWorkflowTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMcpPartialResultContractTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityCatalogTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptsToolTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceServicesSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatSourceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatContextTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceDiagnosisHeartbeatWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsToolTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultReferenceContextTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2763,6 +2923,7 @@
       "code_scopes": [
         "ColorVision/Copilot",
         "Engine/ColorVision.Engine",
+        "Engine/ST.Library.UI",
         "UI/ColorVision.Common"
       ],
       "domain": "copilot",
@@ -4854,7 +5015,14 @@
         "ViewCamera",
         "ViewSpectrum",
         "AlgorithmView",
-        "ViewCalibration"
+        "ViewCalibration",
+        "InspectDeviceServices",
+        "inspect_device_services",
+        "已加载设备目录",
+        "设备缓存状态",
+        "HeartbeatObservationKnown",
+        "UnknownDevices",
+        "心跳未观测"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Dao/SysResourceModel.cs",
@@ -4890,10 +5058,26 @@
         "UI/ColorVision.UI/DisPlayControlPanel.cs",
         "UI/ColorVision.UI/Docking/DockPanelTitleAction.cs",
         "UI/ColorVision.UI/Views/DockViewManager.cs",
-        "UI/ColorVision.Solution/Workspace/DockViewManager.cs"
+        "UI/ColorVision.Solution/Workspace/DockViewManager.cs",
+        "Engine/ColorVision.Engine/Services/CopilotDeviceServicesReader.cs",
+        "ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotDeviceServicesInspectionService.Cursor.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectDeviceServicesTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.DeviceServices.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.DeviceServices.cs",
+        "ColorVision/Copilot/Skills/colorvision-flow-diagnostics/references/checklist.md",
+        "Engine/ColorVision.Engine/Services/CopilotDeviceContextFactory.cs",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs"
+        "Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceServicesSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeviceServicesWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatSourceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceHeartbeatContextTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotDeviceDiagnosisHeartbeatWorkflowTests.cs"
       ],
       "related": [
         "engine.index",
@@ -4914,7 +5098,9 @@
         "ui.database"
       ],
       "code_scopes": [
+        "ColorVision/Copilot",
         "Engine/ColorVision.Engine",
+        "UI/ColorVision.Common",
         "UI/ColorVision.Database",
         "UI/ColorVision.Solution",
         "UI/ColorVision.UI"
@@ -5616,7 +5802,7 @@
       "knowledge_id": "engine.results",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。",
+      "summary": "算法结果交接、已加载批次主记录查询与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出，保留来源与文档/revision 生命周期。",
       "aliases": [
         "结果交接",
         "算法结果管理",
@@ -5647,7 +5833,11 @@
         "本地算法结果叠加",
         "AlgorithmOverlayRenderer",
         "AlgorithmGeometryArtifact",
-        "AlgorithmOverlayArtifact"
+        "AlgorithmOverlayArtifact",
+        "批次详情",
+        "已加载批次结果",
+        "InspectLoadedBatchResults",
+        "inspect_loaded_batch_results"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs",
@@ -5669,7 +5859,18 @@
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs",
         "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
-        "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs"
+        "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs",
+        "Engine/ColorVision.Engine/Dao/MeasureBatchPage.xaml.cs",
+        "Engine/ColorVision.Engine/Dao/CopilotLoadedBatchResultsReader.cs",
+        "Engine/ColorVision.Engine/Dao/CopilotMeasurementResultContextProvider.cs",
+        "Engine/ColorVision.Engine/Services/Core/ViewResultImage.cs",
+        "ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotLoadedBatchResultsInspectionService.Cursor.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectLoadedBatchResultsTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolEnvironment.LoadedBatchResults.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.LoadedBatchResults.cs",
+        "ColorVision/Copilot/Skills/colorvision-database-operations/SKILL.md",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs",
@@ -5678,7 +5879,12 @@
         "Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmResultImageDimensionsTests.cs",
         "Test/ColorVision.UI.Tests/ResultMessageBusTests.cs",
-        "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs"
+        "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsWorkflowTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultsSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLoadedBatchResultsToolTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotLoadedBatchResultReferenceContextTests.cs"
       ],
       "related": [
         "engine.index",
@@ -5691,8 +5897,10 @@
         "algorithms.arvr"
       ],
       "code_scopes": [
+        "ColorVision/Copilot",
         "Engine/ColorVision.Engine",
         "UI/ColorVision.Algorithms",
+        "UI/ColorVision.Common",
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
@@ -6047,7 +6255,19 @@
         "留存流程模板",
         "InspectFlowRunHistory",
         "inspect_flow_run_history",
-        "流程运行历史对照"
+        "流程运行历史对照",
+        "CompareRecordedFlowTemplates",
+        "compare_recorded_flow_templates",
+        "留存流程配置差异",
+        "InspectFlowRunEvents",
+        "inspect_flow_run_events",
+        "流程运行事件续读",
+        "ListFlowRuns",
+        "list_flow_runs",
+        "留存流程运行发现",
+        "InspectFlowRunAttempts",
+        "inspect_flow_run_attempts",
+        "运行节点尝试续读"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowAnalysisDataSource.cs",
@@ -6093,7 +6313,29 @@
         "ColorVision/Copilot/Capabilities/CopilotFlowRunHistoryInspectionService.cs",
         "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunHistoryTool.cs",
         "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunHistory.cs",
-        "Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowJournalHashSql.cs"
+        "Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowJournalHashSql.cs",
+        "Engine/ColorVision.Engine/Services/FlowDiagnostics/RecordedFlowTemplateComparer.cs",
+        "ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateComparisonService.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotCompareRecordedFlowTemplatesTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.RecordedFlowTemplateComparison.cs",
+        "ColorVision/Copilot/Capabilities/CopilotRecordedFlowTemplateComparisonService.Cursor.cs",
+        "Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRunEventReader.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowRunEventInspectionService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowRunEventInspectionService.Cursor.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunEventsTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunEvents.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotSensitiveTextRedactor.cs",
+        "Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRunQueryReader.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowRunQueryService.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotListFlowRunsTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRuns.cs",
+        "ColorVision/Copilot/Skills/colorvision-flow-diagnostics",
+        "Engine/ColorVision.Engine/Services/FlowDiagnostics/FlowRunAttemptReader.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowRunAttemptInspectionService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowRunAttemptInspectionService.Cursor.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotInspectFlowRunAttemptsTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRunAttempts.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowExecutionJournalTests.cs",
@@ -6116,7 +6358,23 @@
         "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateGraphTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistorySourceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryServiceTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryToolTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunHistoryToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonGraphTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRecordedFlowTemplateComparisonServiceTests.Pagination.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunEventsToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunEventSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunEventServiceTests.cs",
+        "Test/ColorVision.UI.Tests/CopilotFlowLogProjectionPrivacyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunQuerySourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunQueryToolTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunDiscoveryWorkflowTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptSourceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFlowRunAttemptsToolTests.cs"
       ],
       "related": [
         "flow.session",
@@ -6293,7 +6551,14 @@
         "LocalFlowNodeBase",
         "CVStartCFC输入快照",
         "getBaseEventData",
-        "CVEndNode"
+        "CVEndNode",
+        "离线算法帮助",
+        "AlgorithmHelpCatalog",
+        "ReadAlgorithmHelp",
+        "read_algorithm_help",
+        "algorithmHelpTopicId",
+        "DisConnectOptionTransactional",
+        "单条连线事务"
       ],
       "code_paths": [
         "Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs",
@@ -6312,7 +6577,17 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility",
         "Engine/FlowEngineLib/FlowNodeDocumentationAttribute.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeDocumentationPresenter.cs",
-        "UI/ColorVision.UI.Desktop/Help"
+        "UI/ColorVision.UI.Desktop/Help",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs",
+        "ColorVision/Copilot/Capabilities/CopilotAlgorithmHelpReadingService.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotReadAlgorithmHelpTool.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.AlgorithmHelp.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowRead.cs",
+        "docs/.vitepress/scripts/algorithm-help.mjs",
+        "docs/.vitepress/algorithm-help/sources.json",
+        "Engine/ST.Library.UI/NodeEditor/STNodeOption.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeEditor.Edit.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
@@ -6322,7 +6597,13 @@
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs",
         "Test/ColorVision.UI.Tests/LocalCleanupNodeTests.cs",
         "Test/ColorVision.UI.Tests/FolderSizePreProcessorTests.cs",
-        "Test/ColorVision.UI.Tests/AlgorithmHelpTests.cs"
+        "Test/ColorVision.UI.Tests/AlgorithmHelpTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpReadingServiceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAlgorithmHelpToolTests.cs",
+        "Test/ColorVision.UI.Tests/FlowExecutionEditingTests.cs",
+        "docs/.vitepress/scripts/algorithm-help.test.mjs",
+        "Test/ColorVision.UI.Tests/CopilotFlowDisconnectionTests.cs",
+        "Test/ColorVision.UI.Tests/STNodeTransactionalDisconnectionTests.cs"
       ],
       "related": [
         "platform.extensibility",
@@ -6331,10 +6612,13 @@
         "ui.property-grid"
       ],
       "code_scopes": [
+        "ColorVision/Copilot",
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
         "Engine/ST.Library.UI",
-        "UI/ColorVision.UI.Desktop"
+        "UI/ColorVision.Common",
+        "UI/ColorVision.UI.Desktop",
+        "docs/.vitepress"
       ],
       "domain": "flow",
       "title": "FlowEngineLib 节点扩展",
@@ -9420,7 +9704,9 @@
         "结果统计",
         "统计日期记忆",
         "CycleTimeStatisticsWindow",
-        "ARVR 项目"
+        "ARVR 项目",
+        "算法实证",
+        "同图算法比对"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro/Offline",
@@ -9442,7 +9728,9 @@
         "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml",
         "Projects/ProjectARVRPro/ResultStatistics.cs",
         "Projects/ProjectARVRPro/ResultTimeline.cs",
-        "Projects/ProjectARVRPro/ProjectARVRProConfig.cs"
+        "Projects/ProjectARVRPro/ProjectARVRProConfig.cs",
+        "Projects/ProjectARVRPro/AlgorithmEvidence",
+        "UI/ColorVision.ImageEditor/Algorithms/Evidence"
       ],
       "test_paths": [
         "Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs",
@@ -9453,7 +9741,8 @@
         "Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs",
         "Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs",
         "Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs",
-        "Test/ProjectARVRPro.Tests/OfflineFileMaintenanceTests.cs"
+        "Test/ProjectARVRPro.Tests/OfflineFileMaintenanceTests.cs",
+        "Test/ProjectARVRPro.Tests/AlgorithmEvidenceTests.cs"
       ],
       "related": [
         "projects.index",
@@ -9464,7 +9753,8 @@
         "projects.capabilities"
       ],
       "code_scopes": [
-        "Projects/ProjectARVRPro"
+        "Projects/ProjectARVRPro",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "projects",
       "title": "ProjectARVRPro",
@@ -12430,12 +12720,14 @@
         "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs",
         "UI/ColorVision.UI/AssemblyHandler.cs",
         "ColorVision/App.xaml.cs",
+        "ColorVision/Wizards/ApplicationUpdateWizardStep.cs",
         "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs",
         "ColorVision/Wizards/CameraDriverWizardStep.cs",
         "ColorVision/ToolPlugins/CameraDriver",
         "Engine/ColorVision.Engine/Services/Devices/Camera/CameraDriverInstallationService.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ApplicationUpdateWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/CameraDriverWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs"

@@ -92,6 +92,10 @@ namespace ColorVision.Copilot
         {
             if (InheritsCameraDefaults(toolInput))
                 throw new InvalidOperationException("Inherited camera settings require asynchronous preview validation before approval.");
+            if (IsDisconnection(toolInput))
+                throw new InvalidOperationException("Flow disconnection requires asynchronous preview validation before approval.");
+            if (IsPropertyChange(toolInput))
+                throw new InvalidOperationException("Flow property changes require asynchronous preview validation before approval.");
             return BuildApprovalPresentation(toolInput);
         }
 
@@ -101,9 +105,12 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(toolInput);
             cancellationToken.ThrowIfCancellationRequested();
             var presentation = BuildApprovalPresentation(toolInput);
-            if (!InheritsCameraDefaults(toolInput))
+            var inheritsCameraDefaults = InheritsCameraDefaults(toolInput);
+            var isDisconnection = IsDisconnection(toolInput);
+            var isPropertyChange = IsPropertyChange(toolInput);
+            if (!inheritsCameraDefaults && !isDisconnection && !isPropertyChange)
                 return presentation;
-            if (string.IsNullOrWhiteSpace(toolInput.GetStringArgument("camera_defaults_fingerprint")))
+            if (inheritsCameraDefaults && string.IsNullOrWhiteSpace(toolInput.GetStringArgument("camera_defaults_fingerprint")))
                 throw new InvalidOperationException("Preview the camera node and pass its camera_defaults_fingerprint before requesting approval.");
 
             var preview = await CopilotApplicationCapabilityInvocation.InvokeAsync(
@@ -115,13 +122,19 @@ namespace ColorVision.Copilot
                 cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (!preview.Success || preview.IsApprovalRequired)
-                throw new InvalidOperationException($"Camera settings preview failed: {preview.Content}");
+                throw new InvalidOperationException($"{(isDisconnection ? "Flow disconnection" : isPropertyChange ? "Flow property change" : "Camera settings")} preview failed: {preview.Content}");
             return presentation with
             {
-                Description = presentation.Description + "\n将继承预览中的相机采集参数；参数变化后需要重新预览。",
+                Description = inheritsCameraDefaults ? presentation.Description + "\n将继承预览中的相机采集参数；参数变化后需要重新预览。" : presentation.Description,
                 ReviewDetails = CopilotApprovalReviewTextEncoder.Encode(preview.Content),
             };
         }
+
+        private static bool IsDisconnection(CopilotAgentToolInput? toolInput) =>
+            string.Equals(toolInput?.GetStringArgument("operation"), "disconnect", StringComparison.Ordinal);
+
+        private static bool IsPropertyChange(CopilotAgentToolInput? toolInput) =>
+            string.Equals(toolInput?.GetStringArgument("operation"), "set_property", StringComparison.Ordinal);
 
         private static bool InheritsCameraDefaults(CopilotAgentToolInput? toolInput)
         {
@@ -138,6 +151,7 @@ namespace ColorVision.Copilot
                 "add_node" => $"类型：{GetArgument(arguments, "type_key")}\n位置：({GetArgument(arguments, "left")}, {GetArgument(arguments, "top")})",
                 "set_property" => $"节点：{GetArgument(arguments, "node_id")}\n属性：{GetArgument(arguments, "property_name")}\n新值：{CopilotMcpAuditLogger.RedactArgument(GetArgument(arguments, "property_name")?.ToString() ?? string.Empty, GetArgument(arguments, "value")?.ToString())}",
                 "connect" => $"连接：{GetArgument(arguments, "source_node_id")}/{GetArgument(arguments, "source_port_id")} → {GetArgument(arguments, "target_node_id")}/{GetArgument(arguments, "target_port_id")}",
+                "disconnect" => $"断开连接：{GetArgument(arguments, "source_node_id")}/{GetArgument(arguments, "source_port_id")} → {GetArgument(arguments, "target_node_id")}/{GetArgument(arguments, "target_port_id")}",
                 _ => "未知操作",
             };
             return new CopilotToolApprovalPresentation("应用 Flow 图修改", $"操作：{operation}\n{detail}\n不会自动保存或运行流程。");
