@@ -23,6 +23,8 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 `CameraNativeLibrary` 为本程序集的所有 `cvCamera.dll` P/Invoke 注册统一解析器，在首次调用时优先查找托管程序集旁、其次宿主旁的 `runtimes/win-x64/native/`，再兼容按 RID 发布时平铺到程序集或宿主旁的 native 资产。加载前通过 `SetDllDirectoryW` 将实际目录设为当前进程的 DLL 搜索目录，覆盖 SCGDCamLayer 等旧 SDK 在稍后调用 `LoadLibrary` 按名称加载依赖的行为；这会取代宿主先前设置的单一 DLL 搜索目录，宿主在设备运行期间不得覆盖它。不更改系统或用户 `PATH`，不连接或枚举设备；缺少文件、依赖或架构不匹配仍由加载异常报告。原生 DLL、导出和许可证构建无需随本次目录调整而替换。
 
+传感器业务通过 Engine 的 `LocalSensorSession` 使用 C# TCP/串口实现，保留 MQTT 服务模式，不依赖旧 `cvColorVision.SensorComm` P/Invoke 类。该旧类型与配套内部版 DLL 的旧传感器/TCP 服务导出已退役；仍引用这些公共入口的外部插件需要迁移并重新编译，不能直接使用新的绑定程序集或原生 DLL。PG 绑定仍使用 `Communicate_Type`，其命名空间、类型名与枚举值保持兼容；相机继电器所需的五个串口函数仅作为原生内部实现保留。配套 DLL 同时退役了未使用的 `CalGamut`、`GetMAKETYPE`、`XYZ2xyuv`、`CheckLedJudge`，仍依赖它们的旧调用方也需先迁移。源码清理不代表已更新交付 DLL。
+
 电机控制器 `FOCUS_COMMUN` 与原生及已有配置的数值保持一致：`VID_SERIAL=0`、`CANON_SERIAL=1`、`NED_SERIAL=2`、`LONGFOOT_SERIAL=3`、`TSM_SERIAL=4`、`SV6100=5`。`InitCom` / `CM_InitComEx` 的首参对应原生 `HANDLE&`，C# 必须传 `ref IntPtr` 接收独立电机句柄，不能传相机管理器句柄，也不能把整数状态码当句柄。旧调用方需要按此签名重新编译；新增类型需要配套 DLL，选择项存在不证明串口通信已验收。本地相机会话通过 `CM_InitComEx` 创建电机、下发配置，通过 `CM_ShutDown` 释放；托管适配器串行进入原生电机注册表，避免不同相机对未加锁的原生句柄表并发访问。
 
 `CM_EvaluateFocus(HANDLE, EvaFunc, double&)` 是本地对焦使用的同步单帧评价入口，成功为 1，失败保留采集错误码或返回对应的平台错误；失败不写输出。它只采集 RAW 并调用既有原生清晰度算法，不移动电机、不创建异步线程或保存图像。已通过现有 `CM_AutoFocusCallBackEx` 注册过程预览时，评价成功后同步借出同一 RAW 帧，回调返回后原生帧即释放，不额外取图；失败不发预览。Engine 在回调期间复制为独立显示快照，并在每次评价结束的 finally 中注销回调，委托保活至注销完成；显示错误不跨越原生边界，也不改变有效的清晰度结果。回调为 `int32/StdCall`，像素指针仅在调用期间有效。Live 模式、未打开的相机和未知评价类型会失败。移动、搜索范围、超时和句柄生命周期由 Engine 的本地相机会话管理，不通过遗留 `CM_CalcAutoFocus` / `CM_GetAutoFocus` 启动后台搜索；服务模式仍保留既有异步入口。
