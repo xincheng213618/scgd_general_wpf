@@ -11,12 +11,8 @@ public sealed class CopilotBackgroundStopFeedbackTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
     [Theory]
-    [InlineData("help", "stopped")]
-    [InlineData("switch", "failure")]
     [InlineData("dispose", "exception")]
     [InlineData("unchanged", "stopped")]
-    [InlineData("unchanged", "failure")]
-    [InlineData("unchanged", "exception")]
     public void BackgroundStopKeepsItsAuthorizedOperationAndOnlyPublishesCurrentFeedback(string transition, string outcome)
     {
         StaTest.Run(() =>

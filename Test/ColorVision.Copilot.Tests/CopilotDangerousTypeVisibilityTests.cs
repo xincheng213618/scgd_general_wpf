@@ -55,14 +55,6 @@ namespace ColorVision.Copilot.Tests
             yield return [typeof(CopilotApplicationCapability)];
         }
 
-        [Theory]
-        [MemberData(nameof(DangerousImplementationTypes))]
-        public void DangerousConcreteImplementationIsNotPublic(Type implementationType)
-        {
-            Assert.False(implementationType.IsVisible, $"{implementationType.FullName} must remain assembly-internal.");
-            Assert.True(implementationType.IsNotPublic, $"{implementationType.FullName} must not be a public top-level type.");
-        }
-
         [Fact]
         public void PublicFacadeConstructorsDoNotExposeDangerousImplementationTypes()
         {

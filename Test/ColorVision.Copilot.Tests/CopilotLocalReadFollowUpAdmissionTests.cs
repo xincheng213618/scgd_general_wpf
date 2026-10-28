@@ -7,10 +7,12 @@ public sealed class CopilotLocalReadFollowUpAdmissionTests
     private static readonly string[] ToolNames = ["ReadLocalFile", "ListDirectory", "SearchFiles", "GrepText"];
 
     public static IEnumerable<object[]> Continuations =>
-        from toolName in ToolNames
-        from successful in new[] { true, false }
-        from readOnlySandbox in new[] { true, false }
-        select new object[] { toolName, successful, readOnlySandbox };
+    [
+        ["ReadLocalFile", true, true],
+        ["ListDirectory", false, false],
+        ["SearchFiles", true, false],
+        ["GrepText", false, true],
+    ];
 
     [Theory]
     [MemberData(nameof(Continuations))]

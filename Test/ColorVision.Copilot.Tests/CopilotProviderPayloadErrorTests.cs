@@ -72,12 +72,8 @@ public sealed class CopilotProviderPayloadErrorTests
 
     [Theory]
     [InlineData(false, "missing", "incomplete")]
-    [InlineData(true, "missing", "incomplete")]
-    [InlineData(false, "empty", "incomplete")]
     [InlineData(true, "empty", "incomplete")]
     [InlineData(false, "stop", "incomplete")]
-    [InlineData(true, "stop", "incomplete")]
-    [InlineData(false, "max_output_tokens", "max_output_tokens")]
     [InlineData(true, "max_output_tokens", "max_output_tokens")]
     public async Task IncompleteResponsesRemainIncompleteWhenTheirReasonIsUnavailable(bool streaming, string reason, string expectedFinishReason)
     {

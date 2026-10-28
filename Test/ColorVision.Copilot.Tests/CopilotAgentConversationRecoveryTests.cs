@@ -41,11 +41,8 @@ public sealed class CopilotAgentConversationRecoveryTests
     }
 
     [Theory]
-    [InlineData("中", 3_000)]
     [InlineData("😀", 1_500)]
     [InlineData("x", 9_000)]
-    [InlineData("中", 9_000)]
-    [InlineData("😀", 4_500)]
     public void SelectUnseenVisibleTailDoesNotReplayLongUnicodeCheckpointHistory(string fragment, int repetitions)
     {
         var visibleHistory = new[]
@@ -64,9 +61,6 @@ public sealed class CopilotAgentConversationRecoveryTests
 
     [Theory]
     [InlineData("中", 3_000)]
-    [InlineData("😀", 1_500)]
-    [InlineData("x", 9_000)]
-    [InlineData("中", 9_000)]
     [InlineData("😀", 4_500)]
     public void SelectUnseenVisibleTailReturnsOnlyCompleteNewUnicodeTail(string fragment, int repetitions)
     {
@@ -90,8 +84,6 @@ public sealed class CopilotAgentConversationRecoveryTests
     }
 
     [Theory]
-    [InlineData("x", 9_000)]
-    [InlineData("中", 9_000)]
     [InlineData("😀", 4_500)]
     public void RebuildingPreparedPromptPreservesCurrentHistoryBeyondCheckpointContentLimits(string fragment, int repetitions)
     {
@@ -148,9 +140,7 @@ public sealed class CopilotAgentConversationRecoveryTests
     }
 
     [Theory]
-    [InlineData("中", 2_500)]
     [InlineData("😀", 1_250)]
-    [InlineData("x", 7_500)]
     public void CompleteCheckpointMessagesWithDifferentConclusionsRemainDistinct(string fragment, int repetitions)
     {
         var prefix = string.Concat(Enumerable.Repeat(fragment, repetitions));

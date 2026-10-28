@@ -117,7 +117,7 @@
 
         <GridSplitter HorizontalAlignment="Right" Background="#22FFFFFF"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="1" Cursor="SizeWE"/>
 
-        <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" x:Name="GridProperty">
+        <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" x:Name="GridProperty" DataContext="{x:Null}">
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
             <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
             <WindowsFormsHost>

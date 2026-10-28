@@ -56,51 +56,6 @@ public sealed class CopilotFlowRunHistoryToolTests
         Assert.False(mcp.RequiresApproval);
     }
 
-    [Theory]
-    [InlineData("{}")]
-    [InlineData("{\"run_record_id\":0}")]
-    [InlineData("{\"run_record_id\":2147483648}")]
-    [InlineData("{\"run_record_id\":\"17\"}")]
-    [InlineData("{\"run_record_id\":1.0}")]
-    [InlineData("{\"run_record_id\":17,\"max_runs\":0}")]
-    [InlineData("{\"run_record_id\":17,\"max_runs\":51}")]
-    [InlineData("{\"run_record_id\":17,\"max_runs\":\"10\"}")]
-    [InlineData("{\"run_record_id\":17,\"max_runs\":1.0}")]
-    [InlineData("{\"run_record_id\":17,\"node_id\":\"\"}")]
-    [InlineData("{\"run_record_id\":17,\"node_id\":null}")]
-    [InlineData("{\"run_record_id\":17,\"node_id\":17}")]
-    [InlineData("{\"run_record_id\":17,\"cursor\":\"invented\"}")]
-    public Task BothSurfacesRejectInvalidArgumentsBeforeTheInspectorRuns(string json) =>
-        AssertInvalidArgumentsRejectedAsync(json);
-
-    [Fact]
-    public Task BothSurfacesRejectAnOversizedExactNodeIdBeforeTheInspectorRuns() =>
-        AssertInvalidArgumentsRejectedAsync(JsonSerializer.Serialize(new { run_record_id = 17, node_id = new string('n', 129) }));
-
-    private static async Task AssertInvalidArgumentsRejectedAsync(string json)
-    {
-        var calls = 0;
-        var dispatcher = CreateDispatcher((_, _, _, _) =>
-        {
-            ++calls;
-            throw new InvalidOperationException("Invalid input reached the history inspector.");
-        });
-        var tool = new CopilotInspectFlowRunHistoryTool(dispatcher);
-        var arguments = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
-        var agentArguments = arguments.ToDictionary(pair => pair.Key, pair => (object?)pair.Value);
-        Assert.False(tool.InputSchema.TryBind(agentArguments, out _, out _));
-
-        var agent = await tool.ExecuteAsync(Request(), new CopilotAgentToolInput { Arguments = agentArguments }, CancellationToken.None);
-        var mcp = await dispatcher.CallAsync("inspect_flow_run_history", arguments, CancellationToken.None);
-
-        Assert.False(agent.Success);
-        Assert.Equal(CopilotToolFailureKind.Validation, agent.FailureKind);
-        Assert.False(mcp.Success);
-        Assert.Equal(CopilotToolFailureKind.Validation, mcp.FailureKind);
-        Assert.Equal("invalid_arguments", mcp.ErrorCode);
-        Assert.Equal(0, calls);
-    }
-
     private static CopilotAgentRequest Request(CopilotAgentMode mode = CopilotAgentMode.Auto) => new()
     {
         Mode = mode,

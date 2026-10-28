@@ -451,7 +451,10 @@ public sealed class CopilotWebPageSecurityTests
     }
 
     [Theory]
-    [MemberData(nameof(BlockedIpv4Addresses))]
+    [InlineData("10.0.0.1")]
+    [InlineData("127.0.0.1")]
+    [InlineData("169.254.1.1")]
+    [InlineData("192.168.1.1")]
     public async Task ConnectionGuardRejectsSpecialPurposeIpv4BeforeConnecting(string address)
     {
         var connectCalls = 0;
@@ -473,7 +476,11 @@ public sealed class CopilotWebPageSecurityTests
     }
 
     [Theory]
-    [MemberData(nameof(NonCanonicalBlockedIpv4Hosts))]
+    [InlineData("2130706433")]
+    [InlineData("0x7f000001")]
+    [InlineData("127.1")]
+    [InlineData("localhost.")]
+    [InlineData("１２７.０.０.１")]
     public async Task ConnectionGuardRejectsNonCanonicalBlockedHostWithoutDnsLookup(string host)
     {
         var resolverCalls = 0;

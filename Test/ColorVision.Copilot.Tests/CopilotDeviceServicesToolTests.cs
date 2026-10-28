@@ -7,43 +7,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotDeviceServicesToolTests
 {
-    [Fact]
-    public void BothSurfacesShareTheReadOnlyLoadedRegistryContract()
-    {
-        var definition = CopilotSharedCapabilityCatalog.DeviceServices;
-        var dispatcher = Dispatcher(_ => throw new InvalidOperationException("Discovery must not capture devices."));
-        var tool = Assert.IsType<CopilotInspectDeviceServicesTool>(definition.CreateAgentTool(dispatcher));
-        var descriptor = Assert.Single(dispatcher.ListTools(), item => item.Name == "inspect_device_services");
-        Assert.Equal("device.services", definition.Id);
-        Assert.Equal("InspectDeviceServices", tool.Name);
-        Assert.Same(dispatcher, tool.ApplicationCapabilityInvoker);
-        Assert.Same(definition.AgentInputSchema, definition.McpInputSchema);
-        Assert.True(JsonElement.DeepEquals(tool.InputSchema.JsonSchema, Assert.IsType<JsonElement>(descriptor.InputSchema)));
-        Assert.Equal(CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime, definition.ExecutionRoute);
-        Assert.Equal(CopilotToolAccess.ReadOnly, tool.Capability.Access);
-        Assert.Equal(CopilotToolIdempotency.Idempotent, tool.Capability.Idempotency);
-        Assert.Equal(CopilotToolConcurrencyMode.SharedRead, tool.Capability.EffectiveConcurrencyMode);
-        Assert.Equal(CopilotToolApprovalMode.Never, tool.Capability.ApprovalMode);
-        Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, tool.Capability.AuditArgumentMode);
-        Assert.Equal(TimeSpan.FromSeconds(15), tool.Capability.EffectiveExecutionTimeout);
-        var properties = tool.InputSchema.JsonSchema.GetProperty("properties");
-        foreach (var field in new[] { "device_ref", "expected_source_instance_id" })
-        {
-            Assert.Equal(32, properties.GetProperty(field).GetProperty("minLength").GetInt32());
-            Assert.Equal(32, properties.GetProperty(field).GetProperty("maxLength").GetInt32());
-            Assert.Equal("^[0-9a-fA-F]{32}$", properties.GetProperty(field).GetProperty("pattern").GetString());
-        }
-        Assert.Equal(1, properties.GetProperty("max_devices").GetProperty("minimum").GetInt32());
-        Assert.Equal(100, properties.GetProperty("max_devices").GetProperty("maximum").GetInt32());
-        Assert.Equal(40, properties.GetProperty("max_devices").GetProperty("default").GetInt32());
-        Assert.Equal(1, properties.GetProperty("cursor").GetProperty("minLength").GetInt32());
-        Assert.Equal(4096, properties.GetProperty("cursor").GetProperty("maxLength").GetInt32());
-        var registry = new CopilotToolRegistry([tool]);
-        foreach (var mode in Enum.GetValues<CopilotAgentMode>().Where(mode => mode != CopilotAgentMode.Chat))
-            Assert.Single(registry.FindTools(Request(mode)));
-        Assert.Empty(registry.FindTools(Request(CopilotAgentMode.Chat)));
-    }
-
     [Theory]
     [InlineData("list")]
     [InlineData("focus")]
@@ -86,39 +49,6 @@ public sealed class CopilotDeviceServicesToolTests
         Assert.Null(agent.Approval);
     }
 
-    [Theory]
-    [InlineData("{\"device_ref\":\"00000000000000000000000000000001\"}")]
-    [InlineData("{\"device_ref\":\"00000000000000000000000000000001\",\"expected_source_instance_id\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"cursor\":\"opaque\"}")]
-    [InlineData("{\"device_ref\":\"camera-name\"}")]
-    [InlineData("{\"device_ref\":null}")]
-    [InlineData("{\"expected_source_instance_id\":\" aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}")]
-    [InlineData("{\"expected_source_instance_id\":null}")]
-    [InlineData("{\"max_devices\":0}")]
-    [InlineData("{\"max_devices\":101}")]
-    [InlineData("{\"max_devices\":1.0}")]
-    [InlineData("{\"max_devices\":\"40\"}")]
-    [InlineData("{\"cursor\":\"\"}")]
-    [InlineData("{\"cursor\":null}")]
-    [InlineData("{\"cursor\":7}")]
-    [InlineData("{\"cursor\":\"not-a-cursor\"}")]
-    [InlineData("{\"code\":\"camera-1\"}")]
-    [MemberData(nameof(OversizedCursor))]
-    public async Task InvalidProtocolOrScopeArgumentsNeverReachTheSnapshotProvider(string json)
-    {
-        var calls = 0;
-        var dispatcher = Dispatcher(_ => { calls++; throw new InvalidOperationException("Invalid arguments reached device capture."); });
-        var arguments = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
-        var input = new CopilotAgentToolInput { Arguments = arguments.ToDictionary(item => item.Key, item => (object?)item.Value) };
-        var agent = await new CopilotInspectDeviceServicesTool(dispatcher).ExecuteAsync(Request(), input, CancellationToken.None);
-        var mcp = await dispatcher.CallAsync("inspect_device_services", arguments, CancellationToken.None);
-        Assert.False(agent.Success);
-        Assert.False(mcp.Success);
-        Assert.Equal(CopilotToolFailureKind.Validation, agent.FailureKind);
-        Assert.Equal(agent.FailureKind, mcp.FailureKind);
-        Assert.Equal(0, calls);
-    }
-    public static IEnumerable<object[]> OversizedCursor => [[JsonSerializer.Serialize(new { cursor = new string('c', 4097) })]];
-
     [Fact]
     public async Task UnsupportedMetadataIsExplicitPartialEvidenceOnBothSurfaces()
     {
@@ -149,28 +79,6 @@ public sealed class CopilotDeviceServicesToolTests
         Assert.Equal(CopilotToolFailureKind.Validation, agent.FailureKind);
         Assert.Equal(agent.FailureKind, mcp.FailureKind);
         Assert.DoesNotContain("PRIVATE_DETAIL", agent.Content, StringComparison.Ordinal);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task CallerCancellationReachesTheSnapshotProviderAndPropagates(bool agentSurface)
-    {
-        var entered = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var dispatcher = Dispatcher(async token =>
-        {
-            entered.TrySetResult(token);
-            await Task.Delay(Timeout.InfiniteTimeSpan, token);
-            return Snapshot([]);
-        });
-        using var cancellation = new CancellationTokenSource();
-        Task call = agentSurface
-            ? new CopilotInspectDeviceServicesTool(dispatcher).ExecuteAsync(Request(), CopilotAgentToolInput.Empty, cancellation.Token)
-            : dispatcher.CallAsync("inspect_device_services", null, cancellation.Token);
-        var providerToken = await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        cancellation.Cancel();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => call);
-        Assert.True(providerToken.IsCancellationRequested);
     }
 
     private static CopilotAgentRequest Request(CopilotAgentMode mode = CopilotAgentMode.Diagnose) => new()

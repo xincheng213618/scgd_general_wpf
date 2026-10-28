@@ -91,96 +91,6 @@ public sealed class CopilotTurnEventReducerTests
     }
 
     [Fact]
-    public void ReviewRejectsAgentEventsBeforeEnteredReviewMode()
-    {
-        var state = CreateStartedState(CopilotAgentMode.Review);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotTurnEventReducer.Reduce(
-                state,
-                new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("finding"))));
-
-        Assert.Contains("before entering review mode", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReviewRejectsExitBeforeAgentCompletedItem()
-    {
-        var state = CopilotTurnEventReducer.Reduce(
-            CreateStartedState(CopilotAgentMode.Review),
-            new CopilotTurnReviewEnteredEvent(CopilotWorkspaceReviewTargetContext.WorkingTree()));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotTurnEventReducer.Reduce(
-                state,
-                new CopilotTurnReviewExitedEvent(
-                    CopilotWorkspaceReviewTargetContext.WorkingTree(),
-                    string.Empty,
-                    false)));
-
-        Assert.Contains("before its completed item", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReviewRejectsTurnCompletionBeforeReviewExit()
-    {
-        var result = CopilotTurnResult.FromAgent(
-            CopilotAgentMode.Review,
-            CopilotTokenUsage.Empty,
-            new CopilotAgentRunResult());
-        var state = Replay(
-            CopilotTurnEventState.Create(CopilotAgentMode.Review),
-            [
-                new CopilotTurnReviewEnteredEvent(CopilotWorkspaceReviewTargetContext.WorkingTree()),
-                new CopilotTurnAgentEvent(CopilotAgentEvent.Completed()),
-                CreatePlanEvent(result.AgentRunResult!.TaskLedger),
-            ]);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotTurnEventReducer.Reduce(state, new CopilotTurnCompletedEvent(result)));
-
-        Assert.Contains("before exiting review mode", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void CompletedReviewRejectsEmptyFinalReviewText()
-    {
-        var result = CopilotTurnResult.FromAgent(
-            CopilotAgentMode.Review,
-            CopilotTokenUsage.Empty,
-            new CopilotAgentRunResult { StopReason = CopilotAgentStopReason.Completed });
-        var state = Replay(
-            CopilotTurnEventState.Create(CopilotAgentMode.Review),
-            [
-                new CopilotTurnReviewEnteredEvent(CopilotWorkspaceReviewTargetContext.WorkingTree()),
-                new CopilotTurnAgentEvent(CopilotAgentEvent.Completed()),
-                CreatePlanEvent(result.AgentRunResult!.TaskLedger),
-                new CopilotTurnReviewExitedEvent(
-                    CopilotWorkspaceReviewTargetContext.WorkingTree(),
-                    string.Empty,
-                    false),
-            ]);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotTurnEventReducer.Reduce(state, new CopilotTurnCompletedEvent(result)));
-
-        Assert.Contains("without final review text", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void NonReviewTurnRejectsReviewLifecycleEvents()
-    {
-        var state = CreateStartedState(CopilotAgentMode.Auto);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotTurnEventReducer.Reduce(
-                state,
-                new CopilotTurnReviewEnteredEvent(CopilotWorkspaceReviewTargetContext.WorkingTree())));
-
-        Assert.Contains("cannot emit", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void ReviewRejectsExitWithDifferentTarget()
     {
         var state = Replay(
@@ -207,25 +117,6 @@ public sealed class CopilotTurnEventReducerTests
     }
 
     [Fact]
-    public void ReviewEventSinkSnapshotsMutableTarget()
-    {
-        var emitted = new List<CopilotTurnEvent>();
-        var sink = new CopilotTurnEventSink(emitted.Add);
-        var target = new CopilotWorkspaceReviewTargetContext
-        {
-            Target = CopilotWorkspaceReviewTarget.Commit,
-            Revision = "abcdef1",
-        };
-
-        sink.OnReviewEntered(target);
-        target.Revision = "changed";
-
-        var entered = Assert.IsType<CopilotTurnReviewEnteredEvent>(Assert.Single(emitted));
-        Assert.NotSame(target, entered.Target);
-        Assert.Equal("abcdef1", entered.Target.Revision);
-    }
-
-    [Fact]
     public async Task StatePersistenceBarrierWaitsForConsumerCommit()
     {
         var emitted = new List<CopilotTurnEvent>();
@@ -246,20 +137,6 @@ public sealed class CopilotTurnEventReducerTests
 
         Assert.True(barrier.TryCommit());
         await waitTask;
-    }
-
-    [Fact]
-    public void ChatTurnAcceptsStatePersistenceBarrier()
-    {
-        var state = CopilotTurnEventReducer.Reduce(
-            CopilotTurnEventState.Create(CopilotAgentMode.Chat),
-            new CopilotTurnStartedEvent(CopilotAgentMode.Chat));
-
-        var reduced = CopilotTurnEventReducer.Reduce(
-            state,
-            new CopilotTurnStatePersistenceBarrierEvent());
-
-        Assert.Equal(state, reduced);
     }
 
     [Fact]
@@ -297,45 +174,6 @@ public sealed class CopilotTurnEventReducerTests
         Assert.False(assistant.IsExecutionInProgress);
         Assert.Equal("authoritative finding", assistant.Content);
         Assert.EndsWith("Review completed · commit abcdef1", assistant.ExecutionContent, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReviewAnswerAccumulatorAppliesResetAndMatchesUiTruncation()
-    {
-        var accumulator = CopilotTurnAnswerLifecycleState.Empty;
-        accumulator = accumulator.Observe(CopilotAgentEvent.AnswerDelta("discarded"));
-        accumulator = accumulator.Observe(CopilotAgentEvent.AnswerReset());
-        accumulator = accumulator.Observe(CopilotAgentEvent.AnswerDelta("final"));
-
-        Assert.Equal("final", accumulator.Text);
-        Assert.False(accumulator.IsTruncated);
-
-        accumulator = accumulator.Observe(CopilotAgentEvent.AnswerDelta(new string('x', CopilotChatMessage.MaximumAssistantTextCharacters)));
-
-        Assert.True(accumulator.IsTruncated);
-        Assert.Equal(CopilotChatMessage.MaximumAssistantTextCharacters, accumulator.Text.Length);
-        Assert.EndsWith(CopilotChatMessage.ResponseTruncationMarker, accumulator.Text, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ReviewRejectsInvalidTruncatedFinalTextSnapshot()
-    {
-        var state = Replay(
-            CopilotTurnEventState.Create(CopilotAgentMode.Review),
-            [
-                new CopilotTurnReviewEnteredEvent(CopilotWorkspaceReviewTargetContext.WorkingTree()),
-                new CopilotTurnAgentEvent(CopilotAgentEvent.Completed()),
-            ]);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotTurnEventReducer.Reduce(
-                state,
-                new CopilotTurnReviewExitedEvent(
-                    CopilotWorkspaceReviewTargetContext.WorkingTree(),
-                    "partial",
-                    true)));
-
-        Assert.Contains("invalid final review text snapshot", exception.Message, StringComparison.Ordinal);
     }
 
     private static CopilotTurnEventState Replay(

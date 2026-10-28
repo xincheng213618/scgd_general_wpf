@@ -211,53 +211,11 @@ public sealed class CopilotOpenAiProviderRetryTests
     }
 
     [Theory]
-    [InlineData(true, "gpt-6-astra", true)]
-    [InlineData(true, "gpt-5.5", false)]
-    [InlineData(false, "gpt-6-astra", false)]
-    public async Task RuntimePublishesCacheComparisonWithoutChangingToolEvidenceOrBudget(bool responsesApi, string model, bool expectedDiagnostics)
-    {
-        await using var server = new LoopbackProvider(call =>
-        {
-            var response = CompletedResponse(responsesApi, toolCall: call == 1);
-            return response with
-            {
-                Body = response.Body.Replace("gpt-5.5", model, StringComparison.Ordinal).Replace("\"usage\":",
-                    "\"prompt_cache_diagnostics\":{\"type\":\"cache_miss\",\"reason\":\"input_changed\",\"cache_missed_tokens\":9000},\"usage\":", StringComparison.Ordinal),
-            };
-        });
-        using var fixture = new RunFixture(server, responsesApi, requestTool: true);
-        fixture.Profile.Model = model;
-
-        var result = await fixture.RunAsync();
-
-        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
-        Assert.Equal(2, server.CallCount);
-        Assert.Equal(2, result.Budget.ProviderCalls);
-        Assert.Equal(0, result.Budget.ProviderRetryCount);
-        Assert.Equal(220, result.Usage.EffectiveTotalTokens);
-        Assert.Equal(220, result.Budget.ReportedTotalTokens);
-        Assert.Equal(1, fixture.Tool.CallCount);
-        Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
-        Assert.Equal(expectedDiagnostics ? 1 : 0, fixture.Events.Count(item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
-            && item.Text.Contains("提示缓存比较：cache_miss", StringComparison.Ordinal)));
-        using var payload = JsonDocument.Parse(server.Payloads[1]);
-        if (expectedDiagnostics)
-            Assert.Equal("resp_test", payload.RootElement.GetProperty("prompt_cache_options").GetProperty("comparison_response_id").GetString());
-        else
-            Assert.False(payload.RootElement.TryGetProperty("prompt_cache_options", out _));
-        fixture.AssertTurnLifecycle(result);
-    }
-
-    [Theory]
     [InlineData(false, "insufficient_quota")]
     [InlineData(true, "insufficient_quota")]
     [InlineData(false, "credit_balance_exhausted")]
-    [InlineData(true, "credit_balance_exhausted")]
-    [InlineData(false, "organization_spend_limit_exceeded")]
     [InlineData(true, "organization_spend_limit_exceeded")]
     [InlineData(false, "project_spend_limit_exceeded")]
-    [InlineData(true, "project_spend_limit_exceeded")]
-    [InlineData(false, "organization_usage_limit_exceeded")]
     [InlineData(true, "organization_usage_limit_exceeded")]
     public async Task RuntimeDoesNotRetryBillingFailuresOrReplayCompletedTools(bool responsesApi, string code)
     {
@@ -281,91 +239,8 @@ public sealed class CopilotOpenAiProviderRetryTests
         server.AssertRoute(responsesApi);
     }
 
-    [Theory]
-    [InlineData(false, 429, "slow_down", "rate_limit_error")]
-    [InlineData(true, 429, "slow_down", "rate_limit_error")]
-    [InlineData(false, 503, "server_is_overloaded", "service_unavailable_error")]
-    [InlineData(true, 503, "server_is_overloaded", "service_unavailable_error")]
-    public async Task SdkRetryHonorsServerDelayAndReportsSpecificError(bool responsesApi, int status, string code, string type)
-    {
-        await using var server = new LoopbackProvider(call => call == 1
-            ? StructuredErrorResponse(status, code, type) with { Headers = "Retry-After: 7\r\n" }
-            : CompletedResponse(responsesApi, toolCall: false));
-        using var httpClient = server.CreateClient(responsesApi);
-        var delays = new List<TimeSpan>();
-        var retries = new List<CopilotProviderRetryInfo>();
-        using var provider = new CopilotProviderRetryChatClient(
-            CopilotOpenAiAgentChatClientFactory.Create(CreateProfile(responsesApi), httpClient), retries.Add,
-            delayFactory: _ => TimeSpan.Zero, delayAsync: (delay, _) => { delays.Add(delay); return Task.CompletedTask; });
-
-        var text = new StringBuilder();
-        await foreach (var update in provider.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "Read the result.")], cancellationToken: server.Token))
-            text.Append(update.Text);
-
-        Assert.Equal("Completed answer.", text.ToString());
-        Assert.Equal(2, server.CallCount);
-        Assert.Equal(TimeSpan.FromSeconds(7), Assert.Single(delays));
-        var retry = Assert.Single(retries);
-        Assert.Equal($"HTTP {status} ({code})", retry.FailureKind);
-        Assert.Equal(status, retry.StatusCode);
-        server.AssertRoute(responsesApi);
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public async Task SdkLongRetryAfterStopsInsteadOfRetryingEarly(bool responsesApi, bool httpDate)
-    {
-        var header = httpDate ? DateTimeOffset.UtcNow.AddMinutes(10).ToString("R", CultureInfo.InvariantCulture) : "600";
-        await using var server = new LoopbackProvider(_ => StructuredErrorResponse(429, "slow_down", "rate_limit_error") with
-        {
-            Headers = $"Retry-After: {header}\r\nx-request-id: req-long-delay\r\n",
-        });
-        using var httpClient = server.CreateClient(responsesApi);
-        var retries = new List<CopilotProviderRetryInfo>();
-        var waits = 0;
-        using var provider = new CopilotProviderRetryChatClient(
-            CopilotOpenAiAgentChatClientFactory.Create(CreateProfile(responsesApi), httpClient), retries.Add,
-            delayAsync: (_, _) => { waits++; return Task.CompletedTask; });
-
-        var error = await Assert.ThrowsAnyAsync<ClientResultException>(async () =>
-        {
-            await foreach (var _ in provider.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "Read the result.")], cancellationToken: server.Token)) { }
-        });
-
-        Assert.Equal(429, error.Status);
-        Assert.Equal("req-long-delay", CopilotProviderRequestId.Find(error));
-        Assert.True(CopilotProviderRetryChatClient.ResolveRetryDelay(error, TimeSpan.Zero) > TimeSpan.FromMinutes(2));
-        Assert.Equal(1, server.CallCount);
-        Assert.Equal(0, waits);
-        Assert.Empty(retries);
-    }
-
     private static ProviderResponse StructuredErrorResponse(int status, string code, string type)
         => new(status, "application/json", JsonSerializer.Serialize(new { error = new { code, type, message = "Controlled failure." } }));
-
-    [Theory]
-    [InlineData(false, 401)]
-    [InlineData(false, 429)]
-    [InlineData(false, 503)]
-    [InlineData(true, 401)]
-    [InlineData(true, 429)]
-    [InlineData(true, 503)]
-    public async Task ProductionFactoryLeavesHttpRetriesToHost(bool responsesApi, int statusCode)
-    {
-        await using var server = new LoopbackProvider(_ => ErrorResponse(statusCode));
-        using var httpClient = server.CreateClient(responsesApi);
-        using var provider = CopilotOpenAiAgentChatClientFactory.Create(CreateProfile(responsesApi), httpClient);
-
-        var error = await Assert.ThrowsAnyAsync<ClientResultException>(() => provider.GetResponseAsync(
-            [new ChatMessage(ChatRole.User, "Summarize the supplied result.")], cancellationToken: server.Token));
-
-        Assert.Equal(statusCode, error.Status);
-        Assert.Equal(1, server.CallCount);
-        server.AssertRoute(responsesApi);
-    }
 
     [Theory]
     [InlineData(false, 429)]

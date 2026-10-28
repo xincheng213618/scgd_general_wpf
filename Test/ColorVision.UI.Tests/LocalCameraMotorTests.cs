@@ -36,8 +36,11 @@ public class LocalCameraMotorTests
         Assert.Equal(150, session.UseMotor(m => m.Move(150, true)));
         Assert.Equal(130, session.UseMotor(m => m.Move(-20, false)));
         int moves = motor.Moves;
-        Assert.Throws<ArgumentOutOfRangeException>(() => session.UseMotor(m => m.Move(1001, true)));
-        Assert.Equal(moves, motor.Moves);
+        Assert.Equal(1001, session.UseMotor(m => m.Move(1001, true)));
+        Assert.Equal(moves + 1, motor.Moves);
+        motor.Position = int.MaxValue;
+        Assert.Throws<ArgumentOutOfRangeException>(() => session.UseMotor(m => m.Move(1, false)));
+        Assert.Equal(moves + 1, motor.Moves);
         session.Close(true);
         Assert.Equal(1, motor.Closes);
         Assert.Equal(1, camera.Closes);
@@ -142,15 +145,55 @@ public class LocalCameraMotorTests
         new(EvaFunc.Tenengrad, method, 0, 1000, 100, 100, 0.5, 1, 0, 10000);
 
     [Fact]
-    public void TemplateSnapshotValidatesTravelAndDoesNotChangeWhenTemplateIsEdited()
+    public void ExhaustedFocusBudgetReportsTemplateTimeoutInsteadOfGenericMotorFailure()
+    {
+        var focus = Settings() with { Timeout = 30000 };
+        var error = Assert.Throws<TimeoutException>(() => LocalCameraMotorSession.CheckFocusOperation(0, focus, 30001, "自动对焦移动电机至 385000", default));
+        Assert.Contains("模板总超时 30000 ms", error.Message);
+        Assert.Contains("385000", error.Message);
+        Assert.DoesNotContain("failure", error.Message);
+        Assert.Throws<InvalidOperationException>(() => LocalCameraMotorSession.CheckFocusOperation(0, focus, 100, "自动对焦移动电机", default));
+        using var stop = new CancellationTokenSource();
+        stop.Cancel();
+        Assert.Throws<OperationCanceledException>(() => LocalCameraMotorSession.CheckFocusOperation(0, focus, 30001, "移动", stop.Token));
+    }
+
+    [Fact]
+    public void FocusPreviewUsesEachEvaluationWithoutAnotherCaptureAndStopsWithTheSearch()
+    {
+        var native = new FakeMotor();
+        using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), Configuration(), motorNative: native);
+        session.Open("camera", TakeImageMode.Measure_Normal, 16);
+        int evaluations = 0, previews = 0;
+        native.OnSample = () => evaluations++;
+        native.OnPreview = sink => sink?.Invoke(new(IntPtr.Zero, 2, 1, 16, 1));
+        var result = session.AutoFocus(Settings(), 10, 1, preview: frame => { Assert.Equal(16, frame.Bits); previews++; });
+        Assert.Equal(result.Samples, evaluations);
+        Assert.Equal(evaluations, previews);
+        using var stop = new CancellationTokenSource();
+        int moves = native.Moves;
+        Assert.Throws<OperationCanceledException>(() => session.AutoFocus(Settings(), 10, 1, stop.Token, _ => stop.Cancel()));
+        Assert.Equal(moves + 1, native.Moves);
+    }
+
+    [Fact]
+    public void TemplateSnapshotUsesItsOwnRangeAndDoesNotChangeWhenTemplateIsEdited()
     {
         var config = Configuration();
         var template = new AutoFocusParam { MinPosition = 0, MaxPosition = 1000, CurStep = 100, Forwardparam = 100, StopStep = 1 };
         var snapshot = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);
         template.MaxPosition = 2000;
         Assert.Equal(1000, snapshot.Maximum);
-        Assert.Throws<ArgumentException>(() => LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig));
+        Assert.Equal(2000, LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig).Maximum);
+        template.MinPosition = 300000;
+        template.MaxPosition = 450000;
+        var vidFocus = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);
+        Assert.Equal(300000, vidFocus.Minimum);
+        Assert.Equal(450000, vidFocus.Maximum);
+        template.MinPosition = 1000;
         template.MaxPosition = 1000;
+        Assert.Throws<ArgumentException>(() => LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig));
+        template.MinPosition = 0;
         template.Curtailparam = 1;
         Assert.Throws<ArgumentException>(() => LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig));
     }
@@ -212,9 +255,10 @@ public class LocalCameraMotorTests
         Assert.Equal(MsgRecordState.Success, (await Execute(mqtt.GetPosition)).MsgRecordState);
         Assert.Equal(MsgRecordState.Success, (await Execute(mqtt.GoHome)).MsgRecordState);
         Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.MoveDiaphragm(2.8))).MsgRecordState);
+        native.MoveResult = -10063;
         var failed = await Execute(() => mqtt.Move(2000));
         Assert.Equal(MsgRecordState.Fail, failed.MsgRecordState);
-        Assert.Contains("超出电机行程", failed.MsgReturn.Message);
+        Assert.Contains("移动本地电机", failed.MsgReturn.Message);
         WpfTestHost.Invoke(() => Assert.Equal(0, config.MotorConfig.Position));
 
         session.Close(true);
@@ -234,6 +278,7 @@ public class LocalCameraMotorTests
         internal bool ConfigurationError;
         internal LocalMotorSettings? Settings;
         internal Action? OnSample;
+        internal Action<Action<LocalAutoFocusFrame>?>? OnPreview;
         public int Open(ref IntPtr handle, LocalMotorSettings settings) { Events.Add("open"); Settings = settings; handle = new IntPtr(700); return 1; }
         public void Configure(IntPtr handle, LocalMotorSettings settings) { Events.Add("configure"); if (ConfigurationError) throw new InvalidOperationException("configuration failed"); }
         public int Close(IntPtr handle) { Closes++; Events.Add("close"); return CloseResult; }
@@ -242,6 +287,6 @@ public class LocalCameraMotorTests
         public int Home(IntPtr handle, LocalMotorSettings settings) { Position = 0; return 1; }
         public int Aperture(IntPtr handle, float aperture, int timeout) => 1;
         public void PrepareFocus(IntPtr cameraHandle, float exposure, float gain) { }
-        public int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value) { OnSample?.Invoke(); value = 1000000 - Math.Pow(Position - 463, 2); return 1; }
+        public int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value, Action<LocalAutoFocusFrame>? preview) { OnSample?.Invoke(); value = 1000000 - Math.Pow(Position - 463, 2); OnPreview?.Invoke(preview); return 1; }
     }
 }

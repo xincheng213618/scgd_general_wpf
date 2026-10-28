@@ -31,6 +31,9 @@ internal sealed record LocalMotorSettings(bool Enabled, bool CameraLinkage, FOCU
     }
 }
 
+// Pixels are borrowed only for the duration of the synchronous evaluation callback.
+internal readonly record struct LocalAutoFocusFrame(IntPtr Pixels, int Width, int Height, int Bits, int Channels);
+
 internal interface ILocalCameraMotorNative
 {
     int Open(ref IntPtr handle, LocalMotorSettings settings);
@@ -41,7 +44,7 @@ internal interface ILocalCameraMotorNative
     int Home(IntPtr handle, LocalMotorSettings settings);
     int Aperture(IntPtr handle, float aperture, int timeout);
     void PrepareFocus(IntPtr cameraHandle, float exposure, float gain);
-    int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value);
+    int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value, Action<LocalAutoFocusFrame>? preview);
 }
 
 internal sealed class LocalCameraMotorNative : ILocalCameraMotorNative
@@ -72,7 +75,29 @@ internal sealed class LocalCameraMotorNative : ILocalCameraMotorNative
         LocalCameraMotorSession.Check(cvCameraCSLib.CM_SetGain(cameraHandle, gain), "设置对焦增益");
         LocalCameraMotorSession.Check(cvCameraCSLib.CM_SetExpTime(cameraHandle, exposure), "设置对焦曝光");
     }
-    public int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value) => cvCameraCSLib.CM_EvaluateFocus(cameraHandle, evaluation, out value);
+    public int EvaluateFocus(IntPtr cameraHandle, EvaFunc evaluation, out double value, Action<LocalAutoFocusFrame>? preview)
+    {
+        if (preview == null) return cvCameraCSLib.CM_EvaluateFocus(cameraHandle, evaluation, out value);
+        Exception? previewError = null;
+        cvCameraCSLib.AutoFocusFrameCallBack callback = (_, width, height, bits, channels, pixels) =>
+        {
+            try { preview(new(pixels, width, height, bits, channels)); }
+            catch (Exception error) { previewError = error; }
+            return 1;
+        };
+        LocalCameraMotorSession.Check(cvCameraCSLib.CM_AutoFocusCallBackEx(cameraHandle, callback, cameraHandle), "注册自动对焦过程预览");
+        try
+        {
+            int result = cvCameraCSLib.CM_EvaluateFocus(cameraHandle, evaluation, out value);
+            if (previewError != null) MQTTServiceBase.log.Error("自动对焦过程预览失败，清晰度评价结果仍有效。", previewError);
+            return result;
+        }
+        finally
+        {
+            LocalCameraMotorSession.Check(cvCameraCSLib.CM_AutoFocusCallBackEx(cameraHandle, null, IntPtr.Zero), "注销自动对焦过程预览");
+            GC.KeepAlive(callback);
+        }
+    }
 }
 
 // All instance operations run under the owning LocalCameraSession.SyncRoot.
@@ -141,7 +166,7 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
     {
         var settings = RequireOpen();
         long target = absolute ? position : (long)ReadPosition() + position;
-        if (target < settings.Minimum || target > settings.Maximum) throw new ArgumentOutOfRangeException(nameof(position), $"目标位置 {target} 超出电机行程 [{settings.Minimum}, {settings.Maximum}]。");
+        if (target < int.MinValue || target > int.MaxValue) throw new ArgumentOutOfRangeException(nameof(position), "目标位置超出电机位置接口的整数范围。");
         Check(native.Move(handle, (int)target, settings.Timeout), "移动本地电机");
         return ReadPosition();
     }
@@ -159,24 +184,31 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         Check(native.Aperture(handle, (float)aperture, settings.Timeout), "设置本地镜头光圈");
     }
 
-    internal LocalAutoFocusResult AutoFocus(IntPtr cameraHandle, LocalAutoFocusSettings focus, float exposure, float gain, CancellationToken token)
+    internal LocalAutoFocusResult AutoFocus(IntPtr cameraHandle, LocalAutoFocusSettings focus, float exposure, float gain, CancellationToken token, Action<LocalAutoFocusFrame>? preview = null)
     {
         var settings = RequireOpen();
-        focus.Validate(settings.Minimum, settings.Maximum);
+        focus.Validate();
         if (!float.IsFinite(exposure) || exposure <= 0 || !float.IsFinite(gain) || gain < 0)
             throw new ArgumentException("对焦曝光须为正有限值，增益须为非负有限值。");
         token.ThrowIfCancellationRequested();
         var watch = Stopwatch.StartNew();
         native.PrepareFocus(cameraHandle, exposure, gain);
+        int? initialPosition = focus.Method == FindFuncModel.FindDichotomy ? ReadPosition() : null;
         var result = LocalAutoFocusSearch.Run(focus, (position, remaining) =>
         {
-            Check(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), "自动对焦移动电机");
-            token.ThrowIfCancellationRequested();
-            if (watch.ElapsedMilliseconds >= focus.Timeout) throw new TimeoutException("本地自动对焦超时，已停止后续取图和移动。");
-            Check(native.EvaluateFocus(cameraHandle, focus.Evaluation, out double value), "自动对焦取图评价");
+            string operation = $"自动对焦移动电机至 {position}";
+            CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds, operation, token);
+            CheckFocusOperation(native.EvaluateFocus(cameraHandle, focus.Evaluation, out double value, preview), focus, watch.ElapsedMilliseconds, "自动对焦取图评价", token);
             return value;
-        }, (position, remaining) => Check(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), "移动至最佳对焦位置"), token, () => watch.ElapsedMilliseconds);
+        }, (position, remaining) => CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds,
+            $"移动至最佳对焦位置 {position}", token), token, () => watch.ElapsedMilliseconds, initialPosition);
         return result with { VidPosition = ConvertVid(result.Position) };
+    }
+
+    internal static void CheckFocusOperation(int code, LocalAutoFocusSettings focus, long elapsedMilliseconds, string operation, CancellationToken token)
+    {
+        focus.Remaining(elapsedMilliseconds, token, operation);
+        Check(code, operation);
     }
 
     internal double? ConvertVid(int position)

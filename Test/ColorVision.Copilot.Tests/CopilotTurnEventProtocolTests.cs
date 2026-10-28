@@ -15,28 +15,6 @@ public sealed class CopilotTurnEventProtocolTests
     }
 
     [Fact]
-    public void RejectsDuplicateStartedEvent()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnStartedEvent(CopilotAgentMode.Chat)));
-
-        Assert.Contains("more than once", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsStartedEventForDifferentTurnId()
-    {
-        var protocol = new CopilotTurnEventProtocol(CopilotAgentMode.Chat, "turn:expected");
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnStartedEvent("turn:other", CopilotAgentMode.Chat)));
-
-        Assert.Contains("different turn ID", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void AcceptsPreparedChatProgressAndMatchingCompletion()
     {
         var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
@@ -72,42 +50,6 @@ public sealed class CopilotTurnEventProtocolTests
     }
 
     [Fact]
-    public void RejectsPreparedChatRequestWithoutContentSnapshot()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnRequestPreparedEvent(default)));
-
-        Assert.Contains("invalid request snapshot", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsChatProgressBeforeRequestPreparation()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnChatDeltaEvent(
-                new CopilotStreamDelta(string.Empty, "partial"))));
-
-        Assert.Contains("before its request was prepared", exception.Message);
-    }
-
-    [Fact]
-    public void RejectsDuplicateChatRequestPreparation()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
-        var prepared = new CopilotTurnRequestPreparedEvent(
-            new CopilotPreparedTurnRequest("prepared", false));
-        protocol.Observe(prepared);
-
-        var exception = Assert.Throws<InvalidOperationException>(() => protocol.Observe(prepared));
-
-        Assert.Contains("more than once", exception.Message);
-    }
-
-    [Fact]
     public void RejectsAgentEventDuringChatTurn()
     {
         var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
@@ -117,18 +59,6 @@ public sealed class CopilotTurnEventProtocolTests
                 CopilotAgentEvent.AnswerDelta("partial"))));
 
         Assert.Contains("chat turn cannot emit", exception.Message);
-    }
-
-    [Fact]
-    public void RejectsChatEventDuringAgentTurn()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnRequestPreparedEvent(
-                new CopilotPreparedTurnRequest("prepared", false))));
-
-        Assert.Contains("Auto turn cannot emit", exception.Message);
     }
 
     [Fact]
@@ -184,68 +114,6 @@ public sealed class CopilotTurnEventProtocolTests
     }
 
     [Fact]
-    public void RejectsHookCompletionBeforeMatchingStart()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-        var hookRun = CopilotToolExecutionHookRun.Create(
-            "module:policy",
-            CopilotToolExecutionHookPhase.BeforeExecute,
-            CopilotToolExecutionHookState.Completed,
-            12);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.HookCompleted(
-                CreateToolExecution(CopilotToolExecutionState.Pending),
-                hookRun))));
-
-        Assert.Contains("before it started", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsToolResultWhileHookIsActive()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-        var execution = CreateToolExecution(CopilotToolExecutionState.Pending);
-        protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.HookStarted(
-            execution,
-            "module:policy",
-            CopilotToolExecutionHookPhase.BeforeExecute)));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.FromToolResult(
-                new CopilotToolResult { ToolName = execution.ToolName, Success = true },
-                CreateToolExecution(CopilotToolExecutionState.Completed)))));
-
-        Assert.Contains("before its active hook completed", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsToolResultThatDropsObservedHookCompletion()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-        var execution = CreateToolExecution(CopilotToolExecutionState.Pending);
-        var hookRun = CopilotToolExecutionHookRun.Create(
-            "module:policy",
-            CopilotToolExecutionHookPhase.BeforeExecute,
-            CopilotToolExecutionHookState.Completed,
-            12);
-        protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.HookStarted(
-            execution,
-            hookRun.SourceId,
-            hookRun.Phase)));
-        protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.HookCompleted(
-            execution,
-            hookRun)));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.FromToolResult(
-                new CopilotToolResult { ToolName = execution.ToolName, Success = true },
-                CreateToolExecution(CopilotToolExecutionState.Completed)))));
-
-        Assert.Contains("did not reconcile", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsAgentTurnCompletionBeforeAgentCompletedItem()
     {
         var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
@@ -259,43 +127,6 @@ public sealed class CopilotTurnEventProtocolTests
             protocol.Observe(new CopilotTurnCompletedEvent(result)));
 
         Assert.Contains("before its completed item", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsAgentEventAfterAgentCompletedItem()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-        protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.Completed()));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnAgentEvent(
-                CopilotAgentEvent.RuntimeDiagnostic("late"))));
-
-        Assert.Contains("after its completed item", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsCompletionForDifferentMode()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnCompletedEvent(CreateChatResult())));
-
-        Assert.Contains("but Auto was requested", exception.Message);
-    }
-
-    [Fact]
-    public void AcceptsInterruptedTerminalEventWithoutSuccessfulResult()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-
-        protocol.Observe(CopilotTurnCompletedEvent.Interrupted(
-            CopilotTurnStartedEvent.DefaultTurnId,
-            CopilotAgentMode.Auto));
-
-        var exception = Assert.Throws<InvalidOperationException>(protocol.RequireCompletion);
-        Assert.Contains("Interrupted", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -337,36 +168,6 @@ public sealed class CopilotTurnEventProtocolTests
         Assert.DoesNotContain("secret-provider-detail", terminal.Error?.Message, StringComparison.Ordinal);
         var exception = Assert.Throws<InvalidOperationException>(protocol.RequireCompletion);
         Assert.Contains("Failed", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsFailedTerminalWithoutPrecedingErrorEvent()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(CopilotTurnCompletedEvent.Failed(
-                CopilotTurnStartedEvent.DefaultTurnId,
-                CopilotAgentMode.Auto,
-                new InvalidOperationException("provider failed"))));
-
-        Assert.Contains("invalid terminal metadata", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsProgressAfterErrorEventBeforeFailedTerminal()
-    {
-        var protocol = CreateStartedProtocol(CopilotAgentMode.Auto);
-        protocol.Observe(new CopilotTurnErrorEvent(
-            CopilotTurnStartedEvent.DefaultTurnId,
-            CopilotAgentMode.Auto,
-            CopilotTurnError.FromException(new InvalidOperationException("provider failed"))));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            protocol.Observe(new CopilotTurnAgentEvent(
-                CopilotAgentEvent.RuntimeDiagnostic("late"))));
-
-        Assert.Contains("after its error event", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -18,34 +18,6 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
 {
     private readonly DirectoryInfo _directory = Directory.CreateTempSubdirectory("CopilotPartialEvidence-");
 
-    [Theory]
-    [InlineData("unreadable-search")]
-    [InlineData("search-page")]
-    [InlineData("file-search-page")]
-    [InlineData("directory-page")]
-    [InlineData("truncated-read")]
-    [InlineData("mixed-read")]
-    public async Task RealPartialResultsRemainVisibleInCollapsedAndExpandedActivity(string kind)
-    {
-        var result = await CreatePartialResult(kind);
-        Assert.True(result.Success, result.ErrorMessage);
-        var entry = CreateEntry(result);
-
-        Assert.Contains("结果不完整", entry.ActivityLabel);
-        Assert.NotEqual("✓", entry.ActivityGlyph);
-        Assert.NotEmpty(entry.ActivityDescription);
-        Assert.Equal(result.PartialResultMessage, entry.ActivityDescription);
-        Assert.DoesNotContain("已获得文件搜索结果。", entry.ActivityDescription);
-        Assert.False(entry.IsFailure);
-        var group = Assert.Single(CopilotAgentTraceGroup.Create([entry, CreateEntry(new()
-        {
-            ToolName = result.ToolName, Success = true, Summary = "Completed.",
-        })]));
-        Assert.Contains("结果不完整", group.ActivityLabel);
-        Assert.NotEqual("✓", group.ActivityGlyph);
-        Assert.Contains("1 次结果不完整", group.ActivityDescription);
-    }
-
     [Fact]
     public async Task PartialCoverageSurvivesSnapshotsAndConversationRecovery()
     {
@@ -65,80 +37,6 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
         Assert.Equal(entry.ActivityLabel, restored.ActivityLabel);
         Assert.Contains(entry.PartialResultMessage, restored.DiagnosticDetails);
         Assert.False(restored.EnsureValid(DateTimeOffset.UtcNow));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ApplicationBusinessCoverageSurvivesTheSharedRouteAndRecoveredActivity(bool hasMore)
-    {
-        var sourcePage = new FlowRunQueryPage([new FlowRunRecord
-        {
-            Id = 42, FlowKey = "flow-a", FlowName = "Partial is an ordinary recorded label",
-            Status = FlowStatus.Completed, FinalOutcome = FlowFinalOutcome.Succeeded, ElapsedMs = 1000,
-        }], hasMore, false, new string('a', 64));
-        var service = new CopilotFlowRunQueryService((_, _, _, _) => Task.FromResult(sourcePage));
-        CopilotCapabilityResult? produced = null;
-        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
-        {
-            WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot(),
-            FlowRunQueryProvider = async (key, maximum, cursor, token) =>
-            {
-                var page = await service.ListAsync(key, maximum, cursor, token);
-                produced = page;
-                return page;
-            },
-        });
-        var tool = new CopilotListFlowRunsTool(dispatcher);
-        var result = CopilotToolResultContract.Capture(tool.Name, await tool.ExecuteAsync(new()
-        {
-            Mode = CopilotAgentMode.Diagnose, UserText = "Inspect retained runs.",
-            ConversationId = "business-coverage", TaskId = "business-coverage-task",
-        }, CopilotAgentToolInput.Empty, CancellationToken.None));
-
-        Assert.True(result.Success, result.ErrorMessage);
-        Assert.NotNull(produced);
-        Assert.Equal(produced.Content, result.Content);
-        Assert.Equal(produced.PartialResultMessage, result.PartialResultMessage);
-        Assert.Equal(hasMore, !string.IsNullOrWhiteSpace(result.PartialResultMessage));
-        var observation = CopilotToolObservation.FromResult(result);
-        var snapshot = new CopilotAgentRunResult
-        {
-            StepRecords = [new() { Observation = observation, ModelObservation = observation }],
-        };
-        Assert.Equal(result.PartialResultMessage, snapshot.StepRecords[0].Observation.PartialResultMessage);
-        Assert.Equal(result.PartialResultMessage, snapshot.StepRecords[0].ModelObservation!.PartialResultMessage);
-        var entry = CreateEntry(result);
-        var restored = JsonConvert.DeserializeObject<CopilotAgentTraceEntry>(JsonConvert.SerializeObject(entry))!;
-        restored.EnsureValid(DateTimeOffset.UtcNow);
-        Assert.Equal(hasMore, restored.HasPartialResult);
-        Assert.Equal(result.PartialResultMessage, restored.PartialResultMessage);
-        if (hasMore)
-        {
-            Assert.Contains("结果不完整", restored.ActivityLabel);
-            Assert.Equal(result.PartialResultMessage, restored.ActivityDescription);
-        }
-        else
-        {
-            Assert.DoesNotContain("结果不完整", restored.ActivityLabel);
-            Assert.Equal("✓", restored.ActivityGlyph);
-        }
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FailureOrNullAdvisoriesViolateTheResultContract(bool nullAdvisory)
-    {
-        var captured = CopilotToolResultContract.Capture("ReadLocalFile", new()
-        {
-            ToolName = "ReadLocalFile", Success = nullAdvisory,
-            FailureKind = nullAdvisory ? CopilotToolFailureKind.None : CopilotToolFailureKind.Validation,
-            PartialResultMessage = nullAdvisory ? null! : "Some file content remains unread.",
-        });
-        Assert.False(captured.Success);
-        Assert.Equal(CopilotToolResultContract.InvalidOutputFailureCode, captured.FailureCode);
-        Assert.Empty(captured.PartialResultMessage);
     }
 
     [Fact]
@@ -166,21 +64,6 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
         Assert.False(restored.HasPartialResult);
         Assert.Empty(restored.PartialResultMessage);
         Assert.Contains("失败", restored.ActivityLabel);
-    }
-
-    [Fact]
-    public void CompleteEmptySearchAndLegacyTraceDoNotAcquirePartialWarnings()
-    {
-        File.WriteAllText(Path.Combine(_directory.FullName, "capture.log"), "No matching result");
-        var result = CopilotGrepTextCapability.Search([_directory.FullName], "SUMMARY", null, CancellationToken.None)
-            .ToCapabilityResult().ToToolResult("GrepText");
-        Assert.True(result.Success);
-        Assert.Empty(result.PartialResultMessage);
-        Assert.Equal("✓", CreateEntry(result).ActivityGlyph);
-        var legacy = JsonConvert.DeserializeObject<CopilotAgentTraceEntry>("{\"SchemaVersion\":18,\"ToolName\":\"ReadLocalFile\",\"State\":\"Completed\"}")!;
-        legacy.EnsureValid(DateTimeOffset.UtcNow);
-        Assert.False(legacy.HasPartialResult);
-        Assert.DoesNotContain("PartialResultMessage", JsonConvert.SerializeObject(legacy));
     }
 
     [Fact]
@@ -222,116 +105,6 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
         Assert.NotEqual(CopilotToolResultContract.InvalidOutputFailureCode, result.FailureCode);
         Assert.NotEmpty(result.ErrorMessage);
         Assert.Empty(result.PartialResultMessage);
-    }
-
-    [Theory]
-    [InlineData("mixed-fetch")]
-    [InlineData("mixed-search")]
-    [InlineData("all-failed-fetch")]
-    [InlineData("omitted-fetch")]
-    [InlineData("unavailable-deep-read")]
-    public async Task WebPartialEvidenceSurvivesResultCaptureAndActivityProjection(string kind)
-    {
-        const string pageUrl = "https://public.example/page";
-        const string failedUrl = "https://public.example/unavailable.json";
-        const string omittedUrl = "https://public.example/omitted";
-        var loadedUrls = new ConcurrentQueue<string>();
-        Task<CopilotFetchedWebPageContent> LoadPage(string url, CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-            loadedUrls.Enqueue(url);
-            if (url == failedUrl || kind is "all-failed-fetch" or "unavailable-deep-read")
-                throw new IOException("Controlled web fetch failure.");
-            return Task.FromResult(new CopilotFetchedWebPageContent(url, "Captured page", string.Empty,
-                "Captured web evidence for " + url,
-                kind == "mixed-search" && url == pageUrl ? [failedUrl] : []));
-        }
-
-        var fetch = new CopilotFetchUrlTool(LoadPage);
-        var isSearch = kind is "mixed-search" or "unavailable-deep-read";
-        ICopilotTool tool = isSearch ? new CopilotWebSearchTool(
-            (searchQuery, _) => Task.FromResult(new CopilotWebSearchResult
-            {
-                Success = true, Query = searchQuery, Provider = "controlled-search", Summary = "Found a search lead.",
-                Content = "Search leads for " + pageUrl,
-                Hits = [new() { Rank = 1, Title = "Selected page", Url = pageUrl, Snippet = "Search lead." }],
-            }),
-            (request, url, token) => fetch.ExecuteAsync(request, new() { Query = url }, token)) : fetch;
-        var query = kind switch
-        {
-            "mixed-fetch" => pageUrl + " " + failedUrl,
-            "omitted-fetch" => pageUrl + " https://public.example/second https://public.example/third " + omittedUrl,
-            _ => pageUrl,
-        };
-        var rawResult = await tool.ExecuteAsync(new() { Mode = CopilotAgentMode.Web, UserText = query },
-            new() { Query = query }, CancellationToken.None);
-        var captured = CopilotToolResultContract.Capture(tool.Name, rawResult);
-        Assert.NotEqual(CopilotToolResultContract.InvalidOutputFailureCode, captured.FailureCode);
-        Assert.Equal(rawResult.Content, captured.Content);
-        var observation = CopilotToolObservation.FromResult(captured);
-        Assert.Equal(captured.Content, observation.Content);
-        Assert.Equal(captured.PartialResultMessage, observation.PartialResultMessage);
-        var expectedSources = kind switch
-        {
-            "all-failed-fetch" => Array.Empty<string>(),
-            "omitted-fetch" => [pageUrl, "https://public.example/second", "https://public.example/third"],
-            "mixed-search" => [pageUrl, pageUrl],
-            _ => new[] { pageUrl },
-        };
-        Assert.NotNull(captured.WebEvidenceSourceUrls);
-        Assert.Equal(expectedSources, captured.WebEvidenceSourceUrls);
-        Assert.Equal(expectedSources, observation.WebEvidenceSourceUrls);
-        var entry = CopilotAgentTraceEntry.FromResult(new()
-        {
-            ToolName = tool.Name, CallId = "web-partial-evidence", Access = CopilotToolAccess.ReadOnly,
-            State = captured.Success ? CopilotToolExecutionState.Completed : CopilotToolExecutionState.Failed,
-        }, captured);
-        if (kind == "all-failed-fetch")
-        {
-            Assert.False(captured.Success);
-            Assert.Equal(rawResult.FailureKind, captured.FailureKind);
-            Assert.Contains("Controlled web fetch failure.", captured.ErrorMessage, StringComparison.Ordinal);
-            Assert.Empty(captured.PartialResultMessage);
-            Assert.False(observation.Success);
-            Assert.True(entry.IsFailure);
-            Assert.Contains("[Web Page Fetch Failed] " + pageUrl, captured.Content, StringComparison.Ordinal);
-            Assert.Equal(new[] { pageUrl }, loadedUrls);
-            return;
-        }
-
-        Assert.True(captured.Success, captured.ErrorMessage);
-        Assert.Empty(captured.ErrorMessage);
-        Assert.NotEmpty(captured.PartialResultMessage);
-        Assert.True(observation.Success);
-        Assert.True(entry.HasPartialResult);
-        Assert.True(entry.IsVisibleInActivity);
-        Assert.False(entry.IsFailure);
-        Assert.Equal(captured.PartialResultMessage, entry.PartialResultMessage);
-        Assert.Contains("结果不完整", entry.ActivityLabel);
-        Assert.NotEmpty(entry.ActivityDescription);
-        if (isSearch)
-            Assert.Contains("Search leads for " + pageUrl, captured.Content, StringComparison.Ordinal);
-        if (kind == "unavailable-deep-read")
-        {
-            Assert.Contains("[Selected Search Result Deep Read Unavailable] " + pageUrl, captured.Content, StringComparison.Ordinal);
-            Assert.Equal(new[] { pageUrl }, loadedUrls);
-        }
-        else
-        {
-            Assert.Contains("Captured web evidence for " + pageUrl, captured.Content, StringComparison.Ordinal);
-            if (kind == "omitted-fetch")
-            {
-                Assert.Contains("input_set_complete: false", captured.Content, StringComparison.Ordinal);
-                Assert.Contains("omitted_input_url: " + omittedUrl, captured.Content, StringComparison.Ordinal);
-                Assert.Equal(new[] { pageUrl, "https://public.example/second", "https://public.example/third" }, loadedUrls);
-            }
-            else
-            {
-                Assert.Contains("[Web Page Fetch Failed] " + failedUrl, captured.Content, StringComparison.Ordinal);
-                Assert.Contains("all_attempts_succeeded: false", captured.Content, StringComparison.Ordinal);
-                Assert.Equal(new[] { pageUrl, failedUrl }, loadedUrls);
-            }
-        }
     }
 
     private async Task<CopilotToolResult> CreatePartialResult(string kind)

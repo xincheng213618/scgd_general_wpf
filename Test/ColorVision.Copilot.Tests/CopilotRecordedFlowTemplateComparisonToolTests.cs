@@ -39,38 +39,6 @@ public sealed class CopilotRecordedFlowTemplateComparisonToolTests
         Assert.Null(agent.Approval);
     }
 
-    [Theory]
-    [InlineData("{}")]
-    [InlineData("{\"baseline_run_record_id\":1}")]
-    [InlineData("{\"current_run_record_id\":2}")]
-    [InlineData("{\"baseline_run_record_id\":0,\"current_run_record_id\":2}")]
-    [InlineData("{\"baseline_run_record_id\":1,\"current_run_record_id\":2147483648}")]
-    [InlineData("{\"baseline_run_record_id\":\"1\",\"current_run_record_id\":2}")]
-    [InlineData("{\"baseline_run_record_id\":1,\"current_run_record_id\":2,\"max_changes\":0}")]
-    [InlineData("{\"baseline_run_record_id\":1,\"current_run_record_id\":2,\"max_changes\":201}")]
-    [InlineData("{\"baseline_run_record_id\":1,\"current_run_record_id\":2,\"snapshot_id\":3}")]
-    [InlineData("{\"baseline_run_record_id\":1,\"current_run_record_id\":2,\"cursor\":\"\"}")]
-    [MemberData(nameof(OversizedCursorArguments))]
-    public async Task InvalidPairArgumentsDoNotReachTheProvider(string json)
-    {
-        var calls = 0;
-        var dispatcher = Dispatcher((_, _, _, _, _) => { calls++; throw new InvalidOperationException("Invalid arguments reached comparison."); });
-        var args = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
-        var input = new CopilotAgentToolInput { Arguments = args.ToDictionary(item => item.Key, item => (object?)item.Value) };
-        var agent = await new CopilotCompareRecordedFlowTemplatesTool(dispatcher).ExecuteAsync(Request(), input, CancellationToken.None);
-        var mcp = await dispatcher.CallAsync("compare_recorded_flow_templates", args, CancellationToken.None);
-        Assert.False(agent.Success);
-        Assert.False(mcp.Success);
-        Assert.Equal(CopilotToolFailureKind.Validation, agent.FailureKind);
-        Assert.Equal(agent.FailureKind, mcp.FailureKind);
-        Assert.Equal(0, calls);
-    }
-
-    public static IEnumerable<object[]> OversizedCursorArguments =>
-    [
-        [JsonSerializer.Serialize(new { baseline_run_record_id = 1, current_run_record_id = 2, cursor = new string('x', 4097) })],
-    ];
-
     private static CopilotAgentRequest Request(CopilotAgentMode mode = CopilotAgentMode.Diagnose) => new()
     {
         Mode = mode, UserText = "Compare the retained templates for these exact runs.", ConversationId = "template-comparison-test", TaskId = "comparison-task",

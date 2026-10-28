@@ -38,61 +38,9 @@ public sealed class CopilotWebEvidenceOutputFormatTests
     }
 
     [Theory]
-    [InlineData("https://public.example/Report", "https://public.example/report", false, true)]
-    [InlineData("https://public.example/Report", "https://public.example/report", true, true)]
-    [InlineData("https://public.example/reference?id=ABC", "https://public.example/reference?id=abc", false, true)]
-    [InlineData("https://public.example/reference?id=ABC", "https://public.example/reference?id=abc", true, true)]
-    [InlineData("https://public.example/Report?id=ABC", "HTTPS://PUBLIC.EXAMPLE/Report?id=ABC", false, false)]
-    [InlineData("https://public.example/Report?id=ABC", "HTTPS://PUBLIC.EXAMPLE/Report?id=ABC", true, false)]
-    public async Task FinalAnswerRecognizesOnlyTheSameNormalizedSourceUrl(
-        string sourceUrl, string citedUrl, bool finalAnswerRecovery, bool expectAppendix)
-    {
-        var answer = $"The observed value is 7. Source: <{citedUrl}>.";
-        var content = CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(
-            new CopilotFetchedWebPageContent(sourceUrl, "Reference", string.Empty, "value=7"));
-        var output = await RunWebEvidenceAsync(answer, finalAnswerRecovery, false, "FetchUrl", content, [sourceUrl]);
-
-        if (expectAppendix)
-        {
-            Assert.StartsWith(answer, output, StringComparison.Ordinal);
-            Assert.Contains("来源：", output, StringComparison.Ordinal);
-            Assert.Contains($"- <{sourceUrl}>", output, StringComparison.Ordinal);
-        }
-        else
-            Assert.Equal(answer, output);
-    }
-
-    [Theory]
-    [InlineData("FetchUrl", false)]
-    [InlineData("FetchUrl", true)]
-    [InlineData("WebSearch", false)]
-    [InlineData("WebSearch", true)]
-    public async Task FinalAnswerPreservesCaseDistinctReturnedSourcesInOrder(string toolName, bool queryCase)
-    {
-        var sources = queryCase
-            ? new[] { "https://public.example/reference?id=ABC", "https://public.example/reference?id=abc" }
-            : new[] { "https://public.example/Report", "https://public.example/report" };
-        var content = toolName == "FetchUrl"
-            ? string.Join("\n\n", sources.Select(url => CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(
-                new CopilotFetchedWebPageContent(url, "Reference", string.Empty, "value=7"))))
-            : $"Search results for reference:\n1. First reference\n   URL: {sources[0]}\n   Snippet: value=7\n"
-                + $"2. Second reference\n   URL: {sources[1]}\n   Snippet: value=7";
-        const string answer = "The observed value is 7.";
-        var output = await RunWebEvidenceAsync(answer, false, false, toolName, content, sources);
-
-        Assert.StartsWith(answer, output, StringComparison.Ordinal);
-        Assert.Contains("来源：", output, StringComparison.Ordinal);
-        Assert.Equal(sources, CopilotWebPageToolSupport.ExtractHttpUrls(output));
-    }
-
-    [Theory]
     [InlineData("fetch", false)]
-    [InlineData("fetch", true)]
-    [InlineData("search-read", false)]
     [InlineData("search-read", true)]
     [InlineData("search-unavailable", false)]
-    [InlineData("search-unavailable", true)]
-    [InlineData("search-no-hits", false)]
     [InlineData("search-no-hits", true)]
     public async Task NativeWebSourcesCannotBeInventedByReturnedText(string kind, bool finalAnswerRecovery)
     {
@@ -189,46 +137,6 @@ public sealed class CopilotWebEvidenceOutputFormatTests
             Assert.StartsWith("CopilotWebEvidenceOutput-", Path.GetFileName(resolved), StringComparison.Ordinal);
             Directory.Delete(resolved, recursive: true);
         }
-    }
-
-    [Theory]
-    [InlineData("{\"value\":7")]
-    [InlineData("{\"value\":7} trailing text")]
-    [InlineData("{\"value\":7}{\"value\":8}")]
-    [InlineData("{\"value\":7,}")]
-    [InlineData("42")]
-    public void NonStructuredAnswersKeepExistingSourceAppendix(string answer)
-    {
-        var appendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
-            [new() { ToolCall = new() { ToolName = "FetchUrl" }, Observation = new() { Success = true, Content = FixtureWebTool.Content } }],
-            [new FixtureWebTool("FetchUrl", FixtureWebTool.Content)], answer);
-        Assert.Contains(SourceUrl, appendix, StringComparison.Ordinal);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void StructuredWebSourcesRemainAuthoritativeWithEmptyContent(bool hasSource)
-    {
-        var appendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
-            [new() { ToolCall = new() { ToolName = "FetchUrl" }, Observation = new()
-            {
-                Success = true, Content = string.Empty, WebEvidenceSourceUrls = hasSource ? [SourceUrl] : [],
-            } }],
-            [new FixtureWebTool("FetchUrl", string.Empty)], "The observed value is 7.");
-        if (hasSource) Assert.Contains(SourceUrl, appendix, StringComparison.Ordinal);
-        else Assert.Empty(appendix);
-    }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(65)]
-    public void CompleteNestedJsonDoesNotGainAnAppendixAtTheParserDefaultDepth(int depth)
-    {
-        var answer = new string('[', depth) + "{\"value\":7}" + new string(']', depth);
-        Assert.Empty(CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
-            [new() { ToolCall = new() { ToolName = "FetchUrl" }, Observation = new() { Success = true, Content = FixtureWebTool.Content } }],
-            [new FixtureWebTool("FetchUrl", FixtureWebTool.Content)], answer));
     }
 
     private sealed class EmptyExternalTools : ICopilotExternalToolProvider

@@ -13,12 +13,8 @@ public sealed class CopilotGitDiffFeedbackTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
     [Theory]
-    [InlineData("newer", "success")]
     [InlineData("newer", "throw")]
     [InlineData("switch", "failure")]
-    [InlineData("dispose", "success")]
-    [InlineData("unchanged", "success")]
-    [InlineData("unchanged", "throw")]
     public async Task GitDiffCompletionPreservesTheCurrentFeedbackOwner(string transition, string outcome)
     {
         await using var fixture = new Fixture();

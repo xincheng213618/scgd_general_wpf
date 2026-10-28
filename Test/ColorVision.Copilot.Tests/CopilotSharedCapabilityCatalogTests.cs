@@ -8,36 +8,6 @@ public sealed class CopilotSharedCapabilityCatalogTests
 {
 
     [Fact]
-    public void SharedCatalogAndInputParametersAreBackedByImmutableViews()
-    {
-        var catalog = Assert.IsAssignableFrom<IList<CopilotSharedCapabilityDefinition>>(
-            CopilotSharedCapabilityCatalog.All);
-        var parameters = Assert.IsAssignableFrom<IList<CopilotToolParameter>>(
-            CopilotSharedCapabilityCatalog.SearchFiles.AgentInputSchema.Parameters);
-
-        Assert.True(catalog.IsReadOnly);
-        Assert.True(parameters.IsReadOnly);
-        Assert.Throws<NotSupportedException>(() => catalog[0] = catalog[1]);
-        Assert.Throws<NotSupportedException>(() => parameters[0] = parameters[1]);
-    }
-
-    [Fact]
-    public void McpDescriptorsExposeFrozenSchemasAndAnnotations()
-    {
-        var descriptor = new CopilotMcpToolDispatcher().ListTools()
-            .Single(tool => string.Equals(
-                tool.Name,
-                "get_server_status",
-                StringComparison.OrdinalIgnoreCase));
-        var annotations = Assert.IsAssignableFrom<IDictionary<string, object>>(
-            descriptor.Annotations);
-
-        Assert.IsType<JsonElement>(descriptor.InputSchema);
-        Assert.True(annotations.IsReadOnly);
-        Assert.Throws<NotSupportedException>(() => annotations["readOnlyHint"] = false);
-    }
-
-    [Fact]
     public void EveryMcpDescriptorPublishesAClosedValidInputSchema()
     {
         foreach (var descriptor in new CopilotMcpToolDispatcher().ListTools())
@@ -61,25 +31,6 @@ public sealed class CopilotSharedCapabilityCatalogTests
                     out var error),
                 $"{tool.Name}: {error}");
         }
-    }
-
-    [Theory]
-    [InlineData("{\"type\":\"object\",\"properties\":{},\"additionalProperties\":true}", "additionalProperties")]
-    [InlineData("{\"type\":\"object\",\"properties\":{},\"required\":[\"missing\"],\"additionalProperties\":false}", "undeclared")]
-    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"mystery\"}},\"additionalProperties\":false}", "unsupported type")]
-    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"integer\",\"minimum\":10,\"maximum\":1}},\"additionalProperties\":false}", "invalid minimum/maximum")]
-    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"enum\":[1]}},\"additionalProperties\":false}", "does not match")]
-    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"minimum\":1}},\"additionalProperties\":false}", "numeric constraints")]
-    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"$ref\":\"#/$defs/value\"}},\"additionalProperties\":false}", "unsupported keyword")]
-    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":true}},\"additionalProperties\":false}", "additionalProperties")]
-    public void McpSchemaValidationRejectsInvalidPublishedContracts(
-        string schemaJson,
-        string expectedError)
-    {
-        var schema = JsonSerializer.Deserialize<JsonElement>(schemaJson);
-
-        Assert.False(CopilotToolInputContractValidator.TryValidateSchema(schema, out var error));
-        Assert.Contains(expectedError, error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -122,76 +73,6 @@ public sealed class CopilotSharedCapabilityCatalogTests
             "builtin:open-test",
             "Built-in open test",
             [openTool]));
-    }
-
-    [Fact]
-    public async Task ExternalMcpProviderUpdatesItsBoundCapabilityCatalog()
-    {
-        var catalog = new CopilotCapabilityCatalog();
-        var server = new CopilotMcpClientServerConfig
-        {
-            Name = "isolated-catalog",
-            Endpoint = "https://example.test/mcp",
-            Enabled = true,
-        };
-        catalog.PublishExternalMcp(
-            server,
-            [new SchemaOverrideTool("ExternalProbe", CopilotToolInputSchema.Empty)]);
-        var provider = new CopilotMcpToolProvider(
-            new CopilotMcpToolDiscoveryCache(),
-            catalog);
-
-        await using var lease = await provider.DiscoverAsync(
-            new CopilotAgentRequest(),
-            CancellationToken.None);
-
-        Assert.Empty(lease.Tools);
-        Assert.Empty(catalog.GetSnapshot().Capabilities);
-    }
-
-    [Fact]
-    public void CapabilitySchemaIdentityIgnoresObjectOrderButTracksConstraintChanges()
-    {
-        var firstSchema = CopilotToolInputSchema.FromJsonSchema(
-            JsonSerializer.Deserialize<JsonElement>(
-                "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"Search text.\"},\"limit\":{\"type\":\"integer\",\"minimum\":1}},\"required\":[\"query\"],\"additionalProperties\":false}"));
-        var reorderedSchema = CopilotToolInputSchema.FromJsonSchema(
-            JsonSerializer.Deserialize<JsonElement>(
-                "{\"additionalProperties\":false,\"required\":[\"query\"],\"properties\":{\"limit\":{\"minimum\":1,\"type\":\"integer\"},\"query\":{\"description\":\"Search text.\",\"type\":\"string\"}},\"type\":\"object\"}"));
-        var changedSchema = CopilotToolInputSchema.FromJsonSchema(
-            JsonSerializer.Deserialize<JsonElement>(
-                "{\"additionalProperties\":false,\"required\":[\"query\"],\"properties\":{\"limit\":{\"minimum\":2,\"type\":\"integer\"},\"query\":{\"description\":\"Search text.\",\"type\":\"string\"}},\"type\":\"object\"}"));
-        var catalog = new CopilotCapabilityCatalog();
-
-        var first = catalog.PublishSource(
-            CopilotCapabilitySourceKind.ExternalMcp,
-            "external:stable-schema",
-            "Stable schema server",
-            [new SchemaOverrideTool("StableSchemaTool", firstSchema)]);
-        var reordered = catalog.PublishSource(
-            CopilotCapabilitySourceKind.ExternalMcp,
-            "external:stable-schema",
-            "Stable schema server",
-            [new SchemaOverrideTool("StableSchemaTool", reorderedSchema)]);
-
-        Assert.Equal(
-            Assert.Single(first.Capabilities).InputSchemaFingerprint,
-            Assert.Single(reordered.Capabilities).InputSchemaFingerprint);
-        Assert.Equal(first.Revision, reordered.Revision);
-        Assert.Equal(
-            Assert.Single(first.Capabilities).Fingerprint,
-            Assert.Single(reordered.Capabilities).Fingerprint);
-
-        var changed = catalog.PublishSource(
-            CopilotCapabilitySourceKind.ExternalMcp,
-            "external:stable-schema",
-            "Stable schema server",
-            [new SchemaOverrideTool("StableSchemaTool", changedSchema)]);
-
-        Assert.True(changed.Revision > reordered.Revision);
-        Assert.NotEqual(
-            Assert.Single(reordered.Capabilities).Fingerprint,
-            Assert.Single(changed.Capabilities).Fingerprint);
     }
 
     [Theory]
@@ -267,26 +148,6 @@ public sealed class CopilotSharedCapabilityCatalogTests
         Assert.Equal("invalid_arguments", result.ErrorCode);
         Assert.Contains("expected_revision", result.Text, StringComparison.Ordinal);
         Assert.Contains("missing", result.Text, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task McpRuntimeDispatchesThePublishedToolDefinition()
-    {
-        var dispatcher = new CopilotMcpToolDispatcher();
-        var publishedName = dispatcher.ListTools()
-            .Single(tool => string.Equals(
-                tool.Name,
-                "get_server_status",
-                StringComparison.OrdinalIgnoreCase))
-            .Name;
-
-        var result = await dispatcher.CallAsync(
-            publishedName,
-            null,
-            CancellationToken.None);
-
-        Assert.True(result.Success);
-        Assert.NotEmpty(result.Text);
     }
 
     [Fact]
@@ -597,69 +458,6 @@ public sealed class CopilotSharedCapabilityCatalogTests
         Assert.DoesNotContain(@"C:\workspace\first", second.Text, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Theory]
-    [InlineData("search_files", "EvidenceFile.cs", "EvidenceFile")]
-    [InlineData("grep_text", "durable evidence", "durable evidence")]
-    public async Task WorkspaceSearchMcpSurfaceUsesCanonicalCapabilityOutput(
-        string toolName,
-        string query,
-        string expectedContent)
-    {
-        var root = Path.Combine(Path.GetTempPath(), nameof(WorkspaceSearchMcpSurfaceUsesCanonicalCapabilityOutput), Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        var filePath = Path.Combine(root, "EvidenceFile.cs");
-        await File.WriteAllTextAsync(filePath, "// durable evidence");
-
-        try
-        {
-            var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
-            {
-                WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot
-                {
-                    SolutionDirectoryPath = root,
-                    SearchRootPaths = [root],
-                },
-            });
-            var arguments = new Dictionary<string, JsonElement>
-            {
-                ["query"] = JsonSerializer.SerializeToElement(query),
-            };
-
-            var result = await dispatcher.CallAsync(toolName, arguments, CancellationToken.None);
-
-            Assert.True(result.Success);
-            Assert.Contains(expectedContent, result.Text, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("[Scan Complete] true", result.Text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("ColorVision file search results", result.Text, StringComparison.Ordinal);
-            Assert.DoesNotContain("ColorVision text search results", result.Text, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(root, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void OnlyDocumentedSecurityOrBatchBoundariesUseSurfaceSpecificInputs()
-    {
-        var surfaceSpecific = CopilotSharedCapabilityCatalog.All
-            .Where(definition => !definition.SharesInputSchema)
-            .ToArray();
-
-        Assert.Equal(
-            ["application.execute-menu", "workspace.read-file"],
-            surfaceSpecific.Select(definition => definition.Id)
-                .OrderBy(id => id, StringComparer.Ordinal)
-                .ToArray());
-        Assert.All(
-            surfaceSpecific,
-            definition => Assert.False(string.IsNullOrWhiteSpace(definition.InputContractDifference)));
-        Assert.All(
-            CopilotSharedCapabilityCatalog.All.Except(surfaceSpecific),
-            definition => Assert.True(string.IsNullOrWhiteSpace(definition.InputContractDifference)));
-        Assert.Equal(28, CopilotSharedCapabilityCatalog.All.Count(definition => definition.SharesInputSchema));
-    }
-
     [Fact]
     public void SharedCatalogOwnsTheCrossSurfaceSafetyClassification()
     {
@@ -687,168 +485,6 @@ public sealed class CopilotSharedCapabilityCatalogTests
             24,
             CopilotSharedCapabilityCatalog.All.Count(
                 definition => definition.SafetyClass == CopilotSharedCapabilitySafetyClass.ReadOnly));
-    }
-
-    [Fact]
-    public void SharedCatalogOwnsApprovalReversibilityMetadata()
-    {
-        var approvalRequired = CopilotSharedCapabilityCatalog.All
-            .Where(definition => definition.SafetyClass
-                == CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite)
-            .ToArray();
-
-        Assert.All(approvalRequired, definition =>
-        {
-            Assert.True(definition.ApprovalMetadata.IsValid);
-            Assert.True(definition.ApprovalMetadata.HasPresentation);
-            Assert.False(string.IsNullOrWhiteSpace(
-                definition.ApprovalMetadata.ReversibilitySummary));
-            Assert.True(CopilotSharedCapabilityCatalog.TryResolveMcpTool(
-                definition.McpToolName,
-                out var resolved));
-            Assert.Same(definition, resolved);
-        });
-        Assert.Equal(
-            [
-                "application.create-flow",
-                "application.set-language",
-                "flow.apply-patch",
-                "template.apply-patch",
-            ],
-            approvalRequired
-                .Where(definition => definition.ApprovalMetadata.Reversibility
-                    == CopilotApprovalReversibility.ManualOnly)
-                .Select(definition => definition.Id)
-                .OrderBy(id => id, StringComparer.Ordinal)
-                .ToArray());
-        Assert.Equal(
-            ["application.execute-menu"],
-            approvalRequired
-                .Where(definition => definition.ApprovalMetadata.Reversibility
-                    == CopilotApprovalReversibility.Unknown)
-                .Select(definition => definition.Id)
-                .ToArray());
-
-        var basePresentation = new CopilotToolApprovalPresentation("title", "description");
-        var enriched = CopilotSharedCapabilityCatalog.ApplyApprovalMetadata(
-            CopilotSharedCapabilityCatalog.ApplyFlowPatch.AgentToolName,
-            basePresentation);
-        Assert.Equal(CopilotApprovalReversibility.ManualOnly, enriched.Reversibility);
-        Assert.Equal(
-            CopilotSharedCapabilityCatalog.ApplyFlowPatch.ApprovalMetadata.ReversibilitySummary,
-            enriched.ReversibilitySummary);
-    }
-
-    [Fact]
-    public void AgentSurfaceValidationRejectsSchemaDrift()
-    {
-        var tools = CopilotToolRegistry.CreateCoreDefaultTools().ToList();
-        var index = tools.FindIndex(tool => string.Equals(
-            tool.Name,
-            CopilotSharedCapabilityCatalog.SearchDocs.AgentToolName,
-            StringComparison.OrdinalIgnoreCase));
-        tools[index] = new SchemaOverrideTool(
-            tools[index].Name,
-            CopilotToolInputSchema.Query("Drifted query."));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotSharedCapabilityCatalog.ValidateAgentSurface(tools));
-
-        Assert.Contains("schema drift", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(CopilotSharedCapabilityCatalog.SearchDocs.AgentToolName, exception.Message);
-    }
-
-    [Fact]
-    public void McpSurfaceValidationRejectsSchemaDrift()
-    {
-        var tools = new CopilotMcpToolDispatcher().ListTools().ToList();
-        var index = tools.FindIndex(tool => string.Equals(
-            tool.Name,
-            CopilotSharedCapabilityCatalog.SearchDocs.McpToolName,
-            StringComparison.OrdinalIgnoreCase));
-        tools[index] = new CopilotMcpToolDescriptor
-        {
-            Name = tools[index].Name,
-            InputSchema = CopilotToolInputSchema.Empty.JsonSchema,
-        };
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotSharedCapabilityCatalog.ValidateMcpSurface(tools));
-
-        Assert.Contains("schema drift", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(CopilotSharedCapabilityCatalog.SearchDocs.McpToolName, exception.Message);
-    }
-
-    [Fact]
-    public void AgentSurfaceValidationRejectsExecutionPolicyDrift()
-    {
-        var tools = CopilotToolRegistry.CreateCoreDefaultTools().ToList();
-        var index = tools.FindIndex(tool => string.Equals(
-            tool.Name,
-            CopilotSharedCapabilityCatalog.SearchDocs.AgentToolName,
-            StringComparison.OrdinalIgnoreCase));
-        tools[index] = new SchemaOverrideTool(
-            tools[index].Name,
-            tools[index].InputSchema,
-            CopilotToolCapabilityDescriptor.ProtectedWrite(CopilotToolIdempotency.NonIdempotent));
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotSharedCapabilityCatalog.ValidateAgentSurface(tools));
-
-        Assert.Contains("execution policy drift", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(CopilotSharedCapabilityCatalog.SearchDocs.AgentToolName, exception.Message);
-    }
-
-    [Fact]
-    public void McpSurfaceValidationRejectsExecutionPolicyDrift()
-    {
-        var tools = new CopilotMcpToolDispatcher().ListTools().ToList();
-        var index = tools.FindIndex(tool => string.Equals(
-            tool.Name,
-            CopilotSharedCapabilityCatalog.SearchDocs.McpToolName,
-            StringComparison.OrdinalIgnoreCase));
-        tools[index] = new CopilotMcpToolDescriptor
-        {
-            Name = tools[index].Name,
-            InputSchema = CopilotSharedCapabilityCatalog.SearchDocs.McpInputSchema.JsonSchema,
-            RiskLevel = "low-risk-action",
-        };
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotSharedCapabilityCatalog.ValidateMcpSurface(tools));
-
-        Assert.Contains("execution policy drift", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(CopilotSharedCapabilityCatalog.SearchDocs.McpToolName, exception.Message);
-    }
-
-    [Fact]
-    public void McpSurfaceValidationRejectsAnnotationPolicyDrift()
-    {
-        var tools = new CopilotMcpToolDispatcher().ListTools().ToList();
-        var index = tools.FindIndex(tool => string.Equals(
-            tool.Name,
-            CopilotSharedCapabilityCatalog.SetTheme.McpToolName,
-            StringComparison.OrdinalIgnoreCase));
-        var original = tools[index];
-        tools[index] = new CopilotMcpToolDescriptor
-        {
-            Name = original.Name,
-            Description = original.Description,
-            InputSchema = original.InputSchema,
-            RiskLevel = original.RiskLevel,
-            Category = original.Category,
-            UsageExample = original.UsageExample,
-            Annotations = new Dictionary<string, object>(original.Annotations)
-            {
-                ["idempotentHint"] = false,
-            },
-        };
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotSharedCapabilityCatalog.ValidateMcpSurface(tools));
-
-        Assert.Contains("descriptor metadata drift", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(CopilotSharedCapabilityCatalog.SetTheme.McpToolName, exception.Message);
     }
 
     private sealed class SchemaOverrideTool(

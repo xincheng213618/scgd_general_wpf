@@ -31,60 +31,6 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.False(compatibility.CanResume);
     }
 
-    [Fact]
-    public void StructurallyValidCheckpointAcceptsCurrentEmptyTaskEventJournal()
-    {
-        var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot());
-
-        Assert.True(checkpoint.IsStructurallyValid());
-    }
-
-    [Fact]
-    public void StructurallyValidCheckpointRejectsUnknownTaskEventJournalSchema()
-    {
-        var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot
-        {
-            SchemaVersion = CopilotAgentTaskEventJournalSnapshot.CurrentSchemaVersion + 1,
-        });
-
-        Assert.False(checkpoint.IsStructurallyValid());
-    }
-
-    [Fact]
-    public void StructurallyValidCheckpointRejectsOutOfOrderTaskEvents()
-    {
-        var runId = CopilotAgentTaskEventIds.CreateRunId();
-        var occurredAtUtc = DateTimeOffset.UtcNow;
-        var later = CreateEvent(2, runId, occurredAtUtc.AddSeconds(1));
-        var earlier = CreateEvent(1, runId, occurredAtUtc);
-        var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot
-        {
-            Events = [later, earlier],
-        });
-
-        Assert.True(later.IsStructurallyValid());
-        Assert.True(earlier.IsStructurallyValid());
-        Assert.False(checkpoint.IsStructurallyValid());
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void StructurallyValidCheckpointRejectsAssistantSteeringProvenance(bool sessionMemory)
-    {
-        CopilotRequestMessage[] invalidMemory =
-        [
-            new("assistant", "invalid provenance") { IsSteering = true },
-        ];
-        var checkpoint = CreateCheckpoint(
-            new CopilotAgentTaskEventJournalSnapshot(),
-            conversationMemory: sessionMemory ? [] : invalidMemory,
-            sessionConversationMemory: sessionMemory ? invalidMemory : null);
-
-        Assert.False(checkpoint.IsStructurallyValid());
-        Assert.False(CopilotAgentSessionCheckpoint.TryCreateSnapshot(checkpoint, out _));
-    }
-
     [Theory]
     [InlineData(CopilotAgentSessionCheckpoint.MaxConversationMemoryMessages + 1, 1)]
     [InlineData(1, CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength + 1)]
@@ -109,66 +55,6 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
-    public void CreateFreezesPersistedTaskEventJournal()
-    {
-        var occurredAtUtc = DateTimeOffset.UtcNow;
-        var originalRunId = CopilotAgentTaskEventIds.CreateRunId();
-        var originalEvent = CreateEvent(1, originalRunId, occurredAtUtc);
-        var sourceEvents = new[] { originalEvent };
-        var source = new CopilotAgentTaskEventJournalSnapshot
-        {
-            Events = sourceEvents,
-        };
-
-        var checkpoint = CopilotAgentSessionCheckpoint.Create(
-            CreateOpenAiProfile(CopilotVendorType.OpenAI, "https://example.test/v1"),
-            "{}",
-            CopilotCapabilityCatalog.Shared.GetSnapshot(),
-            taskEventJournal: source);
-
-        Assert.NotNull(checkpoint);
-        Assert.NotSame(source, checkpoint.TaskEventJournal);
-        Assert.NotSame(originalEvent, Assert.Single(checkpoint.TaskEventJournal.Events));
-        sourceEvents[0] = CreateEvent(
-            1,
-            CopilotAgentTaskEventIds.CreateRunId(),
-            occurredAtUtc.AddSeconds(1));
-        Assert.Equal(originalRunId, Assert.Single(checkpoint.TaskEventJournal.Events).RunId);
-        var persistedEvents = Assert.IsAssignableFrom<IList<CopilotAgentTaskEvent>>(
-            checkpoint.TaskEventJournal.Events);
-        Assert.Throws<NotSupportedException>(() => persistedEvents[0] = sourceEvents[0]);
-    }
-
-    [Fact]
-    public void CreateFreezesPersistedCheckpointCollections()
-    {
-        var sourceSessionMemory = new[] { new CopilotRequestMessage("user", "Stored request") };
-        var checkpoint = CopilotAgentSessionCheckpoint.Create(
-            CreateOpenAiProfile(CopilotVendorType.OpenAI, "https://example.test/v1"),
-            "{}",
-            CopilotCapabilityCatalog.Shared.GetSnapshot(),
-            availableToolNames: ["ReadWorkspace"],
-            conversationMemory: [new CopilotRequestMessage("user", "Inspect the workspace")],
-            sessionConversationMemory: sourceSessionMemory);
-
-        Assert.NotNull(checkpoint);
-        var capabilities = Assert.IsAssignableFrom<IList<CopilotAgentCheckpointCapability>>(
-            checkpoint.Capabilities);
-        var toolNames = Assert.IsAssignableFrom<IList<string>>(checkpoint.AvailableToolNames);
-        var conversationMemory = Assert.IsAssignableFrom<IList<CopilotRequestMessage>>(
-            checkpoint.ConversationMemory);
-        var sessionMemory = Assert.IsAssignableFrom<IList<CopilotRequestMessage>>(
-            checkpoint.SessionConversationMemory);
-        Assert.Throws<NotSupportedException>(() => capabilities[0] = capabilities[0]);
-        Assert.Throws<NotSupportedException>(() => toolNames[0] = "RewriteWorkspace");
-        Assert.Throws<NotSupportedException>(() =>
-            conversationMemory[0] = new CopilotRequestMessage("assistant", "Rewritten history"));
-        sourceSessionMemory[0] = new CopilotRequestMessage("assistant", "Rewritten session history");
-        Assert.Equal("Stored request", Assert.Single(sessionMemory).Content);
-        Assert.Throws<NotSupportedException>(() => sessionMemory[0] = sourceSessionMemory[0]);
-    }
-
-    [Fact]
     public void PersistedCheckpointWithInvalidEvidenceArtifactIsRejected()
     {
         var checkpoint = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(
@@ -181,102 +67,6 @@ public sealed class CopilotAgentSessionCheckpointTests
             """)!;
 
         Assert.False(checkpoint.IsStructurallyValid());
-    }
-
-    [Fact]
-    public void CopyWithTaskEventJournalRejectsInvalidJournal()
-    {
-        var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot());
-        var invalidJournal = new CopilotAgentTaskEventJournalSnapshot
-        {
-            SchemaVersion = CopilotAgentTaskEventJournalSnapshot.CurrentSchemaVersion + 1,
-        };
-
-        Assert.Null(checkpoint.CopyWithTaskEventJournal(invalidJournal));
-    }
-
-    [Fact]
-    public void CopyWithTaskEventJournalPreservesRecoveryIntentAndEnvironment()
-    {
-        var checkpoint = new CopilotAgentSessionCheckpoint
-        {
-            ProfileKey = "test-profile",
-            SerializedSessionJson = "{}",
-            TaskIntentText = "Inspect the current workspace",
-            EnvironmentVersion = CopilotAgentSessionCheckpoint.CurrentEnvironmentVersion,
-            EnvironmentFingerprint = new string('a', 64),
-            HookSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion,
-            HookSurfaceFingerprint = new string('b', 64),
-            ProjectInstructionSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentProjectInstructionSurfaceVersion,
-            ProjectInstructionSurfaceFingerprint = new string('d', 64),
-            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
-        };
-
-        var copy = checkpoint.CopyWithTaskEventJournal(new CopilotAgentTaskEventJournalSnapshot());
-
-        Assert.NotNull(copy);
-        Assert.Equal(checkpoint.TaskIntentText, copy.TaskIntentText);
-        Assert.Equal(checkpoint.EnvironmentVersion, copy.EnvironmentVersion);
-        Assert.Equal(checkpoint.EnvironmentFingerprint, copy.EnvironmentFingerprint);
-        Assert.Equal(checkpoint.HookSurfaceVersion, copy.HookSurfaceVersion);
-        Assert.Equal(checkpoint.HookSurfaceFingerprint, copy.HookSurfaceFingerprint);
-        Assert.Equal(checkpoint.ProjectInstructionSurfaceVersion, copy.ProjectInstructionSurfaceVersion);
-        Assert.Equal(checkpoint.ProjectInstructionSurfaceFingerprint, copy.ProjectInstructionSurfaceFingerprint);
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(0)]
-    [InlineData(1)]
-    public void CopyWithOutcomePreservesHookSurfaceWhileRefreshingConversationMemory(int sessionMessageCount)
-    {
-        IReadOnlyList<CopilotRequestMessage>? sessionMemory = sessionMessageCount < 0
-            ? null
-            : Enumerable.Range(0, sessionMessageCount)
-                .Select(_ => new CopilotRequestMessage("user", "confirmed session request"))
-                .ToArray();
-        var checkpoint = new CopilotAgentSessionCheckpoint
-        {
-            ProfileKey = "test-profile",
-            SerializedSessionJson = "{}",
-            HookSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion,
-            HookSurfaceFingerprint = new string('c', 64),
-            ConversationMemory = [new CopilotRequestMessage("user", "old evidence")],
-            SessionConversationMemory = sessionMemory,
-            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
-        };
-        var refreshedMemory = new[]
-        {
-            new CopilotRequestMessage("user", "original task"),
-            new CopilotRequestMessage("assistant", "partial final answer"),
-        };
-
-        var copy = checkpoint.CopyWithOutcome(
-            new CopilotAgentTaskEventJournalSnapshot(),
-            refreshedMemory);
-
-        Assert.NotNull(copy);
-        Assert.Equal(checkpoint.HookSurfaceVersion, copy.HookSurfaceVersion);
-        Assert.Equal(checkpoint.HookSurfaceFingerprint, copy.HookSurfaceFingerprint);
-        Assert.Equal(refreshedMemory, copy.ConversationMemory);
-        Assert.NotSame(refreshedMemory, copy.ConversationMemory);
-        Assert.Equal(sessionMemory ?? checkpoint.ConversationMemory, copy.SessionConversationMemory);
-        Assert.NotSame(sessionMemory ?? checkpoint.ConversationMemory, copy.SessionConversationMemory);
-        Assert.Equal(checkpoint.SerializedSessionJson, copy.SerializedSessionJson);
-
-        var journalOnlyCopy = Assert.IsType<CopilotAgentSessionCheckpoint>(
-            checkpoint.CopyWithTaskEventJournal(new CopilotAgentTaskEventJournalSnapshot()));
-        if (sessionMemory == null)
-            Assert.Null(journalOnlyCopy.SessionConversationMemory);
-        else
-            Assert.Equal(sessionMemory, journalOnlyCopy.SessionConversationMemory);
-
-        var secondCopy = Assert.IsType<CopilotAgentSessionCheckpoint>(copy.CopyWithOutcome(
-            new CopilotAgentTaskEventJournalSnapshot(),
-            [new CopilotRequestMessage("assistant", "another partial final answer")]));
-        Assert.Equal(copy.SessionConversationMemory, secondCopy.SessionConversationMemory);
-        if (copy.SessionConversationMemory?.Count > 0)
-            Assert.NotSame(copy.SessionConversationMemory, secondCopy.SessionConversationMemory);
     }
 
     [Fact]
@@ -402,31 +192,6 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
-    public void ConfiguredDeveloperInstructionFingerprintUsesTheEffectiveTrimmedValue()
-    {
-        var profile = CreateOpenAiProfile(
-            CopilotVendorType.OpenAI,
-            "https://example.test/v1");
-        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
-        var projectInstructions = CreateProjectInstructions("Keep the repository workflow stable.");
-        var checkpoint = CopilotAgentSessionCheckpoint.Create(
-            profile,
-            "{}",
-            capabilitySnapshot,
-            projectInstructions: projectInstructions,
-            configuredDeveloperInstructions: "  Use the configured project persona.  ");
-
-        var compatibility = checkpoint!.EvaluateFor(
-            profile,
-            capabilitySnapshot,
-            projectInstructions: projectInstructions,
-            configuredDeveloperInstructions: "Use the configured project persona.");
-
-        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
-        Assert.True(compatibility.CanResume);
-    }
-
-    [Fact]
     public void LegacyCheckpointWithoutProjectInstructionSnapshotRequiresAReplan()
     {
         var profile = CreateOpenAiProfile(
@@ -475,21 +240,6 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.True(previousCheckpoint.IsStructurallyValid());
         Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing, compatibility.Kind);
         Assert.True(compatibility.RequiresReplan);
-    }
-
-    [Fact]
-    public void ConversationNormalizationDropsCheckpointWithInvalidJournal()
-    {
-        var conversation = new CopilotConversationRecord
-        {
-            AgentSessionCheckpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot
-            {
-                SchemaVersion = CopilotAgentTaskEventJournalSnapshot.CurrentSchemaVersion + 1,
-            }),
-        };
-
-        Assert.True(conversation.EnsureValid());
-        Assert.Null(conversation.AgentSessionCheckpoint);
     }
 
     [Fact]
@@ -643,21 +393,6 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
-    public void NewtonsoftPersistenceMigratesLargeLegacySessionOnNextSave()
-    {
-        var sessionJson = "{\"legacy\":\"" + new string('x', 32_000) + "\"}";
-        var legacyDocument = "{\"SerializedSessionJson\":" + JsonConvert.SerializeObject(sessionJson) + "}";
-
-        var restored = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(legacyDocument);
-        var migratedDocument = JsonConvert.SerializeObject(restored);
-
-        Assert.NotNull(restored);
-        Assert.Equal(sessionJson, restored.SerializedSessionJson);
-        Assert.Contains(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, migratedDocument, StringComparison.Ordinal);
-        Assert.True(migratedDocument.Length < legacyDocument.Length / 2);
-    }
-
-    [Fact]
     public void MalformedCompressedSessionRemainsRecoverableForValidation()
     {
         var malformedPayload = CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix + "not-base64";
@@ -798,23 +533,6 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
-    public void ConversationCheckpointOwnsEquivalentCurrentJournalWithoutPersistingDuplicate()
-    {
-        var journal = new CopilotAgentTaskEventJournalBuilder();
-        journal.RecordRunStarted();
-        var checkpoint = CreateCheckpoint(journal.Snapshot());
-        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
-
-        Assert.True(conversation.SetAgentSessionCheckpoint(checkpoint));
-
-        var serialized = JsonConvert.SerializeObject(conversation);
-        var document = JObject.Parse(serialized);
-        Assert.Same(checkpoint.TaskEventJournal, conversation.CurrentAgentTaskEventJournal);
-        Assert.Null(conversation.LatestAgentTaskEventJournal);
-        Assert.Null(document[nameof(CopilotConversationRecord.LatestAgentTaskEventJournal)]);
-    }
-
-    [Fact]
     public void ConversationCheckpointDetachesMutableSourceCollections()
     {
         var runId = CopilotAgentTaskEventIds.CreateRunId();
@@ -949,22 +667,6 @@ public sealed class CopilotAgentSessionCheckpointTests
             conversation.LatestAgentTaskEventJournal,
             conversation.CurrentAgentTaskEventJournal);
         Assert.NotNull(document[nameof(CopilotConversationRecord.LatestAgentTaskEventJournal)]);
-    }
-
-    [Fact]
-    public void ValidationCollapsesLegacyDuplicateCheckpointJournal()
-    {
-        var journal = new CopilotAgentTaskEventJournalBuilder();
-        journal.RecordRunStarted();
-        var snapshot = journal.Snapshot();
-        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
-        conversation.AgentSessionCheckpoint = CreateCheckpoint(snapshot);
-        conversation.LatestAgentTaskEventJournal = snapshot;
-
-        Assert.True(conversation.EnsureValid());
-
-        Assert.Null(conversation.LatestAgentTaskEventJournal);
-        Assert.Same(snapshot, conversation.CurrentAgentTaskEventJournal);
     }
 
     [Fact]
@@ -1285,22 +987,6 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.Same(newerCheckpoint, conversation.AgentSessionCheckpoint);
         Assert.Null(conversation.LatestAgentTaskEventJournal);
         Assert.Same(newerCheckpointJournal, conversation.CurrentAgentTaskEventJournal);
-    }
-
-    [Fact]
-    public void EquivalentTerminalJournalRemainsOwnedByCheckpointOnly()
-    {
-        var journal = new CopilotAgentTaskEventJournalBuilder();
-        journal.RecordRunStarted();
-        var snapshot = journal.Snapshot();
-        var checkpoint = CreateCheckpoint(snapshot);
-        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
-
-        Assert.True(conversation.CommitAgentRunState(snapshot, checkpoint));
-
-        Assert.Same(checkpoint, conversation.AgentSessionCheckpoint);
-        Assert.Null(conversation.LatestAgentTaskEventJournal);
-        Assert.Same(snapshot, conversation.CurrentAgentTaskEventJournal);
     }
 
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(

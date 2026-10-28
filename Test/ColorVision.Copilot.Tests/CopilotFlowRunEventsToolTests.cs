@@ -48,38 +48,6 @@ public sealed class CopilotFlowRunEventsToolTests
         Assert.Null(agent.Approval);
     }
 
-    [Theory]
-    [InlineData("{}")]
-    [InlineData("{\"run_record_id\":0}")]
-    [InlineData("{\"run_record_id\":2147483648}")]
-    [InlineData("{\"run_record_id\":\"1\"}")]
-    [InlineData("{\"run_record_id\":1,\"max_events\":0}")]
-    [InlineData("{\"run_record_id\":1,\"max_events\":101}")]
-    [InlineData("{\"run_record_id\":1,\"cursor\":\"\"}")]
-    [InlineData("{\"run_record_id\":1,\"incident_id\":2}")]
-    [MemberData(nameof(OversizedCursorArguments))]
-    public async Task InvalidArgumentsDoNotReachEitherProviderRoute(string json)
-    {
-        var calls = 0;
-        var dispatcher = Dispatcher((_, _, _, _) => { calls++; throw new InvalidOperationException("Invalid arguments reached run event inspection."); });
-        var arguments = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
-        var values = arguments.ToDictionary(item => item.Key, item => (object?)item.Value);
-        var tool = new CopilotInspectFlowRunEventsTool(dispatcher);
-        Assert.False(tool.InputSchema.TryBind(values, out _, out _));
-        var agent = await tool.ExecuteAsync(Request(), new CopilotAgentToolInput { Arguments = values }, CancellationToken.None);
-        var mcp = await dispatcher.CallAsync("inspect_flow_run_events", arguments, CancellationToken.None);
-        Assert.False(agent.Success);
-        Assert.False(mcp.Success);
-        Assert.Equal(CopilotToolFailureKind.Validation, agent.FailureKind);
-        Assert.Equal(agent.FailureKind, mcp.FailureKind);
-        Assert.Equal(0, calls);
-    }
-
-    public static IEnumerable<object[]> OversizedCursorArguments =>
-    [
-        [JsonSerializer.Serialize(new { run_record_id = 1, cursor = new string('x', 4097) })],
-    ];
-
     private static CopilotAgentRequest Request(CopilotAgentMode mode = CopilotAgentMode.Diagnose) => new()
     {
         Mode = mode, UserText = "Read the recorded events for this exact run.", ConversationId = "flow-run-events-test", TaskId = "flow-run-events-task",

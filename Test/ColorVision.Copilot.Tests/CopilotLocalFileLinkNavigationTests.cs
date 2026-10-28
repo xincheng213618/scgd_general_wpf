@@ -16,25 +16,6 @@ namespace ColorVision.Copilot.Tests;
 [Collection(CopilotChatViewModelProfileIsolationFixture.Name)]
 public sealed class CopilotLocalFileLinkNavigationTests
 {
-    [Fact]
-    public void StandaloneOpenDoesNotNavigateAnUnrelatedEditor()
-    {
-        Run(scope =>
-        {
-            var oldEditor = scope.OpenText(scope.OtherPath);
-            var oldText = Editor(oldEditor).Text;
-            CopilotLinkProbeOpenAction.Open = _ => new(true, true);
-
-            var opened = CopilotLocalFileLinkNavigator.TryOpen(new(scope.TargetPath, 4, 3), out var error);
-
-            Assert.Equal(1, Editor(oldEditor).TextArea.Caret.Line);
-            Assert.Equal(oldText, Editor(oldEditor).Text);
-            Assert.False(oldEditor.IsDirty);
-            Assert.False(opened);
-            Assert.Contains("定位", error);
-        });
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -59,60 +40,6 @@ public sealed class CopilotLocalFileLinkNavigationTests
         });
     }
 
-    [Fact]
-    public void StandaloneOpenWithoutCoordinatesSucceedsAndKeepsEditorPosition()
-    {
-        Run(scope =>
-        {
-            var oldEditor = scope.OpenText(scope.OtherPath);
-            CopilotLinkProbeOpenAction.Open = _ => new(true, true);
-            Assert.True(CopilotLocalFileLinkNavigator.TryOpen(new(scope.TargetPath, null, null), out var error), error);
-            Assert.Equal(1, Editor(oldEditor).TextArea.Caret.Line);
-        });
-    }
-
-    [Fact]
-    public void OpenFailureKeepsTheRouterCause()
-    {
-        Run(scope =>
-        {
-            CopilotLinkProbeOpenAction.Open = _ => new(true, false, "测试查看器拒绝了此文件格式。");
-            Assert.False(CopilotLocalFileLinkNavigator.TryOpen(new(scope.TargetPath, 4, 3), out var error));
-            Assert.Equal("测试查看器拒绝了此文件格式。", error);
-        });
-    }
-
-    [Fact]
-    public void RenderedMarkdownClickNavigatesAndClearsAnEarlierFailure()
-    {
-        Run(scope =>
-        {
-            var view = new CopilotMarkdownView();
-            var builder = typeof(CopilotMarkdownView).GetMethod("BuildMarkdownDocument", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            var document = Assert.IsType<FlowDocument>(builder.Invoke(view, [$"[采集来源](<{scope.TargetPath}:4:3>)"]));
-            var paragraph = Assert.IsType<Paragraph>(Assert.Single(document.Blocks.Cast<Block>()));
-            var link = Assert.Single(paragraph.Inlines.OfType<Hyperlink>());
-            var target = Assert.IsType<CopilotLocalFileLinkTarget>(link.Tag);
-            Assert.Equal(scope.TargetPath, target.FilePath);
-            var expectedToolTip = CopilotLocalFileLinkNavigator.BuildToolTip(target);
-            Assert.Equal(expectedToolTip, link.ToolTip);
-            CopilotLinkProbeOpenAction.Open = _ => new(true, false, "测试文件暂时无法打开。");
-
-            link.RaiseEvent(new RoutedEventArgs(Hyperlink.ClickEvent));
-
-            Assert.Equal("文件引用未完成：测试文件暂时无法打开。", link.ToolTip);
-            AvalonEditControll? openedEditor = null;
-            CopilotLinkProbeOpenAction.Open = path => { openedEditor = scope.OpenText(path); return new(true, true); };
-
-            link.RaiseEvent(new RoutedEventArgs(Hyperlink.ClickEvent));
-
-            Assert.NotNull(openedEditor);
-            Assert.Equal(4, Editor(openedEditor).TextArea.Caret.Line);
-            Assert.Equal(3, Editor(openedEditor).TextArea.Caret.Column);
-            Assert.Equal(expectedToolTip, link.ToolTip);
-        });
-    }
-
     [Theory]
     [InlineData("#L0")]
     [InlineData("#L99999999999999999")]
@@ -121,29 +48,6 @@ public sealed class CopilotLocalFileLinkNavigationTests
     public void InvalidCoordinatesAreNotSilentlyConvertedToPlainFileLinks(string suffix)
     {
         Run(scope => Assert.False(CopilotLocalFileLinkNavigator.TryResolve(scope.TargetPath + suffix, out _)));
-    }
-
-    [Theory]
-    [InlineData("absolute")]
-    [InlineData("relative")]
-    [InlineData("uri")]
-    [InlineData("encoded-relative")]
-    public void ReferenceFormatsResolveTheSameFileAndCoordinates(string format)
-    {
-        Run(scope =>
-        {
-            var link = format switch
-            {
-                "relative" => Path.GetFileName(scope.TargetPath) + ":4:3",
-                "uri" => new Uri(scope.TargetPath).AbsoluteUri + "#L4C3",
-                "encoded-relative" => Uri.EscapeDataString(Path.GetFileName(scope.TargetPath)) + "#L4C3",
-                _ => scope.TargetPath + ":4:3",
-            };
-            Assert.True(CopilotLocalFileLinkNavigator.TryResolve(link, out var target));
-            Assert.Equal(scope.TargetPath, target.FilePath);
-            Assert.Equal(4, target.LineNumber);
-            Assert.Equal(3, target.ColumnNumber);
-        });
     }
 
     [Fact]

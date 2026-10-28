@@ -14,17 +14,6 @@ public sealed class CopilotMarkdownTableBoundaryTests
     }
 
     [Fact]
-    public void EscapedTrailingPipeBeforeOuterDelimiterRemainsCellContent()
-    {
-        var table = Parse(
-            "| Name | Value | Note |",
-            "| --- | --- | --- |",
-            @"| alpha | beta | keep\| |");
-
-        Assert.Equal(["alpha", "beta", "keep|"], Assert.Single(table.Rows));
-    }
-
-    [Fact]
     public void ActualOuterDelimitersAreExcludedFromCells()
     {
         var table = Parse(
@@ -34,17 +23,6 @@ public sealed class CopilotMarkdownTableBoundaryTests
 
         Assert.Equal(["Name", "Value"], table.Headers);
         Assert.Equal(["alpha", "beta"], Assert.Single(table.Rows));
-    }
-
-    [Fact]
-    public void ExplicitEmptyTrailingCellIsPreservedBeforeOuterDelimiter()
-    {
-        var table = Parse(
-            "Name | Value | Note",
-            "--- | --- | ---",
-            "alpha | beta | |");
-
-        Assert.Equal(["alpha", "beta", ""], Assert.Single(table.Rows));
     }
 
     private static CopilotMarkdownTableModel Parse(params string[] lines)

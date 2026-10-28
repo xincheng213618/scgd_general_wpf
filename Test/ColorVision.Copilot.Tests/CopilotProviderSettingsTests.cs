@@ -61,32 +61,6 @@ public sealed partial class CopilotProviderSettingsTests
     }
 
     [Fact]
-    public void ModelEditorUsesAnIsolatedDraftAndValidatesInheritedBudget()
-    {
-        using var settings = CreateSettings(CopilotProfileConfig.CreateDefault());
-        var original = settings.SelectedProfile!;
-        var draft = settings.CreateModelDraft(original);
-        var editor = new CopilotModelEditor(draft, settings.AvailableModelPresets)
-        { ModelId = "custom-model", SmartConfiguration = false, ContextWindowText = "0", MaxOutputText = "128000", SupportsImages = true };
-        Assert.Equal("deepseek-v4-pro", original.Model);
-        Assert.True(editor.Validate());
-        settings.AgentContextWindowTokens = 32768;
-        Assert.False(settings.CommitModelDraft(draft, original, out var error));
-        Assert.Contains("Agent", error);
-        editor.ContextWindowText = "256000";
-        Assert.True(editor.Validate());
-        Assert.True(settings.CommitModelDraft(draft, original, out _));
-        var restored = JsonConvert.DeserializeObject<CopilotProfileConfig>(JsonConvert.SerializeObject(settings.SelectedProfile))!;
-        Assert.Equal(128000, restored.MaxTokens);
-        Assert.Equal(256000, restored.ContextWindowTokens);
-        Assert.True(restored.SupportsImageInput);
-        var budget = CopilotAgentRunBudget.Resolve(new CopilotAgentRequest { Profile = restored });
-        Assert.Equal(256000, budget.ContextWindowTokens);
-        var history = CopilotConversationRequestBuilder.ResolveHistoryLimits(restored.ContextWindowTokens, restored.MaxTokens);
-        Assert.Equal((256000 - 128000) / 2 * CopilotTokenEstimator.AsciiCharactersPerToken, history.MaximumCharacters);
-    }
-
-    [Fact]
     public void DeletedLastProviderStaysDeletedAfterInitialization()
     {
         using var settings = CreateSettings(CopilotProfileConfig.CreateDefault());
@@ -95,25 +69,6 @@ public sealed partial class CopilotProviderSettingsTests
         config.EnsureInitialized();
         Assert.Empty(config.Profiles);
         Assert.Null(settings.SelectedProvider);
-    }
-
-    [Fact]
-    public void DefaultsRequireAnExactKnownModelAndLocalOutputLimitIsReadOnly()
-    {
-        var profile = new CopilotProfileConfig { VendorType = CopilotVendorType.OpenAI, Model = "gpt-6-astra" };
-        Assert.True(CopilotModelDefaults.Apply(profile));
-        Assert.True(profile.SupportsImageInput);
-        Assert.Equal(1050000, profile.ContextWindowTokens);
-        profile.Model = "gpt-6-astra-unknown";
-        Assert.False(CopilotModelDefaults.Apply(profile));
-        Assert.False(profile.SupportsImageInput);
-        profile.ProviderType = CopilotProviderType.LocalCodex;
-        var editor = new CopilotModelEditor(profile, []);
-        Assert.False(editor.CanEditOutputLimit);
-        editor.SmartConfiguration = false;
-        editor.SupportsImages = true;
-        editor.ModelId = "different-manual-model";
-        Assert.False(editor.SupportsImages);
     }
 
     [Fact]

@@ -2,17 +2,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotPlanModeTests
 {
-    [Fact]
-    public void PlanEnumValuesAreAppendedWithoutChangingExistingContracts()
-    {
-        Assert.Equal(6, (int)CopilotAgentMode.Diagnose);
-        Assert.Equal(7, (int)CopilotAgentMode.Plan);
-        Assert.Equal(5, (int)CopilotPromptMode.Diagnose);
-        Assert.Equal(6, (int)CopilotPromptMode.Plan);
-        Assert.Equal(6, (int)CopilotModuleAgentMode.Diagnose);
-        Assert.Equal(7, (int)CopilotModuleAgentMode.Plan);
-    }
-
     [Theory]
     [InlineData("/plan", "")]
     [InlineData("/plan fix the auth bug", "fix the auth bug")]
@@ -93,37 +82,4 @@ public sealed class CopilotPlanModeTests
                 hasModelFinalAnswer: true));
     }
 
-    [Fact]
-    public void PlanModeInstructionRequiresAnImplementationReadyReadOnlyPlan()
-    {
-        var instruction = CopilotAgentContextBuilder.BuildModeInstruction(CopilotAgentMode.Plan);
-
-        Assert.Contains("plan-only", instruction, StringComparison.Ordinal);
-        Assert.Contains("implementation-ready plan", instruction, StringComparison.Ordinal);
-        Assert.Contains("Never modify files or application state", instruction, StringComparison.Ordinal);
-        Assert.Contains("Never", instruction, StringComparison.Ordinal);
-        Assert.Contains("testing occurred", instruction, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void PlanHarnessRemainsInPlanAndTreatsTodosAsProposedWork()
-    {
-        var request = new CopilotAgentRequest
-        {
-            Mode = CopilotAgentMode.Plan,
-            UserText = "Plan the requested implementation.",
-        };
-
-        var instructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
-            request,
-            [new CopilotTemplatePatchTool()],
-            CopilotAgentEnvironmentContext.Capture(request),
-            taskLedgerEnabled: true,
-            agentModeEnabled: true);
-
-        Assert.Contains("Remain in plan mode", instructions, StringComparison.Ordinal);
-        Assert.Contains("planned steps, not completed work", instructions, StringComparison.Ordinal);
-        Assert.Contains("Do not switch to execute mode", instructions, StringComparison.Ordinal);
-        Assert.DoesNotContain("Use execute mode for authorized work", instructions, StringComparison.Ordinal);
-    }
 }

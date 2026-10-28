@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             float gain = DisplayConfig.Gain;
             return RunLocalCommand("AutoFocus", () =>
             {
-                LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain);
+                LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain, showProgress: true);
                 LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
                 {
                     Device = this, CameraParameters = BuildLocalCameraParameters(), SaveFiles = false, FlipMode = DisplayConfig.FlipMode
@@ -115,12 +115,30 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default)
+        internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default, bool showProgress = false)
         {
-            LocalAutoFocusResult result = LocalCameraSession.AutoFocus(settings, exposure, gain, stop);
+            Action<LocalAutoFocusFrame>? preview = showProgress ? source => PublishLocalFocusPreview(source, exposure, gain) : null;
+            LocalAutoFocusResult result = LocalCameraSession.AutoFocus(settings, exposure, gain, stop, preview);
             stop.ThrowIfCancellationRequested();
             PublishLocalMotorPosition(result.Position, result.VidPosition);
             return result;
+        }
+
+        private unsafe void PublishLocalFocusPreview(LocalAutoFocusFrame source, float exposure, float gain)
+        {
+            if (IsDisposed || ExistingView == null) return;
+            if (source.Pixels == IntPtr.Zero || source.Width <= 0 || source.Height <= 0 || source.Bits is not (8 or 16) || source.Channels is not (1 or 3))
+                throw new InvalidOperationException("自动对焦过程图像格式无效。");
+            int length = checked(source.Width * source.Height * source.Channels * (source.Bits / 8));
+            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = source.Width, Height = source.Height, SourceBpp = source.Bits, Channels = source.Channels,
+                Gain = gain, Exposure = source.Channels == 1 ? [exposure] : [exposure, exposure, exposure],
+                DeviceCode = Code, PrimaryBufferKind = LocalFrameBufferKind.CvRaw, FlipMode = DisplayConfig.FlipMode
+            }, length, 0, LocalCameraSession.RawBufferPool);
+            using (LocalFlowFrameLease lease = frame.Acquire()) Buffer.MemoryCopy(source.Pixels.ToPointer(), lease.RawPointer.ToPointer(), lease.RawLength, length);
+            // Publish synchronously copies a frozen snapshot before the native evaluation releases its frame.
+            PublishLocalPreview(frame, null, forceDisplay: true);
         }
 
         internal MsgRecord AutoExposeLocally(ParamBase template, CalibrationParam? calibration)

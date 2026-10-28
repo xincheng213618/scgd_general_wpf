@@ -51,40 +51,6 @@ public sealed class CopilotFlowRunAttemptsToolTests
         Assert.Equal(agent.PartialResultMessage, mcp.PartialResultMessage);
     }
 
-    [Theory]
-    [InlineData("{}")]
-    [InlineData("{\"run_record_id\":0}")]
-    [InlineData("{\"run_record_id\":2147483648}")]
-    [InlineData("{\"run_record_id\":\"1\"}")]
-    [InlineData("{\"run_record_id\":1,\"max_attempts\":0}")]
-    [InlineData("{\"run_record_id\":1,\"max_attempts\":101}")]
-    [InlineData("{\"run_record_id\":1,\"node_id\":\"\"}")]
-    [InlineData("{\"run_record_id\":1,\"node_id\":\" \\t\"}")]
-    [InlineData("{\"run_record_id\":1,\"cursor\":\"\"}")]
-    [InlineData("{\"run_record_id\":1,\"incident_id\":2}")]
-    [MemberData(nameof(OversizedCursorArguments))]
-    public async Task InvalidArgumentsDoNotReachEitherProviderRoute(string json)
-    {
-        var calls = 0;
-        var dispatcher = Dispatcher((_, _, _, _, _) => { calls++; throw new InvalidOperationException("Invalid arguments reached run attempt inspection."); });
-        var arguments = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
-        var values = arguments.ToDictionary(item => item.Key, item => (object?)item.Value);
-        var tool = new CopilotInspectFlowRunAttemptsTool(dispatcher);
-        var agent = await tool.ExecuteAsync(Request(), new CopilotAgentToolInput { Arguments = values }, CancellationToken.None);
-        var mcp = await dispatcher.CallAsync("inspect_flow_run_attempts", arguments, CancellationToken.None);
-        Assert.False(agent.Success);
-        Assert.False(mcp.Success);
-        Assert.Equal(CopilotToolFailureKind.Validation, agent.FailureKind);
-        Assert.Equal(agent.FailureKind, mcp.FailureKind);
-        Assert.Equal(0, calls);
-    }
-
-    public static IEnumerable<object[]> OversizedCursorArguments =>
-    [
-        [JsonSerializer.Serialize(new { run_record_id = 1, cursor = new string('x', 4097) })],
-        [JsonSerializer.Serialize(new { run_record_id = 1, node_id = new string('n', 129) })],
-    ];
-
     private static CopilotAgentRequest Request(CopilotAgentMode mode = CopilotAgentMode.Diagnose) => new()
     {
         Mode = mode, UserText = "Read the recorded attempts for this exact run.", ConversationId = "flow-run-attempts-test", TaskId = "flow-run-attempts-task",

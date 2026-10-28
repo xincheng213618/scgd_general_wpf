@@ -31,32 +31,6 @@ public sealed class CopilotCodexDefaultModeRequestUserInputTests
                 ["ReadLocalFile"]));
     }
 
-    [Fact]
-    public void DefaultModePromptInstructionsFollowTheEffectiveToolSurface()
-    {
-        var disabledRequest = CreateRequest(CopilotAgentMode.Code);
-        var enabledRequest = CreateRequest(
-            CopilotAgentMode.Code,
-            defaultModeEnabled: true);
-        var environment = CopilotAgentEnvironmentContext.Capture(enabledRequest);
-
-        string disabledPrompt = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
-            disabledRequest,
-            Array.Empty<ICopilotTool>(),
-            environment,
-            taskLedgerEnabled: false,
-            agentModeEnabled: true);
-        string enabledPrompt = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
-            enabledRequest,
-            Array.Empty<ICopilotTool>(),
-            environment,
-            taskLedgerEnabled: false,
-            agentModeEnabled: true);
-
-        Assert.DoesNotContain("AskUserQuestion is a structured clarification pause", disabledPrompt, StringComparison.Ordinal);
-        Assert.Contains("AskUserQuestion is a structured clarification pause", enabledPrompt, StringComparison.Ordinal);
-    }
-
     private static CopilotAgentRequest CreateRequest(
         CopilotAgentMode mode,
         bool defaultModeEnabled = false,

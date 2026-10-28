@@ -49,6 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
 
         [DisplayName("TimeoutDuration")]
         [LocalizedDisplayName(nameof(Resources.TimeoutDuration))]
+        [Description("单位为毫秒。本地模式限制整次搜索；长行程或长曝光时需相应增加。")]
         public int nTimeout { get => GetValue(_nTimeout); set { SetProperty(ref _nTimeout, value); } }
         private int _nTimeout = 30000;
 

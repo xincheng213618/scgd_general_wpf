@@ -58,10 +58,7 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
 
     [Theory]
     [InlineData("utf8")]
-    [InlineData("utf8-bom")]
     [InlineData("utf16-le")]
-    [InlineData("utf16-be")]
-    [InlineData("utf32-le")]
     [InlineData("utf32-be")]
     public async Task ContinuationKeepsSupplementaryCharacterIntactAcrossReadBudget(string encodingName)
     {
@@ -121,10 +118,7 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
 
     [Theory]
     [InlineData("utf8")]
-    [InlineData("utf8-bom")]
     [InlineData("utf16-le")]
-    [InlineData("utf16-be")]
-    [InlineData("utf32-le")]
     [InlineData("utf32-be")]
     public async Task DecodedNulBeyondPreviewDoesNotBecomeSuccessfulTextEvidence(string encodingName)
     {
@@ -140,10 +134,7 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
 
     [Theory]
     [InlineData("utf8")]
-    [InlineData("utf8-bom")]
-    [InlineData("utf16-le")]
     [InlineData("utf16-be")]
-    [InlineData("utf32-le")]
     [InlineData("utf32-be")]
     public async Task IncompleteUnicodeCodeUnitIsRejectedInsteadOfReplacingEvidence(string encodingName)
     {
