@@ -2,6 +2,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -15,6 +16,7 @@ public partial class EditPG : Window
 {
     private readonly ConfigPG target;
     private readonly DisplayPGConfig? displayTarget;
+    private readonly string authorizationResourceId;
     public PGConfigurationDraft Draft { get; }
     public ConfigPG EditConfig => Draft.Config;
 
@@ -31,6 +33,7 @@ public partial class EditPG : Window
     internal EditPG(ConfigPG source, IEnumerable<string> categories, DisplayPGConfig? display = null)
     {
         target = source;
+        authorizationResourceId = source.Code;
         displayTarget = display;
         Draft = new PGConfigurationDraft(source, display);
         InitializeComponent();
@@ -69,6 +72,11 @@ public partial class EditPG : Window
 
     internal bool TryApply(out string error)
     {
+        if (!AccessControl.Evaluate("device.configure", PermissionMode.Administrator, authorizationResourceId).Allowed)
+        {
+            error = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+            return false;
+        }
         Keyboard.ClearFocus();
         if (HasInvalidInput(EditorContent))
         {

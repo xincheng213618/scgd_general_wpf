@@ -23,17 +23,16 @@ public sealed class LocalSpectrumTests
     [InlineData(1, false, true)]
     [InlineData(null, true, true)]
     [InlineData(-1, true, true)]
-    public void LocalOpenChecksOnlyStoredExpiryAndReleasesExpiredConnection(int? expirySeconds, bool experimentalFeatures, bool allowed)
+    public void LocalOpenChecksExpiryOrSkipsValidationAndReleasesRejectedConnections(int? expirySeconds, bool skipValidation, bool allowed)
     {
         DateTime now = new(2026, 10, 13, 12, 0, 0);
         LicenseModel license = new() { LiceType = 1, ExpiryDate = expirySeconds.HasValue ? now.AddSeconds(expirySeconds.Value) : null, LicenseValue = "not a license payload" };
-        ExperimentalFeaturesConfig settings = new() { IsEnabled = experimentalFeatures };
         var native = new FakeNative();
         using var session = new LocalSpectrumSession(native,
             ensureLicenseAvailable: config =>
             {
                 Assert.Equal(native.Serial, config.SN);
-                LocalSpectrumLicense.EnsureNotExpired(license.ExpiryDate, settings.IsEnabled, now);
+                LocalSpectrumLicense.EnsureNotExpired(license.ExpiryDate, skipValidation, now);
             });
 
         if (allowed)
@@ -64,7 +63,7 @@ public sealed class LocalSpectrumTests
         DateTime expiry = now.AddSeconds(1);
         var native = new FakeNative();
         using var session = new LocalSpectrumSession(native,
-            ensureLicenseAvailable: _ => LocalSpectrumLicense.EnsureNotExpired(expiry, false, now));
+            ensureLicenseAvailable: _ => LocalSpectrumLicense.EnsureNotExpired(expiry, skipValidation: false, now));
         session.Open(files.Config);
         now = now.AddSeconds(2);
 

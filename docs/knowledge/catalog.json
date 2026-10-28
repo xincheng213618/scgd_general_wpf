@@ -1955,7 +1955,6 @@
         "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"
@@ -2719,8 +2718,7 @@
         "ColorVision/ColorVision.csproj"
       ],
       "test_paths": [
-        "Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotCodexSkillInstructionsTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs"
       ],
       "related": [
         "copilot.lifecycle",
@@ -7790,7 +7788,7 @@
       "knowledge_id": "operations.main-window",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。",
+      "summary": "主窗口菜单、搜索、状态栏与工作区装配；Windows 11 使用紧凑主窗口，Windows 10 保持原生窗口。",
       "aliases": [
         "主窗口",
         "菜单不见了",
@@ -7801,19 +7799,16 @@
         "MainWindowFactory",
         "紧凑主窗口",
         "紧凑标题栏",
-        "恢复旧主窗口",
         "标题栏合并菜单",
         "标题栏更多",
         "标题栏按钮位置",
         "标题栏图标颜色",
         "Windows build 22000",
-        "低版本隐藏紧凑主窗口设置",
         "MainWindowActionButtonStyle",
         "TitleBarActionForeground",
         "TitleBarActionInactiveForeground",
         "最大化闪烁",
         "还原闪烁",
-        "UseCompactMainWindow",
         "CompactTitleBarChrome",
         "CompactTitleBarLayout",
         "CompactTitleBarActions",
@@ -8513,7 +8508,6 @@
         "MainWindowInitializer",
         "MainWindowFactory",
         "CompactMainWindow",
-        "UseCompactMainWindow",
         "LoadingPlugin",
         "startup-maintenance",
         "startup-skip-plugins",
@@ -12475,10 +12469,12 @@
       "knowledge_id": "ui.storage-maintenance",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。",
+      "summary": "存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。",
       "aliases": [
-        "存储与维护",
-        "存储与重置",
+        "存储",
+        "配置",
+        "存储空间",
+        "分类占用",
         "扫描空间",
         "清理选中项",
         "配置恢复点",
@@ -12501,6 +12497,7 @@
         "内存缓存管理",
         "FileManagementWindow",
         "IFileMaintenanceProvider",
+        "IStorageUsageProvider",
         "增量扫描"
       ],
       "code_paths": [
@@ -12514,12 +12511,17 @@
         "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs",
         "UI/ColorVision.UI.Desktop/Download/Infrastructure/DownloadTaskStore.cs",
         "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs",
-        "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs"
+        "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs",
+        "Engine/ColorVision.Engine/Services/Storage",
+        "Engine/ColorVision.Engine/FlowProcessing/PreProcess"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/MaintenanceFileCleanupTests.cs",
         "Test/ColorVision.UI.Tests/StorageMaintenanceCatalogTests.cs",
         "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs",
+        "Test/ColorVision.UI.Tests/StorageOverviewTests.cs",
+        "Test/ColorVision.UI.Tests/StorageUsageScannerTests.cs",
+        "Test/ColorVision.UI.Tests/EngineStorageUsageProviderTests.cs",
         "Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"
       ],
       "related": [
@@ -12533,6 +12535,7 @@
         "ColorVision",
         "ColorVision/Settings",
         "ColorVision/Update",
+        "Engine/ColorVision.Engine",
         "UI/ColorVision.ImageTools",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"

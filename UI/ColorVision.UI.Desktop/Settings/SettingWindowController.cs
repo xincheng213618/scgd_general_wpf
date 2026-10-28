@@ -188,6 +188,8 @@ namespace ColorVision.UI.Desktop.Settings
 
             string text = $"{group} {displayName}".ToLowerInvariant();
             if (group == "Appearance") return "\uE790";
+            if (group == ConfigSettingConstants.Configuration) return "\uE713";
+            if (text.Contains("storage") || text.Contains("存储") || text.Contains("儲存")) return "\uE8B7";
             if (text.Contains("maintenance") || text.Contains("维护")) return "\uE74D";
             if (text.Contains("dump") || text.Contains("转储")) return "\uE9D9";
             if (text.Contains("remote") || text.Contains("局域网")) return "\uE968";

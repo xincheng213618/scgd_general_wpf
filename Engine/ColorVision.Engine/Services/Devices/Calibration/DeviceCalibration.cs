@@ -46,19 +46,22 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCalibration(Config);
-            _view = new DockViewRegistration(() => new ViewCalibration(this, deferInitialization: true), Config.Name);
+            _view = new DockViewRegistration(() => new ViewCalibration(this, deferInitialization: true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
+                { PersistenceKey = Config.Code };
             this.SetIconResource("DICalibrationIcon");;
 
             EditCommand = new RelayCommand(a =>
             {
+                if (!CanConfigure) return;
                 var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submitted += (s, e) => Save();
+                ProtectConfigurationEditor(propertyEditorWindow);
+                propertyEditorWindow.Submitted += (s, e) => TryCommitConfiguration(propertyEditorWindow);
                 propertyEditorWindow.ShowDialog();
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => CanConfigure);
 
 
 
-            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger) && PhyCamera !=null);
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Evaluate("physical-camera.manage", PermissionMode.Administrator).Allowed && PhyCamera !=null);
             DisplayLazy = new Lazy<DisplayCalibration>(() => new DisplayCalibration(this));
             AttachPhyCamera(PhyCamera);
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
@@ -149,9 +152,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         [Description("CommandPhysicalCameraHint")]
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
 
-        [RequiresPermission(PermissionMode.Administrator)]
+        [RequiresPermission(PermissionMode.Administrator, ActionId = "physical-camera.manage")]
         public static void OpenPhyCameraManger()
         {
+            AccessControl.Demand("physical-camera.manage", PermissionMode.Administrator);
             new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
         }
 

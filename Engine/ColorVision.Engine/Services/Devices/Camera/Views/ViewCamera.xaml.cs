@@ -159,7 +159,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
-            if (IsDisposed || Device.RoutesLocally || arg.DeviceCode != Device.Config.Code) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible || Device.RoutesLocally || arg.DeviceCode != Device.Config.Code) return;
 
             if (arg.Code == 102)
             {
@@ -170,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         {
                             Application.Current?.Dispatcher.Invoke(() =>
                             {
-                                if (IsDisposed) return;
+                                if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
 
                                 Device.Config.MotorConfig.Position = arg.Data.Position;
                                 OpenImage((string?)arg.Data.ImageTmpFile);
@@ -243,6 +243,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void LocalResultPublished(ResultMessage message)
         {
             if (IsDisposed
+                || !Device.ViewRegistration.IsVisible
                 || message.Route != ResultRoutes.Camera
                 || message.ResultKind != ResultKinds.Image
                 || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
@@ -255,12 +256,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void ShowPersistedResult(int masterId)
         {
-            if (IsDisposed || masterId <= 0) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible || masterId <= 0) return;
             MeasureResultImgModel? model = MeasureImgResultDao.Instance.GetById(masterId);
             if (model == null) return;
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                if (!IsDisposed)
+                if (!IsDisposed && Device.ViewRegistration.IsVisible)
                     ShowResult(model);
             });
         }
@@ -286,7 +287,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         internal void ShowLocalResult(MeasureResultImgModel? model, LocalCameraPreview preview, bool forceDisplay)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
             EnsureInitialized();
             localPreview = preview;
             localPreviewResultId = model?.Id ?? -1;
@@ -310,7 +311,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public void ShowResult(MeasureResultImgModel model)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
             EnsureInitialized();
 
             ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);

@@ -13,7 +13,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 `ConfigHandler` 负责应用设置 JSON 的读取、实例缓存、合并写入和备份恢复；`ConfigService` 只是可替换的 `IConfigService` 入口。文件保存、运行期对象发布和订阅者重绑定是不同完成条件，不能用“保存方法返回”统一代表。
 
-本主题不处理设备资源的 MySQL 保存，也不定义属性编辑事务：分别见[设备资源配置](../../01-user-guide/devices/configuration.md)和[属性编辑器契约](./property-grid.md)。配置恢复点的界面入口由[存储与维护](./storage-maintenance.md)负责；软件设置、流程和结果各自的备份范围见[导入导出边界](../../01-user-guide/data-management/export-import.md)。
+本主题不处理设备资源的 MySQL 保存，也不定义属性编辑事务：分别见[设备资源配置](../../01-user-guide/devices/configuration.md)和[属性编辑器契约](./property-grid.md)。配置恢复点的界面入口由[配置页维护控件](./storage-maintenance.md)负责；软件设置、流程和结果各自的备份范围见[导入导出边界](../../01-user-guide/data-management/export-import.md)。
 
 ## 配置路径由谁决定
 

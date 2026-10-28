@@ -217,7 +217,7 @@ public partial class CalibrationJsonEditorWindow : Window
         if (StatusText == null || document == null) return;
         var errors = document.Validate();
         StatusText.Text = errors.Count == 0 ? (HasUnsavedChanges ? EngineLocalization.Get("参数已修改，尚未保存。") : EngineLocalization.Get("参数检查通过。")) : string.Join("\n", errors.Take(5));
-        SaveButton.IsEnabled = !saving && (!IsManualDraft || ManualConfirmation.IsChecked == true);
+        SaveButton.IsEnabled = !saving && ServiceAuthorization.CanWriteCalibrationFile(snapshot?.Path) && (!IsManualDraft || ManualConfirmation.IsChecked == true);
         SaveAsButton.IsEnabled = SaveButton.IsEnabled;
         CommandManager.InvalidateRequerySuggested();
     }
@@ -265,7 +265,7 @@ public partial class CalibrationJsonEditorWindow : Window
     }
     private void ApplyAdvanced_Click(object sender, RoutedEventArgs e) => ApplyAdvanced();
     private void Confirmation_Changed(object sender, RoutedEventArgs e) => UpdateStatus();
-    private void Save_CanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = document != null && !saving && (!IsManualDraft || ManualConfirmation.IsChecked == true);
+    private void Save_CanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = document != null && !saving && ServiceAuthorization.CanWriteCalibrationFile(snapshot?.Path) && (!IsManualDraft || ManualConfirmation.IsChecked == true);
     private async void Save_Executed(object sender, ExecutedRoutedEventArgs e) => await SaveAsync(false);
     private async void Save_Click(object sender, RoutedEventArgs e) => await SaveAsync(false);
     private async void SaveAs_Click(object sender, RoutedEventArgs e) => await SaveAsync(true);
@@ -304,7 +304,7 @@ public partial class CalibrationJsonEditorWindow : Window
 
     private void UpdateButtons()
     {
-        SaveButton.IsEnabled = !saving && (!IsManualDraft || ManualConfirmation.IsChecked == true);
+        SaveButton.IsEnabled = !saving && ServiceAuthorization.CanWriteCalibrationFile(snapshot?.Path) && (!IsManualDraft || ManualConfirmation.IsChecked == true);
         SaveAsButton.IsEnabled = SaveButton.IsEnabled;
         CommandManager.InvalidateRequerySuggested();
     }

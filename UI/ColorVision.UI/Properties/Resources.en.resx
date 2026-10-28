@@ -651,7 +651,7 @@
     <value>No controls available</value>
   </data>
   <data name="DisplayControlVisibilityHint" xml:space="preserve">
-    <value>Hiding a control only affects the device control panel. Devices and flows continue to run.</value>
+    <value>Hiding closes the detail page and pauses its automatic exports. Device connections and flows continue. Pages stay hidden after restart and reopen when shown.</value>
   </data>
   <data name="DisplayControlCreateGroup" xml:space="preserve">
     <value>New Group</value>
@@ -687,7 +687,7 @@
     <value>Move to a group</value>
   </data>
   <data name="DisplayControlVisibilityTooltip" xml:space="preserve">
-    <value>Show or hide in the device control panel</value>
+    <value>Show or hide both the device control and its detail page</value>
   </data>
   <data name="DisplayControlPinTooltip" xml:space="preserve">
     <value>Pin or unpin within the group</value>
@@ -939,4 +939,5 @@ Duration: {0:N0} ms</value>
   <data name="SearchLanguages" xml:space="preserve"><value>Search languages</value></data>
   <data name="AppearanceDefault" xml:space="preserve"><value>ColorVision (default)</value></data>
   <data name="LanguageAutoDetect" xml:space="preserve"><value>Auto detect</value></data>
+  <data name="SettingsConfiguration" xml:space="preserve"><value>Configuration</value></data>
 </root>

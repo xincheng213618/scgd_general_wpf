@@ -11,9 +11,10 @@ namespace ColorVision.UI.Desktop.Marketplace
         public override int Order => 9000;
         public override string Header => LocalizedMenuAccessKey.Format(Resources.Marketplace, 'P');
 
-        [RequiresPermission(PermissionMode.Administrator)]
+        [RequiresPermission(PermissionMode.Administrator, ActionId = "plugins.manage", ResourceId = "application.plugins")]
         public override void Execute()
         {
+            AccessControl.Demand("plugins.manage", PermissionMode.Administrator, "application.plugins");
             new MarketplaceWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }

@@ -2,10 +2,10 @@
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>Storage and maintenance</value></data>
-  <data name="Description" xml:space="preserve"><value>Clean logs, temporary files and rebuildable caches. Manage history, backups and settings resets separately.</value></data>
+  <data name="Title" xml:space="preserve"><value>Storage</value></data>
+  <data name="Description" xml:space="preserve"><value>View and manage local images, camera resources, and cache storage.</value></data>
   <data name="Space" xml:space="preserve"><value>Free up space</value></data>
-  <data name="Protected" xml:space="preserve"><value>Original images, results, flow templates, device settings and licences are excluded.</value></data>
+  <data name="Protected" xml:space="preserve"><value>Cleanup uses category-specific file lists. Active and protected files are retained.</value></data>
   <data name="Scan" xml:space="preserve"><value>Scan storage</value></data>
   <data name="CleanSelected" xml:space="preserve"><value>Clean selected</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
@@ -81,9 +81,26 @@
   <data name="FeedbackProtected" xml:space="preserve"><value>The feedback window is using diagnostic packages and screenshots. These attachments are protected.</value></data>
   <data name="UpdatePackagesProtected" xml:space="preserve"><value>All installer packages are protected while an update is running or awaiting installation.</value></data>
   <data name="ResetStartupFailed" xml:space="preserve"><value>The last startup could not finish the reset: {0}. You can cancel the plan and inspect the configuration and backup.</value></data>
-  <data name="Management" xml:space="preserve"><value>Cache management</value></data>
-  <data name="FileManagement" xml:space="preserve"><value>File cache management</value></data>
-  <data name="FileManagementDescription" xml:space="preserve"><value>Review and clean logs, temporary files, field data copies and rebuildable caches. Scans incrementally when opened.</value></data>
+  <data name="Management" xml:space="preserve"><value>Storage management</value></data>
+  <data name="FileManagement" xml:space="preserve"><value>File management</value></data>
+  <data name="FileManagementDescription" xml:space="preserve"><value>Review files, choose retention, and confirm cleanup. Maintain configuration and calibration resources in their resource manager.</value></data>
   <data name="MemoryManagement" xml:space="preserve"><value>Memory cache management</value></data>
   <data name="MemoryManagementDescription" xml:space="preserve"><value>Inspect camera, calibration and image buffers, and release idle memory.</value></data>
+  <data name="AccessDenied" xml:space="preserve"><value>The current user or policy does not allow this operation.</value></data>
+  <data name="ConfigurationTitle" xml:space="preserve"><value>Configuration</value></data>
+  <data name="ConfigurationDescription" xml:space="preserve"><value>Manage settings backups, reset and recovery, and crash dump configuration.</value></data>
+  <data name="ConfigurationMaintenanceTitle" xml:space="preserve"><value>Settings backup and reset</value></data>
+  <data name="ThisDevice" xml:space="preserve"><value>This device</value></data>
+  <data name="StorageScope" xml:space="preserve"><value>Manage images, camera resources, and caches on this computer. Remote database servers are excluded.</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="StorageCategories" xml:space="preserve"><value>Storage categories</value></data>
+  <data name="UsedStorage" xml:space="preserve"><value>ColorVision accounted storage: {0}</value></data>
+  <data name="Updating" xml:space="preserve"><value>Updating…</value></data>
+  <data name="UsageUpdated" xml:space="preserve"><value>Storage updated</value></data>
+  <data name="UsagePartial" xml:space="preserve"><value>Partial results; {0} locations could not be fully read.</value></data>
+  <data name="UsageCancelled" xml:space="preserve"><value>Scan cancelled. Completed categories remain available.</value></data>
+  <data name="UsageManifestMissing" xml:space="preserve"><value>No file manifest was provided; this usage is excluded from the total.</value></data>
+  <data name="ReadOnlyResources" xml:space="preserve"><value>Configuration and calibration resources are read-only here. Use the resource manager to modify them.</value></data>
+  <data name="ResourceManager" xml:space="preserve"><value>Resource manager</value></data>
+  <data name="CategoryUnavailable" xml:space="preserve"><value>This category is unavailable. Refresh the file management list.</value></data>
 </root>

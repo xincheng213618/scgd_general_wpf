@@ -15,6 +15,10 @@ MySQL 连接时，设备配置保存到 `SysResourceModel.Value`；未连接时�
 
 资源怎样进入列表和主显示区见[Engine 设备装配](../../04-api-reference/engine-components/device-service-chain.md)。本页覆盖通用终端/设备资源，不替代物理相机、客户项目或具体硬件参数契约。
 
+设备与终端已接入的关键配置入口通过 `ServiceAuthorization` 使用 Common 动作策略，默认要求应用管理员。动作分别为设备配置 `device.configure`、终端名称配置 `service.configure`、创建终端 `service.create`、创建设备 `device.create` 和删除资源 `resource.delete`；设备和终端资源通常使用 Code，无 Code 的通用资源路径回退到 `resource:` 加资源 ID，创建终端使用服务类型身份。打开窗口和执行提交分别检查；事务属性窗口通过 `Submitting` 在复制回原配置前拒绝撤权后的提交，PG/Spectrum 的独立配置草稿在真正 `Apply` 前检查。
+
+这些检查保护实际接入的界面/命令和提交入口，不把通用 `Save()`、DAO 或任意直接配置赋值变成全产品统一授权拦截。原有公开保存接口继续承担持久化与通知；宿主新增业务入口时仍应在副作用前请求对应动作，并保留数据库、远端服务、Windows 权限及设备许可各自的边界。
+
 RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连接测试、取消、节点令牌与设备状态的区别见[RC 注册契约](../../04-api-reference/engine-components/rc-registration.md)。
 
 ## 无 MySQL 时创建相机与许可证

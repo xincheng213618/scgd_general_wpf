@@ -2,15 +2,9 @@ using ColorVision.Windowing;
 
 namespace ColorVision;
 
-/// <summary>Selects a shell only at startup; existing windows never change type in place.</summary>
+/// <summary>Selects the supported shell for the operating system at startup.</summary>
 internal static class MainWindowFactory
 {
-    internal static bool ShouldUseCompactMainWindow(bool configured, bool operatingSystemSupported) =>
-        configured && operatingSystemSupported;
-
-    internal static MainWindow Create(bool useCompactMainWindow)
-    {
-        bool selected = ShouldUseCompactMainWindow(useCompactMainWindow, CompactTitleBarChrome.IsSupportedOperatingSystem);
-        return selected ? new CompactMainWindow() : new MainWindow();
-    }
+    internal static MainWindow Create() =>
+        CompactTitleBarChrome.IsSupportedOperatingSystem ? new CompactMainWindow() : new MainWindow();
 }

@@ -7,6 +7,7 @@ using ColorVision.Rbac.Security;
 using ColorVision.UI.Authorizations;
 using SqlSugar;
 using System.IO;
+using System.Globalization;
 using System.Windows;
 using ColorVision.Rbac.Entity;
 
@@ -96,9 +97,15 @@ namespace ColorVision.Rbac
 
             // 若已有有效登录缓存则同步权限；无有效登录态时默认允许管理员级操作。
             if (IsValidLoginResult(Config.LoginResult))
+            {
+                Authorization.Instance.SubjectId = Config.LoginResult.User.Id.ToString(CultureInfo.InvariantCulture);
                 Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
+            }
             else
+            {
+                Authorization.Instance.SubjectId = null;
                 Authorization.Instance.PermissionMode = PermissionMode.Administrator;
+            }
         }
 
         private void SeedPermissionsAndRoles()

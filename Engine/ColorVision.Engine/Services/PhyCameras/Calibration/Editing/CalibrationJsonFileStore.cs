@@ -57,6 +57,7 @@ public static class CalibrationJsonFileStore
 
     public static CalibrationJsonFileSnapshot Save(CalibrationJsonFileSnapshot source, string json)
     {
+        ServiceAuthorization.DemandCalibrationFileWrite(source.Path);
         CalibrationJsonDocument.ParseObject(json);
         using var lockedSource = LockSource(source);
         string temporary = source.Path + "." + Guid.NewGuid().ToString("N") + ".tmp";
@@ -76,6 +77,7 @@ public static class CalibrationJsonFileStore
 
     public static CalibrationJsonFileSnapshot SaveAs(string path, string json, CalibrationJsonFileSnapshot? source = null)
     {
+        ServiceAuthorization.DemandCalibrationFileWrite(path);
         CalibrationJsonDocument.ParseObject(json);
         path = System.IO.Path.GetFullPath(path);
         using var lockedSource = source == null ? null : LockSource(source);

@@ -97,6 +97,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         private bool _isLoading;
 
         public static PreProcessManager GetInstance() { lock (_locker) { _instance ??= new PreProcessManager(); return _instance; } }
+        internal static PreProcessManager? Current { get { lock (_locker) { return _instance; } } }
 
         public ObservableCollection<PreProcessAction> Processes { get; } = new ObservableCollection<PreProcessAction>();
         public ObservableCollection<PreProcessTypeOption> AvailableProcessTypes { get; } = new ObservableCollection<PreProcessTypeOption>();

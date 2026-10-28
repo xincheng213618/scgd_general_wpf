@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Terminal;
+using ColorVision.UI.Authorizations;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
@@ -62,6 +63,9 @@ namespace ColorVision.Engine.Services.Types
     public class TypeService : TerminalServiceBase
     {
         public SysDictionaryModel SysDictionaryModel { get; set; }
+        protected override string? AuthorizationResourceId => CreationResourceId;
+        internal string? CreationResourceId => SysDictionaryModel == null ? null : "service-type:" + SysDictionaryModel.Id;
+        private bool CanCreate => SysDictionaryModel != null && AccessControl.Evaluate("service.create", PermissionMode.Administrator, CreationResourceId).Allowed;
 
         public ServiceTypes ServiceTypes { get =>  (ServiceTypes)SysDictionaryModel.Value; }
 
@@ -72,6 +76,7 @@ namespace ColorVision.Engine.Services.Types
         {
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
+                if (!CanCreate) return;
                 if (MessageBox.Show(Properties.Resources.AvoidCreationUnlessNecessary, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     CreateType createType = new CreateType(this);
@@ -79,7 +84,7 @@ namespace ColorVision.Engine.Services.Types
                     createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                     createType.ShowDialog();
                 }
-            });
+            }, _ => CanCreate);
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create ,Command = OpenCreateWindowCommand });
@@ -87,6 +92,7 @@ namespace ColorVision.Engine.Services.Types
 
         public override void Delete()
         {
+            DemandDeleteAccess();
             if (MessageBox.Show(Properties.Resources.AvoidDeletionOfServiceUnlessNecessary,"ColorVision",MessageBoxButton.YesNo)==MessageBoxResult.Yes)
             {
                 base.Delete();

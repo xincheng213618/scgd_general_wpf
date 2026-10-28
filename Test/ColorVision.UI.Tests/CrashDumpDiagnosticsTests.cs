@@ -21,6 +21,7 @@ namespace ColorVision.UI.Tests
             ConfigSettingMetadata setting = Assert.Single(new CrashDumpSettingsProvider().GetConfigSettings());
 
             Assert.Equal("崩溃转储", setting.Name);
+            Assert.Equal(ConfigSettingConstants.Configuration, setting.Group);
             Assert.Equal(ConfigSettingType.Class, setting.Type);
             Assert.Same(CrashDumpConfiguration.Current, setting.Source);
             Assert.Equal(typeof(CrashDumpSettingsControl), setting.ViewType);

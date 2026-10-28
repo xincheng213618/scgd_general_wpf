@@ -138,10 +138,12 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 | 动作 | 实际行为与边界 |
 | --- | --- |
 | 编辑字段 | 通常按绑定触发条件写入 `EditableObject`；`Immediate` 下它就是原对象 |
-| 确定 | 先 `Commit()`，再触发 `Submitted`，最后关闭；是否落盘或保存模板取决于宿主订阅 |
+| 确定 | 先触发可取消的 `Submitting`，允许后才 `Commit()`、触发 `Submitted` 并关闭；是否落盘或保存模板取决于宿主订阅 |
 | 取消／关闭 | `Cancel_Click` 只关闭窗口，未调用恢复；`Immediate` 下按钮显示“关闭”，已写入原对象的值不会因此撤销 |
 | 重置 | `Reset()` 将打开时的初始快照复制到当前编辑对象；`Immediate` 下同样会修改原对象 |
 | 恢复默认 | `ResetToDefaults()` 用可构造的默认对象覆盖当前编辑对象；不是从配置备份文件恢复 |
+
+宿主可在 `Submitting` 中设置 `PropertyEditorSubmittingEventArgs.Cancel=true`，并通过 `ErrorMessage` 在窗口内显示拒绝原因。取消时保留窗口和工作副本，不调用 `Commit()`、`Submitted` 或宿主保存动作；没有订阅时保留原有提交流程。既有构造函数、`Submitted` 和兼容别名 `Submited` 的调用形状不变。该边界可用于提交前重新验证操作授权；`Immediate` 模式已经直接写入的值仍不因此回滚。
 
 编辑器只负责把控件值写入传入的 `obj`。判断“配置保存失败”需分别核对字段绑定、会话提交和宿主持久化，不能把界面值变化或确定按钮当成文件／数据库已保存的证据。[软件配置](./configuration.md)与[设备资源配置](../../01-user-guide/devices/configuration.md)有不同的保存/发布边界。只读诊断不要用改值、重置或恢复默认来探测设备配置；实际验证应使用隔离对象，并经授权检查保存后重开与宿主副作用。
 

@@ -54,6 +54,8 @@ namespace ColorVision.UI.Desktop.Settings
             {
                 return Resources.GeneralSettings;
             }
+            if (string.Equals(group, ConfigSettingConstants.Configuration, StringComparison.Ordinal))
+                return SettingResources.Configuration;
 
             string? localized = TryGetResourceText(Resources.ResourceManager, group);
             return localized ?? ToFriendlyName(group);
@@ -155,6 +157,9 @@ namespace ColorVision.UI.Desktop.Settings
 
         private static string ResolveNavigationGroup(ConfigSettingMetadata metadata, string title)
         {
+            string? explicitGroup = NormalizeText(metadata.Group);
+            if (explicitGroup != null && !string.Equals(explicitGroup, ConfigSettingConstants.Universal, StringComparison.OrdinalIgnoreCase))
+                return explicitGroup;
             if (metadata.Type != ConfigSettingType.Property && !string.IsNullOrWhiteSpace(title))
             {
                 return title;
@@ -165,6 +170,9 @@ namespace ColorVision.UI.Desktop.Settings
 
         private static string ResolveGroupDisplayName(ConfigSettingMetadata metadata, string group, string title)
         {
+            string? explicitGroup = NormalizeText(metadata.Group);
+            if (explicitGroup != null && !string.Equals(explicitGroup, ConfigSettingConstants.Universal, StringComparison.OrdinalIgnoreCase))
+                return ResolveGroupDisplayName(group);
             if (metadata.Type != ConfigSettingType.Property && !string.IsNullOrWhiteSpace(title))
             {
                 return title;

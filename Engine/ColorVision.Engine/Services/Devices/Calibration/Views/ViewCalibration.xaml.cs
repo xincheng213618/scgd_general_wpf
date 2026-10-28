@@ -141,7 +141,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void ClearList_Click(object sender, RoutedEventArgs e) => ViewResults.Clear();
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
-            if (_isDisposed)
+            if (_isDisposed || !Device.ViewRegistration.IsVisible)
                 return;
 
             switch (arg.EventName)
@@ -157,6 +157,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void LocalResultPublished(ResultMessage message)
         {
             if (_isDisposed
+                || !Device.ViewRegistration.IsVisible
                 || message.Route != ResultRoutes.Calibration
                 || message.ResultKind != ResultKinds.Image
                 || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
@@ -167,7 +168,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void ShowPersistedResult(int masterId)
         {
-            if (_isDisposed || masterId <= 0) return;
+            if (_isDisposed || !Device.ViewRegistration.IsVisible || masterId <= 0) return;
             log.Debug($"masterId:{masterId}");
             MeasureResultImgModel? model = MeasureImgResultDao.Instance.GetById(masterId);
             if (model == null)
@@ -179,7 +180,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             log.Debug($"FileUrl：{model.FileUrl}");
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (!_isDisposed)
+                if (!_isDisposed && Device.ViewRegistration.IsVisible)
                     ShowResult(model);
             });
         }
@@ -187,7 +188,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void ShowResult(MeasureResultImgModel model)
         {
-            if (_isDisposed)
+            if (_isDisposed || !Device.ViewRegistration.IsVisible)
                 return;
 
             EnsureInitialized();

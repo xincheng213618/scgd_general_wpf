@@ -1,57 +1,68 @@
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Operations;
-using ColorVision.Solution.MultiImageViewer;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.HotKey;
-using ColorVision.UI.Languages;
-using ColorVision.UI.Serach;
+using ColorVision.UI.Maintenance;
 using ColorVision.Update;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.Settings.Maintenance;
 
 public partial class StorageMaintenanceControl : UserControl
 {
-    public static IReadOnlyList<string> ResetSectionNames { get; } = Array.AsReadOnly(new[]
-    {
-        typeof(ThemeConfig), typeof(LanguageConfig), typeof(MainWindowConfig), typeof(HotKeyConfig), typeof(SearchConfig), typeof(MultiImageViewerConfig)
-    }.SelectMany(type => new[] { type.FullName!, type.Name }).Distinct(StringComparer.Ordinal).ToArray());
+    public static IReadOnlyList<string> ResetSectionNames => ConfigurationMaintenanceControl.ResetSectionNames;
     public StorageMaintenanceViewModel ViewModel { get; }
+    public StorageOverviewViewModel Overview { get; }
+    public Task ScanTask { get; private set; } = Task.CompletedTask;
     private readonly ConfigHandler? _configHandler;
     private Window? _owner;
+    private bool _loaded;
 
-    public StorageMaintenanceControl() : this(CreateProductionViewModel(), ConfigHandler.GetInstance()) { }
+    public StorageMaintenanceControl() : this(CreateProductionViewModel(), ConfigHandler.GetInstance(),
+        new StorageOverviewViewModel(AssemblyHandler.GetInstance().LoadImplementations<IStorageUsageProvider>())) { }
 
-    // Supplying a model without a handler is an isolated UI host: no real configuration or database is opened.
+    // Explicit models with no handler are isolated hosts: no production providers or configuration are opened.
     public StorageMaintenanceControl(StorageMaintenanceViewModel viewModel, ConfigHandler? configHandler = null)
+        : this(viewModel, configHandler, new StorageOverviewViewModel([])) { }
+
+    public StorageMaintenanceControl(StorageMaintenanceViewModel viewModel, ConfigHandler? configHandler, StorageOverviewViewModel overview)
     {
         ViewModel = viewModel;
+        Overview = overview;
         _configHandler = configHandler;
         InitializeComponent();
-        DataContext = viewModel;
+        DataContext = this;
     }
 
     private static StorageMaintenanceViewModel CreateProductionViewModel() => new(
-        ConfigService.Instance.GetRequiredService<StorageMaintenanceConfig>(), Array.Empty<ColorVision.UI.Maintenance.IFileMaintenanceProvider>()) { Status = string.Empty };
+        ConfigService.Instance.GetRequiredService<StorageMaintenanceConfig>(), Array.Empty<IFileMaintenanceProvider>()) { Status = string.Empty };
 
-    private void Control_Loaded(object sender, RoutedEventArgs e)
+    private async void Control_Loaded(object sender, RoutedEventArgs e)
     {
+        if (_loaded) return;
+        _loaded = true;
         _owner = Window.GetWindow(this);
-        if (_owner != null) _owner.Closing += Owner_Closing;
-        RefreshPendingReset();
+        if (_owner != null) { _owner.Closing -= Owner_Closing; _owner.Closing += Owner_Closing; }
+        if (Overview.IsBusy) await Overview.ScanTask;
+        if (!_loaded) return;
+        ScanTask = Overview.ScanAsync();
+        await ScanTask;
     }
 
     private void Control_Unloaded(object sender, RoutedEventArgs e)
     {
+        _loaded = false;
+        Overview.Cancel();
         ViewModel.Cancel();
         if (_owner != null) _owner.Closing -= Owner_Closing;
         _owner = null;
@@ -64,119 +75,79 @@ public partial class StorageMaintenanceControl : UserControl
         ShowMessage(MaintenanceText.BusyClose);
     }
 
-    private void Files_Click(object sender, RoutedEventArgs e)
+    private async void RefreshStorage_Click(object sender, RoutedEventArgs e)
     {
-        if (_configHandler != null) FileManagementWindow.OpenWindow();
+        ScanTask = Overview.ScanAsync();
+        await ScanTask;
     }
+    private void CancelStorage_Click(object sender, RoutedEventArgs e) => Overview.Cancel();
+    private void Files_Click(object sender, RoutedEventArgs e) { if (_configHandler != null) FileManagementWindow.OpenWindow(); }
+    private void Memory_Click(object sender, RoutedEventArgs e) { if (_configHandler != null) ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow(); }
 
-    private void Memory_Click(object sender, RoutedEventArgs e)
+    private void Database_Click(object sender, RoutedEventArgs e) => RunAction(MaintenanceActions.OpenDatabase, () =>
     {
-        if (_configHandler != null) ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow();
-    }
+        var flow = new FlowOperationsRuntimeStatusProvider().Capture();
+        if (!flow.Available || flow.IsActive) throw new InvalidOperationException(MaintenanceText.Get("FlowBusy"));
+        DatabaseCleanupWindow.OpenWindow(Window.GetWindow(this));
+    });
+    private void Snapshots_Click(object sender, RoutedEventArgs e) => RunAction(MaintenanceActions.OpenSnapshots,
+        () => new ApplicationSnapshotsWindow { Owner = Window.GetWindow(this) }.ShowDialog());
 
-    private void Database_Click(object sender, RoutedEventArgs e)
+    private void ManageCategory_Click(object sender, RoutedEventArgs e)
     {
-        if (_configHandler == null || !CheckAdministrator()) return;
-        RunAction(() =>
+        if (_configHandler == null || (sender as FrameworkElement)?.DataContext is not StorageUsageItem item || !item.CanManage) return;
+        var grid = new DataGrid { AutoGenerateColumns = false, IsReadOnly = true, CanUserAddRows = false, ItemsSource = item.Files, EnableRowVirtualization = true };
+        grid.Columns.Add(new DataGridTextColumn { Header = MaintenanceText.FilePath, Binding = new Binding("FullPath"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+        grid.Columns.Add(new DataGridTextColumn { Header = MaintenanceText.Size + " (B)", Binding = new Binding("Length"), Width = 100 });
+        grid.Columns.Add(new DataGridTextColumn { Header = MaintenanceText.Modified, Binding = new Binding("LastWriteTimeUtc") { StringFormat = "yyyy-MM-dd HH:mm:ss" }, Width = 160 });
+        var panel = new DockPanel { Margin = new Thickness(16) };
+        var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+        DockPanel.SetDock(actions, Dock.Bottom);
+        var window = new Window { Title = item.Title, Width = 960, Height = 560, MinWidth = 660, MinHeight = 360, Owner = Window.GetWindow(this), Content = panel, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        window.SetResourceReference(Window.BackgroundProperty, "GlobalBackground");
+        window.SetResourceReference(Window.ForegroundProperty, "GlobalTextBrush");
+        window.ApplyCaption();
+        void AddAction(string label, Action action)
         {
-            var flow = new FlowOperationsRuntimeStatusProvider().Capture();
-            if (!flow.Available || flow.IsActive) throw new InvalidOperationException(MaintenanceText.Get("FlowBusy"));
-            DatabaseCleanupWindow.OpenWindow(Window.GetWindow(this));
-        });
-    }
-
-    private void Snapshots_Click(object sender, RoutedEventArgs e)
-    {
-        if (_configHandler == null || !CheckAdministrator()) return;
-        RunAction(() => new ApplicationSnapshotsWindow { Owner = Window.GetWindow(this) }.ShowDialog());
-    }
-
-    private void Backup_Click(object sender, RoutedEventArgs e)
-    {
-        if (_configHandler == null || !CheckAdministrator()) return;
-        RunAction(() =>
+            var button = new Button { Content = label, Padding = new Thickness(12, 5, 12, 5), Margin = new Thickness(8, 0, 0, 0) };
+            button.Click += (_, _) => { try { action(); } catch (Exception ex) { MessageBox.Show(window, ex.Message, item.Title, MessageBoxButton.OK, MessageBoxImage.Warning); } };
+            actions.Children.Add(button);
+        }
+        AddAction(MaintenanceText.OpenFileLocation, () =>
         {
-            _configHandler.SaveConfigs();
-            var result = _configHandler.CreateMaintenanceResetService().CreateBackup();
-            RequireSuccess(result);
-            ViewModel.Status = string.Format(MaintenanceText.BackupCreated, result.BackupPath);
+            if (grid.SelectedItem is FileMaintenanceEntry file && File.Exists(file.FullPath)) PlatformHelper.OpenFolderAndSelectFile(file.FullPath);
+            else
+            {
+                string[] roots = item.SourceDirectories.Where(Directory.Exists).ToArray();
+                if (roots.Length == 1) PlatformHelper.OpenFolder(roots[0]);
+                else if (roots.Length > 1)
+                {
+                    var menu = new ContextMenu();
+                    foreach (string root in roots) { var entry = new MenuItem { Header = root }; entry.Click += (_, _) => PlatformHelper.OpenFolder(root); menu.Items.Add(entry); }
+                    menu.IsOpen = true;
+                }
+            }
         });
-    }
-
-    private void OpenBackups_Click(object sender, RoutedEventArgs e)
-    {
-        if (_configHandler == null || !CheckAdministrator()) return;
-        RunAction(() =>
+        if (item.Category.OpenManager is { } manager) AddAction(MaintenanceText.Get("ResourceManager"), manager);
+        if (!item.IsProtected && item.ManagementCategoryId is { } categoryId)
+            AddAction(MaintenanceText.FileManagement, () => { window.Close(); FileManagementWindow.OpenCategory(categoryId); });
+        AddAction(MaintenanceText.Close, window.Close);
+        panel.Children.Add(actions);
+        if (item.IsProtected)
         {
-            string directory = _configHandler.CreateMaintenanceResetService().BackupDirectoryPath;
-            if (!Directory.Exists(directory)) { ShowMessage(MaintenanceText.CacheUnavailable); return; }
-            Process.Start(new ProcessStartInfo(directory) { UseShellExecute = true });
-        });
+            var notice = new TextBlock { Text = MaintenanceText.Get("ReadOnlyResources"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) };
+            DockPanel.SetDock(notice, Dock.Top); panel.Children.Add(notice);
+        }
+        panel.Children.Add(grid);
+        window.ShowDialog();
     }
 
-    private void Reset_Click(object sender, RoutedEventArgs e)
+    private void RunAction(string actionId, Action action)
     {
-        if (_configHandler == null || !CheckAdministrator()) return;
-        var selected = ResetOptions.Children.OfType<CheckBox>().Where(check => check.IsChecked == true).ToArray();
-        if (selected.Length == 0) { ShowMessage(MaintenanceText.SelectReset); return; }
-        string message = string.Format(MaintenanceText.ResetConfirm, string.Join("、", selected.Select(check => check.Content)));
-        if (MessageBox.Show(Window.GetWindow(this), message, MaintenanceText.Reset, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-        RunAction(() =>
-        {
-            _configHandler.SaveConfigs();
-            var service = _configHandler.CreateMaintenanceResetService();
-            var plan = service.Prepare(selected.SelectMany(check => ((string)check.Tag).Split(',')));
-            RequireSuccess(service.Schedule(plan));
-            ViewModel.Status = MaintenanceText.ResetScheduled;
-            RefreshPendingReset();
-        });
-    }
-
-    private void CancelReset_Click(object sender, RoutedEventArgs e)
-    {
-        if (_configHandler == null || !CheckAdministrator()) return;
-        RunAction(() =>
-        {
-            RequireSuccess(_configHandler.CreateMaintenanceResetService().CancelPending());
-            ViewModel.Status = MaintenanceText.ResetCancelled;
-            RefreshPendingReset();
-        });
-    }
-
-    private void RefreshPendingReset()
-    {
-        CancelResetButton.IsEnabled = false;
-        if (_configHandler == null) return;
-        var result = _configHandler.CreateMaintenanceResetService().GetPending();
-        bool pending = result.Status == ConfigMaintenanceResetStatus.Scheduled;
-        CancelResetButton.IsEnabled = pending || (result.Status == ConfigMaintenanceResetStatus.Failed && File.Exists(_configHandler.CreateMaintenanceResetService().PendingFilePath));
-        ResetStatus.Text = pending ? string.Format(MaintenanceText.Pending, string.Join(", ", result.SectionNames)) : result.ErrorMessage;
-        if (!pending && _configHandler.LastMaintenanceResetResult is { Status: ConfigMaintenanceResetStatus.Applied } applied)
-            ResetStatus.Text = string.Format(MaintenanceText.Get("ResetApplied"), applied.BackupPath);
-        if (pending && _configHandler.LastMaintenanceResetResult is { Status: ConfigMaintenanceResetStatus.Deferred })
-            ResetStatus.Text += " " + MaintenanceText.Get("ResetDeferred");
-        if (pending && _configHandler.LastMaintenanceResetResult is { Status: ConfigMaintenanceResetStatus.Failed } failed)
-            ResetStatus.Text += " " + string.Format(MaintenanceText.Get("ResetStartupFailed"), failed.ErrorMessage);
-    }
-
-    private bool CheckAdministrator()
-    {
-        if (Authorization.Instance != null && Authorization.Instance.PermissionMode <= PermissionMode.Administrator) return true;
-        ShowMessage(MaintenanceText.AdminRequired);
-        return false;
-    }
-
-    private static void RequireSuccess(ConfigMaintenanceResetResult result)
-    {
-        if (!result.Succeeded) throw new InvalidOperationException(result.ErrorMessage);
-    }
-
-    private void RunAction(Action action)
-    {
-        if (ViewModel.IsBusy) return;
-        try { action(); }
+        if (_configHandler == null || ViewModel.IsBusy) return;
+        try { MaintenanceAccess.Demand(actionId); action(); }
+        catch (AccessDeniedException) { ShowMessage(MaintenanceText.Get("AccessDenied")); }
         catch (Exception ex) { ViewModel.Status = string.Format(MaintenanceText.Failed, ex.Message); ShowMessage(ViewModel.Status); }
     }
-
     private void ShowMessage(string message) => MessageBox.Show(Window.GetWindow(this), message, MaintenanceText.Title, MessageBoxButton.OK, MessageBoxImage.Information);
 }

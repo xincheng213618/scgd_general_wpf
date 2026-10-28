@@ -35,6 +35,7 @@ namespace ColorVision.Engine.Services.Terminal
     public class TerminalService : TerminalServiceBase, IIcon
     {
         public SysResourceModel SysResourceModel { get; set; }
+        protected override string? AuthorizationResourceId => ServiceAuthorization.ResourceId(SysResourceModel);
         public TerminalServiceConfig Config { get; set; }
 
         public MQTTServiceTerminalBase MQTTServiceTerminalBase { get; set; }
@@ -63,6 +64,7 @@ namespace ColorVision.Engine.Services.Terminal
             RefreshCommand = new RelayCommand(a => Save());
             EditCommand = new RelayCommand(a =>
             {
+                if (!ServiceAuthorization.Can("service.configure", SysResourceModel)) return;
                 var nameConfig = new BaseConfig { Name = Name };
                 PropertyEditorWindow window = new PropertyEditorWindow(nameConfig);
                 window.Title = $"{Properties.Resources.MenuEdit} {Properties.Resources.ServiceName}";
@@ -78,15 +80,16 @@ namespace ColorVision.Engine.Services.Terminal
                     }
                 };
                 window.ShowDialog();
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => ServiceAuthorization.Can("service.configure", SysResourceModel));
 
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
+                if (!ServiceAuthorization.Can("device.create", SysResourceModel)) return;
                 CreateTerminal createTerminal = new(this);
                 createTerminal.Owner = Application.Current.GetActiveWindow();
                 createTerminal.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createTerminal.ShowDialog();
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => ServiceAuthorization.Can("device.create", SysResourceModel));
 
             if (DeviceServiceFactoryRegistry.TryGetFactory(ServiceType, out IDeviceServiceFactory? deviceServiceFactory)
                 && !string.IsNullOrWhiteSpace(deviceServiceFactory?.TerminalIconResourceKey))
@@ -104,6 +107,7 @@ namespace ColorVision.Engine.Services.Terminal
 
         public override void Delete()
         {
+            DemandDeleteAccess();
             if (MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.AvoidDeletionUnlessNecessary, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
             Parent.RemoveChild(this);
@@ -121,6 +125,7 @@ namespace ColorVision.Engine.Services.Terminal
 
         internal void Rename(string name)
         {
+            ServiceAuthorization.Demand("service.configure", SysResourceModel);
             if (Name == name) return;
             var storedConfig = string.IsNullOrWhiteSpace(SysResourceModel.Value) ? new JObject()
                 : JsonConvert.DeserializeObject<JObject>(SysResourceModel.Value, new JsonSerializerSettings { DateParseHandling = DateParseHandling.None }) ?? new JObject();

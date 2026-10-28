@@ -8,6 +8,7 @@ using ScottPlot.Plottables;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -20,12 +21,13 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
-    public partial class ViewSMU : UserControl
+    public partial class ViewSMU : UserControl, IDisposable
     {
         public ObservableCollection<ViewResultSMU> ViewResults { get; set; } = new();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new();
         private bool _initializationStarted;
         private bool _isInitialized;
+        private bool _isDisposed;
         private bool _updatingPoints;
         private ViewResultSMU? _activeResult;
         private ViewResultSMU? _latestResult;
@@ -53,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         internal void EnsureInitialized()
         {
             if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(EnsureInitialized); return; }
-            if (_initializationStarted) return;
+            if (_initializationStarted || _isDisposed) return;
             _initializationStarted = true;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
@@ -71,12 +73,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             if (_isInitialized) return;
             _isInitialized = true;
             listView1.ItemsSource = ViewResults;
-            ViewResults.CollectionChanged += (_, _) =>
-            {
-                RecordCount.Text = EngineLocalization.Format($"{ViewResults.Count} 条");
-                EmptyState.Visibility = ViewResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-                if (_activeResult != null && !ViewResults.Contains(_activeResult)) PresentResult(null);
-            };
+            ViewResults.CollectionChanged += ViewResults_CollectionChanged;
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -92,6 +89,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         public void AddViewResultSMU(ViewResultSMU result)
         {
+            if (_isDisposed) return;
             EnsureInitialized();
             _latestResult = result;
             if (ViewSMUConfig.Instance.InsertAtBeginning)
@@ -103,6 +101,53 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 listView1.SelectedItem = result;
                 listView1.ScrollIntoView(result);
             }
+        }
+
+        private void ViewResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (_isDisposed) return;
+            RecordCount.Text = EngineLocalization.Format($"{ViewResults.Count} 条");
+            EmptyState.Visibility = ViewResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (_activeResult != null && !ViewResults.Contains(_activeResult)) PresentResult(null);
+        }
+
+        public void Dispose()
+        {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(Dispose); return; }
+            if (_isDisposed) return;
+            _isDisposed = true;
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
+            ViewResults.CollectionChanged -= ViewResults_CollectionChanged;
+            if (ReferenceEquals(ViewSMUConfig.Instance.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                ViewSMUConfig.Instance.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
+            if (listView1 != null)
+            {
+                listView1.SelectionChanged -= Result_SelectionChanged;
+                listView1.PreviewKeyDown -= Result_PreviewKeyDown;
+                BindingOperations.ClearAllBindings(listView1);
+                listView1.ItemsSource = null;
+                listView1.ContextMenu = null;
+                listView1.CommandBindings.Clear();
+            }
+            if (listView2 != null)
+            {
+                listView2.SelectionChanged -= Point_SelectionChanged;
+                listView2.ItemsSource = null;
+            }
+            ViewResults.Clear();
+            _activeResult = null;
+            _latestResult = null;
+            _pointMarker = null;
+            if (_isInitialized)
+            {
+                MetricBand.DataContext = null;
+                wpfplot1.Plot.Clear();
+            }
+            DataContext = null;
+            Content = null;
+            GC.SuppressFinalize(this);
         }
 
         private void Result_SelectionChanged(object sender, SelectionChangedEventArgs e)

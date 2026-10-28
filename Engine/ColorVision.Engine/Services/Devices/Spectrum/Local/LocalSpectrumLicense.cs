@@ -12,10 +12,10 @@ internal sealed class LocalSpectrumLicenseException : InvalidOperationException
 
 internal static class LocalSpectrumLicense
 {
-    internal static void EnsureNotExpired(DateTime? expiryDate, bool experimentalFeatures, DateTime now)
+    internal static void EnsureNotExpired(DateTime? expiryDate, bool skipValidation, DateTime now)
     {
         // Match the expiry displayed by physical spectrum management without decoding or validating the payload.
-        if (!experimentalFeatures && (!expiryDate.HasValue || expiryDate.Value <= now))
+        if (!skipValidation && (!expiryDate.HasValue || expiryDate.Value <= now))
             throw new LocalSpectrumLicenseException();
     }
 

@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -409,18 +410,20 @@ public sealed class StorageMaintenanceTests
     }
 
     [Fact]
-    public void IsolatedControlDoesNotResolveProductionStateOrAutomaticallyScan()
+    public void IsolatedControlScansReadonlyUsageWithoutResolvingProductionStateOrPreparingCleanup()
     {
         WithPage(980, false, "zh-CN", (host, page, scroll, model, sandbox) =>
         {
             Assert.Same(model, page.ViewModel);
-            Assert.Same(model, page.DataContext);
+            Assert.Same(page, page.DataContext);
             Assert.Equal(0, sandbox.RuleFactoryCalls);
             Assert.Equal(0, sandbox.ThumbnailScanCalls);
+            Assert.True(page.Overview.IsComplete);
+            Assert.Equal(5, page.Overview.TotalCount);
             Assert.True(Element<Button>(page, "FileManagementButton").IsEnabled);
             Assert.True(Element<Button>(page, "MemoryManagementButton").IsEnabled);
             Assert.DoesNotContain(Descendants(page), element => element.Name == "ScanButton" || element.Name == "CleanSelectedButton");
-            Assert.False(Element<Button>(page, "CancelResetButton").IsEnabled);
+            Assert.DoesNotContain(Descendants(page), element => element.Name is "ResetOptions" or "CancelResetButton");
         });
     }
 
@@ -575,11 +578,13 @@ public sealed class StorageMaintenanceTests
     }
 
     [Theory]
-    [InlineData(980)]
-    [InlineData(1180)]
-    public void RealSettingsShellKeepsMaintenanceContentReadableAfterCustomPageSizing(int width)
+    [InlineData(980, false)]
+    [InlineData(980, true)]
+    [InlineData(1180, false)]
+    [InlineData(1180, true)]
+    public void RealSettingsShellKeepsMaintenanceContentReadableAfterCustomPageSizing(int width, bool dark)
     {
-        WithMaintenanceSettings(width, (window, host, page, model, sandbox) =>
+        WithMaintenanceSettings(width, dark, 18, (window, host, page, model, sandbox) =>
         {
             Assert.Equal(0, sandbox.RuleFactoryCalls);
             Assert.Equal(0, sandbox.ThumbnailScanCalls);
@@ -588,6 +593,8 @@ public sealed class StorageMaintenanceTests
             CompleteWithDispatcher(model.ScanAsync());
             RefreshLayout(host, width);
             Assert.True(page.ActualWidth >= 600, "The settings shell must leave enough room for the maintenance actions.");
+            Rect titleBounds = BoundsIn(Element<TextBlock>(window, "CurrentGroupTitle"), host);
+            Assert.InRange(Math.Abs(titleBounds.Left - BoundsIn(page, host).Left), 0, 1);
             ScrollViewer scroll = Element<ScrollViewer>(window, "SettingsScrollViewer");
             Assert.True(scroll.ScrollableHeight > 0);
 
@@ -597,7 +604,6 @@ public sealed class StorageMaintenanceTests
                 Assert.True(bounds.Left >= -1 && bounds.Right <= page.ActualWidth + 1,
                     $"The real shell's custom-content sizing clips {ElementLabel(element)}: {bounds}, page {page.RenderSize}.");
                 if (element is TextBlock text && !string.IsNullOrWhiteSpace(text.Text)) AssertTextFits(text);
-                if (element is ComboBox combo) Assert.InRange(combo.ActualWidth, 64, 80);
             }
             foreach (Button button in Descendants(page).OfType<Button>().Where(IsEffectivelyVisible).ToArray())
             {
@@ -607,14 +613,17 @@ public sealed class StorageMaintenanceTests
                 Assert.True(bounds.Top >= -1 && bounds.Bottom <= scroll.ActualHeight + 1,
                     $"The real settings shell must scroll to maintenance action '{button.Content}': {bounds}, viewport {scroll.RenderSize}.");
             }
-
+            scroll.ScrollToTop();
+            RefreshLayout(host, width);
+            CaptureStoragePreview(host, $"storage-overflow-{width}-{(dark ? "dark" : "light")}.png");
         });
+        CaptureNormalStoragePreview(width, dark);
     }
 
     [Fact]
     public void RealSettingsShellReusesTheIsolatedMaintenancePageAcrossGroupChanges()
     {
-        WithMaintenanceSettings(980, (window, host, page, model, sandbox) =>
+        WithMaintenanceSettings(980, true, 18, (window, host, page, model, sandbox) =>
         {
             CompleteWithDispatcher(model.ScanAsync());
             Item(model, "packages").IsSelected = true;
@@ -643,14 +652,15 @@ public sealed class StorageMaintenanceTests
         });
     }
 
-    private static void WithMaintenanceSettings(int width,
+    private static void WithMaintenanceSettings(int width, bool dark, int categoryCount,
         Action<SettingWindow, Grid, StorageMaintenanceControl, StorageMaintenanceViewModel, Sandbox> action)
     {
-        WithPage(width, true, "zh-CN", (_, _, _, model, sandbox) =>
+        WithPage(width, dark, "zh-CN", (_, _, _, model, sandbox) =>
         {
             Func<StorageMaintenanceControl>? previousFactory = PreviewMaintenancePage.CreatePage;
             // The public parameterless view is only an activation adapter around this injected fake model.
-            PreviewMaintenancePage.CreatePage = () => new StorageMaintenanceControl(model);
+            PreviewMaintenancePage.CreatePage = () => new StorageMaintenanceControl(model, null,
+                new StorageOverviewViewModel([new PreviewUsageProvider(sandbox.Root, categoryCount)]));
             try
             {
                 ConfigSettingMetadata[] settings =
@@ -672,6 +682,7 @@ public sealed class StorageMaintenanceTests
                     PreviewMaintenancePage wrapper = Assert.Single(Descendants(Element<StackPanel>(window, "SettingsContentPanel")).OfType<PreviewMaintenancePage>());
                     page = wrapper.Page;
                     page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+                    CompleteWithDispatcher(page.ScanTask);
                     action(window, host, page, model, sandbox);
                 }
                 finally
@@ -759,10 +770,22 @@ public sealed class StorageMaintenanceTests
                     previousLocalResources[key] = resources[key];
                     resources.Remove(key);
                 }
+                // Production ThemeResourceDictionary also contributes these derived surface/font tokens.
+                // Create only the in-memory resources; applying ThemeManager would start its OS monitor.
+                ResourceDictionary appearance = new ThemeAppearance().CreateResources(dark ? Theme.Dark : Theme.Light, resources);
+                foreach (object key in appearance.Keys.Cast<object>().ToArray())
+                {
+                    if (!resources.Keys.Cast<object>().Contains(key)) continue;
+                    previousLocalResources[key] = resources[key];
+                    resources.Remove(key);
+                }
+                resources.MergedDictionaries.Add(appearance);
+                dictionaries.Add(appearance);
 
                 using Sandbox sandbox = new();
                 StorageMaintenanceViewModel model = sandbox.CreateModel();
-                StorageMaintenanceControl page = new(model);
+                StorageMaintenanceControl page = new(model, null,
+                    new StorageOverviewViewModel([new PreviewUsageProvider(sandbox.Root, 5)]));
                 Grid host = new();
                 host.SetResourceReference(Panel.BackgroundProperty, "GlobalBackground");
                 host.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(240) });
@@ -783,6 +806,7 @@ public sealed class StorageMaintenanceTests
                 host.Children.Add(scroll);
                 // No Window.Show, production App startup, ConfigHandler or live cache/database provider is used.
                 page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+                CompleteWithDispatcher(page.ScanTask);
                 try
                 {
                     RefreshLayout(host, width);
@@ -810,6 +834,54 @@ public sealed class StorageMaintenanceTests
             host.UpdateLayout();
             host.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
         }
+    }
+
+    private static void CaptureStoragePreview(FrameworkElement content, string fileName)
+    {
+        string? directory = Environment.GetEnvironmentVariable("STORAGE_RENDER_DIR");
+        if (string.IsNullOrWhiteSpace(directory)) return;
+        Directory.CreateDirectory(directory);
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(content.ActualWidth), (int)Math.Ceiling(content.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+        var visual = new DrawingVisual();
+        using (DrawingContext drawing = visual.RenderOpen())
+        {
+            Rect bounds = new(0, 0, content.ActualWidth, content.ActualHeight);
+            Brush background = content.TryFindResource("CV.Surface.Sidebar") as Brush
+                ?? content.TryFindResource("GlobalBackground") as Brush ?? Brushes.White;
+            drawing.DrawRectangle(background, null, bounds);
+            drawing.DrawRectangle(new VisualBrush(content), null, bounds);
+        }
+        bitmap.Render(visual);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var stream = File.Create(Path.Combine(directory, fileName));
+        encoder.Save(stream);
+    }
+
+    private static void CaptureNormalStoragePreview(int width, bool dark)
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("STORAGE_RENDER_DIR"))) return;
+        WithMaintenanceSettings(width, dark, 5, (_, host, page, _, _) =>
+        {
+            RefreshLayout(host, width);
+            CompleteWithDispatcher(page.ScanTask);
+            host.Dispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+            RefreshLayout(host, width);
+            Assert.False(page.Overview.IsBusy);
+            Assert.True(page.Overview.IsComplete);
+            Assert.Equal(5, page.Overview.Items.Count);
+            Assert.Equal(15L * 1024 * 1024 * 1024, page.Overview.TotalBytes);
+            ItemsControl legend = Element<ItemsControl>(page, "OverviewLegend");
+            ItemsControl managedSources = Assert.Single(Descendants(page).OfType<ItemsControl>(), control =>
+                !ReferenceEquals(control, legend) && control.ItemsSource is IEnumerable<StorageUsageItem>);
+            Assert.Equal(5, managedSources.Items.Count);
+            Assert.All(page.Overview.Items, item =>
+            {
+                Assert.True(item.IsScanned);
+                Assert.Contains(Descendants(legend).OfType<TextBlock>(), text => text.Text == item.SizeText);
+            });
+            CaptureStoragePreview(host, $"storage-{width}-{(dark ? "dark" : "light")}.png");
+        });
     }
 
     private static void CompleteWithDispatcher(Task task)
@@ -898,6 +970,27 @@ public sealed class StorageMaintenanceTests
         {
             Page = CreatePage?.Invoke() ?? throw new InvalidOperationException("The maintenance test fixture must be explicitly injected.");
             Content = Page;
+        }
+    }
+
+    private sealed class PreviewUsageProvider(string root, int count) : IStorageUsageProvider
+    {
+        public void PrepareStorageScan() { }
+        public IEnumerable<StorageUsageCategory> GetStorageCategories() => Enumerable.Range(0, count).Select(index => new PreviewUsageCategory(root, index));
+    }
+
+    private sealed class PreviewUsageCategory(string root, int index) : StorageUsageCategory
+    {
+        public override string Id => $"fixture.usage.{index}";
+        public override string Title => new[] { "相机图像", "算法结果", "相机资源", "预处理目录", "文件缓存" }[index % 5] + (index < 5 ? "" : $" {index + 1}");
+        public override string Description => "仅用于隔离布局验证的存储来源。";
+        public override bool IsProtected => index == 2;
+        public override IReadOnlyList<string> SourceDirectories => [root];
+        public override StorageUsageSnapshot Scan(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            long bytes = (index + 1L) * 1024 * 1024 * 1024;
+            return new(bytes, 1, [new FileMaintenanceEntry(Path.Combine(root, $"usage-{index}.dat"), bytes, DateTime.UnixEpoch)], []);
         }
     }
 

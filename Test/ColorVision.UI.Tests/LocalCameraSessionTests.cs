@@ -242,23 +242,22 @@ public class LocalCameraSessionTests
     }
 
     [Theory]
-    [InlineData(null, "{}", false)]
-    [InlineData(-1, "{}", false)]
-    [InlineData(0, "{\"IsEnabled\":false}", false)]
-    [InlineData(1, "{}", true)]
-    [InlineData(null, "{\"IsEnabled\":true}", true)]
-    [InlineData(-1, "{\"IsEnabled\":true}", true)]
-    public void LocalOpenChecksOnlyStoredExpiryAndRespectsPersistedExperimentalSetting(int? expirySeconds, string settingsJson, bool allowed)
+    [InlineData(null, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0, false, false)]
+    [InlineData(1, false, true)]
+    [InlineData(null, true, true)]
+    [InlineData(-1, true, true)]
+    public void LocalOpenChecksStoredExpiryUnlessValidationIsSkipped(int? expirySeconds, bool skipValidation, bool allowed)
     {
         DateTime now = new(2026, 10, 7, 12, 0, 0);
         LicenseModel license = new() { ExpiryDate = expirySeconds.HasValue ? now.AddSeconds(expirySeconds.Value) : null, LicenseValue = "not a license payload" };
-        ExperimentalFeaturesConfig settings = JsonConvert.DeserializeObject<ExperimentalFeaturesConfig>(settingsJson)!;
         var native = new FakeNative();
         var backend = new CameraBackendState(true);
         ConfigCamera config = new();
         int saves = 0;
         using var session = new LocalCameraSession(native, backend, config, () => saves++,
-            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(license.ExpiryDate, settings.IsEnabled, now));
+            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(license.ExpiryDate, skipValidation, now));
 
         if (allowed)
         {
@@ -290,7 +289,7 @@ public class LocalCameraSessionTests
         var native = new FakeNative { SwitchResult = switchResult };
         var backend = new CameraBackendState(true);
         using var session = new LocalCameraSession(native, backend,
-            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(expiry, false, now));
+            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(expiry, skipValidation: false, now));
         session.Open("camera-1", TakeImageMode.Live, 8);
         session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, () => native.Events.Add("stop"));
         native.Events.Clear();

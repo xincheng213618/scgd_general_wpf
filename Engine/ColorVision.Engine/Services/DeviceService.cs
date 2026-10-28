@@ -73,6 +73,38 @@ namespace ColorVision.Engine.Services
 
         public virtual ImageSource Icon { get; set; }
         public SysResourceModel SysResourceModel { get; set; }
+        protected override string? AuthorizationResourceId => ServiceAuthorization.ResourceId(SysResourceModel);
+
+        internal bool CanConfigure => ServiceAuthorization.Can("device.configure", SysResourceModel);
+
+        internal void DemandConfigurationAccess() => ServiceAuthorization.Demand("device.configure", SysResourceModel);
+
+        internal void ProtectConfigurationEditor(PropertyEditorWindow window)
+        {
+            window.Submitting += (_, e) =>
+            {
+                if (CanConfigure) return;
+                e.Cancel = true;
+                e.ErrorMessage = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+            };
+        }
+
+        internal void CommitConfiguration(Action? prepare = null)
+        {
+            DemandConfigurationAccess();
+            prepare?.Invoke();
+            Save();
+        }
+
+        internal bool TryCommitConfiguration(Window owner, Action? prepare = null)
+        {
+            try { CommitConfiguration(prepare); return true; }
+            catch (AccessDeniedException)
+            {
+                MessageBox.Show(owner, EngineLocalization.Get("当前权限不足，无法保存设备配置。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+        }
 
         public virtual UserControl GetDeviceInfo()
         {
@@ -152,7 +184,7 @@ namespace ColorVision.Engine.Services
                     MessageBox1.Show(WindowHelpers.GetActiveWindow(), Config.ToJsonN(), "ColorVision");
                 }
             });
-            DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
+            DeleteCommand = new RelayCommand(a => DeleteFromCommand(), a => CanDelete);
             EditCommand = new RelayCommand(a => { });
 
             ImportCommand = new RelayCommand(a =>
@@ -262,6 +294,7 @@ namespace ColorVision.Engine.Services
 
         public override void Delete()
         {
+            DemandDeleteAccess();
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AvoidDeletionUnlessNecessary, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
 

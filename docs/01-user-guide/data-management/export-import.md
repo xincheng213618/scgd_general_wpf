@@ -19,7 +19,7 @@ related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.
 
 | 对象 | 当前入口与实现 | 能力边界 |
 | --- | --- | --- |
-| 软件配置与备份 | “存储与维护”中的“配置恢复点”提供创建备份和打开备份文件夹；配置服务另有滚动备份与重载接口 | 两种备份独立，均不等于全部数据库与结果图的备份 |
+| 软件配置与备份 | “配置”中的“配置恢复点”提供创建备份和打开备份文件夹；配置服务另有滚动备份与重载接口 | 两种备份独立，均不等于全部数据库与结果图的备份 |
 | 单流程及关联模板 `.cvflow` | `TemplateFlow` 调用 `FlowPackageHelper` | 带关联模板及引用处理；包兼容与导入规则见[模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md) |
 | 多选流程 | `TemplateFlow` 多选导出 | 当前是 zip 内多个 `.stn`，不能等同于多个完整 `.cvflow` 包 |
 | 数据库记录 | 所属业务结果页或实体通用查询 | 用于确认源记录和范围，不能据此推断存在通用数据库迁移向导 |
@@ -31,7 +31,7 @@ related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.
 
 ## 配置文件与备份
 
-在[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)的“配置恢复点”中，管理员可创建备份或打开 `MaintenanceBackups` 文件夹。创建备份先保存当前设置，再备份完整主文件；该目录不参与配置服务的 `Backup` 滚动备份自动回退。
+在[配置页](../../04-api-reference/ui-components/storage-maintenance.md)的“配置恢复点”中，管理员可创建备份或打开 `MaintenanceBackups` 文件夹。创建备份先保存当前设置，再备份完整主文件；该目录不参与配置服务的 `Backup` 滚动备份自动回退。
 
 `ConfigHandler.SaveConfigs(fileName)` 仍是底层保存接口：序列化当前已实例化的配置对象，并合并目标文件已有节。新目标可能缺少从未实例化的节，已有目标也可能保留其它旧节；该接口不构成全项目备份。保存校验、备份回退、重载通知与旧对象引用的边界统一见[配置持久化与重载](../../04-api-reference/ui-components/configuration.md)。
 

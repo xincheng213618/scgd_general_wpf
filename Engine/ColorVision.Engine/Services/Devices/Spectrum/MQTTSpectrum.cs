@@ -145,8 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                     {
                                         try
                                         {
-                                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
-                                            Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                            Device.PresentResult(() => new ViewResultSpectrum(model));
                                             Device.DisplayConfig.IntTime = model.IntTime ??0;
 
                                         }
@@ -171,8 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 {
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
-                                        Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                        Device.PresentResult(() => new ViewResultSpectrum(model));
                                         Device.DisplayConfig.IntTime = model.IntTime ?? 0;
                                     });
                                 }
@@ -190,8 +188,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                     {
                                         Application.Current.Dispatcher.Invoke(() =>
                                         {
-                                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
-                                            Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                            Device.PresentResult(() => new ViewResultSpectrum(model));
                                             Device.DisplayConfig.IntTime = model.IntTime ?? 0;
                                         });
                                     }
@@ -203,8 +200,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
-                                    Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                    Device.PresentResult(() => new ViewResultSpectrum(colorParam.Data));
                                 });
                             }
                         }

@@ -94,7 +94,7 @@ internal static class StartupMaintenanceController
         string title = StartupMaintenanceText.Get(mode == StartupMaintenanceMode.SetupWizard ? "WizardTitle" : "RecoveryTitle");
         try
         {
-            ThrowIfOpeningBlocked(app);
+            ThrowIfOpeningBlocked(app, mode == StartupMaintenanceMode.SetupWizard ? MaintenanceActions.OpenSetup : MaintenanceActions.OpenRecovery);
             Window owner = app.GetActiveWindow() ?? app.MainWindow;
             if (mode == StartupMaintenanceMode.SetupWizard)
             {
@@ -106,6 +106,7 @@ internal static class StartupMaintenanceController
             ShowOwnedWindow(owner, recovery);
             if (recovery.Result.Action == StartupRecoveryAction.RunSetupWizard)
             {
+                ThrowIfOpeningBlocked(app, MaintenanceActions.OpenSetup);
                 ShowOwnedWindow(owner, new WizardWindow(runInitializers: false));
                 return;
             }
@@ -173,7 +174,7 @@ internal static class StartupMaintenanceController
 
     internal static void ThrowIfBlocked(App app)
     {
-        ThrowIfOpeningBlocked(app);
+        ThrowIfOpeningBlocked(app, MaintenanceActions.OpenRecovery);
         var flow = new FlowOperationsRuntimeStatusProvider().Capture();
         if (!flow.Available || flow.IsActive)
             throw new InvalidOperationException(StartupMaintenanceText.Get("FlowBusy"));
@@ -185,13 +186,13 @@ internal static class StartupMaintenanceController
             throw new InvalidOperationException(StartupMaintenanceText.Get("UpdateBusy"));
     }
 
-    internal static void ThrowIfOpeningBlocked(App app)
+    internal static void ThrowIfOpeningBlocked(App app, string actionId)
     {
         if (app.Dispatcher.HasShutdownStarted || app.Dispatcher.HasShutdownFinished
             || app.MainWindow is not MainWindow { IsLoaded: true, IsVisible: true })
             throw new InvalidOperationException(StartupMaintenanceText.Get("ApplicationUnavailable"));
-        if (Authorization.Instance == null || Authorization.Instance.PermissionMode > PermissionMode.Administrator)
-            throw new InvalidOperationException(StartupMaintenanceText.Get("AdminRequired"));
+        try { MaintenanceAccess.Demand(actionId); }
+        catch (AccessDeniedException ex) { throw new InvalidOperationException(StartupMaintenanceText.Get("AccessDenied"), ex); }
     }
 
     private static bool HasBusyView(DependencyObject element)

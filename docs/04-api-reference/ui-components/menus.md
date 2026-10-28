@@ -100,13 +100,13 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 ## 执行、搜索与快捷键的边界
 
-默认 `MenuItemBase.Command` 返回 `RelayCommand`，把 `AccessControl.Check(Execute)` 放在 `CanExecute` predicate。`RelayCommand.Execute` 本身直接执行 action，不重新检查 predicate；其它条目可返回完全不同的 ICommand。权限特性和粗粒度检查的准确范围见[Common 命令契约](./ColorVision.Common.md)与[安全边界](../../03-architecture/security/overview.md)，不能从菜单是否变灰推导所有调用都被保护。
+默认 `MenuItemBase.Command` 返回的 `RelayCommand` 在 `CanExecute` predicate 和实际调用 `Execute` 前都执行 `AccessControl.Check(Execute)`。因此直接调用这条默认命令也会重新决策，拒绝时不进入菜单 action；通用 `RelayCommand.Execute` 仍只直接执行自己的委托，其它条目也可返回完全不同的 ICommand。方法/声明类的权限特性及其稳定 `ActionId` 交给当前共享策略，精确范围见[Common 命令契约](./ColorVision.Common.md)与[安全边界](../../03-architecture/security/overview.md)，不能从菜单是否变灰推导全部直接调用都被保护。
 
-懒 adapter 的 Command 使用默认可执行的 RelayCommand；每次执行重新构造目标类，再反射调用公共或非公共的无参 `Execute()`。它不自动解析目标类的 ICommand 属性，也不添加 AccessControl/CanExecute 检查；构造失败、缺少方法或同步反射调用异常会记录警告。反射返回值被忽略，返回 Task 时既不等待，也不观察其后续异步失败，因此菜单点击或返回不能作为异步业务完成信号。实现 `IMenuItem` 的类型优先走直接路径，不会因再加 `[MenuItem]` 自动变成懒加载。
+懒 adapter 保持目标类按执行时构造：注册时只读取无参 `Execute()` 及方法/类的权限元数据，不为 `CanExecute` 创建实例。其 predicate 和执行前检查同一动作、角色要求及 `ResourceId`；允许后才构造，实际调用前再执行 `Demand`。实例若实现 `IMenuItem`，还需其自身 Command 的 `CanExecute` 允许；否则反射调用公共或非公共的无参 `Execute()`。构造失败、缺少方法或同步调用异常会记录警告。反射返回值被忽略，返回 Task 时既不等待，也不观察其后续异步失败，因此菜单点击或返回不能作为异步业务完成信号。实现 `IMenuItem` 的类型在普通发现路径仍优先走直接适配，不会因再加 `[MenuItem]` 自动变成懒加载。
 
 `MenuSearchProvider` 从 `GetAllMenuItemsFiltered` 再选取 `TargetName=MainWindow/Global`、自身 `Visibility=Visible`、Header/Command 非空的条目，排除 `OwnerGuid=Menu` 的顶层分组；它不是任意窗口菜单的统一入口，也没有重建菜单树来证明每个候选的父项实际可见。单项元数据读取失败记录警告并继续。结果通常保留原 ICommand，新增说明、别名和 `CategoryKey=Commands`；`MenuClose` 例外使用已有 `CloseDocumentCommand`，不再经依赖活动窗口的菜单适配器。菜单身份包含 TargetName/GuidId，已有 `IHotKey` 动作则按稳定 ActionId 关联当前键位，不通过显示名称猜测。
 
-搜索界面对不可执行结果给出不可用状态，并在真正派发前检查 `CanExecute`；RoutedCommand 使用原业务宿主中的明确内容目标，不因独立搜索窗口变为活动窗口而改为保存搜索框或关闭搜索宿主。原内容隐藏或活动文档已切换时拒绝旧路由结果，关闭搜索后仍复核目标。候选刷新、焦点恢复、目标失效和同步异常边界归[产品搜索契约](./search.md)。这些检查只覆盖搜索执行通道，不改变 RelayCommand 的直接调用或懒 adapter 的默认可执行行为，仍不能把 MenuItemBase 的 predicate 当成所有入口的统一业务鉴权。菜单重建也不主动更新一个已经显示的搜索结果快照。
+搜索界面对不可执行结果给出不可用状态，并在真正派发前检查 `CanExecute`；RoutedCommand 使用原业务宿主中的明确内容目标，不因独立搜索窗口变为活动窗口而改为保存搜索框或关闭搜索宿主。原内容隐藏或活动文档已切换时拒绝旧路由结果，关闭搜索后仍复核目标。候选刷新、焦点恢复、目标失效和同步异常边界归[产品搜索契约](./search.md)。搜索通道的检查与默认 `MenuItemBase` 命令的执行检查分别负责各自边界，均不改变任意 `RelayCommand` 或直接方法调用的行为。菜单重建也不主动更新一个已经显示的搜索结果快照。
 
 `InputGestureText` 仅为显示文字，不注册 `Ctrl+X` 等快捷键。`HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，还接收显式注册；它不读取菜单隐藏覆盖。已注册快捷键可能仍调用原操作，是否能执行继续取决于该回调自己的检查和[热键注册状态](./hotkeys.md)。菜单管理窗口也没有快捷键编辑字段，编辑入口在独立的快捷键设置页。
 

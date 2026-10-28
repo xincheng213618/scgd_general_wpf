@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.Views
@@ -26,6 +27,8 @@ namespace ColorVision.UI.Views
 
         private readonly List<DockViewRegistration> _registrations = new();
         private readonly Dictionary<Control, string> _viewIdentities = new();
+        private readonly Dictionary<Control, bool> _legacyVisibility = new();
+        private readonly ConditionalWeakTable<Control, DockViewRegistration> _viewOwners = new();
 
         public void SetViewIdentity(Control control, string persistenceKey)
         {
@@ -36,15 +39,58 @@ namespace ColorVision.UI.Views
 
         public string? GetViewIdentity(Control control) => _viewIdentities.GetValueOrDefault(control);
 
+        internal void SetViewOwner(Control control, DockViewRegistration registration) => _viewOwners.Add(control, registration);
+
+        public bool IsViewVisible(Control control) => _viewOwners.TryGetValue(control, out DockViewRegistration? registration)
+            ? registration.IsVisible && ReferenceEquals(registration.Current, control)
+            : _legacyVisibility.GetValueOrDefault(control, true);
+
+        internal void SetViewVisibility(Control control, bool isVisible)
+        {
+            bool previous = _legacyVisibility.GetValueOrDefault(control, true);
+            _legacyVisibility[control] = isVisible;
+            if (previous == isVisible || !Views.Contains(control)) return;
+            if (isVisible) ViewAddedHandler?.Invoke(control);
+            else
+            {
+                if (ReferenceEquals(LastActiveView, control)) LastActiveView = null;
+                ViewRemovedHandler?.Invoke(control);
+            }
+        }
+
+        /// <summary>Applies display-control visibility without activating another document.</summary>
+        public void SetViewVisibility(string persistenceKey, bool isVisible)
+        {
+            foreach (var registration in _registrations.Where(item => item.PersistenceKey == persistenceKey).ToArray())
+            {
+                bool previous = registration.IsVisible;
+                registration.IsVisible = isVisible;
+                if (isVisible && !previous)
+                {
+                    Control control = registration.GetOrCreate();
+                    SetViewTitle(control, registration.Title);
+                    AddView(control);
+                }
+            }
+            foreach (Control control in _legacyVisibility.Keys.Where(control => GetViewIdentity(control) == "DockView:" + persistenceKey).ToArray())
+                SetViewVisibility(control, isVisible);
+        }
+
         public bool TryGetViewForLayout(string contentId, out Control? control)
         {
             control = null;
             var registrations = _registrations.Where(item => !string.IsNullOrWhiteSpace(item.PersistenceKey)
                 && "DockView:" + item.PersistenceKey == contentId).ToArray();
             if (registrations.Length > 1) return false;
+            if (registrations.Length == 1 && !registrations[0].IsVisible) return false;
             var candidates = _viewIdentities.Where(item => item.Value == contentId).Select(item => item.Key).ToArray();
             if (candidates.Length > 1) return false;
-            if (candidates.Length == 1) { control = candidates[0]; return true; }
+            if (candidates.Length == 1)
+            {
+                if (!IsViewVisible(candidates[0])) return false;
+                control = candidates[0];
+                return true;
+            }
             if (registrations.Length != 1) return false;
             control = registrations[0].GetOrCreate();
             SetViewTitle(control, registrations[0].Title);
@@ -61,6 +107,7 @@ namespace ColorVision.UI.Views
         public void OpenView(DockViewRegistration registration)
         {
             RegisterView(registration);
+            if (!registration.IsVisible) return;
             Control control = registration.GetOrCreate();
             SetViewTitle(control, registration.Title);
             ActiveView(control);
@@ -115,10 +162,10 @@ namespace ColorVision.UI.Views
         /// </summary>
         public int AddView(Control control)
         {
-            if (control == null) return -1;
+            if (control == null || (!IsViewVisible(control) && !_legacyVisibility.ContainsKey(control))) return -1;
             if (Views.Contains(control)) return Views.IndexOf(control);
             Views.Add(control);
-            ViewAddedHandler?.Invoke(control);
+            if (IsViewVisible(control)) ViewAddedHandler?.Invoke(control);
             return Views.IndexOf(control);
         }
 
@@ -127,10 +174,10 @@ namespace ColorVision.UI.Views
         /// </summary>
         public int AddView(int index, Control control)
         {
-            if (control == null) return -1;
+            if (control == null || (!IsViewVisible(control) && !_legacyVisibility.ContainsKey(control))) return -1;
             if (Views.Contains(control)) return Views.IndexOf(control);
             Views.Insert(Math.Clamp(index, 0, Views.Count), control);
-            ViewAddedHandler?.Invoke(control);
+            if (IsViewVisible(control)) ViewAddedHandler?.Invoke(control);
             return Views.IndexOf(control);
         }
 
@@ -157,6 +204,7 @@ namespace ColorVision.UI.Views
             Views.Remove(control);
             ViewTitles.Remove(control);
             _viewIdentities.Remove(control);
+            _legacyVisibility.Remove(control);
             if (ReferenceEquals(LastActiveView, control))
                 LastActiveView = null;
             ViewRemovedHandler?.Invoke(control);
@@ -167,6 +215,7 @@ namespace ColorVision.UI.Views
         /// </summary>
         public void ActiveView(Control control)
         {
+            if (!IsViewVisible(control)) return;
             if (!Views.Contains(control))
                 AddView(control);
             ActiveViewHandler?.Invoke(control);
@@ -180,6 +229,7 @@ namespace ColorVision.UI.Views
         {
             foreach (var registration in _registrations.ToArray())
             {
+                if (!registration.IsVisible) continue;
                 Control control = registration.GetOrCreate();
                 SetViewTitle(control, registration.Title);
                 AddView(control);
@@ -204,6 +254,7 @@ namespace ColorVision.UI.Views
         /// </summary>
         public void SelectView(Control control)
         {
+            if (!IsViewVisible(control)) return;
             if (!Views.Contains(control))
                 AddView(control);
             SelectViewHandler?.Invoke(control);
@@ -215,7 +266,7 @@ namespace ColorVision.UI.Views
         /// </summary>
         public void ActivateLastView()
         {
-            if (LastActiveView != null)
+            if (LastActiveView != null && IsViewVisible(LastActiveView))
                 ActiveViewHandler?.Invoke(LastActiveView);
         }
     }

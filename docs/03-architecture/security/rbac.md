@@ -39,6 +39,8 @@ RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVis
 
 构造还创建 `SessionCleanupService`，5 分钟后首次调用清理，然后每小时运行；当前清理是将过期会话标记为撤销，不是删除账户，也不会同步清空 `RbacManagerConfig.LoginResult`。后台清理异常被捕获。取得单例、打开登录或管理窗口都不能当成无文件/数据库副作用的检查方法。
 
+结构有效的缓存恢复、密码登录成功和 Session 恢复成功时，同时把用户 ID 的 invariant 字符串同步到 `Authorization.SubjectId`；无有效初始化缓存时清空该标识。它只为共享策略提供当前主体上下文，不写入 Authorization 配置，也不改变上述缓存/会话验证规则。缓存恢复本身也会写入这个 ID，因此标识非空不能作为会话已经验证的证据。
+
 ## 服务职责与注册
 
 | 入口 | 当前责任 |
@@ -79,14 +81,14 @@ RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVis
 | 分支 | 代码实际行为 |
 | --- | --- |
 | `LoginBySessionTokenAsync` 成功 | 检查会话存在、未撤销、未过期及用户启用/未删除；更新 `LastActivityAt`，重新加载详情和角色。窗口更新 LoginResult、SavedUsername、全局权限并请求配置保存；不轮换 token，也不延长 ExpiresAt |
-| 返回 null | 窗口只清空 SessionToken、关闭 RememberMe 并请求保存；没有清空 LoginResult，也没有重置全局权限，旧缓存权限可能继续存在 |
+| 返回 null | 窗口只清空 SessionToken、关闭 RememberMe 并请求保存；没有清空 LoginResult、当前 SubjectId 或重置全局权限，旧缓存身份和权限可能继续存在 |
 | 抛异常 | `TryAutoLogin` 的 catch 只让输入框获得焦点，继续手动登录；不保证凭据、缓存或权限已清理 |
 
 这两种失败分支是当前未修复限制，不是“失败自动降权”的实现。`SessionService.ValidateSessionAsync` 也是另一接口：它检查会话并可能标记过期会话为撤销、更新活动时间，但不重新查询用户启停状态；不能把它与 `AuthService.LoginBySessionTokenAsync` 的完整行为混同。
 
 ### 登出与保存不是一项事务
 
-`RbacManagerWindow.BtnLogout_Click` 经确认后先尝试撤销当前 token，再尝试写审计；两处异常都被吞掉。随后清空 LoginResult、SessionToken、SavedUsername，关闭 RememberMe，把当前全局权限设为 `Guest`，调用配置保存并重新显示登录窗口。重新登录可再次改变权限；本地状态清空不能证明数据库会话已成功撤销。
+`RbacManagerWindow.BtnLogout_Click` 经确认后先尝试撤销当前 token，再尝试写审计；两处异常都被吞掉。随后清空 LoginResult、SessionToken、SavedUsername 和当前 `Authorization.SubjectId`，关闭 RememberMe，把当前全局权限设为 `Guest`，调用配置保存并重新显示登录窗口。重新登录可再次改变权限；本地状态清空不能证明数据库会话已成功撤销。
 
 登出当下的 `Guest` 与下次无结构有效缓存时初始化的 `Administrator` 是两条不同分支，不能承诺登出后重启仍保持 Guest。配置保存调用也不能替代对落盘结果的验证，保存层边界见[配置、恢复与保存](../../04-api-reference/ui-components/configuration.md)。
 
@@ -94,10 +96,10 @@ RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVis
 
 | 层级 | 当前入口 | 说明 |
 | --- | --- | --- |
-| 粗粒度 | `Authorization.Instance.PermissionMode`、`AccessControl.Check(...)` | 管理窗口按枚举数值比较；管理员及更高权限可进入，但这种比较本身没有验证登录或会话 |
+| 粗粒度 | `Authorization.Instance.PermissionMode`、`AccessControl.Evaluate/Demand/Check(...)` | Common 动作策略默认兼容角色层级；RBAC 管理窗口仍有自身的角色检查，这些判断本身没有验证登录或会话 |
 | 细粒度 | `PermissionChecker` | 查询用户角色和角色权限，带过期时间和 LRU 缓存 |
 
-当前系统是粗细两层并存。不要把 `PermissionMode` 写成已经被 RBAC 完全替换，也不要把权限码写成已覆盖全产品所有入口。
+当前系统是粗细两层并存。`IAccessPolicy` 提供宿主可替换的动作/资源决策点，默认仍读取全局角色；`PermissionChecker` 的数据库权限码结果不会自动接入该策略。需要受管身份时应由宿主明确桥接会话和权限来源，不能仅凭 `SubjectId` 或缓存 DTO 字段齐全认定已认证。不要把 `PermissionMode` 写成已经被 RBAC 完全替换，也不要把权限码写成已覆盖全产品所有入口。
 
 `PermissionChecker` 的缓存期限为 5 分钟，最多缓存约 1000 个用户并按访问时间淘汰。当前数据库查询从 UserRole/RolePermission 连接 Permission，过滤权限自身的启用/删除状态，但不在该查询中核验用户或角色的启停/删除状态。权限管理窗口保存后调用 `InvalidateAllCache()`；其他修改路径不能仅因数据库已更新就假定所有缓存已失效。
 

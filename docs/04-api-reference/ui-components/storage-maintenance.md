@@ -2,18 +2,24 @@
 knowledge_id: "ui.storage-maintenance"
 knowledge_type: "topic"
 status: "current"
-summary: "独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。"
-aliases: ["存储与维护", "存储与重置", "扫描空间", "清理选中项", "配置恢复点", "安排重置", "取消重置", "清理日志", "运行垃圾", "工作垃圾", "清理缓存", "重置设置", "StorageMaintenanceCatalog", "StorageMaintenanceControl", "StorageMaintenanceViewModel", "MaintenanceFileCleanup", "ConfigMaintenanceResetService", "ThumbnailCacheMaintenanceSnapshot", "HasPackageMaintenanceProtection", "HasActiveUpdateForCleanup", "文件缓存管理", "内存缓存管理", "FileManagementWindow", "IFileMaintenanceProvider", "增量扫描"]
-code_paths: ["ColorVision/Settings/Maintenance", "ColorVision/App.xaml.cs", "ColorVision/Update/CombinedUpdateCoordinator.cs", "UI/ColorVision.UI/Maintenance", "UI/ColorVision.UI/ConfigMaintenanceResetService.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Update/ExitUpdateHandoff.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs", "UI/ColorVision.UI.Desktop/Download/Infrastructure/DownloadTaskStore.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MaintenanceFileCleanupTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceCatalogTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs","Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"]
+summary: "存储分类占用与模块扩展接口、独立文件确认清理，以及配置页的恢复点和选择性下次启动重置。"
+aliases: ["存储", "配置", "存储空间", "分类占用", "扫描空间", "清理选中项", "配置恢复点", "安排重置", "取消重置", "清理日志", "运行垃圾", "工作垃圾", "清理缓存", "重置设置", "StorageMaintenanceCatalog", "StorageMaintenanceControl", "StorageMaintenanceViewModel", "MaintenanceFileCleanup", "ConfigMaintenanceResetService", "ThumbnailCacheMaintenanceSnapshot", "HasPackageMaintenanceProtection", "HasActiveUpdateForCleanup", "文件缓存管理", "内存缓存管理", "FileManagementWindow", "IFileMaintenanceProvider", "IStorageUsageProvider", "增量扫描"]
+code_paths: ["ColorVision/Settings/Maintenance", "ColorVision/App.xaml.cs", "ColorVision/Update/CombinedUpdateCoordinator.cs", "UI/ColorVision.UI/Maintenance", "UI/ColorVision.UI/ConfigMaintenanceResetService.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Update/ExitUpdateHandoff.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs", "UI/ColorVision.UI.Desktop/Download/Infrastructure/DownloadTaskStore.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs", "Engine/ColorVision.Engine/Services/Storage", "Engine/ColorVision.Engine/FlowProcessing/PreProcess"]
+test_paths: ["Test/ColorVision.UI.Tests/MaintenanceFileCleanupTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceCatalogTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs","Test/ColorVision.UI.Tests/StorageOverviewTests.cs","Test/ColorVision.UI.Tests/StorageUsageScannerTests.cs","Test/ColorVision.UI.Tests/EngineStorageUsageProviderTests.cs","Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"]
 related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update", "engine.database-maintenance"]
 ---
 
 # 存储清理与选择性设置重置
 
-`ColorVision/Settings/Maintenance/` 提供独立的“文件缓存管理”窗口，通过主窗口底部的文件夹图标或设置“存储与维护”的同名入口打开。“存储与维护”继续提供历史数据维护、程序存档、配置恢复点和选择性重置，并增加“内存缓存管理”跳转；内存释放仍由原有独立窗口处理，不参与文件清理。普通清理仅处理明确归属本软件、可删除或可重建的文件；重置需要管理员确认，下次启动生效。
+设置“存储”展示本机已登记来源的分类占用、分段比例条和来源位置，并提供文件缓存、内存缓存、历史数据与程序存档的管理入口。配置恢复点与选择性重置位于“配置”，崩溃转储设置也归入该页；Dump 文件本身仍可由存储清理来源管理。页面标题和内容使用设置宿主的同一左边界，自定义页不重复生成总标题。
+
+`ColorVision/Settings/Maintenance/` 提供独立的“文件缓存管理”窗口，通过主窗口底部的文件夹图标或“存储”的同名入口打开。内存释放仍由原有独立窗口处理，不参与文件清理。普通清理仅处理明确归属本软件、可删除或可重建的文件；重置需要管理员确认，下次启动生效。
 
 页面通过 `StorageMaintenanceSettingsProvider` 的 `IConfigSettingProvider` 元数据发现，展示与通用设置窗口的关系见[设置窗口契约](./settings.md)。文件类别通过 `IFileMaintenanceProvider` 的程序集发现注册。主程序 `BuiltInFileMaintenanceProvider` 接入现有五类，`StorageMaintenanceCatalog` 保持文件白名单；客户包可以提供独立类别，主程序不依赖客户包。每个类别负责扫描快照、保留期、保护提示和确认清理，准备或扫描失败仅使所属类别不可清理；重复类别标识不覆盖已有 owner。Windows 文件执行器归 `UI/ColorVision.UI/Maintenance/`；缩略图数据库仍由自己的 owner 管理，不能交给通用文件删除器处理。
+
+分类占用由独立的 `IStorageUsageProvider` 提供：`PrepareStorageScan` 只捕获模块当前路径和配置，`GetStorageCategories` 提供类别，后台 `StorageUsageCategory.Scan` 返回文件大小、数量、文件清单和扫描问题。`StorageUsageRule` 是只读统计白名单，不赋予删除权限；统计不创建不存在的目录，也不为了发现来源而连接设备或初始化业务数据库。重复来源按规范化文件路径去重，访问失败与取消不能当成完整的零占用结果。
+
+占用统计包含来源实际持有的文件，与清理窗口按保留期、保护状态筛出的可清理候选分别计算。顶部总量是已登记且成功扫描的来源，不是系统磁盘剩余空间或整个软件安装占用。类别可通过 `ManagementCategoryId` 指向所属模块的清理类别，通过可选 `OpenManager` 提供模块管理入口，或仅提供来源位置。`OpenManager` 的实际操作授权由所属模块在执行前检查，统计发现不会自动授予模块管理权限。受保护的相机配置、校正和授权文件可以计入占用，但不会仅因出现在比例条中就加入普通缓存清理。
 
 ## 清理范围与默认保留
 
@@ -24,6 +30,9 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 | 缩略图 `thumbnails` | `ThumbnailCacheManager.SqliteDbPath` 指向的既有缩略图数据库 | 默认勾选；只经 owner 清缓存记录和整理空间，不直接删除数据库、WAL 或 SHM 文件 |
 | CIE 背景 `cie-cache` | `%LocalAppData%\ColorVision\ImageEditor\CieCache` 中三个 `CieDiagramKind` 对应、版本号有效的背景 PNG | 默认勾选；可按需重新生成，不含用户图像 |
 | 安装包缓存 `packages` | `Environments.DirPackageCache` 下 `Application/Full`、`Application/Incremental`、`Plugins`、`Tools` 的顶层已知包扩展 | 保留最近 30 天，默认不勾选；保护待安装更新、下载任务和续传状态，不递归进入 `Recovery` |
+| 相机资源 `Engine.CameraResources` | 已加载物理相机的 `FileBasePath/<Code>/cfg` | 只读占用和文件清单；不注册清理类别，模块管理入口仍检查 `physical-camera.manage` |
+| 相机图像 `Engine.CameraImages`、算法图像 `Engine.AlgorithmImages` | 已加载对应设备的 `DataBasePath/<Code>/Data` 专用目录 | 独立业务文件清理类别，保留最近 30 天且默认不勾选；流程、相机预览/采集、算法忙碌期间保护，不将整个数据根目录纳入扫描 |
+| 预处理目录 `Engine.PreProcessFiles` | 已配置 `FolderSizePreProcessor` 的 `FolderPaths`、扩展名和是否递归选择 | 独立类别，保留最近 30 天且默认不勾选；目录覆盖到相机资源时仍保护资源文件。自定义 `IStorageUsageContributor` 提供的路径只参与占用统计，不自动获得清理权限 |
 
 加载 ProjectARVRPro 后，“现场数据副本”由该包的 `OfflineFileMaintenanceProvider` 注册，默认不勾选，保留 7 天。其范围和应用会话保护见[现场数据离线查看](../projects/project-arvr-pro.md)。未知来源的临时解压目录不会仅凭名称自动纳入清理。
 
@@ -33,9 +42,11 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 每个类别通过 `FileMaintenanceCategory.SourceDirectories` 提供“打开文件位置”；多个来源显示目录菜单，没有过期候选也能打开已存在目录。文件清单中可对选中的文件使用同名右键操作，在资源管理器中定位该文件。打开位置不执行扫描、清理或创建目录。
 
-不在普通清理范围内的内容包括：原始检测图、结果文件、流程模板、校准文件、设备配置、授权、数据库连接、用户下载目录、Copilot 会话、程序快照和恢复区。不能根据 `.tmp`、`.zip`、`.db` 等扩展名扫描整个磁盘或临时目录。
+通用缓存白名单不包括原始检测图、结果文件、流程模板、校准文件、设备配置、授权、数据库连接、用户下载目录、Copilot 会话、程序快照和恢复区。相机、算法和预处理输出只可通过上表独立业务来源管理，不因后缀类似缓存就默认勾选。未登记的手工导出、默认桌面侧栏保存目录和其它共享目录不会整目录扫描；不能根据 `.tmp`、`.zip`、`.db` 等扩展名扩展到整个磁盘或临时目录。
 
-数据库管理和程序备份是页面上的独立入口，不参与“清理选中项”。数据库入口要求管理员且当前流程状态可用、未运行；后续行为仍由[数据库清理窗口](../engine-components/database-maintenance.md)负责。打开程序备份也不等于删除快照或重建默认快照。
+`EngineStorageUsageProvider` 读取现有设备和物理相机实例的路径，不为了显示存储页初始化服务。预处理管理器已加载时读取当前 action 配置；未加载时只读取现有持久化 JSON，不构造预处理器。新的预处理保存功能可在其已配置 action 上实现 `IStorageUsageContributor.GetStorageUsageRules()`，提供明确目录、文件名模式、扩展名筛选和递归范围；模块若还需删除，应独立提供 `IFileMaintenanceProvider` 的确认清理契约，不能把统计规则直接当作删除授权。
+
+数据库管理和程序备份是“存储”页面上的独立入口，不参与“清理选中项”。这些入口以及“配置”页的配置备份、打开恢复点目录、安排和取消选择性重置，通过 `MaintenanceAccess` 以各自的 `maintenance.*` 动作和 `application` 资源请求授权；默认策略要求应用管理员。执行前重新检查，确认重置之后也再次检查，不只依据页面或按钮打开时的权限。数据库入口还要求当前流程状态可用、未运行；后续行为仍由[数据库清理窗口](../engine-components/database-maintenance.md)负责。打开程序备份也不等于删除快照或重建默认快照，应用内授权不代替 Windows 文件权限或后续维护步骤的检查。
 
 ## 扫描、确认与执行
 
@@ -73,7 +84,7 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 
 ## 选择性启动重置与独立备份
 
-页面只允许重置下列已注册非关键配置节：
+“配置”页只允许重置下列已注册非关键配置节：
 
 | 页面选项 | 配置节 | 初始选择 |
 | --- | --- | --- |
@@ -102,6 +113,8 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 - `MaintenanceFileCleanupTests.cs`：确认范围、身份变化、保留期、取消、占用和路径保护。
 - `StorageMaintenanceCatalogTests.cs`：实际日志命名、白名单目录、保护状态复查、新更新目录、续传文件与只读接管标记检查。
 - `StorageMaintenanceTests.cs`：扩展类别的扫描/清理与失败隔离、文件窗口加载自动扫描、ViewModel 门禁、保留期失效、取消与跨页面互斥；中英语言、深浅主题及 980/1180 宽度的隔离布局；真实设置框架中的注入分组、搜索、滚动复位与说明保留，不发现生产配置或连接生产服务。
+- `StorageOverviewTests.cs`：只读占用与保护文件、跨来源清单去重、准备失败清除旧统计、无清单统计拒绝计入、重扫替换和取消后的部分结果；不初始化生产 provider 或访问真实业务目录。
+- `StorageUsageScannerTests.cs` 与 `EngineStorageUsageProviderTests.cs`：统计白名单、链接/重解析点和重复来源、模块专用路径、预处理扩展来源、活动保护及确认清单清理；仅使用注入路径与隔离文件。
 - `ThumbnailCacheMaintenanceTests.cs`：缺库只读扫描、变化后重扫、事务清理、原图保留和维护 generation 推进；未模拟旧生成任务的实际回写。
 
 从仓库根目录可执行最小相关测试；仅针对测试创建的隔离数据，不运行实际维护页的删除、联网更新或业务数据清理：

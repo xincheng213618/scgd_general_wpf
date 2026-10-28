@@ -113,7 +113,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ### 设备控制管理、隐藏与开合
 
-“设备控制管理”窗口统一管理分组的新建、重命名、删除和顺序，也可调整每个控制项的分组、顺序、置顶、展开和显示状态。隐藏只从左侧设备控制栏移除对应显示控件，不删除 `IDisPlayControl`，不停止设备服务、连接、详情页或流程执行；重新显示时保留原分组、基础顺序、置顶和开合状态。全部控制项都隐藏时管理窗口仍列出这些项，作为恢复入口。
+“设备控制管理”窗口统一管理分组的新建、重命名、删除和顺序，也可调整每个控制项的分组、顺序、置顶、展开和显示状态。“显示”开关同时控制左侧设备控制项和关联的右侧详情页：隐藏时关闭详情页，布局恢复和启动显示全部视图时也跳过隐藏页；重新显示时恢复对应页面，不主动抢占当前页面焦点。隐藏不删除 `IDisPlayControl`，不停止设备服务、连接或流程执行。重新显示控制项时保留原分组、基础顺序、置顶和开合状态。全部控制项都隐藏时管理窗口仍列出这些项，作为恢复入口。
 
 分组标题的“+”新建分组，每行的“…”或右键菜单提供重命名、上下移动和删除；默认分组不能移动或删除。右侧始终列出全部控制项，通过行内分组选择、显示开关、置顶和展开图标调整状态，行尾箭头调整所属分组内的基础顺序。行内操作直接作用于所在项，无需预先选中。
 
@@ -131,20 +131,21 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ### 设备详情视图按需初始化
 
-相机、光谱、算法、校准和 SMU 设备保留完整的真实设备卡片；设备区仍能同时显示多个展开面板，`IsSelected` 继续表示选择和上下文。按需初始化只作用于对应的 `ViewCamera`、`ViewSpectrum`、`AlgorithmView`、`ViewCalibration`、`ViewSMU` 详情内容，不减少 `IDisPlayControls`，也不延迟设备服务或硬件初始化。SMU 的设备卡片登记空详情壳，首次可见或结果入口显式访问 `DeviceSMU.View` 后才创建列表及两幅图表。
+相机、光谱、算法、校准和 SMU 设备保留完整的真实设备卡片；设备区仍能同时显示多个展开面板，`IsSelected` 继续表示选择和上下文。按需初始化只作用于对应的 `ViewCamera`、`ViewSpectrum`、`AlgorithmView`、`ViewCalibration`、`ViewSMU` 详情内容，不减少 `IDisPlayControls`，也不延迟设备服务或硬件初始化。
 
 | 入口 | 详情初始化与兼容契约 |
 | --- | --- |
-| 设备卡片登记 | `AddViewConfig` 使用内部 `Device.ViewShell`，取得同一个 Lazy 保存的真实详情控件，但不立即调用 `InitializeComponent`。详情按原设备遍历顺序登记到 Dock，保持控件身份、标题、标签顺序和 `DockView_N` 的分配顺序 |
+| 设备卡片登记 | `AddViewConfig` 登记 `Device.ViewRegistration` 的工厂与稳定设备身份，不立即创建详情。注册在设备构造时就按设备 Code／旧名称读取隐藏配置，布局恢复和启动显示全部视图时跳过隐藏项 |
 | 公开访问 | `Device.View` 先执行 `EnsureInitialized` 再返回；原公开详情构造函数也立即初始化。因此直接访问图像、列表和结果操作的既有调用方仍取得可用控件 |
 | 显示详情 | `Loaded` 仅在 `IsVisible` 为 true 时初始化；`IsVisibleChanged` 仅在 `IsLoaded && IsVisible` 时初始化。未选中的 Dock 标签也可能先收到 `Loaded`，不能只用 Loaded 判断用户正在查看详情 |
-| 重复显示 | `EnsureInitialized` 防止重入及重复初始化；初始化后解除两种显示事件订阅，切换标签或卸载后重新显示复用已有内容 |
+| 切换标签 | `EnsureInitialized` 防止重入及重复初始化；初始化后解除两种显示事件订阅，普通标签切换复用已有内容 |
+| 隐藏与重新显示 | `DockViewRegistration.IsVisible` 表示是否允许设备界面出现，与控件当前是否可见分开。隐藏释放当前详情，重新显示创建新页面并补回标签，不主动激活；不回放关闭前的内存图像或列表，历史记录仍可查询 |
 
-`ViewShell` 先切换到 UI Dispatcher，再取得 `Lazy.Value`，避免后台线程持有 Lazy 构造锁等待 UI、同时 UI 又请求同一 Lazy 的死锁。详情控件和内部图形内容始终在 UI 线程创建，不在 `Task.Run` 中构造后跨线程挂载。空详情控件可能在进入 Dock 树时已触发 WPF `Initialized`，因此 `EnsureInitialized` 在 `InitializeComponent` 后显式调用原初始化处理函数，由该处理函数的状态保护避免执行两次。
+`ViewShell` 通过注册对象先切换到 UI Dispatcher，再取得或创建当前详情，避免后台线程持有构造锁等待 UI。详情控件和内部图形内容始终在 UI 线程创建，不在 `Task.Run` 中构造后跨线程挂载。空详情控件可能在进入 Dock 树时已触发 WPF `Initialized`，因此 `EnsureInitialized` 在 `InitializeComponent` 后显式调用原初始化处理函数，由该处理函数的状态保护避免执行两次。显式访问公开 `Device.View` 仍可构造控件，但显示管理器不会把隐藏设备的控件挂回文档；自动结果入口不使用此路径重建隐藏页。
 
-相机、算法和校准详情在轻量构造时就订阅原有 MQTT 回包及 `ResultMessageBus`，无设备参数的 `AlgorithmView` 仍不订阅。消息沿各自原有设备、路由、结果类型及结果 ID 规则过滤；相关持久化记录经查询取得后，回到 UI Dispatcher，再在结果显示入口确保初始化。隐藏详情因此也能保留首条可显示结果，不需要先点击标签；不匹配消息不会因为这条路径构造详情。相机对焦中间图沿原有过滤进入 `OpenImage`，同样按需初始化。光谱结果继续由 `MQTTSpectrum` 经 UI Dispatcher 调用 `Device.View.AddViewResultSpectrum`，公开 View 的初始化保证覆盖首结果入口。各结果的持久化、过滤和失败含义仍分别由设备主题及[结果交接链](./result-handoff-chain.md)维护。
+相机、算法和校准详情在轻量构造时订阅原有 MQTT 回包及 `ResultMessageBus`，无设备参数的 `AlgorithmView` 不建立这两种订阅。消息沿各自原有设备、路由、结果类型及结果 ID 规则过滤，再回到 UI Dispatcher 更新尚存在且允许显示的页面；普通未激活标签仍可接收结果，管理窗口隐藏或关闭页面后不再追加和绘图。光谱、SMU 的 `PresentResult` 只向当前页面呈现，隐藏时连结果界面模型也不构造；排队回调复核页面身份，不能把已关闭的旧页面复活。设备服务的 MQTT 通信、业务状态、结果持久化和流程执行保持原路径；各结果的过滤和失败含义仍由设备主题及[结果交接链](./result-handoff-chain.md)维护。
 
-`ViewCamera`、`AlgorithmView` 和 `ViewCalibration` 支持在内容未初始化时 Dispose：解除显示事件、MQTT 和本地结果订阅，对尚不存在的内部控件安全跳过；后续显示或已排队的结果回调不会重新初始化已释放详情。此保证只覆盖这些详情的实现，不代表设备所有资源已完整释放。`ViewSpectrum` 没有对应的 IDisposable 与设备详情释放契约，不能将上述三类的保证推广为全部设备的生命周期承诺。
+这五类详情释放时解除自身的显示、配置、主题及结果订阅，清理其图像或图表、驻留结果和配置中可能保留页面的列引用；未初始化内容安全跳过。后续显示或排队回调不会重新初始化已释放详情。兼容的旧 `UserControl` 注册路径只撤下文档，实例仍由原 owner 管理；尤其工作流程页与运行图共享对象，隐藏不销毁流程图、不取消正在执行的流程。此边界不代表设备所有资源或第三方页面都有同等释放保证。
 
 ## 各模块的独立契约
 

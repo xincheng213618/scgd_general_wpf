@@ -545,7 +545,7 @@
     <value>暫無控制項</value>
   </data>
   <data name="DisplayControlVisibilityHint" xml:space="preserve">
-    <value>隱藏僅影響設備控制欄，設備和流程仍可正常運行。</value>
+    <value>隱藏會關閉對應詳情頁並暫停該頁的自動儲存；設備連線和流程繼續運行。重啟保持隱藏，重新顯示恢復頁面。</value>
   </data>
   <data name="DisplayControlCreateGroup" xml:space="preserve">
     <value>新建分組</value>
@@ -581,7 +581,7 @@
     <value>移動到分組</value>
   </data>
   <data name="DisplayControlVisibilityTooltip" xml:space="preserve">
-    <value>在設備控制欄中顯示或隱藏</value>
+    <value>同時顯示或隱藏設備控制項及對應詳情頁</value>
   </data>
   <data name="DisplayControlPinTooltip" xml:space="preserve">
     <value>在所屬分組內置頂或取消置頂</value>
@@ -833,4 +833,5 @@
   <data name="SearchLanguages" xml:space="preserve"><value>搜尋語言</value></data>
   <data name="AppearanceDefault" xml:space="preserve"><value>ColorVision（預設）</value></data>
   <data name="LanguageAutoDetect" xml:space="preserve"><value>自動偵測</value></data>
+  <data name="SettingsConfiguration" xml:space="preserve"><value>設定</value></data>
 </root>

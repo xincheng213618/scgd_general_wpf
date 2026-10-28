@@ -8,6 +8,10 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.POI;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Core;
@@ -38,6 +42,279 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DockViewLifecycleTests
 {
+    [Fact]
+    public void HidingAControlReleasesItsDocumentAndShowingItPreservesTheActivePage()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            var manager = DockViewManager.GetInstance();
+            var displays = new DisPlayManager();
+            var display = new TestDisplayControl($"visibility-{Guid.NewGuid():N}", "Device");
+            displays.IDisPlayControls.Add(display);
+            using var registration = new DockViewRegistration(() => new DisposableTestView(), display.DisPlayName);
+            display.AddViewConfig(registration, display.DisPlayName);
+            manager.OpenView(registration);
+            var previous = Assert.IsType<DisposableTestView>(registration.Current);
+            var previousDocument = Assert.Single(scope.Pane.Children);
+            var other = new UserControl();
+            try
+            {
+                manager.ActiveView(other);
+                displays.SetControlVisible(display, false);
+                Assert.False(registration.IsVisible);
+                Assert.Null(registration.Current);
+                Assert.True(previous.IsDisposed);
+                Assert.Null(previousDocument.Content);
+                Assert.DoesNotContain(previous, manager.Views);
+                Assert.Same(other, manager.LastActiveView);
+
+                manager.OpenView(registration);
+                manager.ActiveView(previous);
+                manager.SelectView(previous);
+                manager.ShowAllViews();
+                Assert.Null(registration.Current);
+                Assert.False(manager.TryGetViewForLayout("DockView:" + display.PersistenceKey, out _));
+                Assert.Same(other, Assert.Single(scope.Pane.Children).Content);
+
+                displays.SetControlVisible(display, true);
+                Assert.True(registration.IsVisible);
+                Assert.IsType<DisposableTestView>(registration.Current);
+                Assert.NotSame(previous, registration.Current);
+                Assert.Contains(scope.Pane.Children, document => ReferenceEquals(document.Content, registration.Current));
+                manager.ActiveView(previous);
+                manager.SelectView(previous);
+                Assert.DoesNotContain(previous, manager.Views);
+                Assert.Same(other, manager.LastActiveView);
+                Assert.True(scope.Pane.Children.Single(document => ReferenceEquals(document.Content, other)).IsActive);
+            }
+            finally
+            {
+                manager.RemoveView(other);
+            }
+        });
+    }
+
+    [Fact]
+    public void HidingAnExternallyOwnedPageKeepsItsInstanceAndRestoresItWithoutTakingFocus()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            var manager = DockViewManager.GetInstance();
+            var displays = new DisPlayManager();
+            var display = new TestDisplayControl($"legacy-visibility-{Guid.NewGuid():N}", "Running flow");
+            displays.IDisPlayControls.Add(display);
+            var ownedView = new DisposableTestView();
+            var other = new UserControl();
+            try
+            {
+                display.AddViewConfig(ownedView, display.DisPlayName);
+                var previousDocument = Assert.Single(scope.Pane.Children);
+                var docking = new DockingManager { Layout = Assert.IsType<LayoutRoot>(scope.Pane.Root) };
+                var layout = new DockLayoutManager(docking);
+                using var saved = new StringWriter();
+                new XmlLayoutSerializer(docking).Serialize(saved);
+
+                displays.SetControlVisible(display, false);
+                Assert.False(ownedView.IsDisposed);
+                Assert.Null(previousDocument.Content);
+                Assert.False(manager.IsViewVisible(ownedView));
+                manager.ActiveView(ownedView);
+                manager.SelectView(ownedView);
+                manager.ShowAllViews();
+                Assert.False(manager.TryGetViewForLayout("DockView:" + display.PersistenceKey, out _));
+                Assert.Empty(scope.Pane.Children);
+
+                layout.RestoreLayout(new StringReader(saved.ToString()));
+                manager.ShowAllViews();
+                Assert.Empty(docking.Layout.Descendents().OfType<LayoutDocument>());
+                manager.ActiveView(other);
+                displays.SetControlVisible(display, true);
+                Assert.False(ownedView.IsDisposed);
+                Assert.True(manager.IsViewVisible(ownedView));
+                var documents = docking.Layout.Descendents().OfType<LayoutDocument>().ToArray();
+                Assert.Contains(documents, document => ReferenceEquals(document.Content, ownedView));
+                Assert.Same(other, manager.LastActiveView);
+                Assert.True(documents.Single(document => ReferenceEquals(document.Content, other)).IsActive);
+            }
+            finally
+            {
+                manager.RemoveView(other);
+                manager.RemoveView(ownedView);
+                ownedView.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void PersistedHiddenControlIsNotCreatedByOldLayoutOrStartupShowAll()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            var manager = DockViewManager.GetInstance();
+            var docking = new DockingManager { Layout = Assert.IsType<LayoutRoot>(scope.Pane.Root) };
+            var layout = new DockLayoutManager(docking);
+            string key = $"hidden-startup-{Guid.NewGuid():N}";
+            var oldDisplay = new TestDisplayControl(key, "Original device name");
+            using var oldRegistration = new DockViewRegistration(() => new DisposableTestView(), oldDisplay.DisPlayName);
+            oldDisplay.AddViewConfig(oldRegistration, oldDisplay.DisPlayName);
+            manager.OpenView(oldRegistration);
+            using var saved = new StringWriter();
+            new XmlLayoutSerializer(docking).Serialize(saved);
+            oldRegistration.Dispose();
+
+            // This is the persisted presentation state loaded before device controls register on restart.
+            DisPlayManagerConfig.Instance.HiddenControls.Add(key);
+            var display = new TestDisplayControl(key, "Renamed device");
+            int creations = 0;
+            using var registration = new DockViewRegistration(() => { creations++; return new DisposableTestView(); }, display.DisPlayName);
+            display.AddViewConfig(registration, display.DisPlayName);
+            Assert.False(DisPlayManager.IsControlVisible(display));
+            Assert.False(registration.IsVisible);
+            Assert.Null(registration.Current);
+
+            layout.RestoreLayout(new StringReader(saved.ToString()));
+            manager.ShowAllViews();
+            manager.OpenView(registration);
+            Assert.Equal(0, creations);
+            Assert.Null(registration.Current);
+            Assert.Empty(docking.Layout.Descendents().OfType<LayoutDocument>());
+        });
+    }
+
+    [Fact]
+    public void HiddenCameraDropsQueuedPreviewWithoutRecreatingTheViewAndCanResumeAfterShowing()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var camera = new DeviceCamera(Resource("hidden-preview"));
+            var display = Assert.IsAssignableFrom<IDisPlayControl>(camera.GetDisplayControl());
+            var displays = new DisPlayManager();
+            displays.IDisPlayControls.Add(display);
+            var manager = DockViewManager.GetInstance();
+            manager.OpenView(camera.ViewRegistration);
+            var previous = camera.View;
+            object service = camera.DService;
+            using var first = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 2, Height = 1, SourceBpp = 8, Channels = 1 }, 2, 0);
+            camera.PublishLocalPreview(first, null, forceDisplay: true);
+            displays.SetControlVisible(display, false);
+            camera.PublishLocalPreview(first, null, forceDisplay: true);
+            Pump();
+            Assert.Null(camera.ExistingView);
+            Assert.Null(previous.ImageView.ViewBitmapSource);
+            Assert.Same(service, camera.DService);
+
+            displays.SetControlVisible(display, true);
+            var current = camera.View;
+            using var second = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 4, Height = 1, SourceBpp = 8, Channels = 1 }, 4, 0);
+            camera.PublishLocalPreview(second, null, forceDisplay: true);
+            Pump();
+            Assert.NotSame(previous, current);
+            Assert.Equal(4, Assert.IsAssignableFrom<BitmapSource>(current.ImageView.ViewBitmapSource).PixelWidth);
+        });
+    }
+
+    [Theory]
+    [InlineData("spectrum")]
+    [InlineData("smu")]
+    public void HiddenChartDevicesDoNotConstructResultModelsOrRetainClosedPages(string kind)
+    {
+        Scope? scope = null;
+        DeviceService? device = null;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                scope = new Scope();
+                SysResourceModel resource = Resource(kind);
+                DisPlayManagerConfig.Instance.HiddenControls.Add(resource.Code!);
+                device = kind == "spectrum" ? new DeviceSpectrum(resource) : new DeviceSMU(resource);
+                Assert.False(ChartRegistration(device).IsVisible);
+                int hiddenFactories = 0;
+                PresentChartResult(device, () => hiddenFactories++);
+                Assert.Equal(0, hiddenFactories);
+                Assert.Null(ChartRegistration(device).Current);
+
+                var display = Assert.IsAssignableFrom<IDisPlayControl>(device.GetDisplayControl());
+                var displays = new DisPlayManager();
+                displays.IDisPlayControls.Add(display);
+                displays.SetControlVisible(display, true);
+            });
+            WeakReference[] references = WpfTestHost.Invoke(() => HideChartAndCapture(device!));
+            Collect(references);
+            Assert.All(references, reference => Assert.False(reference.IsAlive,
+                "A hidden chart device must release its old page and plot while the device service remains alive."));
+            WpfTestHost.Invoke(() =>
+            {
+                var display = Assert.IsAssignableFrom<IDisPlayControl>(device!.GetDisplayControl());
+                var displays = new DisPlayManager();
+                displays.IDisPlayControls.Add(display);
+                displays.SetControlVisible(display, true);
+                int factories = 0;
+                PresentChartResult(device, () => factories++);
+                Assert.Equal(1, factories);
+                Assert.NotNull(ChartRegistration(device).Current);
+                Assert.Equal(1, ChartResultCount(device));
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => { device?.Dispose(); scope?.Dispose(); });
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference[] HideChartAndCapture(DeviceService device)
+    {
+        var display = Assert.IsAssignableFrom<IDisPlayControl>(device.GetDisplayControl());
+        var displays = new DisPlayManager();
+        displays.IDisPlayControls.Add(display);
+        var registration = ChartRegistration(device);
+        DockViewManager.GetInstance().OpenView(registration);
+        int factories = 0;
+        PresentChartResult(device, () => factories++);
+        Assert.Equal(1, factories);
+        var view = Assert.IsAssignableFrom<UserControl>(registration.Current);
+        Assert.NotNull(view.Content);
+        object plot = Assert.IsAssignableFrom<FrameworkElement>(view.FindName("wpfplot1"));
+        var references = new[] { new WeakReference(view), new WeakReference(plot) };
+        object? service = device.GetMQTTService();
+        displays.SetControlVisible(display, false);
+        PresentChartResult(device, () => factories++);
+        Assert.Equal(1, factories);
+        Assert.Null(registration.Current);
+        Assert.DoesNotContain(view, DockViewManager.GetInstance().Views);
+        Assert.Same(service, device.GetMQTTService());
+        return references;
+    }
+
+    private static DockViewRegistration ChartRegistration(DeviceService device) => device switch
+    {
+        DeviceSpectrum spectrum => spectrum.ViewRegistration,
+        DeviceSMU smu => smu.ViewRegistration,
+        _ => throw new ArgumentException("Unsupported chart device.", nameof(device))
+    };
+
+    private static int ChartResultCount(DeviceService device) => device switch
+    {
+        DeviceSpectrum spectrum => spectrum.ExistingView!.ViewResults.Count,
+        DeviceSMU smu => smu.ExistingView!.ViewResults.Count,
+        _ => throw new ArgumentException("Unsupported chart device.", nameof(device))
+    };
+
+    private static void PresentChartResult(DeviceService device, Action created)
+    {
+        if (device is DeviceSpectrum spectrum)
+            spectrum.PresentResult(() => { created(); return new ViewResultSpectrum(); });
+        else if (device is DeviceSMU smu)
+            smu.PresentResult(() => { created(); return new ViewResultSMU(MeasurementType.Voltage, 2, [1d, 2d], [0.1d, 0.2d]); });
+        else
+            throw new ArgumentException("Unsupported chart device.", nameof(device));
+    }
+
     // Protect cold-start identity and nested pane placement without restoring result content or writing user layout files.
     [Fact]
     public void ColdStartRestoresNestedDevicePanesByIdentityWithFreshEmptyViews()
@@ -550,6 +827,22 @@ public sealed class DockViewLifecycleTests
         DeviceCalibration calibration => calibration.View.ImageView,
         _ => throw new ArgumentException("Unsupported device.", nameof(device))
     };
+
+    private sealed class TestDisplayControl(string key, string name) : UserControl, IDisPlayControl
+    {
+        public event RoutedEventHandler Selected { add { } remove { } }
+        public event RoutedEventHandler Unselected { add { } remove { } }
+        public event EventHandler SelectChanged { add { } remove { } }
+        public bool IsSelected { get; set; }
+        public string DisPlayName => name;
+        public string PersistenceKey => key;
+    }
+
+    private sealed class DisposableTestView : UserControl, IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+        public void Dispose() => IsDisposed = true;
+    }
 
     private sealed class Scope : IDisposable
     {

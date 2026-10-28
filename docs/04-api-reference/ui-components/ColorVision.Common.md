@@ -30,7 +30,7 @@ related: ["ui.index", "ui.framework", "ui.configuration", "ui.menus", "platform.
 | `RelayCommand<T>` 的 `ICommand` 入口 | 只接受可匹配 T 的参数；null 仅在 `default(T) is null` 时接受。类型不匹配时 CanExecute 为 false、Execute 静默不执行，不做字符串/数值转换 |
 | `RelayCommand<T>.Execute(T)` | 直接调用 action，同样不检查 predicate；此泛型类型当前没有非泛型类的 `RaiseCanExecuteChanged` 方法 |
 
-因此“按钮灰了”不能证明底层操作不可执行。会写文件、改配置、控制设备或启动外部程序的 action，不能只把必要检查放在 `CanExecute`。`MenuItemBase` 默认把 `AccessControl.Check(Execute)` 放在 predicate 中，并未在 `RelayCommand.Execute` 内加入权限拦截；具体菜单、懒调用和搜索入口见[菜单执行契约](./menus.md)。
+因此“按钮灰了”不能证明底层操作不可执行。会写文件、改配置、控制设备或启动外部程序的 action，不能只把必要检查放在 `CanExecute`。`MenuItemBase` 的默认命令在 predicate 和实际执行前都调用 `AccessControl.Check(Execute)`，但通用 `RelayCommand.Execute` 仍不会替任意 action 鉴权；具体菜单、懒调用和搜索入口见[菜单执行契约](./menus.md)。
 
 `ActionCommand` 只是 `Header`、`UndoAction`、`RedoAction` 的载体，不实现 `ICommand`，不持有撤销栈，也不自动执行 Undo/Redo；历史记录和调用顺序属于使用它的上层模块。
 
@@ -76,19 +76,25 @@ Common 中的 `AssemblyService`、`ConfigService`、`MenuService` 是可由宿�
 
 ## 粗粒度权限的判据不是统一授权拦截
 
-`Authorizations/AccessControl.cs` 中的 `Authorization` 是 `IConfig`，`Instance` 为可设置的全局引用；实例默认模式为 Administrator，但引用本身没有自动初始化。`ConfigHandler.Load()` 将配置实例赋给它。设置 `PermissionMode` 会同步发送 `PermissionModeChanged`，相同值也通知，不自动触发所有控件的命令重查询。
+`Authorizations/AccessControl.cs` 中的 `Authorization` 是 `IConfig`，`Instance` 为可设置的全局引用；实例默认模式为 Administrator，引用本身没有自动初始化。`ConfigHandler.Load()` 将配置实例赋给它。设置 `PermissionMode` 会同步发送 `PermissionModeChanged`，相同值也通知，不自动触发所有控件的命令重查询。`SubjectId` 是不持久化的可选主体标识，不是 SessionToken，也不以其非空证明会话有效。
 
 当前枚举按权限由高到低为 `SuperAdministrator=-1`、`Administrator=0`、`PowerUser=1`、`User=2`、`Guest=3`。
 
+Common 通过中立的 `AccessSubject`、`AccessRequest`、`AccessDecision` 和 `IAccessPolicy` 表达主体、动作、资源与允许/拒绝原因。`AccessControl.Evaluate(actionId, requiredPermission, resourceId, subject)` 返回 `Allowed` 和 `ReasonCode`，省略主体时捕获当前全局身份；`Demand` 对拒绝抛出带有请求与决策的 `AccessDeniedException`，由实际执行入口决定怎样向用户报告。它不创建窗口、连接 RBAC 数据库或访问授权服务器。
+
+`AccessControl.Policy` 可由宿主替换。默认 `RoleAccessPolicy` 保留已有角色层级：有权限要求时采用有效枚举值的 `current <= required`；`Authorization.Instance=null` 时拒绝受保护动作，原有 `new Authorization()` 的 Administrator 默认不变。没有权限要求的旧公开动作在默认策略下仍允许。默认策略不根据资源查询 ACL，也不验证登录会话、硬件许可证或部署环境；动作和资源标识为替换策略提供上下文，替换策略不会自动覆盖未接入的调用路径。
+
+空动作返回 `invalid_action`；默认角色策略区分 `allowed`、`permission_denied`、`identity_unavailable` 与 `invalid_permission`。策略抛异常、返回空决策或缺失原因时统一拒绝为 `policy_unavailable`，不因授权提供方失败而放行。需要诊断具体原因的入口应读取决策，不能仅凭按钮状态或 bool 检查结果推断。
+
 | 入口 | 实际检查 |
 | --- | --- |
-| `AccessControl.Check(PermissionMode)` | `Authorization.Instance.PermissionMode <= required`，数值越小权限越高；Instance 未装配时会失败，不会自动创建 guest |
-| `AccessControl.Check(Action)` | 只反射 `action.Method` 的 `RequiresPermissionAttribute`；无该方法特性则返回 true，有则采用上述层级比较 |
-| `ExecuteWithPermissionCheck(Action, currentPermission)` | 使用**调用方传入的值与 required 精确相等**，不是 `<=`；无方法特性则直接执行，不相等弹消息但没有 bool 完成结果 |
+| `AccessControl.Check(PermissionMode)` | 通过 `legacy.permission.check` 动作调用当前策略并返回 bool；未装配身份时，默认策略拒绝受保护检查 |
+| `AccessControl.Check(Action)` | 先读取方法特性，再回退到实际目标类型、声明类的 `RequiresPermissionAttribute`，把动作与资源交给同一策略；默认策略下无权限要求的旧动作保持公开 |
+| `ExecuteWithPermissionCheck(Action, currentPermission)` | 保留原签名，使用调用方显式传入的角色和同一策略判断；默认层级同样为 `<=`，允许才执行，拒绝仍弹消息，没有 bool 完成结果 |
 
-后二者不能互换：要求 Administrator 的方法可通过 SuperAdministrator 的 `Check`，却不能通过传入 SuperAdministrator 的 `ExecuteWithPermissionCheck`。后者不自动取全局模式，也不捕获 action 自身异常。
+旧 helper 保留源码调用形状；显式角色的执行 helper 不自动取全局模式，也不捕获 action 自身异常。默认策略下 SuperAdministrator 可以执行要求 Administrator 的动作，不再采用两套不同的比较规则。此兼容适配不表示每个旧入口已经使用明确的业务动作或资源。
 
-`RequiresPermissionAttribute` 允许标在类或方法上，但上述 helper 只读取委托的方法，没有额外查询声明类；lambda 包装也不会自动继承被包装方法的特性。特性本身不拦截调用，直接调用方法不会自动执行权限检查。
+`RequiresPermissionAttribute` 可声明稳定 `ActionId` 和可选 `ResourceId`；未声明动作时沿用委托方法的声明类型全名和方法名作为兼容身份。方法特性优先，随后查实际目标类型和声明类；lambda 包装不会自动继承被包装方法的特性。特性本身不拦截调用，直接调用方法仍需在副作用前经过 `Demand` 或相同的决策检查，不能把声明特性当作自动织入的安全边界。
 
 RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/PermissionChecker.cs`；它与全局模式并存，登录等具体路径会同步模式。`RbacManager` 无有效登录态时仍可把全局模式设为 Administrator，因此 **Administrator 模式不证明已登录或拥有某个 RBAC 权限码**。完整账户、会话和接入边界见[RBAC 登录与会话](../../03-architecture/security/rbac.md)，不要把 Common 的 helper 当成全产品统一安全边界。
 
@@ -99,7 +105,8 @@ RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/Permissio
 - `IsLoaded` 为 true 后普通 Load 会复用现有列表；重新收集用 `forceReload`，通知支持缓存的 provider 重新探测另用 `forceProviderRefresh`，两者不是同一个缓存开关。`Refresh()` 对已加载列表只更新每项状态，不重新发现 provider。
 - `LoadAppsAsync` 把收集放到 `Task.Run`，完成后通过可用的应用 dispatcher 替换集合。取消在 provider/条目之间检查，不能强制终止 provider 内部操作。单个 provider 的普通异常被吞掉，可能留下部分条目；最终 `IsLoaded=true` 不证明所有 provider 成功。
 - `ThirdPartyAppInfo.RefreshStatus` 可能读取文件、注册表和图标；它不启动应用。配置了 `LaunchAction` 或 `LaunchPath` 会直接视为已安装，不证明命令能启动；其它探测得到文件路径也不等于可执行文件可信或功能验收通过。
-- `DoubleClickCommand` 的 predicate 和实际 `OnDoubleClick` 都检查 `IsAuthorized`；`RunInstaller` 与打开目录也有执行路径检查。该模型在全局 Authorization 为空时拒绝授权，和直接使用 `AccessControl.Check(PermissionMode)` 的行为不同。
+- `DoubleClickCommand` 的 predicate 和实际 `OnDoubleClick` 都检查 `IsAuthorized`；`RunInstaller` 与打开目录也有执行路径检查。`IsAuthorized` 与保留的 `IsAuthorizedFor(PermissionMode)` 都通过共享策略决定，不再另写角色比较。
+- 工具可声明 `ActionId` 和 `ResourceId`；旧定义使用 `third-party.launch`，资源依次回退到启动路径、启动委托方法身份、可执行文件/安装路径和类型名，不使用可翻译的显示名称作为授权身份。默认策略仍只比较角色；资源存在不证明路径可信或实际启动已获 Windows 授权。
 - `ThirdPartyAppContextAction` 只依赖自身 Execute/CanExecute，没有自动继承所属工具的 RequiredPermission；新增上下文操作仍需维护执行路径的授权边界。
 
 实际启动优先调用 `LaunchAction`，其次用 `LaunchPath` 和参数，再尝试已探测的 exe，最后可能转为安装入口。`RunInstaller` 可调用自定义 `InstallAction` 或通过 shell 启动安装文件；这些调用可能打开窗口、启动外部进程或改变系统安装状态，必须有当前任务的相应授权，不能为验证工具列表而执行。异常一般弹消息；方法返回不代表子进程退出成功、安装完成或业务动作完成，也没有统一取消/回滚。
@@ -110,7 +117,8 @@ RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/Permissio
 
 目标框架、WPF/WinForms、NuGet README 和生成包设置以 `ColorVision.Common.csproj` 为准。当前项目文件没有高层 `ProjectReference`；这不等于跨平台、所有工具无外部环境依赖，或上层程序集无需匹配版本。构建入口保留在源码旁 README，包生成不等于上传发布。
 
-- `ThirdPartyAppInfoTests.cs` 检查默认分类/权限、工具权限层级、直接执行命令仍检查权限及若干 provider 元数据；其中执行的是测试委托，不是实际安装或外部进程。它不覆盖 `AccessControl` 两套判据一致性或全部 Win32 行为。
+- `ThirdPartyAppInfoTests.cs` 检查默认分类/权限、工具权限层级、直接执行命令仍检查权限及若干 provider 元数据；其中执行的是测试委托，不是实际安装或外部进程，不覆盖全部 Win32 行为。动作策略的原因码、空身份、提供方失败及替换策略需由对应权限测试单独验证，不能用工具列表的可见性代替。
+- `AccessControlPolicyTests.cs` 检查默认角色层级、未装配身份、无效枚举、主体快照与不持久化、替换策略的动作/资源上下文、策略失败，以及权限撤回后的菜单和工具命令执行。测试不创建 RBAC 用户、不验证真实 SessionToken，不代表 Windows 提权或硬件许可验收。
 - `ModuleCatalogTests.cs` 检查重复登记、Seal、RBAC 模块进入现有发现快照及类型快照复用；不证明所有插件、构造失败路径或上层 UI 都已验证。
 - `ConfigHandlerPersistenceTests.cs` 中的重载测试检查配置实例替换与 `Authorization.Instance` 重绑定；不是账户鉴权、权限码或跨线程通知测试。
 - 当前关联测试未证明 `ViewModelBase` 的所有通知线程/重入场景、泛型命令参数与重查询时序、第三方 provider 失败/取消/重载、真实外部工具、完整 SDK/ABI 兼容性。公共契约变更仍需有针对性的测试和实际消费者构建。

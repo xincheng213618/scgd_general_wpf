@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.SMU.Local;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
@@ -106,9 +107,10 @@ namespace ColorVision.Engine.Services.Devices.SMU
     {
         public MQTTSMU DService { get; set; }
 
-        private readonly Lazy<ViewSMU> _view;
-        internal ViewSMU ViewShell => Application.Current.Dispatcher.CheckAccess()
-            ? _view.Value : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        private readonly DockViewRegistration _view;
+        internal DockViewRegistration ViewRegistration => _view;
+        internal ViewSMU? ExistingView => _view.Current as ViewSMU;
+        internal ViewSMU ViewShell => (ViewSMU)_view.GetOrCreate();
         public ViewSMU View
         {
             get
@@ -118,6 +120,18 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 return view;
             }
         }
+        internal void PresentResult(Func<ViewResultSMU> createResult)
+        {
+            ViewSMU? view = ExistingView;
+            if (localDisposed || !_view.IsVisible || view == null) return;
+            void Present()
+            {
+                if (!localDisposed && _view.IsVisible && ReferenceEquals(ExistingView, view))
+                    view.AddViewResultSMU(createResult());
+            }
+            if (view.Dispatcher.CheckAccess()) Present();
+            else view.Dispatcher.BeginInvoke(Present);
+        }
         public DisplaySMUConfig DisplayConfig { get; }
 
         public DeviceSMU(SysResourceModel sysResourceModel) : this(sysResourceModel, new LocalSmuSession()) { }
@@ -126,7 +140,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             LocalSession = session;
             DisplayConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplaySMUConfig>(Config.Code);
-            _view = new Lazy<ViewSMU>(() => new ViewSMU(deferInitialization: true));
+            _view = new DockViewRegistration(() => new ViewSMU(deferInitialization: true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
+                { PersistenceKey = Config.Code };
             InitializeLocalSmu();
             DService = new MQTTSMU(this);
             DService.RefreshBackendStatus();

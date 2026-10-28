@@ -6,6 +6,7 @@ using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Microsoft.Win32;
+using ColorVision.UI.Authorizations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(EditSpectrum));
         private readonly ConfigSpectrum target;
+        private readonly string authorizationResourceId;
         private readonly bool useLocalStore = SysResourceDao.Instance.UseLocal;
         private readonly CancellationTokenSource cancellation = new();
         private readonly Dictionary<string, string> discoveries = new(StringComparer.OrdinalIgnoreCase);
@@ -35,6 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public EditSpectrum(ConfigSpectrum config)
         {
             target = config;
+            authorizationResourceId = config.Code;
             Draft = new SpectrumConfigurationDraft(config);
             InitializeComponent();
             this.ApplyCaption();
@@ -243,13 +246,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
             Keyboard.ClearFocus();
-            if (!Draft.TryApply(target, out string error))
+            if (!TryApply(out string error))
             {
                 ConnectionTab.IsSelected = true;
                 StatusText.Text = error;
                 return;
             }
             DialogResult = true;
+        }
+
+        internal bool TryApply(out string error)
+        {
+            if (!AccessControl.Evaluate("device.configure", PermissionMode.Administrator, authorizationResourceId).Allowed)
+            {
+                error = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+                return false;
+            }
+            return Draft.TryApply(target, out error);
         }
     }
 }

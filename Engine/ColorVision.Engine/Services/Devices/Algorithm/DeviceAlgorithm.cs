@@ -36,18 +36,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTAlgorithm(Config);
-            _view = new DockViewRegistration(() => new AlgorithmView(this, deferInitialization: true), Config.Name);
+            _view = new DockViewRegistration(() => new AlgorithmView(this, deferInitialization: true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
+                { PersistenceKey = Config.Code };
             this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
 
             EditCommand = new RelayCommand(a =>
             {
+                if (!CanConfigure) return;
                 var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submitted += (s, e) => Save();
+                ProtectConfigurationEditor(propertyEditorWindow);
+                propertyEditorWindow.Submitted += (s, e) => TryCommitConfiguration(propertyEditorWindow);
                 propertyEditorWindow.ShowDialog();
 
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => CanConfigure);
         }
 
         private void Con_Submited(object? sender, EventArgs e)

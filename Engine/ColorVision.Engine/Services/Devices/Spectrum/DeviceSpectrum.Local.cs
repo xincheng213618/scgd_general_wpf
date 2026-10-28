@@ -74,7 +74,7 @@ public partial class DeviceSpectrum
     {
         if (ExperimentalFeaturesConfig.Instance.IsEnabled) return;
         LicenseModel? license = PhyLicenseDao.Instance.GetByMAC(config.SN, SysResourceDao.IsLocalId(SysResourceModel.Id) || !ColorVision.Database.MySqlSetting.IsConnect);
-        LocalSpectrumLicense.EnsureNotExpired(license?.LiceType == 1 ? license.ExpiryDate : null, false, DateTime.Now);
+        LocalSpectrumLicense.EnsureNotExpired(license?.LiceType == 1 ? license.ExpiryDate : null, skipValidation: false, DateTime.Now);
     }
 
     // Callers reserve the backend before scheduling native work. The session itself serializes all handle access.
@@ -116,7 +116,7 @@ public partial class DeviceSpectrum
         if (localDisposed) return;
         if (result.NDPort.HasValue) ApplyLocalNdState(result.NDPort.Value, result.NdCalibration);
         DisplayConfig.IntTime = result.IntegralTime;
-        View.AddViewResultSpectrum(CreateLocalSpectrumView(result));
+        PresentResult(() => CreateLocalSpectrumView(result));
         LocalResultAvailable?.Invoke(result, continuous);
     }
 
@@ -325,6 +325,7 @@ public partial class DeviceSpectrum
     {
         if (localDisposed) return;
         localDisposed = true;
+        _view.Dispose();
         DisplayConfig.PropertyChanged -= LocalDisplayConfigChanged;
         SpectrumBackend.Changed -= RefreshLocalSpectrumStatus;
         _ = SpectrumBackend.StopLocalCommandAsync();

@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     LoadingPanel.Visibility = Visibility.Collapsed;
                 });
             };
-            this.AddViewConfig(Device.ViewShell, DisPlayName);
+            this.AddViewConfig(Device.ViewRegistration, DisPlayName);
             DService_DeviceStatusChanged(sender, DeviceStatusType.Closed);
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;

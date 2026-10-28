@@ -1,6 +1,7 @@
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
@@ -32,6 +33,11 @@ namespace ColorVision.Engine.Services.Types
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (!AccessControl.Evaluate("service.create", PermissionMode.Administrator, TypeService.CreationResourceId).Allowed)
+            {
+                MessageBox.Show(this, EngineLocalization.Get("当前权限不足，无法创建服务。"), "ColorVision");
+                return;
+            }
             if (!ServicesHelper.IsInvalidPath(CreateCode.Text, Properties.Resources.ResourceIdentifier) || !ServicesHelper.IsInvalidPath(CreateName.Text, Properties.Resources.ResourceName))
                 return;
 
@@ -53,6 +59,7 @@ namespace ColorVision.Engine.Services.Types
             terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
+            AccessControl.Demand("service.create", PermissionMode.Administrator, TypeService.CreationResourceId);
             int pkId = SysResourceDao.Instance.SaveAndReturnId(sysResource);
             sysResource.Id = pkId;
 

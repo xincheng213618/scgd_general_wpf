@@ -61,7 +61,7 @@
                     Visibility="{Binding IsBusy, Converter={StaticResource BoolVisibility}}"/>
         </Grid>
         <Border Style="{StaticResource Card}">
-            <ItemsControl ItemsSource="{Binding Items}" IsEnabled="{Binding IsIdle}">
+            <ItemsControl x:Name="CategoriesList" ItemsSource="{Binding Items}" IsEnabled="{Binding IsIdle}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="0,0,0,1" Padding="16,13">

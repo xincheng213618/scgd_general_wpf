@@ -11,6 +11,7 @@ namespace ColorVision.UI
     public static class ConfigSettingConstants
     {
         public const string Universal  = "Universal";
+        public const string Configuration = "Configuration";
         public const string SectionBasic = "Basic";
         public const string SectionAppearance = "Appearance";
         public const string SectionUpdates = "Updates";

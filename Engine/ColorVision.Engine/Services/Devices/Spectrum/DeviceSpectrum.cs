@@ -20,6 +20,7 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
+using ColorVision.UI.Views;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
@@ -137,9 +138,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private int spectrumContinuousStopAcknowledged;
 
         public MQTTSpectrum DService { get; set; }
-        private readonly Lazy<ViewSpectrum> _view;
-        internal ViewSpectrum ViewShell => Application.Current.Dispatcher.CheckAccess()
-            ? _view.Value : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        private readonly DockViewRegistration _view;
+        internal DockViewRegistration ViewRegistration => _view;
+        internal ViewSpectrum? ExistingView => _view.Current as ViewSpectrum;
+        internal ViewSpectrum ViewShell => (ViewSpectrum)_view.GetOrCreate();
         public ViewSpectrum View
         {
             get
@@ -148,6 +150,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 view.EnsureInitialized();
                 return view;
             }
+        }
+        internal void PresentResult(Func<ViewResultSpectrum> createResult)
+        {
+            ViewSpectrum? view = ExistingView;
+            if (localDisposed || !_view.IsVisible || view == null) return;
+            void Present()
+            {
+                if (!localDisposed && _view.IsVisible && ReferenceEquals(ExistingView, view))
+                    view.AddViewResultSpectrum(createResult());
+            }
+            if (view.Dispatcher.CheckAccess()) Present();
+            else view.Dispatcher.BeginInvoke(Present);
         }
         public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Config.Code);
 
@@ -210,10 +224,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             LocalSession = new(ensureLicenseAvailable: EnsureLocalSpectrumLicense);
+            _view = new DockViewRegistration(() => new ViewSpectrum(this, true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
+                { PersistenceKey = Config.Code };
             InitializeLocalSpectrum();
             DService = new MQTTSpectrum(this);
             DService.RefreshBackendStatus();
-            _view = new Lazy<ViewSpectrum>(() => new ViewSpectrum(this, true));
             this.SetIconResource("DISpectrumIcon");
 
             Config.SynchronizeActiveCalibrationGroupFiles();
@@ -222,15 +237,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             EditCommand = new RelayCommand(a =>
             {
+                if (!CanConfigure) return;
                 EditSpectrum window = new EditSpectrum(Config);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
-                    Save();
+                    TryCommitConfiguration(window);
                 }
 
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => CanConfigure);
 
             DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
 

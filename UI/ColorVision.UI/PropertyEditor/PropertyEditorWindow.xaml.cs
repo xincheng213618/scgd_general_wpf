@@ -58,9 +58,15 @@ namespace ColorVision.UI
     /// <summary>
     /// EditConfig.xaml 的交互逻辑
     /// </summary>
+    public sealed class PropertyEditorSubmittingEventArgs : CancelEventArgs
+    {
+        public string? ErrorMessage { get; set; }
+    }
+
     public partial class PropertyEditorWindow : Window
     {
         private event EventHandler? SubmittedCore;
+        public event EventHandler<PropertyEditorSubmittingEventArgs>? Submitting;
 
         public event EventHandler Submitted
         {
@@ -139,6 +145,11 @@ namespace ColorVision.UI
         }
         private void OK_Click(object sender, RoutedEventArgs e)
         {
+            var submitting = new PropertyEditorSubmittingEventArgs();
+            Submitting?.Invoke(this, submitting);
+            SubmissionError.Text = submitting.ErrorMessage ?? string.Empty;
+            SubmissionError.Visibility = string.IsNullOrWhiteSpace(submitting.ErrorMessage) ? Visibility.Collapsed : Visibility.Visible;
+            if (submitting.Cancel) return;
             _editSession?.Commit();
             SubmittedCore?.Invoke(sender, EventArgs.Empty);
             this.Close();

@@ -91,15 +91,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             CalibrationResources.Add(this);
-            OpenCommand = new RelayCommand(a=> Open(),a => AccessControl.Check(PermissionMode.Administrator));
-            EditCommand = new RelayCommand(a => Edit(), a => CanEdit && AccessControl.Check(PermissionMode.Administrator));
+            OpenCommand = new RelayCommand(a=> Open(),a => ServiceAuthorization.Can("calibration.open", SysResourceModel));
+            EditCommand = new RelayCommand(a => Edit(), a => CanEdit && ServiceAuthorization.Can("calibration.write", SysResourceModel));
             Config = JsonConvert.DeserializeObject<CalibrationFileConfig>(sysResourceModel.Remark ?? string.Empty) ?? new CalibrationFileConfig();
         }
 
         public void Edit()
         {
             ServiceTypes type = (ServiceTypes)SysResourceModel.Type;
-            if (!CanEdit || !AccessControl.Check(PermissionMode.Administrator))
+            if (!CanEdit || !ServiceAuthorization.Can("calibration.write", SysResourceModel))
                 return;
 
             if (TryGetFilePath(out string filepath))
@@ -131,6 +131,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public void Open()
         {
+            ServiceAuthorization.Demand("calibration.open", SysResourceModel);
             if (TryGetFilePath(out string filepath))
             {
                 PlatformHelper.OpenFolderAndSelectFile(filepath);
@@ -140,6 +141,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public override void Save()
         {
+            ServiceAuthorization.Demand("calibration.write", SysResourceModel);
             SysResourceModel.Remark = JsonConvert.SerializeObject(Config);
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
             Db.Updateable(SysResourceModel).ExecuteCommand();

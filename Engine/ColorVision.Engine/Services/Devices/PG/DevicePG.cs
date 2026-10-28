@@ -30,15 +30,15 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             EditCommand = new RelayCommand(a =>
             {
+                if (!CanConfigure) return;
                 EditPG window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
-                    ConfigService.Instance.Save<DisplayConfigManager>();
-                    Save();
+                    TryCommitConfiguration(window, () => ConfigService.Instance.Save<DisplayConfigManager>());
                 }
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => CanConfigure);
 
             EditPGTemplateCommand = new RelayCommand(a => EditPGTemplate());
         }

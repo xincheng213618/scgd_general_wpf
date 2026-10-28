@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services
     public class ServiceBase : ServiceObjectBase
     {
         public SysResourceModel SysResourceModel { get; set; }
+        protected override string? AuthorizationResourceId => ServiceAuthorization.ResourceId(SysResourceModel);
         public int Id { get => SysResourceModel.Id; set { } }
 
         public ServiceBase(SysResourceModel sysResourceModel)

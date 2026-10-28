@@ -42,9 +42,25 @@ public partial class FileManagementWindow : Window
         else
         {
             if (_instance.WindowState == WindowState.Minimized) _instance.WindowState = WindowState.Normal;
-            _ = _instance.ViewModel.ScanAsync();
+            _instance.ScanTask = _instance.ViewModel.ScanAsync();
         }
         _instance.Activate();
+    }
+
+    public static void OpenCategory(string categoryId)
+    {
+        if (!Application.Current.Dispatcher.CheckAccess()) { Application.Current.Dispatcher.Invoke(() => OpenCategory(categoryId)); return; }
+        OpenWindow();
+        if (_instance != null) _ = _instance.FocusCategoryAsync(categoryId);
+    }
+
+    private async Task FocusCategoryAsync(string categoryId)
+    {
+        await ScanTask;
+        var selected = System.Linq.Enumerable.FirstOrDefault(ViewModel.Items, item => item.Id == categoryId);
+        if (selected == null) { ViewModel.Status = MaintenanceText.Get("CategoryUnavailable"); return; }
+        foreach (var item in ViewModel.Items) item.IsSelected = ReferenceEquals(item, selected);
+        if (FileContent.Content is FileManagementControl control) control.FocusCategory(selected);
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)

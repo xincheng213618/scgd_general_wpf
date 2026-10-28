@@ -181,7 +181,7 @@ public partial class DeviceSMU
             if (localDisposed) return;
             LocalResultAvailable?.Invoke(capture);
             if (!capture.HasMeasurements) { ClearLocalSmuReadings(capture.Parameters.Channel, false); return; }
-            View.AddViewResultSMU(LocalSmuResultService.CreateView(capture, Code, id));
+            PresentResult(() => LocalSmuResultService.CreateView(capture, Code, id));
             if (!capture.IsScan || capture.Parameters.SourceValues != null)
             {
                 var channel = capture.Parameters.Channel == SMUChannelType.A ? DisplayConfig.ChannelA : DisplayConfig.ChannelB;
@@ -213,6 +213,7 @@ public partial class DeviceSMU
     {
         if (localDisposed) return;
         localDisposed = true;
+        _view.Dispose();
         localWindow?.Close();
         DisplayConfig.PropertyChanged -= LocalSmuPreferenceChanged;
         SmuBackend.Changed -= RefreshSmuBackendStatus;

@@ -61,7 +61,7 @@ namespace ColorVision.Solution.Workspace
 
             manager.ShowAllViewsHandler = () =>
             {
-                foreach (var control in manager.Views)
+                foreach (var control in manager.Views.Where(manager.IsViewVisible))
                 {
                     EnsureDocument(control);
                 }

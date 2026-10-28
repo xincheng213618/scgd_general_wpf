@@ -108,10 +108,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
                             DB.Dispose();
                             if (model != null)
                             {
-                                ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    Device.View.AddViewResultSMU(viewResultSpectrum);
+                                    Device.PresentResult(() => new ViewResultSMU(model));
 
                                     if (model.ChannelType == SMUChannelType.A)
                                     {
@@ -159,8 +158,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                 {
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
-                                        Device.View.AddViewResultSMU(viewResultSpectrum);
+                                        Device.PresentResult(() => new ViewResultSMU(model));
                                     });
                                 }
 
@@ -173,10 +171,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
                             {
                                 if (_lastScanParam != null)
                                 {
-                                    ViewResultSMU viewResultSMU = new ViewResultSMU(_lastScanParam.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)_lastScanParam.EndValue, data.VList, data.IList);
-                                    viewResultSMU.CreateTime = DateTime.Now;
-                                    viewResultSMU.Id = -1;
-                                    Device.View.AddViewResultSMU(viewResultSMU);
+                                    Device.PresentResult(() => new ViewResultSMU(_lastScanParam.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)_lastScanParam.EndValue, data.VList, data.IList)
+                                        { CreateTime = DateTime.Now, Id = -1 });
                                 }
                             });
                         }

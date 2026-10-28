@@ -57,6 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public DeviceSpectrum Device { get; set; }
         private bool _initializationStarted;
         private bool _isInitialized;
+        private bool _isDisposed;
 
         public ViewSpectrum(DeviceSpectrum device) : this(device, false) { }
 
@@ -86,7 +87,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 Dispatcher.Invoke(EnsureInitialized);
                 return;
             }
-            if (_initializationStarted) return;
+            if (_initializationStarted || _isDisposed) return;
             _initializationStarted = true;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
@@ -165,6 +166,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void Dispose()
         {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(Dispose); return; }
+            if (_isDisposed) return;
+            _isDisposed = true;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             if (_isInitialized)
@@ -175,6 +179,29 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
             relativeCursor?.Dispose();
             absoluteCursor?.Dispose();
+            relativeCursor = null;
+            absoluteCursor = null;
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
+            if (listView1 != null)
+            {
+                listView1.SelectionChanged -= listView1_SelectionChanged;
+                listView1.PreviewKeyDown -= listView1_PreviewKeyDown;
+                BindingOperations.ClearAllBindings(listView1);
+                listView1.ItemsSource = null;
+                listView1.ContextMenu = null;
+                listView1.CommandBindings.Clear();
+            }
+            ViewResults.Clear();
+            LastMulSelectComparsion = null;
+            if (_isInitialized)
+            {
+                wpfplot1.Plot.Clear();
+                wpfplot2.Plot.Clear();
+            }
+            DataContext = null;
+            Content = null;
             GC.SuppressFinalize(this);
         }
 
@@ -485,6 +512,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
         {
+            if (_isDisposed) return;
             EnsureInitialized();
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, viewResultSpectrum);

@@ -19,11 +19,13 @@ namespace ColorVision.Engine.Services.Devices.Motor
           
             EditCommand = new RelayCommand(a =>
             {
+                if (!CanConfigure) return;
                 var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submitted += (s, e) => Save();
+                ProtectConfigurationEditor(propertyEditorWindow);
+                propertyEditorWindow.Submitted += (s, e) => TryCommitConfiguration(propertyEditorWindow);
                 propertyEditorWindow.ShowDialog();
 
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+            }, a => CanConfigure);
         }
 
         public override UserControl GetDeviceInfo() => new InfoMotor(this);

@@ -521,24 +521,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 紧凑主窗口（重启生效） 的本地化字符串。
-        /// </summary>
-        public static string ConfigUseCompactMainWindow {
-            get {
-                return ResourceManager.GetString("ConfigUseCompactMainWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 将菜单与快捷入口合并到标题栏，保留系统按钮和边框。全新安装或首次升级到此开关时默认开启，重启生效；关闭并重启可恢复旧主窗口，之后保留该选择。仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。 的本地化字符串。
-        /// </summary>
-        public static string ConfigUseCompactMainWindowDescription {
-            get {
-                return ResourceManager.GetString("ConfigUseCompactMainWindowDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
         public static string ConfirmUpdate {

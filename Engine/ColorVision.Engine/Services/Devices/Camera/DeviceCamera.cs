@@ -85,10 +85,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService = new MQTTCamera(this);
             CameraBackend.Changed += CameraBackend_Changed;
             DisplayConfig.PropertyChanged += DisplayConfig_BackendPreferenceChanged;
-            _view = new DockViewRegistration(() => new ViewCamera(this, true), Config.Name);
+            _view = new DockViewRegistration(() => new ViewCamera(this, true), Config.Name, DisPlayManager.IsControlVisible(Config.Code, Config.Name))
+                { PersistenceKey = Config.Code };
             this.SetIconResource("DrawingImageCamera");
 
-            EditCommand = new RelayCommand(a => EditCameraAction(), b => AccessControl.Check(EditCameraAction));
+            EditCommand = new RelayCommand(a => EditCameraAction(), b => CanConfigure);
 
             FetchLatestTemperatureCommand = new RelayCommand(a => FetchLatestTemperature(a));
 
@@ -107,9 +108,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
 
-            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+            OpenPhyCameraMangerCommand = new RelayCommand(a =>
+            {
+                if (AccessControl.Evaluate("physical-camera.manage", PermissionMode.Administrator, Code).Allowed) OpenPhyCameraManger();
+            }, _ => AccessControl.Evaluate("physical-camera.manage", PermissionMode.Administrator, Code).Allowed);
             EditPhyCameraConfigCommand = new RelayCommand(_ => PhyCamera?.EditCommand.Execute(null),
-                _ => PhyCamera != null && AccessControl.Check(PermissionMode.Administrator));
+                _ => PhyCamera?.CanConfigure == true);
 
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
 
@@ -324,6 +328,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [RequiresPermission(PermissionMode.Administrator)]
         private void EditCameraAction()
         {
+            if (!CanConfigure) return;
             EditCamera window = new(this);
             window.Owner = Application.Current.GetActiveWindow();
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -338,9 +343,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Category("DeviceConnection")]
         public RelayCommand EditPhyCameraConfigCommand { get; set; }
 
-        [RequiresPermission(PermissionMode.Administrator)]
+        [RequiresPermission(PermissionMode.Administrator, ActionId = "physical-camera.manage")]
         public void OpenPhyCameraManger()
         {
+            AccessControl.Demand("physical-camera.manage", PermissionMode.Administrator, Code);
             if (PhyCamera != null)
             {
                 foreach (var item in PhyCameraManager.GetInstance().PhyCameras)

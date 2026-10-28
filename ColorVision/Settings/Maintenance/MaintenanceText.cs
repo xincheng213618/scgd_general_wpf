@@ -8,6 +8,10 @@ public static class MaintenanceText
     private static readonly ResourceManager Manager = new("ColorVision.Settings.Maintenance.MaintenanceResources", typeof(MaintenanceText).Assembly);
     public static string Get(string key) => Manager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     public static string Title => Get("Title");
+    public static string ThisDevice => Get("ThisDevice");
+    public static string StorageScope => Get("StorageScope");
+    public static string Refresh => Get("Refresh");
+    public static string StorageCategories => Get("StorageCategories");
     public static string Management => Get("Management");
     public static string FileManagement => Get("FileManagement");
     public static string FileManagementDescription => Get("FileManagementDescription");

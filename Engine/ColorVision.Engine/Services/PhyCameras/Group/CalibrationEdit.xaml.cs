@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI.Authorizations;
 using ColorVision.Themes;
-using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -218,7 +217,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void CreateCalibration_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button button || !AccessControl.Check(PermissionMode.Administrator)) return;
+            if (sender is not Button button || !ServiceAuthorization.Can("calibration.write", PhyCamera.SysResourceModel)) return;
             if (ListView1.SelectedItem is not GroupResource group)
             {
                 MessageBox.Show(this, EngineLocalization.Get("请先选择或添加校正组。"), Properties.Resources.CalibrationFileManagement);
@@ -236,7 +235,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void CreateCalibrationRow_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button button || button.DataContext is not CalibrationEditRow row || !AccessControl.Check(PermissionMode.Administrator)) return;
+            if (sender is not Button button || button.DataContext is not CalibrationEditRow row || !ServiceAuthorization.Can("calibration.write", row.Group.SysResourceModel)) return;
             var menu = new ContextMenu { FontFamily = FontFamily, FontSize = FontSize };
             AddCreationChoices(menu.Items, CalibrationSlotDefinitions.ByKey[row.SlotKey], row.Group);
             menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true;
@@ -312,6 +311,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
+            if (!ServiceAuthorization.Can("calibration.write", PhyCamera.SysResourceModel)) return;
             string calue = NewCreateFileName("title");
             var group = GroupResource.AddGroupResource(PhyCamera, calue);
             if (group == null)
@@ -336,27 +336,26 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if (ListView1.SelectedItems.Count > 0)
             {
-                // Create a SysDictionaryModDetaiModels to hold the items to be removed
-                List<GroupResource> itemsToRemove = new List<GroupResource>();
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                foreach (var selectedItem in ListView1.SelectedItems)
+                var itemsToRemove = ListView1.SelectedItems.OfType<GroupResource>().ToArray();
+                if (itemsToRemove.Any(item => !item.CanDelete))
                 {
-                    GroupResource groupResource = selectedItem as GroupResource;
-                    if (groupResource != null)
+                    MessageBox.Show(this, EngineLocalization.Get("当前权限不足，无法删除此资源。"), "ColorVision");
+                    return;
+                }
+                try
+                {
+                    foreach (var item in itemsToRemove)
                     {
-                        Db.Deleteable<SysResourceModel>().Where(it => it.Id == groupResource.SysResourceModel.Id).ExecuteCommand();
-                        itemsToRemove.Add(groupResource);
+                        item.Delete();
+                        groupResources.Remove(item);
+                        PhyCamera.VisualChildren.Remove(item);
                     }
                 }
-
-                // Remove the items from the original SysDictionaryModDetaiModels and the visual children
-                foreach (var item in itemsToRemove)
+                catch (AccessDeniedException)
                 {
-                    groupResources.Remove(item);
-                    PhyCamera.VisualChildren.Remove(item);
+                    MessageBox.Show(this, EngineLocalization.Get("当前权限不足，无法删除此资源。"), "ColorVision");
+                    return;
                 }
-
                 MessageBox.Show(Properties.Resources.DeleteSucceeded);
             }
             else
@@ -368,6 +367,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private void Window_Closed(object sender, EventArgs e)
         {
             PhyCamera.VisualChildren.CollectionChanged -= CameraChildrenChanged;
+            if (!ServiceAuthorization.Can("calibration.write", PhyCamera.SysResourceModel)) return;
             foreach (var item in groupResources)
             {
                 item.Save();

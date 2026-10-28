@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="CameraResourcesTitle" xml:space="preserve"><value>相機資源</value></data>
+  <data name="CameraResourcesDescription" xml:space="preserve"><value>實體相機下的設定與校正檔案；檢視目錄，不參與批次清理。</value></data>
+  <data name="CameraImagesTitle" xml:space="preserve"><value>相機影像</value></data>
+  <data name="CameraImagesDescription" xml:space="preserve"><value>已設定相機專用 Data 目錄中的影像與配套結果檔案。</value></data>
+  <data name="AlgorithmImagesTitle" xml:space="preserve"><value>演算法結果</value></data>
+  <data name="AlgorithmImagesDescription" xml:space="preserve"><value>已設定演算法模組專用 Data 目錄中的影像與結果檔案。</value></data>
+  <data name="PreProcessFilesTitle" xml:space="preserve"><value>前置處理檔案</value></data>
+  <data name="PreProcessFilesDescription" xml:space="preserve"><value>前置處理容量策略中設定的資料夾，沿用檔案類型與子目錄設定。</value></data>
+  <data name="CleanupNotice" xml:space="preserve"><value>依保留時間選擇檔案後確認清理。相機資源目錄及流程、擷取執行期間的檔案受保護；刪除結果檔案會影響歷史結果重新開啟。</value></data>
+</root>

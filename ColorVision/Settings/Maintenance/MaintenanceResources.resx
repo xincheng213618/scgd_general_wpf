@@ -2,10 +2,10 @@
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>存储与维护</value></data>
-  <data name="Description" xml:space="preserve"><value>清理日志、临时文件和可重建缓存；独立管理历史数据、备份与设置重置。</value></data>
+  <data name="Title" xml:space="preserve"><value>存储</value></data>
+  <data name="Description" xml:space="preserve"><value>查看本机图像、相机资源和缓存的占用，按类别管理文件。</value></data>
   <data name="Space" xml:space="preserve"><value>空间清理</value></data>
-  <data name="Protected" xml:space="preserve"><value>不会删除检测原图、结果、流程模板、设备参数或授权。</value></data>
+  <data name="Protected" xml:space="preserve"><value>按类别生成清理清单；正在使用或受保护的文件会保留。</value></data>
   <data name="Scan" xml:space="preserve"><value>扫描空间</value></data>
   <data name="CleanSelected" xml:space="preserve"><value>清理选中项</value></data>
   <data name="Cancel" xml:space="preserve"><value>取消</value></data>
@@ -81,9 +81,26 @@
   <data name="FeedbackProtected" xml:space="preserve"><value>反馈窗口仍在使用诊断包和截图，这些附件暂不清理。</value></data>
   <data name="UpdatePackagesProtected" xml:space="preserve"><value>存在进行中或待安装的更新，本次保留全部安装包缓存。</value></data>
   <data name="ResetStartupFailed" xml:space="preserve"><value>上次启动未能完成重置：{0}。可取消计划后检查配置和备份。</value></data>
-  <data name="Management" xml:space="preserve"><value>缓存管理</value></data>
-  <data name="FileManagement" xml:space="preserve"><value>文件缓存管理</value></data>
-  <data name="FileManagementDescription" xml:space="preserve"><value>查看和清理日志、临时文件、现场数据副本及可重建缓存；打开后自动增量扫描。</value></data>
+  <data name="Management" xml:space="preserve"><value>存储管理</value></data>
+  <data name="FileManagement" xml:space="preserve"><value>文件管理</value></data>
+  <data name="FileManagementDescription" xml:space="preserve"><value>查看文件清单、设置保留时间并确认清理；配置和校正资源通过所属资源管理器维护。</value></data>
   <data name="MemoryManagement" xml:space="preserve"><value>内存缓存管理</value></data>
   <data name="MemoryManagementDescription" xml:space="preserve"><value>查看相机、校正和图像缓冲的内存占用，释放空闲内存。</value></data>
+  <data name="AccessDenied" xml:space="preserve"><value>当前用户或策略不允许执行此操作。</value></data>
+  <data name="ConfigurationTitle" xml:space="preserve"><value>配置</value></data>
+  <data name="ConfigurationDescription" xml:space="preserve"><value>管理设置备份、重置与恢复，以及崩溃转储配置。</value></data>
+  <data name="ConfigurationMaintenanceTitle" xml:space="preserve"><value>设置备份与重置</value></data>
+  <data name="ThisDevice" xml:space="preserve"><value>此设备</value></data>
+  <data name="StorageScope" xml:space="preserve"><value>管理保存在此电脑上的图像、相机资源和缓存，不包含远程数据库服务器。</value></data>
+  <data name="Refresh" xml:space="preserve"><value>刷新</value></data>
+  <data name="StorageCategories" xml:space="preserve"><value>存储类别</value></data>
+  <data name="UsedStorage" xml:space="preserve"><value>ColorVision 已统计占用 {0}</value></data>
+  <data name="Updating" xml:space="preserve"><value>正在更新…</value></data>
+  <data name="UsageUpdated" xml:space="preserve"><value>统计已更新</value></data>
+  <data name="UsagePartial" xml:space="preserve"><value>已完成部分统计，{0} 处未能完整读取。</value></data>
+  <data name="UsageCancelled" xml:space="preserve"><value>统计已取消；已完成的类别仍可查看。</value></data>
+  <data name="UsageManifestMissing" xml:space="preserve"><value>未提供文件清单，该占用暂未计入总量。</value></data>
+  <data name="ReadOnlyResources" xml:space="preserve"><value>配置和校正资源在此仅供查看，请通过资源管理器修改。</value></data>
+  <data name="ResourceManager" xml:space="preserve"><value>资源管理器</value></data>
+  <data name="CategoryUnavailable" xml:space="preserve"><value>该类别当前不可用，请刷新文件管理列表。</value></data>
 </root>

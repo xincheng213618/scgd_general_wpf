@@ -13,7 +13,7 @@ using System.Windows.Threading;
 namespace ColorVision.Windowing
 {
     /// <summary>
-    /// An opt-in, non-layered title-bar experiment. The application owns the left
+    /// Non-layered title-bar integration. The application owns the left
     /// title-bar content; DWM continues to draw and hit-test the caption buttons.
     /// The root and caption placeholder must not paint over the native button area.
     /// </summary>
@@ -75,7 +75,7 @@ namespace ColorVision.Windowing
 
         /// <summary>
         /// Attach after SourceInitialized. Older systems retain the ordinary window:
-        /// this experiment requires Windows 11's documented caption-color attributes.
+        /// this integration requires Windows 11's documented caption-color attributes.
         /// </summary>
         public bool TryAttach()
         {

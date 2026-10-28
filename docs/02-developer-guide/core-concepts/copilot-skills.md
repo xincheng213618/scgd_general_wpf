@@ -5,7 +5,7 @@ status: "current"
 summary: "Copilot 技能的项目/用户/内置发现路径、显式调用、同名选择、开关、按需加载、使用统计和 MCP 依赖配置。"
 aliases: ["技能", "内置技能", "Skill 什么时候加载", "/skills", "SKILL.md", "SKILL.json", ".agents/skills", "allow_implicit_invocation", "Skill 没有出现", "CopilotAgentSkills", "CopilotAgentSkillCatalog", "CopilotAgentSkillMetadata", "CopilotAgentSkillReference", "CopilotAgentSkillOverrideConfig", "CopilotAgentSkillUsageStore", "Skill MCP 依赖", "colorvision-flow-diagnostics", "colorvision-script-automation"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSkills.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCatalogMonitor.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMetadata.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillSelectionPolicy.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillUsageStore.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillReference.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCommand.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillDiagnostics.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyPolicy.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyInstaller.cs", "ColorVision/Copilot/Config/CopilotAgentSkillOverrideConfig.cs", "ColorVision/Copilot/CopilotChatViewModel.SupportCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.SkillMcpDependencies.cs", "ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs", "ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs", "ColorVision/Copilot/CopilotSettingsWindow.xaml", "ColorVision/Copilot/Skills", "ColorVision/ColorVision.csproj"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs", "Test/ColorVision.Copilot.Tests/CopilotCodexSkillInstructionsTests.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs"]
 related: ["copilot.lifecycle", "copilot.configuration", "copilot.interactions", "copilot.extensions", "copilot.tool-contracts"]
 ---
 
@@ -135,4 +135,4 @@ MCP 依赖写在 `dependencies.tools` 中，使用 `type: mcp`、服务标识 `v
 4. 使用 `$name` 或 `/name` 再观察；单纯提到名称、候选相关性不足或预算省略都可能导致不加载。
 5. 区分目录项、运行时已选择、正文已加载、工具已执行及最终业务成功；分别查看 `/skills`、任务诊断和真实工具结果。
 
-`CopilotAgentSkillCatalogTests` 覆盖项目/用户/内置来源、嵌套路径、同名选择、路径覆盖、元数据回退、监视器与 MCP 依赖计划；`CopilotCodexSkillInstructionsTests` 覆盖兼容选项与技能选择的边界。测试文件存在不表示本轮已运行，也不能替代真实界面或外部 MCP 服务验收。
+`CopilotAgentSkillCatalogTests` 覆盖项目/用户/内置来源、嵌套路径、同名选择、路径覆盖、监视器与 MCP 依赖计划。测试文件存在不表示本轮已运行，也不能替代真实界面或外部 MCP 服务验收。

@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay)
         {
             ViewCamera? view = ExistingView;
-            if (IsDisposed || Application.Current == null || view == null) return;
+            if (IsDisposed || !_view.IsVisible || Application.Current == null || view == null) return;
             // Skip the full RAW/CIE snapshot for automatic captures while refresh is disabled.
             if (!forceDisplay && !ViewCameraConfig.Instance.AutoRefreshView) return;
             long version = Interlocked.Increment(ref previewVersion);
@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 LocalCameraPreview preview = LocalCameraPreview.Create(frame);
                 lock (previewSync)
                 {
-                    if (IsDisposed || !ReferenceEquals(ExistingView, view) || version != Volatile.Read(ref previewVersion)) return;
+                    if (IsDisposed || !_view.IsVisible || !ReferenceEquals(ExistingView, view) || version != Volatile.Read(ref previewVersion)) return;
                     pendingPreview = (view, model, preview, forceDisplay);
                     if (previewQueued) return;
                     previewQueued = true;
@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         pendingPreview = null;
                         previewQueued = false;
                     }
-                    if (IsDisposed || pending == null || !ReferenceEquals(ExistingView, pending.Value.View)) return;
+                    if (IsDisposed || !_view.IsVisible || pending == null || !ReferenceEquals(ExistingView, pending.Value.View)) return;
                     try { pending.Value.View.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
                     catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览显示失败。", ex); }
                 });

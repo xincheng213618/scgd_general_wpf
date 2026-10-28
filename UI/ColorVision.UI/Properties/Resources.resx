@@ -690,7 +690,7 @@
     <value>暂无控制项</value>
   </data>
   <data name="DisplayControlVisibilityHint" xml:space="preserve">
-    <value>隐藏仅影响设备控制栏，设备和流程仍可正常运行。</value>
+    <value>隐藏会关闭对应详情页并暂停该页的自动保存；设备连接和流程继续运行。重启保持隐藏，重新显示恢复页面。</value>
   </data>
   <data name="DisplayControlCreateGroup" xml:space="preserve">
     <value>新建分组</value>
@@ -726,7 +726,7 @@
     <value>移动到分组</value>
   </data>
   <data name="DisplayControlVisibilityTooltip" xml:space="preserve">
-    <value>在设备控制栏中显示或隐藏</value>
+    <value>同时显示或隐藏设备控制项及对应详情页</value>
   </data>
   <data name="DisplayControlPinTooltip" xml:space="preserve">
     <value>在所属分组内置顶或取消置顶</value>
@@ -978,4 +978,5 @@
   <data name="SearchLanguages" xml:space="preserve"><value>搜索语言</value></data>
   <data name="AppearanceDefault" xml:space="preserve"><value>ColorVision（默认）</value></data>
   <data name="LanguageAutoDetect" xml:space="preserve"><value>自动检测</value></data>
+  <data name="SettingsConfiguration" xml:space="preserve"><value>配置</value></data>
 </root>

@@ -69,9 +69,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             try
             {
+                DeviceCamera.DemandConfigurationAccess();
                 DeviceCamera.EnsurePhyCameraBindingCanChange(EditConfig.CameraCode);
                 EditConfig.CopyTo(DeviceCamera.Config);
-                DeviceCamera.Save();
+                DeviceCamera.CommitConfiguration();
                 Close();
             }
             catch (Exception ex)

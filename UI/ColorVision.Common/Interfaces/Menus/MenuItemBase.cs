@@ -20,7 +20,7 @@ namespace ColorVision.UI.Menus
         public virtual string? InputGestureText { get; }
         public virtual object? Icon { get; }
         public virtual ICommand? Command => RelayCommand;   
-        public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
+        public virtual RelayCommand RelayCommand => new(A => { if (AccessControl.Check(Execute)) Execute(); }, b => AccessControl.Check(Execute));
 
         public virtual bool? IsChecked {get;}
 

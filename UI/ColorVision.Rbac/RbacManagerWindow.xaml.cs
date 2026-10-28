@@ -382,6 +382,7 @@ namespace ColorVision.Rbac
             Config.SessionToken = string.Empty;
             Config.RememberMe = false;
             Config.SavedUsername = string.Empty;
+            Authorization.Instance.SubjectId = null;
             Authorization.Instance.PermissionMode = PermissionMode.Guest;
             ConfigService.Instance.Save<RbacManagerConfig>();
 

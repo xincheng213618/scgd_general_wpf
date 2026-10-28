@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -35,8 +36,14 @@ namespace ColorVision.Engine.Services.Terminal
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (!ServiceAuthorization.Can("device.create", TerminalService.SysResourceModel))
+            {
+                MessageBox1.Show(this, EngineLocalization.Get("当前权限不足，无法创建设备。"), "ColorVision");
+                return;
+            }
             SysResourceModel saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
             {
+                ServiceAuthorization.Demand("device.create", TerminalService.SysResourceModel);
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
                 int pkId = SysResourceDao.Instance.SaveAndReturnId(sysResource);
                 sysResource.Id = pkId;

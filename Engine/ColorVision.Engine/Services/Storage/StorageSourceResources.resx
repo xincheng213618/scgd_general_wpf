@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="CameraResourcesTitle" xml:space="preserve"><value>相机资源</value></data>
+  <data name="CameraResourcesDescription" xml:space="preserve"><value>物理相机下的配置与校正文件；查看目录，不参与批量清理。</value></data>
+  <data name="CameraImagesTitle" xml:space="preserve"><value>相机图像</value></data>
+  <data name="CameraImagesDescription" xml:space="preserve"><value>已配置相机专用 Data 目录中的图像与配套结果文件。</value></data>
+  <data name="AlgorithmImagesTitle" xml:space="preserve"><value>算法结果</value></data>
+  <data name="AlgorithmImagesDescription" xml:space="preserve"><value>已配置算法模块专用 Data 目录中的图像与结果文件。</value></data>
+  <data name="PreProcessFilesTitle" xml:space="preserve"><value>预处理文件</value></data>
+  <data name="PreProcessFilesDescription" xml:space="preserve"><value>预处理容量策略中配置的文件夹，沿用文件类型与子目录设置。</value></data>
+  <data name="CleanupNotice" xml:space="preserve"><value>按保留时间选择文件后确认清理。相机资源目录及流程、采集运行期间的文件受保护；删除结果文件会影响历史结果重新打开。</value></data>
+</root>

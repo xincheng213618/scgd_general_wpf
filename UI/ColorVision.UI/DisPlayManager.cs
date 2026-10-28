@@ -93,8 +93,12 @@ namespace ColorVision.UI
         public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
         {
             var manager = DockViewManager.GetInstance();
-            if (userControl is IDisPlayControl display && !string.IsNullOrWhiteSpace(display.PersistenceKey))
-                manager.SetViewIdentity(viewControl, display.PersistenceKey);
+            if (userControl is IDisPlayControl display)
+            {
+                string key = DisPlayManager.GetControlKey(display);
+                if (!string.IsNullOrWhiteSpace(key)) manager.SetViewIdentity(viewControl, key);
+                manager.SetViewVisibility(viewControl, DisPlayManager.IsControlVisible(display));
+            }
             if (!string.IsNullOrEmpty(title))
                 manager.SetViewTitle(viewControl, title);
             manager.AddView(viewControl);
@@ -116,10 +120,12 @@ namespace ColorVision.UI
         {
             var manager = DockViewManager.GetInstance();
             registration.Title = title;
-            if (userControl is IDisPlayControl display && !string.IsNullOrWhiteSpace(display.PersistenceKey))
+            if (userControl is IDisPlayControl display)
             {
-                registration.PersistenceKey = display.PersistenceKey;
-                if (registration.Current is { } current) manager.SetViewIdentity(current, display.PersistenceKey);
+                registration.PersistenceKey = DisPlayManager.GetControlKey(display);
+                registration.IsVisible = DisPlayManager.IsControlVisible(display);
+                if (registration.Current is { } current && !string.IsNullOrWhiteSpace(registration.PersistenceKey))
+                    manager.SetViewIdentity(current, registration.PersistenceKey);
             }
             manager.RegisterView(registration);
             userControl.MouseDoubleClick += (s, e) =>
@@ -129,6 +135,7 @@ namespace ColorVision.UI
                 e.Handled = true;
             };
         }
+
     }
 
     public class DisPlayGroupConfig : ViewModelBase
@@ -390,7 +397,7 @@ namespace ColorVision.UI
 
         internal static bool IsDefaultGroup(string groupId) => groupId == DisPlayManagerConfig.DefaultGroupId;
 
-        private static string GetControlKey(IDisPlayControl control)
+        internal static string GetControlKey(IDisPlayControl control)
         {
             string key = control.PersistenceKey;
             return string.IsNullOrWhiteSpace(key) ? control.DisPlayName : key;
@@ -524,10 +531,15 @@ namespace ColorVision.UI
             return DisPlayManagerConfig.Instance.PinnedControls.Contains(GetControlKey(control));
         }
 
-        public static bool IsControlVisible(IDisPlayControl control)
+        public static bool IsControlVisible(IDisPlayControl control) => IsControlVisible(control.PersistenceKey, control.DisPlayName);
+
+        public static bool IsControlVisible(string persistenceKey, string displayName)
         {
             EnsureConfigCollections();
-            return !DisPlayManagerConfig.Instance.HiddenControls.Contains(GetControlKey(control));
+            var hidden = DisPlayManagerConfig.Instance.HiddenControls;
+            // Registration precedes the full display snapshot and its legacy-key migration.
+            string key = string.IsNullOrWhiteSpace(persistenceKey) ? displayName : persistenceKey;
+            return !hidden.Contains(key) && !hidden.Contains(displayName);
         }
 
         public void SetControlVisible(IDisPlayControl control, bool isVisible)
@@ -545,6 +557,7 @@ namespace ColorVision.UI
             if (!changed)
                 return;
 
+            DockViewManager.GetInstance().SetViewVisibility(key, isVisible);
             RebuildPanel();
             if (!isVisible && ReferenceEquals(_selectedControl, control))
             {

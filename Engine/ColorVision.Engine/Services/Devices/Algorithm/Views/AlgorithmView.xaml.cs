@@ -241,7 +241,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void AddAlgResultMasterModel(AlgResultMasterModel result)
         {
-            if (!_isDisposed && result != null)
+            if (!_isDisposed && Device?.ViewRegistration.IsVisible != false && result != null)
             {
                 if (_viewResults.ContainsId(result.Id)) return;
                 EnsureInitialized();
@@ -268,6 +268,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (_isDisposed
                 || Device == null
                 || Device.IsDisposed
+                || !Device.ViewRegistration.IsVisible
                 || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)
                 || masterIdValue == null)
                 return;
@@ -283,6 +284,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (_isDisposed
                 || Device == null
                 || Device.IsDisposed
+                || !Device.ViewRegistration.IsVisible
                 || (!isLocalFlow && message.Route != ResultRoutes.Algorithm)
                 || message.ResultKind != ResultKinds.Algorithm
                 || (!isLocalFlow && !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)))
@@ -293,7 +295,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void ShowPersistedResult(int masterId)
         {
-            if (_isDisposed || Device == null || Device.IsDisposed || masterId <= 0) return;
+            if (_isDisposed || Device == null || Device.IsDisposed || !Device.ViewRegistration.IsVisible || masterId <= 0) return;
             AlgResultMasterModel? model = AlgResultMasterDao.Instance.GetById(masterId);
             if (model == null)
             {
@@ -304,7 +306,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             log.Debug($"FileUrl：{model.ImgFile}");
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                if (!_isDisposed && !Device.IsDisposed)
+                if (!_isDisposed && !Device.IsDisposed && Device.ViewRegistration.IsVisible)
                     AddAlgResultMasterModel(model);
             });
         }
@@ -388,9 +390,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {
-            var listView = IsExchange ? listView1 : listViewSide;
-
-            listView.Width = ListCol2.ActualWidth;
+            listViewSide.Width = ListCol2.ActualWidth;
             SideTextBox.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
@@ -399,8 +399,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (ListRow2.ActualHeight > 32)
             {
-                var listView = !IsExchange ? listView1 : listViewSide;
-                listView.Height = ListRow2.ActualHeight - 32;
+                listView1.Height = ListRow2.ActualHeight - 32;
                 ListRow2.Height = GridLength.Auto;
                 ListRow1.Height = new GridLength(1, GridUnitType.Star);
 
@@ -416,40 +415,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (sender is ContextMenu contextMenu && listViewSide.View is GridView gridView && LeftGridViewColumnVisibilitys.Count ==0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
         }
-        bool IsExchange;
-        private void Exchange_Click(object sender, RoutedEventArgs e)
-        {
-            IsExchange = !IsExchange;
-            var listD = IsExchange ? listView1 : listViewSide;
-            var listL = IsExchange ? listViewSide : listView1;
-            if (listD.Parent is Grid parent1 && listL.Parent is Grid parent2 )
-            {
-                var tempCol = Grid.GetColumn(listD);
-                var tempRow = Grid.GetRow(listD);   
-
-                var tempCol1 = Grid.GetColumn(listL);
-                var tempRow1 = Grid.GetRow(listL);
-
-                parent1.Children.Remove(listD);
-                parent2.Children.Remove(listL);
-
-                parent1.Children.Add(listL);
-                parent2.Children.Add(listD);
-
-                Grid.SetColumn(listD, tempCol1);
-                Grid.SetRow(listD, tempRow1);
-
-                Grid.SetColumn(listL, tempCol);
-                Grid.SetRow(listL, tempRow);
-
-
-                listD.Width = listL.ActualWidth;
-                listL.Height = listD.ActualHeight;
-                listD.Height = double.NaN;
-                listL.Width = double.NaN;
-            }
-        }
-
         public void SideSave(ViewResultAlg result,string selectedPath)
         {
             EnsureInitialized();
