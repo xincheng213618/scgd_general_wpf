@@ -2624,24 +2624,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 管理自动曝光参数模板 的本地化字符串。
-        /// </summary>
-        public static string CommandAutoExposureHint {
-            get {
-                return ResourceManager.GetString("CommandAutoExposureHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 管理自动聚焦参数模板 的本地化字符串。
-        /// </summary>
-        public static string CommandAutoFocusHint {
-            get {
-                return ResourceManager.GetString("CommandAutoFocusHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 查看和释放校正与图像文件缓存 的本地化字符串。
         /// </summary>
         public static string CommandCalibrationCacheHint {
@@ -2656,24 +2638,6 @@ namespace ColorVision.Engine.Properties {
         public static string CommandCameraCalibrationHint {
             get {
                 return ResourceManager.GetString("CommandCameraCalibrationHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 根据当前后端查看本地相机或相机服务日志 的本地化字符串。
-        /// </summary>
-        public static string CommandCameraLogHint {
-            get {
-                return ResourceManager.GetString("CommandCameraLogHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 管理相机采集参数模板 的本地化字符串。
-        /// </summary>
-        public static string CommandCameraParametersHint {
-            get {
-                return ResourceManager.GetString("CommandCameraParametersHint", resourceCulture);
             }
         }
         
@@ -4069,15 +4033,6 @@ namespace ColorVision.Engine.Properties {
         public static string EditCalibration {
             get {
                 return ResourceManager.GetString("EditCalibration", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 校正文件设置 的本地化字符串。
-        /// </summary>
-        public static string EditCalibrationFile {
-            get {
-                return ResourceManager.GetString("EditCalibrationFile", resourceCulture);
             }
         }
         

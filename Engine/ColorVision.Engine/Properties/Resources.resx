@@ -1063,16 +1063,11 @@
   <data name="DataLogs" xml:space="preserve"><value>数据与日志</value></data>
   <data name="SpectrumCalibrationGroups" xml:space="preserve"><value>标定分组管理</value></data>
   <data name="CameraLog" xml:space="preserve"><value>相机日志</value></data>
-  <data name="EditCalibrationFile" xml:space="preserve"><value>校正文件设置</value></data>
   <data name="CommandEditConfigHint" xml:space="preserve"><value>连接、设备参数与运行配置</value></data>
   <data name="CommandRestartHint" xml:space="preserve"><value>保存当前配置并重启设备服务</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>删除当前设备资源</value></data>
-  <data name="CommandCameraLogHint" xml:space="preserve"><value>根据当前后端查看本地相机或相机服务日志</value></data>
   <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>查看和释放校正与图像文件缓存</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>配置相机关联的校正文件</value></data>
-  <data name="CommandAutoExposureHint" xml:space="preserve"><value>管理自动曝光参数模板</value></data>
-  <data name="CommandAutoFocusHint" xml:space="preserve"><value>管理自动聚焦参数模板</value></data>
-  <data name="CommandCameraParametersHint" xml:space="preserve"><value>管理相机采集参数模板</value></data>
   <data name="CommandPhysicalCameraHint" xml:space="preserve"><value>查看与配置物理相机</value></data>
   <data name="CommandRefreshDevicesHint" xml:space="preserve"><value>刷新服务端设备列表</value></data>
   <data name="CommandDisplayConfigHint" xml:space="preserve"><value>配置采集与结果显示选项</value></data>

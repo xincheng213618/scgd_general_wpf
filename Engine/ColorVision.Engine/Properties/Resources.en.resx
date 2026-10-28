@@ -4634,16 +4634,11 @@ Please close camera or other programs using this serial port, or check device co
   <data name="DataLogs" xml:space="preserve"><value>Data and logs</value></data>
   <data name="SpectrumCalibrationGroups" xml:space="preserve"><value>Manage calibration groups</value></data>
   <data name="CameraLog" xml:space="preserve"><value>Camera log</value></data>
-  <data name="EditCalibrationFile" xml:space="preserve"><value>Calibration files</value></data>
   <data name="CommandEditConfigHint" xml:space="preserve"><value>Connection, device and runtime settings</value></data>
   <data name="CommandRestartHint" xml:space="preserve"><value>Save current settings and restart the device service</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>Delete the current device resource</value></data>
-  <data name="CommandCameraLogHint" xml:space="preserve"><value>View local camera or camera service logs for the active backend</value></data>
   <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>Inspect and release calibration and image file caches</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>Configure associated calibration files</value></data>
-  <data name="CommandAutoExposureHint" xml:space="preserve"><value>Manage auto exposure templates</value></data>
-  <data name="CommandAutoFocusHint" xml:space="preserve"><value>Manage auto focus templates</value></data>
-  <data name="CommandCameraParametersHint" xml:space="preserve"><value>Manage camera acquisition templates</value></data>
   <data name="CommandPhysicalCameraHint" xml:space="preserve"><value>View and configure physical cameras</value></data>
   <data name="CommandRefreshDevicesHint" xml:space="preserve"><value>Refresh the service device list</value></data>
   <data name="CommandDisplayConfigHint" xml:space="preserve"><value>Acquisition and result display options</value></data>

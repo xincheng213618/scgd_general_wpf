@@ -911,7 +911,6 @@ public sealed class LumFourColorWorkflowSafetyTests
         WithTheme(() =>
         {
             var camera = TestCamera("VAM");
-            camera.EditCalibrationCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
             camera.ReleaseLocalCalibrationCacheCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
             camera.UserCalibrationCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
             var commands = new System.Windows.Controls.Primitives.UniformGrid();
