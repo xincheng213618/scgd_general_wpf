@@ -51,7 +51,7 @@ public static class ImageEvidenceRunner
                 Stopwatch timer = Stopwatch.StartNew();
                 AlgorithmResult result;
                 try { result = algorithm.Evaluate(image); }
-                catch (OperationCanceledException) { throw; }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                 catch (Exception ex)
                 {
                     result = new AlgorithmResult

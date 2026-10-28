@@ -93,13 +93,17 @@ namespace ColorVision.ImageEditor.Algorithms
         /// </summary>
         public static AlgorithmImageBuffer Copy(HImage image, AlgorithmImageFormat format, double dpiX = 96, double dpiY = 96)
         {
+            if (image.pData == IntPtr.Zero || image.rows <= 0 || image.cols <= 0)
+                throw new ArgumentException("HImage must contain a nonempty pixel buffer with positive dimensions.", nameof(image));
             if (format.Channels() != image.channels || format.BitsPerChannel() != image.depth)
                 throw new ArgumentException($"Declared format {format} does not match HImage depth={image.depth}, channels={image.channels}.", nameof(format));
             int rowBytes = checked(image.cols * format.BytesPerPixel());
-            int sourceStride = image.stride >= rowBytes ? image.stride : rowBytes;
+            int sourceStride = image.stride == 0 ? rowBytes : image.stride;
+            if (sourceStride < rowBytes)
+                throw new ArgumentException("HImage stride must be zero or at least the size of one pixel row.", nameof(image));
             byte[] data = new byte[checked(rowBytes * image.rows)];
             for (int row = 0; row < image.rows; row++)
-                Marshal.Copy(IntPtr.Add(image.pData, row * sourceStride), data, row * rowBytes, rowBytes);
+                Marshal.Copy(new IntPtr(checked(image.pData.ToInt64() + (long)row * sourceStride)), data, row * rowBytes, rowBytes);
             return new AlgorithmImageBuffer(image.cols, image.rows, rowBytes, format, data, dpiX, dpiY);
         }
 

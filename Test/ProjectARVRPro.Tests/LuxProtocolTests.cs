@@ -56,7 +56,7 @@ public sealed class LuxProtocolTests
     }
 
     [Fact]
-    public void AsyncCompletionKeepsItsConnectionAndMachinePrefixAndRepliesOnce()
+    public void AsyncCompletionKeepsItsRequestPrefixAndRepliesOnce()
     {
         var first = new List<string>();
         var second = new List<string>();

@@ -12,7 +12,6 @@ namespace ProjectARVRPro.Services
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            SocketControl.Current.Stream = stream;
             try
             {
                 string groupName = request.Params;

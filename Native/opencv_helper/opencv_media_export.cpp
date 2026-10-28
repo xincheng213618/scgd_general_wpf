@@ -1046,10 +1046,11 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 
 
 
-int FindClosestFactor(int value, const int* allowedFactors, int size = 13)
+template <std::size_t N>
+static int FindClosestFactor(int value, const int (&allowedFactors)[N])
 {
 	int closestFactor = allowedFactors[0];
-	for (int i = 1; i < size; ++i)
+	for (std::size_t i = 1; i < N; ++i)
 	{
 		if (std::abs(value - allowedFactors[i]) < std::abs(value - closestFactor))
 		{
@@ -1104,7 +1105,7 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 
 		double initialScaleFactor = std::sqrt(static_cast<double>(originalWidth) * originalHeight / targetPixels);
 
-		int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
+		constexpr int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
 		int scaleFactor = FindClosestFactor(static_cast<int>(std::round(initialScaleFactor)), allowedFactors);
 		if (scaleFactor <= 0) {
 			scaleFactor = 1;

@@ -31,7 +31,7 @@ internal sealed record LuxRequest(string MachineNo, string SocketCode, string Se
         : ResponsePrefix;
 }
 
-/// <summary>A command owns its connection and response prefix until its single terminal reply.</summary>
+/// <summary>Keeps the command's response prefix and permits one terminal reply.</summary>
 internal sealed class LuxCommandSession(LuxRequest request, Action<string> send)
 {
     private int _completed;
@@ -63,13 +63,13 @@ public sealed class LuxSocketDispatcher : ISocketTextDispatcher
     }
 
     private static string? DispatchToWindow(NetworkStream stream, LuxRequest command) =>
-        Application.Current.Dispatcher.Invoke(() => ProjectARVRWindowHost.ShowOrActivate().HandleLuxRequest(
+        Application.Current.Dispatcher.Invoke(() => ProjectARVRWindowHost.ShowOrActivate().HandleLuxRequest(stream,
             new LuxCommandSession(command, response =>
             {
                 SocketMessageManager.GetInstance().AddMessage(new SocketMessage
                 {
                     Direction = SocketMessageDirection.Sent, Content = response, MessageTime = DateTime.Now
                 });
-                stream.Write(Encoding.UTF8.GetBytes(response));
+                SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(response));
             })));
 }

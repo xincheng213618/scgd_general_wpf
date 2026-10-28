@@ -2953,30 +2953,43 @@ bool smokeConvertImageHandlesStrideAndOwnedBuffer()
     himg.isDispose = false;
     himg.pData = padded.data();
 
-    unsigned char* output = nullptr;
-    int length = 0;
-    int scaleFactor = 0;
-    const int ret = M_ConvertImage(himg, &output, &length, &scaleFactor, width, height);
-
-    bool ok = false;
-    if (ret == 0 && output != nullptr && length == width * height && scaleFactor == 1) {
-        cv::Mat source(height, width, CV_8UC3, padded.data(), stride);
-        cv::Mat expected;
-        cv::cvtColor(source, expected, cv::COLOR_BGR2GRAY);
-
-        ok = true;
-        for (int y = 0; y < height && ok; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (output[y * width + x] != expected.at<unsigned char>(y, x)) {
-                    ok = false;
-                    break;
+    cv::Mat source(height, width, CV_8UC3, padded.data(), stride);
+    cv::Mat expected;
+    cv::cvtColor(source, expected, cv::COLOR_BGR2GRAY);
+    struct ScaleCase { int targetWidth; int targetHeight; int expectedScale; };
+    const ScaleCase cases[] = {
+        { 7, 5, 1 }, { 14, 10, 1 }, { 4, 2, 2 },
+        { 2, 2, 2 }, // Rounded scale 3: equidistant factors retain the smaller 2.
+        { 2, 1, 4 }, { 1, 1, 4 } // Rounded scale 6: retain 4 instead of 8.
+    };
+    for (const ScaleCase& test : cases) {
+        unsigned char* output = nullptr;
+        int length = 0;
+        int scaleFactor = 0;
+        const int ret = M_ConvertImage(himg, &output, &length, &scaleFactor, test.targetWidth, test.targetHeight);
+        const int expectedWidth = std::max(width / test.expectedScale, 1);
+        const int expectedHeight = std::max(height / test.expectedScale, 1);
+        bool ok = ret == 0 && output != nullptr
+            && length == expectedWidth * expectedHeight && scaleFactor == test.expectedScale;
+        if (ok) {
+            for (int y = 0; y < expectedHeight && ok; ++y) {
+                for (int x = 0; x < expectedWidth; ++x) {
+                    if (output[y * expectedWidth + x] != expected.at<unsigned char>(y * test.expectedScale, x * test.expectedScale)) {
+                        ok = false;
+                        break;
+                    }
                 }
             }
         }
+        M_FreeHImageData(output);
+        if (!ok) {
+            std::cerr << "M_ConvertImage scale/pixel contract failed for target "
+                << test.targetWidth << "x" << test.targetHeight << ": return=" << ret
+                << ", scale=" << scaleFactor << ", expected=" << test.expectedScale << std::endl;
+            return false;
+        }
     }
-
-    M_FreeHImageData(output);
-    return ok;
+    return true;
 }
 
 bool smokeConvertImageClearsOutputsOnFailure()
@@ -3699,8 +3712,97 @@ bool RunSfrAnalysisTests();
 
 bool RunBmwLocalizationTests();
 
+struct NativeTestCommand
+{
+    const char* name;
+    int minimumArgc;
+    int maximumArgc;
+    const char* arguments;
+};
+
+static constexpr NativeTestCommand nativeTestCommands[] = {
+    { "--help", 2, 2, "" },
+    { "--image-helpers-only", 2, 2, "" },
+    { "--bmw-only", 2, 2, "" },
+    { "--sfr-only", 2, 2, "" },
+    { "--grid-distortion-v2", 2, 2, "" },
+    { "--surface-defect-equivalence", 2, 2, "" },
+    { "--surface-defect-benchmark", 2, 2, "" },
+    { "--cuda-fusion-benchmark", 7, 9, "<dll> <width> <height> <images> <warm-iterations> [prewarm] [function]" },
+    { "--cuda-fusion-compare", 7, 8, "<reference-dll> <candidate-dll> <width> <height> <images> [channels]" },
+    { "--cuda-fusion-ab-benchmark", 8, 8, "<reference-dll> <candidate-dll> <width> <height> <images> <iterations>" },
+    { "--cuda-fusion-verify", 3, 3, "<candidate-dll>" },
+    { "--calibration-smoke", 2, 2, "" },
+    { "--calibration-cache-small-budget", 2, 2, "" },
+    { "--calibration-real-data", 3, 3, "<test-root>" },
+    { "--calibration-legacy-color", 5, 5, "<file.cvraw> <color-file> <legacy-dll>" },
+    { "--p2-only", 2, 2, "" },
+    { "--native-log", 2, 2, "" },
+    { "--pseudo-color", 2, 2, "" },
+    { "--luminous-v2-only", 2, 2, "" },
+    { "--find-cross-only", 2, 2, "" },
+    { "--find-cross-cvraw", 3, 13, "<file.cvraw> [x y width height [expectedCenterX expectedCenterY expectedRotation centerTolerance rotationTolerance minConfidence]]" },
+    { "--luminous-v2-cvraw", 3, 3, "<file.cvraw>" },
+    { "--luminous-v2-cvraw-reject", 3, 3, "<file.cvraw>" },
+    { "--distortion-p9-only", 2, 2, "" },
+};
+
+static void printNativeTestUsage(std::ostream& output)
+{
+    output << "Usage: opencv_helper_test.exe [image-path]" << std::endl
+        << "       opencv_helper_test.exe <mode> [mode arguments]" << std::endl
+        << "No arguments, or one image path, runs the default smoke suite." << std::endl
+        << "Modes:" << std::endl;
+    for (const NativeTestCommand& command : nativeTestCommands) {
+        output << "  " << command.name;
+        if (command.arguments[0] != '\0') {
+            output << " " << command.arguments;
+        }
+        output << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
+    // Reject malformed invocations before any suite, image read, or device probe.
+    // Otherwise a mistyped focused mode can silently run the default suite and pass.
+    if (argc > 1) {
+        const std::string requested = argv[1];
+        if (requested.rfind("--", 0) == 0) {
+            const NativeTestCommand* selected = nullptr;
+            for (const NativeTestCommand& command : nativeTestCommands) {
+                if (requested == command.name) {
+                    selected = &command;
+                    break;
+                }
+            }
+            const bool validFindCrossCount = requested != "--find-cross-cvraw"
+                || argc == 3 || argc == 7 || argc == 13;
+            if (selected == nullptr || argc < selected->minimumArgc
+                || argc > selected->maximumArgc || !validFindCrossCount) {
+                std::cerr << (selected == nullptr ? "Unknown mode: " : "Invalid argument count for mode: ")
+                    << requested << std::endl;
+                printNativeTestUsage(std::cerr);
+                return 2;
+            }
+            if (requested == "--help") {
+                printNativeTestUsage(std::cout);
+                return 0;
+            }
+        }
+        else if (argc != 2) {
+            std::cerr << "The default suite accepts at most one image path." << std::endl;
+            printNativeTestUsage(std::cerr);
+            return 2;
+        }
+    }
+    if (argc == 2 && std::string(argv[1]) == "--image-helpers-only") {
+        const bool passed = smokeHImageHelpersValidateLayoutAndOwnership()
+            && smokeConvertImageHandlesStrideAndOwnedBuffer()
+            && smokeConvertImageClearsOutputsOnFailure();
+        std::cout << "Image helper focused tests: " << (passed ? "PASS" : "FAIL") << std::endl;
+        return passed ? 0 : 1;
+    }
     if (argc == 2 && std::string(argv[1]) == "--bmw-only") return RunBmwLocalizationTests() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--sfr-only") {
         const bool diagnostics = RunSfrAnalysisTests();

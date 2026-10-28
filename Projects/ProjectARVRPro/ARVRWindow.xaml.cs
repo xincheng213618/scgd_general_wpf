@@ -1826,7 +1826,6 @@ namespace ProjectARVRPro
                 config.CustomXlsxProjectName, config.CustomOutputProfile
             };
             string serialNumber = SNtextBox.Text;
-            var responseStream = SocketControl.Current.Stream;
             DateTime exportTime = DateTime.Now;
             string csvOutputDirectory = outputConfig.CsvSavePath;
             string customXlsxOutputDirectory = string.IsNullOrWhiteSpace(outputConfig.CustomXlsxSavePath)
@@ -1933,6 +1932,7 @@ namespace ProjectARVRPro
                     ResponseCode = response.Code
                 };
 
+                var responseStream = SocketControl.Current.Stream;
                 if (SocketManager.GetInstance().TcpClients.Count <= 0 || responseStream == null)
                 {
                     log.Info("找不到连接的Socket");

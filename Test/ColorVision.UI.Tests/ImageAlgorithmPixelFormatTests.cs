@@ -108,30 +108,55 @@ public sealed class ImageAlgorithmPixelFormatTests
         Assert.Equal(rgba, Pixels(roundTrip, 8));
     }
 
-    [Fact]
-    public void HImageConversionRequiresMatchingExplicitCanonicalFormat()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void HImageConversionRequiresMatchingExplicitCanonicalFormat(int stride)
     {
+        int physicalStride = stride == 0 ? 6 : stride;
+        byte[] pixels = new byte[physicalStride * 2];
+        new byte[] { 1, 2, 3, 4, 5, 6 }.CopyTo(pixels, 0);
+        new byte[] { 7, 8, 9, 10, 11, 12 }.CopyTo(pixels, physicalStride);
         HImage image = new()
         {
-            rows = 1,
-            cols = 1,
+            rows = 2,
+            cols = 2,
             channels = 3,
             depth = 8,
-            stride = 3,
-            pData = Marshal.AllocCoTaskMem(3),
+            stride = stride,
+            pData = Marshal.AllocCoTaskMem(pixels.Length),
         };
         try
         {
-            Marshal.Copy(new byte[] { 1, 2, 3 }, 0, image.pData, 3);
+            Marshal.Copy(pixels, 0, image.pData, pixels.Length);
             using AlgorithmImageBuffer normalized = ImageAlgorithmInputFactory.Copy(image, AlgorithmImageFormat.Bgr24);
 
-            Assert.Equal(new byte[] { 1, 2, 3 }, normalized.Data.ToArray());
+            Assert.Equal(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }, normalized.Data.ToArray());
             Assert.Throws<ArgumentException>(() => ImageAlgorithmInputFactory.Copy(image, AlgorithmImageFormat.Bgra32));
         }
         finally
         {
             image.Dispose();
         }
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(5)]
+    public void HImageConversionRejectsInvalidStrideInsteadOfAssumingPackedRows(int stride)
+    {
+        HImage image = new()
+        {
+            rows = 2, cols = 2, channels = 3, depth = 8, stride = stride,
+            pData = Marshal.AllocCoTaskMem(12),
+        };
+        try
+        {
+            Marshal.Copy(new byte[12], 0, image.pData, 12);
+            Assert.Throws<ArgumentException>(() => ImageAlgorithmInputFactory.Copy(image, AlgorithmImageFormat.Bgr24));
+        }
+        finally { image.Dispose(); }
     }
 
     [Fact]

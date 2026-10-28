@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Flow;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
 using System.IO;
+using System.Net.Sockets;
 
 namespace ProjectARVRPro;
 
@@ -15,7 +16,7 @@ public partial class ARVRWindow
     private ProcessMeta? _luxFlowMeta;
     private TemplateModel<FlowParam>? _luxFlowTemplate;
 
-    internal string? HandleLuxRequest(LuxCommandSession session)
+    internal string? HandleLuxRequest(NetworkStream stream, LuxCommandSession session)
     {
         Dispatcher.VerifyAccess();
         LuxRequest request = session.Request;
@@ -32,6 +33,7 @@ public partial class ARVRWindow
         }
 
         _luxSession = session;
+        SocketControl.Current.Stream = stream;
         ProjectConfig.SN = request.SerialNumber;
         UpdateTestButtonState();
         if (request.SocketCode is "01" or "31") _ = ExecuteLuxDeviceRequestAsync(session);
@@ -103,7 +105,7 @@ public partial class ARVRWindow
 
     private async Task ExecuteLuxDeviceRequestAsync(LuxCommandSession session)
     {
-        // Freeze the settings with the originating connection, including while a new handshake arrives.
+        // Keep this command's settings when another station handshakes during measurement.
         string directory = ViewResultManager.Config.CsvSavePath;
         double min = ProjectConfig.LuxVidMin, max = ProjectConfig.LuxVidMax;
         double factor = ProjectConfig.LuxVidFix, offset = ProjectConfig.LuxVidB;

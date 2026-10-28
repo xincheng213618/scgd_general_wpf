@@ -14,7 +14,6 @@ namespace ProjectARVRPro.Services
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            SocketControl.Current.Stream = stream;
             try
             {
                 var data = RunOnUiThread(BuildProcessEnableData);
@@ -84,7 +83,6 @@ namespace ProjectARVRPro.Services
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            SocketControl.Current.Stream = stream;
             try
             {
                 if (!TryParseItems(request.Params, out var requestItems, out string errorMessage))

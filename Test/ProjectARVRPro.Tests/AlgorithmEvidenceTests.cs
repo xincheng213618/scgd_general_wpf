@@ -27,9 +27,20 @@ public sealed class AlgorithmEvidenceTests
         Assert.Single(ArvrEvidenceImages.Select([new() { Model = "Black" }], false));
     }
 
-    [Fact]
-    public void ComparisonUsesSameInputAndOneAlgorithmFailureDoesNotStopOthers()
+    [Theory]
+    [InlineData("error")]
+    [InlineData("adapter-canceled")]
+    [InlineData("adapter-task-canceled")]
+    public void ComparisonUsesSameInputAndOneAlgorithmFailureDoesNotStopOthers(string failureKind)
     {
+        using CancellationTokenSource adapterCancellation = new();
+        adapterCancellation.Cancel();
+        Exception failure = failureKind switch
+        {
+            "adapter-canceled" => new OperationCanceledException("adapter canceled", adapterCancellation.Token),
+            "adapter-task-canceled" => new TaskCanceledException("adapter task canceled", null, adapterCancellation.Token),
+            _ => new InvalidOperationException("failure")
+        };
         IntPtr pixels = Marshal.AllocHGlobal(1);
         try
         {
@@ -38,11 +49,12 @@ public sealed class AlgorithmEvidenceTests
             List<string> calls = [];
             IReadOnlyList<ImageEvidenceObservation> results = ImageEvidenceRunner.Run(image,
             [
-                new("test.broken", "旧算法", input => { calls.Add("old"); Assert.Equal(pixels, input.pData); throw new InvalidOperationException("failure"); }),
+                new("test.broken", "旧算法", input => { calls.Add("old"); Assert.Equal(pixels, input.pData); throw failure; }),
                 new("test.working", "新算法", input => { calls.Add("new"); Assert.Equal(123, Marshal.ReadByte(input.pData)); return Success("test.working"); })
             ]);
             Assert.Equal(["old", "new"], calls);
             Assert.Equal(AlgorithmResultStatus.Failed, results[0].Result.Status);
+            Assert.Equal("ExecutionError", Assert.Single(results[0].Result.Failures).Code);
             Assert.Equal(AlgorithmResultStatus.Succeeded, results[1].Result.Status);
             Assert.Equal(123, Marshal.ReadByte(pixels));
             foreach (ImageEvidenceObservation result in results) result.Result.Dispose();
@@ -59,6 +71,24 @@ public sealed class AlgorithmEvidenceTests
         [
             new("test.first", "first", _ => { cancellation.Cancel(); return first; }),
             new("test.second", "second", _ => throw new Xunit.Sdk.XunitException("Unexpected second call"))
+        ], cancellation.Token));
+        Assert.True(first.IsDisposed);
+    }
+
+    [Fact]
+    public void CallerCancellationThrownByAlgorithmDisposesEarlierArtifactsAndStopsComparison()
+    {
+        using CancellationTokenSource cancellation = new();
+        AlgorithmResult first = Success("test.first");
+        Assert.Throws<OperationCanceledException>(() => ImageEvidenceRunner.Run(new HImage(),
+        [
+            new("test.first", "first", _ => first),
+            new("test.canceling", "canceling", _ =>
+            {
+                cancellation.Cancel();
+                throw new OperationCanceledException(cancellation.Token);
+            }),
+            new("test.third", "third", _ => throw new Xunit.Sdk.XunitException("Unexpected third call"))
         ], cancellation.Token));
         Assert.True(first.IsDisposed);
     }

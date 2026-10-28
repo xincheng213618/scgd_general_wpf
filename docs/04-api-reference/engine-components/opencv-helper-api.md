@@ -522,7 +522,9 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels,
 - `scaleFactout` - Actual scale factor used
 - `targetPixelsX/Y` - Positive target-area hints (header defaults 512/512), not exact output dimensions. The implementation chooses a scale and samples source pixels; it does not resize to exactly targetPixelsX by targetPixelsY.
 
-Input may have one, three or four channels; color is converted to gray and non-8-bit values are min/max-normalized to 8-bit. Returned length and scaleFactor describe the allocated result. A current implementation gap remains: the local allowedFactors array has 12 elements, while FindClosestFactor defaults to reading 13. The documented candidate factors therefore cannot establish safe behavior for every size; existing stride/ownership tests do not prove this selection path free of out-of-bounds reads.
+输入支持单通道、三通道和四通道；彩色先转灰度，非 8 位值按最小值/最大值归一化到 8 位。尺度依据原图面积与目标面积之比的平方根取整，再从 `1, 2, 4, …, 2048` 中选择最近值；等距时保留较小尺度。候选遍历长度由实际数组推导，不读取数组末尾之外的数据。返回长度为 `max(width / scale, 1) × max(height / scale, 1)`，像素从原图对应步长位置采样，不承诺精确输出目标宽高。
+
+`opencv_helper_test.exe --image-helpers-only` 覆盖紧密/填充步长、尺度选择与等距边界、采样像素、缓冲区释放和失败输出清零；这是离线内存与采样契约验证，不代替大图性能或现场显示验收。
 
 **Memory:** Caller must release `rowGrayPixels` with `M_FreeHImageData()`.
 
