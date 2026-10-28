@@ -211,6 +211,14 @@ public sealed class CompatibilityNodeMigrationTests
                 ((JObject)expected!).Remove("POI_MasterId");
                 ((JObject)expected!).Remove("ExpTemplateParam");
             }
+            if (request is FlowEngineLib.Node.POI.POIReviseData)
+            {
+                ((JObject)expected!)["OutputParam"] = new JObject
+                {
+                    ["ID"] = -1,
+                    ["Name"] = ((FlowEngineLib.Node.POI.POIReviseNode)nodes[i]).Output ?? string.Empty,
+                };
+            }
             Assert.True(JToken.DeepEquals(expected, request == null ? JValue.CreateNull() : JToken.FromObject(request)), type.FullName);
             if (i + 1 < nodes.Length)
                 Assert.Same(nodes[i + 1].GetAllInputOptions()[0], Assert.Single(nodes[i].GetAllOutputOptions()[0].ConnectedOption));

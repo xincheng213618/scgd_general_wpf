@@ -47,7 +47,7 @@ public sealed class FlowTemplateBrowserOrderTests
                 Assert.Equal(new[] { last, first }, list.Items.Cast<TemplateBase>());
                 list.SelectedItem = last;
                 first.IsSelected = true;
-                ((ToggleButton)window.FindName("ListViewButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                ((MenuItem)window.FindName("ListViewMenu")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 Assert.IsType<GridView>(list.View);
                 Assert.Same(last, list.SelectedItem);
                 Assert.True(first.IsSelected);
@@ -75,7 +75,7 @@ public sealed class FlowTemplateBrowserOrderTests
                 Assert.IsType<GridView>(list.View);
                 Assert.Equal(new[] { added, first, middle }, list.Items.Cast<TemplateBase>());
                 var selected = list.SelectedItem;
-                ((ToggleButton)window.FindName("CardsViewButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                ((MenuItem)window.FindName("MediumIconsMenu")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 Assert.Null(list.View);
                 Assert.Same(selected, list.SelectedItem);
                 Assert.True(first.IsSelected);

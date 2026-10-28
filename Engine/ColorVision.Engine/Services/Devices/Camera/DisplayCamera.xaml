@@ -28,9 +28,9 @@
             <ToggleButton x:Name="DisplayHeaderToggle" Content="{Binding Config.Name}" FontSize="15" IsChecked="True" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}"/>
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
-            <StackPanel Margin="3">
+            <StackPanel Margin="5">
                 <controls:CameraActionsControl x:Name="Actions"/>
-                <controls:CameraCaptureControl x:Name="Capture"/>
+                <controls:CameraCaptureControl x:Name="Capture" Margin="0,2,0,0"/>
                 <controls:CameraPreviewControl x:Name="Preview"/>
             </StackPanel>
         </Border>

@@ -42,7 +42,8 @@ public sealed class LocalFlowTemplateStorage
         return new FlowParam
         {
             Id = ConvertId(document.Id), Name = document.Name, DataBase64 = content.DataBase64,
-            FlowKey = content.FlowKey, LoadedContentHash = hash, LocalStorage = this
+            FlowKey = content.FlowKey, LoadedContentHash = hash, LocalStorage = this,
+            TemplateDate = document.CreatedUtc?.ToLocalTime()
         };
     }
 
@@ -78,6 +79,7 @@ public sealed class LocalFlowTemplateStorage
         value.FlowKey = flowKey;
         value.LoadedContentHash = hash;
         value.LocalStorage = this;
+        value.TemplateDate = documents.Read(Kind, id).CreatedUtc?.ToLocalTime();
     }
 
     public void Delete(int id)

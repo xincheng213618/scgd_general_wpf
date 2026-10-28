@@ -57,6 +57,7 @@ public sealed class ProcessManagerPersistenceTests
             {
                 Name = "Source",
                 FlowTemplate = "SourceTemplate",
+                SocketCode = "21",
                 Process = sourceProcess,
                 IsEnabled = false,
                 ConfigJson = JsonConvert.SerializeObject(sourceProcess.Config),
@@ -84,6 +85,7 @@ public sealed class ProcessManagerPersistenceTests
             Assert.Same(copy, manager.SelectedProcessMeta);
             Assert.Equal("Source_Copy_1", copy.Name);
             Assert.Equal(source.FlowTemplate, copy.FlowTemplate);
+            Assert.Equal("21", copy.SocketCode);
             Assert.Equal(source.IsEnabled, copy.IsEnabled);
             Assert.NotSame(source.Process, copy.Process);
             BlackProcess copiedProcess = Assert.IsType<BlackProcess>(copy.Process);
@@ -144,6 +146,7 @@ public sealed class ProcessManagerPersistenceTests
             {
                 Name = "Source",
                 FlowTemplate = "SourceTemplate",
+                SocketCode = "22",
                 Process = source,
                 ConfigJson = JsonConvert.SerializeObject(new BlackProcessConfig()),
                 FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig
@@ -171,6 +174,12 @@ public sealed class ProcessManagerPersistenceTests
             Assert.Equal(2, reloaded.ProcessGroups.Count);
             ProcessMeta restoredSourceMeta = Assert.Single(reloaded.ProcessGroups[0].ProcessMetas);
             ProcessMeta restoredCopyMeta = Assert.Single(reloaded.ProcessGroups[1].ProcessMetas);
+            Assert.Equal("22", restoredSourceMeta.SocketCode);
+            Assert.Equal("22", restoredCopyMeta.SocketCode);
+            Assert.Same(restoredCopyMeta, reloaded.FindProcessMetaBySocketCode("22"));
+            restoredCopyMeta.IsEnabled = false; // Legacy Socket dispatch is independent of RunAll's enabled list.
+            Assert.Same(restoredCopyMeta, reloaded.FindProcessMetaBySocketCode("22"));
+            Assert.Null(reloaded.FindProcessMetaBySocketCode("99"));
             BlackProcess restoredSource = Assert.IsType<BlackProcess>(restoredSourceMeta.Process);
             BlackProcess restoredCopy = Assert.IsType<BlackProcess>(restoredCopyMeta.Process);
             BlackProcess restoredParser = Assert.IsType<BlackProcess>(Assert.Single(reloaded.ResultParserMetas).Process);

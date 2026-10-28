@@ -105,6 +105,27 @@ namespace ProjectARVRPro
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
+        [DisplayName("LUX 协议设备号"), Category("LUX协议")]
+        [Description("原 LUX 文本回包的前缀，例如 H03 或 H03AR；不参与流程批次 Code 的生成。")]
+        public string LuxMachineNo { get => _LuxMachineNo; set { _LuxMachineNo = value; OnPropertyChanged(); } }
+        private string _LuxMachineNo = "H03";
+
+        [DisplayName("VID 下限"), Category("LUX协议")]
+        public double LuxVidMin { get => _LuxVidMin; set { _LuxVidMin = value; OnPropertyChanged(); } }
+        private double _LuxVidMin;
+
+        [DisplayName("VID 上限"), Category("LUX协议")]
+        public double LuxVidMax { get => _LuxVidMax; set { _LuxVidMax = value; OnPropertyChanged(); } }
+        private double _LuxVidMax;
+
+        [DisplayName("VID 修正系数 K"), Category("LUX协议")]
+        public double LuxVidFix { get => _LuxVidFix; set { _LuxVidFix = value; OnPropertyChanged(); } }
+        private double _LuxVidFix = 1;
+
+        [DisplayName("VID 修正偏移 B"), Category("LUX协议")]
+        public double LuxVidB { get => _LuxVidB; set { _LuxVidB = value; OnPropertyChanged(); } }
+        private double _LuxVidB;
+
         [DisplayName("串口名称"), Category("串口参数")]
         [Description("例如 COM3；从流程处理配置的“雷鸟连接与切图”中连接和调试设备。")]
         public string ThunderbirdPortName { get => _ThunderbirdPortName; set { _ThunderbirdPortName = value; OnPropertyChanged(); } }

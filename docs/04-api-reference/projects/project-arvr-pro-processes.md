@@ -52,6 +52,7 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 | `FlowTemplate` | Engine Flow 模板名称 |
 | `ProcessTypeFullName` | 处理类型完整名称，用于持久化和恢复 |
 | `IsEnabled` | 是否进入启用步骤序列，默认 `true` |
+| `SocketCode` | `Text` 模式下 LUX 命令 `T00XX` 的末两位，默认空；独立于步骤顺序，`00`、`01`、`31` 为专用命令 |
 | `ConfigJson` | 当前处理实例的行为配置与内嵌 Recipe |
 | `PictureSwitchConfig` | 步骤启动前的切图配置 |
 | `FlowCameraParameterOverrideConfig` | 该步骤运行时使用的外部曝光和校正模板覆盖，默认关闭 |

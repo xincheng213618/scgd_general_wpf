@@ -830,6 +830,9 @@ namespace ProjectARVRPro.Process
             SelectedProcessMeta = copy;
         }
 
+        public ProcessMeta? FindProcessMetaBySocketCode(string socketCode) => ActiveGroup?.ProcessMetas
+            .FirstOrDefault(meta => string.Equals(meta.SocketCode, socketCode, StringComparison.OrdinalIgnoreCase));
+
         private static ProcessMeta CloneProcessMeta(ProcessMeta source, string name)
         {
             string configJson = GetProcessConfigJson(source);
@@ -841,6 +844,7 @@ namespace ProjectARVRPro.Process
             {
                 Name = name,
                 FlowTemplate = source.FlowTemplate,
+                SocketCode = source.SocketCode,
                 Process = process,
                 IsEnabled = source.IsEnabled,
                 ConfigJson = configJson,
@@ -1436,6 +1440,7 @@ namespace ProjectARVRPro.Process
             {
                 Name = item.Name,
                 FlowTemplate = item.FlowTemplate,
+                SocketCode = item.SocketCode,
                 Process = proc,
                 IsEnabled = item.IsEnabled,
                 ConfigJson = item.ConfigJson,
@@ -1564,6 +1569,7 @@ namespace ProjectARVRPro.Process
             {
                 Name = meta.Name,
                 FlowTemplate = meta.FlowTemplate,
+                SocketCode = meta.SocketCode,
                 ProcessTypeFullName = meta.Process?.GetType().FullName ?? string.Empty,
                 IsEnabled = meta.IsEnabled,
                 ConfigJson = GetProcessConfigJson(meta),

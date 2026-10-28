@@ -45,6 +45,9 @@ namespace ColorVision.Engine.Templates
 
         public virtual int Count { get; }
 
+        /// <summary>Restricts the new-template chooser to built-in presets and existing copies; prepared imports remain supported.</summary>
+        public virtual bool UseCatalogCreateSources => false;
+
         public virtual string GetTemplateName(int index)
         {
             throw new NotImplementedException();

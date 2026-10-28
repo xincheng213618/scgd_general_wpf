@@ -11,20 +11,19 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DisplayAlgorithmControl));
         private readonly IDisplayAlgorithm _algorithm;
-        private readonly Button _calculateButton;
 
         public DisplayAlgorithmControl(IDisplayAlgorithm algorithm)
         {
             _algorithm = algorithm ?? throw new ArgumentNullException(nameof(algorithm));
             InitializeComponent();
-            _calculateButton = new Button
-            {
-                Content = Properties.Resources.Calculate
-            };
-            _calculateButton.Click += CalculateButton_Click;
-            ConfigurationContent.Content = new DisplayAlgorithmConfigurationBuilder().Build(
-                algorithm.Configuration,
-                _calculateButton);
+            ConfigurationContent.Content = new DisplayAlgorithmConfigurationBuilder().Build(algorithm.Configuration);
+        }
+
+        internal Button DetachCalculateButton()
+        {
+            CalculateButtonHost.Content = null;
+            CalculateButtonHost.Visibility = Visibility.Collapsed;
+            return CalculateButton;
         }
 
         private void CalculateButton_Click(object sender, RoutedEventArgs e)
@@ -34,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 MsgRecord? msgRecord = _algorithm.Execute();
                 if (msgRecord != null)
                 {
-                    ServicesHelper.SendCommand(_calculateButton, msgRecord);
+                    ServicesHelper.SendCommand(CalculateButton, msgRecord);
                 }
             }
             catch (Exception ex)

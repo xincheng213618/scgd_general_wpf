@@ -19,7 +19,7 @@ public partial class ARVRWindow
             bool canStop = flowControl.IsFlowRun;
             TestButton.Content = DisplayText.Get(canStop ? "停止" : "测试");
             TestButton.IsEnabled = !_isFlowCompletionPending
-                && (canStop || !_isFlowStartPending && !_isFlowLifecycleActive && !IsResultExportPending);
+                && (canStop || _luxSession == null && !_isFlowStartPending && !_isFlowLifecycleActive && !IsResultExportPending);
         });
     }
 

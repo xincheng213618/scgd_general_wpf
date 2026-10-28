@@ -7,6 +7,7 @@ namespace ProjectARVRPro.Process
         public string FlowTemplate { get; set; }
         public string ProcessTypeFullName { get; set; }
         public bool IsEnabled { get; set; } = true;
+        public string SocketCode { get; set; } = string.Empty;
         public string ConfigJson { get; set; }
         public PictureSwitchConfig PictureSwitchConfig { get; set; }
         public FlowCameraParameterOverrideConfig FlowCameraParameterOverrideConfig { get; set; }

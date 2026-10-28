@@ -160,6 +160,14 @@
                                                         CellTemplate="{StaticResource FlowTemplateCellTemplate}"/>
                                         <GridViewColumn Header="{display:DisplayText Key='处理类型'}" Width="215"
                                                         DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
+                                        <GridViewColumn Header="SocketCode" Width="100">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBox Text="{Binding SocketCode, UpdateSourceTrigger=LostFocus}" MinWidth="65"
+                                                             ToolTip="LUX 命令 T00XX 的末两位，例如 21；00、01、31 为专用命令。"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
                                     </GridView>
                                 </ListView.View>
                             </ListView>

@@ -9,6 +9,36 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalFlowTemplateStorageTests
 {
+    [Fact]
+    public void LegacyLocalDocumentsKeepUnknownDatesWhileNewCreationDatesSurviveUpdatesAndSwaps()
+    {
+        string path = NewPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE local_templates(id INTEGER PRIMARY KEY AUTOINCREMENT,kind TEXT NOT NULL,name TEXT NOT NULL,schema_version INTEGER NOT NULL,payload TEXT NOT NULL,sort_order INTEGER NOT NULL DEFAULT 0); INSERT INTO local_templates(kind,name,schema_version,payload) VALUES('flow','legacy',1,'{}')";
+            command.ExecuteNonQuery();
+        }
+        var store = new LocalTemplateStore(path);
+        var legacy = Assert.Single(store.List("flow"));
+        Assert.Null(legacy.CreatedUtc);
+        Assert.True(store.TryUpdate("flow", legacy, "renamed legacy", 1, "{}"));
+        Assert.Null(store.Read("flow", legacy.Id).CreatedUtc);
+        int id = store.Save("flow", null, "new", 1, "{}");
+        var created = store.Read("flow", id);
+        Assert.NotNull(created.CreatedUtc);
+        Assert.Equal(DateTimeKind.Utc, created.CreatedUtc.Value.Kind);
+        store.Save("flow", id, "updated", 1, "{\"changed\":true}");
+        Assert.Equal(created.CreatedUtc, store.Read("flow", id).CreatedUtc);
+        var previous = store.Read("flow", id);
+        Assert.True(store.TryUpdate("flow", previous, "renamed", 1, "{}"));
+        store.SwapOrder("flow", legacy.Id, id);
+        Assert.Equal(created.CreatedUtc, store.Read("flow", id).CreatedUtc);
+        Assert.Null(store.Read("flow", legacy.Id).CreatedUtc);
+    }
+
     private static string NewPath() => Path.Combine(Path.GetTempPath(), "ColorVision-local-flow-tests", Guid.NewGuid().ToString("N"), "ColorVision.Local.db");
     private static LocalFlowTemplateStorage Open(string path) => new(new LocalTemplateStore(path));
     private static TemplateFlow Offline(LocalFlowTemplateStorage storage) => new(storage, () => false,

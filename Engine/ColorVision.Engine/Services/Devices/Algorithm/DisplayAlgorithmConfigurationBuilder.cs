@@ -18,24 +18,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     public sealed class DisplayAlgorithmConfigurationBuilder
     {
         private const double LabelWidth = 110;
-        private const double TemplateInlineActionMinWidth = 340;
 
-        public FrameworkElement Build(
-            DisplayAlgorithmConfigBase configuration,
-            FrameworkElement? primaryTemplateAction = null)
+        public FrameworkElement Build(DisplayAlgorithmConfigBase configuration)
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
             StackPanel panel = new();
-            BuildObject(configuration, panel, 0, ref primaryTemplateAction);
+            BuildObject(configuration, panel, 0);
             return panel;
         }
 
         private void BuildObject(
             object source,
             Panel panel,
-            int depth,
-            ref FrameworkElement? primaryTemplateAction)
+            int depth)
         {
             IEnumerable<PropertyInfo> properties = source.GetType()
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -49,11 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             foreach (PropertyInfo property in properties)
             {
-                FrameworkElement? editor = CreateEditor(
-                    source,
-                    property,
-                    depth,
-                    ref primaryTemplateAction);
+                FrameworkElement? editor = CreateEditor(source, property, depth);
                 if (editor == null)
                 {
                     continue;
@@ -67,16 +59,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private FrameworkElement? CreateEditor(
             object source,
             PropertyInfo property,
-            int depth,
-            ref FrameworkElement? primaryTemplateAction)
+            int depth)
         {
             object? value = property.GetValue(source);
 
             if (value is DisplayAlgorithmTemplateSelection templateSelection)
             {
-                FrameworkElement? action = primaryTemplateAction;
-                primaryTemplateAction = null;
-                return CreateTemplateEditor(templateSelection, action);
+                bool isPrimaryTemplate = source is SingleTemplateDisplayAlgorithmConfig && property.Name == nameof(SingleTemplateDisplayAlgorithmConfig.Template);
+                return CreateTemplateEditor(templateSelection, showLabel: !isPrimaryTemplate);
             }
 
             if (property.GetCustomAttribute<DisplayAlgorithmFileAttribute>() is DisplayAlgorithmFileAttribute fileAttribute)
@@ -123,7 +113,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (value != null && propertyType.IsClass && propertyType != typeof(Type) && depth < 3)
             {
                 StackPanel nestedPanel = new();
-                BuildObject(value, nestedPanel, depth + 1, ref primaryTemplateAction);
+                BuildObject(value, nestedPanel, depth + 1);
                 if (nestedPanel.Children.Count == 0)
                 {
                     return null;
@@ -143,20 +133,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private static FrameworkElement CreateTemplateEditor(
             DisplayAlgorithmTemplateSelection selection,
-            FrameworkElement? action)
+            bool showLabel)
         {
-            Grid row = new()
+            Grid row = CreateSelectionRow(showLabel);
+            if (showLabel)
             {
-                Margin = new Thickness(0, 2, 0, 2)
-            };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelWidth) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            row.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0) });
+                row.Children.Add(CreateLabel(selection.DisplayName));
+            }
 
-            TextBlock label = CreateLabel(selection.DisplayName);
             ComboBox comboBox = new()
             {
                 MinWidth = 0,
@@ -165,6 +149,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 DisplayMemberPath = "Key",
                 SelectedValuePath = "Value"
             };
+            System.Windows.Automation.AutomationProperties.SetName(comboBox, selection.DisplayName);
             comboBox.SetResourceReference(FrameworkElement.StyleProperty, "ComboBox.Small");
             comboBox.SetBinding(
                 System.Windows.Controls.Primitives.Selector.SelectedIndexProperty,
@@ -189,33 +174,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             };
             System.Windows.Automation.AutomationProperties.SetName(editButton, selection.DisplayName);
 
-            Grid.SetColumn(label, 0);
-            Grid.SetColumn(comboBox, 1);
-            Grid.SetColumn(editButton, 2);
-            row.Children.Add(label);
+            int editorColumn = showLabel ? 1 : 0;
+            Grid.SetColumn(comboBox, editorColumn);
+            Grid.SetColumn(editButton, editorColumn + 1);
             row.Children.Add(comboBox);
             row.Children.Add(editButton);
 
-            if (action != null)
-            {
-                Grid.SetColumn(action, 3);
-                row.Children.Add(action);
-                row.SizeChanged += (_, e) => UpdateTemplateActionLayout(row, action, e.NewSize.Width);
-            }
             return row;
-        }
-
-        private static void UpdateTemplateActionLayout(Grid row, FrameworkElement action, double availableWidth)
-        {
-            bool stackAction = availableWidth < TemplateInlineActionMinWidth;
-            row.RowDefinitions[1].Height = stackAction ? GridLength.Auto : new GridLength(0);
-            Grid.SetRow(action, stackAction ? 1 : 0);
-            Grid.SetColumn(action, stackAction ? 1 : 3);
-            Grid.SetColumnSpan(action, stackAction ? 3 : 1);
-            action.HorizontalAlignment = HorizontalAlignment.Right;
-            action.Margin = stackAction
-                ? new Thickness(0, 4, 0, 0)
-                : new Thickness(8, 0, 0, 0);
         }
 
         private static FrameworkElement CreateFileEditor(
@@ -223,13 +188,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             PropertyInfo property,
             DisplayAlgorithmFileAttribute attribute)
         {
-            DockPanel row = CreateRow();
-            TextBlock label = CreateLabel(
-                property.Name == nameof(DisplayAlgorithmConfigBase.ImageFilePath)
-                    ? Properties.Resources.Image
-                    : GetDisplayName(source, property));
+            bool showLabel = property.Name != nameof(DisplayAlgorithmConfigBase.ImageFilePath);
+            Grid row = CreateSelectionRow(showLabel);
+            if (showLabel)
+            {
+                row.Children.Add(CreateLabel(GetDisplayName(source, property)));
+            }
             TextBox textBox = CreateTextBox(source, property, usePlaceholderStyle: true);
             HandyControl.Controls.InfoElement.SetPlaceholder(textBox, ColorVision.Themes.Properties.Resources.Upload_SelectFile);
+            System.Windows.Automation.AutomationProperties.SetName(textBox,
+                property.Name == nameof(DisplayAlgorithmConfigBase.ImageFilePath) ? Properties.Resources.Image : GetDisplayName(source, property));
             Button browseButton = new()
             {
                 Content = "...",
@@ -260,11 +228,24 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             };
 
-            DockPanel.SetDock(label, Dock.Left);
-            DockPanel.SetDock(browseButton, Dock.Right);
-            row.Children.Add(label);
+            int editorColumn = showLabel ? 1 : 0;
+            Grid.SetColumn(browseButton, editorColumn + 1);
+            Grid.SetColumn(textBox, editorColumn);
             row.Children.Add(browseButton);
             row.Children.Add(textBox);
+            return row;
+        }
+
+        private static Grid CreateSelectionRow(bool showLabel)
+        {
+            Grid row = new() { Margin = new Thickness(0, 2, 0, 2) };
+            if (showLabel)
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelWidth) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            // Preserve the input width when moving unlabeled fields to the left.
+            if (!showLabel)
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelWidth) });
             return row;
         }
 

@@ -4,6 +4,7 @@ using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using ColorVision.Engine.Templates.Browser;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -27,6 +28,22 @@ namespace ColorVision.Engine.Templates
         public bool FlowBrowserListView { get; set; }
         [Browsable(false)]
         public bool PoiBrowserListView { get; set; }
+        [Browsable(false)]
+        public TemplateBrowserIconSize FlowBrowserIconSize { get; set; } = TemplateBrowserIconSize.Medium;
+        [Browsable(false)]
+        public TemplateBrowserIconSize PoiBrowserIconSize { get; set; } = TemplateBrowserIconSize.Medium;
+        [Browsable(false)]
+        public TemplateBrowserSort FlowBrowserSort { get; set; }
+        [Browsable(false)]
+        public TemplateBrowserSort PoiBrowserSort { get; set; }
+        [Browsable(false)]
+        public bool FlowBrowserSortDescending { get; set; } = true;
+        [Browsable(false)]
+        public bool PoiBrowserSortDescending { get; set; } = true;
+        [Browsable(false)]
+        public TemplateBrowserGroup FlowBrowserGroup { get; set; }
+        [Browsable(false)]
+        public TemplateBrowserGroup PoiBrowserGroup { get; set; }
         [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }

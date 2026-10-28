@@ -177,6 +177,8 @@ internal static class HikCaptureBenchmark
             Check(camera.MV_CC_GetEnumValue_NET("PixelFormat", ref pixel), "Get PixelFormat");
             var format = SelectFormat(pixel);
             var source = format.Source;
+            bool advertised = pixel.nSupportValue.Take(checked((int)pixel.nSupportedNum)).Contains((uint)source);
+            log.Report($"PixelFormat: current=0x{pixel.nCurValue:X8}; selected={source}; advertised={advertised}; SDK write/readback required.");
             SetEnum("PixelFormat", (uint)source);
             ConfigureSoftwareTrigger();
             SetEnum("ExposureAuto", 0);
@@ -449,16 +451,17 @@ internal static class HikCaptureBenchmark
         string currentFormat = ((MyCamera.MvGvspPixelType)pixel.nCurValue).ToString();
         if (currentFormat.StartsWith("PixelType_Gvsp_Mono", StringComparison.Ordinal))
         {
-            if (!formats.Contains(MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono16))
-                throw new InvalidOperationException(EngineLocalization.Get("HikTest_Bayer16Required"));
             return new(MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono16, 1);
         }
+        // Preserve a known sensor phase even if the current-depth enumeration
+        // omits the requested format. SetEnum verifies the actual SDK transition.
+        foreach (var target in new[] { MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerGR16, MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerRG16,
+            MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerGB16, MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerBG16 })
+            if (currentFormat.StartsWith(target.ToString()[..^2], StringComparison.Ordinal)) return new(target, 3);
         var bayer16 = formats.Where(v => v.ToString().StartsWith("PixelType_Gvsp_Bayer", StringComparison.Ordinal)
             && v.ToString().EndsWith("16", StringComparison.Ordinal)).ToArray();
-        var source = bayer16.FirstOrDefault(v => currentFormat.StartsWith(v.ToString()[..^2], StringComparison.Ordinal));
-        if ((uint)source == 0 && bayer16.Length == 1) source = bayer16[0];
-        if ((uint)source == 0) throw new InvalidOperationException(EngineLocalization.Get("HikTest_Bayer16Required"));
-        return new(source, 3);
+        if (bayer16.Length != 1) throw new InvalidOperationException(EngineLocalization.Get("HikTest_Bayer16Required"));
+        return new(bayer16[0], 3);
     }
 
     internal static int OutputLength(uint width, uint height, uint channels)

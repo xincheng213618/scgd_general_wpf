@@ -9,31 +9,22 @@
         Width="940" Height="660" MinWidth="640" MinHeight="420" ShowInTaskbar="False"
         Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
     <Window.Resources>
+        <local:TemplateBrowserDisplayNameConverter x:Key="TileDisplayName"/>
         <Style x:Key="BrowserAction" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Padding" Value="12,4"/>
-            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="FontSize" Value="12"/>
         </Style>
-        <Style x:Key="BrowserViewToggle" TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonDefault}">
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="Padding" Value="10,4"/>
-            <Setter Property="Margin" Value="6,0,0,0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <Style x:Key="TemplateCheck" TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+            <Setter Property="Visibility" Value="Hidden"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Margin" Value="2"/>
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
-                <Trigger Property="IsChecked" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                    <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
-                </Trigger>
+                <DataTrigger Binding="{Binding IsMouseOver,RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                <Trigger Property="IsChecked" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger>
             </Style.Triggers>
         </Style>
         <DataTemplate x:Key="TemplateName">
@@ -45,73 +36,153 @@
                          IsVisibleChanged="RenameBox_IsVisibleChanged" LostFocus="RenameBox_LostFocus" KeyDown="RenameBox_KeyDown"/>
             </Grid>
         </DataTemplate>
+        <DataTemplate x:Key="TemplateTileName">
+            <Grid Height="36">
+                <TextBlock Text="{Binding Key,Converter={StaticResource TileDisplayName}}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="34"
+                           TextAlignment="Center" ToolTip="{Binding Key}" VerticalAlignment="Top"
+                           Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                <TextBox Text="{Binding Key,UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Key}"
+                         Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"
+                         IsVisibleChanged="RenameBox_IsVisibleChanged" LostFocus="RenameBox_LostFocus" KeyDown="RenameBox_KeyDown"/>
+            </Grid>
+        </DataTemplate>
         <ContextMenu x:Key="TemplateContextMenu" Opened="TemplateContextMenu_Opened">
             <MenuItem Header="{x:Static properties:Resources.TemplateBrowserOpenEditor}" Click="Open_Click"/>
             <Separator/>
             <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}"/>
             <MenuItem Header="{x:Static properties:Resources.CreateCopy}" Click="Copy_Click"/>
-            <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete"/>
+            <MenuItem Header="{x:Static properties:Resources.Export}" Click="Export_Click"/>
+            <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" InputGestureText="Delete"/>
         </ContextMenu>
-        <Style x:Key="TemplateRowItem" TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-            <Setter Property="MinHeight" Value="32"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="ContextMenu" Value="{StaticResource TemplateContextMenu}"/>
-            <Style.Triggers>
-                <Trigger Property="Tag" Value="SwapTarget"><Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
-            </Style.Triggers>
-        </Style>
-        <GridView x:Key="TemplateDetailsView" AllowsColumnReorder="False">
-            <GridViewColumn Header="{x:Static properties:Resources.Choice}" Width="54">
-                <GridViewColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsSelected}" ToolTip="{x:Static properties:Resources.Choice}"/></DataTemplate></GridViewColumn.CellTemplate>
-            </GridViewColumn>
-            <GridViewColumn Header="{x:Static properties:Resources.SerialNumber1}" Width="80" DisplayMemberBinding="{Binding Id}"/>
-            <GridViewColumn Header="{x:Static properties:Resources.Name}" Width="360" CellTemplate="{StaticResource TemplateName}"/>
-        </GridView>
-        <Style x:Key="TemplateTileItem" TargetType="ListViewItem">
-            <Setter Property="Width" Value="{Binding TileWidth,RelativeSource={RelativeSource AncestorType=local:TemplateBrowserWindow}}"/>
-            <Setter Property="Margin" Value="4,4,4,8"/>
-            <Setter Property="Padding" Value="6"/>
+        <Style x:Key="BrowserItem" TargetType="ListViewItem">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="ContextMenu" Value="{StaticResource TemplateContextMenu}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <ControlTemplate x:Key="TileChrome" TargetType="ListViewItem">
+            <Grid>
+                <Border x:Name="SelectionFill" Background="{DynamicResource PrimaryBrush}" Opacity="0" CornerRadius="2"/>
+                <Border x:Name="SelectionOutline" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" Opacity="0" CornerRadius="2"/>
+                <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Stretch"/>
+                <Border x:Name="SwapBadge" Visibility="Collapsed" Background="{DynamicResource PrimaryBrush}" CornerRadius="2"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="2" Padding="4,2" IsHitTestVisible="False">
+                    <TextBlock Text="{x:Static properties:Resources.TemplateBrowserSwap}" Foreground="White" FontSize="10"/>
+                </Border>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="SelectionFill" Property="Opacity" Value="0.08"/></Trigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="SelectionFill" Property="Opacity" Value="0.2"/>
+                    <Setter TargetName="SelectionOutline" Property="Opacity" Value="0.65"/>
+                </DataTrigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter TargetName="SelectionFill" Property="Opacity" Value="0.2"/>
+                    <Setter TargetName="SelectionOutline" Property="Opacity" Value="0.65"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="SelectionOutline" Property="Opacity" Value="1"/></Trigger>
+                <Trigger Property="Tag" Value="SwapTarget"><Setter TargetName="SwapBadge" Property="Visibility" Value="Visible"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+        <Style x:Key="TemplateTileItem" TargetType="ListViewItem" BasedOn="{StaticResource BrowserItem}">
+            <Setter Property="Width" Value="{Binding TileWidth,RelativeSource={RelativeSource AncestorType=local:TemplateBrowserWindow}}"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template" Value="{StaticResource TileChrome}"/>
+        </Style>
+        <Style x:Key="TemplateRowItem" TargetType="ListViewItem" BasedOn="{StaticResource BrowserItem}">
+            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="Padding" Value="4,2"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
                         <Grid>
-                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="6">
-                                <ContentPresenter HorizontalAlignment="Stretch"/>
-                            </Border>
-                            <Border x:Name="SwapBadge" Visibility="Collapsed" Background="{DynamicResource PrimaryBrush}" CornerRadius="3"
-                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="7,3" IsHitTestVisible="False">
-                                <TextBlock Text="{x:Static properties:Resources.TemplateBrowserSwap}" Foreground="White" FontSize="11"/>
-                            </Border>
+                            <Border x:Name="SelectionFill" Background="{DynamicResource PrimaryBrush}" Opacity="0" CornerRadius="2"/>
+                            <Border x:Name="SelectionOutline" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" Opacity="0" CornerRadius="2"/>
+                            <GridViewRowPresenter Content="{TemplateBinding Content}" Columns="{Binding View.Columns,RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                  Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
-                            </Trigger>
-                            <Trigger Property="Tag" Value="SwapTarget">
-                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                <Setter TargetName="SwapBadge" Property="Visibility" Value="Visible"/>
-                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="SelectionFill" Property="Opacity" Value="0.08"/></Trigger>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter TargetName="SelectionFill" Property="Opacity" Value="0.2"/><Setter TargetName="SelectionOutline" Property="Opacity" Value="0.65"/></DataTrigger>
+                            <Trigger Property="IsSelected" Value="True"><Setter TargetName="SelectionFill" Property="Opacity" Value="0.2"/><Setter TargetName="SelectionOutline" Property="Opacity" Value="0.65"/></Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="SelectionOutline" Property="Opacity" Value="1"/></Trigger>
+                            <Trigger Property="Tag" Value="SwapTarget"><Setter TargetName="SelectionOutline" Property="Opacity" Value="1"/><Setter TargetName="SelectionFill" Property="Opacity" Value="0.3"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+        <GridView x:Key="TemplateDetailsView" AllowsColumnReorder="False">
+            <GridViewColumn Header="{x:Static properties:Resources.Choice}" Width="42">
+                <GridViewColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsSelected}" ToolTip="{x:Static properties:Resources.Choice}"/></DataTemplate></GridViewColumn.CellTemplate>
+            </GridViewColumn>
+            <GridViewColumn Header="{x:Static properties:Resources.SerialNumber1}" Width="64" DisplayMemberBinding="{Binding Id}"/>
+            <GridViewColumn Header="{x:Static properties:Resources.Name}" Width="420" CellTemplate="{StaticResource TemplateName}"/>
+            <GridViewColumn Header="{engine:EngineLang 日期}" Width="150" DisplayMemberBinding="{Binding Date,StringFormat=yyyy/MM/dd HH:mm}"/>
+        </GridView>
         <ItemsPanelTemplate x:Key="TemplateTilePanel"><WrapPanel/></ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="TemplateGroupPanel"><StackPanel/></ItemsPanelTemplate>
+        <GroupStyle x:Key="TemplateGroupStyle">
+            <GroupStyle.ContainerStyle>
+                <Style TargetType="GroupItem">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="GroupItem">
+                                <Expander IsExpanded="True" Margin="0,5,0,6" HorizontalContentAlignment="Stretch"
+                                          Foreground="{DynamicResource GlobalTextBrush}" Background="Transparent" BorderThickness="0">
+                                    <Expander.Template>
+                                        <ControlTemplate TargetType="Expander">
+                                            <StackPanel>
+                                                <ToggleButton IsChecked="{Binding IsExpanded,RelativeSource={RelativeSource TemplatedParent},Mode=TwoWay}"
+                                                              Content="{TemplateBinding Header}" FocusVisualStyle="{x:Null}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                                    <ToggleButton.Template>
+                                                        <ControlTemplate TargetType="ToggleButton">
+                                                            <Grid Background="Transparent">
+                                                                <Border x:Name="Hover" Background="{DynamicResource PrimaryBrush}" Opacity="0" CornerRadius="2"/>
+                                                                <DockPanel Margin="1,4">
+                                                                    <TextBlock x:Name="Chevron" Text="&#xE76C;" Width="18" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                                                               Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                                                    <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
+                                                                </DockPanel>
+                                                            </Grid>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsChecked" Value="True"><Setter TargetName="Chevron" Property="Text" Value="&#xE70D;"/></Trigger>
+                                                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Hover" Property="Opacity" Value="0.06"/></Trigger>
+                                                                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Hover" Property="Opacity" Value="0.12"/></Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </ToggleButton.Template>
+                                                </ToggleButton>
+                                                <ContentPresenter x:Name="GroupContent" ContentSource="Content" Visibility="Collapsed"/>
+                                            </StackPanel>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsExpanded" Value="True"><Setter TargetName="GroupContent" Property="Visibility" Value="Visible"/></Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Expander.Template>
+                                    <Expander.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name.Label}" Foreground="{DynamicResource PrimaryBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding ItemCount,StringFormat= ({0})}" FontSize="11" Opacity="0.5" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </Expander.Header>
+                                    <ItemsPresenter Margin="3,3,0,0"/>
+                                </Expander>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </GroupStyle.ContainerStyle>
+        </GroupStyle>
         <ControlTemplate x:Key="TemplateTileList" TargetType="ListView">
             <Border Background="{TemplateBinding Background}">
-                <ScrollViewer Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
-                              CanContentScroll="False">
+                <ScrollViewer Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" CanContentScroll="False">
                     <ItemsPresenter/>
                 </ScrollViewer>
             </Border>
@@ -120,93 +191,69 @@
             <StackPanel>
                 <Grid Height="{Binding CoverHeight,RelativeSource={RelativeSource AncestorType=local:TemplateBrowserWindow}}">
                     <flow:FlowTemplateCover Flow="{Binding Value}"/>
-                    <CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"
-                              ToolTip="{x:Static properties:Resources.Choice}">
-                        <CheckBox.Style>
-                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
-                                <Setter Property="Visibility" Value="Hidden"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsMouseOver,RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                    <Trigger Property="IsChecked" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </CheckBox.Style>
-                    </CheckBox>
+                    <CheckBox IsChecked="{Binding IsSelected}" Style="{StaticResource TemplateCheck}" ToolTip="{x:Static properties:Resources.Choice}"/>
                 </Grid>
-                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TemplateName}" HorizontalContentAlignment="Stretch" TextBlock.TextAlignment="Center" Margin="0,7,0,0" Height="26"/>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TemplateTileName}" HorizontalContentAlignment="Stretch" Margin="0,5,0,0"/>
             </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="PoiSymbol">
+            <Viewbox>
+                <Canvas Width="64" Height="64">
+                    <Path Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Data="M 8,22 L 8,8 22,8 M 42,8 L 56,8 56,22 M 56,42 L 56,56 42,56 M 22,56 L 8,56 8,42"/>
+                    <Path Fill="{DynamicResource PrimaryBrush}" Opacity="0.7">
+                        <Path.Data><GeometryGroup>
+                            <EllipseGeometry Center="20,20" RadiusX="2.5" RadiusY="2.5"/><EllipseGeometry Center="32,20" RadiusX="2.5" RadiusY="2.5"/><EllipseGeometry Center="44,20" RadiusX="2.5" RadiusY="2.5"/>
+                            <EllipseGeometry Center="20,32" RadiusX="2.5" RadiusY="2.5"/><EllipseGeometry Center="44,32" RadiusX="2.5" RadiusY="2.5"/>
+                            <EllipseGeometry Center="20,44" RadiusX="2.5" RadiusY="2.5"/><EllipseGeometry Center="32,44" RadiusX="2.5" RadiusY="2.5"/><EllipseGeometry Center="44,44" RadiusX="2.5" RadiusY="2.5"/>
+                        </GeometryGroup></Path.Data>
+                    </Path>
+                    <Ellipse Canvas.Left="27" Canvas.Top="27" Width="10" Height="10" Fill="{DynamicResource PrimaryBrush}"/>
+                </Canvas>
+            </Viewbox>
         </DataTemplate>
         <DataTemplate x:Key="PoiTile">
             <StackPanel>
-                <Grid Height="90">
-                    <Canvas x:Name="PoiIcon" Width="64" Height="64" VerticalAlignment="Center" IsHitTestVisible="False">
-                        <Path Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 8,22 L 8,8 22,8 M 42,8 L 56,8 56,22 M 56,42 L 56,56 42,56 M 22,56 L 8,56 8,42"/>
-                        <Path Fill="{DynamicResource PrimaryBrush}" Opacity="0.7">
-                            <Path.Data>
-                                <GeometryGroup>
-                                    <EllipseGeometry Center="20,20" RadiusX="2.5" RadiusY="2.5"/>
-                                    <EllipseGeometry Center="32,20" RadiusX="2.5" RadiusY="2.5"/>
-                                    <EllipseGeometry Center="44,20" RadiusX="2.5" RadiusY="2.5"/>
-                                    <EllipseGeometry Center="20,32" RadiusX="2.5" RadiusY="2.5"/>
-                                    <EllipseGeometry Center="44,32" RadiusX="2.5" RadiusY="2.5"/>
-                                    <EllipseGeometry Center="20,44" RadiusX="2.5" RadiusY="2.5"/>
-                                    <EllipseGeometry Center="32,44" RadiusX="2.5" RadiusY="2.5"/>
-                                    <EllipseGeometry Center="44,44" RadiusX="2.5" RadiusY="2.5"/>
-                                </GeometryGroup>
-                            </Path.Data>
-                        </Path>
-                        <Ellipse Canvas.Left="27" Canvas.Top="27" Width="10" Height="10" Fill="{DynamicResource PrimaryBrush}"/>
-                    </Canvas>
-                    <CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2"
-                              ToolTip="{x:Static properties:Resources.Choice}">
-                        <CheckBox.Style>
-                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
-                                <Setter Property="Visibility" Value="Hidden"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsMouseOver,RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
-                                    <Trigger Property="IsChecked" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </CheckBox.Style>
-                    </CheckBox>
+                <Grid Height="{Binding CoverHeight,RelativeSource={RelativeSource AncestorType=local:TemplateBrowserWindow}}">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PoiSymbol}" HorizontalAlignment="Center" Margin="3"/>
+                    <CheckBox IsChecked="{Binding IsSelected}" Style="{StaticResource TemplateCheck}" ToolTip="{x:Static properties:Resources.Choice}"/>
                 </Grid>
-                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TemplateName}" HorizontalContentAlignment="Stretch"
-                                TextBlock.TextAlignment="Center" Margin="0,5,0,0" Height="26"/>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TemplateTileName}" HorizontalContentAlignment="Stretch" Margin="0,5,0,0"/>
             </StackPanel>
         </DataTemplate>
+        <DataTemplate x:Key="SmallFlowTile">
+            <Grid Height="26"><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <flow:FlowTemplateCover Flow="{Binding Value}" Height="23" Margin="0,0,5,0"/>
+                <CheckBox IsChecked="{Binding IsSelected}" Style="{StaticResource TemplateCheck}" ToolTip="{x:Static properties:Resources.Choice}"/>
+                <ContentControl Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource TemplateName}" HorizontalContentAlignment="Stretch" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="SmallPoiTile">
+            <Grid Height="26"><Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PoiSymbol}" Width="22" Height="22" Margin="0,0,5,0"/>
+                <CheckBox IsChecked="{Binding IsSelected}" Style="{StaticResource TemplateCheck}" ToolTip="{x:Static properties:Resources.Choice}"/>
+                <ContentControl Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource TemplateName}" HorizontalContentAlignment="Stretch" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
     </Window.Resources>
-    <Grid Margin="16,12">
+    <Grid Margin="12,9">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <DockPanel Margin="0,0,0,14">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="NewButton" Command="ApplicationCommands.New" ToolTip="{x:Static properties:Resources.TemplateBrowserTemplates}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserTemplates}"
-                        Style="{StaticResource BrowserAction}" Background="{DynamicResource PrimaryBrush}" Foreground="White" BorderBrush="Transparent">
-                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock x:Name="NewLabel" Text="{x:Static properties:Resources.TemplateBrowserTemplates}"/></StackPanel>
-                </Button>
-                <Button Click="Import_Click" Content="{x:Static properties:Resources.Import}" ToolTip="{x:Static properties:Resources.TemplateBrowserImportHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserImportHint}" Style="{StaticResource BrowserAction}"/>
-                <Button Click="Export_Click" Content="{x:Static properties:Resources.Export}" ToolTip="{x:Static properties:Resources.TemplateBrowserExportHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserExportHint}" Style="{StaticResource BrowserAction}"/>
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="260"/></Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="HeadingText" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock x:Name="CountText" FontSize="12" Margin="12,0,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.55" VerticalAlignment="Center"/>
             </StackPanel>
-            <StackPanel>
-                <TextBlock x:Name="HeadingText" Text="{x:Static properties:Resources.TemplateBrowserTemplates}" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
-                <TextBlock x:Name="CountText" FontSize="12" Margin="0,3,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6"/>
-            </StackPanel>
-        </DockPanel>
-        <Grid Grid.Row="1" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <Border Height="34" HorizontalAlignment="Stretch" Margin="0,0,8,0"
-                    Background="{DynamicResource ButtonBackground}" BorderThickness="1" CornerRadius="5">
+            <Border Grid.Column="1" Height="30" Background="{DynamicResource ButtonBackground}" BorderThickness="1" CornerRadius="3">
                 <Border.Style><Style TargetType="Border"><Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
                     <Style.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger></Style.Triggers>
                 </Style></Border.Style>
                 <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/></Grid.ColumnDefinitions>
-                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" Padding="0,3"
-                             ToolTip="{x:Static properties:Resources.TemplateBrowserSearchHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserSearchHint}" TextChanged="Search_TextChanged" KeyDown="Search_KeyDown"/>
-                    <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="{x:Static properties:Resources.TemplateBrowserSearchHint}" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.45">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions>
+                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                    <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" Padding="0,2" FontSize="12"
+                             ToolTip="{x:Static properties:Resources.TemplateBrowserSearchHint}" TextChanged="Search_TextChanged" KeyDown="Search_KeyDown"/>
+                    <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.45" FontSize="12">
                         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
                         </Style></TextBlock.Style>
@@ -219,49 +266,84 @@
                     </Button>
                 </Grid>
             </Border>
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <ToggleButton x:Name="CardsViewButton" Style="{StaticResource BrowserViewToggle}" Click="ViewMode_Click"
-                              ToolTip="{engine:EngineLang TemplateBrowserCards}" AutomationProperties.Name="{engine:EngineLang TemplateBrowserCards}">
-                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang TemplateBrowserCards}"/></StackPanel>
-                </ToggleButton>
-                <ToggleButton x:Name="ListViewButton" Style="{StaticResource BrowserViewToggle}" Click="ViewMode_Click"
-                              ToolTip="{engine:EngineLang TemplateBrowserList}" AutomationProperties.Name="{engine:EngineLang TemplateBrowserList}">
-                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang TemplateBrowserList}"/></StackPanel>
-                </ToggleButton>
-                <ToggleButton x:Name="PreviewButton" Style="{StaticResource BrowserViewToggle}" Click="Preview_Click"
-                              ToolTip="{engine:EngineLang TemplateBrowserPreview}" AutomationProperties.Name="{engine:EngineLang TemplateBrowserPreview}">
-                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang TemplateBrowserPreview}"/></StackPanel>
-                </ToggleButton>
-            </StackPanel>
         </Grid>
+        <Border Grid.Row="1" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,7" Margin="0,0,0,6">
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="NewButton" Command="ApplicationCommands.New" Style="{StaticResource BrowserAction}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBlock x:Name="NewLabel"/></StackPanel>
+                </Button>
+                <Button Click="Import_Click" Content="{x:Static properties:Resources.Import}" ToolTip="{x:Static properties:Resources.TemplateBrowserImportHint}" Style="{StaticResource BrowserAction}"/>
+                <Button Click="Export_Click" Content="{x:Static properties:Resources.Export}" ToolTip="{x:Static properties:Resources.TemplateBrowserExportHint}" Style="{StaticResource BrowserAction}"/>
+                <Border Width="1" Height="18" Background="{DynamicResource GlobalBorderBrush}" Margin="5,0,9,0"/>
+                <Button x:Name="DeleteButton" Command="ApplicationCommands.Delete" ToolTip="{x:Static properties:Resources.TemplateBrowserDeleteHint}"
+                        AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserDeleteHint}" Style="{StaticResource BrowserAction}" Width="32" MinWidth="0">
+                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+                <Border Width="1" Height="18" Background="{DynamicResource GlobalBorderBrush}" Margin="5,0,9,0"/>
+                <Menu VerticalAlignment="Center" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" FontSize="12">
+                    <MenuItem x:Name="SortCommandsMenu">
+                        <MenuItem.Header><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8CB;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang 排序}"/><TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="9" Margin="6,0,0,0" VerticalAlignment="Center"/></StackPanel></MenuItem.Header>
+                        <MenuItem x:Name="SortSavedMenu" Header="{engine:EngineLang 模板顺序}" IsCheckable="True" Tag="SavedOrder" Click="Sort_Click"/>
+                        <MenuItem x:Name="SortNameMenu" Header="{x:Static properties:Resources.Name}" IsCheckable="True" Tag="Name" Click="Sort_Click"/>
+                        <MenuItem x:Name="SortDateMenu" Header="{engine:EngineLang 日期}" IsCheckable="True" Tag="Date" Click="Sort_Click"/>
+                        <Separator/>
+                        <MenuItem x:Name="SortAscendingMenu" Header="{engine:EngineLang 升序}" IsCheckable="True" Tag="False" Click="SortDirection_Click"/>
+                        <MenuItem x:Name="SortDescendingMenu" Header="{engine:EngineLang 降序}" IsCheckable="True" Tag="True" Click="SortDirection_Click"/>
+                        <Separator/>
+                        <MenuItem x:Name="GroupingCommandsMenu" Header="{engine:EngineLang 分组依据}">
+                            <MenuItem x:Name="GroupNoneMenu" Header="{engine:EngineLang 不分组}" IsCheckable="True" Tag="None" Click="Group_Click"/>
+                            <MenuItem x:Name="GroupNameMenu" Header="{x:Static properties:Resources.Name}" IsCheckable="True" Tag="Name" Click="Group_Click"/>
+                            <MenuItem x:Name="GroupDateMenu" Header="{engine:EngineLang 日期}" IsCheckable="True" Tag="Date" Click="Group_Click"/>
+                        </MenuItem>
+                    </MenuItem>
+                    <MenuItem x:Name="ViewCommandsMenu">
+                        <MenuItem.Header><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8A9;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0"/><TextBlock Text="{engine:EngineLang 查看}"/><TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="9" Margin="6,0,0,0" VerticalAlignment="Center"/></StackPanel></MenuItem.Header>
+                        <MenuItem x:Name="ExtraLargeIconsMenu" Header="{engine:EngineLang 超大图标}" IsCheckable="True" Tag="ExtraLarge" Click="IconSize_Click"/>
+                        <MenuItem x:Name="LargeIconsMenu" Header="{engine:EngineLang 大图标}" IsCheckable="True" Tag="Large" Click="IconSize_Click"/>
+                        <MenuItem x:Name="MediumIconsMenu" Header="{engine:EngineLang 中等图标}" IsCheckable="True" Tag="Medium" Click="IconSize_Click"/>
+                        <MenuItem x:Name="SmallIconsMenu" Header="{engine:EngineLang 小图标}" IsCheckable="True" Tag="Small" Click="IconSize_Click"/>
+                        <MenuItem x:Name="ListViewMenu" Header="{engine:EngineLang TemplateBrowserList}" IsCheckable="True" Click="ListView_Click"/>
+                        <Separator/>
+                        <MenuItem x:Name="PreviewMenu" Header="{engine:EngineLang TemplateBrowserPreview}" IsCheckable="True" Click="Preview_Click"/>
+                    </MenuItem>
+                </Menu>
+            </StackPanel>
+        </Border>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions><ColumnDefinition Width="2*" MinWidth="200"/><ColumnDefinition Width="Auto"/><ColumnDefinition x:Name="PreviewColumn" Width="0"/></Grid.ColumnDefinitions>
             <Grid>
-            <ListView x:Name="TemplateList" Style="{StaticResource ListView.Small}" ItemContainerStyle="{StaticResource TemplateTileItem}"
-                      Template="{StaticResource TemplateTileList}" ItemsPanel="{StaticResource TemplateTilePanel}"
-                      BorderThickness="0" ScrollViewer.CanContentScroll="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      PreviewMouseDoubleClick="TemplateList_DoubleClick" KeyDown="TemplateList_KeyDown" AllowDrop="True"
-                      PreviewMouseLeftButtonDown="TemplateList_MouseDown" PreviewMouseMove="TemplateList_MouseMove" DragOver="TemplateList_DragOver" DragLeave="TemplateList_DragLeave" Drop="TemplateList_Drop"/>
-            <TextBlock x:Name="EmptyText" Text="{x:Static properties:Resources.TemplateBrowserNoMatches}" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{DynamicResource GlobalTextBrush}" IsHitTestVisible="False"/>
+                <ListView x:Name="TemplateList" Style="{StaticResource ListView.Small}" Background="{DynamicResource GlobalBackground}"
+                          ItemContainerStyle="{StaticResource TemplateTileItem}" Template="{StaticResource TemplateTileList}" ItemsPanel="{StaticResource TemplateTilePanel}"
+                          BorderThickness="0" Padding="0" SelectionMode="Extended" ScrollViewer.CanContentScroll="False"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          PreviewMouseDoubleClick="TemplateList_DoubleClick" KeyDown="TemplateList_KeyDown" AllowDrop="True"
+                          PreviewMouseLeftButtonDown="TemplateList_MouseDown" PreviewMouseMove="TemplateList_MouseMove"
+                          PreviewMouseLeftButtonUp="EndBoxSelection" LostMouseCapture="EndBoxSelection"
+                          DragOver="TemplateList_DragOver" DragLeave="TemplateList_DragLeave" Drop="TemplateList_Drop">
+                    <ListView.GroupStyle><StaticResource ResourceKey="TemplateGroupStyle"/></ListView.GroupStyle>
+                </ListView>
+                <Canvas IsHitTestVisible="False" ClipToBounds="True">
+                    <Border x:Name="SelectionRectangle" Visibility="Collapsed" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1">
+                        <Border Background="{DynamicResource PrimaryBrush}" Opacity="0.15"/>
+                    </Border>
+                </Canvas>
+                <TextBlock x:Name="EmptyText" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource GlobalTextBrush}" IsHitTestVisible="False"/>
             </Grid>
             <GridSplitter x:Name="PreviewSplitter" Grid.Column="1" Width="8" HorizontalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Visibility="Collapsed" Background="Transparent"/>
-            <Border x:Name="PreviewPane" Grid.Column="2" Visibility="Collapsed" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="1,0,0,0" Padding="14,0,0,0">
+            <Border x:Name="PreviewPane" Grid.Column="2" Visibility="Collapsed" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="1,0,0,0" Padding="12,0,0,0">
                 <local:TemplateBrowserPreview x:Name="PreviewContent"/>
             </Border>
         </Grid>
-        <Border Grid.Row="3" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+        <Border Grid.Row="3" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="0,7,0,0" Margin="0,6,0,0">
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="SelectionText" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.7" VerticalAlignment="Center" FontSize="12"/>
-                    <Button x:Name="DeleteButton" Command="ApplicationCommands.Delete" Content="{x:Static properties:Resources.Delete}" ToolTip="{x:Static properties:Resources.TemplateBrowserDeleteHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserDeleteHint}" Style="{StaticResource BrowserAction}" Background="Transparent" BorderBrush="Transparent" Foreground="#E87979"/>
-                </StackPanel>
-                <TextBlock x:Name="StatusText" Grid.Column="1" Text="{x:Static properties:Resources.TemplateBrowserInteractionHint}" TextTrimming="CharacterEllipsis" Margin="14,0" FontSize="12" Opacity="0.6"
+                <TextBlock x:Name="SelectionText" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.65" VerticalAlignment="Center" FontSize="12"/>
+                <TextBlock x:Name="StatusText" Grid.Column="1" Text="{x:Static properties:Resources.TemplateBrowserInteractionHint}" TextTrimming="CharacterEllipsis" Margin="14,0" FontSize="11" Opacity="0.5"
                            ToolTip="{Binding Text,RelativeSource={RelativeSource Self}}" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Command="ApplicationCommands.Save" Content="{x:Static properties:Resources.Save}" ToolTip="{x:Static properties:Resources.TemplateBrowserSaveHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserSaveHint}" Style="{StaticResource BrowserAction}"/>
-                    <Button Click="Close_Click" Content="{x:Static properties:Resources.Close}" ToolTip="{x:Static properties:Resources.TemplateBrowserCloseHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserCloseHint}" Style="{StaticResource BrowserAction}"/>
+                    <Button Command="ApplicationCommands.Save" Content="{x:Static properties:Resources.Save}" ToolTip="{x:Static properties:Resources.TemplateBrowserSaveHint}" Style="{StaticResource BrowserAction}"/>
+                    <Button Click="Close_Click" Content="{x:Static properties:Resources.Close}" ToolTip="{x:Static properties:Resources.TemplateBrowserCloseHint}" Style="{StaticResource BrowserAction}"/>
                 </StackPanel>
             </Grid>
         </Border>

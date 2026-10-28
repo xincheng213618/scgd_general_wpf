@@ -1,7 +1,11 @@
 <UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.DisplayAlgorithmControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid>
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties">
+    <DockPanel LastChildFill="True">
+        <ContentControl x:Name="CalculateButtonHost" DockPanel.Dock="Top" HorizontalAlignment="Right" Margin="0,2">
+            <Button x:Name="CalculateButton" Content="{x:Static properties:Resources.Calculate}" Click="CalculateButton_Click" />
+        </ContentControl>
         <ContentControl x:Name="ConfigurationContent" />
-    </Grid>
+    </DockPanel>
 </UserControl>

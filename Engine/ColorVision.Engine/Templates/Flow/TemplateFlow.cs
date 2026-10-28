@@ -38,6 +38,8 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class TemplateFlow : ITemplate<FlowParam>, IAsyncTemplateLoad
     {
+        public override bool UseCatalogCreateSources => true;
+
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateFlow));
 
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();

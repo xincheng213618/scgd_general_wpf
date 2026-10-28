@@ -44,6 +44,8 @@ namespace ColorVision.Engine.Templates
         private bool _isRefreshingSources;
         private bool _isSettingName;
         private bool _nameWasEdited;
+        private bool _useSourceSections;
+        private TemplateCreateSourceKind _activeSourceSection = TemplateCreateSourceKind.Preset;
 
         public TemplateCreateView()
         {
@@ -59,6 +61,8 @@ namespace ColorVision.Engine.Templates
             _selectedSource = null;
             _appliedSource = null;
             _nameWasEdited = false;
+            _useSourceSections = template.UseCatalogCreateSources;
+            _activeSourceSection = TemplateCreateSourceKind.Preset;
             ValidationTextBlock.Visibility = Visibility.Collapsed;
             PresetLoadStatus.Visibility = Visibility.Collapsed;
             _isRefreshingSources = true;
@@ -68,6 +72,7 @@ namespace ColorVision.Engine.Templates
             BuildTemplateSources();
             bool isSourceSelectionVisible = options?.IsSourceSelectionVisible ?? true;
             SourcePanel.Visibility = isSourceSelectionVisible ? Visibility.Visible : Visibility.Collapsed;
+            SourceSections.Visibility = isSourceSelectionVisible && _useSourceSections ? Visibility.Visible : Visibility.Collapsed;
             SourceSearchTextBox.Visibility = isSourceSelectionVisible && _templateSources.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
             TemplateCreateSource? initialSource = FindInitialSource(options);
             RenderTemplateSources(initialSource);
@@ -116,13 +121,16 @@ namespace ColorVision.Engine.Templates
                 });
             }
 
-            _templateSources.Add(new TemplateCreateSource
+            if (!_template.UseCatalogCreateSources)
             {
-                Kind = TemplateCreateSourceKind.Default,
-                Title = Properties.Resources.DefaultTemplate,
-                Description = Properties.Resources.UseSystemDefaultTemplate,
-                SourceLabel = LocalizedText.Get("默认")
-            });
+                _templateSources.Add(new TemplateCreateSource
+                {
+                    Kind = TemplateCreateSourceKind.Default,
+                    Title = Properties.Resources.DefaultTemplate,
+                    Description = Properties.Resources.UseSystemDefaultTemplate,
+                    SourceLabel = LocalizedText.Get("默认")
+                });
+            }
 
             if (_template is ITemplateCreatePresetProvider presetProvider)
             {
@@ -143,7 +151,9 @@ namespace ColorVision.Engine.Templates
                 catch (Exception ex)
                 {
                     log4net.LogManager.GetLogger(typeof(TemplateCreateView)).Warn("基础模板库加载失败", ex);
-                    PresetLoadStatus.Text = EngineLocalization.Get("内置基础模板暂不可用，请修复软件安装。仍可使用默认模板、已有模板或导入文件。");
+                    PresetLoadStatus.Text = EngineLocalization.Get(_useSourceSections
+                        ? "内置流程暂不可用，请检查软件安装。可从现有模板创建，或返回管理窗口导入流程。"
+                        : "内置基础模板暂不可用，请修复软件安装。仍可使用默认模板、已有模板或导入文件。");
                     PresetLoadStatus.Visibility = Visibility.Visible;
                 }
             }
@@ -175,7 +185,7 @@ namespace ColorVision.Engine.Templates
             }
 
             bool supportsImport = _template.GetType().GetMethod(nameof(ITemplate.Import), Type.EmptyTypes)?.DeclaringType != typeof(ITemplate);
-            if (supportsImport)
+            if (supportsImport && !_template.UseCatalogCreateSources)
             {
                 _templateSources.Add(new TemplateCreateSource
                 {
@@ -211,18 +221,33 @@ namespace ColorVision.Engine.Templates
         private void RenderTemplateSources(TemplateCreateSource? preferredSource = null)
         {
             string keyword = SourceSearchTextBox.Text.Trim();
-            List<TemplateCreateSource> visibleSources = _templateSources
+            List<TemplateCreateSource> matchingSources = _templateSources
                 .Where(source => string.IsNullOrWhiteSpace(keyword)
                     || source.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase)
                     || source.Description.Contains(keyword, StringComparison.OrdinalIgnoreCase)
                     || source.SourceLabel.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
+            if (_useSourceSections)
+            {
+                if (preferredSource != null)
+                    _activeSourceSection = preferredSource.Kind == TemplateCreateSourceKind.Preset ? TemplateCreateSourceKind.Preset : TemplateCreateSourceKind.Existing;
+                _isRefreshingSources = true;
+                SourceSections.SelectedItem = _activeSourceSection == TemplateCreateSourceKind.Preset ? BuiltInSourcesTab : ExistingSourcesTab;
+                BuiltInSourcesTab.Header = LocalizedText.Format($"内置流程 ({matchingSources.Count(source => source.Kind == TemplateCreateSourceKind.Preset)})");
+                ExistingSourcesTab.Header = LocalizedText.Format($"现有模板 ({matchingSources.Count(source => source.Kind is TemplateCreateSourceKind.Existing or TemplateCreateSourceKind.Prepared)})");
+                _isRefreshingSources = false;
+            }
+            List<TemplateCreateSource> visibleSources = matchingSources.Where(source => !_useSourceSections
+                || (_activeSourceSection == TemplateCreateSourceKind.Preset ? source.Kind == TemplateCreateSourceKind.Preset
+                    : source.Kind is TemplateCreateSourceKind.Existing or TemplateCreateSourceKind.Prepared)).ToList();
+
             TemplateCreateSource? sourceToSelect = preferredSource != null && visibleSources.Contains(preferredSource)
                 ? preferredSource
                 : _selectedSource != null
                     ? visibleSources.Contains(_selectedSource) ? _selectedSource : null
                     : visibleSources.FirstOrDefault();
+            if (_useSourceSections && sourceToSelect == null) sourceToSelect = visibleSources.FirstOrDefault();
 
             _isRefreshingSources = true;
             SourceListBox.ItemsSource = visibleSources;
@@ -231,6 +256,31 @@ namespace ColorVision.Engine.Templates
 
             if (sourceToSelect != null && !ReferenceEquals(sourceToSelect, _selectedSource))
                 SelectTemplateSource(sourceToSelect);
+            else if (sourceToSelect == null && _useSourceSections)
+                ClearSourceSelection();
+
+            CreateButton.IsEnabled = !_useSourceSections || sourceToSelect != null && ReferenceEquals(sourceToSelect, _appliedSource);
+            SourceEmptyState.Visibility = _useSourceSections && visibleSources.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            SourceEmptyState.Text = !string.IsNullOrWhiteSpace(keyword) ? LocalizedText.Get("此分区没有匹配的模板。")
+                : _activeSourceSection == TemplateCreateSourceKind.Existing ? LocalizedText.Get("暂无现有模板，可先从内置流程创建。") : LocalizedText.Get("此分区暂无可用来源。");
+        }
+
+        private void SourceSections_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isRefreshingSources || !_useSourceSections || _template == null) return;
+            _activeSourceSection = ReferenceEquals(SourceSections.SelectedItem, ExistingSourcesTab) ? TemplateCreateSourceKind.Existing : TemplateCreateSourceKind.Preset;
+            RenderTemplateSources();
+        }
+
+        private void ClearSourceSelection()
+        {
+            _selectedSource = _appliedSource = null;
+            _template?.ClearCreateTemplateSource();
+            PropertyGrid1.SelectedObject = null;
+            CustomPreviewHost.Children.Clear();
+            CustomPreviewHost.Visibility = PropertyGridHost.Visibility = PresetGuide.Visibility = Visibility.Collapsed;
+            PresetGuide.DataContext = null;
+            PreviewEmptyState.Visibility = Visibility.Visible;
         }
 
         private void SelectTemplateSource(TemplateCreateSource source)
@@ -241,10 +291,16 @@ namespace ColorVision.Engine.Templates
                 _isRefreshingSources = true;
                 SourceListBox.SelectedItem = previousSource;
                 _isRefreshingSources = false;
+                if (_useSourceSections)
+                {
+                    if (previousSource == null || !SourceListBox.Items.Contains(previousSource)) ClearSourceSelection();
+                    CreateButton.IsEnabled = false;
+                }
                 return;
             }
 
             _selectedSource = source;
+            CreateButton.IsEnabled = true;
             UpdateSuggestedNameForSource(source);
 
             if (source.Kind != TemplateCreateSourceKind.Prepared
@@ -316,6 +372,7 @@ namespace ColorVision.Engine.Templates
 
         private void UpdateCreatePreview()
         {
+            PreviewEmptyState.Visibility = Visibility.Collapsed;
             TemplateCreatePreset? preset = _appliedSource?.Preset;
             PresetGuide.DataContext = preset == null ? null : preset with
             {
@@ -413,7 +470,7 @@ namespace ColorVision.Engine.Templates
                 return;
             }
 
-            if (_selectedSource == null)
+            if (_selectedSource == null || _useSourceSections && !ReferenceEquals(SourceListBox.SelectedItem, _selectedSource))
             {
                 ShowValidation(EngineLocalization.Get("请选择创建来源。"));
                 return;

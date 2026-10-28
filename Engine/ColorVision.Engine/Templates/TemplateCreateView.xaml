@@ -14,6 +14,29 @@
              Background="{DynamicResource GlobalBackground}">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}"/>
+        <Style x:Key="SourceSectionTab" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="SectionBorder" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter TargetName="SectionBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/></Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="SectionBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="TemplateCreateSourceItemStyle" TargetType="{x:Type ListBoxItem}">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -26,7 +49,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
                         <Border x:Name="Card"
-                                Width="178"
+                                Width="168"
                                 Height="72"
                                 Padding="13,10"
                                 Background="{DynamicResource RegionBrush}"
@@ -102,7 +125,7 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Text="{x:Static properties:Resources.NewTemplateName}"
-                           FontWeight="SemiBold"/>
+                           FontWeight="SemiBold" HorizontalAlignment="Left"/>
                 <hc:TextBox x:Name="CreateNameTextBox"
                             Grid.Row="1"
                             Height="38"
@@ -123,6 +146,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Margin="0,20,0,8">
@@ -132,6 +156,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{x:Static properties:Resources.CreateSource}"
                                    FontWeight="SemiBold"
+                                   HorizontalAlignment="Left"
                                    VerticalAlignment="Center"/>
                         <hc:TextBox x:Name="SourceSearchTextBox"
                                     Grid.Column="1"
@@ -145,9 +170,18 @@
                                     TextChanged="SourceSearchTextBox_TextChanged"/>
                     </Grid>
 
-                    <TextBlock x:Name="PresetLoadStatus" Grid.Row="1" Margin="0,0,8,8" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    <TabControl x:Name="SourceSections" Grid.Row="1" Visibility="Collapsed" Margin="0,0,8,10"
+                                Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource SourceSectionTab}"
+                                SelectionChanged="SourceSections_SelectionChanged">
+                        <TabControl.Template>
+                            <ControlTemplate TargetType="TabControl"><TabPanel IsItemsHost="True" Background="Transparent"/></ControlTemplate>
+                        </TabControl.Template>
+                        <TabItem x:Name="BuiltInSourcesTab" Header="{i18n:EngineLang 内置流程}"/>
+                        <TabItem x:Name="ExistingSourcesTab" Header="{i18n:EngineLang 现有模板}"/>
+                    </TabControl>
+                    <TextBlock x:Name="PresetLoadStatus" Grid.Row="2" Margin="0,0,8,8" TextWrapping="Wrap" Visibility="Collapsed"/>
                     <ListBox x:Name="SourceListBox"
-                             Grid.Row="2"
+                             Grid.Row="3"
                              Padding="0"
                              Background="Transparent"
                              BorderThickness="0"
@@ -162,6 +196,8 @@
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
                     </ListBox>
+                    <TextBlock x:Name="SourceEmptyState" Grid.Row="3" TextWrapping="Wrap" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6"
+                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,16,10,0" Visibility="Collapsed"/>
                 </Grid>
             </Grid>
 
@@ -201,6 +237,8 @@
                         <winf:PropertyGrid x:Name="PropertyGrid1"/>
                     </WindowsFormsHost>
                     <Grid x:Name="CustomPreviewHost" Grid.Row="1" Margin="5" Visibility="Collapsed"/>
+                    <TextBlock x:Name="PreviewEmptyState" Grid.RowSpan="2" Text="{i18n:EngineLang 选择创建来源以查看预览}"
+                               Margin="18" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Visibility="Collapsed"/>
                 </Grid>
             </Border>
         </Grid>
@@ -216,7 +254,7 @@
                         Height="36"
                         Margin="0,0,10,0"
                         Click="CancelButton_Click"/>
-                <Button Content="{x:Static properties:Resources.Create}"
+                <Button x:Name="CreateButton" Content="{x:Static properties:Resources.Create}"
                         MinWidth="108"
                         Height="36"
                         Foreground="White"

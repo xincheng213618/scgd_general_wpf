@@ -55,17 +55,34 @@ public sealed class HikCaptureBenchmarkTests
         Assert.Equal(checked(4 * 2 * (int)channels * 2), HikCaptureBenchmark.OutputLength(4, 2, channels));
     }
 
-    [Theory]
-    [InlineData(PixelType.PixelType_Gvsp_Mono8)]
-    [InlineData(PixelType.PixelType_Gvsp_RGB8_Packed)]
-    public void MissingMono16AndAmbiguousBayerPhasesAreRejected(PixelType current)
+    [Fact]
+    public void UnknownSensorPhaseWithMultipleBayerCandidatesIsRejected()
     {
         MyCamera.MVCC_ENUMVALUE formats = new()
         {
-            nCurValue = (uint)current, nSupportedNum = 2,
+            nCurValue = (uint)PixelType.PixelType_Gvsp_RGB8_Packed, nSupportedNum = 2,
             nSupportValue = [(uint)PixelType.PixelType_Gvsp_BayerRG16, (uint)PixelType.PixelType_Gvsp_BayerBG16]
         };
         Assert.Throws<InvalidOperationException>(() => HikCaptureBenchmark.SelectFormat(formats));
+    }
+
+    [Theory]
+    [InlineData(PixelType.PixelType_Gvsp_Mono8, PixelType.PixelType_Gvsp_Mono16, 1u)]
+    [InlineData(PixelType.PixelType_Gvsp_Mono12, PixelType.PixelType_Gvsp_Mono16, 1u)]
+    [InlineData(PixelType.PixelType_Gvsp_BayerRG8, PixelType.PixelType_Gvsp_BayerRG16, 3u)]
+    [InlineData(PixelType.PixelType_Gvsp_BayerGR8, PixelType.PixelType_Gvsp_BayerGR16, 3u)]
+    [InlineData(PixelType.PixelType_Gvsp_BayerGB8, PixelType.PixelType_Gvsp_BayerGB16, 3u)]
+    [InlineData(PixelType.PixelType_Gvsp_BayerBG8, PixelType.PixelType_Gvsp_BayerBG16, 3u)]
+    public void KnownPhaseSelectsDepthForSdkVerificationWhenCurrentEnumerationOmitsIt(PixelType current, PixelType expected, uint channels)
+    {
+        MyCamera.MVCC_ENUMVALUE formats = new()
+        {
+            nCurValue = (uint)current, nSupportedNum = 1, nSupportValue = [(uint)current]
+        };
+        var selected = HikCaptureBenchmark.SelectFormat(formats);
+
+        Assert.Equal(expected, selected.Source);
+        Assert.Equal(channels, selected.Channels);
     }
 
     [Fact]

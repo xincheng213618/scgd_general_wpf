@@ -46,7 +46,7 @@ internal sealed class ProjectSettingsSession
 
         Sections =
         [
-            Section(ProjectSettingsPage.Testing, "检测设置", "设置失败处理和 SN 锁定方式。", ["测试策略"]),
+            Section(ProjectSettingsPage.Testing, "检测设置", "设置失败处理、SN 锁定方式及 LUX 协议参数。", ["测试策略", "LUX协议"]),
             Section(ProjectSettingsPage.Display, "界面显示", "调整工作区、结果图层和默认查询条数。", ["界面", "结果图层", "结果列表"]),
             Section(ProjectSettingsPage.Results, "结果保存", "设置保存位置、CSV、兼容格式、客户报表和磁盘空间清理。", ["输出路径", "保存选项", "兼容格式", "客制化输出", "磁盘空间", "结果编号"]),
             Section(ProjectSettingsPage.Images, "图像保存", "标记图和原图保存在结果输出目录；开启后显示格式等选项。", ["标记图", "原图"]),
@@ -105,6 +105,11 @@ internal sealed class ProjectSettingsSession
     {
         if (source is ProjectARVRProConfig)
         {
+            if (property == nameof(ProjectARVRProConfig.LuxMachineNo)
+                && (value is not string machineNo || string.IsNullOrWhiteSpace(machineNo) || machineNo.IndexOfAny([',', ';', '\r', '\n']) >= 0))
+                return "LUX 协议设备号不能为空或包含逗号、分号、换行。";
+            if (property.StartsWith("LuxVid", StringComparison.Ordinal) && value is double vid && !double.IsFinite(vid))
+                return "VID 参数必须是有效数值。";
             if (property == nameof(ProjectARVRProConfig.TryCountMax) && value is int count && count < 0) return "最大尝试次数不能小于0。";
             if (property == nameof(ProjectARVRProConfig.ResultOverlayFontSize) && value is double size && !double.IsFinite(size)) return "结果文字字号必须是有效数值。";
         }

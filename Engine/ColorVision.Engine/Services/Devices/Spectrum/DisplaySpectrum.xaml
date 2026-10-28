@@ -30,7 +30,7 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <Grid Margin="0,0,0,3">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
@@ -60,7 +60,7 @@
                     </DockPanel>
                 </Grid>
                 <StackPanel x:Name="StackPanelContent">
-                    <StackPanel x:Name="StackPanelOpen">
+                    <StackPanel x:Name="StackPanelOpen" Margin="0,3,0,0">
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.AverageTimes}" />
                             <TextBox Width="50" DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum, Path=Value}" />

@@ -48,6 +48,8 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 
 `DisplayAlgorithmManager` 查找带 `DisplayAlgorithmAttribute` 的 `IDisplayAlgorithm` 实现；`DisplayAlgorithmControl` 根据算法 `Configuration` 生成界面，执行按钮调用 `Execute()`；请求后的结果处理见[结果链](../../engine-components/result-handoff-chain.md)。
 
+设备面板直接列出全部算法并恢复上次选择，算法下拉框固定宽度靠左，“计算”在同排右侧，中间留白；按钮随当前算法切换。图像和主模板行省略左侧标签，输入区域保持原大小并靠左排列，主模板下拉框与编辑齿轮继续保留；附加的关注点等模板保留各自名称、布局和编辑入口，CIE 等其他文件行也保留标签。独立调试窗口在配置上方保留自己的计算按钮。
+
 `DisplayAlgorithmTemplateSelection` 保存模板与条目来源，提供 `SelectedIndex`、`SelectedValue`、`SelectedName`、`IsSelectionValid`、`TryGetValue<T>`。它的 `EditCommand` 将 `SelectedIndex + editorIndexOffset` 传给 `Template.CreateManagerWindow`；主 POI 和流程进入专用浏览窗口，其他模板仍使用 `TemplateEditorWindow`；空项或特殊条目来源需检查索引偏移，不能照搬另一个算法的选中索引。
 
 新增手动算法的模板编辑能力时优先复用这个选择对象和配置宿主；只有确有独立菜单需求时才新增具体菜单类。参数属性编辑契约见 [PropertyGrid](../../ui-components/property-grid.md)。

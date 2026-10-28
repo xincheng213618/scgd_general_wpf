@@ -20,6 +20,134 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowTemplatePresetTests
 {
+    [Fact]
+    public void CreationSectionsContainOnlyBuiltInsAndExistingCopiesAndCannotCreateFromAHiddenSelection()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var oldResources = Application.Current.Resources;
+            var oldTemplates = TemplateFlow.Params.ToArray();
+            var path = Path.Combine(Path.GetTempPath(), "ColorVision-flow-create-sections", Guid.NewGuid() + ".db");
+            var storage = new LocalFlowTemplateStorage(new LocalTemplateStore(path));
+            TemplateFlow.Params.Clear();
+            var template = new TemplateFlow(storage, () => false, () => throw new InvalidOperationException("Creation preview must not open MySQL."));
+            TemplateCreateView? view = null;
+            try
+            {
+                var resources = new ResourceDictionary();
+                foreach (var uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
+                    resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) });
+                Application.Current.Resources = resources;
+                Assert.True(template.ApplyCreatePreset("flow-camera-capture"));
+                template.Create("已有流程");
+                template.ClearCreateTemplateSource();
+                var original = Assert.Single(storage.Load());
+                view = new TemplateCreateView();
+                view.Initialize(template);
+                var sections = (TabControl)view.FindName("SourceSections");
+                var sources = (ListBox)view.FindName("SourceListBox");
+                var search = (TextBox)view.FindName("SourceSearchTextBox");
+                var create = (Button)view.FindName("CreateButton");
+                Assert.Equal(Visibility.Visible, sections.Visibility);
+                Assert.Equal(2, sections.Items.Count);
+                Assert.Same(view.FindName("BuiltInSourcesTab"), sections.SelectedItem);
+                Assert.Equal(9, sources.Items.Count);
+                Assert.All(sources.Items.Cast<object>(), source => Assert.Equal(TemplateCreateSourceKind.Preset, SourceKind(source)));
+                Assert.NotNull(template.ImportTemp?.CreationPreset);
+                Assert.True(create.IsEnabled);
+                ((TextBox)view.FindName("CreateNameTextBox")).Text = "手填名称";
+
+                sections.SelectedItem = view.FindName("ExistingSourcesTab");
+                Assert.Equal(TemplateCreateSourceKind.Existing, SourceKind(Assert.Single(sources.Items)));
+                Assert.NotSame(TemplateFlow.Params[0].Value, template.ImportTemp);
+                Assert.Equal(original.DataBase64, template.ImportTemp!.DataBase64);
+                Assert.Equal(original.DataBase64, Assert.Single(storage.Load()).DataBase64);
+                search.Text = "nothing-matches";
+                Assert.Empty(sources.Items);
+                Assert.False(create.IsEnabled);
+                Assert.Null(template.ImportTemp);
+                Assert.Equal(Visibility.Visible, ((TextBlock)view.FindName("PreviewEmptyState")).Visibility);
+                // Direct invocation follows the same guard as Enter, even when the button is disabled.
+                create.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.Single(storage.Load());
+                search.Clear();
+                Assert.True(create.IsEnabled);
+                sections.SelectedItem = view.FindName("BuiltInSourcesTab");
+                Assert.Equal("手填名称", ((TextBox)view.FindName("CreateNameTextBox")).Text);
+                Assert.Equal(9, sources.Items.Count);
+                string selectedDraft = template.ImportTemp!.DataBase64;
+                create.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var created = storage.Load();
+                Assert.Equal(2, created.Count);
+                Assert.Equal(2, created.Select(flow => flow.FlowKey).Distinct().Count());
+                Assert.Contains(created, flow => flow.Name == "手填名称" && flow.DataBase64 == selectedDraft);
+            }
+            finally
+            {
+                view?.Discard();
+                TemplateFlow.Params.Clear();
+                foreach (var item in oldTemplates) TemplateFlow.Params.Add(item);
+                TemplateControl.ITemplateNames.Remove(template.Name);
+                Application.Current.Resources = oldResources;
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MissingCatalogDoesNotReintroduceDefaultOrFileSourcesAndPreparedImportsStillWork(bool prepared)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var oldResources = Application.Current.Resources;
+            var oldTemplates = TemplateFlow.Params.ToArray();
+            TemplateFlow.Params.Clear();
+            var template = new MissingCatalogFlow(new LocalFlowTemplateStorage(new LocalTemplateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".db"))));
+            TemplateCreateView? view = null;
+            try
+            {
+                var resources = new ResourceDictionary();
+                foreach (var uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
+                    resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) });
+                Application.Current.Resources = resources;
+                if (prepared) template.ImportTemp = new FlowParam { Id = -1, DataBase64 = FlowTemplatePresets.CreateDraft(FlowTemplatePresets.All[0]).DataBase64 };
+                view = new TemplateCreateView();
+                view.Initialize(template, new TemplateCreateOptions { IsSourceSelectionVisible = !prepared });
+                Assert.Equal(Visibility.Visible, ((TextBlock)view.FindName("PresetLoadStatus")).Visibility);
+                var list = (ListBox)view.FindName("SourceListBox");
+                Assert.Equal(prepared, ((Button)view.FindName("CreateButton")).IsEnabled);
+                if (prepared)
+                {
+                    Assert.Equal(TemplateCreateSourceKind.Prepared, SourceKind(Assert.Single(list.Items)));
+                    Assert.NotNull(template.ImportTemp);
+                }
+                else
+                {
+                    Assert.Empty(list.Items);
+                    ((TabControl)view.FindName("SourceSections")).SelectedItem = view.FindName("ExistingSourcesTab");
+                    Assert.Empty(list.Items);
+                    Assert.Null(template.ImportTemp);
+                }
+            }
+            finally
+            {
+                view?.Discard();
+                TemplateFlow.Params.Clear();
+                foreach (var item in oldTemplates) TemplateFlow.Params.Add(item);
+                TemplateControl.ITemplateNames.Remove(template.Name);
+                Application.Current.Resources = oldResources;
+            }
+        });
+    }
+
+    private static TemplateCreateSourceKind SourceKind(object source) => (TemplateCreateSourceKind)source.GetType().GetProperty("Kind")!.GetValue(source)!;
+
+    private sealed class MissingCatalogFlow(LocalFlowTemplateStorage storage) : TemplateFlow(storage, () => false)
+    {
+        public override IEnumerable<TemplateCreatePreset> GetCreatePresets() => throw new InvalidDataException("Test catalog is unavailable.");
+    }
+
     [Theory]
     [InlineData("flow-camera-capture", 3)]
     [InlineData("flow-camera-poi", 4)]

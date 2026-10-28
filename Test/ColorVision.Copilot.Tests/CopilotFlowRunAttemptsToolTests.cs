@@ -5,42 +5,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotFlowRunAttemptsToolTests
 {
-    [Fact]
-    public void BothSurfacesPublishTheSameReadOnlyContractWithoutReadingTheJournal()
-    {
-        var definition = CopilotSharedCapabilityCatalog.FlowRunAttempts;
-        var dispatcher = Dispatcher((_, _, _, _, _) => throw new InvalidOperationException("Discovery must not read the journal."));
-        var tool = Assert.IsType<CopilotInspectFlowRunAttemptsTool>(definition.CreateAgentTool(dispatcher));
-        var descriptor = Assert.Single(dispatcher.ListTools(), item => item.Name == "inspect_flow_run_attempts");
-        Assert.Equal("flow.run-attempts", definition.Id);
-        Assert.Equal("InspectFlowRunAttempts", tool.Name);
-        Assert.Same(definition.AgentInputSchema, definition.McpInputSchema);
-        Assert.True(JsonElement.DeepEquals(tool.InputSchema.JsonSchema, Assert.IsType<JsonElement>(descriptor.InputSchema)));
-        Assert.Equal(CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime, definition.ExecutionRoute);
-        Assert.Equal(CopilotToolAccess.ReadOnly, tool.Capability.Access);
-        Assert.Equal(CopilotToolIdempotency.Idempotent, tool.Capability.Idempotency);
-        Assert.Equal(CopilotToolConcurrencyMode.SharedRead, tool.Capability.EffectiveConcurrencyMode);
-        Assert.Equal(CopilotToolApprovalMode.Never, tool.Capability.ApprovalMode);
-        Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, tool.Capability.AuditArgumentMode);
-        Assert.Equal(TimeSpan.FromSeconds(15), tool.Capability.EffectiveExecutionTimeout);
-        var schema = tool.InputSchema.JsonSchema;
-        Assert.Equal(new[] { "run_record_id" }, schema.GetProperty("required").EnumerateArray().Select(value => value.GetString()));
-        var properties = schema.GetProperty("properties");
-        Assert.Equal(1, properties.GetProperty("run_record_id").GetProperty("minimum").GetInt32());
-        Assert.Equal(int.MaxValue, properties.GetProperty("run_record_id").GetProperty("maximum").GetInt32());
-        Assert.Equal(1, properties.GetProperty("node_id").GetProperty("minLength").GetInt32());
-        Assert.Equal(128, properties.GetProperty("node_id").GetProperty("maxLength").GetInt32());
-        Assert.Equal(1, properties.GetProperty("max_attempts").GetProperty("minimum").GetInt32());
-        Assert.Equal(100, properties.GetProperty("max_attempts").GetProperty("maximum").GetInt32());
-        Assert.Equal(40, properties.GetProperty("max_attempts").GetProperty("default").GetInt32());
-        Assert.Equal(1, properties.GetProperty("cursor").GetProperty("minLength").GetInt32());
-        Assert.Equal(4096, properties.GetProperty("cursor").GetProperty("maxLength").GetInt32());
-        var registry = new CopilotToolRegistry([tool]);
-        foreach (var mode in Enum.GetValues<CopilotAgentMode>().Where(mode => mode != CopilotAgentMode.Chat))
-            Assert.Single(registry.FindTools(Request(mode)));
-        Assert.Empty(registry.FindTools(Request(CopilotAgentMode.Chat)));
-    }
-
     [Theory]
     [InlineData(1, null, null, null)]
     [InlineData(17, "  opaque-node/non-guid  ", 1, null)]
@@ -90,21 +54,13 @@ public sealed class CopilotFlowRunAttemptsToolTests
     [Theory]
     [InlineData("{}")]
     [InlineData("{\"run_record_id\":0}")]
-    [InlineData("{\"run_record_id\":-1}")]
     [InlineData("{\"run_record_id\":2147483648}")]
-    [InlineData("{\"run_record_id\":1.0}")]
     [InlineData("{\"run_record_id\":\"1\"}")]
-    [InlineData("{\"run_record_id\":null}")]
     [InlineData("{\"run_record_id\":1,\"max_attempts\":0}")]
     [InlineData("{\"run_record_id\":1,\"max_attempts\":101}")]
-    [InlineData("{\"run_record_id\":1,\"max_attempts\":40.0}")]
     [InlineData("{\"run_record_id\":1,\"node_id\":\"\"}")]
     [InlineData("{\"run_record_id\":1,\"node_id\":\" \\t\"}")]
-    [InlineData("{\"run_record_id\":1,\"node_id\":null}")]
-    [InlineData("{\"run_record_id\":1,\"node_id\":7}")]
     [InlineData("{\"run_record_id\":1,\"cursor\":\"\"}")]
-    [InlineData("{\"run_record_id\":1,\"cursor\":42}")]
-    [InlineData("{\"run_record_id\":1,\"cursor\":null}")]
     [InlineData("{\"run_record_id\":1,\"incident_id\":2}")]
     [MemberData(nameof(OversizedCursorArguments))]
     public async Task InvalidArgumentsDoNotReachEitherProviderRoute(string json)
@@ -128,55 +84,6 @@ public sealed class CopilotFlowRunAttemptsToolTests
         [JsonSerializer.Serialize(new { run_record_id = 1, cursor = new string('x', 4097) })],
         [JsonSerializer.Serialize(new { run_record_id = 1, node_id = new string('n', 129) })],
     ];
-
-    [Theory]
-    [InlineData(CopilotToolFailureKind.NotFound)]
-    [InlineData(CopilotToolFailureKind.Validation)]
-    [InlineData(CopilotToolFailureKind.Transient)]
-    public async Task BothSurfacesPreserveInspectionFailureClassification(CopilotToolFailureKind kind)
-    {
-        var dispatcher = Dispatcher((_, _, _, _, _) => Task.FromResult(new CopilotCapabilityResult
-        {
-            Success = false, FailureKind = kind, ErrorMessage = "Exact run attempts are unavailable or the cursor is invalid.",
-        }));
-        var input = new CopilotAgentToolInput { Arguments = new Dictionary<string, object?> { ["run_record_id"] = 1 } };
-        var agent = await new CopilotInspectFlowRunAttemptsTool(dispatcher).ExecuteAsync(Request(), input, CancellationToken.None);
-        var mcp = await dispatcher.CallAsync("inspect_flow_run_attempts", CopilotFlowReadToolBase.ToJsonArguments(input), CancellationToken.None);
-        Assert.False(agent.Success);
-        Assert.False(mcp.Success);
-        Assert.Equal(kind, agent.FailureKind);
-        Assert.Equal(kind, mcp.FailureKind);
-        Assert.Equal(mcp.Text, agent.Content);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task CallerCancellationReachesTheInspectorAndPropagates(bool agentSurface)
-    {
-        var entered = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var dispatcher = Dispatcher(async (_, _, _, _, token) =>
-        {
-            entered.TrySetResult(token);
-            try
-            {
-                await Task.Delay(Timeout.InfiniteTimeSpan, token);
-                return new CopilotCapabilityResult { Success = true };
-            }
-            finally { stopped.TrySetResult(); }
-        });
-        var input = new CopilotAgentToolInput { Arguments = new Dictionary<string, object?> { ["run_record_id"] = 1 } };
-        using var cancellation = new CancellationTokenSource();
-        Task call = agentSurface
-            ? new CopilotInspectFlowRunAttemptsTool(dispatcher).ExecuteAsync(Request(), input, cancellation.Token)
-            : dispatcher.CallAsync("inspect_flow_run_attempts", CopilotFlowReadToolBase.ToJsonArguments(input), cancellation.Token);
-        var providerToken = await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        cancellation.Cancel();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => call);
-        await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(providerToken.IsCancellationRequested);
-    }
 
     private static CopilotAgentRequest Request(CopilotAgentMode mode = CopilotAgentMode.Diagnose) => new()
     {

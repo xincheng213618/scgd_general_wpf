@@ -4520,4 +4520,37 @@
   <data name="TemplateBrowserUsageScope" xml:space="preserve"><value>执行次数仅统计本机保留的运行记录。没有匹配当前版本的正常完成记录时，不估算耗时。</value></data>
   <data name="Flow_NodeInspector_AlgorithmHelp" xml:space="preserve"><value>查看算法原理</value></data>
   <data name="Flow_NodeInspector_AlgorithmHelpTooltip" xml:space="preserve"><value>查看测量原理、计算公式和交互示意，离线可用</value></data>
+  <data name="排序" xml:space="preserve"><value>排序</value></data>
+  <data name="模板顺序" xml:space="preserve"><value>模板顺序</value></data>
+  <data name="日期" xml:space="preserve"><value>日期</value></data>
+  <data name="升序" xml:space="preserve"><value>升序</value></data>
+  <data name="降序" xml:space="preserve"><value>降序</value></data>
+  <data name="分组依据" xml:space="preserve"><value>分组依据</value></data>
+  <data name="不分组" xml:space="preserve"><value>不分组</value></data>
+  <data name="超大图标" xml:space="preserve"><value>超大图标</value></data>
+  <data name="大图标" xml:space="preserve"><value>大图标</value></data>
+  <data name="中等图标" xml:space="preserve"><value>中等图标</value></data>
+  <data name="小图标" xml:space="preserve"><value>小图标</value></data>
+  <data name="中文及其他" xml:space="preserve"><value>中文及其他</value></data>
+  <data name="日期未知" xml:space="preserve"><value>日期未知</value></data>
+  <data name="将来" xml:space="preserve"><value>将来</value></data>
+  <data name="今天" xml:space="preserve"><value>今天</value></data>
+  <data name="昨天" xml:space="preserve"><value>昨天</value></data>
+  <data name="本周早些时候" xml:space="preserve"><value>本周早些时候</value></data>
+  <data name="上周" xml:space="preserve"><value>上周</value></data>
+  <data name="本月早些时候" xml:space="preserve"><value>本月早些时候</value></data>
+  <data name="上个月" xml:space="preserve"><value>上个月</value></data>
+  <data name="今年早些时候" xml:space="preserve"><value>今年早些时候</value></data>
+  <data name="更早" xml:space="preserve"><value>更早</value></data>
+  <data name="已选择 {0} 项" xml:space="preserve"><value>已选择 {0} 项</value></data>
+  <data name="双击打开 · Delete 删除 · 按模板顺序且不分组时可拖放交换" xml:space="preserve"><value>双击打开 · Delete 删除 · 按模板顺序且不分组时可拖放交换</value></data>
+  <data name="内置流程" xml:space="preserve"><value>内置流程</value></data>
+  <data name="现有模板" xml:space="preserve"><value>现有模板</value></data>
+  <data name="内置流程 ({0})" xml:space="preserve"><value>内置流程 ({0})</value></data>
+  <data name="现有模板 ({0})" xml:space="preserve"><value>现有模板 ({0})</value></data>
+  <data name="选择创建来源以查看预览" xml:space="preserve"><value>选择创建来源以查看预览</value></data>
+  <data name="内置流程暂不可用，请检查软件安装。可从现有模板创建，或返回管理窗口导入流程。" xml:space="preserve"><value>内置流程暂不可用，请检查软件安装。可从现有模板创建，或返回管理窗口导入流程。</value></data>
+  <data name="此分区没有匹配的模板。" xml:space="preserve"><value>此分区没有匹配的模板。</value></data>
+  <data name="暂无现有模板，可先从内置流程创建。" xml:space="preserve"><value>暂无现有模板，可先从内置流程创建。</value></data>
+  <data name="此分区暂无可用来源。" xml:space="preserve"><value>此分区暂无可用来源。</value></data>
 </root>

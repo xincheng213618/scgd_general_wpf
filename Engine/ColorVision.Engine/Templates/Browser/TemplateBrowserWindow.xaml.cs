@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.UI;
@@ -24,9 +24,9 @@ namespace ColorVision.Engine.Templates.Browser;
 /// <summary>Shared browsing behavior; each template retains its own storage and editor.</summary>
 public partial class TemplateBrowserWindow : Window
 {
-    public static readonly DependencyProperty TileWidthProperty = DependencyProperty.Register(nameof(TileWidth), typeof(double), typeof(TemplateBrowserWindow), new PropertyMetadata(212d));
+    public static readonly DependencyProperty TileWidthProperty = DependencyProperty.Register(nameof(TileWidth), typeof(double), typeof(TemplateBrowserWindow), new PropertyMetadata(128d));
     public double TileWidth { get => (double)GetValue(TileWidthProperty); private set => SetValue(TileWidthProperty, value); }
-    public static readonly DependencyProperty CoverHeightProperty = DependencyProperty.Register(nameof(CoverHeight), typeof(double), typeof(TemplateBrowserWindow), new PropertyMetadata(111d));
+    public static readonly DependencyProperty CoverHeightProperty = DependencyProperty.Register(nameof(CoverHeight), typeof(double), typeof(TemplateBrowserWindow), new PropertyMetadata(66.375d));
     public double CoverHeight { get => (double)GetValue(CoverHeightProperty); private set => SetValue(CoverHeightProperty, value); }
     private static readonly ILog log = LogManager.GetLogger(typeof(TemplateBrowserWindow));
     private const string DragFormat = "ColorVision.TemplateBrowser.Template";
@@ -40,6 +40,13 @@ public partial class TemplateBrowserWindow : Window
     private readonly ObservableCollection<TemplateBase> browserItems;
     private readonly HashSet<TemplateBase> renamed = [];
     private readonly HashSet<FlowTemplateCover> covers = [];
+    private readonly Dictionary<TemplateBase, int> savedPositions = [];
+    private TemplateBrowserIconSize iconSize;
+    private TemplateBrowserSort sort;
+    private TemplateBrowserGroup grouping;
+    private bool descending, previewVisible, updatingSelection, organizationRefreshPending;
+    private Point? selectionOrigin;
+    private HashSet<TemplateBase> selectionBeforeDrag = [];
     private bool isClosed, coverRefreshPending;
     private ListViewItem? dropTarget;
     private long lastDragScroll;
@@ -60,7 +67,15 @@ public partial class TemplateBrowserWindow : Window
         template.Load();
         // Reverse only the browser projection; shared picker indexes and local negative IDs retain their meaning.
         browserItems = new ObservableCollection<TemplateBase>(SourceItems.Reverse());
+        UpdateSavedPositions();
         items = new ListCollectionView(browserItems);
+        iconSize = options.HasCovers ? this.settings.FlowBrowserIconSize : this.settings.PoiBrowserIconSize;
+        sort = options.HasCovers ? this.settings.FlowBrowserSort : this.settings.PoiBrowserSort;
+        grouping = options.HasCovers ? this.settings.FlowBrowserGroup : this.settings.PoiBrowserGroup;
+        descending = options.HasCovers ? this.settings.FlowBrowserSortDescending : this.settings.PoiBrowserSortDescending;
+        if (!Enum.IsDefined(iconSize)) iconSize = TemplateBrowserIconSize.Medium;
+        if (!Enum.IsDefined(sort)) sort = TemplateBrowserSort.SavedOrder;
+        if (!Enum.IsDefined(grouping)) grouping = TemplateBrowserGroup.None;
         InitializeComponent();
         this.ApplyCaption();
         HeadingText.Text = string.Format(EngineResources.TemplateBrowserHeading, options.Label);
@@ -73,15 +88,16 @@ public partial class TemplateBrowserWindow : Window
         TemplateList.ItemsSource = items;
         TemplateList.SelectedItem = SourceItems.ElementAtOrDefault(selectedIndex);
         ApplyViewMode(options.HasCovers ? this.settings.FlowBrowserListView : this.settings.PoiBrowserListView);
-        PreviewButton.IsChecked = false;
         ApplyPreviewVisibility();
+        CreateBackgroundMenu();
         ((INotifyCollectionChanged)items).CollectionChanged += Items_CollectionChanged;
         ((INotifyCollectionChanged)template.ItemsSource).CollectionChanged += Source_CollectionChanged;
         foreach (var item in browserItems) item.PropertyChanged += Item_PropertyChanged;
         UpdateEmptyState();
         UpdateStatus();
         CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (_, _) => TryAction(Create, EngineResources.TemplateBrowserCreateFailed)));
-        CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (_, _) => TryAction(Delete, EngineResources.TemplateBrowserDeleteFailed), (_, e) => e.CanExecute = Selected != null));
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (_, _) => TryAction(Delete, EngineResources.TemplateBrowserDeleteFailed), (_, e) =>
+            e.CanExecute = FindParent<TextBoxBase>(e.OriginalSource as DependencyObject) == null && (Selected != null || browserItems.Any(item => item.IsSelected))));
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (_, _) =>
         {
             TryAction(SaveRenames, EngineResources.TemplateBrowserSaveFailed);
@@ -94,7 +110,10 @@ public partial class TemplateBrowserWindow : Window
             if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control) { SearchBox.Focus(); e.Handled = true; }
         };
         TemplateList.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((_, _) => { UpdateTileSize(); QueueCoverRefresh(); }));
-        TemplateList.SelectionChanged += (_, _) => { UpdateStatus(); RefreshPreview(); };
+        TemplateList.SelectionChanged += TemplateList_SelectionChanged;
+        foreach (var item in browserItems.Where(item => item.IsSelected && items.Contains(item)))
+            if (!TemplateList.SelectedItems.Contains(item)) TemplateList.SelectedItems.Add(item);
+        if (Selected != null) Selected.IsSelected = true;
         TemplateList.SizeChanged += (_, _) =>
         {
             UpdateTileSize();
@@ -134,7 +153,7 @@ public partial class TemplateBrowserWindow : Window
         if (!options.HasCovers || isClosed) return;
         if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(RefreshPreviewStyle); return; }
         QueueCoverRefresh();
-        if (PreviewButton.IsChecked == true) RefreshPreview();
+        if (previewVisible) RefreshPreview();
     }
 
     private void UpdateTileSize()
@@ -143,24 +162,31 @@ public partial class TemplateBrowserWindow : Window
         if (available <= 0) return;
         if (TemplateList.View is GridView view)
         {
-            view.Columns[2].Width = Math.Max(140, available - 150);
+            view.Columns[2].Width = Math.Max(140, available - 278);
             return;
         }
-        int columns = Math.Max(1, (int)(available / (options.HasCovers ? 220 : 144)));
-        double width = Math.Floor(available / columns) - 8;
+        double width = iconSize switch { TemplateBrowserIconSize.Small => 212, TemplateBrowserIconSize.Large => 176, TemplateBrowserIconSize.ExtraLarge => 256, _ => 128 };
+        width = Math.Min(width, Math.Max(100, available - 8));
         if (Math.Abs(TileWidth - width) < 0.5) return;
-        TileWidth = Math.Max(options.HasCovers ? 160 : 120, width);
-        CoverHeight = (TileWidth - 14) * 9 / 16;
+        TileWidth = width;
+        CoverHeight = (TileWidth - 10) * 9 / 16;
     }
 
-    private void ViewMode_Click(object sender, RoutedEventArgs e) => ApplyViewMode(ReferenceEquals(sender, ListViewButton));
+    private void ListView_Click(object sender, RoutedEventArgs e) => ApplyViewMode(true);
+
+    private void IconSize_Click(object sender, RoutedEventArgs e)
+    {
+        iconSize = Enum.Parse<TemplateBrowserIconSize>(MenuValue(sender));
+        if (options.HasCovers) settings.FlowBrowserIconSize = iconSize;
+        else settings.PoiBrowserIconSize = iconSize;
+        ApplyViewMode(false);
+    }
 
     private void ApplyViewMode(bool useList)
     {
         var selected = Selected;
+        updatingSelection = true;
         SetDropTarget(null);
-        CardsViewButton.IsChecked = !useList;
-        ListViewButton.IsChecked = useList;
         if (options.HasCovers) settings.FlowBrowserListView = useList;
         else settings.PoiBrowserListView = useList;
         if (useList)
@@ -175,13 +201,15 @@ public partial class TemplateBrowserWindow : Window
         {
             TemplateList.View = null;
             TemplateList.ItemContainerStyle = (Style)Resources["TemplateTileItem"];
-            TemplateList.ItemTemplate = (DataTemplate)Resources[options.HasCovers ? "FlowTile" : "PoiTile"];
+            string tile = options.HasCovers ? "FlowTile" : "PoiTile";
+            TemplateList.ItemTemplate = (DataTemplate)Resources[iconSize == TemplateBrowserIconSize.Small ? "Small" + tile : tile];
             TemplateList.ItemsPanel = (ItemsPanelTemplate)Resources["TemplateTilePanel"];
             TemplateList.Template = (ControlTemplate)Resources["TemplateTileList"];
         }
         ScrollViewer.SetCanContentScroll(TemplateList, useList);
         ScrollViewer.SetHorizontalScrollBarVisibility(TemplateList, useList ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled);
         TemplateList.SelectedItem = selected;
+        ApplyOrganization();
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
         {
             if (isClosed) return;
@@ -191,11 +219,203 @@ public partial class TemplateBrowserWindow : Window
         });
     }
 
-    private void Preview_Click(object sender, RoutedEventArgs e) => ApplyPreviewVisibility();
+    private static string MenuValue(object sender) => ((string)((MenuItem)sender).Tag).Split(':')[^1];
+    private bool CanSwap => sort == TemplateBrowserSort.SavedOrder && grouping == TemplateBrowserGroup.None;
+
+    private void Sort_Click(object sender, RoutedEventArgs e)
+    {
+        var next = Enum.Parse<TemplateBrowserSort>(MenuValue(sender));
+        if (next != sort) descending = next != TemplateBrowserSort.Name;
+        sort = next;
+        SaveOrganizationSettings();
+        ApplyOrganization();
+    }
+
+    private void SortDirection_Click(object sender, RoutedEventArgs e)
+    {
+        descending = bool.Parse(MenuValue(sender));
+        SaveOrganizationSettings();
+        ApplyOrganization();
+    }
+
+    private void Group_Click(object sender, RoutedEventArgs e)
+    {
+        grouping = Enum.Parse<TemplateBrowserGroup>(MenuValue(sender));
+        SaveOrganizationSettings();
+        ApplyOrganization();
+    }
+
+    private void SaveOrganizationSettings()
+    {
+        if (options.HasCovers)
+        {
+            settings.FlowBrowserSort = sort;
+            settings.FlowBrowserSortDescending = descending;
+            settings.FlowBrowserGroup = grouping;
+        }
+        else
+        {
+            settings.PoiBrowserSort = sort;
+            settings.PoiBrowserSortDescending = descending;
+            settings.PoiBrowserGroup = grouping;
+        }
+    }
+
+    private void ApplyOrganization()
+    {
+        var selected = Selected;
+        updatingSelection = true;
+        try
+        {
+            using (items.DeferRefresh())
+            {
+                items.CustomSort = new TemplateBrowserComparer(sort, descending, item => savedPositions.GetValueOrDefault(item));
+                items.GroupDescriptions.Clear();
+                if (grouping != TemplateBrowserGroup.None)
+                {
+                    var description = new TemplateBrowserGrouping(grouping, DateTime.Today)
+                    {
+                        CustomSort = Comparer<CollectionViewGroup>.Create((left, right) =>
+                            ((TemplateBrowserGroupKey)left.Name).Order.CompareTo(((TemplateBrowserGroupKey)right.Name).Order))
+                    };
+                    items.GroupDescriptions.Add(description);
+                }
+            }
+            bool useList = TemplateList.View != null;
+            // GroupStyle.Panel arranges the groups; ItemsPanel arranges each group's leaf items.
+            TemplateList.GroupStyle[0].Panel = (ItemsPanelTemplate)Resources["TemplateGroupPanel"];
+            if (useList) TemplateList.ClearValue(ItemsControl.ItemsPanelProperty);
+            else TemplateList.ItemsPanel = (ItemsPanelTemplate)Resources["TemplateTilePanel"];
+            ScrollViewer.SetCanContentScroll(TemplateList, useList && grouping == TemplateBrowserGroup.None);
+            RestoreSelection(selected);
+        }
+        finally { updatingSelection = false; }
+        StatusText.Text = CanSwap ? EngineResources.TemplateBrowserInteractionHint : EngineLocalization.Get("双击打开 · Delete 删除 · 按模板顺序且不分组时可拖放交换");
+        UpdateMenus();
+        UpdateStatus();
+        RefreshPreview();
+        UpdateTileSize();
+        QueueCoverRefresh();
+    }
+
+    private void RestoreSelection(TemplateBase? current)
+    {
+        TemplateList.SelectedItems.Clear();
+        if (current != null && items.Contains(current)) TemplateList.SelectedItem = current;
+        foreach (var item in browserItems.Where(item => item.IsSelected && items.Contains(item)))
+            if (!TemplateList.SelectedItems.Contains(item)) TemplateList.SelectedItems.Add(item);
+    }
+
+    private void QueueOrganizationRefresh()
+    {
+        if (sort == TemplateBrowserSort.SavedOrder && grouping == TemplateBrowserGroup.None || organizationRefreshPending) return;
+        organizationRefreshPending = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        {
+            organizationRefreshPending = false;
+            if (!isClosed) ApplyOrganization();
+        });
+    }
+
+    private void UpdateMenus()
+    {
+        ListViewMenu.IsChecked = TemplateList.View != null;
+        PreviewMenu.IsChecked = previewVisible;
+        SmallIconsMenu.IsChecked = TemplateList.View == null && iconSize == TemplateBrowserIconSize.Small;
+        MediumIconsMenu.IsChecked = TemplateList.View == null && iconSize == TemplateBrowserIconSize.Medium;
+        LargeIconsMenu.IsChecked = TemplateList.View == null && iconSize == TemplateBrowserIconSize.Large;
+        ExtraLargeIconsMenu.IsChecked = TemplateList.View == null && iconSize == TemplateBrowserIconSize.ExtraLarge;
+        SortSavedMenu.IsChecked = sort == TemplateBrowserSort.SavedOrder;
+        SortNameMenu.IsChecked = sort == TemplateBrowserSort.Name;
+        SortDateMenu.IsChecked = sort == TemplateBrowserSort.Date;
+        SortAscendingMenu.IsChecked = !descending;
+        SortDescendingMenu.IsChecked = descending;
+        GroupNoneMenu.IsChecked = grouping == TemplateBrowserGroup.None;
+        GroupNameMenu.IsChecked = grouping == TemplateBrowserGroup.Name;
+        GroupDateMenu.IsChecked = grouping == TemplateBrowserGroup.Date;
+    }
+
+    private void CreateBackgroundMenu()
+    {
+        var copies = new List<(MenuItem Source, MenuItem Copy)>();
+        MenuItem Copy(MenuItem source)
+        {
+            var copy = new MenuItem { Header = source.Header, IsCheckable = source.IsCheckable };
+            copies.Add((source, copy));
+            copy.Click += (_, e) =>
+            {
+                source.IsChecked = copy.IsChecked;
+                source.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, source));
+                e.Handled = true;
+            };
+            return copy;
+        }
+        var menu = new ContextMenu();
+        var view = new MenuItem { Header = EngineLocalization.Get("查看") };
+        foreach (object item in ViewCommandsMenu.Items) view.Items.Add(item is MenuItem action ? Copy(action) : new Separator());
+        var order = new MenuItem { Header = EngineLocalization.Get("排序") };
+        foreach (var action in new[] { SortSavedMenu, SortNameMenu, SortDateMenu }) order.Items.Add(Copy(action));
+        order.Items.Add(new Separator());
+        order.Items.Add(Copy(SortAscendingMenu));
+        order.Items.Add(Copy(SortDescendingMenu));
+        var groups = new MenuItem { Header = EngineLocalization.Get("分组依据") };
+        foreach (MenuItem action in GroupingCommandsMenu.Items) groups.Items.Add(Copy(action));
+        menu.Items.Add(view);
+        menu.Items.Add(order);
+        menu.Items.Add(groups);
+        menu.Items.Add(new Separator());
+        var refresh = new MenuItem { Header = EngineLocalization.Get("刷新"), InputGestureText = "F5" };
+        refresh.Click += Refresh_Click;
+        menu.Items.Add(refresh);
+        menu.Items.Add(new MenuItem { Header = NewLabel.Text, Command = ApplicationCommands.New, CommandTarget = this });
+        menu.Opened += (_, _) =>
+        {
+            UpdateMenus();
+            foreach (var (source, copy) in copies) { copy.IsChecked = source.IsChecked; copy.IsEnabled = source.IsEnabled; }
+        };
+        TemplateList.ContextMenu = menu;
+        TemplateList.InputBindings.Add(new KeyBinding(new ColorVision.Common.MVVM.RelayCommand(_ => Refresh_Click(this, new RoutedEventArgs())), Key.F5, ModifierKeys.None));
+    }
+
+    private void TemplateList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (updatingSelection) return;
+        updatingSelection = true;
+        try
+        {
+            foreach (TemplateBase item in e.RemovedItems) item.IsSelected = false;
+            foreach (TemplateBase item in e.AddedItems) item.IsSelected = true;
+        }
+        finally { updatingSelection = false; }
+        UpdateStatus();
+        RefreshPreview();
+    }
+
+    private void EndBoxSelection(object sender, RoutedEventArgs e)
+    {
+        if (selectionOrigin == null) return;
+        selectionOrigin = null;
+        selectionBeforeDrag.Clear();
+        SelectionRectangle.Visibility = Visibility.Collapsed;
+        if (TemplateList.IsMouseCaptured) TemplateList.ReleaseMouseCapture();
+    }
+
+    private void Refresh_Click(object sender, RoutedEventArgs e) => TryAction(() =>
+    {
+        template.Load();
+        ApplyOrganization();
+    }, EngineResources.TemplateBrowserOpenFailed);
+
+    private void Preview_Click(object sender, RoutedEventArgs e)
+    {
+        previewVisible = ((MenuItem)sender).IsChecked;
+        ApplyPreviewVisibility();
+        UpdateMenus();
+    }
 
     private void ApplyPreviewVisibility()
     {
-        bool show = PreviewButton.IsChecked == true;
+        bool show = previewVisible;
         PreviewPane.Visibility = PreviewSplitter.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         PreviewColumn.MinWidth = show ? 220 : 0;
         PreviewColumn.Width = show ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
@@ -204,7 +424,7 @@ public partial class TemplateBrowserWindow : Window
 
     private void RefreshPreview()
     {
-        if (isClosed || PreviewButton.IsChecked != true) { PreviewContent.Cancel(); return; }
+        if (isClosed || !previewVisible) { PreviewContent.Cancel(); return; }
         PreviewTask = PreviewContent.ShowAsync(Selected, CoverService);
     }
 
@@ -230,29 +450,61 @@ public partial class TemplateBrowserWindow : Window
 
     private void Source_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        var source = SourceItems.ToHashSet();
-        foreach (var removed in browserItems.Where(item => !source.Contains(item)).ToArray())
+        var selected = Selected;
+        updatingSelection = true;
+        try
         {
-            removed.PropertyChanged -= Item_PropertyChanged;
-            browserItems.Remove(removed);
+            var source = SourceItems.ToHashSet();
+            foreach (var removed in browserItems.Where(item => !source.Contains(item)).ToArray())
+            {
+                removed.PropertyChanged -= Item_PropertyChanged;
+                browserItems.Remove(removed);
+            }
+            foreach (var added in SourceItems.Where(item => !browserItems.Contains(item)))
+            {
+                added.PropertyChanged += Item_PropertyChanged;
+                browserItems.Add(added);
+            }
+            int index = 0;
+            foreach (var item in SourceItems.Reverse())
+            {
+                int previous = browserItems.IndexOf(item);
+                if (previous != index) browserItems.Move(previous, index);
+                index++;
+            }
+            UpdateSavedPositions();
+            items.Refresh();
+            RestoreSelection(selected);
         }
-        foreach (var added in SourceItems.Where(item => !browserItems.Contains(item)))
-        {
-            added.PropertyChanged += Item_PropertyChanged;
-            browserItems.Add(added);
-        }
+        finally { updatingSelection = false; }
+        UpdateStatus();
+        RefreshPreview();
+    }
+
+    private void UpdateSavedPositions()
+    {
+        savedPositions.Clear();
         int index = 0;
-        foreach (var item in SourceItems.Reverse())
-        {
-            int previous = browserItems.IndexOf(item);
-            if (previous != index) browserItems.Move(previous, index);
-            index++;
-        }
+        foreach (var item in SourceItems) savedPositions[item] = index++;
     }
 
     private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(TemplateBase.IsSelected) && updatingSelection) return;
+        if (e.PropertyName == nameof(TemplateBase.IsSelected) && sender is TemplateBase selected && !updatingSelection)
+        {
+            updatingSelection = true;
+            try
+            {
+                if (selected.IsSelected && items.Contains(selected) && !TemplateList.SelectedItems.Contains(selected)) TemplateList.SelectedItems.Add(selected);
+                else if (!selected.IsSelected) TemplateList.SelectedItems.Remove(selected);
+            }
+            finally { updatingSelection = false; }
+            RefreshPreview();
+        }
         if (e.PropertyName is nameof(TemplateBase.IsSelected) or nameof(TemplateBase.Key)) UpdateStatus();
+        if ((e.PropertyName is nameof(TemplateBase.Key) or nameof(TemplateBase.Date) && sender is TemplateBase { IsEditMode: false })
+            || e.PropertyName == nameof(TemplateBase.IsEditMode) && sender is TemplateBase { IsEditMode: false }) QueueOrganizationRefresh();
         if (e.PropertyName == nameof(TemplateBase.Key) && ReferenceEquals(sender, Selected)) PreviewContent.SetTitle(Selected?.Key);
         if (e.PropertyName == nameof(TemplateBase.Id) && ReferenceEquals(sender, Selected)) RefreshPreview();
     }
@@ -262,8 +514,9 @@ public partial class TemplateBrowserWindow : Window
         if (CountText == null) return;
         CountText.Text = items.Count == browserItems.Count ? string.Format(EngineResources.TemplateBrowserCount, browserItems.Count, options.Label) : string.Format(EngineResources.TemplateBrowserFilteredCount, items.Count, browserItems.Count, options.Label);
         int marked = browserItems.Count(item => item.IsSelected);
-        SelectionText.Text = marked > 0 ? string.Format(EngineResources.TemplateBrowserCheckedCount, marked) : Selected == null ? EngineResources.TemplateBrowserNoSelection : EngineResources.TemplateBrowserOneSelected;
-        DeleteButton.Content = marked > 0 ? string.Format(EngineResources.TemplateBrowserDeleteCount, marked) : EngineResources.Delete;
+        int count = Math.Max(marked, TemplateList.SelectedItems.Count);
+        SelectionText.Text = count == 0 ? EngineResources.TemplateBrowserNoSelection : EngineLocalization.Format($"已选择 {count} 项");
+        DeleteButton.ToolTip = (count > 0 ? string.Format(EngineResources.TemplateBrowserDeleteCount, count) : EngineResources.TemplateBrowserDeleteHint) + " (Delete)";
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -306,8 +559,15 @@ public partial class TemplateBrowserWindow : Window
         if (items == null || TemplateList == null) return;
         var selected = Selected;
         string[] words = SearchBox.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        items.Filter = words.Length == 0 ? null : value => value is TemplateBase flow && words.All(word => flow.Key.Contains(word, StringComparison.OrdinalIgnoreCase));
-        TemplateList.SelectedItem = selected != null && items.Contains(selected) ? selected : items.Cast<object>().FirstOrDefault();
+        updatingSelection = true;
+        try
+        {
+            items.Filter = words.Length == 0 ? null : value => value is TemplateBase flow && words.All(word => flow.Key.Contains(word, StringComparison.OrdinalIgnoreCase));
+            RestoreSelection(selected);
+        }
+        finally { updatingSelection = false; }
+        UpdateStatus();
+        RefreshPreview();
         UpdateEmptyState();
         QueueCoverRefresh();
     }
@@ -324,11 +584,17 @@ public partial class TemplateBrowserWindow : Window
         if (FindParent<ListViewItem>(e.OriginalSource as DependencyObject) is { Content: TemplateBase item }
             && !IsEditingControl(e.OriginalSource as DependencyObject)) { TemplateList.SelectedItem = item; OpenSelected(); e.Handled = true; }
     }
-    private void TemplateList_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter && !IsEditingControl(e.OriginalSource as DependencyObject)) { OpenSelected(); e.Handled = true; } }
+    private void TemplateList_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (FindParent<TextBoxBase>(e.OriginalSource as DependencyObject) != null) return;
+        if (e.Key == Key.Delete && ApplicationCommands.Delete.CanExecute(null, this)) { ApplicationCommands.Delete.Execute(null, this); e.Handled = true; }
+        else if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control) { TemplateList.SelectAll(); e.Handled = true; }
+        else if (e.Key == Key.Enter && !IsEditingControl(e.OriginalSource as DependencyObject)) { OpenSelected(); e.Handled = true; }
+    }
     private void Search_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) { OpenSelected(); e.Handled = true; } }
     private void TemplateContextMenu_Opened(object sender, RoutedEventArgs e)
     {
-        if (sender is ContextMenu { PlacementTarget: FrameworkElement { DataContext: TemplateBase item } }) TemplateList.SelectedItem = item;
+        if (sender is ContextMenu { PlacementTarget: FrameworkElement { DataContext: TemplateBase item } } && !TemplateList.SelectedItems.Contains(item)) TemplateList.SelectedItem = item;
     }
 
     private void BeginRename() { if (Selected is { } item) { renamed.Add(item); item.IsEditMode = true; StatusText.Text = EngineResources.TemplateBrowserUnsavedNames; UpdateStatus(); } }
@@ -366,10 +632,9 @@ public partial class TemplateBrowserWindow : Window
 
     private void Delete()
     {
-        int index = SourceIndex;
-        if (index < 0) return;
         var targets = SourceItems.Where(item => item.IsSelected).ToArray();
-        if (targets.Length == 0) targets = [Selected!];
+        if (targets.Length == 0) targets = TemplateList.SelectedItems.Cast<TemplateBase>().ToArray();
+        if (targets.Length == 0) return;
         string names = string.Join("\n", targets.Take(8).Select(item => item.Key));
         if (targets.Length > 8) names += "\n…";
         if (MessageBox.Show(this, string.Format(EngineResources.TemplateBrowserDeletePrompt, targets.Length, options.Label, names), Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
@@ -393,6 +658,7 @@ public partial class TemplateBrowserWindow : Window
         Keyboard.ClearFocus();
         foreach (var item in renamed.Where(SourceItems.Contains)) { item.IsEditMode = false; options.SaveName(item); }
         renamed.Clear();
+        ApplyOrganization();
         StatusText.Text = EngineResources.TemplateBrowserNamesSaved;
         UpdateStatus();
     }
@@ -414,22 +680,81 @@ public partial class TemplateBrowserWindow : Window
     private void TemplateList_MouseDown(object sender, MouseButtonEventArgs e)
     {
         dragStart = e.GetPosition(TemplateList);
-        dragItem = IsEditingControl(e.OriginalSource as DependencyObject) ? null : FindParent<ListViewItem>(e.OriginalSource as DependencyObject)?.Content as TemplateBase;
+        var origin = e.OriginalSource as DependencyObject;
+        var container = FindParent<ListViewItem>(origin);
+        dragItem = CanSwap && !IsEditingControl(origin) ? container?.Content as TemplateBase : null;
+        if (container != null || IsEditingControl(origin) || FindParent<ScrollBar>(origin) != null) return;
+        selectionBeforeDrag = (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) != 0
+            ? browserItems.Where(item => item.IsSelected).ToHashSet() : [];
+        if (selectionBeforeDrag.Count == 0)
+        {
+            TemplateList.SelectedItems.Clear();
+            foreach (var item in browserItems.Where(item => item.IsSelected).ToArray()) item.IsSelected = false;
+        }
+        selectionOrigin = dragStart;
+        TemplateList.Focus();
+        TemplateList.CaptureMouse();
+        e.Handled = true;
     }
     private void TemplateList_MouseMove(object sender, MouseEventArgs e)
     {
+        if (selectionOrigin is Point start && e.LeftButton == MouseButtonState.Pressed)
+        {
+            Point point = e.GetPosition(TemplateList);
+            var rect = new Rect(start, new Point(Math.Clamp(point.X, 0, TemplateList.ActualWidth), Math.Clamp(point.Y, 0, TemplateList.ActualHeight)));
+            Canvas.SetLeft(SelectionRectangle, rect.Left);
+            Canvas.SetTop(SelectionRectangle, rect.Top);
+            SelectionRectangle.Width = rect.Width;
+            SelectionRectangle.Height = rect.Height;
+            SelectionRectangle.Visibility = Visibility.Visible;
+            SelectInRectangle(rect, selectionBeforeDrag);
+            e.Handled = true;
+            return;
+        }
         if (dragItem == null || e.LeftButton != MouseButtonState.Pressed) return;
         Vector delta = e.GetPosition(TemplateList) - dragStart;
         if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance) return;
-        var item = dragItem;
+        var dragSource = dragItem;
         dragItem = null;
-        try { DragDrop.DoDragDrop(TemplateList, new DataObject(DragFormat, item), DragDropEffects.Move); }
+        try { DragDrop.DoDragDrop(TemplateList, new DataObject(DragFormat, dragSource), DragDropEffects.Move); }
         finally { SetDropTarget(null); }
+    }
+
+    internal void SelectInRectangle(Rect rectangle, IReadOnlySet<TemplateBase> previous)
+    {
+        // Grouped views have nested generators; walk realized containers instead of querying only the root generator.
+        var hit = ItemContainers(TemplateList).Where(container => container.IsVisible &&
+            rectangle.IntersectsWith(container.TransformToAncestor(TemplateList).TransformBounds(new Rect(container.RenderSize))))
+            .Select(container => container.Content).OfType<TemplateBase>().ToHashSet();
+        updatingSelection = true;
+        try
+        {
+            foreach (var item in browserItems)
+            {
+                bool selected = previous.Contains(item) || hit.Contains(item);
+                if (item.IsSelected != selected) item.IsSelected = selected;
+                if (selected && items.Contains(item) && !TemplateList.SelectedItems.Contains(item)) TemplateList.SelectedItems.Add(item);
+                else if (!selected) TemplateList.SelectedItems.Remove(item);
+            }
+        }
+        finally { updatingSelection = false; }
+        UpdateStatus();
+        RefreshPreview();
+    }
+
+    private static IEnumerable<ListViewItem> ItemContainers(DependencyObject parent)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is ListViewItem item) yield return item;
+            else foreach (var nested in ItemContainers(child)) yield return nested;
+        }
     }
     private void TemplateList_DragOver(object sender, DragEventArgs e)
     {
         var target = FindParent<ListViewItem>(e.OriginalSource as DependencyObject);
-        bool canSwap = e.Data.GetData(DragFormat) is TemplateBase source && browserItems.Contains(source)
+        bool canSwap = CanSwap && e.Data.GetData(DragFormat) is TemplateBase source && browserItems.Contains(source)
             && target?.Content is TemplateBase destination && !ReferenceEquals(source, destination);
         e.Effects = canSwap ? DragDropEffects.Move : DragDropEffects.None;
         SetDropTarget(canSwap ? target : null);
@@ -452,7 +777,7 @@ public partial class TemplateBrowserWindow : Window
 
     private async void TemplateList_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(DragFormat) is not TemplateBase source
+        if (!CanSwap || e.Data.GetData(DragFormat) is not TemplateBase source
             || FindParent<ListViewItem>(e.OriginalSource as DependencyObject)?.Content is not TemplateBase target || ReferenceEquals(source, target)) return;
         SetDropTarget(null);
         e.Handled = true;

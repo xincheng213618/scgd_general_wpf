@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 
 namespace ColorVision.Database
 {
@@ -30,11 +31,25 @@ namespace ColorVision.Database
                         name TEXT NOT NULL,
                         schema_version INTEGER NOT NULL,
                         payload TEXT NOT NULL,
-                        sort_order INTEGER NOT NULL DEFAULT 0
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_utc TEXT NULL
                     );
                     CREATE INDEX IF NOT EXISTS ix_local_templates_kind ON local_templates(kind, sort_order, id);
                     """;
                 command.ExecuteNonQuery();
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('local_templates') WHERE name='created_utc'";
+                if (Convert.ToInt32(command.ExecuteScalar()) == 0)
+                {
+                    // Recheck under a write transaction when two owners open a legacy database together.
+                    using var transaction = connection.BeginTransaction();
+                    command.Transaction = transaction;
+                    if (Convert.ToInt32(command.ExecuteScalar()) == 0)
+                    {
+                        command.CommandText = "ALTER TABLE local_templates ADD COLUMN created_utc TEXT NULL";
+                        command.ExecuteNonQuery();
+                    }
+                    transaction.Commit();
+                }
                 return connection;
             }
             catch { connection.Dispose(); throw; }
@@ -44,11 +59,11 @@ namespace ColorVision.Database
         {
             using var connection = Open();
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT id,name,schema_version,payload FROM local_templates WHERE kind=$kind ORDER BY sort_order,id";
+            command.CommandText = "SELECT id,name,schema_version,payload,created_utc FROM local_templates WHERE kind=$kind ORDER BY sort_order,id";
             command.Parameters.AddWithValue("$kind", kind);
             using var reader = command.ExecuteReader();
             var result = new List<LocalTemplateDocument>();
-            while (reader.Read()) result.Add(new(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2), reader.GetString(3)));
+            while (reader.Read()) result.Add(ReadDocument(reader));
             return result;
         }
 
@@ -56,13 +71,18 @@ namespace ColorVision.Database
         {
             using var connection = Open();
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT id,name,schema_version,payload FROM local_templates WHERE kind=$kind AND id=$id";
+            command.CommandText = "SELECT id,name,schema_version,payload,created_utc FROM local_templates WHERE kind=$kind AND id=$id";
             command.Parameters.AddWithValue("$kind", kind);
             command.Parameters.AddWithValue("$id", id);
             using var reader = command.ExecuteReader();
             if (!reader.Read()) throw new InvalidDataException($"找不到本地模板：{kind}/{id}");
-            return new(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2), reader.GetString(3));
+            return ReadDocument(reader);
         }
+
+        private static LocalTemplateDocument ReadDocument(SqliteDataReader reader) => new(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2), reader.GetString(3))
+        {
+            CreatedUtc = !reader.IsDBNull(4) && DateTime.TryParse(reader.GetString(4), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var date) ? date : null
+        };
 
         public int Save(string kind, int? id, string name, int schemaVersion, string payload)
         {
@@ -70,9 +90,10 @@ namespace ColorVision.Database
             using var command = connection.CreateCommand();
             command.CommandText = id.HasValue
                 ? "UPDATE local_templates SET name=$name,schema_version=$version,payload=$payload WHERE kind=$kind AND id=$id RETURNING id"
-                : "INSERT INTO local_templates(kind,name,schema_version,payload,sort_order) VALUES($kind,$name,$version,$payload,COALESCE((SELECT MAX(sort_order)+1 FROM local_templates WHERE kind=$kind),0)) RETURNING id";
+                : "INSERT INTO local_templates(kind,name,schema_version,payload,sort_order,created_utc) VALUES($kind,$name,$version,$payload,COALESCE((SELECT MAX(sort_order)+1 FROM local_templates WHERE kind=$kind),0),$created) RETURNING id";
             command.Parameters.AddWithValue("$kind", kind);
             if (id.HasValue) command.Parameters.AddWithValue("$id", id.Value);
+            else command.Parameters.AddWithValue("$created", DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
             command.Parameters.AddWithValue("$name", name);
             command.Parameters.AddWithValue("$version", schemaVersion);
             command.Parameters.AddWithValue("$payload", payload);
@@ -144,5 +165,8 @@ namespace ColorVision.Database
         }
     }
 
-    public sealed record LocalTemplateDocument(int Id, string Name, int SchemaVersion, string Payload);
+    public sealed record LocalTemplateDocument(int Id, string Name, int SchemaVersion, string Payload)
+    {
+        public DateTime? CreatedUtc { get; init; }
+    }
 }

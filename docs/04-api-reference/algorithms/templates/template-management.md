@@ -54,7 +54,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 
 已有条目的 **创建副本** 和列表底部的 **导入** 会先准备内容，再打开创建窗口。导入窗口隐藏来源选择；文件已选好仍需完成创建。创建后列表数量变化时，宿主清空搜索并选择新条目；应核对条目名称及参数，不能只看列表数量。
 
-`TemplateCreateView.Initialize` 构建来源列表；是否展示现有副本、文件导入，取决于反射判断 `CopyTo(int)` / `Import()` 是否被覆写，不是运行能力测试。默认来源始终列出，已有暂存内容时增加 Prepared；请求 Existing 时先找指定索引，找不到再找同类首项，请求类别不存在才回退 Prepared、Default。
+`TemplateCreateView.Initialize` 构建来源列表；是否展示现有副本、文件导入，取决于反射判断 `CopyTo(int)` / `Import()` 是否被覆写，不是运行能力测试。普通模板列出默认来源；`UseCatalogCreateSources=true` 的模板只列出内置和现有分区，不提供 Default/File 来源卡片。Flow 启用该模式，打开时优先选择首个可用内置流程；空分区和无匹配搜索清除旧草稿与预览并禁用创建，不能从隐藏项创建。已准备的复制/导入内容仍以 Prepared 接入。已有暂存内容时增加 Prepared；请求 Existing 时先找指定索引，找不到再找同类首项，请求类别不存在才回退 Prepared、Default。
 
 | 来源 | `ApplyTemplateSource` 的动作 | 重要边界 |
 | --- | --- | --- |

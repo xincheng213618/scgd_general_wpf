@@ -13,6 +13,9 @@ namespace ColorVision.Engine.Templates
         [JsonIgnore]
         public virtual int Id { get; set; }
 
+        [JsonIgnore]
+        public virtual DateTime? Date => null;
+
         internal void NotifyIdChanged() => OnPropertyChanged(nameof(Id));
 
         [JsonIgnore]
@@ -55,6 +58,9 @@ namespace ColorVision.Engine.Templates
         public override int Id { get => Value.Id; }
 
         [JsonIgnore]
+        public override DateTime? Date => Value is ParamModBase value ? value.TemplateDate ?? value.ModMaster?.CreateDate : null;
+
+        [JsonIgnore]
         public override string Key
         {
             get => Value.Name;
@@ -64,7 +70,12 @@ namespace ColorVision.Engine.Templates
             }
         }
 
-        public T Value { get; set; }
+        private T _value = default!;
+        public T Value
+        {
+            get => _value;
+            set { _value = value; OnPropertyChanged(); OnPropertyChanged(nameof(Date)); }
+        }
 
         public override object GetValue()
         {

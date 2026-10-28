@@ -988,7 +988,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.TakePhotoButton.IsEnabled = state.CanCapture;
             Actions.LocalVideoButton.Visibility = Visible(idle.CanPreview || (state.Busy && Device.CameraBackend.LocalOwned));
             Capture.TakePhotoButton.Visibility = Visible(!previewing && (idle.CanCapture || (state.Busy && !Device.CameraBackend.VideoOwned)));
-            Actions.VideoColumn.Width = Actions.LocalVideoButton.Visibility == Visibility.Visible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            Actions.VideoColumn.Width = Actions.LocalVideoButton.Visibility == Visibility.Visible ? GridLength.Auto : new GridLength(0);
             Actions.LocalVideoButton.ToolTip = state.ShowServiceSettings && state.Connected
                 ? EngineLocalization.Get("CameraPanel_ServicePreviewHint") : null;
             bool showProblem = !state.Connected && !state.CanConnect && !state.Busy;

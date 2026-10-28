@@ -30,7 +30,7 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <DockPanel Margin="0,0,0,3" LastChildFill="False">
+                <DockPanel LastChildFill="False">
                     <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
                         <DockPanel x:Name="TextBlockUnknow" HorizontalAlignment="Left">
                             <TextBlock HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
@@ -49,8 +49,8 @@
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center"/>
                     </Button>
                 </DockPanel>
-                <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
-                    <DockPanel Margin="0,2">
+                <StackPanel x:Name="StackPanelOpen" Margin="0,3,0,0">
+                    <DockPanel>
                         <Button Click="GetPort_Click" Content="{x:Static properties:Resources.FilterWheelReadPosition}" DockPanel.Dock="Right" />
                         <Button Click="SetPort_Click" Content="{x:Static properties:Resources.FilterWheelSetPosition}" DockPanel.Dock="Right" />
                         <ComboBox x:Name="CombPort" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"

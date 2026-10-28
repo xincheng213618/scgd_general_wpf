@@ -132,8 +132,10 @@ namespace ProjectARVRPro
         internal bool IsResultExportPending { get; private set; }
 
         private bool IsTestExecutionBusy => IsSwitchRun
+            || _luxSession != null
+            || _isFlowCompletionPending
             || _isFlowStartPending
-            || flowControl.IsFlowRun
+            || flowControl?.IsFlowRun == true
             || _isFlowLifecycleActive
             || _isRunAllRunning
             || IsResultExportPending
@@ -141,6 +143,7 @@ namespace ProjectARVRPro
 
         public string InitTest(string? serialNumber)
         {
+            if (_luxSession != null) return _objectiveSessionSerialNumber;
             if (IsResultExportPending)
             {
                 log.Warn("正在保存测试结果，暂不初始化下一次测试");
@@ -336,6 +339,7 @@ namespace ProjectARVRPro
 
         public async Task<bool> TryStartNextTemplateAsync(CancellationToken cancellationToken = default)
         {
+            if (_luxSession != null) return false;
             if (IsSwitchRun)
             {
                 log.Warn("重复触发PG，忽略本次请求");
@@ -810,6 +814,7 @@ namespace ProjectARVRPro
 
         public async Task RunTemplate()
         {
+            if (_luxSession != null) return;
             if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
                 return;
 
@@ -1386,6 +1391,12 @@ namespace ProjectARVRPro
                 }
 
                 _isFlowLifecycleActive = false;
+                if (_luxSession != null)
+                {
+                    CompleteLuxFlow(processingSucceeded ? "Completed" : "Failed", CurrentFlowResult.Msg);
+                    TryCount = 0;
+                    return;
+                }
                 if (!processingSucceeded && !ProjectARVRProConfig.Instance.AllowTestFailures)
                 {
                     await TestCompletedAsync();
@@ -1417,7 +1428,8 @@ namespace ProjectARVRPro
                     _isFlowLifecycleActive = false;
                     await Task.Delay(200);
                     log.Info("重新尝试运行流程");
-                    _ = RunTemplate();
+                    if (_luxSession != null) _ = RunLuxTemplateAsync();
+                    else _ = RunTemplate();
                     return;
                 }
                 else
@@ -1427,6 +1439,12 @@ namespace ProjectARVRPro
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
                     _isFlowLifecycleActive = false;
+                    if (_luxSession != null)
+                    {
+                        CompleteLuxFlow(FlowControlData.EventName, FlowControlData.Params);
+                        TryCount = 0;
+                        return;
+                    }
                     await TestCompletedAsync();
                 }
                 TryCount = 0;
@@ -1446,6 +1464,12 @@ namespace ProjectARVRPro
 
                 TryCount = 0;
 
+                if (_luxSession != null)
+                {
+                    _isFlowLifecycleActive = false;
+                    CompleteLuxFlow(FlowControlData.EventName, FlowControlData.Params);
+                    return;
+                }
                 if (ProjectARVRProConfig.Instance.AllowTestFailures)
                 {
                     //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
@@ -1766,6 +1790,11 @@ namespace ProjectARVRPro
 
         private async Task TestCompletedAsync()
         {
+            if (_luxSession != null)
+            {
+                CompleteLuxFlow("Failed", CurrentFlowResult?.Msg);
+                return;
+            }
             if (_objectiveSessionCompleted)
                 return;
 
@@ -2774,6 +2803,7 @@ namespace ProjectARVRPro
         /// </summary>
         public async Task RunAllAsync()
         {
+            if (_luxSession != null) return;
             if (_isRunAllRunning)
             {
                 log.Info("一键执行已在运行中，忽略重复调用");
@@ -3072,6 +3102,7 @@ namespace ProjectARVRPro
                 return;
 
             _isDisposed = true;
+            _luxLifetime.Cancel();
             _runningFlowNodes.Reset(null);
             foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
