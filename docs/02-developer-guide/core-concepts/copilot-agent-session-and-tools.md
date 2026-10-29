@@ -11,198 +11,128 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 
 # Copilot 任务、恢复与内置工具
 
+本页维护任务调度、用户输入恢复、Session/磁盘安全点及内置工具的操作边界。输入按键见[交互契约](./copilot-local-interactions.md)，执行证据见[执行链](./copilot-agent-execution.md)，审批与事件协议见[工具契约](./copilot-agent-tool-contracts.md)。状态 schema 与具体限额直接查映射源码，不在正文复制版本号。
+
 ## 任务 UI、停止原因、运行中 steering 与后续队列
 
-成功的 Agent 轮次会把任务快照和结构化 `CopilotAgentStopReason` 写入对应的 Assistant 消息。聊天面板直接显示模式、完成数、任务标题/说明和停止原因。停止原因包括正常完成、等待用户、审批未通过、请求预算耗尽和本轮任务 pass 上限；这些字段随聊天状态持久化，状态 Schema 以 `ColorVision/Copilot/State/CopilotChatState.cs` 的 `CurrentSchemaVersion` 为准，不在专题页复制易漂移的版本号。
+任务快照和 `CopilotAgentStopReason` 随源 Assistant 消息保存，UI 展示任务与停止原因。只有最新回答且原会话仍有兼容 checkpoint 才能继续；继续会建立可见用户轮次并先复核状态，不从历史生成写授权。暂停须在真实可恢复安全点后承诺，明确取消清除可执行 checkpoint；无类型化意图的系统取消不能当作用户暂停。
 
-只有最新 Assistant 消息且当前 Conversation 仍持有兼容 Session 检查点时，“继续”按钮才可用。点击后会创建一个正常的可见用户轮次，要求先复核当前状态；它不会从历史任务生成写授权。
+`CopilotAgentTaskIndex` 从已保存会话、最后任务 ledger、stop reason、blocker 和 checkpoint 派生跨会话入口，不另维护任务状态。未完成 todo 和仅缺最终回答的可恢复任务都须能找回；重启将开放 run 标为 Interrupted，再重建索引，不自动执行。
 
-运行中的补充要求走 Harness 自带的 [`MessageInjectingChatClient`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.messageinjectingchatclient?view=agent-framework-dotnet-latest)：
+`CopilotAgentTaskHost` 是进程级单活动运行宿主，跨会话请求进入有界 FIFO 队列，不是并行执行多个 Agent。运行绑定原会话/消息，切换或新建会话不转移结果；同一活动会话的新输入用于 steering，不再启动第二任务。Profile、附件、文档和根在提交时冻结，真正执行时重采当前设备/流程状态。普通 Chat 不进后台队列，仍受会话切换锁定。
 
-- Runtime 在活动 `AgentSession` 上注册短生命周期 steering context，结束或异常时自动移除。
-- 用户明确走 steering 入口后，纯文本只以 `ChatRole.User` 入队，不允许客户端构造 system、assistant 或工具消息。新增附件与文本整体排到下一轮，不扩展当前轮已经捕获的上下文范围。实际 Enter/Tab 行为受 multiline 与 follow-up 偏好及补全焦点影响，统一见[输入与命令](./copilot-local-interactions.md)。
-- 注入队列按 Session 隔离，并在线程安全的 `EnqueueMessages` 中等待下一个模型调用机会；立即停止仍使用原有取消令牌和方形停止按钮。
-- steering 只改变模型后续决策，所有业务工具仍通过同一 Schema、预算、并发闸门和访问策略边界。临时授权的补丁直接批准与其他受保护工具的自动复核是不同路径，均不因注入消息扩大权限；见[原生审批契约](./copilot-agent-tool-contracts.md#原生审批与参数快照)。
+steering 与 follow-up 不同：前者在活动 `AgentSession` 的下一模型机会以 user-role 注入，后者等待下一轮。附件与文本整体排后续，不扩展当前冻结上下文；按键由输入偏好和补全焦点决定，不在这里固定为某个键。所有工具仍经过原 Schema、预算、审批与范围守卫。
 
-运行中补充指令先保存为绑定 run ID 的待确认记录。Runtime 在停止宽限内未能发布恢复事件时，宿主终态仍会把该 run 剩余未确认指令恢复到原会话草稿，保留后来输入和附件；不会自动重发，也不处理其他 run 的记录。已确认送达的批次继续按原 checkpoint 确认或显式取消规则消费；恢复事件只消费仍待确认的指令 ID，退出时已恢复的输入不能因随后刷新缓冲事件而重复追加。若运行时接受指令但恢复记录已满，普通输入保持在草稿；自动审批重试指令也立即追加到原会话草稿，保留已有输入和附件。恢复提示说明“尚未确认”，不以缺失事件断言指令一定没有执行。`CopilotSteeringCancellationRecoveryTests` 使用真实 ViewModel 和有界事件流覆盖取消、暂停、切换会话、及时恢复及已确认批次；`CopilotChatViewModelProfileIsolationTests` 覆盖退出恢复与缓冲刷新顺序。
+运行中补充先成为绑定 run ID 的待确认记录，**入队或出队不等于已送达保存**。只有 Framework 历史成功保存才确认消息 ID 并推进恢复记忆。停止宽限/退出前未确认的输入恢复到原会话草稿，保留新输入和附件、不自动重发、不处理其他 run；提示只能说“尚未确认”，不能断言未执行。晚到事件不重复追加已恢复内容。记录容量不足时也保留草稿，自动审批重试输入同样不能丢失。
 
-顶层会话恢复执行 Session 时，在注册新一轮输入前移除旧待发送队列中由宿主标记的 user steering，防止已交由草稿恢复的同一指令随检查点自动重发。已提交历史、任务与审批状态不受这项队列清理影响；同队列中的后台观察及 hook 上下文按原顺序保留。子代理协调输入没有聊天草稿副本，仍由子运行保留其待发送队列；恢复时按原消息 ID 重建未送达跟踪，计入待处理上限，不重复入队或记录接收事件。只有框架历史成功保存后才确认送达、更新投递计数及两份对话记忆，使后续恢复保留该指令且不重复注入。`CopilotInitialCheckpointPromptRecoveryTests` 通过真实 Runtime、检查点重载和模拟供应商请求验证这项投递边界；其中模型变化仅验证 Runtime 记忆重建，子任务协调器仍拒绝不兼容的续作。
+顶层恢复先移除旧待发送队列中的宿主 user steering，防止与草稿副本双发；已提交历史及其他后台/Hook 消息保留。子任务没有草稿副本，按原 ID 恢复待发送跟踪，不重复入队，仍计待处理上限。定位 `CopilotSteeringCancellationRecoveryTests`、`CopilotInitialCheckpointPromptRecoveryTests`。
 
-`CopilotAgentTaskHost` 另外提供同一活动 Agent 会话的 follow-up 队列。steering 调整当前轮，queue 等待下一轮取得执行权，不能把两者按键固定写死。它有以下边界：
+follow-up 队列的交接契约：
 
-- follow-up 只能绑定当前活动的 Agent conversation；Chat 模式、其他 conversation、关闭中的 Host 和满队列全部 fail closed。普通调度入口仍拒绝同一 conversation 重复入队，只有专用 follow-up 入口允许。
-- `CopilotQueuedFollowUp` 保留提交时的 Profile、附件、活动文档、解决方案根和 Live Context，但不提前创建用户/助手消息。任务真正取得执行权时，才从刚完成的 conversation 重新捕获可见历史并写入本轮消息，避免把上一轮的未完成快照固化进下一轮。多条 Review 请求恢复到空草稿并保留 Review 模式时，所有审查目标都有效且 `Target`、`Revision` 完全一致才保留共同目标，重新发送仍使用原分支或提交范围；冲突、缺失或混合模式不挑选某一项的目标，也不覆盖较新草稿的目标。`CopilotQueuedFollowUpReviewTargetTests` 保护目标快照及冲突边界，`CopilotChatViewModelProfileIsolationTests` 经公开排队、真实 Save／Load 与显式重发验证共同分支目标。
-- 新建的耐久恢复记录也保存版本化的活动文档、解决方案根、附加只读根和 Live Context 快照。重启恢复只在当前解决方案根仍匹配、原活动文档与附加根仍存在时复用这份提交上下文；否则把请求和附件恢复到原会话草稿，不用当前窗口上下文自动执行。旧版缺少宿主快照的记录为兼容仍按旧路径恢复；临时授权、审批决定和 checkpoint 不由这份宿主快照持久化。
-- 启动恢复中，用户排队项因不可续作、原 Profile 缺失、停用或配置不完整、宿主上下文失效或重新准入失败而退回草稿时，同会话后续项也退回草稿，不能越过前项自动执行。ViewModel 在状态归一化时保留有效用户请求的结构化记录，待全部启动资格检查完成后，按捕获的队列顺序一次追加正文和附件，保留较新草稿、重复请求和混合模式标记；旧格式记录与耐久记录混合时也不因检查阶段不同而倒序。较新非空草稿的执行模式也保留，Auto 是有效模式，不因旧请求的共同模式被替换；模式不一致的恢复项加 `[Mode]` 正文提示，标签不直接决定执行模式或权限。仅当原草稿正文为空且模式为 Auto 时，才继承恢复项的单一共同模式，原有空草稿的显式模式仍保留。读取完整启动队列后，由 Host 执行容量准入，不能提前截取记录而遗漏待恢复的后续输入；其他会话仍按原规则恢复。独立状态恢复仍保留原有直接转回草稿的行为。`CopilotQueuedFollowUpRecoveryTests` 覆盖不可续作前项、会话隔离及空草稿／较新模式的恢复边界，`CopilotChatViewModelProfileIsolationTests` 通过公开排队、真实 Save／Load 和显式重发验证缺失 Profile、旧格式混合、较小 Host 容量及较新 Auto 草稿的模式交接；模式交接不等同于真实模型执行验收。
-- 排队本地命令转换成后续模型请求时同样保留入队时的模型、运行配置与宿主上下文，只更新执行时的会话历史。`/plan`、`/review`、`/verify` 不因等待期间切换文档而改变目标；`/init` 的目标说明也从提交快照生成，显式 direct prompt 仍不消费排队附件或新草稿。`/retry` 对已捕获附件快照的消息保留原附件与历史边界，不把排队命令的 Composer 附件当成原消息附件；旧消息未捕获附件快照时仍沿用回退规则，但使用入队时的附件，不读取后来修改的草稿。
-- 普通 follow-up 在图片准入或 UI 准备阶段取消／失败且尚未建立消息时，通过同一 recovery coordinator 把输入和附件恢复到源会话，保留更新的草稿；只有源会话仍被选中才同步输入框。图片准入失败也会阻止后续普通追问自动启动；本进程内等待项及其恢复记录保持排队，仍可手动启动。该会话尚未开始的后续输入不再自动跨重启执行；重启后按原顺序追加到现有草稿并恢复附件，供用户检查后手动发送。其他会话的恢复记录不受影响。`CopilotChatViewModelProfileIsolationTests` 通过真实 Save／Load 覆盖图片丢失、准入取消与较新草稿的保留。UI 创建消息前再次检查取消，防止图片保存期间的取消仍产生新轮次。消息建立后、Runtime 调用前的 Flush 失败会回滚本轮消息，并对该会话的后续等待项应用同一重启保护；已执行的请求不按这条路径重放。自动目标续作的图片准入失败也适用同一等待项保护，并暂停仍匹配的目标；内部续作提示不恢复成用户草稿。`CopilotGoalQueueRecoveryTests` 使用继承的托管图片、公开追问排队和真实状态重载验证用户输入及附件的恢复；自动项创建复用既有执行绑定，未覆盖模型完成评估。正常应用退出时保留尚未消费的恢复记录。
-- 输入区上方显示全局队列位置，并允许相邻上移、下移、删除或取消后移回输入框编辑；所有操作都复用 Host 的锁、run state 和变更事件，桌面宠物也在排序变化后重新聚合任务状态。“立即发送”把指定等待项提升为下一项，再请求取消当前模型轮次；目标可来自另一个会话，已在队首也需要这次显式提升。正在处理排队本地命令时只提升等待项，命令完成后再交接，包括命令尚在等待执行前保存的阶段。普通上移、下移仍保留原来的完成条件。`CopilotQueuedFollowUpCancellationTests` 覆盖真实取消后的同／跨会话交接。
-- 重启恢复的自动启动资格逐会话保留：上一轮正常完成的会话可自动启动首项；中断会话的等待项仍需用户显式启动，不能被另一个会话完成时带起。同会话后继只在上一项正常完成后自动启动。`CopilotQueuedFollowUpRestartDispatchTests` 通过真实状态保存／重载、受控 Runtime 和命令执行前保存屏障验证恢复与交接，不调用模型或剪贴板。
-- 队列删除、移回输入框编辑及目标队列清理使用 `RequestCancelQueued`，在 Host 锁内仅移除仍在等待的项。确认框或 UI 通知延迟期间已经取得活动槽的请求不能被旧队列对象取消，也不能因此清除其恢复记录或暂停目标；明确的任务停止仍走支持活动请求的 `RequestCancel`。注册尚未完成时接受的取消，会在释出执行项之前撤销晚加入的界面项与恢复记录，本次提交不消费原输入，不能在重启后重新执行。启动恢复只处理当前仍存在的原记录，已取消项不从旧快照回填草稿；宿主关闭时停止恢复并保留未消费记录。`CopilotQueuedFollowUpCoordinatorTests` 覆盖 Host 通知、集合通知重入与恢复交接，`CopilotQueuedFollowUpCancellationTests` 用真实 Host 的受控晋升验证旧对象、正常队列删除／编辑、目标清理及显式停止，不操作确认弹窗。
-- 可在运行中执行的本地命令可以立即分派；其他 Slash 命令可走 `IsLocalCommand` 专用队列，取得执行权后由宿主 handler 解析，不能去掉 `/` 当普通模型提示词。持久化等待结束后，在变更会话或执行命令前再次检查取消；执行前取消或保存失败的命令不产生副作用，并通过同一 coordinator 恢复草稿和附件，选中会话的输入框同步恢复且保留更新的草稿。同会话尚未开始的后续输入保留在本进程队列，仍可手动启动；这些等待项不再跨重启自动分派，重启后按原顺序恢复草稿和附件。`CopilotChatViewModelProfileIsolationTests` 使用受控保存失败及取消，并经真实 Save／Load 验证较新草稿、命令原文和后续追问的恢复顺序。这份执行前保护不撤销已经开始执行的命令及其已接受的后继。命令控制与位置变化见[交互契约](./copilot-local-interactions.md#诊断、设置与任务控制不是同一种命令)。
+- 专用入口只接受当前活动 Agent 会话，Chat、其他会话、满队列或关闭中的 Host 拒绝。等待时不提前创建消息；取得执行权后才捕获刚完成的会话历史，其他提交上下文仍用原快照。
+- 耐久记录保存版本化宿主上下文。重启只在解决方案根仍匹配、原文档及只读根仍有效时复用，否则请求和附件回原草稿，不改用当前窗口自动执行；旧记录缺宿主快照沿兼容路径，不从快照恢复授权或 checkpoint。
+- 某会话前项因 Profile、上下文、不可续作或准入失败回草稿时，其后项也回草稿，不能越过前项自动执行。先读取完整恢复记录，再按队列顺序统一恢复和容量准入；保留新草稿、重复输入与附件，不因新旧格式混用而乱序。
+- 较新非空草稿保留其模式和 Review 目标，Auto 也是有效模式；只有空正文且模式 Auto 才继承恢复项的单一共同模式。不同模式用正文提示，不由标签授予执行权。恢复多项 Review 时，目标必须全部有效且 Target/Revision 一致才保留共同目标，冲突不能挑一项代替。
+- 等待期间的本地命令保留原 Profile、宿主和目标；`/plan`、`/review`、`/verify`、`/init` 不取后来切换的文档。`/retry` 用原消息附件快照，旧消息回退也只取入队时附件，不消费新草稿。
+- 图片准入、执行前取消或消息建立后的首次 Flush 失败，在未调用 Runtime 时恢复源输入/附件并回滚新消息。该会话后续等待项本进程内可手动启动，跨重启改回草稿，其他会话不受影响；自动目标续作失败只暂停匹配目标，不把内部提示恢复为用户草稿。运行期保存 Profile 不等于重启，不能触发此恢复流程。
+- 正常完成的会话可自动启动后继，中断会话须显式启动，不能被其他会话完成带起。“立即发送”提升指定项后请求取消当前模型轮次；本地命令已在处理时只提升、待命令交接。队列删除/编辑仅取消仍等待的项，旧 UI 对象不能取消已经晋升的活动请求或清掉其恢复记录；明确停止走活动取消入口。
+- 可运行本地命令立即分派，其他 Slash 命令以 `IsLocalCommand` 入队，不能去掉 `/` 变普通提示。执行前再次核对取消及保存，失败恢复原文/附件并保护后继；这不撤销已经开始的命令或已接受后继。正常退出保留未消费恢复记录。
+
+实现入口为 `CopilotQueuedFollowUpCoordinator`、`CopilotQueuedFollowUpRecovery` 和 ViewModel 的 Profile/恢复路径；回归从 `CopilotQueuedFollowUpRecoveryTests`、`CopilotQueuedFollowUpCancellationTests`、`CopilotQueuedFollowUpRestartDispatchTests` 与 `CopilotChatViewModelProfileIsolationTests` 定位，不以受控调度测试代替真实模型验收。
 
 ## 磁盘状态回退与附件保护
 
-持续目标在进程重启后仍先转为暂停，不因存在旧队列而自动重新激活。显式目标首轮（`AutomaticGoalContinuation=false`）若因目标已暂停、完成或被替换而不能重新准入，会把原请求和附件恢复到原会话草稿，并保留较新的输入；不静默删除用户请求。内部自动续作提示仍丢弃，不混入草稿。已建立消息但尚未调用 Runtime 的目标队列若保存失败，会回滚本次消息，并暂停仍处于 Active 且 ID 匹配的目标；显式首轮恢复用户输入，自动续作不恢复内部提示。保存成功仍只分派一次。`CopilotGoalQueueRecoveryTests` 通过真实状态文件重载及受控保存失败验证目标准入和执行前保存交接；普通追问、显式首轮和自动续作保存失败后，均验证存储恢复并保存的后续用户输入及附件在重启时按顺序回到草稿，不把“尚未开始运行”显示为继续运行中的目标。
+持续目标重启后先暂停，不因旧队列自动激活。显式目标首轮失去准入资格时恢复用户输入/附件，内部自动续作丢弃；执行前保存失败则回滚消息并暂停仍匹配的目标。普通 Agent 追问可接管目标，本地诊断命令不代替续作；命令产生模型后继时优先后继，目标身份/Active 状态再次复核，避免重复或失效续作。
 
-持续目标需要下一轮时，普通 Agent 追问可以接管目标，排队本地命令本身不能替代自动续作。诊断命令正常结束后，目标继续取得执行权；`/goal pause`、`/goal clear` 和目标替换仍取消相应续作。能生成模型后继的命令先分派其后继；后继仍评估目标并复用已有自动项，执行前复核目标是否 Active 及 ID 是否匹配，避免重复续作或执行已失效目标。
+独立目标评估不能覆盖失败或过期的最后工作区验证：验证后再写入则必须重验，只读调用不能冲掉这个门槛，长记录裁剪也不能丢失最后验证事实。定位 `CopilotConversationGoalTests`、`CopilotGoalQueueRecoveryTests`。
 
-持续目标的完成门槛保留本轮最后一次工作区验证：验证失败或验证后仍有写入时，独立评估给出完成结论也不能直接结束目标。评估用的工具摘要最多 32 项；最后一次验证超出最近记录窗口时仍保留，新鲜度依据完整工具记录计算，后续只读调用不能冲掉失败或过期验证。重新验证成功后按最新验证判断。`CopilotConversationGoalTests` 覆盖较长工具序列、正常成功验证和重新验证，保留摘要上限及单次验证记录的唯一性。
+`CopilotChatStateStore` 的数据保护边界：
 
-运行期间保存 Profile（包括排队的 `/reasoning`）会走 `CopilotChatStateProfileReconciler.Apply`，但这不是重启恢复。`EnsureInitialized` 在这条路径只同步配置与会话元数据，不把正在执行的本地命令恢复成草稿，也不消费自动目标续作记录；`PrepareForRestartDispatch` 仅在 `EnsureInitializedAfterRestore` 的实际恢复路径执行。`CopilotChatStateProfileReconciliationTests` 验证运行期保留记录和附件引用，再经真实 Save／Load 后才恢复普通命令、保留新草稿，并丢弃不应重放的自动续作。
+| 场景 | 必须保留的行为 |
+| --- | --- |
+| `.bak`/Recovery 内容回退 | 先持久化附件保护标记再提升旧状态，防止仅被损坏新状态引用的附件遭清理；保护跨重启，所有现存托管文件重新获引用后才解除 |
+| 文件锁、I/O、权限失败 | 不是损坏，直接失败；不能跳过较新候选或用旧备份覆盖。只有确实不存在才当缺失 |
+| 未来 schema 的 primary/`.tmp` | 加载/同步或异步保存均拒绝覆盖，包括 Load 后才出现的较新临时快照；未取得临时文件所有权不删除旧 `.tmp` |
+| 保护标记写失败 | 本次保留附件且不提升 primary；后续保存重试，仍失败则报告并保留恢复入口 |
+| 附件根为重解析点或枚举失败 | 跳过清理并保留保护；空失败列表不等于所有附件有引用。每个删除仍复核根内路径和重解析点，不宣称 OS 级并发隔离 |
 
-`CopilotChatStateStore` 从旧 `.bak` 或 Recovery 快照恢复时，旧引用集可能遗漏仅由损坏的新状态引用的托管附件。两种回退都先创建持久化保护标记，再恢复主文件；附件清理不据旧快照删除未引用文件，保护会跨随后从 primary 加载的重启保留。全部现存托管文件重新被引用后，清理器才解除该标记。正常 Primary/Temporary 加载仍执行原有孤儿附件清理；未来 schema 的拒绝覆盖规则保持不变。
+事件时间保留原日期字符串及偏移，到目标类型才解析，避免 journal ID 和 checkpoint 因时区归一化失效。现有 v1 单成员 gzip 请求/Session 保持大小、严格 UTF-8、CRC32 与原字节数验证；截断 payload 保留供恢复，不能把解压前缀当完整内容。有效旧编码、未压缩文本和以压缩标记开头的字面内容继续兼容。
 
-文件占用、I/O 或权限失败不属于损坏记录：读取候选或提交前检查遇到这些错误时直接失败，不跳过较新的候选、不用旧备份覆盖主文件。仅文件确实不存在才视为缺失；内容验证失败仍走损坏恢复。同步与异步保存在接管已有 `.tmp` 前检查其 schema；即使未调用 Load，或较新格式的临时快照在加载后才出现，也拒绝覆盖并保留 primary、backup 和 `.tmp`。受支持或损坏的旧临时内容仍可由新保存接管。未成功打开本次临时写入文件的保存尝试，不删除已有 `.tmp` 恢复快照；成功接管后产生的失败或取消仍清理本次临时文件。`CopilotChatStateStoreReadFailureTests` 以真实文件锁覆盖加载、同步/异步提交及临时文件所有权，并在解锁后重新加载或保存。
-
-状态文件形状检查保留日期字符串，到目标类型反序列化时才解析；不能先转成本地时区再还原。任务事件 ID 包含原始时间偏移，加载必须保留这份表示，否则有效 journal 和执行检查点会被误判失效。`CopilotAgentSessionCheckpointTests` 通过真实 Save／Load 验证与本机时区不同的事件时间及 ID 完整保留。
-
-消息的请求正文与执行 Session 共用有界压缩文本编码。解码现有 v1 单成员 gzip 时，除大小上限和严格 UTF-8 外，还检查尾部 CRC32 与原始字节数；压缩正文或尾部被截断时保留原 payload 交给恢复与验证，不把已解出的前缀当成完整正文。有效旧编码、未压缩文本和恰好以压缩标记开头的字面内容继续兼容；`CopilotAgentSessionCheckpointTests` 覆盖这些存储边界。
-
-聊天面板读取失败时显示重试入口，解除占用或恢复访问权限后可以在原面板重新加载；失败的 ViewModel 构造不订阅全局事件或启动保存任务。已打开聊天中的设置窗口若读取会话状态失败，保留当前聊天并显示可重试的错误提示，不宣称已加载空历史。
-
-保护标记写入失败时，本次加载仍保留附件，但不把旧状态提升成 primary。后续同步或异步保存会重试写标记，仍失败则报 `IOException` 并保留原恢复入口，避免自动保存后重启失去保护。`CopilotChatStateRecoveryAttachmentTests` 使用临时文件覆盖两种回退、跨重启、标记写失败及恢复保存；不代表损坏会话内容已经完整找回。
-
-批量清理在枚举文件或解除保护标记之前检查附件根目录；根本身是符号链接／重解析点，或无法完成检查时，直接跳过。枚举不静默忽略不可访问目录；任何枚举失败都会保留保护标记并跳过本次清理，不能把失败返回的空列表解释为“所有附件均已引用”。没有可用状态文件的首次加载也将枚举失败视为需要恢复保护。每个孤儿文件还须通过 `TryDeleteManagedAttachmentFile` 的根内路径和重解析点检查后才删除，不能仅依赖枚举器跳过子项链接。`CopilotManagedAttachmentDeletionTests` 覆盖链接根不删除外部文件、不解除保护标记，以及普通目录中保留引用文件并删除孤儿文件；这些检查不构成抵御并发文件系统替换的操作系统隔离。
+读取失败提供原面板重试，不显示虚假的空历史；失败构造不订阅全局事件/启动保存。对应测试为 `CopilotChatStateStoreReadFailureTests`、`CopilotChatStateRecoveryAttachmentTests`、`CopilotManagedAttachmentDeletionTests` 和 `CopilotAgentSessionCheckpointTests`；保护附件不证明损坏正文已找回。
 
 ## 会话分支与恢复隔离
 
-“继续任务”“重试最终回答”和自动审批重试在输入框已有普通非空草稿时，独立提交 Auto 恢复请求，保留草稿正文、模式、审查目标、Skill 和附件；这些待发送内容不进入恢复请求，之后发送草稿也不携带此次恢复模式。历史搜索先关闭，再读取实际草稿，查询词不参与提交。已入队的恢复请求绑定原会话，等待期间切换会话不改变归属。
+“继续任务/重试最终回答/自动审批重试”在已有非空草稿时独立提交 Auto 恢复，保留草稿、模式、Review 目标、Skill 和附件；它们不混进恢复请求，历史搜索词也不提交。空草稿的待发送恢复绑定原会话和原文，准入失败后原文重发仍可恢复，改写问题或真正切换会话则不能携带旧恢复模式。异步等待不能读取后来替换的恢复上下文；已入队恢复始终归属原会话。
 
-空草稿或仍匹配原文的待发送恢复请求沿用输入框提交：恢复信息绑定原 conversation 与原输入文本，并在发送开始时随输入快照一起捕获。附件或预算准入失败后，同会话保留原文再次发送仍可恢复；切换到其他会话或改写成新问题后不能携带旧恢复模式。真正接受会话切换时清除待发送恢复，拒绝切换或重复选择当前会话不清除。图片保存、自动压缩等异步等待也不能让已开始准入的请求读取后来创建的恢复上下文。`CopilotPendingRecoveryConversationTests` 覆盖草稿保留、恢复元数据、排队后切换会话、历史搜索，以及侧栏、命令分支、消息分支、同会话改写与原请求重试。
+`/fork`/`/branch` 通过 `CopilotConversationBranchService` 克隆可见历史及历史附件快照、重新生成消息 ID 并映射有效压缩边界；不复制草稿/待发送附件、checkpoint、RecoveryRequest、最后用量或临时授权。运行中可快照分支而不停止源任务，未闭合 trace 记为 `fork_snapshot_incomplete` 并形成模型可见边界。
 
-`/fork` / `/branch` 创建新 conversation 并切换，不是文件系统回滚；命令导航、命名和 `/rewind` 入口见[交互契约](./copilot-local-interactions.md#会话导航、回顾与出口)。实现复用消息菜单已有的 `CopilotConversationBranchService`；消息菜单仍只允许从指定的完整 Assistant 消息分叉，而 `/fork` 通过 `CreateCurrentBranch` 选择当前最后一条 Assistant 消息。所有消息 ID 和历史附件记录 ID 都重新生成，合法的 compaction boundary 会映射到克隆后的消息。新分支保留可见消息、模型内容、工具 trace 和消息当时捕获的附件快照，但不复制编辑区 `DraftText`、待发送 `Attachments`、最后 token 用量、`AgentSessionCheckpoint`、`RecoveryRequest` 或临时授权，因此旧 Session、待执行任务与授权都不会成为新分支的执行许可。Agent 运行中执行 `/fork` 时，服务会在 UI 调度线程复制当前可见状态，不停止源任务；克隆回答会完成所有运行中标志，把未闭合工具 trace 转为 `Interrupted/fork_snapshot_incomplete`，追加模型可见的“会话分支快照”标记并持久化中断说明。分叉不创建 Git branch、不复制工作目录也不回滚文件；两个会话继续观察同一个 ColorVision 工作区。`CopilotConversationBranchOrigin` 额外持久化直接父 conversation、稳定根 conversation、分叉消息和 UTC 时间，仅用于导航与分组。`BuildBranchFamily` 以当前会话声明的根 ID 选择同一会话家族：实际根优先，子节点按分叉时间、标题和 ID 做确定性父前子后排序；缺失直接父节点的分支保留为根下孤儿项，跨记录形成的循环通过已访问 ID 集合终止并去重。`CopilotChatViewModel.ConversationBranchFamily` 把该只读投影绑定到标题栏 **会话树** 菜单，菜单切换复用现有 `SelectConversationCommand` 和 `CanSwitchConversation`。侧栏继续展示独立 conversation 行，不把 transcript 合并成一行；家族投影也不读取或复制 checkpoint、审批、临时授权及宿主运行对象。
+分叉只新建 conversation，两个会话仍观察同一工作区，不建 Git branch、不复制/回滚文件。`BranchOrigin` 的父/根/消息/时间仅供导航分组，家族投影对缺父/循环安全收敛，不合并 transcript 或复制运行对象/授权。UI 入口见[会话导航](./copilot-local-interactions.md#会话导航、回顾与出口)，恢复准入回归见 `CopilotPendingRecoveryConversationTests`。
 
 ## AgentSession 会话检查点
 
-编辑消息后发送的异步失效规则见[草稿编辑与历史恢复](./copilot-local-interactions.md#草稿编辑与历史恢复)：编辑已取消或被后来的操作替代时，旧发送不能清除当前 checkpoint。
+Framework `ChatHistoryProvider.InvokedAsync` 是模型历史成功保存的边界：先建初始安全点，每次真实模型调用成功写入历史后增量序列化 Session，连同 todo、evidence 和 journal 原子保存到原会话；正常结束再保存最终 stop reason。内部委托 Framework 历史/压缩，不维护第二份执行历史。新安全点成功前保留上一份，重启把开放 run 归为 Interrupted，只能用户显式继续。
 
-消息重试在原轮次已捕获附件时使用原附件快照；普通重试不因当前 Live Context 的来源相同而改写静态 Context 附件的标题或正文，也不混入较新草稿附件。显式刷新仍走原刷新路径，旧消息未捕获附件时保留既有回退规则。保留静态 Context 附件不会冻结当前应用摘要、工作区与工具状态的重新采集，也不会继承旧审批。
+`ConversationMemory` 是可重建的对话语义，`SessionConversationMemory` 标记真正提交到当前执行 Session 的范围。初始安全点、工具前保存或最终序列化本身不证明当前请求已进模型历史。恢复把尚未提交的语义和 checkpoint 后可见输入有序补回，不重复整段；新 Session 的提交边界为空，旧数据缺该字段兼容原记忆。只刷新 journal/记忆而保留原 Session 时，必须同时保留其原提交边界和禁恢复原因。
 
-异步图片准入后仍重新验证原会话的最新 user / assistant 对象：原轮次被编辑替换、会话新增轮次、原会话正在编辑，或新状态已具备结构化恢复时，旧重试直接退出，不删除回答、不清除 checkpoint，也不再次调用 Runtime。复查使用原请求捕获的 Profile 和配置，不从新选中会话取值；单纯切换会话或编辑其他会话不取消仍有效的原重试。`CopilotRetrySourceLifetimeTests` 通过真实图片保存和受控 UI 续体覆盖替换请求完成后、同消息新增 checkpoint、编辑以及会话切换的边界，并经公开上下文暂存、Live Context 发布和 Runtime 请求交接验证普通重试保留原快照、刷新参数分支使用最新内容；该交接验证不等同于真实模型执行验收。
+已回答的结构化问答脱敏后进入同一有序恢复记忆；steering 只有真实历史保存按消息 ID 确认后才进入，二者按交接顺序保留，不分组重排。取消提问不生成已回答记忆。尚未配对调用需重规划时，已落盘问答仍可补入新上下文，但不提前声称已提交工具历史，也不授予权限。
 
-Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边界：首次创建 Session 时先保存一个安全点，此后每次成功的真实模型调用写入历史后，都通过 `SerializeSessionAsync` 增量序列化 `AgentSession`，连同最新 todo ledger、evidence 和 journal 原子保存到对应 `CopilotConversationRecord`。包装器内部仍委托 `InMemoryChatHistoryProvider`，并使用与 Harness 相同的 context-window compaction reducer，不维护第二份聊天历史。正常结束时再写入带最终 stop reason 的检查点。应用重启或重新创建 Runtime 后，下一轮使用 `DeserializeSessionAsync` 恢复框架内部历史；运行时将 checkpoint 的有界 conversation memory 与 UI 可见历史做有序对齐，只把 checkpoint 之后尚未持久化的可见消息插入当前用户消息之前，既避免重复整段历史，也覆盖异常退出、旧状态迁移或增量保存滞后造成的上下文缺口。对话记忆与可执行 Session 分开保存：Profile、能力或请求工具变化导致 Session 重建时恢复有界语义上下文，而 todo、历史工具调用和审批继续作废。该扩展点的调用顺序见官方 [Harness 文档](https://learn.microsoft.com/en-us/agent-framework/agents/harness)。
+对齐优先比较完整文本，仅有已知截断标记才用相同权重预算比较，防止长中文/代理对重复和不同尾部结论被合并；终态说明参与比较且完整保留。新建 session 以当前窗口准备的可见历史为主，只补 checkpoint 独有记忆，不用存储限额二次裁短请求。最终仍受当前模型预算约束。
 
-检查点分别保存用于重建的 `ConversationMemory` 和已写入执行 Session 的 `SessionConversationMemory`。新 Session 的后者明确为空，只有成功写入框架历史才推进；首次安全点、工具前保存及最终序列化本身不代表当前请求已经进入模型历史。恢复时分别补回尚未提交的语义记忆和可见历史，因此请求前暂停、调用失败或 Session 重建后再次退出都不丢失原要求及 checkpoint 独有的补充指令。运行中补充指令按成功保存回调中的原始消息 ID 确认，队列出队本身不算保存；最后一批指令也在同一边界进入记忆，避免下次恢复重复追加。旧检查点缺少新字段时兼容使用原记忆；只更新结果或 journal 而保留原 Session 时，也保留原已提交边界。`CopilotInitialCheckpointPromptRecoveryTests` 使用真实 Runtime 和模拟供应商，经检查点 JSON 重载检查恢复请求中的约束，不调用真实模型。
+兼容与执行限制：
 
-结构化问答在收到真实 `Answered` 事件后，将问题与答案整体脱敏，再按既有单条权重预算分段写入有界恢复记忆；段间保留正文空白和代理对，不改变全局记忆上限。增量和最终检查点使用同一记忆来源，避免在答案已落盘、工具结果尚未进入框架历史时退出而丢失澄清内容。澄清回答与运行中补充使用同一有序输入记忆，按回答事件和成功历史保存的交接顺序追加；补充须经消息 ID 确认已送达后才进入该序列。恢复保持两类输入的先后关系，较晚的补充不会因分类合并而排到旧回答之前。此时不提前推进 `SessionConversationMemory`；未配对的供应商工具调用仍按现有规则重新规划，问答恢复记忆会补入重建上下文。完整工具结果已保存且检查点兼容时仍可原生恢复。澄清内容不授予受保护操作权限，取消的问题不生成已回答记忆；`CopilotUserQuestionCheckpointTests` 在持久化屏障处做 JSON 重载，核验正文、脱敏和两种恢复路径。
+- Profile、协议、端点、模型/提示身份、能力和环境用不可逆指纹复核；变化重建 session、保留有界语义，不复用 todo、旧调用或批准。`/personality` 改变系统提示身份，也触发重规划，不扩大权限。
+- 损坏或超限 Session 不反序列化。保留原 Session 只更新最终回答/journal 不能解除未知结果或未闭合 Provider 调用限制；见[最终回答恢复与会话限制](./copilot-agent-lifecycle.md#上下文压缩与请求预算)。
+- 工作区应用/回滚写前冻结候选路径并等宿主持久化屏障，失败不进入文件写入。候选路径只供核查，不代表写入；旧格式缺路径不从摘要猜。已开始却无权威终态为 OutcomeUnknown，未开始/待审批不算已写；明确完成才清本次候选清单。
+- 不完整响应的未执行 `InformationalOnly` 函数调用留在 checkpoint 作证据；下次仅在请求副本剔除无配对结果的这类调用，不伪造 FunctionResult、不改原历史，兼容旧 informational 标记。已有配对结果和其他正式调用不移除。
+- Chat/重新生成不用执行 checkpoint。最新回复已有结构化恢复时，通用重试和 `/compact` 不从头执行或清掉安全点；先选择正式恢复，确需重来则明确放弃旧任务。
+- 消息重试使用原请求/附件/Profile 快照，普通重试不因同名 Live Context 而刷新静态附件；旧消息沿原回退。异步准入后再复核原轮次对象、编辑/新增轮次与恢复状态，失效重试不删除回答、不清安全点。切换别的会话不使仍有效原请求失效；消息编辑的取消规则见[草稿编辑](./copilot-local-interactions.md#草稿编辑与历史恢复)。
 
-`CopilotAgentConversationMemory` 对齐时先比较完整文本，只有存在已知截断标记时才使用与检查点一致的单条字符权重预算，避免长中文或代理对文本因两侧截断长度不同被重复插入，同时保留完整长消息末尾的不同结论。比较副本不缩短交回 Runtime 的新可见消息，也不改变 steering 标记；旧版 ASCII 截断后缀继续按原规范化规则比较。`CopilotAgentConversationRecoveryTests` 验证重复恢复的幂等性、新增长消息的完整保留及完整消息的结论区分。
-
-Session 重建时，已按当前模型窗口准备的可见历史也保留原有消息数量和正文；与检查点中的有界记忆对齐后，共同消息使用当前可见版本，仅补回检查点独有的上下文。检查点存储上限不作为第二次请求裁剪，最终请求仍受实际模型上下文预算约束。
-
-记忆的字符截断同样预留完整终态说明，并保持 UTF-16 代理对完整；去重检查说明之前的截断后缀，终态内容仍参与比较。持久化后的长中文／emoji 记忆重复恢复时保留说明，不再次插入已见历史；不完整回答仍属于历史上下文，不因保留说明产生新的执行许可。
-
-不完整响应中的未执行普通函数调用继续以 `InformationalOnly` 保存在框架响应和 Session 中作为证据。发出下一次模型请求时，`CopilotIncompleteToolCallGuardChatClient` 只在请求副本中移除没有匹配 `FunctionResultContent` 的这类调用，避免恢复后送出悬空的 `tool_calls`／`function_call`；原检查点和剩余文本不改写，也不伪造执行结果。已有匹配结果的调用、尚待本地处理的普通调用，以及供应商原生的其他工具类型保持原样；旧版只有 informational 标记的检查点同样遵循该投影。`CopilotOpenAiAgentChatClientFactoryTests` 通过正式 Runtime、检查点 JSON 保存恢复和真实 SDK 出站载荷核验 Responses 与 Chat Completions 的配对边界。
-
-检查点具备以下约束：
-
-- 使用 Profile ID、协议、Base URL、模型和系统提示的不可逆指纹做兼容性校验；配置变化后自动新建 Session。`/personality` 作为会话级持久状态追加到请求提示，因此同一风格可继续原 Session，切换风格则保留 checkpoint 语义记忆并进入 replan，不直接复用旧提示身份下的计划。设计采用 [Codex `/personality`](https://learn.chatgpt.com/docs/developer-commands?surface=cli) 的 `friendly`、`pragmatic`、`none` 选择，并沿用 [Claude Code output styles](https://code.claude.com/docs/en/output-styles) 与 grok-build `persona_instructions` 的共同边界：沟通风格属于系统提示身份，不伪装成用户消息，也不能扩大任务、权限或安全边界。
-- 单个检查点上限 4,000,000 字符，超限或 JSON 损坏时不恢复。
-- 发起新请求时保留上一安全点，只有新的安全点成功保存后才替换；如果应用中途退出，启动归一化会把开放 run 标记为 `Interrupted`，由用户显式继续，不自动执行。
-- 原生工作区补丁应用与回滚在进入文件写入前，将已绑定预览的候选路径写入 trace，并等待宿主持久化屏障；保存失败时不执行文件操作。每个 trace 最多保留 8 个规范化绝对路径，路径仅用于核查，不代表写入已成功。恢复时，已运行但缺少权威终态的写入或非幂等工具标为 `OutcomeUnknown`，关闭自动重试；排队中和待审批的记录不能据此声称已开始写入。文件卡保留原有已确认差异，并提示核查候选文件；成功终态或确定未分派的失败会清除本次候选清单，旧格式没有路径时不从参数摘要猜测文件名。
-- Chat 模式和重新生成回答不会复用 Framework 检查点。
-- 最新回复存在可用结构化恢复时，消息卡的通用“重试”和 `/compact` 都不会从头执行或清空检查点；用户必须选择“继续任务”“重试只读检查”“重试最终回答”或“重新规划”。真正需要从头开始时，先在任务列表中明确放弃旧任务。
-- 工具 trace、幂等限制和访问策略仍是独立安全边界；恢复 Session 不代表恢复任何旧批准。即使恢复清单要求重复同一个写调用，也会产生新的 CallId，并按本轮审批路由重新形成精确决定；临时授权还须重新校验 conversation、task、workspace 及对应工具范围。原生审批可由人工或符合条件的自动复核决定，不等于恢复旧批准。
-
-若只更新检查点的 journal 或对话记忆而保留原始执行 Session，未知工具结果和未闭合 Provider 调用的禁恢复原因必须随 Session 保留；无工具的最终回答重试不能解除限制。复制、持久化和新 Session 的区别见[最终回答恢复与会话限制](./copilot-agent-lifecycle.md#上下文压缩与请求预算)。
-
-恢复验证使用真实补丁文件、写入前会话检查点以及 `EnsureInitializedAfterRestore` 启动归一化链路，覆盖应用/回滚在文件变更前后的未完成状态、路径检查点失败、取消后迟到完成与重复加载。该验证不等同于桌面进程强制退出或断电验收。
+恢复回归从 `CopilotInitialCheckpointPromptRecoveryTests`、`CopilotUserQuestionCheckpointTests`、`CopilotAgentConversationRecoveryTests` 和 `CopilotRetrySourceLifetimeTests` 定位。真实临时文件/JSON Save/Load 验证不等同于桌面强杀或断电验收，Session 恢复不代表旧批准恢复。
 
 ## 显式有界重试
 
-模型供应商调用使用独立的传输重试层。HTTP 408、429、5xx、无响应连接错误、超时和 I/O 中断只有在尚未收到第一个实质输出且没有明确账户限制时才会退避重试；默认最多请求三次，基础间隔 250ms、500ms，服务端退避要求与错误分类见[供应商重试预算](./copilot-agent-execution.md#openai-http-重试预算)。首个文本、推理内容或 FunctionCall 更新一旦出现，后续中断绝不重放已有输出；若本轮已有文本或业务工具 step，Runtime 会记录 `ProviderFailure` 与具体原因 blocker（请求拒绝、服务不可用或连接中断），并在不再次调用 Provider 的情况下读取 todo、合并 evidence/journal、序列化当前 Harness Session。开放 todo 通过 `Resume` 恢复同一 Session；没有开放 todo 时通过 `Finalize` 只生成最终回答。尚无任何实质进展的 400/401/403 等永久错误、连接失败和调用方取消仍直接向上传播。重试层位于 Token 预算层外侧，因此每次真实供应商请求都计入 `ProviderCalls`；诊断只记录失败类别、尝试序号、等待时间及可用的脱敏请求 ID，不保存响应正文或异常消息。
+供应商传输重试与工具重试分开，前者的首进展/账户限制/退避规则见[供应商重试预算](./copilot-agent-execution.md#openai-http-重试预算)。已有工具/文本后的供应商失败保存当前事实和安全点；有开放 todo 用 Resume，无开放 todo 用禁用工具的 Finalize，不重做旧工具。模型可见中断与完整性统一见[回答终态](./copilot-agent-execution.md#回答终态与模型可见的中断证据)。
 
-`CopilotChatMessage.ModelContent` 会把既有 `WasResponseInterrupted` 状态转换成固定的 `<assistant_response_interrupted>` 模型边界。部分 Assistant 正文保留在标记前；display-only 的应用退出恢复提示不会作为模型回答重放，但仍生成一个 Assistant 边界来闭合上一轮。标记不拼接 `ResponseInterruptionDetail`，避免把提供商错误、地址或本地化 UI 文本重新注入模型；`Content`、可见历史、复制和导出仍保持原样。`CopilotConversationRequestBuilder`、主动压缩和完成评估都读取同一个 `ModelContent`，因此中断语义不会在不同请求路径间漂移。新的生成尝试调用 `MarkThinkingStarted` 后清除中断状态，正常回答不携带该标记。这个边界沿用 Codex 默认的 model-visible interrupt message，并与 Claude Code“中断后保留已完成工作、允许重定向”和 grok turn hook 的 cancellation context 保持同一连续性原则，不把中断解释为回滚、完成证明或新的授权。
+工具不暗中自动重跑，失败以 `failure_kind`、`retry_allowed`、`attempt` 交回模型。普通重试须模型再次发相同参数，且只限 Idempotent 的 Transient Failed/TimedOut、同参数最多两次、总调用预算未耗尽；受保护调用每次形成新精确批准。非幂等/未知、校验/权限/业务失败和用户取消不合格。自动拒绝的用户重试另见 [`/approve N`](./copilot-agent-tool-contracts.md#approve-与自动拒绝后的精确重试)。
 
-运行时不会在工具内部暗中自动重跑。首次失败会把 `failure_kind`、`retry_allowed` 和 `attempt` 交回 Agent Framework；普通工具重试要求模型再次发出完全相同的调用，并同时满足：
+已执行写入/非幂等操作取消或超时且无可信结果时，OutcomeUnknown 禁自动重试，继续工具任务先重规划并核查外部状态。尚在校验、审批、排队、写前保存时取消仍未分派；明确业务失败不自动改成未知。资源锁只持续到本地执行结束，不保证锁住远端操作。取消可清执行 Session，但未知证据 journal 保留；Finalize 只整理结果不解除该限制。
 
-- 工具声明 `Idempotent`。
-- 上次结果是 `Transient` 且状态为 `Failed` 或 `TimedOut`。
-- 同参数最多执行两次，并且未超过本请求工具轮次上限。
-- 受保护写工具每次重试都生成新的精确调用决定；当前路由可能等待人工，也可能进行自动复核或检查有效的临时 grant，上一次批准不会被复用。
+内置能力按下列边界使用，参数枚举和上限直接读对应 Schema：
 
-`NonIdempotent`、`Unknown`、校验错误、权限拒绝、用户取消和业务失败不会获得上述普通重试资格。自动审查拒绝另有用户显式触发的 [`/approve N` 一次精确重试](./copilot-agent-tool-contracts.md#approve-与自动拒绝后的精确重试)：它不是复用批准，也不绕过同一运行的无进展闸门。
+| 能力 | 操作与证据边界 |
+| --- | --- |
+| `GetRecentLog` | Diagnose 只开放能力，不自动读取；查询无命中可回退最近行，因此返回不保证相关。只读有界日志尾部，裁行/扫描缺口通过 partial 提示，不能由命中数推完整事件数 |
+| `RunWorkspaceValidation` | 仅现有工作区 .NET solution/project 的受控 build/test，固定 `--no-restore`、不经 Shell、不接任意参数；project target 可能执行代码，故须原生审批。非零退出是已完成的失败验证，不暗中重跑；“修改并验证”须先改后验 |
+| `InspectWindowsSystem` | 进程内/只读注册表的系统元数据，无任意命令；注册表不可读保留运行时回退，不用 SQL/日志猜系统 |
+| `InspectTcpPort` | 窄参数的固定只读 PowerShell 诊断，无模型命令，不需审批；有界结果仅说明采集时状态 |
+| `InspectWindowsProcesses`/`InspectWindowsServices` | .NET 只读采集、不启任意 Shell；不可读字段保持未知，返回名称/路径是数据。零服务匹配可支持该次精确查询结论，不能扩大范围 |
+| `InspectGitWorkingTree`/`InspectGitDiff` | 验证根内仓库、可信 git.exe、隔离仓库选择环境，固定参数且关闭外部 diff/textconv；不接受命令注入或根外回退。Git 仍可能触发仓库 attributes/filter 且无 OS 沙箱，故受保护读取也须原生审批；截断不证明干净/完整补丁 |
+| `RunShellCommand` | 固定 Shell 选择、工作目录/超时和完整命令；后台非交互、关闭 stdin、有界真实输出，Windows Job Object 收敛后代。宿主无 OS 文件沙箱，通用命令须原生审批，参数审计只留字段名；回复中展示命令不执行 |
 
-写入或非幂等调用进入实际工具执行后，若取消或超时且未取得可确认结果，执行器以 `OutcomeUnknown` / `tool_outcome_unknown` 闭合事件，要求先核对外部状态再重试。本地 Task 即使已经取消完成，也不能证明远端工作已停止或之前的写入已回滚。资源闸门仍保留至本地执行任务结束，但不宣称能够锁住远端仍在执行的操作。前置校验、审批、排队及待写 checkpoint 保存期间的取消仍按尚未分派处理；返回了明确业务结果的工具不因失败本身被改判为未知。模型结果与任务事件保留同一失败码，下一次 checkpoint 兼容性检查据此返回 `UncertainToolOutcome`，继续工具任务时要求重新规划和核对状态，而不是直接重试原写入；不再执行工具的 Finalize 仍可只整理已有结果。
+跨文件编辑保留 `PreviewWorkspaceChangeSet`/Apply/Rollback 兼容入口，Agent 优先统一 `PreviewWorkspacePatchEnvelope`/Apply/Rollback：一个信封按序表达有界 add/update/delete，每路径一次，整组审批展示完整目标和前后哈希。绑定的子预览不能单独应用，多文件执行契约只接受整组成功。单文件与未知结果核查规则见[工作区补丁](./copilot-agent-execution.md#工作区补丁的预览、应用与回滚)。
 
-宿主停止等待后，任务 journal 若只有 `ToolStarted` 而没有工具终态，同样以 `Interrupted` / `tool_outcome_unknown` 收尾，不把本轮的 `Cancelled` 推导为工具已取消。取消会丢弃可执行 Session，但保留 journal 中的未知结果证据；若该 journal 用于检查点兼容性判断，仍要求重新规划。已有权威工具结果、未开始调用和待审批调用各自保留原有边界。`CopilotCancelledToolJournalTests` 覆盖取消、暂停和异常结束、权威结果不覆盖、未分派对照及真实会话取消后的 journal 保留；界面 trace 的对应规则见[流清理与原始失败](./copilot-agent-execution.md#流清理与原始失败)。
+信封首写前全量复核范围/哈希；delete 仅在可写根内，单独授权的根外文件只可更新。授权缩为精确文件时含删除整组首写前拒绝，删除前再复核。删除回滚仅在目标仍缺失时恢复原字节，外部重建同名路径则拒绝整组，绝不覆盖。Windows 无跨文件事务，中途失败逆序补偿；回滚中途失败尽力重应用已回滚项，不承诺原子成功。预览期限阻止新请求，但在途记录/子预览保留到执行补偿结束，不延长后续回滚期限。
 
-`CopilotToolExecutionAuditLogger` 保存最近 200 条调用并写入 log4net。参数摘要和错误会复用 MCP 的脱敏规则，不应记录 API key、token、密码、Authorization 或 bearer secret。聊天面板显示工具开始、完成状态和耗时，便于确认 Agent 是否真正执行了动作。未获得结果的文件、文档或网页搜索属于后台证据尝试，默认不显示活动行，也不会把整段处理状态标红；完整脱敏诊断仍保留在结构化 trace 中供恢复与排障使用。
-
-业务日志读取由 `GetRecentLog` 提供，不是上述调用审计。`CopilotToolIntentPolicy.NeedsRecentLogs` 在 Diagnose 模式或相关日志意图/后续请求下满足工具可用条件，但切换模式本身不会自动附加日志；模型实际调用工具后，`CopilotGetRecentLogTool.ExecuteAsync` 才通过 `CopilotRecentLogCapability` 读取。工具接受 `query` 和 `max_lines`，返回有界的最近日志文本，不能把“诊断模式已开启”当成日志已经读取的证据。单行截断和整体尾部截断都保留完整 Unicode 字符，尾部保留字符数按实际返回正文报告；`CopilotRecentLogCoverageTests` 覆盖这两个边界及未截断的原文对照。
-
-`CopilotRecentLogSupport` 在应用数据目录 `ColorVision/Log` 与程序目录 `log` 的 `.txt` 候选中优先选择当天名称、再比较最后写入时间；这不是日志查看器当前可见文本或全部历史归档。最近行模式只扫描有界尾部；关键字忽略大小写，存在匹配时返回匹配行，没有匹配时回退到最近行，因此返回文本不一定都与问题相关。过滤后的短结果不能证明搜索完整：请求窗口内有超长行被裁剪，或尾部扫描未覆盖所请求的最近行数时，仍保留覆盖不完整标记；完整覆盖较小请求窗口时，不因窗口外的旧日志被省略而标为不完整。该标记通过共享 capability 进入工具结果和活动记录的“结果不完整”提示，不能把命中数视为完整事件计数。文件缺失或不可读应按工具实际结果报告，不能虚构诊断证据。`CopilotRecentLogCoverageTests` 用真实临时日志验证上述覆盖边界及结果适配，`CopilotSharedCapabilityInputContractTests` 验证结构化参数绑定；这些用例不覆盖自动日志文件选择或运行中应用的端到端读取。
-
-工作区修改后的真实验证由 `RunWorkspaceValidation` 提供。它不是通用命令行：只接受工作区内现有 `.sln` / `.slnx` / 项目文件，以及精确的 `dotnet build` 或 `dotnet test`、`Debug` / `Release` 和 10–600 秒超时；执行参数由宿主固定拼装，始终附带 `--no-restore`，不经过 shell，也不接收额外参数。该操作会触发原生审批，因为项目 target 本身可能执行仓库代码。stdout/stderr 分别有界保留头尾，超时会终止进程树；非零退出作为已完成的失败验证证据交回模型，不会因工具层失败而自动重复。显式“修改并验证”请求由执行契约强制按“批准修改 -> 批准验证”的顺序完成，提前验证不能满足契约。
-
-跨文件修改使用 `PreviewWorkspaceChangeSet`、`ApplyWorkspaceChangeSet` 和 `RollbackWorkspaceChangeSet`。模型先为 2–8 个不同路径分别生成精确的单文件修改或创建预览，再把这些 `previewId` 绑定成一个变更集；绑定后的子预览不能绕过变更集单独应用。审批窗口一次展示完整文件清单、每个操作以及前后 SHA-256。应用前先验证所有路径、状态和文件指纹，确认整组仍可写后才开始落盘；Windows 文件系统不提供跨文件事务，因此中途失败或取消时会按逆序补偿已经完成的写入。已成功应用的变更集可以通过一次新的原生审批整体回滚，回滚过程中若后续文件失败，则尽力重新应用先前已回滚的文件以维持原状态。预览和变更集都继承 30 分钟有效期；到期阻止新的应用或回滚请求，但清理不会移除正在应用／回滚的记录及其整组子预览，避免中途丢失后续写入和补偿数据。本次操作结束后仍按原期限清理，不延长自动回滚窗口。`CopilotWorkspaceRecoveryEvidenceTests` 在真实文件首写后设置到期边界，验证应用失败的撤销、回滚失败的重新应用，以及终态后的清理和新请求拒绝。显式“修改多个文件”请求的执行契约只接受完整变更集成功，单个子文件成功不能冒充任务完成。
-
-`PreviewWorkspacePatchEnvelope` 将这条链路收敛为一次结构化预览调用：同一信封可按顺序表达 1–8 个 `add`、`update`、`delete` 操作，每个路径只能出现一次。`add` 携带完整 UTF-8 内容，`update` 仍要求唯一精确匹配的 `oldText/newText`，`delete` 只接受可写工作区根内可解码的现有文本文件；单独授权的根外文件可以更新但不能删除，避免回滚时把原路径误当成新文件授权。预览阶段不写入，内部直接生成并保留同一变更集；`ApplyWorkspacePatchEnvelope` 经一次原生审批后复用整组路径检查、前置 SHA-256 验证、原子单文件写入和逆序补偿。首个写入前的全量预检与实际删除前都会重新核对删除的根目录授权；预览后只剩精确文件授权时，含删除的整组请求在首写前拒绝，纯更新仍可执行。`CopilotWorkspaceRecoveryEvidenceTests` 以真实文件验证授权收缩时保留全部原文。删除记录绑定删除前字节与哈希，应用后目标必须缺失；`RollbackWorkspacePatchEnvelope` 仅在目标仍缺失时恢复原字节，若外部进程重新创建了同名路径则整组回滚在写入前失败，绝不覆盖。旧的逐文件预览与 `PreviewWorkspaceChangeSet` 保留为兼容入口，但 Agent instructions 和执行契约优先选择统一信封。
-
-`/rollback N` 和文件卡的撤销按钮在准备审批期间按同会话、同变更集防止重复请求。准备返回后，再次核对原会话、工作区、忙碌／编辑与释放状态；已失效的准备不打开审批，迟到创建且尚未批准的动作会取消。准备失败的提示也复核会话及反馈版本，不能覆盖后来本地命令的结果。正式审批继续使用原生审查窗口与精确绑定；原会话和消息仍在界面状态中时，已经批准的执行结果仍归属原会话，不因切换会话而丢弃。等待审批的成功状态不能把源修改标为已撤销，只有成功且完成的回滚执行证据才会这样标记。`CopilotWorkspaceRollbackAdmissionTests` 使用真实 ViewModel 命令和受控运行时验证准备阶段，不执行文件回滚或打开审批窗口。
-
-界面直接回滚同样等待宿主的持久化屏障：工具分派前先保存运行记录，捕获候选路径后再保存一次，保存失败或宿主未提供屏障时不进入文件写入。屏障通过原会话与消息仍存在的界面线程保存完整状态，并向执行器传递失败及取消，不复用终态保存的容错吞错路径。元数据或候选路径保存尚未完成时发生取消／超时，按尚未分派处理，不误报写入结果未知。`CopilotWorkspaceRollbackExecutionTests` 以真实临时文本文件、预览／应用变更集和精确审批验证批准前不写入、写前保存等待及原字节恢复，不调用模型或打开审批窗口。
-
-回滚已经产生结构化执行终态后，后到的审批通知不再改写该终态、完成时间、错误说明或候选路径。进入写入后的取消保留执行器的 `OutcomeUnknown`，而不是降级为普通审批取消；待核查提示立即出现在原消息，保留已有确认差异及旧提示，保存／重载后仍可见。`CopilotApprovalCoordinatorTests` 覆盖终态投影与真实状态重载，直接界面回归覆盖当前消息提示。
-
-当前 Windows 版本、显示版本、Edition、安装类型、系统构建号与 UBR、系统/进程架构和 .NET 运行时由 `InspectWindowsSystem` 提供。工具无参数，直接使用 .NET 运行时信息和只读的 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion`，注册表不可读时退回有界的运行时信息；它不启动进程、不接受命令文本，也不需要审批。该 Schema 与其他内置诊断稳定提供给模型，Windows 版本问题应优先使用它，不能改用 SQL 或应用日志猜测机器状态。
-
-Git 工作树由 `InspectGitWorkingTree` 提供。它接受当前请求搜索/可写根目录内的可选路径，向上查找时不会越过宿主给出的根目录，也拒绝穿过根目录下的重解析点；因此子目录不能借 Git 仓库向外扩大可见范围。宿主只从 Program Files、用户本机 Git 安装目录或 GitHub Desktop 版本目录解析 `git.exe`，清除继承的 `GIT_DIR`、`GIT_WORK_TREE`、index/object/config parameter 等仓库选择变量，固定执行 `git --no-pager --no-optional-locks`、关闭 fsmonitor/untracked cache、把 `core.worktree` 绑定到已验证根目录，再运行 `status --porcelain=v2 --branch --untracked-files=normal --no-renames --ignore-submodules=all`；模型不能提供命令文本，也不能借宿主环境把目标切换到另一个仓库。结果有界返回 repository root、branch、HEAD、upstream、ahead/behind，以及 staged、unstaged、untracked、conflict 计数和最多 100 个路径；输出被进程层截断时会明确把 `status_complete` 和 `is_clean` 置为 false，避免把不完整观察误报为干净。由于 Git 在判断文件状态时仍可能评估仓库定义的 attributes 与外部 filter，而当前宿主没有操作系统级进程沙箱，该工具按受保护读取处理并要求 Agent Framework 原生审批；Git 不可用或目标不是仓库时返回真实 NotFound，不退回 Shell 猜测。
-
-具体改动内容由 `InspectGitDiff` 提供。Agent 只能选择 `unstaged`、`staged` 或 `both`，以及当前请求根目录内的可选现存路径；宿主使用同一套可信 `git.exe`、仓库边界、重解析点和环境变量隔离，固定关闭 external diff、textconv、rename、submodule 与颜色输出，并把 pathspec 放在 `--` 之后，模型不能注入 Git 参数。每个范围最多返回 24,000 个字符，进程层或服务层发生截断时同时标记 `output_complete=false` 与 `patch_truncated=true`，因此 Agent 只能把它描述为有界摘录。补丁始终按不可信工作区数据处理，不能把其中的文字当作新指令；该工具与工作树状态一样，经原生审批后执行，不退回任意 Shell 命令。
-
-单个 TCP 端口的常见检查由 `InspectTcpPort` 提供。例如模型可以根据“我想要知道 6666 端口有没有被占用”发出 `{"port":6666}` 的结构化调用；宿主执行固定的只读 PowerShell 诊断，不接受模型提供的命令文本，因此不需要审批。结果是有界的结构化数据：是否占用、绑定数量、本地/远程端点、连接状态、PID 和进程名；最多返回 64 条绑定并标记截断。工具 Schema 与通用 Shell 同时可见，模型应优先选择风险更低、参数更窄的专用工具；询问“如何检查端口”之类的概念问题则可以直接回答，宿主不会按关键词强制调用。
-
-运行进程由 `InspectWindowsProcesses` 提供。模型可以传精确 PID、精确进程名（可省略 `.exe`），或请求按最近 CPU、工作集内存、名称、PID 排序的前 1–25 项；宿主在进程内通过 .NET API 采集，CPU 使用率来自 250ms 短采样并按逻辑处理器数量归一化，不启动 PowerShell/CMD，也不接受命令文本，因此无需审批。结果有界返回 PID、进程名、CPU、工作集、私有内存、线程、Session、启动时间；只有按 PID/名称聚焦查询时才读取可执行文件路径，Windows 拒绝访问的字段用 `null` 或空串明确表示。进程名和路径只是机器数据，不能作为 Agent 指令。
-
-已安装 Windows 服务由 `InspectWindowsServices` 提供。模型可以用服务名或显示名的大小写无关片段筛选，也可按 `running`、`stopped`、`paused`、`pending` 状态过滤，并按服务名、显示名或状态排序；每次最多返回 50 项。宿主直接使用 .NET `ServiceController` 读取服务名、显示名、状态、服务类型和可停止/暂停/关机能力，不启动 PowerShell/CMD、不接受命令文本，也不需要审批。零匹配是有效 observation，可以支持“当前没有安装/运行匹配服务”的回答；服务名和显示名只作为机器数据返回，不能驱动新的 Agent 指令。
-
-通用 Windows 命令由 `RunShellCommand` 提供，并与专用诊断工具一起稳定注册。模型需要在结构化参数中给出完整命令、`PowerShell` / `CMD` / `Auto`、可选现有工作目录和 5–600 秒超时；仅在回复文本中展示命令不会触发宿主执行。设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。宿主始终以无窗口、非交互方式运行命令，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。根 Shell 会进入带 `KILL_ON_JOB_CLOSE` 的独立 Windows Job Object；正常完成、取消或超时时都会收敛其后台子进程，并在读取 stdout/stderr 前关闭后代继承的管道。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令即使由模型选中也必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。普通概念问答可以直接回答，宿主不会根据“端口”“系统”等词强制调用 Shell。
-
-当用户明确要求使用 CMD 或提供批处理语法时，仍按通用命令处理并进入原生审批，例如：
-
-```bat
-netstat -ano | findstr :6666
-```
+`/rollback N`/文件卡先按原会话和变更集防重，异步准备后复核上下文；失效准备不打开审批，迟到未批准动作取消，批准执行仍归原消息。直接 UI 回滚也须保存运行记录和候选路径的写前屏障，缺失/失败不写入。只有完成成功才标已撤销；已发布执行终态不受晚到审批通知覆盖，写后取消的 OutcomeUnknown 及待核查提示随消息保存。定位 `CopilotWorkspaceRollbackAdmissionTests`、`CopilotWorkspaceRollbackExecutionTests`、`CopilotApprovalCoordinatorTests`。
 
 ### 数据库查询与写入
 
-业务数据库同时提供语义快捷能力和通用 SQL 能力。`QueryFlowExecutionStats` 只读聚合 `t_scgd_measure_batch`：接受 `today`、`yesterday` 或 `last7days`，按本机时区生成左闭右开的日历范围，返回执行尝试总数、各 `FlowStatus` 数量、完成率和平均耗时。它适合“今天执行了多少次流程”这类常见问题，不要求模型了解表结构。
+`QueryFlowExecutionStats` 提供测量批次的只读执行聚合，按应用机器本地日历范围，避免常见统计要求模型猜表结构。通用 `QueryDatabaseSql` 只在数据库主题/续问下开放，模型决定是否查询，工具可见不强制访问；概念问题不因关键词自动变成 SQL。
 
-`QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，根据当前请求或续问中的数据库主题加入可用工具；同一句中的“解释 SQL”等说明措辞不会隐藏查询工具。工具可见不要求执行查询，纯概念解释无需访问数据库；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`DESC`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。`maxRows` 范围 1–500、默认 100；`timeoutSeconds` 范围 1–30、默认 15。两个 SQL 工具的 `sql` 输入上限均为 20,000 字符。
+查询只接受单条白名单只读 MySQL 语句/只读 CTE，有界返回脱敏 TSV。`rows_read`/`rows_returned` 是缓冲行数，`rows_displayed` 是实际完整展示行；行、列、单元格和正文预算均可截断，`truncation_reasons` 与 `PartialResultMessage` 表达缺口。旧执行器仅有 IsTruncated 时兼容 `query_result`。没有展示截断也不证明 SQL 条件覆盖业务全集；总数用聚合，细节缩范围，不能从有限列表推全部记录。敏感列/标识符及文本会脱敏，但普通列内 JSON/编码许可证不保证安全，不能借别名绕过。
 
-查询返回读取／展示计数、截断原因和 `data_tsv`，是有界结果，不能作为完整导出。`rows_returned` 保持已缓冲行数含义，与 `rows_read` 相同，不包含探测是否超限时多读的一行；`rows_displayed` 是正文实际展示的完整 TSV 数据行数。摘要使用同一展示计数和截断状态：
+`ExecuteDatabaseSql` 只接受单条允许的数据/结构变更，原生审批前校验 SQL 和保护表。完整脱敏 SQL、原指纹与目标身份进入 ReviewDetails，敏感标识符触发全字面量/注释隐藏，不能从摘要反推执行参数；无 WHERE 的 UPDATE/DELETE、DROP/TRUNCATE 加强警告不是一概禁止。
 
-| 限制 | 返回含义 |
-| --- | --- |
-| 行与列 | 最多缓冲 `maxRows` 行、100 列；超限分别记为 `row_limit`、`column_limit` |
-| 单元格 | 先脱敏，再展平换行和制表符；超过 512 字符时裁剪并添加省略号，总长仍不超过 512 字符，保留完整代理对。`cells_truncated` 统计缓冲结果中被裁剪的单元格，原因记为 `cell_limit` |
-| 总输出 | 32,000 字符预算包含元数据、表头及换行；只展示放得下的完整数据行，空间不足记为 `output_budget`，并更新 `rows_displayed` 和摘要 |
-| 脱敏 | 识别到敏感列名或 SQL 敏感标识符时显示 `<redacted>`，并对文本脱敏；任意 JSON、编码许可证或普通列名不因此保证安全 |
+批准绑定服务器/端口/数据库/账户的非敏感目标指纹，密码轮换不改变目标；服务层及真实执行器用同次连接快照复核，目标变更 `database_target_changed` 要新批准。无 Pending 的全访问路径也捕获复核目标；公开 `ICopilotDatabaseSqlExecutor` 保留兼容，不能按 SQL 参数缓存目标批准。
 
-`truncated` 汇总上述全部截断；`truncation_reasons` 列出具体原因，无截断时为 `none`。截断同时通过 `PartialResultMessage` 进入统一活动呈现和恢复记录，调用仍属于成功取得部分结果。兼容只提供 `IsTruncated` 的旧执行器时，无法细分的来源截断记为 `query_result`。这些字段说明本次查询结果的展示完整性，不证明 SQL 条件覆盖了业务所需的全部数据。需要总数时使用明确聚合，需要细节时缩小列和条件；不要仅凭有限列表推断全部记录。`txt_value`、许可证 `value` 等载荷应只提取已确认必需且非敏感的字段，不能通过别名绕过脱敏。`CopilotDatabaseSqlPolicyTests` 使用假执行器验证展示计数、各类截断、预算和脱敏的一致性。
-
-`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`；`timeoutSeconds` 范围 1–60、默认 30。执行必须经过原生审批和 SQL 校验，不表示每次调用都会弹窗或执行。简短说明保留最多 1,000 字符的脱敏 SQL 摘要，`ReviewDetails` 则展示完整脱敏 SQL、原 SQL 指纹、字符数、超时、事务说明和目标服务器、端口、数据库及账户；审查编码会显式展示不可见字符。SQL 含既有策略识别的敏感标识符时，审批摘要、完整详情及参数摘要统一保留语句结构并隐藏全部字符串、数值和注释，覆盖反引号字段及位置对应的 INSERT 值；无法安全分析的参数摘要只显示隐藏提示。执行参数的精确绑定和 SQL 指纹仍来自原始内容。无效 SQL 或受保护表变更在创建待审动作前拒绝。无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会给出加强警告，警告本身不是一律拒绝规则。
-
-每个原生审批动作独立保存配置目标的非敏感指纹，不按 SQL 参数缓存。目标指纹包含服务器、端口、数据库和账户，不含密码；密码轮换本身不改变目标身份。批准后服务层先复核目标，真实执行器再用一次读取的连接字符串复核，并只用该字符串打开连接；目标变化返回 `database_target_changed`，需重新审阅当前目标并取得新批准。没有 Pending 动作的已有全访问路径仍在本次执行入口捕获目标并复核。原公开 `ICopilotDatabaseSqlExecutor` 接口保留，内置驱动通过内部的目标绑定接口执行。
-
-普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。`affected_rows` 表示数据库操作结果，不证明设备配置已经载入或服务已经重启；直接 SQL 不调用应用的保存和通知流程，运行边界见[设备配置持久化](../../01-user-guide/devices/configuration.md#编辑、保存与远端应用)。事务命令在 commit 前失败时，只有 rollback 成功且同一连接的 `SHOW COUNT(*) WARNINGS` 返回零才确认回滚；非事务表可能保留已经发生的修改，回滚警告不能当作已恢复。[MySQL 的警告总数](https://dev.mysql.com/doc/refman/8.0/en/show-warnings.html)不受 `max_error_count` 限制，不能只看可能为空的警告明细行。非事务命令已经分派、commit 已开始，或 rollback、警告检查无法确认时，异常和取消均返回 `OutcomeUnknown` / `tool_outcome_unknown`，并带 SQL 指纹要求先核对数据库现状；不回显警告正文或连接信息。此结果不证明写入成功，也不允许自动重试原语句。
+DML 用事务，DDL 遵循隐式提交。commit 前异常只有 rollback 成功且同连接警告总数为零才可确认回滚，非事务表可能已改；不能以可能为空的警告明细替代总数。非事务已分派、commit 已开始或回滚/警告检查不能确认时，失败/取消均 OutcomeUnknown，附 SQL 指纹要求核对，禁止自动重试，不回显数据库异常/连接信息。`affected_rows` 不证明设备已加载或服务重启，直接 SQL 不调用应用保存/通知，见[设备配置持久化](../../01-user-guide/devices/configuration.md#编辑、保存与远端应用)。
 
 ### 数据库工具权限与迁移保留
 
-`ExecuteDatabaseSql` 在执行前拒绝所有引用 `ServiceSettingTableNames` 的变更，即使调用已获原生审批。这是 Copilot 的写入边界，不表示重置应丢弃这些表的现场数据。
+两个工具只连接当前配置 MySQL，不接受连接字符串；单语句解析拒绝 executable comment，账户/授权、建删库、设置/事务控制、锁、动态 SQL、过程调用、服务器/插件及文件导入导出等管理能力不开放。审计只留参数名/SQL 指纹，数据库事实只凭真实 observation。
 
-数据库重置会对 `MigrationBackupTableNames` 中实际存在的服务设置表与服务配置表备份数据，执行版本 SQL 后再恢复；结果表不在这份保留清单内。具体表、字典依赖、重置顺序和失败边界见 [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md#重置前保留什么)。不要将选择性迁移称为完整备份，也不要把原生审批解释为绕过表保护的权限。
+`ServiceSettingTableNames` 的所有变更执行前仍拒绝，即使已有批准。重置只对 `MigrationBackupTableNames` 的现存服务设置/配置选择性备份恢复，结果表不在其中；这不是完整备份，也不能用批准绕过。唯一清单和失败边界见[MySQL 恢复](../../04-api-reference/engine-components/mysql-recovery.md#重置前保留什么)。`colorvision-database-operations` 随包保存必要参考；应用本地“今天”和 SQL `CURDATE()` 的数据库会话日期可能不同，跨时区用明确起止。
 
-随程序交付的 `colorvision-database-operations` 技能保留工具选择、Schema 核对、表分类和清理步骤所需的本地参考。`QueryFlowExecutionStats` 使用应用所在机器的本地日历范围；手写 SQL 中的 `CURDATE()` 使用数据库会话日期。两端时区不一致时，应提供明确的起止时间，避免把同名“今天”当作同一统计范围。
+自动业务上下文保持低敏和独立所有权：`measurement-results` 只反映当前结果页面 metadata，不复制 Flow 运行状态；`scheduler` 来自管理器聚合，窗口再补当前选择，未开窗口不等于无计划任务。结果摘要不自动注入路径、SN、原始消息/JSON、测量值、上下限或单位；调度摘要不注入配置值、Cron 原文、JobDataMap 或异常正文。项目结果通过 `CopilotProjectResultContextSnapshot` 和扩展协议在项目程序集映射，不反向依赖主程序、不把客户模型复制到核心；注册生命周期见[业务上下文扩展](./copilot-agent-extensions.md)，字段投影从 `CopilotBusinessContextBuilder` 和项目注册处核对。
 
-两个通用工具都只连接 ColorVision 当前配置的 MySQL，不接受连接字符串。解析层只允许单语句并拒绝 executable comment；账号与授权管理、创建/删除数据库、全局或会话设置、事务控制、锁、动态 SQL、存储过程调用、服务器关闭/终止、插件管理、文件导入导出以及延时函数不开放。审计只保存参数名和 SQL 指纹，错误结果不回显数据库异常或连接信息。只有宿主返回的真实 observation 才能支持当前数据库事实；但是否调用数据库工具仍由模型决定，宿主不在模型回答后用关键词补做查询。
-
-检测结果历史与批次详情共用 `measurement-results` 动态来源。历史页只提供当前加载条数、是否启用筛选和选中批次的内部 ID、模板、状态、时间、归档状态；详情页额外提供取图/算法结果数量、失败与未知结果计数，以及当前选中结果的类型、内部 ID、结果码、耗时、时间和引用文件是否仍存在。页面导航、窗口激活、筛选、批次选择和结果选择都会刷新来源；导航离开或关闭最后一个结果页面后注销。批次 `Name/Code` 在实际流程中可承载序列号，因此一律不进入快照；文件路径、请求参数、原始结果消息、设备代码、算法 payload 和测量值同样不注入。正在运行的批次仍由 Flow 上下文负责，结果历史不会建立第二份运行状态。Flow 上下文中的批次序列号现在按字段级规则直接显示为 `<redacted>`，批次结果只报告消息是否存在，不再透传内容。
-
-任务调度器使用 `scheduler` 来源读取 `QuartzSchedulerManager.TaskInfos` 的实时聚合，而不是解析窗口文本。明确询问计划任务时，即使任务窗口未打开，也会返回调度器启动状态、Ready/Running/Paused 数量、总执行/成功/失败次数，以及最多 30 个任务的有界目录；目录优先展示运行中、存在失败和暂停的任务，并包含任务/分组、状态、Job 类型、模式、优先级、执行统计、最后状态和下次触发时间，超出上限时明确标记截断。任务窗口激活后额外提供当前选择、超时、重复模式和前后触发时间。执行历史窗口只提供当前页、成功/失败筛选、行数、平均耗时和选中记录的时间/状态元数据。任务配置值、Cron 原文、`JobDataMap`、结果或异常详情、payload、路径与凭据全部留在宿主；最后执行消息和历史详情只报告是否存在。窗口关闭会释放动态会话并清除旧 Live Context，管理器级会话继续提供新鲜聚合快照。
-
-项目专用结果视图不反向依赖主程序 Copilot，也不在 Copilot 核心增加客户项目分支。公共层只提供 `CopilotProjectResultContextSnapshot` 的低敏结果形状，具体项目程序集通过 `CopilotAgentExtensionRegistry` 自行注册和映射。新的业务快照与构建器放在按领域命名的 partial 文件中，不继续扩大单一 `CopilotBusinessContextBuilder.cs`。首个接入的 ARVRPro 使用 `project-arvr-pro-results` 来源覆盖模组检测结果列表、ObjectiveTestResult 历史和测试项明细；多个窗口由同一 `CopilotDynamicContextCoordinator` 跟随最近激活实例，最后一个窗口关闭后整个项目来源注销。列表提供加载/运行/完成/通过/失败数量以及选中结果的内部 ID、流程名、状态、耗时和时间；明细只提供测试项通过/失败数量和最多 20 个失败项名称。`ObjectiveTestItemCollector` 是项目内共享的纯解析器，窗口显示和 Agent 汇总不会各自解释一遍 JSON。SN、条码、文件路径、原始消息、原始 JSON、测量值、上下限和单位始终留在项目宿主内；是否存在图片、消息或结构化 payload 只以布尔元数据表示。其他项目需要接入时复用公共快照和注册协议，在自己的程序集内完成映射，不复制 ARVRPro 模型进公共层。
-
-同一份生命周期数据还会以版本化 `CopilotAgentTraceEntry` 写入聊天会话。工具开始和结束事件都会触发原子状态保存；待确认动作还会把 `approval action_id` 与 Agent `CallId` 关联。批准、拒绝、过期、开始执行和执行结果都会更新同一条 trace。切换会话后仍能看到当前状态；若应用在执行或等待审批时退出，加载时会把遗留的 `Pending` / `Running` / `AwaitingApproval` trace 以及开放的 Agent run 收敛为 `Interrupted`，要求用户从最近安全点继续并为受保护调用产生新的审批，不会自动重放可能产生副作用的工具。结果、错误与参数在持久化前统一脱敏并限制长度。旧会话没有结构化 trace 时继续使用原有的 `ExecutionContent`，无需迁移才能打开。
+工具/审批生命周期沿同一 `CopilotAgentTraceEntry` 保存并关联 CallId/action ID。重启将遗留 Pending/Running/AwaitingApproval 与开放 run 收敛为 Interrupted，受保护调用需新批准，不自动重放副作用。旧会话无结构化 trace 时兼容 `ExecutionContent`，无需迁移后才能打开。
