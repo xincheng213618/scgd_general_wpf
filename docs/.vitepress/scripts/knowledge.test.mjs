@@ -7,7 +7,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
   buildCatalog, codeCatalogGroups, collectKnowledgeMarkdown, createNavigationData, generatedArtifacts, generateKnowledge,
-  impactCatalog, parseFrontmatter, renderKnowledgeIndex, searchCatalog, validateRepositoryPath, validateRetrievalCases,
+  impactCatalog, oversizedTopics, parseFrontmatter, renderKnowledgeIndex, searchCatalog, validateRepositoryPath, validateRetrievalCases,
 } from './knowledge.mjs'
 import { buildPageRecord, buildSearchEntries, normalizeMarkdownLine, readHeadingAnchors } from './generate-docs-index.mjs'
 import { affectsWebsite } from './knowledge-ci.mjs'
@@ -89,6 +89,15 @@ test('excludes AGENTS, hidden files, generated map and compatibility pages', asy
   await fs.writeFile(path.join(root, 'docs/redirect.md'), '---\nredirect_from_deleted_page: true\nsearch: false\n---\n# Compatibility\n')
   assert.equal((await collectKnowledgeMarkdown(root)).length, 2)
   assert.equal((await buildCatalog(root)).entries.length, 1)
+})
+
+test('reading budget counts UTF-8 body bytes and ignores frontmatter', async (t) => {
+  const root = await fixture(t)
+  await fs.writeFile(path.join(root, 'docs/large.md'), markdown({ knowledge_id: 'ui.large', aliases: ['x'.repeat(200)], related: ['ui.fixture'] }, `# Large\n\n${'相机'.repeat(20)}\n`))
+  const catalog = await buildCatalog(root)
+  const body = Buffer.byteLength(`# Large\n\n${'相机'.repeat(20)}\n`, 'utf8')
+  assert.deepEqual((await oversizedTopics(root, catalog, body - 1)).map((topic) => topic.knowledge_id), ['ui.large'])
+  assert.deepEqual(await oversizedTopics(root, catalog, body + 10), [])
 })
 
 test('source maps derive real module directories, preserve cross-module links, and keep root scopes local', async (t) => {
