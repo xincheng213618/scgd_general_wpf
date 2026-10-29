@@ -21,6 +21,7 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 | --- | --- | --- |
 | 流程组 / `ProcessGroup` | 保存某个产品或场景的有序步骤 | `ActiveGroup` 决定当前组；`ProcessMetas` 指向该组步骤 |
 | 流程步骤 / `ProcessMeta` | 绑定 Flow 模板、处理类型、私有配置和可选切图 | RunAll 按顺序执行启用项 |
+| 其他配置 | 设置 LUX 设备号、VID 测量方式及上下限和 K/B | 位于流程组页之后，修改后自动保存到原项目配置；这些参数不加入 RunAll 步骤 |
 | 流程解析映射 / `ResultParserMetas` | 按 Flow 模板名配置处理类型与 Recipe | 提供解析查找，不额外加入 RunAll 的步骤序列 |
 
 `FindProcessMetaForTemplate` 先在活动组查找，再查流程解析映射，模板名忽略大小写，取首个具有处理实例的匹配项。该查找不检查 `IsEnabled`；步骤是否执行与能否作为解析映射命中是不同判断。

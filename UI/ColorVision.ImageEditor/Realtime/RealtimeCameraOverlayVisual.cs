@@ -73,6 +73,14 @@ namespace ColorVision.ImageEditor.Realtime
             string statusText = articulation.HasValue
                 ? string.Format(CultureInfo.InvariantCulture, "fps:{0:F1} 清晰度:{1:F5}", fps, articulation.Value)
                 : string.Format(CultureInfo.InvariantCulture, "fps:{0:F1}", fps);
+            UpdateStatusText(statusText);
+        }
+
+        public void UpdateFocusEvaluation(string evaluation, double score) =>
+            UpdateStatusText(string.Format(CultureInfo.InvariantCulture, "自动聚焦({0}) 评价值:{1:F5}", evaluation, score));
+
+        private void UpdateStatusText(string statusText)
+        {
             if (string.Equals(_statusText, statusText, StringComparison.Ordinal)) return;
 
             _statusText = statusText;

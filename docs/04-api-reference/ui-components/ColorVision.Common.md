@@ -111,7 +111,7 @@ RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/Permissio
 
 实际启动优先调用 `LaunchAction`，其次用 `LaunchPath` 和参数，再尝试已探测的 exe，最后可能转为安装入口。`RunInstaller` 可调用自定义 `InstallAction` 或通过 shell 启动安装文件；这些调用可能打开窗口、启动外部进程或改变系统安装状态，必须有当前任务的相应授权，不能为验证工具列表而执行。异常一般弹消息；方法返回不代表子进程退出成功、安装完成或业务动作完成，也没有统一取消/回滚。
 
-`NativeMethods/`、`Utilities/` 还包含文件、窗口、剪贴板、注册表及设备等低层操作，不能因为位于 Common 就视为无副作用。具体调用前核对对应实现、Windows 约束与任务权限，本页不作为每个工具函数的使用手册。
+`Utilities/DebounceTimer.cs` 的同键替换、Dispatcher 排队取消与清理后的复用见[共享防抖与回调生命周期](./debounce-timer.md)。`NativeMethods/`、`Utilities/` 还包含文件、窗口、剪贴板、注册表及设备等低层操作，不能因为位于 Common 就视为无副作用。具体调用前核对对应实现、Windows 约束与任务权限，本页不作为每个工具函数的使用手册。
 
 ## 包与验证边界
 

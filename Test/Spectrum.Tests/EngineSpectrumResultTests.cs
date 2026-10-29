@@ -14,6 +14,50 @@ namespace Spectrum.Tests;
 [Collection("LocalSpectrumDriver")]
 public sealed class EngineSpectrumResultTests
 {
+    // Undefined SDK metrics must not become bare NaN/Infinity literals in an ORM INSERT.
+    [Theory]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(float.NegativeInfinity)]
+    public void NonFiniteMetricsPersistAsNullWithoutChangingRawSamples(float invalid)
+    {
+        using var db = new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite,
+            IsAutoCloseConnection = false, InitKeyType = InitKeyType.Attribute
+        });
+        db.CodeFirst.InitTables<SpectumResultEntity>();
+        object native = new COLOR_PARA { fPL = [1, invalid, -.25f], fRi = [invalid] };
+        var mappedFields = typeof(COLOR_PARA).GetFields().Where(field => field.FieldType == typeof(float)
+            && typeof(SpectumResultEntity).GetProperty(field.Name)?.PropertyType == typeof(float?)).ToArray();
+        foreach (var field in mappedFields) field.SetValue(native, invalid);
+        var data = (COLOR_PARA)native;
+        data.fy = .25f;
+        var capture = new LocalSpectrumCapture
+        {
+            DeviceCode = "NONFINITE.SPECTRUM", IntegralTime = 100, Data = data,
+            EqeData = new COLOR_PARA_EQE { dEqe = invalid, dIm = invalid, dW = invalid }
+        };
+        var model = LocalSpectrumResultService.CreateModel(capture, new() { Eqe = true, Voltage = 5, Current = 1 });
+        int id = db.Insertable(model).ExecuteReturnIdentity();
+        var stored = db.Queryable<SpectumResultEntity>().Single(row => row.Id == id);
+
+        foreach (var field in mappedFields.Where(field => field.Name != nameof(COLOR_PARA.fy)))
+            Assert.Null(typeof(SpectumResultEntity).GetProperty(field.Name)!.GetValue(stored));
+        Assert.Null(stored.Eqe);
+        Assert.Null(stored.LuminousFlux);
+        Assert.Null(stored.RadiantFlux);
+        Assert.Null(stored.fRi);
+        Assert.Equal(.25f, stored.fy);
+        Assert.Equal(100f, stored.IntTime);
+        Assert.Equal(5f, stored.VResult);
+        Assert.Equal(1000f, stored.IResult);
+        Assert.Equal(invalid, JsonConvert.DeserializeObject<float[]>(stored.fPL!)![1]);
+        Assert.Equal(invalid, JObject.Parse(stored.CieDataEx!)[nameof(COLOR_PARA.fx)]!.Value<float>());
+        Assert.Equal(invalid, capture.Data.fx);
+        Assert.Equal(invalid, capture.Data.fPL[1]);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private DeviceStatusType localStatus = DeviceStatusType.Closed;
         private int localCommands;
         private int serviceCommands;
+        public bool IsCommandRunning { get { lock (OwnershipSync) return localCommands != 0 || serviceCommands != 0; } }
 
         public bool RoutesLocally => LocalOwned;
         public bool OpensLocally => LocalOwned || (!ServiceMayOwnCamera && PreferLocal);
@@ -93,9 +94,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (localCommands != 0) throw new InvalidOperationException("本地相机操作正在执行，请等待完成。");
                 localCommands++;
             }
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
-        public void EndLocalCommand() { lock (OwnershipSync) localCommands--; }
+        public void EndLocalCommand()
+        {
+            lock (OwnershipSync) localCommands--;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
 
         public void BeginServiceCommand(string eventName)
         {
@@ -105,6 +111,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 serviceCommands++;
                 if (eventName == "Open") ServiceMayOwnCamera = true;
             }
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         public void EnsureServiceAvailable()
@@ -114,6 +121,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     throw new InvalidOperationException("当前相机由本地后端管理，不支持发送服务相机指令。");
         }
 
-        public void EndServiceCommand() { lock (OwnershipSync) serviceCommands--; }
+        public void EndServiceCommand()
+        {
+            lock (OwnershipSync) serviceCommands--;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
     }
 }

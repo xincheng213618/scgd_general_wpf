@@ -22,6 +22,8 @@ public partial class DeviceSpectrum
     private bool localDisposed;
     public event Action<LocalSpectrumCapture, bool>? LocalResultAvailable;
     public event Action<string>? LocalCaptureFailed;
+    [Browsable(false)]
+    public bool IsLocalSpectrumBackend => SpectrumBackend.OpensLocally;
     [CommandDisplay("本地光谱仪管理", Order = -2, CategoryOrder = 0), Category("DeviceConnection")]
     public RelayCommand OpenLocalSpectrumManagerCommand { get; private set; } = null!;
 
@@ -38,7 +40,11 @@ public partial class DeviceSpectrum
     {
         if (e.PropertyName == nameof(DisplaySpectrumConfig.UseLocalSpectrum)) SpectrumBackend.SetPreference(DisplayConfig.UseLocalSpectrum);
     }
-    private void RefreshLocalSpectrumStatus() => DService?.RefreshBackendStatus();
+    private void RefreshLocalSpectrumStatus()
+    {
+        DService?.RefreshBackendStatus();
+        OnPropertyChanged(nameof(IsLocalSpectrumBackend));
+    }
 
     public void OpenLocalSpectrumWindow(ColorVision.Engine.FlowProcessing.Nodes.LocalSpectrumNode? node = null)
     {
@@ -157,6 +163,7 @@ public partial class DeviceSpectrum
             }
             EnsureLocalSpectrumConnected(false, config);
             if (eventName == "InitDark") LocalSession.Dark(parameters, config);
+            else if (eventName == "ResetDark") LocalSession.ResetDark(config);
             else if (eventName == "InitAutoDark") LocalSession.InitAutoDark(config);
             else if (eventName is "ShutterConnect" or "ShutterDisconnect" or "ShutterDoOpen" or "ShutterDoClose") LocalSession.ControlShutter(eventName, config);
             else throw new NotSupportedException($"本地光谱仪暂不支持 {eventName} 操作。");
@@ -242,7 +249,15 @@ public partial class DeviceSpectrum
         {
             object? data = null;
             Exception? failure = null;
-            try { data = await work(); }
+            try
+            {
+                data = await work();
+                if (eventName == "ResetDark")
+                {
+                    DisplayConfig.IsAutoDark = false;
+                    DisplayConfig.IsShutter = false;
+                }
+            }
             catch (OperationCanceledException ex) { failure = new OperationCanceledException("光谱仪操作已停止。", ex); LocalCaptureFailed?.Invoke(failure.Message); }
             catch (Exception ex) { failure = ex; log.Error(ex); LocalCaptureFailed?.Invoke(ex.Message); }
             record.ReciveTime = DateTime.Now;

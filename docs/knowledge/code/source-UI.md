@@ -104,6 +104,9 @@ next: false
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
   应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。
 
+- [共享防抖与回调生命周期](../../04-api-reference/ui-components/debounce-timer.md) — `ui.debounce-timer`
+  共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。
+
 - [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
@@ -327,7 +330,7 @@ next: false
   GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。
 
 - [图像比较：差分、SSIM 与对齐预检](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
-  图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
+  图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；对齐预检使用有硬采样预算的均匀网格，192MiB仅限制图像输出。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
   灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。

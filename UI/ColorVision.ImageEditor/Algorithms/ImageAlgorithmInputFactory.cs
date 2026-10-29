@@ -2,7 +2,11 @@ using ColorVision.Algorithms;
 using ColorVision.Core;
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -58,8 +62,8 @@ namespace ColorVision.ImageEditor.Algorithms
         }
 
         /// <summary>
-        /// Captures the current document revision through ImageFrameLease while normalizing the
-        /// WPF source at the only boundary that still knows its channel, alpha and palette semantics.
+        /// Captures the shared document revision without materializing a native frame when the
+        /// host supports source-state capture. WPF still owns channel, alpha and palette semantics.
         /// </summary>
         public static (AlgorithmImageBuffer Image, long Revision) AcquireCurrentFrame(ImageProcessingContext image)
         {
@@ -71,6 +75,14 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static (AlgorithmImageBuffer Image, long Revision) AcquireCurrentFrameCore(ImageProcessingContext image)
         {
+            if (image.CaptureSourceState() is { } state)
+            {
+                BitmapSource capturedSource = state.Source as BitmapSource
+                    ?? throw new InvalidOperationException("The current image has no WPF bitmap source.");
+                return CopyCurrentSource(image, capturedSource, state.Revision);
+            }
+
+            // Older hosts provide only native leases. Keep their lifetime and layout validation.
             using ImageFrameLease? lease = image.AcquireImageFrame();
             if (lease == null) throw new InvalidOperationException("The current image has no readable source frame.");
             BitmapSource source = image.ViewBitmapSource as BitmapSource
@@ -78,13 +90,19 @@ namespace ColorVision.ImageEditor.Algorithms
             if (source.PixelWidth != lease.Width || source.PixelHeight != lease.Height)
                 throw new InvalidOperationException("The WPF source and leased frame dimensions do not match.");
 
+            return CopyCurrentSource(image, source, lease.Revision);
+        }
+
+        private static (AlgorithmImageBuffer Image, long Revision) CopyCurrentSource(
+            ImageProcessingContext image, BitmapSource source, long revision)
+        {
             AlgorithmImageBuffer buffer = Copy(source);
-            if (!image.IsCurrentImageRevision(lease.Revision))
+            if (!image.IsCurrentImageRevision(revision) || !ReferenceEquals(image.ViewBitmapSource, source))
             {
                 buffer.Dispose();
                 throw new InvalidOperationException("The source image changed while its algorithm snapshot was being captured.");
             }
-            return (buffer, lease.Revision);
+            return (buffer, revision);
         }
 
         /// <summary>
@@ -107,7 +125,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return new AlgorithmImageBuffer(image.cols, image.rows, rowBytes, format, data, dpiX, dpiY);
         }
 
-        public static AlgorithmImageBuffer Copy(BitmapSource image)
+        public static unsafe AlgorithmImageBuffer Copy(BitmapSource image)
         {
             ArgumentNullException.ThrowIfNull(image);
             if (image.Format == PixelFormats.Indexed8) return CopyIndexed8(image);
@@ -117,8 +135,11 @@ namespace ColorVision.ImageEditor.Algorithms
             byte[] data = new byte[checked(stride * image.PixelHeight)];
             image.CopyPixels(data, stride, 0);
             if (image.Format == PixelFormats.Rgb24) SwapRedBlue(data, stride, image.PixelWidth, image.PixelHeight, 1, 3);
-            else if (image.Format == PixelFormats.Rgb48) SwapRedBlue(data, stride, image.PixelWidth, image.PixelHeight, 2, 3);
-            else if (image.Format == PixelFormats.Rgba64) SwapRedBlue(data, stride, image.PixelWidth, image.PixelHeight, 2, 4);
+            else if (image.Format == PixelFormats.Rgb48 || image.Format == PixelFormats.Rgba64)
+            {
+                fixed (byte* pixels = data)
+                    CopyColor16(pixels, stride, pixels, stride, image.PixelWidth, image.PixelHeight, format.BytesPerPixel());
+            }
             else if (image.Format == PixelFormats.Bgr32) SetOpaqueAlpha(data, stride, image.PixelWidth, image.PixelHeight);
             else if (image.Format == PixelFormats.Pbgra32) UnpremultiplyAlpha(data, stride, image.PixelWidth, image.PixelHeight);
             return new AlgorithmImageBuffer(image.PixelWidth, image.PixelHeight, stride, format, data, image.DpiX, image.DpiY);
@@ -130,12 +151,15 @@ namespace ColorVision.ImageEditor.Algorithms
             Int32Rect bounds = new(0, 0, image.Width, image.Height);
             if (image.Format is AlgorithmImageFormat.Bgr48 or AlgorithmImageFormat.Bgra64)
             {
-                byte[] converted = image.Data.ToArray();
-                if (image.Format == AlgorithmImageFormat.Bgr48)
-                    SwapRedBlue(converted, image.Stride, image.Width, image.Height, 2, 3);
-                else
-                    SwapRedBlue(converted, image.Stride, image.Width, image.Height, 2, 4);
-                bitmap.WritePixels(bounds, converted, image.Stride, 0);
+                bitmap.Lock();
+                try
+                {
+                    using MemoryHandle pin = image.Data.Pin();
+                    CopyColor16((byte*)pin.Pointer, image.Stride, (byte*)bitmap.BackBuffer, bitmap.BackBufferStride,
+                        image.Width, image.Height, image.Format.BytesPerPixel());
+                    bitmap.AddDirtyRect(bounds);
+                }
+                finally { bitmap.Unlock(); }
             }
             else
             {
@@ -144,6 +168,66 @@ namespace ColorVision.ImageEditor.Algorithms
                 bitmap.WritePixels(bounds, (IntPtr)pin.Pointer, data.Length, image.Stride);
             }
             return bitmap;
+        }
+
+        // Supports disjoint output and in-place normalization of a private snapshot.
+        internal static unsafe void CopyColor16(byte* sourceBase, int sourceStride, byte* destinationBase, int destinationStride,
+            int width, int height, int pixelBytes, CancellationToken cancellationToken = default)
+        {
+            Vector128<byte> swap = pixelBytes == 6
+                ? Vector128.Create((byte)4, 5, 2, 3, 0, 1, 10, 11, 8, 9, 6, 7, 128, 128, 128, 128)
+                : Vector128.Create((byte)4, 5, 2, 3, 0, 1, 6, 7, 12, 13, 10, 11, 8, 9, 14, 15);
+            for (int y = 0; y < height; y++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                byte* source = sourceBase + (long)y * sourceStride;
+                byte* destination = destinationBase + (long)y * destinationStride;
+                int x = 0;
+                if (Ssse3.IsSupported)
+                {
+                    if (pixelBytes == 6)
+                    {
+                        // A 16-byte load needs three valid 6-byte pixels. Emit exactly two pixels.
+                        for (; x + 2 < width; x += 2)
+                        {
+                            Vector128<byte> pixels = Ssse3.Shuffle(Unsafe.ReadUnaligned<Vector128<byte>>(source), swap);
+                            Unsafe.WriteUnaligned(destination, pixels.AsUInt64().GetElement(0));
+                            Unsafe.WriteUnaligned(destination + 8, pixels.AsUInt32().GetElement(2));
+                            source += 12;
+                            destination += 12;
+                        }
+                    }
+                    else
+                    {
+                        for (; x + 1 < width; x += 2)
+                        {
+                            Vector128<byte> pixels = Ssse3.Shuffle(Unsafe.ReadUnaligned<Vector128<byte>>(source), swap);
+                            Unsafe.WriteUnaligned(destination, pixels);
+                            source += 16;
+                            destination += 16;
+                        }
+                    }
+                }
+                for (; x < width; x++)
+                {
+                    byte blueLow = source[0];
+                    byte blueHigh = source[1];
+                    destination[0] = source[4];
+                    destination[1] = source[5];
+                    destination[2] = source[2];
+                    destination[3] = source[3];
+                    destination[4] = blueLow;
+                    destination[5] = blueHigh;
+                    if (pixelBytes == 8)
+                    {
+                        destination[6] = source[6];
+                        destination[7] = source[7];
+                    }
+                    source += pixelBytes;
+                    destination += pixelBytes;
+                }
+            }
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         public static AlgorithmImageFormat FromPixelFormat(PixelFormat format)

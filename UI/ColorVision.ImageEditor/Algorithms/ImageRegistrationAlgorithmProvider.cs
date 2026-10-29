@@ -121,7 +121,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 (byte[] mask, long validPixels) = GeometricTransformAlgorithmProvider.BuildValidityMask(
                     reference.Width, reference.Height, moving.Width, moving.Height, inverse, cancellationToken, context.Progress);
-                registered = AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY);
+                registered = AlgorithmImageInterop.FromMat(output, reference.DpiX, reference.DpiY, cancellationToken);
                 validityMask = new AlgorithmImageBuffer(reference.Width, reference.Height, reference.Width, AlgorithmImageFormat.Gray8, mask, reference.DpiX, reference.DpiY);
                 double photometricRmse = PhotometricRmse(referenceGray, output, moving.Format, mask, validPixels);
                 double inverseResidual = GeometricTransformAlgorithmProvider.InverseResidual(matrix, inverse);

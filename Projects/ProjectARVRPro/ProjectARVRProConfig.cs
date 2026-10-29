@@ -39,6 +39,12 @@ namespace ProjectARVRPro
         public static ProjectARVRProLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProLogConfig>();
     }
 
+    public enum LuxVidMeasurementMode
+    {
+        [Description("自动聚焦")] AutoFocus,
+        [Description("直接获取位置")] GetPosition
+    }
+
     [DisplayName("模组检测设置")]
     public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
@@ -109,6 +115,11 @@ namespace ProjectARVRPro
         [Description("原 LUX 文本回包的前缀，例如 H03 或 H03AR；不参与流程批次 Code 的生成。")]
         public string LuxMachineNo { get => _LuxMachineNo; set { _LuxMachineNo = value; OnPropertyChanged(); } }
         private string _LuxMachineNo = "H03";
+
+        [DisplayName("VID 测量方式"), Category("LUX协议")]
+        [Description("自动聚焦使用相机当前选择的对焦模板；直接获取位置仅读取当前位置对应的 VID。两者使用相同的修正与限值。")]
+        public LuxVidMeasurementMode LuxVidMode { get => _LuxVidMode; set { _LuxVidMode = value; OnPropertyChanged(); } }
+        private LuxVidMeasurementMode _LuxVidMode;
 
         [DisplayName("VID 下限"), Category("LUX协议")]
         public double LuxVidMin { get => _LuxVidMin; set { _LuxVidMin = value; OnPropertyChanged(); } }

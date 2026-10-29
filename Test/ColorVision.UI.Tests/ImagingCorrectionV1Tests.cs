@@ -10,6 +10,7 @@ using OpenCvSharp;
 using System.Buffers.Binary;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -452,6 +453,89 @@ public sealed class ImagingCorrectionV1Tests
     }
 
     [Fact]
+    public void ReferenceImageLoadingRejectsActiveWritersAndRecoversAfterClose()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-reference-lock-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "reference.png");
+        try
+        {
+            WpfTestHost.Invoke(() => SaveGray8Png(path, 2, 2, [1, 2, 3, 4]));
+            using (FileStream writer = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            {
+                Assert.Throws<IOException>(() => WpfTestHost.Invoke(() =>
+                {
+                    AlgorithmInput unexpected = AlgorithmReferenceImageLoader.LoadTransferred("dark-frame", path);
+                    unexpected.Image.Dispose();
+                }));
+            }
+            AlgorithmInput recovered = WpfTestHost.Invoke(() => AlgorithmReferenceImageLoader.LoadTransferred("dark-frame", path));
+            using (recovered.Image) Assert.Equal(new byte[] { 1, 2, 3, 4 }, recovered.Image.Data.ToArray());
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+            Directory.Delete(directory);
+        }
+    }
+
+    [Fact]
+    public void ReferenceImageLoadingSharesReadersAndReturnsAnIndependentIdentifiedSnapshot()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-reference-snapshot-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "reference.png");
+        try
+        {
+            WpfTestHost.Invoke(() => SaveGray8Png(path, 2, 2, [10, 20, 30, 40]));
+            byte[] encoded = File.ReadAllBytes(path);
+            string checksum = "sha256:" + Convert.ToHexString(SHA256.HashData(encoded)).ToLowerInvariant();
+            AlgorithmInput input;
+            using (FileStream reader = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                input = WpfTestHost.Invoke(() => AlgorithmReferenceImageLoader.LoadTransferred("flat-field", path));
+            using (input.Image)
+            {
+                Assert.Equal("flat-field", input.Name);
+                Assert.Equal(Path.GetFullPath(path), input.SourceUri);
+                Assert.Equal(AlgorithmInputOwnership.Transferred, input.Ownership);
+                Assert.Equal("encoded-device-values", input.ColorSpace);
+                Assert.Equal(AlgorithmImageFormat.Gray8, input.Image.Format);
+                Assert.Equal(checksum, input.Checksum);
+                using (FileStream writer = File.Open(path, FileMode.Truncate, FileAccess.Write, FileShare.None))
+                    writer.Write(new byte[] { 0, 1, 2 });
+                Assert.Equal(new byte[] { 10, 20, 30, 40 }, input.Image.Data.ToArray());
+                Assert.Equal(checksum, input.Checksum);
+            }
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+            Directory.Delete(directory);
+        }
+    }
+
+    [Fact]
+    public void ReferenceImageLoadingReleasesReadHandleAfterDecodeFailure()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-reference-failure-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "broken.png");
+        try
+        {
+            File.WriteAllBytes(path, [0, 1, 2]);
+            Assert.NotNull(Record.Exception(() => WpfTestHost.Invoke(() =>
+                AlgorithmReferenceImageLoader.LoadTransferred("dark-frame", path))));
+            using FileStream writer = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.None);
+            writer.WriteByte(3);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+            Directory.Delete(directory);
+        }
+    }
+
+    [Fact]
     public async Task BatchAndNamedFlowFramesUseTheSameParametersAndArtifacts()
     {
         string directory = Path.Combine(Path.GetTempPath(), $"colorvision-imaging-correction-{Guid.NewGuid():N}");
@@ -489,34 +573,92 @@ public sealed class ImagingCorrectionV1Tests
         }
     }
 
-    [Fact]
-    public async Task StalePreviewConsumesAndReleasesTransferredReferenceBeforeRunnerStarts()
+    [Theory]
+    [InlineData("source-replaced")]
+    [InlineData("revision-changed")]
+    [InlineData("newer-session")]
+    [InlineData("unchanged")]
+    public async Task ReferenceLoadingKeepsBoundSourceAndRejectsSupersededOperation(string change)
     {
         ImageView imageView = WpfTestHost.Invoke(() =>
         {
             EnsureResources();
             ImageView view = new();
             WriteableBitmap bitmap = new(4, 3, 96, 96, PixelFormats.Gray8, null);
+            bitmap.WritePixels(new Int32Rect(0, 0, 4, 3), Enumerable.Repeat((byte)100, 12).ToArray(), 4, 0);
             view.SetImageSource(bitmap, enableEditorImageServices: false, configureDefaultLayerController: false);
             return view;
         });
         ImageAlgorithmPreviewSession? first = null;
+        ImageAlgorithmPreviewSession? newer = null;
+        TaskCompletionSource<bool> loadingStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> releaseLoading = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using AlgorithmImageBuffer transferred = ByteBuffer(4, 3, Enumerable.Repeat((byte)10, 12).ToArray());
         try
         {
             ImageProcessingContext context = imageView.EditorContext.ProcessingContext;
             first = WpfTestHost.Invoke(() => ImageAlgorithmPreviewSession.Start(context));
-            WpfTestHost.Invoke(context.NotifySourcePixelsChanged);
-            AlgorithmImageBuffer transferred = ByteBuffer(4, 3, new byte[12]);
-            using AlgorithmResult superseded = await first.PreviewWithInputsAsync(
-                AlgorithmInvocation.Create(StandardAlgorithmIds.ImagingCorrection, new ImagingCorrectionParameters { EnableDarkFrame = true }),
-                [new AlgorithmInput { Name = "dark-frame", Image = transferred, Ownership = AlgorithmInputOwnership.Transferred, ColorSpace = "encoded-device-values" }],
-                AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.MultiInput);
-            Assert.Equal(AlgorithmResultStatus.Superseded, superseded.Status);
+            AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImagingCorrection, new ImagingCorrectionParameters { EnableDarkFrame = true });
+            Task<AlgorithmResult> operation = WpfTestHost.Invoke(async () =>
+            {
+                loadingStarted.TrySetResult(true);
+                await releaseLoading.Task;
+                return await ImageAlgorithmApplier.ApplyAsync(first, invocation,
+                    [new AlgorithmInput { Name = "dark-frame", Image = transferred, Ownership = AlgorithmInputOwnership.Transferred, ColorSpace = "encoded-device-values" }]);
+            });
+            await loadingStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            (ImageSource source, ImageSource displayed, ImageSource? functionImage, long revision) = WpfTestHost.Invoke(() =>
+            {
+                switch (change)
+                {
+                    case "source-replaced":
+                        WriteableBitmap replacement = new(4, 3, 96, 96, PixelFormats.Gray8, null);
+                        replacement.WritePixels(new Int32Rect(0, 0, 4, 3), Enumerable.Repeat((byte)200, 12).ToArray(), 4, 0);
+                        imageView.SetImageSource(replacement, enableEditorImageServices: false, configureDefaultLayerController: false);
+                        break;
+                    case "revision-changed":
+                        context.NotifySourcePixelsChanged();
+                        break;
+                    case "newer-session":
+                        newer = ImageAlgorithmPreviewSession.Start(context);
+                        break;
+                }
+                return (context.ViewBitmapSource, context.ImageShow.Source, context.FunctionImage, context.ImageRevision);
+            });
+            releaseLoading.TrySetResult(true);
+            using AlgorithmResult result = await operation.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.True(transferred.IsDisposed);
+            byte[] currentPixels = WpfTestHost.Invoke(() =>
+            {
+                byte[] pixels = new byte[12];
+                ((BitmapSource)context.ViewBitmapSource).CopyPixels(pixels, 4, 0);
+                return pixels;
+            });
+            long currentRevision = WpfTestHost.Invoke(() => context.ImageRevision);
+            AlgorithmResultStatus expectedStatus = change == "unchanged" ? AlgorithmResultStatus.Succeeded : AlgorithmResultStatus.Superseded;
+            Assert.True(result.Status == expectedStatus,
+                $"Change={change}; expected {expectedStatus}, actual {result.Status}; revision {revision}->{currentRevision}; current pixel={currentPixels[0]}.");
+            if (change == "unchanged")
+            {
+                Assert.All(currentPixels, value => Assert.Equal(90, value));
+                Assert.Equal(revision + 1, currentRevision);
+            }
+            else
+            {
+                Assert.Equal(revision, currentRevision);
+                Assert.All(currentPixels, value => Assert.Equal(change == "source-replaced" ? 200 : 100, value));
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Same(source, context.ViewBitmapSource);
+                    Assert.Same(displayed, context.ImageShow.Source);
+                    Assert.Same(functionImage, context.FunctionImage);
+                });
+            }
         }
         finally
         {
-            WpfTestHost.Invoke(() => { first?.Dispose(); imageView.Dispose(); });
+            releaseLoading.TrySetResult(true);
+            WpfTestHost.Invoke(() => { first?.Dispose(); newer?.Dispose(); imageView.Dispose(); });
         }
     }
 

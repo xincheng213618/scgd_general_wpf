@@ -103,6 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             catch (Exception ex) { return RunLocalCommand("AutoFocus", () => throw ex); }
             float exposure = (float)(Config.IsExpThree ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
             float gain = DisplayConfig.Gain;
+            MQTTServiceBase.log.Info($"[LocalAutoFocus] Template Name={template.Name} Id={template.Id}");
             return RunLocalCommand("AutoFocus", () =>
             {
                 LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain, showProgress: true);
@@ -111,6 +112,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Device = this, CameraParameters = BuildLocalCameraParameters(), SaveFiles = false, FlipMode = DisplayConfig.FlipMode
                 });
                 using (capture.Frame) PublishLocalPreview(capture.Frame, null, forceDisplay: true);
+                PublishFocusEvaluation(settings.Evaluation, result.Score);
                 return new { result.Position, result.Score, result.Samples, result.TotalTime, result.VidPosition };
             });
         }
@@ -118,10 +120,26 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default, bool showProgress = false)
         {
             Action<LocalAutoFocusFrame>? preview = showProgress ? source => PublishLocalFocusPreview(source, exposure, gain) : null;
-            LocalAutoFocusResult result = LocalCameraSession.AutoFocus(settings, exposure, gain, stop, preview);
+            if (showProgress) PublishFocusEvaluation(settings.Evaluation, null);
+            LocalAutoFocusResult result = LocalCameraSession.AutoFocus(settings, exposure, gain, stop, preview, (position, vid, score) =>
+            {
+                if (!score.HasValue) PublishLocalMotorPosition(position, vid);
+                if (showProgress && score.HasValue) PublishFocusEvaluation(settings.Evaluation, score.Value);
+            });
             stop.ThrowIfCancellationRequested();
             PublishLocalMotorPosition(result.Position, result.VidPosition);
             return result;
+        }
+
+        private void PublishFocusEvaluation(EvaFunc evaluation, double? score)
+        {
+            if (IsDisposed || ExistingView == null) return;
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (IsDisposed || ExistingView == null) return;
+                if (score.HasValue) ExistingView.ShowFocusEvaluation(evaluation.ToString(), score.Value);
+                else ExistingView.ClearFocusEvaluation();
+            });
         }
 
         private unsafe void PublishLocalFocusPreview(LocalAutoFocusFrame source, float exposure, float gain)

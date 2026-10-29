@@ -1481,7 +1481,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
-            if (!CameraTemplateSelection.TryResolveRequired(Capture.ComboxAutoFocus.SelectedValue, out AutoFocusParam param))
+            if (!CameraTemplateSelection.TryResolveRequired(Capture.ComboxAutoFocus.SelectedItem, out AutoFocusParam param))
             {
                 ShowRequiredTemplateMessage(Properties.Resources.AutoFocusTemplate);
                 return;
@@ -1693,6 +1693,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen || (_sharedLocalVideo && !_sharedVideoActive)) return;
             view.EnsureInitialized();
+            view.ClearFocusEvaluation();
             _localRealtimePipeline.Start(view.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false,
                 showOverlayMetrics: !Device.DisplayConfig.IsCrossGuideEnabled);
             SetLocalVideoPoiTemplateSupported(true);
@@ -1979,6 +1980,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 void StartPreview()
                 {
+                    Device.View.ClearFocusEvaluation();
                     button.Content = EngineLocalization.Get("CameraPanel_StopPreview");
                     ApplyLocalVideoRoiToRealtimeConfig();
                     _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false, showOverlayMetrics: !Device.DisplayConfig.IsCrossGuideEnabled);

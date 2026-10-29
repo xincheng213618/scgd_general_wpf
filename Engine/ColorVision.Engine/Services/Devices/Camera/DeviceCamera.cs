@@ -146,8 +146,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cameraLocalWindow.Show();
         }
 
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
         [Description("CommandDisplayConfigHint")]
         public RelayCommand EditDisplayConfigCommand { get; }
 

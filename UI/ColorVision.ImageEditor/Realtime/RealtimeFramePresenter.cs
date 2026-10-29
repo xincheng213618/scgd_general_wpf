@@ -3,6 +3,7 @@ using ColorVision.Core;
 using log4net;
 using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -30,6 +31,7 @@ namespace ColorVision.ImageEditor.Realtime
         private readonly Action _refreshPixelOverlay;
         private Guid _sourceId = Guid.NewGuid();
         private readonly object _gate = new();
+        private readonly object _submitGate = new();
         private byte[]? _latestPixels;
         private byte[]? _drawingPixels;
         private FrameInfo _latestFrame;
@@ -37,7 +39,7 @@ namespace ColorVision.ImageEditor.Realtime
         private bool _renderQueued;
         private bool _disposed;
         private bool _hasRenderedFrame;
-        private WriteableBitmap? _bitmap;
+        private Task _completion = Task.CompletedTask;
         private WriteableBitmap? _lastPresentedSource;
         private ImageSource? _lastPresentedDisplay;
         private long _lastPresentedRevision;
@@ -52,6 +54,8 @@ namespace ColorVision.ImageEditor.Realtime
         }
 
         public RealtimeFrameOptions Options { get; private set; }
+
+        internal Task Completion { get { lock (_gate) return _completion; } }
 
         public void Configure(RealtimeFrameOptions options)
         {
@@ -84,19 +88,36 @@ namespace ColorVision.ImageEditor.Realtime
             if (sourcePointer == IntPtr.Zero) return false;
             if (!CanAcceptFrame(width, height, pixelFormat, ref sourceStride, ref bufferLength)) return false;
 
-            bool queueRender;
-            lock (_gate)
+            // The camera owns sourcePointer only until this call returns. Copy synchronously,
+            // but never hold the state gate during a full-frame copy: Reset runs on the UI.
+            lock (_submitGate)
             {
-                if (_disposed) return false;
-                if (_latestPixels == null || _latestPixels.Length < bufferLength) _latestPixels = new byte[bufferLength];
+                byte[]? pixels;
+                Guid sourceId;
+                lock (_gate)
+                {
+                    if (_disposed) return false;
+                    pixels = _latestPixels;
+                    _latestPixels = null;
+                    _hasLatestFrame = false;
+                    sourceId = _sourceId;
+                }
 
-                Marshal.Copy(sourcePointer, _latestPixels, 0, bufferLength);
-                SaveLatestFrame(width, height, pixelFormat, sourceStride, bufferLength, transform);
-                queueRender = !_renderQueued;
-                _renderQueued = true;
+                if (pixels == null || pixels.Length < bufferLength) pixels = new byte[bufferLength];
+                Marshal.Copy(sourcePointer, pixels, 0, bufferLength);
+                lock (_gate)
+                {
+                    if (_disposed || sourceId != _sourceId) return false;
+                    _latestPixels = pixels;
+                    SaveLatestFrame(width, height, pixelFormat, sourceStride, bufferLength, transform);
+                    if (!_renderQueued)
+                    {
+                        _renderQueued = true;
+                        _completion = Task.Run(RenderLatestFramesAsync);
+                    }
+                }
             }
-
-            return !queueRender || QueueRender();
+            return true;
         }
 
         public void Reset(bool clearImageSource = false)
@@ -111,16 +132,15 @@ namespace ColorVision.ImageEditor.Realtime
                 && ReferenceEquals(_context.ViewBitmapSource, _lastPresentedSource)
                 && ReferenceEquals(_context.Presentation.DisplaySource, _lastPresentedDisplay);
             _context.StreamPresentation.ResetSource(_sourceId);
-            _sourceId = Guid.NewGuid();
             lock (_gate)
             {
+                _sourceId = Guid.NewGuid();
                 _hasLatestFrame = false;
                 _hasRenderedFrame = false;
                 _latestPixels = null;
                 _drawingPixels = null;
             }
 
-            _bitmap = null;
             _lastPresentedSource = null;
             _lastPresentedDisplay = null;
 
@@ -138,99 +158,69 @@ namespace ColorVision.ImageEditor.Realtime
             _hasLatestFrame = true;
         }
 
-        private void RenderLatestFrame()
+        private async Task RenderLatestFramesAsync()
         {
-            byte[]? pixels;
-            FrameInfo frame;
-
-            lock (_gate)
+            while (true)
             {
-                if (_disposed || !_hasLatestFrame || _latestPixels == null)
-                {
-                    _renderQueued = false; return;
-                }
-
-                (_latestPixels, _drawingPixels) = (_drawingPixels, _latestPixels);
-                pixels = _drawingPixels;
-                frame = _latestFrame;
-                _hasLatestFrame = false;
-            }
-
-            try
-            {
-                if (pixels != null) RenderFrame(pixels, frame);
-            }
-            catch (Exception ex)
-            {
-                Log.Warn("Unable to present a realtime frame.", ex);
-            }
-            finally
-            {
-                bool queueAgain;
+                byte[] pixels;
+                FrameInfo frame;
+                Guid sourceId;
                 lock (_gate)
                 {
-                    queueAgain = _hasLatestFrame && !_disposed;
-                    _renderQueued = queueAgain;
+                    if (_disposed || !_hasLatestFrame || _latestPixels == null)
+                    {
+                        _renderQueued = false;
+                        return;
+                    }
+                    (_latestPixels, _drawingPixels) = (_drawingPixels, _latestPixels);
+                    pixels = _drawingPixels!;
+                    frame = _latestFrame;
+                    sourceId = _sourceId;
+                    _hasLatestFrame = false;
                 }
-                if (queueAgain) QueueRender();
-            }
-        }
 
-        private bool QueueRender()
-        {
-            try
-            {
-                if (!_context.Dispatcher.HasShutdownStarted)
+                try
                 {
-                    DispatcherOperation operation = _context.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RenderLatestFrame));
-                    if (operation.Status != DispatcherOperationStatus.Aborted) return true;
+                    // Allocation, copying, flipping and freezing all belong to this worker.
+                    // StreamPresentation can consume the frozen bitmap without cloning it on UI.
+                    WriteableBitmap? bitmap = await Task.Run(() => CreateFrameBitmap(pixels, frame)).ConfigureAwait(false);
+                    if (bitmap == null || _context.Dispatcher.HasShutdownStarted) continue;
+                    await _context.Dispatcher.InvokeAsync(() =>
+                    {
+                        if (_disposed || _context.IsDisposed || Options.IsFrozen || sourceId != _sourceId) return;
+                        _context.StreamPresentation.Submit(bitmap, sourceId, () => !Options.IsFrozen && !_disposed && sourceId == _sourceId);
+                    }, DispatcherPriority.Background).Task.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn("Unable to present a realtime frame.", ex);
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Warn("Unable to queue a realtime frame.", ex);
-            }
-            lock (_gate) _renderQueued = false;
-            return false;
         }
 
-        private void RenderFrame(byte[] pixels, FrameInfo frame)
+        private static WriteableBitmap? CreateFrameBitmap(byte[] pixels, FrameInfo frame)
         {
-            if (Options.IsFrozen || _disposed || _context.IsDisposed) return;
-            if (frame.Length < GetRequiredBufferSize(frame.Width, frame.Height, frame.Format, frame.Stride)) return;
-
-            EnsureBitmap(frame);
+            if (frame.Length < GetRequiredBufferSize(frame.Width, frame.Height, frame.Format, frame.Stride)) return null;
+            WriteableBitmap bitmap = new(frame.Width, frame.Height, 96, 96, frame.Format, null);
 
             try
             {
                 if (frame.Transform == TransformNone)
                 {
-                    _bitmap!.WritePixels(new Int32Rect(0, 0, frame.Width, frame.Height), pixels, frame.Stride, 0);
+                    bitmap.WritePixels(new Int32Rect(0, 0, frame.Width, frame.Height), pixels, frame.Stride, 0);
                 }
-                else if (!WriteTransformedPixels(pixels, frame))
+                else if (!WriteTransformedPixels(bitmap, pixels, frame))
                 {
-                    return;
+                    return null;
                 }
             }
             catch (ArgumentException)
             {
-                return;
+                return null;
             }
 
-            _context.StreamPresentation.Submit(_bitmap!, _sourceId, () => !Options.IsFrozen && !_disposed);
-        }
-
-        private void EnsureBitmap(FrameInfo frame)
-        {
-            if (_bitmap != null
-                && _bitmap.PixelWidth == frame.Width
-                && _bitmap.PixelHeight == frame.Height
-                && _bitmap.Format == frame.Format)
-            {
-                return;
-            }
-
-            _bitmap = new WriteableBitmap(frame.Width, frame.Height, 96, 96, frame.Format, null);
+            bitmap.Freeze();
+            return bitmap;
         }
 
         private void OnFramePresented(Guid sourceId, WriteableBitmap source)
@@ -248,9 +238,9 @@ namespace ColorVision.ImageEditor.Realtime
             _refreshPixelOverlay();
         }
 
-        private unsafe bool WriteTransformedPixels(byte[] pixels, FrameInfo frame)
+        private static unsafe bool WriteTransformedPixels(WriteableBitmap bitmap, byte[] pixels, FrameInfo frame)
         {
-            if (_bitmap == null || frame.Format.BitsPerPixel % 8 != 0) return false;
+            if (frame.Format.BitsPerPixel % 8 != 0) return false;
 
             int pixelBytes = frame.Format.BitsPerPixel / 8;
             int rowBytes = GetDefaultStride(frame.Width, frame.Format);
@@ -259,11 +249,11 @@ namespace ColorVision.ImageEditor.Realtime
 
             fixed (byte* sourceBase = pixels)
             {
-                _bitmap.Lock();
+                bitmap.Lock();
                 try
                 {
-                    byte* targetBase = (byte*)_bitmap.BackBuffer;
-                    int targetStride = _bitmap.BackBufferStride;
+                    byte* targetBase = (byte*)bitmap.BackBuffer;
+                    int targetStride = bitmap.BackBufferStride;
 
                     for (int y = 0; y < frame.Height; y++)
                     {
@@ -287,12 +277,12 @@ namespace ColorVision.ImageEditor.Realtime
                         }
                     }
 
-                    _bitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Width, frame.Height));
+                    bitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Width, frame.Height));
                     return true;
                 }
                 finally
                 {
-                    _bitmap.Unlock();
+                    bitmap.Unlock();
                 }
             }
         }
@@ -376,7 +366,6 @@ namespace ColorVision.ImageEditor.Realtime
             }
             void Detach()
             {
-                _bitmap = null;
                 _lastPresentedSource = null;
                 _lastPresentedDisplay = null;
                 _context.StreamPresentation.FramePresented -= OnFramePresented;

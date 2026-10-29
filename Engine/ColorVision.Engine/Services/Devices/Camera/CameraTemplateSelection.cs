@@ -13,6 +13,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         internal static bool TryResolveRequired<T>(object? selectedValue, out T template) where T : ParamBase
         {
+            // Template reload replaces Value without refreshing ComboBox.SelectedValue's cached object.
+            if (selectedValue is TemplateModel<T> model) selectedValue = model.Value;
             if (selectedValue is T selected && selected.Id != -1 && !IsUninitialized(selected))
             {
                 template = selected;

@@ -63,13 +63,19 @@ public sealed class LuxSocketDispatcher : ISocketTextDispatcher
     }
 
     private static string? DispatchToWindow(NetworkStream stream, LuxRequest command) =>
-        Application.Current.Dispatcher.Invoke(() => ProjectARVRWindowHost.ShowOrActivate().HandleLuxRequest(stream,
-            new LuxCommandSession(command, response =>
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            if (command.SocketCode == "00" && ProjectWindowInstance.WindowInstance == null)
+                return command.ResponsePrefix;
+            ARVRWindow window = command.SocketCode is "00" or "01" or "31"
+                ? ProjectARVRWindowHost.GetOrCreate() : ProjectARVRWindowHost.ShowOrActivate();
+            return window.HandleLuxRequest(stream, new LuxCommandSession(command, response =>
             {
                 SocketMessageManager.GetInstance().AddMessage(new SocketMessage
                 {
                     Direction = SocketMessageDirection.Sent, Content = response, MessageTime = DateTime.Now
                 });
                 SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(response));
-            })));
+            }));
+        });
 }

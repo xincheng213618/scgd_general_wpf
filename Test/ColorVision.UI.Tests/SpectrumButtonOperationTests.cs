@@ -31,6 +31,7 @@ public sealed class SpectrumButtonOperationTests
             var previousConfig = ConfigService.Instance;
             List<ResourceDictionary> dictionaries = [];
             Window? window = null;
+            LocalSpectrumWindow? localWindow = null;
             DeviceSpectrum? device = null;
             DisplaySpectrum? card = null;
             try
@@ -77,7 +78,7 @@ public sealed class SpectrumButtonOperationTests
                 Assert.True(content.IsVisible);
                 Assert.Equal(!opening, panel.IsVisible);
                 Assert.True(panel.IsEnabled);
-                if (!opening) Assert.True(Assert.IsType<Button>(card.FindName("btn_stopTest")).IsEnabled);
+                Assert.Equal(Visibility.Collapsed, Assert.IsType<Button>(card.FindName("btn_stopTest")).Visibility);
                 Assert.Equal(opening ? DeviceStatusType.Opening : DeviceStatusType.Opened, device.DService.DeviceStatus);
 
                 if (opening) device.SpectrumBackend.SetLocalStatus(terminalState == MsgRecordState.Success ? DeviceStatusType.Opened : DeviceStatusType.Closed);
@@ -96,6 +97,8 @@ public sealed class SpectrumButtonOperationTests
                 if (!opening && terminalState == MsgRecordState.Success)
                 {
                     // Continuous measurements retain every saved frame and read the insertion setting for each capture.
+                    // Result delivery targets an existing view, as created when the workspace opens the device page.
+                    ViewSpectrum spectrumView = device.View;
                     var display = typeof(DeviceSpectrum).GetMethod("DisplayLocalSpectrum", BindingFlags.Instance | BindingFlags.NonPublic)!;
                     foreach (int id in new[] { 18, 19, 20 })
                     {
@@ -105,7 +108,7 @@ public sealed class SpectrumButtonOperationTests
                             MeasurementId = id, DeviceCode = device.Code, IntegralTime = 100,
                             Data = new COLOR_PARA { fPL = [1, -.5f], fSpect1 = 500, fSpect2 = 501, fInterval = 1 }
                         }, true]);
-                        Assert.Equal(id, Assert.IsType<ViewResultSpectrum>(((ListView)device.View.FindName("listView1")).SelectedItem).Id);
+                        Assert.Equal(id, Assert.IsType<ViewResultSpectrum>(((ListView)spectrumView.FindName("listView1")).SelectedItem).Id);
                     }
                     Assert.Equal(new[] { 20, 18, 19 }, device.View.ViewResults.Select(row => row.Id));
                     Assert.All(device.View.ViewResults, row => Assert.Equal(new float[] { 1, -.5f }, row.fPL));
@@ -125,6 +128,37 @@ public sealed class SpectrumButtonOperationTests
                     Pump();
                     Assert.True(content.IsVisible);
                     Assert.False(panel.IsVisible);
+
+                    device.SpectrumBackend.SetLocalStatus(DeviceStatusType.Opened);
+                    localWindow = new LocalSpectrumWindow(device) { Left = -10000, Top = -10000, ShowActivated = false, ShowInTaskbar = false };
+                    localWindow.Show();
+                    Pump();
+                    var stop = Assert.IsType<Button>(card.FindName("btn_stopTest"));
+                    var localStop = Assert.IsType<Button>(localWindow.FindName("StopCaptureButton"));
+                    Assert.Equal(Visibility.Collapsed, localStop.Visibility);
+                    device.SpectrumBackend.SetLocalStatus(DeviceStatusType.SP_Continuous_Mode);
+                    Pump();
+                    Assert.True(stop.IsVisible);
+                    Assert.True(localStop.IsVisible);
+                    device.SpectrumBackend.SetLocalStatus(DeviceStatusType.Opened);
+                    Pump();
+                    Assert.Equal(Visibility.Collapsed, stop.Visibility);
+                    Assert.Equal(Visibility.Collapsed, localStop.Visibility);
+
+                    // Reset completion clears the display's automatic dark modes only after success.
+                    var startRecord = typeof(DeviceSpectrum).GetMethod("StartLocalRecord", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                    device.DisplayConfig.IsShutter = true;
+                    Func<Task<object?>> failedReset = () => Task.FromException<object?>(new InvalidOperationException("reset rejected"));
+                    var reset = Assert.IsType<MsgRecord>(startRecord.Invoke(device, ["ResetDark", failedReset]));
+                    Pump();
+                    Assert.Equal(MsgRecordState.Fail, reset.MsgRecordState);
+                    Assert.True(device.DisplayConfig.IsShutter);
+                    Func<Task<object?>> resetWork = () => Task.FromResult<object?>(null);
+                    reset = Assert.IsType<MsgRecord>(startRecord.Invoke(device, ["ResetDark", resetWork]));
+                    Pump();
+                    Assert.Equal(MsgRecordState.Success, reset.MsgRecordState);
+                    Assert.False(device.DisplayConfig.IsAutoDark);
+                    Assert.False(device.DisplayConfig.IsShutter);
                 }
 
                 // Immediate replies (for example rejected calibration) must not leave a progress overlay running.
@@ -135,6 +169,7 @@ public sealed class SpectrumButtonOperationTests
             }
             finally
             {
+                localWindow?.Close();
                 card?.Dispose();
                 window?.Close();
                 if (device != null)

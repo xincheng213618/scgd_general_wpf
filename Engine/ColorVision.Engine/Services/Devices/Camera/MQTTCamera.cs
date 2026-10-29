@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using MQTTMessageLib;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -90,6 +91,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (Config.Code != null && msg.DeviceCode != Config.Code) return;
             if (Device.RoutesLocally) return;
+
+            if (msg.EventName == "AutoFocus" && msg.Code == 102 && msg.Data != null)
+            {
+                JObject data = msg.Data is JObject json ? json : JObject.FromObject((object)msg.Data);
+                int? position = data.Value<int?>("Position");
+                double? vid = data.Value<double?>("VidPosition");
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (position.HasValue) Config.MotorConfig.Position = position.Value;
+                    if (vid.HasValue) Config.MotorConfig.VIDPosition = vid.Value;
+                });
+            }
 
             if (msg.Code == 0)
             {

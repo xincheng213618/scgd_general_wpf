@@ -119,7 +119,7 @@
                                 <Button x:Name="btn_oneTest" Margin="2" Click="Button_Click_OneTest" Content="{x:Static properties:Resources.SingleTest}" />
                                 <Button x:Name="btn_autoTest" Margin="2" Click="Button_Click_AutoTest" Content="{x:Static properties:Resources.ContinuousMeasurement}" />
                             </StackPanel>
-                            <Button x:Name="btn_stopTest" Margin="2" HorizontalAlignment="Left" Click="Button_Click_StopTest" Content="{display:EngineLang Key='停止采集'}" />
+                            <Button x:Name="btn_stopTest" Margin="2" HorizontalAlignment="Left" Click="Button_Click_StopTest" Content="{display:EngineLang Key='停止采集'}" Visibility="Collapsed" />
                             <DockPanel>
                                 <Button x:Name="btn_oneInitDark" Margin="2" Click="Button_Click_Init_Dark" Content="{x:Static properties:Resources.SingleZeroCalibration}" />
                                 <!--  半透明遮罩层  -->
@@ -147,7 +147,9 @@
                                         </TextBlock.RenderTransform>
                                     </TextBlock>
                                 </Button>
-
+                                <Button x:Name="btn_resetDark" Margin="2" HorizontalAlignment="Left" Click="Button_Click_Reset_Dark" Content="{display:EngineLang Key='重置'}"
+                                        ToolTip="{display:EngineLang Key='清除当前连接的暗数据，并关闭自动校零和自适应暗校正。'}"
+                                        Visibility="{Binding IsLocalSpectrumBackend, Converter={StaticResource bool2VisibilityConverter}}" />
                             </DockPanel>
 
                             <DockPanel Margin="0,2" Visibility="{Binding DisplayConfig.IsWithND, Converter={StaticResource bool2VisibilityConverter}}">
@@ -164,8 +166,8 @@
                             </DockPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable, Converter={StaticResource bool2VisibilityConverter}}">
-                            <Button Click="Button_Click_Shutter_Doopen" Content="{x:Static properties:Resources.OpenShutter}" />
-                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="{x:Static properties:Resources.CloseShutter}" />
+                            <Button Click="Button_Click_Shutter_Doopen" Content="{display:EngineLang Key='通光（测量）'}" ToolTip="{display:EngineLang Key='让光线进入光谱仪，用于正常测量。'}" />
+                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="{display:EngineLang Key='遮光（校零）'}" ToolTip="{display:EngineLang Key='遮住光线，用于采集暗数据。此按钮只切换光路，不执行校零。'}" />
                         </StackPanel>
 
                     </StackPanel>

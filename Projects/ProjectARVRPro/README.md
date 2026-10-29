@@ -8,7 +8,7 @@ ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dl
 - 宿主版本要求读取随包 `manifest.json` 的 `requires`。项目版本独立于主程序；手工修改 `ProjectARVRPro.csproj` 的 `VersionPrefix`，打包器从主 DLL 同步 manifest 版本。
 - 运行检测需要现场的 Flow 模板、设备服务、Engine MySQL 数据和匹配的 Recipe；本地结果保存在 SQLite。
 - 流程配置默认位于 `%APPDATA%\ColorVision\Config\ProjectARVRProProcessGroups.json`，结果库为同目录 `ProjectARVRPro.db`。首次升级仅在能确认旧共享 `ProcessGroups.json` 属于 ARVRPro 时复制迁移，原文件保留；Recipe 随流程或解析实例保存。
-- 承接 LUX 客户端时，现场只安装 ARVRPro，宿主 Socket 解析模式选现有 `Text`；Pro 检测设置填写 LUX 协议设备号，活动流程组填写 SocketCode，不迁移原 LUX 配置。`T0000` 保留握手，普通命令逐项执行并返回原文本；VID/光通量仍调用设备 AutoFocus/GetData，支持设备已配置的本地或服务后端。原 Pro JSON 对接继续选 `Json`。
+- 承接 LUX 客户端时，现场只安装 ARVRPro，宿主 Socket 解析模式选现有 `Text`；在“流程处理配置 → 其他配置”填写 LUX 设备号、VID 测量方式及限值和 K/B，活动流程组填写 SocketCode，不迁移原 LUX 配置。`T0000` 保留握手；VID/光通量指令不自动显示检测窗口，VID 先打开未连接的相机，再按选择执行 AutoFocus 或 GetPosition，光通量调用 GetData，支持设备已配置的本地或服务后端。原 Pro JSON 对接继续选 `Json`。
 - 真实运行可能切换图案、控制设备及写入结果。Demura 默认“仅返回CSV”，W128 文件存在且可读取即通过；关闭该选项后，完整处理的 `BurnAfterGenerate` 默认开启，须核对源文件和目标设备操作范围。
 
 旧 AOI 模板升级时，将仅用于中转的通用传感器切图节点替换为「ProjectARVRPro → 外部切图」，核对等待超时及完成后延时，并保留外部客户端的主 Socket 连接。旧服务端 Flow 需改为宿主进程内执行。模板不会自动迁移；确认无其它指令引用后再清理专用传感器配置。协议事件名保持 `AoiSwitchPG` / `AOITestSwitchImageComplete`。

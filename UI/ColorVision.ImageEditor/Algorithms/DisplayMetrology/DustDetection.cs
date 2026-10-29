@@ -110,8 +110,8 @@ public sealed partial class DisplayMetrologyProvider
             ("边界截断候选数", rejectedBoundary, "count"), ("分析图宽", width, "px"), ("分析图高", height, "px"));
         var metadata = new Dictionary<string, string> { ["sourcePixelsPerAnalysisPixelX"] = scaleX.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             ["sourcePixelsPerAnalysisPixelY"] = scaleY.ToString("R", System.Globalization.CultureInfo.InvariantCulture) };
-        artifacts.Add(new AlgorithmImageArtifact("有效成像区域", "visualization", AlgorithmImageInterop.FromMat(mask), metadata));
-        artifacts.Add(new AlgorithmImageArtifact("灰尘候选掩膜", "visualization", AlgorithmImageInterop.FromMat(acceptedMask), metadata));
+        artifacts.Add(new AlgorithmImageArtifact("有效成像区域", "visualization", AlgorithmImageInterop.FromMat(mask, cancellationToken: token), metadata));
+        artifacts.Add(new AlgorithmImageArtifact("灰尘候选掩膜", "visualization", AlgorithmImageInterop.FromMat(acceptedMask, cancellationToken: token), metadata));
         artifacts.Add(new AlgorithmGeometryArtifact("dust-regions", AlgorithmCoordinateSpace.Pixel, geometry));
         artifacts.Add(new AlgorithmOverlayArtifact("dust-candidates", AlgorithmOverlayLifetime.Transient, overlays));
         artifacts.Add(new AlgorithmStructuredDataArtifact("dust-analysis", "colorvision.dust-detection/v1", AlgorithmJson.ToElement(new

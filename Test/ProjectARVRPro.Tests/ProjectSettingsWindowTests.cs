@@ -14,6 +14,57 @@ namespace ProjectARVRPro.Tests;
 [Collection(nameof(FlowExecutionStatusTestGroup))]
 public sealed class ProjectSettingsWindowTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OtherSettingsPreserveValidationAndAutoSaveOutsideTheTestingPage(bool dark)
+    {
+        RunUi(dark, () =>
+        {
+            var config = new ProjectARVRProConfig { LuxMachineNo = "H03AR", LuxVidMin = 100, LuxVidMax = 200 };
+            int saves = 0;
+            var panel = new Process.OtherSettingsPanel(config, () => saves++);
+            var window = new Window { Content = panel, Width = 900, Height = 520, ShowActivated = false,
+                ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.Manual, Left = -10000, Top = -10000 };
+            window.SetResourceReference(Window.BackgroundProperty, "GlobalBackground");
+            window.Closing += (_, _) => panel.CommitPendingEdits();
+            try
+            {
+                window.Show();
+                Pump();
+                var inputs = Descendants<TextBox>(panel).ToArray();
+                TextBox machine = inputs.Single(input => input.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path.Path == nameof(config.LuxMachineNo));
+                machine.Text = "invalid;prefix";
+                machine.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Assert.True(Validation.GetHasError(machine));
+                Assert.Equal("H03AR", config.LuxMachineNo);
+                Assert.Equal(0, saves);
+                machine.Text = "H03";
+                machine.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Assert.Equal("H03", config.LuxMachineNo);
+                Assert.Equal(1, saves);
+                var mode = Assert.Single(Descendants<ComboBox>(panel));
+                mode.SelectedValue = LuxVidMeasurementMode.GetPosition;
+                Pump();
+                Assert.Equal(LuxVidMeasurementMode.GetPosition, config.LuxVidMode);
+                Assert.Equal(2, saves);
+                var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                bitmap.Render(window);
+                var png = new PngBitmapEncoder();
+                png.Frames.Add(BitmapFrame.Create(bitmap));
+                using var file = File.Create(Path.Combine(Path.GetTempPath(), $"arvrpro-lux-other-settings-{(dark ? "dark" : "light")}.png"));
+                png.Save(file);
+                TextBox offset = inputs.Single(input => input.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path.Path == nameof(config.LuxVidB));
+                offset.Focus();
+                offset.Text = "3.5";
+                Assert.Equal(0, config.LuxVidB);
+                window.Close();
+                Assert.Equal(3.5, config.LuxVidB);
+                Assert.Equal(3, saves);
+            }
+            finally { window.Close(); }
+        });
+    }
 
     [Fact]
     public void FailedConnectionSettingsSaveRestoresPreviousParameters()

@@ -6,6 +6,9 @@ using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
 using System.IO;
 using System.Net.Sockets;
+using System.Diagnostics;
+using System.Windows.Threading;
+using ColorVision.UI.Controls;
 
 namespace ProjectARVRPro;
 
@@ -109,12 +112,23 @@ public partial class ARVRWindow
         string directory = ViewResultManager.Config.CsvSavePath;
         double min = ProjectConfig.LuxVidMin, max = ProjectConfig.LuxVidMax;
         double factor = ProjectConfig.LuxVidFix, offset = ProjectConfig.LuxVidB;
+        string operation = session.Request.SocketCode == "31" ? "光通量测量"
+            : ProjectConfig.LuxVidMode == LuxVidMeasurementMode.GetPosition ? "VID 获取位置" : "VID 自动聚焦";
+        var elapsed = Stopwatch.StartNew();
+        bool succeeded = false;
+        string? failure = null;
+        string completionEvent = "Failed";
+        void UpdateStatus() => ExecutionStatus.Status = FlowExecutionStatusInfo.Running(operation, operation, elapsed.ElapsedMilliseconds, 0);
+        UpdateStatus();
+        var progress = new DispatcherTimer(TimeSpan.FromMilliseconds(ExecutionStatusRefreshIntervalMs), DispatcherPriority.Background,
+            (_, _) => UpdateStatus(), Dispatcher);
         try
         {
             Directory.CreateDirectory(directory);
             if (session.Request.SocketCode == "01")
             {
                 double? measured = await LuxDeviceMeasurements.MeasureVidAsync(_luxLifetime.Token);
+                succeeded = measured.HasValue;
                 double value = measured.HasValue ? measured.Value * factor + offset : 0;
                 if (!double.IsFinite(value)) throw new InvalidOperationException("VID 结果不是有效数值。");
                 var item = new ObjectiveTestItem { Name = "VID", Unit = "cd/m^2", Value = value, LowLimit = min, UpLimit = max };
@@ -125,20 +139,31 @@ public partial class ARVRWindow
             }
             else
             {
-                var (succeeded, spectrum) = await LuxDeviceMeasurements.MeasureFluxAsync(_luxLifetime.Token);
+                var (measured, spectrum) = await LuxDeviceMeasurements.MeasureFluxAsync(_luxLifetime.Token);
+                succeeded = measured && spectrum != null;
                 if (spectrum != null)
                     SpectrumCsvExportHelper.ExportLuminousFluxMode(Path.Combine(directory, Tool.SanitizeFileName($"D_{session.Request.SerialNumber}.csv")), [spectrum]);
-                session.Complete(session.Request.MeasurementResponse(succeeded ? spectrum?.LuminousFlux : 0));
+                session.Complete(session.Request.MeasurementResponse(measured ? spectrum?.LuminousFlux : 0));
             }
+            completionEvent = succeeded ? "Completed" : "Failed";
+            if (!succeeded) failure = "设备测量失败，请查看设备日志。";
         }
-        catch (OperationCanceledException) when (_luxLifetime.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (_luxLifetime.IsCancellationRequested) { completionEvent = "Canceled"; }
         catch (Exception ex)
         {
+            failure = ex.Message;
             log.Error("LUX 设备测量失败", ex);
             try { session.Complete(session.Request.MeasurementResponse(0)); }
             catch (Exception sendError) { log.Error("LUX 设备回包失败", sendError); }
         }
-        finally { ReleaseLuxSession(session); }
+        finally
+        {
+            progress.Stop();
+            elapsed.Stop();
+            if (!_isDisposed)
+                ExecutionStatus.Status = FlowExecutionStatusInfo.Finished(operation, completionEvent, failure, elapsed.ElapsedMilliseconds);
+            ReleaseLuxSession(session);
+        }
     }
 
     private void ReleaseLuxSession(LuxCommandSession session)

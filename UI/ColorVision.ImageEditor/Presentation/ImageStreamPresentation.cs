@@ -118,23 +118,23 @@ public sealed class ImageStreamPresentation : IDisposable
                 });
                 if (work == null) return;
 
-                HImage output = default;
                 try
                 {
-                    output = await Task.Run(() =>
+                    WriteableBitmap display = await Task.Run(() =>
                     {
                         using HImage source = work.Source.ToHImage();
-                        return _process(source, work.Settings);
+                        using HImage output = _process(source, work.Settings);
+                        // Copy and freeze on the worker too. Large pseudo-color outputs must
+                        // not reintroduce a full-frame UI copy after native processing finishes.
+                        var bitmap = output.ToWriteableBitmap();
+                        bitmap.Freeze();
+                        return bitmap;
                     }).ConfigureAwait(false);
                     await _context.Dispatcher.InvokeAsync(() =>
                     {
                         if (!CanPublish(work)) return;
-                        HImage borrowed = output;
-                        borrowed.isDispose = true;
                         // A displayed bitmap can be retained by an algorithm preview or output
                         // capture. Never borrow and mutate another operation's FunctionImage.
-                        var display = borrowed.ToWriteableBitmap();
-                        display.Freeze();
                         Publish(work.Source, display, work.Sequence);
                     });
                 }
@@ -146,10 +146,6 @@ public sealed class ImageStreamPresentation : IDisposable
                         {
                             if (CanPublish(work)) Publish(work.Source, null, work.Sequence);
                         });
-                }
-                finally
-                {
-                    output.Dispose();
                 }
             }
         }

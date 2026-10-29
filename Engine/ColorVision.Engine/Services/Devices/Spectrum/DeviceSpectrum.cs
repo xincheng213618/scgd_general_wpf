@@ -1010,8 +1010,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
         }
 
-        [CommandDisplay("EditDisplayConfig", Order =-1, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
         [Description("SpectrumDisplayHint")]
         public RelayCommand EditDisplayConfigCommand { get; set; }
         public void EditDisplayConfig()

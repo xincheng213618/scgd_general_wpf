@@ -38,15 +38,35 @@ public sealed class ImageDocument : IDisposable
         CompleteRetirement(DetachCapability(clearContent));
     }
 
-    internal void ReplaceCapability(IImageContentCapability? capability)
+    internal void ReplaceCapability(IImageContentCapability? capability, out long installedContentVersion)
+    {
+        installedContentVersion = -1;
+        (Action? Release, long Version) retirement;
+        lock (_contentSync)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            if (ReferenceEquals(_capability, capability))
+            {
+                installedContentVersion = ContentVersion;
+                return;
+            }
+            var previous = _capability;
+            long version = Interlocked.Increment(ref _contentVersion);
+            Volatile.Write(ref _capability, capability);
+            // Ownership is established before either retirement phase can throw or reenter.
+            installedContentVersion = version;
+            retirement = (previous?.DetachForRetirement(version), version);
+        }
+        CompleteRetirement(retirement);
+    }
+
+    internal void RetireCapabilityIfCurrent(IImageContentCapability? capability, long installedContentVersion)
     {
         (Action? Release, long Version) retirement;
         lock (_contentSync)
         {
-            if (ReferenceEquals(_capability, capability)) return;
-            long version = Interlocked.Increment(ref _contentVersion);
-            retirement = (_capability?.DetachForRetirement(version), version);
-            Volatile.Write(ref _capability, capability);
+            if (!ReferenceEquals(_capability, capability) || ContentVersion != installedContentVersion) return;
+            retirement = DetachCapability(clearContent: false);
         }
         CompleteRetirement(retirement);
     }
@@ -74,7 +94,7 @@ public sealed class ImageDocument : IDisposable
     internal event Action<ImageDocumentMutationKind, long, long>? Changed;
 
     // Compatibility assignments retain their historical semantics. Producers must explicitly
-    // commit in-place writes; a source-reference change is also detected when acquiring a lease.
+    // commit in-place writes; source captures and lease acquisition also detect reference changes.
     internal void AssignSource(ImageSource? source)
     {
         _dispatcher.VerifyAccess();
@@ -105,18 +125,44 @@ public sealed class ImageDocument : IDisposable
             Changed?.Invoke(kind, previous, current);
     }
 
+    internal (ImageSource? Source, long Revision) CaptureSourceState()
+    {
+        if (!_dispatcher.CheckAccess())
+            return _dispatcher.Invoke(CaptureSourceState);
+
+        while (true)
+        {
+            lock (_contentSync)
+            {
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
+                ImageSource? source = Source;
+                if (_cachedSource == null || ReferenceEquals(_cachedSource, source))
+                {
+                    _cachedSource = source;
+                    return (source, Revision);
+                }
+            }
+            // Retirement callbacks can capture an intermediate source and then replace it.
+            // Reconcile that binding too; never hold the content lock across those callbacks.
+            Invalidate(ImageDocumentMutationKind.ImageSourceReplaced);
+        }
+    }
+
     internal ImageFrameLease? AcquireFrame()
     {
         if (!_dispatcher.CheckAccess())
             return _dispatcher.Invoke(AcquireFrame);
 
-        ImageSource? source = Source;
-        if (_cachedSource != null && !ReferenceEquals(_cachedSource, source))
-            Invalidate(ImageDocumentMutationKind.ImageSourceReplaced);
-
+        ImageSource? source = CaptureSourceState().Source;
         ImageFrameLease? lease = _frames.AcquireOrCreate(
             () => source is WriteableBitmap bitmap ? bitmap.ToHImage() : null);
-        if (lease != null) _cachedSource = source;
+        lock (_contentSync)
+        {
+            // A worker may invalidate between source capture and native frame creation.
+            // Only rebind the cache for a lease that still belongs to this source and revision.
+            if (lease != null && _frames.IsCurrent(lease.Revision) && ReferenceEquals(Source, source))
+                _cachedSource = source;
+        }
         return lease;
     }
 

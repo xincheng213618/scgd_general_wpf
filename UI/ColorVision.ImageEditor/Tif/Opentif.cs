@@ -139,19 +139,19 @@ namespace ColorVision.ImageEditor.Tif
                     throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
 
                 BitmapSource source = decodedImage.BitmapSource;
-                WriteableBitmap? currentBitmap = decodedImage.Metadata.ColorVisionParameters == null ? context.ImageView.ViewBitmapSource as WriteableBitmap : null;
                 WriteableBitmap writeableBitmap;
 
+                // Providers may await or cancel before publication; keep the display staging private.
                 // 测量型 Gray32Float 通常不是可直接显示的归一化范围；Gray16 仅作为显示代理，
                 // 测量和无损导出仍持有原始浮点样本，不能从此显示代理反推。
                 if (source.Format == PixelFormats.Gray32Float && TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen)
                 {
-                    writeableBitmap = GetReusableBitmap(currentBitmap, source.PixelWidth, source.PixelHeight, PixelFormats.Gray16, null);
+                    writeableBitmap = new WriteableBitmap(source.PixelWidth, source.PixelHeight, 96, 96, PixelFormats.Gray16, null);
                     CopyGray32FloatToGray16(source, writeableBitmap);
                 }
                 else
                 {
-                    writeableBitmap = GetReusableBitmap(currentBitmap, source.PixelWidth, source.PixelHeight, source.Format, source.Palette);
+                    writeableBitmap = new WriteableBitmap(source.PixelWidth, source.PixelHeight, 96, 96, source.Format, source.Palette);
                     CopyPixels(source, writeableBitmap);
                 }
 
@@ -198,27 +198,6 @@ namespace ColorVision.ImageEditor.Tif
             if (frame.CanFreeze && !frame.IsFrozen)
                 frame.Freeze();
             return new DecodedImage(frame, metadata);
-        }
-
-        private static WriteableBitmap GetReusableBitmap(
-            WriteableBitmap? currentBitmap,
-            int width,
-            int height,
-            PixelFormat pixelFormat,
-            BitmapPalette? palette)
-        {
-            if (currentBitmap != null && !currentBitmap.IsFrozen &&
-                currentBitmap.PixelWidth == width &&
-                currentBitmap.PixelHeight == height &&
-                currentBitmap.Format == pixelFormat &&
-                Math.Abs(currentBitmap.DpiX - 96) <= 0.01 &&
-                Math.Abs(currentBitmap.DpiY - 96) <= 0.01 &&
-                PalettesEqual(currentBitmap.Palette, palette))
-            {
-                return currentBitmap;
-            }
-
-            return new WriteableBitmap(width, height, 96, 96, pixelFormat, palette);
         }
 
         private static void CopyPixels(BitmapSource source, WriteableBitmap target)
@@ -302,21 +281,6 @@ namespace ColorVision.ImageEditor.Tif
                 ArrayPool<float>.Shared.Return(floatPixels);
                 ArrayPool<ushort>.Shared.Return(ushortPixels);
             }
-        }
-
-        private static bool PalettesEqual(BitmapPalette? left, BitmapPalette? right)
-        {
-            if (ReferenceEquals(left, right))
-                return true;
-            if (left == null || right == null || left.Colors.Count != right.Colors.Count)
-                return false;
-
-            for (int index = 0; index < left.Colors.Count; index++)
-            {
-                if (left.Colors[index] != right.Colors[index])
-                    return false;
-            }
-            return true;
         }
 
         private static ImageMetadata ReadMetadata(BitmapMetadata? metadata)

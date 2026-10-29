@@ -53,7 +53,15 @@ public partial class LocalSpectrumWindow : Window
                 ? "正在停止，等待当前采集返回…" : LocalizedText.Get("正在执行…");
             MsgRecord record = device.RunLocalSpectrumCommand(command);
             MsgRecordState state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(record, TimeSpan.FromMinutes(20), CancellationToken.None);
-            Message.Text = state == MsgRecordState.Success ? LocalizedText.Get("操作完成") : record.MsgReturn?.Message ?? LocalizedText.Get("操作失败");
+            Message.Text = state == MsgRecordState.Success
+                ? LocalizedText.Get(command switch
+                {
+                    "ResetDark" => "校零数据已重置，请重新采集。",
+                    "ShutterDoOpen" => "通光指令已完成，可进行测量。",
+                    "ShutterDoClose" => "遮光指令已完成，可进行校零。",
+                    _ => "操作完成"
+                })
+                : record.MsgReturn?.Message ?? LocalizedText.Get("操作失败");
         }
         catch (Exception ex) { Message.Text = ex.Message; }
     }

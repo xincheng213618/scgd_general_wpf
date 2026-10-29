@@ -48,14 +48,14 @@ V1 支持最近邻/线性插值和常量/复制边界。常量边界以规范化
 
 `AlgorithmParameterPreset` 是 provider-neutral 的 V1 文档，保存稳定 AlgorithmId、算法版本、参数 schema 版本、JSON 参数、PresetId 和元数据。`GeometricTransformPresetSerializer` 严格检查 ID/版本/schema 和参数验证结果，避免把未来或其他算法的 preset 静默套用。
 
-- ImageView：“算法 → 几何变换...”可编辑 PropertyGrid 参数、加载/保存不覆盖已有文件的 JSON preset，并通过统一 preview session 执行和提交。结果窗口同时显示已提交图像、mask、正逆矩阵，可分别保存 PNG 或导出结构化 JSON。
+- ImageView：“算法 → 几何变换...”在打开参数窗口前绑定源图会话，可编辑 PropertyGrid 参数、加载/保存不覆盖已有文件的 JSON preset，确认后按[平台单次应用契约](./image-algorithm-platform-v1.md#m0-执行与所有权规则)执行和提交。结果窗口同时显示已提交图像、mask、正逆矩阵，可分别保存 PNG 或导出结构化 JSON。
 - Batch：Catalog 投影自动显示该算法，使用相同默认值、参数类和 primary image artifact；格式转换仍是独立输出策略。
 - Flow：`LocalFlowImageAlgorithmAdapter` 可复用同一 Invocation/Result；没有生产 STNode 入口。
 - Copilot：几何变换未加入显式白名单，alias、Catalog 或反射发现不会自动暴露执行入口。
 
 ## 验证与性能
 
-`GeometricTransformV1Tests` 覆盖九种规范格式 identity golden、仿射平移与边界值、自动包围 90° 旋转、透视正逆点往返、有效 mask、preset JSON、奇异/投影无穷远/输出预算拒绝、取消、输入只读、成功/取消/Result 释放、Batch/Flow，以及 ImageView session 提交和结果窗口资源释放。
+`GeometricTransformV1Tests` 覆盖九种规范格式 identity golden、仿射平移与边界值、自动包围 90° 旋转、透视正逆点往返、有效 mask、preset JSON、奇异/投影无穷远/输出预算拒绝、取消、输入只读、成功/取消/Result 释放及 Batch/Flow。ImageView 的单次应用生命周期由平台共享回归检查；参数窗口和结果窗口仍需要交互验收。
 
 可选性能门禁 `GeometricTransformPipelineProbe` 在 4K Gray16/Bgra32 上验证 retained managed 图像只包含一份输出和一份 mask（另加固定 16 MiB 容差），并限制单次执行在 20 秒内。实际门禁使用的 native warp 读取 lease，无 `input → byte[] → Mat` 复制；剩余不可消除的边界是 native 输出到 Result-owned buffer 的一次复制，以及单字节 mask。
 

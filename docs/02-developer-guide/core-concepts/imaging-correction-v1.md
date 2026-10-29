@@ -27,7 +27,7 @@ related: ["algorithms.platform", "algorithms.index", "operations.calibration"]
 
 **执行成功即已提交。** 结果窗口不是提交前确认页，关闭它只释放本次结果，不撤销主图，也不自动保存原始图像文件。保留磁盘输出需使用保存按钮或批量输出。
 
-当前专用入口没有可交互的计算进度/取消按钮。“取消”仅用于执行前的参数窗口；内部 preview session 的取消和过期检查属于执行保护。该 session 在异步参考加载完成后才捕获当前源图，未绑定打开参数窗口时的图像；参考加载期间切图可能使后续处理作用于新图。开始处理后的 document/revision/invocation 变化才按[平台 session 契约](./image-algorithm-platform-v1.md#m0-执行与所有权规则)拒绝迟到提交。
+当前专用入口没有可交互的计算进度/取消按钮。“取消”用于执行前的参数窗口；内部 preview session 的取消和过期检查属于执行保护。入口在打开参数窗口前建立会话，保留源图快照并绑定 document、source revision 和调用所有权，贯穿参数确认及异步参考加载。期间切图、刷新源图或其它算法取得调用所有权时，本次操作返回 `commit_superseded` 并释放已加载的 transferred 参考；只有绑定仍有效时才开始计算与提交。参数取消、加载失败或异常都会释放会话；已过期会话的清理不会恢复掉后继预览。开始处理后的有效性继续遵循[平台 session 契约](./image-algorithm-platform-v1.md#m0-执行与所有权规则)。
 
 ## 准备参考图
 
@@ -124,7 +124,7 @@ map 值按 `Gray8值/255 > BadPixelThresholdNormalized` 标记，默认阈值 0.
 
 加载后直接修改阶段开关或路径仍可能保留原 PresetId；提交高级参数会清空 ID，另存 preset 后使用新文件名作为 ID。因此 PresetId 是追溯标签，不证明参数与最初文件完全一致；核对结果中实际参数和输入 checksum。
 
-参考加载器记录绝对路径、SHA-256 和 `encoded-device-values` 标签；它先计算文件哈希再解码，文件以 FileShare.ReadWrite 打开，不提供防并发修改的不可变快照保证。需要复现时保留稳定的参考文件及匹配校验和。ImageView 的 source 通常记录 revision，无参考文件式哈希；API/Flow 可提供自身 URI、revision、checksum，字段缺失不能补写成已验证来源。
+参考加载器记录绝对路径、原始编码文件的 SHA-256 和 `encoded-device-values` 标签；同一个 `FileShare.Read` 句柄覆盖哈希、第一帧解码、快照及规范像素复制。按 Windows 文件共享语义，它允许其它读取者，拒绝已有写句柄，并阻止持有期间新增的写入打开；被占用时沿宿主现有失败路径报告错误，不继续使用可能变化的参考。成功返回或读取失败后都会关闭句柄；成功结果拥有独立像素缓冲，后续原文件改变不影响该输入及已记录的校验和。需要复现时仍保留参考文件及匹配校验和。ImageView 的 source 通常记录 revision，无参考文件式哈希；API/Flow 可提供自身 URI、revision、checksum，字段缺失不能补写成已验证来源。
 
 ## 检查与保存结果
 
@@ -173,6 +173,6 @@ Provider 对所有输入只读。Borrowed 由调用方释放，Transferred 由 R
 | `commit_superseded` | 处理过程中源图/revision/调用已变化；重新核对当前图像后执行 |
 | JSON/CSV 导出后没有图像 | 这些文件没有像素，使用两个独立 PNG 保存按钮或另行处理 API 图像结果 |
 
-`ImagingCorrectionV1Tests` 检查九种格式的有限数据精确复制、dark/flat/shading 数值、全通道有效比例、范围/非有限输出、坏点中值、输入匹配、所有权、ImageView 提交、Batch/Flow 和 JSON 拒绝覆盖。它没有覆盖禁用路径的非有限数据、默认裁剪下范围外 Alpha、参考加载期间切图、并发改写参考文件，以及所有 PNG 编码格式。
+`ImagingCorrectionV1Tests` 检查九种格式的有限数据精确复制、dark/flat/shading 数值、全通道有效比例、范围/非有限输出、坏点中值、输入匹配、所有权、ImageView 提交、Batch/Flow 和 JSON 拒绝覆盖。参考加载的确定性用例检查已有写句柄拒绝、并行读取、关闭写句柄后恢复、原始编码校验和、独立像素，以及成功/解码失败后的文件句柄释放；异步门闩覆盖参考准备期间切图、revision 变化、同 revision 新会话及未失效正常提交，检查源图身份、revision 和 transferred 输入释放。它没有覆盖禁用路径的非有限数据、默认裁剪下范围外 Alpha，以及所有 PNG 编码格式。
 
 Provider 分配紧凑校正图和 Gray8 mask，不建立全帧浮点中间图；这不是总内存上限。处理还存在逐样本消息字符串分配、宿主输入/显示副本及表格开销。可选 `ImagingCorrectionPipelineProbe` 对 4K Gray16/Bgra32 暗场校正设定“管理分配不超过结果图+mask+16 MiB、延迟小于 30 秒”的门槛，必须显式启用；源码中的门槛不是实际通过证明，也不覆盖所有阶段组合。参考扫描每 32 行、输出/坏点每 16 行检查取消；单个检查间隔的工作量仍依赖宽度、通道与邻域。公共门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。

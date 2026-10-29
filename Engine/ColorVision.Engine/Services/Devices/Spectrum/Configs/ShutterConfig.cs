@@ -33,10 +33,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
-        [DisplayName("SpectrumOpenShutter"), PropertyVisibility(nameof(UseFilterWheel), true)]
+        [DisplayName("通光指令（测量）"), Description("切换至通光状态，让光线进入光谱仪后进行正常测量。"), PropertyVisibility(nameof(UseFilterWheel), true)]
         public string OpenCmd { get => _OpenCmd; set { _OpenCmd = value; OnPropertyChanged(); } }
         private string _OpenCmd = "a";
-        [DisplayName("SpectrumCloseShutter"), PropertyVisibility(nameof(UseFilterWheel), true)]
+        [DisplayName("遮光指令（校零）"), Description("切换至遮光状态，遮住光线后采集暗数据。"), PropertyVisibility(nameof(UseFilterWheel), true)]
         public string CloseCmd { get => _CloseCmd; set { _CloseCmd = value; OnPropertyChanged(); } }
         private string _CloseCmd = "b";
 

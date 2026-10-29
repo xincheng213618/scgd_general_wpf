@@ -16,17 +16,15 @@ namespace ColorVision.ImageEditor.Algorithms
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             string fullPath = Path.GetFullPath(filePath);
             if (!File.Exists(fullPath)) throw new FileNotFoundException($"Reference image '{role}' does not exist.", fullPath);
-            byte[] checksumBytes;
-            BitmapSource frame;
-            using (FileStream stream = File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                checksumBytes = SHA256.HashData(stream);
-                stream.Position = 0;
-                BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                if (decoder.Frames.Count == 0) throw new InvalidDataException($"Reference image '{role}' has no readable frame.");
-                frame = decoder.Frames[0];
-                _ = ImageAlgorithmInputFactory.FromPixelFormat(frame.Format);
-            }
+            // Keep the Windows read-sharing handle through hashing and canonical pixel copying.
+            // Otherwise a writer can change the reference between these two reads.
+            using FileStream stream = File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            byte[] checksumBytes = SHA256.HashData(stream);
+            stream.Position = 0;
+            BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            if (decoder.Frames.Count == 0) throw new InvalidDataException($"Reference image '{role}' has no readable frame.");
+            BitmapSource frame = decoder.Frames[0];
+            _ = ImageAlgorithmInputFactory.FromPixelFormat(frame.Format);
             WriteableBitmap snapshot = new(frame);
             if (snapshot.CanFreeze) snapshot.Freeze();
             return new AlgorithmInput

@@ -68,6 +68,7 @@ namespace ProjectARVRPro.Process
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
+            OtherSettings.CommitPendingEdits();
             // Cleanup event handlers on window close
             CleanupEventHandlers();
         }
@@ -345,6 +346,7 @@ namespace ProjectARVRPro.Process
             if (!IsInitialized || !ReferenceEquals(e.OriginalSource, sender))
                 return;
 
+            OtherSettings?.CommitPendingEdits();
             if (DataContext is ProcessManager manager)
             {
                 if (MainTabControl.SelectedIndex == 0)

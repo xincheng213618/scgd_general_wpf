@@ -266,6 +266,16 @@ internal sealed class LocalSpectrumSession : IDisposable
         dark = buffer;
     }
 
+    public void ResetDark(ConfigSpectrum config)
+    {
+        lock (gate)
+        {
+            EnsureOpen(config);
+            dark = new float[10000];
+            adaptiveDarkInitialized = false;
+        }
+    }
+
     public void InitAutoDark(ConfigSpectrum c)
     {
         lock (gate)

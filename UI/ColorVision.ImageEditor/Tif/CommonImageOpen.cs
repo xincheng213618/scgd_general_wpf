@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
@@ -85,15 +84,8 @@ namespace ColorVision.ImageEditor.Tif
 
                 ApplyMetadata(context, decodedImage.Metadata);
 
-                WriteableBitmap writeableBitmap;
-                if (decodedImage.Metadata.ColorVisionParameters == null && context.ImageView.ViewBitmapSource is WriteableBitmap currentBitmap && TryUpdateWriteableBitmap(bitmapSource, currentBitmap))
-                {
-                    writeableBitmap = currentBitmap;
-                }
-                else
-                {
-                    writeableBitmap = new WriteableBitmap(bitmapSource);
-                }
+                // Providers may await or cancel before publication; never stage into the current source.
+                WriteableBitmap writeableBitmap = new(bitmapSource);
 
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!IsCurrentRequest(context, requestedFilePath, requestId))
@@ -209,45 +201,6 @@ namespace ColorVision.ImageEditor.Tif
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageTitle, metadata.Title, nameof(CommonImageOpen), "EXIF 标题");
             if (metadata.Subject != null)
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageSubject, metadata.Subject, nameof(CommonImageOpen), "EXIF 主题");
-        }
-
-        internal static bool TryUpdateWriteableBitmap(BitmapSource source, WriteableBitmap target)
-        {
-            if (target.IsFrozen) return false;
-            if (source.PixelWidth != target.PixelWidth || source.PixelHeight != target.PixelHeight || source.Format != target.Format)
-                return false;
-            if (Math.Abs(source.DpiX - target.DpiX) > 0.01 || Math.Abs(source.DpiY - target.DpiY) > 0.01)
-                return false;
-            if (!PalettesEqual(source.Palette, target.Palette))
-                return false;
-
-            target.Lock();
-            try
-            {
-                int bufferSize = checked(target.BackBufferStride * target.PixelHeight);
-                source.CopyPixels(new Int32Rect(0, 0, source.PixelWidth, source.PixelHeight), target.BackBuffer, bufferSize, target.BackBufferStride);
-                target.AddDirtyRect(new Int32Rect(0, 0, target.PixelWidth, target.PixelHeight));
-            }
-            finally
-            {
-                target.Unlock();
-            }
-            return true;
-        }
-
-        private static bool PalettesEqual(BitmapPalette? left, BitmapPalette? right)
-        {
-            if (ReferenceEquals(left, right))
-                return true;
-            if (left == null || right == null || left.Colors.Count != right.Colors.Count)
-                return false;
-
-            for (int index = 0; index < left.Colors.Count; index++)
-            {
-                if (left.Colors[index] != right.Colors[index])
-                    return false;
-            }
-            return true;
         }
 
         private sealed record DecodedImage(BitmapSource BitmapSource, ImageMetadata Metadata);

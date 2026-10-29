@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -10,6 +11,7 @@ namespace ColorVision.ImageEditor.Algorithms
 {
     public sealed class OpenCvAlgorithmProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
     {
+        private readonly PseudoColorProcessor _pseudoColor = new();
         private static readonly HashSet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
         private static readonly HashSet<AlgorithmId> SupportedIds = new()
         {
@@ -77,17 +79,74 @@ namespace ColorVision.ImageEditor.Algorithms
                 });
             }
             using AlgorithmImageMatLease source = AlgorithmImageInterop.BorrowReadOnly(input.Image);
-            using Mat result = Execute(source.Mat, context.Descriptor.Id, context.Parameters, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            AlgorithmImageBuffer output = AlgorithmImageInterop.FromMat(result, input.Image.DpiX, input.Image.DpiY);
-            return ValueTask.FromResult(new AlgorithmResult
+            AlgorithmImageBuffer output;
+            if (context.Descriptor.Id == StandardAlgorithmIds.BasicAdjustment)
             {
-                InvocationId = context.Invocation.InvocationId,
-                AlgorithmId = context.Descriptor.Id,
-                AlgorithmVersion = context.Descriptor.Version,
-                Status = AlgorithmResultStatus.Succeeded,
-                Artifacts = new AlgorithmArtifact[] { new AlgorithmImageArtifact("image", "primary", output) },
-            });
+                output = ExecuteBasicAdjustment(source.Mat, input.Image, (BasicAdjustmentParameters)context.Parameters, cancellationToken);
+            }
+            else if (context.Descriptor.Id == StandardAlgorithmIds.PseudoColor)
+            {
+                output = _pseudoColor.Execute(source.Mat, input.Image, (PseudoColorParameters)context.Parameters, cancellationToken);
+            }
+            else
+            {
+                using Mat result = Execute(source.Mat, context.Descriptor.Id, context.Parameters, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                output = AlgorithmImageInterop.FromMat(result, input.Image.DpiX, input.Image.DpiY, cancellationToken);
+            }
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return ValueTask.FromResult(new AlgorithmResult
+                {
+                    InvocationId = context.Invocation.InvocationId,
+                    AlgorithmId = context.Descriptor.Id,
+                    AlgorithmVersion = context.Descriptor.Version,
+                    Status = AlgorithmResultStatus.Succeeded,
+                    Artifacts = new AlgorithmArtifact[] { new AlgorithmImageArtifact("image", "primary", output) },
+                });
+            }
+            catch
+            {
+                output.Dispose();
+                throw;
+            }
+        }
+
+        private static unsafe AlgorithmImageBuffer ExecuteBasicAdjustment(Mat source, AlgorithmImageBuffer input,
+            BasicAdjustmentParameters parameters, CancellationToken cancellationToken)
+        {
+            int stride = checked(input.Width * input.Format.BytesPerPixel());
+            int length = checked(stride * input.Height);
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[]? data = null;
+            MemoryHandle pin = default;
+            Mat? destination = null;
+            try
+            {
+                OpenCvImageAlgorithms.AdjustBasicTo(source, () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (data != null) throw new InvalidOperationException("Basic adjustment requested its output more than once.");
+                    data = new byte[length];
+                    pin = data.AsMemory().Pin();
+                    destination = Mat.FromPixelData(input.Height, input.Width, AlgorithmImageInterop.ToMatType(input.Format),
+                        (IntPtr)pin.Pointer, stride);
+                    return destination;
+                }, parameters.Exposure, parameters.Brightness,
+                    parameters.Contrast, parameters.Gamma, cancellationToken);
+                if (destination == null || data == null)
+                    throw new InvalidOperationException("Basic adjustment did not create its output.");
+                if (destination.Data != (IntPtr)pin.Pointer || destination.Step() != stride)
+                    throw new InvalidOperationException("Basic adjustment replaced its externally owned output storage.");
+            }
+            finally
+            {
+                destination?.Dispose();
+                pin.Dispose();
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return new AlgorithmImageBuffer(input.Width, input.Height, stride, input.Format, data, input.DpiX, input.DpiY);
         }
 
         private static bool TryGetCompatibilityFailure(
@@ -135,15 +194,16 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static Mat Execute(Mat source, AlgorithmId id, IAlgorithmParameters parameters, CancellationToken cancellationToken)
         {
-            Mat result = source.Clone();
+            cancellationToken.ThrowIfCancellationRequested();
+            // These operations produce their own output. Copying the source before replacing it
+            // would allocate and discard a full image (366 MB for a 61 MP Bgr48 frame).
+            bool createsOutput = id == StandardAlgorithmIds.WhiteBalance || id == StandardAlgorithmIds.Canny
+                || id == StandardAlgorithmIds.HistogramEqualization || id == StandardAlgorithmIds.PseudoColor;
+            Mat result = createsOutput ? new Mat() : source.Clone();
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (id == StandardAlgorithmIds.Invert) OpenCvImageAlgorithms.Invert(result);
-                else if (id == StandardAlgorithmIds.BasicAdjustment)
-                {
-                    BasicAdjustmentParameters value = (BasicAdjustmentParameters)parameters;
-                    OpenCvImageAlgorithms.AdjustBasic(result, value.Exposure, value.Brightness, value.Contrast, value.Gamma);
-                }
                 else if (id == StandardAlgorithmIds.Threshold)
                 {
                     ThresholdParameters value = (ThresholdParameters)parameters;
@@ -261,41 +321,16 @@ namespace ColorVision.ImageEditor.Algorithms
 
         internal static Mat ApplyPseudoColor(Mat source, PseudoColorParameters parameters)
         {
-            using Mat gray = SelectChannel(source, parameters.Channel);
-            using Mat gray8 = ConvertPseudoColorSource(gray, parameters, out double minimum, out double maximum);
-            using Mat scaled = new();
-            if (maximum > minimum)
+            Mat result = new(source.Rows, source.Cols, MatType.CV_8UC3);
+            try
             {
-                gray8.ConvertTo(scaled, MatType.CV_8U, byte.MaxValue / (maximum - minimum), -minimum * byte.MaxValue / (maximum - minimum));
+                PseudoColorProcessor.Render(source, result, parameters, default);
+                return result;
             }
-            else
-            {
-                gray8.CopyTo(scaled);
-            }
-            Mat result = new();
-            Cv2.ApplyColorMap(scaled, result, (OpenCvSharp.ColormapTypes)(int)parameters.Colormap);
-            using Mat below = new();
-            using Mat above = new();
-            Cv2.Compare(gray8, minimum, below, CmpTypes.LT);
-            Cv2.Compare(gray8, maximum, above, CmpTypes.GT);
-            result.SetTo(Scalar.Black, below);
-            result.SetTo(Scalar.White, above);
-            return result;
+            catch { result.Dispose(); throw; }
         }
 
-        private static Mat SelectChannel(Mat source, int channel)
-        {
-            if (source.Channels() == 1) return source.Clone();
-            if (channel >= 0 && channel < source.Channels())
-            {
-                Mat selected = new();
-                Cv2.ExtractChannel(source, selected, channel);
-                return selected;
-            }
-            return ConvertToGray(source);
-        }
-
-        private static Mat ConvertPseudoColorSource(Mat source, PseudoColorParameters parameters, out double minimum, out double maximum)
+        internal static Mat ConvertPseudoColorSource(Mat source, PseudoColorParameters parameters, out double minimum, out double maximum)
         {
             if (parameters.UseNominalRange)
             {

@@ -167,9 +167,16 @@ public class LocalCameraMotorTests
         int evaluations = 0, previews = 0;
         native.OnSample = () => evaluations++;
         native.OnPreview = sink => sink?.Invoke(new(IntPtr.Zero, 2, 1, 16, 1));
-        var result = session.AutoFocus(Settings(), 10, 1, preview: frame => { Assert.Equal(16, frame.Bits); previews++; });
+        var updates = new List<(int Position, double? Score)>();
+        var result = session.AutoFocus(Settings(), 10, 1, preview: frame => { Assert.Equal(16, frame.Bits); previews++; },
+            progress: (position, _, score) => { Assert.Equal(native.Position, position); updates.Add((position, score)); });
         Assert.Equal(result.Samples, evaluations);
         Assert.Equal(evaluations, previews);
+        Assert.Equal(result.Samples + 1, updates.Count(update => !update.Score.HasValue));
+        Assert.Equal(result.Samples + 1, updates.Count(update => update.Score.HasValue));
+        Assert.Equal((result.Position, (double?)result.Score), updates[^1]);
+        Assert.All(updates.Where(update => update.Score.HasValue), update =>
+            Assert.Equal(1000000 - Math.Pow(update.Position - 463, 2), update.Score!.Value));
         using var stop = new CancellationTokenSource();
         int moves = native.Moves;
         Assert.Throws<OperationCanceledException>(() => session.AutoFocus(Settings(), 10, 1, stop.Token, _ => stop.Cancel()));
@@ -183,8 +190,15 @@ public class LocalCameraMotorTests
         var template = new AutoFocusParam { MinPosition = 0, MaxPosition = 1000, CurStep = 100, Forwardparam = 100, StopStep = 1 };
         var snapshot = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);
         template.MaxPosition = 2000;
+        template.CurStep = 200;
+        template.Forwardparam = 300;
+        template.StopStep = 2;
+        template.Curtailparam = 0.4;
+        template.nTimeout = 60000;
         Assert.Equal(1000, snapshot.Maximum);
-        Assert.Equal(2000, LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig).Maximum);
+        Assert.Equal((100, 100d, 1, 0.3, 30000), (snapshot.InitialStep, snapshot.FineStep, snapshot.StopStep, snapshot.Reduction, snapshot.Timeout));
+        var nextRun = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);
+        Assert.Equal((2000, 200, 300d, 2, 0.4, 60000), (nextRun.Maximum, nextRun.InitialStep, nextRun.FineStep, nextRun.StopStep, nextRun.Reduction, nextRun.Timeout));
         template.MinPosition = 300000;
         template.MaxPosition = 450000;
         var vidFocus = LocalAutoFocusSettings.FromTemplate(template, config.MotorConfig);

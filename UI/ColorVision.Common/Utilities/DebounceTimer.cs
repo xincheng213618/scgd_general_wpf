@@ -1,23 +1,25 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Timers;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Common.Utilities
 {
 
     public static class DebounceTimer
     {
-        private static readonly ConcurrentDictionary<string, Timer> _timers = new();
+        private static readonly DebounceScheduler Scheduler = new();
 
         public static void AddOrResetTimer<T,T1>(string actionType, int delayMilliseconds, Action<T,T1> action, T parameter, T1 parameter1)
         {
+            ArgumentNullException.ThrowIfNull(action);
             ElapsedEventHandler handler = (s, e) => action(parameter, parameter1);
             AddOrResetTimer(actionType, delayMilliseconds, handler);
         }
 
         public static void AddOrResetTimer<T>(string actionType, int delayMilliseconds, Action<T> action, T parameter)
         {
+            ArgumentNullException.ThrowIfNull(action);
             ElapsedEventHandler handler = (s, e) => action(parameter);
             AddOrResetTimer(actionType, delayMilliseconds, handler);
         }
@@ -26,18 +28,17 @@ namespace ColorVision.Common.Utilities
         /// </summary>
         public static void AddOrResetTimer(string actionType, int delayMilliseconds, Action action)
         {
+            ArgumentNullException.ThrowIfNull(action);
             ElapsedEventHandler handler = (s, e) => action();
             AddOrResetTimer(actionType, delayMilliseconds, handler);
         }
 
         public static void AddOrResetTimerDispatcher(string actionType, int delayMilliseconds, Action action)
         {
-            ElapsedEventHandler handler = (s, e) => Application.Current?.Dispatcher.BeginInvoke(action);
-            AddOrResetTimer(actionType, delayMilliseconds, handler);
+            ArgumentNullException.ThrowIfNull(action);
+            Scheduler.AddOrReset(actionType, fire => new SystemDebounceTimer(delayMilliseconds, (sender, args) => action(), fire),
+                (execute, abandon) => QueueOnDispatcher(Application.Current?.Dispatcher, execute, abandon));
         }
-
-
-
 
         /// <summary>
         /// Adds or resets a debounced event timer for a given action type.
@@ -47,50 +48,42 @@ namespace ColorVision.Common.Utilities
         /// <param name="action">The callback to invoke after the delay.</param>
         public static void AddOrResetTimer(string actionType, int delayMilliseconds, ElapsedEventHandler action)
         {
-            // Stop and dispose the existing timer if it exists.
-            Cancel(actionType);
-
-            // Create a new timer and configure it.
-            var timer = new Timer(delayMilliseconds)
-            {
-                AutoReset = false,
-                Enabled = true
-            };
-            timer.Elapsed += (sender, args) =>
-            {
-                action(sender, args);
-                // Dispose the timer after the action is triggered.
-                if (_timers.TryRemove(actionType, out var elapsedTimer))
-                {
-                    elapsedTimer.Dispose();
-                }
-            };
-
-            // Start the timer and add it to the dictionary.
-            timer.Start();
-            _timers.TryAdd(actionType, timer);
+            ArgumentNullException.ThrowIfNull(action);
+            Scheduler.AddOrReset(actionType, fire => new SystemDebounceTimer(delayMilliseconds, action, fire));
         }
 
-        public static void Cancel(string actionType)
+        public static void Cancel(string actionType) => Scheduler.Cancel(actionType);
+
+        internal static void QueueOnDispatcher(Dispatcher? dispatcher, Action execute, Action abandon)
         {
-            if (_timers.TryRemove(actionType, out var existingTimer))
+            if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             {
-                existingTimer.Stop();
-                existingTimer.Dispose();
+                abandon();
+                return;
             }
+            DispatcherOperation operation = dispatcher.BeginInvoke(execute);
+            operation.Aborted += (sender, args) => abandon();
+            if (operation.Status == DispatcherOperationStatus.Aborted) abandon();
         }
 
         /// <summary>
         /// Disposes all timers and clears the dictionary.
         /// </summary>
-        public static void DisposeAllTimers()
+        public static void DisposeAllTimers() => Scheduler.DisposeAll();
+
+        private sealed class SystemDebounceTimer : IDebounceTimer
         {
-            foreach (var timer in _timers.Values)
+            private readonly Timer _timer;
+
+            internal SystemDebounceTimer(int delayMilliseconds, ElapsedEventHandler action, Action<Action> fire)
             {
-                timer.Stop();
-                timer.Dispose();
+                _timer = new Timer(delayMilliseconds) { AutoReset = false };
+                _timer.Elapsed += (sender, args) => fire(() => action(sender, args));
             }
-            _timers.Clear();
+
+            public void Start() => _timer.Start();
+
+            public void Dispose() => _timer.Dispose();
         }
     }
 }

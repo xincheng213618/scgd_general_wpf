@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (_disposed) return;
                 bool connected = Device.CameraBackend.LocalOwned;
-                SynchronizeSessionMode();
+                if (!Device.CameraBackend.IsCommandRunning) SynchronizeSessionMode();
                 if (!connected || m_etakeImageMode != TakeImageMode.Live) _localRealtimePipeline.Stop(resetRealtime: true);
                 UpdateConnectionState(connected);
             });
@@ -215,26 +215,27 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void UpdateConnectionState(bool isConnected)
         {
             _isConnected = isConnected;
-            bool canConfigure = !isConnected && !_isRefreshingCameraIds && !_isCapturing;
+            bool busy = _isCapturing || Device.CameraBackend.IsCommandRunning;
+            bool canConfigure = !isConnected && !_isRefreshingCameraIds && !busy;
 
             btn_Connect.IsEnabled = canConfigure;
-            btn_close.IsEnabled = isConnected && !_isCapturing;
+            btn_close.IsEnabled = isConnected && !busy;
             btn_reset.IsEnabled = canConfigure;
             btn_RefreshCameraId.IsEnabled = canConfigure;
 
             cb_CM_TYPE.IsEnabled = canConfigure;
             cb_CM_MODE.IsEnabled = canConfigure;
             cb_CM_ID.IsEnabled = canConfigure && string.IsNullOrWhiteSpace(Device.Config.CameraCode);
-            cb_get_mode.IsEnabled = !_isCapturing && !_isRefreshingCameraIds;
+            cb_get_mode.IsEnabled = !busy && !_isRefreshingCameraIds;
             bool usesMvs = m_eCameraMdl is CameraModel.HK_USB or CameraModel.HK_CARD && m_eCameraMode != CameraMode.CV_MODE
                 && (isConnected ? Device.LocalCameraSession.OpenedUseHikMvs : Device.DisplayConfig.UseHikMvs);
             for (int index = (int)TakeImageMode.Measure_Fast; index <= (int)TakeImageMode.Measure_FastEx; index++)
                 ((ComboBoxItem)cb_get_mode.Items[index]).IsEnabled = !usesMvs;
             cb_bpp.IsEnabled = canConfigure;
 
-            bool canCapture = isConnected && !_isCapturing;
+            bool canCapture = isConnected && !busy;
             btn_Meas.IsEnabled = canCapture;
-            btn_CalAutoExp.IsEnabled = isConnected && !_isCapturing;
+            btn_CalAutoExp.IsEnabled = isConnected && !busy;
             HikCaptureTestButton.IsEnabled = canConfigure;
         }
 
@@ -420,7 +421,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (_isCapturing)
+            if (_isCapturing || Device.CameraBackend.IsCommandRunning)
             {
                 e.Cancel = true;
                 CaptureStatusText.Text = EngineLocalization.Get("正在取图，完成后可以关闭窗口。");

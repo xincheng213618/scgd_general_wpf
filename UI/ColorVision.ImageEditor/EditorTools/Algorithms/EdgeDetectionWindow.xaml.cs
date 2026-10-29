@@ -14,12 +14,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private readonly string _debounceKey = $"{nameof(EdgeDetectionWindow)}_{Guid.NewGuid():N}";
         private readonly ImageAlgorithmPreviewSession _preview;
         private readonly CannyParameters _parameters = new();
+        private long _parameterRevision;
 
         public EdgeDetectionWindow(ImageProcessingContext image)
         {
             InitializeComponent();
             this.ApplyCaption();
-            _preview = ImageAlgorithmPreviewSession.Start(image);
+            _preview = ImageAlgorithmPreviewSession.StartForCatalogPreview(image);
             Threshold1Slider.Value = _parameters.LowThreshold;
             Threshold2Slider.Value = _parameters.HighThreshold;
             _ = ApplyPreviewAsync();
@@ -30,7 +31,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             if (!IsInitialized || Threshold1Slider == null || Threshold2Slider == null) return;
             _parameters.LowThreshold = Threshold1Slider.Value;
             _parameters.HighThreshold = Threshold2Slider.Value;
-            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyPreviewAsync());
+            if (_preview == null) return;
+            _parameterRevision++;
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, _preview.GuardDeferredPreview(() => _ = ApplyPreviewAsync()));
         }
 
         private async System.Threading.Tasks.Task<bool> ApplyPreviewAsync()
@@ -56,7 +59,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
-            if (await ApplyPreviewAsync() && _preview.Commit()) Close();
+            long parameterRevision = _parameterRevision;
+            if (await ApplyPreviewAsync() && parameterRevision == _parameterRevision && _preview.Commit()) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

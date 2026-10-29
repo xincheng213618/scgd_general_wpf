@@ -312,11 +312,16 @@ public sealed class LocalSpectrumTests
         var native = new FakeNative();
         var port = new FakeShutterPort(native.Calls);
         var wheel = new FakeFilterWheel(native.Calls, files.Config.ShutterCfg);
-        using var session = new LocalSpectrumSession(native, shutter: new(_ => port, _ => wheel));
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => port, _ => wheel, ms =>
+        {
+            Assert.Equal(files.Config.ShutterCfg.DelayTime, ms);
+            native.Calls.Add("shutter-settled");
+        }));
         session.Open(files.Config);
         var result = session.Capture(new() { AutoIntegration = true, AutoInitDark = true, Eqe = eqe, Current = 1 }, files.Config);
         Assert.Equal(240, result.IntegralTime);
-        Assert.Equal(new[] { "smoothing", "wave", "magnitude", "shutter-open", "auto", "shutter-close", "dark", "shutter-open", "capture" }, native.Calls);
+        string[] expected = ["smoothing", "wave", "magnitude", "shutter-open", "shutter-settled", "auto", "shutter-close", "shutter-settled", "dark", "shutter-open", "shutter-settled", "capture"];
+        Assert.Equal(useFilterWheel ? expected.Where(call => call != "shutter-settled") : expected, native.Calls);
         Assert.Equal(240, native.DarkTime);
         Assert.Equal(useFilterWheel ? 0 : 3, port.DiscardCalls);
         if (useFilterWheel)
@@ -357,7 +362,7 @@ public sealed class LocalSpectrumTests
                 bool open = command == "a";
                 return [Confirm(open) == open ? "turn on" : "turn off"];
             }
-        }, _ => wheel);
+        }, _ => wheel, _ => { });
         using var session = new LocalSpectrumSession(native, shutter: shutter);
         session.Open(files.Config);
         var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoInitDark = true }, files.Config));
@@ -376,7 +381,7 @@ public sealed class LocalSpectrumTests
         using var files = new CalibrationFiles();
         files.Config.IsShutterEnable = true;
         var native = new FakeNative();
-        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls) { Reply = _ => ["turn off"] }));
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls) { Reply = _ => ["turn off"] }, waitForSettle: _ => { }));
         session.Open(files.Config);
         Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoIntegration = true, AutoInitDark = true }, files.Config));
         Assert.DoesNotContain("auto", native.Calls);
@@ -393,7 +398,7 @@ public sealed class LocalSpectrumTests
         files.Config.IsShutterEnable = true;
         files.Config.ShutterCfg.UseFilterWheel = useFilterWheel;
         var native = new FakeNative();
-        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls), config => new FakeFilterWheel(native.Calls, config)));
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls), config => new FakeFilterWheel(native.Calls, config), _ => { }));
         session.Open(files.Config);
         session.InitAutoDark(files.Config);
         Assert.Equal(new[] { "shutter-close", "init-adaptive", "shutter-open" }, native.Calls);
@@ -410,7 +415,7 @@ public sealed class LocalSpectrumTests
         config.IsShutterEnable = true;
         var native = new FakeNative();
         var ports = new List<FakeShutterPort>();
-        var shutter = new LocalSpectrumShutter(_ => { var port = new FakeShutterPort(native.Calls); ports.Add(port); return port; });
+        var shutter = new LocalSpectrumShutter(_ => { var port = new FakeShutterPort(native.Calls); ports.Add(port); return port; }, waitForSettle: _ => { });
         using var session = new LocalSpectrumSession(native, shutter: shutter);
         session.Open(config);
         session.ControlShutter("ShutterConnect", config);
@@ -434,7 +439,8 @@ public sealed class LocalSpectrumTests
     {
         var config = new ShutterConfig { DelayTime = 1, OpenCmd = "OPEN", CloseCmd = "CLOSE" };
         var port = new FakeShutterPort([]) { Reply = _ => [] };
-        var shutter = new LocalSpectrumShutter(_ => port);
+        int settleCalls = 0;
+        var shutter = new LocalSpectrumShutter(_ => port, waitForSettle: _ => settleCalls++);
         shutter.Connect(config);
         port.Pending.Enqueue("turn on");
         Assert.Throws<TimeoutException>(() => shutter.SetOpen(true, config));
@@ -444,6 +450,39 @@ public sealed class LocalSpectrumTests
         port = new FakeShutterPort([]) { Reply = _ => ["turn off\r\nturn on"] };
         Assert.Throws<InvalidOperationException>(() => shutter.SetOpen(true, config));
         Assert.True(port.Disposed);
+        Assert.Equal(0, settleCalls);
+    }
+
+    [Fact]
+    public void ResetDarkClearsManualAndAdaptiveDataWithoutReconnectingOrChangingCalibration()
+    {
+        using var files = new CalibrationFiles();
+        var native = new FakeNative { DarkValue = 123 };
+        using var session = new LocalSpectrumSession(native);
+        Assert.Throws<InvalidOperationException>(() => session.ResetDark(files.Config));
+        session.Open(files.Config);
+        session.Dark(new(), files.Config);
+        session.Capture(new(), files.Config);
+        Assert.All(native.LastCaptureDark, value => Assert.Equal(123, value));
+        session.InitAutoDark(files.Config);
+        session.Capture(new() { SelfAdaptionInitDark = true }, files.Config);
+        string wave = files.Config.WavelengthFile, magnitude = files.Config.MaguideFile;
+        int darkCalls = native.DarkCalls;
+
+        session.ResetDark(files.Config);
+        session.Capture(new(), files.Config);
+        Assert.All(native.LastCaptureDark, value => Assert.Equal(0, value));
+        Assert.Contains("初始化", Assert.Throws<InvalidOperationException>(() => session.Capture(new() { SelfAdaptionInitDark = true }, files.Config)).Message);
+        Assert.Equal(darkCalls, native.DarkCalls);
+        Assert.True(session.IsOpen);
+        Assert.Equal(1, native.CreateCalls);
+        Assert.Equal(0, native.CloseCalls);
+        Assert.Equal(wave, files.Config.WavelengthFile);
+        Assert.Equal(magnitude, files.Config.MaguideFile);
+
+        session.InitAutoDark(files.Config);
+        session.Capture(new() { SelfAdaptionInitDark = true }, files.Config);
+        Assert.All(native.LastCaptureDark, value => Assert.Equal(123, value));
     }
 
     [Fact]
@@ -711,6 +750,8 @@ public sealed class LocalSpectrumTests
     {
         public int InitCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls, DarkCode = 1;
         public float DarkTime;
+        public float DarkValue;
+        public float[] LastCaptureDark = [];
         public bool LastDarkAdaptive;
         public bool CaptureFails;
         public Action? OnCapture;
@@ -737,11 +778,12 @@ public sealed class LocalSpectrumTests
         public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c, CancellationToken cancellationToken)
         { Calls.Add("auto"); OnAutoTime?.Invoke(cancellationToken); time = AutoTimes?.Dequeue() ?? 240; return AutoTimeCode; }
         public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive)
-        { Calls.Add("dark"); DarkCalls++; DarkTime = time; LastDarkAdaptive = adaptive; return DarkCode; }
+        { Calls.Add("dark"); DarkCalls++; DarkTime = time; LastDarkAdaptive = adaptive; Array.Fill(data, DarkValue); return DarkCode; }
         public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) { Calls.Add("init-adaptive"); return 1; }
         public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, EngineSettings settings, float[] dark)
         {
             CaptureSmoothing = (settings.SmoothingMethod, settings.FilterBW);
+            LastCaptureDark = dark.ToArray();
             Calls.Add("capture"); CaptureCalls++;
             OnCapture?.Invoke();
             if (CaptureFails) throw new InvalidOperationException("Native failure");

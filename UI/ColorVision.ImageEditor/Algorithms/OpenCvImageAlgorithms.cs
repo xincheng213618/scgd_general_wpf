@@ -1,5 +1,6 @@
 using OpenCvSharp;
 using System;
+using System.Threading;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
@@ -27,31 +28,57 @@ namespace ColorVision.ImageEditor.Algorithms
             Cv2.BitwiseNot(mat, mat);
         }
 
-        public static void AdjustBasic(Mat mat, double exposure, double brightness, double contrast, double gamma)
+        public static void AdjustBasic(Mat mat, double exposure, double brightness, double contrast, double gamma, CancellationToken cancellationToken = default)
+            => AdjustBasic(mat, mat, exposure, brightness, contrast, gamma, cancellationToken);
+
+        public static void AdjustBasic(Mat source, Mat destination, double exposure, double brightness, double contrast, double gamma,
+            CancellationToken cancellationToken = default)
+            => AdjustBasicTo(source, () => destination, exposure, brightness, contrast, gamma, cancellationToken);
+
+        /// <summary>Requests one caller-owned destination at final writeback, avoiding storage for superseded work.</summary>
+        public static void AdjustBasicTo(Mat source, Func<Mat> createDestination, double exposure, double brightness, double contrast, double gamma,
+            CancellationToken cancellationToken = default)
         {
-            double maximum = GetNominalMaximum(mat.Depth());
+            ArgumentNullException.ThrowIfNull(createDestination);
+            MatType depth = source.Depth();
+            double maximum = GetNominalMaximum(depth);
             double exposureGain = Math.Pow(2, Math.Clamp(exposure, -5, 5));
             double brightnessOffset = Math.Clamp(brightness, -100, 100) / 100;
             double contrastGain = 1 + Math.Clamp(contrast, -100, 100) / 100;
             double gammaValue = Math.Clamp(gamma, 0.1, 5);
             double alpha = exposureGain * contrastGain;
             double beta = brightnessOffset * contrastGain + 0.5 * (1 - contrastGain);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            if (mat.Channels() != 4)
+            // Integer identity is exact across the full sample range. Float inputs still need clipping.
+            if ((depth == MatType.CV_8U || depth == MatType.CV_16U)
+                && alpha == 1 && beta == 0 && gammaValue == 1 && !source.Empty())
             {
-                ApplyToneAdjustment(mat, alpha, beta, gammaValue, maximum);
+                Mat destination = RequestDestination(createDestination, cancellationToken);
+                if (!ReferenceEquals(source, destination)) source.CopyTo(destination);
+                cancellationToken.ThrowIfCancellationRequested();
                 return;
             }
 
-            Mat[] channels = Cv2.Split(mat);
+            if (source.Channels() != 4)
+            {
+                ApplyToneAdjustment(source, createDestination, alpha, beta, gammaValue, maximum, cancellationToken);
+                return;
+            }
+
+            Mat[] channels = Cv2.Split(source);
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 for (int index = 0; index < 3; index++)
                 {
-                    ApplyToneAdjustment(channels[index], alpha, beta, gammaValue, maximum);
+                    Mat channel = channels[index];
+                    ApplyToneAdjustment(channel, () => channel, alpha, beta, gammaValue, maximum, cancellationToken);
                 }
 
-                Cv2.Merge(channels, mat);
+                Mat destination = RequestDestination(createDestination, cancellationToken);
+                Cv2.Merge(channels, destination);
+                cancellationToken.ThrowIfCancellationRequested();
             }
             finally
             {
@@ -164,19 +191,36 @@ namespace ColorVision.ImageEditor.Algorithms
             return value % 2 == 0 ? value + 1 : value;
         }
 
-        private static void ApplyToneAdjustment(Mat mat, double alpha, double beta, double gamma, double maximum)
+        private static Mat RequestDestination(Func<Mat> createDestination, CancellationToken cancellationToken)
         {
-            MatType workingType = mat.Depth() == MatType.CV_64F
-                ? MatType.MakeType(MatType.CV_64F, mat.Channels())
-                : MatType.MakeType(MatType.CV_32F, mat.Channels());
-            using Mat normalized = new();
-            mat.ConvertTo(normalized, workingType, 1 / maximum);
-            normalized.ConvertTo(normalized, workingType, alpha, beta);
-            Cv2.Max(normalized, 0, normalized);
-            Cv2.Pow(normalized, 1 / gamma, normalized);
-            Cv2.Min(normalized, 1, normalized);
+            cancellationToken.ThrowIfCancellationRequested();
+            Mat destination = createDestination() ?? throw new InvalidOperationException("The tone destination factory returned no image.");
+            cancellationToken.ThrowIfCancellationRequested();
+            return destination;
+        }
 
-            normalized.ConvertTo(mat, mat.Type(), maximum);
+        private static void ApplyToneAdjustment(Mat source, Func<Mat> createDestination, double alpha, double beta, double gamma, double maximum, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            MatType sourceType = source.Type();
+            MatType workingType = source.Depth() == MatType.CV_64F
+                ? MatType.MakeType(MatType.CV_64F, source.Channels())
+                : MatType.MakeType(MatType.CV_32F, source.Channels());
+            using Mat normalized = new();
+            source.ConvertTo(normalized, workingType, 1 / maximum);
+            cancellationToken.ThrowIfCancellationRequested();
+            normalized.ConvertTo(normalized, workingType, alpha, beta);
+            cancellationToken.ThrowIfCancellationRequested();
+            Cv2.Max(normalized, 0, normalized);
+            cancellationToken.ThrowIfCancellationRequested();
+            Cv2.Pow(normalized, 1 / gamma, normalized);
+            cancellationToken.ThrowIfCancellationRequested();
+            Cv2.Min(normalized, 1, normalized);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Mat destination = RequestDestination(createDestination, cancellationToken);
+            normalized.ConvertTo(destination, sourceType, maximum);
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         private static double GetNominalMaximum(MatType depth)

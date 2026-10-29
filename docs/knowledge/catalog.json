@@ -530,7 +530,7 @@
       "knowledge_id": "algorithms.image-comparison",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。",
+      "summary": "图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；对齐预检使用有硬采样预算的均匀网格，192MiB仅限制图像输出。",
       "aliases": [
         "图像比较",
         "ImageComparison",
@@ -1244,10 +1244,14 @@
         "ONNX 是否已经支持",
         "Microsoft.ML.OnnxRuntime",
         "AlgorithmRunner",
+        "AlgorithmImageBuffer",
+        "RetainReadOnly",
+        "AlgorithmImageBufferLease",
         "ImageAlgorithmPlatform",
         "ExperimentalAlgorithmProviderGate",
         "AlgorithmsContextMenu",
         "ImageAlgorithmPreviewSession",
+        "StartForCatalogPreview",
         "ImageAlgorithmApplier",
         "BasicAdjustmentWindow",
         "WhiteBalanceWindow",
@@ -1272,15 +1276,26 @@
         "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.Evidence.cs",
         "UI/ColorVision.Algorithms",
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/AlgorithmBitmapWriteTarget.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/OpenCvImageAlgorithms.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/OpenCvAlgorithmProvider.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmParameterInputs.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/GaussianBlurWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/MedianBlurWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/EdgeDetectionWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/FilterDenoiseWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/MorphologyWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs",
         "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs",
         "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs",
@@ -1301,7 +1316,18 @@
         "Test/ColorVision.Copilot.Tests/CopilotBatchImageCancellationEvidenceTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs",
-        "Scripts/tests/test_algorithm_package_contract.py"
+        "Scripts/tests/test_algorithm_package_contract.py",
+        "Test/ColorVision.UI.Tests/AlgorithmImageBufferTests.cs",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmPixelFormatTests.cs",
+        "Test/ColorVision.UI.Tests/AlgorithmBitmapWriteTargetTests.cs",
+        "Test/ColorVision.UI.Tests/OpenCvImageAlgorithmsInPlaceTests.cs",
+        "Test/ColorVision.UI.Tests/BasicAdjustmentProviderTests.cs",
+        "Test/ColorVision.UI.Tests/BasicAdjustmentWindowOwnershipTests.cs",
+        "Test/ColorVision.UI.Tests/LazyBasicAdjustmentTests.cs",
+        "Test/ColorVision.UI.Tests/AlgorithmImageInteropTests.cs",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmSessionArbitrationTests.cs",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDocumentSourceSnapshotTests.cs"
       ],
       "related": [
         "algorithms.index",
@@ -10694,6 +10720,37 @@
       "searchable": true
     },
     {
+      "knowledge_id": "ui.debounce-timer",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。",
+      "aliases": [
+        "DebounceTimer",
+        "按键防抖",
+        "防抖取消",
+        "Dispatcher防抖",
+        "ElapsedEventHandler"
+      ],
+      "code_paths": [
+        "UI/ColorVision.Common/Utilities/DebounceTimer.cs",
+        "UI/ColorVision.Common/Utilities/DebounceScheduler.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/DebounceTimerTests.cs"
+      ],
+      "related": [
+        "ui.common"
+      ],
+      "code_scopes": [
+        "UI/ColorVision.Common"
+      ],
+      "domain": "ui",
+      "title": "共享防抖与回调生命周期",
+      "source": "docs/04-api-reference/ui-components/debounce-timer.md",
+      "url": "/04-api-reference/ui-components/debounce-timer",
+      "searchable": true
+    },
+    {
       "knowledge_id": "ui.desktop",
       "knowledge_type": "reference",
       "status": "current",
@@ -11376,7 +11433,8 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs",
-        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs"
+        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDocumentSourceSnapshotTests.cs"
       ],
       "related": [
         "ui.core",

@@ -74,8 +74,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         [Description("CommandCameraCalibrationHint")]
         public RelayCommand EditCalibrationCommand { get; set; }
 
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
         [Description("CommandDisplayConfigHint")]
         public RelayCommand EditDisplayConfigCommand { get; }
 

@@ -2,7 +2,7 @@
 knowledge_id: "algorithms.image-comparison"
 knowledge_type: "reference"
 status: "current"
-summary: "图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。"
+summary: "图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；对齐预检使用有硬采样预算的均匀网格，192MiB仅限制图像输出。"
 aliases: ["图像比较", "ImageComparison", "CompareImage", "ImageDiff", "ImageComparisonAlgorithmProvider", "ImageComparisonParameters", "ImageComparisonEditorTool", "ImageComparisonResultWindow", "ImageComparisonQualityAnalyzer", "ImageComparisonOutputPlan", "差分热力图", "有符号差", "SSIM", "PSNR", "对齐预检", "IncludeAlphaInMetrics", "FloatPeakValue", "HeatmapMaximum", "EnableSsim", "SsimWindowSize", "SsimK1", "SsimK2", "SsimMinimumValidFraction", "EnableAlignmentPrecheck", "AlignmentSearchRadius", "AlignmentWarningThresholdPixels", "AlignmentMinimumOverlapFraction", "AlignmentMaximumSamples", "comparison_output_budget_exceeded", "float_difference_artifact_overflow", "alignment_precheck_inconclusive", "comparison_roi_empty", "comparison_roi_clipped", "comparison_output_plan_invalid", "colorvision.image-comparison.requested-artifacts"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageComparisonAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageComparisonQualityAnalyzer.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageComparisonParameterMigrator.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageComparisonOutputPlan.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmPixelRoi.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageComparison"]
 test_paths: ["Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs","Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs"]
@@ -82,7 +82,7 @@ Invocation 可不带 ROI，或携带 Pixel/Physical 坐标的矩形、圆、多�
 | `AlignmentSearchRadius` / 对齐预检搜索半径 | 8 | 0–32 px；X/Y 各方向搜索 |
 | `AlignmentWarningThresholdPixels` / 平移警告阈值 | 0.5 | 0–64 px；偏移幅值严格超过阈值才发出 warning，不是自动校正阈值 |
 | `AlignmentMinimumOverlapFraction` / 最小重叠比例 | 0.75 | 0.1–1；有效匹配对占参考有效采样点的比例门槛 |
-| `AlignmentMaximumSamples` / 对齐预检最大采样数 | 4096 | 256–100000；用于计算网格步长，当前不保证实际采样数的硬上限，见对齐预检 |
+| `AlignmentMaximumSamples` / 对齐预检最大采样数 | 4096 | 256–100000；对齐网格点数量的硬上限，通过增大均匀网格步长满足预算 |
 
 Runner 在 Provider 前完成参数迁移、默认值合并和校验；未知未来 schema 返回结构化失败。参数问题可包含 `invalid_float_peak`、`invalid_heatmap_maximum`、`invalid_odd_value` 或 `out_of_range`，应按失败字段调整。
 
@@ -109,7 +109,9 @@ Runner 在 Provider 前完成参数迁移、默认值合并和校验；未知未
 
 预检使用灰度原值或 `0.114B + 0.587G + 0.299R` 亮度，在 `[-radius,+radius]²` 内比较 `reference(x,y)` 与 `candidate(x+dx,y+dy)`。`(dx,dy)` 是候选图相对参考图的采样偏移；它不会作用到输入、基础差分或 SSIM。
 
-采样为确定性的规则网格，步长为 `max(1, ceil(sqrt(ROI包围盒面积 / AlignmentMaximumSamples)))`。**当前最大采样数存在上限缺口**：实现没有逐点计数截断；按该公式，10000×1 区域、目标 4096 会得到步长 2 和最多 5000 个网格点。狭长区域不能依赖该参数限制为恰好不超过指定数量。
+采样为确定性的规则网格，两个方向使用同一个步长，起点保持在 ROI 包围盒的最小坐标。起始步长为 `max(1, ceil(sqrt(ROI包围盒面积 / AlignmentMaximumSamples)))`；再以 64 位整数计算 `ceil(包围盒宽 / step) × ceil(包围盒高 / step)`。若超出预算，通过二分增大步长，选择不小于起始值且满足预算的最小整数。这样保留整个区域的均匀覆盖，原已符合预算的网格保持不变；ROI 掩码、非有限值及候选偏移边界会进一步减少有效采样数。
+
+最大采样数是上限，不承诺恰好用满。例如 10000×1 或 1×10000 区域、预算 4096，步长为 3，最多 3334 个网格点；86×86 区域、预算 300，步长为 6，最多 225 个网格点。`SampleStep` 仍为两个方向共用的像素步长，`SampleCount` 记录所报告候选偏移实际参与相关计算的有限样本对数量。
 
 候选偏移按有限样本对的归一化互相关排序，并要求重叠比例达标；相关性相同时保留搜索顺序中先遇到的项。Confidence 由最佳相关性和相对次佳峰的 margin 计算，`ok` 不等于高置信度，重复纹理出现多个同等峰值时尤其要检查该值。
 
@@ -165,6 +167,6 @@ ImageView 固定请求三张显示图，参数窗口没有输出计划开关。�
 
 `ImageComparisonV1Tests` 覆盖基础指标、整数/浮点差分、非有限与溢出、输入验证、输出选择/预算、取消及输入/结果释放；`ImageComparisonAdvancedV1Tests` 覆盖 schema 迁移、ROI、SSIM、已知偏移、低纹理及结果窗口/overlay。界面测试验证控件存在和生命周期，不等于覆盖文件选择、全部解码器、PNG/CSV 操作或实际 Blink/Split 交互。
 
-采样数量测试使用 257×257 方形输入，未覆盖上述狭长 ROI 上限缺口；参数测试也不能替代每个边界值的完整验证。当前托管套件不包含 4K/8K 性能探针，比较性能时须保持输入与配置一致，并分别记录 CPU、内存、对齐、SSIM、heatmap 和三图窗口成本。
+采样数量测试覆盖 257×257 方形、水平/竖直狭长区域及 86×86 的取整边界，并用仅末端含纹理的输入验证采样仍覆盖整个区域；参数测试不能替代每个边界值的完整验证。当前托管套件不包含 4K/8K 性能探针，比较性能时须保持输入与配置一致，并分别记录 CPU、内存、对齐、SSIM、heatmap 和三图窗口成本。
 
 交付验证还应遵循[平台验收门禁](./image-algorithm-platform-v1.md#m0-验收门禁)。

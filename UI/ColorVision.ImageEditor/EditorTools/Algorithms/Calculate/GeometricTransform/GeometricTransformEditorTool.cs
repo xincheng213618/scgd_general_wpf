@@ -18,25 +18,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GeometricTran
 
         public async Task ExecuteAsync()
         {
-            GeometricTransformParametersWindow parametersWindow = new(_image.AlgorithmRuntime.Catalog)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-            };
-            if (parametersWindow.ShowDialog() != true) return;
-            GeometricTransformParameters parameters = parametersWindow.Parameters;
-            AlgorithmInvocation baseInvocation = AlgorithmInvocation.Create(StandardAlgorithmIds.GeometricTransform, parameters);
-            AlgorithmInvocation invocation = new()
-            {
-                InvocationId = baseInvocation.InvocationId,
-                AlgorithmId = baseInvocation.AlgorithmId,
-                ParameterSchemaVersion = baseInvocation.ParameterSchemaVersion,
-                Parameters = baseInvocation.Parameters,
-                PresetId = parametersWindow.PresetId,
-            };
             AlgorithmResult result;
             try
             {
-                result = await ImageAlgorithmApplier.ApplyAsync(_image, invocation);
+                using ImageAlgorithmPreviewSession session = ImageAlgorithmPreviewSession.Start(_image);
+                GeometricTransformParametersWindow parametersWindow = new(_image.AlgorithmRuntime.Catalog)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                };
+                if (parametersWindow.ShowDialog() != true) return;
+                GeometricTransformParameters parameters = parametersWindow.Parameters;
+                AlgorithmInvocation baseInvocation = AlgorithmInvocation.Create(StandardAlgorithmIds.GeometricTransform, parameters);
+                AlgorithmInvocation invocation = new()
+                {
+                    InvocationId = baseInvocation.InvocationId,
+                    AlgorithmId = baseInvocation.AlgorithmId,
+                    ParameterSchemaVersion = baseInvocation.ParameterSchemaVersion,
+                    Parameters = baseInvocation.Parameters,
+                    PresetId = parametersWindow.PresetId,
+                };
+                result = await ImageAlgorithmApplier.ApplyAsync(session, invocation, Array.Empty<AlgorithmInput>());
             }
             catch (Exception exception)
             {

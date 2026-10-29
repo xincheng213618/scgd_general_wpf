@@ -184,7 +184,8 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         Check(native.Aperture(handle, (float)aperture, settings.Timeout), "设置本地镜头光圈");
     }
 
-    internal LocalAutoFocusResult AutoFocus(IntPtr cameraHandle, LocalAutoFocusSettings focus, float exposure, float gain, CancellationToken token, Action<LocalAutoFocusFrame>? preview = null)
+    internal LocalAutoFocusResult AutoFocus(IntPtr cameraHandle, LocalAutoFocusSettings focus, float exposure, float gain, CancellationToken token,
+        Action<LocalAutoFocusFrame>? preview = null, Action<int, double?, double?>? progress = null)
     {
         var settings = RequireOpen();
         focus.Validate();
@@ -198,11 +199,20 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         {
             string operation = $"自动对焦移动电机至 {position}";
             CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds, operation, token);
+            double? vid = progress == null ? null : ConvertVid(position);
+            progress?.Invoke(position, vid, null);
             CheckFocusOperation(native.EvaluateFocus(cameraHandle, focus.Evaluation, out double value, preview), focus, watch.ElapsedMilliseconds, "自动对焦取图评价", token);
+            progress?.Invoke(position, vid, value);
             return value;
-        }, (position, remaining) => CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds,
-            $"移动至最佳对焦位置 {position}", token), token, () => watch.ElapsedMilliseconds, initialPosition);
-        return result with { VidPosition = ConvertVid(result.Position) };
+        }, (position, remaining) =>
+        {
+            CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds,
+                $"移动至最佳对焦位置 {position}", token);
+            progress?.Invoke(position, ConvertVid(position), null);
+        }, token, () => watch.ElapsedMilliseconds, initialPosition);
+        double? finalVid = ConvertVid(result.Position);
+        progress?.Invoke(result.Position, finalVid, result.Score);
+        return result with { VidPosition = finalVid };
     }
 
     internal static void CheckFocusOperation(int code, LocalAutoFocusSettings focus, long elapsedMilliseconds, string operation, CancellationToken token)

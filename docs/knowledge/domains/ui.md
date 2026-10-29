@@ -41,6 +41,9 @@ next: false
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
 
+- [共享防抖与回调生命周期](../../04-api-reference/ui-components/debounce-timer.md) — `ui.debounce-timer`
+  共享防抖的同键替换、回调所有权、Dispatcher 排队取消与可复用清理边界。
+
 - [桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) — `ui.desktop-pet`
   桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。
 

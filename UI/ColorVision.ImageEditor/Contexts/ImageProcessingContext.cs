@@ -88,6 +88,9 @@ namespace ColorVision.ImageEditor
             return _binding.AcquireImageFrame();
         }
 
+        internal (ImageSource? Source, long Revision)? CaptureSourceState()
+            => _binding.CaptureSourceState?.Invoke();
+
         public bool IsCurrentImageRevision(long revision)
         {
             return _binding.IsCurrentImageRevision(revision);
@@ -174,6 +177,8 @@ namespace ColorVision.ImageEditor
             _operations.SupersedePreviewForDisplaySelection();
         }
 
+        internal long AlgorithmClaimSequence => _operations.AlgorithmClaimSequence;
+
         internal long AlgorithmPreviewGeneration => _operations.AlgorithmPreviewGeneration;
 
         internal bool OwnsAlgorithmPreviewClaim(AlgorithmInvocationClaim claim)
@@ -229,6 +234,8 @@ namespace ColorVision.ImageEditor
         public required Func<long> GetImageRevision { get; init; }
 
         public required Func<ImageFrameLease?> AcquireImageFrame { get; init; }
+
+        public Func<(ImageSource? Source, long Revision)>? CaptureSourceState { get; init; }
 
         public required Func<long, bool> IsCurrentImageRevision { get; init; }
 

@@ -90,7 +90,7 @@ next: false
   GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。
 
 - [图像比较：差分、SSIM 与对齐预检](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
-  图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
+  图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；对齐预检使用有硬采样预算的均匀网格，192MiB仅限制图像输出。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
   灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。

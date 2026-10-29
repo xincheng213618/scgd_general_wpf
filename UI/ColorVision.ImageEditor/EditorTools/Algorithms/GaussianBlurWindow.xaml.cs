@@ -16,12 +16,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private static readonly ILog log = LogManager.GetLogger(typeof(GaussianBlurWindow));
         private readonly string _debounceKey = $"{nameof(GaussianBlurWindow)}_{Guid.NewGuid():N}";
         private ImageAlgorithmPreviewSession? _preview;
+        private long _parameterRevision;
 
         public GaussianBlurWindow(ImageProcessingContext image)
         {
             InitializeComponent();
             this.ApplyCaption();
-            _preview = ImageAlgorithmPreviewSession.Start(image);
+            _preview = ImageAlgorithmPreviewSession.StartForCatalogPreview(image);
             _ = ApplyGaussianBlurAsync((int)KernelSizeSlider.Value, SigmaSlider.Value);
         }
 
@@ -32,6 +33,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return;
             }
 
+            _parameterRevision++;
             if (KernelSizeSlider != null && SigmaSlider != null)
             {
                 int kernelSize = (int)KernelSizeSlider.Value;
@@ -43,7 +45,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 }
 
                 double sigma = SigmaSlider.Value;
-                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyGaussianBlurAsync(kernelSize, sigma));
+                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, _preview.GuardDeferredPreview(() => _ = ApplyGaussianBlurAsync(kernelSize, sigma)));
             }
         }
 
@@ -67,9 +69,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
+            long parameterRevision = _parameterRevision;
             int kernelSize = (int)KernelSizeSlider.Value;
             if (kernelSize % 2 == 0) kernelSize++;
-            if (await ApplyGaussianBlurAsync(kernelSize, SigmaSlider.Value) && _preview?.Commit() == true) Close();
+            if (await ApplyGaussianBlurAsync(kernelSize, SigmaSlider.Value) && parameterRevision == _parameterRevision && _preview?.Commit() == true) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

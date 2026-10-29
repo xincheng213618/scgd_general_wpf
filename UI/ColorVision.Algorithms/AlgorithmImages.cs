@@ -25,6 +25,17 @@ public sealed class AlgorithmImageBuffer : IDisposable
         _data = new SharedImageData(data);
     }
 
+    private AlgorithmImageBuffer(AlgorithmImageBuffer source, SharedImageData data)
+    {
+        Width = source.Width;
+        Height = source.Height;
+        Stride = source.Stride;
+        Format = source.Format;
+        DpiX = source.DpiX;
+        DpiY = source.DpiY;
+        _data = data;
+    }
+
     public int Width { get; }
 
     public int Height { get; }
@@ -41,12 +52,22 @@ public sealed class AlgorithmImageBuffer : IDisposable
 
     public ReadOnlyMemory<byte> Data => GetData().Data;
 
+    /// <summary>Identity of this immutable pixel snapshot, shared by retained handles; not a content hash or document revision.</summary>
+    public Guid StorageId => GetData().Id;
+
     /// <summary>
     /// Retains the immutable image bytes without copying them. The lease remains readable after this
     /// buffer is disposed and must itself be disposed by long-lived consumers such as presenters.
     /// </summary>
     public AlgorithmImageBufferLease AcquireReadOnlyLease()
         => new(Width, Height, Stride, Format, DpiX, DpiY, GetData());
+
+    /// <summary>
+    /// Creates an independently disposable input handle without copying the immutable pixels.
+    /// Disposing either handle does not invalidate the other; providers must keep inputs read-only.
+    /// Use <see cref="Clone"/> when independent pixel storage is required.
+    /// </summary>
+    public AlgorithmImageBuffer RetainReadOnly() => new(this, GetData());
 
     public AlgorithmImageBuffer Clone() => new(Width, Height, Stride, Format, Data.ToArray(), DpiX, DpiY);
 
@@ -60,6 +81,8 @@ public sealed class AlgorithmImageBuffer : IDisposable
 
     internal sealed class SharedImageData(byte[] data)
     {
+        public Guid Id { get; } = Guid.NewGuid();
+
         public ReadOnlyMemory<byte> Data { get; } = data;
     }
 }

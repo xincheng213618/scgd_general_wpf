@@ -16,12 +16,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private static readonly ILog log = LogManager.GetLogger(typeof(MedianBlurWindow));
         private readonly string _debounceKey = $"{nameof(MedianBlurWindow)}_{Guid.NewGuid():N}";
         private ImageAlgorithmPreviewSession? _preview;
+        private long _parameterRevision;
 
         public MedianBlurWindow(ImageProcessingContext image)
         {
             InitializeComponent();
             this.ApplyCaption();
-            _preview = ImageAlgorithmPreviewSession.Start(image);
+            _preview = ImageAlgorithmPreviewSession.StartForCatalogPreview(image);
             _ = ApplyMedianBlurAsync((int)KernelSizeSlider.Value);
         }
 
@@ -32,6 +33,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return;
             }
 
+            _parameterRevision++;
             if (KernelSizeSlider != null)
             {
                 int kernelSize = (int)KernelSizeSlider.Value;
@@ -42,7 +44,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     return;
                 }
 
-                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyMedianBlurAsync(kernelSize));
+                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, _preview.GuardDeferredPreview(() => _ = ApplyMedianBlurAsync(kernelSize)));
             }
         }
 
@@ -66,9 +68,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
+            long parameterRevision = _parameterRevision;
             int kernelSize = (int)KernelSizeSlider.Value;
             if (kernelSize % 2 == 0) kernelSize++;
-            if (await ApplyMedianBlurAsync(kernelSize) && _preview?.Commit() == true) Close();
+            if (await ApplyMedianBlurAsync(kernelSize) && parameterRevision == _parameterRevision && _preview?.Commit() == true) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

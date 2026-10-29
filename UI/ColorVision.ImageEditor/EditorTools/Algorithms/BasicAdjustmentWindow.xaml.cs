@@ -15,35 +15,54 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BasicAdjustmentWindow));
         private readonly string _debounceKey = $"{nameof(BasicAdjustmentWindow)}_{Guid.NewGuid():N}";
+        private readonly ImageProcessingContext _image;
+        private readonly AlgorithmParameterInputs _parameterInputs;
         private ImageAlgorithmPreviewSession? _preview;
         private bool _isResetting;
+        private long _parameterRevision;
+        private Guid _completedPreviewInvocationId;
+        private long _completedPreviewParameterRevision;
+        private long _completedPreviewInputRevision;
 
         public BasicAdjustmentWindow(ImageProcessingContext image)
         {
+            _image = image;
             InitializeComponent();
             this.ApplyCaption();
-            _preview = ImageAlgorithmPreviewSession.Start(image);
+            _preview = ImageAlgorithmPreviewSession.StartForCatalogPreview(image);
+            _parameterInputs = new(this, () =>
+            {
+                if (!_isResetting && PreviewCheckBox.IsChecked != true) _preview?.ShowOriginal();
+            });
             _ = ApplyAdjustmentAsync();
         }
 
         private void ParameterSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (!IsInitialized || _preview == null || _isResetting)
+            if (!IsInitialized || _preview == null || _isResetting || _image.IsDisposed)
             {
                 return;
             }
 
+            _parameterRevision++;
             if (PreviewCheckBox.IsChecked == true)
             {
-                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyAdjustmentAsync());
+                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, _preview.GuardDeferredPreview(() => _ = ApplyAdjustmentAsync()));
+            }
+            else
+            {
+                _preview.ShowOriginal();
             }
         }
 
-        private async System.Threading.Tasks.Task<bool> ApplyAdjustmentAsync()
+        private async System.Threading.Tasks.Task<bool> ApplyAdjustmentAsync(bool forceApply = false)
         {
             try
             {
-                if (_preview == null) return false;
+                if (_preview == null || (!forceApply && PreviewCheckBox.IsChecked != true)) return false;
+                long parameterRevision = _parameterRevision;
+                long inputRevision = _parameterInputs.Revision;
+                _completedPreviewInvocationId = Guid.Empty;
                 BasicAdjustmentParameters parameters = new()
                 {
                     Exposure = ExposureSlider.Value,
@@ -52,8 +71,20 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     Gamma = GammaSlider.Value,
                 };
                 AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.BasicAdjustment, parameters);
-                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
-                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
+                bool succeeded;
+                using (AlgorithmResult result = await _preview.PreviewAsync(invocation))
+                {
+                    succeeded = result.Status == AlgorithmResultStatus.Succeeded;
+                }
+                // Result disposal can reenter; qualify only the completed run's original parameter state.
+                bool current = succeeded && _preview.IsCurrent(invocation.InvocationId);
+                if (current && parameterRevision == _parameterRevision && inputRevision == _parameterInputs.Revision)
+                {
+                    _completedPreviewParameterRevision = parameterRevision;
+                    _completedPreviewInputRevision = inputRevision;
+                    _completedPreviewInvocationId = invocation.InvocationId;
+                }
+                return current;
             }
             catch (Exception ex)
             {
@@ -64,6 +95,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
+            _parameterRevision++;
             _isResetting = true;
             try
             {
@@ -95,6 +127,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return;
             }
 
+            _parameterRevision++;
             DebounceTimer.Cancel(_debounceKey);
             if (PreviewCheckBox.IsChecked == true)
             {
@@ -108,8 +141,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
+            bool inputsValid = _parameterInputs.TryCommit();
             DebounceTimer.Cancel(_debounceKey);
-            if (await ApplyAdjustmentAsync() && _preview?.Commit() == true) Close();
+            if (!inputsValid) return;
+            long parameterRevision = _parameterRevision;
+            long inputRevision = _parameterInputs.Revision;
+            if (_completedPreviewInvocationId != Guid.Empty
+                && parameterRevision == _completedPreviewParameterRevision && inputRevision == _completedPreviewInputRevision
+                && _preview?.IsCurrent(_completedPreviewInvocationId) == true)
+            {
+                if (_preview.Commit()) Close();
+                // Commit failure can mean a new owner took over during its synchronous callbacks.
+                return;
+            }
+            if (await ApplyAdjustmentAsync(forceApply: true) && parameterRevision == _parameterRevision
+                && inputRevision == _parameterInputs.Revision && _preview?.Commit() == true) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -122,6 +168,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         protected override void OnClosed(EventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
+            _parameterInputs.Dispose();
             _preview?.Dispose();
             base.OnClosed(e);
         }

@@ -329,72 +329,45 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void Import()
         {
-            PhysicalCameraCreationBatch creationBatch = new();
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog
+            using var dialog = new System.Windows.Forms.OpenFileDialog
             {
-                RestoreDirectory = true,
-                Multiselect = true,
-                Filter = "All files (*.*)|*.zip;*.lic",
-                Title = Properties.Resources.SelectLicenseFilePrompt,
-                FilterIndex = 1
+                RestoreDirectory = true, Multiselect = true,
+                Filter = "License files (*.lic;*.zip)|*.lic;*.zip",
+                Title = Properties.Resources.SelectLicenseFilePrompt
             };
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            try { ImportFiles(dialog.FileNames, requiredType: 0); }
+            catch (Exception ex) { MessageBox.Show(WindowHelpers.GetActiveWindow(), ex.Message, Properties.Resources.LicenseImport); }
+        }
 
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        internal void ImportFiles(IEnumerable<string> paths, int? requiredType = null)
+        {
+            var existing = PhyLicenseDao.Instance.GetAll();
+            var identities = DeviceLicenseImport.KnownDevices(SysResourceDao.Instance.GetAll(), existing);
+            var imported = DeviceLicenseImport.ReadFiles(paths, identities, existing, requiredType);
+            ImportLicenses(imported);
+        }
+
+        internal void ImportLicenses(IReadOnlyList<LicenseModel> imported)
+        {
+            var licenses = PhyLicenseDao.Instance.GetAll();
+            foreach (var item in imported)
+                if (licenses.Any(existing => string.Equals(existing.MacAddress, item.MacAddress, StringComparison.OrdinalIgnoreCase) && existing.LiceType != item.LiceType))
+                    throw new InvalidDataException("许可证设备类型冲突，未覆盖现有记录。");
+            PhysicalCameraCreationBatch creationBatch = new();
+            foreach (var item in imported)
             {
-                string[] selectedFiles = openFileDialog.FileNames;
-                var licenses = PhyLicenseDao.Instance.GetAll();
-
-                foreach (string file in selectedFiles)
+                if (item.LiceType == 1)
                 {
-                    try
-                    {
-                        if (Path.GetExtension(file).Equals(".zip", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ProcessZipFile(file, licenses, creationBatch);
-                        }
-                        else if (Path.GetExtension(file).Equals(".lic", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ProcessLicFile(file, licenses, creationBatch);
-                        }
-                        else
-                        {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, Properties.Resources.LicenseImport);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FileProcessFailed, ex.Message), Properties.Resources.LicenseImport);
-                    }
+                    ColorVision.Engine.Services.PhySpectrums.PhySpectrumStore.SaveLicense(item);
+                    continue;
                 }
+                var existing = GetOrCreateLicenseModel(item.MacAddress!, licenses);
+                UpdateLicenseModel(DeviceLicenseImport.PreserveAssociation(item, existing), creationBatch);
             }
             LoadPhyCamera();
             _ = creationBatch.ActivateAsync();
         }
-
-        private void ProcessZipFile(string file, List<LicenseModel> licenses, PhysicalCameraCreationBatch creationBatch)
-        {
-            using ZipArchive archive = ZipFile.OpenRead(file);
-            var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
-
-            foreach (var item in licFiles)
-            {
-                var licenseModel = GetOrCreateLicenseModel(Path.GetFileNameWithoutExtension(item.FullName), licenses);
-                using var stream = item.Open();
-                using var reader = new StreamReader(stream, Encoding.UTF8);
-                licenseModel.LicenseValue = reader.ReadToEnd();
-
-                UpdateLicenseModel(licenseModel, creationBatch);
-            }
-        }
-
-        private void ProcessLicFile(string file, List<LicenseModel> licenses, PhysicalCameraCreationBatch creationBatch)
-        {
-            var licenseModel = GetOrCreateLicenseModel(Path.GetFileNameWithoutExtension(file), licenses);
-            licenseModel.LicenseValue = File.ReadAllText(file);
-
-            UpdateLicenseModel(licenseModel, creationBatch);
-        }
-
         internal static LicenseModel GetOrCreateLicenseModel(string macAddress, List<LicenseModel> licenses)
         {
             var licenseModel = licenses.Find(a => string.Equals(a.MacAddress, macAddress, StringComparison.OrdinalIgnoreCase));
@@ -408,15 +381,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void UpdateLicenseModel(LicenseModel licenseModel, PhysicalCameraCreationBatch creationBatch)
         {
-            licenseModel.CusTomerName = licenseModel.ColorVisionLicense.Licensee;
-            licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
-            licenseModel.ExpiryDate = licenseModel.ColorVisionLicense.ExpiryDateTime;
-
             int ret = PhyLicenseDao.Instance.Save(licenseModel);
-            if (ret == -1)
-            {
-                return;
-            }
+            if (ret <= 0) throw new InvalidOperationException("保存相机许可证失败。");
 
             var phyCamera = PhyCameras.FirstOrDefault(a => string.Equals(a.Code, licenseModel.MacAddress, StringComparison.OrdinalIgnoreCase));
             if (phyCamera != null)

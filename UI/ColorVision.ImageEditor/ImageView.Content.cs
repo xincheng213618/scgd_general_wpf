@@ -78,8 +78,9 @@ public partial class ImageView
                 _document.Content = content.Parameters != null || content.Pixels.Format == System.Windows.Media.PixelFormats.Gray32Float
                     ? content : new DecodedImageContent((BitmapSource)ViewBitmapSource, null, content.FilePath);
                 _document.ParameterRecord = content.Parameters;
-                AttachImageContentCapability(capability);
+                IImageContentCapability? publishingCapability = capability;
                 capability = null;
+                AttachImageContentCapability(publishingCapability);
             }
             finally { _publishingDecodedContent = false; }
             UpdateZoomAndScale();
@@ -91,12 +92,25 @@ public partial class ImageView
     public void AttachImageContentCapability(IImageContentCapability? capability)
     {
         Dispatcher.VerifyAccess();
-        if (!ReferenceEquals(_document.Capability, capability))
+        long installedContentVersion = -1;
+        try
         {
-            _document.ReplaceCapability(capability);
+            _document.ReplaceCapability(capability, out installedContentVersion);
+            if (_document.IsDisposed || !ReferenceEquals(_document.Capability, capability) || _document.ContentVersion != installedContentVersion)
+                throw new OperationCanceledException("The image content capability was replaced during retirement.");
+            capability?.Activate();
+            if (_document.IsDisposed || !ReferenceEquals(_document.Capability, capability) || _document.ContentVersion != installedContentVersion)
+                throw new OperationCanceledException("The image content capability was replaced during activation.");
+            bool toolsAccepted = IEditorToolFactory.ApplyImageContentTools(capability ?? (object?)EditorContext.IImageOpen);
+            if (!toolsAccepted || _document.IsDisposed || !ReferenceEquals(_document.Capability, capability) || _document.ContentVersion != installedContentVersion)
+                throw new OperationCanceledException("The image content capability was replaced during tool publication.");
         }
-        capability?.Activate();
-        IEditorToolFactory.ApplyImageContentTools(capability ?? (object?)EditorContext.IImageOpen);
+        catch
+        {
+            if (installedContentVersion < 0) capability?.Dispose();
+            else _document.RetireCapabilityIfCurrent(capability, installedContentVersion);
+            throw;
+        }
     }
 
     /// <summary>Changes the selected display/algorithm layer without changing acquisition identity.</summary>

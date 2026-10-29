@@ -225,8 +225,19 @@ namespace ColorVision.ImageEditor.Algorithms
             ImageComparisonParameters parameters,
             CancellationToken cancellationToken)
         {
-            long boundingArea = checked((long)(region.MaximumXExclusive - region.MinimumX) * (region.MaximumYExclusive - region.MinimumY));
+            int width = region.MaximumXExclusive - region.MinimumX;
+            int height = region.MaximumYExclusive - region.MinimumY;
+            long boundingArea = checked((long)width * height);
             int step = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(boundingArea / (double)parameters.AlignmentMaximumSamples)));
+            int maximumStep = Math.Max(width, height);
+            // Bound the rounded grid dimensions while retaining uniform spacing over the entire ROI.
+            while (step < maximumStep)
+            {
+                int candidateStep = step + (maximumStep - step) / 2;
+                long samples = ((width + (long)candidateStep - 1) / candidateStep) * ((height + (long)candidateStep - 1) / candidateStep);
+                if (samples <= parameters.AlignmentMaximumSamples) maximumStep = candidateStep;
+                else step = candidateStep + 1;
+            }
             long potential = 0;
             for (int y = region.MinimumY; y < region.MaximumYExclusive; y += step)
             {

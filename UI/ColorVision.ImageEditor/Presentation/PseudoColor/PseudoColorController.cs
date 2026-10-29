@@ -24,6 +24,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
     internal sealed class PseudoColorController : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PseudoColorController));
+        private const int SliderRenderDelayMilliseconds = 25;
 
         private readonly ImageProcessingContext _owner;
         private readonly PseudoColorState _state;
@@ -193,7 +194,8 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
                 return;
             }
 
-            RequestRender(100);
+            // TaskConflator still runs one preview at a time and keeps only the latest pending request.
+            RequestRender(SliderRenderDelayMilliseconds);
         }
 
         private void State_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -355,7 +357,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
                     || !_previewSession.OwnsHostPreview)
                 {
                     DisposePreviewSession();
-                    _previewSession = ImageAlgorithmPreviewSession.Start(_owner);
+                    _previewSession = ImageAlgorithmPreviewSession.StartForCatalogPreview(_owner);
                 }
                 return _previewSession;
             });

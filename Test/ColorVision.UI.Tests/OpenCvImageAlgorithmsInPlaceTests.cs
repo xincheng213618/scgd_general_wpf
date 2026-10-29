@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.BatchProcessing;
 using OpenCvSharp;
 using System.Reflection;
@@ -175,13 +176,169 @@ public class OpenCvImageAlgorithmsInPlaceTests
                 SetOption(options, "Contrast", contrast);
                 SetOption(options, "Gamma", gamma);
             },
-            (source, destination) => ApplyReferenceBasicAdjustment(
+            (source, destination) => BasicAdjustmentReference.Apply(
                 source,
                 destination,
                 exposure,
                 brightness,
                 contrast,
                 gamma));
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(16)]
+    public void BasicAdjustmentNeutralIntegersPreserveEveryValueAndStorage(int bits)
+    {
+        int side = bits == 8 ? 16 : 256;
+        ushort[,] values = new ushort[side, side];
+        for (int row = 0; row < side; row++)
+        {
+            for (int column = 0; column < side; column++) values[row, column] = (ushort)(row * side + column);
+        }
+        using Mat input = Mat.FromArray(values);
+        using Mat actual = new();
+        input.ConvertTo(actual, bits == 8 ? MatType.CV_8U : MatType.CV_16U);
+        using Mat original = actual.Clone();
+        using Mat expected = actual.Clone();
+        BasicAdjustmentReference.Apply(original, expected, 0, 0, 0, 1);
+        IntPtr data = actual.Data;
+        long step = actual.Step();
+
+        OpenCvImageAlgorithms.AdjustBasic(actual, 0, 0, 0, 1);
+
+        AssertMatsEqual(original, expected);
+        AssertMatsEqual(expected, actual);
+        Assert.Equal(data, actual.Data);
+        Assert.Equal(step, actual.Step());
+    }
+
+    [Fact]
+    public void BasicAdjustmentEquivalentNeutralParametersPreserveBgra64RoiAndItsOwner()
+    {
+        using Mat owner = new(7, 9, MatType.CV_16UC4, Scalar.All(1234));
+        using Mat roi = new(owner, new Rect(1, 1, 5, 4));
+        int rows = roi.Rows;
+        int columns = roi.Cols;
+        for (int row = 0; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                int value = row * columns + column;
+                roi.Set(row, column, new Vec4w((ushort)(value * 3079), (ushort)(value * 2003 + 17), (ushort)(value * 1237 + 31), (ushort)(ushort.MaxValue - value * 2027)));
+            }
+        }
+        using Mat originalOwner = owner.Clone();
+        using Mat original = roi.Clone();
+        using Mat expected = roi.Clone();
+        BasicAdjustmentReference.Apply(original, expected, exposure: 1, brightness: -50, contrast: -50, gamma: 1);
+        IntPtr data = roi.Data;
+        long step = roi.Step();
+        Assert.False(roi.IsContinuous());
+
+        OpenCvImageAlgorithms.AdjustBasic(roi, exposure: 1, brightness: -50, contrast: -50, gamma: 1);
+
+        using Mat actual = roi.Clone();
+        AssertMatsEqual(expected, actual);
+        AssertMatsEqual(originalOwner, owner);
+        AssertAlphaEqual(original, actual);
+        Assert.Equal(data, roi.Data);
+        Assert.Equal(step, roi.Step());
+        Assert.False(roi.IsContinuous());
+    }
+
+    [Fact]
+    public void BasicAdjustmentNonNeutralBgra64RoiKeepsItsStorageAlphaAndOwnerBorder()
+    {
+        Rect region = new(1, 1, 5, 4);
+        using Mat owner = new(7, 9, MatType.CV_16UC4, Scalar.All(1234));
+        using Mat roi = new(owner, region);
+        for (int row = 0; row < region.Height; row++)
+        {
+            for (int column = 0; column < region.Width; column++)
+            {
+                int value = row * region.Width + column;
+                roi.Set(row, column, new Vec4w((ushort)(value * 3079), (ushort)(value * 2003 + 17), (ushort)(value * 1237 + 31), (ushort)(ushort.MaxValue - value * 2027)));
+            }
+        }
+        using Mat original = roi.Clone();
+        using Mat expectedOwner = owner.Clone();
+        using (Mat expectedRoi = new(expectedOwner, region))
+        {
+            BasicAdjustmentReference.Apply(original, expectedRoi, 0.65, -15, 28, 1.8);
+        }
+        IntPtr data = roi.Data;
+        long step = roi.Step();
+        Assert.False(roi.IsContinuous());
+
+        OpenCvImageAlgorithms.AdjustBasic(roi, 0.65, -15, 28, 1.8);
+
+        using Mat actual = roi.Clone();
+        AssertMatsEqual(expectedOwner, owner);
+        AssertAlphaEqual(original, actual);
+        Assert.Equal(data, roi.Data);
+        Assert.Equal(step, roi.Step());
+        Assert.False(roi.IsContinuous());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BasicAdjustmentNonNeutralFloatingPointMatchesSeparatePassOracleExactly(bool useDouble)
+    {
+        using Mat image = useDouble
+            ? Mat.FromArray(new double[,] { { -0.5, 0, 1e-7, 0.001, 0.1, 0.25, 0.49999, 0.5, 0.9, 1, 1.5 } })
+            : Mat.FromArray(new float[,] { { -0.5f, 0, 1e-7f, 0.001f, 0.1f, 0.25f, 0.49999f, 0.5f, 0.9f, 1, 1.5f } });
+        using Mat expected = image.Clone();
+        BasicAdjustmentReference.Apply(image, expected, 0.65, -15, 28, 1.8);
+        IntPtr data = image.Data;
+        long step = image.Step();
+
+        OpenCvImageAlgorithms.AdjustBasic(image, 0.65, -15, 28, 1.8);
+
+        AssertMatsEqual(expected, image);
+        Assert.Equal(data, image.Data);
+        Assert.Equal(step, image.Step());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BasicAdjustmentDefaultsStillClampFloatingPointImages(bool useDouble)
+    {
+        using Mat image = useDouble
+            ? Mat.FromArray(new double[,] { { -0.5, 0.25, 1.5 } })
+            : Mat.FromArray(new float[,] { { -0.5f, 0.25f, 1.5f } });
+
+        OpenCvImageAlgorithms.AdjustBasic(image, 0, 0, 0, 1);
+
+        double[] expected = [0, 0.25, 1];
+        for (int column = 0; column < expected.Length; column++)
+        {
+            double actual = useDouble ? image.At<double>(0, column) : image.At<float>(0, column);
+            Assert.Equal(expected[column], actual);
+        }
+    }
+
+    [Theory]
+    [InlineData(0d)]
+    [InlineData(5d)]
+    public void BasicAdjustmentRejectsPreCancelledTokenWithoutChangingPixelsOrStorage(double brightness)
+    {
+        using Mat image = Mat.FromArray(new ushort[,] { { 0, 1, 32767 }, { 32768, 65534, 65535 } });
+        using Mat original = image.Clone();
+        IntPtr data = image.Data;
+        long step = image.Step();
+        using CancellationTokenSource cancellation = new();
+        cancellation.Cancel();
+
+        OperationCanceledException exception = Assert.Throws<OperationCanceledException>(() =>
+            OpenCvImageAlgorithms.AdjustBasic(image, 0, brightness, 0, 1, cancellation.Token));
+
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        AssertMatsEqual(original, image);
+        Assert.Equal(data, image.Data);
+        Assert.Equal(step, image.Step());
     }
 
     private static void VerifyAgainstExplicitSourceClone(
@@ -343,66 +500,6 @@ public class OpenCvImageAlgorithmsInPlaceTests
             default:
                 throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
         }
-    }
-
-    private static void ApplyReferenceBasicAdjustment(
-        Mat source,
-        Mat destination,
-        double exposure,
-        double brightness,
-        double contrast,
-        double gamma)
-    {
-        double maximum = source.Depth() == MatType.CV_16U ? ushort.MaxValue : byte.MaxValue;
-        double exposureGain = Math.Pow(2, Math.Clamp(exposure, -5, 5));
-        double brightnessOffset = Math.Clamp(brightness, -100, 100) / 100;
-        double contrastGain = 1 + Math.Clamp(contrast, -100, 100) / 100;
-        double alpha = exposureGain * contrastGain;
-        double beta = brightnessOffset * contrastGain + 0.5 * (1 - contrastGain);
-        double gammaValue = Math.Clamp(gamma, 0.1, 5);
-
-        if (source.Channels() != 4)
-        {
-            ApplyReferenceToneAdjustment(source, destination, alpha, beta, gammaValue, maximum);
-            return;
-        }
-
-        Mat[] channels = Cv2.Split(source);
-        try
-        {
-            for (int index = 0; index < 3; index++)
-            {
-                ApplyReferenceToneAdjustment(channels[index], channels[index], alpha, beta, gammaValue, maximum);
-            }
-
-            Cv2.Merge(channels, destination);
-        }
-        finally
-        {
-            foreach (Mat channel in channels)
-            {
-                channel.Dispose();
-            }
-        }
-    }
-
-    private static void ApplyReferenceToneAdjustment(
-        Mat mat,
-        Mat destination,
-        double alpha,
-        double beta,
-        double gamma,
-        double maximum)
-    {
-        using Mat source = mat.Clone();
-        MatType workingType = MatType.MakeType(MatType.CV_32F, mat.Channels());
-        using Mat normalized = new();
-        source.ConvertTo(normalized, workingType, 1 / maximum);
-        normalized.ConvertTo(normalized, workingType, alpha, beta);
-        Cv2.Max(normalized, 0, normalized);
-        Cv2.Pow(normalized, 1 / gamma, normalized);
-        Cv2.Min(normalized, 1, normalized);
-        normalized.ConvertTo(destination, mat.Type(), maximum);
     }
 
     private static void SetOption(object options, string propertyName, object value)

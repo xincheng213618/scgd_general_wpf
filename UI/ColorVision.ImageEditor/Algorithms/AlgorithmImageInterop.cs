@@ -2,6 +2,7 @@ using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
 using System.Buffers;
+using System.Threading;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
@@ -19,25 +20,29 @@ namespace ColorVision.ImageEditor.Algorithms
         /// </summary>
         public static AlgorithmImageMatLease BorrowReadOnly(AlgorithmImageBuffer image) => new(image);
 
-        public static AlgorithmImageBuffer FromMat(Mat mat, double dpiX = 96, double dpiY = 96)
+        public static AlgorithmImageBuffer FromMat(Mat mat, double dpiX = 96, double dpiY = 96, CancellationToken cancellationToken = default)
         {
             if (mat.Empty()) throw new ArgumentException("The provider returned an empty image.", nameof(mat));
             AlgorithmImageFormat format = ToImageFormat(mat.Type());
             int width = mat.Cols;
             int height = mat.Rows;
             int stride = checked(width * format.BytesPerPixel());
-            byte[] data = new byte[checked(stride * height)];
-            CopyRows(mat, data, stride, height);
+            int length = checked(stride * height);
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[] data = new byte[length];
+            CopyRows(mat, data, stride, height, cancellationToken);
             return new AlgorithmImageBuffer(width, height, stride, format, data, dpiX, dpiY);
         }
 
-        private static unsafe void CopyRows(Mat source, byte[] destination, int rowBytes, int height)
+        private static unsafe void CopyRows(Mat source, byte[] destination, int rowBytes, int height, CancellationToken cancellationToken)
         {
             for (int row = 0; row < height; row++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 ReadOnlySpan<byte> sourceRow = new((void*)source.Ptr(row), rowBytes);
                 sourceRow.CopyTo(destination.AsSpan(row * rowBytes, rowBytes));
             }
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         public static MatType ToMatType(AlgorithmImageFormat format) => format switch

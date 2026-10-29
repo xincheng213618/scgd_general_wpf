@@ -108,7 +108,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 ? CreateLegacyCompatibilityInput(source, descriptor.Id, parameters, cancellationToken)
                 : null;
             cancellationToken.ThrowIfCancellationRequested();
-            AlgorithmImageBuffer inputImage = AlgorithmImageInterop.FromMat(compatibilityInput ?? source);
+            AlgorithmImageBuffer inputImage = AlgorithmImageInterop.FromMat(compatibilityInput ?? source, cancellationToken: cancellationToken);
             AlgorithmInvocation invocation = new()
             {
                 AlgorithmId = descriptor.Id,

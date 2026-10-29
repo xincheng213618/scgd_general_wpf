@@ -84,7 +84,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         ?? throw new NotSupportedException(string.Format(Properties.Resources.BatchUnsupportedFormat, Path.GetExtension(item.FilePath)));
                     using Mat source = loader.Load(item.FilePath);
                     AlgorithmInvocation invocation = CloneInvocation(request.Invocation, item.FilePath);
-                    AlgorithmImageBuffer input = AlgorithmImageInterop.FromMat(source);
+                    AlgorithmImageBuffer input = AlgorithmImageInterop.FromMat(source, cancellationToken: cancellationToken);
                     using AlgorithmResult result = await _runtime.Runner.RunAsync(new AlgorithmRunRequest
                     {
                         Invocation = invocation,

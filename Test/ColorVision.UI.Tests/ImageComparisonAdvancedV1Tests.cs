@@ -200,22 +200,30 @@ public sealed class ImageComparisonAdvancedV1Tests
         Assert.Contains(result.Diagnostics.Messages, message => message.Code == "alignment_precheck_inconclusive");
     }
 
-    [Fact]
-    public async Task AlignmentPrecheckHonorsDeterministicSampleBound()
+    [Theory]
+    [InlineData(257, 257, 256, 17, 256)]
+    [InlineData(10000, 1, 4096, 3, 3334)]
+    [InlineData(1, 10000, 4096, 3, 3334)]
+    [InlineData(86, 86, 300, 6, 225)]
+    public async Task AlignmentPrecheckHonorsDeterministicSampleBound(int width, int height, int maximumSamples, int expectedStep, long expectedSamples)
     {
-        const int width = 257;
-        const int height = 257;
-        using AlgorithmImageBuffer reference = Gray8(PatternBytes(width, height), width, height);
+        byte[] values = PatternBytes(width, height);
+        // Keep texture at the far end so a first-N cutoff on the long ROIs cannot produce a correlation.
+        Array.Fill(values, (byte)10, 0, values.Length * 9 / 10);
+        using AlgorithmImageBuffer reference = Gray8(values, width, height);
         using AlgorithmImageBuffer candidate = reference.Clone();
         using AlgorithmResult result = await RunAsync(reference, candidate, new ImageComparisonParameters
         {
             EnableSsim = false,
             AlignmentSearchRadius = 0,
-            AlignmentMaximumSamples = 256,
+            AlignmentMaximumSamples = maximumSamples,
         });
         IReadOnlyDictionary<string, JsonElement> row = Assert.Single(result.GetArtifact<AlgorithmTableArtifact>("image-comparison-alignment")!.Rows);
-        Assert.InRange(row["SampleCount"].GetInt64(), 4, 256);
-        Assert.Equal(17, row["SampleStep"].GetInt32());
+        Assert.InRange(row["SampleCount"].GetInt64(), 4, maximumSamples);
+        Assert.Equal(expectedSamples, row["SampleCount"].GetInt64());
+        Assert.Equal(expectedStep, row["SampleStep"].GetInt32());
+        Assert.Equal("ok", row["Status"].GetString());
+        Assert.Equal(1, row["BestCorrelation"].GetDouble(), 12);
     }
 
     [Fact]

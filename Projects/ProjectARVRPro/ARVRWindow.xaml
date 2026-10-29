@@ -199,7 +199,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <DockPanel  Margin="0,0,0,5">
+                    <DockPanel x:Name="ExecutionToolbar" Margin="0,0,0,5">
                         <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                         <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -284,7 +284,7 @@
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
             <StatusBarItem HorizontalAlignment="Left" HorizontalContentAlignment="Left" Padding="0">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel x:Name="ConfigurationActions" Orientation="Horizontal">
                     <Button Content="{display:DisplayText Key='设置'}" Command="{Binding OpenConfigCommand}" Margin="2,0"/>
                     <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}" Margin="2,0"/>
                     <StackPanel Orientation="Horizontal" Margin="2,0">
@@ -306,7 +306,7 @@
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right" Panel.ZIndex="1">
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="InitTest"
+                    <Button x:Name="InitTestButton" Content="InitTest"
                             Command="{Binding InitTestCommand}"
                             Margin="2,0"/>
                 </StackPanel>

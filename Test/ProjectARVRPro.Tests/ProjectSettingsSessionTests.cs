@@ -130,7 +130,7 @@ public sealed class ProjectSettingsSessionTests
         foreach (var source in new object[] { session.Project, session.Results })
         {
             var expected = PropertyEditorHelper.GetEditableProperties(source.GetType())
-                .Where(property => property.GetCustomAttribute<CategoryAttribute>()?.Category != "串口参数")
+                .Where(property => property.GetCustomAttribute<CategoryAttribute>()?.Category is not ("串口参数" or "LUX协议"))
                 .Select(property => property.Name).Order();
             var actual = session.Sections.SelectMany(section => section.Groups).Where(group => group.Source == source)
                 .SelectMany(group => group.Properties).Select(property => property.Name).Order();
@@ -140,7 +140,7 @@ public sealed class ProjectSettingsSessionTests
         Assert.Equal(ProjectSettingsPage.Results, Assert.Single(session.Sections, section => section.Matches("CodeUseSN")).Id);
         Assert.Equal(ProjectSettingsPage.Images, Assert.Single(session.Sections, section => section.Matches("IsSaveLink")).Id);
         Assert.Equal(ProjectSettingsPage.Results, Assert.Single(session.Sections, section => section.Matches("CsvSavePath")).Id);
-        Assert.DoesNotContain(session.Sections, section => section.Matches("TextSavePath") || section.Matches("Thunderbird"));
+        Assert.DoesNotContain(session.Sections, section => section.Matches("TextSavePath") || section.Matches("Thunderbird") || section.Matches("Lux"));
         Assert.Equal(4, session.Sections.Count);
     }
 
@@ -148,12 +148,16 @@ public sealed class ProjectSettingsSessionTests
     public void DefaultsAndSaveDoNotChangeConnectionOrLegacyTextDirectory()
     {
         var project = new ProjectARVRProConfig { ThunderbirdPortName = "COM19", ThunderbirdBaudRate = 57600,
-            ThunderbirdTimeoutMs = -1, ThunderbirdAutoConnect = true };
+            ThunderbirdTimeoutMs = -1, ThunderbirdAutoConnect = true, LuxMachineNo = "H03AR",
+            LuxVidMode = LuxVidMeasurementMode.GetPosition, LuxVidMin = 100, LuxVidMax = 200, LuxVidFix = 2, LuxVidB = 3 };
         var results = new ViewResultManagerConfig { TextSavePath = "legacy-text" };
         var session = new ProjectSettingsSession(project, results, false);
         session.RestoreDefaults();
         session.Project.TryCountMax = 9;
         session.Save(() => { });
+        Assert.Equal("H03AR", project.LuxMachineNo);
+        Assert.Equal(LuxVidMeasurementMode.GetPosition, project.LuxVidMode);
+        Assert.Equal((100d, 200d, 2d, 3d), (project.LuxVidMin, project.LuxVidMax, project.LuxVidFix, project.LuxVidB));
         Assert.Equal("COM19", project.ThunderbirdPortName);
         Assert.Equal(57600, project.ThunderbirdBaudRate);
         Assert.Equal(-1, project.ThunderbirdTimeoutMs);

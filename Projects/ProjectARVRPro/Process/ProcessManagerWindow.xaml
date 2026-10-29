@@ -365,6 +365,10 @@
             </Grid>
         </TabItem>
 
+        <TabItem Header="{display:DisplayText Key='其他配置'}">
+            <local:OtherSettingsPanel x:Name="OtherSettings"/>
+        </TabItem>
+
         <TabItem Header="{display:DisplayText Key='流程解析映射'}">
             <Grid Margin="4 8 4 4">
                 <Grid.ColumnDefinitions>

@@ -165,6 +165,15 @@ namespace ColorVision.ImageEditor.Operations
             }
         }
 
+        /// <summary>The last accepted host claim sequence, retained after its claim is released.</summary>
+        internal long AlgorithmClaimSequence
+        {
+            get
+            {
+                lock (_algorithmPreviewSync) return _algorithmClaimSequence;
+            }
+        }
+
         internal long AlgorithmPreviewGeneration
         {
             get

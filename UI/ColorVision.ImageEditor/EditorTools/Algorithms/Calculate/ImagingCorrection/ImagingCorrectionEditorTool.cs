@@ -21,36 +21,28 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
 
         public async Task ExecuteAsync()
         {
-            ImagingCorrectionParametersWindow parametersWindow = new(_image.AlgorithmRuntime.Catalog) { Owner = Application.Current.GetActiveWindow() };
-            if (parametersWindow.ShowDialog() != true) return;
-            IReadOnlyList<AlgorithmInput> references;
-            try
-            {
-                references = await Task.Run(() => AlgorithmReferenceImageLoader.LoadEnabledReferences(parametersWindow.Parameters));
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show(exception.Message, LocalizedText.Get("成像校正"), MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            ImagingCorrectionParameters parameters = parametersWindow.Parameters;
-            AlgorithmInvocation baseInvocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImagingCorrection, parameters);
-            AlgorithmInvocation invocation = new()
-            {
-                InvocationId = baseInvocation.InvocationId,
-                AlgorithmId = baseInvocation.AlgorithmId,
-                ParameterSchemaVersion = baseInvocation.ParameterSchemaVersion,
-                Parameters = baseInvocation.Parameters,
-                PresetId = parametersWindow.PresetId,
-                Inputs = new[] { new AlgorithmInputReference("source") }
-                    .Concat(references.Select(value => new AlgorithmInputReference(value.Name, value.SourceUri, value.SourceRevision, value.Checksum)))
-                    .ToArray(),
-            };
+            IReadOnlyList<AlgorithmInput> references = Array.Empty<AlgorithmInput>();
             AlgorithmResult result;
             try
             {
-                result = await ImageAlgorithmApplier.ApplyAsync(_image, invocation, references);
+                using ImageAlgorithmPreviewSession session = ImageAlgorithmPreviewSession.Start(_image);
+                ImagingCorrectionParametersWindow parametersWindow = new(_image.AlgorithmRuntime.Catalog) { Owner = Application.Current.GetActiveWindow() };
+                if (parametersWindow.ShowDialog() != true) return;
+                ImagingCorrectionParameters parameters = parametersWindow.Parameters;
+                references = await Task.Run(() => AlgorithmReferenceImageLoader.LoadEnabledReferences(parameters));
+                AlgorithmInvocation baseInvocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImagingCorrection, parameters);
+                AlgorithmInvocation invocation = new()
+                {
+                    InvocationId = baseInvocation.InvocationId,
+                    AlgorithmId = baseInvocation.AlgorithmId,
+                    ParameterSchemaVersion = baseInvocation.ParameterSchemaVersion,
+                    Parameters = baseInvocation.Parameters,
+                    PresetId = parametersWindow.PresetId,
+                    Inputs = new[] { new AlgorithmInputReference("source") }
+                        .Concat(references.Select(value => new AlgorithmInputReference(value.Name, value.SourceUri, value.SourceRevision, value.Checksum)))
+                        .ToArray(),
+                };
+                result = await ImageAlgorithmApplier.ApplyAsync(session, invocation, references);
             }
             catch (Exception exception)
             {

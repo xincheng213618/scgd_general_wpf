@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Controls
         {
             DeviceStatusType status = backend.Status;
             bool ready = status is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free;
-            bool busy = operating || status is DeviceStatusType.Opening or DeviceStatusType.Closing or DeviceStatusType.Busy;
+            bool busy = operating || backend.IsCommandRunning || status is DeviceStatusType.Opening or DeviceStatusType.Closing or DeviceStatusType.Busy;
             bool connected = backend.LocalOwned || backend.VideoOwned || backend.ServiceMayOwnCamera || ready || status == DeviceStatusType.Busy;
             bool canConnect = !connected && !busy && (status == DeviceStatusType.Closed || backend.OpensLocally);
             // Local capture and preview share a session. Legacy service/video owners must close first.

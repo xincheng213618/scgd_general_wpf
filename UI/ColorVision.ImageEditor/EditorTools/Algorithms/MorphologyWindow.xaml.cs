@@ -13,13 +13,16 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private static readonly ILog log = LogManager.GetLogger(typeof(MorphologyWindow));
         private readonly string _debounceKey = $"{nameof(MorphologyWindow)}_{Guid.NewGuid():N}";
         private readonly ImageAlgorithmPreviewSession _preview;
+        private readonly AlgorithmParameterInputs _parameterInputs;
+        private long _parameterRevision;
 
         public MorphologyWindow(ImageProcessingContext image, int defaultOperation = 0)
         {
             InitializeComponent();
             this.ApplyCaption();
-            _preview = ImageAlgorithmPreviewSession.Start(image);
+            _preview = ImageAlgorithmPreviewSession.StartForCatalogPreview(image);
             OperationCombo.SelectedIndex = defaultOperation;
+            _parameterInputs = new(this);
             _ = ApplyPreviewAsync();
         }
 
@@ -30,7 +33,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return;
             }
 
-            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyPreviewAsync());
+            if (_preview == null) return;
+            _parameterRevision++;
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, _preview.GuardDeferredPreview(() => _ = ApplyPreviewAsync()));
         }
 
         private async System.Threading.Tasks.Task<bool> ApplyPreviewAsync()
@@ -58,8 +63,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
+            bool inputsValid = _parameterInputs.TryCommit();
             DebounceTimer.Cancel(_debounceKey);
-            if (await ApplyPreviewAsync() && _preview.Commit()) Close();
+            if (!inputsValid) return;
+            long parameterRevision = _parameterRevision;
+            long inputRevision = _parameterInputs.Revision;
+            if (await ApplyPreviewAsync() && parameterRevision == _parameterRevision
+                && inputRevision == _parameterInputs.Revision && _preview.Commit()) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -71,6 +81,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         protected override void OnClosed(EventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
+            _parameterInputs.Dispose();
             _preview.Dispose();
             base.OnClosed(e);
         }

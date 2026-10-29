@@ -18,25 +18,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
 
         public async Task ExecuteAsync()
         {
-            LensDistortionCorrectionParametersWindow parametersWindow = new(_image.AlgorithmRuntime.Catalog)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-            };
-            if (parametersWindow.ShowDialog() != true) return;
-            LensDistortionCorrectionParameters parameters = parametersWindow.Parameters;
-            AlgorithmInvocation baseInvocation = AlgorithmInvocation.Create(StandardAlgorithmIds.LensDistortionCorrection, parameters);
-            AlgorithmInvocation invocation = new()
-            {
-                InvocationId = baseInvocation.InvocationId,
-                AlgorithmId = baseInvocation.AlgorithmId,
-                ParameterSchemaVersion = baseInvocation.ParameterSchemaVersion,
-                Parameters = baseInvocation.Parameters,
-                PresetId = parametersWindow.PresetId,
-            };
             AlgorithmResult result;
             try
             {
-                result = await ImageAlgorithmApplier.ApplyAsync(_image, invocation);
+                using ImageAlgorithmPreviewSession session = ImageAlgorithmPreviewSession.Start(_image);
+                LensDistortionCorrectionParametersWindow parametersWindow = new(_image.AlgorithmRuntime.Catalog)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                };
+                if (parametersWindow.ShowDialog() != true) return;
+                LensDistortionCorrectionParameters parameters = parametersWindow.Parameters;
+                AlgorithmInvocation baseInvocation = AlgorithmInvocation.Create(StandardAlgorithmIds.LensDistortionCorrection, parameters);
+                AlgorithmInvocation invocation = new()
+                {
+                    InvocationId = baseInvocation.InvocationId,
+                    AlgorithmId = baseInvocation.AlgorithmId,
+                    ParameterSchemaVersion = baseInvocation.ParameterSchemaVersion,
+                    Parameters = baseInvocation.Parameters,
+                    PresetId = parametersWindow.PresetId,
+                };
+                result = await ImageAlgorithmApplier.ApplyAsync(session, invocation, Array.Empty<AlgorithmInput>());
             }
             catch (Exception exception)
             {

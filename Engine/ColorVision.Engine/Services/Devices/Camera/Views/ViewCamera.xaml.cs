@@ -5,6 +5,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
@@ -39,6 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private int localPreviewResultId = -1;
         private bool updatingLocalSelection;
         private bool _isInitialized;
+        private RealtimeCameraOverlayVisual? _focusEvaluationOverlay;
         internal bool IsContentInitialized => _isInitialized;
 
         private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
@@ -230,6 +232,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsDisposed || updatingLocalSelection) return;
+            ClearFocusEvaluation();
 
             if (listView1.SelectedItem is ViewResultImage result)
             {
@@ -270,6 +273,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (IsDisposed) return;
             EnsureInitialized();
+            ClearFocusEvaluation();
             if (string.IsNullOrWhiteSpace(filePath))
                 ImageView.Clear();
             else
@@ -304,9 +308,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             finally { updatingLocalSelection = false; }
             if (forceDisplay || Config.AutoRefreshView)
             {
+                ClearFocusEvaluation();
                 preview.Show(ImageView);
                 ImageView.UpdateZoomAndScale();
             }
+        }
+
+        internal void ShowFocusEvaluation(string evaluation, double score)
+        {
+            if (IsDisposed || !Device.ViewRegistration.IsVisible || !double.IsFinite(score)) return;
+            EnsureInitialized();
+            _focusEvaluationOverlay ??= new RealtimeCameraOverlayVisual(Device.RealtimeCameraConfig) { IsRoiVisible = false };
+            _focusEvaluationOverlay.Attach();
+            ImageView.ImageShow.AddOverlayVisual(_focusEvaluationOverlay);
+            _focusEvaluationOverlay.UpdateFocusEvaluation(evaluation, score);
+        }
+
+        internal void ClearFocusEvaluation()
+        {
+            if (_focusEvaluationOverlay == null) return;
+            ImageView?.ImageShow.RemoveOverlayVisual(_focusEvaluationOverlay);
+            _focusEvaluationOverlay.Detach();
+            _focusEvaluationOverlay = null;
         }
 
         public void ShowResult(MeasureResultImgModel model)
@@ -396,6 +419,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DisposeCore()
         {
+            ClearFocusEvaluation();
             _historyConfig.PropertyChanged -= HistoryConfig_PropertyChanged;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;

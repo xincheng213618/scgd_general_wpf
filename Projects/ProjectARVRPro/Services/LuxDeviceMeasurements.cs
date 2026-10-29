@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using log4net;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
 
@@ -13,14 +14,32 @@ namespace ProjectARVRPro.Services;
 
 internal static class LuxDeviceMeasurements
 {
+    private static readonly ILog log = LogManager.GetLogger(typeof(LuxDeviceMeasurements));
+
     internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         DeviceCamera camera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault()
             ?? throw new InvalidOperationException("未配置相机设备。");
-        DisplayCameraConfig display = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(camera.Config.Code);
-        if (display.AutoFocusTemplateIndex < 0 || display.AutoFocusTemplateIndex >= TemplateAutoFocus.Params.Count)
-            throw new InvalidOperationException("请先选择自动对焦模板。");
-        MsgReturn? response = await WaitForResultAsync(camera.DService.AutoFocus(TemplateAutoFocus.Params[display.AutoFocusTemplateIndex].Value), cancellationToken);
+        LuxVidMeasurementMode mode = ProjectARVRProConfig.Instance.LuxVidMode;
+        if (!Enum.IsDefined(mode)) throw new InvalidOperationException("请选择有效的 VID 测量方式。");
+        AutoFocusParam? template = null;
+        if (mode == LuxVidMeasurementMode.AutoFocus)
+        {
+            DisplayCameraConfig display = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(camera.Config.Code);
+            if (display.AutoFocusTemplateIndex < 0 || display.AutoFocusTemplateIndex >= TemplateAutoFocus.Params.Count)
+                throw new InvalidOperationException("请先选择自动对焦模板。");
+            template = TemplateAutoFocus.Params[display.AutoFocusTemplateIndex].Value;
+        }
+        if (camera.DService.DeviceStatus <= DeviceStatusType.Closed)
+        {
+            MsgReturn? opened = await WaitForResultAsync(camera.DService.Open(camera.Config.CameraID,
+                camera.Config.TakeImageMode, (int)camera.Config.ImageBpp), cancellationToken);
+            if (opened == null) return null;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        MsgRecord command = template == null ? camera.DService.GetPosition() : camera.DService.AutoFocus(template);
+        MsgReturn? response = await WaitForResultAsync(command, cancellationToken);
         return response == null ? null : ReadVid(response);
     }
 
@@ -69,7 +88,8 @@ internal static class LuxDeviceMeasurements
         void OnStateChanged(object? sender, MsgRecordState state)
         {
             if (state == MsgRecordState.Success) completion.TrySetResult(record.MsgReturn);
-            else if (state is MsgRecordState.Fail or MsgRecordState.Timeout) completion.TrySetResult(null);
+            else if ((state is MsgRecordState.Fail or MsgRecordState.Timeout) && completion.TrySetResult(null))
+                log.Warn($"LUX 设备命令结束: Event={record.MsgSend?.EventName}, State={state}, Code={record.MsgReturn?.Code}, Message={record.MsgReturn?.Message}");
         }
         record.MsgRecordStateChanged += OnStateChanged;
         try

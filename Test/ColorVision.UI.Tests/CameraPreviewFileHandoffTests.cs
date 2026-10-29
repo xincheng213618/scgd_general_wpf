@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.POI;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using System.IO;
 using System.Reflection;
@@ -222,7 +223,7 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
             pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
             return bitmap;
         });
-        await view.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle).Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await view.Realtime.Completion.WaitAsync(TimeSpan.FromSeconds(10));
         WpfTestHost.Invoke(() =>
         {
             Assert.Same(previous, view.ViewBitmapSource);
@@ -230,6 +231,89 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
         });
         await PresentAsync([71, 72, 73, 74, 75, 76], 8, 1);
         WpfTestHost.Invoke(() => Assert.Equal(new byte[] { 71, 72, 73, 74, 75, 76 }, Pixels((BitmapSource)view.ViewBitmapSource)));
+    }
+
+    [Theory]
+    [InlineData(8, 1, RealtimeFramePresenter.TransformNone)]
+    [InlineData(16, 1, RealtimeFramePresenter.TransformFlipX)]
+    [InlineData(8, 3, RealtimeFramePresenter.TransformFlipY)]
+    [InlineData(16, 3, RealtimeFramePresenter.TransformFlipXY)]
+    public async Task BackgroundVideoCopyPreservesPixelLayoutAndFlipWithPaddedBorrowedRows(int depth, int channels, int transform)
+    {
+        int pixelBytes = channels * (depth / 8);
+        int rowBytes = 3 * pixelBytes;
+        int stride = rowBytes + 5;
+        byte[] samples = Enumerable.Range(0, stride * 2).Select(i => (byte)(i + 1)).ToArray();
+        byte[] expected = new byte[rowBytes * 2];
+        for (int y = 0; y < 2; y++)
+            for (int x = 0; x < 3; x++)
+            {
+                int sourceY = (transform & RealtimeFramePresenter.TransformFlipX) != 0 ? 1 - y : y;
+                int sourceX = (transform & RealtimeFramePresenter.TransformFlipY) != 0 ? 2 - x : x;
+                Array.Copy(samples, sourceY * stride + sourceX * pixelBytes, expected, y * rowBytes + x * pixelBytes, pixelBytes);
+            }
+        IntPtr borrowed = Marshal.AllocCoTaskMem(samples.Length);
+        try
+        {
+            Marshal.Copy(samples, 0, borrowed, samples.Length);
+            WpfTestHost.Invoke(() =>
+            {
+                pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
+                Assert.True(view.Realtime.SubmitFrame(borrowed, 3, 2, RealtimeFramePresenter.GetPixelFormat(channels, depth), stride, samples.Length, transform));
+            });
+        }
+        finally { Marshal.FreeCoTaskMem(borrowed); }
+        await view.Realtime.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+        WpfTestHost.Invoke(() =>
+        {
+            var source = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+            Assert.True(source.IsFrozen);
+            Assert.Equal(expected, Pixels(source));
+            Assert.Equal(depth, view.Config.GetProperties<int>(ImageViewPropertyKeys.Depth));
+            Assert.Equal(channels, view.Config.GetProperties<int>(ImageViewPropertyKeys.Channel));
+        });
+    }
+
+    [Fact]
+    public async Task BusyUiKeepsOnlyLatestPendingVideoFrameAndDoesNotMutatePresentedSnapshots()
+    {
+        using ManualResetEventSlim prepared = new();
+        List<WriteableBitmap> presented = [];
+        void OnFrame(Guid id, WriteableBitmap source) => presented.Add(source);
+        WpfTestHost.Invoke(() =>
+        {
+            pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
+            view.EditorContext.ProcessingContext.StreamPresentation.FramePresented += OnFrame;
+            int uiThread = Environment.CurrentManagedThreadId;
+            void OnPosted(object? sender, DispatcherHookEventArgs args)
+            {
+                if (args.Operation.Priority == DispatcherPriority.Background && Environment.CurrentManagedThreadId != uiThread)
+                    prepared.Set();
+            }
+            view.Dispatcher.Hooks.OperationPosted += OnPosted;
+            try
+            {
+                pipeline.SubmitFrame(new byte[] { 11 }, 1, 1, 1, 1, 8, 1);
+                // Wait for background preparation while this UI invocation still owns the
+                // dispatcher. Its completed frozen bitmap is waiting to be published.
+                Assert.True(prepared.Wait(TimeSpan.FromSeconds(10)));
+                pipeline.SubmitFrame(new byte[] { 22 }, 1, 1, 1, 1, 8, 1);
+                pipeline.SubmitFrame(new byte[] { 33 }, 1, 1, 1, 1, 8, 1);
+            }
+            finally { view.Dispatcher.Hooks.OperationPosted -= OnPosted; }
+        });
+        try
+        {
+            await view.Realtime.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(2, presented.Count);
+                Assert.Equal(new byte[] { 11 }, Pixels(presented[0]));
+                Assert.Equal(new byte[] { 33 }, Pixels(presented[1]));
+                Assert.All(presented, source => Assert.True(source.IsFrozen));
+            });
+        }
+        finally { WpfTestHost.Invoke(() => view.EditorContext.ProcessingContext.StreamPresentation.FramePresented -= OnFrame); }
     }
 
     private SemaphoreSlim OpenGate => (SemaphoreSlim)typeof(CalibratedImageCapability).GetField("_rawOpenGate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener)!;

@@ -1,7 +1,10 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Presentation;
 using ColorVision.ImageEditor.Presentation.PseudoColor;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -109,6 +112,74 @@ public sealed class ImageDisplayEffectsTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ContinuousPseudoColorPublishesIndependentWorkerSnapshotsAndRejectsResetWork(bool reset)
+    {
+        using ManualResetEventSlim processing = new();
+        using ManualResetEventSlim finishProcessing = new();
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture());
+        ImageStreamPresentation stream = WpfTestHost.Invoke(() => new ImageStreamPresentation(fixture.Context, (source, _) =>
+        {
+            Assert.False(fixture.Context.Dispatcher.CheckAccess());
+            processing.Set();
+            Assert.True(finishProcessing.Wait(TimeSpan.FromSeconds(10)));
+            byte[] pixels = new byte[4];
+            for (int y = 0; y < 2; y++)
+                for (int x = 0; x < 2; x++)
+                    pixels[y * 2 + x] = (byte)(Marshal.ReadByte(source.pData, y * source.stride + x) + 10);
+            IntPtr output = Marshal.AllocCoTaskMem(pixels.Length);
+            Marshal.Copy(pixels, 0, output, pixels.Length);
+            return new HImage { pData = output, rows = 2, cols = 2, channels = 1, depth = 8, stride = 2 };
+        }));
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap source = new(2, 2, 96, 96, PixelFormats.Gray8, null);
+                source.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 1, 2, 3, 4 }, 2, 0);
+                fixture.Source = source;
+                fixture.State.IsEnabled = true;
+                fixture.Context.DisplayEffects.Invalidate();
+                fixture.Context.Presentation.Publish(source, null);
+                stream.Submit(source, Guid.NewGuid());
+                source.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[4], 2, 0);
+            });
+            Assert.True(processing.Wait(TimeSpan.FromSeconds(10)));
+            if (reset) WpfTestHost.Invoke(stream.Reset);
+            finishProcessing.Set();
+            await stream.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                if (reset)
+                {
+                    Assert.False(stream.IsActive);
+                    Assert.Null(fixture.Context.FunctionImage);
+                    Assert.Equal(1, fixture.Context.ImageRevision);
+                    return;
+                }
+                var source = Assert.IsType<WriteableBitmap>(fixture.Source);
+                var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                Assert.True(source.IsFrozen);
+                Assert.True(display.IsFrozen);
+                Assert.NotSame(source, display);
+                byte[] pixels = new byte[4];
+                source.CopyPixels(pixels, 2, 0);
+                Assert.Equal(new byte[] { 1, 2, 3, 4 }, pixels);
+                display.CopyPixels(pixels, 2, 0);
+                Assert.Equal(new byte[] { 11, 12, 13, 14 }, pixels);
+                Assert.Equal(2, fixture.Context.ImageRevision);
+                Assert.Same(display, fixture.Context.Presentation.DisplaySource);
+            });
+        }
+        finally
+        {
+            finishProcessing.Set();
+            WpfTestHost.Invoke(() => { stream.Dispose(); fixture.Dispose(); });
+        }
+    }
+
     private sealed class EffectsFixture : IDisposable
     {
         internal ImageSource? Source { get; set; }
@@ -116,6 +187,7 @@ public sealed class ImageDisplayEffectsTests
         internal bool OwnerDisposed { get; set; }
         internal bool Initialized { get; set; }
         internal int AcquireCount { get; private set; }
+        private long _revision = 1;
         internal ImageProcessingContext Context { get; }
         internal PseudoColorState State => Context.DisplayEffects.PseudoColor;
 
@@ -128,15 +200,15 @@ public sealed class ImageDisplayEffectsTests
                     IsInitialized = () => Initialized,
                     GetDocumentInstanceId = () => documentId,
                     IsDisposed = () => OwnerDisposed,
-                    GetImageRevision = () => 1,
+                    GetImageRevision = () => _revision,
                     AcquireImageFrame = () =>
                     {
                         AcquireCount++;
                         return null;
                     },
-                    IsCurrentImageRevision = revision => !OwnerDisposed && revision == 1,
+                    IsCurrentImageRevision = revision => !OwnerDisposed && revision == _revision,
                     NotifySourcePixelsChanged = () => { },
-                    CommitSourcePixels = value => Source = value,
+                    CommitSourcePixels = value => { Source = value; _revision++; },
                     GetViewBitmapSource = () => Source,
                     SetViewBitmapSource = value => Source = value,
                     GetSelectedLayerSourceChannelIndex = () => SelectedChannel,
