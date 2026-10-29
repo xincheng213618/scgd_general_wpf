@@ -14,7 +14,6 @@ using cvColorVision;
 using Newtonsoft.Json;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace ColorVision.UI.Tests;
 
@@ -236,93 +235,6 @@ public sealed class PhyCameraLicenseImportPolicyTests : IDisposable
 
         Assert.Same(existing, match);
         Assert.Single(licenses);
-    }
-
-    private static string ImportLicenseValue => Convert.ToBase64String(Encoding.UTF8.GetBytes(
-        """{"device_mode":"CAM-TEST","expiry_date":"2200000000","licensee":"Test customer"}"""));
-
-    [Fact]
-    public void CameraLicenseUsesHardwareMd5AfterTheFileIsRenamed()
-    {
-        const string cameraId = "hardware-camera-id";
-        string key = Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(cameraId)));
-        string file = Path.Combine(_tempDirectory, "改过的许可证名称.lic");
-        File.WriteAllText(file, ImportLicenseValue);
-
-        var identity = DeviceLicenseImport.Camera(cameraId, key.ToLowerInvariant());
-        var license = DeviceLicenseImport.ReadFile(file, identity);
-
-        Assert.Equal(key, license.MacAddress);
-        Assert.Equal(0, license.LiceType);
-        Assert.Equal("CAM-TEST", license.Model);
-        Assert.Equal("Test customer", license.CusTomerName);
-        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(2200000000).LocalDateTime, license.ExpiryDate);
-        Assert.Equal(ImportLicenseValue, license.LicenseValue);
-        Assert.Throws<InvalidDataException>(() => DeviceLicenseImport.Camera(cameraId, new string('0', 32)));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    public void RenamedUnboundLicenseReusesTheIdentityOfItsExistingContent(int licenseType)
-    {
-        string key = licenseType == 0 ? new string('A', 32) : "SPECTRUM-SN-01";
-        var existing = new LicenseModel { LiceType = licenseType, MacAddress = key, LicenseValue = ImportLicenseValue };
-        string file = Path.Combine(_tempDirectory, "任意文件名.lic");
-        File.WriteAllText(file, ImportLicenseValue + "\r\n");
-        var devices = DeviceLicenseImport.KnownDevices([], [existing]);
-
-        var license = Assert.Single(DeviceLicenseImport.ReadFiles([file], devices, [existing]));
-
-        Assert.Equal(key, license.MacAddress);
-        Assert.Equal(licenseType, license.LiceType);
-    }
-
-    [Fact]
-    public void UnknownRenamedLicenseRequiresATargetAndCannotCreateADeviceFromItsName()
-    {
-        string file = Path.Combine(_tempDirectory, "随意改名.lic");
-        File.WriteAllText(file, ImportLicenseValue);
-        Assert.Throws<InvalidDataException>(() => DeviceLicenseImport.ReadFiles([file], [], []));
-    }
-
-    [Fact]
-    public void BatchImportRecognizesHardwareIdentifiersAndKeepsLegacyMd5Packages()
-    {
-        const string cameraId = "hardware-camera-id";
-        var identity = DeviceLicenseImport.Camera(cameraId, null);
-        string file = Path.Combine(_tempDirectory, cameraId + ".lic");
-        File.WriteAllText(file, ImportLicenseValue);
-        var devices = DeviceLicenseImport.KnownDevices(
-            [new SysResourceModel { Type = (int)ServiceTypes.PhyCamera, Code = identity.Key }], []);
-        Assert.Equal(identity.Key, Assert.Single(DeviceLicenseImport.ReadFiles([file], devices, [])).MacAddress);
-
-        string legacyFile = Path.Combine(_tempDirectory, identity.Key + ".lic");
-        File.WriteAllText(legacyFile, ImportLicenseValue);
-        Assert.Equal(identity.Key, Assert.Single(DeviceLicenseImport.ReadFiles([legacyFile], [], [])).MacAddress);
-        Assert.Throws<InvalidDataException>(() => DeviceLicenseImport.ReadFiles([file, legacyFile], devices, []));
-    }
-
-    [Theory]
-    [InlineData(12)]
-    [InlineData(-12)]
-    public void LicenseRenewalPreservesDatabaseIdentityAndDeviceAssociations(int id)
-    {
-        var identity = DeviceLicenseImport.Camera("hardware-camera-id", null);
-        DateTime created = new(2020, 1, 1);
-        var existing = new LicenseModel
-        {
-            Id = id, MacAddress = identity.Key.ToLowerInvariant(), LiceType = 0,
-            DevCameraId = 31, DevCaliId = 32, CreateDate = created, LicenseValue = "old"
-        };
-        var updated = DeviceLicenseImport.PreserveAssociation(DeviceLicenseImport.Parse(ImportLicenseValue, identity), existing);
-        Assert.Equal(id, updated.Id);
-        Assert.Equal(31, updated.DevCameraId);
-        Assert.Equal(32, updated.DevCaliId);
-        Assert.Equal(created, updated.CreateDate);
-        Assert.Equal(ImportLicenseValue, updated.LicenseValue);
-        existing.LiceType = 1;
-        Assert.Throws<InvalidDataException>(() => DeviceLicenseImport.PreserveAssociation(updated, existing));
     }
 
     [Theory]

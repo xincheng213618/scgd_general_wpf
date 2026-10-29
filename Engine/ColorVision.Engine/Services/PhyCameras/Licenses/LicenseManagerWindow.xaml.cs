@@ -332,16 +332,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                try
-                {
-                    PhyCameraManager.GetInstance().ImportFiles(openFileDialog.FileNames);
-                    LoadLicenses();
-                }
-                catch (Exception ex)
-                {
-                    log.Error("Failed to import device licenses", ex);
-                    OperationMessage = ex.Message;
-                }
+                // Use PhyCameraManager's Import logic
+                PhyCameraManager.GetInstance().Import();
+                LoadLicenses();
             }
         }
 

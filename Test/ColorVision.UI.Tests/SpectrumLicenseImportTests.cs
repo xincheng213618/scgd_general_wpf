@@ -101,11 +101,11 @@ public sealed class SpectrumLicenseImportTests
                 Assert.True(upload.IsEnabled);
                 Assert.Equal(serial, window.EditConfig.SN);
                 string value = Convert.ToBase64String(Encoding.UTF8.GetBytes("""{"device_mode":"SP-TEST","expiry_date":"2100000000","licensee":"Test"}"""));
-                string file = Path.Combine(directory, "renamed-license.lic");
+                string file = Path.Combine(directory, serial + ".lic");
                 File.WriteAllText(file, value);
                 var run = typeof(EditSpectrum).GetMethod("RunAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
                 string wrongFile = Path.Combine(directory, "OTHER.lic");
-                File.WriteAllText(wrongFile, "invalid license content");
+                File.WriteAllText(wrongFile, value);
                 Func<Task> rejected = () => window.ImportLicenseAsync(wrongFile, serial);
                 await (Task)run.Invoke(window, [rejected])!;
                 Assert.False(string.IsNullOrWhiteSpace(((TextBlock)window.FindName("StatusText")).Text));

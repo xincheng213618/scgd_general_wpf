@@ -808,30 +808,103 @@ namespace ColorVision.Engine.Services.PhyCameras
         public bool SetLicense(string filepath)
         {
             if (!File.Exists(filepath)) return false;
-            try
+            if (Path.GetExtension(filepath) == ".zip")
             {
-                var identity = DeviceLicenseImport.Camera(Config.CameraID, Code);
-                var imported = DeviceLicenseImport.ReadFile(filepath, identity);
-                var existing = PhyLicenseDao.Instance.GetByMAC(identity.Key, SysResourceDao.IsLocalId(Id));
-                string? previousLicenseValue = existing?.LicenseValue;
-                var updated = DeviceLicenseImport.PreserveAssociation(imported, existing);
-                int ret = PhyLicenseDao.Instance.Save(updated, SysResourceDao.IsLocalId(Id));
-                if (ret <= 0) return false;
-                CameraLicenseModel = updated;
-                RefreshLicense();
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{identity.Key} {Properties.Resources.UpdateSuccess}", Properties.Resources.ModifyLicense);
-                if (ShouldRestartServicesAfterLicenseUpdate(previousLicenseValue, updated.LicenseValue, ret)
-                    && MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.Camera_ConfirmRestartService, Properties.Resources.ModifyLicense, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
-                    MqttRCService.GetInstance().RestartServices();
-                return true;
+                try
+                {
+                    using ZipArchive archive = ZipFile.OpenRead(filepath);
+                    var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
+
+                    foreach (var item in licFiles)
+                    {
+                        string Code = Path.GetFileNameWithoutExtension(item.FullName);
+                        if (Code == SysResourceModel.Code)
+                        {
+                            CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code, SysResourceDao.IsLocalId(Id));
+                            string? previousLicenseValue = CameraLicenseModel?.LicenseValue;
+                            if (CameraLicenseModel == null)
+                                CameraLicenseModel = new LicenseModel();
+                            CameraLicenseModel.LiceType = 0;
+                            CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
+                            using var stream = item.Open();
+                            using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
+                            CameraLicenseModel.LicenseValue = reader.ReadToEnd();
+
+                            CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                            CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                            CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
+
+                            int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel, SysResourceDao.IsLocalId(Id));
+                            if(ret == 1)
+                            {
+                                RefreshLicense();
+                            }
+
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.AddSuccess)}", Properties.Resources.ModifyLicense);
+                            if (ShouldRestartServicesAfterLicenseUpdate(previousLicenseValue, CameraLicenseModel.LicenseValue, ret)
+                                && MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.Camera_ConfirmRestartService, Properties.Resources.ModifyLicense, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                            {
+                                MqttRCService.GetInstance().RestartServices();
+                            }
+                            if (ret == -1)
+                            {
+                                return false;
+                            }
+                            return true;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExtractionFailed} :{ex.Message}", Properties.Resources.ModifyLicense);
+                    return false;
+                }
             }
-            catch (Exception ex)
+            else if (Path.GetExtension(filepath) == ".lic")
             {
-                log.Error("Failed to import camera license", ex);
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), ex.Message, Properties.Resources.ModifyLicense);
-                return false;
+                string Code = Path.GetFileNameWithoutExtension(filepath);
+                if (Code == SysResourceModel.Code)
+                {
+                    CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code, SysResourceDao.IsLocalId(Id));
+                    string? previousLicenseValue = CameraLicenseModel?.LicenseValue;
+                    if (CameraLicenseModel == null)
+                        CameraLicenseModel = new LicenseModel();
+                    CameraLicenseModel.LiceType = 0;
+                    CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
+                    CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
+                    CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                    CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                    CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
+
+                    int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel, SysResourceDao.IsLocalId(Id));
+                    if (ret == 1)
+                    {
+                        RefreshLicense();
+                    }
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.UpdateSuccess)}", Properties.Resources.ModifyLicense);
+                    if (ShouldRestartServicesAfterLicenseUpdate(previousLicenseValue, CameraLicenseModel.LicenseValue, ret)
+                        && MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.Camera_ConfirmRestartService, Properties.Resources.ModifyLicense, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                    {
+                        MqttRCService.GetInstance().RestartServices();
+                    }
+                    if (ret == -1)
+                    {
+                        return false;
+                    }
+                    return true;
+                }
+                else
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseNotSupportedForCamera, Properties.Resources.ModifyLicense);
+                }
             }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, Properties.Resources.ModifyLicense);
+            }
+            return false;
         }
+
         internal static bool ShouldRestartServicesAfterLicenseUpdate(string? previousLicenseValue, string? currentLicenseValue, int saveResult)
         {
             if (saveResult != 1)

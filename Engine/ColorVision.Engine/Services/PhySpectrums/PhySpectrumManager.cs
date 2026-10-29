@@ -219,9 +219,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
             await RunAsync(async () =>
             {
                 // Validate every selected file before writing the first license.
-                string[] knownSerials = Spectrums.Select(spectrum => spectrum.SN).ToArray();
-                var existing = useLocalStore ? PhyLicenseDao.Instance.GetLocal() : PhyLicenseDao.Instance.GetAll();
-                var licenses = await Task.Run(() => SpectrumLicenseUpdateService.ReadFiles(dialog.FileNames, knownSerials, existing), cancellation.Token);
+                var licenses = await Task.Run(() => SpectrumLicenseUpdateService.ReadFiles(dialog.FileNames), cancellation.Token);
                 foreach (var license in licenses)
                     await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore), cancellation.Token);
                 SearchText = string.Empty;

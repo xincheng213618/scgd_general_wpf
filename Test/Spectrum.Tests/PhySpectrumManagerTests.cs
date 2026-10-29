@@ -109,12 +109,10 @@ public sealed class PhySpectrumManagerTests
     }
 
     [Fact]
-    public void ArchiveUsesSelectedSerialForSingleRenamedLicenseAndRejectsAmbiguity()
+    public void ArchiveRejectsMissingOrAmbiguousSerial()
     {
-        using var renamed = Archive(("renamed.lic", LicenseValue()));
-        Assert.Equal("SN-01", SpectrumLicenseUpdateService.ReadArchive(renamed, "SN-01").MacAddress);
-        using var unmatched = Archive(("FIRST.lic", LicenseValue()), ("SECOND.lic", LicenseValue()));
-        Assert.Throws<InvalidDataException>(() => SpectrumLicenseUpdateService.ReadArchive(unmatched, "SN-01"));
+        using var missing = Archive(("OTHER.lic", LicenseValue()));
+        Assert.Throws<InvalidDataException>(() => SpectrumLicenseUpdateService.ReadArchive(missing, "SN-01"));
         using var ambiguous = Archive(("first/SN-01.lic", LicenseValue()), ("second/sn-01.lic", LicenseValue()));
         Assert.Throws<InvalidDataException>(() => SpectrumLicenseUpdateService.ReadArchive(ambiguous, "SN-01"));
     }
@@ -150,14 +148,14 @@ public sealed class PhySpectrumManagerTests
     }
 
     [Fact]
-    public void ToolbarImportMatchesKnownSerialsWithoutRequiringASelection()
+    public void ToolbarImportReadsAllSerialsWithoutRequiringASelection()
     {
         string file = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".zip");
         try
         {
             using var archive = Archive(("SN-01.lic", LicenseValue()), ("nested/SN-02.lic", LicenseValue()));
             File.WriteAllBytes(file, archive.ToArray());
-            var licenses = SpectrumLicenseUpdateService.ReadFiles([file], ["SN-01", "SN-02"], []);
+            var licenses = SpectrumLicenseUpdateService.ReadFiles(new[] { file });
             Assert.Equal(new[] { "SN-01", "SN-02" }, licenses.Select(l => l.MacAddress));
             Assert.All(licenses, license => Assert.Equal(1, license.LiceType));
         }
@@ -175,23 +173,9 @@ public sealed class PhySpectrumManagerTests
             using var duplicate = Archive(("sn-01.lic", LicenseValue()));
             File.WriteAllBytes(first, archive.ToArray());
             File.WriteAllBytes(second, duplicate.ToArray());
-            Assert.Throws<InvalidDataException>(() => SpectrumLicenseUpdateService.ReadFiles([first, second], ["SN-01"], []));
+            Assert.Throws<InvalidDataException>(() => SpectrumLicenseUpdateService.ReadFiles(new[] { first, second }));
         }
         finally { File.Delete(first); File.Delete(second); }
-    }
-
-    [Fact]
-    public void UnknownUnboundSerialRequiresAnExplicitDeviceTarget()
-    {
-        string file = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".zip");
-        try
-        {
-            using var archive = Archive(("UNKNOWN-SN.lic", LicenseValue()));
-            File.WriteAllBytes(file, archive.ToArray());
-            Assert.Throws<InvalidDataException>(() => SpectrumLicenseUpdateService.ReadFiles([file], ["SN-01"], []));
-            Assert.Equal("SN-01", SpectrumLicenseUpdateService.ReadFile(file, "SN-01").MacAddress);
-        }
-        finally { File.Delete(file); }
     }
 
     private static MemoryStream Archive(params (string Name, string Value)[] files)
