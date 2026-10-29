@@ -26,6 +26,12 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
     [Theory]
     [InlineData("basic")]
     [InlineData("white-balance")]
+    [InlineData("threshold")]
+    [InlineData("edge-detection")]
+    [InlineData("gaussian-blur")]
+    [InlineData("median-blur")]
+    [InlineData("morphology")]
+    [InlineData("denoise")]
     public async Task CompletedUnchangedPreviewIsCommittedWithoutAnotherExecution(string windowKind)
     {
         WriteOwnerIdentity();
@@ -42,9 +48,12 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
                 Assert.NotSame(fixture.Canonical, bitmap);
                 Assert.False(bitmap.IsFrozen);
                 Assert.True(preview.Output!.IsDisposed);
-                BindingExpression binding = FindNumericTextBox(fixture.Window, fixture.SliderName).GetBindingExpression(TextBox.TextProperty)!;
-                Assert.Equal(BindingStatus.Active, binding.Status);
-                Assert.False(binding.HasError);
+                if (HasEditableNumericInputs(fixture.Window))
+                {
+                    BindingExpression binding = FindNumericTextBox(fixture.Window, fixture.SliderName).GetBindingExpression(TextBox.TextProperty)!;
+                    Assert.Equal(BindingStatus.Active, binding.Status);
+                    Assert.False(binding.HasError);
+                }
                 return (Bitmap: bitmap, Revision: fixture.Context.ImageRevision, Executions: fixture.Provider.ExecutionCount,
                     ParameterRevision: ParameterRevision(fixture.Window), InputRevision: InputRevision(fixture.Window), Claim: fixture.CurrentClaim());
             });
@@ -90,6 +99,12 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
     [Theory]
     [InlineData("basic", 10, 20)]
     [InlineData("white-balance", 1.5, 1.75)]
+    [InlineData("threshold", 10, 20)]
+    [InlineData("edge-detection", 25, 35)]
+    [InlineData("gaussian-blur", 2, 3)]
+    [InlineData("median-blur", 9, 11)]
+    [InlineData("morphology", 9, 11)]
+    [InlineData("denoise", 9, 11)]
     public async Task SuccessfulPreviewCannotBeReusedForParametersChangedBeforeItCompleted(string windowKind, double previousValue, double currentValue)
     {
         WriteOwnerIdentity();
@@ -161,7 +176,7 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
                 ready = new { ready.Revision, ready.Executions, ready.ParameterRevision, ready.InputRevision }, settled
             }));
             Assert.True(changed.ParameterRevision > started.ParameterRevision);
-            Assert.True(changed.InputRevision > started.InputRevision);
+            if (HasEditableNumericInputs(fixture.Window)) Assert.True(changed.InputRevision > started.InputRevision);
             Assert.Equal(changed.ParameterRevision, ready.ParameterRevision);
             Assert.Equal(changed.InputRevision, ready.InputRevision);
             Assert.Equal(2, ready.Executions);
@@ -186,6 +201,18 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
     [InlineData("basic", "new-preview")]
     [InlineData("white-balance", "analysis")]
     [InlineData("white-balance", "new-preview")]
+    [InlineData("threshold", "analysis")]
+    [InlineData("threshold", "new-preview")]
+    [InlineData("edge-detection", "analysis")]
+    [InlineData("edge-detection", "new-preview")]
+    [InlineData("gaussian-blur", "analysis")]
+    [InlineData("gaussian-blur", "new-preview")]
+    [InlineData("median-blur", "analysis")]
+    [InlineData("median-blur", "new-preview")]
+    [InlineData("morphology", "analysis")]
+    [InlineData("morphology", "new-preview")]
+    [InlineData("denoise", "analysis")]
+    [InlineData("denoise", "new-preview")]
     public async Task ReadyPreviewCommitDoesNotReclaimAReplacementOwner(string windowKind, string takeover)
     {
         WriteOwnerIdentity();
@@ -261,8 +288,13 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
     private static long ParameterRevision(Window window)
         => (long)window.GetType().GetField("_parameterRevision", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
 
+    private static bool HasEditableNumericInputs(Window window)
+        => window is not (EdgeDetectionWindow or GaussianBlurWindow or MedianBlurWindow);
+
     private static long InputRevision(Window window)
-        => ((AlgorithmParameterInputs)window.GetType().GetField("_parameterInputs", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!).Revision;
+        => HasEditableNumericInputs(window)
+            ? ((AlgorithmParameterInputs)window.GetType().GetField("_parameterInputs", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!).Revision
+            : 0;
 
     private static async Task<PreviewExecutionGate> CompleteChangedPreviewAsync(WindowFixture fixture)
     {
@@ -824,8 +856,8 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
 
     private static Task RaiseApplyAndObserveCompletion(Window window, bool defaultAccessKey = false)
     {
-        // White balance's XAML identifies Apply by localized content rather than IsDefault.
-        Button apply = FindApplyButton(window, window is WhiteBalanceWindow) ?? throw new InvalidOperationException("The actual Apply button was not found.");
+        // Several catalog windows identify Apply by localized content rather than IsDefault.
+        Button apply = FindApplyButton(window, matchApplyContent: true) ?? throw new InvalidOperationException("The actual Apply button was not found.");
         Assert.True(apply.IsEnabled);
         SynchronizationContext? previous = SynchronizationContext.Current;
         AsyncVoidCompletionContext observer = new(previous ?? new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
@@ -1065,7 +1097,13 @@ public sealed class BasicAdjustmentWindowOwnershipTests(ITestOutputHelper output
                 {
                     BasicAdjustmentParameters parameters => parameters.Brightness,
                     WhiteBalanceParameters parameters => parameters.RedScale,
-                    _ => throw new InvalidOperationException("The gated preview requires a basic or white-balance parameter set."),
+                    ThresholdParameters parameters => parameters.Threshold,
+                    CannyParameters parameters => parameters.LowThreshold,
+                    GaussianBlurParameters parameters => parameters.Sigma,
+                    MedianBlurParameters parameters => parameters.KernelSize,
+                    MorphologyParameters parameters => parameters.KernelSize,
+                    DenoiseParameters parameters => parameters.KernelSize,
+                    _ => throw new InvalidOperationException("The gated preview requires a supported parameter set."),
                 };
                 execution.Input = context.Inputs[0].Image;
                 execution.Started.TrySetResult(true);

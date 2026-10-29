@@ -11325,7 +11325,8 @@
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
         "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs",
         "Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs",
-        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
+        "Test/ColorVision.UI.Tests/PseudoColorChannelSelectionTests.cs"
       ],
       "related": [
         "ui.image-editor",

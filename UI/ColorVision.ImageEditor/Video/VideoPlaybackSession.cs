@@ -2,13 +2,17 @@ using ColorVision.Core;
 using log4net;
 using System;
 using System.Threading;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Video
 {
-    // Image is borrowed for the duration of the synchronous delivery callback.
-    // Consumers that retain pixels must copy them or acquire their own frame owner.
-    internal readonly record struct VideoFrameDelivery(HImage Image, Guid SessionId, int FrameIndex, int TotalFrames, bool IsInitialFrame);
+    // Image is borrowed for the synchronous callback; Source is an independent frozen
+    // snapshot which consumers can retain after the native frame is released.
+    internal readonly record struct VideoFrameDelivery(HImage Image, Guid SessionId, int FrameIndex, int TotalFrames, bool IsInitialFrame)
+    {
+        public required WriteableBitmap Source { get; init; }
+    }
 
     internal sealed class VideoPlaybackSession : IDisposable
     {
@@ -18,6 +22,8 @@ namespace ColorVision.ImageEditor.Video
         private readonly Action<VideoFrameDelivery> _presentFrame;
         private readonly IVideoPlaybackBackend _backend;
         private readonly IVideoAudioTrack _audio;
+        private readonly Func<HImage, WriteableBitmap> _prepareFrame;
+        private readonly object _preparationSync = new();
         private int _handle = -1;
         private long _generation;
         private long _timeline;
@@ -28,12 +34,13 @@ namespace ColorVision.ImageEditor.Video
         private int _droppedFrameCount;
         private bool _disposed;
 
-        public VideoPlaybackSession(Dispatcher dispatcher, Action<VideoFrameDelivery> presentFrame, IVideoPlaybackBackend? backend = null, IVideoAudioTrack? audio = null)
+        public VideoPlaybackSession(Dispatcher dispatcher, Action<VideoFrameDelivery> presentFrame, IVideoPlaybackBackend? backend = null, IVideoAudioTrack? audio = null, Func<HImage, WriteableBitmap>? prepareFrame = null)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _presentFrame = presentFrame ?? throw new ArgumentNullException(nameof(presentFrame));
             _backend = backend ?? new NativeVideoPlaybackBackend();
             _audio = audio ?? new WpfVideoAudioTrack();
+            _prepareFrame = prepareFrame ?? PrepareFrame;
         }
 
         public event EventHandler? StateChanged;
@@ -70,7 +77,7 @@ namespace ColorVision.ImageEditor.Video
                 try
                 {
                     if (_backend.ReadFrame(handle, out firstFrame) == 0)
-                        Deliver(firstFrame, 0, info.totalFrames, isInitialFrame: true);
+                        Deliver(firstFrame, PrepareSource(firstFrame), 0, info.totalFrames, isInitialFrame: true);
                 }
                 finally
                 {
@@ -142,10 +149,11 @@ namespace ColorVision.ImageEditor.Video
         {
             VerifyUsable();
             if (!IsOpen) return;
-            _backend.Seek(_handle, frameIndex);
+            // Retire the old queue before native Seek can publish its target.
             SessionId = Guid.NewGuid();
             Interlocked.Increment(ref _timeline);
             Interlocked.Exchange(ref _pendingFrame, null)?.Dispose();
+            _backend.Seek(_handle, frameIndex);
             CurrentFrame = frameIndex;
             TryAudio(() => _audio.Position = GetPosition(frameIndex));
             OnStateChanged();
@@ -205,19 +213,45 @@ namespace ColorVision.ImageEditor.Video
 
             try
             {
+                // Native consumer and paused-seek producer callbacks can overlap. Prepare
+                // one accepted frame at a time, without sharing mutable bitmap storage.
+                lock (_preparationSync)
+                {
+                    if (!IsCurrent(handle, generation) || frame.Timeline != Volatile.Read(ref _timeline)
+                        || !frame.TryBeginUse())
+                    {
+                        ReleasePending(frame);
+                        return;
+                    }
+                    try
+                    {
+                        if (!frame.TrySetPreparedSource(PrepareSource(frame.Image)))
+                        {
+                            ReleasePending(frame);
+                            return;
+                        }
+                    }
+                    finally { frame.EndUse(); }
+                }
+                if (!IsCurrent(handle, generation) || frame.Timeline != Volatile.Read(ref _timeline)
+                    || _dispatcher.HasShutdownStarted)
+                {
+                    ReleasePending(frame);
+                    return;
+                }
                 DispatcherOperation operation = _dispatcher.BeginInvoke(new Action(() =>
                 {
                     try
                     {
-                        if (!IsCurrent(handle, generation) || frame.Timeline != Volatile.Read(ref _timeline) || !frame.TryBeginDelivery()) return;
+                        if (!IsCurrent(handle, generation) || frame.Timeline != Volatile.Read(ref _timeline) || !frame.TryBeginUse()) return;
                         CurrentFrame = frame.Index;
                         try
                         {
-                            Deliver(frame.Image, frame.Index, frame.TotalFrames, isInitialFrame: false);
+                            Deliver(frame.Image, frame.PreparedSource!, frame.Index, frame.TotalFrames, isInitialFrame: false);
                         }
                         finally
                         {
-                            frame.EndDelivery();
+                            frame.EndUse();
                         }
                         if (!IsCurrent(handle, generation) || frame.Timeline != Volatile.Read(ref _timeline)) return;
                         if (++_uiUpdateCounter % 10 == 0)
@@ -245,10 +279,25 @@ namespace ColorVision.ImageEditor.Video
             }
         }
 
-        private void Deliver(HImage image, int frameIndex, int totalFrames, bool isInitialFrame)
+        internal static WriteableBitmap PrepareFrame(HImage image)
+        {
+            WriteableBitmap source = image.ToWriteableBitmap();
+            source.Freeze();
+            return source;
+        }
+
+        private WriteableBitmap PrepareSource(HImage image)
         {
             image.isDispose = true;
-            _presentFrame(new VideoFrameDelivery(image, SessionId, frameIndex, totalFrames, isInitialFrame));
+            WriteableBitmap source = _prepareFrame(image);
+            if (!source.IsFrozen) source.Freeze();
+            return source;
+        }
+
+        private void Deliver(HImage image, WriteableBitmap source, int frameIndex, int totalFrames, bool isInitialFrame)
+        {
+            image.isDispose = true;
+            _presentFrame(new VideoFrameDelivery(image, SessionId, frameIndex, totalFrames, isInitialFrame) { Source = source });
         }
 
         private void ReleasePending(PendingFrame frame)
@@ -374,29 +423,41 @@ namespace ColorVision.ImageEditor.Video
         {
             private readonly object _gate = new();
             private bool _disposeRequested;
-            private bool _delivering;
+            private bool _usingPixels;
             private bool _released;
             public HImage Image { get; } = image;
             public int Index { get; } = index;
             public int TotalFrames { get; } = totalFrames;
             public long Timeline { get; } = timeline;
+            public WriteableBitmap? PreparedSource { get; private set; }
 
-            public bool TryBeginDelivery()
+            public bool TrySetPreparedSource(WriteableBitmap source)
             {
                 lock (_gate)
                 {
                     if (_disposeRequested) return false;
-                    _delivering = true;
+                    PreparedSource = source;
                     return true;
                 }
             }
 
-            public void EndDelivery()
+            public bool TryBeginUse()
+            {
+                lock (_gate)
+                {
+                    if (_disposeRequested) return false;
+                    _usingPixels = true;
+                    return true;
+                }
+            }
+
+            public void EndUse()
             {
                 bool releaseNow;
                 lock (_gate)
                 {
-                    _delivering = false;
+                    _usingPixels = false;
+                    if (_disposeRequested) PreparedSource = null;
                     releaseNow = _disposeRequested && !_released;
                     if (releaseNow) _released = true;
                 }
@@ -409,7 +470,8 @@ namespace ColorVision.ImageEditor.Video
                 lock (_gate)
                 {
                     _disposeRequested = true;
-                    releaseNow = !_delivering && !_released;
+                    if (!_usingPixels) PreparedSource = null;
+                    releaseNow = !_usingPixels && !_released;
                     if (releaseNow) _released = true;
                 }
                 if (releaseNow) release(Image);

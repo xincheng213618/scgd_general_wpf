@@ -126,6 +126,14 @@ namespace ColorVision.ImageEditor
             return _binding.GetSelectedLayerSourceChannelIndex();
         }
 
+        internal void RestoreSelectedLayerDisplay()
+        {
+            Dispatcher.VerifyAccess();
+            if (IsDisposed) return;
+            if (_binding.RestoreSelectedLayerDisplay is Action restore) restore();
+            else Presentation.RestoreSource();
+        }
+
         public void SetImageSource(ImageSource imageSource)
         {
             _binding.SetImageSource(imageSource);
@@ -248,6 +256,8 @@ namespace ColorVision.ImageEditor
         public required Action<ImageSource?> SetViewBitmapSource { get; init; }
 
         public required Func<int> GetSelectedLayerSourceChannelIndex { get; init; }
+
+        public Action? RestoreSelectedLayerDisplay { get; init; }
 
         public required Action<ImageSource> SetImageSource { get; init; }
 

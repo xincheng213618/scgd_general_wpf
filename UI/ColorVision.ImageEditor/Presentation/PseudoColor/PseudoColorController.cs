@@ -10,6 +10,8 @@ using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Presentation.PseudoColor
@@ -21,6 +23,14 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         bool IsEnabled,
         PseudoColorFrameRequest? Request);
 
+    internal sealed record SelectedLayerRestorePreparation(
+        ImageFrameLease Frame,
+        Guid DocumentId,
+        ImageSource Source,
+        int Channel,
+        long ClaimSequence,
+        long SelectionVersion);
+
     internal sealed class PseudoColorController : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PseudoColorController));
@@ -31,6 +41,8 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         private readonly string _renderTaskKey = $"{nameof(PseudoColorController)}_{Guid.NewGuid():N}";
         private ImageAlgorithmPreviewSession? _previewSession;
         private int _renderVersion;
+        private int _lastRequestedRenderVersion;
+        private bool _resetting;
         private bool _disposed;
 
         public PseudoColorController(ImageProcessingContext owner, PseudoColorState state)
@@ -110,13 +122,19 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         public void Reset()
         {
             Invalidate();
-            _state.IsEnabled = false;
-            _state.ResetImageRange();
-            InvokeOnUiThread(() =>
+            bool wasResetting = _resetting;
+            _resetting = true;
+            try
             {
-                RestoreSource();
-                return true;
-            });
+                _state.IsEnabled = false;
+                _state.ResetImageRange();
+                InvokeOnUiThread(() =>
+                {
+                    RestoreSource();
+                    return true;
+                });
+            }
+            finally { _resetting = wasResetting; }
         }
 
         private bool TryCreateFrameRequest(out PseudoColorFrameRequest request)
@@ -124,6 +142,10 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
             var snapshot = InvokeOnUiThread(() =>
             {
                 var channel = GetSelectedChannel();
+                // Catalog input is canonical BGR; frame/native requests retain source ordering.
+                if ((channel is 0 or 2) && _owner.ViewBitmapSource is BitmapSource source
+                    && (source.Format == PixelFormats.Rgb24 || source.Format == PixelFormats.Rgb48 || source.Format == PixelFormats.Rgba64))
+                    channel = 2 - channel;
                 return (IsEnabled: IsEnabledCore(), Request: CaptureFrameRequest(channel));
             });
 
@@ -153,6 +175,97 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
             _owner.Presentation.RestoreSource();
         }
 
+        private void RestoreSelectedLayer(PseudoColorPreviewRequest request, WriteableBitmap? preparedChannel = null)
+        {
+            Guid documentId = _owner.DocumentInstanceId;
+            long revision = _owner.ImageRevision;
+            ImageSource? source = _owner.ViewBitmapSource;
+            long claimSequence = _owner.AlgorithmClaimSequence;
+            long selectionVersion = _owner.Presentation.SelectionVersion;
+            bool restoredOwnedPreview = DisposePreviewSession();
+            // An owned Cancel publishes the canonical source once. Any additional display
+            // selection or claim belongs to a synchronous callback and must remain intact.
+            long expectedSelectionVersion = selectionVersion + (restoredOwnedPreview ? 1 : 0);
+            if (_disposed || _owner.IsDisposed || _owner.DocumentInstanceId != documentId
+                || !_owner.IsCurrentImageRevision(revision) || !ReferenceEquals(_owner.ViewBitmapSource, source)
+                || _owner.AlgorithmClaimSequence != claimSequence
+                || _owner.HasActiveAlgorithmPreview || _owner.Presentation.SelectionVersion != expectedSelectionVersion) return;
+            int currentVersion = Volatile.Read(ref _renderVersion);
+            if (request.Version != currentVersion)
+            {
+                // A synchronous toggle can capture before Cancel advances the preview generation.
+                // Rebase an actual queued request; invalidation alone must not revive rendering.
+                if (restoredOwnedPreview && currentVersion == Volatile.Read(ref _lastRequestedRenderVersion)) RequestRender();
+                return;
+            }
+            if (preparedChannel != null) _owner.Presentation.Publish(preparedChannel, preparedChannel);
+            else _owner.RestoreSelectedLayerDisplay();
+        }
+
+        private SelectedLayerRestorePreparation? CaptureSelectedLayerRestore(PseudoColorPreviewRequest request)
+        {
+            _owner.Dispatcher.VerifyAccess();
+            if (!IsCurrentRequest(request)) return null;
+            int channel = GetSelectedChannel();
+            ImageSource? source = _owner.ViewBitmapSource;
+            if (channel < 0 || source == null || _owner.StreamPresentation.IsActive)
+            {
+                RestoreSelectedLayer(request);
+                return null;
+            }
+
+            Guid documentId = _owner.DocumentInstanceId;
+            long claimSequence = _owner.AlgorithmClaimSequence;
+            long selectionVersion = _owner.Presentation.SelectionVersion;
+            ImageFrameLease? frame;
+            try { frame = _owner.AcquireImageFrame(); }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to acquire the selected channel before disabling pseudo color.", ex);
+                frame = null;
+            }
+            if (!IsCurrentRequest(request) || _owner.DocumentInstanceId != documentId
+                || !ReferenceEquals(_owner.ViewBitmapSource, source) || GetSelectedChannel() != channel
+                || _owner.AlgorithmClaimSequence != claimSequence || _owner.Presentation.SelectionVersion != selectionVersion)
+            {
+                frame?.Dispose();
+                return null;
+            }
+            if (frame == null || frame.Image.channels < 3 || channel >= frame.Image.channels || frame.Image.depth is not (8 or 16))
+            {
+                frame?.Dispose();
+                RestoreSelectedLayer(request);
+                return null;
+            }
+            return new(frame, documentId, source, channel, claimSequence, selectionVersion);
+        }
+
+        private async Task RestoreSelectedLayerAsync(PseudoColorPreviewRequest request)
+        {
+            SelectedLayerRestorePreparation? preparation = await _owner.Dispatcher.InvokeAsync(() => CaptureSelectedLayerRestore(request));
+            if (preparation == null) return;
+            using ImageFrameLease frame = preparation.Frame;
+            WriteableBitmap? prepared = null;
+            try
+            {
+                prepared = await Task.Run(() => ImageChannelPresenter.PrepareChannel(frame.Image, preparation.Channel));
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to prepare the selected channel before disabling pseudo color.", ex);
+            }
+            await _owner.Dispatcher.InvokeAsync(() =>
+            {
+                if (!IsCurrentRequest(request) || _owner.DocumentInstanceId != preparation.DocumentId
+                    || !ReferenceEquals(_owner.ViewBitmapSource, preparation.Source) || GetSelectedChannel() != preparation.Channel
+                    || _owner.AlgorithmClaimSequence != preparation.ClaimSequence
+                    || _owner.Presentation.SelectionVersion != preparation.SelectionVersion) return;
+                // Preserve Cancel's synchronous callbacks, then restore the prepared channel
+                // without yielding to the dispatcher between the two display publications.
+                RestoreSelectedLayer(request, prepared);
+            });
+        }
+
         public void Dispose()
         {
             if (_disposed) return;
@@ -165,7 +278,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         public void OnColormapTypesChanged()
         {
             RefreshPreview();
-            RequestRender();
+            if (IsEnabledCore()) RequestRender();
         }
 
         public void OnAutoSetRangeChanged()
@@ -187,9 +300,18 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
             RequestRender();
         }
 
+        public void OnSelectedLayerChanged()
+        {
+            if (_disposed || _owner.IsDisposed) return;
+            bool enabled = IsEnabledCore();
+            if (!enabled && !_owner.StreamPresentation.IsActive) return;
+            if (enabled && _state.IsAutoSetRange) ApplyAutoRange();
+            RequestRender();
+        }
+
         public void OnSliderValueChanged()
         {
-            if (!_owner.IsInitialized)
+            if (!_owner.IsInitialized || !IsEnabledCore())
             {
                 return;
             }
@@ -200,6 +322,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
 
         private void State_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (_resetting) return;
             switch (e.PropertyName)
             {
                 case nameof(PseudoColorState.ColormapTypes):
@@ -291,6 +414,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         private PseudoColorPreviewRequest CapturePreviewRequest()
         {
             var version = Interlocked.Increment(ref _renderVersion);
+            Volatile.Write(ref _lastRequestedRenderVersion, version);
             var imageRevision = _owner.ImageRevision;
             var previewGeneration = _owner.AlgorithmPreviewGeneration;
             if (TryCreateFrameRequest(out var request))
@@ -336,15 +460,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         {
             if (!request.IsEnabled || request.Request == null)
             {
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    if (!IsCurrentRequest(request))
-                    {
-                        return;
-                    }
-
-                    RestoreSource();
-                });
+                await RestoreSelectedLayerAsync(request);
                 return;
             }
 
@@ -382,10 +498,11 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
 
         private bool DisposePreviewSession()
         {
-            bool restoredOwnedPreview = _previewSession?.Cancel() == true;
-            _previewSession?.Dispose();
+            ImageAlgorithmPreviewSession? session = _previewSession;
             _previewSession = null;
-            return restoredOwnedPreview;
+            if (session == null) return false;
+            try { return session.Cancel(); }
+            finally { session.Dispose(); }
         }
     }
 }

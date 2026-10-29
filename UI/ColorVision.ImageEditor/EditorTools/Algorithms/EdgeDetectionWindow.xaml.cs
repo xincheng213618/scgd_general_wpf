@@ -15,6 +15,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private readonly ImageAlgorithmPreviewSession _preview;
         private readonly CannyParameters _parameters = new();
         private long _parameterRevision;
+        private Guid _completedPreviewInvocationId;
+        private long _completedPreviewParameterRevision;
 
         public EdgeDetectionWindow(ImageProcessingContext image)
         {
@@ -40,10 +42,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             try
             {
+                long parameterRevision = _parameterRevision;
+                _completedPreviewInvocationId = Guid.Empty;
                 AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Canny, _parameters);
-                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
-                if (result.Status == AlgorithmResultStatus.Failed) log.Warn(string.Join("; ", result.Failures));
-                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
+                bool succeeded;
+                using (AlgorithmResult result = await _preview.PreviewAsync(invocation))
+                {
+                    if (result.Status == AlgorithmResultStatus.Failed) log.Warn(string.Join("; ", result.Failures));
+                    succeeded = result.Status == AlgorithmResultStatus.Succeeded;
+                }
+                // Result disposal can reenter; qualify only the completed run's original parameter state.
+                bool current = succeeded && _preview.IsCurrent(invocation.InvocationId);
+                if (current && parameterRevision == _parameterRevision)
+                {
+                    _completedPreviewParameterRevision = parameterRevision;
+                    _completedPreviewInvocationId = invocation.InvocationId;
+                }
+                return current;
             }
             catch (ObjectDisposedException)
             {
@@ -60,6 +75,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             DebounceTimer.Cancel(_debounceKey);
             long parameterRevision = _parameterRevision;
+            if (_completedPreviewInvocationId != Guid.Empty
+                && parameterRevision == _completedPreviewParameterRevision && _preview.IsCurrent(_completedPreviewInvocationId))
+            {
+                if (_preview.Commit()) Close();
+                // Commit failure can mean a new owner took over during its synchronous callbacks.
+                return;
+            }
             if (await ApplyPreviewAsync() && parameterRevision == _parameterRevision && _preview.Commit()) Close();
         }
 

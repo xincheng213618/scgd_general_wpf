@@ -1,6 +1,5 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor.Video;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -9,133 +8,68 @@ namespace ColorVision.UI.Tests;
 
 public class VideoFrameCopyTests
 {
-    private static readonly MethodInfo UpdateMethod = typeof(VideoOpen).GetMethod(
-        "UpdateWriteableBitmapFast",
-        BindingFlags.NonPublic | BindingFlags.Static) ?? throw new MissingMethodException(typeof(VideoOpen).FullName, "UpdateWriteableBitmapFast");
-
     [Fact]
-    public void UpdateWriteableBitmapFastCopiesContiguousFrames()
+    public void PrepareFrameCopiesContiguousFrames()
     {
         StaTest.Run(() =>
         {
             AssertCopy(width: 4, height: 3, PixelFormats.Bgr24, channels: 3, depth: 8, sourcePadding: 0, expectTargetPadding: false);
-            AssertCopy(width: 3, height: 3, PixelFormats.Bgra32, channels: 4, depth: 8, sourcePadding: 0, expectTargetPadding: false);
+            AssertCopy(width: 3, height: 3, PixelFormats.Bgr32, channels: 4, depth: 8, sourcePadding: 0, expectTargetPadding: false);
             AssertCopy(width: 2, height: 3, PixelFormats.Rgb48, channels: 3, depth: 16, sourcePadding: 0, expectTargetPadding: false);
         });
     }
 
     [Fact]
-    public void UpdateWriteableBitmapFastCopiesRowsWithSourcePadding()
+    public void PrepareFrameCopiesRowsWithSourcePadding()
     {
-        StaTest.Run(() =>
-        {
-            AssertCopy(width: 2, height: 3, PixelFormats.Bgra32, channels: 4, depth: 8, sourcePadding: 5, expectTargetPadding: false);
-        });
+        StaTest.Run(() => AssertCopy(width: 2, height: 3, PixelFormats.Bgr32, channels: 4, depth: 8, sourcePadding: 5, expectTargetPadding: false));
     }
 
     [Fact]
-    public void UpdateWriteableBitmapFastCopiesRowsWithTargetPadding()
+    public void PrepareFrameCopiesRowsWithTargetPadding()
     {
-        StaTest.Run(() =>
-        {
-            AssertCopy(width: 1, height: 3, PixelFormats.Bgr24, channels: 3, depth: 8, sourcePadding: 0, expectTargetPadding: true);
-        });
+        StaTest.Run(() => AssertCopy(width: 1, height: 3, PixelFormats.Bgr24, channels: 3, depth: 8, sourcePadding: 0, expectTargetPadding: true));
     }
 
     [Fact]
-    public void UpdateWriteableBitmapFastUnlocksBitmapWhenStrideIsInvalid()
+    public void PrepareFrameRejectsInvalidStrideBeforeCopying()
     {
         StaTest.Run(() =>
         {
-            const int width = 2;
-            const int height = 2;
-            const int bytesPerRow = width * 3;
-            int invalidStride = bytesPerRow - 1;
-            WriteableBitmap bitmap = new(width, height, 96, 96, PixelFormats.Bgr24, null);
-            IntPtr data = Marshal.AllocCoTaskMem(invalidStride * height);
-
+            const int width = 2, height = 2, bytesPerRow = width * 3;
+            IntPtr data = Marshal.AllocCoTaskMem(bytesPerRow * height);
             try
             {
-                HImage image = new()
-                {
-                    rows = height,
-                    cols = width,
-                    channels = 3,
-                    depth = 8,
-                    stride = invalidStride,
-                    isDispose = true,
-                    pData = data
-                };
-
-                TargetInvocationException exception = Assert.Throws<TargetInvocationException>(
-                    () => UpdateMethod.Invoke(null, new object[] { bitmap, image }));
-                Assert.IsType<ArgumentException>(exception.InnerException);
-
-                bitmap.Lock();
-                try
-                {
-                    Assert.NotEqual(IntPtr.Zero, bitmap.BackBuffer);
-                }
-                finally
-                {
-                    bitmap.Unlock();
-                }
+                HImage image = new() { rows = height, cols = width, channels = 3, depth = 8, stride = bytesPerRow - 1, isDispose = true, pData = data };
+                Assert.Throws<ArgumentException>(() => VideoPlaybackSession.PrepareFrame(image));
             }
-            finally
-            {
-                Marshal.FreeCoTaskMem(data);
-            }
+            finally { Marshal.FreeCoTaskMem(data); }
         });
     }
 
-    private static void AssertCopy(
-        int width,
-        int height,
-        PixelFormat format,
-        int channels,
-        int depth,
-        int sourcePadding,
-        bool expectTargetPadding)
+    private static void AssertCopy(int width, int height, PixelFormat format, int channels, int depth, int sourcePadding, bool expectTargetPadding)
     {
         int bytesPerRow = width * channels * (depth / 8);
         int sourceStride = bytesPerRow + sourcePadding;
         byte[] source = CreateSource(height, bytesPerRow, sourceStride);
-        WriteableBitmap bitmap = new(width, height, 96, 96, format, null);
-        Assert.Equal(expectTargetPadding, bitmap.BackBufferStride > bytesPerRow);
-        if (!expectTargetPadding)
-        {
-            Assert.Equal(bytesPerRow, bitmap.BackBufferStride);
-        }
-
+        WriteableBitmap bitmap;
         IntPtr data = Marshal.AllocCoTaskMem(source.Length);
         try
         {
             Marshal.Copy(source, 0, data, source.Length);
-            HImage image = new()
-            {
-                rows = height,
-                cols = width,
-                channels = channels,
-                depth = depth,
-                stride = sourceStride,
-                isDispose = true,
-                pData = data
-            };
-
-            UpdateMethod.Invoke(null, new object[] { bitmap, image });
-
-            byte[] actual = new byte[bitmap.BackBufferStride * height];
-            bitmap.CopyPixels(actual, bitmap.BackBufferStride, 0);
-            Assert.Equal(
-                ExtractActivePixels(source, height, bytesPerRow, sourceStride),
-                ExtractActivePixels(actual, height, bytesPerRow, bitmap.BackBufferStride));
+            HImage image = new() { rows = height, cols = width, channels = channels, depth = depth, stride = sourceStride, isDispose = true, pData = data };
+            bitmap = VideoPlaybackSession.PrepareFrame(image);
         }
-        finally
-        {
-            Marshal.FreeCoTaskMem(data);
-        }
+        finally { Marshal.FreeCoTaskMem(data); }
+
+        Assert.True(bitmap.IsFrozen);
+        Assert.Equal(format, bitmap.Format);
+        Assert.Equal(expectTargetPadding, bitmap.BackBufferStride > bytesPerRow);
+        if (!expectTargetPadding) Assert.Equal(bytesPerRow, bitmap.BackBufferStride);
+        byte[] actual = new byte[bitmap.BackBufferStride * height];
+        bitmap.CopyPixels(actual, bitmap.BackBufferStride, 0);
+        Assert.Equal(ExtractActivePixels(source, height, bytesPerRow, sourceStride), ExtractActivePixels(actual, height, bytesPerRow, bitmap.BackBufferStride));
     }
-
     private static byte[] CreateSource(int rows, int bytesPerRow, int stride)
     {
         byte[] source = new byte[rows * stride];

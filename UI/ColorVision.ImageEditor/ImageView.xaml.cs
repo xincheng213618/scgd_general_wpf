@@ -224,6 +224,7 @@ namespace ColorVision.ImageEditor
                     GetViewBitmapSource = () => _document.Source,
                     SetViewBitmapSource = _document.AssignSource,
                     GetSelectedLayerSourceChannelIndex = GetSelectedLayerSourceChannelIndex,
+                    RestoreSelectedLayerDisplay = RestoreSelectedLayerDisplay,
                     SetImageSource = SetImageSource,
                     UpdateZoomAndScale = UpdateZoomAndScale,
                     BeforeAlgorithmClaimStateUpdate = claim => AlgorithmClaimStateUpdateHook?.Invoke(claim),
@@ -1089,6 +1090,12 @@ namespace ColorVision.ImageEditor
             return SelectedLayer?.SourceChannelIndex ?? -1;
         }
 
+        private void RestoreSelectedLayerDisplay()
+        {
+            if (_layerController != null && SelectedLayer is ImageLayerDescriptor layer) _layerController.SelectLayer(layer);
+            else _presentation.RestoreSource();
+        }
+
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isUpdatingLayerSelection || _layerController == null)
@@ -1103,6 +1110,7 @@ namespace ColorVision.ImageEditor
 
             SelectedLayer = layer;
             _layerController.SelectLayer(layer);
+            EditorContext.ProcessingContext.DisplayEffects.RefreshForSelectedLayer();
         }
 
         private void UpdateLayerSelectorVisibility()

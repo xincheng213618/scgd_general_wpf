@@ -30,7 +30,7 @@ public sealed class ImageStreamPresentation : IDisposable
     private long _workerId;
     private Task _completion = Task.CompletedTask;
 
-    private sealed record FrameWork(WriteableBitmap Source, PseudoColorFrameRequest Settings, long Epoch, long Sequence);
+    private sealed record FrameWork(WriteableBitmap Source, PseudoColorFrameRequest? Settings, int Channel, long Epoch, long Sequence);
 
     internal ImageStreamPresentation(ImageProcessingContext context)
         : this(context, ProcessPseudoColor) { }
@@ -64,7 +64,9 @@ public sealed class ImageStreamPresentation : IDisposable
         _latestSource = frozen;
         _expectedRevision = _context.ImageRevision;
 
-        if (!_context.DisplayEffects.TryCapturePseudoColorRequest(out PseudoColorFrameRequest request))
+        bool pseudoColorEnabled = _context.DisplayEffects.TryCapturePseudoColorRequest(out PseudoColorFrameRequest request);
+        int channel = _context.GetSelectedLayerSourceChannelIndex();
+        if (!pseudoColorEnabled && (channel < 0 || _context.ViewBitmapSource == null))
         {
             ++_epoch;
             _pending = null;
@@ -74,7 +76,7 @@ public sealed class ImageStreamPresentation : IDisposable
 
         // Only queued/processing frames retain snapshots. Replacing the pending work releases
         // its managed reference, and native buffers are allocated only when processing starts.
-        _pending = new FrameWork(frozen, request, _epoch, ++_sequence);
+        _pending = new FrameWork(frozen, pseudoColorEnabled ? request : null, channel, _epoch, ++_sequence);
         if (_running) return;
         _running = true;
         _completion = RunAsync(++_workerId);
@@ -123,7 +125,9 @@ public sealed class ImageStreamPresentation : IDisposable
                     WriteableBitmap display = await Task.Run(() =>
                     {
                         using HImage source = work.Source.ToHImage();
-                        using HImage output = _process(source, work.Settings);
+                        using HImage output = work.Settings is PseudoColorFrameRequest settings
+                            ? _process(source, settings)
+                            : ExtractChannel(source, work.Channel);
                         // Copy and freeze on the worker too. Large pseudo-color outputs must
                         // not reintroduce a full-frame UI copy after native processing finishes.
                         var bitmap = output.ToWriteableBitmap();
@@ -164,11 +168,15 @@ public sealed class ImageStreamPresentation : IDisposable
     }
 
     private bool CanPublish(FrameWork work)
-        => !_disposed && !_context.IsDisposed && IsActive && work.Epoch == _epoch
-            && work.Sequence > _publishedSequence && _context.ImageRevision == _expectedRevision
-            && _canPublish?.Invoke() != false
-            && _context.DisplayEffects.TryCapturePseudoColorRequest(out PseudoColorFrameRequest current)
-            && current == work.Settings;
+    {
+        if (_disposed || _context.IsDisposed || !IsActive || work.Epoch != _epoch
+            || work.Sequence <= _publishedSequence || _context.ImageRevision != _expectedRevision
+            || _canPublish?.Invoke() == false) return false;
+        bool pseudoColorEnabled = _context.DisplayEffects.TryCapturePseudoColorRequest(out PseudoColorFrameRequest current);
+        return work.Settings is PseudoColorFrameRequest settings
+            ? pseudoColorEnabled && current == settings
+            : !pseudoColorEnabled && _context.GetSelectedLayerSourceChannelIndex() == work.Channel;
+    }
 
     private void Publish(WriteableBitmap source, System.Windows.Media.ImageSource? display, long sequence)
     {
@@ -179,6 +187,9 @@ public sealed class ImageStreamPresentation : IDisposable
         _publishing = true;
         try
         {
+            using IDisposable? sourceRestore = display != null
+                ? _context.Presentation.DeferSourceRestoreForFrame(source, previousRevision + 1)
+                : null;
             _context.CommitSourcePixels(source);
             // A synchronous revision subscriber may replace or clear the document. Such a
             // newer publication wins over this frame, just as it does for algorithm previews.
@@ -208,6 +219,14 @@ public sealed class ImageStreamPresentation : IDisposable
     private void OnDocumentScopeChanged(object? sender, EventArgs e)
     {
         if (!_publishing) Reset();
+    }
+
+    private static HImage ExtractChannel(HImage source, int channel)
+    {
+        int status = OpenCVMediaHelper.M_ExtractChannel(source, out HImage output, channel);
+        if (status == 0) return output;
+        output.Dispose();
+        throw new InvalidOperationException($"Channel extraction failed with status {status}.");
     }
 
     private static HImage ProcessPseudoColor(HImage source, PseudoColorFrameRequest request)

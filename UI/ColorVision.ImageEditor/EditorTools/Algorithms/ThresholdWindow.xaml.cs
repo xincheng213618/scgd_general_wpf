@@ -19,6 +19,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private ImageAlgorithmPreviewSession? _preview;
         private readonly AlgorithmParameterInputs _parameterInputs;
         private long _parameterRevision;
+        private Guid _completedPreviewInvocationId;
+        private long _completedPreviewParameterRevision;
+        private long _completedPreviewInputRevision;
 
         public ThresholdWindow(ImageProcessingContext image)
         {
@@ -54,10 +57,25 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
             try
             {
+                long parameterRevision = _parameterRevision;
+                long inputRevision = _parameterInputs.Revision;
+                _completedPreviewInvocationId = Guid.Empty;
                 ThresholdParameters parameters = CreateParameters(ThresholdSlider.Value);
                 AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Threshold, parameters);
-                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
-                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
+                bool succeeded;
+                using (AlgorithmResult result = await _preview.PreviewAsync(invocation))
+                {
+                    succeeded = result.Status == AlgorithmResultStatus.Succeeded;
+                }
+                // Result disposal can reenter; qualify only the completed run's original parameter state.
+                bool current = succeeded && _preview.IsCurrent(invocation.InvocationId);
+                if (current && parameterRevision == _parameterRevision && inputRevision == _parameterInputs.Revision)
+                {
+                    _completedPreviewParameterRevision = parameterRevision;
+                    _completedPreviewInputRevision = inputRevision;
+                    _completedPreviewInvocationId = invocation.InvocationId;
+                }
+                return current;
             }
             catch (Exception ex)
             {
@@ -76,6 +94,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             if (!inputsValid) return;
             long parameterRevision = _parameterRevision;
             long inputRevision = _parameterInputs.Revision;
+            if (_completedPreviewInvocationId != Guid.Empty
+                && parameterRevision == _completedPreviewParameterRevision && inputRevision == _completedPreviewInputRevision
+                && _preview?.IsCurrent(_completedPreviewInvocationId) == true)
+            {
+                if (_preview?.Commit() == true) Close();
+                // Commit failure can mean a new owner took over during its synchronous callbacks.
+                return;
+            }
             if (await ApplyThresholdAsync() && parameterRevision == _parameterRevision
                 && inputRevision == _parameterInputs.Revision && _preview?.Commit() == true) Close();
         }

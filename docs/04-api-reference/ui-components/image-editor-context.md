@@ -5,7 +5,7 @@ status: "current"
 summary: "ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。"
 aliases: ["图像编辑器上下文", "ImageView重构", "状态归属", "工具栏刷新", "配置作用域", "临时ROI", "临时选区", "四边形", "选区坐标", "白色画布选区", "矢量画布布点", "EditorContext", "ImageProcessingContext", "ImageDocument", "ImageEditorSession", "ImagePresentation", "ImageStreamPresentation", "ImageDisplayEffects", "ImageShaderPresentation", "ImageOperationCoordinator", "CommitSourcePixels", "ImageViewConfig", "ImageViewPropertyScope", "IEditorToolFactory", "BeginSelectAsync", "SelectShapeType", "SelectResult", "TransientRoiSelectionSession", "ImageSelectionScope", "EnableEditorImageServices"]
 code_paths: ["UI/ColorVision.ImageEditor/Abstractions/DecodedImageContent.cs", "UI/ColorVision.ImageEditor/ImageView.Content.cs", "UI/ColorVision.ImageEditor/ARCHITECTURE.md", "UI/ColorVision.ImageEditor/Documents", "UI/ColorVision.ImageEditor/ImageEditorSession.cs", "UI/ColorVision.ImageEditor/Presentation", "UI/ColorVision.ImageEditor/Operations", "UI/ColorVision.ImageEditor/Output", "UI/ColorVision.ImageEditor/Tooling", "UI/ColorVision.ImageEditor/Navigation", "UI/ColorVision.ImageEditor/Abstractions/PseudoColorFrameRequest.cs", "UI/ColorVision.ImageEditor/EditorContext.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs", "Test/ColorVision.UI.Tests/PseudoColorChannelSelectionTests.cs"]
 related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.platform", "algorithms.roi-routes", "algorithms.local-native-analysis"]
 ---
 
@@ -71,17 +71,21 @@ PNG/TIFF 在能力准备前创建独立显示位图，`PrepareAsync` 等待和�
 
 静态伪彩通过 `StartForCatalogPreview` 建立会话，不创建全尺寸占位位图；首个有效结果发布前显示原图。滑块请求由 `TaskConflator` 串行执行，只保留最新待执行请求，并使用 25 ms 的轮间等待参数；这不是固定帧率，也不承诺中断已经进入 native 的操作。查表输出与有界灰度缓存的数值、存储契约见[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。
 
+静态图的通道选择与伪彩开关分别保留状态：普通关闭伪彩会重新呈现当前所选图层，例如 Red 单通道，不强制切回 Composite。支持的 8/16 位 RGB 单通道先在后台准备独立冻结显示，再于同一 UI 调用中取消伪彩并恢复该通道，避免取消后等待提取期间停留在全彩图；取消中的同步原图显示通知仍会发生，不代表从未发布过原图事件。准备期间换图、切换通道、发布其它显示或建立新算法 owner，会使旧准备失效。同一源图内，开启伪彩时通过图层选择器切换通道，自动范围模式重新计算新通道范围，手动模式保留当前上下限，两种模式都重绘伪彩。RGB 单通道预览只改变显示，不改文档源像素或 revision。关闭过程若有同步回调换图、发布其它显示或建立新算法 owner，则保留后继操作。换图 Reset，以及效果关闭时的范围和配色配置，不触发图层重选。
+
+静态算法输入已归一为 BGR/BGRA，因此伪彩在 UI 捕获请求时，将 `Rgb24/Rgb48/Rgba64` 的源通道 0、2 交换为 canonical 通道索引；公开连续帧请求和自动范围仍使用源通道索引。`PseudoColorChannelSelectionTests` 经真实图层选择器、通道提取和受控伪彩 provider 检查显示切换、源不变与取消回调接管；该受控输出不替代 native 配色数值验证。
+
 `ImageShaderPresentation` 拥有独立滤镜状态和 effect 附着，工具负责界面与显式持久化。显示白平衡提供范围为 `-1..1`、默认 `0` 的色温与色调控制，并与手动 RGB 增益组合；显示滤镜不重排颜色通道。以上变化都不提交或改写源像素。滤镜沿用完整画布的 `SceneEffect` 范围，包含图像和叠加内容；没有静默缩小成只处理底图。关闭时仅在当前 effect 仍是自身对象时恢复先前 effect。
 
 ### 连续帧显示
 
-相机 `RealtimeFramePresenter` 和视频打开器把帧交给 `ImageStreamPresentation`。可变输入先复制并冻结；已冻结输入直接复用，后台处理读取该快照，不读取生产者下次改写的暂存位图。相机在回调有效期内复制像素，位图创建、写入、翻转和冻结由单个后台任务完成，最多一帧准备或等待 UI 发布、一帧待准备；UI 只发布快照，重置和释放拒绝旧流的迟到快照。伪彩开启时另有最多一帧执行、一帧等待，新输入替换等待帧，不建立无界队列；在途帧可以先发布，随后处理最新等待帧。
+相机 `RealtimeFramePresenter` 和视频打开器把帧交给 `ImageStreamPresentation`。可变输入先复制并冻结；已冻结输入直接复用，后台处理读取该快照，不读取生产者下次改写的暂存位图。相机在回调有效期内复制像素，位图创建、写入、翻转和冻结由单个后台任务完成，最多一帧准备或等待 UI 发布、一帧待准备；UI 只发布快照，重置和释放拒绝旧流的迟到快照。需要伪彩或 RGB 单通道显示时，使用同一条最多一帧执行、一帧等待的处理队列，新输入替换等待帧，不建立无界队列；在途帧可以先发布，随后处理最新等待帧。
 
-处理输出也在后台复制成独立冻结位图，并在后台释放 native 输出，不借用或改写已有 `FunctionImage`，以免破坏其它预览或输出仍保留的图像。发布时先通过 `CommitSourcePixels` 提交此次处理对应的冻结源，再通过 `Presentation.Publish` 发布同帧结果。因此当前基准源与伪彩显示来自同一帧，source revision 仍按帧提交推进；流身份和序号用于调度，不替代文档版本。
+处理输出也在后台复制成独立冻结位图，并在后台释放 native 输出，不借用或改写已有 `FunctionImage`，以免破坏其它预览或输出仍保留的图像。发布时先通过 `CommitSourcePixels` 提交此次处理对应的冻结源，再通过 `Presentation.Publish` 发布同帧结果。因此当前基准源与显示结果来自同一帧，source revision 仍按帧提交推进；流身份和序号用于调度，不替代文档版本。
 
-提交期间若重入回调又换图、推进版本、重置流、选择新显示或取得新的算法预览，此帧停止发布并重置流状态。`SelectionVersion` 区分显式显示选择与文档失效时清理旧预览的基准恢复，后者不应被当成新选择而阻断正常帧；新的用户显示选择和预览则优先于正在提交的流帧。
+提交期间若重入回调又换图、推进版本、重置流、选择新显示或取得新的算法预览，此帧停止发布并重置流状态。`SelectionVersion` 区分显式显示选择与文档失效时清理旧预览的基准恢复，后者不应被当成新选择而阻断正常帧。已有处理结果的帧提交通过精确匹配文档、源引用及下一版本的作用域，延后自身失效清理造成的原图发布，避免单通道或伪彩之间插入全彩图；正常结果和同步回调的新显示均优先，未完成且没有后继选择的提交仍恢复基准源。新选择在该版本创建的显示请求也保留有效性，不能被后置清理当成旧请求作废。
 
-换图、释放、流重置、参数变化和调用方的发布条件均参与过期检查。伪彩不可用时直接发布原图；native 处理异常时，仍有效的请求回退到该帧原图，清除旧处理显示。重置不承诺中断正在执行的 native 调用，迟到输出会释放。参数调整可通过 `RefreshCurrent()` 重处理最后的冻结帧，关闭伪彩可立即恢复它；实时请求仍需已有基准源，缺少基准时先发布原图建立源。视频解码与相机指标计算的上游限制分别见[视频模式](./ColorVision.ImageEditor.md#视频模式)和[相机实时链](../../01-user-guide/devices/camera.md#本地视频与实时伪彩)。
+换图、释放、流重置、参数变化、所选通道和调用方的发布条件均参与过期检查。未开启伪彩时，Composite 直接发布冻结源，RGB 单通道则在后台提取对应灰度显示，文档仍保留完整彩色帧。开启伪彩按当前源通道处理，关闭后继续呈现最后一帧的所选通道；通道切换和伪彩参数调整通过 `RefreshCurrent()` 重处理最后的冻结帧。native 处理异常时，仍有效的请求回退到该帧原图，清除旧处理显示。重置不承诺中断正在执行的 native 调用，迟到输出会释放；实时请求仍需已有基准源，缺少基准时先发布原图建立源。视频解码与相机指标计算的上游限制分别见[视频模式](./ColorVision.ImageEditor.md#视频模式)和[相机实时链](../../01-user-guide/devices/camera.md#本地视频与实时伪彩)。
 
 ## 扩展发现、构造与刷新
 

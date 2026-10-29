@@ -115,13 +115,7 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
             HImage source = lease.Image;
             target = await context.Dispatcher.InvokeAsync(() => CreateTarget(source));
             selection.Token.ThrowIfCancellationRequested();
-            await Task.Run(() =>
-            {
-                using Mat input = Mat.FromPixelData(source.rows, source.cols,
-                    MatType.MakeType(GetOpenCvDepth(source.depth), source.channels), source.pData, source.stride);
-                using Mat output = Mat.FromPixelData(source.rows, source.cols, target.Type, target.Buffer, target.Stride);
-                Cv2.ExtractChannel(input, output, channel);
-            }, selection.Token).ConfigureAwait(false);
+            await Task.Run(() => ExtractPixels(source, target, channel), selection.Token).ConfigureAwait(false);
 
             await context.Dispatcher.InvokeAsync(() =>
             {
@@ -149,6 +143,30 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
             if (enteredGate) _renderGate.Release();
             CompleteSelection(selection);
         }
+    }
+
+    internal static WriteableBitmap PrepareChannel(HImage source, int channel)
+    {
+        if (channel < 0 || channel >= source.channels)
+            throw new ArgumentOutOfRangeException(nameof(channel), channel, "Channel must identify a source channel.");
+        ChannelTarget target = CreateTarget(source);
+        bool hasPixels = false;
+        try
+        {
+            ExtractPixels(source, target, channel);
+            hasPixels = true;
+        }
+        finally { target.Unlock(hasPixels); }
+        target.Bitmap.Freeze();
+        return target.Bitmap;
+    }
+
+    private static void ExtractPixels(HImage source, ChannelTarget target, int channel)
+    {
+        using Mat input = Mat.FromPixelData(source.rows, source.cols,
+            MatType.MakeType(GetOpenCvDepth(source.depth), source.channels), source.pData, source.stride);
+        using Mat output = Mat.FromPixelData(source.rows, source.cols, target.Type, target.Buffer, target.Stride);
+        Cv2.ExtractChannel(input, output, channel);
     }
 
     private static ChannelTarget CreateTarget(HImage source)

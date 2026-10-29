@@ -19,6 +19,57 @@ public sealed class ImagePresentation
     private ImageSource? _functionImage;
     private long _generation;
     private long _selectionVersion;
+    private SourceRestoreDeferral? _sourceRestoreDeferral;
+
+    private sealed class SourceRestoreDeferral : IDisposable
+    {
+        private readonly ImagePresentation _owner;
+        private readonly SourceRestoreDeferral? _previous;
+        private readonly ImageSource _source;
+        private readonly Guid _documentId;
+        private readonly long _revision;
+        private readonly long _selectionVersion;
+        private bool _restoreRequested;
+        private bool _disposed;
+
+        public SourceRestoreDeferral(ImagePresentation owner, ImageSource source, long revision)
+        {
+            _owner = owner;
+            _previous = owner._sourceRestoreDeferral;
+            _source = source;
+            _documentId = owner._documentId();
+            _revision = revision;
+            _selectionVersion = owner._selectionVersion;
+            owner._sourceRestoreDeferral = this;
+        }
+
+        private bool MatchesSource()
+            => !_owner._isDisposed() && _owner._documentId() == _documentId
+                && _owner._revision() == _revision && ReferenceEquals(_owner._source(), _source);
+
+        public bool TryDeferRestore()
+        {
+            if (!MatchesSource()) return false;
+            // Revision subscribers can already have selected a display or requested work
+            // for the new source. Housekeeping must preserve that newer intent entirely.
+            if (_owner._selectionVersion == _selectionVersion)
+            {
+                Interlocked.Increment(ref _owner._generation);
+                _owner.FunctionImage = null;
+                _restoreRequested = true;
+            }
+            return true;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _owner._sourceRestoreDeferral = _previous;
+            if (_restoreRequested && _owner._selectionVersion == _selectionVersion && MatchesSource())
+                _owner.PublishCore(_source, null);
+        }
+    }
 
     internal ImagePresentation(ImageDocument document, DrawCanvas canvas)
     {
@@ -89,12 +140,19 @@ public sealed class ImagePresentation
 
     public void RestoreSource() => Publish(_source(), null);
 
+    internal IDisposable DeferSourceRestoreForFrame(ImageSource source, long expectedRevision)
+    {
+        _canvas.Dispatcher.VerifyAccess();
+        return new SourceRestoreDeferral(this, source, expectedRevision);
+    }
+
     // Invalidating an old preview is housekeeping, not a new display choice. A frame
     // producer can distinguish it from a synchronous subscriber selecting a new view.
     internal void RestoreSourceForDocumentMutation()
     {
         _canvas.Dispatcher.VerifyAccess();
         if (_isDisposed()) return;
+        if (_sourceRestoreDeferral?.TryDeferRestore() == true) return;
         Interlocked.Increment(ref _generation);
         PublishCore(_source(), null);
     }

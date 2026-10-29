@@ -17,6 +17,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private readonly string _debounceKey = $"{nameof(MedianBlurWindow)}_{Guid.NewGuid():N}";
         private ImageAlgorithmPreviewSession? _preview;
         private long _parameterRevision;
+        private Guid _completedPreviewInvocationId;
+        private long _completedPreviewParameterRevision;
 
         public MedianBlurWindow(ImageProcessingContext image)
         {
@@ -53,10 +55,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             try
             {
                 if (_preview == null) return false;
+                long parameterRevision = _parameterRevision;
+                _completedPreviewInvocationId = Guid.Empty;
                 MedianBlurParameters parameters = new() { KernelSize = kernelSize };
                 AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.MedianBlur, parameters);
-                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
-                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
+                bool succeeded;
+                using (AlgorithmResult result = await _preview.PreviewAsync(invocation))
+                {
+                    succeeded = result.Status == AlgorithmResultStatus.Succeeded;
+                }
+                // Result disposal can reenter; qualify only the completed run's original parameter state.
+                bool current = succeeded && _preview.IsCurrent(invocation.InvocationId);
+                if (current && parameterRevision == _parameterRevision)
+                {
+                    _completedPreviewParameterRevision = parameterRevision;
+                    _completedPreviewInvocationId = invocation.InvocationId;
+                }
+                return current;
             }
             catch (Exception ex)
             {
@@ -69,6 +84,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             DebounceTimer.Cancel(_debounceKey);
             long parameterRevision = _parameterRevision;
+            if (_completedPreviewInvocationId != Guid.Empty
+                && parameterRevision == _completedPreviewParameterRevision && _preview?.IsCurrent(_completedPreviewInvocationId) == true)
+            {
+                if (_preview?.Commit() == true) Close();
+                // Commit failure can mean a new owner took over during its synchronous callbacks.
+                return;
+            }
             int kernelSize = (int)KernelSizeSlider.Value;
             if (kernelSize % 2 == 0) kernelSize++;
             if (await ApplyMedianBlurAsync(kernelSize) && parameterRevision == _parameterRevision && _preview?.Commit() == true) Close();

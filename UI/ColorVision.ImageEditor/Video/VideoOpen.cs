@@ -17,7 +17,6 @@ namespace ColorVision.ImageEditor.Video
     public record class VideoOpen(EditorContext EditorContext) : IImageOpen, IImageOpenEditorToolLifecycle, IDisposable
     {
         private VideoPlaybackSession? _session;
-        private WriteableBitmap? _writeableBitmap;
         private Slider? _progressSlider;
         private Button? _playPauseButton;
         private Button? _stopButton;
@@ -292,85 +291,16 @@ namespace ColorVision.ImageEditor.Video
         private void PublishFrame(ImageProcessingContext context, VideoFrameDelivery frame)
         {
             _streamSessionId = frame.SessionId;
-            HImage image = frame.Image;
-            if (_writeableBitmap != null && _writeableBitmap.PixelWidth == image.cols && _writeableBitmap.PixelHeight == image.rows)
-            {
-                UpdateWriteableBitmapFast(_writeableBitmap, image);
-            }
-            else
-            {
-                _writeableBitmap = image.ToWriteableBitmap();
-            }
             if (frame.IsInitialFrame)
             {
-                WriteableBitmap source = _writeableBitmap.Clone();
-                source.Freeze();
-                context.SetImageSource(source);
+                context.SetImageSource(frame.Source);
                 context.UpdateZoomAndScale();
             }
             else
             {
-                context.StreamPresentation.Submit(_writeableBitmap, frame.SessionId);
+                context.StreamPresentation.Submit(frame.Source, frame.SessionId);
             }
         }
-
-        private static void UpdateWriteableBitmapFast(WriteableBitmap writeableBitmap, HImage hImage)
-        {
-            writeableBitmap.Lock();
-            try
-            {
-                long rowBytes = (long)hImage.cols * hImage.channels * (hImage.depth / 8);
-                int rows = hImage.rows;
-                int dstStride = writeableBitmap.BackBufferStride;
-                if (hImage.pData == IntPtr.Zero ||
-                    hImage.rows <= 0 ||
-                    hImage.cols <= 0 ||
-                    hImage.channels <= 0 ||
-                    hImage.depth <= 0 ||
-                    hImage.depth % 8 != 0 ||
-                    rowBytes <= 0 ||
-                    rowBytes > int.MaxValue)
-                {
-                    throw new ArgumentException("Invalid HImage layout.");
-                }
-
-                int bytesPerRow = (int)rowBytes;
-                int srcStride = hImage.stride > 0 ? hImage.stride : bytesPerRow;
-                if (srcStride < bytesPerRow || dstStride < bytesPerRow)
-                {
-                    throw new ArgumentException("Invalid HImage stride.");
-                }
-
-                long totalBytes = (long)rows * bytesPerRow;
-
-                unsafe
-                {
-                    byte* pSrc = (byte*)hImage.pData;
-                    byte* pDst = (byte*)writeableBitmap.BackBuffer;
-
-                    if (srcStride == bytesPerRow && dstStride == bytesPerRow)
-                    {
-                        Buffer.MemoryCopy(pSrc, pDst, totalBytes, totalBytes);
-                    }
-                    else
-                    {
-                        for (int y = 0; y < rows; y++)
-                        {
-                            Buffer.MemoryCopy(pSrc, pDst, bytesPerRow, bytesPerRow);
-                            pSrc += srcStride;
-                            pDst += dstStride;
-                        }
-                    }
-                }
-
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
-            }
-            finally
-            {
-                writeableBitmap.Unlock();
-            }
-        }
-
         private void OnPlaybackStateChanged(object? sender, EventArgs e)
         {
             if (_session != null && _streamSessionId != _session.SessionId)
@@ -427,7 +357,6 @@ namespace ColorVision.ImageEditor.Video
             if (_resizeComboBox?.SelectedItem is ComboBoxItem { Tag: double scale })
             {
                 _session?.SetResizeScale(scale);
-                _writeableBitmap = null;
             }
         }
 
@@ -477,7 +406,6 @@ namespace ColorVision.ImageEditor.Video
                     if (_autoHideCheckBox != null) _videoToolBar.Items.Remove(_autoHideCheckBox);
                     _videoToolBar.Opacity = 0.8;
                 }
-                _writeableBitmap = null;
                 _streamSessionId = Guid.Empty;
                 _progressSlider = null;
                 _playPauseButton = null;

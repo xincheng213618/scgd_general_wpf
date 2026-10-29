@@ -29,7 +29,6 @@ public class VideoLifecycleTests
         .. ControlFieldNames,
         "_videoToolBar",
         "_mouseIdleTimer",
-        "_writeableBitmap",
         "_session"
     ];
 
