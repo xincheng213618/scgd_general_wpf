@@ -9904,6 +9904,10 @@
         "MTFH07",
         "MTFV07",
         "MTFHV048",
+        "VR MTF 分区",
+        "VRMtfPartitionProcess",
+        "VRMTFH",
+        "VRMTFV",
         "W25",
         "鬼影解析",
         "RingGhostProcess",
@@ -9925,6 +9929,7 @@
         "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs",
         "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs",
         "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs",
+        "Test/ProjectARVRPro.Tests/VRMtfPartitionTests.cs",
         "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs",
         "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"
       ],

@@ -3,9 +3,9 @@ knowledge_id: "projects.arvr-pro-processes"
 knowledge_type: "guide"
 status: "current"
 summary: "配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。"
-aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProjectARVRProProcessGroups.json", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25", "鬼影解析", "RingGhostProcess", "RingGhostTestResults", "GMR1", "GMR2"]
+aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProjectARVRProProcessGroups.json", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "VR MTF 分区", "VRMtfPartitionProcess", "VRMTFH", "VRMTFV", "W25", "鬼影解析", "RingGhostProcess", "RingGhostTestResults", "GMR1", "GMR2"]
 code_paths: ["Projects/ProjectARVRPro/Process/", "Projects/ProjectARVRPro/Recipe/", "Projects/ProjectARVRPro/Services/PictureSwitchService.cs", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs", "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs", "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs", "Test/ProjectARVRPro.Tests/VRMtfPartitionTests.cs", "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs", "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"]
 related: ["projects.arvr-pro", "projects.arvr-pro-demura", "flow.templates", "ui.property-grid"]
 ---
 
@@ -145,6 +145,7 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | 圆环鬼影 | `RingGhostProcess`，`Ghost/` | 在“缺陷检测”分类读取本地圆环结果，对外输出 GMR1/GMR2，正常未检出为 0 |
 | 动态 POI | `PoiDynamicProcess`，`POI/` | 运行时点位的亮色度解析与显示 |
 | 通用 MTF | `MTFProcess`，`MTF/` | 通用 MTF 结果解析 |
+| VR MTF 分区 | `VRMtfPartitionProcess`，`MTF/VRPartition/` | H/V 实例分别配置网格、圆环及输出 Key，各区 Min/Max/Average 使用独立 Recipe |
 | HV 特殊图案 | `MTFHVProcess` / `MTFHV048Process` / `MTFHV058Process` | 分别对应 0368、048、058 点位方案 |
 | 动态 HV | `MTFHVDynamicProcess` | HV 特殊图案的动态区域 |
 | 058 条纹 | `MTFHProcess` / `MTFVProcess` | 横条纹或竖条纹的 058 方案 |
@@ -152,6 +153,16 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | 缺陷与 AOI | `DetectScreenDefectsProcess` / `AOIProcess` | 屏幕缺陷或 OLED AOI 结果 |
 | Demura | `DemuraProcess` / `DemuraAoiProcess` | 补偿准备与[烧录](./project-arvr-pro-demura.md)，或补偿后的 AOI 判定 |
 | 空处理 | `BlankProcess` | 无业务解析的回退处理，不作为普通处理类型选项展示 |
+
+### VR MTF 分区
+
+在 MTF 分类选择 **VR MTF 分区**（`VRMtfPartitionProcess`），读取 MTF 2.0 结果并按自然点名顺序逐行铺成正方形网格，再按到中心的距离划分互斥的 A/B/C/D 圆环。每区输出 Min、Max、Average，保留原测量点；边界点归入半径较小的一圈，最外圈之外的点不参与区域汇总。结果图按 A灰/B绿/C蓝/D黄/圈外红着色；区域归属随结果保存，后来修改半径不会重新划分历史图。
+
+H/V 使用两个独立实例和不同输出 Key，如 `VRMTFH`、`VRMTFV`。迁入旧方案时，两者均为 30×30、中心 14.5；H 的四个半径为 1/4/9/15，V 为 1/2/4/7.5。批次有多份 MTF 结果时，按实际结果名筛选为唯一候选；旧 LUX 配置不自动导入。原数值保持 MTF 输出尺度，不乘 100；旧 Fix 字段原本未参与区域计算，不作为已生效修正迁入，新实例按 Pro 的每项 Recipe 配置 K/B 和上下限。
+
+区域测量使用实例 Recipe 判定，并并入当前流程总结果；这与旧 LUX 只写区域项限值、未合并总判定的行为不同。网格点数不符、非有限数值、无效分区参数或空区域会使解析失败，并清除该输出 Key 的旧成功值。结果进入 Pro 的标准 CSV、结果详情和历史快照导出；不额外写旧版可选的 `SN_MTFH_Result.csv` / `SN_MTFV_Result.csv`。原点名统一保留来源下划线，旧 H 曾删除下划线的命名不再沿用。
+
+`VRMtfPartitionTests` 保护 H/V 区域统计、边界归属、失败清理及结果导出；配置完成后仍需用现场 Flow 和测量批次核对点名排序及网格方向。
 
 ### 解析 Key 与输出 Key
 

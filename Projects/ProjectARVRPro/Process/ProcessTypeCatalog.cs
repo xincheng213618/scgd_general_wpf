@@ -78,7 +78,7 @@ namespace ProjectARVRPro.Process
                 return category;
 
             string typeName = processType.Name;
-            if (typeName.StartsWith("MTF", StringComparison.Ordinal))
+            if (typeName.StartsWith("MTF", StringComparison.Ordinal) || typeName == "VRMtfPartitionProcess")
                 return MtfSubcategory;
 
             if (typeName.StartsWith("Chessboard", StringComparison.Ordinal))
@@ -153,6 +153,7 @@ namespace ProjectARVRPro.Process
             "LuminanceChromaticityProcess" => ("亮色度", "解析关键点亮度与色度结果，用于亮度、色坐标及均匀性评价。", "亮度 · 色度 · 均匀性 · 点位叠加"),
             "LuminanceChromaticityYWProcess" => ("YW亮色度（12X7 + 8X7）", "分别解析YW的12X7与8X7两组POI，并直接计算平均亮度、亮度均匀性和色度均匀性。", "双POI组 · 本地均匀性计算 · 独立Recipe · 强类型Key"),
             "MTFProcess" => ("MTF 通用", "解析通用 MTF 结果，按测量点输出清晰度评价。", "MTF 解析 · 阈值判定 · 区域叠加 · 文本结果"),
+            "VRMtfPartitionProcess" => ("VR MTF 分区", "按自然点名顺序组成方形网格，计算互斥A/B/C/D区域的最小值、最大值与平均值。", "VR圆环分区 · 12项独立Recipe · 独立输出Key · 原始点叠加"),
             "MTFHProcess" => ("MTF 058-H（横条纹）", "解析058测试点位方案的横条纹MTF结果。", "横条纹 · 058点位 · 固定区域 · 独立阈值"),
             "MTFVProcess" => ("MTF 058-V（竖条纹）", "解析058测试点位方案的竖条纹MTF结果。", "竖条纹 · 058点位 · 固定区域 · 独立阈值"),
             "MTFH07Process" => ("MTFH07（横条纹）", "解析07测试点位方案的横条纹结果；中心0F和四角0.7F分别配置解析Key与Recipe。", "横条纹 · 5个固定点位 · 逐点Recipe · 独立输出Key"),
