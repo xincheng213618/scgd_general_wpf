@@ -4,8 +4,8 @@ knowledge_type: "reference"
 status: "current"
 summary: "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。"
 aliases: ["上游DLL更新", "反编译比对", "只提供DLL", "节点类型映射","跨程序集节点名称匹配","流程节点结束为什么业务还没完成","FlowEngineLib","FlowEngineAPI","FlowEngineControl","CVStartCFC","FlowRuntimeHost","弃用节点兼容","合规验证旧流程","AlgComplianceMathNode","AlgComplianceContrastNode","AlgComplianceJudgmentNode","ComplianceMathType","Compliance_Math","Compliance_Contrast","Compliance.Judgment"]
-code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs","Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs","Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs"]
+code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs","Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs","Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/CalcEQEParam.cs","Engine/FlowEngineLib/AlgorithmEQENode.cs","Engine/FlowEngineLib/Node/Spectrum/SpectrumEQENode.cs","Engine/FlowEngineLib/LightingSensorNode.cs","Engine/FlowEngineLib/LightingSensorData.cs","Engine/FlowEngineLib/LightingChannel.cs","Engine/FlowEngineLib/LightingCommand.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowUpstreamProtocolTests.cs","Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"]
 related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","flow.session","flow.headless","flow.node-extension"]
 ---
 
@@ -56,7 +56,9 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 | `CVEndNode` | `TryDoFinishing()` 接受首次终止后调用 `FireFinished()`，重复到达不会再次结束 |
 | `AlgorithmNode` / `AlgorithmARVRNode` | 把模板、图像、颜色、POI、SMU 数据打包成算法请求 |
 
-大部分节点的核心职责是构建并转发执行参数，不是在本地完成完整算法。
+大部分节点构建并转发执行参数，由服务完成算法。`LightingSensorNode` 复用现有 `LightingControl` 服务，支持 A/B 通道开关和查询，不另建连接或本地后端。
+
+`AlgorithmEQENode` 请求中的 `SMUData` 携带电气分支的结果 ID 和类型，同时保留旧 `SMU_MasterId` 字段兼容既有算法服务。`SpectrumEQENode` 的服务路径按紧邻前步结果构造关联；本地路径保留实际 SMU 量测关联、V/mA 单位和缺失输入校验，不能套用服务的零值占位。源码见 `Engine/FlowEngineLib/CalcEQEParam.cs`、`AlgorithmEQENode.cs` 和 `Node/Spectrum/SpectrumEQENode.cs`；`FlowUpstreamProtocolTests` 保护请求与保存边界。
 
 ## 节点类型加载
 

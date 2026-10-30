@@ -6699,14 +6699,23 @@
         "Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs",
         "Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs",
-        "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"
+        "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs",
+        "Engine/FlowEngineLib/CalcEQEParam.cs",
+        "Engine/FlowEngineLib/AlgorithmEQENode.cs",
+        "Engine/FlowEngineLib/Node/Spectrum/SpectrumEQENode.cs",
+        "Engine/FlowEngineLib/LightingSensorNode.cs",
+        "Engine/FlowEngineLib/LightingSensorData.cs",
+        "Engine/FlowEngineLib/LightingChannel.cs",
+        "Engine/FlowEngineLib/LightingCommand.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs",
-        "Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs"
+        "Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs",
+        "Test/ColorVision.UI.Tests/FlowUpstreamProtocolTests.cs",
+        "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"
       ],
       "related": [
         "flow.architecture",

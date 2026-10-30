@@ -1,4 +1,5 @@
 using System.Drawing;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
@@ -277,6 +278,16 @@ public class SpectrumEQENode : CVBaseServerNode
 				sMUResultData.V = _Voltage;
 				sMUResultData.I = _Current;
 			}
+		}
+		if (RequiresRemoteService)
+		{
+			// Remote services resolve the electrical input from the preceding result.
+			// Local EQE must keep its measured V/I and original SMU association.
+			AlgorithmPreStepParam previous = new();
+			getPreStepParam(start, previous);
+			sMUResultData ??= new SMUResultData();
+			sMUResultData.MasterId = previous.MasterId;
+			sMUResultData.MasterResultType = previous.MasterResultType;
 		}
 		return new SpectrumEQEParamData
 		{

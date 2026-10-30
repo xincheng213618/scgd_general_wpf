@@ -72,6 +72,7 @@ public sealed class LocalSpectrumFlowTests
 
     private sealed class EqeProbe : SpectrumEQENode
     {
+        public override bool RequiresRemoteService => false;
         internal SpectrumEQEParamData Build(CVStartCFC action) => (SpectrumEQEParamData)getBaseEventData(action);
     }
 
