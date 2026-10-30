@@ -90,7 +90,7 @@ W255 和按 Key 亮色度的 **显示配置** 提供独立的 **亮度均匀性�
 
 例如同一 `MTFH07Process` 用于两个画面时，为两个步骤分别设置输出 `Key` 与 Recipe；修改其中一个实例不应更改另一个实例的阈值。历史结果保存的配置快照也包括内嵌 Recipe。
 
-共享 `ProcessBase<TConfig, TRecipeConfig>` 与根 `RecipeConfig` 容器仍是兼容接口；内置流程不使用这个共享基类。独立的 [ProjectLUX](./project-lux.md) 采用自身的 Recipe/Fix 管理器，不能套用本页的实例存储规则。
+共享 `ProcessBase<TConfig, TRecipeConfig>` 与根 `RecipeConfig` 容器仍是兼容接口；内置流程不使用这个共享基类。
 
 ## 结果图显示配置
 

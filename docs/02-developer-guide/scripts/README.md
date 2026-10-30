@@ -68,7 +68,7 @@ OpenCV 原生运行库遵循普通内容差分：与所选历史基准内容相�
 | 场景 | 命令 |
 | --- | --- |
 | 仓库内普通插件 | `Scripts\package_plugin.bat Conoscope` |
-| 仓库内项目包 | `Scripts\package_project.bat ProjectLUX` |
+| 仓库内项目包 | `Scripts\package_project.bat ProjectARVRPro` |
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
 插件和项目包默认上传，并在上传尝试结束后删除本地 `.cvxp`，包括上传或 `LATEST_RELEASE` 提交失败的路径；失败后应修复原因并重新执行 wrapper，不能把本地包是否残留当成成功依据。构建和上传前会先校验 `manifest.json` 的插件 ID、DLL 路径和文件大小；需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。仓库内 `Plugins/`、`Projects/` 的默认打包路径会将该集合与当前 Release x64 宿主输出比较；发生双向漂移时自动从当前宿主输出刷新仓库与 Plugin Kit 两份清单，再继续打包。外部 `--src-dir` 和显式 `--shared-files` 仍保留离线兼容行为，不改写调用者提供的清单。

@@ -5,8 +5,8 @@ status: "current"
 summary: "按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。"
 aliases: ["应该改哪个客户项目","客户项目包源码在哪里","客户项目如何构建","项目包和插件有什么区别","ProjectARVRPro","ProjectARVRPro.IntegrationDemo","ProjectKB","ProjectLUX","ProcessGroup","ProcessMeta","归档项目","已停用项目","ProjectARVRLite","ProjectARVR","ProjectBlackMura","ProjectHeyuan","ProjectShiyuan"]
 code_paths: ["Projects/","PluginProject.HostCopy.targets","Scripts/package_project.bat","Scripts/package_cvxp.py"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj","Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
-related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux","plugins.model","plugins.getting-started"]
+test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj"]
+related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux-protocol","plugins.model","plugins.getting-started"]
 ---
 
 # 客户项目与对接示例入口
@@ -20,13 +20,13 @@ related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","
 | AR/VR 流程组、Recipe、历史图像回退 | [ProjectARVRPro](./project-arvr-pro.md) | `Projects/ProjectARVRPro/ARVRWindow.xaml.cs`、`ResultImagePresentation.cs`；宿主入口为 `PluginConfig/ProjectARVRWindowHost.cs` |
 | ARVRPro TCP/JSON 客户端、RunAll ACK 与最终结果 | [Integration Demo](./project-arvr-pro-integration-demo.md) | `Projects/ProjectARVRPro.IntegrationDemo/Program.cs`、`MainWindow.xaml.cs`、`Contracts/` |
 | 键盘背光、Modbus 触发、MES 返回码与键位结果 | [ProjectKB](./project-kb.md) | `Projects/ProjectKB/ProjectKBWindow.xaml.cs`；宿主入口为 `PluginConfig/KBProjectPlugin.cs` |
-| LUX 文本 Socket、Recipe/Fix 与结果导出 | [ProjectLUX](./project-lux.md) | `Projects/ProjectLUX/LUXWindow.xaml.cs`、`Services/SocketControl.cs`；宿主入口为 `PluginConfig/ProjectLUXPlugin.cs` |
+| LUX 文本 Socket、VID 与光通量 | [ARVRPro 的 LUX 协议](./project-lux-protocol.md) | `Projects/ProjectARVRPro/Services/LuxSocketDispatcher.cs`、`ARVRWindow.Lux.cs` |
 
-尚未确定业务归属，或要比较协议、触发与结果出口时，查独立的[项目横向速查](./project-capability-matrix.md)（`projects.capabilities`），再进入具体项目主题。`ProjectARVR`、`ProjectARVRLite`、`ProjectBlackMura`、`ProjectHeyuan` 和 `ProjectShiyuan` 属于已停用项目，当前分支不包含这些项目目录。归档标签、原版本和源码取回步骤统一见仓库 `Projects/ARCHIVED.md`；恢复源码不包含外部依赖或运行环境，也不代表旧包兼容当前宿主。
+尚未确定业务归属，或要比较协议、触发与结果出口时，查独立的[项目横向速查](./project-capability-matrix.md)（`projects.capabilities`），再进入具体项目主题。`ProjectARVR`、`ProjectARVRLite`、`ProjectBlackMura`、`ProjectHeyuan`、`ProjectShiyuan` 和 `ProjectLUX` 属于已停用项目。归档标签、原版本和源码取回步骤统一见仓库 `Projects/ARCHIVED.md`；恢复源码不包含外部依赖或运行环境，也不代表旧包兼容当前宿主。
 
 ## 项目包与独立示例的边界
 
-`ProjectARVRPro`、`ProjectKB`、`ProjectLUX` 各有自己的 `.csproj`、`manifest.json` 和 `PluginConfig/` 宿主入口，manifest 的 `dllpath` 指向各自主 DLL。它们通过插件装载机制进入宿主，但业务所有权仍在对应项目，不是另一套“项目装载器”。运行装载及兼容门禁见[插件装载契约](../../02-developer-guide/plugin-development/overview.md)。
+`ProjectARVRPro`、`ProjectKB` 各有自己的 `.csproj`、`manifest.json` 和 `PluginConfig/` 宿主入口，manifest 的 `dllpath` 指向各自主 DLL。它们通过插件装载机制进入宿主，但业务所有权仍在对应项目，不是另一套“项目装载器”。运行装载及兼容门禁见[插件装载契约](../../02-developer-guide/plugin-development/overview.md)。
 
 `ProjectARVRPro.IntegrationDemo` 则是独立的 `net48` WPF/命令行对接程序，项目文件没有 ColorVision 项目引用，不按 `.cvxp` 插件交付。其公开 `Contracts/`、样例、参数和结果解析属于客户端契约，不能因类型命名相似而直接引入 Engine、数据库或客户项目内部实现。
 
@@ -34,9 +34,9 @@ related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","
 
 ## 本地构建与发布不是同一动作
 
-各项目页保留自己的构建、测试和交付命令，本入口不复制命令。三个项目包的 `VersionPrefix` 独立于宿主版本；打包器按已构建主 DLL 的文件版本同步 manifest，不能以主程序版本或 manifest 文本单独证明当前交付内容。
+各项目页保留自己的构建、测试和交付命令，本入口不复制命令。项目包的 `VersionPrefix` 独立于宿主版本；打包器按已构建主 DLL 的文件版本同步 manifest，不能以主程序版本或 manifest 文本单独证明当前交付内容。
 
-- 本地构建不上传，但会写入编译产物；KB/LUX 的 `PluginProject.HostCopy.targets` 在 `SolutionDir` 有效时复制宿主输出，ARVRPro 自有 PostBuild 还可从项目路径回推仓库目录。不要把构建理解为不会触碰宿主 `bin/.../Plugins/`。
+- 本地构建不上传，但会写入编译产物；KB 的 `PluginProject.HostCopy.targets` 在 `SolutionDir` 有效时复制宿主输出，ARVRPro 自有 PostBuild 还可从项目路径回推仓库目录。不要把构建理解为不会触碰宿主 `bin/.../Plugins/`。
 - 常规 `Scripts/package_project.bat <ProjectName>` 调用强制加 `--build`，随后打包并上传包与版本文件；`--no-upload` 被拒绝。进入上传阶段后，`package_cvxp.py` 在 `finally` 清理本地 `.cvxp`，上传失败也可能清理。只有明确发布授权才走此入口，问答、排障和本地编译不构成授权。
 - Demo 的客户产物使用其专题中的 `dotnet publish` 路径，不调用项目包上传 wrapper。真实 Socket、Modbus、MES 或设备联调要另行确认操作范围，不能为了验证文档执行。
 
@@ -48,4 +48,4 @@ related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","
 - 新增可装载项目包时维护 `.csproj`、README、CHANGELOG、manifest、配置/资源和 docs 主题；独立示例按自身产物与公开契约维护，不强行为它添加插件 manifest。
 - 修改协议、流程组、Recipe/Fix、导出字段、依赖或打包行为时，同步对应项目主题和项目自有说明；跨项目变化再更新 `projects.capabilities`，不要在本入口复制实现细节。
 
-本页的三个测试项目路径只是验证入口，不代表所有业务、协议或现场设备链路均被覆盖。具体自动化范围和人工缺口以各项目主题及测试实现为准；目录存在、知识校验通过或发布成功都不能替代业务验收。
+本页的测试项目路径只是验证入口，不代表所有业务、协议或现场设备链路均被覆盖。具体自动化范围和人工缺口以各项目主题及测试实现为准；目录存在、知识校验通过或发布成功都不能替代业务验收。

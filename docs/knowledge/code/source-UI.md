@@ -452,7 +452,7 @@ next: false
   ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。
 
 - [LUX TCP 通讯协议](../../04-api-reference/projects/project-lux-protocol.md) — `projects.lux-protocol`
-  LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。
+  ARVRPro 的 LUX TCP 文本入口：T0000 握手、VID、光学中心、光通量与 SocketCode 流程，以及回包和连接限制。
 
 - [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
   UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。

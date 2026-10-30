@@ -34,16 +34,16 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 ## 项目边界和版本
 
-| 项目 | 通信方式 | 流程组织 | 典型风险 |
+| 入口 | 通信方式 | 流程组织 | 典型风险 |
 | --- | --- | --- | --- |
-| `ProjectARVRPro` | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图回执、Legacy 输出、控制连接归属 |
-| `ProjectLUX` | 文本命令 | 流程组 + `SocketCode` | 文本返码、客户命令映射 |
+| Pro JSON | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图回执、Legacy 输出、控制连接归属 |
+| Pro LUX | 文本命令 | 活动流程组 + `SocketCode` | 文本返码、客户命令映射 |
 
 客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。手工维护项目 `ProjectARVRPro.csproj` 的 `VersionPrefix`；打包器从主 DLL 的文件版本生成 manifest 版本，不手工同步 `manifest.json`。最低宿主要求读取 manifest 的 `requires`。
 
 ARVRPro 也可承接原 LUX 文本客户端：现场只安装 ARVRPro，在“网络通信 → 服务设置”将解析模式设为现有的 `Text`，由 Pro 的 `LuxSocketDispatcher` 接收。在“流程处理配置 → 其他配置”填写 **LUX 协议设备号**（默认 `H03`，AR 光学中心站用 `H03AR`）、VID 测量方式、限值和 K/B，再在流程组的 **SocketCode** 列填写 `T00XX` 的末两位。设备号仅组成回包前缀，不是 Engine 批次 `Code`，也不是步骤索引；旧配置不迁移，现场重新配置。原 Pro 对接继续使用 `Json`，不新增公共协议模式或多处理器路由。
 
-Pro 的 LUX 文本入口中，`T0000` 只握手、不清空正在测试的结果；普通命令只运行活动组首个 SocketCode 匹配项，不检查 `IsEnabled`，不会自动发送下一项 `SwitchPG` 或最终 JSON。保留原文本前缀、固定 `00` 和 `FlowFailed:<EventName>,<Params>;`，固定 `00` 不代表测量 PASS。`H03AR` 的 `02` 从光学中心结果输出 Rotation、TiltX、TiltY，不依赖它位于第几项。普通流程完成后在 Pro 结果输出目录写 `C_<SN>.csv`；`T0001` 根据 VID 测量方式调用设备 `AutoFocus` 或 `GetPosition`，`T0031` 调用 `GetData`，随设备后端选择本地或服务执行，输出 `B_<SN>.csv`、`D_<SN>.csv`，回包数值位于分号后、末尾无分号。光谱本地结果直接使用此次采集数据，服务结果仍按 MasterId 查询。每个命令固定自己的 SN、设备号和处理项，异步完成最多回包一次；连接与 JSON 入口共用 `SocketControl.Current.Stream`，LUX 新测量通过原有忙碌检查后记录，握手及被忽略的 LUX 测量不改回包连接。JSON 的执行与推进命令保留原来的连接更新方式，具体规则见 [Pro 连接说明](./project-arvr-pro-protocol.md)。忙碌期间的新测量沿用原协议不回 BUSY，握手仍可立即回复。报文示例与特殊边界见 [LUX TCP 协议](./project-lux-protocol.md)；该页描述独立 ProjectLUX 时的模板子串匹配、首项 OC 和旧窗口共享状态不适用于 Pro 的新入口。
+LUX 命令、回包、流程匹配、设备测量和并发限制统一见 [LUX TCP 协议](./project-lux-protocol.md)。原独立项目的源码、测试和协议文档通过仓库 `Projects/ARCHIVED.md` 中的 Git 标签恢复，供交付前核对；后续迭代均在 Pro。
 
 `T0000` 在检测窗口尚未创建时直接回握手；`T0001`、`T0031` 复用后台检测实例，不自动显示或激活窗口，其它 Flow 指令沿用原窗口行为。VID 检查相机当前状态，未打开时通过原 `Open` 接口等待连接成功，再执行选定操作；直接获取位置无需对焦模板，两种方式统一按 `VID × K + B` 修正及同一组限值生成 CSV。只在设备命令成功、失败或超时后回包，进度通知不代表完成。检测窗口已打开时显示执行状态与耗时，并在设备测量期间禁用测试、流程选择和配置操作，终态后恢复。
 
@@ -71,7 +71,7 @@ Pro 的 LUX 文本入口中，`T0000` 只握手、不清空正在测试的结果
 
 窗口通过 `ProjectSettingsSession` 暂存编辑值并逐项自动保存到原 `ProjectARVRProConfig`、`ViewResultManagerConfig` 实例，调用 `ConfigService.SaveConfigs` 持久化。开关和下拉选择修改后直接生效；文字、数字、目录在失焦或结束输入时校验并保存，目录选择器选定目录后自动保存。关闭（包括标题栏关闭）会提交最后一个有效输入，不撤销已保存项。无效输入就地标红且不影响其它有效设置；持久化失败恢复该项提交前的运行值并显示重试入口，仍有失败或无效输入时关闭需确认是否放弃这些未保存项。每次成功保存刷新比较基线，支持反复切换回原值，且不覆盖其它窗口修改的未编辑项。“恢复默认设置”经确认后一次保存所有可编辑项，失败时全部恢复运行值，不修改雷鸟连接参数或保留的文本目录。检测和导出后续读取配置时直接采用新值，不增加下轮生效的排队机制，也不撤销已经开始的后台导出。两种配置的序列化身份和属性名保持兼容；SN、进度、模板选择、结果区高度等非编辑状态不参与提交，原图格式只回写真实存储字段，避免两个格式选择器互相覆盖。测试入口为 `Test/ProjectARVRPro.Tests/ProjectSettingsSessionTests.cs` 与 `ProjectSettingsWindowTests.cs`，覆盖自动保存、输入校验、关闭提交、失败重试、默认值恢复、条件显示、连续滚动与定位同步、导航搜索和主题布局；不代替现场串口或实际导出验收。
 
-主窗口测试工具栏下方使用 `ColorVision.UI.Controls.FlowExecutionStatus`，与 KB、LUX 共用紧凑执行状态栏：普通提示保持一行，运行时显示当前节点，运行中和结束后的耗时均显示整数毫秒（ms）；长错误最多占两行，窄窗口优先保留提示并隐藏辅助耗时。“详情”浮层可查看、选择和复制完整提示、流程名、节点与精确耗时，按 Esc 关闭，不挤压结果区域。上次耗时和预计剩余时间只在详情内显示，单位同为 ms；预计剩余时间仅作为历史参考。状态图标同时配中文文字，错误保留至后续执行更新，已排队的定时刷新不得覆盖最终状态。“流程执行完成”只表示 Flow 完成，不代替检测结果的 PASS/FAIL 判定。
+主窗口测试工具栏下方使用 `ColorVision.UI.Controls.FlowExecutionStatus`，与 KB 共用紧凑执行状态栏：普通提示保持一行，运行时显示当前节点，运行中和结束后的耗时均显示整数毫秒（ms）；长错误最多占两行，窄窗口优先保留提示并隐藏辅助耗时。“详情”浮层可查看、选择和复制完整提示、流程名、节点与精确耗时，按 Esc 关闭，不挤压结果区域。上次耗时和预计剩余时间只在详情内显示，单位同为 ms；预计剩余时间仅作为历史参考。状态图标同时配中文文字，错误保留至后续执行更新，已排队的定时刷新不得覆盖最终状态。“流程执行完成”只表示 Flow 完成，不代替检测结果的 PASS/FAIL 判定。
 
 单独测试与一键执行的运行中状态统一按 100 ms 间隔请求刷新，节点事件也会请求更新；UI 忙时合并待处理请求，执行时读取最新节点与秒表值，不积压逐次刷新。实际显示节奏受 UI 调度影响。刷新只更新状态显示，不触发采集、算法或结果查询；结束状态单独读取停止后的秒表，不按刷新间隔取整。
 

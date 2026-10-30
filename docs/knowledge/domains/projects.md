@@ -36,13 +36,10 @@ next: false
   独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
-  比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
+  比较 ARVRPro、KB 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
 
 - [ProjectKB](../../04-api-reference/projects/project-kb.md) — `projects.kb`
   ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正、CSV 与按天生产统计和运行内查询记忆。
 
-- [ProjectLUX](../../04-api-reference/projects/project-lux.md) — `projects.lux`
-  ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。
-
 - [LUX TCP 通讯协议](../../04-api-reference/projects/project-lux-protocol.md) — `projects.lux-protocol`
-  LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。
+  ARVRPro 的 LUX TCP 文本入口：T0000 握手、VID、光学中心、光通量与 SocketCode 流程，以及回包和连接限制。

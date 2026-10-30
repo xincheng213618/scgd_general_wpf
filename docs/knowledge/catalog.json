@@ -10046,13 +10046,12 @@
       "knowledge_id": "projects.capabilities",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。",
+      "summary": "比较 ARVRPro、KB 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。",
       "aliases": [
         "哪个项目使用 Modbus",
         "哪些项目输出 MES 或 Socket",
         "ProjectARVRPro",
         "ProjectKB",
-        "ProjectLUX",
         "ProjectARVRPro.IntegrationDemo",
         "项目协议对比",
         "项目结果出口",
@@ -10062,26 +10061,23 @@
       "code_paths": [
         "Projects/ProjectARVRPro",
         "Projects/ProjectARVRPro.IntegrationDemo",
-        "Projects/ProjectKB",
-        "Projects/ProjectLUX"
+        "Projects/ProjectKB"
       ],
       "test_paths": [
         "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj",
-        "Test/ProjectKB.Tests/ProjectKB.Tests.csproj",
-        "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"
+        "Test/ProjectKB.Tests/ProjectKB.Tests.csproj"
       ],
       "related": [
         "projects.index",
         "projects.arvr-pro",
         "projects.arvr-pro-demo",
         "projects.kb",
-        "projects.lux"
+        "projects.lux-protocol"
       ],
       "code_scopes": [
         "Projects/ProjectARVRPro",
         "Projects/ProjectARVRPro.IntegrationDemo",
-        "Projects/ProjectKB",
-        "Projects/ProjectLUX"
+        "Projects/ProjectKB"
       ],
       "domain": "projects",
       "title": "项目横向速查",
@@ -10121,15 +10117,14 @@
       ],
       "test_paths": [
         "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj",
-        "Test/ProjectKB.Tests/ProjectKB.Tests.csproj",
-        "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"
+        "Test/ProjectKB.Tests/ProjectKB.Tests.csproj"
       ],
       "related": [
         "projects.capabilities",
         "projects.arvr-pro",
         "projects.arvr-pro-demo",
         "projects.kb",
-        "projects.lux",
+        "projects.lux-protocol",
         "plugins.model",
         "plugins.getting-started"
       ],
@@ -10190,70 +10185,14 @@
       "searchable": true
     },
     {
-      "knowledge_id": "projects.lux",
-      "knowledge_type": "reference",
-      "status": "current",
-      "summary": "ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。",
-      "aliases": [
-        "T00XX 如何匹配 LUX 流程",
-        "LUX 结果和修正在哪里",
-        "ProjectLUX",
-        "LUXWindow",
-        "ProcessMeta.SocketCode",
-        "ProjectLUXProcessGroups.json",
-        "ProcessGroups.json",
-        "ARVRRecipe.json",
-        "ProjectARVRProFixConfig.json",
-        "ProjectLUXSummary.json",
-        "LUX Recipe",
-        "LUX Fix"
-      ],
-      "code_paths": [
-        "Projects/ProjectLUX/LUXWindow.xaml",
-        "Projects/ProjectLUX/TestResultViewWindow.xaml",
-        "Projects/ProjectLUX/LUXWindow.xaml.cs",
-        "Projects/ProjectLUX/Services/SocketControl.cs",
-        "Projects/ProjectLUX/Process",
-        "Projects/ProjectLUX/ViewResultManager.cs",
-        "Projects/ProjectLUX/ResultStatistics.cs",
-        "Projects/ProjectLUX/ResultStatisticsWindow.xaml",
-        "Projects/ProjectLUX/ResultStatisticsWindow.xaml.cs",
-        "Projects/ProjectLUX/ResultJsonPayloadStorage.cs",
-        "Projects/ProjectLUX/LegacyResultJsonMigration.cs",
-        "Projects/ProjectLUX/LuxSqliteCleanupProvider.cs",
-        "Projects/ProjectLUX/Recipe",
-        "Projects/ProjectLUX/Fix",
-        "Projects/ProjectLUX/Summary.cs"
-      ],
-      "test_paths": [
-        "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj",
-        "Test/ProjectLUX.Tests/ProcessManagerPersistenceTests.cs",
-        "Test/ProjectLUX.Tests/ResultJsonPayloadStorageTests.cs"
-      ],
-      "related": [
-        "projects.index",
-        "projects.capabilities",
-        "projects.lux-protocol",
-        "projects.arvr-pro-processes",
-        "ui.socket-protocol"
-      ],
-      "code_scopes": [
-        "Projects/ProjectLUX"
-      ],
-      "domain": "projects",
-      "title": "ProjectLUX",
-      "source": "docs/04-api-reference/projects/project-lux.md",
-      "url": "/04-api-reference/projects/project-lux",
-      "searchable": true
-    },
-    {
       "knowledge_id": "projects.lux-protocol",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。",
+      "summary": "ARVRPro 的 LUX TCP 文本入口：T0000 握手、VID、光学中心、光通量与 SocketCode 流程，以及回包和连接限制。",
       "aliases": [
         "LUX TCP 协议",
         "ProjectLUX TCP 通讯协议手册",
+        "LuxSocketDispatcher",
         "T0000",
         "T0001",
         "T0002",
@@ -10269,25 +10208,29 @@
         "LUX VID"
       ],
       "code_paths": [
-        "Projects/ProjectLUX/Services/SocketControl.cs",
-        "Projects/ProjectLUX/LUXWindow.xaml.cs",
-        "Projects/ProjectLUX/Process/ProcessManager.cs",
-        "Projects/ProjectLUX/Process/OpticCenter",
-        "Projects/ProjectLUX/Process/VID",
-        "Projects/ProjectLUX/Summary.cs",
-        "Projects/ProjectLUX/ProjectLUXConfig.cs",
+        "Projects/ProjectARVRPro/Services/LuxSocketDispatcher.cs",
+        "Projects/ProjectARVRPro/Services/LuxDeviceMeasurements.cs",
+        "Projects/ProjectARVRPro/ARVRWindow.Lux.cs",
+        "Projects/ProjectARVRPro/Process/ProcessManager.cs",
+        "Projects/ProjectARVRPro/ProjectARVRProConfig.cs",
         "UI/ColorVision.SocketProtocol/SocketManager.cs",
         "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs",
         "UI/ColorVision.SocketProtocol/SocketConfig.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ProjectARVRPro.Tests/LuxProtocolTests.cs",
+        "Test/ProjectARVRPro.Tests/LuxVidMeasurementTests.cs",
+        "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs",
+        "Test/ProjectARVRPro.Tests/SocketControlTests.cs"
+      ],
       "related": [
-        "projects.lux",
-        "projects.capabilities",
+        "projects.arvr-pro",
+        "projects.arvr-pro-processes",
+        "projects.arvr-pro-protocol",
         "ui.socket-protocol"
       ],
       "code_scopes": [
-        "Projects/ProjectLUX",
+        "Projects/ProjectARVRPro",
         "UI/ColorVision.SocketProtocol"
       ],
       "domain": "projects",
