@@ -19,7 +19,7 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 
 项目和 `Plugins/Directory.Build.props` 定义 Windows WPF、x64、`net10.0-windows` 及 Engine/UI 依赖。manifest身份为 `WindowsServicePlugin`，入口 `WindowsServicePlugin.dll`；插件发布版本取编译DLL的FileVersion。[插件产物与交付](../../../02-developer-guide/plugin-development/getting-started.md)负责HostCopy、manifest和.cvxp规则。
 
-- `MenuServiceManager` 在“帮助 > 服务管理器”提供常用快捷入口，`ServiceManagerAppProvider` 在“应用与工具 > 内部工具”提供另一入口；两者打开同一非模态窗口并要求应用内 `PermissionMode.Administrator`。这不是Windows提权、目录ACL或后台代理授权已通过的证明。
+- `MenuServiceManager` 在“帮助 > 服务管理器”提供常用快捷入口，`ServiceManagerAppProvider` 在“应用与工具 > 内部工具”提供另一入口；两者打开同一非模态窗口，不限制应用内角色。打开窗口不代表已具备Windows提权、目录ACL或后台代理授权。
 - `Menus` 中的服务日志菜单提供 localhost REST 日志导出入口，不属于 Backend CVWS API。
 - `InstallServiceManager` 是向导步骤，点击“安装”直接打开模态 `ServiceInstallWindow`，确认安装目录及 MySQL、MQTT、服务组件后再执行安装。关闭窗口后刷新描述与配置状态；`ConfigurationStatus` 仅检查 BaseLocation 非空且目录存在，不检查数据库、服务安装或健康。
 - `ServiceHostWindowsServiceController` 将安装/卸载/启停交给 `ColorVisionServiceHostClient`，返回bool并记录代理缺失、旧版本或失败。执行仍需兼容的代理及服务、文件、数据库权限。
@@ -88,7 +88,7 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 服务管理器的 CVWindowsService 页在“注册中心服务”的“更多操作”菜单中提供“移除归档服务检测”，其它服务行不显示此入口，用于旧部署仍按 `Monitor.Services` 反复尝试启动 `CVArchService` 的情况。`ServiceManagerViewModel.Monitoring.cs` 优先从已注册的注册中心程序路径定位 `cfg/WinService.config`，未注册时回退到安装根目录；`RegistrationCenterMonitorConfiguration` 从当前 `RCName` 对应数据库列表中，仅按完整服务名忽略大小写移除归档项，保留其它监控服务，并将清理后的数据库列表同步到本地文件，保留检测周期等其它配置。配置里的非空 `NodeName` 必须与当前 `RCName` 一致；缺文件、缺监控记录或匹配多个记录都报错。
 
-点击后先确认运行状态变化：原来运行的注册中心通过 ServiceHost 停止，保存后恢复；原来停止的保持停止。停止失败不会写配置。数据库更新使用事务，本地文件先以临时文件替换，数据库提交失败时尝试恢复原文件；普通写入失败不报告成功。这不是跨数据库和文件的崩溃原子事务，双重恢复失败会明确提示核对两处配置。保存失败仍尝试恢复原先运行的注册中心；保存成功但恢复启动失败会明确提示“配置已保存”和服务状态待处理。此操作不卸载归档服务、不删除归档库或数据，也不要求重装服务包；应用内管理员身份之外，仍须具备数据库、目录写权限和兼容的后台代理。
+点击后先确认运行状态变化：原来运行的注册中心通过 ServiceHost 停止，保存后恢复；原来停止的保持停止。停止失败不会写配置。数据库更新使用事务，本地文件先以临时文件替换，数据库提交失败时尝试恢复原文件；普通写入失败不报告成功。这不是跨数据库和文件的崩溃原子事务，双重恢复失败会明确提示核对两处配置。保存失败仍尝试恢复原先运行的注册中心；保存成功但恢复启动失败会明确提示“配置已保存”和服务状态待处理。此操作不卸载归档服务、不删除归档库或数据，也不要求重装服务包；执行仍须具备数据库、目录写权限和兼容的后台代理。
 
 `ServiceManagerConfig.BaseLocation` 是安装根，`MySqlPort` 默认3306；安装窗口的 `InstallServiceChecked/InstallMySqlChecked/InstallMqttChecked` 直接代理同名配置字段，初始缺省分别true/false/false。`AutoUpdateDatabase` 和所选包路径则是安装ViewModel自己的状态，不能把勾选项一律当作已保存配置或已完成动作。
 
