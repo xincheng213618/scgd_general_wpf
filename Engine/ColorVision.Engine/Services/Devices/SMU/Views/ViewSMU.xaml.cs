@@ -163,8 +163,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             _activeResult = result;
             bool scan = result?.HasCurve == true;
             ChartTitle.Text = result?.ResultKind == "脉冲" ? EngineLocalization.Get("脉冲采样点 · V–I") : EngineLocalization.Get("I–V 特性");
-            PlotNote.Text = result == null ? string.Empty : $"{result.SourceDescription} · {result.ProtectionDisplay} · " +
-                (result.ResultKind == "脉冲" ? EngineLocalization.Get("仅显示脉冲采样点，不代表完整时域波形。") : EngineLocalization.Get("保留采集顺序；选择右侧数据点可定位读数。"));
             ScanPanel.Visibility = scan ? Visibility.Visible : Visibility.Collapsed;
             PointInfo.Visibility = scan ? Visibility.Collapsed : Visibility.Visible;
             HistorySplitter.Visibility = scan && ViewSMUConfig.Instance.IsShowListView ? Visibility.Visible : Visibility.Collapsed;
@@ -203,16 +201,28 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             wpfplot1.Plot.Clear();
             _pointMarker = null;
+            bool logY = LogYAxis.IsChecked == true;
+            wpfplot1.Plot.Axes.Left.TickGenerator = logY
+                ? new ScottPlot.TickGenerators.NumericAutomatic
+                {
+                    IntegerTicksOnly = true,
+                    MinorTickGenerator = new ScottPlot.TickGenerators.LogMinorTickGenerator(),
+                    LabelFormatter = position => Math.Pow(10, position).ToString("G4", CultureInfo.CurrentCulture)
+                }
+                : new ScottPlot.TickGenerators.NumericAutomatic();
+            PlotNote.Text = _activeResult == null ? string.Empty : $"{_activeResult.SourceDescription} · {_activeResult.ProtectionDisplay} · " +
+                (_activeResult.ResultKind == "脉冲" ? EngineLocalization.Get("仅显示脉冲采样点，不代表完整时域波形。") : EngineLocalization.Get("保留采集顺序；选择右侧数据点可定位读数。"));
             if (_activeResult?.HasCurve != true) { wpfplot1.Refresh(); return; }
             bool currentAxis = AxisChoice.SelectedIndex == 1;
             var results = CompareScans.IsChecked == true ? listView1.SelectedItems.OfType<ViewResultSMU>().Where(item => item.HasCurve).ToArray() : [_activeResult];
             Color[] colors = [Color.FromHex("#2878C8"), Color.FromHex("#C77B22"), Color.FromHex("#27856B"), Color.FromHex("#8D65B5")];
+            bool hasVisiblePoint = false;
             for (int index = 0; index < results.Length; index++)
             {
                 ViewResultSMU result = results[index];
-                double[] xs = result.SMUDatas.Select(point => currentAxis ? point.Current : point.Voltage).ToArray();
-                double[] ys = result.SMUDatas.Select(point => currentAxis ? point.Voltage : point.Current).ToArray();
-                var curve = wpfplot1.Plot.Add.Scatter(xs, ys);
+                Coordinates[] points = result.SMUDatas.Select(point => GetPlotCoordinates(point, currentAxis, logY)).ToArray();
+                hasVisiblePoint |= points.Any(point => double.IsFinite(point.X) && double.IsFinite(point.Y));
+                var curve = wpfplot1.Plot.Add.Scatter(points);
                 curve.Color = colors[index % colors.Length];
                 curve.LineWidth = ReferenceEquals(result, _activeResult) ? 2 : 1;
                 curve.MarkerSize = result.PointCount <= 100 ? 4 : 0;
@@ -221,25 +231,42 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             wpfplot1.Plot.Legend.IsVisible = results.Length > 1;
             wpfplot1.Plot.XLabel(currentAxis ? EngineLocalization.Get("电流 (mA)") : EngineLocalization.Get("电压 (V)"));
             wpfplot1.Plot.YLabel(currentAxis ? EngineLocalization.Get("电压 (V)") : EngineLocalization.Get("电流 (mA)"));
+            if (logY)
+                PlotNote.Text = EngineLocalization.Get(hasVisiblePoint
+                    ? "对数轴只显示大于 0 的有效值；零、负数和无效值保留在逐点数据和导出中。"
+                    : "当前所选曲线没有可显示的正值；原始读数保留在逐点数据和导出中。") + " · " + PlotNote.Text;
             string font = Fonts.Detect("电压 电流");
             wpfplot1.Plot.Axes.Left.Label.FontName = font;
             wpfplot1.Plot.Axes.Bottom.Label.FontName = font;
             wpfplot1.Plot.Legend.FontName = font;
-            wpfplot1.Plot.Axes.AutoScale();
+            if (hasVisiblePoint) wpfplot1.Plot.Axes.AutoScale();
+            else wpfplot1.Plot.Axes.SetLimits(0, 1, logY ? -1 : 0, 1);
             RefreshPointMarker();
+        }
+
+        // Invalid/non-positive logarithmic points remain gaps, so curves never bridge a hidden measurement.
+        internal static Coordinates GetPlotCoordinates(SMUData point, bool currentAxis, bool logY)
+        {
+            double x = currentAxis ? point.Current : point.Voltage;
+            double y = currentAxis ? point.Voltage : point.Current;
+            if (!double.IsFinite(x) || !double.IsFinite(y) || (logY && y <= 0)) return new Coordinates(double.NaN, double.NaN);
+            return new Coordinates(x, logY ? Math.Log10(y) : y);
         }
 
         private void RefreshPointMarker()
         {
             if (_pointMarker != null) wpfplot1.Plot.Remove(_pointMarker);
             _pointMarker = null;
-            if (_activeResult?.HasCurve == true && listView2.SelectedItem is SMUData point && double.IsFinite(point.Voltage) && double.IsFinite(point.Current))
+            if (_activeResult?.HasCurve == true && listView2.SelectedItem is SMUData point)
             {
-                bool currentAxis = AxisChoice.SelectedIndex == 1;
-                _pointMarker = wpfplot1.Plot.Add.Marker(currentAxis ? point.Current : point.Voltage, currentAxis ? point.Voltage : point.Current);
-                _pointMarker.MarkerSize = 10;
-                _pointMarker.Color = Color.FromHex("#E28B24");
-                _pointMarker.MarkerShape = MarkerShape.FilledCircle;
+                Coordinates coordinates = GetPlotCoordinates(point, AxisChoice.SelectedIndex == 1, LogYAxis.IsChecked == true);
+                if (double.IsFinite(coordinates.X) && double.IsFinite(coordinates.Y))
+                {
+                    _pointMarker = wpfplot1.Plot.Add.Marker(coordinates.X, coordinates.Y);
+                    _pointMarker.MarkerSize = 10;
+                    _pointMarker.Color = Color.FromHex("#E28B24");
+                    _pointMarker.MarkerShape = MarkerShape.FilledCircle;
+                }
             }
             wpfplot1.Refresh();
         }
@@ -250,6 +277,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         }
 
         private void CompareScans_Click(object sender, RoutedEventArgs e) => DrawPlot();
+        private void LogYAxis_Click(object sender, RoutedEventArgs e) => DrawPlot();
 
         private void FollowLatest_Click(object sender, RoutedEventArgs e)
         {

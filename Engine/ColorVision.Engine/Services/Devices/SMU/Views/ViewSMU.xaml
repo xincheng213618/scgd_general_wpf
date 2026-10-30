@@ -97,13 +97,15 @@
                     <Grid Margin="10">
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <DockPanel Margin="4,0,4,8">
+                            <CheckBox x:Name="LogYAxis" DockPanel.Dock="Right" Content="{i18n:EngineLang Key='纵轴 log10'}" Margin="12,0,0,0" VerticalAlignment="Center"
+                                      Click="LogYAxis_Click" ToolTip="{i18n:EngineLang Key='对数轴只显示大于 0 的有效值；零、负数和无效值保留在逐点数据和导出中。'}"/>
                             <ComboBox x:Name="AxisChoice" DockPanel.Dock="Right" Width="155" SelectedIndex="0" SelectionChanged="AxisChoice_SelectionChanged">
                                 <ComboBoxItem Content="{i18n:EngineLang Key='横轴：电压 (V)'}"/><ComboBoxItem Content="{i18n:EngineLang Key='横轴：电流 (mA)'}"/>
                             </ComboBox>
                             <TextBlock x:Name="ChartTitle" Text="{i18n:EngineLang Key='I–V 特性'}" FontWeight="SemiBold" FontSize="15"/>
                         </DockPanel>
                         <ScottPlot:WpfPlot x:Name="wpfplot1" Grid.Row="1" MinHeight="150"/>
-                        <TextBlock x:Name="PlotNote" Grid.Row="2" Style="{StaticResource MutedText}" Margin="4,7,0,0" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="PlotNote" Grid.Row="2" Style="{StaticResource MutedText}" Margin="4,7,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
                     </Grid>
                 </Border>
                 <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" Background="{DynamicResource GlobalBorderBrush1}"/>

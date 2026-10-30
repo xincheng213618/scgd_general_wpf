@@ -57,7 +57,10 @@
                         <TextBlock Text="{i18n:EngineLang Key='测量设置'}" Style="{StaticResource SectionTitleStyle}"/>
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                            <StackPanel x:Name="MeasurementFields" Margin="0,0,16,0"/>
+                            <StackPanel Margin="0,0,16,0">
+                                <StackPanel x:Name="MeasurementFields"/>
+                                <StackPanel x:Name="NplcFields" Visibility="{Binding Draft.DisplayConfig.UseLocalSmu, Converter={StaticResource VisibleWhen}}"/>
+                            </StackPanel>
                             <StackPanel x:Name="DisplayFields" Grid.Column="1"/>
                         </Grid>
                     </StackPanel>

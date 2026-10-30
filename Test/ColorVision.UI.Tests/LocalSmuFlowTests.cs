@@ -159,6 +159,7 @@ public sealed class LocalSmuFlowTests
                 device.DisplayConfig.UseLocalSmu = false;
                 device.DisplayConfig.LocalBaudRate = SMUSerialBaudRate.Baud115200;
                 device.Config.IsNet = configuredAsNetwork;
+                device.Config.Nplc = 0.5;
                 if (configuredAsNetwork) device.Config.IpAddress = address;
                 else device.Config.SerialPort = address;
                 if (scanScenario == RepeatScanScenario.NodeDelayOverride) device.Config.DelayTime = 100;
@@ -273,6 +274,9 @@ public sealed class LocalSmuFlowTests
             Assert.Equal(configuredAsNetwork, connection.IsNet);
             Assert.Equal(address, connection.DeviceName);
             Assert.Equal(configuredAsNetwork ? 9600 : 115200, connection.BaudRate);
+            Assert.Equal(0.5, connection.Nplc);
+            Assert.NotEmpty(sdk.AppliedNplc);
+            Assert.All(sdk.AppliedNplc, value => Assert.Equal(0.5, value));
             if (scanScenario == RepeatScanScenario.NodeDelayOverride)
                 Assert.Equal(new double[] { 100, 0, 0, 0 }, sdk.AppliedDelays);
             Assert.Equal(!usesScan, sdk.Step);
@@ -403,12 +407,14 @@ public sealed class LocalSmuFlowTests
         internal double[]? ListSourceValues;
         internal readonly List<(double Source, double Limit)> Points = [];
         internal readonly List<double> AppliedDelays = [];
+        internal readonly List<double> AppliedNplc = [];
         internal readonly List<int> ClosedBeforePoint = [];
         private Channel channel;
         public int Open(LocalSmuConnection connection) { OpenedConnections.Add(connection); return 0; }
         public int GetIdn(int handle, StringBuilder text, ref int length) { text.Append("synthetic flow SMU"); return 1; }
         public int SetWiring(int handle, bool fourWire, bool front) => 1;
         public int SetDelay(int handle, double milliseconds) { AppliedDelays.Add(milliseconds); return 1; }
+        public int SetNplc(int handle, double nplc, Pss_Type type) { AppliedNplc.Add(nplc); return 1; }
         public int SetChannel(int handle, bool channelA) { channel = channelA ? Channel.A : Channel.B; return 1; }
         public int SetSource(int handle, bool voltage) => 1;
         public int Measure(int handle, LocalSmuParameters parameters, bool step, ref double voltage, ref double current)

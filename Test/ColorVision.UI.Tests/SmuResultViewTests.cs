@@ -89,10 +89,48 @@ public sealed class SmuResultViewTests
                 Assert.Equal(scan.SMUDatas[15].Voltage, Assert.Single(plot.Plot.GetPlottables().OfType<Marker>()).X);
                 Capture(view, "scan.png");
 
+                CheckBox logYAxis = (CheckBox)view.FindName("LogYAxis");
+                Assert.False(logYAxis.IsChecked == true);
+                logYAxis.IsChecked = true;
+                logYAxis.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Pump(window);
+                Assert.True(Assert.IsType<ScottPlot.TickGenerators.NumericAutomatic>(plot.Plot.Axes.Left.TickGenerator).IntegerTicksOnly);
+                curve = Assert.Single(plot.Plot.GetPlottables().OfType<Scatter>());
+                Assert.True(double.IsNaN(curve.Data.GetScatterPoints()[0].Y));
+                Assert.Equal(amps.Skip(1).Select(current => Math.Log10(current * 1000)), curve.Data.GetScatterPoints().Skip(1).Select(p => p.Y));
+                Assert.Equal(Math.Log10(scan.SMUDatas[15].Current), Assert.Single(plot.Plot.GetPlottables().OfType<Marker>()).Y);
+                Assert.Equal(amps, scan.IList);
+                points.SelectedIndex = 0;
+                Assert.Empty(plot.Plot.GetPlottables().OfType<Marker>());
+                Assert.Same(scan.SMUDatas[0], metrics.DataContext);
+                Capture(view, "scan-log.png");
+
                 ((ComboBox)view.FindName("AxisChoice")).SelectedIndex = 1;
                 curve = Assert.Single(plot.Plot.GetPlottables().OfType<Scatter>());
+                Assert.Equal(voltages.Skip(1).Select(Math.Log10), curve.Data.GetScatterPoints().Skip(1).Select(p => p.Y));
+                logYAxis.IsChecked = false;
+                logYAxis.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                curve = Assert.Single(plot.Plot.GetPlottables().OfType<Scatter>());
                 Assert.Equal(voltages, curve.Data.GetScatterPoints().Select(p => p.Y));
+                Assert.False(Assert.IsType<ScottPlot.TickGenerators.NumericAutomatic>(plot.Plot.Axes.Left.TickGenerator).IntegerTicksOnly);
+                Assert.Equal(0, Assert.Single(plot.Plot.GetPlottables().OfType<Marker>()).Y);
                 Assert.Equal(amps, scan.IList);
+                view.AddViewResultSMU(new(MeasurementType.Voltage, 1, [-1, 0], [-0.001, 0]));
+                logYAxis.IsChecked = true;
+                logYAxis.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Pump(window);
+                Assert.Empty(plot.Plot.GetPlottables().OfType<Marker>());
+                Assert.Contains("没有可显示的正值", ((TextBlock)view.FindName("PlotNote")).Text);
+                Capture(view, "scan-log-empty.png");
+                view.AddViewResultSMU(new(MeasurementType.Voltage, 32, [1, 2, 0, 4, 8, -1, 16, 32],
+                    [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008]));
+                Pump(window);
+                curve = Assert.Single(plot.Plot.GetPlottables().OfType<Scatter>());
+                Assert.True(double.IsNaN(curve.Data.GetScatterPoints()[2].Y));
+                Assert.True(double.IsNaN(curve.Data.GetScatterPoints()[5].Y));
+                Capture(view, "scan-log-gaps.png");
+                logYAxis.IsChecked = false;
+                logYAxis.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 history.SelectedItem = point;
                 Assert.False(follow.IsChecked);
                 ViewResultSMU next = new(new SMUResultModel { IsSourceV = true, VResult = 2, IResult = 12 });

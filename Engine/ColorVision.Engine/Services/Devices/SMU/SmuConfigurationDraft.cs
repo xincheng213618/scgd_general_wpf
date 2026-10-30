@@ -52,6 +52,11 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         internal bool TryApply(ConfigSMU target, DisplaySMUConfig displayTarget, out string error)
         {
+            if (DisplayConfig.UseLocalSmu)
+            {
+                try { ConfigSMU.ValidateNplc(Config.DevType, Config.Nplc); }
+                catch (ArgumentException ex) { error = ex.Message; return false; }
+            }
             string address = (IsNet ? IpAddress : SerialPortName)?.Trim() ?? string.Empty;
             if (IsNet)
             {

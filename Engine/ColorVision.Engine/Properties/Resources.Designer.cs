@@ -23456,6 +23456,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 纵轴 log10 的本地化字符串。
+        /// </summary>
+        public static string 纵轴_log10 {
+            get {
+                return ResourceManager.GetString("纵轴 log10", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 线性扫描 的本地化字符串。
         /// </summary>
         public static string 线性扫描 {

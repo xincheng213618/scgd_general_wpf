@@ -7,12 +7,14 @@ namespace ColorVision.Engine.Services.Devices.SMU.Local;
 
 internal sealed record LocalSmuConnection(bool IsNet, string DeviceName, Pss_Type DeviceType, double DelayTime, bool Is4Wire, bool IsFront, int BaudRate = 9600)
 {
-    internal static LocalSmuConnection From(ConfigSMU config, int baudRate = 9600) => new(config.IsNet, config.DevName?.Trim() ?? string.Empty, config.DevType, config.DelayTime, config.Is4Wire, config.IsFront, config.IsNet ? 9600 : baudRate);
+    public double Nplc { get; init; } = ConfigSMU.DefaultNplc(DeviceType);
+    internal static LocalSmuConnection From(ConfigSMU config, int baudRate = 9600) => new(config.IsNet, config.DevName?.Trim() ?? string.Empty, config.DevType, config.DelayTime, config.Is4Wire, config.IsFront, config.IsNet ? 9600 : baudRate) { Nplc = config.Nplc };
     internal string Endpoint => $"{(IsNet ? "NET" : "COM")}:{DeviceName.ToUpperInvariant()}";
     internal void Validate()
     {
         if (string.IsNullOrWhiteSpace(DeviceName) || !Enum.IsDefined(DeviceType)) throw new ArgumentException("请设置有效的源表设备名和类型。");
         if (!double.IsFinite(DelayTime) || DelayTime < 0) throw new ArgumentException("源表延时必须是非负有限值。");
+        ConfigSMU.ValidateNplc(DeviceType, Nplc);
         if (!IsNet)
         {
             if (!Enum.IsDefined((SMUSerialBaudRate)BaudRate)) throw new ArgumentException("请选择有效的源表串口波特率。");

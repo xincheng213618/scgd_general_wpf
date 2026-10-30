@@ -6,6 +6,36 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalSmuCurveTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LogYAxisKeepsRawReadingsAndBreaksAtNonPositiveOrInvalidMeasurements(bool currentAxis)
+    {
+        double[] ys = [0.001, 0, 10, -1, 100, double.NaN, double.PositiveInfinity];
+        var points = ys.Select((y, index) => new SMUData
+        {
+            Voltage = currentAxis ? y : index,
+            Current = currentAxis ? index : y
+        }).ToArray();
+        var coordinates = points.Select(point => ViewSMU.GetPlotCoordinates(point, currentAxis, true)).ToArray();
+        Assert.Equal(7, coordinates.Length);
+        foreach (int index in new[] { 0, 2, 4 })
+        {
+            Assert.Equal(index, coordinates[index].X);
+            Assert.Equal(Math.Log10(ys[index]), coordinates[index].Y);
+        }
+        foreach (int index in new[] { 1, 3, 5, 6 })
+        {
+            Assert.True(double.IsNaN(coordinates[index].X));
+            Assert.True(double.IsNaN(coordinates[index].Y));
+        }
+        Assert.Equal(ys, points.Select(point => currentAxis ? point.Voltage : point.Current));
+        Assert.Equal(0, ViewSMU.GetPlotCoordinates(points[1], currentAxis, false).Y);
+        Assert.Equal(-1, ViewSMU.GetPlotCoordinates(points[3], currentAxis, false).Y);
+        var invalidX = new SMUData { Voltage = currentAxis ? 1 : double.NegativeInfinity, Current = currentAxis ? double.NegativeInfinity : 1 };
+        Assert.True(double.IsNaN(ViewSMU.GetPlotCoordinates(invalidX, currentAxis, true).Y));
+    }
+
     [Fact]
     public void ComplianceLimitedMeasurementDoesNotInventPlateauPoints()
     {

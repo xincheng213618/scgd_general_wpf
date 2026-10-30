@@ -197,6 +197,39 @@ public sealed class LocalSmuSessionTests
         Assert.Equal(0, sdk.Closes);
     }
 
+    // Protect connection-time application and the ordinary/advanced sampling boundary.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NplcAppliesAtOpenAndOrdinaryCapturesWithoutReconnectingOrChangingOldReads(bool network)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config() with { IsNet = network, DeviceType = Pss_Type.Keithley_2400, Nplc = 0.01 };
+        await session.OpenAsync(config);
+        Assert.Equal(new[] { 0.01 }, sdk.AppliedNplc);
+        await session.CaptureAsync(config, Point(), false, true, true);
+        config = config with { Nplc = 1 };
+        await session.CaptureAsync(config, Point(), false, false, true);
+        config = config with { Nplc = 0.1 };
+        await session.CaptureAsync(config, Point() with { BeginValue = 1, EndValue = 2, Points = 2 }, true, false, true);
+        await session.CaptureAsync(config, Point(), false, false, true, read: true);
+        config = config with { Nplc = 2 };
+        await session.CaptureAsync(config, Scan(true) with { Channel = Channel.A }, true, false, true);
+        Assert.Equal(new[] { 0.01, 0.01, 1, 0.1, 2 }, sdk.AppliedNplc);
+        Assert.Equal(1, sdk.Opens);
+        Assert.Equal(0, sdk.Closes);
+        int measurements = sdk.Measurements;
+        foreach (double invalid in new[] { 0, -1, 0.001, 11, double.NaN, double.PositiveInfinity })
+            await Assert.ThrowsAsync<ArgumentException>(() => session.CaptureAsync(config with { Nplc = invalid }, Point(), false, true, true));
+        Assert.Equal(measurements, sdk.Measurements);
+        Assert.Equal(5, sdk.AppliedNplc.Count);
+        sdk.NplcCode = 0;
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config, Point(), false, true, true));
+        Assert.Contains("设置源表积分时间失败", error.Message);
+        Assert.Equal(measurements, sdk.Measurements);
+    }
+
     [Fact]
     public void ConnectionEditorsCommitOneLegacyAddressAndSwitchByTransport()
     {
@@ -705,15 +738,26 @@ public sealed class LocalSmuSessionTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task FailedRepeatScanClosesOutputWithoutRetryingPointMeasurements(bool list)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task FailedRepeatScanClosesOutputWithoutRetryingPointMeasurements(bool list, bool network)
     {
         var sdk = new FakeNative { SweepCapabilities = 3, SweepCode = 0, ListCode = 0 };
         await using var session = new LocalSmuSession(sdk);
-        var config = Config();
+        var config = Config() with { IsNet = network, DeviceType = network ? Pss_Type.Keithley_2400 : Pss_Type.Keithley_2600, DelayTime = 100 };
         await session.OpenAsync(config);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config, Scan(list), true, false, true));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config, Scan(list), true, false, true));
+        Assert.Contains("SDK 返回 0", error.Message);
+        Assert.Contains(config.DeviceName, error.Message);
+        Assert.Contains(config.DeviceType.ToString(), error.Message);
+        Assert.Contains(network ? "网络" : "串口 9600 baud", error.Message);
+        Assert.Contains(list ? "列表扫描" : "线性扫描", error.Message);
+        Assert.Contains("通道=B", error.Message);
+        Assert.Contains("点数=3", error.Message);
+        Assert.Contains("保护=10 mA", error.Message);
+        Assert.Contains("延时=100 ms", error.Message);
         Assert.Equal(1, sdk.Sweeps + sdk.Lists);
         Assert.Equal(0, sdk.PointMeasurements);
         Assert.Equal(new[] { Channel.B }, sdk.ClosedOutputs);
@@ -786,6 +830,8 @@ public sealed class LocalSmuSessionTests
         internal readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal readonly List<string> Events = [];
         internal readonly List<double> AppliedDelays = [];
+        internal readonly List<double> AppliedNplc = [];
+        internal int NplcCode = 1;
         internal readonly List<Channel> ClosedOutputs = [];
         private Channel channel;
         public int Open(LocalSmuConnection c)
@@ -799,6 +845,7 @@ public sealed class LocalSmuSessionTests
         public int GetIdn(int h, StringBuilder text, ref int length) { text.Append("synthetic SMU"); return 1; }
         public int SetWiring(int h, bool wire, bool front) => WiringCode;
         public int SetDelay(int h, double delay) { AppliedDelays.Add(delay); return 1; }
+        public int SetNplc(int h, double nplc, Pss_Type type) { AppliedNplc.Add(nplc); return NplcCode; }
         public int SetChannel(int h, bool channelA) { channel = channelA ? Channel.A : Channel.B; return 1; }
         public int SetSource(int h, bool voltage) => 1;
         private void Capture()

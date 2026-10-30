@@ -55,6 +55,9 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_SetDelayTime", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetDelayTime(int nDevID, double dTimems);
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_SetNPLC", CallingConvention = CallingConvention.StdCall)]
+        public static extern int SetNPLC(int nDevID, double nplc);
+
         // 关闭源输出
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_CloseOutput", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CloseOutput(int nDevID);

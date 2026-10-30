@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Local;
 
 internal sealed class LocalSmuSession : IAsyncDisposable
 {
+    private static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(LocalSmuSession));
     private static readonly object OwnersSync = new();
     private static readonly Dictionary<string, LocalSmuSession> Owners = new(StringComparer.OrdinalIgnoreCase);
     private readonly object sync = new();
@@ -49,7 +50,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     private bool OpenCore(LocalSmuConnection config)
     {
         config.Validate();
-        if (handle >= 0 && MatchesOpenSettings(config)) return true;
+        if (handle >= 0 && MatchesOpenSettings(config))
+        {
+            ApplyNplc(config);
+            return true;
+        }
         lock (OwnersSync)
         {
             if (Owners.TryGetValue(config.Endpoint, out var owner) && !ReferenceEquals(owner, this)) throw new InvalidOperationException("另一个本地源表正在使用此连接。");
@@ -80,6 +85,8 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             stage = "读取仪器型号";
             Check(native.GetIdn(handle, text, ref length), "读取源表标识");
             Idn = text.ToString();
+            stage = "设置积分时间";
+            ApplyNplc(config);
             SweepCapabilities = native.GetSweepCapabilities(handle);
             LocalFamily = native.GetLocalFamily(handle);
             SetStatus(DeviceStatusType.Opened);
@@ -114,11 +121,13 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             {
                 SelectChannel(parameters.Channel);
                 if (!read) Check(native.SetSource(handle, parameters.IsSourceV), "设置源类型");
+                if (!read) ApplyNplc(config);
                 // Apply each request's delay under the session lock; an override must not leak
                 // into a later node or a manual measurement that inherits the device setting.
                 if (!read) Check(native.SetDelay(handle, parameters.MeasureDelayMs ?? config.DelayTime), "设置源表测量延时");
                 if (!read) advancedMode = false;
                 if (!read) lastParameters = parameters;
+                if (scan) log.Info($"本地源表扫描开始：{CaptureContext(config, parameters, scan, read)}");
                 // A failing or canceled native call may already have enabled the selected output.
                 outputChannels.Add(parameters.Channel);
                 long generation = ++nextGeneration;
@@ -139,7 +148,11 @@ internal sealed class LocalSmuSession : IAsyncDisposable
                 }
                 capture = new LocalSmuCapture(parameters, voltages, currents, (int)Math.Min(watch.ElapsedMilliseconds, int.MaxValue), scan) { Generation = generation };
             }
-            catch (Exception ex) { failure = ex; }
+            catch (Exception ex)
+            {
+                failure = ex is OperationCanceledException ? ex
+                    : new InvalidOperationException($"{ex.Message}\n{CaptureContext(config, parameters, scan, read)}", ex);
+            }
             try
             {
                 if (failure != null || parameters.IsCloseOutput) CloseChannel(parameters.Channel);
@@ -153,6 +166,26 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
             return capture!;
             }, token, flowOwner);
+    }
+
+    private void ApplyNplc(LocalSmuConnection config)
+    {
+        if (config.DeviceType is cvColorVision.Pss_Type.Keithley_2400 or cvColorVision.Pss_Type.Keithley_2600)
+            Check(native.SetNplc(handle, config.Nplc, config.DeviceType), "设置源表积分时间");
+    }
+
+    private static string CaptureContext(LocalSmuConnection config, LocalSmuParameters parameters, bool scan, bool read)
+    {
+        string transport = config.IsNet ? "网络" : $"串口 {config.BaudRate} baud";
+        string sourceUnit = parameters.IsSourceV ? "V" : "mA";
+        string limitUnit = parameters.IsSourceV ? "mA" : "V";
+        string operation = read ? "读取" : scan ? parameters.IsListSweep ? "列表扫描" : "线性扫描" : "点测";
+        string source = scan
+            ? FormattableString.Invariant($"起点={parameters.BeginValue:G17} {sourceUnit}，终点={parameters.EndValue:G17} {sourceUnit}，点数={parameters.Points}")
+            : FormattableString.Invariant($"源值={parameters.MeasureValue:G17} {sourceUnit}");
+        string range = parameters.IsAutoRng ? "自动量程"
+            : FormattableString.Invariant($"SDK 源量程={parameters.SrcRng:G17}，限量程={parameters.LmtRng:G17}");
+        return FormattableString.Invariant($"{config.DeviceType}，{config.DeviceName}，{transport}，通道={parameters.Channel}，{operation}；{source}，保护={parameters.LimitValue:G17} {limitUnit}，延时={parameters.MeasureDelayMs ?? config.DelayTime:G17} ms，NPLC={config.Nplc:G17}，{range}。");
     }
 
     internal Task CloseOutputAsync(SMUChannelType channel, CancellationToken token = default, long? expectedGeneration = null, object? flowOwner = null) => RunAsync(() =>

@@ -39,6 +39,7 @@ public sealed class LocalSmuAdvancedTests
         var settings = new LocalSmuSettings { IsSourceV = false, SourceValue = 10, Limit = 5,
             Measurement = SmuMeasurement.Resistance, Sweep = SmuSweep.List, Values = "10,20,10", CloseOutput = false };
         var result = await session.CaptureAdvancedAsync(connection, settings, true);
+        Assert.Equal(new[] { connection.Nplc }, native.AppliedNplc);
         Assert.Equal(new double[] { 10, 10, 10 }, result.Currents);
         Assert.Equal(new double?[] { 501, 502, null }, result.Details!.Resistance);
         var response = LocalSmuResultService.Response(result, 0);
@@ -299,6 +300,7 @@ public sealed class LocalSmuAdvancedTests
     {
         internal int Family=4,Captures,Opens,Closes;internal bool Block,Fail,RequestedCloseOutput;internal double Source;internal SmuOffMode OffMode;
         internal List<Channel>ClosedChannels=[];private Channel channel;
+        internal readonly List<double> AppliedNplc = [];
         internal TaskCompletionSource Started=new(TaskCreationOptions.RunContinuationsAsynchronously),Release=new(TaskCreationOptions.RunContinuationsAsynchronously);
         public int Open(LocalSmuConnection c){Opens++;return 0;}
         public int GetIdn(int h,StringBuilder text,ref int length){text.Append("KEITHLEY INSTRUMENTS INC.,MODEL 2602B,offline,1");return 1;}
@@ -306,6 +308,7 @@ public sealed class LocalSmuAdvancedTests
         public int CloseAdvancedOutput(int h,int ch,int mode){OffMode=(SmuOffMode)mode;ClosedChannels.Add((Channel)ch);return 1;}
         public int SetWiring(int h,bool wire,bool front)=>1;
         public int SetDelay(int h,double delay)=>1;
+        public int SetNplc(int h,double nplc,Pss_Type type){AppliedNplc.Add(nplc);return 1;}
         public int SetChannel(int h,bool a){channel=a?Channel.A:Channel.B;return 1;}
         public int SetSource(int h,bool voltage)=>1;
         public void ExecuteAdvanced(int h,LocalSmuSettings s,double[] sources,double[] limits,double[] v,double[] i,double[] r,int[] status)

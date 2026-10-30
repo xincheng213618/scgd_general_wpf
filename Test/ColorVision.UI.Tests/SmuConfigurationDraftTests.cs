@@ -1,13 +1,87 @@
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Themes;
 using cvColorVision;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
 // Protect cancel/apply isolation, separate configuration ownership and the service's IsNet + DevName contract.
 public sealed class SmuConfigurationDraftTests
 {
+    [Theory]
+    [InlineData(Pss_Type.Keithley_2400, 0.01)]
+    [InlineData(Pss_Type.Keithley_2600, 1)]
+    public void LegacyNplcKeepsDriverDefaultAndExplicitValuesRoundTrip(Pss_Type type, double expected)
+    {
+        var legacy = new JObject { [nameof(ConfigSMU.DevType)] = type.ToString(), [nameof(ConfigSMU.DevName)] = "COM7" }.ToObject<ConfigSMU>()!;
+        Assert.Equal(expected, legacy.Nplc);
+        Assert.Equal(expected, new SmuConfigurationDraft(legacy, new()).Config.Nplc);
+        legacy.Nplc = 0.2;
+        var payload = JObject.FromObject(legacy);
+        Assert.Equal(0.2, payload.Value<double>(nameof(ConfigSMU.Nplc)));
+        Assert.Null(payload[nameof(ConfigSMU.SupportsNplc)]);
+        Assert.Equal(0.2, payload.ToObject<ConfigSMU>()!.Nplc);
+    }
+
+    [Fact]
+    public void DriverChangesNotifyNplcAndKeepExplicitSettings()
+    {
+        var config = new ConfigSMU();
+        List<string?> changed = [];
+        config.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+        config.DevType = Pss_Type.Keithley_2600;
+        Assert.Equal(1, config.Nplc);
+        Assert.Contains(nameof(ConfigSMU.Nplc), changed);
+        Assert.Contains(nameof(ConfigSMU.SupportsNplc), changed);
+        config.Nplc = 0.2;
+        config.DevType = Pss_Type.Keithley_2400;
+        Assert.Equal(0.2, config.Nplc);
+    }
+
+    [Theory]
+    [InlineData(Pss_Type.Keithley_2400, 0.001)]
+    [InlineData(Pss_Type.Keithley_2400, 10.1)]
+    [InlineData(Pss_Type.Keithley_2400, double.NaN)]
+    [InlineData(Pss_Type.Keithley_2600, 0.0009)]
+    [InlineData(Pss_Type.Keithley_2600, 10.1)]
+    [InlineData(Pss_Type.Keithley_2600, double.PositiveInfinity)]
+    public void InvalidLocalNplcDoesNotApplyDeviceOrDisplayEdits(Pss_Type type, double nplc)
+    {
+        var config = new ConfigSMU { DevType = type, DevName = "COM7", Name = "Original" };
+        var display = new DisplaySMUConfig { UseLocalSmu = false };
+        string original = JsonConvert.SerializeObject(config);
+        var draft = new SmuConfigurationDraft(config, display);
+        draft.Config.Nplc = nplc;
+        draft.Config.Name = "Edited";
+        draft.DisplayConfig.UseLocalSmu = true;
+        Assert.False(draft.TryApply(config, display, out string error));
+        Assert.Contains("NPLC", error);
+        Assert.Contains("10", error);
+        Assert.Equal(original, JsonConvert.SerializeObject(config));
+        Assert.False(display.UseLocalSmu);
+    }
+
+    [Theory]
+    [InlineData(false, Pss_Type.Keithley_2400)]
+    [InlineData(true, Pss_Type.Precise_S100)]
+    public void ServiceAndUnsupportedDriversDoNotValidateInactiveNplc(bool local, Pss_Type type)
+    {
+        var config = new ConfigSMU { DevType = type, DevName = "COM7" };
+        var display = new DisplaySMUConfig { UseLocalSmu = local };
+        var draft = new SmuConfigurationDraft(config, display);
+        draft.Config.Nplc = 0;
+        Assert.True(draft.TryApply(config, display, out string error), error);
+        Assert.Equal(0, config.Nplc);
+    }
+
     [Theory]
     [InlineData(false, "COM7", "192.168.100.100")]
     [InlineData(true, "192.0.2.7", "192.0.2.7")]
@@ -104,15 +178,18 @@ public sealed class SmuConfigurationDraftTests
         draft.DisplayConfig.IsUseLimitSigned = false;
         draft.DisplayConfig.IsSourceV = false;
         draft.DisplayConfig.Channel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType.B;
+        draft.Config.Nplc = 0.2;
         Assert.False(display.UseLocalSmu);
         Assert.Equal(SMUSerialBaudRate.Baud115200, display.LocalBaudRate);
         Assert.True(display.IsUseLimitSigned);
         Assert.Equal("COM7", config.DevName);
+        Assert.Equal(1, config.Nplc);
         // Incoming measurements can change while the draft is open.
         channel.V = 12;
         source.MeasureVal = 17;
         Assert.True(draft.TryApply(config, display, out string error), error);
         Assert.Equal("COM23", config.DevName);
+        Assert.Equal(0.2, config.Nplc);
         Assert.True(display.UseLocalSmu);
         Assert.Equal(SMUSerialBaudRate.Baud19200, display.LocalBaudRate);
         Assert.False(display.IsUseLimitSigned);
@@ -125,12 +202,74 @@ public sealed class SmuConfigurationDraftTests
         var devicePayload = JObject.FromObject(config);
         Assert.Null(devicePayload[nameof(DisplaySMUConfig.UseLocalSmu)]);
         Assert.Null(devicePayload[nameof(DisplaySMUConfig.LocalBaudRate)]);
+        Assert.Equal(0.2, devicePayload.Value<double>(nameof(ConfigSMU.Nplc)));
+        Assert.Null(JObject.FromObject(display)[nameof(ConfigSMU.Nplc)]);
         var restored = JObject.FromObject(display).ToObject<DisplaySMUConfig>()!;
         Assert.True(restored.UseLocalSmu);
         Assert.Equal(SMUSerialBaudRate.Baud19200, restored.LocalBaudRate);
         Assert.False(restored.IsUseLimitSigned);
         draft.DisplayConfig.UseLocalSmu = false;
+        draft.Config.Nplc = 0.3;
         Assert.True(display.UseLocalSmu);
+        Assert.Equal(0.2, config.Nplc);
+    }
+
+    [Fact]
+    public void NplcEditorUsesMetadataAndOnlyAppearsForSupportedLocalDevices()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            List<ResourceDictionary> dictionaries = [];
+            EditSMU? window = null;
+            try
+            {
+                foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
+                {
+                    var dictionary = new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
+                    dictionaries.Add(dictionary);
+                    Application.Current.Resources.MergedDictionaries.Add(dictionary);
+                }
+                var config = new ConfigSMU { DevType = Pss_Type.Keithley_2400, DevName = "COM7" };
+                var display = new DisplaySMUConfig { UseLocalSmu = true };
+                window = new EditSMU(config, display);
+                window.ShowActivated = false; window.ShowInTaskbar = false; window.Left = -10000; window.Top = -10000;
+                window.Show(); window.UpdateLayout();
+                var section = Assert.IsType<StackPanel>(window.FindName("NplcFields"));
+                var field = Assert.IsType<DockPanel>(Assert.Single(section.Children.Cast<UIElement>()));
+                Assert.Equal(Visibility.Visible, section.Visibility);
+                Assert.Equal(Visibility.Visible, field.Visibility);
+                var input = Assert.Single(field.Children.OfType<TextBox>());
+                input.Text = 0.2.ToString();
+                input.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Assert.Equal(0.2, window.EditConfig.Nplc);
+                Assert.Equal(0.01, config.Nplc);
+                window.Draft.DisplayConfig.UseLocalSmu = false;
+                BindingOperations.GetBindingExpression(section, UIElement.VisibilityProperty)!.UpdateTarget();
+                Assert.Equal(Visibility.Collapsed, section.Visibility);
+                window.Draft.DisplayConfig.UseLocalSmu = true;
+                BindingOperations.GetBindingExpression(section, UIElement.VisibilityProperty)!.UpdateTarget();
+                window.EditConfig.DevType = Pss_Type.Precise_S100;
+                BindingOperations.GetBindingExpression(field, UIElement.VisibilityProperty)!.UpdateTarget();
+                Assert.Equal(Visibility.Collapsed, field.Visibility);
+                window.EditConfig.DevType = Pss_Type.Keithley_2600;
+                BindingOperations.GetBindingExpression(field, UIElement.VisibilityProperty)!.UpdateTarget();
+                Assert.Equal(Visibility.Visible, field.Visibility);
+                string? preview = Environment.GetEnvironmentVariable("CV_SMU_CONFIG_PREVIEW_PATH");
+                if (!string.IsNullOrEmpty(preview))
+                {
+                    window.UpdateLayout();
+                    var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(window);
+                    var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                    using var output = File.Create(preview); encoder.Save(output);
+                }
+            }
+            finally
+            {
+                window?.Close();
+                foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
+            }
+        });
     }
 
     [Fact]

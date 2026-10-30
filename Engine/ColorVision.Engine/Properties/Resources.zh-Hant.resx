@@ -8399,4 +8399,9 @@
   <data name="此分区没有匹配的模板。" xml:space="preserve"><value>此分區沒有符合的範本。</value></data>
   <data name="暂无现有模板，可先从内置流程创建。" xml:space="preserve"><value>尚無現有範本，可先從內建流程建立。</value></data>
   <data name="此分区暂无可用来源。" xml:space="preserve"><value>此分區尚無可用來源。</value></data>
+  <data name="纵轴 log10" xml:space="preserve"><value>縱軸 log10</value></data>
+  <data name="对数轴只显示大于 0 的有效值；零、负数和无效值保留在逐点数据和导出中。" xml:space="preserve"><value>對數軸只顯示大於 0 的有效值；零、負數和無效值保留在逐點數據和匯出中。</value></data>
+  <data name="当前所选曲线没有可显示的正值；原始读数保留在逐点数据和导出中。" xml:space="preserve"><value>目前所選曲線沒有可顯示的正值；原始讀數保留在逐點數據和匯出中。</value></data>
+  <data name="以电源周期为单位，仅本地模式普通点测和扫描使用；打开连接时应用，修改后下一次普通测量也会应用。2400：0.01～10，2600：0.001～10；值越大积分时间越长，高级窗口使用独立设置。" xml:space="preserve"><value>以電源週期為單位，僅本地模式普通點測和掃描使用；開啟連線時套用，修改後下一次普通測量也會套用。2400：0.01～10，2600：0.001～10；值越大積分時間越長，進階視窗使用獨立設定。</value></data>
+  <data name="本地源表积分时间（NPLC）必须是 {0:G}～10 之间的有限值。" xml:space="preserve"><value>本地源表積分時間（NPLC）必須是 {0:G}～10 之間的有限值。</value></data>
 </root>

@@ -7456,4 +7456,9 @@ Field: </value></data>
   <data name="此分区没有匹配的模板。" xml:space="preserve"><value>No matching templates in this section.</value></data>
   <data name="暂无现有模板，可先从内置流程创建。" xml:space="preserve"><value>No existing templates. Create one from a built-in flow first.</value></data>
   <data name="此分区暂无可用来源。" xml:space="preserve"><value>No sources available in this section.</value></data>
+  <data name="纵轴 log10" xml:space="preserve"><value>Y axis log10</value></data>
+  <data name="对数轴只显示大于 0 的有效值；零、负数和无效值保留在逐点数据和导出中。" xml:space="preserve"><value>The log axis shows valid positive values only; zero, negative and invalid readings remain in the point table and exports.</value></data>
+  <data name="当前所选曲线没有可显示的正值；原始读数保留在逐点数据和导出中。" xml:space="preserve"><value>The selected curves have no positive values to display; raw readings remain in the point table and exports.</value></data>
+  <data name="以电源周期为单位，仅本地模式普通点测和扫描使用；打开连接时应用，修改后下一次普通测量也会应用。2400：0.01～10，2600：0.001～10；值越大积分时间越长，高级窗口使用独立设置。" xml:space="preserve"><value>In power-line cycles, for ordinary local point measurements and sweeps only. Applied on connection open and before the next ordinary measurement after changes. 2400: 0.01–10; 2600: 0.001–10. Larger values integrate longer; the advanced window has separate settings.</value></data>
+  <data name="本地源表积分时间（NPLC）必须是 {0:G}～10 之间的有限值。" xml:space="preserve"><value>Local SMU integration time (NPLC) must be a finite value from {0:G} to 10.</value></data>
 </root>
