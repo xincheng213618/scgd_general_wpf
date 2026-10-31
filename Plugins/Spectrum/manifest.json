@@ -5,5 +5,5 @@
   "version": "2.3.3.26",
   "description": "Spectrum",
   "dllpath": "Spectrum.dll",
-  "requires": "1.4.17.8"
+  "requires": "1.4.17.86"
 }

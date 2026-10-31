@@ -8,7 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 
 
-namespace ColorVision.UI.CUDA
+namespace ColorVision.UI.Desktop.Hardware
 {
     public static class SystemHelper 
     {

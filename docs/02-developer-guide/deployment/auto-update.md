@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
 aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","十分钟缓存","空结果不缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
-code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Update/","UI/ColorVision.UI.Desktop/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs","UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
+code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI.Desktop/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs","UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
@@ -158,7 +158,7 @@ flowchart LR
 
 | 范围 | 位置 |
 | --- | --- |
-| 客户端更新实现 | `ColorVision/Update/`、`UI/ColorVision.UI.Desktop/Update/`、`UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs`；独立交付插件使用的 `UpdateHttpClientProvider` 与 `UpdateNetworkConfig` 保留在 `UI/ColorVision.UI/Update/`，以免已部署插件的程序集绑定失效 |
+| 客户端更新实现 | `ColorVision/Update/`、`UI/ColorVision.UI.Desktop/Update/`、`UI/ColorVision.UI.Desktop/Plugins/PluginUpdater.cs`；更新网络设置与共享 HTTP 客户端 `UpdateNetworkConfig`、`UpdateHttpClientProvider` 也在 `UI/ColorVision.UI.Desktop/Update/`，使用它们的插件需引用 `ColorVision.UI.Desktop` |
 | 启动与插件恢复 | `ColorVision/Recovery/`、`UI/ColorVision.UI.Desktop/Plugins/PluginRecoveryBackupService.cs` |
 | 正式发布入口 | [构建与发布脚本](../scripts/README.md) 中的 `Scripts\release.bat` |
 | 完整安装包 | `Scripts/build.py` 调用仓库外的 Advanced Installer `ColorVision.aip` 构建 |

@@ -1,11 +1,7 @@
 using System.Windows;
 using System.Windows.Shell;
 
-#if SPECTRUM_ABOUT
-namespace Spectrum.Help.Art;
-#else
 namespace ColorVision.UI.Views.About;
-#endif
 
 /// <summary>Sizes an opaque exhibition window and aligns its native corners with its scaled artwork.</summary>
 public static class AboutWindowChrome

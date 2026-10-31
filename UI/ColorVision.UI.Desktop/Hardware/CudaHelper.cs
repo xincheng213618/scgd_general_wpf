@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA2211
 using ColorVision.Common.MVVM;
 
-namespace ColorVision.UI.CUDA
+namespace ColorVision.UI.Desktop.Hardware
 {
     public class ConfigCuda:ViewModelBase
     {

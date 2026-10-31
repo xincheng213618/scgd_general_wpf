@@ -1,11 +1,7 @@
 using System.Globalization;
 using System.Resources;
 
-#if SPECTRUM_ABOUT
-namespace Spectrum.Help.Art;
-#else
 namespace ColorVision.UI.Views.About;
-#endif
 
 /// <summary>Localized presentation shared by the main and Spectrum About windows.</summary>
 public static class AboutText

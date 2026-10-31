@@ -3,7 +3,7 @@ using ColorVision.Common.NativeMethods;
 using log4net;
 using System.Runtime.InteropServices;
 
-namespace ColorVision.UI.CUDA
+namespace ColorVision.UI.Desktop.Hardware
 {
     public class CudaInitializer : InitializerBase
     {

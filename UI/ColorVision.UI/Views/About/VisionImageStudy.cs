@@ -3,11 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-#if SPECTRUM_ABOUT
-namespace Spectrum.Help.Art;
-#else
 namespace ColorVision.UI.Views.About;
-#endif
 
 /// <summary>A single optical image separated into acquisition, color sampling and measured geometry.</summary>
 internal sealed class VisionImageStudy
