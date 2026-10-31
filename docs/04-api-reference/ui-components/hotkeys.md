@@ -145,7 +145,7 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 
 ## 源码定位与验证
 
-- 定义发现、ID 匹配、宿主与应用补偿：`HotkeyService.cs`、`HotkeyDefinition.cs`、`HotkeySetting.cs`、`HotkeyApplyResult.cs`。
+- 定义发现、ID 匹配、宿主与应用补偿：`HotkeyService.cs`（注册与宿主），`HotkeyService.Discovery.cs`、`.Settings.cs`、`.Apply.cs`（校验、保存与回滚）、`.Capture.cs`（录入期间暂停全局键），`HotkeyDefinition.cs`、`HotkeySetting.cs`、`HotkeyApplyResult.cs`。
 - 动作说明、分类、来源与友好缺省：`HotkeyPresentation.cs`、`HotkeyPresentationResources.resx` / `.en.resx`。
 - 列表、搜索、弹窗与录入限制：`HotKeysSetting.xaml` / `.xaml.cs`、`HotkeySettingsViewModel.cs`、`HotkeyEditWindow.xaml` / `.xaml.cs`、`HotkeyInput.cs`。
 - 窗口输入、重复组合与句柄释放：`WindowHotKey/WindowHotKey.cs`、`WindowHotKey/WindowHotKeyManager.cs`。
