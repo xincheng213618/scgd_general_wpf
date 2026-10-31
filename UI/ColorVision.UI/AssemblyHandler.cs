@@ -46,7 +46,7 @@ namespace ColorVision.UI
         private Assembly[]? _assemblies;
         private readonly HashSet<Assembly> _registeredAssemblies = new();
         private readonly ConcurrentDictionary<Assembly, Type[]> _assemblyTypeCache = new();
-        private readonly ConcurrentDictionary<Type, Type[]> _implementationTypeCache = new();
+        private ConcurrentDictionary<Type, Type[]> _implementationTypeCache = new();
         private readonly object _assembliesLock = new();
         private bool _registeredAssembliesOnly;
 
@@ -139,7 +139,7 @@ namespace ColorVision.UI
                     changed = true;
                 }
 
-                _implementationTypeCache.Clear();
+                Volatile.Write(ref _implementationTypeCache, new());
             }
 
             if (changed)
@@ -228,9 +228,10 @@ namespace ColorVision.UI
             }
             catch (ReflectionTypeLoadException ex)
             {
-                types = Array.Empty<Type>();
+                types = ex.Types.OfType<Type>().ToArray();
+                _assemblyTypeCache.TryAdd(assembly, types);
                 Log.Error($"Failed to load types from assembly '{assembly.FullName}': {ex.Message}", ex);
-                return false;
+                return true;
             }
             catch (Exception ex)
             {
@@ -278,7 +279,7 @@ namespace ColorVision.UI
                 _assemblies = customAssemblies;
 
                 // Clear cache when assemblies are refreshed
-                _implementationTypeCache.Clear();
+                Volatile.Write(ref _implementationTypeCache, new());
 
                 if (Log.IsDebugEnabled)
                     Log.Debug($"Loaded {customAssemblies.Length} custom assemblies");
@@ -330,7 +331,9 @@ namespace ColorVision.UI
         public IReadOnlyList<Type> GetImplementationTypes(Type serviceType)
         {
             ArgumentNullException.ThrowIfNull(serviceType);
-            return _implementationTypeCache.GetOrAdd(serviceType, key =>
+            // An in-flight query may finish after registration or a refresh. Keep its result
+            // in the old snapshot rather than repopulating the current cache with stale types.
+            return Volatile.Read(ref _implementationTypeCache).GetOrAdd(serviceType, key =>
             {
                 var implementationTypes = new List<Type>();
                 var assemblies = GetAssemblies();
@@ -396,7 +399,7 @@ namespace ColorVision.UI
             {
                 _assemblies = null;
                 _assemblyTypeCache.Clear();
-                _implementationTypeCache.Clear();
+                Volatile.Write(ref _implementationTypeCache, new());
             }
 
             AssembliesChanged?.Invoke(this, EventArgs.Empty);

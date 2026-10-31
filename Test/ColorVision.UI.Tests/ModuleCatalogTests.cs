@@ -111,6 +111,72 @@ namespace ColorVision.UI.Tests
             handler.ClearCaches();
         }
 
+        [Fact]
+        public void GetTypes_PreservesLoadableExtensionsWhenAnotherTypeHasMissingDependencies()
+        {
+            AssemblyHandler handler = AssemblyHandler.GetInstance();
+            var assembly = new PartiallyLoadableAssembly();
+
+            IReadOnlyList<Type> types = handler.GetTypes(assembly);
+
+            Assert.Equal(new[] { typeof(ModuleCatalogTests) }, types);
+            Assert.Same(types, handler.GetTypes(assembly));
+        }
+
+        private sealed class PartiallyLoadableAssembly : Assembly
+        {
+            public override string FullName => "PartiallyLoadableExtensionAssembly";
+
+            public override Type[] GetTypes() => throw new ReflectionTypeLoadException(
+                new Type[] { typeof(ModuleCatalogTests), null! },
+                new Exception[] { new System.IO.FileNotFoundException("Optional extension dependency is missing.") });
+        }
+
+        [Fact]
+        public async Task GetImplementationTypes_InFlightQueryCannotRepopulateInvalidatedCache()
+        {
+            AssemblyHandler handler = AssemblyHandler.GetInstance();
+            handler.ClearCaches();
+            handler.RegisterAssembly(typeof(ModuleCatalogTests).Assembly);
+            _ = handler.GetAssemblies();
+            using var entered = new ManualResetEventSlim();
+            using var release = new ManualResetEventSlim();
+            var serviceType = new BlockingServiceType(entered, release);
+            Task<IReadOnlyList<Type>> query = Task.Run(() => handler.GetImplementationTypes(serviceType));
+            try
+            {
+                Assert.True(entered.Wait(TimeSpan.FromSeconds(30)), "The discovery query did not enter type matching.");
+                handler.ClearCaches();
+                _ = handler.GetAssemblies();
+            }
+            finally
+            {
+                release.Set();
+                await query;
+            }
+
+            int previousCalls = serviceType.MatchCalls;
+            _ = handler.GetImplementationTypes(serviceType);
+            Assert.True(serviceType.MatchCalls > previousCalls, "The invalidated query was reused instead of discovering the current snapshot.");
+            handler.ClearCaches();
+        }
+
+        private sealed class BlockingServiceType(ManualResetEventSlim entered, ManualResetEventSlim release) : TypeDelegator(typeof(object))
+        {
+            private int _matchCalls;
+            public int MatchCalls => Volatile.Read(ref _matchCalls);
+
+            public override bool IsAssignableFrom(Type? type)
+            {
+                if (Interlocked.Increment(ref _matchCalls) == 1)
+                {
+                    entered.Set();
+                    release.Wait();
+                }
+                return false;
+            }
+        }
+
         private sealed class RecordingAssemblyService : IAssemblyService
         {
             public List<Assembly> Assemblies { get; } = new();

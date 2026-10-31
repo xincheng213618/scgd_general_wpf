@@ -85,6 +85,9 @@ namespace ColorVision.UI
             Type? GenericExporter);
 
         private volatile TypeMaps? _typeMaps;
+        private readonly IAssemblyService _assemblyService;
+        private readonly object _typeMapsLock = new();
+        private int _typeMapsGeneration;
 
         /// <summary>
         /// Optional resource-aware handler installed by the solution module.
@@ -92,16 +95,45 @@ namespace ColorVision.UI
         /// </summary>
         public Func<string, CancellationToken, Task<FileOpenRouteResult>>? ResourceOpenHandlerAsync { get; set; }
 
-        private FileProcessorFactory()
+        private FileProcessorFactory() : this(AssemblyHandler.GetInstance()) { }
+
+        internal FileProcessorFactory(IAssemblyService assemblyService)
         {
-            AssemblyHandler.GetInstance().AssembliesChanged += (_, _) => _typeMaps = null;
+            _assemblyService = assemblyService;
+            assemblyService.AssembliesChanged += (_, _) =>
+            {
+                lock (_typeMapsLock)
+                {
+                    _typeMapsGeneration++;
+                    _typeMaps = null;
+                }
+            };
         }
 
-        private TypeMaps GetTypeMaps() => _typeMaps ??= BuildTypeMaps();
-
-        private static TypeMaps BuildTypeMaps()
+        private TypeMaps GetTypeMaps()
         {
-            var assemblyService = AssemblyHandler.GetInstance();
+            while (true)
+            {
+                int generation;
+                lock (_typeMapsLock)
+                {
+                    if (_typeMaps is { } cached) return cached;
+                    generation = _typeMapsGeneration;
+                }
+
+                // Discovery may itself load assemblies; never hold the publication lock while scanning.
+                TypeMaps built = BuildTypeMaps();
+                lock (_typeMapsLock)
+                {
+                    if (generation != _typeMapsGeneration) continue;
+                    return _typeMaps ??= built;
+                }
+            }
+        }
+
+        private TypeMaps BuildTypeMaps()
+        {
+            var assemblyService = _assemblyService;
             var openActions = new Dictionary<string, List<Type>>();
             var exporters = new Dictionary<string, List<Type>>();
             Type? genericExporter = null;

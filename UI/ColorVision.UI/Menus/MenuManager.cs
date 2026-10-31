@@ -37,14 +37,18 @@ namespace ColorVision.UI.Menus
         private volatile MenuTypeSnapshot? _typeSnapshot;
         private int _typeSnapshotGeneration;
         private readonly object _typeCacheLock = new();
+        private readonly object _typeSnapshotPublicationLock = new();
 
         private MenuManager()
         {
             MenuService.SetInstance(this);
             AssemblyHandler.GetInstance().AssembliesChanged += (_, _) =>
             {
-                Interlocked.Increment(ref _typeSnapshotGeneration);
-                _typeSnapshot = null;
+                lock (_typeSnapshotPublicationLock)
+                {
+                    _typeSnapshotGeneration++;
+                    _typeSnapshot = null;
+                }
             };
         }
 

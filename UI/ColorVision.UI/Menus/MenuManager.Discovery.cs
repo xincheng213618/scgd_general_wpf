@@ -39,8 +39,11 @@ namespace ColorVision.UI.Menus
 
                 // A scan that raced with an assembly change is returned once but not cached.
                 var result = new MenuTypeSnapshot(itemTypes.ToArray(), providerTypes.ToArray(), attributeTypes.ToArray());
-                if (generation == Volatile.Read(ref _typeSnapshotGeneration))
-                    _typeSnapshot = result;
+                lock (_typeSnapshotPublicationLock)
+                {
+                    if (generation == _typeSnapshotGeneration)
+                        _typeSnapshot = result;
+                }
                 return result;
             }
         }
