@@ -156,7 +156,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             {
                 try
                 {
-                    foreach (Type type in assembly.GetTypes().Where(IsSelectablePreProcessType))
+                    foreach (Type type in AssemblyHandler.GetInstance().GetTypes(assembly).Where(IsSelectablePreProcessType))
                     {
                         string? fullName = type.FullName;
                         if (string.IsNullOrWhiteSpace(fullName) || _processTypesByFullName.ContainsKey(fullName))

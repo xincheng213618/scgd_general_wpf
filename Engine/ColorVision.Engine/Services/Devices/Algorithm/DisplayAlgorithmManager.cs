@@ -35,30 +35,22 @@ namespace ColorVision.Engine
         {
             List<DisplayAlgorithmMeta> algorithmMetas = new();
 
-            foreach (Assembly assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (Type type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IDisplayAlgorithm)))
             {
-                foreach (Type type in assembly.GetTypes())
+                DisplayAlgorithmAttribute? attribute = type.GetCustomAttribute<DisplayAlgorithmAttribute>();
+                if (attribute == null)
                 {
-                    if (!typeof(IDisplayAlgorithm).IsAssignableFrom(type) || type.IsAbstract)
-                    {
-                        continue;
-                    }
-
-                    DisplayAlgorithmAttribute? attribute = type.GetCustomAttribute<DisplayAlgorithmAttribute>();
-                    if (attribute == null)
-                    {
-                        continue;
-                    }
-
-                    algorithmMetas.Add(new DisplayAlgorithmMeta
-                    {
-                        Type = type,
-                        Order = attribute.Order,
-                        Name = attribute.Name,
-                        DisplayName = attribute.DisplayName,
-                        Group = attribute.Group
-                    });
+                    continue;
                 }
+
+                algorithmMetas.Add(new DisplayAlgorithmMeta
+                {
+                    Type = type,
+                    Order = attribute.Order,
+                    Name = attribute.Name,
+                    DisplayName = attribute.DisplayName,
+                    Group = attribute.Group
+                });
             }
 
             AlgorithmMetas = algorithmMetas

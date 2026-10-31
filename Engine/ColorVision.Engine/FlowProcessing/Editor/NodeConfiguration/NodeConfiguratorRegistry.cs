@@ -20,22 +20,12 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
         {
             var dict = new ConcurrentDictionary<Type, INodeConfigurator>();
 
-            var assemblies = AssemblyHandler.Instance.GetAssemblies();
-            foreach (var assembly in assemblies)
+            foreach (var type in AssemblyHandler.Instance.GetImplementationTypes(typeof(INodeConfigurator)))
             {
-                Type[] types;
-                try { types = assembly.GetTypes(); } catch { continue; }
-
-                foreach (var type in types)
+                var attr = type.GetCustomAttribute<NodeConfiguratorAttribute>();
+                if (attr != null && Activator.CreateInstance(type) is INodeConfigurator configurator)
                 {
-                    if (!typeof(INodeConfigurator).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface)
-                        continue;
-
-                    var attr = type.GetCustomAttribute<NodeConfiguratorAttribute>();
-                    if (attr != null && Activator.CreateInstance(type) is INodeConfigurator configurator)
-                    {
-                        dict[attr.NodeType] = configurator;
-                    }
+                    dict[attr.NodeType] = configurator;
                 }
             }
             return dict;

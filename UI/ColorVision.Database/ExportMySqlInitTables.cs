@@ -42,9 +42,7 @@ namespace ColorVision.Database
         private static void Initialize()
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            IEnumerable<Type> tableTypes = AssemblyHandler.GetInstance().GetAssemblies()
-                .SelectMany(assembly => assembly.GetTypes())
-                .Where(type => typeof(IInitTables).IsAssignableFrom(type) && !type.IsAbstract);
+            IEnumerable<Type> tableTypes = AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IInitTables));
             InitTableTypes(tableTypes, type =>
             {
                 using var DB = CreateInitializationClient(MySqlControl.GetConnectionString());

@@ -1,6 +1,7 @@
 ﻿namespace ColorVision.UI
 {
 
+    [System.Obsolete("No host calls IPlugin. Contribute through the extension interfaces (IMenuItem, IInitializer, IConfig, ...) instead.")]
     public interface IPlugin
     {
         public string Header { get; }
@@ -9,6 +10,7 @@
     }
 
 
+    [System.Obsolete("No host calls IPlugin. Contribute through the extension interfaces (IMenuItem, IInitializer, IConfig, ...) instead.")]
     public abstract class IPluginBase : IPlugin
     {
         public virtual string Header { get; set; }

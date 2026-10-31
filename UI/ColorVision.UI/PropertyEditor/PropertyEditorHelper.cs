@@ -50,10 +50,8 @@ namespace ColorVision.UI
             PropertyEditorBuiltIns.Register(EditorRegistry);
             try
             {
-                var editorTypes = AssemblyHandler.Instance.GetAssemblies()
-                    .Where(assembly => assembly != typeof(PropertyEditorHelper).Assembly)
-                    .SelectMany(assembly => AssemblyHandler.Instance.GetTypes(assembly))
-                    .Where(type => typeof(IPropertyEditor).IsAssignableFrom(type) && !type.IsAbstract && type.IsClass);
+                var editorTypes = AssemblyHandler.Instance.GetImplementationTypes(typeof(IPropertyEditor))
+                    .Where(type => type.Assembly != typeof(PropertyEditorHelper).Assembly);
                 foreach (Type type in editorTypes)
                 {
                     try

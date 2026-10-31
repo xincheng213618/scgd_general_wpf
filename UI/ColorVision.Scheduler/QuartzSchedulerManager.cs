@@ -405,16 +405,10 @@ namespace ColorVision.Scheduler
                 Jobs = new Dictionary<string, Type>();
 
                 _logger.Debug("Discovering job types from assemblies");
-                foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+                foreach (var type in AssemblyService.Instance.GetImplementationTypes(typeof(IJob)))
                 {
-                    foreach (var type in assembly.GetTypes())
-                    {
-                        if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
-                        {
-                            string name = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name;
-                            Jobs[name] = type;
-                        }
-                    }
+                    string name = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name;
+                    Jobs[name] = type;
                 }
                 var failedJobs = new List<string>();
                 foreach (var item in TaskInfos)

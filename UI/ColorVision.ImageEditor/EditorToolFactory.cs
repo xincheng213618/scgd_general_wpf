@@ -61,49 +61,32 @@ namespace ColorVision.ImageEditor
             _toolbarComposer = new EditorToolbarComposer(imageView.GetRegionToolBar);
             _context = context;
 
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            var assemblyService = AssemblyHandler.GetInstance();
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IDVContextMenu)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                if (CreateContextBoundOrDefaultInstance(type, context) is IDVContextMenu instance)
                 {
-                    if (typeof(IDVContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                    {
-                        if (CreateContextBoundOrDefaultInstance(type, context) is IDVContextMenu instance)
-                        {
-                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
-                            ContextMenuProviders.Add(instance);
-                        }
-                    }
+                    if (!IsAlgorithmMenuExecutable(instance, context)) continue;
+                    ContextMenuProviders.Add(instance);
                 }
             }
 
             // 加载上下文菜单
-            foreach (var assembly in Application.Current.GetAssemblies())
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IIEditorToolContextMenu)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                if (CreateContextBoundInstance(type, context) is IIEditorToolContextMenu instance)
                 {
-                    if (typeof(IIEditorToolContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                    {
-                        if (CreateContextBoundInstance(type, context) is IIEditorToolContextMenu instance)
-                        {
-                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
-                            IIEditorToolContextMenus.Add(instance);
-                        }
-                    }
+                    if (!IsAlgorithmMenuExecutable(instance, context)) continue;
+                    IIEditorToolContextMenus.Add(instance);
                 }
             }
 
             // 加载编辑器工具
-            foreach (var assembly in Application.Current.GetAssemblies())
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IEditorTool)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                if (CanCreateGlobalEditorTool(type) && CreateEditorTool(type, context) is IEditorTool instance)
                 {
-                    if (typeof(IEditorTool).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract && CanCreateGlobalEditorTool(type))
-                    {
-                        if (CreateEditorTool(type, context) is IEditorTool instance)
-                        {
-                            IEditorTools.Add(instance);
-                        }
-                    }
+                    IEditorTools.Add(instance);
                 }
             }
 
@@ -114,25 +97,19 @@ namespace ColorVision.ImageEditor
             }
 
             // 加载图像打开器
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+            foreach (var type in assemblyService.GetImplementationTypes(typeof(IImageOpen)))
             {
-                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
+                var attr = type.GetCustomAttributes(typeof(FileExtensionAttribute), false)
+                    .Cast<FileExtensionAttribute>().FirstOrDefault();
+                if (attr != null)
                 {
-                    if (typeof(IImageOpen).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+                    foreach (var ext in attr.Extensions)
                     {
-                        var attr = type.GetCustomAttributes(typeof(FileExtensionAttribute), false)
-                            .Cast<FileExtensionAttribute>().FirstOrDefault();
-                        if (attr != null)
-                        {
-                            foreach (var ext in attr.Extensions)
-                            {
-                                var extLower = ext.ToLowerInvariant();
+                        var extLower = ext.ToLowerInvariant();
 
-                                if (Activator.CreateInstance(type, context) is IImageOpen instance)
-                                {
-                                    IImageOpens.Add(extLower, instance);
-                                }
-                            }
+                        if (Activator.CreateInstance(type, context) is IImageOpen instance)
+                        {
+                            IImageOpens.Add(extLower, instance);
                         }
                     }
                 }

@@ -20,15 +20,10 @@ namespace ColorVision
                 return;
 
             var launchers = new List<IFeatureLauncher>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (Type type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IFeatureLauncher)))
             {
-                foreach (Type type in assembly.GetTypes().Where(type =>
-                    typeof(IFeatureLauncher).IsAssignableFrom(type)
-                    && !type.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IFeatureLauncher launcher)
-                        launchers.Add(launcher);
-                }
+                if (Activator.CreateInstance(type) is IFeatureLauncher launcher)
+                    launchers.Add(launcher);
             }
 
             launchers.FirstOrDefault(launcher => launcher.Header == project)?.Execute();

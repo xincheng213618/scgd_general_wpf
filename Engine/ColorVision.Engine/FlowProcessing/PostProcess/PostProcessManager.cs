@@ -83,16 +83,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         private void LoadProcesses()
         {
             var processList = new System.Collections.Generic.List<IPostProcessor>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (Type type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IPostProcessor)))
             {
                 try
                 {
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IPostProcessor).IsAssignableFrom(t) && !t.IsAbstract))
+                    if (Activator.CreateInstance(type) is IPostProcessor process)
                     {
-                        if (Activator.CreateInstance(type) is IPostProcessor process)
-                        {
-                            processList.Add(process);
-                        }
+                        processList.Add(process);
                     }
                 }
                 catch (Exception ex)

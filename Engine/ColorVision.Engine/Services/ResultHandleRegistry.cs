@@ -16,15 +16,11 @@ namespace ColorVision.Engine
 
         private ResultHandleRegistry()
         {
-            foreach (Assembly assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (Type type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IResultHandleBase)))
             {
-                foreach (Type type in assembly.GetTypes().Where(type =>
-                             typeof(IResultHandleBase).IsAssignableFrom(type) && !type.IsAbstract))
+                if (Activator.CreateInstance(type) is IResultHandleBase resultHandle)
                 {
-                    if (Activator.CreateInstance(type) is IResultHandleBase resultHandle)
-                    {
-                        ResultHandles.Add(resultHandle);
-                    }
+                    ResultHandles.Add(resultHandle);
                 }
             }
         }

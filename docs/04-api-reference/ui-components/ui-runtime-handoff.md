@@ -57,14 +57,14 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 | 菜单 | `MenuManager` 在发现视图的类型快照中筛选 `IMenuItem`、`IMenuItemProvider`、`MenuItemAttribute`，排除开放泛型和直接标注 Obsolete 的类型 | 类型快照在 `AssembliesChanged` 后丢弃，下次加载或重建菜单时重扫；已显示的菜单不会自动重建，仍需宿主调用重建。见[菜单](./menus.md) |
 | 文件打开与导出 | `FileProcessorFactory` 通过 `GetImplementationTypes` 取得 `IFileOpenActionProcessor` / `IFileExporter`，按 `FileExtensionAttribute` 建立扩展名映射，`GenericFileAttribute` 导出器作为兜底 | 映射在首次使用时建立，`AssembliesChanged` 后丢弃重建；每次调用重新构造处理器，单个处理器构造失败记录警告并跳过。见[工作区与资源路由](./ColorVision.Solution.md) |
 | 设置 | `ConfigSettingManager.GetAllSettings` 取 provider 和 `IConfig` 的实现类型，再读属性上的 ConfigSetting 标注 | 类型与条目两层缓存；`InvalidateCache` 只清条目，重建条目重新解析配置对象，不重扫类型。见[设置发现与搜索](./settings.md) |
-| 向导 | `WizardManager.Initialized` 扫描 `IWizardStep`、`IWizardInitializer`，无参构造后分别按 Order 排序 | 每次 Initialized 清列表并扫描；不统一过滤业务可见性，反射或构造异常可中断发现。见[向导](./wizards.md) |
+| 向导 | `WizardManager.Initialized` 从 `GetImplementationTypes` 取 `IWizardStep`、`IWizardInitializer`，无参构造后分别按 Order 排序 | 每次 Initialized 清列表并扫描；不统一过滤业务可见性，反射或构造异常可中断发现。见[向导](./wizards.md) |
 | 属性编辑 | `PropertyEditorHelper` 静态初始化注册内置映射，并触发外部 IPropertyEditor 类型的静态构造；类型映射仍需注册 | 不是为每个实现类自动建立属性类型映射；显式 RegisterEditor、属性指定类型和元数据 provider 各有入口，实例缓存与字段选择见[PropertyGrid](./property-grid.md) |
 | 状态栏 | `StatusBarManager` 通过通用帮助器构造 `IStatusBarProvider`；活动文档项另来自 IActiveDocumentStatusProvider | 全局 provider 列表非空后复用实例；RefreshAll 重取元数据，不重扫新 provider。绑定值、项目变化事件和文档切换分开，见[状态栏](./status-bar.md) |
 | 热键 | `HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，也接收显式注册 | 发现定义、设置草稿、窗口/全局注册和释放分层，菜单隐藏不会注销热键。见[快捷键](./hotkeys.md) |
 | 搜索 | `SearchManager` 接收 `ISearch`、`ISearchProvider`、`IDynamicSearchProvider`、`IAsyncSearchProvider` | 所见程序集序列变化才重建 provider；常规候选刷新复用实例。静态候选、动态查询和过滤见[产品搜索](./search.md) |
-| 图像打开与工具 | `IEditorToolFactory` 构造时扫描 `IImageOpen`、工具和两类右键菜单接口，按接口选取可解析构造函数 | RefreshToolBars 重建已有工具的控件，不重扫类型；当前 opener 还可覆盖工具。见[编辑器上下文](./image-editor-context.md) |
-| Socket | `SocketJsonDispatcher` / `SocketTextDispatcher` 构造时分别扫描 handler；SocketManager 默认构造器创建二者 | 各自保留 handler 集合；JSON 按 EventName 路由，文本按独立规则派发。连接存在不证明业务调用，见[Socket 协议](./ColorVision.SocketProtocol.md) |
-| 调度 | `QuartzSchedulerManager.Start` 扫描 IJob 类型并建立任务类型目录 | 任务恢复、触发器、运行和历史是不同阶段；从 InitializationTask、任务配置与错误记录排查。见[调度](./ColorVision.Scheduler.md) |
+| 图像打开与工具 | `IEditorToolFactory` 构造时从 `GetImplementationTypes` 取 `IImageOpen`、工具和两类右键菜单接口，类型集合在多个图像视图间复用，按接口选取可解析构造函数 | RefreshToolBars 重建已有工具的控件，不重扫类型；当前 opener 还可覆盖工具。见[编辑器上下文](./image-editor-context.md) |
+| Socket | `SocketJsonDispatcher` / `SocketTextDispatcher` 构造时分别从 `GetImplementationTypes` 取 handler；SocketManager 默认构造器创建二者 | 各自保留 handler 集合；JSON 按 EventName 路由，文本按独立规则派发。连接存在不证明业务调用，见[Socket 协议](./ColorVision.SocketProtocol.md) |
+| 调度 | `QuartzSchedulerManager.Start` 从 `GetImplementationTypes` 取非抽象 IJob 类型并建立任务类型目录 | 任务恢复、触发器、运行和历史是不同阶段；从 InitializationTask、任务配置与错误记录排查。见[调度](./ColorVision.Scheduler.md) |
 | Solution 编辑器 | `EditorManager` 发现 IEditor 的扩展名/通用/目录标注，也接受显式描述符注册 | 监听 AppDomain.AssemblyLoad，具有自己的程序集去重和注册规则；不能套用菜单缓存结论。见[编辑器与文档](./editor-document-lifecycle.md) |
 
 已经找到入口后的问题应转到对应契约：设置丢失查[配置持久化与重载](./configuration.md)；overlay 错位先核对底图、坐标空间及图像版本，再按[Engine 历史结果与中立算法](../engine-components/result-handoff-chain.md)分流；文件打不开先查[工作区与资源路由](./ColorVision.Solution.md)。主题外观、数据库操作和客户业务成功条件不由程序集发现证明。

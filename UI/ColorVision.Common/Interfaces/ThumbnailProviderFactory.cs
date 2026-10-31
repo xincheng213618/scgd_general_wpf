@@ -52,33 +52,19 @@ namespace ColorVision.UI
                         return;
                     }
 
-                    // Discover IThumbnailProvider implementations from all loaded assemblies
-                    // Using the same pattern as EditorToolFactory
-                    foreach (var assembly in AssemblyService.Instance.GetAssemblies())
+                    // Discover IThumbnailProvider implementations from the shared type index
+                    foreach (var type in AssemblyService.Instance.GetImplementationTypes(typeof(IThumbnailProvider)))
                     {
                         try
                         {
-                            foreach (var type in assembly.GetTypes())
+                            if (Activator.CreateInstance(type) is IThumbnailProvider provider)
                             {
-                                try
-                                {
-                                    if (typeof(IThumbnailProvider).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                                    {
-                                        if (Activator.CreateInstance(type) is IThumbnailProvider provider)
-                                        {
-                                            _providers.Add(provider);
-                                        }
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    System.Diagnostics.Debug.WriteLine($"Failed to create IThumbnailProvider instance of {type.Name}: {ex.Message}");
-                                }
+                                _providers.Add(provider);
                             }
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Failed to scan assembly {assembly.FullName}: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"Failed to create IThumbnailProvider instance of {type.Name}: {ex.Message}");
                         }
                     }
 

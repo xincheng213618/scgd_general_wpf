@@ -51,7 +51,7 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 - `TaskViewerInitializer.Order=1000` 的正常宿主入口等待 `InitializationTask`，让低 Order 的服务初始化先执行。但 `SchedulerStatusBarProvider`、`TaskViewerWindow` 和历史窗口的上下文注册也会取得单例，不能据初始化器顺序断言所有首次访问都已等待设备就绪。
 - 单个任务类型丢失、定义校验失败或注册失败会汇总警告，其他可恢复任务仍会登记；启动阶段整体异常则记录日志、提示并使初始化任务失败。JSON/SQLite 加载异常有各自的捕获分支，不等于启动被统一阻断。
 
-Job 类型来自当次 `AssemblyService.Instance.GetAssemblies()` 扫描，不来自 SQLite。发现条件是实现 `IJob` 且不是接口；最终创建还要求非抽象类。显示键取 `DisplayNameAttribute` 或类型名，同名会覆盖目录项；当前没有持续监听新程序集重新发现 Job 的机制。
+Job 类型来自当次 `AssemblyService.Instance.GetImplementationTypes(typeof(IJob))`，不来自 SQLite。发现条件是实现 `IJob` 的非抽象、非开放泛型类，范围限于发现视图，主程序中不含 Quartz 自身的内部 Job。显示键取 `DisplayNameAttribute` 或类型名，同名会覆盖目录项；当前没有持续监听新程序集重新发现 Job 的机制。
 
 ## JSON 定义和计划进度
 
