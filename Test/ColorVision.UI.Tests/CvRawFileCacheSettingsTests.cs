@@ -304,7 +304,13 @@ public sealed class CvRawFileCacheSettingsTests
     private static void WaitUntilIdle(LocalCalibrationCacheManagerWindow window)
     {
         FieldInfo busy = typeof(LocalCalibrationCacheManagerWindow).GetField("isBusy", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        Assert.True(SpinWait.SpinUntil(() => WpfTestHost.Invoke(() => !(bool)busy.GetValue(window)!), TimeSpan.FromSeconds(10)));
+        // A config change only queues RefreshAsync, so drain the dispatcher before trusting isBusy;
+        // the window ignores clicks while busy.
+        Assert.True(SpinWait.SpinUntil(() =>
+        {
+            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            return WpfTestHost.Invoke(() => !(bool)busy.GetValue(window)!);
+        }, TimeSpan.FromSeconds(10)));
     }
 
 }
