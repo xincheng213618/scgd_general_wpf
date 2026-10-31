@@ -2,6 +2,10 @@
 
 Versioned release notes for the SystemMonitor plugin.
 
+## [1.4.3.11] 2026.11.01
+
+- 适配 ColorVision 1.4.17.86，请先升级主程序。
+
 ## [1.4.3.10] 2026.10.08
 
 - 随 ColorVision 1.4.16.5 同步更新，请先升级主程序。
