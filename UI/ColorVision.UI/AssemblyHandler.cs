@@ -48,8 +48,65 @@ namespace ColorVision.UI
         private readonly ConcurrentDictionary<Assembly, Type[]> _assemblyTypeCache = new();
         private readonly ConcurrentDictionary<Type, Type[]> _implementationTypeCache = new();
         private readonly object _assembliesLock = new();
+        private bool _registeredAssembliesOnly;
 
         public event EventHandler? AssembliesChanged;
+
+        /// <summary>
+        /// Restricts discovery to explicitly registered assemblies, i.e. the host's module catalog.
+        /// Without this switch every loaded assembly under the application directory is scanned,
+        /// which keeps tests and standalone hosts working without a catalog.
+        /// </summary>
+        public void UseRegisteredAssembliesOnly()
+        {
+            bool hasSnapshot;
+            lock (_assembliesLock)
+            {
+                if (_registeredAssembliesOnly)
+                    return;
+                _registeredAssembliesOnly = true;
+                hasSnapshot = _assemblies != null;
+            }
+
+            AppDomain.CurrentDomain.AssemblyLoad += (_, e) => WarnIfUnregisteredContributor(e.LoadedAssembly);
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                WarnIfUnregisteredContributor(assembly);
+
+            if (hasSnapshot)
+                RefreshAssemblies();
+        }
+
+        /// <summary>
+        /// Catalog-only discovery silently skips a first-party assembly that was never registered,
+        /// so report application-directory assemblies that reference the extension contracts.
+        /// Plugin assemblies are excluded because PluginLoader registers them right after loading.
+        /// </summary>
+        private void WarnIfUnregisteredContributor(Assembly assembly)
+        {
+            try
+            {
+                lock (_assembliesLock)
+                {
+                    if (_registeredAssemblies.Contains(assembly))
+                        return;
+                }
+
+                string? name = assembly.GetName().Name;
+                if (!IsCustomAssembly(name, assembly) || !TryGetAssemblyLocation(assembly, out string? location))
+                    return;
+
+                string pluginDirectory = EnsureTrailingDirectorySeparator(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins"));
+                if (location!.StartsWith(pluginDirectory, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                if (assembly.GetReferencedAssemblies().Any(reference => reference.Name is "ColorVision.Common" or "ColorVision.UI"))
+                    Log.Warn($"Assembly '{name}' references ColorVision extension contracts but is not registered in the module catalog; its extensions are not discovered.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Could not inspect assembly '{assembly.FullName}' for catalog registration.", ex);
+            }
+        }
 
         private AssemblyHandler()
         {
@@ -205,8 +262,10 @@ namespace ColorVision.UI
             bool changed;
             lock (_assembliesLock)
             {
-                customAssemblies = AppDomain.CurrentDomain.GetAssemblies()
-                    .Concat(_registeredAssemblies)
+                IEnumerable<Assembly> candidates = _registeredAssembliesOnly
+                    ? _registeredAssemblies
+                    : AppDomain.CurrentDomain.GetAssemblies().Concat(_registeredAssemblies);
+                customAssemblies = candidates
                     .Distinct()
                     .Where(assembly =>
                     {

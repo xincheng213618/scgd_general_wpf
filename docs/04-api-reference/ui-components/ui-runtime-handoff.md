@@ -16,7 +16,7 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 ## 按顺序定位缺失的入口
 
 1. **确认程序集实际加载。** 记录插件 ID、目标扩展类型和当前安装目录，查本次装载日志。目录存在、缓存中有 `PluginInfo` 或阶段标记 `PluginsLoaded`，都不能证明该 DLL 本次已成功加载；先排除禁用、本次跳过和依赖失败。
-2. **确认进入发现视图。** 在对应宿主核对 `AssemblyHandler.GetAssemblies()` 中的程序集及其 `Location`。此集合经过过滤，不等于 `AppDomain.CurrentDomain.GetAssemblies()`；显式注册也不会绕过过滤，规则见下节。
+2. **确认进入发现视图。** 在对应宿主核对 `AssemblyHandler.GetAssemblies()` 中的程序集及其 `Location`。主程序只扫描模块目录中登记的程序集，未登记会有警告日志；此集合还经过过滤，不等于 `AppDomain.CurrentDomain.GetAssemblies()`，显式注册也不会绕过过滤，规则见下节。
 3. **确认类型可读。** 查看 `GetTypes(assembly)` 是否包含目标类型，以及 `Failed to load types from assembly` / `Unexpected error loading types from assembly` 日志。反射失败时这里不会保留部分可加载类型，不要仅凭 DLL 已加载继续排查控件布局。
 4. **确认消费方已发现并构造条目。** 按下表选择具体 manager，检查接口、构造函数、类型/实例缓存与创建日志。程序集视图变了，不代表菜单、设置或图像工具已重新扫描；构造函数失败也可能仅留下日志。
 5. **确认宿主接入和显示条件。** 检查目标窗口、父级/标识、可见性、宿主资源与命令路由。条目已显示后，再按所属主题区分 `CanExecute`、注册成功、保存成功和业务完成。
@@ -27,7 +27,9 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 
 ## AssemblyHandler 的过滤与缓存
 
-程序集必须名称非空、非动态、有可读取的 `Location`，且位置在 `AppDomain.CurrentDomain.BaseDirectory` 之下。路径比较不区分大小写并保留目录分隔边界，不按当前工作目录判断，也不只限基础目录的第一层。
+主程序在 `BuiltInModules.Register` 之后调用 `UseRegisteredAssembliesOnly()`，此后发现视图只来自显式登记的程序集：内置模块、`BuiltInModules` 中列出的主程序与基础库，以及 `PluginLoader` 加载后登记的插件。插件和内置模块因此走同一条发现路径；未登记的程序集即使已在进程中也不会被扫描。主程序项目引用新的第一方程序集时，必须同时在 `BuiltInModules` 或其模块的 `Register` 中登记。启用后，应用目录（`Plugins` 子目录除外）中引用 `ColorVision.Common` 或 `ColorVision.UI` 却未登记的程序集会记录 `references ColorVision extension contracts but is not registered in the module catalog` 警告。未调用该开关的宿主（测试、独立运行的插件或客户应用）仍合并 AppDomain 已加载项与登记项。
+
+两种模式都要求程序集名称非空、非动态、有可读取的 `Location`，且位置在 `AppDomain.CurrentDomain.BaseDirectory` 之下。路径比较不区分大小写并保留目录分隔边界，不按当前工作目录判断，也不只限基础目录的第一层。
 
 名称按不区分大小写的前缀过滤，当前排除 `System.`、`Microsoft.`、`netstandard`、`WindowsBase`、`PresentationCore`、`PresentationFramework`、`mscorlib`、`Newtonsoft`、`EntityFramework`、`log4net` 和 `HandyControl`。这些是前缀规则，不能将其中某个名字开头的业务程序集视为例外。位于其它目录的 DLL 即使已经 LoadFrom 或登记，也不能据此进入该发现视图。
 
@@ -35,7 +37,7 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 | --- | --- |
 | `GetAssemblies()` | 已有快照时直接返回；首次调用才执行 `RefreshAssemblies()` |
 | `RegisterAssembly(assembly)` | 拒绝动态程序集；新登记项只有通过过滤且类型读取成功，才补入已有快照，并发布 `AssembliesChanged`。每次新增登记均清空通用实现类型缓存；重复登记同一程序集直接返回，不是强制重试 |
-| `RefreshAssemblies()` | 合并 AppDomain 已加载项和显式登记项，过滤并读取类型后重建程序集快照；清空通用实现类型缓存，保留成功的程序集类型缓存。已有快照且程序集集合变化时发布 `AssembliesChanged`，首次建立快照不发布 |
+| `RefreshAssemblies()` | 合并 AppDomain 已加载项和显式登记项（只认登记模式下仅取登记项），过滤并读取类型后重建程序集快照；清空通用实现类型缓存，保留成功的程序集类型缓存。已有快照且程序集集合变化时发布 `AssembliesChanged`，首次建立快照不发布 |
 | `GetTypes(assembly)` | 成功时按程序集复用同一个类型快照；读取异常时记录错误并返回空集合，失败结果不缓存。直接调用它不额外执行程序集目录/名称过滤 |
 | `GetImplementationTypes(type)` | 在发现视图中返回可赋值给该接口或基类的非抽象、非开放泛型 class，按服务类型缓存，程序集集合变化时清空。不检查构造函数形态，由调用方决定如何构造 |
 | `ClearCaches()` | 清空程序集快照、程序集类型缓存和通用实现类型缓存并发布 `AssembliesChanged`；保留显式登记集合，不卸载 DLL，不清理已创建对象 |

@@ -156,6 +156,7 @@ namespace ColorVision
             ConfigHandler.ConfigureMaintenanceResetSections(Settings.Maintenance.ConfigurationMaintenanceControl.ResetSectionNames, Settings.Maintenance.MaintenanceStartupGuard.CanApplyReset);
             _moduleCatalog = new ModuleCatalog(AssemblyHandler.GetInstance());
             BuiltInModules.Register(_moduleCatalog);
+            AssemblyHandler.GetInstance().UseRegisteredAssembliesOnly();
             ConfigHandler configHandler = ConfigHandler.GetInstance();
             configHandler.IsAutoSave = false;
             LogConfig.Instance.SetLog();

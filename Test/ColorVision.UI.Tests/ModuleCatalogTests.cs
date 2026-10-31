@@ -61,8 +61,19 @@ namespace ColorVision.UI.Tests
                 provider => provider.GetType().FullName == "ColorVision.Rbac.MenuRbacManager");
 
             BuiltInModules.Register(catalog);
+            // The host discovers only registered assemblies, so its own first-party assemblies are listed too.
             string[] expectedBuiltInIds =
             {
+                "ColorVision",
+                "ColorVision.Common",
+                "ColorVision.UI",
+                "ColorVision.Themes",
+                "ColorVision.Core",
+                "ColorVision.Algorithms",
+                "ColorVision.FileIO",
+                "cvColorVision",
+                "FlowEngineLib",
+                "ST.Library.UI",
                 "ColorVision.Engine",
                 "ColorVision.Scheduler",
                 "ColorVision.ImageEditor",
