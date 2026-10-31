@@ -67,7 +67,7 @@ related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.setting
 
 直接条目和 provider 的构造/枚举异常按类型记录日志后继续；provider 已产出的条目不会因后续枚举失败而统一撤回。调用方的 `typeFilter` 在构造前按声明类型筛选，provider 整体受筛选；`TargetName` 的窗口筛选则在条目创建之后。因此为某个窗口加载菜单仍可能先构造其它窗口的条目，构造函数不应被当作只在用户点击时执行。
 
-类型缓存只构建一次，当前没有公开失效接口。`RebuildAllMenus` 和 `RefreshMenuItemsByGuid` 都不重新扫描菜单类型；它们只是用既有类型列表重新构造条目/provider。上游程序集刷新、菜单重建和新插件菜单可发现，不是同一件事。
+类型缓存是一份不可变快照，`AssemblyHandler.AssembliesChanged`（登记新程序集、程序集集合变化的 `RefreshAssemblies` 或 `ClearCaches`）会丢弃它；与变化并发的扫描结果只用于本次调用，不写回缓存。`RebuildAllMenus`、`RefreshMenuItemsByGuid` 和 `LoadMenuForWindow` 在快照已丢弃时重新扫描，否则只用既有类型列表重新构造条目/provider。程序集刷新本身不会重建已显示的菜单，新插件菜单仍需宿主调用重建后才出现。
 
 普通条目实例也不是 manager 为类型维护的永久单例；重复枚举、加载或刷新会产生新实例。菜单控件持有其 `Tag`/Command，但 manager 没有统一调用这些条目或 provider 的 `Dispose`。业务资源和订阅不应依赖“菜单重建会自动清理旧实例”。
 
@@ -92,7 +92,7 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 | 刷新入口 | 实际影响范围 |
 | --- | --- |
-| `LoadMenuForWindow` / `RebuildAllMenus` | 清空已注册 Menu 并重新建树；不清类型缓存。首次接管时备份已有顶层 MenuItem，重建后按 Header 去重追加这些原对象 |
+| `LoadMenuForWindow` / `RebuildAllMenus` | 清空已注册 Menu 并重新建树；自身不清类型缓存，只在程序集变化后重扫。首次接管时备份已有顶层 MenuItem，重建后按 Header 去重追加这些原对象 |
 | `RefreshMenuItemsByGuid(ownerGuid)` | 每个已注册 Menu 只找第一个匹配 ID 的节点，清空并重建它的子项；不更新该节点自身的标题、可见性、Command，也不创建缺失的根节点 |
 | Menu Unloaded 或所属 Window Closed | 注销该 Menu 的注册、事件和备份；再次装载控件不等于自动重新注册，需要调用方重新接入 |
 
@@ -141,7 +141,7 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 | 现象 | 检查顺序 |
 | --- | --- |
-| 菜单管理器找不到条目 | 确认目标范围和搜索条件；再检查插件是否进入发现视图、类型构造条件及发现日志。仅重建菜单不会刷新类型缓存 |
+| 菜单管理器找不到条目 | 确认目标范围和搜索条件；再检查插件是否进入发现视图、类型构造条件及发现日志。程序集未变化时，仅重建菜单不会刷新类型缓存 |
 | 管理器中 Visible 已勾选，实际菜单仍不显示 | 确认已 Apply、条目所属 Target、父项是否被过滤、父级是否存在及条目自身 Visibility；配置预览中的根项不一定是有效的运行时根项 |
 | 隐藏菜单后快捷键仍有效 | 到独立快捷键设置查看该动作的绑定。菜单隐藏控制显示，不能用作禁用业务操作的权限措施 |
 | Apply 成功，重启后恢复原样 | 区分本次运行时生效与文件保存成功；检查配置路径、保存错误日志和 `MenuItemManagerConfig` 实际文件内容，不用成功弹窗替代落盘证据 |

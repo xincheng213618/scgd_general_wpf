@@ -34,23 +34,27 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 | API | 缓存与返回语义 |
 | --- | --- |
 | `GetAssemblies()` | 已有快照时直接返回；首次调用才执行 `RefreshAssemblies()` |
-| `RegisterAssembly(assembly)` | 拒绝动态程序集；新登记项只有通过过滤且类型读取成功，才补入已有快照。每次新增登记均清空通用实现类型缓存；重复登记同一程序集直接返回，不是强制重试 |
-| `RefreshAssemblies()` | 合并 AppDomain 已加载项和显式登记项，过滤并读取类型后重建程序集快照；清空通用实现类型缓存，保留成功的程序集类型缓存 |
+| `RegisterAssembly(assembly)` | 拒绝动态程序集；新登记项只有通过过滤且类型读取成功，才补入已有快照，并发布 `AssembliesChanged`。每次新增登记均清空通用实现类型缓存；重复登记同一程序集直接返回，不是强制重试 |
+| `RefreshAssemblies()` | 合并 AppDomain 已加载项和显式登记项，过滤并读取类型后重建程序集快照；清空通用实现类型缓存，保留成功的程序集类型缓存。已有快照且程序集集合变化时发布 `AssembliesChanged`，首次建立快照不发布 |
 | `GetTypes(assembly)` | 成功时按程序集复用同一个类型快照；读取异常时记录错误并返回空集合，失败结果不缓存。直接调用它不额外执行程序集目录/名称过滤 |
-| `ClearCaches()` | 清空程序集快照、程序集类型缓存和通用实现类型缓存；保留显式登记集合，不卸载 DLL，不清理各 manager 自己的缓存或已创建对象 |
+| `GetImplementationTypes(type)` | 在发现视图中返回可赋值给该接口或基类的非抽象、非开放泛型 class，按服务类型缓存，程序集集合变化时清空。不检查构造函数形态，由调用方决定如何构造 |
+| `ClearCaches()` | 清空程序集快照、程序集类型缓存和通用实现类型缓存并发布 `AssembliesChanged`；保留显式登记集合，不卸载 DLL，不清理已创建对象 |
+
+`AssembliesChanged` 在锁外同步触发，订阅者只应丢弃自己的类型缓存，下次查询时重建；它不重建已显示的菜单、设置窗口或已创建的 provider。`IAssemblyService` 为 `GetTypes`、`GetImplementationTypes` 和该事件提供默认实现，其它实现不提供事件时，消费者只是不会自动失效。
 
 `Assembly.GetTypes()` 抛出 `ReflectionTypeLoadException` 时，AssemblyHandler 不使用异常中的 `Types` 残余项。首次构建或刷新程序集视图时，该程序集会因类型读取失败而被排除；有的消费者自己调用 `assembly.GetTypes()` 并处理残余类型，但前提仍是该程序集已经进入它取得的视图。应核对失败所在层，不能假定所有扫描都具有相同容错。
 
-通用 `LoadImplementations<T>(params object?[]? args)` 要求 `T` 为接口，否则抛出 `Type parameter T must be an interface`。候选必须是实现该接口的非抽象 class，具有公共无参构造；缓存的是候选类型，每次调用都重新实例化。`args` 当前不传给构造函数，不能靠此参数注入依赖。单项构造异常记录 `Failed to create instance` 后继续，其它实例仍可返回。构造可以产生副作用，这个方法也不统一调用 `Initialize`、`Dispose` 或业务命令。
+通用 `LoadImplementations<T>(params object?[]? args)` 要求 `T` 为接口，否则抛出 `Type parameter T must be an interface`。候选取自 `GetImplementationTypes`，并要求具有公共无参构造；缓存的是候选类型，每次调用都重新实例化。`args` 当前不传给构造函数，不能靠此参数注入依赖。单项构造异常记录 `Failed to create instance` 后继续，其它实例仍可返回。构造可以产生副作用，这个方法也不统一调用 `Initialize`、`Dispose` 或业务命令。
 
 ## 各消费方的发现与刷新
 
-下表中的 API 需由实际宿主调用。它们使用不同缓存，不能用一次 `RefreshAssemblies()` 代替所有更新。
+下表中的 API 需由实际宿主调用。只有菜单与文件打开/导出订阅 `AssembliesChanged`；其它消费方仍各自缓存，不能用一次 `RefreshAssemblies()` 代替所有更新。
 
 | 能力 | 发现入口与条件 | 刷新范围与所属契约 |
 | --- | --- | --- |
-| 菜单 | `MenuManager` 自行扫描 `IMenuItem`、`IMenuItemProvider`、`MenuItemAttribute`，排除开放泛型和直接标注 Obsolete 的类型 | 类型缓存一次建立；重建只重新构造既有类型，仍受目标、父子树与隐藏规则约束。见[菜单](./menus.md) |
-| 设置 | `ConfigSettingManager.GetAllSettings` 扫描 provider 和 `IConfig` 属性上的 ConfigSetting 标注 | 类型与条目两层缓存；`InvalidateCache` 只清条目，重建条目重新解析配置对象，不重扫类型。见[设置发现与搜索](./settings.md) |
+| 菜单 | `MenuManager` 在发现视图的类型快照中筛选 `IMenuItem`、`IMenuItemProvider`、`MenuItemAttribute`，排除开放泛型和直接标注 Obsolete 的类型 | 类型快照在 `AssembliesChanged` 后丢弃，下次加载或重建菜单时重扫；已显示的菜单不会自动重建，仍需宿主调用重建。见[菜单](./menus.md) |
+| 文件打开与导出 | `FileProcessorFactory` 通过 `GetImplementationTypes` 取得 `IFileOpenActionProcessor` / `IFileExporter`，按 `FileExtensionAttribute` 建立扩展名映射，`GenericFileAttribute` 导出器作为兜底 | 映射在首次使用时建立，`AssembliesChanged` 后丢弃重建；每次调用重新构造处理器，单个处理器构造失败记录警告并跳过。见[工作区与资源路由](./ColorVision.Solution.md) |
+| 设置 | `ConfigSettingManager.GetAllSettings` 取 provider 和 `IConfig` 的实现类型，再读属性上的 ConfigSetting 标注 | 类型与条目两层缓存；`InvalidateCache` 只清条目，重建条目重新解析配置对象，不重扫类型。见[设置发现与搜索](./settings.md) |
 | 向导 | `WizardManager.Initialized` 扫描 `IWizardStep`、`IWizardInitializer`，无参构造后分别按 Order 排序 | 每次 Initialized 清列表并扫描；不统一过滤业务可见性，反射或构造异常可中断发现。见[向导](./wizards.md) |
 | 属性编辑 | `PropertyEditorHelper` 静态初始化注册内置映射，并触发外部 IPropertyEditor 类型的静态构造；类型映射仍需注册 | 不是为每个实现类自动建立属性类型映射；显式 RegisterEditor、属性指定类型和元数据 provider 各有入口，实例缓存与字段选择见[PropertyGrid](./property-grid.md) |
 | 状态栏 | `StatusBarManager` 通过通用帮助器构造 `IStatusBarProvider`；活动文档项另来自 IActiveDocumentStatusProvider | 全局 provider 列表非空后复用实例；RefreshAll 重取元数据，不重扫新 provider。绑定值、项目变化事件和文档切换分开，见[状态栏](./status-bar.md) |

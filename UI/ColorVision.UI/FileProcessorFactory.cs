@@ -1,6 +1,7 @@
 ﻿using ColorVision.UI.Menus;
 using ColorVision.UI.Menus.Base.File;
 using ColorVision.UI.HotKey;
+using log4net;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -52,7 +53,15 @@ namespace ColorVision.UI
                 {
                     return;
                 }
-                FileOpenRouteResult result = await FileProcessorFactory.GetInstance().OpenFileAsync(selectedFilePath);
+                FileOpenRouteResult result;
+                try
+                {
+                    result = await FileProcessorFactory.GetInstance().OpenFileAsync(selectedFilePath);
+                }
+                catch (Exception ex)
+                {
+                    result = new FileOpenRouteResult(true, false, ex.Message);
+                }
                 if (!result.Succeeded && !result.Canceled)
                 {
                     MessageBox.Show(string.IsNullOrWhiteSpace(result.ErrorMessage)
@@ -68,11 +77,14 @@ namespace ColorVision.UI
         private static readonly Lazy<FileProcessorFactory> _instance = new(() => new FileProcessorFactory());
         public static FileProcessorFactory GetInstance() => _instance.Value;
 
-        private readonly Dictionary<string, List<Type>> _openActionTypeMap = new();
-        private readonly Dictionary<string, List<Type>> _exporterTypeMap = new();
-        private readonly HashSet<Assembly> _registeredAssemblies = new();
-        private readonly object _syncRoot = new();
-        private Type? _genericExporterType;
+        private static readonly ILog log = LogManager.GetLogger(typeof(FileProcessorFactory));
+
+        private sealed record TypeMaps(
+            Dictionary<string, Type[]> OpenActions,
+            Dictionary<string, Type[]> Exporters,
+            Type? GenericExporter);
+
+        private volatile TypeMaps? _typeMaps;
 
         /// <summary>
         /// Optional resource-aware handler installed by the solution module.
@@ -82,75 +94,69 @@ namespace ColorVision.UI
 
         private FileProcessorFactory()
         {
-            AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
-            foreach (Assembly assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                RegisterAssembly(assembly);
+            AssemblyHandler.GetInstance().AssembliesChanged += (_, _) => _typeMaps = null;
         }
 
-        private void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
-        {
-            RegisterAssembly(e.LoadedAssembly);
-        }
+        private TypeMaps GetTypeMaps() => _typeMaps ??= BuildTypeMaps();
 
-        private void RegisterAssembly(Assembly assembly)
+        private static TypeMaps BuildTypeMaps()
         {
-            lock (_syncRoot)
+            var assemblyService = AssemblyHandler.GetInstance();
+            var openActions = new Dictionary<string, List<Type>>();
+            var exporters = new Dictionary<string, List<Type>>();
+            Type? genericExporter = null;
+
+            foreach (Type type in assemblyService.GetImplementationTypes(typeof(IFileOpenActionProcessor)))
+                AddByExtension(openActions, type);
+
+            foreach (Type type in assemblyService.GetImplementationTypes(typeof(IFileExporter)))
             {
-                if (!_registeredAssemblies.Add(assembly))
-                    return;
+                if (type.GetCustomAttribute<GenericFileAttribute>() != null)
+                    genericExporter = type;
+                else
+                    AddByExtension(exporters, type);
+            }
 
-                foreach (Type type in GetLoadableTypes(assembly).Where(type =>
-                    !type.IsAbstract
-                    && !type.IsInterface
-                    && (typeof(IFileOpenActionProcessor).IsAssignableFrom(type)
-                        || typeof(IFileExporter).IsAssignableFrom(type))))
+            return new TypeMaps(
+                openActions.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray()),
+                exporters.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray()),
+                genericExporter);
+        }
+
+        private static void AddByExtension(Dictionary<string, List<Type>> map, Type type)
+        {
+            var extAttr = type.GetCustomAttribute<FileExtensionAttribute>();
+            if (extAttr == null)
+                return;
+
+            foreach (string extKey in extAttr.Extensions
+                .Where(extension => !string.IsNullOrWhiteSpace(extension))
+                .Select(extension => extension.ToLowerInvariant())
+                .Distinct())
+            {
+                if (!map.TryGetValue(extKey, out List<Type>? types))
+                    map[extKey] = types = new List<Type>();
+                types.Add(type);
+            }
+        }
+
+        /// <summary>Creates each handler independently so one broken contribution cannot hide the others.</summary>
+        private static IEnumerable<T> CreateHandlers<T>(IEnumerable<Type> types) where T : class
+        {
+            foreach (Type type in types)
+            {
+                T? handler = null;
+                try
                 {
-                    bool isOpenAction = typeof(IFileOpenActionProcessor).IsAssignableFrom(type);
-                    bool isExporter = typeof(IFileExporter).IsAssignableFrom(type);
-                    if (isExporter && type.GetCustomAttribute<GenericFileAttribute>() != null)
-                    {
-                        _genericExporterType = type;
-                        continue;
-                    }
-                    var extAttr = type.GetCustomAttribute<FileExtensionAttribute>();
-                    if (extAttr != null)
-                    {
-                        foreach (string extKey in extAttr.Extensions
-                            .Where(extension => !string.IsNullOrWhiteSpace(extension))
-                            .Select(extension => extension.ToLowerInvariant())
-                            .Distinct(StringComparer.OrdinalIgnoreCase))
-                        {
-                            if (isOpenAction)
-                            {
-                                if (!_openActionTypeMap.ContainsKey(extKey))
-                                    _openActionTypeMap[extKey] = new List<Type>();
-                                _openActionTypeMap[extKey].Add(type);
-                            }
-                            if (isExporter)
-                            {
-                                if (!_exporterTypeMap.ContainsKey(extKey))
-                                    _exporterTypeMap[extKey] = new List<Type>();
-                                _exporterTypeMap[extKey].Add(type);
-                            }
-                        }
-                    }
+                    handler = Activator.CreateInstance(type) as T;
                 }
-            }
-        }
+                catch (Exception ex)
+                {
+                    log.Warn($"Failed to create file handler '{type.FullName}'.", ex);
+                }
 
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.OfType<Type>();
-            }
-            catch
-            {
-                return Array.Empty<Type>();
+                if (handler != null)
+                    yield return handler;
             }
         }
 
@@ -176,19 +182,10 @@ namespace ColorVision.UI
         public FileOpenRouteResult TryOpenFileAction(string filePath)
         {
             string extension = Path.GetExtension(filePath).ToLowerInvariant();
-            Type[] actionTypes;
-            lock (_syncRoot)
-            {
-                actionTypes = _openActionTypeMap.TryGetValue(extension, out List<Type>? registeredTypes)
-                    ? registeredTypes.ToArray()
-                    : [];
-            }
-            if (actionTypes.Length == 0)
+            if (!GetTypeMaps().OpenActions.TryGetValue(extension, out Type[]? actionTypes))
                 return FileOpenRouteResult.NotHandled;
 
-            return SelectFileOpenAction(actionTypes
-                .Select(type => Activator.CreateInstance(type))
-                .OfType<IFileOpenActionProcessor>(), filePath);
+            return SelectFileOpenAction(CreateHandlers<IFileOpenActionProcessor>(actionTypes), filePath);
         }
 
         internal static FileOpenRouteResult SelectFileOpenAction(
@@ -213,28 +210,17 @@ namespace ColorVision.UI
                 return new FileExportResult(true, false, $"文件不存在：{filePath}");
 
             string extension = Path.GetExtension(filePath).ToLowerInvariant();
-            Type[] exporterTypes;
-            Type? genericExporterType;
-            lock (_syncRoot)
-            {
-                exporterTypes = _exporterTypeMap.TryGetValue(extension, out List<Type>? registeredTypes)
-                    ? registeredTypes.ToArray()
-                    : [];
-                genericExporterType = _genericExporterType;
-            }
+            TypeMaps typeMaps = GetTypeMaps();
+            Type[] exporterTypes = typeMaps.Exporters.TryGetValue(extension, out Type[]? registeredTypes) ? registeredTypes : [];
 
             try
             {
-                FileExportResult result = SelectFileExporter(
-                    exporterTypes
-                        .Select(type => Activator.CreateInstance(type))
-                        .OfType<IFileExporter>(),
-                    filePath);
+                FileExportResult result = SelectFileExporter(CreateHandlers<IFileExporter>(exporterTypes), filePath);
                 if (result.Handled)
                     return result;
 
-                if (genericExporterType != null
-                    && Activator.CreateInstance(genericExporterType) is IFileExporter fallback)
+                if (typeMaps.GenericExporter != null
+                    && CreateHandlers<IFileExporter>([typeMaps.GenericExporter]).FirstOrDefault() is IFileExporter fallback)
                 {
                     result = fallback.Export(filePath);
                     if (result.Handled)

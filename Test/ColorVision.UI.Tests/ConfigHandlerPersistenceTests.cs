@@ -556,6 +556,53 @@ namespace ColorVision.UI.Tests
             Assert.Empty(defaultConfig.Items);
         }
 
+        [Fact]
+        public void UnreadableSectionIsPreservedBeforeDefaultsCanOverwriteIt()
+        {
+            string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backupFolderPath = Path.Combine(_rootDirectory, "Backup");
+            var unreadable = new JObject { [nameof(FirstConfig.Value)] = "kept", [nameof(FirstConfig.Items)] = 5 };
+            File.WriteAllText(configFilePath, new JObject { [typeof(FirstConfig).FullName!] = unreadable }.ToString());
+            var configHandler = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig",
+                ConfigFilePath = configFilePath,
+                BackupFolderPath = backupFolderPath,
+            };
+            configHandler.LoadConfigs();
+
+            Assert.Equal(string.Empty, configHandler.GetRequiredService<FirstConfig>().Value);
+            configHandler.SaveConfigs();
+
+            string quarantined = Assert.Single(Directory.GetFiles(Path.Combine(backupFolderPath, "Quarantine")));
+            Assert.True(JToken.DeepEquals(unreadable, JObject.Parse(File.ReadAllText(quarantined))[typeof(FirstConfig).FullName!]));
+        }
+
+        [Fact]
+        public void DeclaredSectionNameReadsAliasesAndWritesTheStableName()
+        {
+            string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            File.WriteAllText(configFilePath, new JObject
+            {
+                ["Legacy.Section"] = new JObject { [nameof(SectionNamedConfig.Value)] = "from-alias" },
+            }.ToString());
+            var configHandler = new ConfigHandler { ConfigFilePath = configFilePath };
+            configHandler.LoadConfigs();
+
+            SectionNamedConfig config = configHandler.GetRequiredService<SectionNamedConfig>();
+            Assert.Equal("from-alias", config.Value);
+            config.Value = "saved";
+            configHandler.Save<SectionNamedConfig>();
+
+            JObject saved = JObject.Parse(File.ReadAllText(configFilePath));
+            Assert.Equal("saved", saved["Tests.StableSection"]![nameof(SectionNamedConfig.Value)]!.ToString());
+            Assert.Equal("from-alias", saved["Legacy.Section"]![nameof(SectionNamedConfig.Value)]!.ToString());
+            Assert.Null(saved[typeof(SectionNamedConfig).FullName!]);
+
+            configHandler.LoadConfigs();
+            Assert.Equal("saved", configHandler.GetRequiredService<SectionNamedConfig>().Value);
+        }
+
         private static void WriteConfig(
             string fileName,
             string firstValue,
@@ -592,6 +639,12 @@ namespace ColorVision.UI.Tests
         }
 
         public sealed class SecondConfig : IConfig
+        {
+            public string Value { get; set; } = string.Empty;
+        }
+
+        [ConfigSection("Tests.StableSection", Aliases = ["Legacy.Section"])]
+        public sealed class SectionNamedConfig : IConfig
         {
             public string Value { get; set; } = string.Empty;
         }

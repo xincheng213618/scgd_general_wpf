@@ -31,7 +31,7 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 
 ## 发现来源与两层缓存
 
-`ConfigSettingManager.GetAllSettings` 使用 `AssemblyHandler.GetAssemblies()` 的缓存/过滤程序集视图，不是扫描磁盘上所有 DLL。首次建立类型缓存时收集非抽象的 `IConfigSettingProvider` 与 `IConfig` 实现：
+`ConfigSettingManager.GetAllSettings` 使用 `AssemblyHandler.GetAssemblies()` 的缓存/过滤程序集视图，不是扫描磁盘上所有 DLL。首次建立类型缓存时通过 `AssemblyHandler.GetImplementationTypes` 收集非抽象、非开放泛型的 `IConfigSettingProvider` 与 `IConfig` 实现 class：
 
 | 来源 | 生成规则与失败边界 |
 | --- | --- |

@@ -46,8 +46,10 @@ namespace ColorVision.UI
         private Assembly[]? _assemblies;
         private readonly HashSet<Assembly> _registeredAssemblies = new();
         private readonly ConcurrentDictionary<Assembly, Type[]> _assemblyTypeCache = new();
-        private readonly ConcurrentDictionary<Type, List<Type>> _implementationTypeCache = new();
+        private readonly ConcurrentDictionary<Type, Type[]> _implementationTypeCache = new();
         private readonly object _assembliesLock = new();
+
+        public event EventHandler? AssembliesChanged;
 
         private AssemblyHandler()
         {
@@ -65,20 +67,26 @@ namespace ColorVision.UI
             if (assembly.IsDynamic)
                 throw new ArgumentException("Dynamic assemblies cannot be registered as application modules.", nameof(assembly));
 
+            bool changed = false;
             lock (_assembliesLock)
             {
                 if (!_registeredAssemblies.Add(assembly))
                     return;
 
                 if (_assemblies != null
+                    && !_assemblies.Contains(assembly)
                     && IsCustomAssembly(assembly.GetName().Name, assembly)
                     && TryLoadAssemblyTypes(assembly, out _))
                 {
-                    _assemblies = _assemblies.Append(assembly).Distinct().ToArray();
+                    _assemblies = _assemblies.Append(assembly).ToArray();
+                    changed = true;
                 }
 
                 _implementationTypeCache.Clear();
             }
+
+            if (changed)
+                AssembliesChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -193,9 +201,11 @@ namespace ColorVision.UI
         /// </summary>
         public Assembly[] RefreshAssemblies()
         {
+            Assembly[] customAssemblies;
+            bool changed;
             lock (_assembliesLock)
             {
-                var customAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                customAssemblies = AppDomain.CurrentDomain.GetAssemblies()
                     .Concat(_registeredAssemblies)
                     .Distinct()
                     .Where(assembly =>
@@ -205,6 +215,7 @@ namespace ColorVision.UI
                     })
                     .ToArray();
 
+                changed = _assemblies != null && !_assemblies.ToHashSet().SetEquals(customAssemblies);
                 _assemblies = customAssemblies;
 
                 // Clear cache when assemblies are refreshed
@@ -212,9 +223,11 @@ namespace ColorVision.UI
 
                 if (Log.IsDebugEnabled)
                     Log.Debug($"Loaded {customAssemblies.Length} custom assemblies");
-
-                return customAssemblies;
             }
+
+            if (changed)
+                AssembliesChanged?.Invoke(this, EventArgs.Empty);
+            return customAssemblies;
         }
 
         /// <summary>
@@ -246,16 +259,19 @@ namespace ColorVision.UI
                     nameof(T));
             }
 
-            var implementationTypes = GetOrCacheImplementationTypes(interfaceType);
+            var implementationTypes = GetImplementationTypes(interfaceType)
+                .Where(type => type.GetConstructor(Type.EmptyTypes) != null);
             return InstantiateTypes<T>(implementationTypes, args);
         }
 
         /// <summary>
-        /// Gets implementation types from cache or discovers them
+        /// Gets concrete, closed classes assignable to the service type from the shared cache.
+        /// The cache is cleared whenever the discovered assembly set changes.
         /// </summary>
-        private List<Type> GetOrCacheImplementationTypes(Type interfaceType)
+        public IReadOnlyList<Type> GetImplementationTypes(Type serviceType)
         {
-            return _implementationTypeCache.GetOrAdd(interfaceType, key =>
+            ArgumentNullException.ThrowIfNull(serviceType);
+            return _implementationTypeCache.GetOrAdd(serviceType, key =>
             {
                 var implementationTypes = new List<Type>();
                 var assemblies = GetAssemblies();
@@ -263,26 +279,22 @@ namespace ColorVision.UI
                 foreach (var assembly in assemblies)
                 {
                     implementationTypes.AddRange(GetTypes(assembly)
-                        .Where(t => IsInstantiableImplementation(t, key)));
+                        .Where(t => IsConcreteImplementation(t, key)));
                 }
 
                 if (Log.IsDebugEnabled)
-                    Log.Debug($"Found {implementationTypes.Count} implementations of '{interfaceType.Name}'");
+                    Log.Debug($"Found {implementationTypes.Count} implementations of '{key.Name}'");
 
-                return implementationTypes;
+                return implementationTypes.ToArray();
             });
         }
 
-        /// <summary>
-        /// Determines if a type is a concrete implementation that can be instantiated
-        /// </summary>
-        private static bool IsInstantiableImplementation(Type type, Type interfaceType)
+        private static bool IsConcreteImplementation(Type type, Type serviceType)
         {
-            return interfaceType.IsAssignableFrom(type)
-                   && type.IsClass
+            return type.IsClass
                    && !type.IsAbstract
-                   && !type.IsInterface
-                   && type.GetConstructor(Type.EmptyTypes) != null;
+                   && !type.ContainsGenericParameters
+                   && serviceType.IsAssignableFrom(type);
         }
 
         /// <summary>
@@ -327,6 +339,8 @@ namespace ColorVision.UI
                 _assemblyTypeCache.Clear();
                 _implementationTypeCache.Clear();
             }
+
+            AssembliesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

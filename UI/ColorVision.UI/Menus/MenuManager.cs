@@ -33,18 +33,23 @@ namespace ColorVision.UI.Menus
         private readonly List<MenuRegistration> _menuRegistrations = new();
         private readonly Dictionary<Menu, List<MenuItem>> _menuBackups = new();
 
-        private bool _typeCacheBuilt;
-        private readonly List<Type> _menuItemTypeCache = new();
-        private readonly List<Type> _menuItemProviderTypeCache = new();
-        /// <summary>Types decorated with <see cref="MenuItemAttribute"/> that do NOT
+        /// <param name="AttributeTypes">Types decorated with <see cref="MenuItemAttribute"/> that do NOT
         /// already implement <see cref="IMenuItem"/> or <see cref="IMenuItemProvider"/>.
-        /// These are handled via the lazy-loading path.</summary>
-        private readonly List<Type> _menuItemAttributeTypeCache = new();
+        /// These are handled via the lazy-loading path.</param>
+        private sealed record MenuTypeSnapshot(Type[] ItemTypes, Type[] ProviderTypes, Type[] AttributeTypes);
+
+        private volatile MenuTypeSnapshot? _typeSnapshot;
+        private int _typeSnapshotGeneration;
         private readonly object _typeCacheLock = new();
 
         private MenuManager()
         {
             MenuService.SetInstance(this);
+            AssemblyHandler.GetInstance().AssembliesChanged += (_, _) =>
+            {
+                Interlocked.Increment(ref _typeSnapshotGeneration);
+                _typeSnapshot = null;
+            };
         }
 
         public int GetEffectiveOrder(IMenuItem mi)
@@ -288,13 +293,17 @@ namespace ColorVision.UI.Menus
             return menuItem;
         }
 
-        private void EnsureTypeCaches()
+        private MenuTypeSnapshot EnsureTypeCaches()
         {
-            if (_typeCacheBuilt) return;
+            if (_typeSnapshot is { } snapshot) return snapshot;
             lock (_typeCacheLock)
             {
-                if (_typeCacheBuilt) return;
+                if (_typeSnapshot is { } built) return built;
 
+                int generation = Volatile.Read(ref _typeSnapshotGeneration);
+                var itemTypes = new List<Type>();
+                var providerTypes = new List<Type>();
+                var attributeTypes = new List<Type>();
                 foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                 {
                     foreach (var t in AssemblyHandler.GetInstance().GetTypes(assembly))
@@ -303,20 +312,24 @@ namespace ColorVision.UI.Menus
 
                         if (typeof(IMenuItem).IsAssignableFrom(t))
                         {
-                            AddInstantiableType(_menuItemTypeCache, t, nameof(IMenuItem));
+                            AddInstantiableType(itemTypes, t, nameof(IMenuItem));
                         }
                         else if (typeof(IMenuItemProvider).IsAssignableFrom(t))
                         {
-                            AddInstantiableType(_menuItemProviderTypeCache, t, nameof(IMenuItemProvider));
+                            AddInstantiableType(providerTypes, t, nameof(IMenuItemProvider));
                         }
                         else if (t.IsDefined(typeof(MenuItemAttribute), false))
                         {
-                            AddInstantiableType(_menuItemAttributeTypeCache, t, nameof(MenuItemAttribute));
+                            AddInstantiableType(attributeTypes, t, nameof(MenuItemAttribute));
                         }
                     }
                 }
 
-                _typeCacheBuilt = true;
+                // A scan that raced with an assembly change is returned once but not cached.
+                var result = new MenuTypeSnapshot(itemTypes.ToArray(), providerTypes.ToArray(), attributeTypes.ToArray());
+                if (generation == Volatile.Read(ref _typeSnapshotGeneration))
+                    _typeSnapshot = result;
+                return result;
             }
         }
 
@@ -373,10 +386,10 @@ namespace ColorVision.UI.Menus
 
         private List<IMenuItem> CreateAllMenuItems(Func<Type, bool>? typeFilter)
         {
-            EnsureTypeCaches();
-            var allMenuItems = new List<IMenuItem>(_menuItemTypeCache.Count + _menuItemProviderTypeCache.Count + _menuItemAttributeTypeCache.Count + 16);
+            var types = EnsureTypeCaches();
+            var allMenuItems = new List<IMenuItem>(types.ItemTypes.Length + types.ProviderTypes.Length + types.AttributeTypes.Length + 16);
 
-            foreach (var t in _menuItemTypeCache)
+            foreach (var t in types.ItemTypes)
             {
                 if (typeFilter != null && !typeFilter(t))
                     continue;
@@ -392,7 +405,7 @@ namespace ColorVision.UI.Menus
                 }
             }
 
-            foreach (var t in _menuItemProviderTypeCache)
+            foreach (var t in types.ProviderTypes)
             {
                 if (typeFilter != null && !typeFilter(t))
                     continue;
@@ -418,7 +431,7 @@ namespace ColorVision.UI.Menus
                 }
             }
 
-            foreach (var t in _menuItemAttributeTypeCache)
+            foreach (var t in types.AttributeTypes)
             {
                 if (typeFilter != null && !typeFilter(t))
                     continue;

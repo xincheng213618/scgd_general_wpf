@@ -28,7 +28,7 @@ public class SearchManager
     private readonly List<string> _recentIds = [];
     private bool _catalogTruncated;
 
-    public SearchManager() : this(() => AssemblyHandler.Instance.GetAssemblies(), assembly => assembly.GetTypes(),
+    public SearchManager() : this(() => AssemblyHandler.Instance.GetAssemblies(), AssemblyHandler.Instance.GetTypes,
         () => SearchConfig.Instance, () => HotkeyService.GetInstance().HotKeys) { }
 
     internal SearchManager(Func<Assembly[]> getAssemblies, Func<Assembly, IEnumerable<Type>> getTypes,

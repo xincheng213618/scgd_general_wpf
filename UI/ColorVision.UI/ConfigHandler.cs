@@ -7,8 +7,6 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows;
 
 namespace ColorVision.UI
@@ -23,13 +21,8 @@ namespace ColorVision.UI
     public class ConfigHandler : IConfigService, IConfigReloadNotifier
     {
         private const string BackupFolderName = "Backup";
+        private const string QuarantineFolderName = "Quarantine";
         private const int MaxBackupCount = 10;
-        private static readonly TimeSpan SaveFileLockTimeout = TimeSpan.FromSeconds(30);
-        private static readonly string[] ObsoleteConfigSectionNames =
-        {
-            "ConfigOptions",
-            "MarketplaceServiceConfig"
-        };
 
         private static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         private static ConfigHandler? _instance;
@@ -204,9 +197,9 @@ namespace ColorVision.UI
             {
                 BeginSaveTransaction();
                 transactionStarted = true;
-                using (AcquireSaveFileLock(fullPath))
+                using (ConfigFileStore.AcquireLock(fullPath))
                 {
-                    if (!TryReadConfigFile(fullPath, out JObject loadedJson, ex => log.Warn(ex)))
+                    if (!ConfigFileStore.TryRead(fullPath, out JObject loadedJson, ex => log.Warn(ex)))
                         throw new InvalidOperationException($"Unable to reload configuration file '{fullPath}'.");
 
                     ApplyLoadedConfig(loadedJson);
@@ -241,27 +234,52 @@ namespace ColorVision.UI
 
         private IConfig CreateConfig(Type type)
         {
+            string? sectionName = ConfigSectionNames.GetReadCandidates(type).FirstOrDefault(jsonObject.ContainsKey);
+            if (sectionName == null)
+                return CreateDefaultConfig(type);
+
+            JToken configToken = jsonObject[sectionName]!;
             try
             {
-                if (jsonObject.TryGetValue(type.FullName!, out JToken? configToken)
-                    || jsonObject.TryGetValue(type.Name, out configToken))
+                var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings)) as IConfig;
+                if (config != null)
                 {
-                    var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings)) as IConfig;
-                    if (config != null)
-                    {
-                        if (config is IConfigSecure configSecure)
-                            configSecure.Decrypt();
+                    if (config is IConfigSecure configSecure)
+                        configSecure.Decrypt();
 
-                        return config;
-                    }
+                    return config;
                 }
             }
             catch (Exception ex)
             {
-                log.Warn(ex);
+                log.Warn($"Configuration section '{sectionName}' could not be read as '{type.FullName}'; defaults are used.", ex);
+                QuarantineSection(sectionName, configToken);
             }
 
             return CreateDefaultConfig(type);
+        }
+
+        /// <summary>
+        /// Keeps a copy of an unreadable section before defaults can overwrite it on the next save,
+        /// so a schema mistake does not silently destroy the user's settings.
+        /// </summary>
+        private void QuarantineSection(string sectionName, JToken token)
+        {
+            if (string.IsNullOrEmpty(BackupFolderPath))
+                return;
+
+            try
+            {
+                string directory = Path.Combine(BackupFolderPath, QuarantineFolderName);
+                string safeName = string.Concat(sectionName.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+                string path = Path.Combine(directory, $"{ConfigDIFileName}_{safeName}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.json");
+                ConfigFileStore.Write(path, new JObject { [sectionName] = token.DeepClone() });
+                log.Warn($"The unreadable configuration section '{sectionName}' was preserved at '{path}'.");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Failed to preserve the unreadable configuration section '{sectionName}'.", ex);
+            }
         }
 
         private static IConfig CreateDefaultConfig(Type type) => (IConfig)Activator.CreateInstance(type)!;
@@ -281,13 +299,12 @@ namespace ColorVision.UI
                 var persisted = false;
                 try
                 {
-                    using var fileLock = AcquireSaveFileLock(fullPath);
-                    var jObject = ReadExistingConfigFileForSave(fullPath);
-                    RemoveObsoleteConfigSections(jObject);
+                    using var fileLock = ConfigFileStore.AcquireLock(fullPath);
+                    var jObject = ConfigFileStore.ReadForMerge(fullPath);
                     foreach (var property in stagedConfigs.Properties())
                         jObject[property.Name] = property.Value.DeepClone();
 
-                    WriteConfigFile(fullPath, jObject);
+                    ConfigFileStore.Write(fullPath, jObject);
                     persisted = true;
                     return;
                 }
@@ -362,64 +379,6 @@ namespace ColorVision.UI
             }
         }
 
-        internal static IDisposable AcquireSaveFileLock(string fullPath)
-        {
-            string canonicalPath = Path.GetFullPath(fullPath).ToUpperInvariant();
-            string pathHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonicalPath)));
-            var mutex = new Mutex(initiallyOwned: false, $"Local\\ColorVision.ConfigSave.{pathHash}");
-            try
-            {
-                var acquired = false;
-                try
-                {
-                    acquired = mutex.WaitOne(SaveFileLockTimeout);
-                }
-                catch (AbandonedMutexException)
-                {
-                    acquired = true;
-                }
-
-                if (!acquired)
-                {
-                    throw new TimeoutException(
-                        $"Timed out waiting to save configuration file '{fullPath}'.");
-                }
-
-                return new SaveFileLockLease(mutex);
-            }
-            catch
-            {
-                mutex.Dispose();
-                throw;
-            }
-        }
-
-        private sealed class SaveFileLockLease : IDisposable
-        {
-            private Mutex? _mutex;
-
-            public SaveFileLockLease(Mutex mutex)
-            {
-                _mutex = mutex;
-            }
-
-            public void Dispose()
-            {
-                var mutex = Interlocked.Exchange(ref _mutex, null);
-                if (mutex == null)
-                    return;
-
-                try
-                {
-                    mutex.ReleaseMutex();
-                }
-                finally
-                {
-                    mutex.Dispose();
-                }
-            }
-        }
-
         private JObject CreateConfigSnapshot()
         {
             var stagedConfigs = new JObject();
@@ -453,7 +412,7 @@ namespace ColorVision.UI
 
         private static void SaveConfig(JObject jObject, Type configType, IConfig config, JsonSerializer serializer)
         {
-            string sectionName = configType.FullName!;
+            string sectionName = ConfigSectionNames.GetSectionName(configType);
             if (jObject.ContainsKey(sectionName))
                 throw new InvalidOperationException($"Multiple configuration types map to section '{sectionName}'. The configuration snapshot cannot be saved.");
 
@@ -487,109 +446,6 @@ namespace ColorVision.UI
                     $"Secure configuration '{configName}' could not be cloned for persistence.");
             secureSnapshot.Encryption();
             jObject[configName] = JToken.FromObject(secureSnapshot, serializer);
-        }
-
-        private static JObject ReadExistingConfigFileForSave(string fileName)
-        {
-            if (!File.Exists(fileName))
-                return new JObject();
-
-            Exception? readException = null;
-            if (TryReadConfigFile(fileName, out var jObject, ex => readException = ex))
-                return jObject;
-
-            throw new InvalidDataException(
-                $"Existing configuration file '{fileName}' is not a valid JSON object.",
-                readException);
-        }
-
-        private static void RemoveObsoleteConfigSections(JObject jObject)
-        {
-            foreach (string sectionName in ObsoleteConfigSectionNames)
-            {
-                jObject.Remove(sectionName);
-            }
-        }
-
-        private static bool TryReadConfigFile(string fileName, out JObject jObject, Action<Exception> logException)
-        {
-            jObject = new JObject();
-            if (!File.Exists(fileName))
-                return false;
-
-            try
-            {
-                using StreamReader file = File.OpenText(fileName);
-                using JsonTextReader reader = new(file);
-                jObject = JObject.Load(reader);
-                if (reader.Read())
-                    throw new JsonReaderException("Additional content was found after the configuration JSON object.");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                logException(ex);
-                return false;
-            }
-        }
-
-        internal static void WriteConfigFile(string fileName, JObject jObject)
-        {
-            string fullPath = Path.GetFullPath(fileName);
-            string directory = Path.GetDirectoryName(fullPath)
-                ?? throw new ArgumentException("Configuration path must include a directory.", nameof(fileName));
-            Directory.CreateDirectory(directory);
-
-            string temporaryPath = Path.Combine(
-                directory,
-                $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
-            try
-            {
-                using (var stream = new FileStream(
-                    temporaryPath,
-                    FileMode.CreateNew,
-                    FileAccess.Write,
-                    FileShare.None,
-                    4096,
-                    FileOptions.WriteThrough))
-                using (var file = new StreamWriter(
-                    stream,
-                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                    4096,
-                    leaveOpen: true))
-                using (var writer = new JsonTextWriter(file) { CloseOutput = false })
-                {
-                    jObject.WriteTo(writer);
-                    writer.Flush();
-                    file.Flush();
-                    stream.Flush(flushToDisk: true);
-                }
-
-                Exception? validationException = null;
-                if (!TryReadConfigFile(temporaryPath, out _, ex => validationException = ex))
-                {
-                    throw new InvalidDataException(
-                        $"Temporary configuration file '{temporaryPath}' failed JSON validation.",
-                        validationException);
-                }
-
-                if (File.Exists(fullPath))
-                    File.Replace(temporaryPath, fullPath, destinationBackupFileName: null, ignoreMetadataErrors: true);
-                else
-                    File.Move(temporaryPath, fullPath);
-            }
-            finally
-            {
-                try
-                {
-                    if (File.Exists(temporaryPath))
-                        File.Delete(temporaryPath);
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Failed to remove temporary configuration file '{temporaryPath}'.", ex);
-                }
-            }
         }
 
         public void LoadDefaultConfigs()
@@ -638,12 +494,12 @@ namespace ColorVision.UI
             restoredJson = new JObject();
             foreach (string backupFile in GetBackupFiles())
             {
-                if (!TryReadConfigFile(backupFile, out var backupJson, ex => log.Warn(ex)))
+                if (!ConfigFileStore.TryRead(backupFile, out var backupJson, ex => log.Warn(ex)))
                     continue;
 
                 string fullPath = Path.GetFullPath(ConfigFilePath);
-                using (AcquireSaveFileLock(fullPath))
-                    WriteConfigFile(fullPath, backupJson);
+                using (ConfigFileStore.AcquireLock(fullPath))
+                    ConfigFileStore.Write(fullPath, backupJson);
 
                 restoredJson = backupJson;
                 return true;
@@ -655,35 +511,19 @@ namespace ColorVision.UI
         private ConcurrentDictionary<Type, IConfig> CreateDefaultConfigInstances()
         {
             var configs = new ConcurrentDictionary<Type, IConfig>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (var type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IConfig)))
             {
-                foreach (var type in GetConfigTypes(assembly))
+                try
                 {
-                    try
-                    {
-                        configs[type] = CreateDefaultConfig(type);
-                    }
-                    catch
-                    {
-                    }
+                    configs[type] = CreateDefaultConfig(type);
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Skipped default configuration '{type.FullName}'.", ex);
                 }
             }
 
             return configs;
-        }
-
-        private static IEnumerable<Type> GetConfigTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes()
-                    .Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract)
-                    .ToArray();
-            }
-            catch
-            {
-                return Enumerable.Empty<Type>();
-            }
         }
 
         private IEnumerable<string> GetBackupFiles()
@@ -735,9 +575,9 @@ namespace ColorVision.UI
             {
                 BeginSaveTransaction();
                 transactionStarted = true;
-                using (AcquireSaveFileLock(fullPath))
+                using (ConfigFileStore.AcquireLock(fullPath))
                 {
-                    if (TryReadConfigFile(fullPath, out var loadedJson, ex => log.Warn(ex)))
+                    if (ConfigFileStore.TryRead(fullPath, out var loadedJson, ex => log.Warn(ex)))
                     {
                         ApplyLoadedConfig(loadedJson);
                         stateChanged = true;
@@ -792,7 +632,7 @@ namespace ColorVision.UI
             out string errorMessage) where T1 : IConfig
         {
             var type = typeof(T1);
-            var configName = type.FullName!;
+            var configName = ConfigSectionNames.GetSectionName(type);
             JToken? candidateToken = null;
 
             if (_savePublicationScope.Value)
@@ -828,12 +668,11 @@ namespace ColorVision.UI
                 string fullPath = Path.GetFullPath(ConfigFilePath);
                 BeginSaveTransaction();
                 transactionStarted = true;
-                using (AcquireSaveFileLock(fullPath))
+                using (ConfigFileStore.AcquireLock(fullPath))
                 {
-                    var jObject = ReadExistingConfigFileForSave(fullPath);
-                    RemoveObsoleteConfigSections(jObject);
+                    var jObject = ConfigFileStore.ReadForMerge(fullPath);
                     jObject[configName] = candidateToken;
-                    WriteConfigFile(fullPath, jObject);
+                    ConfigFileStore.Write(fullPath, jObject);
                     persisted = true;
                 }
 

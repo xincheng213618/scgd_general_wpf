@@ -10444,6 +10444,8 @@
       ],
       "code_paths": [
         "UI/ColorVision.UI/ConfigHandler.cs",
+        "UI/ColorVision.UI/ConfigFileStore.cs",
+        "UI/ColorVision.Common/Interfaces/Config/ConfigSectionAttribute.cs",
         "UI/ColorVision.Common/Interfaces/Config/IConfig.cs",
         "UI/ColorVision.Common/Interfaces/Config/IConfigSecure.cs",
         "UI/ColorVision.Common/Interfaces/Config/IConfigService.cs",
