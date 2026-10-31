@@ -111,11 +111,16 @@ namespace ColorVision.UI.Tests
             handler.ClearCaches();
         }
 
-        [Fact]
-        public void GetTypes_PreservesLoadableExtensionsWhenAnotherTypeHasMissingDependencies()
+        // A kept type can still reference the missing dependency through attribute or constructor metadata;
+        // it must be dropped so discovery checks such as IsDefined or GetConstructor cannot throw later.
+        [Theory]
+        [InlineData(null)]
+        [InlineData(BrokenMetadata.Attributes)]
+        [InlineData(BrokenMetadata.Constructors)]
+        public void GetTypes_PreservesLoadableExtensionsWhenAnotherTypeHasMissingDependencies(BrokenMetadata? brokenMetadata)
         {
             AssemblyHandler handler = AssemblyHandler.GetInstance();
-            var assembly = new PartiallyLoadableAssembly();
+            var assembly = new PartiallyLoadableAssembly(brokenMetadata);
 
             IReadOnlyList<Type> types = handler.GetTypes(assembly);
 
@@ -123,13 +128,24 @@ namespace ColorVision.UI.Tests
             Assert.Same(types, handler.GetTypes(assembly));
         }
 
-        private sealed class PartiallyLoadableAssembly : Assembly
+        public enum BrokenMetadata { Attributes, Constructors }
+
+        private sealed class PartiallyLoadableAssembly(BrokenMetadata? brokenMetadata) : Assembly
         {
-            public override string FullName => "PartiallyLoadableExtensionAssembly";
+            public override string FullName => $"PartiallyLoadableExtensionAssembly{brokenMetadata}";
 
             public override Type[] GetTypes() => throw new ReflectionTypeLoadException(
-                new Type[] { typeof(ModuleCatalogTests), null! },
+                brokenMetadata is { } broken ? new Type[] { typeof(ModuleCatalogTests), new MissingDependencyType(broken), null! } : new Type[] { typeof(ModuleCatalogTests), null! },
                 new Exception[] { new System.IO.FileNotFoundException("Optional extension dependency is missing.") });
+        }
+
+        private sealed class MissingDependencyType(BrokenMetadata broken) : TypeDelegator(typeof(object))
+        {
+            public override IList<CustomAttributeData> GetCustomAttributesData() =>
+                broken == BrokenMetadata.Attributes ? throw new System.IO.FileNotFoundException("Attribute dependency is missing.") : [];
+
+            public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) =>
+                broken == BrokenMetadata.Constructors ? throw new System.IO.FileNotFoundException("Constructor dependency is missing.") : base.GetConstructors(bindingAttr);
         }
 
         [Fact]

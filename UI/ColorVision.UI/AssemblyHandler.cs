@@ -228,7 +228,7 @@ namespace ColorVision.UI
             }
             catch (ReflectionTypeLoadException ex)
             {
-                types = ex.Types.OfType<Type>().ToArray();
+                types = ex.Types.OfType<Type>().Where(IsMetadataResolvable).ToArray();
                 _assemblyTypeCache.TryAdd(assembly, types);
                 Log.Error($"Failed to load types from assembly '{assembly.FullName}': {ex.Message}", ex);
                 return true;
@@ -237,6 +237,27 @@ namespace ColorVision.UI
             {
                 types = Array.Empty<Type>();
                 Log.Error($"Unexpected error loading types from assembly '{assembly.FullName}': {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// A type that survived a partial load can still reference the missing dependency through an
+        /// attribute or constructor signature, which makes discovery checks such as IsDefined or
+        /// GetConstructor throw. Keep only types whose metadata every consumer can safely read.
+        /// </summary>
+        private static bool IsMetadataResolvable(Type type)
+        {
+            try
+            {
+                _ = type.GetCustomAttributesData().Select(attribute => attribute.AttributeType).ToArray();
+                foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                    _ = constructor.GetParameters();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Skip partially loadable type '{type.FullName}': {ex.Message}");
                 return false;
             }
         }

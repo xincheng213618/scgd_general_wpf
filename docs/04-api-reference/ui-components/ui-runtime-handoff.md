@@ -38,13 +38,13 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 | `GetAssemblies()` | 已有快照时直接返回；首次调用才执行 `RefreshAssemblies()` |
 | `RegisterAssembly(assembly)` | 拒绝动态程序集；新登记项只有通过过滤且类型读取成功，才补入已有快照，并发布 `AssembliesChanged`。每次新增登记均清空通用实现类型缓存；重复登记同一程序集直接返回，不是强制重试 |
 | `RefreshAssemblies()` | 合并 AppDomain 已加载项和显式登记项（只认登记模式下仅取登记项），过滤并读取类型后重建程序集快照；清空通用实现类型缓存，保留成功的程序集类型缓存。已有快照且程序集集合变化时发布 `AssembliesChanged`，首次建立快照不发布 |
-| `GetTypes(assembly)` | 完整或部分成功时按程序集复用类型快照；`ReflectionTypeLoadException` 保留可加载项，其它异常记录错误并返回空集合、不缓存。直接调用不额外执行目录/名称过滤 |
+| `GetTypes(assembly)` | 完整或部分成功时按程序集复用类型快照；`ReflectionTypeLoadException` 保留特性与构造签名都能解析的可加载项，其它异常记录错误并返回空集合、不缓存。直接调用不额外执行目录/名称过滤 |
 | `GetImplementationTypes(type)` | 在发现视图中返回可赋值给该接口或基类的非抽象、非开放泛型 class，按服务类型缓存，程序集集合变化时清空。不检查构造函数形态，由调用方决定如何构造 |
 | `ClearCaches()` | 清空程序集快照、程序集类型缓存和通用实现类型缓存并发布 `AssembliesChanged`；保留显式登记集合，不卸载 DLL，不清理已创建对象 |
 
 `AssembliesChanged` 在锁外同步触发，订阅者只应丢弃自己的类型缓存，下次查询时重建；它不重建已显示的菜单、设置窗口或已创建的 provider。`IAssemblyService` 为 `GetTypes`、`GetImplementationTypes` 和该事件提供默认实现，其它实现不提供事件时，消费者只是不会自动失效。
 
-`Assembly.GetTypes()` 抛出 `ReflectionTypeLoadException` 时，AssemblyHandler 记录错误并保留 `Types` 中的非空项，该程序集仍可进入发现视图，正常扩展不会随缺失依赖的类型一起消失。其它类型读取异常返回空集合，并使程序集无法进入新建或刷新的视图。应核对目标类型及失败日志，部分成功不证明全部扩展可用。
+`Assembly.GetTypes()` 抛出 `ReflectionTypeLoadException` 时，AssemblyHandler 记录错误并保留 `Types` 中的非空项；其中特性或构造函数签名仍引用缺失依赖的类型也会剔除并记录 `Skip partially loadable type` 警告（这类类型即使可构造，也会让消费方的 `IsDefined`、`GetCustomAttribute` 或 `GetConstructor` 抛异常），该程序集仍可进入发现视图，正常扩展不会随缺失依赖的类型一起消失。其它类型读取异常返回空集合，并使程序集无法进入新建或刷新的视图。应核对目标类型及失败日志，部分成功不证明全部扩展可用。完整加载的程序集不做该检查，成员签名引用缺失依赖时，菜单扫描会跳过该类型并记录 `Skip menu discovery` 警告，其它消费方按各自容错处理。
 
 通用 `LoadImplementations<T>(params object?[]? args)` 要求 `T` 为接口，否则抛出 `Type parameter T must be an interface`。候选取自 `GetImplementationTypes`，并要求具有公共无参构造；缓存的是候选类型，每次调用都重新实例化。`args` 当前不传给构造函数，不能靠此参数注入依赖。单项构造异常记录 `Failed to create instance` 后继续，其它实例仍可返回。构造可以产生副作用，这个方法也不统一调用 `Initialize`、`Dispose` 或业务命令。
 
@@ -73,7 +73,7 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 
 修改发现代码时，使用已知且无害的测试扩展，分别验证“程序集进入视图 → 类型进入候选 → 实例创建 → 目标宿主呈现”。涉及配置保存、热键注册、Socket 或任务执行，再按对应契约验证；不要用连接成功、窗口能打开或出现图标代替这些结果。
 
-- `ModuleCatalogTests` 用记录型服务检查重复登记与封存；另用真实 AssemblyHandler 检查 Rbac provider 进入既有快照、GetTypes 复用、部分类型加载失败保留可用项，以及并发旧查询无法回填失效缓存。它不覆盖所有位置/名称过滤、其它读取异常、构造异常或各消费方缓存。
+- `ModuleCatalogTests` 用记录型服务检查重复登记与封存；另用真实 AssemblyHandler 检查 Rbac provider 进入既有快照、GetTypes 复用、部分类型加载失败保留可用项并剔除特性或构造签名无法解析的类型，以及并发旧查询无法回填失效缓存。它不覆盖所有位置/名称过滤、其它读取异常、构造异常或各消费方缓存。
 - `PluginLoaderTests` 检查跳过匹配和文件存在；任意字节文件也能通过存在性断言，测试没有完整装载 DLL 或验证全部依赖。
 - `MenuDiscoveryExclusionTests` 检查指定旧类型缺失和部分保留候选/位置，不是完整菜单树或业务初始化测试。菜单、设置、热键等的专项测试在各自主题中说明。
 

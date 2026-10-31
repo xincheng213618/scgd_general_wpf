@@ -20,19 +20,28 @@ namespace ColorVision.UI.Menus
                 {
                     foreach (var t in AssemblyHandler.GetInstance().GetTypes(assembly))
                     {
-                        if (!IsConcreteMenuCandidate(t)) continue;
+                        // Member metadata can reference a missing dependency even when the type itself loaded;
+                        // skip that type so it cannot abort the main window's whole menu.
+                        try
+                        {
+                            if (!IsConcreteMenuCandidate(t)) continue;
 
-                        if (typeof(IMenuItem).IsAssignableFrom(t))
-                        {
-                            AddInstantiableType(itemTypes, t, nameof(IMenuItem));
+                            if (typeof(IMenuItem).IsAssignableFrom(t))
+                            {
+                                AddInstantiableType(itemTypes, t, nameof(IMenuItem));
+                            }
+                            else if (typeof(IMenuItemProvider).IsAssignableFrom(t))
+                            {
+                                AddInstantiableType(providerTypes, t, nameof(IMenuItemProvider));
+                            }
+                            else if (t.IsDefined(typeof(MenuItemAttribute), false))
+                            {
+                                AddInstantiableType(attributeTypes, t, nameof(MenuItemAttribute));
+                            }
                         }
-                        else if (typeof(IMenuItemProvider).IsAssignableFrom(t))
+                        catch (Exception ex)
                         {
-                            AddInstantiableType(providerTypes, t, nameof(IMenuItemProvider));
-                        }
-                        else if (t.IsDefined(typeof(MenuItemAttribute), false))
-                        {
-                            AddInstantiableType(attributeTypes, t, nameof(MenuItemAttribute));
+                            log.Warn($"Skip menu discovery for {t.FullName}: {ex.Message}");
                         }
                     }
                 }
