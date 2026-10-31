@@ -24,7 +24,7 @@ namespace ColorVision.UI.Tests;
 public sealed class CompatibilityLocalCalibrationFlowTests
 {
     [Fact]
-    public void TemplatePoiFollowsCameraOwnershipAndConsumesItsMemoryFrame() => StaTest.Run(() =>
+    public void TemplatePoiFollowsCameraOwnershipAndConsumesItsMemoryFrame() => WpfTestHost.Invoke(() => // TemplatePoi.Params is bound on the shared WPF host thread
     {
         using var scope = new DeviceScope();
         var camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));

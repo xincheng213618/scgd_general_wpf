@@ -82,7 +82,7 @@ public sealed class RepeatRegionEditorTests
     [Fact]
     public void WorkingArraysResizeTogetherAndOnlyApplyCommitsThem()
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             var camera = new LocalCameraNode { ExpTime = 350, AvgCount = 2 };
             var spectrum = new LocalSpectrumNode { IntegralTime = 250, NumberOfAverage = 3 };
@@ -111,7 +111,7 @@ public sealed class RepeatRegionEditorTests
     [Fact]
     public void InvalidBulkFillIsAtomicAndAutomaticExposureKeepsAverageEditable()
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             var camera = new LocalCameraNode { IsAutoExp = true, AvgCount = 2 };
             camera.Create();

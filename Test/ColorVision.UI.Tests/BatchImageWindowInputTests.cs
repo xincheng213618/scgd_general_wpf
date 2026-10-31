@@ -6,10 +6,11 @@ using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
 
+// The window resolves implicit styles from Application resources owned by the shared WPF host thread.
 public class BatchImageWindowInputTests
 {
     [Fact]
-    public void PreparedInputsNormalizeAndDeduplicateWithoutLoadingOrChangingSettings() => StaTest.Run(() =>
+    public void PreparedInputsNormalizeAndDeduplicateWithoutLoadingOrChangingSettings() => WpfTestHost.Invoke(() =>
     {
         CountingLoader loader = new();
         int algorithmCalls = 0;
@@ -70,7 +71,7 @@ public class BatchImageWindowInputTests
     [InlineData("invalid-file")]
     [InlineData("invalid-root")]
     [InlineData("outside-root")]
-    public void InvalidPreparedInputRejectsTheWholeBatch(string invalidKind) => StaTest.Run(() =>
+    public void InvalidPreparedInputRejectsTheWholeBatch(string invalidKind) => WpfTestHost.Invoke(() =>
     {
         CountingLoader loader = new();
         BatchImageProcessingWindow window = CreateWindow(loader);
@@ -102,7 +103,7 @@ public class BatchImageWindowInputTests
     });
 
     [Fact]
-    public void BusyAndClosedWindowsRejectPreparedInputs() => StaTest.Run(() =>
+    public void BusyAndClosedWindowsRejectPreparedInputs() => WpfTestHost.Invoke(() =>
     {
         BatchImageProcessingWindow window = CreateWindow(new CountingLoader());
         FieldInfo cancellationField = typeof(BatchImageProcessingWindow)
@@ -128,7 +129,7 @@ public class BatchImageWindowInputTests
     });
 
     [Fact]
-    public void PreparedInputsRequireTheOwningDispatcher() => StaTest.Run(() =>
+    public void PreparedInputsRequireTheOwningDispatcher() => WpfTestHost.Invoke(() =>
     {
         BatchImageProcessingWindow window = CreateWindow(new CountingLoader());
         try

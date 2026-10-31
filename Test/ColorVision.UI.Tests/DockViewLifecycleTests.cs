@@ -858,10 +858,21 @@ public sealed class DockViewLifecycleTests
         private readonly Action<Control, string>? _title;
         private readonly Action? _showAll;
         private readonly Control? _lastActive;
+        private readonly Control[] _views;
+        private readonly DockViewRegistration[] _registrationsBefore;
         public LayoutDocumentPane Pane { get; } = new();
+
+        // DockViewManager is a process-wide singleton; other test classes leave views and registrations
+        // behind, and ShowAllViews would re-open them into this scope's pane.
+        private List<DockViewRegistration> Registrations => (List<DockViewRegistration>)typeof(DockViewManager)
+            .GetField("_registrations", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(_manager)!;
 
         public Scope()
         {
+            _views = _manager.Views.ToArray();
+            _registrationsBefore = Registrations.ToArray();
+            _manager.Views.Clear();
+            Registrations.Clear();
             _active = _manager.ActiveViewHandler;
             _select = _manager.SelectViewHandler;
             _added = _manager.ViewAddedHandler;
@@ -892,6 +903,10 @@ public sealed class DockViewLifecycleTests
             _manager.ViewTitleChangedHandler = _title;
             _manager.ShowAllViewsHandler = _showAll;
             _manager.LastActiveView = _lastActive;
+            _manager.Views.Clear();
+            _manager.Views.AddRange(_views);
+            Registrations.Clear();
+            Registrations.AddRange(_registrationsBefore);
             WorkspaceManager.LayoutDocumentPane = _previousPane;
             WorkspaceManager.layoutRoot = _previousRoot;
             ConfigService.SetInstance(_previousConfig!);

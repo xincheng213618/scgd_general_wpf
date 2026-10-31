@@ -195,6 +195,8 @@ public sealed class FlowNodeComparisonTests : IDisposable
         string target = Path.GetFullPath(_directory);
         if (!target.StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Unexpected test directory.");
+        // The analysis data source under test opens pooled connections to ui.db.
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         Directory.Delete(target, recursive: true);
     }
 }

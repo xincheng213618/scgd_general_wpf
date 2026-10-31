@@ -57,7 +57,7 @@ public sealed class ResultHistoryTests
     [Fact]
     public void EvictingASelectedResultClearsTheListSelection()
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             var history = new ResultHistoryCollection<Row>(row => row.Id, 1) { new() { Id = 1 } };
             ListView list = new() { ItemsSource = history, SelectedItem = history[0] };
@@ -117,7 +117,7 @@ public sealed class ResultHistoryTests
     [InlineData(true, 2, 2)]
     public void HistoryQueryLoadsFullyAndTheNextLiveResultsRestoreTheLimit(bool convert, int requested, int expected)
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite, IsAutoCloseConnection = false });
             db.CodeFirst.InitTables<Row>();
@@ -148,7 +148,7 @@ public sealed class ResultHistoryTests
     [Fact]
     public void LargeSearchLoadsFullyAndContinuousTestingCanEvictItsRecords()
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             var rows = new ResultHistoryCollection<Row>(row => row.Id, 500);
             for (int id = 1; id <= 1000; id++) rows.QueryResults.Add(new Row { Id = id });
