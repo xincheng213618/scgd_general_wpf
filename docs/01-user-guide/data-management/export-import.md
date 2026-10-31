@@ -62,6 +62,6 @@ related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.
 
 ## 源码与验证边界
 
-配置保存、备份和加载在 `UI/ColorVision.UI/ConfigHandler.cs`；流程入口在 `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`；图像快照与原图保存入口在 `UI/ColorVision.ImageEditor/ImageView.Snapshot.cs`。
+配置加载在 `UI/ColorVision.UI/ConfigHandler.cs`，保存在 `ConfigHandler.Save.cs`，默认值与备份在 `ConfigHandler.Backup.cs`；流程入口在 `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`；图像快照与原图保存入口在 `UI/ColorVision.ImageEditor/ImageView.Snapshot.cs`。
 
 `ConfigHandlerPersistenceTests.cs` 覆盖配置重载和持久化的局部契约，不等于所有模块迁移已验证；`FlowPackageCompatibilityTests.cs` 覆盖流程包兼容、完整性与模板引用；项目报表字段和 Socket/MES 交付仍需对应样例与项目测试。
