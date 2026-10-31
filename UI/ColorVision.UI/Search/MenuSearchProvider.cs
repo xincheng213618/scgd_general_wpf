@@ -4,7 +4,7 @@ using ColorVision.UI.Menus.Base.File;
 using log4net;
 using System.Windows;
 
-namespace ColorVision.UI.Serach
+namespace ColorVision.UI.Search
 {
     public class MenuSearchProvider: ISearchProvider
     {

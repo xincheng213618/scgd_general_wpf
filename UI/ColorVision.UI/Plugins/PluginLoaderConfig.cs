@@ -9,14 +9,14 @@ using System.Text;
 
 namespace ColorVision.UI.Plugins
 {
-    public class PluginLoaderrConfig : ViewModelBase
+    public class PluginLoaderConfig : ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PluginLoaderrConfig));
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginLoaderConfig));
         private static readonly object locker = new();
-        private static PluginLoaderrConfig? _instance;
+        private static PluginLoaderConfig? _instance;
         private static bool _processExitRegistered;
 
-        public static PluginLoaderrConfig Instance
+        public static PluginLoaderConfig Instance
         {
             get
             {
@@ -54,7 +54,7 @@ namespace ColorVision.UI.Plugins
             }
         }
 
-        private static PluginLoaderrConfig Load()
+        private static PluginLoaderConfig Load()
         {
             string configFilePath = GetCurrentConfigFilePath();
             try
@@ -62,7 +62,7 @@ namespace ColorVision.UI.Plugins
                 if (File.Exists(configFilePath))
                 {
                     string json = File.ReadAllText(configFilePath);
-                    PluginLoaderrConfig? config = JsonConvert.DeserializeObject<PluginLoaderrConfig>(json);
+                    PluginLoaderConfig? config = JsonConvert.DeserializeObject<PluginLoaderConfig>(json);
                     if (config != null)
                     {
                         config.ConfigFilePath = configFilePath;
@@ -76,7 +76,7 @@ namespace ColorVision.UI.Plugins
                 log.Warn($"Load plugin config failed: {configFilePath}", ex);
             }
 
-            return new PluginLoaderrConfig { ConfigFilePath = configFilePath };
+            return new PluginLoaderConfig { ConfigFilePath = configFilePath };
         }
 
         private static void RegisterProcessExitSave()

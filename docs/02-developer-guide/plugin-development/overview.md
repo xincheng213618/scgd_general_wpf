@@ -3,8 +3,8 @@ knowledge_id: "plugins.model"
 knowledge_type: "topic"
 status: "current"
 summary: "PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。"
-aliases: ["插件生命周期","插件菜单为什么没出现","插件能否卸载和热更新","插件禁用后仍运行","requires","deps.json","Loaded","IPlugin","PluginManifest","PluginLoader","PluginLoaderrConfig","ModuleCatalog"]
-code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","UI/ColorVision.Common/Interfaces/IPlugin.cs","UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs","UI/ColorVision.UI/Plugins/PluginManifest.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginLoadReport.cs","UI/ColorVision.UI/Plugins/PluginLoaderrConfig.cs","UI/ColorVision.UI/Plugins/PluginInfo.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/StatusBar/StatusBarManager.cs","UI/ColorVision.UI.Desktop/Marketplace/PluginUpdateCompatibility.cs"]
+aliases: ["插件生命周期","插件菜单为什么没出现","插件能否卸载和热更新","插件禁用后仍运行","requires","deps.json","Loaded","IPlugin","PluginManifest","PluginLoader","PluginLoaderConfig","ModuleCatalog"]
+code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","UI/ColorVision.Common/Interfaces/IPlugin.cs","UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs","UI/ColorVision.UI/Plugins/PluginManifest.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginLoadReport.cs","UI/ColorVision.UI/Plugins/PluginLoaderConfig.cs","UI/ColorVision.UI/Plugins/PluginInfo.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/StatusBar/StatusBarManager.cs","UI/ColorVision.UI.Desktop/Marketplace/PluginUpdateCompatibility.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginLoaderTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs","Test/ColorVision.UI.Tests/PluginUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs"]
 related: ["plugins.index","plugins.getting-started","ui.discovery"]
 ---
@@ -46,13 +46,13 @@ related: ["plugins.index","plugins.getting-started","ui.discovery"]
 
 ## 禁用状态、缓存与 legacy
 
-`PluginLoaderrConfig.Plugins` 主要以 manifest ID 保存 `PluginInfo`。扫描开始时，用磁盘清单中的有效 ID（否则用目录名）计算保留集合，删除已无对应候选的缓存项；这只删配置记录，不卸载程序集。
+`PluginLoaderConfig.Plugins` 主要以 manifest ID 保存 `PluginInfo`。扫描开始时，用磁盘清单中的有效 ID（否则用目录名）计算保留集合，删除已无对应候选的缓存项；这只删配置记录，不卸载程序集。
 
 对单个目录，装载器先检查目录名是否退役、缓存中同目录名是否禁用，以及是否属于本次跳过名单，再解析清单。解析后按 manifest ID 新建或更新 `PluginInfo`：新项默认 `Enabled=true`，已有项保留禁用状态，再执行退役/禁用/本次跳过判断。当前退役名单包含 `EventVWR`。缓存字典的默认键比较与大小写不敏感的退役/跳过集合并不相同；不要通过改 ID 或只改大小写来尝试绕过管理状态。
 
 `skipOncePluginKeys` 可按 manifest ID 或目录名匹配，匹配不区分大小写，只影响该次扫描；它不自动改写 `Enabled`。`Enabled=false` 是后续装载时的跳过条件，不是停止当前插件的命令。
 
-缓存文件是 `PluginLoaderrConfig.ConfigFilePath`：优先使用当前目录已有的 `Config`，否则在应用数据目录中选择公司配置目录，再按安装路径哈希区分 `Plugins/<hash>.json`。装载结束和进程退出时保存；保存异常只记日志。因此改禁用状态后仍需确认保存结果，不能假定所有安装实例共享同一份状态。
+缓存文件是 `PluginLoaderConfig.ConfigFilePath`：优先使用当前目录已有的 `Config`，否则在应用数据目录中选择公司配置目录，再按安装路径哈希区分 `Plugins/<hash>.json`。装载结束和进程退出时保存；保存异常只记日志。因此改禁用状态后仍需确认保存结果，不能假定所有安装实例共享同一份状态。
 
 没有 manifest 的 legacy 候选尝试 `<目录名>/<目录名>.dll`，成功时可以登记模块并被后续程序集扫描发现，但该分支**不会新建对应 `PluginInfo` 缓存项**。所以管理列表不是当前进程已加载程序集的完整清单；有缓存条目也不表示 DLL 已成功加载，缓存项在实际加载前就可能建立。
 

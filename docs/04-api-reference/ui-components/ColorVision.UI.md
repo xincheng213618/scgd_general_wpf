@@ -4,7 +4,7 @@ knowledge_type: "index"
 status: "current"
 summary: "ColorVision.UI壳层责任入口：按配置、插件、菜单、热键、搜索、语言、状态栏、属性编辑和日志定位规范主题，业务行为仍归所属模块。"
 aliases: ["菜单和属性编辑器在哪个模块", "ColorVision.UI", "壳层基础设施", "ConfigSettingManager"]
-code_paths: ["UI/ColorVision.UI/README.md", "UI/ColorVision.UI/ColorVision.UI.csproj", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/LogImp", "UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Serach", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs"]
+code_paths: ["UI/ColorVision.UI/README.md", "UI/ColorVision.UI/ColorVision.UI.csproj", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/LogImp", "UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Search", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs"]
 test_paths: []
 related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.search", "ui.localization", "ui.status-bar", "operations.logs", "ui.desktop"]
 ---
@@ -20,12 +20,12 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 | 责任或问题 | 主要实现 | 规范主题 |
 | --- | --- | --- |
 | 配置对象来源、保存、重载、备份与发布失败 | `ConfigHandler.cs`、`ConfigSetting/ConfigServiceAdapters.cs` | [配置持久化与重载](./configuration.md) |
-| 插件 DLL、manifest、依赖门禁与禁用状态 | `Plugins/PluginLoader.cs`、`PluginLoaderrConfig.cs` | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) |
+| 插件 DLL、manifest、依赖门禁与禁用状态 | `Plugins/PluginLoader.cs`、`PluginLoaderConfig.cs` | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) |
 | 插件构建、安装目录替换、备份恢复和导出 | `Plugins/PluginExtractor.cs`；安装替换与恢复备份在 `UI/ColorVision.UI.Desktop/Plugins/`，主程序更新在 `UI/ColorVision.UI.Desktop/Update/` | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) |
 | 菜单、设置、状态栏、热键与搜索的扩展发现 | `AssemblyHandler.cs` 及各消费者 | [UI 发现链](./ui-runtime-handoff.md) |
 | 菜单树、隐藏、命令入口与管理提交 | `Menus/MenuManager.cs`、`UI/ColorVision.UI.Desktop/MenuItemManager/` | [菜单契约](./menus.md) |
 | 快捷键定义、设置草稿、注册冲突和释放 | `HotKey/` | [快捷键契约](./hotkeys.md) |
-| 搜索候选、刷新缓存、排序和结果执行 | `Serach/`，保留实际目录拼写 | [产品搜索契约](./search.md) |
+| 搜索候选、刷新缓存、排序和结果执行 | `Search/` | [产品搜索契约](./search.md) |
 | 语言资源、系统文化回退与确认重启 | `Languages/`、各模块 Properties 资源 | [界面语言契约](./localization.md) |
 | 状态项目、活动文档、绑定刷新和宿主清理 | `StatusBar/`、Common 状态接口及业务 provider | [状态栏契约](./status-bar.md) |
 | 属性元数据、编辑器选择、工作副本和提交 | `PropertyEditor/` | [PropertyGrid 编辑契约](./property-grid.md) |

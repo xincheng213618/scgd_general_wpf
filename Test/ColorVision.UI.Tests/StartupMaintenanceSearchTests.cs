@@ -1,7 +1,7 @@
 using ColorVision.Recovery;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Serach;
+using ColorVision.UI.Search;
 using System.Globalization;
 using System.Windows.Input;
 

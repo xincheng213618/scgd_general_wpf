@@ -2,7 +2,7 @@ using ColorVision.Themes;
 using System.ComponentModel;
 using System.Windows;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 /// <summary>A normal, non-modal owned window for application search.</summary>
 public partial class SearchWindow : Window

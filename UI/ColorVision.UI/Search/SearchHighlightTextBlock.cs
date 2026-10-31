@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 public sealed class SearchHighlightTextBlock : TextBlock
 {

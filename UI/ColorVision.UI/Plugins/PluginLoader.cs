@@ -18,7 +18,7 @@ namespace ColorVision.UI.Plugins
             "EventVWR"
         };
 
-        public static PluginLoaderrConfig Config => PluginLoaderrConfig.Instance;
+        public static PluginLoaderConfig Config => PluginLoaderConfig.Instance;
 
         /// <summary>The report of the most recent load pass; empty before the first pass.</summary>
         public static PluginLoadReport LastReport => Volatile.Read(ref _lastReport);
@@ -120,7 +120,7 @@ namespace ColorVision.UI.Plugins
             var skipOncePluginIdSet = new HashSet<string>(
                 skipOncePluginIds?.Where(id => !string.IsNullOrWhiteSpace(id)) ?? [],
                 StringComparer.OrdinalIgnoreCase);
-            PluginLoaderrConfig pluginConfig = PluginLoaderrConfig.Instance;
+            PluginLoaderConfig pluginConfig = PluginLoaderConfig.Instance;
             var plugins = pluginConfig.Plugins;
             path = Path.GetFullPath(path); // 保证path是绝对路径
                                            // 先收集当前所有的插件目录名（通常以插件Id为key）

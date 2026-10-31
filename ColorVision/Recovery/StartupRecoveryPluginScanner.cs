@@ -35,7 +35,7 @@ namespace ColorVision.Recovery
             }
 
             IReadOnlyDictionary<string, PluginInfo> configuredPlugins =
-                PluginLoaderrConfig.Instance.Plugins;
+                PluginLoaderConfig.Instance.Plugins;
             List<StartupRecoveryPluginItem> items = new();
 
             if (Directory.Exists(fullPluginsDirectory))

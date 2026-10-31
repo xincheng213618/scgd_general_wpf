@@ -5,7 +5,7 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Languages;
-using ColorVision.UI.Serach;
+using ColorVision.UI.Search;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -31,7 +31,7 @@ public partial class ConfigurationMaintenanceControl : UserControl
     public static IReadOnlyList<string> ResetSectionNames { get; } = Array.AsReadOnly(new[]
     {
         typeof(ThemeConfig), typeof(LanguageConfig), typeof(MainWindowConfig), typeof(HotKeyConfig), typeof(SearchConfig), typeof(MultiImageViewerConfig)
-    }.SelectMany(type => new[] { type.FullName!, type.Name }).Distinct(StringComparer.Ordinal).ToArray());
+    }.SelectMany(ConfigSectionNames.GetReadCandidates).Distinct(StringComparer.Ordinal).ToArray());
     public ConfigurationMaintenanceViewModel ViewModel { get; } = new();
     private readonly ConfigHandler? configHandler;
     private Window? owner;

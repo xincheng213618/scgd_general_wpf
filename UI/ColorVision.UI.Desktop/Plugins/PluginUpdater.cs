@@ -55,7 +55,7 @@ namespace ColorVision.UI.Plugins
                 if (targetPluginDirectories.Count == 0) return;
 
                 ConfigService.Instance.SaveConfigs();
-                PluginLoaderrConfig.Instance.Save();
+                PluginLoaderConfig.Instance.Save();
 
                 tempDirectory = Path.Combine(Path.GetTempPath(), $"ColorVisionPluginsUpdate-{Guid.NewGuid():N}");
                 Directory.CreateDirectory(tempDirectory);
@@ -159,7 +159,7 @@ namespace ColorVision.UI.Plugins
             {
                 // 1. 保存配置（原逻辑）
                 ConfigService.Instance.SaveConfigs();
-                PluginLoaderrConfig.Instance.Save();
+                PluginLoaderConfig.Instance.Save();
 
                 // 2. 定义临时与目标路径
                 tempRoot = Path.Combine(Path.GetTempPath(), $"ColorVisionPluginsUpdate-{Guid.NewGuid():N}");

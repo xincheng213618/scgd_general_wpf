@@ -725,7 +725,7 @@ namespace ColorVision.Recovery
 
         private static void PersistDisabledPlugins(IEnumerable<StartupRecoveryPluginItem> selectedPlugins)
         {
-            PluginLoaderrConfig config = PluginLoaderrConfig.Instance;
+            PluginLoaderConfig config = PluginLoaderConfig.Instance;
             foreach (StartupRecoveryPluginItem item in selectedPlugins)
             {
                 KeyValuePair<string, PluginInfo> existingPair = config.Plugins

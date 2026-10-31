@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 public partial class SearchControl : UserControl
 {

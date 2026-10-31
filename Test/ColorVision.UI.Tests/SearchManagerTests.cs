@@ -1,7 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Serach;
+using ColorVision.UI.Search;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Input;

@@ -1,7 +1,7 @@
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
 
-namespace ColorVision.UI.Serach
+namespace ColorVision.UI.Search
 {
     public enum SearchEngine
     {
@@ -10,6 +10,7 @@ namespace ColorVision.UI.Serach
         Bing
     }
 
+    [ConfigSection("ColorVision.UI.Search.SearchConfig", Aliases = ["ColorVision.UI.Serach.SearchConfig"])]
     public class SearchConfig : ViewModelBase, IConfig
     {
         public static SearchConfig Instance => ConfigService.Instance.GetRequiredService<SearchConfig>();

@@ -451,7 +451,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public void Restart()
         {
             ConfigService.Instance.SaveConfigs();
-            PluginLoaderrConfig.Instance.Save();
+            PluginLoaderConfig.Instance.Save();
 
             Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-c MenuPluginManager");
 

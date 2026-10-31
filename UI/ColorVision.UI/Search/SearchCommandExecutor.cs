@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 internal static class SearchCommandExecutor
 {

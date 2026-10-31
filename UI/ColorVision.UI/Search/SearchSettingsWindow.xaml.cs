@@ -1,7 +1,7 @@
 using ColorVision.Themes;
 using System.Windows;
 
-namespace ColorVision.UI.Serach
+namespace ColorVision.UI.Search
 {
     public partial class SearchSettingsWindow : Window
     {

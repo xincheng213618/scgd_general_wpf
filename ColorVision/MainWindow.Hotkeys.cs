@@ -4,7 +4,7 @@ using ColorVision.Solution.Workspace;
 using AvalonDock;
 using ColorVision.Common.MVVM;
 using ColorVision.Copilot;
-using ColorVision.UI.Serach;
+using ColorVision.UI.Search;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;

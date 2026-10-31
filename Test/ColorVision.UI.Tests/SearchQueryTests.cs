@@ -1,5 +1,5 @@
 using ColorVision.Common.MVVM;
-using ColorVision.UI.Serach;
+using ColorVision.UI.Search;
 
 namespace ColorVision.UI.Tests;
 

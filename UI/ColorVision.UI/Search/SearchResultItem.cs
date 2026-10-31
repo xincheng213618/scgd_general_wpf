@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 /// <summary>A display snapshot with the original command retained for execution on its owning UI context.</summary>
 public sealed class SearchResultItem

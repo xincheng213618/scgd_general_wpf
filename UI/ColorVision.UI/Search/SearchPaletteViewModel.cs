@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using log4net;
 using System.Globalization;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 internal sealed record SearchCategoryOption(string? Key, string Label);
 

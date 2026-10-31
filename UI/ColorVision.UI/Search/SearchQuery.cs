@@ -1,4 +1,4 @@
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 /// <summary>Deterministic, side-effect-free ranking shared by static and provider-produced results.</summary>
 public static class SearchQuery

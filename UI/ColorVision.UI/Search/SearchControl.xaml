@@ -1,7 +1,7 @@
-<UserControl x:Class="ColorVision.UI.Serach.SearchControl"
+<UserControl x:Class="ColorVision.UI.Search.SearchControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ColorVision.UI.Serach"
+             xmlns:local="clr-namespace:ColorVision.UI.Search"
              x:Name="RootControl" UseLayoutRounding="True"
              Foreground="{DynamicResource GlobalTextBrush}" Background="Transparent"
              KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="Palette_PreviewKeyDown">

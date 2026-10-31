@@ -466,7 +466,7 @@ namespace ColorVision.UI.Plugins
                 }, cancellationToken);
 
                 ConfigService.Instance.SaveConfigs();
-                PluginLoaderrConfig.Instance.Save();
+                PluginLoaderConfig.Instance.Save();
                 ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses();
 
                 string executablePath = Environment.ProcessPath

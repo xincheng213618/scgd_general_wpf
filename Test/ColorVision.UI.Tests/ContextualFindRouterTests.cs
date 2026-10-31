@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Copilot;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.LogImp.Controls;
-using ColorVision.UI.Serach;
+using ColorVision.UI.Search;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Search;
 using System.Windows;

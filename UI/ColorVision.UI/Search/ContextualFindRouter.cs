@@ -6,7 +6,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 /// <summary>Routes Find to the focused content without simulating keys or searching another document.</summary>
 public static class ContextualFindRouter

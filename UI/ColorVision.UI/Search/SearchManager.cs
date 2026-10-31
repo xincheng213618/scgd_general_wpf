@@ -6,7 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 /// <summary>Coordinates UI-owned providers without moving legacy UI objects to worker threads.</summary>
 public class SearchManager

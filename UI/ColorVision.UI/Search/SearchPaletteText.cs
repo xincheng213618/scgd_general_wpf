@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Resources;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 public static class SearchPaletteText
 {
-    private static readonly ResourceManager Resources = new("ColorVision.UI.Serach.SearchPaletteResources", typeof(SearchPaletteText).Assembly);
+    private static readonly ResourceManager Resources = new("ColorVision.UI.Search.SearchPaletteResources", typeof(SearchPaletteText).Assembly);
     public static string Get(string key) => Resources.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     public static string Title => Get(nameof(Title));
     public static string Placeholder => Get(nameof(Placeholder));

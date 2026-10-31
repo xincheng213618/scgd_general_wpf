@@ -2,7 +2,7 @@ using ColorVision.UI.HotKey;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.UI.Serach;
+namespace ColorVision.UI.Search;
 
 /// <summary>Refocuses search using the owner's current bindings in the independent search window.</summary>
 public sealed class SearchWindowHotkeyBridge : IDisposable
