@@ -19,7 +19,7 @@ related: ["ui.solution", "ui.configuration", "ui.image-editor", "ui.text-editor"
 
 ## 编辑器注册和默认选择
 
-`EditorManager` 初始化时扫描可用程序集，并监听后续 `AssemblyLoad`。发现输入是具体 `IEditor` 类型上的 `EditorForExtensionAttribute`、`GenericEditorAttribute` 和 `FolderEditorAttribute`；运行期也可直接 `RegisterEditor(EditorDescriptor)`。只存在一个类、不带发现属性且未显式注册，不会自动成为候选。
+`EditorManager` 初始化时扫描发现视图中的程序集，并在 `AssembliesChanged` 后登记新出现的程序集；没有程序集服务的宿主退回监听 `AppDomain.AssemblyLoad`。发现输入是具体 `IEditor` 类型上的 `EditorForExtensionAttribute`、`GenericEditorAttribute` 和 `FolderEditorAttribute`；运行期也可直接 `RegisterEditor(EditorDescriptor)`。只存在一个类、不带发现属性且未显式注册，不会自动成为候选。
 
 注册以 `EditorDescriptor.Id` 为键，不区分大小写；相同 ID 的新注册会替换旧注册，包括旧的文件夹、通用和各扩展名关联。扩展名去空白、补点并转小写；非通用文件编辑器必须声明扩展名，文件夹编辑器不使用扩展名。未指定稳定 ID 的属性注册回退到类型全名。注册验证不等于构造成功：没有 `Factory` 时仍需在打开时通过 `Activator.CreateInstance` 创建实例。
 

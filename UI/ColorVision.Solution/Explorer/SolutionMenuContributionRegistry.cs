@@ -69,7 +69,7 @@ namespace ColorVision.Solution.Explorer
         private static readonly HashSet<Assembly> _registeredAssemblies = new();
         private static readonly object _syncRoot = new();
         private static bool _initialized;
-        private static bool _assemblyLoadSubscribed;
+        private static bool _discoverySubscribed;
 
         public static event EventHandler? ContributionsChanged;
 
@@ -83,15 +83,13 @@ namespace ColorVision.Solution.Explorer
             {
                 if (_initialized)
                     return;
-                if (!_assemblyLoadSubscribed)
+                if (!_discoverySubscribed)
                 {
-                    AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
-                    _assemblyLoadSubscribed = true;
+                    SolutionAssemblyDiscovery.Subscribe(OnAssembliesChanged);
+                    _discoverySubscribed = true;
                 }
 
-                Assembly[] assemblies = AssemblyService.Instance?.GetAssemblies()
-                    ?? AppDomain.CurrentDomain.GetAssemblies();
-                foreach (Assembly assembly in assemblies)
+                foreach (Assembly assembly in SolutionAssemblyDiscovery.GetAssemblies())
                     changed |= RegisterContributionsFromAssemblyCore(assembly);
                 _initialized = true;
             }
@@ -164,11 +162,12 @@ namespace ColorVision.Solution.Explorer
             return menuItems;
         }
 
-        private static void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
+        private static void OnAssembliesChanged(IEnumerable<Assembly> assemblies)
         {
-            bool changed;
+            bool changed = false;
             lock (_syncRoot)
-                changed = RegisterContributionsFromAssemblyCore(e.LoadedAssembly);
+                foreach (Assembly assembly in assemblies)
+                    changed |= RegisterContributionsFromAssemblyCore(assembly);
             if (changed)
                 ContributionsChanged?.Invoke(null, EventArgs.Empty);
         }
@@ -179,7 +178,7 @@ namespace ColorVision.Solution.Explorer
                 return false;
 
             bool changed = false;
-            foreach (Type type in GetLoadableTypes(assembly))
+            foreach (Type type in SolutionAssemblyDiscovery.GetTypes(assembly))
             {
                 var attribute = type.GetCustomAttribute<SolutionMenuContributionAttribute>();
                 if (attribute == null
@@ -249,22 +248,6 @@ namespace ColorVision.Solution.Explorer
         {
             if (string.IsNullOrWhiteSpace(contribution.Id))
                 throw new ArgumentException("菜单贡献 Id 不允许为空。", nameof(contribution));
-        }
-
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.OfType<Type>();
-            }
-            catch
-            {
-                return Array.Empty<Type>();
-            }
         }
     }
 }

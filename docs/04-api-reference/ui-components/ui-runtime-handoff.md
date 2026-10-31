@@ -50,7 +50,7 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 
 ## 各消费方的发现与刷新
 
-下表中的 API 需由实际宿主调用。只有菜单与文件打开/导出订阅 `AssembliesChanged`；其它消费方仍各自缓存，不能用一次 `RefreshAssemblies()` 代替所有更新。
+下表中的 API 需由实际宿主调用。只有菜单、文件打开/导出和 Solution 的编辑器、项目 Provider、项目模板与菜单贡献注册表订阅 `AssembliesChanged`；其它消费方仍各自缓存，不能用一次 `RefreshAssemblies()` 代替所有更新。
 
 | 能力 | 发现入口与条件 | 刷新范围与所属契约 |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 | 图像打开与工具 | `IEditorToolFactory` 构造时从 `GetImplementationTypes` 取 `IImageOpen`、工具和两类右键菜单接口，类型集合在多个图像视图间复用，按接口选取可解析构造函数 | RefreshToolBars 重建已有工具的控件，不重扫类型；当前 opener 还可覆盖工具。见[编辑器上下文](./image-editor-context.md) |
 | Socket | `SocketJsonDispatcher` / `SocketTextDispatcher` 构造时分别从 `GetImplementationTypes` 取 handler；SocketManager 默认构造器创建二者 | 各自保留 handler 集合；JSON 按 EventName 路由，文本按独立规则派发。连接存在不证明业务调用，见[Socket 协议](./ColorVision.SocketProtocol.md) |
 | 调度 | `QuartzSchedulerManager.Start` 从 `GetImplementationTypes` 取非抽象 IJob 类型并建立任务类型目录 | 任务恢复、触发器、运行和历史是不同阶段；从 InitializationTask、任务配置与错误记录排查。见[调度](./ColorVision.Scheduler.md) |
-| Solution 编辑器 | `EditorManager` 发现 IEditor 的扩展名/通用/目录标注，也接受显式描述符注册 | 监听 AppDomain.AssemblyLoad，具有自己的程序集去重和注册规则；不能套用菜单缓存结论。见[编辑器与文档](./editor-document-lifecycle.md) |
+| Solution 编辑器 | `EditorManager` 发现 IEditor 的扩展名/通用/目录标注，也接受显式描述符注册 | 订阅 `AssembliesChanged` 后按程序集增量登记并去重（无程序集服务时退回监听 `AppDomain.AssemblyLoad`），具有自己的注册规则；不能套用菜单缓存结论。见[编辑器与文档](./editor-document-lifecycle.md) |
 
 已经找到入口后的问题应转到对应契约：设置丢失查[配置持久化与重载](./configuration.md)；overlay 错位先核对底图、坐标空间及图像版本，再按[Engine 历史结果与中立算法](../engine-components/result-handoff-chain.md)分流；文件打不开先查[工作区与资源路由](./ColorVision.Solution.md)。主题外观、数据库操作和客户业务成功条件不由程序集发现证明。
 

@@ -89,41 +89,38 @@ namespace Pattern
         {
             await Task.Delay(30);
             // 1. 加载插件
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (Type type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IPattern)))
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IPattern).IsAssignableFrom(t) && !t.IsAbstract))
+                try
                 {
-                    try
-                    {
-                        var browsable = type.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true;
-                        if (!browsable) continue;
+                    var browsable = type.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true;
+                    if (!browsable) continue;
 
-                        var resourceManager = PropertyEditorHelper.GetResourceManager(type);
-                        var displayName = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name);
-                        var description = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "");
-                        var category = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<CategoryAttribute>()?.Category ?? "");
-                        IPattern pattern = (IPattern)Activator.CreateInstance(type);
-                        if (pattern != null)
-                        {
-                            var patternMeta = new PatternMeta
-                            {
-                                Id = type.FullName ?? type.Name,
-                                Name = displayName,
-                                Description = description,
-                                Category = category,
-                                Pattern = pattern
-                            };
-                            lock (Patterns)
-                            {
-                                Application.Current.Dispatcher.Invoke(() => Patterns.Add(patternMeta), DispatcherPriority.Background);
-                            }
-                            log.Info($"已加载图案生成器: {type.FullName}");
-                        }
-                    }
-                    catch (Exception ex)
+                    var resourceManager = PropertyEditorHelper.GetResourceManager(type);
+                    var displayName = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name);
+                    var description = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "");
+                    var category = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<CategoryAttribute>()?.Category ?? "");
+                    IPattern pattern = (IPattern)Activator.CreateInstance(type);
+                    if (pattern != null)
                     {
-                        log.Error($"加载图案生成器失败: {type.FullName}", ex);
+                        var patternMeta = new PatternMeta
+                        {
+                            Id = type.FullName ?? type.Name,
+                            Name = displayName,
+                            Description = description,
+                            Category = category,
+                            Pattern = pattern
+                        };
+                        lock (Patterns)
+                        {
+                            Application.Current.Dispatcher.Invoke(() => Patterns.Add(patternMeta), DispatcherPriority.Background);
+                        }
+                        log.Info($"已加载图案生成器: {type.FullName}");
                     }
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"加载图案生成器失败: {type.FullName}", ex);
                 }
             }
 

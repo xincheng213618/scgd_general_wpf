@@ -43,9 +43,8 @@ namespace ColorVision.Solution
 
         private EditorManager()
         {
-            AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
-            RegisterEditors(AssemblyService.Instance?.GetAssemblies()
-                ?? AppDomain.CurrentDomain.GetAssemblies());
+            SolutionAssemblyDiscovery.Subscribe(RegisterEditors);
+            RegisterEditors(SolutionAssemblyDiscovery.GetAssemblies());
             LoadConfiguredEditors();
         }
 
@@ -60,11 +59,6 @@ namespace ColorVision.Solution
             return normalized.ToLowerInvariant();
         }
 
-        private void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
-        {
-            RegisterEditors([e.LoadedAssembly]);
-        }
-
         private void RegisterEditors(IEnumerable<Assembly> assemblies)
         {
             bool changed = false;
@@ -75,7 +69,7 @@ namespace ColorVision.Solution
                     if (!_registeredAssemblies.Add(assembly))
                         continue;
 
-                    foreach (Type type in GetLoadableTypes(assembly))
+                    foreach (Type type in SolutionAssemblyDiscovery.GetTypes(assembly))
                     {
                         if (!typeof(IEditor).IsAssignableFrom(type) || type.IsInterface || type.IsAbstract)
                             continue;
@@ -242,22 +236,6 @@ namespace ColorVision.Solution
             return string.IsNullOrWhiteSpace(registeredId)
                 ? type.FullName ?? type.Name
                 : registeredId.Trim();
-        }
-
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.Where(type => type != null)!;
-            }
-            catch
-            {
-                return Enumerable.Empty<Type>();
-            }
         }
 
         private static List<EditorDescriptor> OrderDescriptors(IEnumerable<EditorDescriptor> descriptors)

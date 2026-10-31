@@ -701,16 +701,13 @@ namespace ProjectARVRPro.Process
 
         private void LoadProcesses()
         {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (Type type in AssemblyHandler.GetInstance().GetImplementationTypes(typeof(IProcess)))
             {
                 try
                 {
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IProcess).IsAssignableFrom(t) && !t.IsAbstract))
+                    if (Activator.CreateInstance(type) is IProcess process)
                     {
-                        if (Activator.CreateInstance(type) is IProcess process)
-                        {
-                            Processes.Add(process);
-                        }
+                        Processes.Add(process);
                     }
                 }
                 catch (Exception ex)
