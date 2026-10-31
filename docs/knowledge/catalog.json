@@ -9321,6 +9321,7 @@
         "UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs",
         "UI/ColorVision.UI/Plugins/PluginManifest.cs",
         "UI/ColorVision.UI/Plugins/PluginLoader.cs",
+        "UI/ColorVision.UI/Plugins/PluginLoadReport.cs",
         "UI/ColorVision.UI/Plugins/PluginLoaderrConfig.cs",
         "UI/ColorVision.UI/Plugins/PluginInfo.cs",
         "UI/ColorVision.UI/AssemblyHandler.cs",

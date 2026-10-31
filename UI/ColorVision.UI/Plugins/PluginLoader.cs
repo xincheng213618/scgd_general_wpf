@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Windows;
 
 
 namespace ColorVision.UI.Plugins
@@ -13,7 +12,7 @@ namespace ColorVision.UI.Plugins
     public static class PluginLoader
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginLoader));
-        private static int _lastLoadFailureCount;
+        private static PluginLoadReport _lastReport = PluginLoadReport.Empty;
         private static readonly HashSet<string> RetiredPluginIds = new(StringComparer.OrdinalIgnoreCase)
         {
             "EventVWR"
@@ -21,7 +20,10 @@ namespace ColorVision.UI.Plugins
 
         public static PluginLoaderrConfig Config => PluginLoaderrConfig.Instance;
 
-        public static bool LastLoadCompletedWithoutFailures => Volatile.Read(ref _lastLoadFailureCount) == 0;
+        /// <summary>The report of the most recent load pass; empty before the first pass.</summary>
+        public static PluginLoadReport LastReport => Volatile.Read(ref _lastReport);
+
+        public static bool LastLoadCompletedWithoutFailures => !LastReport.HasFailures;
 
         internal static bool IsRetiredPlugin(string? pluginId)
         {
@@ -53,39 +55,39 @@ namespace ColorVision.UI.Plugins
             return !string.IsNullOrWhiteSpace(dllPath) && File.Exists(dllPath);
         }
 
-        public static void LoadPlugins()
+        public static PluginLoadReport LoadPlugins()
         {
-            LoadPlugins("Plugins");
+            return LoadPlugins("Plugins");
         }
 
-        public static void LoadPlugins(ModuleCatalog moduleCatalog)
-        {
-            ArgumentNullException.ThrowIfNull(moduleCatalog);
-            LoadPlugins("Plugins", moduleCatalog);
-        }
-
-        public static void LoadPlugins(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds)
-        {
-            LoadPlugins(moduleCatalog, skipOncePluginIds, null);
-        }
-
-        public static void LoadPlugins(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds, Action<string>? onPluginLoading)
+        public static PluginLoadReport LoadPlugins(ModuleCatalog moduleCatalog)
         {
             ArgumentNullException.ThrowIfNull(moduleCatalog);
-            LoadPlugins("Plugins", moduleCatalog, skipOncePluginIds, onPluginLoading);
+            return LoadPlugins("Plugins", moduleCatalog);
         }
 
-        public static void LoadPlugins(string path)
+        public static PluginLoadReport LoadPlugins(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds)
         {
-            LoadPlugins(path, null);
+            return LoadPlugins(moduleCatalog, skipOncePluginIds, null);
         }
 
-        private static void LoadPlugins(string path, ModuleCatalog? moduleCatalog)
+        public static PluginLoadReport LoadPlugins(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds, Action<string>? onPluginLoading)
         {
-            LoadPlugins(path, moduleCatalog, null, null);
+            ArgumentNullException.ThrowIfNull(moduleCatalog);
+            return LoadPlugins("Plugins", moduleCatalog, skipOncePluginIds, onPluginLoading);
         }
 
-        public static Task LoadPluginsAsync(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds,
+        public static PluginLoadReport LoadPlugins(string path)
+        {
+            return LoadPlugins(path, null);
+        }
+
+        private static PluginLoadReport LoadPlugins(string path, ModuleCatalog? moduleCatalog)
+        {
+            return LoadPlugins(path, moduleCatalog, null, null);
+        }
+
+        public static Task<PluginLoadReport> LoadPluginsAsync(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds,
             Action<string>? onPluginLoading, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -97,19 +99,20 @@ namespace ColorVision.UI.Plugins
                 });
         }
 
-        private static void LoadPlugins(
+        private static PluginLoadReport LoadPlugins(
             string path,
             ModuleCatalog? moduleCatalog,
             IEnumerable<string>? skipOncePluginIds,
             Action<string>? onPluginLoading)
         {
-            LoadPluginsCoreAsync(path, moduleCatalog, skipOncePluginIds, onPluginLoading, null).GetAwaiter().GetResult();
+            return LoadPluginsCoreAsync(path, moduleCatalog, skipOncePluginIds, onPluginLoading, null).GetAwaiter().GetResult();
         }
 
-        private static async Task LoadPluginsCoreAsync(string path, ModuleCatalog? moduleCatalog,
+        private static async Task<PluginLoadReport> LoadPluginsCoreAsync(string path, ModuleCatalog? moduleCatalog,
             IEnumerable<string>? skipOncePluginIds, Action<string>? onPluginLoading, Func<Task>? yieldToUi)
         {
-            Volatile.Write(ref _lastLoadFailureCount, 0);
+            var results = new List<PluginLoadResult>();
+            Volatile.Write(ref _lastReport, PluginLoadReport.Empty);
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -164,9 +167,11 @@ namespace ColorVision.UI.Plugins
                 string manifestPath = Path.Combine(directory, "manifest.json");
                 PluginManifest manifest = null;
                 string dllPath = null;
+                string dirName = Path.GetFileName(directory);
+                void Record(PluginLoadStatus status, string? detail = null, string? userMessage = null, Exception? error = null)
+                    => results.Add(new PluginLoadResult(manifest?.Id ?? dirName, directory, status, detail, userMessage, error));
                 try
                 {
-                    string dirName = Path.GetFileName(directory);
                     PluginInfo pluginInfo = null;
 
                     // Directory-level recovery decisions must run before manifest parsing so a
@@ -174,18 +179,21 @@ namespace ColorVision.UI.Plugins
                     if (IsRetiredPlugin(dirName))
                     {
                         log.Info($"Skipped retired plugin directory '{directory}'.");
+                        Record(PluginLoadStatus.Retired);
                         continue;
                     }
 
                     if (plugins.TryGetValue(dirName, out pluginInfo) && !pluginInfo.Enabled)
                     {
                         log.Info($"Skipped disabled plugin directory '{directory}'.");
+                        Record(PluginLoadStatus.Disabled);
                         continue;
                     }
 
                     if (ShouldSkipPlugin(skipOncePluginIdSet, null, dirName))
                     {
                         log.Info($"Skipped plugin directory '{directory}' for this startup.");
+                        Record(PluginLoadStatus.Skipped);
                         continue;
                     }
 
@@ -195,8 +203,9 @@ namespace ColorVision.UI.Plugins
                         manifest = JsonConvert.DeserializeObject<PluginManifest>(manifestContent);
                         if (string.IsNullOrWhiteSpace(manifest.Id))
                         {
-                            RecordLoadFailure();
-                            log.Warn($"Plugin manifest is missing an Id: '{manifestPath}'.");
+                            string detail = $"Plugin manifest is missing an Id: '{manifestPath}'.";
+                            log.Warn(detail);
+                            Record(PluginLoadStatus.Failed, detail);
                             continue;
                         }
 
@@ -221,15 +230,20 @@ namespace ColorVision.UI.Plugins
                             pluginInfo.Name = manifest.Name;
                             pluginInfo.Description = manifest.Description;
                             log.Info($"Skipped retired plugin '{manifest.Id}'. Its functionality is built into ColorVision.");
+                            Record(PluginLoadStatus.Retired);
                             continue;
                         }
 
                         if (!pluginInfo.Enabled)
+                        {
+                            Record(PluginLoadStatus.Disabled);
                             continue;
+                        }
 
                         if (ShouldSkipPlugin(skipOncePluginIdSet, manifest.Id, dirName))
                         {
                             log.Info($"Skipped plugin '{manifest.Id}' for this startup.");
+                            Record(PluginLoadStatus.Skipped);
                             continue;
                         }
                     }
@@ -249,6 +263,9 @@ namespace ColorVision.UI.Plugins
                     {
                         pluginInfo.DepsJson = depsObj;
                         bool depsOk = false;
+                        string? depsDetail = null;
+                        string? depsUserMessage = null;
+                        Exception? depsError = null;
 
                         if (depsObj != null)
                         {
@@ -269,7 +286,8 @@ namespace ColorVision.UI.Plugins
                                             if (!File.Exists(expectedDll))
                                             {
                                                 depsOk = false;
-                                                log.Warn($"Plugin dependency '{dep.Key}' was not found at '{expectedDll}'.");
+                                                depsDetail = $"Plugin dependency '{dep.Key}' was not found at '{expectedDll}'.";
+                                                log.Warn(depsDetail);
                                                 break;
                                             }
 
@@ -286,16 +304,19 @@ namespace ColorVision.UI.Plugins
                                                 if (actualVersion == null || actualVersion < requiredVersion)
                                                 {
                                                     depsOk = false;
-                                                    log.ErrorExt($"Plugin dependency '{dep.Key}' requires version {requiredVersion}, but version {actualVersion} is installed.");
-                                                    MessageBox.Show(string.Format(Properties.Resources.DependencyVersionInsufficient, dep.Key, requiredVersion, actualVersion));
+                                                    depsDetail = $"Plugin dependency '{dep.Key}' requires version {requiredVersion}, but version {actualVersion} is installed.";
+                                                    depsUserMessage = string.Format(Properties.Resources.DependencyVersionInsufficient, dep.Key, requiredVersion, actualVersion);
+                                                    log.ErrorExt(depsDetail);
                                                     break;
                                                 }
                                             }
                                             catch (Exception ex)
                                             {
                                                 depsOk = false;
-                                                log.Warn($"Plugin dependency '{dep.Key}' could not be inspected: {ex.Message}");
-                                                MessageBox.Show(string.Format(Properties.Resources.DependencyCheckException, dep.Key, ex.Message));
+                                                depsDetail = $"Plugin dependency '{dep.Key}' could not be inspected: {ex.Message}";
+                                                depsUserMessage = string.Format(Properties.Resources.DependencyCheckException, dep.Key, ex.Message);
+                                                depsError = ex;
+                                                log.Warn(depsDetail);
                                                 break;
                                             }
                                         }
@@ -305,11 +326,11 @@ namespace ColorVision.UI.Plugins
                             }
                             if (!depsOk)
                             {
-                                RecordLoadFailure();
+                                Record(PluginLoadStatus.Failed, depsDetail ?? "Plugin dependency metadata could not be validated.", depsUserMessage, depsError);
                                 continue;
                             }
                         }
-                      
+
                         if (IsPluginAssemblyAvailable(dllPath))
                         {
                             log.Info($"Loading plugin: {manifest.Name}");
@@ -327,13 +348,13 @@ namespace ColorVision.UI.Plugins
                             pluginInfo.AssemblyPublicKeyToken = BitConverter.ToString(assembly.GetName().GetPublicKeyToken() ?? Array.Empty<byte>());
                             pluginInfo.Name = manifest.Name;
                             pluginInfo.Description = manifest.Description;
-
-
+                            Record(PluginLoadStatus.Loaded);
                         }
                         else
                         {
-                            RecordLoadFailure();
-                            log.Warn($"Plugin assembly was not found: '{dllPath}'.");
+                            string detail = $"Plugin assembly was not found: '{dllPath}'.";
+                            log.Warn(detail);
+                            Record(PluginLoadStatus.Failed, detail);
                         }
                     }
                     else
@@ -344,29 +365,28 @@ namespace ColorVision.UI.Plugins
                             Assembly assembly = Assembly.LoadFrom(dllPath);
                             moduleCatalog?.AddPlugin(dirName, assembly);
                             log.Info($"Loaded plugin without a manifest: {dllPath}");
+                            Record(PluginLoadStatus.Loaded);
                         }
                         else
                         {
-                            RecordLoadFailure();
-                            log.Warn($"Plugin assembly was not found: '{dllPath}'.");
+                            string detail = $"Plugin assembly was not found: '{dllPath}'.";
+                            log.Warn(detail);
+                            Record(PluginLoadStatus.Failed, detail);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    RecordLoadFailure();
-                    MessageBox.Show(string.Format(Properties.Resources.PluginLoadError, ex.Message), "ColorVision");
                     log.Error(ex);
+                    Record(PluginLoadStatus.Failed, ex.Message, string.Format(Properties.Resources.PluginLoadError, ex.Message), ex);
                 }
             }
 
             pluginConfig.Save();
             AssemblyHandler.GetInstance().RefreshAssemblies();
-        }
-
-        private static void RecordLoadFailure()
-        {
-            Interlocked.Increment(ref _lastLoadFailureCount);
+            var report = new PluginLoadReport(results.ToArray());
+            Volatile.Write(ref _lastReport, report);
+            return report;
         }
     }
 }

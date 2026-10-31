@@ -395,12 +395,14 @@ namespace ColorVision
                 startupPhaseStopwatch.Restart();
                 StartupRegistryChecker.MarkStage("LoadingPlugins");
                 await showStage(global::ColorVision.Startup.StartupText.LoadingExtensions);
-                await PluginLoader.LoadPluginsAsync(
+                PluginLoadReport pluginReport = await PluginLoader.LoadPluginsAsync(
                     moduleCatalog,
                     skipOncePluginKeys,
                     pluginKey => StartupRegistryChecker.MarkStage("LoadingPlugin", pluginKey), cancellationToken);
                 StartupRegistryChecker.MarkStage("PluginsLoaded");
                 log.Info($"Startup plugin loading took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
+                if (pluginReport.UserMessages.Count > 0)
+                    MessageBox.Show(string.Join(Environment.NewLine + Environment.NewLine, pluginReport.UserMessages), "ColorVision");
             }
             else
             {

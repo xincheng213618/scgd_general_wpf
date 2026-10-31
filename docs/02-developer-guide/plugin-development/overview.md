@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。"
 aliases: ["插件生命周期","插件菜单为什么没出现","插件能否卸载和热更新","插件禁用后仍运行","requires","deps.json","Loaded","IPlugin","PluginManifest","PluginLoader","PluginLoaderrConfig","ModuleCatalog"]
-code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","UI/ColorVision.Common/Interfaces/IPlugin.cs","UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs","UI/ColorVision.UI/Plugins/PluginManifest.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs","UI/ColorVision.UI/Plugins/PluginLoaderrConfig.cs","UI/ColorVision.UI/Plugins/PluginInfo.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/StatusBar/StatusBarManager.cs","UI/ColorVision.UI.Desktop/Marketplace/PluginUpdateCompatibility.cs"]
+code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","UI/ColorVision.Common/Interfaces/IPlugin.cs","UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs","UI/ColorVision.UI/Plugins/PluginManifest.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginLoadReport.cs","UI/ColorVision.UI/Plugins/PluginLoaderrConfig.cs","UI/ColorVision.UI/Plugins/PluginInfo.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/StatusBar/StatusBarManager.cs","UI/ColorVision.UI.Desktop/Marketplace/PluginUpdateCompatibility.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginLoaderTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs","Test/ColorVision.UI.Tests/PluginUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs"]
 related: ["plugins.index","plugins.getting-started","ui.discovery"]
 ---
@@ -58,7 +58,7 @@ related: ["plugins.index","plugins.getting-started","ui.discovery"]
 
 ## Loaded 不等于 provider 可见
 
-“Loaded”应明确指哪个阶段。`PluginInfo.Assembly` 只在进程中保存且不序列化，版本/路径等缓存字段可能来自以前的扫描；`PluginsLoaded` 是启动阶段标记，`LastLoadCompletedWithoutFailures` 只表示装载器记录的失败计数为零，均不证明所有扩展已构造、初始化或可执行。
+“Loaded”应明确指哪个阶段。`PluginInfo.Assembly` 只在进程中保存且不序列化，版本/路径等缓存字段可能来自以前的扫描；`PluginsLoaded` 是启动阶段标记，`LastLoadCompletedWithoutFailures` 只表示最近一次报告中没有 `Failed` 结果，均不证明所有扩展已构造、初始化或可执行。
 
 装载后的可见性继续经过程序集过滤、类型读取、provider 构造和宿主缓存，统一按[UI 扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md)核对。程序集登记不绕过目录/名称过滤，刷新程序集也不自动重建菜单或状态栏；不要将本页的装载成功当作入口已经显示。
 
@@ -66,7 +66,7 @@ related: ["plugins.index","plugins.getting-started","ui.discovery"]
 
 ## 异常、隔离与恢复边界
 
-单个候选目录内的清单、依赖、加载或登记异常由 `PluginLoader` 捕获，计失败、弹窗/记日志后继续其它目录；但目录创建、外层目录枚举等并不全在该候选的 `try` 中，不能宣称任何插件目录异常都不会影响启动。类型扫描、provider 构造和主窗口初始化还发生在各自的异常边界，不能只看装载失败计数。
+单个候选目录内的清单、依赖、加载或登记异常由 `PluginLoader` 捕获，记日志并在 `PluginLoadReport` 中记为 `Failed` 后继续其它目录。装载器本身不弹窗：每个目录得到一条 `Loaded` / `Disabled` / `Retired` / `Skipped` / `Failed` 结果，只有依赖版本不足、依赖检查异常和加载异常带 `UserMessage`；主程序与独立 Engine 宿主在装载结束后把这些消息合并为一个对话框。`LoadPlugins` / `LoadPluginsAsync` 返回该报告，`LastReport` 保存最近一次结果；但目录创建、外层目录枚举等并不全在该候选的 `try` 中，不能宣称任何插件目录异常都不会影响启动。类型扫描、provider 构造和主窗口初始化还发生在各自的异常边界，不能只看装载失败计数。
 
 `Assembly.LoadFrom` 在 `ModuleCatalog.AddPlugin` 之前；后续登记失败不会撤销已经加载的程序集；主程序只扫描登记过的程序集，所以它的扩展不会被发现，而未启用只认登记模式的宿主在末尾刷新时仍可能从 AppDomain 发现它。这里没有独立进程、权限沙箱或可回收加载上下文，也没有统一卸载/撤销副作用的实现。`ClearCaches()`、禁用或删除缓存项都不卸载 DLL；不能承诺当前进程内原位热替换。
 
