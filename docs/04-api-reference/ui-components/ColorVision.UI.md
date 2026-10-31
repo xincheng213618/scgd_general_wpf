@@ -19,11 +19,11 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 
 | 责任或问题 | 主要实现 | 规范主题 |
 | --- | --- | --- |
-| 配置对象来源、保存、重载、备份与发布失败 | `ConfigHandler.cs`、`ConfigSetting/ConfigServiceAdapters.cs` | [配置持久化与重载](./configuration.md) |
+| 配置对象来源、保存、重载、备份与发布失败 | `ConfigHandler.cs`（加载与重载）、`.Save.cs`、`.Backup.cs`、`ConfigSetting/ConfigServiceAdapters.cs` | [配置持久化与重载](./configuration.md) |
 | 插件 DLL、manifest、依赖门禁与禁用状态 | `Plugins/PluginLoader.cs`、`PluginLoaderConfig.cs` | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) |
 | 插件构建、安装目录替换、备份恢复和导出 | `Plugins/PluginExtractor.cs`；安装替换与恢复备份在 `UI/ColorVision.UI.Desktop/Plugins/`，主程序更新在 `UI/ColorVision.UI.Desktop/Update/` | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) |
 | 菜单、设置、状态栏、热键与搜索的扩展发现 | `AssemblyHandler.cs` 及各消费者 | [UI 发现链](./ui-runtime-handoff.md) |
-| 菜单树、隐藏、命令入口与管理提交 | `Menus/MenuManager.cs`、`UI/ColorVision.UI.Desktop/MenuItemManager/` | [菜单契约](./menus.md) |
+| 菜单树、隐藏、命令入口与管理提交 | `Menus/MenuManager.cs`（树构建）、`.Discovery.cs`（类型发现与过滤）、`.Registration.cs`、`UI/ColorVision.UI.Desktop/MenuItemManager/` | [菜单契约](./menus.md) |
 | 快捷键定义、设置草稿、注册冲突和释放 | `HotKey/` | [快捷键契约](./hotkeys.md) |
 | 搜索候选、刷新缓存、排序和结果执行 | `Search/` | [产品搜索契约](./search.md) |
 | 语言资源、系统文化回退与确认重启 | `Languages/`、各模块 Properties 资源 | [界面语言契约](./localization.md) |

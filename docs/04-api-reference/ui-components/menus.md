@@ -157,4 +157,4 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 `SearchManagerTests` 的隔离菜单用例覆盖搜索元数据的稳定 ActionId、说明、保留 RoutedCommand、`MenuClose` 的明确文档路由，以及排除其它目标和 Collapsed 条目；它们不等于真实角色/设备权限验收，不执行生产菜单业务，也不证明所有插件的 CanExecute 实现正确。测试引用不是已运行通过的声明。
 
-修改发现/树构建看 `UI/ColorVision.UI/Menus/MenuManager.cs`；修改管理提交看 `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerService.cs` 和窗口 Apply/Cancel；修改声明/命令看 `UI/ColorVision.Common/Interfaces/Menus/`。验证时分别证明候选进入、树显示、命令实际检查、运行时应用和文件保存，不通过执行真实业务菜单来默认“验收文档”。
+修改树构建看 `UI/ColorVision.UI/Menus/MenuManager.cs`，修改类型发现与过滤看同目录 `MenuManager.Discovery.cs`；修改管理提交看 `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerService.cs` 和窗口 Apply/Cancel；修改声明/命令看 `UI/ColorVision.Common/Interfaces/Menus/`。验证时分别证明候选进入、树显示、命令实际检查、运行时应用和文件保存，不通过执行真实业务菜单来默认“验收文档”。
