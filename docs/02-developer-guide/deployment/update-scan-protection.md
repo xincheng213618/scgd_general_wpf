@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "ServiceHost提供的主程序增量更新临时Defender排除项、目录准入和清理所有权；启用失败不阻断更新，服务停止或保护超时不保证排除项立即恢复。"
 aliases: ["更新扫描保护", "临时Defender排除项", "排除项恢复", "扫描保护超时清理", "ApplicationUpdateScanProtection", "ApplicationUpdateScanProtectionService", "PowerShellDefenderExclusionManager", "IDefenderExclusionManager", "ApplicationUpdateScanProtectionPaths", "ApplicationUpdateScanProtectionState", "COLORVISION_UPDATE_SCAN_PROTECTION_ID"]
-code_paths: ["UI/ColorVision.UI/Update/ApplicationUpdateScanProtection.cs", "ColorVision/Update/AutoUpdater.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "src/ColorVisionServiceHost/ApplicationUpdateScanProtectionService.cs", "src/ColorVisionServiceHost/ServiceHostCommandHandler.cs", "src/ColorVisionServiceHost/ColorVisionServiceHostService.cs"]
+code_paths: ["UI/ColorVision.UI.Desktop/Update/ApplicationUpdateScanProtection.cs", "ColorVision/Update/AutoUpdater.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "src/ColorVisionServiceHost/ApplicationUpdateScanProtectionService.cs", "src/ColorVisionServiceHost/ServiceHostCommandHandler.cs", "src/ColorVisionServiceHost/ColorVisionServiceHostService.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ApplicationUpdateScanProtectionTests.cs", "Test/ColorVision.UI.Tests/UpdaterBatchExecutionTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs"]
 related: ["delivery.update", "platform.service-host"]
 ---

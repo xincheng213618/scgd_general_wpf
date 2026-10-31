@@ -12,7 +12,7 @@ public static class ApplicationUpdateFilePreparation
         for (int offset = 0; offset < command.Length; offset += 2000)
         {
             string redirect = offset == 0 ? ">" : ">>";
-            builder.AppendLine($"{redirect}\"%UPDATE_DLL_SCRIPT%\" echo {command.Substring(offset, Math.Min(2000, command.Length - offset))}");
+            builder.AppendLine($"{redirect}\"%UPDATE_DLL_SCRIPT%\" echo {command.AsSpan(offset, Math.Min(2000, command.Length - offset))}");
         }
         builder.AppendLine("powershell.exe -NoLogo -NoProfile -NonInteractive -Command \"& ([scriptblock]::Create([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String([IO.File]::ReadAllText($env:UPDATE_DLL_SCRIPT)))))\" >>\"%UPDATE_LOG%\" 2>&1");
         builder.AppendLine("if errorlevel 1 goto fail");

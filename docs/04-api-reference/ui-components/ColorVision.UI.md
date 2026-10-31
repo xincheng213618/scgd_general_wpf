@@ -21,7 +21,7 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 | --- | --- | --- |
 | 配置对象来源、保存、重载、备份与发布失败 | `ConfigHandler.cs`、`ConfigSetting/ConfigServiceAdapters.cs` | [配置持久化与重载](./configuration.md) |
 | 插件 DLL、manifest、依赖门禁与禁用状态 | `Plugins/PluginLoader.cs`、`PluginLoaderrConfig.cs` | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) |
-| 插件构建、安装目录替换、备份恢复和导出 | `Plugins/PluginUpdater.cs`、`PluginRecoveryBackupService.cs`、`PluginExtractor.cs` | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) |
+| 插件构建、安装目录替换、备份恢复和导出 | `Plugins/PluginExtractor.cs`；安装替换与恢复备份在 `UI/ColorVision.UI.Desktop/Plugins/`，主程序更新在 `UI/ColorVision.UI.Desktop/Update/` | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) |
 | 菜单、设置、状态栏、热键与搜索的扩展发现 | `AssemblyHandler.cs` 及各消费者 | [UI 发现链](./ui-runtime-handoff.md) |
 | 菜单树、隐藏、命令入口与管理提交 | `Menus/MenuManager.cs`、`UI/ColorVision.UI.Desktop/MenuItemManager/` | [菜单契约](./menus.md) |
 | 快捷键定义、设置草稿、注册冲突和释放 | `HotKey/` | [快捷键契约](./hotkeys.md) |
