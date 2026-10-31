@@ -1,6 +1,8 @@
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.SocketProtocol;
+using log4net;
 using ProjectARVRPro.PluginConfig;
-using ProjectARVRPro.Process.OpticCenter;
+using ProjectARVRPro.Process;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows;
@@ -21,21 +23,65 @@ internal sealed record LuxRequest(string MachineNo, string SocketCode, string Se
         return error == null ? new(machineNo, code[^2..], sn) : null;
     }
 
-    internal bool IsOpticCenter => MachineNo == "H03AR" && SocketCode == "02";
-    internal string ResponsePrefix => IsOpticCenter ? $"{MachineNo}{SocketCode},{SerialNumber}" : $"{MachineNo}{SocketCode},{SerialNumber},00;";
+    internal string ResponsePrefix => $"{MachineNo}{SocketCode},{SerialNumber},00;";
     internal string MeasurementResponse(object? value) => ResponsePrefix + value;
-    internal string FailureResponse(string? eventName, string? parameters) => ResponsePrefix + $"FlowFailed:{eventName},{parameters};";
-    internal string CompletedResponse(OpticCenterTestResult? center) => IsOpticCenter
-        && center is { OptCenterRotation: not null, OptCenterXTilt: not null, OptCenterYTilt: not null }
-        ? ResponsePrefix + $",{center.OptCenterRotation.Value},{center.OptCenterXTilt.Value},{center.OptCenterYTilt.Value},00;"
-        : ResponsePrefix;
+    internal string FailureResponse(string? eventName, string? parameters, string? responsePrefix = null) =>
+        (responsePrefix ?? ResponsePrefix) + $"FlowFailed:{eventName},{parameters};";
 }
 
 /// <summary>Keeps the command's response prefix and permits one terminal reply.</summary>
 internal sealed class LuxCommandSession(LuxRequest request, Action<string> send)
 {
+    private static readonly ILog log = LogManager.GetLogger(typeof(LuxCommandSession));
     private int _completed;
     internal LuxRequest Request { get; } = request;
+
+    internal void CompleteFlow(IProcess? process, ProjectARVRReuslt? result, string? eventName, string? parameters)
+    {
+        var context = new LuxFlowResponseContext(Request.MachineNo, Request.SocketCode, Request.SerialNumber, result);
+        var provider = process as ILuxFlowResponseProvider;
+        string responsePrefix = Request.ResponsePrefix;
+        if (provider != null)
+        {
+            try { responsePrefix = provider.GetResponsePrefix(context) ?? responsePrefix; }
+            catch (Exception ex) { log.Error($"LUX 回包前缀生成失败，SN={Request.SerialNumber}", ex); }
+        }
+        if (eventName != "Completed")
+        {
+            Complete(Request.FailureResponse(eventName, parameters, responsePrefix));
+            return;
+        }
+
+        string response = responsePrefix;
+        if (provider != null)
+        {
+            if (result is not { FlowStatus: FlowStatus.Completed, BatchId: > 0 }
+                || !string.Equals(result.SN, Request.SerialNumber, StringComparison.Ordinal)
+                || !string.Equals(result.ProcessTypeFullName, provider.GetType().FullName, StringComparison.Ordinal))
+            {
+                log.Warn($"LUX 回包未使用结果：本次流程尚未完成或结果归属不匹配，SN={Request.SerialNumber}, BatchId={result?.BatchId}");
+            }
+            else
+            {
+                try
+                {
+                    LuxFlowResponse? custom = provider.BuildCompletedResponse(context);
+                    if (custom != null)
+                    {
+                        response = custom.Text;
+                        if (custom.Error != null)
+                            log.Warn($"LUX 自定义回包缺值，SN={Request.SerialNumber}, BatchId={result.BatchId}: {custom.Error}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"LUX 自定义回包生成失败，SN={Request.SerialNumber}, BatchId={result.BatchId}", ex);
+                }
+            }
+        }
+        Complete(response);
+    }
+
     internal void Complete(string response)
     {
         if (Interlocked.Exchange(ref _completed, 1) == 0) send(response);

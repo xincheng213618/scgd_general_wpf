@@ -369,9 +369,7 @@ namespace ProjectARVRPro.Process
             _isEnabled = isEnabled;
             _selectedTemplate = _allTemplates.FirstOrDefault(template => string.Equals(template.Key, flowTemplate, StringComparison.OrdinalIgnoreCase))
                 ?? (!isEdit && string.IsNullOrWhiteSpace(flowTemplate) ? _allTemplates.FirstOrDefault() : null);
-            _selectedOption = ProcessTypeCatalog.IsBlankProcess(process)
-                ? null
-                : _allOptions.FirstOrDefault(option => option.FullTypeName == process?.GetType().FullName);
+            _selectedOption = _allOptions.FirstOrDefault(option => option.FullTypeName == process?.GetType().FullName);
             _selectedProcessDraft = _selectedOption == null
                 ? null
                 : CreateProcessDraft(process ?? _selectedOption.Process);
@@ -383,6 +381,7 @@ namespace ProjectARVRPro.Process
             foreach (string category in new[]
                      {
                          ProcessTypeCatalog.ArvrCategory,
+                         ProcessTypeCatalog.BlankCategory,
                          ProcessTypeCatalog.AoiCategory,
                          ProcessTypeCatalog.DemuraCategory
                      })

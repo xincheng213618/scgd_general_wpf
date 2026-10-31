@@ -1,6 +1,7 @@
 #pragma warning disable CS0168
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.KeyedResults;
+using ProjectARVRPro.Process.OpticCenter;
 using System.Collections;
 using System.ComponentModel;
 using System.IO;
@@ -154,6 +155,9 @@ namespace ProjectARVRPro
                     var childObj = prop.GetValue(results);
                     if (childObj != null)
                     {
+                        if (childObj is OpticCenterTestResult center)
+                            raw = center.GetOutputKey();
+
                         // 检查是否为泛型集合类型 (如 List<T>)
                         if (childObj is IList list && prop.PropertyType.IsGenericType)
                         {

@@ -98,9 +98,7 @@ public partial class ARVRWindow
                 catch (Exception ex) { log.Error("LUX CSV 导出失败", ex); }
             }
             FinalizeObjectiveTestResultRecord();
-            session.Complete(eventName == "Completed"
-                ? session.Request.CompletedResponse(ObjectiveTestResult.OpticCenterTestResult)
-                : session.Request.FailureResponse(eventName, parameters));
+            session.CompleteFlow(_currentFlowProcess, CurrentFlowResult, eventName, parameters);
         }
         catch (Exception ex) { log.Error("LUX 流程回包失败", ex); }
         finally { ReleaseLuxSession(session); }

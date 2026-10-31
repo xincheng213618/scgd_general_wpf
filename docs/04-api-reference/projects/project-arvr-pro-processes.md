@@ -60,6 +60,8 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 
 Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` 返回的布尔值表示处理是否完成；测量项与聚合结果的 PASS/FAIL 仍由结果数据及 Recipe 决定，不能只看方法是否返回成功。
 
+处理配置统一使用 **输出Key** 表示结果分组标识，CSV 的 `Test_Screen` 与相应结果字典沿用此值；旧配置中部分字段仍以 `Name` 持久化，界面名称统一不改变原字段或默认值。普通光学中心及“光学中心（回包）”新增 `Key`，默认 `Optical_Center`，留空也使用该默认值；Key 随结果快照保存，标准/LUX CSV、批次指标与报表值查找使用同一分组标识，修改当前配置不重命名历史结果。它不改变三轴回包中的数值或设备前缀。
+
 ## 外部相机参数覆盖
 
 **覆盖相机参数** 位于流程模板下方。勾选时，界面加载当前模板，从默认 Start 的执行链中找到唯一的 `LVCameraNode` 或 `LocalCameraNode`，把节点的曝光与校正模板同步到步骤配置，再显示节点同款的数值编辑器和校正模板选择器。取消勾选会隐藏编辑项，并恢复为关闭、曝光 `100 ms`、空模板；切换流程模板也会关闭旧覆盖，防止参数与新模板错配。仅切换流程步骤不会重新覆盖已经保存的外部值。
@@ -106,7 +108,7 @@ W255 和按 Key 亮色度的 **显示配置** 提供独立的 **亮度均匀性�
 
 十字 RGB 分离使用独立的 `RgbCrossProcess`，与原十字定位/光学中心放在同一个“光学与几何”分类。执行时按当前批次读取唯一 `FindCross=63`、`version=2.0` 主记录，再由公共明细的 `ResultFileName` 找到 JSON，原图取该记录的 `ImgFile`。没有手填 JSON、模板名称筛选或原图覆盖入口。零条、多条、失败状态或不完整明细均报错，不扫描目录或回退到旧批次；原单十字解析跳过 2.0 九点记录。
 
-Process 的“导出名称”默认 `RgbCross`，用于 CSV 分组和 `ObjectiveTestResult.DynamicRgbCrossResults` 字典的 Key。不同画面配置不同名称，可并存十字测量、几何与判定状态；相同名称本次执行替换对应项，失败时写入 DATA_ERROR，避免残留旧成功结果。导出名称存入当前结果快照，修改配置不重命名历史导出。使用单独类型的字典保留空测量和 MEASURED/INVALID 状态，不把未判定数据压成普通布尔 PASS。
+Process 的“输出Key”默认 `RgbCross`，用于 CSV 分组和 `ObjectiveTestResult.DynamicRgbCrossResults` 字典的 Key。不同画面配置不同 Key，可并存十字测量、几何与判定状态；相同 Key 本次执行替换对应项，失败时写入 DATA_ERROR，避免残留旧成功结果。输出 Key 存入当前结果快照，修改配置不重命名历史导出。使用单独类型的字典保留空测量和 MEASURED/INVALID 状态，不把未判定数据压成普通布尔 PASS。
 
 该类型接受算法 ID 为 `colorvision.display.rgb-cross-registration`、算法版本 `1.1.0` / `1.2.0` / `1.3.0` 的通用 artifact JSON，读取 `RGB-cross-separation` 与 `rgb-cross-regions`。现场验证脚本的 `measurements.json` 不属于该格式。生产节点与 ImageView 的“导出十字 JSON”使用 `colorvision.rgb-cross-measurement` v1 对接格式，只输出测量、绘图数据与有效性；通用导出保持兼容。算法 `1.4.0` / `1.5.0` 的通用导出读取其中的结构化测量结果，并核对执行标识；新生产 JSON 使用 `1.2.0`，必须提供 `grid.rows/columns`、`referenceChannel: "G"` 和每点 `comparisons.R-G/B-G`；四条带符号的对应边缘偏移及其绝对最大值须与通道几何一致。继续接受原 3×3 `1.0.0` 和可变布局 `1.1.0`，旧结果从通道几何推导 R-G、B-G，不把三通道极差当成任一通道对。结果快照保存布局，判定按配置点数检查完整性。客户判定授权由交付/宿主承担，不由 JSON 的 `capabilityProfile` 字符串授予权限。
 
@@ -121,6 +123,8 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 历史 `ViewResultJson` 保存来源主记录 ID、原测量、JSON 摘要、原图绑定、本次使用的 Recipe 副本、修正值和逐点状态，回看/导出读取快照。当前显示开关可控制叠图，修改 Recipe 不会静默重新判定历史数据。`RgbCrossProcessTests` 覆盖真实算法导出到解析的衔接、无效数据拒绝、可选判定、CSV 状态和 WPF 图元替换；节点和批次选择的自动测试使用数据库替身；此验证不替代现场真实数据库、原图身份和客户许可验收。
 
 ## 选择处理类型
+
+仅需执行 Flow、无需业务指标解析时，选择 **空流程 → 空流程**。它仍执行绑定的模板，正常完成后直接通过，不添加业务指标或 CSV 项，无需 Process/Recipe 配置。
 
 **ARVR → 缺陷检测 → 圆环鬼影** 使用 `RingGhostProcess`，对应 Flow 的 [圆环鬼影节点](../algorithms/detectors/display-metrology.md)。流程可配置为开始 → 取图/打开线性 RAW 或 TIFF → 圆环鬼影 → 结束，再为该 Flow 选择“圆环鬼影”解析。当前节点不以 CVCIE 主缓冲计算亮度，不应接到把主缓冲切换为 CIE 的校正步骤之后。每个解析步骤必须对应当前批次唯一、成功的 `Ghost` / `ring-ghost/1.0` 结果；零条、多条、失败或明细/文件不完整均报错，不回退旧批次或远端 Ghost2.0。
 
@@ -141,6 +145,7 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | 棋盘格 | `ChessboardProcess` / `ChessboardDynamicProcess` | 固定或动态点位的棋盘格对比度 |
 | 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 固定或动态点位的几何结果 |
 | 光学中心 | `OpticCenterProcess` / `OpticCenterDynamicProcess` | 固定或动态点位的中心结果 |
+| 光学中心（回包） | `OpticCenterLuxProcess`，`OpticCenter/` | 继承普通光学中心；选择此类型即通过回包接口返回本次三轴值，不限定设备号或流程命令，切换类型后核对 Recipe |
 | 十字 RGB 分离 | `RgbCrossProcess`，`OpticCenter/` | 与原十字/光学中心同属“光学与几何”；读取 JSON、绘制 RGB 边缘，可选在本项目判定 |
 | 圆环鬼影 | `RingGhostProcess`，`Ghost/` | 在“缺陷检测”分类读取本地圆环结果，对外输出 GMR1/GMR2，正常未检出为 0 |
 | 动态 POI | `PoiDynamicProcess`，`POI/` | 运行时点位的亮色度解析与显示 |

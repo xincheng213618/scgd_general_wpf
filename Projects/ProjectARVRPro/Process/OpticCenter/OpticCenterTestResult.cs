@@ -1,9 +1,14 @@
 using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process.KeyedResults;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
     public class OpticCenterTestResult : ViewModelBase
     {
+        public string Key { get; set; } = OpticCenterProcessConfig.DefaultKey;
+
+        public string GetOutputKey() => KeyedTestResultDictionary.NormalizeKey(Key, OpticCenterProcessConfig.DefaultKey);
+
         /// <summary>
         /// X÷·«„–±Ω«(°„) ≤‚ ‘œÓ
         /// </summary>

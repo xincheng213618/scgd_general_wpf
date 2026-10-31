@@ -10210,12 +10210,17 @@
         "No Dispatcher Hanle",
         "FlowFailed",
         "LUX 光通量",
-        "LUX VID"
+        "LUX VID",
+        "光学中心（回包）",
+        "OpticCenterLuxProcess",
+        "ILuxFlowResponseProvider"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro/Services/LuxSocketDispatcher.cs",
         "Projects/ProjectARVRPro/Services/LuxDeviceMeasurements.cs",
         "Projects/ProjectARVRPro/ARVRWindow.Lux.cs",
+        "Projects/ProjectARVRPro/Process/ILuxFlowResponseProvider.cs",
+        "Projects/ProjectARVRPro/Process/OpticCenter/OpticCenterLuxProcess.cs",
         "Projects/ProjectARVRPro/Process/ProcessManager.cs",
         "Projects/ProjectARVRPro/ProjectARVRProConfig.cs",
         "UI/ColorVision.SocketProtocol/SocketManager.cs",

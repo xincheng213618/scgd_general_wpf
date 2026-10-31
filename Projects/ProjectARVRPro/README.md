@@ -9,6 +9,8 @@ ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dl
 - 运行检测需要现场的 Flow 模板、设备服务、Engine MySQL 数据和匹配的 Recipe；本地结果保存在 SQLite。
 - 流程配置默认位于 `%APPDATA%\ColorVision\Config\ProjectARVRProProcessGroups.json`，结果库为同目录 `ProjectARVRPro.db`。首次升级仅在能确认旧共享 `ProcessGroups.json` 属于 ARVRPro 时复制迁移，原文件保留；Recipe 随流程或解析实例保存。
 - 承接 LUX 客户端时，现场只安装 ARVRPro，宿主 Socket 解析模式选现有 `Text`；在“流程处理配置 → 其他配置”填写 LUX 设备号、VID 测量方式及限值和 K/B，活动流程组填写 SocketCode，不迁移原 LUX 配置。`T0000` 保留握手；VID/光通量指令不自动显示检测窗口，VID 先打开未连接的相机，再按选择执行 AutoFocus 或 GetPosition，光通量调用 GetData，支持设备已配置的本地或服务后端。原 Pro JSON 对接继续选 `Json`。
+- 需要三轴回包的步骤选择“ARVR → 光学与几何 → 光学中心（回包）”，切换后核对 Recipe 限值和 K/B；已有配置不会自动换类型。选择类型即启用回包，设备号只决定前缀、可保持默认 `H03`，SocketCode 按步骤配置，避开 `00`、`01`、`31`。三轴回包只读本次流程快照，缺值不沿用旧结果。FindCross 模板仍使用 `optCenter` / `ImageCenter` 名称区分光学中心与图像中心。
+- 普通光学中心和回包类型的“输出Key”默认 `Optical_Center`，可按需修改 CSV 与批次指标分组；修改 Key 不改变三轴回包内容。相关流程原“导出名称”统一显示为“输出Key”，旧配置字段与默认值保留。
 - 真实运行可能切换图案、控制设备及写入结果。Demura 默认“仅返回CSV”，W128 文件存在且可读取即通过；关闭该选项后，完整处理的 `BurnAfterGenerate` 默认开启，须核对源文件和目标设备操作范围。
 
 旧 AOI 模板升级时，将仅用于中转的通用传感器切图节点替换为「ProjectARVRPro → 外部切图」，核对等待超时及完成后延时，并保留外部客户端的主 Socket 连接。旧服务端 Flow 需改为宿主进程内执行。模板不会自动迁移；确认无其它指令引用后再清理专用传感器配置。协议事件名保持 `AoiSwitchPG` / `AOITestSwitchImageComplete`。

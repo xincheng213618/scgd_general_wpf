@@ -7,6 +7,8 @@ namespace ProjectARVRPro.Process.OpticCenter
     /// </summary>
     public class OpticCenterTestResult : ViewModelBase
     {
+        public string Key { get; set; } = "Optical_Center";
+
         /// <summary>图像中心 X 方向倾斜或偏移角，单位 degree。</summary>
         public ObjectiveTestItem ImageCenterXTilt { get; set; }
         /// <summary>图像中心 Y 方向倾斜或偏移角，单位 degree。</summary>

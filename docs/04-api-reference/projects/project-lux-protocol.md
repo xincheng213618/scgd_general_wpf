@@ -3,8 +3,8 @@ knowledge_id: "projects.lux-protocol"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 的 LUX TCP 文本入口：T0000 握手、VID、光学中心、光通量与 SocketCode 流程，以及回包和连接限制。"
-aliases: ["LUX TCP 协议","ProjectLUX TCP 通讯协议手册","LuxSocketDispatcher","T0000","T0001","T0002","T0031","T00XX","H03AR","MachineNO","No SN","No right Code","No Dispatcher Hanle","FlowFailed","LUX 光通量","LUX VID"]
-code_paths: ["Projects/ProjectARVRPro/Services/LuxSocketDispatcher.cs","Projects/ProjectARVRPro/Services/LuxDeviceMeasurements.cs","Projects/ProjectARVRPro/ARVRWindow.Lux.cs","Projects/ProjectARVRPro/Process/ProcessManager.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
+aliases: ["LUX TCP 协议","ProjectLUX TCP 通讯协议手册","LuxSocketDispatcher","T0000","T0001","T0002","T0031","T00XX","H03AR","MachineNO","No SN","No right Code","No Dispatcher Hanle","FlowFailed","LUX 光通量","LUX VID","光学中心（回包）","OpticCenterLuxProcess","ILuxFlowResponseProvider"]
+code_paths: ["Projects/ProjectARVRPro/Services/LuxSocketDispatcher.cs","Projects/ProjectARVRPro/Services/LuxDeviceMeasurements.cs","Projects/ProjectARVRPro/ARVRWindow.Lux.cs","Projects/ProjectARVRPro/Process/ILuxFlowResponseProvider.cs","Projects/ProjectARVRPro/Process/OpticCenter/OpticCenterLuxProcess.cs","Projects/ProjectARVRPro/Process/ProcessManager.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
 test_paths: ["Test/ProjectARVRPro.Tests/LuxProtocolTests.cs","Test/ProjectARVRPro.Tests/LuxVidMeasurementTests.cs","Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs","Test/ProjectARVRPro.Tests/SocketControlTests.cs"]
 related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-protocol","ui.socket-protocol"]
 ---
@@ -16,7 +16,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-p
 ## 部署与配置
 
 1. 在“网络通信 → 服务设置”启用 Socket Server，解析模式选择 **Text**。默认监听 `0.0.0.0:6666`，UTF-8；服务默认关闭。Pro JSON 客户端使用 Json 模式，两种模式按现场用途选择。
-2. 在“流程处理配置 → 其他配置”填写 **LUX 协议设备号**（默认 `H03`，AR 光学中心站使用 `H03AR`）、VID 测量方式、限值和 K/B；设备号只组成回包前缀。
+2. 在“流程处理配置 → 其他配置”按需填写 **LUX 协议设备号**（默认 `H03`）、VID 测量方式、限值和 K/B；设备号只组成回包前缀，不决定是否返回光学中心数据。
 3. 普通流程在活动组的 **SocketCode** 列填写命令末两位，绑定实际 Flow 模板与 Pro 实例 Recipe。旧 LUX 配置不自动迁移，现场需重新配置；流程和配置存储见 [Pro 流程组](./project-arvr-pro-processes.md)。
 4. 准备相机、光谱仪、Flow 服务和输出目录。普通流程、VID、光通量分别使用 Pro 的 CSV 输出目录生成 `C_<SN>.csv`、`B_<SN>.csv`、`D_<SN>.csv`。
 
@@ -41,20 +41,26 @@ T00XX,<SN>;
 | `T0000,SN001;` | 立即握手：`H0300,SN001,00;`。空闲时设置当前 SN，忙碌时不修改正在运行的 SN；不清空已有累计结果，窗口未创建时可直接回复 |
 | `T0001,SN001;` | 按 VID 测量方式调用相机 `AutoFocus` 或 `GetPosition`，取设备转换后的 VID，再应用 K/B，输出 `B_` CSV；如 `H0301,SN001,00;123.45` |
 | `T0031,SN001;` | 调用光谱仪 `GetData`，取得光谱结果时输出 `D_` CSV；如 `H0331,SN001,00;125.42` |
-| `T0002,SN001;` | 按活动组 `SocketCode=02` 运行普通流程；设备号为 `H03AR` 时使用光学中心专用回包 |
+| `T0002,SN001;` | 按活动组 `SocketCode=02` 运行流程；回包内容由所选处理类型决定 |
 | `T00XX,SN001;` | 运行活动组首个 `SocketCode=XX` 匹配项绑定的模板，完成后输出 `C_` CSV；如 `H0321,SN001,00;` |
 
-`00`、`01`、`31` 有固定用途，不分配给普通流程；`H03AR` 的 `02` 对应光学中心。普通命令不检查步骤 `IsEnabled`，不会自动发送下一项 `SwitchPG` 或最终 JSON。模板按该步骤的实际绑定查找，不使用旧 LUX 的名称子串匹配。
+`00`、`01`、`31` 有固定用途，不分配给普通流程；其余命令通过步骤的 SocketCode 路由，光学中心回包不限定命令编号。普通命令不检查步骤 `IsEnabled`，不会自动发送下一项 `SwitchPG` 或最终 JSON。模板按该步骤的实际绑定查找，不使用旧 LUX 的名称子串匹配。
 
 普通回包为 `<MachineNO><XX>,<SN>,00;`。固定 `00` 不代表 Recipe PASS 或整机合格；步骤或模板缺失时也可能只返回此前缀。客户端结合结果界面、SQLite 和 CSV 判定业务结果，不能把回包当成完成全部测试的证据。
 
-光学中心专用响应取当前光学中心结果的 Rotation、TiltX、TiltY，与步骤索引无关：
+需要三轴回包的步骤选择 **ARVR → 光学与几何 → 光学中心（回包）**，切换后核对该实例的 Recipe 限值和 K/B。选择类型即启用回包，不需要将设备号改成 `H03AR`，步骤可使用任意未保留的 SocketCode。已有配置不会自动换类型。`OpticCenterLuxProcess` 继承普通 `OpticCenterProcess`，复用解析、修正、判定和 CSV，通过可选接口 `ILuxFlowResponseProvider` 生成三轴回包及成功、缺值、失败时的前缀。普通及动态光学中心不实现此接口；窗口只把本次执行实例和结果交给通用调度器，不读取累计光学中心结果。
+
+专用响应从本次已完成流程的结果快照读取 Rotation、TiltX、TiltY，与步骤索引无关。设备号与命令编号只构成前缀，例如设备号 `H03AR`、SocketCode `02` 时：
 
 ```text
 H03AR02,SN001,1,2,3,00;
 ```
 
-三个值有任一缺失时只返回 `H03AR02,SN001`，不能当作有效三轴结果。VID/光通量失败通常回复数值 `0`；光谱命令成功但无结果模型时也可能只有前缀，客户端需区分缺值和有效零值。光谱本地结果使用此次返回模型，服务结果仍按 MasterId 查询；设备执行方式由其后端决定。
+设备号保持默认 `H03`、SocketCode 配为 `21` 时，同样返回 `H0321,SN001,1,2,3,00;`。其他处理类型仍使用普通响应，不因设备号或命令编号隐式添加三轴值。
+
+已选择“光学中心（回包）”但结果归属不匹配、快照无效或三轴缺项/非有限数值时，只返回设备号、命令编号和 SN 前缀，例如 `H03AR02,SN001`，不能当作有效三轴结果；不补零、不沿用其他步骤或上次测量值。接口生成失败及无效结果会记录原因。有效零值和 Recipe 超限的测量仍按原格式回传。FindCross 继续使用普通光学中心的 `optCenter` / `ImageCenter` 识别规则，图像中心不替代光学中心。
+
+VID/光通量失败通常回复数值 `0`；光谱命令成功但无结果模型时也可能只有前缀，客户端需区分缺值和有效零值。光谱本地结果使用此次返回模型，服务结果仍按 MasterId 查询；设备执行方式由其后端决定。
 
 ### 错误与超时
 

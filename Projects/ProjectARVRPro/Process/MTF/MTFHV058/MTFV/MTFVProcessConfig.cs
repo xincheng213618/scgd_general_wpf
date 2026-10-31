@@ -10,7 +10,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
     public class MTFVProcessConfig : ProcessConfigBase<MTFVRecipeConfig>
     {
         [Category("输出配置")]
-        [DisplayName("导出名称")]
+        [DisplayName("输出Key")]
         [Description("写入DynamicTestResults并导出CSV时使用的组名；配置多个MTFV流程时应使用不同名称。")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name = "MTFV";
