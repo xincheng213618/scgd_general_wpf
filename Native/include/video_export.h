@@ -42,6 +42,13 @@ extern "C" COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage
 // Seek to a specific frame
 extern "C" COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex);
 
+// Atomically register callbacks and queue a seek without starting playback.
+// A decoded frame retains the callbacks/userData captured with its work request;
+// callers must retain delegates and userData through Close and any in-flight callbacks.
+// Returns 0 on success, -1 for an invalid handle, -2 for an invalid frame index,
+// or -3 for a missing frame callback. Failure leaves the request unchanged.
+extern "C" COLORVISIONCORE_API int M_VideoSeekWithCallbacks(int handle, int frameIndex, VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, void* userData);
+
 // Get current frame position
 extern "C" COLORVISIONCORE_API int M_VideoGetCurrentFrame(int handle);
 

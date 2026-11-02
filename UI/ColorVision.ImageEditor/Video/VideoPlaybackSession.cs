@@ -24,12 +24,14 @@ namespace ColorVision.ImageEditor.Video
         private readonly IVideoAudioTrack _audio;
         private readonly Func<HImage, WriteableBitmap> _prepareFrame;
         private readonly object _preparationSync = new();
+        private readonly object _pendingSync = new();
         private int _handle = -1;
         private long _generation;
         private long _timeline;
         private PendingFrame? _pendingFrame;
         private OpenCVMediaHelper.VideoFrameCallback? _frameCallback;
         private OpenCVMediaHelper.VideoStatusCallback? _statusCallback;
+        private bool _timelineTokensRequired;
         private int _uiUpdateCounter;
         private int _droppedFrameCount;
         private bool _disposed;
@@ -107,16 +109,11 @@ namespace ColorVision.ImageEditor.Video
             VerifyUsable();
             if (!IsOpen || IsPlaying) return;
             int handle = _handle;
-            long generation = Volatile.Read(ref _generation);
             Interlocked.Exchange(ref _droppedFrameCount, 0);
-            _frameCallback = (int callbackHandle, ref HImage frame, int currentFrame, int totalFrames, IntPtr _) =>
-                OnFrameReceived(callbackHandle, ref frame, currentFrame, totalFrames, generation);
-            _statusCallback = (callbackHandle, status, _) => OnStatusChanged(callbackHandle, status, generation);
-            int result = _backend.Play(handle, _frameCallback, _statusCallback);
+            EnsureCallbacks();
+            int result = _backend.Play(handle, _frameCallback!, _statusCallback!, new IntPtr(Volatile.Read(ref _timeline)));
             if (result != 0)
             {
-                _frameCallback = null;
-                _statusCallback = null;
                 log.Warn($"Failed to start video playback. Native return code: {result}");
                 OnStateChanged();
                 return;
@@ -149,11 +146,31 @@ namespace ColorVision.ImageEditor.Video
         {
             VerifyUsable();
             if (!IsOpen) return;
-            // Retire the old queue before native Seek can publish its target.
-            SessionId = Guid.NewGuid();
-            Interlocked.Increment(ref _timeline);
-            Interlocked.Exchange(ref _pendingFrame, null)?.Dispose();
-            _backend.Seek(_handle, frameIndex);
+            if (frameIndex < 0 || frameIndex >= Info.totalFrames) return;
+            EnsureCallbacks();
+            PendingFrame? retired;
+            long timeline;
+            lock (_pendingSync)
+            {
+                // Admission and seek share this short gate so a pre-seek callback cannot
+                // occupy the new queue after it was cleared and displace the target frame.
+                Volatile.Write(ref _timelineTokensRequired, true);
+                SessionId = Guid.NewGuid();
+                timeline = Interlocked.Increment(ref _timeline);
+                retired = Interlocked.Exchange(ref _pendingFrame, null);
+            }
+            retired?.Dispose();
+            if (!_backend.TrySeekWithCallbacks(_handle, frameIndex, _frameCallback!, _statusCallback!, new IntPtr(timeline), out int result))
+            {
+                Volatile.Write(ref _timelineTokensRequired, false);
+                _backend.Seek(_handle, frameIndex);
+            }
+            else if (result != 0)
+            {
+                log.Warn($"Failed to seek video playback. Native return code: {result}");
+                Close();
+                return;
+            }
             CurrentFrame = frameIndex;
             TryAudio(() => _audio.Position = GetPosition(frameIndex));
             OnStateChanged();
@@ -186,19 +203,37 @@ namespace ColorVision.ImageEditor.Video
             OnStateChanged();
         }
 
-        private void OnFrameReceived(int handle, ref HImage image, int currentFrame, int totalFrames, long generation)
+        private void EnsureCallbacks()
         {
-            if (!IsCurrent(handle, generation))
+            if (_frameCallback != null) return;
+            long generation = Volatile.Read(ref _generation);
+            _frameCallback = (int callbackHandle, ref HImage frame, int currentFrame, int totalFrames, IntPtr userData) =>
+                OnFrameReceived(callbackHandle, ref frame, currentFrame, totalFrames, generation, userData);
+            _statusCallback = (callbackHandle, status, userData) => OnStatusChanged(callbackHandle, status, generation, userData);
+        }
+
+        private void OnFrameReceived(int handle, ref HImage image, int currentFrame, int totalFrames, long generation, IntPtr userData)
+        {
+            PendingFrame? frame = null;
+            bool queueFull = false;
+            lock (_pendingSync)
+            {
+                long timeline = Volatile.Read(ref _timelineTokensRequired) ? userData.ToInt64() : Volatile.Read(ref _timeline);
+                if (IsCurrent(handle, generation) && timeline == Volatile.Read(ref _timeline))
+                {
+                    frame = new PendingFrame(image, currentFrame, totalFrames, timeline, _backend.ReleaseFrame);
+                    queueFull = Interlocked.CompareExchange(ref _pendingFrame, frame, null) != null;
+                }
+            }
+            if (frame == null)
             {
                 HImage staleImage = image;
                 image = default;
                 _backend.ReleaseFrame(staleImage);
                 return;
             }
-
-            PendingFrame frame = new(image, currentFrame, totalFrames, Volatile.Read(ref _timeline), _backend.ReleaseFrame);
             image = default;
-            if (Interlocked.CompareExchange(ref _pendingFrame, frame, null) != null)
+            if (queueFull)
             {
                 Interlocked.Increment(ref _droppedFrameCount);
                 frame.Dispose();
@@ -306,10 +341,11 @@ namespace ColorVision.ImageEditor.Video
             frame.Dispose();
         }
 
-        private void OnStatusChanged(int handle, int status, long generation)
+        private void OnStatusChanged(int handle, int status, long generation, IntPtr userData)
         {
-            if (!IsCurrent(handle, generation) || _dispatcher.HasShutdownStarted) return;
             long timeline = Volatile.Read(ref _timeline);
+            if (!IsCurrent(handle, generation) || _dispatcher.HasShutdownStarted
+                || (Volatile.Read(ref _timelineTokensRequired) && userData.ToInt64() != timeline)) return;
             try
             {
                 _dispatcher.BeginInvoke(new Action(() =>
@@ -390,9 +426,12 @@ namespace ColorVision.ImageEditor.Video
             }
             finally
             {
-                Interlocked.Exchange(ref _pendingFrame, null)?.Dispose();
+                PendingFrame? retired;
+                lock (_pendingSync) retired = Interlocked.Exchange(ref _pendingFrame, null);
+                retired?.Dispose();
                 _frameCallback = null;
                 _statusCallback = null;
+                Volatile.Write(ref _timelineTokensRequired, false);
                 IsPlaying = false;
                 SessionId = Guid.Empty;
                 TryAudio(_audio.Close);

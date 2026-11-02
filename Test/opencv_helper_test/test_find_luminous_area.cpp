@@ -14,6 +14,7 @@
 #include <atomic>
 #include <array>
 #include <chrono>
+#include <condition_variable>
 #include <cmath>
 #include <combaseapi.h>
 #include <cstddef>
@@ -24,6 +25,7 @@
 #include <future>
 #include <iomanip>
 #include <limits>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -104,6 +106,84 @@ static void __stdcall smokeVideoStatusCallback(int, int status, void*)
     if (status == 1) {
         g_videoStatusPlaying.fetch_add(1);
     }
+}
+
+struct PausedVideoSeekState {
+    std::mutex gate;
+    std::condition_variable changed;
+    std::vector<int> frames;
+    bool firstEntered = false;
+    bool releaseFirst = false;
+    bool failed = false;
+    int playingStatuses = 0;
+    int releasedFrames = 0;
+};
+
+struct PausedVideoSeekRequest {
+    PausedVideoSeekState& state;
+    int frameIndex;
+    bool holdCallback;
+};
+
+static cv::Vec3b pausedVideoPixel(int frameIndex, int x, int y)
+{
+    return cv::Vec3b(static_cast<uchar>(frameIndex * 19 + y * 3 + x),
+        static_cast<uchar>(frameIndex * 7 + x * 5), static_cast<uchar>(200 - frameIndex * 11 + y));
+}
+
+static bool pausedVideoPixelsMatch(const HImage& frame, int frameIndex)
+{
+    if (frame.pData == nullptr || frame.cols != 4 || frame.rows != 3 || frame.channels != 3
+        || frame.depth != 8 || frame.stride < 12) return false;
+    for (int y = 0; y < frame.rows; ++y) {
+        for (int x = 0; x < frame.cols; ++x) {
+            const cv::Vec3b expected = pausedVideoPixel(frameIndex, x, y);
+            const unsigned char* actual = frame.pData + y * frame.stride + x * 3;
+            for (int channel = 0; channel < 3; ++channel) {
+                if (actual[channel] != expected[channel]) return false;
+            }
+        }
+    }
+    return true;
+}
+
+static void __stdcall pausedVideoSeekFrameCallback(int, HImage* frame, int currentFrame, int totalFrames, void* userData)
+{
+    if (userData == nullptr) {
+        if (frame != nullptr && frame->pData != nullptr) {
+            CoTaskMemFree(frame->pData);
+            frame->pData = nullptr;
+        }
+        return;
+    }
+    auto& request = *static_cast<PausedVideoSeekRequest*>(userData);
+    PausedVideoSeekState& state = request.state;
+    bool pixelsMatched = frame != nullptr && pausedVideoPixelsMatch(*frame, request.frameIndex);
+    {
+        std::unique_lock<std::mutex> lock(state.gate);
+        state.frames.push_back(currentFrame);
+        state.failed = state.failed || !pixelsMatched || currentFrame != request.frameIndex || totalFrames != 10;
+        if (request.holdCallback) {
+            state.firstEntered = true;
+            state.changed.notify_all();
+            state.changed.wait(lock, [&] { return state.releaseFirst; });
+            state.failed = state.failed || frame == nullptr || !pausedVideoPixelsMatch(*frame, request.frameIndex);
+        }
+        if (frame != nullptr && frame->pData != nullptr) {
+            CoTaskMemFree(frame->pData);
+            frame->pData = nullptr;
+            ++state.releasedFrames;
+        }
+    }
+    state.changed.notify_all();
+}
+
+static void __stdcall pausedVideoSeekStatusCallback(int, int status, void* userData)
+{
+    if (userData == nullptr) return;
+    auto& request = *static_cast<PausedVideoSeekRequest*>(userData);
+    std::lock_guard<std::mutex> lock(request.state.gate);
+    if (status == 1) ++request.state.playingStatuses;
 }
 
 static int __cdecl smokeInitialFrameCallback(void* data, int rows, int cols, int channels)
@@ -3341,6 +3421,7 @@ bool smokeVideoInvalidCalls()
         && readInvalidClearsOutput
         && M_VideoReadFrame(-999, nullptr) == -1
         && M_VideoSeek(-999, 0) == -1
+        && M_VideoSeekWithCallbacks(-999, 0, smokeVideoFrameCallback, smokeVideoStatusCallback, nullptr) == -1
         && M_VideoGetCurrentFrame(-999) == -1
         && M_VideoSetPlaybackSpeed(-999, 1.0) == -1
         && M_VideoSetResizeScale(-999, 1.0) == -1
@@ -3410,6 +3491,92 @@ bool smokeVideoApiLifecycle()
         && closeRet == 0
         && g_videoStatusPlaying.load() > 0
         && g_videoCallbackFrames.load() > 0;
+}
+
+bool smokePausedVideoSeekCapturesCallbacksWithoutStartingPlayback()
+{
+    namespace fs = std::filesystem;
+    std::cout << "Paused video seek callback identity smoke..." << std::endl;
+    const fs::path videoDir = fs::temp_directory_path()
+        / ("colorvision_paused_video_seek_" + std::to_string(GetCurrentProcessId()) + "_" + std::to_string(GetTickCount64()));
+    PausedVideoSeekState state;
+    PausedVideoSeekRequest first{ state, 3, true };
+    PausedVideoSeekRequest target{ state, 7, false };
+    PausedVideoSeekRequest rejected{ state, 9, false };
+    int handle = -1;
+    bool passed = false;
+    try {
+        fs::create_directories(videoDir);
+        bool fixtureReady = true;
+        for (int index = 0; index < 10; ++index) {
+            cv::Mat image(3, 4, CV_8UC3);
+            for (int y = 0; y < image.rows; ++y) {
+                for (int x = 0; x < image.cols; ++x) image.at<cv::Vec3b>(y, x) = pausedVideoPixel(index, x, y);
+            }
+            char filename[32];
+            std::snprintf(filename, sizeof(filename), "frame_%02d.png", index);
+            fixtureReady = cv::imwrite((videoDir / filename).string(), image) && fixtureReady;
+        }
+        VideoInfo info{};
+        if (fixtureReady) handle = M_VideoOpen((videoDir / "frame_%02d.png").wstring().c_str(), &info);
+        if (handle > 0) {
+            HImage initial{};
+            const bool initialRead = M_VideoReadFrame(handle, &initial) == 0 && pausedVideoPixelsMatch(initial, 0);
+            if (initial.pData != nullptr) CoTaskMemFree(initial.pData);
+            const bool startupSeek = M_VideoSeek(handle, 0) == 0;
+            const bool firstSeek = M_VideoSeekWithCallbacks(handle, first.frameIndex,
+                pausedVideoSeekFrameCallback, pausedVideoSeekStatusCallback, &first) == 0;
+            bool firstEntered;
+            {
+                std::unique_lock<std::mutex> lock(state.gate);
+                firstEntered = state.changed.wait_for(lock, std::chrono::seconds(10), [&] { return state.firstEntered; });
+            }
+            // The producer is inside the first callback. Registration must return without
+            // waiting on it, and this newer request must keep its own userData and pixels.
+            const bool targetSeek = firstEntered && M_VideoSeekWithCallbacks(handle, target.frameIndex,
+                pausedVideoSeekFrameCallback, pausedVideoSeekStatusCallback, &target) == 0;
+            const bool invalidIndexRejected = M_VideoSeekWithCallbacks(handle, -1,
+                pausedVideoSeekFrameCallback, pausedVideoSeekStatusCallback, &rejected) == -2;
+            const bool missingCallbackRejected = M_VideoSeekWithCallbacks(handle, rejected.frameIndex,
+                nullptr, pausedVideoSeekStatusCallback, &rejected) == -3;
+            {
+                std::lock_guard<std::mutex> lock(state.gate);
+                state.releaseFirst = true;
+            }
+            state.changed.notify_all();
+            bool targetDelivered;
+            {
+                std::unique_lock<std::mutex> lock(state.gate);
+                targetDelivered = state.changed.wait_for(lock, std::chrono::seconds(10), [&] { return state.frames.size() >= 2; });
+            }
+            passed = initialRead && startupSeek && firstSeek && firstEntered && targetSeek && targetDelivered
+                && invalidIndexRejected && missingCallbackRejected && info.totalFrames == 10;
+        }
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "Paused video seek test exception: " << ex.what() << std::endl;
+    }
+    {
+        std::lock_guard<std::mutex> lock(state.gate);
+        state.releaseFirst = true;
+    }
+    state.changed.notify_all();
+    if (handle > 0) passed = M_VideoClose(handle) == 0 && passed;
+    {
+        std::lock_guard<std::mutex> lock(state.gate);
+        passed = passed && !state.failed && state.frames == std::vector<int>{ 3, 7 }
+            && state.releasedFrames == 2 && state.playingStatuses == 0;
+    }
+    // Delete only the fixture files this test owns, then its empty directory.
+    std::error_code cleanupError;
+    for (int index = 0; index < 10; ++index) {
+        char filename[32];
+        std::snprintf(filename, sizeof(filename), "frame_%02d.png", index);
+        fs::remove(videoDir / filename, cleanupError);
+    }
+    fs::remove(videoDir, cleanupError);
+    std::cout << "Paused seek callback identity: " << (passed ? "PASS" : "FAIL") << std::endl;
+    return passed;
 }
 
 using CudaFusionBatchFn = int(__cdecl*)(const char*, HImage*, int, int*);
@@ -3723,6 +3890,7 @@ struct NativeTestCommand
 static constexpr NativeTestCommand nativeTestCommands[] = {
     { "--help", 2, 2, "" },
     { "--image-helpers-only", 2, 2, "" },
+    { "--video-only", 2, 2, "" },
     { "--bmw-only", 2, 2, "" },
     { "--sfr-only", 2, 2, "" },
     { "--grid-distortion-v2", 2, 2, "" },
@@ -3801,6 +3969,12 @@ int main(int argc, char* argv[])
             && smokeConvertImageHandlesStrideAndOwnedBuffer()
             && smokeConvertImageClearsOutputsOnFailure();
         std::cout << "Image helper focused tests: " << (passed ? "PASS" : "FAIL") << std::endl;
+        return passed ? 0 : 1;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--video-only") {
+        const bool passed = smokeVideoInvalidCalls() && smokeVideoApiLifecycle()
+            && smokePausedVideoSeekCapturesCallbacksWithoutStartingPlayback();
+        std::cout << "Video focused tests: " << (passed ? "PASS" : "FAIL") << std::endl;
         return passed ? 0 : 1;
     }
     if (argc == 2 && std::string(argv[1]) == "--bmw-only") return RunBmwLocalizationTests() ? 0 : 1;
@@ -4043,6 +4217,10 @@ int main(int argc, char* argv[])
 
     if (!smokeVideoApiLifecycle()) {
         std::cerr << "Video API lifecycle test failed" << std::endl;
+        return 1;
+    }
+    if (!smokePausedVideoSeekCapturesCallbacksWithoutStartingPlayback()) {
+        std::cerr << "Paused video seek callback identity test failed" << std::endl;
         return 1;
     }
 

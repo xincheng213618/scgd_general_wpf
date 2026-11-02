@@ -11,6 +11,13 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <cstdint>
+
+struct VideoCallbackSnapshot {
+	VideoFrameCallback frameCallback = nullptr;
+	VideoStatusCallback statusCallback = nullptr;
+	void* userData = nullptr;
+};
 
 struct VideoContext {
 	cv::VideoCapture cap;
@@ -27,12 +34,11 @@ struct VideoContext {
 	std::mutex capMutex;
 	std::condition_variable cvPause; // Suspends the producer while paused.
 	std::mutex pauseMutex;
-	VideoFrameCallback frameCallback;
-	VideoStatusCallback statusCallback;
-	void* userData;
+	VideoCallbackSnapshot callbacks;
 	std::mutex callbackMutex;
 	std::mutex seekMutex;
 	std::atomic<int> seekRequestFrame; // -1 means no request; >=0 is target frame.
+	std::atomic<std::uint64_t> deliveryEpoch{ 0 };
 
 	// Resize scale: 1.0 = original, 0.5 = 1/2, 0.25 = 1/4, 0.125 = 1/8
 	std::atomic<double> resizeScale;
@@ -40,6 +46,8 @@ struct VideoContext {
 	// Latest frame slot: producer overwrites it, consumer takes the newest frame.
 	cv::Mat latestFrame;
 	int latestFrameIndex;
+	VideoCallbackSnapshot latestFrameCallbacks;
+	std::uint64_t latestFrameEpoch = 0;
 	bool latestFrameValid;
 	std::mutex slotMutex;              // Protects latest frame slot reads/writes.
 	std::condition_variable slotReady; // Notifies the consumer when a frame is ready.
@@ -47,7 +55,6 @@ struct VideoContext {
 
 	VideoContext() : totalFrames(0), fps(0), width(0), height(0),
 		stopRequested(false), playbackSpeed(1.0),
-		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr),
 		seekRequestFrame(-1), threadRunning(true), isPaused(true),
 		resizeScale(1.0), latestFrameIndex(0), latestFrameValid(false),
 		frameDeliveryFailureLogged(false) {}
@@ -156,32 +163,22 @@ static VideoContextPtr GetVideoContext(int handle)
 	return it != g_videos.end() ? it->second : nullptr;
 }
 
-static void InvokeStatus(VideoContext& ctx, int handle, int status)
+static VideoCallbackSnapshot CaptureCallbacks(VideoContext& ctx)
 {
-	VideoStatusCallback callback = nullptr;
-	void* userData = nullptr;
-	{
-		std::lock_guard<std::mutex> lock(ctx.callbackMutex);
-		callback = ctx.statusCallback;
-		userData = ctx.userData;
-	}
+	std::lock_guard<std::mutex> lock(ctx.callbackMutex);
+	return ctx.callbacks;
+}
 
-	if (callback) {
-		callback(handle, status, userData);
+static void InvokeStatus(const VideoCallbackSnapshot& callbacks, int handle, int status)
+{
+	if (callbacks.statusCallback) {
+		callbacks.statusCallback(handle, status, callbacks.userData);
 	}
 }
 
-static int InvokeFrame(VideoContext& ctx, int handle, const cv::Mat& frame, int frameIndex)
+static int InvokeFrame(VideoContext& ctx, const VideoCallbackSnapshot& callbacks, int handle, const cv::Mat& frame, int frameIndex)
 {
-	VideoFrameCallback callback = nullptr;
-	void* userData = nullptr;
-	{
-		std::lock_guard<std::mutex> lock(ctx.callbackMutex);
-		callback = ctx.frameCallback;
-		userData = ctx.userData;
-	}
-
-	if (!callback) {
+	if (!callbacks.frameCallback) {
 		return 0;
 	}
 
@@ -199,7 +196,7 @@ static int InvokeFrame(VideoContext& ctx, int handle, const cv::Mat& frame, int 
 		return convertResult;
 	}
 
-	callback(handle, &hImage, frameIndex, ctx.totalFrames, userData);
+	callbacks.frameCallback(handle, &hImage, frameIndex, ctx.totalFrames, callbacks.userData);
 	return 0;
 }
 
@@ -208,18 +205,24 @@ static void VideoProducerLoop(VideoContextPtr ctx, int handle)
 	try {
 		while (ctx->threadRunning) {
 			auto frameStartTime = std::chrono::steady_clock::now();
+			int seekTo;
+			VideoCallbackSnapshot callbacks;
+			std::uint64_t deliveryEpoch;
 
 			{
 				std::unique_lock<std::mutex> lock(ctx->pauseMutex);
 				ctx->cvPause.wait(lock, [ctx] {
 					return !ctx->isPaused || !ctx->threadRunning || ctx->seekRequestFrame >= 0;
 					});
+				if (!ctx->threadRunning) break;
+				seekTo = ctx->seekRequestFrame.exchange(-1);
+				deliveryEpoch = ctx->deliveryEpoch.load();
+				// Keep the request's callback identity through decoding and delivery. A
+				// later seek must not relabel an already dequeued frame with new userData.
+				callbacks = CaptureCallbacks(*ctx);
 			}
 
-			if (!ctx->threadRunning) break;
-
 			bool justSeeked = false;
-			int seekTo = ctx->seekRequestFrame.exchange(-1);
 			if (seekTo >= 0) {
 				std::lock_guard<std::mutex> lock(ctx->capMutex);
 				if (seekTo < ctx->totalFrames) {
@@ -248,12 +251,17 @@ static void VideoProducerLoop(VideoContextPtr ctx, int handle)
 					}
 				}
 
-				if (reachedEnd && !ctx->isPaused) {
-					ctx->isPaused = true;
-					InvokeStatus(*ctx, handle, 2);
+				bool notifyEnded = false;
+				if (reachedEnd) {
+					std::lock_guard<std::mutex> lock(ctx->pauseMutex);
+					if (deliveryEpoch == ctx->deliveryEpoch.load() && !ctx->isPaused) {
+						ctx->isPaused = true;
+						notifyEnded = true;
+					}
 				}
+				if (notifyEnded) InvokeStatus(callbacks, handle, 2);
 
-				if (readSuccess) {
+				if (readSuccess && deliveryEpoch == ctx->deliveryEpoch.load()) {
 					double scale = ctx->resizeScale.load();
 					if (scale > 0.0 && scale < 1.0) {
 						if (scale == 0.5) {
@@ -279,12 +287,14 @@ static void VideoProducerLoop(VideoContextPtr ctx, int handle)
 						std::lock_guard<std::mutex> slotLock(ctx->slotMutex);
 						ctx->latestFrame = frame;
 						ctx->latestFrameIndex = currentFrame;
+						ctx->latestFrameCallbacks = callbacks;
+						ctx->latestFrameEpoch = deliveryEpoch;
 						ctx->latestFrameValid = true;
 					}
 					ctx->slotReady.notify_one();
 
-					if (justSeeked && ctx->isPaused) {
-						InvokeFrame(*ctx, handle, frame, currentFrame);
+					if (justSeeked && ctx->isPaused && deliveryEpoch == ctx->deliveryEpoch.load()) {
+						InvokeFrame(*ctx, callbacks, handle, frame, currentFrame);
 					}
 				}
 			}
@@ -331,6 +341,8 @@ static void VideoConsumerLoop(VideoContextPtr ctx, int handle)
 		while (ctx->threadRunning) {
 			cv::Mat frameCopy;
 			int frameIndex = 0;
+			VideoCallbackSnapshot callbacks;
+			std::uint64_t deliveryEpoch = 0;
 			bool gotFrame = false;
 
 			{
@@ -344,13 +356,15 @@ static void VideoConsumerLoop(VideoContextPtr ctx, int handle)
 				if (ctx->latestFrameValid) {
 					frameCopy = ctx->latestFrame;
 					frameIndex = ctx->latestFrameIndex;
+					callbacks = ctx->latestFrameCallbacks;
+					deliveryEpoch = ctx->latestFrameEpoch;
 					ctx->latestFrameValid = false;
 					gotFrame = true;
 				}
 			}
 
-			if (gotFrame && !ctx->isPaused) {
-				InvokeFrame(*ctx, handle, frameCopy, frameIndex);
+			if (gotFrame && !ctx->isPaused && deliveryEpoch == ctx->deliveryEpoch.load()) {
+				InvokeFrame(*ctx, callbacks, handle, frameCopy, frameIndex);
 			}
 		}
 	}
@@ -480,6 +494,7 @@ COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 			{
 				std::lock_guard<std::mutex> lock(ctx->pauseMutex);
 				ctx->seekRequestFrame = frameIndex;
+				++ctx->deliveryEpoch;
 			}
 			ctx->cvPause.notify_one();
 			cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
@@ -489,6 +504,32 @@ COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 			return 0;
 		}
 		return -2;
+		});
+}
+
+COLORVISIONCORE_API int M_VideoSeekWithCallbacks(int handle, int frameIndex, VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, void* userData)
+{
+	return GuardVideoExport(__func__, [&]() -> int {
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
+		if (frameIndex < 0 || frameIndex >= ctx->totalFrames) return -2;
+		if (!frameCallback) return -3;
+
+		{
+			std::lock_guard<std::mutex> pauseLock(ctx->pauseMutex);
+			{
+				std::lock_guard<std::mutex> callbackLock(ctx->callbackMutex);
+				ctx->callbacks = { frameCallback, statusCallback, userData };
+			}
+			ctx->seekRequestFrame = frameIndex;
+			++ctx->deliveryEpoch;
+		}
+		ctx->cvPause.notify_one();
+		cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
+			return std::string("[video.lifecycle] M_VideoSeekWithCallbacks handle=") + std::to_string(handle)
+				+ " frame=" + std::to_string(frameIndex);
+			});
+		return 0;
 		});
 }
 
@@ -537,19 +578,16 @@ COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback frameCallback
 		if (!frameCallback) return -2;
 
 		{
-			std::lock_guard<std::mutex> callbackLock(ctx->callbackMutex);
-			ctx->frameCallback = frameCallback;
-			ctx->statusCallback = statusCallback;
-			ctx->userData = userData;
-		}
-
-		{
 			std::lock_guard<std::mutex> pauseLock(ctx->pauseMutex);
+			{
+				std::lock_guard<std::mutex> callbackLock(ctx->callbackMutex);
+				ctx->callbacks = { frameCallback, statusCallback, userData };
+			}
 			ctx->isPaused = false;
 		}
 
 		ctx->cvPause.notify_one();
-		InvokeStatus(*ctx, handle, 1);
+		InvokeStatus(CaptureCallbacks(*ctx), handle, 1);
 		cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
 			return std::string("[video.lifecycle] M_VideoPlay handle=") + std::to_string(handle);
 			});
@@ -568,7 +606,7 @@ COLORVISIONCORE_API int M_VideoPause(int handle)
 			ctx->isPaused = true;
 		}
 
-		InvokeStatus(*ctx, handle, 0);
+		InvokeStatus(CaptureCallbacks(*ctx), handle, 0);
 		cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
 			return std::string("[video.lifecycle] M_VideoPause handle=") + std::to_string(handle);
 			});
@@ -590,9 +628,7 @@ COLORVISIONCORE_API int M_VideoClose(int handle)
 
 		{
 			std::lock_guard<std::mutex> lock(ctx->callbackMutex);
-			ctx->frameCallback = nullptr;
-			ctx->statusCallback = nullptr;
-			ctx->userData = nullptr;
+			ctx->callbacks = {};
 		}
 
 		StopVideoWorkers(ctx);

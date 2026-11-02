@@ -5683,6 +5683,7 @@
         "M_VideoOpen",
         "M_VideoReadFrame",
         "M_VideoSeek",
+        "M_VideoSeekWithCallbacks",
         "M_VideoGetCurrentFrame",
         "M_VideoSetPlaybackSpeed",
         "M_VideoSetResizeScale",

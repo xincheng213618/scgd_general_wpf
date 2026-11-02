@@ -451,6 +451,11 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_VideoSeek(int handle, int frameIndex);
 
+        // Registers the receiving callbacks and seeks atomically without starting playback.
+        // userData is captured with each decoded frame, including frames delivered after a newer seek.
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoSeekWithCallbacks(int handle, int frameIndex, VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, IntPtr userData);
+
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_VideoGetCurrentFrame(int handle);
 

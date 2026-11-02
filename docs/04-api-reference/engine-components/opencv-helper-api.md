@@ -3,7 +3,7 @@ knowledge_id: "engine.opencv-helper-api"
 knowledge_type: "reference"
 status: "current"
 summary: "opencv_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。"
-aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_AnalyzeSfrV2", "斜边清晰度", "ESF", "MTF50", "MTF10", "RGB 子像素", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
+aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_AnalyzeSfrV2", "斜边清晰度", "ESF", "MTF50", "MTF10", "RGB 子像素", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoSeekWithCallbacks", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
 code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/include/video_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/video_export.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/SfrAnalysis.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/SFR", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
 test_paths: ["Test/opencv_helper_test/test_sfr_analysis.cpp","Test/opencv_helper_test/test_find_luminous_area.cpp","Test/opencv_helper_test/test_calibration.cpp","Test/opencv_helper_test/test_pseudo_color.cpp","Test/opencv_helper_test/test_p2_algorithms.cpp","Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms.local-native-analysis", "algorithms.poi-routes", "algorithms.find-cross"]
@@ -999,12 +999,13 @@ Queue a seek to a specific frame.
 
 ```cpp
 COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex);
+COLORVISIONCORE_API int M_VideoSeekWithCallbacks(int handle, int frameIndex,
+    VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, void* userData);
 ```
 
-`0` means the frame index passed validation and was stored in `seekRequestFrame`;
-the producer performs the actual seek later. It does not prove that the target
-frame has been decoded, delivered or rendered. Invalid handle/index returns
-`-1`/`-2` respectively, with additional video guard errors possible.
+两者返回 `0` 只表示接收请求，不证明已解码、回调或显示；无效 handle/index 返回 `-1`/`-2`，异常仍走视频 guard。`M_VideoSeek` 不登记回调，首次 Play 前没有帧接收者。新增的 `M_VideoSeekWithCallbacks` 原子登记回调和目标，保持当前播放/暂停状态；空帧回调返回 `-3`，无效参数不改变已有请求。旧 DLL 缺少此入口，托管 backend 回退旧 Seek。
+
+工作线程出队时捕获回调及 `userData`，同一快照贯穿解码、latest-frame 槽、暂停定位和结束状态。更新登记不会把旧帧标成新请求；可能已在途的旧回调仍带旧 `userData`，接收方应据此拒绝过期结果。Seek 推进内部代次，过期解码不能暂停新请求。
 
 ---
 
@@ -1058,18 +1059,7 @@ COLORVISIONCORE_API int M_VideoPlay(int handle,
     void* userData);
 ```
 
-`InvokeFrame` passes the address of a stack-local `HImage`; that struct pointer
-is borrowed only for the callback and must not be retained. Its `pData` is a
-separately allocated owned buffer transferred to the receiver. Copy/render the
-pixels and dispose the received `HImage` exactly once, or explicitly transfer
-that buffer ownership to a longer-lived holder. The native callback path does
-not free the buffer after calling the receiver.
-
-Playback uses a latest-frame slot: the producer may overwrite an undelivered
-frame, and the consumer takes the newest one. This is not a lossless per-frame
-processing queue. Frame callbacks can run on native worker threads (including
-the producer for a paused seek), not the WPF UI thread. Keep callback delegates
-and `userData` alive while callbacks can still execute.
+`InvokeFrame` 的栈上 `HImage*` 仅在回调期间借用，不可保留；独立分配的 `pData` 所有权交给接收方，须释放一次或显式转移，native 回调返回后不代为释放。生产者覆盖 latest-frame 槽，消费者取最新帧，不保证无损逐帧交付。帧回调在原生工作线程执行，暂停定位也可由生产者直接回调。回调及其 `userData` 须在仍可能执行期间保持有效，替换登记不构成旧回调完成屏障。
 
 **Status codes:** 0=Paused, 1=Playing, 2=Ended
 
