@@ -5,6 +5,10 @@ internal sealed record LuxCsvField(string PropertyName, string CurrentName, stri
 
 internal static class LuxCsvSchema
 {
+    internal static string MtfName(LuxCsvField field, LuxCsvFormat format, LuxMtfPointFormat pointFormat) =>
+        format == LuxCsvFormat.Current ? field.CurrentName
+            : pointFormat == LuxMtfPointFormat.Mtf048 ? field.LegacyName : field.LegacyName.Replace("0.4F_", "0.5F_", StringComparison.Ordinal);
+
     internal static readonly LuxCsvField[] White =
     [
         new("HorizontalFieldOfViewAngle", "Horizontal_Field_Of_View_Angle", "degree", true, "Horizontal_Field_Of_View_Angle", "degree"),
@@ -61,7 +65,7 @@ internal static class LuxCsvSchema
         new("AverageLuminance", "Average_Luminance", "cd/m^2", true, "Average_Luminance", "cd/m^2"),
         new("CenterCIE1931ChromaticCoordinatesx", "Center_CIE_1931Chromatic_Coordinates_x", "", true, "Center_CIE_1931Chromatic_Coordinates_x", ""),
         new("CenterCIE1931ChromaticCoordinatesy", "Center_CIE_1931Chromatic_Coordinates_y", "", true, "Center_CIE_1931Chromatic_Coordinates_y", ""),
-        new("CenterCIE1976ChromaticCoordinatesu", "Center CIE_1976Chromatic_Coordinates_u'", "", true, "Center CIE_1976Chromatic_Coordinates_u'", ""),
+        new("CenterCIE1976ChromaticCoordinatesu", "Center_CIE_1976Chromatic_Coordinates_u'", "", true, "Center_CIE_1976Chromatic_Coordinates_u'", ""),
         new("CenterCIE1976ChromaticCoordinatesv", "Center_CIE_1976Chromatic_Coordinates_v'", "", true, "Center_CIE_1976Chromatic_Coordinates_v'", ""),
         new("Center_Correlated_Color_Temperature", "Center_Correlated_Color_Temperature", "K", true, "Center_Correlated_Color_Temperature", "K"),
     ];

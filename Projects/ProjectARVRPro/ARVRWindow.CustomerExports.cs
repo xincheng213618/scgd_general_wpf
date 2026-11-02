@@ -19,6 +19,7 @@ public partial class ARVRWindow
             OutputDirectory = directory,
             BaseFileName = BuildDailyCustomXlsxBaseFileName(exportTime, options.ProjectName),
             ExportTime = exportTime,
+            LuxMtfFormat = options.LuxMtfFormat,
             FlowResults = CustomTestResultExportService.IsLuxProfile(profile)
                 ? ViewResultManager.GetObjectiveTestFlowResults(ObjectiveTestResultRecordId)
                 : Array.Empty<ProjectARVRReuslt>()

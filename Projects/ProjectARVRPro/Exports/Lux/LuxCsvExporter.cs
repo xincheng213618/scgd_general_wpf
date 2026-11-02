@@ -21,7 +21,7 @@ public sealed class LuxCsvExporter(LuxCsvFormat format) : ITestResultCustomExpor
         Directory.CreateDirectory(context.OutputDirectory);
         string path = Path.Combine(context.OutputDirectory, GetFileName(context));
         var lines = new List<string> { ProjectARVRResultCsvExporter.Header };
-        foreach (ObjectiveTestCsvRow row in LuxCsvProjector.CollectRows(context.Result, format, context.FlowResults))
+        foreach (ObjectiveTestCsvRow row in LuxCsvProjector.CollectRows(context.Result, format, context.FlowResults, context.LuxMtfFormat))
             lines.Add(string.Join(",", new[] { row.TestScreen, row.TestItem, row.TestValue, row.Unit, row.LowerLimit, row.UpperLimit, row.TestResult }.Select(Escape)));
         File.WriteAllLines(path, lines);
         return path;

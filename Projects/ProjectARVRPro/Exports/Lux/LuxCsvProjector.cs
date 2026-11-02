@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.KeyedResults;
 using ProjectARVRPro.Process.MTF.MTFHV048;
+using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
 using System.Collections;
 using System.ComponentModel;
@@ -15,11 +16,13 @@ namespace ProjectARVRPro.Exports.Lux;
 
 internal static class LuxCsvProjector
 {
-    internal static IReadOnlyList<ObjectiveTestCsvRow> CollectRows(ObjectiveTestResult result, LuxCsvFormat format, IReadOnlyList<ProjectARVRReuslt>? flowResults = null)
+    internal static IReadOnlyList<ObjectiveTestCsvRow> CollectRows(ObjectiveTestResult result, LuxCsvFormat format, IReadOnlyList<ProjectARVRReuslt>? flowResults = null,
+        LuxMtfPointFormat mtfPointFormat = LuxMtfPointFormat.Mtf058)
     {
         ArgumentNullException.ThrowIfNull(result);
         var rows = new List<ObjectiveTestCsvRow>();
         Dictionary<string, JObject> chessboards = ReadChessboardSnapshots(flowResults);
+        var mtfSnapshots = LuxMtfCsvProjection.ReadSnapshots(flowResults);
         object? white = KeyedTestResultDictionary.TryGetValue(result.LuminanceChromaticityTestResults, "White", out var keyedWhite)
             ? keyedWhite : result.W255TestResult;
         object? fov = KeyedTestResultDictionary.TryGetValue(result.FieldOfViewTestResults, "White", out var keyedFov)
@@ -27,7 +30,7 @@ internal static class LuxCsvProjector
         if (white != null)
             CollectWhite(white, fov, format, rows);
         else if (fov != null)
-            AddObject(fov, "W255", format, rows);
+            AddObject(fov, "W255", format, rows, null, mtfPointFormat);
 
         foreach (var chessboard in chessboards)
             CollectChessboard(chessboard.Key, chessboard.Value, rows);
@@ -56,17 +59,22 @@ internal static class LuxCsvProjector
                     if (KeyedTestResultDictionary.IsKey(key, "White")
                         && property.Name is nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) or nameof(ObjectiveTestResult.FieldOfViewTestResults))
                         continue;
-                    AddObject(entry.Value, MapScreen(key), format, rows);
+                    string outputKey = MapScreen(key);
+                    AddObject(entry.Value, outputKey, format, rows, mtfSnapshots.GetValueOrDefault((typeof(MTFHV058TestResult), outputKey)), mtfPointFormat);
                 }
             }
             else if (value is IList list)
             {
                 for (int index = 0; index < list.Count; index++)
-                    AddObject(list[index], list[index] is MTFHV048TestResult ? "MTF" : $"{screen}{index + 1}", format, rows);
+                {
+                    string outputKey = list[index] is MTFHV048TestResult ? "MTF" : $"{screen}{index + 1}";
+                    var snapshotKey = list[index] is MTFHV048TestResult ? (typeof(MTFHV048TestResult), $"MTF048{index + 1}") : (typeof(MTFHV058TestResult), outputKey);
+                    AddObject(list[index], outputKey, format, rows, mtfSnapshots.GetValueOrDefault(snapshotKey), mtfPointFormat);
+                }
             }
             else
             {
-                AddObject(value, value is OpticCenterTestResult center ? center.GetOutputKey() : screen, format, rows);
+                AddObject(value, value is OpticCenterTestResult center ? center.GetOutputKey() : screen, format, rows, null, mtfPointFormat);
             }
         }
         return rows;
@@ -117,7 +125,7 @@ internal static class LuxCsvProjector
 
     private static void CollectWhite(object source, object? fov, LuxCsvFormat format, List<ObjectiveTestCsvRow> rows)
     {
-        var points = source.GetType().GetProperty("PoixyuvDatas")?.GetValue(source) as IEnumerable<PoixyuvData>;
+        PoixyuvData[] points = (source.GetType().GetProperty("PoixyuvDatas")?.GetValue(source) as IEnumerable<PoixyuvData>)?.ToArray() ?? [];
         foreach (LuxCsvField field in LuxCsvSchema.White)
         {
             if (format == LuxCsvFormat.Current && !field.CurrentVisible && ReadItem(fov, field.PropertyName) == null)
@@ -127,7 +135,9 @@ internal static class LuxCsvProjector
             Match pointField = Regex.Match(field.PropertyName, "^P([1-9])(Lv|Cx|Cy|Cu|Cv)$");
             if (pointField.Success)
             {
-                PoixyuvData? point = points?.FirstOrDefault(item => item.Name == "P" + pointField.Groups[1].Value);
+                string pointName = "P" + pointField.Groups[1].Value;
+                PoixyuvData? point = points.FirstOrDefault(item => item.Name == pointName)
+                    ?? points.FirstOrDefault(item => CanonicalPoiName(item.Name) == pointName);
                 double? value = point == null ? null : pointField.Groups[2].Value switch
                 {
                     "Lv" => point.Y, "Cx" => point.x, "Cy" => point.y, "Cu" => point.u, "Cv" => point.v, _ => null
@@ -146,31 +156,22 @@ internal static class LuxCsvProjector
                 _ => field.PropertyName
             };
             ObjectiveTestItem? item = ReadItem(source, property);
+            if (property == "AverageLuminance" && item == null && points.Length > 0)
+                item = new ObjectiveTestItem { Value = points.Average(point => point.Y) };
             if (field.PropertyName.EndsWith("FieldOfViewAngle", StringComparison.Ordinal))
                 item = ReadItem(fov, field.PropertyName) ?? item;
             rows.Add(ItemRow(item, "W255", name, unit, field.PropertyName == "LuminanceUniformity" ? 100 : 1));
         }
     }
 
-    private static void AddObject(object? source, string screen, LuxCsvFormat format, List<ObjectiveTestCsvRow> rows)
+    private static void AddObject(object? source, string screen, LuxCsvFormat format, List<ObjectiveTestCsvRow> rows, LuxMtfCsvSnapshot? mtfSnapshot, LuxMtfPointFormat mtfPointFormat)
     {
         if (source == null) return;
-        if (source is MTFHV048TestResult)
+        if (source is MTFHV058TestResult or MTFHV048TestResult)
         {
-            foreach (LuxCsvField field in LuxCsvSchema.ArMtf)
-            {
-                string name = format == LuxCsvFormat.Legacy ? field.LegacyName : field.CurrentName;
-                string unit = format == LuxCsvFormat.Legacy ? field.LegacyUnit : field.CurrentUnit;
-                ObjectiveTestItem? item = ReadItem(source, field.PropertyName);
-                Match average = Regex.Match(field.PropertyName, "^MTF(0F|0_4F|0_8F)_(Center|LeftUp|RightUp|RightDown|LeftDown)_(horizontal|Vertical)$");
-                if (item == null && average.Success)
-                {
-                    string axis = average.Groups[3].Value == "horizontal" ? "H" : "V";
-                    item = ReadItem(source, $"MTF_HV_{axis}_{average.Groups[2].Value}_{average.Groups[1].Value}");
-                }
-                // Legacy adds a '%' label without rescaling these raw MTF values.
-                rows.Add(ItemRow(item, screen, name, unit, 1));
-            }
+            foreach (var (field, item) in LuxMtfCsvProjection.Project(source, mtfSnapshot))
+                rows.Add(ItemRow(item, screen, LuxCsvSchema.MtfName(field, format, mtfPointFormat),
+                    format == LuxCsvFormat.Legacy ? field.LegacyUnit : field.CurrentUnit, 1));
             return;
         }
         if (source is OpticCenterTestResult center)
@@ -211,12 +212,19 @@ internal static class LuxCsvProjector
                 TestItem = name,
                 TestValue = Scale(row.TestValue, factor),
                 MetricValue = Scale(row.TestValue, factor),
-                Unit = row.Unit.Equals("None", StringComparison.OrdinalIgnoreCase) ? string.Empty : row.Unit,
+                Unit = row.Unit == "°" ? "degree"
+                    : row.Unit.Equals("None", StringComparison.OrdinalIgnoreCase) ? string.Empty : row.Unit,
                 LowerLimit = lower,
                 UpperLimit = upper,
                 TestResult = status
             });
         }
+    }
+
+    private static string CanonicalPoiName(string? name)
+    {
+        Match match = Regex.Match(name?.Trim() ?? string.Empty, "^P_?([1-9][0-9]*)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        return match.Success ? "P" + match.Groups[1].Value : name ?? string.Empty;
     }
 
     private static string MapScreen(string key) => key.Trim() switch

@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
 using ProjectARVRPro.Exports;
+using ProjectARVRPro.Exports.Lux;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -284,17 +285,26 @@ namespace ProjectARVRPro
 
         [DisplayName("保存客户报表"), Category("客制化输出")]
         [Description("启用后按所选客户格式输出XLSX或CSV；LUX格式按SN保存并更新同一个文件")]
-        public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowCustomProjectName)); } }
+        public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowCustomProjectName)); OnPropertyChanged(nameof(ShowLuxMtfFormat)); } }
         private bool _IsSaveCustomXlsx;
 
         [DisplayName("报表格式"), Category("客制化输出")]
         [PropertyVisibility(nameof(IsSaveCustomXlsx))]
         [Description("选择需要追加输出的客户表格格式")]
-        public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowCustomProjectName)); } }
+        public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowCustomProjectName)); OnPropertyChanged(nameof(ShowLuxMtfFormat)); } }
         private CustomTestResultOutputProfile _CustomOutputProfile = CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
         [Newtonsoft.Json.JsonIgnore, Browsable(false)]
         public bool ShowCustomProjectName => IsSaveCustomXlsx && !CustomTestResultExportService.IsLuxProfile(CustomOutputProfile);
+
+        [Newtonsoft.Json.JsonIgnore, Browsable(false)]
+        public bool ShowLuxMtfFormat => IsSaveCustomXlsx && CustomOutputProfile == CustomTestResultOutputProfile.LUX_Legacy_CSV;
+
+        [DisplayName("MTF 点位格式"), Category("客制化输出")]
+        [PropertyVisibility(nameof(ShowLuxMtfFormat))]
+        [Description("058 使用 0F/0.5F/0.8F；048 使用 0F/0.4F/0.8F。应与当前项目的 MTF 点位约定一致。")]
+        public LuxMtfPointFormat LuxMtfFormat { get => _luxMtfFormat; set { _luxMtfFormat = value; OnPropertyChanged(); } }
+        private LuxMtfPointFormat _luxMtfFormat = LuxMtfPointFormat.Mtf058;
 
         [DisplayName("报表项目名称"), Category("客制化输出")]
         [PropertyVisibility(nameof(ShowCustomProjectName))]
