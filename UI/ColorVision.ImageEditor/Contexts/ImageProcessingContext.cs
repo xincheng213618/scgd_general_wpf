@@ -179,10 +179,10 @@ namespace ColorVision.ImageEditor
 
         internal bool HasActiveAlgorithmPreview => _operations.HasActiveAlgorithmPreview;
 
-        internal void SupersedePreviewForDisplaySelection()
+        internal bool SupersedePreviewForDisplaySelection()
         {
             DisplayEffects.Invalidate();
-            _operations.SupersedePreviewForDisplaySelection();
+            return _operations.SupersedePreviewForDisplaySelection();
         }
 
         internal long AlgorithmClaimSequence => _operations.AlgorithmClaimSequence;

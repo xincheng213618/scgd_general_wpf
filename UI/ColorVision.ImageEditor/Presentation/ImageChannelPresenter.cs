@@ -53,24 +53,46 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
     public void SelectChannel(int channel)
     {
         context.Dispatcher.VerifyAccess();
-        if (_disposed || context.ViewBitmapSource == null) return;
+        if (_disposed || context.IsDisposed || context.ViewBitmapSource == null) return;
         CancellationTokenSource selection = BeginSelection();
-        context.SupersedePreviewForDisplaySelection();
-        if (channel == -1)
+        ImageFrameLease? lease = null;
+        bool handedOff = false;
+        try
         {
-            context.Presentation.RestoreSource();
-            CompleteSelection(selection);
-            return;
-        }
+            Guid documentId = context.DocumentInstanceId;
+            long revision = context.ImageRevision;
+            ImageSource source = context.ViewBitmapSource;
+            long claimSequence = context.AlgorithmClaimSequence;
+            long selectionVersion = context.Presentation.SelectionVersion;
+            bool restoredPreview = context.SupersedePreviewForDisplaySelection();
+            long expectedSelectionVersion = selectionVersion + (restoredPreview ? 1 : 0);
 
-        ImageFrameLease? lease = context.AcquireImageFrame();
-        if (lease == null)
-        {
-            CompleteSelection(selection);
-            return;
+            bool CanContinue() => !_disposed && !context.IsDisposed && !selection.IsCancellationRequested
+                && context.DocumentInstanceId == documentId && context.IsCurrentImageRevision(revision)
+                && ReferenceEquals(context.ViewBitmapSource, source) && context.AlgorithmClaimSequence == claimSequence
+                && !context.HasActiveAlgorithmPreview && context.Presentation.SelectionVersion == expectedSelectionVersion;
+
+            // Cancel publishes the canonical source synchronously. Its subscribers may
+            // already have selected another display, source, channel, or algorithm owner.
+            if (!CanContinue()) return;
+            if (channel == -1)
+            {
+                context.Presentation.RestoreSource();
+                return;
+            }
+
+            lease = context.AcquireImageFrame();
+            if (lease == null || !CanContinue()) return;
+            ImagePresentationRequest request = context.Presentation.BeginRequest();
+            _ = RenderAsync(lease, request, channel, selection);
+            lease = null;
+            handedOff = true;
         }
-        ImagePresentationRequest request = context.Presentation.BeginRequest();
-        _ = RenderAsync(lease, request, channel, selection);
+        finally
+        {
+            lease?.Dispose();
+            if (!handedOff) CompleteSelection(selection);
+        }
     }
 
     private CancellationTokenSource BeginSelection()

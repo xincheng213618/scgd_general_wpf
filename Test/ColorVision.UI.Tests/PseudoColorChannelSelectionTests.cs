@@ -183,6 +183,61 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         }
     }
 
+    [Theory]
+    [InlineData("red")]
+    [InlineData("composite")]
+    public async Task SelectingALayerPreservesADisplaySelectedDuringPreviewCancellation(string selectedLayer)
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
+        ImageAlgorithmPreviewSession? preview = null;
+        WriteableBitmap? replacement = null;
+        int callbacks = 0;
+        bool replacementWasPublished = false;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            await fixture.SelectLayerAsync("green");
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.False(fixture.State.IsEnabled);
+                preview = ImageAlgorithmPreviewSession.Start(fixture.Context);
+                Assert.True(preview.OwnsHostPreview);
+                Assert.Same(preview.PreviewBitmap, fixture.View.ImageShow.Source);
+                replacement = new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null);
+                replacement.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 201, 202, 203, 204 }, 2, 0);
+                replacement.Freeze();
+                fixture.SourceChanged = () =>
+                {
+                    if (!ReferenceEquals(fixture.View.ImageShow.Source, fixture.Source) || callbacks != 0) return;
+                    callbacks++;
+                    fixture.Context.Presentation.Publish(replacement, replacement);
+                    replacementWasPublished = ReferenceEquals(replacement, fixture.View.ImageShow.Source);
+                };
+                fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == selectedLayer);
+            });
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                output.WriteLine(JsonSerializer.Serialize(new { selectedLayer, callbacks, replacementWasPublished, final = fixture.Snapshot() }));
+                Assert.Equal(1, callbacks);
+                Assert.True(replacementWasPublished);
+                fixture.AssertDocumentUnchanged();
+                Assert.False(fixture.State.IsEnabled);
+                Assert.False(fixture.Context.HasActiveAlgorithmPreview);
+                Assert.Equal(selectedLayer, fixture.View.SelectedLayer!.Id);
+                Assert.Same(replacement, fixture.View.ImageShow.Source);
+                Assert.Same(replacement, fixture.Context.FunctionImage);
+                Assert.Empty(fixture.Provider.Runs);
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => { fixture.SourceChanged = null; preview?.Dispose(); });
+            await fixture.DisposeAsync();
+        }
+    }
+
     [Fact]
     public async Task Rgb48RedUsesCanonicalBgrChannelForStaticPseudoColorAndSourceChannelForFrames()
     {

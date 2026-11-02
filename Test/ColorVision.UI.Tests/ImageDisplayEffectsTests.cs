@@ -339,6 +339,58 @@ public sealed class ImageDisplayEffectsTests
     }
 
     [Fact]
+    public void ChannelSelectionReturnsItsFrameWhenAcquisitionSelectsANewerDisplay()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using ImageFrameStore store = new();
+            store.Invalidate();
+            using EffectsFixture fixture = new() { SelectedChannel = 2 };
+            using ImageChannelPresenter presenter = new(fixture.Context);
+            byte[] sourcePixels = [11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121];
+            WriteableBitmap source = new(2, 2, 96, 96, PixelFormats.Bgr24, null);
+            source.WritePixels(new Int32Rect(0, 0, 2, 2), sourcePixels, 6, 0);
+            source.Freeze();
+            WriteableBitmap replacement = new(2, 2, 96, 96, PixelFormats.Gray8, null);
+            replacement.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 201, 202, 203, 204 }, 2, 0);
+            replacement.Freeze();
+            fixture.Source = source;
+            fixture.Context.Presentation.Publish(source, null);
+            Guid documentId = fixture.Context.DocumentInstanceId;
+            long revision = fixture.Context.ImageRevision;
+            ImageFrameLease? borrowed = null;
+            int releases = 0;
+            fixture.AcquireFrame = () =>
+            {
+                borrowed = store.AcquireOrCreate(() =>
+                {
+                    IntPtr pixels = Marshal.AllocCoTaskMem(sourcePixels.Length);
+                    Marshal.Copy(sourcePixels, 0, pixels, sourcePixels.Length);
+                    return new HImage { pData = pixels, rows = 2, cols = 2, channels = 3, depth = 8, stride = 6 };
+                }, image => { image.Dispose(); releases++; });
+                store.Dispose();
+                fixture.Context.Presentation.Publish(replacement, replacement);
+                return borrowed;
+            };
+
+            presenter.SelectChannel(2);
+
+            Assert.Equal(1, fixture.AcquireCount);
+            Assert.Equal(1, releases);
+            ImageFrameLease returned = Assert.IsType<ImageFrameLease>(borrowed);
+            Assert.Throws<ObjectDisposedException>(() => { _ = returned.Image; });
+            Assert.Same(replacement, fixture.Context.Presentation.DisplaySource);
+            Assert.Same(replacement, fixture.Context.FunctionImage);
+            Assert.Same(source, fixture.Source);
+            Assert.Equal(documentId, fixture.Context.DocumentInstanceId);
+            Assert.Equal(revision, fixture.Context.ImageRevision);
+            byte[] actualSource = new byte[12];
+            source.CopyPixels(actualSource, 6, 0);
+            Assert.Equal(sourcePixels, actualSource);
+        });
+    }
+
+    [Fact]
     public async Task DisablingPseudoColorCannotOverwriteADisplaySelectedAfterChannelCapture()
     {
         TimeSpan watchdog = TimeSpan.FromSeconds(10);

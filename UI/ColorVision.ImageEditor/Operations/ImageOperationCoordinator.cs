@@ -187,11 +187,16 @@ namespace ColorVision.ImageEditor.Operations
             lock (_algorithmPreviewSync) return _activeAlgorithmPreviewClaim == claim;
         }
 
-        internal void SupersedePreviewForDisplaySelection()
+        internal bool SupersedePreviewForDisplaySelection()
         {
             AlgorithmInvocationClaim? claim;
-            lock (_algorithmPreviewSync) claim = _activeAlgorithmPreviewClaim;
-            if (claim.HasValue) TryCancelAlgorithmPreview(claim.Value);
+            bool hasRestore;
+            lock (_algorithmPreviewSync)
+            {
+                claim = _activeAlgorithmPreviewClaim;
+                hasRestore = _activeAlgorithmPreviewRestore != null;
+            }
+            return claim.HasValue && TryCancelAlgorithmPreview(claim.Value) && hasRestore;
         }
 
         internal bool TryPublishAlgorithmPreview(AlgorithmInvocationClaim claim, Action publication)
