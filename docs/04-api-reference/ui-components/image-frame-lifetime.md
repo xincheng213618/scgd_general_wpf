@@ -48,10 +48,6 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 `ImageDocument.CaptureSourceState()` 在文档 Dispatcher 同步源引用并返回 `(Source, Revision)`，使用同一个 `ImageFrameStore` 的 revision；它不复制像素，也不创建 native 帧。文档记录最近一次同步读取的源对象，再次捕获或取帧时若发现已记录的非空源被替换，会先推进 revision 并退役当前帧。失效回调可能嵌套捕获中间源并再次换源，因此返回前须重新核对当前绑定，必要时再次失效。`AcquireFrame()` 复用这一同步入口，再按需创建 native 缓存；只读取状态不会提前分配缓存。已取得的旧租约仍按引用计数保活原副本。
 
-默认静态位图通道选择在伪彩色关闭、源位图可变时，内部通过 `ImageDocument.AcquireFrameAsync` 准备源租约。较大的首次复制分批在源 Dispatcher 上锁定、读取、解锁，让输入等 UI 工作有机会在批次间执行；整份完成且源引用、revision 和当前选择仍有效才允许使用。首个 Lock 仍可能等待渲染同步，因此分批不承诺固定响应时限。已有同版本缓存直接复用；其它同步调用先建立缓存时，异步候选让出并释放。公开 `AcquireImageFrame()` / `ToHImage()` 仍保留同步获取语义。
-
-分批读取沿用显式像素提交的前提：生产者改写后须通知版本失效，才能让在建旧候选整体退出；跨批次改字节却不提交，不保证取得同一时刻的像素快照。分批也不减少完整 native 副本的容量；同步调用与在建候选竞争时，可暂时同时保有一份当前缓存与一份候选。
-
 兼容源 setter 仍只赋值，不在赋值时自动推进版本。生产者应使用 `CommitSourcePixels(source)` 显式完成源赋值和一次失效；原地改写同一张位图也可调用 `NotifySourcePixelsChanged()`。源状态捕获不是像素快照，也不延长位图像素的读取寿命；算法须继续复制私有 canonical 输入并核对捕获是否仍有效。只改字节或调用 Core 位图复制工具不会由 store 自动识别为新版本。完整 `SetImageSource`、`Clear` 和像素提交如何联动算法会话、预览与 overlay，统一见[文档变更边界](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#m0-执行与所有权规则)。
 
 显示发布与像素提交独立：`ImagePresentation.Publish` / `RestoreSource` 不推进 source revision。连续帧先保存冻结源快照，再提交与处理结果对应的同一帧源；可变生产者缓冲不能作为后台长期读取输入。该有界处理队列、过期拒绝和失败回退见[连续帧显示](./image-editor-context.md#连续帧显示)，不能将冻结快照与借用 native 指针混为同一种所有权。
@@ -77,6 +73,6 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 `ImageFrameOwnerTests` 覆盖最后租约释放、重复 Dispose、借用副本、revision 失效、候选竞争、并发取得/失效/关闭。多数用例使用合成指针和释放计数，不解引用真实 native 图像；另有小 WPF 位图切换及原地修改用例，测试主动调用 Invalidate，不证明修改字节会被自动监听。
 
-`ImageDocumentSourceSnapshotTests` 用于检查不创建 native 缓存的源状态捕获、裸换源的版本失效、保有旧 native 租约时的退役读取，以及失效回调中嵌套捕获和再次换源的绑定核对；还在真实异步复制批次之间检查像素提交、换源、取消、关闭和同步缓存竞争。算法私有输入与会话启动拒绝重绑也在同一测试入口验证。测试关联不表示已经运行或通过。
+`ImageDocumentSourceSnapshotTests` 用于检查不创建 native 缓存的源状态捕获、仅观察源状态后裸换源的版本失效、保有旧 native 租约时的退役读取，以及失效回调中嵌套捕获和再次换源的绑定核对；算法私有输入与会话启动拒绝重绑也在同一测试入口验证。测试关联不表示已经运行或通过。
 
 `HImageExtensionCopyTests` 覆盖冻结/可变位图复制、紧密/带 padding 的行、Bgr32 四通道校验。`ToHImage` 用例释放生成的拥有型副本；以 HImage 为输入的转换/更新用例使用借用描述符并自行清理缓冲，不验证拥有型输入的全部成功/失败释放分支。任意格式的色彩正确性、Dispatcher 故障、完整 ImageView 交互及实际 native 运行仍不在这些测试的覆盖范围内。

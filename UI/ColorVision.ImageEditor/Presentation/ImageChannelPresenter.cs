@@ -115,22 +115,6 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
                 result = ChannelSelectionResult.StreamRejected;
             }
 
-            if (preferStream && !context.StreamPresentation.IsActive && !context.DisplayEffects.PseudoColor.IsEnabled
-                && context.SupportsAsyncChannelFrame
-                && source is WriteableBitmap { IsFrozen: false })
-            {
-                if (request == null)
-                {
-                    request = context.Presentation.BeginRequest();
-                    expectedSelectionVersion++;
-                }
-                if (!CanContinue()) return ChannelSelectionResult.Superseded;
-                _ = RenderAsync(null, request.Value, channel, selection,
-                    () => context.AcquireChannelFrameAsync(source, revision, CanContinue, selection.Token));
-                handedOff = true;
-                return result;
-            }
-
             lease = context.AcquireImageFrame();
             if (lease == null || !CanContinue()) return ChannelSelectionResult.Superseded;
             _ = RenderAsync(lease, request ?? context.Presentation.BeginRequest(), channel, selection);
@@ -174,18 +158,13 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
         }
     }
 
-    private async Task RenderAsync(ImageFrameLease? lease, ImagePresentationRequest request, int channel,
-        CancellationTokenSource selection, Func<Task<ImageFrameLease?>>? acquireFrame = null)
+    private async Task RenderAsync(ImageFrameLease lease, ImagePresentationRequest request, int channel, CancellationTokenSource selection)
     {
         bool enteredGate = false;
         try
         {
             await _renderGate.WaitAsync(selection.Token).ConfigureAwait(false);
             enteredGate = true;
-            selection.Token.ThrowIfCancellationRequested();
-
-            if (lease == null) lease = await acquireFrame!().ConfigureAwait(false);
-            if (lease == null) return;
             selection.Token.ThrowIfCancellationRequested();
 
             HImage source = lease.Image;
@@ -206,7 +185,7 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
         }
         finally
         {
-            lease?.Dispose();
+            lease.Dispose();
             if (enteredGate) _renderGate.Release();
             CompleteSelection(selection);
         }
