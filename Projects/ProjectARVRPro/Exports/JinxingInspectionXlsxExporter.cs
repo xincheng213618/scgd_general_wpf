@@ -20,7 +20,7 @@ namespace ProjectARVRPro.Exports
             ArgumentNullException.ThrowIfNull(context);
             Directory.CreateDirectory(context.OutputDirectory);
 
-            string outputPath = Path.Combine(context.OutputDirectory, GetOutputFileName(context));
+            string outputPath = Path.Combine(context.OutputDirectory, GetFileName(context));
             using IWorkbook workbook = OpenOrCreateWorkbook(outputPath);
             ISheet sheet = workbook.GetSheet(ResultSheetName)
                 ?? (workbook.NumberOfSheets > 0 ? workbook.GetSheetAt(0) : workbook.CreateSheet(ResultSheetName));
@@ -35,7 +35,7 @@ namespace ProjectARVRPro.Exports
             return outputPath;
         }
 
-        private string GetOutputFileName(ObjectiveTestResultExportContext context)
+        public string GetFileName(ObjectiveTestResultExportContext context)
         {
             return string.IsNullOrWhiteSpace(FileSuffix)
                 ? $"{context.BaseFileName}.xlsx"

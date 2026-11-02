@@ -282,26 +282,29 @@ namespace ProjectARVRPro
         public bool UseLegacyARVROutput { get => _UseLegacyARVROutput; set { _UseLegacyARVROutput = value; OnPropertyChanged(); } }
         private bool _UseLegacyARVROutput;
 
-        [DisplayName("保存客户 XLSX 报表"), Category("客制化输出")]
-        [Description("启用后，测试完成时会在标准CSV之外追加输出指定客户格式的XLSX")]
-        public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); } }
+        [DisplayName("保存客户报表"), Category("客制化输出")]
+        [Description("启用后按所选客户格式输出XLSX或CSV；LUX格式按SN保存并更新同一个文件")]
+        public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowCustomProjectName)); } }
         private bool _IsSaveCustomXlsx;
 
         [DisplayName("报表格式"), Category("客制化输出")]
         [PropertyVisibility(nameof(IsSaveCustomXlsx))]
         [Description("选择需要追加输出的客户表格格式")]
-        public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
+        public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowCustomProjectName)); } }
         private CustomTestResultOutputProfile _CustomOutputProfile = CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
+        [Newtonsoft.Json.JsonIgnore, Browsable(false)]
+        public bool ShowCustomProjectName => IsSaveCustomXlsx && !CustomTestResultExportService.IsLuxProfile(CustomOutputProfile);
+
         [DisplayName("报表项目名称"), Category("客制化输出")]
-        [PropertyVisibility(nameof(IsSaveCustomXlsx))]
+        [PropertyVisibility(nameof(ShowCustomProjectName))]
         [Description("用于生成每天汇总XLSX文件名，例如 2026-5-21TestResults+ProjectARVRPro.xlsx")]
         public string CustomXlsxProjectName { get => _CustomXlsxProjectName; set { _CustomXlsxProjectName = value; OnPropertyChanged(); } }
         private string _CustomXlsxProjectName = "ProjectARVRPro";
 
         [DisplayName("报表保存目录"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
         [PropertyVisibility(nameof(IsSaveCustomXlsx))]
-        [Description("客制化XLSX的输出文件夹。留空时默认使用CSV保存路径")]
+        [Description("客户XLSX或CSV的输出文件夹。留空时默认使用结果输出目录；LUX格式在这里保存C_<SN>.csv")]
         public string CustomXlsxSavePath { get => _CustomXlsxSavePath; set { _CustomXlsxSavePath = value; OnPropertyChanged(); } }
         private string _CustomXlsxSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 

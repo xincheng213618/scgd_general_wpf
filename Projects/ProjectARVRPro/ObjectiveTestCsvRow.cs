@@ -40,7 +40,12 @@ public static class ObjectiveTestCsvRowCollector
             return Array.Empty<ObjectiveTestCsvRow>();
         }
 
-        if (result == null)
+        return FromObject(result, testScreen);
+    }
+
+    internal static IReadOnlyList<ObjectiveTestCsvRow> FromObject(object? result, string testScreen)
+    {
+        if (result == null || string.IsNullOrWhiteSpace(testScreen))
             return Array.Empty<ObjectiveTestCsvRow>();
 
         var rows = new List<ObjectiveTestCsvRow>();

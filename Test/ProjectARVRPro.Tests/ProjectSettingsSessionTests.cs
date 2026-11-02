@@ -140,7 +140,8 @@ public sealed class ProjectSettingsSessionTests
         Assert.Equal(ProjectSettingsPage.Results, Assert.Single(session.Sections, section => section.Matches("CodeUseSN")).Id);
         Assert.Equal(ProjectSettingsPage.Images, Assert.Single(session.Sections, section => section.Matches("IsSaveLink")).Id);
         Assert.Equal(ProjectSettingsPage.Results, Assert.Single(session.Sections, section => section.Matches("CsvSavePath")).Id);
-        Assert.DoesNotContain(session.Sections, section => section.Matches("TextSavePath") || section.Matches("Thunderbird") || section.Matches("Lux"));
+        Assert.DoesNotContain(session.Sections, section => section.Matches("TextSavePath") || section.Matches("Thunderbird"));
+        Assert.Equal(ProjectSettingsPage.Results, Assert.Single(session.Sections, section => section.Matches("Lux")).Id);
         Assert.Equal(4, session.Sections.Count);
     }
 

@@ -17,6 +17,9 @@ next: false
 - [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
   按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。
 
+- [配置 LUX 客户 CSV](../../04-api-reference/projects/project-arvr-pro-lux-export.md) — `projects.arvr-pro-lux-export`
+  在 ARVRPro 客户报表中配置 LUX Current/Legacy 逐项 CSV，说明单 SN 文件、默认判定和两种格式的兼容边界。
+
 - [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
   配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。
 

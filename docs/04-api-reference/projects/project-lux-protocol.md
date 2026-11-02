@@ -18,7 +18,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-p
 1. 在“网络通信 → 服务设置”启用 Socket Server，解析模式选择 **Text**。默认监听 `0.0.0.0:6666`，UTF-8；服务默认关闭。Pro JSON 客户端使用 Json 模式，两种模式按现场用途选择。
 2. 在“流程处理配置 → 其他配置”按需填写 **LUX 协议设备号**（默认 `H03`）、VID 测量方式、限值和 K/B；设备号只组成回包前缀，不决定是否返回光学中心数据。
 3. 普通流程在活动组的 **SocketCode** 列填写命令末两位，绑定实际 Flow 模板与 Pro 实例 Recipe。旧 LUX 配置不自动迁移，现场需重新配置；流程和配置存储见 [Pro 流程组](./project-arvr-pro-processes.md)。
-4. 准备相机、光谱仪、Flow 服务和输出目录。普通流程、VID、光通量分别使用 Pro 的 CSV 输出目录生成 `C_<SN>.csv`、`B_<SN>.csv`、`D_<SN>.csv`。
+4. 准备相机、光谱仪、Flow 服务和输出目录。默认在 Pro 的 CSV 输出目录生成 `C_<SN>.csv`、`B_<SN>.csv`、`D_<SN>.csv`。需要旧 LUX 格式时，在结果保存中开启 **保存客户报表**，选择 `LUX_Current_CSV` / `LUX_Legacy_CSV`；此时 C_ 文件使用报表目录，B_/D_ 保持原路径，配置与口径见 [LUX 客户 CSV](./project-arvr-pro-lux-export.md)。
 
 共享文本分派器只调用首个发现的 handler，不按命令遍历项目。部署时核对实际接收者，避免同时加载其它文本项目；默认缓冲和协议模式见[通用 Socket 服务](../ui-components/ColorVision.SocketProtocol.md)。协议不提供 TLS 或应用层身份认证，需在受控产线网络中使用。
 

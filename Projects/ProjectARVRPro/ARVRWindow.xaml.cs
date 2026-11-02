@@ -1393,7 +1393,7 @@ namespace ProjectARVRPro
                 _isFlowLifecycleActive = false;
                 if (_luxSession != null)
                 {
-                    CompleteLuxFlow(processingSucceeded ? "Completed" : "Failed", CurrentFlowResult.Msg);
+                    await CompleteLuxFlowAsync(processingSucceeded ? "Completed" : "Failed", CurrentFlowResult.Msg);
                     TryCount = 0;
                     return;
                 }
@@ -1441,7 +1441,7 @@ namespace ProjectARVRPro
                     _isFlowLifecycleActive = false;
                     if (_luxSession != null)
                     {
-                        CompleteLuxFlow(FlowControlData.EventName, FlowControlData.Params);
+                        await CompleteLuxFlowAsync(FlowControlData.EventName, FlowControlData.Params);
                         TryCount = 0;
                         return;
                     }
@@ -1467,7 +1467,7 @@ namespace ProjectARVRPro
                 if (_luxSession != null)
                 {
                     _isFlowLifecycleActive = false;
-                    CompleteLuxFlow(FlowControlData.EventName, FlowControlData.Params);
+                    await CompleteLuxFlowAsync(FlowControlData.EventName, FlowControlData.Params);
                     return;
                 }
                 if (ProjectARVRProConfig.Instance.AllowTestFailures)
@@ -1792,7 +1792,7 @@ namespace ProjectARVRPro
         {
             if (_luxSession != null)
             {
-                CompleteLuxFlow("Failed", CurrentFlowResult?.Msg);
+                await CompleteLuxFlowAsync("Failed", CurrentFlowResult?.Msg);
                 return;
             }
             if (_objectiveSessionCompleted)
@@ -1818,19 +1818,16 @@ namespace ProjectARVRPro
 
             // Settings and the editable SN can change while background cleanup is awaited.
             var config = ViewResultManager.Config;
+            CustomTestResultExportOptions customerOutput = CustomTestResultExportOptions.Capture(config);
             var outputConfig = new
             {
-                config.CsvSavePath, config.CustomXlsxSavePath, config.SaveByDate,
-                config.IsSaveCsv, config.UseLegacyARVROutput, config.IsSaveCustomXlsx,
-                config.AutoCleanupEnabled, config.MinimumFreeSpaceGB,
-                config.CustomXlsxProjectName, config.CustomOutputProfile
+                config.CsvSavePath, config.SaveByDate,
+                config.IsSaveCsv, config.UseLegacyARVROutput,
+                config.AutoCleanupEnabled, config.MinimumFreeSpaceGB
             };
             string serialNumber = SNtextBox.Text;
             DateTime exportTime = DateTime.Now;
             string csvOutputDirectory = outputConfig.CsvSavePath;
-            string customXlsxOutputDirectory = string.IsNullOrWhiteSpace(outputConfig.CustomXlsxSavePath)
-                ? outputConfig.CsvSavePath
-                : outputConfig.CustomXlsxSavePath;
             if (outputConfig.SaveByDate)
             {
                 string dateFolder = exportTime.ToString("yyyy-MM-dd");
@@ -1870,34 +1867,15 @@ namespace ProjectARVRPro
                 }
             }
 
-            if (outputConfig.IsSaveCustomXlsx)
+            if (customerOutput.Enabled)
             {
                 try
                 {
-                    string customXlsxBaseFileName = BuildDailyCustomXlsxBaseFileName(exportTime, outputConfig.CustomXlsxProjectName);
-                    string currentSnDirectory = ProjectImageExportService.BuildOutputDirectory(
-                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, serialNumber);
-                    using var xlsxWrite = ResultStorageSpaceManager.Instance.BeginWrite(
-                        customXlsxOutputDirectory, outputConfig.AutoCleanupEnabled, outputConfig.MinimumFreeSpaceGB,
-                        currentSnDirectory, Path.Combine(customXlsxOutputDirectory, $"{customXlsxBaseFileName}.xlsx"));
-                    await xlsxWrite.EnsureSpaceAsync();
-                    Directory.CreateDirectory(customXlsxOutputDirectory);
-                    string xlsxPath = CustomTestResultExportService.Export(
-                        new ObjectiveTestResultExportContext
-                        {
-                            Result = ObjectiveTestResult,
-                            SerialNumber = serialNumber,
-                            OutputDirectory = customXlsxOutputDirectory,
-                            BaseFileName = customXlsxBaseFileName,
-                            ExportTime = exportTime,
-                        },
-                        outputConfig.CustomOutputProfile);
-
-                    log.Info($"客制化XLSX导出完成:{xlsxPath}");
+                    await ExportCustomerReportAsync(customerOutput, serialNumber, exportTime, luxFlow: false);
                 }
                 catch (Exception ex)
                 {
-                    log.Error("客制化XLSX导出失败", ex);
+                    log.Error("客户报表导出失败", ex);
                 }
             }
 

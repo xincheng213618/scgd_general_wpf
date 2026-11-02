@@ -30,6 +30,9 @@ next: false
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`
   数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。
 
+- [配置 LUX 客户 CSV](../../04-api-reference/projects/project-arvr-pro-lux-export.md) — `projects.arvr-pro-lux-export`
+  在 ARVRPro 客户报表中配置 LUX Current/Legacy 逐项 CSV，说明单 SN 文件、默认判定和两种格式的兼容边界。
+
 - [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
   配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。
 

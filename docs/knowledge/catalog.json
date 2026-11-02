@@ -9885,6 +9885,50 @@
       "searchable": true
     },
     {
+      "knowledge_id": "projects.arvr-pro-lux-export",
+      "knowledge_type": "guide",
+      "status": "current",
+      "summary": "在 ARVRPro 客户报表中配置 LUX Current/Legacy 逐项 CSV，说明单 SN 文件、默认判定和两种格式的兼容边界。",
+      "aliases": [
+        "LUX CSV",
+        "LUX Current",
+        "LUX Legacy",
+        "LUX_Current_CSV",
+        "LUX_Legacy_CSV",
+        "旧Lux导出",
+        "CSV导出格式",
+        "保存客户报表",
+        "一个SN一个文件"
+      ],
+      "code_paths": [
+        "Projects/ProjectARVRPro/Exports/Lux",
+        "Projects/ProjectARVRPro/Exports/CustomTestResultExportService.cs",
+        "Projects/ProjectARVRPro/Exports/ITestResultCustomExporter.cs",
+        "Projects/ProjectARVRPro/Exports/CustomTestResultExportOptions.cs",
+        "Projects/ProjectARVRPro/ARVRWindow.CustomerExports.cs",
+        "Projects/ProjectARVRPro/ARVRWindow.Lux.cs",
+        "Projects/ProjectARVRPro/ViewResultManager.cs"
+      ],
+      "test_paths": [
+        "Test/ProjectARVRPro.Tests/LuxCustomerCsvExporterTests.cs",
+        "Test/ProjectARVRPro.Tests/JinxingInspectionXlsxExporterTests.cs",
+        "Test/ProjectARVRPro.Tests/ProjectSettingsSessionTests.cs"
+      ],
+      "related": [
+        "projects.lux-protocol",
+        "projects.arvr-pro",
+        "projects.arvr-pro-processes"
+      ],
+      "code_scopes": [
+        "Projects/ProjectARVRPro"
+      ],
+      "domain": "projects",
+      "title": "配置 LUX 客户 CSV",
+      "source": "docs/04-api-reference/projects/project-arvr-pro-lux-export.md",
+      "url": "/04-api-reference/projects/project-arvr-pro-lux-export",
+      "searchable": true
+    },
+    {
       "knowledge_id": "projects.arvr-pro-processes",
       "knowledge_type": "guide",
       "status": "current",

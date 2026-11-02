@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ProjectARVRPro.Process;
+using ProjectARVRPro.Exports;
 using ProjectARVRPro.Services;
 using System.IO;
 using System.Net.Sockets;
@@ -67,7 +68,7 @@ public partial class ARVRWindow
         {
             log.Error("启动 LUX 流程失败", ex);
             if (ReferenceEquals(_luxSession, session))
-                CompleteLuxFlow("Failed", ex.Message);
+                await CompleteLuxFlowAsync("Failed", ex.Message);
         }
     }
 
@@ -77,23 +78,29 @@ public partial class ARVRWindow
         if (session == null || _luxFlowTemplate == null || _luxFlowMeta == null) return;
         bool started = await TryRunTemplate(_luxFlowTemplate, _luxFlowMeta, cancellationToken: _luxLifetime.Token);
         if (!started && ReferenceEquals(_luxSession, session))
-            CompleteLuxFlow("Failed", CurrentFlowResult?.Msg);
+            await CompleteLuxFlowAsync("Failed", CurrentFlowResult?.Msg);
     }
 
-    private void CompleteLuxFlow(string? eventName, string? parameters)
+    private async Task CompleteLuxFlowAsync(string? eventName, string? parameters)
     {
         LuxCommandSession? session = _luxSession;
         if (session == null) return;
+        bool wasExportPending = IsResultExportPending;
+        IsResultExportPending = true;
         try
         {
             if (eventName == "Completed")
             {
                 try
                 {
-                    string directory = ViewResultManager.Config.CsvSavePath;
-                    Directory.CreateDirectory(directory);
-                    ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult,
-                        Path.Combine(directory, Tool.SanitizeFileName($"C_{session.Request.SerialNumber}.csv")));
+                    var options = CustomTestResultExportOptions.Capture(ViewResultManager.Config);
+                    if (!await ExportCustomerReportAsync(options, session.Request.SerialNumber, DateTime.Now, luxFlow: true))
+                    {
+                        string directory = ViewResultManager.Config.CsvSavePath;
+                        Directory.CreateDirectory(directory);
+                        ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult,
+                            Path.Combine(directory, Tool.SanitizeFileName($"C_{session.Request.SerialNumber}.csv")));
+                    }
                 }
                 catch (Exception ex) { log.Error("LUX CSV 导出失败", ex); }
             }
@@ -101,7 +108,7 @@ public partial class ARVRWindow
             session.CompleteFlow(_currentFlowProcess, CurrentFlowResult, eventName, parameters);
         }
         catch (Exception ex) { log.Error("LUX 流程回包失败", ex); }
-        finally { ReleaseLuxSession(session); }
+        finally { IsResultExportPending = wasExportPending; ReleaseLuxSession(session); }
     }
 
     private async Task ExecuteLuxDeviceRequestAsync(LuxCommandSession session)
