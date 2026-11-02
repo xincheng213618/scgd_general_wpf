@@ -615,6 +615,122 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SourcePublicationReentryCannotRestoreAnObsoleteDecodedContent(bool replaceWithSameSource)
+    {
+        const string path = "source-publication-fixture.png";
+        ImageView? view = null;
+        AttachmentCapability incoming = new(), replacement = new();
+        ColorVisionTiffParameters incomingParameters = new() { InputFileName = "incoming.png" };
+        ColorVisionTiffParameters replacementParameters = new() { InputFileName = "replacement.png" };
+        WriteableBitmap? pixels = null;
+        Task publication = Task.CompletedTask;
+        Exception? error = null;
+        EventHandler? reenter = null;
+        int callbackCalls = 0, loadedCount = 0;
+        long successorContentVersion = -1, successorRevision = -1;
+        bool disposed = false;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView { EnableEditorImageServices = false };
+                view.IEditorToolFactory.IEditorTools.Clear();
+                view.EditorContext.ProcessingContext.DisplayEffects.PseudoColor.IsEnabled = false;
+                view.SetImageSource(new WriteableBitmap(BitmapSource.Create(1, 1, 96, 96, PixelFormats.Gray8, null, new byte[] { 10 }, 1)));
+                view.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageOpenCompletionContractTests));
+                view.RegisterImageContentProvider(new AttachmentContentProvider(incoming));
+                view.ImageSourceLoaded += (_, _) => loadedCount++;
+                pixels = new WriteableBitmap(BitmapSource.Create(1, 1, 96, 96, PixelFormats.Gray8, null, new byte[] { 200 }, 1));
+                reenter = (_, _) =>
+                {
+                    view.StatusBarItemsChanged -= reenter;
+                    callbackCalls++;
+                    if (replaceWithSameSource)
+                    {
+                        // Source identity and file path deliberately stay unchanged. This is a
+                        // newer content transaction, so the obsolete open must also check its version.
+                        view.SetImageSource(pixels);
+                        view.SetImageParameterRecord(replacementParameters);
+                        view.AttachImageContentCapability(replacement);
+                    }
+                    else view.Clear();
+                    successorContentVersion = view.ContentVersion;
+                    successorRevision = view.ImageRevision;
+                };
+                view.StatusBarItemsChanged += reenter;
+                publication = view.PublishDecodedImageContentAsync(new(pixels, incomingParameters, path), pixels);
+            });
+            try { await publication.WaitAsync(TimeSpan.FromSeconds(10)); }
+            catch (Exception failure) { error = failure; }
+            var settled = WpfTestHost.Invoke(() => new
+            {
+                SourceIsIncoming = ReferenceEquals(view!.ViewBitmapSource, pixels),
+                SourceIsNull = view.ViewBitmapSource == null,
+                ContentIsNull = view.ImageContent == null,
+                ParameterRecordIsReplacement = ReferenceEquals(view.Document.ParameterRecord, replacementParameters),
+                ParameterRecordIsNull = view.Document.ParameterRecord == null,
+                HasCapability = view.ImageContentCapability != null,
+                CapabilityIsReplacement = ReferenceEquals(view.ImageContentCapability, replacement),
+                FilePath = view.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath),
+                InputFileName = view.Config.GetProperties<string>(ImageViewPropertyKeys.ColorVisionInputFileName),
+                view.ContentVersion,
+                view.ImageRevision,
+                IncomingActivateCalls = incoming.ActivateCalls,
+                IncomingDisposeCalls = incoming.DisposeCalls,
+                IncomingToolsRequested = incoming.ToolsRequested,
+                ReplacementActivateCalls = replacement.ActivateCalls,
+                ReplacementDisposeCalls = replacement.DisposeCalls,
+                ReplacementToolsActive = replacement.ToolsActive,
+                callbackCalls,
+                loadedCount,
+            });
+            WpfTestHost.Invoke(view!.Dispose);
+            disposed = true;
+            output.WriteLine(JsonSerializer.Serialize(new
+            {
+                replaceWithSameSource, error = error?.GetType().FullName, publication.IsCanceled,
+                successorContentVersion, successorRevision, settled,
+                incomingDisposeAfterClose = incoming.DisposeCalls,
+                replacementDisposeAfterClose = replacement.DisposeCalls,
+            }));
+            Assert.IsAssignableFrom<OperationCanceledException>(error);
+            Assert.True(publication.IsCanceled);
+            Assert.Equal(1, settled.callbackCalls);
+            Assert.Equal(0, settled.loadedCount);
+            Assert.True(settled.ContentIsNull);
+            Assert.Equal(successorContentVersion, settled.ContentVersion);
+            Assert.Equal(successorRevision, settled.ImageRevision);
+            Assert.Equal(replaceWithSameSource, settled.SourceIsIncoming);
+            Assert.Equal(!replaceWithSameSource, settled.SourceIsNull);
+            Assert.Equal(replaceWithSameSource, settled.ParameterRecordIsReplacement);
+            Assert.Equal(!replaceWithSameSource, settled.ParameterRecordIsNull);
+            Assert.Equal(replaceWithSameSource, settled.HasCapability);
+            Assert.Equal(replaceWithSameSource, settled.CapabilityIsReplacement);
+            Assert.Equal(replaceWithSameSource ? path : null, settled.FilePath);
+            Assert.Equal(replaceWithSameSource ? "replacement.png" : null, settled.InputFileName);
+            Assert.Equal(0, settled.IncomingActivateCalls);
+            Assert.Equal(0, settled.IncomingToolsRequested);
+            Assert.Equal(1, settled.IncomingDisposeCalls);
+            Assert.Equal(1, incoming.DisposeCalls);
+            Assert.Equal(replaceWithSameSource ? 1 : 0, settled.ReplacementActivateCalls);
+            Assert.Equal(0, settled.ReplacementDisposeCalls);
+            Assert.Equal(replaceWithSameSource, settled.ReplacementToolsActive);
+            Assert.Equal(replaceWithSameSource ? 1 : 0, replacement.DisposeCalls);
+        }
+        finally
+        {
+            if (view != null && !disposed) WpfTestHost.Invoke(() =>
+            {
+                view.StatusBarItemsChanged -= reenter;
+                view.Dispose();
+            });
+        }
+    }
+
+    [Theory]
     [InlineData(false, "activation-throws")]
     [InlineData(true, "activation-throws")]
     [InlineData(true, "dispose-installs-replacement")]

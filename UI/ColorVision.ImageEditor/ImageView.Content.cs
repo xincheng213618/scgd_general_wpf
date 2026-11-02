@@ -74,7 +74,16 @@ public partial class ImageView
             _publishingDecodedContent = true;
             try
             {
-                SetImageSource(displaySource is WriteableBitmap writable ? writable : new WriteableBitmap(displaySource));
+                WriteableBitmap publishedSource = displaySource is WriteableBitmap writable ? writable : new WriteableBitmap(displaySource);
+                long revision = _document.Revision;
+                SetImageSource(publishedSource);
+                cancellationToken.ThrowIfCancellationRequested();
+                // Source publication can synchronously clear or replace this content, even
+                // with the same bitmap and path. Only our own single replacement may proceed.
+                if (_document.IsDisposed || _document.ContentVersion != version + 1 || _document.Revision != revision + 1
+                    || !ReferenceEquals(_document.Source, publishedSource)
+                    || !string.Equals(content.FilePath, Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.OrdinalIgnoreCase))
+                    throw new OperationCanceledException("The target image content changed during source publication.");
                 _document.Content = content.Parameters != null || content.Pixels.Format == System.Windows.Media.PixelFormats.Gray32Float
                     ? content : new DecodedImageContent((BitmapSource)ViewBitmapSource, null, content.FilePath);
                 _document.ParameterRecord = content.Parameters;
