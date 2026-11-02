@@ -80,6 +80,8 @@ namespace ColorVision.ImageEditor.Algorithms
 
         public long SourceRevision => _sourceRevision;
 
+        internal bool UsesSource(ImageSource? source) => ReferenceEquals(_originalSource, source);
+
         public bool OwnsHostPreview
         {
             get
@@ -186,8 +188,9 @@ namespace ColorVision.ImageEditor.Algorithms
         public async Task<AlgorithmResult> PreviewAsync(
             AlgorithmInvocation invocation,
             AlgorithmHostCapabilities requiredCapabilities = AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
-            CancellationToken cancellationToken = default)
-            => await PreviewWithInputsAsync(invocation, Array.Empty<AlgorithmInput>(), requiredCapabilities, cancellationToken).ConfigureAwait(false);
+            CancellationToken cancellationToken = default,
+            Func<bool>? canContinue = null)
+            => await PreviewWithInputsAsync(invocation, Array.Empty<AlgorithmInput>(), requiredCapabilities, cancellationToken, canContinue).ConfigureAwait(false);
 
         /// <summary>
         /// Executes a source-image preview with additional named inputs. Transferred additional
@@ -197,7 +200,8 @@ namespace ColorVision.ImageEditor.Algorithms
             AlgorithmInvocation invocation,
             IReadOnlyList<AlgorithmInput> additionalInputs,
             AlgorithmHostCapabilities requiredCapabilities,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            Func<bool>? canContinue = null)
         {
             ArgumentNullException.ThrowIfNull(invocation);
             ArgumentNullException.ThrowIfNull(additionalInputs);
@@ -242,6 +246,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     {
                         if (_disposed || _isCompleted || previewEpoch != _previewEpoch) return false;
                     }
+                    if (canContinue?.Invoke() == false) return false;
                     if (!_image.TryBeginAlgorithmPreviewInvocation(
                             _sessionId,
                             _documentInstanceId,
@@ -357,7 +362,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     bool wrotePreview = false;
                     bool displayed = _image.TryPublishAlgorithmPreview(claim, () =>
                     {
-                        if (!IsCurrent(invocation.InvocationId)) return;
+                        if (!IsCurrent(invocation.InvocationId) || canContinue?.Invoke() == false) return;
                         WriteableBitmap preview = target.TakeBitmap(linked.Token);
                         lock (_sync)
                         {

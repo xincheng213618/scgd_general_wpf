@@ -743,11 +743,26 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
     {
         WriteOwnerIdentity();
         Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
+        ImageAlgorithmPreviewSession? ownedSession = null;
+        AlgorithmImageBuffer? ownedSource = null;
+        int canonicalSourceEvents = 0;
         try
         {
             await fixture.WaitForOwnWorkAsync();
-            await fixture.SelectLayerAsync("red");
             await fixture.EnablePseudoColorAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal("composite", fixture.View.SelectedLayer!.Id);
+                Assert.False(fixture.HasCachedSourceFrame);
+                ownedSession = Assert.IsType<ImageAlgorithmPreviewSession>(fixture.PseudoColorSession);
+                ownedSource = Assert.IsType<AlgorithmImageBuffer>(typeof(ImageAlgorithmPreviewSession)
+                    .GetField("_source", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(ownedSession));
+                fixture.SourceChanged = () =>
+                {
+                    if (ReferenceEquals(fixture.View.ImageShow.Source, fixture.Source)) canonicalSourceEvents++;
+                };
+            });
+            await fixture.SelectLayerAsync("red");
             WpfTestHost.Invoke(() =>
             {
                 fixture.State.IsAutoSetRange = automaticRange;
@@ -759,7 +774,7 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             });
             await fixture.WaitForOwnWorkAsync();
             RangeSnapshot red = WpfTestHost.Invoke(fixture.CaptureRange);
-            output.WriteLine(JsonSerializer.Serialize(new { phase = "red-configured", automaticRange, red }));
+            output.WriteLine(JsonSerializer.Serialize(new { phase = "red-configured", automaticRange, canonicalSourceEvents, red }));
             ProviderRun previous = red.Display.Runs[^1];
             Assert.Equal(automaticRange ? 31d : 20d, red.ValueStart);
             Assert.Equal(automaticRange ? 121d : 180d, red.ValueEnd);
@@ -779,13 +794,20 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                 Assert.Equal(31u, previous.DataMinimum);
                 Assert.Equal(121u, previous.DataMaximum);
             }
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(0, canonicalSourceEvents);
+                Assert.Same(ownedSession, fixture.PseudoColorSession);
+                Assert.False(ownedSource!.IsDisposed);
+                Assert.Equal(automaticRange, fixture.HasCachedSourceFrame);
+            });
 
             await fixture.SelectLayerAsync("green");
             WpfTestHost.Invoke(() =>
             {
                 RangeSnapshot green = fixture.CaptureRange();
                 ProviderRun current = green.Display.Runs[^1];
-                output.WriteLine(JsonSerializer.Serialize(new { phase = "green-selected", automaticRange, red, green }));
+                output.WriteLine(JsonSerializer.Serialize(new { phase = "green-selected", automaticRange, canonicalSourceEvents, red, green }));
                 fixture.AssertDocumentUnchanged();
                 Assert.True(fixture.State.IsEnabled);
                 Assert.Equal("green", green.Display.SelectedLayer);
@@ -794,6 +816,10 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                 Assert.Equal(1, current.Channel);
                 Assert.True(green.Display.Publications > red.Display.Publications);
                 Assert.True(green.Display.HasActivePreview);
+                Assert.Equal(0, canonicalSourceEvents);
+                Assert.Same(ownedSession, fixture.PseudoColorSession);
+                Assert.False(ownedSource!.IsDisposed);
+                Assert.Equal(automaticRange, fixture.HasCachedSourceFrame);
                 Assert.Equal(automaticRange ? 21d : 20d, green.ValueStart);
                 Assert.Equal(automaticRange ? 111d : 180d, green.ValueEnd);
                 Assert.Equal((uint)green.ValueStart, current.Minimum);
@@ -812,6 +838,124 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             });
         }
         finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task QueuedOwnedChannelSelectionCannotOverwriteADisplayChosenDuringAnOlderRun()
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
+        ProviderRunGate? gate = null;
+        WriteableBitmap? replacement = null;
+        AlgorithmInvocationClaim? claimAtTakeover = null;
+        long sequenceAtTakeover = 0;
+        int runsAtTakeover = 0;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            await fixture.EnablePseudoColorAsync();
+            int previousRuns = fixture.Provider.Runs.Length;
+            gate = fixture.Provider.BlockNextRun();
+            WpfTestHost.Invoke(() => fixture.State.ColormapTypes = ColorVision.Core.ColormapTypes.COLORMAP_TURBO);
+            await gate.Started.Task.WaitAsync(Watchdog);
+            WpfTestHost.Invoke(() =>
+            {
+                fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == "red");
+                replacement = new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null);
+                replacement.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 201, 202, 203, 204 }, 2, 0);
+                replacement.Freeze();
+                fixture.Context.Presentation.Publish(replacement, replacement);
+                runsAtTakeover = fixture.Provider.Runs.Length;
+                Assert.Equal(previousRuns + 1, runsAtTakeover);
+                claimAtTakeover = fixture.CurrentClaim();
+                sequenceAtTakeover = fixture.Context.AlgorithmClaimSequence;
+            });
+            gate.Release.TrySetResult(true);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                output.WriteLine(JsonSerializer.Serialize(new { runsAtTakeover, sequenceAtTakeover,
+                    actualSequence = fixture.Context.AlgorithmClaimSequence, claimAtTakeover, final = fixture.Snapshot() }));
+                Assert.Same(replacement, fixture.View.ImageShow.Source);
+                Assert.Same(replacement, fixture.Context.FunctionImage);
+                Assert.Equal(runsAtTakeover, fixture.Provider.Runs.Length);
+                Assert.Equal(sequenceAtTakeover, fixture.Context.AlgorithmClaimSequence);
+                Assert.Equal(claimAtTakeover, fixture.CurrentClaim());
+                fixture.AssertDocumentUnchanged();
+                Assert.True(fixture.State.IsEnabled);
+                Assert.Equal("red", fixture.View.SelectedLayer!.Id);
+            });
+        }
+        finally
+        {
+            gate?.Release.TrySetResult(true);
+            await fixture.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AutomaticOwnedChannelRangeYieldsToAnOwnerChosenByItsDataMinimumCallback()
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
+        ImageAlgorithmPreviewSession? replacement = null;
+        AlgorithmInvocationClaim? replacementClaim = null;
+        PropertyChangedEventHandler? changed = null;
+        Exception? selectionFailure = null;
+        int callbacks = 0, runsBeforeSelection = 0;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            await fixture.EnablePseudoColorAsync();
+            await fixture.SelectLayerAsync("red");
+            WpfTestHost.Invoke(() => fixture.State.IsAutoSetRange = true);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(31u, fixture.State.DataMin);
+                Assert.Equal(121u, fixture.State.DataMax);
+                runsBeforeSelection = fixture.Provider.Runs.Length;
+                changed = (_, args) =>
+                {
+                    if (args.PropertyName != nameof(PseudoColorState.DataMin) || callbacks != 0) return;
+                    callbacks++;
+                    replacement = ImageAlgorithmPreviewSession.StartForCatalogPreview(fixture.Context);
+                    replacementClaim = fixture.CurrentClaim();
+                };
+                fixture.State.PropertyChanged += changed;
+                selectionFailure = Record.Exception(() =>
+                {
+                    fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == "green");
+                });
+            });
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                output.WriteLine(JsonSerializer.Serialize(new { callbacks, replacementClaim, runsBeforeSelection,
+                    selectionFailure = selectionFailure?.ToString(), final = fixture.CaptureRange() }));
+                Assert.Equal(1, callbacks);
+                Assert.Null(selectionFailure);
+                Assert.NotNull(replacement);
+                Assert.True(replacement.OwnsHostPreview);
+                Assert.Equal(replacementClaim, fixture.CurrentClaim());
+                Assert.Same(fixture.Source, fixture.View.ImageShow.Source);
+                Assert.Null(fixture.Context.FunctionImage);
+                Assert.Equal(runsBeforeSelection, fixture.Provider.Runs.Length);
+                fixture.AssertDocumentUnchanged();
+                Assert.True(fixture.State.IsEnabled);
+                Assert.True(fixture.State.IsAutoSetRange);
+                Assert.Equal("green", fixture.View.SelectedLayer!.Id);
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                if (changed != null) fixture.State.PropertyChanged -= changed;
+                replacement?.Dispose();
+            });
+            await fixture.DisposeAsync();
+        }
     }
 
     [Fact]
@@ -1295,14 +1439,27 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
     private sealed record ProviderRun(Guid InvocationId, int Channel, AlgorithmImageFormat InputFormat,
         uint Minimum, uint Maximum, bool AutoRange, bool UseNominalRange, uint DataMinimum, uint DataMaximum);
 
+    private sealed class ProviderRunGate
+    {
+        public TaskCompletionSource<bool> Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<bool> Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
     private sealed class ControlledPseudoProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
     {
         public static readonly byte[] OutputPixels = [150, 70, 220, 151, 71, 221, 152, 72, 222, 153, 73, 223];
         private readonly List<ProviderRun> _runs = [];
+        private ProviderRunGate? _nextRunGate;
         public ProviderRun[] Runs { get { lock (_runs) return _runs.ToArray(); } }
         public TaskCompletionSource<bool> Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource<bool> Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource<bool> ResultDisposed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public ProviderRunGate BlockNextRun()
+        {
+            ProviderRunGate gate = new();
+            Assert.Null(Interlocked.CompareExchange(ref _nextRunGate, gate, null));
+            return gate;
+        }
         public AlgorithmProviderMetadata Metadata { get; } = new("test.pseudo-color-channel", "Controlled pseudo color",
             AlgorithmProviderKind.Cpu, AlgorithmExecutionPlane.Local, 1,
             AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
@@ -1322,7 +1479,13 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             PseudoColorParameters parameters = Assert.IsType<PseudoColorParameters>(context.Parameters);
             lock (_runs) _runs.Add(new(context.Invocation.InvocationId, parameters.Channel, context.Inputs[0].Image.Format,
                 parameters.Minimum, parameters.Maximum, parameters.AutoRange, parameters.UseNominalRange, parameters.DataMinimum, parameters.DataMaximum));
+            ProviderRunGate? gate = Interlocked.Exchange(ref _nextRunGate, null);
             Started.TrySetResult(true);
+            if (gate != null)
+            {
+                gate.Started.TrySetResult(true);
+                await gate.Release.Task.ConfigureAwait(false);
+            }
             await Release.Task.ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             return new AlgorithmResult

@@ -16,6 +16,7 @@ internal enum ChannelSelectionResult
     Ordinary,
     StreamAccepted,
     StreamRejected,
+    StaticPseudoHandled,
 }
 
 /// <summary>Produces channel previews without owning the document or the display surface.</summary>
@@ -67,6 +68,9 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
         bool handedOff = false;
         try
         {
+            if (preferStream && context.DisplayEffects.TryRefreshOwnedStaticSelection(channel))
+                return ChannelSelectionResult.StaticPseudoHandled;
+
             Guid documentId = context.DocumentInstanceId;
             long revision = context.ImageRevision;
             ImageSource source = context.ViewBitmapSource;
