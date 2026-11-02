@@ -102,9 +102,9 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
                 if (!CanContinue()) return ChannelSelectionResult.Superseded;
                 request = context.Presentation.BeginRequest();
                 expectedSelectionVersion++;
-                bool accepted = context.StreamPresentation.TryRefreshCurrent(CanContinue);
-                if (!CanContinue()) return ChannelSelectionResult.Superseded;
-                if (accepted) return ChannelSelectionResult.StreamAccepted;
+                StreamRefreshResult refresh = context.StreamPresentation.TryRefreshCurrent(CanContinue);
+                if (!CanContinue() || refresh == StreamRefreshResult.Superseded) return ChannelSelectionResult.Superseded;
+                if (refresh == StreamRefreshResult.Accepted) return ChannelSelectionResult.StreamAccepted;
                 // The stream predicate already declined this selection. Ordinary fallback
                 // must not invoke the same effect refresh and predicate a second time.
                 result = ChannelSelectionResult.StreamRejected;

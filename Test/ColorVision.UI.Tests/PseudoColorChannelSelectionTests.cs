@@ -521,6 +521,81 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         finally { await fixture.DisposeAsync(); }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task StreamRefreshPreservesANewerFrameSubmittedByItsProducerPredicate(bool allowOuterRefresh)
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(defaultSourceEntry: true));
+        Guid sourceId = Guid.NewGuid(), document = Guid.Empty;
+        byte[] successorPixels = [7, 17, 207, 8, 18, 208, 9, 19, 209, 10, 20, 210];
+        WriteableBitmap? successor = null;
+        Func<bool>? producerAllowsPublication = null;
+        bool armed = false, cachedAfterSelection = false;
+        int nestedSubmissions = 0;
+        long revision = 0;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.False(fixture.State.IsEnabled);
+                Assert.Equal("composite", fixture.View.SelectedLayer!.Id);
+                successor = new WriteableBitmap(2, 2, 96, 96, PixelFormats.Bgr24, null);
+                successor.WritePixels(new Int32Rect(0, 0, 2, 2), successorPixels, 6, 0);
+                successor.Freeze();
+                producerAllowsPublication = () =>
+                {
+                    if (!armed) return true;
+                    armed = false;
+                    nestedSubmissions++;
+                    // The nested request accepts through this same now-unarmed predicate.
+                    fixture.Context.StreamPresentation.Submit(successor, sourceId, producerAllowsPublication);
+                    return allowOuterRefresh;
+                };
+                fixture.Context.StreamPresentation.Submit(fixture.Source, sourceId, producerAllowsPublication);
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+                Assert.False(fixture.HasCachedSourceFrame);
+                revision = fixture.Context.ImageRevision;
+                document = fixture.Context.DocumentInstanceId;
+                armed = true;
+                fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == "red");
+                cachedAfterSelection = fixture.HasCachedSourceFrame;
+            });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                BitmapSource actualSource = Assert.IsAssignableFrom<BitmapSource>(fixture.Context.ViewBitmapSource);
+                byte[] actualPixels = new byte[12];
+                actualSource.CopyPixels(actualPixels, 6, 0);
+                DisplaySnapshot display = fixture.Snapshot();
+                output.WriteLine(JsonSerializer.Serialize(new { allowOuterRefresh, nestedSubmissions,
+                    revision, cachedAfterSelection, actualPixels, display }));
+                Assert.Equal(1, nestedSubmissions);
+                Assert.Same(successor, actualSource);
+                Assert.Equal(PixelFormats.Bgr24, actualSource.Format);
+                Assert.True(actualSource.IsFrozen);
+                Assert.Equal(successorPixels, actualPixels);
+                Assert.Equal(document, fixture.Context.DocumentInstanceId);
+                Assert.Equal(revision + 1, fixture.Context.ImageRevision);
+                Assert.Equal("red", display.SelectedLayer);
+                Assert.Equal("red", display.ComboLayer);
+                Assert.Equal(PixelFormats.Gray8.ToString(), display.Format);
+                Assert.Equal(new[] { 207, 208, 209, 210 }, display.Pixels);
+                Assert.True(Assert.IsAssignableFrom<BitmapSource>(fixture.View.ImageShow.Source).IsFrozen);
+                Assert.Same(fixture.View.ImageShow.Source, fixture.Context.FunctionImage);
+                Assert.False(cachedAfterSelection);
+                Assert.False(fixture.HasCachedSourceFrame);
+                Assert.False(fixture.State.IsEnabled);
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+                Assert.Empty(fixture.Provider.Runs);
+            });
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
     [Fact]
     public async Task Rgb48RedUsesCanonicalBgrChannelForStaticPseudoColorAndSourceChannelForFrames()
     {

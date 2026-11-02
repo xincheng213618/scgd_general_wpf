@@ -7,6 +7,13 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Presentation;
 
+internal enum StreamRefreshResult
+{
+    Accepted,
+    Unavailable,
+    Superseded,
+}
+
 /// <summary>
 /// A bounded continuous-frame display queue. Each processed display is committed together with
 /// its source pixels; acquisition, playback clocks, and measurement are owned by their producers.
@@ -89,10 +96,21 @@ public sealed class ImageStreamPresentation : IDisposable
 
     public void RefreshCurrent() => TryRefreshCurrent(acceptanceGuard: null);
 
-    internal bool TryRefreshCurrent(Func<bool>? acceptanceGuard)
+    internal StreamRefreshResult TryRefreshCurrent(Func<bool>? acceptanceGuard)
     {
         _context.Dispatcher.VerifyAccess();
-        return IsActive && _latestSource != null && SubmitCore(_latestSource, _sourceId, _canPublish, acceptanceGuard);
+        if (!IsActive || _latestSource == null) return StreamRefreshResult.Unavailable;
+        long epoch = _epoch;
+        long sequence = _sequence;
+        Guid sourceId = _sourceId;
+        WriteableBitmap source = _latestSource;
+        bool IsCurrent() => !_disposed && !_context.IsDisposed && IsActive && _epoch == epoch && _sequence == sequence
+            && _sourceId == sourceId && ReferenceEquals(_latestSource, source) && acceptanceGuard?.Invoke() != false;
+
+        if (SubmitCore(source, sourceId, _canPublish, IsCurrent)) return StreamRefreshResult.Accepted;
+        // A rejecting predicate may still have installed a newer stream. Recheck the
+        // scope without invoking it again before allowing an ordinary display fallback.
+        return IsCurrent() ? StreamRefreshResult.Unavailable : StreamRefreshResult.Superseded;
     }
 
     public void Reset()
