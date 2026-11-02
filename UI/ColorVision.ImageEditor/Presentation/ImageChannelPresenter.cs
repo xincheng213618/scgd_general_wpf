@@ -126,7 +126,6 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
 
     private async Task RenderAsync(ImageFrameLease lease, ImagePresentationRequest request, int channel, CancellationTokenSource selection)
     {
-        ChannelTarget? target = null;
         bool enteredGate = false;
         try
         {
@@ -135,16 +134,12 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
             selection.Token.ThrowIfCancellationRequested();
 
             HImage source = lease.Image;
-            target = await context.Dispatcher.InvokeAsync(() => CreateTarget(source));
-            selection.Token.ThrowIfCancellationRequested();
-            await Task.Run(() => ExtractPixels(source, target, channel), selection.Token).ConfigureAwait(false);
+            WriteableBitmap prepared = await Task.Run(() => PrepareChannel(source, channel), selection.Token).ConfigureAwait(false);
 
             await context.Dispatcher.InvokeAsync(() =>
             {
-                target.Unlock(hasPixels: true);
                 if (context.IsDisposed || selection.IsCancellationRequested || !context.Presentation.IsCurrent(request)) return;
-                target.Bitmap.Freeze();
-                context.Presentation.TryPublish(request, target.Bitmap, target.Bitmap);
+                context.Presentation.TryPublish(request, prepared, prepared);
             });
         }
         catch (OperationCanceledException) when (selection.IsCancellationRequested)
@@ -156,11 +151,6 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
         }
         finally
         {
-            if (target?.IsLocked == true)
-            {
-                try { await context.Dispatcher.InvokeAsync(() => target.Unlock(hasPixels: false)); }
-                catch (Exception ex) { Log.Warn("Unable to release the channel preview buffer.", ex); }
-            }
             lease.Dispose();
             if (enteredGate) _renderGate.Release();
             CompleteSelection(selection);
