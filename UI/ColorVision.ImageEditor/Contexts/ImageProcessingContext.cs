@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -86,6 +87,16 @@ namespace ColorVision.ImageEditor
         public ImageFrameLease? AcquireImageFrame()
         {
             return _binding.AcquireImageFrame();
+        }
+
+        internal bool SupportsAsyncChannelFrame => _binding.AcquireChannelFrameAsync != null;
+
+        internal Task<ImageFrameLease?> AcquireChannelFrameAsync(
+            ImageSource source, long revision, Func<bool> canContinue, CancellationToken cancellation)
+        {
+            var acquire = _binding.AcquireChannelFrameAsync!;
+            if (Dispatcher.CheckAccess()) return acquire(source, revision, canContinue, cancellation);
+            return Dispatcher.InvokeAsync(() => acquire(source, revision, canContinue, cancellation)).Task.Unwrap();
         }
 
         internal (ImageSource? Source, long Revision)? CaptureSourceState()
@@ -242,6 +253,8 @@ namespace ColorVision.ImageEditor
         public required Func<long> GetImageRevision { get; init; }
 
         public required Func<ImageFrameLease?> AcquireImageFrame { get; init; }
+
+        internal Func<ImageSource, long, Func<bool>, CancellationToken, Task<ImageFrameLease?>>? AcquireChannelFrameAsync { get; init; }
 
         public Func<(ImageSource? Source, long Revision)>? CaptureSourceState { get; init; }
 

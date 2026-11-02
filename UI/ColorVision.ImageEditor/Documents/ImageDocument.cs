@@ -2,7 +2,9 @@ using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Tif;
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -12,6 +14,7 @@ namespace ColorVision.ImageEditor.Documents;
 /// <summary>Owns the loaded source and revision-safe pixel leases for one editor document.</summary>
 public sealed class ImageDocument : IDisposable
 {
+    private const int FrameCopyBatchBytes = 4 * 1024 * 1024;
     private readonly ImageFrameStore _frames = new();
     private readonly Dispatcher _dispatcher;
     private ImageSource? _source;
@@ -164,6 +167,170 @@ public sealed class ImageDocument : IDisposable
                 _cachedSource = source;
         }
         return lease;
+    }
+
+    internal async Task<ImageFrameLease?> AcquireFrameAsync(
+        ImageSource expectedSource,
+        long expectedRevision,
+        Func<bool> canContinue,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(expectedSource);
+        ArgumentNullException.ThrowIfNull(canContinue);
+        HImage candidate = default;
+        bool candidateTransferred = false;
+        ImageFrameLease? lease = null;
+        WriteableBitmap? frozenSource = null;
+        int copiedBytes = 0;
+        int bufferSize = 0;
+
+        bool IsScopeCurrent()
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsDisposed) return false;
+            (ImageSource? source, long revision) = CaptureSourceState();
+            cancellationToken.ThrowIfCancellationRequested();
+            return !IsDisposed && revision == expectedRevision && ReferenceEquals(source, expectedSource)
+                && _frames.IsCurrent(expectedRevision) && canContinue();
+        }
+
+        bool AdmitCandidate()
+        {
+            _dispatcher.VerifyAccess();
+            if (!IsScopeCurrent()) return true;
+            lease = _frames.AcquireOrCreate(() =>
+            {
+                if (!_frames.IsCurrent(expectedRevision)) return null;
+                // The store owns this candidate even if it later loses to another frame.
+                candidateTransferred = true;
+                return candidate;
+            });
+            if (lease == null) return true;
+            if (lease.Revision != expectedRevision || !IsScopeCurrent())
+            {
+                lease.Dispose();
+                lease = null;
+                return true;
+            }
+            lock (_contentSync)
+            {
+                if (_frames.IsCurrent(lease.Revision) && ReferenceEquals(Source, expectedSource))
+                    _cachedSource = expectedSource;
+            }
+            return true;
+        }
+
+        bool CopyNextBatch()
+        {
+            _dispatcher.VerifyAccess();
+            if (!IsScopeCurrent()) return true;
+            lease = _frames.AcquireOrCreate(static () => null);
+            if (lease != null)
+            {
+                if (lease.Revision == expectedRevision && IsScopeCurrent()) return true;
+                lease.Dispose();
+                lease = null;
+                return true;
+            }
+            if (!IsScopeCurrent() || expectedSource is not WriteableBitmap bitmap) return true;
+            if (bitmap.IsFrozen)
+            {
+                frozenSource = bitmap;
+                return true;
+            }
+
+            bitmap.Lock();
+            try
+            {
+                HImage source = bitmap.ForHImage();
+                if (candidate.pData == IntPtr.Zero)
+                {
+                    int stride = checked(bitmap.PixelWidth * (bitmap.Format.BitsPerPixel / 8));
+                    bufferSize = checked(bitmap.PixelHeight * stride);
+                    candidate = source;
+                    candidate.pData = IntPtr.Zero;
+                    candidate.isDispose = false;
+                    candidate.stride = stride;
+                    candidate.pData = Marshal.AllocCoTaskMem(bufferSize);
+                }
+                if (source.rows != candidate.rows || source.cols != candidate.cols
+                    || source.channels != candidate.channels || source.depth != candidate.depth || source.stride < candidate.stride)
+                    throw new InvalidOperationException("The source frame layout changed during acquisition.");
+
+                int count = Math.Min(FrameCopyBatchBytes, bufferSize - copiedBytes);
+                CopyFrameBytes(source, candidate, copiedBytes, count);
+                copiedBytes += count;
+            }
+            finally { bitmap.Unlock(); }
+
+            // Unlock may notify subscribers. A successor wins before another batch or admission.
+            if (!IsScopeCurrent()) return true;
+            if (copiedBytes < bufferSize) return false;
+            return AdmitCandidate();
+        }
+
+        try
+        {
+            _dispatcher.VerifyAccess();
+            if (!IsScopeCurrent()) return null;
+            lease = _frames.AcquireOrCreate(static () => null);
+            if (lease != null)
+            {
+                if (lease.Revision != expectedRevision || !IsScopeCurrent()) return null;
+                ImageFrameLease cached = lease;
+                lease = null;
+                return cached;
+            }
+
+            while (true)
+            {
+                // The first cold copy also yields; only one bounded UI batch is outstanding.
+                bool complete = await _dispatcher.InvokeAsync(CopyNextBatch, DispatcherPriority.Background, cancellationToken)
+                    .Task.ConfigureAwait(false);
+                if (!complete) continue;
+                if (frozenSource != null)
+                {
+                    // Free the partial mutable copy only after its UI batch has unlocked.
+                    // A frozen source can then be copied independently on the worker.
+                    candidate.Dispose();
+                    candidate = default;
+                    candidate = await Task.Run(frozenSource.ToHImage, cancellationToken).ConfigureAwait(false);
+                    await _dispatcher.InvokeAsync(AdmitCandidate, DispatcherPriority.Background, cancellationToken)
+                        .Task.ConfigureAwait(false);
+                }
+                ImageFrameLease? result = lease;
+                lease = null;
+                return result;
+            }
+        }
+        catch (ObjectDisposedException) when (IsDisposed)
+        {
+            return null;
+        }
+        finally
+        {
+            lease?.Dispose();
+            if (!candidateTransferred) candidate.Dispose();
+        }
+    }
+
+    private static unsafe void CopyFrameBytes(HImage source, HImage destination, int byteOffset, int count)
+    {
+        if (source.stride == destination.stride)
+        {
+            Buffer.MemoryCopy((byte*)source.pData + byteOffset, (byte*)destination.pData + byteOffset, count, count);
+            return;
+        }
+        while (count > 0)
+        {
+            int row = byteOffset / destination.stride;
+            int column = byteOffset % destination.stride;
+            int bytes = Math.Min(count, destination.stride - column);
+            Buffer.MemoryCopy((byte*)source.pData + (long)row * source.stride + column,
+                (byte*)destination.pData + byteOffset, bytes, bytes);
+            byteOffset += bytes;
+            count -= bytes;
+        }
     }
 
     public void Dispose()
