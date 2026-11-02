@@ -184,14 +184,18 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData("red")]
-    [InlineData("composite")]
-    public async Task SelectingALayerPreservesADisplaySelectedDuringPreviewCancellation(string selectedLayer)
+    [InlineData("red", "display")]
+    [InlineData("composite", "display")]
+    [InlineData("red", "algorithm")]
+    public async Task SelectingALayerPreservesASuccessorSelectedDuringPreviewCancellation(string selectedLayer, string takeover)
     {
         WriteOwnerIdentity();
         Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
         ImageAlgorithmPreviewSession? preview = null;
+        ImageAlgorithmPreviewSession? replacementPreview = null;
+        AlgorithmInvocationClaim? replacementClaim = null;
         WriteableBitmap? replacement = null;
+        Exception? selectionFailure = null;
         int callbacks = 0;
         bool replacementWasPublished = false;
         try
@@ -211,29 +215,55 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                 {
                     if (!ReferenceEquals(fixture.View.ImageShow.Source, fixture.Source) || callbacks != 0) return;
                     callbacks++;
-                    fixture.Context.Presentation.Publish(replacement, replacement);
-                    replacementWasPublished = ReferenceEquals(replacement, fixture.View.ImageShow.Source);
+                    if (takeover == "algorithm")
+                    {
+                        replacementPreview = ImageAlgorithmPreviewSession.StartForCatalogPreview(fixture.Context);
+                        replacementClaim = fixture.CurrentClaim();
+                    }
+                    else
+                    {
+                        fixture.Context.Presentation.Publish(replacement, replacement);
+                        replacementWasPublished = ReferenceEquals(replacement, fixture.View.ImageShow.Source);
+                    }
                 };
-                fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == selectedLayer);
+                selectionFailure = Record.Exception(() =>
+                {
+                    fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == selectedLayer);
+                });
             });
             await fixture.WaitForOwnWorkAsync();
             WpfTestHost.Invoke(() =>
             {
-                output.WriteLine(JsonSerializer.Serialize(new { selectedLayer, callbacks, replacementWasPublished, final = fixture.Snapshot() }));
+                output.WriteLine(JsonSerializer.Serialize(new { selectedLayer, takeover, callbacks, replacementClaim,
+                    replacementOwnerInstalled = replacementPreview?.OwnsHostPreview, replacementWasPublished,
+                    selectionFailure = selectionFailure?.ToString(), final = fixture.Snapshot() }));
                 Assert.Equal(1, callbacks);
-                Assert.True(replacementWasPublished);
+                Assert.Null(selectionFailure);
                 fixture.AssertDocumentUnchanged();
                 Assert.False(fixture.State.IsEnabled);
-                Assert.False(fixture.Context.HasActiveAlgorithmPreview);
                 Assert.Equal(selectedLayer, fixture.View.SelectedLayer!.Id);
-                Assert.Same(replacement, fixture.View.ImageShow.Source);
-                Assert.Same(replacement, fixture.Context.FunctionImage);
+                if (takeover == "algorithm")
+                {
+                    Assert.NotNull(replacementPreview);
+                    Assert.True(replacementPreview.OwnsHostPreview);
+                    Assert.Equal(replacementClaim, fixture.CurrentClaim());
+                    Assert.True(fixture.Context.HasActiveAlgorithmPreview);
+                    Assert.Same(fixture.Source, fixture.View.ImageShow.Source);
+                    Assert.Null(fixture.Context.FunctionImage);
+                }
+                else
+                {
+                    Assert.True(replacementWasPublished);
+                    Assert.False(fixture.Context.HasActiveAlgorithmPreview);
+                    Assert.Same(replacement, fixture.View.ImageShow.Source);
+                    Assert.Same(replacement, fixture.Context.FunctionImage);
+                }
                 Assert.Empty(fixture.Provider.Runs);
             });
         }
         finally
         {
-            WpfTestHost.Invoke(() => { fixture.SourceChanged = null; preview?.Dispose(); });
+            WpfTestHost.Invoke(() => { fixture.SourceChanged = null; replacementPreview?.Dispose(); preview?.Dispose(); });
             await fixture.DisposeAsync();
         }
     }

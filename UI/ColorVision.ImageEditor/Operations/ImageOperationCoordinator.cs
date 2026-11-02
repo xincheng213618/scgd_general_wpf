@@ -291,6 +291,9 @@ namespace ColorVision.ImageEditor.Operations
                                 || _algorithmClaimSequence != expectedClaimSequence
                                 || _algorithmPreviewGeneration != expectedGeneration)
                             {
+                                // A synchronous restore subscriber may already own the host.
+                                // TryRelease will reject our stale claim and keep the newer one.
+                                if (restoreCanonical) return;
                                 throw new InvalidOperationException("Preview ownership changed during publication.");
                             }
                             _activeAlgorithmPreviewClaim = null;
