@@ -171,6 +171,18 @@ namespace ColorVision.ImageEditor.Video
                 Close();
                 return;
             }
+            else if (IsPlaying)
+            {
+                // Native may have paused at EOS while its old status is still queued.
+                // Preserve the current playback intent without restarting the audio track.
+                int playResult = _backend.Play(_handle, _frameCallback!, _statusCallback!, new IntPtr(timeline));
+                if (playResult != 0)
+                {
+                    log.Warn($"Failed to resume video after seeking. Native return code: {playResult}");
+                    Close();
+                    return;
+                }
+            }
             CurrentFrame = frameIndex;
             TryAudio(() => _audio.Position = GetPosition(frameIndex));
             OnStateChanged();
@@ -363,6 +375,8 @@ namespace ColorVision.ImageEditor.Video
                                 IsPlaying = true;
                                 break;
                             case 2:
+                                // The current EOS may have queued before a seek restored playback.
+                                _backend.Pause(_handle);
                                 IsPlaying = false;
                                 TryAudio(_audio.Pause);
                                 Seek(0);

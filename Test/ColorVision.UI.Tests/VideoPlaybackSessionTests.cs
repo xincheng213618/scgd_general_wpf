@@ -116,8 +116,9 @@ public sealed class VideoPlaybackSessionTests
         WpfTestHost.Invoke(() =>
         {
             using FakeVideoBackend backend = new() { SupportsCallbackSeek = callbackSeek };
+            FakeAudioTrack audio = new();
             List<int> rendered = [];
-            using VideoPlaybackSession session = new(Dispatcher.CurrentDispatcher, frame => rendered.Add(frame.FrameIndex), backend, new FakeAudioTrack());
+            using VideoPlaybackSession session = new(Dispatcher.CurrentDispatcher, frame => rendered.Add(frame.FrameIndex), backend, audio);
             session.Open("C:\\synthetic\\video.mp4");
             session.Play();
             OpenCVMediaHelper.VideoFrameCallback frameCallback = backend.FrameCallback!;
@@ -126,12 +127,17 @@ public sealed class VideoPlaybackSessionTests
             Guid previousTimelineId = session.SessionId;
             backend.EmitFrame(5);
             backend.EmitStatus(2);
+            Assert.False(backend.IsPlaying);
+            Assert.True(session.IsPlaying);
 
             session.Seek(60);
             Assert.NotEqual(previousTimelineId, session.SessionId);
             Assert.Equal(0, backend.OutstandingFrameCount);
             if (callbackSeek)
             {
+                Assert.True(backend.IsPlaying);
+                Assert.Equal(2, backend.PlayCalls);
+                Assert.Equal(1, audio.PlayCalls);
                 Assert.Same(frameCallback, backend.FrameCallback);
                 Assert.Same(statusCallback, backend.StatusCallback);
                 Assert.NotEqual(oldToken, backend.CallbackToken);
@@ -277,24 +283,42 @@ public sealed class VideoPlaybackSessionTests
         });
     }
 
-    [Fact]
-    public void EndStatusPausesAudioAndSeeksToStartWithoutPublishingAnotherFrame()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EndStatusPausesAudioAndSeeksToStartWithoutPublishingAnotherFrame(bool endedDuringSeek)
     {
         WpfTestHost.Invoke(() =>
         {
-            using FakeVideoBackend backend = new();
+            using FakeVideoBackend backend = new() { SupportsCallbackSeek = endedDuringSeek };
             FakeAudioTrack audio = new();
             int deliveries = 0;
             using VideoPlaybackSession session = new(Dispatcher.CurrentDispatcher, _ => deliveries++, backend, audio);
             session.Open("C:\\synthetic\\video.mp4");
             session.Play();
-            session.Seek(90);
-            backend.StatusCallback!(backend.Handle, 2, IntPtr.Zero);
+            if (endedDuringSeek)
+            {
+                backend.DuringSeek = frameIndex =>
+                {
+                    if (frameIndex == 119) backend.EmitStatus(2);
+                };
+            }
+            session.Seek(endedDuringSeek ? 119 : 90);
+            if (endedDuringSeek)
+            {
+                Assert.True(session.IsPlaying);
+                Assert.True(backend.IsPlaying);
+            }
+            else backend.EmitStatus(2);
             PumpDispatcher();
 
             Assert.False(session.IsPlaying);
+            Assert.False(backend.IsPlaying);
             Assert.Equal(0, session.CurrentFrame);
             Assert.Equal(TimeSpan.Zero, audio.Position);
+            Assert.Equal(1, audio.PlayCalls);
+            Assert.Equal(endedDuringSeek ? 2 : 1, backend.PlayCalls);
+            Assert.Equal(endedDuringSeek ? new[] { 0, 119, 0 } : new[] { 0, 90, 0 }, backend.Seeks);
             Assert.Equal(1, deliveries);
             Assert.Equal(1, backend.ReadCalls);
         });
@@ -552,12 +576,19 @@ public sealed class VideoPlaybackSessionTests
         });
     }
 
-    [Fact]
-    public void RejectedEnhancedSeekClosesWithoutFallingBackOrMovingAudio()
+    [Theory]
+    [InlineData("seek")]
+    [InlineData("resume")]
+    public void RejectedEnhancedSeekClosesWithoutFallingBackOrMovingAudio(string failure)
     {
         WpfTestHost.Invoke(() =>
         {
-            using FakeVideoBackend backend = new() { SupportsCallbackSeek = true, TrySeekResult = 5 };
+            using FakeVideoBackend backend = new()
+            {
+                SupportsCallbackSeek = true,
+                TrySeekResult = failure == "seek" ? 5 : 0,
+                PlayResultAfterFirstCall = failure == "resume" ? 5 : null,
+            };
             FakeAudioTrack audio = new();
             List<int> rendered = [];
             using VideoPlaybackSession session = new(Dispatcher.CurrentDispatcher, frame => rendered.Add(frame.FrameIndex), backend, audio);
@@ -580,9 +611,10 @@ public sealed class VideoPlaybackSessionTests
             Assert.Equal(Guid.Empty, session.SessionId);
             Assert.Equal(0, session.CurrentFrame);
             Assert.Equal(new[] { 0 }, rendered);
-            Assert.Equal(new[] { 0 }, backend.Seeks);
+            Assert.Equal(failure == "resume" ? new[] { 0, 73 } : new[] { 0 }, backend.Seeks);
             Assert.Equal(1, backend.TrySeekCalls);
-            Assert.Single(backend.CallbackRegistrations);
+            Assert.Equal(failure == "resume" ? 3 : 1, backend.CallbackRegistrations.Count);
+            Assert.Equal(failure == "resume" ? 2 : 1, backend.PlayCalls);
             Assert.Equal(1, backend.CloseCalls);
             Assert.Equal(3, backend.ReleasedFrameCount);
             Assert.Equal(0, backend.OutstandingFrameCount);
@@ -609,6 +641,8 @@ public sealed class VideoPlaybackSessionTests
         public int PlayCalls { get; private set; }
         public int CloseCalls { get; private set; }
         public int PlayResult { get; init; }
+        public int? PlayResultAfterFirstCall { get; init; }
+        public bool IsPlaying { get; private set; }
         public bool SupportsCallbackSeek { get; init; }
         public int TrySeekResult { get; init; }
         public int TrySeekCalls { get; private set; }
@@ -655,7 +689,9 @@ public sealed class VideoPlaybackSessionTests
             StatusCallback = statusCallback;
             CallbackToken = token;
             CallbackRegistrations.Add((frameCallback, statusCallback, token));
-            return PlayResult;
+            int result = PlayCalls == 1 ? PlayResult : PlayResultAfterFirstCall ?? PlayResult;
+            IsPlaying = result == 0;
+            return result;
         }
 
         public bool TrySeekWithCallbacks(int handle, int frameIndex, OpenCVMediaHelper.VideoFrameCallback frameCallback,
@@ -687,13 +723,17 @@ public sealed class VideoPlaybackSessionTests
         }
 
         public void EmitStatus(int status) => EmitStatus(status, CallbackToken);
-        public void EmitStatus(int status, IntPtr token) => StatusCallback!(Handle, status, token);
+        public void EmitStatus(int status, IntPtr token)
+        {
+            if (token == CallbackToken && status is 0 or 1 or 2) IsPlaying = status == 1;
+            StatusCallback!(Handle, status, token);
+        }
 
-        public int Pause(int handle) => 0;
+        public int Pause(int handle) { IsPlaying = false; return 0; }
         public int Seek(int handle, int frameIndex) { Seeks.Add(frameIndex); DuringSeek?.Invoke(frameIndex); return 0; }
         public int SetPlaybackSpeed(int handle, double speed) { Speed = speed; return 0; }
         public int SetResizeScale(int handle, double scale) { ResizeScale = scale; return 0; }
-        public int Close(int handle) { CloseCalls++; return 0; }
+        public int Close(int handle) { CloseCalls++; IsPlaying = false; return 0; }
 
         private HImage CreateFrame(byte value)
         {
