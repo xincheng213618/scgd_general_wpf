@@ -93,7 +93,8 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
             ChannelSelectionResult result = ChannelSelectionResult.Ordinary;
             ImagePresentationRequest? request = null;
             if (preferStream && channel is >= 0 and < 3 && channel == context.GetSelectedLayerSourceChannelIndex()
-                && !context.DisplayEffects.PseudoColor.IsEnabled && context.StreamPresentation.IsActive
+                && (!context.DisplayEffects.PseudoColor.IsEnabled || !context.DisplayEffects.PseudoColor.IsAutoSetRange)
+                && context.StreamPresentation.IsActive
                 && source is BitmapSource bitmap && (bitmap.Format == PixelFormats.Bgr24 || bitmap.Format == PixelFormats.Bgr32
                     || bitmap.Format == PixelFormats.Bgra32 || bitmap.Format == PixelFormats.Pbgra32 || bitmap.Format == PixelFormats.Rgb24
                     || bitmap.Format == PixelFormats.Rgb48 || bitmap.Format == PixelFormats.Rgba64))

@@ -302,15 +302,17 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData("accepted")]
-    [InlineData("rejected")]
-    [InlineData("direct")]
-    public async Task ActiveStreamChannelSelectionUsesItsOwnerAndPreservesOrdinaryFallback(string route)
+    [InlineData("accepted", false)]
+    [InlineData("rejected", false)]
+    [InlineData("direct", false)]
+    [InlineData("accepted", true)]
+    [InlineData("rejected", true)]
+    public async Task ActiveStreamChannelSelectionUsesItsOwnerAndPreservesOrdinaryFallback(string route, bool manualPseudo)
     {
         WriteOwnerIdentity();
         Fixture fixture = WpfTestHost.Invoke(() => new Fixture(defaultSourceEntry: true));
         bool producerAllowsPublication = true, cachedAfterSelection = false;
-        int predicateCalls = 0, predicateCallsDuringSelection = 0, presentations = 0;
+        int predicateCalls = 0, predicateCallsDuringSelection = 0, presentations = 0, presentationsBeforeSelection = 0;
         long revision = 0;
         void OnPresented(Guid _, WriteableBitmap source) => presentations++;
         try
@@ -326,9 +328,25 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                     predicateCalls++;
                     return producerAllowsPublication;
                 });
+                if (manualPseudo)
+                {
+                    fixture.State.IsAutoSetRange = false;
+                    fixture.State.ColormapTypes = ColorVision.Core.ColormapTypes.COLORMAP_HOT;
+                    fixture.State.IsEnabled = true;
+                    fixture.State.SliderValueStart = 64;
+                    fixture.State.SliderValueEnd = 90;
+                }
+            });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(manualPseudo, fixture.State.IsEnabled);
                 Assert.True(fixture.Context.StreamPresentation.IsActive);
                 Assert.False(fixture.HasCachedSourceFrame);
                 revision = fixture.Context.ImageRevision;
+                presentationsBeforeSelection = presentations;
+                if (!manualPseudo) Assert.Equal(1, presentationsBeforeSelection);
                 producerAllowsPublication = route != "rejected";
                 int callsBeforeSelection = predicateCalls;
                 if (route == "direct") fixture.View.ExtractChannel(2);
@@ -341,20 +359,35 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             WpfTestHost.Invoke(() =>
             {
                 DisplaySnapshot display = fixture.Snapshot();
-                output.WriteLine(JsonSerializer.Serialize(new { route, revision, cachedAfterSelection,
-                    predicateCallsDuringSelection, presentations, display }));
+                output.WriteLine(JsonSerializer.Serialize(new { route, manualPseudo, revision, cachedAfterSelection,
+                    predicateCallsDuringSelection, presentationsBeforeSelection, presentations, display,
+                    range = fixture.CaptureRange() }));
                 fixture.AssertDocumentUnchanged(revision + (route == "accepted" ? 1 : 0));
-                Assert.False(fixture.State.IsEnabled);
+                Assert.Equal(manualPseudo, fixture.State.IsEnabled);
                 Assert.True(fixture.Context.StreamPresentation.IsActive);
                 Assert.Equal(route == "direct" ? "composite" : "red", display.SelectedLayer);
                 Assert.Equal(display.SelectedLayer, display.ComboLayer);
-                Assert.Equal(PixelFormats.Gray8.ToString(), display.Format);
-                Assert.Equal(new[] { 31, 61, 91, 121 }, display.Pixels);
+                bool pseudoRendered = manualPseudo && route == "accepted";
+                Assert.Equal((pseudoRendered ? PixelFormats.Bgr24 : PixelFormats.Gray8).ToString(), display.Format);
+                Assert.Equal(pseudoRendered ? new[] { 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255 }
+                    : new[] { 31, 61, 91, 121 }, display.Pixels);
                 Assert.True(Assert.IsAssignableFrom<BitmapSource>(fixture.View.ImageShow.Source).IsFrozen);
                 Assert.Same(fixture.View.ImageShow.Source, fixture.Context.FunctionImage);
-                Assert.Equal(route == "accepted" ? 2 : 1, presentations);
+                Assert.Equal(presentationsBeforeSelection + (route == "accepted" ? 1 : 0), presentations);
                 Assert.Equal(route == "direct" ? 0 : 1, predicateCallsDuringSelection);
                 Assert.Equal(route != "accepted", cachedAfterSelection);
+                if (manualPseudo)
+                {
+                    Assert.False(fixture.State.IsAutoSetRange);
+                    Assert.Equal(64d, fixture.State.SliderValueStart);
+                    Assert.Equal(90d, fixture.State.SliderValueEnd);
+                    Assert.Equal(ColorVision.Core.ColormapTypes.COLORMAP_HOT, fixture.State.ColormapTypes);
+                    Assert.True(fixture.Context.DisplayEffects.TryCapturePseudoColorRequest(out var frameRequest));
+                    Assert.Equal(2, frameRequest.Channel);
+                    Assert.Equal(64u, frameRequest.Min);
+                    Assert.Equal(90u, frameRequest.Max);
+                    Assert.False(frameRequest.HasValidAutoRange);
+                }
                 Assert.Empty(fixture.Provider.Runs);
             });
         }
