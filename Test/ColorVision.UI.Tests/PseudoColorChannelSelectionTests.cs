@@ -24,18 +24,32 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
     private static readonly TimeSpan Watchdog = TimeSpan.FromSeconds(10);
 
     [Theory]
-    [InlineData("red")]
-    [InlineData("composite")]
-    public async Task TurningPseudoColorOffRestoresTheSelectedLayer(string selectedLayer)
+    [InlineData("red", false)]
+    [InlineData("composite", false)]
+    [InlineData("red", true)]
+    public async Task TurningPseudoColorOffRestoresTheSelectedLayer(string selectedLayer, bool coldOwnedRgb48)
     {
         WriteOwnerIdentity();
-        Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(rgb48: coldOwnedRgb48));
         try
         {
             await fixture.WaitForOwnWorkAsync();
-            await fixture.SelectLayerAsync(selectedLayer);
-            WpfTestHost.Invoke(() => fixture.AssertSelectedDisplay(selectedLayer));
+            if (!coldOwnedRgb48)
+            {
+                await fixture.SelectLayerAsync(selectedLayer);
+                WpfTestHost.Invoke(() => fixture.AssertSelectedDisplay(selectedLayer));
+            }
             await fixture.EnablePseudoColorAsync();
+            if (coldOwnedRgb48)
+            {
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Equal("composite", fixture.View.SelectedLayer!.Id);
+                    Assert.False(fixture.HasCachedSourceFrame);
+                });
+                await fixture.SelectLayerAsync(selectedLayer);
+                WpfTestHost.Invoke(() => Assert.False(fixture.HasCachedSourceFrame));
+            }
             var enabled = WpfTestHost.Invoke(fixture.Snapshot);
             List<Task<DisplaySnapshot>> offTurnCheckpoints = [];
 
@@ -58,23 +72,107 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             DisplaySnapshot[] checkpoints = await Task.WhenAll(queuedCheckpoints).WaitAsync(Watchdog);
             WpfTestHost.Invoke(() =>
             {
-                output.WriteLine(JsonSerializer.Serialize(new { selectedLayer, enabled, checkpoints, disabled = fixture.Snapshot() }));
+                output.WriteLine(JsonSerializer.Serialize(new { selectedLayer, coldOwnedRgb48, enabled, checkpoints, disabled = fixture.Snapshot() }));
                 fixture.AssertDocumentUnchanged();
                 Assert.False(fixture.State.IsEnabled);
                 Assert.False(fixture.Context.HasActiveAlgorithmPreview);
                 fixture.AssertSelectedDisplay(selectedLayer);
+                if (coldOwnedRgb48) Assert.False(fixture.HasCachedSourceFrame);
                 if (selectedLayer == "red")
                 {
                     Assert.NotEmpty(checkpoints);
                     Assert.All(checkpoints, checkpoint =>
                     {
-                        Assert.Equal(PixelFormats.Gray8.ToString(), checkpoint.Format);
-                        Assert.Equal(new[] { 31, 61, 91, 121 }, checkpoint.Pixels);
+                        Assert.Equal((coldOwnedRgb48 ? PixelFormats.Gray16 : PixelFormats.Gray8).ToString(), checkpoint.Format);
+                        Assert.Equal(coldOwnedRgb48 ? new[] { 232, 3, 76, 4, 176, 4, 20, 5 } : new[] { 31, 61, 91, 121 }, checkpoint.Pixels);
                     });
                 }
             });
         }
         finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task TurningPseudoColorOffUsesRawPremultipliedSourceInsteadOfItsCanonicalInput()
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(defaultSourceEntry: true, pbgra32: true));
+        AlgorithmImageBuffer? canonical = null;
+        bool cacheBeforeOff = false;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() => fixture.State.IsEnabled = true);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.True(fixture.State.IsEnabled);
+                Assert.True(fixture.Context.HasActiveAlgorithmPreview);
+                ImageAlgorithmPreviewSession session = Assert.IsType<ImageAlgorithmPreviewSession>(fixture.PseudoColorSession);
+                canonical = Assert.IsType<AlgorithmImageBuffer>(typeof(ImageAlgorithmPreviewSession)
+                    .GetField("_source", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(session));
+                Assert.Equal(AlgorithmImageFormat.Bgra32, canonical.Format);
+                Assert.Equal(new byte[] { 90, 60, 30, 85, 180, 120, 60, 85, 45, 30, 15, 85, 27, 24, 21, 85 }, canonical.Data.ToArray());
+                Assert.False(fixture.HasCachedSourceFrame);
+            });
+            await fixture.SelectLayerAsync("red");
+            WpfTestHost.Invoke(() =>
+            {
+                cacheBeforeOff = fixture.HasCachedSourceFrame;
+                Assert.False(cacheBeforeOff);
+                fixture.State.IsEnabled = false;
+            });
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                DisplaySnapshot final = fixture.Snapshot();
+                output.WriteLine(JsonSerializer.Serialize(new { cacheBeforeOff, cacheAfterOff = fixture.HasCachedSourceFrame, canonicalRed = new[] { 30, 60, 15, 21 }, final }));
+                fixture.AssertDocumentUnchanged();
+                Assert.False(fixture.State.IsEnabled);
+                Assert.False(fixture.Context.HasActiveAlgorithmPreview);
+                Assert.Equal("red", final.SelectedLayer);
+                Assert.Equal(PixelFormats.Gray8.ToString(), final.Format);
+                Assert.Equal(new[] { 10, 20, 5, 7 }, final.Pixels);
+                Assert.True(canonical!.IsDisposed);
+                Assert.Empty(fixture.Provider.Runs);
+            });
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task RetainedPseudoColorDisplayInputRemainsReadableAfterItsSessionIsDisposed()
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(rgb48: true));
+        AlgorithmImageBuffer? retained = null;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            await fixture.EnablePseudoColorAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                ImageAlgorithmPreviewSession session = Assert.IsType<ImageAlgorithmPreviewSession>(fixture.PseudoColorSession);
+                AlgorithmImageBuffer source = Assert.IsType<AlgorithmImageBuffer>(typeof(ImageAlgorithmPreviewSession)
+                    .GetField("_source", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(session));
+                retained = Assert.IsType<AlgorithmImageBuffer>(session.TryRetainSourceForDisplay(fixture.Source, fixture.Context.ImageRevision));
+                Assert.NotSame(source, retained);
+                Assert.Equal(source.StorageId, retained.StorageId);
+                Assert.Equal(AlgorithmImageFormat.Bgr48, retained.Format);
+
+                session.Dispose();
+
+                Assert.True(source.IsDisposed);
+                Assert.False(retained.IsDisposed);
+            });
+            byte[] actual = await Task.Run(() => retained!.Data.ToArray());
+            Assert.Equal(new byte[] { 184, 11, 208, 7, 232, 3, 28, 12, 52, 8, 76, 4, 128, 12, 152, 8, 176, 4, 228, 12, 252, 8, 20, 5 }, actual);
+        }
+        finally
+        {
+            retained?.Dispose();
+            await fixture.DisposeAsync();
+        }
     }
 
     [Fact]
@@ -125,8 +223,9 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         try
         {
             await fixture.WaitForOwnWorkAsync();
-            await fixture.SelectLayerAsync("red");
             await fixture.EnablePseudoColorAsync();
+            await fixture.SelectLayerAsync("red");
+            WpfTestHost.Invoke(() => Assert.False(fixture.HasCachedSourceFrame));
             WpfTestHost.Invoke(() => fixture.SourceChanged = () =>
             {
                 if (!ReferenceEquals(fixture.View.ImageShow.Source, fixture.Source) || callbacks != 0) return;
@@ -699,8 +798,9 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         try
         {
             await fixture.WaitForOwnWorkAsync();
-            await fixture.SelectLayerAsync("red");
             await fixture.EnablePseudoColorAsync();
+            await fixture.SelectLayerAsync("red");
+            WpfTestHost.Invoke(() => Assert.False(fixture.HasCachedSourceFrame));
             ProviderRun[] previousRuns = fixture.Provider.Runs;
             long generationBeforeOff = WpfTestHost.Invoke(() => fixture.Context.AlgorithmPreviewGeneration);
             WpfTestHost.Invoke(() => fixture.SourceChanged = () =>
@@ -835,6 +935,16 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                     Assert.Equal(21u, current.DataMinimum);
                     Assert.Equal(111u, current.DataMaximum);
                 }
+            });
+            WpfTestHost.Invoke(() => fixture.State.IsEnabled = false);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                fixture.AssertDocumentUnchanged();
+                Assert.False(fixture.State.IsEnabled);
+                Assert.False(fixture.Context.HasActiveAlgorithmPreview);
+                fixture.AssertSelectedDisplay("green");
+                Assert.Equal(automaticRange, fixture.HasCachedSourceFrame);
             });
         }
         finally { await fixture.DisposeAsync(); }
@@ -1246,7 +1356,7 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         private readonly Guid _document;
         private int _publications;
 
-        public Fixture(bool rgb48 = false, bool defaultSourceEntry = false)
+        public Fixture(bool rgb48 = false, bool defaultSourceEntry = false, bool pbgra32 = false)
         {
             ResourceDictionary resources = Application.Current.Resources;
             resources["TextBox.Small"] = new Style(typeof(TextBox));
@@ -1267,11 +1377,13 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                 OutputFormats: new HashSet<AlgorithmImageFormat> { AlgorithmImageFormat.Bgr24 }));
             View = defaultSourceEntry ? new ImageView() : new ImageView(new AlgorithmRuntime(catalog, [Provider], new ImmediateScheduler()));
             Context = View.EditorContext.ProcessingContext;
-            Source = new WriteableBitmap(2, 2, 96, 96, rgb48 ? PixelFormats.Rgb48 : PixelFormats.Bgr24, null);
-            _sourcePixels = rgb48 ? Rgb48Pixels() : [11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121];
-            Source.WritePixels(new Int32Rect(0, 0, 2, 2), _sourcePixels, rgb48 ? 12 : 6, 0);
+            Source = new WriteableBitmap(2, 2, 96, 96, rgb48 ? PixelFormats.Rgb48 : pbgra32 ? PixelFormats.Pbgra32 : PixelFormats.Bgr24, null);
+            _sourcePixels = rgb48 ? Rgb48Pixels() : pbgra32
+                ? [30, 20, 10, 85, 60, 40, 20, 85, 15, 10, 5, 85, 9, 8, 7, 85]
+                : [11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121];
+            Source.WritePixels(new Int32Rect(0, 0, 2, 2), _sourcePixels, rgb48 ? 12 : pbgra32 ? 8 : 6, 0);
             // Immutable frames keep nested Source publication clear of mutable Freezable inheritance bookkeeping.
-            Source.Freeze();
+            if (!pbgra32) Source.Freeze();
             if (defaultSourceEntry) Context.SetImageSource(Source);
             else View.SetImageSource(Source, enableEditorImageServices: false, configureDefaultLayerController: true);
             _revision = Context.ImageRevision;
@@ -1379,8 +1491,16 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             else
             {
                 BitmapSource display = Assert.IsAssignableFrom<BitmapSource>(View.ImageShow.Source);
-                Assert.Equal(PixelFormats.Gray8, display.Format);
-                Assert.Equal(id == "red" ? new byte[] { 31, 61, 91, 121 } : new byte[] { 21, 51, 81, 111 }, ReadPixels(display));
+                if (Source.Format == PixelFormats.Rgb48)
+                {
+                    Assert.Equal(PixelFormats.Gray16, display.Format);
+                    Assert.Equal(id == "red" ? new byte[] { 232, 3, 76, 4, 176, 4, 20, 5 } : new byte[] { 208, 7, 52, 8, 152, 8, 252, 8 }, ReadPixels(display));
+                }
+                else
+                {
+                    Assert.Equal(PixelFormats.Gray8, display.Format);
+                    Assert.Equal(id == "red" ? new byte[] { 31, 61, 91, 121 } : new byte[] { 21, 51, 81, 111 }, ReadPixels(display));
+                }
             }
         }
 

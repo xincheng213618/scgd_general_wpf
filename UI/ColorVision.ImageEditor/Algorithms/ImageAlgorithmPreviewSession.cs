@@ -82,6 +82,36 @@ namespace ColorVision.ImageEditor.Algorithms
 
         internal bool UsesSource(ImageSource? source) => ReferenceEquals(_originalSource, source);
 
+        internal AlgorithmImageBuffer? TryRetainSourceForDisplay(ImageSource expectedSource, long expectedRevision)
+        {
+            ArgumentNullException.ThrowIfNull(expectedSource);
+            ImageProcessingContext? image = _image;
+            if (image == null) return null;
+            image.Dispatcher.VerifyAccess();
+
+            bool IsCurrentSource() => !image.IsDisposed && image.DocumentInstanceId == _documentInstanceId
+                && expectedRevision == _sourceRevision && UsesSource(expectedSource)
+                && ReferenceEquals(image.ViewBitmapSource, expectedSource) && OwnsHostPreview
+                && image.IsCurrentImageRevision(expectedRevision);
+
+            if (!IsCurrentSource()) return null;
+            AlgorithmImageBuffer? retained;
+            lock (_sync)
+            {
+                if (_disposed || _isCompleted || _source == null) return null;
+                retained = _source.RetainReadOnly();
+            }
+            // Host checks stay outside the session monitor, matching preview claim/publication lock order.
+            try
+            {
+                if (!IsCurrentSource()) return null;
+                AlgorithmImageBuffer result = retained;
+                retained = null;
+                return result;
+            }
+            finally { retained?.Dispose(); }
+        }
+
         public bool OwnsHostPreview
         {
             get

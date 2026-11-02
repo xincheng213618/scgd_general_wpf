@@ -25,10 +25,12 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         Func<bool>? SelectionGuard = null);
 
     internal sealed record SelectedLayerRestorePreparation(
-        ImageFrameLease Frame,
+        ImageFrameLease? Frame,
+        AlgorithmImageBuffer? CatalogInput,
         Guid DocumentId,
         ImageSource Source,
         int Channel,
+        int PixelChannel,
         long ClaimSequence,
         long SelectionVersion);
 
@@ -190,16 +192,18 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
             var snapshot = InvokeOnUiThread(() =>
             {
                 var channel = GetSelectedChannel();
-                // Catalog input is canonical BGR; frame/native requests retain source ordering.
-                if ((channel is 0 or 2) && _owner.ViewBitmapSource is BitmapSource source
-                    && (source.Format == PixelFormats.Rgb24 || source.Format == PixelFormats.Rgb48 || source.Format == PixelFormats.Rgba64))
-                    channel = 2 - channel;
+                if (_owner.ViewBitmapSource is BitmapSource source) channel = ToCatalogChannel(source, channel);
                 return (IsEnabled: IsEnabledCore(), Request: CaptureFrameRequest(channel));
             });
 
             request = snapshot.Request;
             return snapshot.IsEnabled;
         }
+
+        // Catalog input is canonical BGR; frame/native requests retain source ordering.
+        private static int ToCatalogChannel(BitmapSource source, int channel)
+            => (channel is 0 or 2) && (source.Format == PixelFormats.Rgb24 || source.Format == PixelFormats.Rgb48
+                || source.Format == PixelFormats.Rgba64) ? 2 - channel : channel;
 
         public bool TryCaptureFrameRequest(out PseudoColorFrameRequest request)
         {
@@ -265,6 +269,33 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
             Guid documentId = _owner.DocumentInstanceId;
             long claimSequence = _owner.AlgorithmClaimSequence;
             long selectionVersion = _owner.Presentation.SelectionVersion;
+            bool IsCaptureCurrent() => IsCurrentRequest(request) && _owner.DocumentInstanceId == documentId
+                && ReferenceEquals(_owner.ViewBitmapSource, source) && GetSelectedChannel() == channel
+                && _owner.AlgorithmClaimSequence == claimSequence && _owner.Presentation.SelectionVersion == selectionVersion;
+
+            // Only the default bitmap layer contract identifies these raw RGB samples with
+            // the catalog snapshot. Pbgra32 is unpremultiplied there and must use raw pixels.
+            if (_owner.CanRestoreChannelFromCatalogSource && channel < 3 && source is BitmapSource bitmap
+                && (bitmap.Format == PixelFormats.Bgr24 || bitmap.Format == PixelFormats.Bgr32
+                    || bitmap.Format == PixelFormats.Bgra32 || bitmap.Format == PixelFormats.Rgb24 || bitmap.Format == PixelFormats.Rgb48))
+            {
+                AlgorithmImageBuffer? input = _previewSession?.TryRetainSourceForDisplay(source, request.ImageRevision);
+                try
+                {
+                    if (!IsCaptureCurrent()) return null;
+                    if (input != null && input.Width == bitmap.PixelWidth && input.Height == bitmap.PixelHeight
+                        && input.Format == ImageAlgorithmInputFactory.FromPixelFormat(bitmap.Format))
+                    {
+                        SelectedLayerRestorePreparation preparation = new(null, input, documentId, source, channel,
+                            ToCatalogChannel(bitmap, channel), claimSequence, selectionVersion);
+                        input = null;
+                        return preparation;
+                    }
+                }
+                finally { input?.Dispose(); }
+            }
+
+            if (!IsCaptureCurrent()) return null;
             ImageFrameLease? frame;
             try { frame = _owner.AcquireImageFrame(); }
             catch (Exception ex)
@@ -272,9 +303,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
                 log.Warn("Unable to acquire the selected channel before disabling pseudo color.", ex);
                 frame = null;
             }
-            if (!IsCurrentRequest(request) || _owner.DocumentInstanceId != documentId
-                || !ReferenceEquals(_owner.ViewBitmapSource, source) || GetSelectedChannel() != channel
-                || _owner.AlgorithmClaimSequence != claimSequence || _owner.Presentation.SelectionVersion != selectionVersion)
+            if (!IsCaptureCurrent())
             {
                 frame?.Dispose();
                 return null;
@@ -285,22 +314,34 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
                 RestoreSelectedLayer(request);
                 return null;
             }
-            return new(frame, documentId, source, channel, claimSequence, selectionVersion);
+            return new(frame, null, documentId, source, channel, channel, claimSequence, selectionVersion);
+        }
+
+        private static WriteableBitmap PrepareSelectedLayerChannel(SelectedLayerRestorePreparation preparation)
+        {
+            if (preparation.CatalogInput is not { } input)
+                return ImageChannelPresenter.PrepareChannel(preparation.Frame!.Image, preparation.PixelChannel);
+
+            using AlgorithmImageMatLease borrowed = AlgorithmImageInterop.BorrowReadOnly(input);
+            HImage source = new()
+            {
+                rows = input.Height, cols = input.Width, stride = input.Stride,
+                channels = input.Format.Channels(), depth = input.Format.BitsPerChannel(),
+                pData = borrowed.Mat.Data, isDispose = true,
+            };
+            return ImageChannelPresenter.PrepareChannel(source, preparation.PixelChannel);
         }
 
         private async Task RestoreSelectedLayerAsync(PseudoColorPreviewRequest request)
         {
             SelectedLayerRestorePreparation? preparation = await _owner.Dispatcher.InvokeAsync(() => CaptureSelectedLayerRestore(request));
             if (preparation == null) return;
-            using ImageFrameLease frame = preparation.Frame;
             WriteableBitmap? prepared = null;
-            try
+            using (preparation.Frame)
+            using (preparation.CatalogInput)
             {
-                prepared = await Task.Run(() => ImageChannelPresenter.PrepareChannel(frame.Image, preparation.Channel));
-            }
-            catch (Exception ex)
-            {
-                log.Warn("Unable to prepare the selected channel before disabling pseudo color.", ex);
+                try { prepared = await Task.Run(() => PrepareSelectedLayerChannel(preparation)); }
+                catch (Exception ex) { log.Warn("Unable to prepare the selected channel before disabling pseudo color.", ex); }
             }
             await _owner.Dispatcher.InvokeAsync(() =>
             {

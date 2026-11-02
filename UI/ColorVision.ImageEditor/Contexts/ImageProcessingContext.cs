@@ -88,6 +88,8 @@ namespace ColorVision.ImageEditor
             return _binding.AcquireImageFrame();
         }
 
+        internal bool CanRestoreChannelFromCatalogSource => _binding.CanRestoreChannelFromCatalogSource?.Invoke() == true;
+
         internal (ImageSource? Source, long Revision)? CaptureSourceState()
             => _binding.CaptureSourceState?.Invoke();
 
@@ -242,6 +244,8 @@ namespace ColorVision.ImageEditor
         public required Func<long> GetImageRevision { get; init; }
 
         public required Func<ImageFrameLease?> AcquireImageFrame { get; init; }
+
+        internal Func<bool>? CanRestoreChannelFromCatalogSource { get; init; }
 
         public Func<(ImageSource? Source, long Revision)>? CaptureSourceState { get; init; }
 

@@ -217,6 +217,7 @@ namespace ColorVision.ImageEditor
                     IsDisposed = () => Volatile.Read(ref _disposed) != 0,
                     GetImageRevision = () => _document.Revision,
                     AcquireImageFrame = AcquireImageFrame,
+                    CanRestoreChannelFromCatalogSource = () => _layerController is BitmapImageLayerController,
                     CaptureSourceState = _document.CaptureSourceState,
                     IsCurrentImageRevision = IsCurrentImageRevision,
                     NotifySourcePixelsChanged = NotifySourcePixelsChanged,
