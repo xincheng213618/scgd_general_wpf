@@ -1109,7 +1109,11 @@ namespace ColorVision.ImageEditor
             }
 
             SelectedLayer = layer;
-            _layerController.SelectLayer(layer);
+            if (_layerController is BitmapImageLayerController)
+            {
+                if (_channels.SelectChannel(layer.SourceChannelIndex ?? -1, preferStream: true) != ChannelSelectionResult.Ordinary) return;
+            }
+            else _layerController.SelectLayer(layer);
             EditorContext.ProcessingContext.DisplayEffects.RefreshForSelectedLayer();
         }
 

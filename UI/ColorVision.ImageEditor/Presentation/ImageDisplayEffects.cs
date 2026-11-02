@@ -33,6 +33,8 @@ namespace ColorVision.ImageEditor.Presentation
 
         internal void RefreshForSelectedLayer() => _pseudoColorController.OnSelectedLayerChanged();
 
+        internal void RetirePreviewForStreamSelection() => _pseudoColorController.RetirePreviewForStreamSelection();
+
         internal void Invalidate() => _pseudoColorController.Invalidate();
 
         internal void ResetForSourceChange() => _pseudoColorController.Reset();

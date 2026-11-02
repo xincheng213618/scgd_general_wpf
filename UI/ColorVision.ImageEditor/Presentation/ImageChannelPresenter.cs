@@ -10,6 +10,14 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Presentation;
 
+internal enum ChannelSelectionResult
+{
+    Superseded,
+    Ordinary,
+    StreamAccepted,
+    StreamRejected,
+}
+
 /// <summary>Produces channel previews without owning the document or the display surface.</summary>
 internal sealed class ImageChannelPresenter(ImageProcessingContext context) : IDisposable
 {
@@ -50,10 +58,10 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
         }
     }
 
-    public void SelectChannel(int channel)
+    public ChannelSelectionResult SelectChannel(int channel, bool preferStream = false)
     {
         context.Dispatcher.VerifyAccess();
-        if (_disposed || context.IsDisposed || context.ViewBitmapSource == null) return;
+        if (_disposed || context.IsDisposed || context.ViewBitmapSource == null) return ChannelSelectionResult.Superseded;
         CancellationTokenSource selection = BeginSelection();
         ImageFrameLease? lease = null;
         bool handedOff = false;
@@ -74,19 +82,40 @@ internal sealed class ImageChannelPresenter(ImageProcessingContext context) : ID
 
             // Cancel publishes the canonical source synchronously. Its subscribers may
             // already have selected another display, source, channel, or algorithm owner.
-            if (!CanContinue()) return;
+            if (!CanContinue()) return ChannelSelectionResult.Superseded;
             if (channel == -1)
             {
                 context.Presentation.RestoreSource();
-                return;
+                expectedSelectionVersion++;
+                return CanContinue() ? ChannelSelectionResult.Ordinary : ChannelSelectionResult.Superseded;
+            }
+
+            ChannelSelectionResult result = ChannelSelectionResult.Ordinary;
+            ImagePresentationRequest? request = null;
+            if (preferStream && channel is >= 0 and < 3 && channel == context.GetSelectedLayerSourceChannelIndex()
+                && !context.DisplayEffects.PseudoColor.IsEnabled && context.StreamPresentation.IsActive
+                && source is BitmapSource bitmap && (bitmap.Format == PixelFormats.Bgr24 || bitmap.Format == PixelFormats.Bgr32
+                    || bitmap.Format == PixelFormats.Bgra32 || bitmap.Format == PixelFormats.Pbgra32 || bitmap.Format == PixelFormats.Rgb24
+                    || bitmap.Format == PixelFormats.Rgb48 || bitmap.Format == PixelFormats.Rgba64))
+            {
+                context.DisplayEffects.RetirePreviewForStreamSelection();
+                if (!CanContinue()) return ChannelSelectionResult.Superseded;
+                request = context.Presentation.BeginRequest();
+                expectedSelectionVersion++;
+                bool accepted = context.StreamPresentation.TryRefreshCurrent(CanContinue);
+                if (!CanContinue()) return ChannelSelectionResult.Superseded;
+                if (accepted) return ChannelSelectionResult.StreamAccepted;
+                // The stream predicate already declined this selection. Ordinary fallback
+                // must not invoke the same effect refresh and predicate a second time.
+                result = ChannelSelectionResult.StreamRejected;
             }
 
             lease = context.AcquireImageFrame();
-            if (lease == null || !CanContinue()) return;
-            ImagePresentationRequest request = context.Presentation.BeginRequest();
-            _ = RenderAsync(lease, request, channel, selection);
+            if (lease == null || !CanContinue()) return ChannelSelectionResult.Superseded;
+            _ = RenderAsync(lease, request ?? context.Presentation.BeginRequest(), channel, selection);
             lease = null;
             handedOff = true;
+            return result;
         }
         finally
         {

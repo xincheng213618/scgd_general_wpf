@@ -48,10 +48,14 @@ public sealed class ImageStreamPresentation : IDisposable
     internal event Action<Guid, WriteableBitmap>? FramePresented;
 
     public void Submit(WriteableBitmap source, Guid sourceId, Func<bool>? canPublish = null)
+        => SubmitCore(source, sourceId, canPublish, acceptanceGuard: null);
+
+    private bool SubmitCore(WriteableBitmap source, Guid sourceId, Func<bool>? canPublish, Func<bool>? acceptanceGuard)
     {
         ArgumentNullException.ThrowIfNull(source);
         _context.Dispatcher.VerifyAccess();
-        if (_disposed || _context.IsDisposed || canPublish?.Invoke() == false) return;
+        if (_disposed || _context.IsDisposed || canPublish?.Invoke() == false) return false;
+        if (acceptanceGuard?.Invoke() == false) return false;
         if (_sourceId != sourceId || _expectedRevision != _context.ImageRevision)
         {
             Reset();
@@ -71,21 +75,24 @@ public sealed class ImageStreamPresentation : IDisposable
             ++_epoch;
             _pending = null;
             Publish(frozen, null, ++_sequence);
-            return;
+            return true;
         }
 
         // Only queued/processing frames retain snapshots. Replacing the pending work releases
         // its managed reference, and native buffers are allocated only when processing starts.
         _pending = new FrameWork(frozen, pseudoColorEnabled ? request : null, channel, _epoch, ++_sequence);
-        if (_running) return;
+        if (_running) return true;
         _running = true;
         _completion = RunAsync(++_workerId);
+        return true;
     }
 
-    public void RefreshCurrent()
+    public void RefreshCurrent() => TryRefreshCurrent(acceptanceGuard: null);
+
+    internal bool TryRefreshCurrent(Func<bool>? acceptanceGuard)
     {
         _context.Dispatcher.VerifyAccess();
-        if (IsActive && _latestSource != null) Submit(_latestSource, _sourceId, _canPublish);
+        return IsActive && _latestSource != null && SubmitCore(_latestSource, _sourceId, _canPublish, acceptanceGuard);
     }
 
     public void Reset()

@@ -184,27 +184,51 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData("red", "display")]
-    [InlineData("composite", "display")]
-    [InlineData("red", "algorithm")]
-    public async Task SelectingALayerPreservesASuccessorSelectedDuringPreviewCancellation(string selectedLayer, string takeover)
+    [InlineData("red", "display", false)]
+    [InlineData("composite", "display", false)]
+    [InlineData("red", "algorithm", false)]
+    [InlineData("red", "display", true)]
+    public async Task SelectingALayerPreservesASuccessorSelectedDuringPreviewCancellation(string selectedLayer, string takeover, bool activeStream)
     {
         WriteOwnerIdentity();
-        Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(defaultSourceEntry: activeStream));
         ImageAlgorithmPreviewSession? preview = null;
         ImageAlgorithmPreviewSession? replacementPreview = null;
         AlgorithmInvocationClaim? replacementClaim = null;
         WriteableBitmap? replacement = null;
         Exception? selectionFailure = null;
         int callbacks = 0;
+        int streamPresentations = 0, presentationsBeforeSelection = 0;
+        long? expectedRevision = null;
         bool replacementWasPublished = false;
+        void OnPresented(Guid _, WriteableBitmap source) => streamPresentations++;
         try
         {
             await fixture.WaitForOwnWorkAsync();
+            if (activeStream)
+            {
+                WpfTestHost.Invoke(() =>
+                {
+                    fixture.Context.StreamPresentation.FramePresented += OnPresented;
+                    fixture.Context.StreamPresentation.Submit(fixture.Source, Guid.NewGuid());
+                });
+                await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            }
             await fixture.SelectLayerAsync("green");
+            if (activeStream)
+            {
+                await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+                await fixture.WaitForOwnWorkAsync();
+            }
             WpfTestHost.Invoke(() =>
             {
                 Assert.False(fixture.State.IsEnabled);
+                if (activeStream)
+                {
+                    Assert.True(fixture.Context.StreamPresentation.IsActive);
+                    expectedRevision = fixture.Context.ImageRevision;
+                    presentationsBeforeSelection = streamPresentations;
+                }
                 preview = ImageAlgorithmPreviewSession.Start(fixture.Context);
                 Assert.True(preview.OwnsHostPreview);
                 Assert.Same(preview.PreviewBitmap, fixture.View.ImageShow.Source);
@@ -231,15 +255,18 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                     fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == selectedLayer);
                 });
             });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
             await fixture.WaitForOwnWorkAsync();
             WpfTestHost.Invoke(() =>
             {
-                output.WriteLine(JsonSerializer.Serialize(new { selectedLayer, takeover, callbacks, replacementClaim,
+                output.WriteLine(JsonSerializer.Serialize(new { selectedLayer, takeover, activeStream, callbacks, replacementClaim,
+                    expectedRevision, streamPresentations, presentationsBeforeSelection,
                     replacementOwnerInstalled = replacementPreview?.OwnsHostPreview, replacementWasPublished,
                     selectionFailure = selectionFailure?.ToString(), final = fixture.Snapshot() }));
                 Assert.Equal(1, callbacks);
                 Assert.Null(selectionFailure);
-                fixture.AssertDocumentUnchanged();
+                fixture.AssertDocumentUnchanged(expectedRevision);
+                if (activeStream) Assert.Equal(presentationsBeforeSelection, streamPresentations);
                 Assert.False(fixture.State.IsEnabled);
                 Assert.Equal(selectedLayer, fixture.View.SelectedLayer!.Id);
                 if (takeover == "algorithm")
@@ -263,9 +290,235 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         }
         finally
         {
-            WpfTestHost.Invoke(() => { fixture.SourceChanged = null; replacementPreview?.Dispose(); preview?.Dispose(); });
+            WpfTestHost.Invoke(() =>
+            {
+                fixture.SourceChanged = null;
+                fixture.Context.StreamPresentation.FramePresented -= OnPresented;
+                replacementPreview?.Dispose();
+                preview?.Dispose();
+            });
             await fixture.DisposeAsync();
         }
+    }
+
+    [Theory]
+    [InlineData("accepted")]
+    [InlineData("rejected")]
+    [InlineData("direct")]
+    public async Task ActiveStreamChannelSelectionUsesItsOwnerAndPreservesOrdinaryFallback(string route)
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(defaultSourceEntry: true));
+        bool producerAllowsPublication = true, cachedAfterSelection = false;
+        int predicateCalls = 0, predicateCallsDuringSelection = 0, presentations = 0;
+        long revision = 0;
+        void OnPresented(Guid _, WriteableBitmap source) => presentations++;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.False(fixture.State.IsEnabled);
+                Assert.Equal("composite", fixture.View.SelectedLayer!.Id);
+                fixture.Context.StreamPresentation.FramePresented += OnPresented;
+                fixture.Context.StreamPresentation.Submit(fixture.Source, Guid.NewGuid(), () =>
+                {
+                    predicateCalls++;
+                    return producerAllowsPublication;
+                });
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+                Assert.False(fixture.HasCachedSourceFrame);
+                revision = fixture.Context.ImageRevision;
+                producerAllowsPublication = route != "rejected";
+                int callsBeforeSelection = predicateCalls;
+                if (route == "direct") fixture.View.ExtractChannel(2);
+                else fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == "red");
+                cachedAfterSelection = fixture.HasCachedSourceFrame;
+                predicateCallsDuringSelection = predicateCalls - callsBeforeSelection;
+            });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                DisplaySnapshot display = fixture.Snapshot();
+                output.WriteLine(JsonSerializer.Serialize(new { route, revision, cachedAfterSelection,
+                    predicateCallsDuringSelection, presentations, display }));
+                fixture.AssertDocumentUnchanged(revision + (route == "accepted" ? 1 : 0));
+                Assert.False(fixture.State.IsEnabled);
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+                Assert.Equal(route == "direct" ? "composite" : "red", display.SelectedLayer);
+                Assert.Equal(display.SelectedLayer, display.ComboLayer);
+                Assert.Equal(PixelFormats.Gray8.ToString(), display.Format);
+                Assert.Equal(new[] { 31, 61, 91, 121 }, display.Pixels);
+                Assert.True(Assert.IsAssignableFrom<BitmapSource>(fixture.View.ImageShow.Source).IsFrozen);
+                Assert.Same(fixture.View.ImageShow.Source, fixture.Context.FunctionImage);
+                Assert.Equal(route == "accepted" ? 2 : 1, presentations);
+                Assert.Equal(route == "direct" ? 0 : 1, predicateCallsDuringSelection);
+                Assert.Equal(route != "accepted", cachedAfterSelection);
+                Assert.Empty(fixture.Provider.Runs);
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.FramePresented -= OnPresented);
+            await fixture.DisposeAsync();
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task StreamProducerPredicateCannotOverwriteANewerDisplayOrStartAnOrdinaryFallback(bool allowPublication)
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(defaultSourceEntry: true));
+        WriteableBitmap? replacement = null;
+        bool armed = false, cachedAfterSelection = false;
+        int takeovers = 0;
+        long revision = 0;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                replacement = new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null);
+                replacement.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 201, 202, 203, 204 }, 2, 0);
+                replacement.Freeze();
+                fixture.Context.StreamPresentation.Submit(fixture.Source, Guid.NewGuid(), () =>
+                {
+                    if (!armed) return true;
+                    armed = false;
+                    takeovers++;
+                    fixture.Context.Presentation.Publish(replacement, replacement);
+                    return allowPublication;
+                });
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+                Assert.False(fixture.HasCachedSourceFrame);
+                revision = fixture.Context.ImageRevision;
+                armed = true;
+                fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == "red");
+                cachedAfterSelection = fixture.HasCachedSourceFrame;
+            });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                output.WriteLine(JsonSerializer.Serialize(new { allowPublication, takeovers, revision,
+                    cachedAfterSelection, display = fixture.Snapshot() }));
+                Assert.Equal(1, takeovers);
+                Assert.Same(replacement, fixture.View.ImageShow.Source);
+                Assert.Same(replacement, fixture.Context.FunctionImage);
+                fixture.AssertDocumentUnchanged(revision);
+                Assert.False(cachedAfterSelection);
+                Assert.Equal("red", fixture.View.SelectedLayer!.Id);
+                Assert.False(fixture.State.IsEnabled);
+                Assert.Empty(fixture.Provider.Runs);
+            });
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task ActiveStreamDoesNotBypassACustomLayerController()
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(defaultSourceEntry: true));
+        WriteableBitmap? derived = null;
+        int selections = 0;
+        Guid document = Guid.Empty;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                fixture.Context.StreamPresentation.Submit(fixture.Source, Guid.NewGuid());
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+                document = fixture.Context.DocumentInstanceId;
+                derived = new WriteableBitmap(2, 2, 96, 96, PixelFormats.Gray8, null);
+                derived.WritePixels(new Int32Rect(0, 0, 2, 2), new byte[] { 201, 202, 203, 204 }, 2, 0);
+                derived.Freeze();
+                CallbackLayerController controller = new(layer =>
+                {
+                    Assert.Equal("derived", layer.Id);
+                    selections++;
+                    fixture.View.SetDisplayLayerSource(derived);
+                });
+                fixture.View.SetLayerController(controller);
+                fixture.View.ComboBoxLayers.SelectedItem = controller.Layers[1];
+            });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                output.WriteLine(JsonSerializer.Serialize(new { selections, display = fixture.Snapshot() }));
+                Assert.Equal(1, selections);
+                Assert.Same(derived, fixture.Context.ViewBitmapSource);
+                Assert.Same(derived, fixture.View.ImageShow.Source);
+                Assert.Null(fixture.Context.FunctionImage);
+                Assert.Equal(document, fixture.Context.DocumentInstanceId);
+                Assert.False(fixture.Context.StreamPresentation.IsActive);
+                Assert.Equal("derived", fixture.View.SelectedLayer!.Id);
+                Assert.Equal(new[] { 201, 202, 203, 204 }, fixture.Snapshot().Pixels);
+            });
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task StreamChannelSelectionReleasesAPseudoColorSessionWhoseOffRequestWasInvalidated()
+    {
+        WriteOwnerIdentity();
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture());
+        ImageAlgorithmPreviewSession? oldSession = null;
+        AlgorithmImageBuffer? oldSource = null;
+        bool sessionClearedOnSelection = false, sourceDisposedOnSelection = false;
+        long revision = 0;
+        try
+        {
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() => fixture.Context.SetImageSource(fixture.Source));
+            await fixture.WaitForOwnWorkAsync();
+            await fixture.EnablePseudoColorAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                oldSession = Assert.IsType<ImageAlgorithmPreviewSession>(fixture.PseudoColorSession);
+                oldSource = Assert.IsType<AlgorithmImageBuffer>(typeof(ImageAlgorithmPreviewSession)
+                    .GetField("_source", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(oldSession));
+                fixture.State.IsEnabled = false;
+                // The queued OFF restore cannot run before this same-turn source commit invalidates it.
+                fixture.Context.StreamPresentation.Submit(fixture.Source, Guid.NewGuid());
+            });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(oldSession, fixture.PseudoColorSession);
+                Assert.False(oldSession!.OwnsHostPreview);
+                Assert.False(oldSource!.IsDisposed);
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+                revision = fixture.Context.ImageRevision;
+                fixture.View.ComboBoxLayers.SelectedItem = fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().Single(layer => layer.Id == "red");
+                sessionClearedOnSelection = fixture.PseudoColorSession == null;
+                sourceDisposedOnSelection = oldSource.IsDisposed;
+            });
+            await WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.Completion).WaitAsync(Watchdog);
+            await fixture.WaitForOwnWorkAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                output.WriteLine(JsonSerializer.Serialize(new { revision, sessionClearedOnSelection,
+                    sourceDisposedOnSelection, display = fixture.Snapshot() }));
+                Assert.True(sessionClearedOnSelection);
+                Assert.True(sourceDisposedOnSelection);
+                Assert.Null(fixture.PseudoColorSession);
+                Assert.True(oldSource!.IsDisposed);
+                fixture.AssertDocumentUnchanged(revision + 1);
+                fixture.AssertSelectedDisplay("red");
+                Assert.False(fixture.State.IsEnabled);
+                Assert.False(fixture.Context.HasActiveAlgorithmPreview);
+                Assert.True(fixture.Context.StreamPresentation.IsActive);
+            });
+        }
+        finally { await fixture.DisposeAsync(); }
     }
 
     [Fact]
@@ -730,8 +983,11 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.NonPublic;
         private static readonly IDictionary Executors = (IDictionary)typeof(TaskConflator).GetField("_executors", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
         private readonly string _renderKey;
+        private readonly object _pseudoColorController;
         private readonly object _channels;
         private readonly object _channelSync;
+        private readonly object _frameStore;
+        private readonly object _frameStoreSync;
         private readonly DependencyPropertyDescriptor _sourceProperty;
         private readonly byte[] _sourcePixels;
         private readonly long _revision;
@@ -768,10 +1024,12 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             else View.SetImageSource(Source, enableEditorImageServices: false, configureDefaultLayerController: true);
             _revision = Context.ImageRevision;
             _document = Context.DocumentInstanceId;
-            object controller = typeof(ColorVision.ImageEditor.Presentation.ImageDisplayEffects).GetField("_pseudoColorController", Instance)!.GetValue(Context.DisplayEffects)!;
-            _renderKey = (string)controller.GetType().GetField("_renderTaskKey", Instance)!.GetValue(controller)!;
+            _pseudoColorController = typeof(ColorVision.ImageEditor.Presentation.ImageDisplayEffects).GetField("_pseudoColorController", Instance)!.GetValue(Context.DisplayEffects)!;
+            _renderKey = (string)_pseudoColorController.GetType().GetField("_renderTaskKey", Instance)!.GetValue(_pseudoColorController)!;
             _channels = typeof(ImageView).GetField("_channels", Instance)!.GetValue(View)!;
             _channelSync = _channels.GetType().GetField("_selectionSync", Instance)!.GetValue(_channels)!;
+            _frameStore = View.Document.GetType().GetField("_frames", Instance)!.GetValue(View.Document)!;
+            _frameStoreSync = _frameStore.GetType().GetField("_sync", Instance)!.GetValue(_frameStore)!;
             _sourceProperty = DependencyPropertyDescriptor.FromProperty(Image.SourceProperty, typeof(DrawCanvas))!;
             _sourceProperty.AddValueChanged(View.ImageShow, OnSourceChanged);
             View.AlgorithmPreviewPublicationHook = _ => _publications++;
@@ -784,6 +1042,12 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         public ControlledPseudoProvider Provider { get; }
         public PseudoColorState State => Context.DisplayEffects.PseudoColor;
         public Action? SourceChanged { get; set; }
+        public ImageAlgorithmPreviewSession? PseudoColorSession
+            => (ImageAlgorithmPreviewSession?)_pseudoColorController.GetType().GetField("_previewSession", Instance)!.GetValue(_pseudoColorController);
+        public bool HasCachedSourceFrame
+        {
+            get { lock (_frameStoreSync) return _frameStore.GetType().GetField("_current", Instance)!.GetValue(_frameStore) != null; }
+        }
 
         private void OnSourceChanged(object? sender, EventArgs e) => SourceChanged?.Invoke();
 
@@ -847,10 +1111,10 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             => new(State.IsAutoSetRange, State.DataMin, State.DataMax, State.SliderMinimum, State.SliderMaximum,
                 State.SliderValueStart, State.SliderValueEnd, Snapshot());
 
-        public void AssertDocumentUnchanged()
+        public void AssertDocumentUnchanged(long? expectedRevision = null)
         {
             Assert.Same(Source, Context.ViewBitmapSource);
-            Assert.Equal(_revision, Context.ImageRevision);
+            Assert.Equal(expectedRevision ?? _revision, Context.ImageRevision);
             Assert.Equal(_document, Context.DocumentInstanceId);
             Assert.Equal(_sourcePixels, ReadPixels(Source));
         }
@@ -900,6 +1164,17 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
             }
             return bytes;
         }
+    }
+
+    private sealed class CallbackLayerController(Action<ImageLayerDescriptor> select) : IImageLayerController
+    {
+        public IReadOnlyList<ImageLayerDescriptor> Layers { get; } =
+        [
+            new() { Id = "base", DisplayName = "Base", Kind = ImageLayerKind.Composite },
+            new() { Id = "derived", DisplayName = "Derived", Kind = ImageLayerKind.Derived, SourceChannelIndex = 2 },
+        ];
+        public ImageLayerDescriptor? DefaultLayer => Layers[0];
+        public void SelectLayer(ImageLayerDescriptor layer) => select(layer);
     }
 
     private sealed class ImmediateScheduler : IAlgorithmExecutionScheduler

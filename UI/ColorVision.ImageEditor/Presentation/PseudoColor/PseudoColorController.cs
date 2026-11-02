@@ -102,8 +102,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
         {
             if (_owner.StreamPresentation.IsActive)
             {
-                Invalidate();
-                DisposePreviewSession();
+                RetirePreviewForStreamSelection();
                 _owner.StreamPresentation.RefreshCurrent();
                 return;
             }
@@ -112,6 +111,12 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
             {
                 await RenderAsync(request);
             }, throttleDelayMs);
+        }
+
+        internal void RetirePreviewForStreamSelection()
+        {
+            Invalidate();
+            DisposePreviewSession();
         }
 
         public void Invalidate()
