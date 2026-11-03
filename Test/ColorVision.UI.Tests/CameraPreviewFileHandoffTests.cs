@@ -274,6 +274,44 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
         });
     }
 
+    [Theory]
+    [InlineData(1, 8, false)]
+    [InlineData(1, 16, true)]
+    [InlineData(3, 8, true)]
+    [InlineData(3, 16, true)]
+    public async Task LargeFrameDisplayCopyDrawsTheSamePixelsWithoutReplacingTheSource(int channels, int depth, bool expectsProxy)
+    {
+        PixelFormat format = RealtimeFramePresenter.GetPixelFormat(channels, depth);
+        int stride = RealtimeFramePresenter.GetDefaultStride(3, format) + 5;
+        byte[] samples = Enumerable.Range(0, stride * 2).Select(i => (byte)(i * 11 + 1)).ToArray();
+        WpfTestHost.Invoke(() =>
+        {
+            pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
+            Assert.True(view.Realtime.SubmitFrame(samples, 3, 2, format, stride, samples.Length, RealtimeFramePresenter.TransformFlipY));
+        });
+        await view.Realtime.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+        WpfTestHost.Invoke(() =>
+        {
+            // Pixel consumers read Source, so the copy must never change its format or bit depth.
+            var source = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+            Assert.Same(source, view.Presentation.DisplaySource);
+            Assert.Equal(format, source.Format);
+            if (!expectsProxy)
+            {
+                Assert.Null(view.ImageShow.ActiveRenderProxy);
+                return;
+            }
+            BitmapSource proxy = Assert.IsAssignableFrom<BitmapSource>(view.ImageShow.ActiveRenderProxy);
+            Assert.True(proxy.IsFrozen);
+            Assert.Equal(Pixels(new FormatConvertedBitmap(source, PixelFormats.Bgr32, null, 0)), Pixels(proxy));
+
+            // Another publication retires the copy even before the next render pass.
+            WriteableBitmap other = new(3, 2, 96, 96, PixelFormats.Gray8, null);
+            view.Presentation.Publish(other, null);
+            Assert.Null(view.ImageShow.ActiveRenderProxy);
+        });
+    }
+
     [Fact]
     public async Task BusyUiKeepsOnlyLatestPendingVideoFrameAndDoesNotMutatePresentedSnapshots()
     {

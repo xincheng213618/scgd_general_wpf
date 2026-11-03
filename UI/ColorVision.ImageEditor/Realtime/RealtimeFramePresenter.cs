@@ -1,5 +1,6 @@
 #pragma warning disable CA1510,CS8625
 using ColorVision.Core;
+using ColorVision.ImageEditor.Presentation;
 using log4net;
 using System;
 using System.Runtime.InteropServices;
@@ -183,12 +184,16 @@ namespace ColorVision.ImageEditor.Realtime
                 {
                     // Allocation, copying, flipping and freezing all belong to this worker.
                     // StreamPresentation can consume the frozen bitmap without cloning it on UI.
-                    WriteableBitmap? bitmap = await Task.Run(() => CreateFrameBitmap(pixels, frame)).ConfigureAwait(false);
+                    (WriteableBitmap? bitmap, BitmapSource? renderProxy) = await Task.Run(() =>
+                    {
+                        WriteableBitmap? created = CreateFrameBitmap(pixels, frame);
+                        return (created, created != null && _context.StreamPresentation.SourceIsDisplayed ? ImageRenderProxy.TryCreate(created) : (BitmapSource?)null);
+                    }).ConfigureAwait(false);
                     if (bitmap == null || _context.Dispatcher.HasShutdownStarted) continue;
                     await _context.Dispatcher.InvokeAsync(() =>
                     {
                         if (_disposed || _context.IsDisposed || Options.IsFrozen || sourceId != _sourceId) return;
-                        _context.StreamPresentation.Submit(bitmap, sourceId, () => !Options.IsFrozen && !_disposed && sourceId == _sourceId);
+                        _context.StreamPresentation.Submit(bitmap, renderProxy, sourceId, () => !Options.IsFrozen && !_disposed && sourceId == _sourceId);
                     }, DispatcherPriority.Background).Task.ConfigureAwait(false);
                 }
                 catch (Exception ex)

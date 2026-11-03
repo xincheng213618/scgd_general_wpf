@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Presentation;
 
@@ -139,6 +140,13 @@ public sealed class ImagePresentation
     }
 
     public void RestoreSource() => Publish(_source(), null);
+
+    internal void PublishFrame(ImageSource? displaySource, ImageSource? functionImage, BitmapSource? renderProxy)
+    {
+        _canvas.Dispatcher.VerifyAccess();
+        _canvas.SetRenderProxy(displaySource, renderProxy);
+        Publish(displaySource, functionImage);
+    }
 
     internal IDisposable DeferSourceRestoreForFrame(ImageSource source, long expectedRevision)
     {

@@ -1,5 +1,6 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Documents;
 using log4net;
 using System;
 using System.Threading.Tasks;
@@ -25,12 +26,14 @@ public sealed class ImageStreamPresentation : IDisposable
     private readonly Func<HImage, PseudoColorFrameRequest, HImage> _process;
     private FrameWork? _pending;
     private WriteableBitmap? _latestSource;
+    private BitmapSource? _latestRenderProxy;
     private Func<bool>? _canPublish;
     private Guid _sourceId;
     private long _epoch;
     private long _sequence;
     private long _publishedSequence;
     private long _expectedRevision;
+    private volatile bool _sourceIsDisplayed = true;
     private bool _running;
     private bool _publishing;
     private bool _disposed;
@@ -54,10 +57,16 @@ public sealed class ImageStreamPresentation : IDisposable
     internal Task Completion => _completion;
     internal event Action<Guid, WriteableBitmap>? FramePresented;
 
-    public void Submit(WriteableBitmap source, Guid sourceId, Func<bool>? canPublish = null)
-        => SubmitCore(source, sourceId, canPublish, acceptanceGuard: null);
+    /// <summary>False while pseudo color or a channel replaces the source, so a producer can skip its display copy.</summary>
+    internal bool SourceIsDisplayed => _sourceIsDisplayed;
 
-    private bool SubmitCore(WriteableBitmap source, Guid sourceId, Func<bool>? canPublish, Func<bool>? acceptanceGuard)
+    public void Submit(WriteableBitmap source, Guid sourceId, Func<bool>? canPublish = null)
+        => SubmitCore(source, null, sourceId, canPublish, acceptanceGuard: null);
+
+    internal void Submit(WriteableBitmap source, BitmapSource? renderProxy, Guid sourceId, Func<bool>? canPublish)
+        => SubmitCore(source, renderProxy, sourceId, canPublish, acceptanceGuard: null);
+
+    private bool SubmitCore(WriteableBitmap source, BitmapSource? renderProxy, Guid sourceId, Func<bool>? canPublish, Func<bool>? acceptanceGuard)
     {
         ArgumentNullException.ThrowIfNull(source);
         _context.Dispatcher.VerifyAccess();
@@ -73,6 +82,7 @@ public sealed class ImageStreamPresentation : IDisposable
         WriteableBitmap frozen = source.IsFrozen ? source : source.Clone();
         if (!frozen.IsFrozen) frozen.Freeze();
         _latestSource = frozen;
+        _latestRenderProxy = renderProxy;
         _expectedRevision = _context.ImageRevision;
 
         bool pseudoColorEnabled = _context.DisplayEffects.TryCapturePseudoColorRequest(out PseudoColorFrameRequest request);
@@ -81,9 +91,12 @@ public sealed class ImageStreamPresentation : IDisposable
         {
             ++_epoch;
             _pending = null;
-            Publish(frozen, null, ++_sequence);
+            _sourceIsDisplayed = true;
+            Publish(frozen, null, ++_sequence, renderProxy);
             return true;
         }
+
+        _sourceIsDisplayed = false;
 
         // Only queued/processing frames retain snapshots. Replacing the pending work releases
         // its managed reference, and native buffers are allocated only when processing starts.
@@ -107,7 +120,7 @@ public sealed class ImageStreamPresentation : IDisposable
         bool IsCurrent() => !_disposed && !_context.IsDisposed && IsActive && _epoch == epoch && _sequence == sequence
             && _sourceId == sourceId && ReferenceEquals(_latestSource, source) && acceptanceGuard?.Invoke() != false;
 
-        if (SubmitCore(source, sourceId, _canPublish, IsCurrent)) return StreamRefreshResult.Accepted;
+        if (SubmitCore(source, _latestRenderProxy, sourceId, _canPublish, IsCurrent)) return StreamRefreshResult.Accepted;
         // A rejecting predicate may still have installed a newer stream. Recheck the
         // scope without invoking it again before allowing an ordinary display fallback.
         return IsCurrent() ? StreamRefreshResult.Unavailable : StreamRefreshResult.Superseded;
@@ -119,6 +132,8 @@ public sealed class ImageStreamPresentation : IDisposable
         ++_epoch;
         _pending = null;
         _latestSource = null;
+        _latestRenderProxy = null;
+        _sourceIsDisplayed = true;
         _canPublish = null;
         _sourceId = Guid.Empty;
         IsActive = false;
@@ -147,7 +162,7 @@ public sealed class ImageStreamPresentation : IDisposable
 
                 try
                 {
-                    WriteableBitmap display = await Task.Run(() =>
+                    (WriteableBitmap display, BitmapSource? displayProxy) = await Task.Run(() =>
                     {
                         using HImage source = work.Source.ToHImage();
                         using HImage output = work.Settings is PseudoColorFrameRequest settings
@@ -157,14 +172,14 @@ public sealed class ImageStreamPresentation : IDisposable
                         // not reintroduce a full-frame UI copy after native processing finishes.
                         var bitmap = output.ToWriteableBitmap();
                         bitmap.Freeze();
-                        return bitmap;
+                        return (bitmap, (BitmapSource?)ImageRenderProxy.TryCreate(bitmap));
                     }).ConfigureAwait(false);
                     await _context.Dispatcher.InvokeAsync(() =>
                     {
                         if (!CanPublish(work)) return;
                         // A displayed bitmap can be retained by an algorithm preview or output
                         // capture. Never borrow and mutate another operation's FunctionImage.
-                        Publish(work.Source, display, work.Sequence);
+                        Publish(work.Source, display, work.Sequence, displayProxy);
                     });
                 }
                 catch (Exception ex)
@@ -173,7 +188,7 @@ public sealed class ImageStreamPresentation : IDisposable
                     if (!_context.Dispatcher.HasShutdownStarted)
                         await _context.Dispatcher.InvokeAsync(() =>
                         {
-                            if (CanPublish(work)) Publish(work.Source, null, work.Sequence);
+                            if (CanPublish(work)) Publish(work.Source, null, work.Sequence, null);
                         });
                 }
             }
@@ -203,7 +218,7 @@ public sealed class ImageStreamPresentation : IDisposable
             : !pseudoColorEnabled && _context.GetSelectedLayerSourceChannelIndex() == work.Channel;
     }
 
-    private void Publish(WriteableBitmap source, System.Windows.Media.ImageSource? display, long sequence)
+    private void Publish(WriteableBitmap source, System.Windows.Media.ImageSource? display, long sequence, BitmapSource? renderProxy)
     {
         long previousRevision = _context.ImageRevision;
         long selectionVersion = _context.Presentation.SelectionVersion;
@@ -232,7 +247,9 @@ public sealed class ImageStreamPresentation : IDisposable
             }
             _expectedRevision = _context.ImageRevision;
             _publishedSequence = sequence;
-            _context.Presentation.Publish(display ?? source, display);
+            _context.Presentation.PublishFrame(display ?? source, display, renderProxy);
+            ImageMemoryReclaimer.RecordStreamFrame(ImageMemoryReclaimer.GetPixelBytes(source)
+                + ImageMemoryReclaimer.GetPixelBytes(display) + ImageMemoryReclaimer.GetPixelBytes(renderProxy));
         }
         finally
         {

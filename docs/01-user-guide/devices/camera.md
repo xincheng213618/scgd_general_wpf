@@ -191,7 +191,7 @@ CV 测量显示 R/G/B 三路曝光，视频显示单路曝光；停止预览后�
 
 “停止预览”保留连接，仅“断开”释放连接。服务模式的独立视频可能重新解析并保存 `CameraID`，停止时关闭独立视频相机后才能连接服务拍照。停止失败不会假装恢复画面。
 
-实时帧经 `CameraRealtimeFramePipeline` → `RealtimeFramePresenter` 在后台生成冻结快照，保留完整分辨率、位深和通道，新帧覆盖等待帧；视频启动会清理上一文件的校正/POI 状态，晚到的旧文件读取不能覆盖视频。显示契约见[连续帧显示](../../04-api-reference/ui-components/image-editor-context.md#连续帧显示)；这只更新预览文档，不改写采集缓冲、测量数据或结果文件。对焦清晰度由 `CameraFocusFrameProcessor`、十字参考线由 `VideoCrossGuideProcessor` 独立处理，单次异常记录日志后继续。后台化不保证超大图像达到满帧，仍需实机验证；不能以进程内存立即下降作为缓冲释放完成的判据。
+实时帧经 `CameraRealtimeFramePipeline` → `RealtimeFramePresenter` 在后台生成冻结快照，保留完整分辨率、位深和通道，新帧覆盖等待帧；视频启动会清理上一文件的校正/POI 状态，晚到的旧文件读取不能覆盖视频。显示契约见[连续帧显示](../../04-api-reference/ui-components/image-editor-context.md#连续帧显示)；这只更新预览文档，不改写采集缓冲、测量数据或结果文件。对焦清晰度由 `CameraFocusFrameProcessor`、十字参考线由 `VideoCrossGuideProcessor` 独立处理，单次异常记录日志后继续。UI 线程不承担超大帧的显示格式转换，但后台与渲染线程仍受帧尺寸限制，后台化不保证超大图像达到满帧，叠加层 FPS 统计的是提交帧率而非实际显示帧率，仍需实机验证；不能以进程内存立即下降作为缓冲释放完成的判据。
 
 ## 查询和显示相机结果
 
