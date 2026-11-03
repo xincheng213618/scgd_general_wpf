@@ -66,6 +66,15 @@ public partial class DeviceSpectrum
 
     internal ConfigSpectrum SnapshotLocalConfiguration() => JsonConvert.DeserializeObject<ConfigSpectrum>(JsonConvert.SerializeObject(Config))!;
 
+    internal MsgRecord SetShutterTransmitting(bool transmitting)
+    {
+        lock (SpectrumBackend.Sync)
+        {
+            bool open = SpectrumBackend.OpensLocally ? transmitting != Config.ShutterCfg.OpenForDark : transmitting;
+            return open ? DService.ShutterDoopen() : DService.ShutterDoclose();
+        }
+    }
+
     internal void EnsureOtherSpectrumBackends(bool local)
     {
         foreach (var other in ServiceManager.Current?.DeviceServices.OfType<DeviceSpectrum>() ?? Enumerable.Empty<DeviceSpectrum>())

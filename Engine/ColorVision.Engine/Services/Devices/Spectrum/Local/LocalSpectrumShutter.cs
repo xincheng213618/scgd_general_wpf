@@ -76,20 +76,21 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
         }
     }
 
-    // Open means a transmitting optical path; it does not describe the actuator's electrical power state.
-    public void SetOpen(bool open, ShutterConfig config)
+    // Optical direction is configurable; acknowledgements follow the actuator command.
+    public void SetTransmitting(bool transmitting, ShutterConfig config)
     {
         if (config.UseFilterWheel)
         {
             using var operation = AcquireOperation(config);
-            filterWheel!.SetOpen(open);
+            filterWheel!.SetTransmitting(transmitting);
             return;
         }
+        bool open = transmitting != config.OpenForDark;
         string command = open ? config.OpenCmd : config.CloseCmd;
         if (string.IsNullOrEmpty(command)) throw new InvalidOperationException("请先配置快门开关指令。");
         Connect(config);
-        string expected = open ? "turn on" : "turn off";
-        string opposite = open ? "turn off" : "turn on";
+        string expected = config.GetExpectedResponse(open);
+        string opposite = expected == "turn on" ? "turn off" : "turn on";
         try
         {
             // A delayed acknowledgement from a previous command must not confirm this command.
@@ -112,7 +113,7 @@ internal sealed class LocalSpectrumShutter(Func<ShutterConfig, ILocalSpectrumShu
                 }
                 Thread.Sleep(10);
             } while (elapsed.ElapsedMilliseconds < timeout);
-            throw new TimeoutException($"快门未在 {timeout} ms 内确认{(open ? "打开" : "关闭")}。");
+            throw new TimeoutException($"光闸未在 {timeout} ms 内确认{(transmitting ? "通光" : "遮光")}。");
         }
         catch
         {

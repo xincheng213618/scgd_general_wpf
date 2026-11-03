@@ -60,7 +60,7 @@ related: ["plugins.spectrum","ui.socket-protocol"]
 
 断开响应按 `Disconnect()` 返回值决定 `200` 或 `-2`。Manager 的断开路径即使原生关闭/释放失败也会清空本地连接状态；释放失败还可能隔离原生会话。`Data.IsConnected = false` 不能单独证明驱动释放成功，必须结合 `Code` / `Msg` 和设备检查。
 
-Socket 校零不回退到人工遮光。自动校零参数选择 Shutter 时，Manager 先关闭快门，正常进入暗场后在 `finally` 中尝试重新打开；`ShutterController` 分别识别 `turn off` / `turn on` 确认。选择滤色轮时，Manager 读取当前测量孔位、切到已配置的遮光孔位，暗场结束后在 `finally` 中恢复原孔位；临时切换不会改变当前标定组。所选控制器缺失、遮光切换失败、原光路恢复失败或 native 返回失败都会使指令失败；收到失败响应不能据此认定光路已经恢复。
+Socket 校零不回退到人工遮光，复用 [Spectrum 的 Shutter/滤色轮控制约定](./spectrum.md)。Shutter 模式按 `OpenForDark` 及两条指令配置完成遮光、采暗数据、恢复通光；默认 `a → 采暗数据 → b`，可反向配置。`turn on` / `turn off` 按实际发送的 a/b 校验，不能代替实际光路验收。选择滤色轮时，Manager 读取当前测量孔位、切到已配置的遮光孔位，暗场结束后在 `finally` 中恢复原孔位；临时切换不会改变当前标定组。所选控制器缺失、遮光切换失败、原光路恢复失败或 native 返回失败都会使指令失败；收到失败响应不能据此认定光路已经恢复。
 
 ## 设备锁与合作式取消
 

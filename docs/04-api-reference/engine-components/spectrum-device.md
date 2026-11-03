@@ -3,7 +3,7 @@ knowledge_id: "engine.spectrum-device"
 knowledge_type: "topic"
 status: "current"
 summary: "主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。"
-aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类", "物理光谱仪管理", "PhySpectrumManager", "SpectrumLicenseUpdateService", "光谱仪联网更新许可证", "ND位置记忆", "本地ND标定切换"]
+aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类", "物理光谱仪管理", "PhySpectrumManager", "SpectrumLicenseUpdateService", "光谱仪联网更新许可证", "ND位置记忆", "本地ND标定切换", "光闸", "遮光", "通光", "光谱采集全黑"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/Devices/CfwPort", "Engine/ColorVision.Engine/Services/PhySpectrums", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
 test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs", "Test/Spectrum.Tests/PhySpectrumManagerTests.cs", "Test/Spectrum.Tests/LocalSpectrumTests.cs", "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs", "Test/ColorVision.UI.Tests/SpectrumNdSelectionTests.cs"]
 related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugins.spectrum"]
@@ -51,13 +51,15 @@ ND 采集始终读取实际孔位，加载该孔位对应的波长和幅值文�
 
 本地外部快门沿用 **修改配置 → 快门** 的启用开关、串口、波特率、开关指令与等待时间，不依赖光谱 SDK 的快门接口。固定快门控制器要求 DTR 有效才能返回回执，串口创建时默认启用 DTR，RTS 保持关闭，不增加配置项，已有快门配置直接生效。光谱仪连接打开后，设备卡片和本地窗口均可打开、关闭快门；首次操作按需连接串口，采集和流程共用该连接，关闭光谱仪或释放设备时一并释放串口。关闭本地窗口继续保留连接。手动指令、单次/连续采集和流程执行共用操作门禁，采集中拒绝额外开关操作，不转发光谱仪 MQTT 指令。快门连接配置修改后在下次操作时重连。
 
-快门界面按光路状态标注 **通光（测量）** 和 **遮光（校零）**，配置项对应为“通光指令（测量）”和“遮光指令（校零）”。原 `OpenCmd` / `ShutterDoOpen` 仍表示通光，原 `CloseCmd` / `ShutterDoClose` 仍表示遮光，配置键、保存的指令和服务事件保持兼容；默认依次为 `a` / `turn on` 与 `b` / `turn off`。自动校零顺序为遮光、采集暗数据、恢复通光；手动遮光按钮只切换光路，不执行校零。此处的开关含义沿用程序光路约定，不代表挡片通电或断电；串口回执不能独立验证实际光路，实物是否通光仍需现场核对。
+**光闸的遮光/通光方向按设备配置，不能由 Open/Close 名称或 a/b 字母固定推断。** 设备卡片和本地窗口按钮只显示 **遮光**、**通光**。在 **修改配置 → 快门** 配置打开指令 `OpenCmd` 和关闭指令 `CloseCmd`（默认 `a/b`），并设置 **遮光使用打开指令（本地）**（`OpenForDark`）：选中时遮光使用打开指令、通光使用关闭指令，取消时两者互换。旧配置缺少该项时默认选中，保持已发布本地版本的行为。回执按实际发送的字符匹配：`a → turn on`、`b → turn off`，交换 a/b 后不会继续等待原字段对应的回执；其它自定义指令沿用打开/关闭的既有回执约定。相反回执及超时仍拒绝操作，不能为消除“不匹配”而关闭校验。手动按钮只切换光路，不采集或校零；串口回执不证明实际光路，仍需现场核对。
+
+服务模式保留 `cvwindowsservice` 已长期使用的打开通光、关闭遮光约定及已验收的指令配置，`OpenForDark` 只影响本地后端。设备卡片在服务模式下仍把遮光映射为 `ShutterDoClose`、通光映射为 `ShutterDoOpen`；不能把某台本地设备的 a/b 方向套到服务端，也不自动改写服务端配置。
 
 同一 shutter 配置中的“使用滤色轮校零”（`ShutterCfg.UseFilterWheel`）默认关闭，旧配置继续使用电动 shutter。启用 shutter 并打开此项后，隐藏串口和开关指令，显示独立的滤轮绑定、测量位及校零位；测量位和校零位使用下拉框，按绑定滤轮的孔位名称选择，默认分别显示 `Spectrum` 和 `ND0`。切换绑定滤轮时刷新选项，不自动覆盖原孔位；未匹配的孔位暂留空供重新选择。绑定和两个孔位保存在 `ShutterCfg` 内，孔位仍保存整数索引以兼容已有配置，与 ND 标定分组绑定分别配置。提交拒绝未绑定、负孔位或测量位与校零位相同的配置；运行时还检查绑定设备及唯一孔位映射。
 
-滤色轮方式仅接入本地光谱：复用绑定 `DeviceCfwPort` 的现有通道，必要时先打开已关闭的滤轮，不另开串口。采集前切到测量位，真实暗采集及自适应校零初始化切到校零位，结束后恢复指定测量位；每次定位都等待设置回执，并读取 `Port` 确认到位。定位、校零或恢复失败会终止本次测量；校零失败仍尝试恢复测量位。整个采集或校零期间占用该滤轮，拒绝本程序通过同一设备发送的额外手动开关及切位；结束时只释放占用，不关闭共享滤轮，也不按临时校零位切换光谱标定组。其它进程或服务端相机流程直接控制同一硬件不在此门禁内，共用滤轮的相机取图和光谱校零须按顺序执行。服务光谱模式拒绝该选项，保留停止和关闭入口。
+滤色轮方式仅接入本地光谱：复用绑定 `DeviceCfwPort` 的现有通道，必要时先打开已关闭的滤轮，不另开串口。手动 **通光** 切到测量位，真实暗采集及自适应校零初始化切到校零位，结束后恢复指定测量位；每次定位都等待设置回执，并读取 `Port` 确认到位。滤轮始终按测量位/校零位控制，不使用串口 a/b 方向。定位、校零或恢复失败会终止本次测量；校零失败仍尝试恢复测量位。整个采集或校零期间占用该滤轮，拒绝本程序通过同一设备发送的额外手动开关及切位；结束时只释放占用，不关闭共享滤轮，也不按临时校零位切换光谱标定组。其它进程或服务端相机流程直接控制同一硬件不在此门禁内，共用滤轮的相机取图和光谱校零须按顺序执行。服务光谱模式拒绝该选项，保留停止和关闭入口。
 
-启用快门时，采集先确认打开快门，再执行自动积分；自动校零在确定积分时间后关闭快门、采集暗电流、重新打开快门，再采集光谱。手动校零和自适应校零初始化同样包在关闭与重新打开之间；已初始化的自适应暗校正仅读取暗电流表，不关闭快门。控制沿用 `turn on` / `turn off` 回执，兼容分段与大小写，发送前清除旧回执；等待时间不大于零时沿用 1000 ms。串口快门在等待时间内收到正确回执后，继续等待同样时长供机械动作稳定，再执行暗采集、自动积分或正式测量；回执可能早于实际遮光完成。相反状态、超时或通信异常均报告失败并停止后续采集；关闭或校零失败后仍尝试重新打开，恢复失败提示检查光路，不能把发送成功当成机械状态确认。
+本地单次、连续及流程采集开始时保留手动光闸状态，不主动发送开关指令；自动积分使用当前光路，正常测量前点击 **通光**。不能为了“确保打开”在采集入口补发开关指令，避免覆盖人工选择。自动校零在确定积分时间后按配置遮光、采集暗电流、恢复通光，再采集光谱；默认配置为 `a → 采暗数据 → b`，反向配置为 `b → 采暗数据 → a`。手动校零和自适应校零初始化沿用该遮光与恢复顺序；读取已初始化的自适应暗电流表不切换光路。回执兼容分段与大小写，发送前清除旧回执；等待时间不大于零时沿用 1000 ms。收到正确回执后再等待同样时长供机械动作稳定。相反状态、超时或通信异常均停止后续采集；遮光或校零失败后仍尝试恢复通光，恢复失败提示检查光路。
 
 本地模式的设备卡片和本地窗口提供 **重置**；设备卡片将按钮放在自适应校零设置按钮之后。重置要求连接已打开且没有正在执行的采集或设备操作，清空当前会话中的暗数据并使自适应校零初始化状态失效。成功后关闭设备界面的自动校零和自适应暗校正，下次手动测量可直接对比清除暗扣除后的结果；重新启用自适应暗校正前必须重新初始化。普通校零每次替换暗数据，不累加；暗数据只保留在当前连接内，关闭光谱仪也会清除。重置不关闭连接、不驱动快门、不删除历史结果或标定文件，也不重算既有结果；流程节点的校零选项仍按节点自身设置执行。SDK 将测量信号减去暗数据后截断负值，因此不充分遮光得到的暗数据可能使后续曲线大面积贴零，不能据此判断物理快门当前是否关闭。
 
@@ -138,7 +140,7 @@ ND 已启用且光谱仪或绑定 ND 使用本地后端时，手动设置、读�
 
 `SpectrumButtonOperationTests` 使用实际 WPF 光谱卡片和模拟命令，验证打开、关闭和测量期间原布局保留、当前按钮防止重复触发，以及成功、失败、超时和即时回复后的恢复；同时检查连续结果逐条追加、保存 ID 对齐，以及查询转换失败时列表不变。`EngineSpectrumResultTests` 用隔离 SQLite 验证 ORM 写入、普通/历史字符串 JSON 读取和原始样本保留；不连接现场 MySQL 或光谱硬件。
 
-`LocalSpectrumTests` 使用替身原生接口验证句柄复用、初始化失败清理、SN 不匹配、驱动互斥、校正前置检查、自动积分/校零顺序、参数和后端占用状态，以及结果数组/波长轴；替身串口覆盖普通/EQE 采集的快门顺序、分段回执、旧回执清理、相反状态与超时拒绝、校零失败恢复、快门重连及连接释放。ND 用例保护实际孔位与标定文件一致、自动积分切孔、停止和不收敛、暗孔恢复及标定缺失边界。`LocalSpectrumFlowTests` 验证流程本地执行钩子、失败不发 MQTT、离线开始节点对本地转发和服务节点的不同限制，以及本地节点保存字段。`SpectrumNdSelectionTests` 通过实际注册、模拟滤轮会话和隔离配置库验证“光谱仪+ND”转发、真实读回及成功后文件提交，覆盖本地光谱和本地 ND 两种入口。它们不替代真实 SDK、硬件采集、串口机械动作和现场窗口操作验收。
+`LocalSpectrumTests.CaptureWithoutDarkPreservesManualShutterState` 保护手动遮光/通光状态不被普通采集及自动积分覆盖；`ShutterCaptureBlocksOnlyForDarkAndThenRestoresTransmission` 保护串口默认 `a → 采暗数据 → b` 和滤轮暗位/测量位顺序。维护光闸控制时应保留这两项行为边界。该测试类还覆盖句柄复用、初始化失败清理、SN 不匹配、驱动互斥、校正前置检查、分段及旧回执、相反状态和超时拒绝、失败恢复、重连及释放。ND 用例保护实际孔位与标定文件一致、自动积分切孔、停止和不收敛、暗孔恢复及标定缺失边界。`LocalSpectrumFlowTests` 验证流程本地执行钩子、失败不发 MQTT、离线开始节点对本地转发和服务节点的不同限制，以及本地节点保存字段。`SpectrumNdSelectionTests` 通过实际注册、模拟滤轮会话和隔离配置库验证“光谱仪+ND”转发、真实读回及成功后文件提交，覆盖本地光谱和本地 ND 两种入口。它们不替代真实 SDK、硬件采集、串口机械动作和现场窗口操作验收。
 
 `SpectrumDeviceDiscoveryTests` 注入模拟查询，覆盖全部类型、USB/串口组合、单驱动失败后继续、原生返回码和序列号解析。测试不加载供应商驱动，也不能替代现场真机搜索与连接验收。
 

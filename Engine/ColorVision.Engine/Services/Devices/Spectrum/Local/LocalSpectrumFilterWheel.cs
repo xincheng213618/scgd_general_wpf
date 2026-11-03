@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 
 internal interface ILocalSpectrumFilterWheelOperation : IDisposable
 {
-    void SetOpen(bool open);
+    void SetTransmitting(bool transmitting);
 }
 
 // Borrow the bound device's existing channel; never open a second serial connection or close a shared wheel.
@@ -42,9 +42,9 @@ internal sealed class LocalSpectrumFilterWheel : ILocalSpectrumFilterWheelOperat
         catch { reservation.Dispose(); throw; }
     }
 
-    public void SetOpen(bool open)
+    public void SetTransmitting(bool transmitting)
     {
-        int port = open ? measurementPort : darkPort;
+        int port = transmitting ? measurementPort : darkPort;
         WaitForReply(device.DService.SetPort(port), $"设置滤色轮位置 {port}");
         MsgRecord read = device.DService.GetPort();
         WaitForReply(read, "读取滤色轮位置");

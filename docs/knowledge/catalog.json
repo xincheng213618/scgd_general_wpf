@@ -6061,7 +6061,11 @@
         "SpectrumLicenseUpdateService",
         "光谱仪联网更新许可证",
         "ND位置记忆",
-        "本地ND标定切换"
+        "本地ND标定切换",
+        "光闸",
+        "遮光",
+        "通光",
+        "光谱采集全黑"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Spectrum",

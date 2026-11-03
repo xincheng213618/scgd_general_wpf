@@ -127,6 +127,84 @@ public sealed class SpectrumCalibrationStateTests
         Assert.Equal(-1, parameter.FilterWheelDarkPosition);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ShutterAutoDark_UsesConfiguredDirection(bool openForDark)
+    {
+        using var controller = new FakeShutterController(openForDark: openForDark);
+        var manager = new SpectrometerManager { ShutterController = controller };
+        string block = openForDark ? "a" : "b", light = openForDark ? "b" : "a";
+
+        (int result, string error) = await manager.ExecuteDarkOperationWithShutterCoreAsync(true, CancellationToken.None, () =>
+        {
+            Assert.Equal(new[] { block }, controller.Commands);
+            controller.Commands.Add("dark");
+            return 1;
+        });
+
+        Assert.Equal(1, result);
+        Assert.Empty(error);
+        Assert.Equal(new[] { block, "dark", light }, controller.Commands);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ShutterAutoDark_BlockFailureSkipsDarkAndAttemptsLightRecovery(bool restoreConfirmed)
+    {
+        using var controller = new FakeShutterController(blockConfirmed: false, restoreConfirmed: restoreConfirmed);
+        var manager = new SpectrometerManager { ShutterController = controller };
+        bool captured = false;
+
+        (int result, string error) = await manager.ExecuteDarkOperationWithShutterCoreAsync(true, CancellationToken.None, () =>
+        {
+            captured = true;
+            return 1;
+        });
+
+        Assert.Equal(SpectrometerManager.ShutterOperationFailed, result);
+        Assert.Contains("未能确认遮光", error);
+        if (!restoreConfirmed) Assert.Contains("恢复通光也失败", error);
+        Assert.False(captured);
+        Assert.Equal(new[] { "a", "b" }, controller.Commands);
+    }
+
+    [Fact]
+    public async Task ShutterAutoDark_LightRecoveryFailureRejectsSuccess()
+    {
+        using var controller = new FakeShutterController(restoreConfirmed: false);
+        var manager = new SpectrometerManager { ShutterController = controller };
+
+        (int result, string error) = await manager.ExecuteDarkOperationWithShutterCoreAsync(true, CancellationToken.None, () =>
+        {
+            controller.Commands.Add("dark");
+            return 1;
+        });
+
+        Assert.Equal(SpectrometerManager.ShutterOperationFailed, result);
+        Assert.Contains("未能恢复通光", error);
+        Assert.Equal(new[] { "a", "dark", "b" }, controller.Commands);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ShutterAutoDark_NativeExceptionOrCancellationStillRestoresLight(bool cancelled)
+    {
+        using var controller = new FakeShutterController();
+        var manager = new SpectrometerManager { ShutterController = controller };
+        Func<Task> run = () => manager.ExecuteDarkOperationWithShutterCoreAsync(true, new CancellationToken(cancelled), () =>
+        {
+            controller.Commands.Add("dark");
+            throw new InvalidOperationException("native failed");
+        });
+
+        if (cancelled) await Assert.ThrowsAnyAsync<OperationCanceledException>(run);
+        else await Assert.ThrowsAsync<InvalidOperationException>(run);
+        Assert.Equal(cancelled ? new[] { "a", "b" } : new[] { "a", "dark", "b" }, controller.Commands);
+    }
+
     [Fact]
     public async Task FilterWheelAutoDark_SwitchesToConfiguredDarkPositionAndRestoresMeasurementPosition()
     {
@@ -255,6 +333,34 @@ public sealed class SpectrumCalibrationStateTests
                 File.Delete(WavelengthPath);
             if (File.Exists(MagnitudePath))
                 File.Delete(MagnitudePath);
+        }
+    }
+
+    private sealed class FakeShutterController : ShutterController
+    {
+        private readonly bool blockConfirmed;
+        private readonly bool restoreConfirmed;
+        public List<string> Commands { get; } = [];
+        public override global::Spectrum.Configs.ShutterConfig Config { get; } = new();
+
+        public FakeShutterController(bool blockConfirmed = true, bool restoreConfirmed = true, bool openForDark = true)
+        {
+            IsConnected = true;
+            this.blockConfirmed = blockConfirmed;
+            this.restoreConfirmed = restoreConfirmed;
+            Config.OpenForDark = openForDark;
+        }
+
+        public override Task<bool> OpenShutter()
+        {
+            Commands.Add("a");
+            return Task.FromResult(Config.OpenForDark ? blockConfirmed : restoreConfirmed);
+        }
+
+        public override Task<bool> CloseShutter()
+        {
+            Commands.Add("b");
+            return Task.FromResult(Config.OpenForDark ? restoreConfirmed : blockConfirmed);
         }
     }
 

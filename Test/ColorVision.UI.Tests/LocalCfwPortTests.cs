@@ -307,9 +307,9 @@ public sealed class LocalCfwPortTests
             {
                 using var operation = new LocalSpectrumFilterWheel(new ShutterConfig
                 { FilterWheelDeviceCode = device!.Code, UseFilterWheel = true, MeasurementPort = 5, DarkPort = 0 });
-                operation.SetOpen(false);
+                operation.SetTransmitting(false);
                 Assert.Equal(0, native.Port);
-                operation.SetOpen(true);
+                operation.SetTransmitting(true);
                 Assert.Equal(5, native.Port);
             });
             Assert.Equal(1, native.Opens);

@@ -85,8 +85,8 @@
                 <Button Content="{display:EngineLang Key='重置'}" Tag="ResetDark" Click="Command_Click" Margin="0,0,0,8"
                         ToolTip="{display:EngineLang Key='清除当前连接的暗数据，并关闭自动校零和自适应暗校正。'}"/>
                 <UniformGrid Columns="2" Margin="0,0,0,8" Visibility="{Binding Config.IsShutterEnable, Converter={StaticResource bool2VisibilityConverter}}">
-                    <Button Content="{display:EngineLang Key='通光（测量）'}" Tag="ShutterDoOpen" Click="Command_Click" Margin="0,0,4,0" ToolTip="{display:EngineLang Key='让光线进入光谱仪，用于正常测量。'}"/>
-                    <Button Content="{display:EngineLang Key='遮光（校零）'}" Tag="ShutterDoClose" Click="Command_Click" Margin="4,0,0,0" ToolTip="{display:EngineLang Key='遮住光线，用于采集暗数据。此按钮只切换光路，不执行校零。'}"/>
+                    <Button Content="{display:EngineLang Key='遮光'}" Tag="ShutterDoOpen" Click="Command_Click" Margin="0,0,4,0" ToolTip="{display:EngineLang Key='按光闸配置遮光。此按钮只切换光路，不执行校零。'}"/>
+                    <Button Content="{display:EngineLang Key='通光'}" Tag="ShutterDoClose" Click="Command_Click" Margin="4,0,0,0" ToolTip="{display:EngineLang Key='按光闸配置通光，用于正常测量。'}"/>
                 </UniformGrid>
                 <UniformGrid Columns="2" Margin="0,0,0,8">
                     <Button Content="{display:EngineLang Key='设备配置'}" Command="{Binding EditCommand}" Margin="0,0,4,0"/>

@@ -166,8 +166,8 @@
                             </DockPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable, Converter={StaticResource bool2VisibilityConverter}}">
-                            <Button Click="Button_Click_Shutter_Doopen" Content="{display:EngineLang Key='通光（测量）'}" ToolTip="{display:EngineLang Key='让光线进入光谱仪，用于正常测量。'}" />
-                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="{display:EngineLang Key='遮光（校零）'}" ToolTip="{display:EngineLang Key='遮住光线，用于采集暗数据。此按钮只切换光路，不执行校零。'}" />
+                            <Button Click="Button_Click_Shutter_Doopen" Content="{display:EngineLang Key='遮光'}" ToolTip="{display:EngineLang Key='按光闸配置遮光。此按钮只切换光路，不执行校零。'}" />
+                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="{display:EngineLang Key='通光'}" ToolTip="{display:EngineLang Key='按光闸配置通光，用于正常测量。'}" />
                         </StackPanel>
 
                     </StackPanel>

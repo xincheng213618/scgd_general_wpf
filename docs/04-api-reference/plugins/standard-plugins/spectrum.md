@@ -85,6 +85,8 @@ Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最
 | 自动校零 | UI 手动流程允许人工遮光；自动测量、Socket 和 Job 按配置使用 Shutter 或滤色轮。滤色轮会记录当前测量孔位，切到可配置的遮光孔位采集暗场，再恢复原孔位；任何切换或恢复失败都会阻止正式测量 |
 | EQE | 已启用 EQE；确认本次电压、电流来自手工配置还是源表采集，且与被测样品一致 |
 
+Shutter 的遮光/通光方向遵守[按设备配置的光闸约定](../../engine-components/spectrum-device.md)。在快门配置中填写打开/关闭指令，并设置 **遮光使用打开指令**（`OpenForDark`）；默认选中，可取消以反向控制，旧配置保持默认。回执随实际发送字符选择：`a → turn on`、`b → turn off`，不因 a/b 填在另一个字段而报告相反状态。手动按钮只显示 **遮光**、**通光**，与自动校零共用配置映射。`ExecuteDarkOperationWithShutterCoreAsync` 按配置遮光、采暗数据，再在 `finally` 中恢复通光；遮光失败时取消暗采集并仍尝试恢复通光，恢复失败拒绝报告校零成功。该实现也供 Socket 和 Job 使用；`SpectrumCalibrationStateTests` 保护正反两种方向及失败恢复。滤色轮模式按配置暗孔及原孔位控制，不使用串口 a/b 方向。
+
 `CalibrationGroupWindow` 编辑独立副本。保存要求已知设备 SN；已连接时先加载两个候选文件，加载成功且请求仍有效才提交配置。未连接分支不加载 native，但 SN 缺失仍会拒绝保存。配置保存在 Windows 文档目录的 `Spectrometer/<SN>/CalibrationGroups.json`，以临时文件替换写入；保存失败会尝试恢复原标定，恢复失败时保持不可测量状态。
 
 关闭有未保存修改的窗口会询问保存、不保存或取消；保存失败保持窗口打开，保存进行中也不允许关闭。

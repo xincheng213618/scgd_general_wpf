@@ -332,8 +332,8 @@
                                                 <StackPanel Visibility="{Binding ShutterController.IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                                     <StackPanel Orientation="Horizontal">
                                                         <Button Margin="0,0,4,0" Padding="8,2" Background="{DynamicResource DangerBrush}" Command="{Binding ShutterController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Disconnect}" Foreground="White" />
-                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.OpenShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.OpenShutter}" />
-                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.CloseShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.CloseShutter}" />
+                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.OpenShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{display:DisplayText Key='遮光'}" />
+                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.CloseShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{display:DisplayText Key='通光'}" />
                                                     </StackPanel>
                                                 </StackPanel>
                                                 <TextBlock Style="{StaticResource DeviceErrorTextStyle}" Text="{Binding ShutterController.LastErrorMessage}" />

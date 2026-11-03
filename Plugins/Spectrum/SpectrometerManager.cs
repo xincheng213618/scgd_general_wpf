@@ -1602,7 +1602,7 @@ namespace Spectrum
                 : ExecuteDarkOperationWithShutterCoreAsync(requireAutomaticControl, cancellationToken, darkOperation);
         }
 
-        private async Task<(int Result, string Error)> ExecuteDarkOperationWithShutterCoreAsync(
+        internal async Task<(int Result, string Error)> ExecuteDarkOperationWithShutterCoreAsync(
             bool requireAutomaticControl,
             CancellationToken cancellationToken,
             Func<int> darkOperation)
@@ -1613,25 +1613,25 @@ namespace Spectrum
 
             if (shouldControlShutter)
             {
-                log.Debug("关闭快门进行校零");
-                if (!await ShutterController.CloseShutter().ConfigureAwait(false))
+                log.Debug("按光闸配置遮光，进行校零");
+                if (!await ShutterController.SetTransmitting(false).ConfigureAwait(false))
                 {
-                    string closeError = string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
-                        ? "快门未能确认关闭"
+                    string blockError = string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
+                        ? "光闸未能确认遮光"
                         : ShutterController.LastErrorMessage;
-                    log.Warn($"{closeError}，校零已取消；尝试恢复打开快门");
-                    bool recovered = await ShutterController.OpenShutter().ConfigureAwait(false);
+                    log.Warn($"{blockError}，校零已取消；尝试恢复通光");
+                    bool recovered = await ShutterController.SetTransmitting(true).ConfigureAwait(false);
                     string recoveryError = recovered
                         ? string.Empty
                         : string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
-                            ? "；恢复打开快门也失败，请检查光路"
+                            ? "；恢复通光也失败，请检查光路"
                             : $"；{ShutterController.LastErrorMessage}，请检查光路";
-                    return (ShutterOperationFailed, $"{closeError}，校零已取消{recoveryError}");
+                    return (ShutterOperationFailed, $"{blockError}，校零已取消{recoveryError}");
                 }
             }
 
             int result;
-            bool reopened = true;
+            bool lightRestored = true;
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -1641,14 +1641,14 @@ namespace Spectrum
             {
                 if (shouldControlShutter)
                 {
-                    log.Debug("打开快门");
-                    reopened = await ShutterController.OpenShutter().ConfigureAwait(false);
+                    log.Debug("按光闸配置恢复通光");
+                    lightRestored = await ShutterController.SetTransmitting(true).ConfigureAwait(false);
                 }
             }
 
-            if (!reopened)
+            if (!lightRestored)
                 return (ShutterOperationFailed, string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
-                    ? "校零后快门未能重新打开，请检查光路"
+                    ? "校零后光闸未能恢复通光，请检查光路"
                     : $"{ShutterController.LastErrorMessage}，请检查光路");
             return result == 1
                 ? (1, string.Empty)

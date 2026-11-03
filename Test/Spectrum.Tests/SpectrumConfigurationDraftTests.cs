@@ -99,6 +99,7 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.Equal("original.dat", config.ActiveCalibrationGroup.WavelengthFile);
         Assert.Equal(9600, config.ShutterCfg.BaudRate);
         Assert.False(config.ShutterCfg.UseFilterWheel);
+        Assert.True(config.ShutterCfg.OpenForDark);
         Assert.Equal(string.Empty, config.ShutterCfg.FilterWheelDeviceCode);
         Assert.Equal(0, config.ShutterCfg.DarkPort);
         Assert.Equal(2, Assert.Single(config.NDConfig.NDRate));
@@ -174,6 +175,7 @@ public sealed class SpectrumConfigurationDraftTests
         draft.Config.ShutterCfg.FilterWheelDeviceCode = "ND-1";
         draft.Config.ShutterCfg.MeasurementPort = 3;
         draft.Config.ShutterCfg.DarkPort = 2;
+        draft.Config.ShutterCfg.OpenForDark = false;
         Assert.True(draft.TryApply(config, out _));
         var payload = JObject.FromObject(config);
         Assert.Null(payload["UseFilterWheel"]);
@@ -184,5 +186,25 @@ public sealed class SpectrumConfigurationDraftTests
         Assert.Equal(2, restored.ShutterCfg.DarkPort);
         Assert.Equal("COM7", restored.ShutterCfg.Addr);
         Assert.Equal("OPEN", restored.ShutterCfg.OpenCmd);
+        Assert.False(restored.ShutterCfg.OpenForDark);
+    }
+
+    [Theory]
+    [InlineData("a", "b", "turn on", "turn off")]
+    [InlineData("b", "a", "turn off", "turn on")]
+    [InlineData("OPEN", "CLOSE", "turn on", "turn off")]
+    public void MainAndPluginAcknowledgeTheConfiguredCommand(string openCommand, string closeCommand, string openReply, string closeReply)
+    {
+        var config = new ShutterConfig { OpenCmd = openCommand, CloseCmd = closeCommand };
+        var pluginConfig = new global::Spectrum.Configs.ShutterConfig { OpenCmd = openCommand, CloseCmd = closeCommand, OpenForDark = false };
+        Assert.Equal(openReply, config.GetExpectedResponse(true));
+        Assert.Equal(closeReply, config.GetExpectedResponse(false));
+        Assert.Equal(openReply, pluginConfig.GetExpectedResponse(true));
+        Assert.Equal(closeReply, pluginConfig.GetExpectedResponse(false));
+        var restored = JObject.FromObject(pluginConfig).ToObject<global::Spectrum.Configs.ShutterConfig>()!;
+        Assert.False(restored.OpenForDark);
+        Assert.Equal(openCommand, restored.OpenCmd);
+        Assert.Equal(closeCommand, restored.CloseCmd);
+        Assert.True(new JObject().ToObject<global::Spectrum.Configs.ShutterConfig>()!.OpenForDark);
     }
 }

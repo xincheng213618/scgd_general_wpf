@@ -211,7 +211,6 @@ internal sealed class LocalSpectrumSession : IDisposable
             }
             Check(native.LoadWavelength(handle, wave), "加载波长校正");
             Check(native.LoadMagnitude(handle, magnitude), "加载幅度校正");
-            if (config.IsShutterEnable && !SharesNdShutter(config)) shutter.SetOpen(true, config.ShutterCfg);
             if (parameters.AutoIntegration)
             {
                 float time = withNd ? FindNdAutoTime(ndOperation!, config, cancellationToken) : FindAutoTime(config, cancellationToken);
@@ -344,7 +343,7 @@ internal sealed class LocalSpectrumSession : IDisposable
 
     private void WithDarkPath(ConfigSpectrum config, ILocalSpectrumNdOperation? operation, Action acquireDark)
     {
-        if ((config.IsShutterEnable && !SharesNdShutter(config)) || operation == null) { WithClosedShutter(config, acquireDark); return; }
+        if ((config.IsShutterEnable && !SharesNdShutter(config)) || operation == null) { WithShutterBlocked(config, acquireDark); return; }
         int darkPort = config.NDConfig.DarkNDPort >= 0 ? config.NDConfig.DarkNDPort : SharesNdShutter(config) ? config.ShutterCfg.DarkPort : -1;
         if (darkPort < 0) throw new InvalidOperationException("请配置 ND 校零孔位或启用外部快门后再校零。");
         int previous = operation.GetPort();
@@ -372,28 +371,28 @@ internal sealed class LocalSpectrumSession : IDisposable
             switch (eventName)
             {
                 case "ShutterConnect": shutter.Connect(config.ShutterCfg); break;
-                case "ShutterDoOpen": shutter.SetOpen(true, config.ShutterCfg); break;
-                case "ShutterDoClose": shutter.SetOpen(false, config.ShutterCfg); break;
+                case "ShutterDoOpen": shutter.SetTransmitting(!config.ShutterCfg.OpenForDark, config.ShutterCfg); break;
+                case "ShutterDoClose": shutter.SetTransmitting(config.ShutterCfg.OpenForDark, config.ShutterCfg); break;
                 default: throw new NotSupportedException($"未知快门操作：{eventName}。");
             }
         }
     }
 
-    private void WithClosedShutter(ConfigSpectrum config, Action operation)
+    private void WithShutterBlocked(ConfigSpectrum config, Action operation)
     {
         if (!config.IsShutterEnable) { operation(); return; }
         Exception? failure = null;
         try
         {
-            shutter.SetOpen(false, config.ShutterCfg);
+            shutter.SetTransmitting(false, config.ShutterCfg);
             operation();
         }
         catch (Exception ex) { failure = ex; }
-        // Even an unconfirmed close may have moved the shutter. Always attempt to restore light.
-        try { shutter.SetOpen(true, config.ShutterCfg); }
+        // Even an unconfirmed blocking command may have moved the shutter. Always attempt to restore light.
+        try { shutter.SetTransmitting(true, config.ShutterCfg); }
         catch (Exception ex)
         {
-            string restore = config.ShutterCfg.UseFilterWheel ? "恢复滤色轮测量位失败" : "恢复打开快门失败";
+            string restore = config.ShutterCfg.UseFilterWheel ? "恢复滤色轮测量位失败" : "恢复光闸通光状态失败";
             throw new InvalidOperationException($"{failure?.Message} 校零后{restore}：{ex.Message} 请检查光路。".Trim(),
                 failure == null ? ex : new AggregateException(failure, ex));
         }

@@ -388,7 +388,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void Button_Click_Shutter_Doopen(object sender, RoutedEventArgs e)
         {
-            ExecuteSpectrumCommand(sender, () => DService.ShutterDoopen(), (record, state) =>
+            ExecuteSpectrumCommand(sender, () => Device.SetShutterTransmitting(false), (record, state) =>
             {
                 if (state == MsgRecordState.Fail)
                 {
@@ -396,14 +396,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else if (state == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("通光指令已完成，可进行测量。"), "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("遮光指令已完成。"), "ColorVision");
                 }
             });
         }
 
         private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
         {
-            ExecuteSpectrumCommand(sender, () => DService.ShutterDoclose(), (record, state) =>
+            ExecuteSpectrumCommand(sender, () => Device.SetShutterTransmitting(true), (record, state) =>
             {
                 if (state == MsgRecordState.Fail)
                 {
@@ -411,7 +411,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else if (state == MsgRecordState.Success)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("遮光指令已完成，可进行校零。"), "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("通光指令已完成。"), "ColorVision");
                 }
             });
         }

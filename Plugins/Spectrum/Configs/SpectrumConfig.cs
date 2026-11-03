@@ -15,10 +15,22 @@ namespace Spectrum.Configs
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
+        [DisplayName("打开指令"), Description("可填写 a 或 b；回执随实际指令判断：a 为 turn on，b 为 turn off。")]
         public string OpenCmd { get => _OpenCmd; set { _OpenCmd = value; OnPropertyChanged(); } }
         private string _OpenCmd = "a";
+        [DisplayName("关闭指令"), Description("可填写 a 或 b；回执随实际指令判断：a 为 turn on，b 为 turn off。")]
         public string CloseCmd { get => _CloseCmd; set { _CloseCmd = value; OnPropertyChanged(); } }
         private string _CloseCmd = "b";
+
+        [DisplayName("遮光使用打开指令"), Description("选中：遮光使用打开指令，通光使用关闭指令；取消：两者互换。")]
+        public bool OpenForDark { get => openForDark; set { openForDark = value; OnPropertyChanged(); } }
+        private bool openForDark = true;
+
+        internal string GetExpectedResponse(bool open)
+        {
+            string command = open ? OpenCmd : CloseCmd;
+            return command?.Trim().ToLowerInvariant() switch { "a" => "turn on", "b" => "turn off", _ => open ? "turn on" : "turn off" };
+        }
 
         [DisplayName("DelayMs")]
         public int DelayTime { get => _DelayTime; set { _DelayTime = value; OnPropertyChanged(); } }

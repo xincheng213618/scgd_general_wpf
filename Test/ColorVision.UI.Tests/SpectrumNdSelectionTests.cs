@@ -381,11 +381,11 @@ public sealed class SpectrumNdSelectionTests
             {
                 using (var operation = new LocalSpectrumFilterWheel(new ShutterConfig { FilterWheelDeviceCode = device.Code }))
                 {
-                    if (wrongReadback) Assert.Throws<InvalidOperationException>(() => operation.SetOpen(false));
+                    if (wrongReadback) Assert.Throws<InvalidOperationException>(() => operation.SetTransmitting(false));
                     else
                     {
-                        operation.SetOpen(false);
-                        operation.SetOpen(true);
+                        operation.SetTransmitting(false);
+                        operation.SetTransmitting(true);
                         Assert.Equal(new[] { "SetPort:0", "GetPort", "SetPort:5", "GetPort" }, mqtt.Commands);
                         Assert.Equal(5, device.DisplayConfig.PortNum);
                     }
@@ -490,6 +490,32 @@ public sealed class SpectrumNdSelectionTests
         window.Show();
         Pump();
         return window;
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ShutterButtonsUseLocalDirectionWithoutChangingServiceConvention(bool local, bool openForDark)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new TestScope();
+            using var device = CreateSpectrum();
+            device.SpectrumBackend.SetPreference(local);
+            device.Config.ShutterCfg.OpenForDark = openForDark;
+            device.DService.Dispose();
+            using var mqtt = new RecordingSpectrum(device);
+            device.DService = mqtt;
+
+            MsgRecord dark = device.SetShutterTransmitting(false);
+            MsgRecord light = device.SetShutterTransmitting(true);
+
+            Assert.Equal(local && openForDark ? "ShutterDoOpen" : "ShutterDoClose", dark.MsgSend.EventName);
+            Assert.Equal(local && openForDark ? "ShutterDoClose" : "ShutterDoOpen", light.MsgSend.EventName);
+            Assert.Equal(2, mqtt.Commands);
+        });
     }
 
     private sealed class RecordingSpectrum(DeviceSpectrum device) : MQTTSpectrum(device)
