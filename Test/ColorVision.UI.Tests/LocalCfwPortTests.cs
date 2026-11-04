@@ -217,16 +217,19 @@ public sealed class LocalCfwPortTests
     [Fact]
     public void ConfigurationDraftKeepsLocalPreferenceOutOfServiceConfig()
     {
-        var config = new ConfigCfwPort { SzComName = "COM12", BaudRate = 9600 };
+        var config = new ConfigCfwPort { SzComName = "COM12", BaudRate = 9600, SN = "CAMERA-1" };
         var display = new DisplayCfwPortConfig();
         var draft = CfwPortConfigurationDraft.From(config, display);
         draft.UseLocalCfwPort = true;
         draft.BaudRate = 19200;
+        draft.SN = "SPECTRUM-1";
+        Assert.Equal("CAMERA-1", config.SN);
         Assert.False(display.UseLocalCfwPort);
         Assert.Equal(9600, config.BaudRate);
         draft.Apply(config, display);
         Assert.True(display.UseLocalCfwPort);
         Assert.Equal(19200, config.BaudRate);
+        Assert.Equal("SPECTRUM-1", JsonConvert.DeserializeObject<ConfigCfwPort>(JsonConvert.SerializeObject(config))!.SN);
         Assert.DoesNotContain("UseLocalCfwPort", JsonConvert.SerializeObject(config));
         Assert.True(JsonConvert.DeserializeObject<DisplayCfwPortConfig>(JsonConvert.SerializeObject(display))!.UseLocalCfwPort);
     }

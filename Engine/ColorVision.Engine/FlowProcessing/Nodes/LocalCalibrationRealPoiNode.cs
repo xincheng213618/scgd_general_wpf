@@ -1,4 +1,6 @@
+using ColorVision.Core;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
@@ -9,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -22,6 +25,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string PoiTemplateName { get; init; } = string.Empty;
         public int PointCount { get; init; }
         public bool LoadedFromFile { get; init; }
+        public bool NinePointCalibrationEnabled { get; init; }
+        public int NinePointCalibrationCorrectedCount { get; init; }
+        public IReadOnlyList<NinePointBlockCalibrationPoint>? NinePointCalibration { get; init; }
         public object? POIResult { get; init; }
     }
 
@@ -29,6 +35,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
+        private bool enableNinePointCalibration;
+
+        [Category("本地校正")]
+        [DefaultValue(false)]
+        [STNodeProperty("9点校准", "仅在关注点恰好为9个时，在当前校正图像中寻找对应亮块中心。找不到的点保留原坐标；其他点数自动跳过。", true)]
+        public bool EnableNinePointCalibration
+        {
+            get => enableNinePointCalibration;
+            set { enableNinePointCalibration = value; OnPropertyChanged(); }
+        }
 
         public LocalCalibrationRealPoiNode() : base("校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
         {
@@ -93,11 +109,20 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalPoiResultSet result;
+                IReadOnlyList<NinePointBlockCalibrationPoint>? calibrationPoints = null;
                 using (LocalFlowFrameLease frame = execution.Frame.Acquire())
                 {
-                    result = LocalPoiCalculator.Calculate(frame, parameters.Poi);
+                    PoiParam poi = LocalNinePointPoiCalibration.ApplyIfEnabled(EnableNinePointCalibration, parameters.Poi, seeds =>
+                    {
+                        HImage image = LocalFindLuminousAreaNode.CreateBorrowedImage(frame);
+                        calibrationPoints = FlowNodeTiming.Run("NinePointCalibration", () =>
+                            NinePointBlockCalibrator.Refine(image, seeds, new NinePointBlockCalibrationOptions(), action.RuntimeResources.StopToken));
+                        return calibrationPoints;
+                    });
+                    result = LocalPoiCalculator.Calculate(frame, poi);
                 }
                 stopwatch.Stop();
+                int correctedCount = calibrationPoints?.Count(point => point.Success) ?? 0;
                 int poiTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(execution.Frame.Metadata.Channels);
                 string algorithmDeviceCode = GetFirstAvailableDeviceCode<DeviceAlgorithm>();
@@ -117,6 +142,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         CalibrationTemplate = execution.Calibration?.Name ?? execution.Frame.Metadata.CalibrationTemplate,
                         POITemplate = parameters.Poi.Name,
                         AllowAcceleration,
+                        NinePointCalibration = new { Enabled = EnableNinePointCalibration, Attempted = calibrationPoints != null, CorrectedCount = correctedCount, Points = calibrationPoints },
                         MemoryOnly = string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath) && string.IsNullOrWhiteSpace(execution.Frame.CvRawFilePath)
                     });
                 LocalPoiCalculator.SaveDetails(poiMasterId, result);
@@ -151,6 +177,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         CvCieFilePath = NullIfEmpty(execution.Frame.CvCieFilePath),
                         PoiTemplateName = result.TemplateName,
                         PointCount = result.Points.Count,
+                        NinePointCalibrationEnabled = EnableNinePointCalibration,
+                        NinePointCalibrationCorrectedCount = correctedCount,
+                        NinePointCalibration = calibrationPoints,
                         POIResult = result.Points
                     }
                 };
@@ -173,6 +202,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.SerialNumber,
                 CalibTempName,
                 AllowAcceleration,
+                EnableNinePointCalibration,
                 InputPriority = "CurrentFrameThenInputFile",
                 InputPorts = InputPortNames
             });

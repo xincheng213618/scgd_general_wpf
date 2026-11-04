@@ -3,9 +3,9 @@ knowledge_id: "algorithms.poi-template"
 knowledge_type: "reference"
 status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
-aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正","POINode","IsCCTWave","色温/波长"]
-code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/TemplateBuildPoi.cs","Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs","Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs"]
+aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正","POINode","IsCCTWave","色温/波长","9点校准","EnableNinePointCalibration"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/TemplateBuildPoi.cs","Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs","Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs","UI/ColorVision.Core/NinePointBlockCalibration.cs","Engine/ColorVision.Engine/Templates/POI/LocalNinePointPoiCalibration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/NinePointBlockCalibrationTests.cs","Test/ColorVision.UI.Tests/LocalNinePointPoiCalibrationTests.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
 
@@ -63,6 +63,8 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 ## Flow 消费
 
 高密度灯珠点集可由“本地算法 → 灯珠定位”直接传给本地 POI 或实时 POI，不创建 POI 模板，也不逐点写入结果数据库；点集和测量值跟随本次运行释放，可选导出本地 CSV。行列识别、不亮/偏暗判断、坐标与内存交接边界见[本地灯珠分析](../local-native-analysis.md#flow-内存点集与本地测量)。普通持久化模板仍使用下述表与命令。
+
+本地“校正+实时 POI”（`LocalCalibrationRealPoiNode`）的“9点校准”（`EnableNinePointCalibration`）默认关闭。开启且输入恰为九个点时，在本次图像完成校正后、POI 测量前，分别从初始点附近寻找亮块四边，以对角线交点细化几何中心；保留点身份、顺序、采样形状和大小，不回写共享 POI 模板。图像与输入点须处于同一坐标系，校准与取值使用同一帧，避免外框透视布点与当前亮块中心不完全重合。每个点只有找到可信对应亮块才修正；未找到、触及边界、低置信度、位移超限或重复命中时保留该点原 RE 坐标，其他点仍可校准。整幅黑图保留全部原点继续测量，输入不是九点时也跳过校准；非法配置或原生依赖等系统错误仍正常报错。
 
 “关注点算法”（`POINode`）的“色温/波长”固定显示 `True` 只读文本，执行请求始终带 `IsCCTWave=true`。旧流程保存的 `false` 不会关闭计算，重新保存时写为 `True`；亚像素等其它选项仍按原配置执行。
 
