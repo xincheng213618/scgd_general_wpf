@@ -49,6 +49,48 @@ public sealed class UiLocalizationConsistencyTests
         Assert.False(string.IsNullOrWhiteSpace(LanguageManager.GetDisplayName("en-GB")));
     }
 
+    // Resource availability stays dynamic, and stored culture names never become filesystem paths.
+    [Fact]
+    public void ConfiguredLanguageUsesOnlyItsOwnResourcesAndObservesInstallationChanges()
+    {
+        string root = Directory.CreateTempSubdirectory("ColorVision-Language-").FullName;
+        string languageDirectory = Path.Combine(root, "en");
+        string nestedDirectory = Path.Combine(languageDirectory, "nested");
+        string resource = Path.Combine(root, "en", "nested", "TestHost.resources.dll");
+        string Resolve(string culture) => LanguageConfig.ResolveUICulture(culture, "zh-CN", root, "TestHost.resources.dll");
+
+        try
+        {
+            Directory.CreateDirectory(nestedDirectory);
+            Assert.Equal("zh-CN", Resolve("en"));
+            File.WriteAllText(resource, "satellite fixture");
+            Assert.Equal("en", Resolve("en"));
+            Assert.Equal("zh-CN", Resolve("EN"));
+            Assert.Equal("zh-CN", Resolve("en/nested"));
+            Assert.Equal("zh-CN", Resolve("../en"));
+            Assert.Equal("zh-CN", Resolve(root));
+            Assert.Equal("zh-CN", Resolve(""));
+            File.Delete(resource);
+            Assert.Equal("zh-CN", Resolve("en"));
+        }
+        finally
+        {
+            if (File.Exists(resource)) File.Delete(resource);
+            if (Directory.Exists(nestedDirectory)) Directory.Delete(nestedDirectory);
+            if (Directory.Exists(languageDirectory)) Directory.Delete(languageDirectory);
+            Directory.Delete(root);
+        }
+    }
+
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("zh-Hans")]
+    public void BuiltInAndSystemLanguageDoNotRequireDirectoryAccess(string culture)
+    {
+        string missingDirectory = Path.Combine(Path.GetTempPath(), "ColorVision-Language-Missing-" + Guid.NewGuid().ToString("N"));
+        Assert.Equal(culture, LanguageConfig.ResolveUICulture(culture, "zh-CN", missingDirectory, "TestHost.resources.dll"));
+    }
+
     [Theory]
     [InlineData("zh-CN")]
     [InlineData("en-US")]

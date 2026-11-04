@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -76,9 +77,27 @@ namespace ColorVision.UI.Languages
         [DisplayName("Language"), Description("LanguageDescription"), PropertyEditorType(typeof(LanguagePropertiesEditor))]
         public string UICulture
         {
-            get => LanguageManager.GetDefaultLanguages().Contains(_UICulture) ? _UICulture : CultureInfo.InstalledUICulture.Name;
+            get => ResolveUICulture(_UICulture, CultureInfo.InstalledUICulture.Name,
+                Path.GetDirectoryName(typeof(LanguageConfig).Assembly.Location)!, $"{AppDomain.CurrentDomain.FriendlyName}.resources.dll");
             set { _UICulture = value; }
         }
         private string _UICulture = CultureInfo.InstalledUICulture.Name;
+
+        internal static string ResolveUICulture(string configuredCulture, string fallbackCulture, string assemblyDirectory, string resourceFileName)
+        {
+            // These values resolve identically whether or not a satellite assembly is installed.
+            if (configuredCulture == fallbackCulture || configuredCulture == "zh-Hans") return configuredCulture;
+
+            // Inspect only the configured language; unrelated plugin and tool trees can be large.
+            // Match directory names exactly as GetDefaultLanguages().Contains did, without treating
+            // the stored culture as a path, and recheck files so installing/removing resources is visible.
+            foreach (string directory in Directory.EnumerateDirectories(assemblyDirectory))
+            {
+                if (!string.Equals(Path.GetFileName(directory), configuredCulture, StringComparison.Ordinal)) continue;
+                return Directory.EnumerateFiles(directory, resourceFileName, SearchOption.AllDirectories).Any()
+                    ? configuredCulture : fallbackCulture;
+            }
+            return fallbackCulture;
+        }
     }
 }
