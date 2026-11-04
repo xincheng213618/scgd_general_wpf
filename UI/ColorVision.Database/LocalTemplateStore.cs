@@ -67,7 +67,10 @@ namespace ColorVision.Database
             return result;
         }
 
-        public LocalTemplateDocument Read(string kind, int id)
+        public LocalTemplateDocument Read(string kind, int id) => Find(kind, id) ?? throw new InvalidDataException($"找不到本地模板：{kind}/{id}");
+
+        /// <summary>Returns null only when the document is missing; storage failures still throw.</summary>
+        public LocalTemplateDocument? Find(string kind, int id)
         {
             using var connection = Open();
             using var command = connection.CreateCommand();
@@ -75,8 +78,7 @@ namespace ColorVision.Database
             command.Parameters.AddWithValue("$kind", kind);
             command.Parameters.AddWithValue("$id", id);
             using var reader = command.ExecuteReader();
-            if (!reader.Read()) throw new InvalidDataException($"找不到本地模板：{kind}/{id}");
-            return ReadDocument(reader);
+            return reader.Read() ? ReadDocument(reader) : null;
         }
 
         private static LocalTemplateDocument ReadDocument(SqliteDataReader reader) => new(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2), reader.GetString(3))
