@@ -85,6 +85,25 @@ namespace ColorVision.ImageEditor.Algorithms
             _ => false,
         };
 
+        public (int MinimumX, int MinimumY, int MaximumXExclusive, int MaximumYExclusive) GetSamplingBounds(AlgorithmImageBuffer image)
+        {
+            // Contains accepts boundary samples beyond the nominal geometry. Circle
+            // tolerance is normalized by its radii, so one extra pixel is not enough
+            // for a very large circle. r * tolerance bounds r * (sqrt(1+tolerance)-1);
+            // the additional pixel also covers endpoint rounding. Keep nominal bounds
+            // and clipping metadata unchanged for callers that expose that geometry.
+            int padding = Kind switch
+            {
+                AlgorithmPixelRoiKind.Circle => (int)Math.Min(int.MaxValue, Math.Ceiling(Math.Max(RadiusX, RadiusY) * BoundaryTolerance) + 1),
+                // Extreme off-image vertices can overflow the existing ray-crossing
+                // arithmetic. Preserve its Contains result across the entire frame.
+                AlgorithmPixelRoiKind.Polygon => Points.Any(point => Math.Abs(point.X) > int.MaxValue || Math.Abs(point.Y) > int.MaxValue) ? int.MaxValue : 1,
+                _ => 0,
+            };
+            return (Math.Max(0, MinimumX - padding), Math.Max(0, MinimumY - padding),
+                (int)Math.Min(image.Width, (long)MaximumXExclusive + padding), (int)Math.Min(image.Height, (long)MaximumYExclusive + padding));
+        }
+
         private bool ContainsPolygon(double x, double y)
         {
             bool inside = false;
