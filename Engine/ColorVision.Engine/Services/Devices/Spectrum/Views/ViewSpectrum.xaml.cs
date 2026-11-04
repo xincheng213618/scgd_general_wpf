@@ -683,7 +683,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 List<string> row = new()
                 {
                     result.Id.ToString(CultureInfo.InvariantCulture),
-                    result.BatchID?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                    result.BatchID?.ToString(CultureInfo.InvariantCulture) ?? "-1",
                     result.IP ?? string.Empty,
                     result.EqePercent.ToString(CultureInfo.InvariantCulture),
                     result.LuminousFlux?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
