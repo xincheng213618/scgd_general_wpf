@@ -161,6 +161,8 @@ namespace ColorVision.ImageEditor.Algorithms
             int segmentIndex = 0;
             double[] raw = new double[image.Source?.RawChannelCount ?? image.Format.Channels()];
             context.Progress?.Report(new AlgorithmProgress(0.05, "profile.sample", "Sampling image profile"));
+            Dictionary<string, object?> rowValues = new(columns.Count, StringComparer.Ordinal);
+            string[] statusNames = channels.Select(channel => channel.Name + "Status").ToArray();
             for (int requestedIndex = 0; requestedIndex < requestedSamples; requestedIndex++)
             {
                 if ((requestedIndex & 1023) == 0)
@@ -199,22 +201,21 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
 
                 SampleRaw(image, x, y, parameters.Interpolation, raw);
-                Dictionary<string, JsonElement> row = Row(
-                    ("SampleIndex", outputIndex),
-                    ("RequestedIndex", requestedIndex),
-                    ("SegmentIndex", segment.OriginalIndex),
-                    ("DistancePixels", distance),
-                    ("DistanceMillimetres", segment.PhysicalStart + ratio * segment.PhysicalLength),
-                    ("XPixel", x),
-                    ("YPixel", y));
+                rowValues["SampleIndex"] = outputIndex;
+                rowValues["RequestedIndex"] = requestedIndex;
+                rowValues["SegmentIndex"] = segment.OriginalIndex;
+                rowValues["DistancePixels"] = distance;
+                rowValues["DistanceMillimetres"] = segment.PhysicalStart + ratio * segment.PhysicalLength;
+                rowValues["XPixel"] = x;
+                rowValues["YPixel"] = y;
                 for (int channelIndex = 0; channelIndex < channels.Length; channelIndex++)
                 {
                     double value = channels[channelIndex].Read(raw);
-                    row[channels[channelIndex].Name] = Value(double.IsFinite(value) ? value : null);
-                    row[channels[channelIndex].Name + "Status"] = Value(Classification(value));
+                    rowValues[channels[channelIndex].Name] = double.IsFinite(value) ? value : null;
+                    rowValues[statusNames[channelIndex]] = Classification(value);
                     statistics[channelIndex].Add(value);
                 }
-                rows.Add(row);
+                rows.Add(SnapshotRow(rowValues));
                 outputIndex++;
             }
 
@@ -415,10 +416,20 @@ namespace ColorVision.ImageEditor.Algorithms
                 Failures = [new AlgorithmFailure(code, message, path)],
             };
 
-        private static Dictionary<string, JsonElement> Row(params (string Name, object? Value)[] values)
-            => values.ToDictionary(value => value.Name, value => Value(value.Value), StringComparer.Ordinal);
-
-        private static JsonElement Value(object? value) => AlgorithmJson.ToElement(value);
+        private static Dictionary<string, JsonElement> SnapshotRow(Dictionary<string, object?> values)
+        {
+            // One independent JSON owner per row. Pair its properties with the same
+            // dictionary's insertion order to retain existing column-name strings.
+            JsonElement serialized = AlgorithmJson.ToElement(values);
+            JsonElement.ObjectEnumerator properties = serialized.EnumerateObject();
+            Dictionary<string, JsonElement> row = new(values.Count, StringComparer.Ordinal);
+            foreach (string name in values.Keys)
+            {
+                properties.MoveNext();
+                row.Add(name, properties.Current.Value);
+            }
+            return row;
+        }
 
         private sealed class ProfileRaster
         {

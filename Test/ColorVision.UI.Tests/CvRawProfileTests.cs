@@ -7,6 +7,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Algorithms;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
@@ -98,6 +99,45 @@ public sealed class CvRawProfileTests
             Assert.False(File.Exists(path));
         }
         finally { CVFileReadCache.Release(); CVFileReadCache.IsEnabled = enabled; }
+    }
+
+    [Fact]
+    public void MeasurementRowsRetainIndependentDoubleValuesAndNonfiniteStatusCells()
+    {
+        const double precise = 0.12345678901234567;
+        using var source = new DoubleProfileSource([precise, double.NaN, double.PositiveInfinity, double.NegativeInfinity]);
+        ImageProfileParameters parameters = new() { Interpolation = ImageProfileInterpolation.Nearest };
+        var invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageProfile, parameters, new PolylineAlgorithmRoi([new(0, 0), new(3, 0)]));
+        using var result = new ImageProfileAlgorithmProvider().ExecuteMeasurement(invocation, parameters, source,
+            new ImageSelectionScope(Guid.NewGuid(), 1, source.Width, source.Height, 96, 96), default);
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        AlgorithmTableArtifact table = result.GetArtifact<AlgorithmTableArtifact>("image-profile-samples")!;
+        Assert.Equal(new[] { "SampleIndex", "RequestedIndex", "SegmentIndex", "DistancePixels", "DistanceMillimetres", "XPixel", "YPixel", "Signal Δ", "Signal ΔStatus" },
+            table.Columns.Select(column => column.Name));
+        Assert.Equal(4, table.Rows.Count);
+        Assert.Equal(precise, table.Rows[0]["Signal Δ"].GetDouble());
+        Assert.Equal(new[] { "Finite", "NaN", "+Infinity", "-Infinity" }, table.Rows.Select(row => row["Signal ΔStatus"].GetString()));
+        for (int index = 0; index < table.Rows.Count; index++)
+        {
+            Assert.Equal(index, table.Rows[index]["SampleIndex"].GetInt32());
+            Assert.Equal(index, table.Rows[index]["DistancePixels"].GetDouble());
+            if (index > 0) Assert.Equal(JsonValueKind.Null, table.Rows[index]["Signal Δ"].ValueKind);
+        }
+    }
+
+    private sealed class DoubleProfileSource(double[] values) : IImageProfileMeasurementSource
+    {
+        public int Width => values.Length;
+        public int Height => 1;
+        public int RawChannelCount => 1;
+        public IReadOnlyList<string> ChannelNames { get; } = ["Signal Δ"];
+        public string ValueDescription => "Original double measurement values";
+        public string FormatName => "Float64";
+        public string? GetUnit(int channel) => "cd/m²";
+        public double GetChannelValue(int channel, ReadOnlySpan<double> sampledValues) => sampledValues[0];
+        public double Read(int x, int y, int channel) => values[x];
+        public void Dispose() { }
     }
 
     internal static AlgorithmResult Run(IImageProfileMeasurementSource source)
