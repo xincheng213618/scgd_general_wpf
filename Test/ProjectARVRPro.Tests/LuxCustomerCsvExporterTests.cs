@@ -226,8 +226,12 @@ public sealed class LuxCustomerCsvExporterTests
         }
     }
 
-    [Fact]
-    public void ActiveLuxFamiliesIncludeChessboardPoiSnapshotsAndKeepTheOriginalGroupAndMetricNames()
+    [Theory]
+    [InlineData(LuxCsvFormat.Current, "P")]
+    [InlineData(LuxCsvFormat.Current, "P_")]
+    [InlineData(LuxCsvFormat.Legacy, "P")]
+    [InlineData(LuxCsvFormat.Legacy, "P_")]
+    public void ActiveLuxFamiliesIncludeChessboardPoiSnapshotsAndKeepTheOriginalGroupAndMetricNames(LuxCsvFormat format, string pointPrefix)
     {
         var result = new ObjectiveTestResult
         {
@@ -244,17 +248,20 @@ public sealed class LuxCustomerCsvExporterTests
             ProcessTypeFullName = typeof(ChessboardProcess).FullName,
             ViewResultJson = JsonConvert.SerializeObject(new
             {
-                PoixyuvDatas = Enumerable.Range(1, 16).Select(index => new { Name = "P" + index, Y = 10 * index }).ToArray(),
+                PoixyuvDatas = Enumerable.Range(1, 16).Select(index => new { Name = pointPrefix + index, Y = 10 * index }).ToArray(),
                 ChessboardContrast = Item("database-contrast", 120)
             })
         };
-        IReadOnlyList<ObjectiveTestCsvRow> rows = LuxCsvProjector.CollectRows(result, LuxCsvFormat.Current, [snapshot]);
+        IReadOnlyList<ObjectiveTestCsvRow> rows = LuxCsvProjector.CollectRows(result, format, [snapshot]);
         Assert.Contains(rows, row => row.TestScreen == "W255" && row.TestItem == "Diagonal_Field_of_View_Angle" && row.TestValue == "46");
         Assert.Contains(rows, row => row.TestScreen == "W255" && row.TestItem == "P1(Lv)" && row.TestValue == "123");
-        Assert.Contains(rows, row => row.TestScreen == "Chessborad_4x4" && row.TestItem == "P16(Lv)" && row.TestValue == "160");
+        foreach (int index in Enumerable.Range(1, 16))
+            Assert.Contains(rows, row => row.TestScreen == "Chessborad_4x4" && row.TestItem == $"P{index}(Lv)" && row.TestValue == (10 * index).ToString(CultureInfo.InvariantCulture));
+        Assert.DoesNotContain(rows, row => row.TestScreen == "Chessborad_4x4" && row.TestItem.StartsWith("P_", StringComparison.Ordinal));
         Assert.Contains(rows, row => row.TestScreen == "Chessborad_4x4" && row.TestItem == "Contrast_radio" && row.TestValue == "120");
         Assert.DoesNotContain(rows, row => row.TestValue == "999");
-        Assert.Contains(rows, row => row.TestScreen == "MTF" && row.TestItem == "P1_horizontal" && row.TestValue == "0.6");
+        string mtfName = format == LuxCsvFormat.Current ? "P1_horizontal" : "0F_Center_horizontal";
+        Assert.Contains(rows, row => row.TestScreen == "MTF" && row.TestItem == mtfName && row.TestValue == "0.6");
         Assert.Contains(rows, row => row.TestScreen == "Distortion" && row.TestItem == "SMIA_TV_Distortion_Horizontal" && row.TestValue == "0.2");
         Assert.Contains(rows, row => row.TestScreen == "Optical_Center" && row.TestItem == "Tilt_x" && row.TestValue == "1");
         Assert.All(rows, row => Assert.Contains(row.TestResult, new[] { "pass", "fail" }));

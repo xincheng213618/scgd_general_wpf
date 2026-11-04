@@ -4,6 +4,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Exports;
+using ProjectARVRPro.Exports.Lux;
 using ProjectARVRPro.Services;
 using System.IO;
 using System.Net.Sockets;
@@ -123,13 +124,19 @@ public partial class ARVRWindow
         bool succeeded = false;
         string? failure = null;
         string completionEvent = "Failed";
-        void UpdateStatus() => ExecutionStatus.Status = FlowExecutionStatusInfo.Running(operation, operation, elapsed.ElapsedMilliseconds, 0);
+        string stage = operation;
+        void UpdateStatus() => ExecutionStatus.Status = FlowExecutionStatusInfo.Running(operation, stage, elapsed.ElapsedMilliseconds, 0);
+        void BeginSave()
+        {
+            stage = "正在保存结果";
+            UpdateStatus();
+        }
         UpdateStatus();
         var progress = new DispatcherTimer(TimeSpan.FromMilliseconds(ExecutionStatusRefreshIntervalMs), DispatcherPriority.Background,
             (_, _) => UpdateStatus(), Dispatcher);
         try
         {
-            Directory.CreateDirectory(directory);
+            log.Info($"LUX 设备测量开始: SocketCode={session.Request.SocketCode}, SN={session.Request.SerialNumber}");
             if (session.Request.SocketCode == "01")
             {
                 double? measured = await LuxDeviceMeasurements.MeasureVidAsync(_luxLifetime.Token);
@@ -138,8 +145,9 @@ public partial class ARVRWindow
                 if (!double.IsFinite(value)) throw new InvalidOperationException("VID 结果不是有效数值。");
                 var item = new ObjectiveTestItem { Name = "VID", Unit = "cd/m^2", Value = value, LowLimit = min, UpLimit = max };
                 string row = $"2pixel_linePair,{item.Name},{item.Value},{item.Unit},{item.LowLimit},{item.UpLimit},{(item.TestResult ? "pass" : "fail")}";
-                File.WriteAllLines(Path.Combine(directory, Tool.SanitizeFileName($"B_{session.Request.SerialNumber}.csv")),
-                    [ProjectARVRResultCsvExporter.Header, row]);
+                BeginSave();
+                await LuxDeviceReportWriter.WriteAsync(Path.Combine(directory, Tool.SanitizeFileName($"B_{session.Request.SerialNumber}.csv")),
+                    path => File.WriteAllLines(path, [ProjectARVRResultCsvExporter.Header, row]), _luxLifetime.Token);
                 session.Complete(session.Request.MeasurementResponse(value));
             }
             else
@@ -147,7 +155,11 @@ public partial class ARVRWindow
                 var (measured, spectrum) = await LuxDeviceMeasurements.MeasureFluxAsync(_luxLifetime.Token);
                 succeeded = measured && spectrum != null;
                 if (spectrum != null)
-                    SpectrumCsvExportHelper.ExportLuminousFluxMode(Path.Combine(directory, Tool.SanitizeFileName($"D_{session.Request.SerialNumber}.csv")), [spectrum]);
+                {
+                    BeginSave();
+                    await LuxDeviceReportWriter.WriteAsync(Path.Combine(directory, Tool.SanitizeFileName($"D_{session.Request.SerialNumber}.csv")),
+                        path => SpectrumCsvExportHelper.ExportLuminousFluxMode(path, [spectrum]), _luxLifetime.Token);
+                }
                 session.Complete(session.Request.MeasurementResponse(measured ? spectrum?.LuminousFlux : 0));
             }
             completionEvent = succeeded ? "Completed" : "Failed";

@@ -56,10 +56,13 @@ internal static class LuxDeviceMeasurements
 
     internal static async Task<(bool Succeeded, ViewResultSpectrum? Result)> MeasureFluxAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         DeviceSpectrum spectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault()
             ?? throw new InvalidOperationException("未配置光谱仪设备。");
         // Keep the existing device API: its backend decides between local SDK and service execution.
-        MsgReturn? response = await WaitForResultAsync(spectrum.DService.GetData(), cancellationToken);
+        bool openLocal = spectrum.IsLocalSpectrumBackend && spectrum.DService.DeviceStatus == DeviceStatusType.Closed;
+        MsgReturn? response = await RequestFluxMeasurementAsync(openLocal, () => spectrum.DService.Open(),
+            () => spectrum.DService.GetData(), cancellationToken);
         if (response == null) return (false, null);
         JObject data = NormalizeData(response);
         SpectumResultEntity? model = ReadLocalSpectrumModel(data);
@@ -75,6 +78,23 @@ internal static class LuxDeviceMeasurements
             }, cancellationToken);
         }
         return (true, model == null ? null : new ViewResultSpectrum(model));
+    }
+
+    internal static async Task<MsgReturn?> RequestFluxMeasurementAsync(bool openLocal, Func<MsgRecord> open,
+        Func<MsgRecord> measure, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (openLocal)
+        {
+            log.Info("LUX 本地光谱仪打开开始");
+            if (await WaitForResultAsync(open(), cancellationToken) == null) return null;
+            log.Info("LUX 本地光谱仪打开完成");
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        log.Info("LUX 光通量采集开始");
+        MsgReturn? result = await WaitForResultAsync(measure(), cancellationToken);
+        log.Info($"LUX 光通量采集结束: Success={result != null}");
+        return result;
     }
 
     internal static SpectumResultEntity? ReadLocalSpectrumModel(JObject data) => data["Model"]?.ToObject<SpectumResultEntity>();

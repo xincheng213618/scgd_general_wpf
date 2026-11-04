@@ -17,7 +17,7 @@
                 <WrapPanel x:Name="NavigationPanel">
                     <Button x:Name="PreviousButton" Content="{display:DisplayText Key='上一张'}" Click="Previous_Click" Padding="12,6" Margin="0,0,8,0"/>
                     <Button x:Name="NextButton" Content="{display:DisplayText Key='下一张'}" Click="Next_Click" Padding="12,6"/>
-                    <Button Content="{display:DisplayText Key='重新验证'}" Click="Run_Click" Padding="12,6" Margin="0,8,8,0"/>
+                    <Button x:Name="RunButton" Content="{display:DisplayText Key='开始验证'}" Click="Run_Click" Padding="12,6" Margin="0,8,8,0"/>
                     <Button Content="{display:DisplayText Key='导出本次报告'}" Click="Export_Click" Padding="12,6" Margin="0,8,0,0"/>
                 </WrapPanel>
                 <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,12,0,0" AutomationProperties.LiveSetting="Polite"/>
@@ -26,9 +26,20 @@
                 <StackPanel>
                     <TextBlock Text="{display:DisplayText Key='算法实证'}" FontSize="23" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <TextBlock Text="{display:DisplayText Key='逐张查看原图，在同一输入上比对算法。'}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <WrapPanel x:Name="ImageSourceActions" Margin="0,0,0,8">
+                        <Button Content="{display:DisplayText Key='选择图像…'}" Click="SelectImages_Click" Padding="8,4" Margin="0,0,6,6"/>
+                        <Button Content="{display:DisplayText Key='云盘…'}" Click="OpenCloudDrive_Click" Padding="8,4" Margin="0,0,6,6"/>
+                        <Button x:Name="UploadCurrentImageButton" Content="{display:DisplayText Key='上传当前原图…'}" Click="UploadCurrentImage_Click" IsEnabled="False" Padding="8,4" Margin="0,0,6,6"/>
+                    </WrapPanel>
+                    <ComboBox x:Name="AlgorithmCategory" SelectedIndex="0" SelectionChanged="AlgorithmCategory_Changed" Margin="0,0,0,8">
+                        <ComboBoxItem Content="{display:DisplayText Key='发光区'}"/>
+                        <ComboBoxItem Content="{display:DisplayText Key='十字 RGB 分离'}"/>
+                        <ComboBoxItem Content="{display:DisplayText Key='点阵畸变'}"/>
+                    </ComboBox>
                     <ComboBox x:Name="SourceFilter" SelectedIndex="0" SelectionChanged="SourceFilter_Changed" Margin="0,0,0,16">
-                        <ComboBoxItem Content="{display:DisplayText Key='W51 图像'}"/>
+                        <ComboBoxItem Content="{display:DisplayText Key='匹配流程图像'}"/>
                         <ComboBoxItem Content="{display:DisplayText Key='全部流程图像'}"/>
+                        <ComboBoxItem Content="{display:DisplayText Key='自选图像'}"/>
                     </ComboBox>
                     <TextBlock Text="{display:DisplayText Key='参与比对的算法'}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <ItemsControl x:Name="AlgorithmsList">
@@ -38,7 +49,29 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock Text="{display:DisplayText Key='红色：RobustV2；蓝色：经典算法。更改勾选后点击重新验证。'}"
+                    <StackPanel x:Name="PatternPanel" Visibility="Collapsed" Margin="0,6,0,12">
+                        <Button Content="{display:DisplayText Key='本地算法参数…'}" Click="ConfigurePattern_Click" HorizontalAlignment="Left"/>
+                        <TextBlock x:Name="PatternDetails" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        <Button x:Name="CrossRegionButton" Content="{display:DisplayText Key='十字搜索区域…'}" Click="ConfigureCrossRegion_Click" HorizontalAlignment="Left" Margin="0,6,0,0"/>
+                        <TextBlock Text="{display:DisplayText Key='本次参数仅用于实证，不修改流程；需要复现历史结果时请核对原始参数和搜索区域。'}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="ServerAaPanel" Margin="0,6,0,12">
+                        <TextBlock Text="{display:DisplayText Key='服务端 AA（本机调用）'}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBox x:Name="ServerAaLibrary" IsReadOnly="True" TextWrapping="Wrap" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        <Button Content="{display:DisplayText Key='选择 AA DLL…'}" Click="SelectServerAaLibrary_Click" HorizontalAlignment="Left" Margin="0,6,0,8"/>
+                        <ComboBox x:Name="ServerAaParameters" DisplayMemberPath="Name"/>
+                        <Button Content="{display:DisplayText Key='加载 AA 参数 JSON…'}" Click="LoadServerAaParameters_Click" HorizontalAlignment="Left" Margin="0,6,0,0"/>
+                        <TextBlock Text="{display:DisplayText Key='参考参数不代表历史流程参数。可选择当前 AA 模板或加载 JSON；只用于本次比对。'}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="ServerDistortionPanel" Visibility="Collapsed" Margin="0,6,0,12">
+                        <TextBlock Text="{display:DisplayText Key='服务端旧版畸变（本机调用）'}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBox x:Name="ServerDistortionLibrary" IsReadOnly="True" TextWrapping="Wrap"/>
+                        <Button Content="{display:DisplayText Key='选择畸变 DLL…'}" Click="SelectServerDistortionLibrary_Click" HorizontalAlignment="Left" Margin="0,6,0,8"/>
+                        <ComboBox x:Name="ServerDistortionParameters" DisplayMemberPath="Name"/>
+                        <Button Content="{display:DisplayText Key='加载畸变参数 JSON…'}" Click="LoadServerDistortionParameters_Click" HorizontalAlignment="Left" Margin="0,6,0,0"/>
+                        <TextBlock Text="{display:DisplayText Key='参考参数不代表历史流程参数；新旧畸变口径请分别核对，不直接按数值相减判定优劣。'}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,0"/>
+                    </StackPanel>
+                    <TextBlock x:Name="AlgorithmLegend" Text="{display:DisplayText Key='红色：RobustV2；蓝色：经典算法；黄色：服务端 AA。点击开始验证后运行。'}"
                                TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,6,0,16"/>
                     <TextBox x:Name="SourceDetails" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0" Background="Transparent" IsUndoEnabled="False"/>
                     <TextBlock Text="{display:DisplayText Key='缺失原图自动跳过。成功表示算法接受本图，仍需核对叠图；历史结果不会被改写。'}"

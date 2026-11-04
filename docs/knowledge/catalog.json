@@ -502,7 +502,8 @@
         "Test/opencv_helper_test/benchmark_public_grid_distortion.py",
         "Test/ColorVision.UI.Tests/GridDistortionTests.cs",
         "Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs",
-        "Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"
+        "Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs",
+        "Test/ColorVision.UI.Tests/DistortionHistoryOverlayTests.cs"
       ],
       "related": [
         "algorithms.arvr",
@@ -1408,7 +1409,9 @@
         "键盘亮度校正",
         "POINode",
         "IsCCTWave",
-        "色温/波长"
+        "色温/波长",
+        "9点校准",
+        "EnableNinePointCalibration"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs",
@@ -1421,7 +1424,10 @@
         "Engine/ColorVision.Engine/Templates/Jsons/BuildPOIAA/TemplateBuildPOIAA.cs",
         "Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/TemplatePoiAnalysis.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/POINode.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/POI/BuildPOINode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationRealPoiNode.cs",
+        "UI/ColorVision.Core/NinePointBlockCalibration.cs",
+        "Engine/ColorVision.Engine/Templates/POI/LocalNinePointPoiCalibration.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs",
@@ -1429,7 +1435,9 @@
         "Test/ColorVision.UI.Tests/PoiPointModelTests.cs",
         "Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs",
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
-        "Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs"
+        "Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs",
+        "Test/ColorVision.UI.Tests/NinePointBlockCalibrationTests.cs",
+        "Test/ColorVision.UI.Tests/LocalNinePointPoiCalibrationTests.cs"
       ],
       "related": [
         "algorithms.index",
@@ -1438,7 +1446,8 @@
         "engine.results"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Core"
       ],
       "domain": "algorithms",
       "title": "POI 模板",
@@ -1467,14 +1476,16 @@
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationDraft.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/RgbCrossConfigurationWindow.xaml",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRgbCrossNode.cs",
-        "Scripts/validate_rgb_cross.ps1"
+        "Scripts/validate_rgb_cross.ps1",
+        "Engine/ColorVision.Engine/Templates/Jsons/FindCross"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalRgbCrossNodeTests.cs",
         "Test/ColorVision.UI.Tests/LocalRgbCrossConfigurationTests.cs",
         "Test/ColorVision.UI.Tests/RgbCrossProfileTests.cs",
         "Test/ColorVision.UI.Tests/RgbCrossPoolingTests.cs",
-        "Test/ColorVision.UI.Tests/RgbCrossLocatorStatisticsTests.cs"
+        "Test/ColorVision.UI.Tests/RgbCrossLocatorStatisticsTests.cs",
+        "Test/ColorVision.UI.Tests/LocalRgbCrossHistoryTests.cs"
       ],
       "related": [
         "algorithms.display-metrology",

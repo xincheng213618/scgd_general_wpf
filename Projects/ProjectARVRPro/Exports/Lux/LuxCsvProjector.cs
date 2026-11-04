@@ -114,7 +114,7 @@ internal static class LuxCsvProjector
         foreach (var point in points)
         {
             index++;
-            string name = point.Value<string>("Name") ?? $"P{index}";
+            string name = CanonicalPoiName(point.Value<string>("Name") ?? $"P{index}");
             rows.Add(ItemRow(new ObjectiveTestItem { Value = point.Value<double?>("Y") ?? 0 }, screen, name + "(Lv)", "cd/m^2", 1));
         }
         ObjectiveTestItem? Read(string name) => result[name]?.ToObject<ObjectiveTestItem>();

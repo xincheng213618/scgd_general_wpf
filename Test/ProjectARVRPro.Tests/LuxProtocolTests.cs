@@ -248,4 +248,76 @@ public sealed class LuxProtocolTests
         ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() => record!.MsgRecordState = MsgRecordState.Fail);
         Assert.Null(await LuxDeviceMeasurements.WaitForResultAsync(record!, CancellationToken.None));
     }
+
+    // LUX must wait for a confirmed local connection before issuing the measurement or replying.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FluxWaitsForRequiredOpenAndReturnsOnlyTheMeasurementReply(bool openLocal)
+    {
+        MsgRecord open = PendingCommand("Open"), measure = PendingCommand("GetData");
+        var measured = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var commands = new List<string>();
+        Task<MsgReturn?> pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(openLocal,
+            () => { commands.Add("Open"); return open; },
+            () => { commands.Add("GetData"); measured.SetResult(); return measure; }, CancellationToken.None);
+        if (openLocal)
+        {
+            Assert.Equal(["Open"], commands);
+            Assert.False(measured.Task.IsCompleted);
+            Assert.False(pending.IsCompleted);
+            CompleteCommand(open, MsgRecordState.Success);
+        }
+        await measured.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(openLocal ? ["Open", "GetData"] : ["GetData"], commands);
+        Assert.False(pending.IsCompleted);
+        CompleteCommand(measure, MsgRecordState.Success);
+        Assert.Same(measure.MsgReturn, await pending.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Theory]
+    [InlineData(MsgRecordState.Fail)]
+    [InlineData(MsgRecordState.Timeout)]
+    public async Task FluxDoesNotMeasureWhenLocalOpenFails(MsgRecordState failure)
+    {
+        MsgRecord open = PendingCommand("Open");
+        Task<MsgReturn?> pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(true, () => open,
+            () => throw new InvalidOperationException("Measurement must not follow failed open."), CancellationToken.None);
+        CompleteCommand(open, failure);
+        Assert.Null(await pending.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CanceledFluxDoesNotStartMeasurementAfterALateOpenReply(bool canceledBeforeOpen)
+    {
+        MsgRecord open = PendingCommand("Open");
+        using var cancellation = new CancellationTokenSource();
+        int openCalls = 0, measurements = 0;
+        if (canceledBeforeOpen) cancellation.Cancel();
+        Task<MsgReturn?> pending = LuxDeviceMeasurements.RequestFluxMeasurementAsync(true,
+            () => { openCalls++; return open; },
+            () => { measurements++; return PendingCommand("GetData"); }, cancellation.Token);
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending.WaitAsync(TimeSpan.FromSeconds(5)));
+        CompleteCommand(open, MsgRecordState.Success);
+        Assert.Equal(canceledBeforeOpen ? 0 : 1, openCalls);
+        Assert.Equal(0, measurements);
+    }
+
+    private static MsgRecord PendingCommand(string eventName)
+    {
+        MsgRecord record = null!;
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() => record = new MsgRecord
+            { MsgSend = new MsgSend { EventName = eventName }, MsgRecordState = MsgRecordState.Sended });
+        return record;
+    }
+
+    private static void CompleteCommand(MsgRecord record, MsgRecordState state) =>
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            record.MsgReturn = new MsgReturn { EventName = record.MsgSend.EventName, Code = state == MsgRecordState.Success ? 0 : -1 };
+            record.MsgRecordState = state;
+        });
 }
