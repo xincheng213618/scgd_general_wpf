@@ -50,7 +50,8 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
-        public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsTcpPortInspection(request);
+        public bool IsAvailable(CopilotAgentRequest request) =>
+            CopilotToolIntentPolicy.CanUseLocalReadTools(request) || CopilotToolIntentPolicy.NeedsTcpPortInspection(request);
 
         public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,

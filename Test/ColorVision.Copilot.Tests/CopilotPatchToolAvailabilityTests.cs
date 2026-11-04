@@ -160,6 +160,58 @@ public sealed class CopilotPatchToolAvailabilityTests
         CodexSandboxMode = readOnlySandbox ? CopilotCodexSandboxMode.ReadOnly : CopilotCodexSandboxMode.WorkspaceWrite,
     };
 
+    // Wording-independent exposure must stay limited to reads that need no approval and leave the machine only via the model.
+    [Theory]
+    [InlineData(CopilotAgentMode.Auto, true)]
+    [InlineData(CopilotAgentMode.Diagnose, true)]
+    [InlineData(CopilotAgentMode.Chat, false)]
+    [InlineData(CopilotAgentMode.Web, false)]
+    [InlineData(CopilotAgentMode.Review, false)]
+    public void LocalReadToolsFollowTheModeAndNotTheWording(CopilotAgentMode mode, bool expected)
+    {
+        var root = Path.GetTempPath();
+        var request = new CopilotAgentRequest
+        {
+            Mode = mode,
+            UserText = "结果表里 NG 有几条",
+            WritableLocalRootPaths = [root],
+            SearchRootPaths = [root],
+        };
+        var names = new CopilotToolRegistry(CopilotToolRegistry.CreateDefaultTools()).FindTools(request)
+            .Select(tool => tool.Name)
+            .ToArray();
+
+        foreach (var name in new[] { "QueryDatabaseSql", "QueryFlowExecutionStats", CopilotSharedAgentToolNames.GetRecentLog, "InspectWindowsServices", "InspectTcpPort" })
+            Assert.Equal(expected, names.Contains(name));
+        Assert.DoesNotContain("ExecuteDatabaseSql", names);
+        if (mode != CopilotAgentMode.Web)
+        {
+            Assert.DoesNotContain("WebSearch", names);
+            Assert.DoesNotContain("FetchUrl", names);
+        }
+        if (mode != CopilotAgentMode.Review)
+            Assert.DoesNotContain("InspectGitDiff", names);
+    }
+
+    [Fact]
+    public void AWriteOptOutKeepsWorkspaceSearchButRemovesPatchTools()
+    {
+        var root = Path.GetTempPath();
+        var names = new CopilotToolRegistry(CopilotToolRegistry.CreateDefaultTools())
+            .FindTools(new CopilotAgentRequest
+            {
+                Mode = CopilotAgentMode.Auto,
+                UserText = "别改代码，只分析原因",
+                WritableLocalRootPaths = [root],
+                SearchRootPaths = [root],
+            })
+            .Select(tool => tool.Name)
+            .ToArray();
+
+        Assert.Contains(CopilotSharedAgentToolNames.GrepText, names);
+        Assert.DoesNotContain("ApplyWorkspacePatchEnvelope", names);
+    }
+
     private static ICopilotTool[] CreateTools()
     {
         var store = new CopilotWorkspacePatchStore();

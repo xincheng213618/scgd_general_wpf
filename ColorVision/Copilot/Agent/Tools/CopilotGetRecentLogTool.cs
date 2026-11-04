@@ -17,7 +17,8 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
-        public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsRecentLogs(request);
+        public bool IsAvailable(CopilotAgentRequest request) =>
+            CopilotToolIntentPolicy.CanUseLocalReadTools(request) || CopilotToolIntentPolicy.NeedsRecentLogs(request);
 
         public async Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,

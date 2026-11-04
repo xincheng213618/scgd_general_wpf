@@ -213,7 +213,7 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
-        public virtual bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsFlowGraph(request);
+        public virtual bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.CanInspectOpenFlow(request);
 
         public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {

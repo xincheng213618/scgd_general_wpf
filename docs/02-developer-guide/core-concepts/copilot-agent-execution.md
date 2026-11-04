@@ -26,7 +26,9 @@ Framework 保持 Provider CallId 与结果配对；ColorVision 负责权限、�
 
 工具可见表示本轮可用，不能推导为用户要求执行。工作区读取与补丁工具按冻结路径、模式、sandbox 和禁止修改约束开放；附加只读根不成为可写根或可信项目指令根。项目指令随工作区能力加载，不把普通应用任务强制改判为源码检查。
 
-Flow patch 要求流程相关上下文，但不能因修改同义词或附带解释要求而隐藏。Plan、Review、Diagnose、Chat、只读 sandbox、空请求和明确禁止修改仍阻止 patch；执行瞬间还须复核权限、文件指纹或图 revision。`NeedsWorkspaceEdit/Create/Rollback` 用于完成证据，不能因为工具可见而强制修改。
+Flow patch 要求流程相关上下文，但不能因修改同义词或附带解释要求而隐藏。Plan、Review、Diagnose、Chat、只读 sandbox、空请求和明确禁止修改仍阻止 patch；执行瞬间还须复核权限、文件指纹或图 revision。`NeedsWorkspaceEdit/Create/Rollback` 只描述请求文字的倾向，不能因为工具可见而强制修改。
+
+完成证据按信号来源分两级。Auto 下，改文件、回滚、验证、Shell 和文字里要求联网只生成不阻断的提示（`IntentHintRequirement`），未使用对应工具仍可正常结束，因为文字无法证明用户要的是落盘还是只改一段回复；有工具的轮次改由通用指令要求没有成功工具结果就不得声称已改或已运行，这是模型指令而非宿主校验。用户选择 Code、Web、Review 模式，或有附件、显式本地文件、直接 URL、`RequiredSuccessfulToolNames` 时仍硬性要求，缺证据按 `Blocked` 结束。批量图像暂是文字信号里的例外，继续硬性要求；已知“这些图片需要做白平衡吗”会误触发。
 
 `RunWorkspaceValidation` 在允许修改且有可写根时稳定提供；仅精确文件写权限不足以授权构建，Review 仅允许用户明确要求的有界验证。可见不增加必须验证的完成条件，批准也不授权根外项目。定位 `CopilotPatchToolAvailabilityTests`、`CopilotWorkspaceValidationAdmissionTests`。
 
@@ -110,7 +112,7 @@ HTTP/流失败在已有进展后分别保留 `provider_request_rejected`、`prov
 
 ## 稳定只读工具与动态暴露
 
-Auto 本地读取工具按证据需求、工作区能力或有界续问记录开放，不因仅有搜索根就保证每句短问都暴露。模型可直接回答概念问题；可见工具不增加必须搜索的完成条件。外部 MCP 的文件/Web/URL 能力仍遵守对应意图门槛，业务设备工具按自身可用性判断。
+无需审批且只读本机的工具不看请求措辞：`CanUseLocalReadTools` 让数据库查询、流程统计、日志、文档和 Windows 系统诊断在 Auto、Code、Plan、Diagnose、Explain 下稳定开放，有打开的流程时再开放流程图读取。本地文件搜索还要求有可写工作区，仅有附加只读根时仍按证据需求或有界续问开放，不因仅有搜索根就保证每句短问都暴露；用户说“只分析”只移除补丁工具，不移除搜索。每次调用都要审批的 Git 工具和会把内容发往外部的 `WebSearch`、`FetchUrl` 仍按意图开放。模型可直接回答概念问题；可见工具不增加必须搜索的完成条件。外部 MCP 的文件/Web/URL 能力仍遵守对应意图门槛，业务设备工具按自身可用性判断。
 
 搜索发现的文件可在同一运行内继续读，但须落在规范授权根，拒绝重解析越界，多根同名须唯一匹配。失败路径诊断只检查已授权根内的元数据，不读目标正文或扩大授权；根消失/失权不能改搜父目录。实现定位 `CopilotLocalPathAuthorizationTests`、`CopilotMcpPathSecurityTests`。
 
@@ -139,7 +141,7 @@ Auto 本地读取工具按证据需求、工作区能力或有界续问记录开
 
 ## 何时强制联网证据
 
-直接 URL、Web 模式和明确要求联网搜索才强制成功 Web 证据。普通概念问题不因存在 WebSearch 增加执行轮次；没有匹配工具时不制造空循环。工具暴露、用户意图和完成证据是三种判断，用户禁网仍优先。
+直接 URL 和 Web 模式才强制成功 Web 证据；Auto 下文字明确要求联网搜索只作提示。普通概念问题不因存在 WebSearch 增加执行轮次；没有匹配工具时不制造空循环。工具暴露、用户意图和完成证据是三种判断，用户禁网仍优先。
 
 ## Review 的证据与结构化 findings
 
@@ -153,7 +155,7 @@ finding 的路径、old/new 侧和行范围须有可见 hunk 正文支持，不�
 
 ## 工作区补丁的预览、应用与回滚
 
-工作区修改必须有正式应用成功证据，输出代码或声称已改不满足执行契约。现有文件用 `PreviewWorkspacePatch → ApplyWorkspacePatch`，精确唯一替换并绑定原 SHA-256；新文件用 `PreviewCreateWorkspaceFile → ApplyCreateWorkspaceFile`，只在可写根创建白名单文本，绝不覆盖。创建目录须能确认归属，不能在竞争中误认其他进程的目录为自建。
+声称工作区已修改必须有正式应用成功证据，何时硬性检查见[工具可见性与任务意图](#工具可见性与任务意图)。现有文件用 `PreviewWorkspacePatch → ApplyWorkspacePatch`，精确唯一替换并绑定原 SHA-256；新文件用 `PreviewCreateWorkspaceFile → ApplyCreateWorkspaceFile`，只在可写根创建白名单文本，绝不覆盖。创建目录须能确认归属，不能在竞争中误认其他进程的目录为自建。
 
 应用须用本进程仍有效的 preview ID，重新复核当前范围/冲突并经原生审批。`RollbackWorkspacePatch` 再审批且应用后指纹仍匹配，才恢复原字节或删除 Agent 新建文件；仅清理仍为空且确为 Agent 原子创建的目录。预览不跨重启授权。
 
@@ -196,6 +198,8 @@ Chat 对 SSE 的非空 JSON data（除 `[DONE]`）及非流式 JSON 严格验语
 输出规则在主循环、委派和最终回答一致：保留用户要求的字段名、大小写、类型、单位；依据明确时允许翻译/映射/计算，不需在源文件中寻找同名输出键，也不等于修改源文件。未知值不强转 false，仅 JSON 不加围栏。它仍是模型指令而非 Provider Schema 强制验证，可解析 JSON 不证明任务完成。
 
 ## 业务评测
+
+意图样本在 `Evaluation/CopilotIntentSamples.cs`，按用户真实诉求标注，经真实工具注册表和执行契约离线评分，不调用模型、不产生费用。`CopilotIntentEvaluationTests` 输出报告到测试输出目录的 `copilot-intent-report.md` 或环境变量 `COPILOT_INTENT_REPORT` 指定的路径；匹配率只描述合成样本上的当前策略，不是线上误判率，也不作通过门槛。
 
 合成场景定义在 `Test/ColorVision.Copilot.Tests/Evaluation/CopilotBusinessScenarios.cs`。`Scripts/evaluate_copilot.ps1` 筛选 `CopilotBusinessEvaluationTests.EvaluateConfiguredProfile`，但当前源树没有该测试入口，不能据此直接取得真实模型评测结果；脚本未产出 `report.json` 时也会明确失败。恢复可运行入口后须重新核验实际协议、权限装配和评分链，不能只因场景定义存在便宣称已覆盖。
 

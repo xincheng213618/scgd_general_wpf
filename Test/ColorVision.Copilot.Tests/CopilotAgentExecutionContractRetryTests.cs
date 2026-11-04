@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotAgentExecutionContractRetryTests
@@ -28,6 +30,38 @@ public sealed class CopilotAgentExecutionContractRetryTests
 
         Assert.False(evaluation.IsSatisfied);
         Assert.Equal(shouldReinvoke, evaluation.ShouldReinvoke);
+    }
+
+    // A rewording request that happens to contain an edit phrase must not end the turn as Blocked.
+    [Theory]
+    [InlineData(CopilotAgentMode.Auto, "帮我改一下这句话的语气", nameof(CopilotAgentExecutionRequirement.None), nameof(CopilotAgentExecutionRequirement.WorkspaceEdit))]
+    [InlineData(CopilotAgentMode.Code, "帮我改一下这段代码", nameof(CopilotAgentExecutionRequirement.WorkspaceEdit), nameof(CopilotAgentExecutionRequirement.None))]
+    [InlineData(CopilotAgentMode.Auto, "帮我改一下，参考 https://example.com/spec", nameof(CopilotAgentExecutionRequirement.DirectUrlEvidence), nameof(CopilotAgentExecutionRequirement.WorkspaceEdit))]
+    public void RequestTextOnlyHintsInAutoWhileExplicitSignalsEnforce(
+        CopilotAgentMode mode,
+        string userText,
+        string enforcedName,
+        string hintedName)
+    {
+        var enforced = Enum.Parse<CopilotAgentExecutionRequirement>(enforcedName);
+        var hinted = Enum.Parse<CopilotAgentExecutionRequirement>(hintedName);
+        var root = Path.GetTempPath();
+        var request = new CopilotAgentRequest
+        {
+            Mode = mode,
+            UserText = userText,
+            WritableLocalRootPaths = [root],
+            SearchRootPaths = [root],
+        };
+        var contract = CopilotAgentExecutionContract.Create(
+            request,
+            new CopilotToolRegistry(CopilotToolRegistry.CreateDefaultTools()).FindTools(request));
+
+        Assert.Equal(enforced, contract.Requirement);
+        Assert.Equal(enforced != CopilotAgentExecutionRequirement.None, contract.IsRequired);
+        Assert.Equal(hinted, contract.IntentHintRequirement);
+        Assert.Equal(enforced == CopilotAgentExecutionRequirement.None, contract.Evaluate([]).IsSatisfied);
+        Assert.Equal(hinted != CopilotAgentExecutionRequirement.None, contract.BuildInitialInstruction().Contains("not a requirement"));
     }
 
     private static CopilotAgentStepRecord Failure(

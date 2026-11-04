@@ -42,6 +42,7 @@ namespace ColorVision.Copilot
         private readonly string[] _requiredAttachedFilePaths;
         private readonly string[] _requiredLocalFilePaths;
         private readonly CopilotWorkspaceReviewTargetContext? _requiredWorkspaceReviewTarget;
+        private CopilotAgentExecutionContract? _intentHint;
 
         private CopilotAgentExecutionContract(
             CopilotAgentExecutionRequirement requirement,
@@ -85,7 +86,32 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AcceptedToolNames => _preferredToolNames;
 
-        public string BuildInitialInstruction()
+        /// <summary>What the request text suggests but does not enforce; never blocks completion.</summary>
+        public CopilotAgentExecutionRequirement IntentHintRequirement =>
+            _intentHint?.IsRequired == true ? _intentHint.Requirement : CopilotAgentExecutionRequirement.None;
+
+        public string IntentHintDescription => _intentHint?.IsRequired == true ? _intentHint.Description : string.Empty;
+
+        public string BuildInitialInstruction() => BuildRequiredInstruction() + BuildIntentHintInstruction();
+
+        private CopilotAgentExecutionContract WithIntentHint(CopilotAgentExecutionContract? intentHint)
+        {
+            _intentHint = intentHint;
+            return this;
+        }
+
+        private string BuildIntentHintInstruction()
+        {
+            if (_intentHint?.IsRequired != true)
+                return string.Empty;
+
+            var steps = _intentHint._requiredToolGroups.Select(group => group.Length == 1
+                ? group[0]
+                : $"({string.Join(" or ", group)})");
+            return $"\n\nRequest-text hint, not a requirement: this request may ask for {_intentHint.Description}. If it does, use {string.Join(" -> ", steps)}. If the user only wants wording, an explanation or a chat answer, respond directly without these tools.";
+        }
+
+        private string BuildRequiredInstruction()
         {
             if (!IsRequired)
                 return string.Empty;

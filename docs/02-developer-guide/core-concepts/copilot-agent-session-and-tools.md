@@ -117,7 +117,7 @@ Framework `ChatHistoryProvider.InvokedAsync` 是模型历史成功保存的边�
 
 ### 数据库查询与写入
 
-`QueryFlowExecutionStats` 提供测量批次的只读执行聚合，按应用机器本地日历范围，避免常见统计要求模型猜表结构。通用 `QueryDatabaseSql` 只在数据库主题/续问下开放，模型决定是否查询，工具可见不强制访问；概念问题不因关键词自动变成 SQL。
+`QueryFlowExecutionStats` 提供测量批次的只读执行聚合，按应用机器本地日历范围，避免常见统计要求模型猜表结构。通用 `QueryDatabaseSql` 在 Auto、Code、Plan、Diagnose、Explain 下稳定开放，由模型决定是否查询，工具可见不强制访问；查询结果会发给当前模型供应商，敏感列按列名脱敏。
 
 查询只接受单条白名单只读 MySQL 语句/只读 CTE，有界返回脱敏 TSV。`rows_read`/`rows_returned` 是缓冲行数，`rows_displayed` 是实际完整展示行；行、列、单元格和正文预算均可截断，`truncation_reasons` 与 `PartialResultMessage` 表达缺口。旧执行器仅有 IsTruncated 时兼容 `query_result`。没有展示截断也不证明 SQL 条件覆盖业务全集；总数用聚合，细节缩范围，不能从有限列表推全部记录。敏感列/标识符及文本会脱敏，但普通列内 JSON/编码许可证不保证安全，不能借别名绕过。
 

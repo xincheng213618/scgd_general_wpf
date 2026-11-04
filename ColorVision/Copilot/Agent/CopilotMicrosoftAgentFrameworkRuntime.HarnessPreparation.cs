@@ -49,6 +49,8 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Agent execution contract enabled · {executionContract.Description} · accepted tools: {string.Join(", ", executionContract.AcceptedToolNames)}."));
             }
+            if (executionContract.IntentHintRequirement != CopilotAgentExecutionRequirement.None)
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent intent hint · {executionContract.IntentHintDescription} · not enforced."));
             var frameworkTools = bridge.CreateFunctions();
             if (IsRequestUserInputToolEnabled(request))
             {

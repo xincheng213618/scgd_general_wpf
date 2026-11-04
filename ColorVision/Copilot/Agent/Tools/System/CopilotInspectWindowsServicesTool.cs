@@ -71,7 +71,7 @@ namespace ColorVision.Copilot
         public bool IsAvailable(CopilotAgentRequest request) => request != null
             && request.Mode != CopilotAgentMode.Chat
             && OperatingSystem.IsWindows()
-            && CopilotToolIntentPolicy.NeedsWindowsServiceInspection(request);
+            && (CopilotToolIntentPolicy.CanUseLocalReadTools(request) || CopilotToolIntentPolicy.NeedsWindowsServiceInspection(request));
 
         public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,

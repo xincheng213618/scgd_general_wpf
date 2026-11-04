@@ -39,7 +39,9 @@ namespace ColorVision.Copilot
         }
 
         internal static bool CanUseWorkspaceEvidence(CopilotAgentRequest? request) =>
-            NeedsLocalEvidence(request) || CanUseWorkspacePatch(request);
+            NeedsLocalEvidence(request)
+            || CanUseLocalReadTools(request)
+                && (request!.WritableLocalRootPaths.Count > 0 || request.WritableLocalFilePaths.Count > 0);
 
         internal static bool CanDiscoverWorkspace(CopilotAgentRequest? request) =>
             CanUseWorkspaceEvidence(request) && !HasBoundedExplicitFileScope(request);

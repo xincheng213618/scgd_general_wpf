@@ -13,6 +13,21 @@ namespace ColorVision.Copilot
                 && CopilotCodexWebSearchModeSelection.AllowsLiveSearch(request.CodexWebSearchMode);
         }
 
+        // These tools read only this machine, need no approval and send nothing to an external
+        // service beyond the model itself, so request wording does not decide their visibility.
+        internal static bool CanUseLocalReadTools(CopilotAgentRequest? request)
+        {
+            return request != null
+                && request.Mode is CopilotAgentMode.Auto or CopilotAgentMode.Code or CopilotAgentMode.Plan
+                    or CopilotAgentMode.Diagnose or CopilotAgentMode.Explain
+                && !string.IsNullOrWhiteSpace(request.UserText);
+        }
+
+        internal static bool CanInspectOpenFlow(CopilotAgentRequest? request)
+        {
+            return NeedsFlowGraph(request) || CanUseLocalReadTools(request) && HasFlowContext(request!);
+        }
+
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
