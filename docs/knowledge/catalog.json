@@ -10729,7 +10729,9 @@
         "Engine/ColorVision.Engine/Messages/MessagesListManager.cs",
         "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ResultHistoryTests.cs"
+      ],
       "related": [
         "ui.database",
         "ui.sqlite-storage",

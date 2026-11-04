@@ -47,11 +47,16 @@ namespace ColorVision.Engine.Services
 
         }
         public AlgResultMasterModel AlgResultMasterModel { get; set; }
-        public ViewResultAlg(AlgResultMasterModel item)
+        public ViewResultAlg(AlgResultMasterModel item) : this(item, BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code)
+        {
+        }
+
+        /// <summary>Uses the supplied batch code, including null, without querying batch metadata.</summary>
+        public ViewResultAlg(AlgResultMasterModel item, string? batchCode)
         {
             AlgResultMasterModel = item;
             Id = item.Id;
-            Batch = BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
+            Batch = batchCode;
             FilePath = item.ImgFile;
             POITemplateName = item.TName;
             CreateTime = item.CreateDate;

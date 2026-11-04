@@ -110,12 +110,15 @@ public sealed class ResultHistoryTests
     }
 
     [Theory]
-    [InlineData(false, 0, 10)]
-    [InlineData(true, 0, 10)]
-    [InlineData(false, 8, 8)]
-    [InlineData(true, 8, 8)]
-    [InlineData(true, 2, 2)]
-    public void HistoryQueryLoadsFullyAndTheNextLiveResultsRestoreTheLimit(bool convert, int requested, int expected)
+    [InlineData(0, 0, 10)]
+    [InlineData(1, 0, 10)]
+    [InlineData(2, 0, 10)]
+    [InlineData(0, 8, 8)]
+    [InlineData(1, 8, 8)]
+    [InlineData(2, 8, 8)]
+    [InlineData(1, 2, 2)]
+    [InlineData(2, 2, 2)]
+    public void HistoryQueryLoadsFullyAndTheNextLiveResultsRestoreTheLimit(int conversionMode, int requested, int expected)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -124,14 +127,36 @@ public sealed class ResultHistoryTests
             db.Insertable(Enumerable.Range(1, 10).Select(id => new Row { Id = id }).ToArray()).ExecuteCommand();
             var rows = new ResultHistoryCollection<Row>(row => row.Id, 3);
             int conversions = 0;
-            GenericQueryBase query = convert
-                ? new GenericQuery<Row, Row>(db, rows.QueryResults, row => { conversions++; return row; })
-                : new GenericQuery<Row>(db, rows.QueryResults);
+            var batchInputs = new List<int[]>();
+            var batchOutputs = new List<Row[]>();
+            GenericQueryBase query;
+            if (conversionMode == 0)
+                query = new GenericQuery<Row>(db, rows.QueryResults);
+            else
+            {
+                var convertedQuery = new GenericQuery<Row, Row>(db, rows.QueryResults, row => { conversions++; return row; });
+                if (conversionMode == 2)
+                {
+                    convertedQuery.BatchConverter = input =>
+                    {
+                        batchInputs.Add(input.Select(row => row.Id).ToArray());
+                        Row[] output = input.Select(row => new Row { Id = row.Id }).ToArray();
+                        batchOutputs.Add(output);
+                        return output;
+                    };
+                }
+                query = convertedQuery;
+            }
             query.QueryConfig.Count = requested;
             query.QueryDB();
             Assert.Equal(expected, rows.Count);
             Assert.Equal(Enumerable.Range(11 - expected, expected).Reverse(), rows.Select(row => row.Id));
-            Assert.Equal(convert ? expected : 0, conversions);
+            Assert.Equal(conversionMode == 1 ? expected : 0, conversions);
+            if (conversionMode == 2)
+            {
+                Assert.Equal(Enumerable.Range(11 - expected, expected).Reverse(), Assert.Single(batchInputs));
+                Assert.Equal(Assert.Single(batchOutputs), rows.ToArray());
+            }
             Assert.Equal(10, db.Queryable<Row>().Count());
             for (int id = 11; id <= 14; id++) rows.Add(new Row { Id = id });
             Assert.Equal(new[] { 12, 13, 14 }, rows.Select(row => row.Id));
@@ -140,6 +165,13 @@ public sealed class ResultHistoryTests
             query.QueryConfig.Count = 2;
             query.QueryDB();
             Assert.Equal(new[] { 10, 9 }, rows.Select(row => row.Id));
+            Assert.Equal(conversionMode == 1 ? expected + 2 : 0, conversions);
+            if (conversionMode == 2)
+            {
+                Assert.Equal(2, batchInputs.Count);
+                Assert.Equal(new[] { 10, 9 }, batchInputs[1]);
+                Assert.Equal(batchOutputs[1], rows.ToArray());
+            }
             rows.Add(new Row { Id = 14 });
             Assert.Equal(14, Assert.Single(rows).Id);
         });

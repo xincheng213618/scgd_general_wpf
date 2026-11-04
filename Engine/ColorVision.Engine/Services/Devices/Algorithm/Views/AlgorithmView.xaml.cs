@@ -503,10 +503,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var query = db.Queryable<AlgResultMasterModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            foreach (var item in dbList)
+            foreach (ViewResultAlg result in AlgorithmResultHistory.CreateViews(dbList, MySqlSetting.IsConnect ? db : null))
             {
-                ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
-                _viewResults.QueryResults.Add(ViewResultAlg);
+                _viewResults.QueryResults.Add(result);
             }
         }
 
@@ -514,7 +513,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(Db, _viewResults.QueryResults, t => new ViewResultAlg(t));
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new(Db, _viewResults.QueryResults, t => new ViewResultAlg(t))
+            {
+                BatchConverter = rows => AlgorithmResultHistory.CreateViews(rows, MySqlSetting.IsConnect ? Db : null)
+            };
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             Db.Dispose();

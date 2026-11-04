@@ -99,7 +99,7 @@ namespace ColorVision.Engine
             ViewResultAlgs.Clear();
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
             {
-                ViewResultAlgs.Add(new ViewResultAlg(item));
+                ViewResultAlgs.Add(new ViewResultAlg(item, MeasureBatchModel.Code));
             }
 
             if (ViewResultImages.Count > 0)

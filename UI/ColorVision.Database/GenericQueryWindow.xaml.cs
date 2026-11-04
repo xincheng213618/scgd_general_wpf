@@ -269,6 +269,8 @@ namespace ColorVision.Database
     {
         public ISugarQueryable<T> Query { get; set; } = null!;
         public IList<T1> ViewResluts { get; set; }
+        /// <summary>Optionally converts one query's ordered, limited rows together instead of invoking the row converter.</summary>
+        public Func<IReadOnlyList<T>, IEnumerable<T1>>? BatchConverter { get; set; }
         internal ObservableCollection<QueryCondition> QueryConditions { get; } = new();
         Func<T, T1> Converter { get; set; }
         private bool _sessionStateLoaded;
@@ -383,9 +385,10 @@ namespace ColorVision.Database
             var dbList = QueryConfig.Count > 0 ? query.Take(QueryConfig.Count).ToList() : query.ToList();
 
             ViewResluts.Clear();
-            foreach (var dbItem in dbList)
+            IEnumerable<T1> converted = BatchConverter is { } batchConverter ? batchConverter(dbList) : dbList.Select(Converter);
+            foreach (var item in converted)
             {
-                ViewResluts.Add(Converter(dbItem));
+                ViewResluts.Add(item);
             }
 
             _stopwatch.Stop();
