@@ -63,6 +63,7 @@ internal sealed class FlowPoiExecutionException(int code, string message) : Exce
 /// </summary>
 public sealed class FlowPoiExecutionService
 {
+    internal const int MasterIdsPerQuery = 500;
     private static readonly ILog log = LogManager.GetLogger(typeof(FlowPoiExecutionService));
     public static FlowPoiExecutionService Shared { get; } = new();
     private readonly Func<FlowPoiExecutionRequest, Task<FlowPoiRun>> runFlow;
@@ -201,15 +202,24 @@ public sealed class FlowPoiExecutionService
             DbType = SqlSugar.DbType.MySql,
             IsAutoCloseConnection = true
         });
+        return ReadPoiResults(db, batchId);
+    }
+
+    internal static IReadOnlyList<FlowPoiPoint> ReadPoiResults(SqlSugarClient db, int batchId)
+    {
         List<AlgResultMasterModel> masters = db.Queryable<AlgResultMasterModel>()
             .Where(item => item.BatchId == batchId && item.ImgFileType == ViewResultAlgType.POI_XYZ)
-            .OrderBy(item => item.Id).ToList();
+            .OrderBy(item => item.Id).Select(item => new AlgResultMasterModel { Id = item.Id, TName = item.TName }).ToList();
         var points = new List<FlowPoiPoint>();
-        foreach (AlgResultMasterModel master in masters)
+        foreach (AlgResultMasterModel[] chunk in masters.Chunk(MasterIdsPerQuery))
         {
-            List<PoiPointResultModel> details = db.Queryable<PoiPointResultModel>()
-                .Where(item => item.Pid == master.Id).OrderBy(item => item.Id).ToList();
-            points.AddRange(details.Select(item => CreatePoint(master, item)));
+            int[] ids = chunk.Select(master => master.Id).ToArray();
+            var details = db.Queryable<PoiPointResultModel>()
+                .Where(item => item.Pid != null && ids.Contains(item.Pid.Value))
+                .OrderBy(item => item.Id).ToList().ToLookup(item => item.Pid);
+            // Each master belongs to one chunk; its grouping retains the detail ID order.
+            foreach (AlgResultMasterModel master in chunk)
+                points.AddRange(details[master.Id].Select(item => CreatePoint(master, item)));
         }
         return points;
     }
