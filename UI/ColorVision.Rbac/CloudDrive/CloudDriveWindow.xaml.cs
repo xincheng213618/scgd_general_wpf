@@ -27,6 +27,18 @@ public partial class CloudDriveWindow : Window
         _window.Activate();
     }
 
+    /// <summary>Opens the existing queue with selected source files; upload starts from the cloud window.</summary>
+    public static void ShowCloudDrive(IEnumerable<string> paths)
+    {
+        ShowCloudDrive();
+        if (_window!._manager.IsBusy)
+        {
+            _window.ShowError(new InvalidOperationException(LocalizedText.Get("云盘正在上传，请先暂停，再添加图像。")));
+            return;
+        }
+        _window.AddPaths(paths);
+    }
+
     public CloudDriveWindow(CloudDriveManager? manager = null)
     {
         _manager = manager ?? CloudDriveManager.Instance;

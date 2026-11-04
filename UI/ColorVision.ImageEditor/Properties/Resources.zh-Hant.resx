@@ -3747,4 +3747,5 @@ ORB 特徵上限: {6:N0}    最少匹配/內點: {7}/{8}    重投影閾值: {9:
   <data name="预处理" xml:space="preserve"><value>預處理</value></data>
   <data name="颜色" xml:space="preserve"><value>顏色</value></data>
   <data name="高级设置" xml:space="preserve"><value>高級設置</value></data>
+  <data name="在文件夹中选择文件" xml:space="preserve"><value>在資料夾中選取檔案</value></data>
 </root>

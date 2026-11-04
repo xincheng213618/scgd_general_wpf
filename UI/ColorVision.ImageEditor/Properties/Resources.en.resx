@@ -3747,4 +3747,5 @@ A single image contains no left/right eye pairing; DIFF_H / DIFF_V are not gener
   <data name="预处理" xml:space="preserve"><value>Pre-processing</value></data>
   <data name="颜色" xml:space="preserve"><value>Color</value></data>
   <data name="高级设置" xml:space="preserve"><value>Advanced settings</value></data>
+  <data name="在文件夹中选择文件" xml:space="preserve"><value>Select file in folder</value></data>
 </root>

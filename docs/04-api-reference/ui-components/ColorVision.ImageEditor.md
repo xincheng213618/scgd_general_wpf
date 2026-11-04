@@ -41,6 +41,8 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 ## 打开图像与完成信号
 
+工具栏、Ctrl+O 和右键“打开”共用 `ApplicationCommands.Open`，宿主可接管选图流程。右键“在文件夹中选择文件”按当前 `Config.FilePath` 在资源管理器定位磁盘文件；内存帧、路径为空或文件不存在时禁用。
+
 `ImageView.OpenImageCore` 按扩展名查询 `IEditorToolFactory.IImageOpens`，不是只凭文件后缀就能保证解码成功：
 
 | 输入 | 打开器与限制 |
