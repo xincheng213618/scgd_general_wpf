@@ -208,18 +208,12 @@ namespace ColorVision.Solution.MultiImageViewer
             {
                 if (useCache)
                 {
-                    var thumb = await ThumbnailCacheManager.Instance.GetOrCreateThumbnailAsync(_filePath, thumbnailSize);
-                    if (thumb != null)
+                    var loaded = await ThumbnailCacheManager.Instance.GetOrCreateThumbnailWithDimensionsAsync(_filePath, thumbnailSize);
+                    if (loaded != null)
                     {
-                        Thumbnail = thumb;
-
-                        // 更新图像尺寸
-                        var cached = ThumbnailCacheManager.Instance.GetCachedInfo(_filePath);
-                        if (cached != null)
-                        {
-                            ImageWidth = cached.OriginalWidth;
-                            ImageHeight = cached.OriginalHeight;
-                        }
+                        Thumbnail = loaded.Thumbnail;
+                        ImageWidth = loaded.OriginalWidth;
+                        ImageHeight = loaded.OriginalHeight;
                     }
                 }
                 else

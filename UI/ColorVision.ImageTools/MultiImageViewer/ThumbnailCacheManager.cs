@@ -72,6 +72,9 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <param name="thumbnailSize">缩略图最大尺寸</param>
         /// <returns>缩略图的BitmapSource，失败返回null</returns>
         public async Task<BitmapSource?> GetOrCreateThumbnailAsync(string filePath, int thumbnailSize = 120)
+            => (await GetOrCreateThumbnailWithDimensionsAsync(filePath, thumbnailSize))?.Thumbnail;
+
+        internal async Task<ThumbnailLoadResult?> GetOrCreateThumbnailWithDimensionsAsync(string filePath, int thumbnailSize)
         {
             if (!File.Exists(filePath))
                 return null;
@@ -93,14 +96,8 @@ namespace ColorVision.Solution.MultiImageViewer
                 {
                     lock (_locker)
                     {
-                        if (_disposed || generation != _cacheMaintenanceGeneration) return null;
-                        using var db = new SqlSugarClient(new ConnectionConfig
-                        {
-                            ConnectionString = $"Data Source={SqliteDbPath}",
-                            DbType = DbType.Sqlite,
-                            IsAutoCloseConnection = true
-                        });
-                        return db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
+                        if (_db == null || _disposed || generation != _cacheMaintenanceGeneration) return null;
+                        return _db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
                     }
                 });
 
@@ -109,7 +106,8 @@ namespace ColorVision.Solution.MultiImageViewer
                 if (cached != null && cached.FileLastModified == lastModified && cached.ThumbnailData != null)
                 {
                     // 从缓存加载
-                    return await LoadThumbnailFromBytesAsync(cached.ThumbnailData);
+                    BitmapSource? cachedThumbnail = await LoadThumbnailFromBytesAsync(cached.ThumbnailData);
+                    return cachedThumbnail == null ? null : new ThumbnailLoadResult(cachedThumbnail, cached.OriginalWidth, cached.OriginalHeight);
                 }
 
                 // 创建新缩略图
@@ -124,7 +122,7 @@ namespace ColorVision.Solution.MultiImageViewer
                     await SaveToCacheAsync(filePath, fileInfo, thumbnailBytes, thumbnail, originalWidth, originalHeight, generation);
                 }
 
-                return thumbnail;
+                return new ThumbnailLoadResult(thumbnail, originalWidth, originalHeight);
             }
             catch (Exception ex)
             {
@@ -143,7 +141,14 @@ namespace ColorVision.Solution.MultiImageViewer
                 if (_db == null || _disposed) return null;
                 try
                 {
-                    return _db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
+                    return _db.Queryable<ThumbnailCacheEntry>().Where(x => x.FilePath == filePath)
+                        .Select(x => new ThumbnailCacheEntry
+                        {
+                            Id = x.Id, FilePath = x.FilePath, FileLastModified = x.FileLastModified,
+                            ThumbnailWidth = x.ThumbnailWidth, ThumbnailHeight = x.ThumbnailHeight,
+                            OriginalWidth = x.OriginalWidth, OriginalHeight = x.OriginalHeight,
+                            FileSize = x.FileSize, CreateDate = x.CreateDate
+                        }).First();
                 }
                 catch (Exception ex)
                 {
@@ -305,16 +310,10 @@ namespace ColorVision.Solution.MultiImageViewer
 
                     lock (_locker)
                     {
-                        if (_disposed || generation != _cacheMaintenanceGeneration) return;
-                        using var db = new SqlSugarClient(new ConnectionConfig
-                        {
-                            ConnectionString = $"Data Source={SqliteDbPath}",
-                            DbType = DbType.Sqlite,
-                            IsAutoCloseConnection = true
-                        });
-                        var updateCount = db.Updateable(entry).Where(x => x.FilePath == filePath).ExecuteCommand();
+                        if (_db == null || _disposed || generation != _cacheMaintenanceGeneration) return;
+                        var updateCount = _db.Updateable(entry).Where(x => x.FilePath == filePath).ExecuteCommand();
                         if (updateCount == 0)
-                            db.Insertable(entry).ExecuteCommand();
+                            _db.Insertable(entry).ExecuteCommand();
                         _cacheWriteVersion++;
                     }
                 }
@@ -412,6 +411,8 @@ namespace ColorVision.Solution.MultiImageViewer
             }
             GC.SuppressFinalize(this);
         }
+
+        internal sealed record ThumbnailLoadResult(BitmapSource Thumbnail, int OriginalWidth, int OriginalHeight);
 
     }
 }

@@ -2,6 +2,9 @@ using ColorVision.Solution.MultiImageViewer;
 using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
@@ -20,6 +23,67 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         Assert.False(scan.CanCleanup);
         Assert.Null(scan.Error);
         Assert.False(Directory.Exists(Path.GetDirectoryName(path)));
+    }
+
+    // Metadata reads must not materialize the PNG payload or cache stale original dimensions.
+    [Fact]
+    public void MetadataReadsExcludePngPayloadAndObserveUpdatedDimensions()
+    {
+        CreateDatabase();
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        List<string> queries = [];
+        database.Aop.OnLogExecuting = (sql, _) => queries.Add(sql);
+
+        ThumbnailCacheEntry first = Assert.IsType<ThumbnailCacheEntry>(reader.GetCachedInfo("original.png"));
+        Assert.Null(first.ThumbnailData);
+        Assert.Equal((1024, 1024, 120, 120, 100000L),
+            (first.OriginalWidth, first.OriginalHeight, first.ThumbnailWidth, first.ThumbnailHeight, first.FileSize));
+        Execute("UPDATE ThumbnailCache SET OriginalWidth = 1920, OriginalHeight = 1080;");
+        ThumbnailCacheEntry changed = Assert.IsType<ThumbnailCacheEntry>(reader.GetCachedInfo("original.png"));
+        Assert.Equal((1920, 1080), (changed.OriginalWidth, changed.OriginalHeight));
+        Assert.Equal(2, queries.Count);
+        Assert.All(queries, sql => Assert.DoesNotContain("ThumbnailData", sql, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // The dimensions belong to the returned image, not to a later, independently queried cache row.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ThumbnailResultKeepsOriginalDimensionsAndRegeneratesChangedSource(bool sourceChanged)
+    {
+        CreateDatabase();
+        string source = Path.Combine(_root, "source.png");
+        byte[] png = WpfTestHost.Invoke(() =>
+        {
+            PngBitmapEncoder encoder = new();
+            encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(2, 2, 96, 96, PixelFormats.Gray8, null,
+                new byte[] { 1, 2, 3, 4 }, 2)));
+            using MemoryStream stream = new();
+            encoder.Save(stream);
+            return stream.ToArray();
+        });
+        File.WriteAllBytes(source, png);
+        DateTime storedTime = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Local);
+        File.SetLastWriteTime(source, sourceChanged ? storedTime.AddDays(1) : storedTime);
+        using (SqliteConnection connection = Open())
+        using (SqliteCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $path, FileLastModified = $time, ThumbnailData = $png;";
+            command.Parameters.AddWithValue("$path", source);
+            command.Parameters.AddWithValue("$time", storedTime);
+            command.Parameters.AddWithValue("$png", png);
+            command.ExecuteNonQuery();
+        }
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        object? result = await WpfTestHost.Invoke(() => LoadWithDimensionsAsync(reader, source));
+        Assert.NotNull(result);
+        var thumbnail = Assert.IsAssignableFrom<BitmapSource>(result.GetType().GetProperty("Thumbnail")!.GetValue(result));
+        Assert.Equal((2, 2), (thumbnail.PixelWidth, thumbnail.PixelHeight));
+        Assert.Equal(sourceChanged ? 2 : 1024, result.GetType().GetProperty("OriginalWidth")!.GetValue(result));
+        Assert.Equal(sourceChanged ? 2 : 1024, result.GetType().GetProperty("OriginalHeight")!.GetValue(result));
+        Assert.True(thumbnail.IsFrozen);
     }
 
     [Fact]
@@ -115,6 +179,27 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
     {
         MethodInfo method = typeof(ThumbnailCacheManager).GetMethod("ScanCacheForMaintenanceAtPath", BindingFlags.Static | BindingFlags.NonPublic)!;
         return (ThumbnailCacheMaintenanceSnapshot)method.Invoke(null, [path])!;
+    }
+
+    private SqlSugar.SqlSugarClient CreateReaderDatabase() => new(new SqlSugar.ConnectionConfig
+    {
+        ConnectionString = $"Data Source={DatabasePath};Pooling=False", DbType = SqlSugar.DbType.Sqlite, IsAutoCloseConnection = true
+    });
+
+    private static ThumbnailCacheManager CreateReader(SqlSugar.SqlSugarClient database)
+    {
+        // Avoid the singleton constructor: this fixture owns only its temporary database.
+        var reader = (ThumbnailCacheManager)RuntimeHelpers.GetUninitializedObject(typeof(ThumbnailCacheManager));
+        typeof(ThumbnailCacheManager).GetField("_db", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(reader, database);
+        return reader;
+    }
+
+    private static async Task<object?> LoadWithDimensionsAsync(ThumbnailCacheManager reader, string source)
+    {
+        Task pending = (Task)typeof(ThumbnailCacheManager).GetMethod("GetOrCreateThumbnailWithDimensionsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(reader, [source, 120])!;
+        await pending;
+        return pending.GetType().GetProperty("Result")!.GetValue(pending);
     }
 
     private void CreateDatabase()
