@@ -29,7 +29,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 OnPropertyChanged(nameof(FileName));
                 OnPropertyChanged(nameof(Directory));
                 OnPropertyChanged(nameof(FileExtension));
-                LoadFileInfo();
+                LoadFileInfo(null, loadCachedInfo: true);
             }
         }
 
@@ -165,7 +165,13 @@ namespace ColorVision.Solution.MultiImageViewer
             FilePath = filePath;
         }
 
-        private void LoadFileInfo()
+        internal ImageFileInfo(string filePath, ThumbnailCacheEntry? cachedInfo)
+        {
+            _filePath = filePath;
+            LoadFileInfo(cachedInfo, loadCachedInfo: false);
+        }
+
+        private void LoadFileInfo(ThumbnailCacheEntry? cachedInfo, bool loadCachedInfo)
         {
             try
             {
@@ -177,7 +183,7 @@ namespace ColorVision.Solution.MultiImageViewer
                     LastModified = fileInfo.LastWriteTime;
 
                     // 尝试从缓存获取图像尺寸
-                    var cached = ThumbnailCacheManager.Instance.GetCachedInfo(_filePath);
+                    var cached = loadCachedInfo ? ThumbnailCacheManager.Instance.GetCachedInfo(_filePath) : cachedInfo;
                     if (cached != null)
                     {
                         ImageWidth = cached.OriginalWidth;

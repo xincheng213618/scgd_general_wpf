@@ -46,6 +46,73 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         Assert.All(queries, sql => Assert.DoesNotContain("ThumbnailData", sql, StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void BatchMetadataUsesBoundedQueriesAndPreservesExactPathMatching()
+    {
+        CreateDatabase();
+        Execute("INSERT INTO ThumbnailCache SELECT 2, 'ORIGINAL.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate FROM ThumbnailCache WHERE Id = 1;");
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        List<string> queries = [];
+        database.Aop.OnLogExecuting = (sql, _) => queries.Add(sql);
+        string[] paths = ["original.png", "ORIGINAL.png", "original.png", .. Enumerable.Range(0, 499).Select(index => $"missing-{index}.png")];
+
+        IReadOnlyDictionary<string, ThumbnailCacheEntry> metadata = ReadCachedInfos(reader, paths);
+        Assert.Equal(2, queries.Count);
+        Assert.Equal(2, metadata.Count);
+        Assert.Equal(1024, metadata["original.png"].OriginalWidth);
+        Assert.Equal(640, metadata["ORIGINAL.png"].OriginalWidth);
+        Assert.False(metadata.ContainsKey("Original.png"));
+        Assert.All(metadata.Values, entry => Assert.Null(entry.ThumbnailData));
+        Assert.All(queries, sql => Assert.DoesNotContain("ThumbnailData", sql, StringComparison.OrdinalIgnoreCase));
+        Execute("UPDATE ThumbnailCache SET OriginalWidth = 1920 WHERE Id = 1;");
+        Assert.Equal(1920, ReadCachedInfos(reader, ["original.png"])["original.png"].OriginalWidth);
+    }
+
+    // Prefetch is local to one load; each item still observes the source file at construction.
+    [Fact]
+    public void PrefetchedItemsPreserveOrderDuplicatesAndCurrentFileStateWithoutQueries()
+    {
+        CreateDatabase();
+        string first = Path.Combine(_root, "first.png"), removed = Path.Combine(_root, "removed.png");
+        File.WriteAllText(first, "first");
+        File.WriteAllText(removed, "removed");
+        using (SqliteConnection connection = Open())
+        using (SqliteCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $first; INSERT INTO ThumbnailCache SELECT 2, $removed, FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate FROM ThumbnailCache WHERE Id = 1;";
+            command.Parameters.AddWithValue("$first", first);
+            command.Parameters.AddWithValue("$removed", removed);
+            command.ExecuteNonQuery();
+        }
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        int queries = 0;
+        database.Aop.OnLogExecuting = (_, _) => queries++;
+        string[] paths = [first, removed, first, first.ToUpperInvariant()];
+        IReadOnlyDictionary<string, ThumbnailCacheEntry> metadata = ReadCachedInfos(reader, paths);
+        Assert.Equal(1, queries);
+        File.Delete(removed);
+        File.WriteAllText(first, "updated source content");
+
+        ImageFileInfo[] items = paths.Select(path =>
+        {
+            metadata.TryGetValue(path, out ThumbnailCacheEntry? cachedInfo);
+            return (ImageFileInfo)Activator.CreateInstance(typeof(ImageFileInfo), BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null, args: [path, cachedInfo], culture: null)!;
+        }).ToArray();
+        Assert.Equal(paths, items.Select(item => item.FilePath));
+        Assert.NotSame(items[0], items[2]);
+        Assert.Equal((1024, 1024), (items[0].ImageWidth, items[2].ImageWidth));
+        Assert.False(items[1].FileExists);
+        Assert.Equal(0, items[1].ImageWidth);
+        Assert.True(items[3].FileExists);
+        Assert.Equal(0, items[3].ImageWidth);
+        Assert.Equal(new FileInfo(first).Length, items[0].FileSize);
+        Assert.Equal(File.GetLastWriteTime(first), items[0].LastModified);
+        Assert.Equal(1, queries);
+    }
+
     // The dimensions belong to the returned image, not to a later, independently queried cache row.
     [Theory]
     [InlineData(false)]
@@ -193,6 +260,10 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         typeof(ThumbnailCacheManager).GetField("_db", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(reader, database);
         return reader;
     }
+
+    private static IReadOnlyDictionary<string, ThumbnailCacheEntry> ReadCachedInfos(ThumbnailCacheManager reader, IReadOnlyList<string> paths) =>
+        (IReadOnlyDictionary<string, ThumbnailCacheEntry>)typeof(ThumbnailCacheManager).GetMethod("GetCachedInfos", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(reader, [paths])!;
 
     private static async Task<object?> LoadWithDimensionsAsync(ThumbnailCacheManager reader, string source)
     {

@@ -2,6 +2,7 @@
 using ColorVision.UI;
 using SqlSugar;
 using System.IO;
+using System.Linq.Expressions;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -15,6 +16,13 @@ namespace ColorVision.Solution.MultiImageViewer
     {
         private static ThumbnailCacheManager? _instance;
         private static readonly object _locker = new();
+        private static readonly Expression<Func<ThumbnailCacheEntry, ThumbnailCacheEntry>> MetadataProjection = x => new ThumbnailCacheEntry
+        {
+            Id = x.Id, FilePath = x.FilePath, FileLastModified = x.FileLastModified,
+            ThumbnailWidth = x.ThumbnailWidth, ThumbnailHeight = x.ThumbnailHeight,
+            OriginalWidth = x.OriginalWidth, OriginalHeight = x.OriginalHeight,
+            FileSize = x.FileSize, CreateDate = x.CreateDate
+        };
         private SqlSugarClient? _db;
         private bool _disposed = false;
 
@@ -141,14 +149,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 if (_db == null || _disposed) return null;
                 try
                 {
-                    return _db.Queryable<ThumbnailCacheEntry>().Where(x => x.FilePath == filePath)
-                        .Select(x => new ThumbnailCacheEntry
-                        {
-                            Id = x.Id, FilePath = x.FilePath, FileLastModified = x.FileLastModified,
-                            ThumbnailWidth = x.ThumbnailWidth, ThumbnailHeight = x.ThumbnailHeight,
-                            OriginalWidth = x.OriginalWidth, OriginalHeight = x.OriginalHeight,
-                            FileSize = x.FileSize, CreateDate = x.CreateDate
-                        }).First();
+                    return _db.Queryable<ThumbnailCacheEntry>().Where(x => x.FilePath == filePath).Select(MetadataProjection).First();
                 }
                 catch (Exception ex)
                 {
@@ -156,6 +157,36 @@ namespace ColorVision.Solution.MultiImageViewer
                     return null;
                 }
             }
+        }
+
+        internal IReadOnlyDictionary<string, ThumbnailCacheEntry> GetCachedInfos(IReadOnlyList<string> filePaths)
+        {
+            var result = new Dictionary<string, ThumbnailCacheEntry>(StringComparer.Ordinal);
+            lock (_locker)
+            {
+                if (_db == null || _disposed) return result;
+                foreach (string[] paths in filePaths.Distinct(StringComparer.Ordinal).Chunk(500))
+                {
+                    try
+                    {
+                        var rows = _db.Queryable<ThumbnailCacheEntry>().Where(x => paths.Contains(x.FilePath)).Select(MetadataProjection).ToList();
+                        foreach (var group in rows.GroupBy(row => row.FilePath, StringComparer.Ordinal))
+                        {
+                            // Legacy caches may contain duplicate paths. Preserve the single-read choice.
+                            ThumbnailCacheEntry? entry = group.Count() == 1 ? group.First() : GetCachedInfo(group.Key);
+                            if (entry != null) result[group.Key] = entry;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"GetCachedInfos Error: {ex.Message}");
+                        // One unreadable row must not hide metadata that individual reads can still load.
+                        foreach (string path in paths)
+                            if (GetCachedInfo(path) is { } entry) result[path] = entry;
+                    }
+                }
+            }
+            return result;
         }
 
         private async Task<(BitmapSource? thumbnail, int width, int height)> CreateThumbnailAsync(string filePath, int thumbnailSize)

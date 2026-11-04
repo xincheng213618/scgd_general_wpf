@@ -92,6 +92,8 @@ namespace ColorVision.Solution.MultiImageViewer
         private string? _currentOpeningFile;
         private readonly object _openImageLock = new();
         private bool _disposed;
+        // Metadata can finish after Clear, disposal or a newer load.
+        private int _loadGeneration;
 
         public MultiImageViewer()
         {
@@ -162,25 +164,42 @@ namespace ColorVision.Solution.MultiImageViewer
         private async Task LoadFilesAsync(List<string> files)
         {
             if (_disposed) return;
+            int generation = ++_loadGeneration;
 
             ImageFiles.Clear();
             ImageView.Clear();
             NoImageHint.Visibility = Visibility.Visible;
+            if (files.Count == 0) { UpdateFileCountText(); return; }
+
+            var metadata = await Task.Run(() =>
+            {
+                string[] existingPaths = files.Where(File.Exists).ToArray();
+                IReadOnlyDictionary<string, ThumbnailCacheEntry> entries = existingPaths.Length == 0 ? new Dictionary<string, ThumbnailCacheEntry>(StringComparer.Ordinal)
+                    : ThumbnailCacheManager.Instance.GetCachedInfos(existingPaths);
+                return (Entries: entries, QueriedPaths: existingPaths.ToHashSet(StringComparer.Ordinal));
+            });
+            if (_disposed || generation != _loadGeneration) return;
 
             int index = 0;
             for (int i = 0; i < files.Count; i++)
             {
+                if (_disposed || generation != _loadGeneration) return;
                 var file = files[i];
 
                 if (file.Equals(FilePath, StringComparison.OrdinalIgnoreCase))
                 {
                     index = i;
                 }
-                var fileInfo = new ImageFileInfo(file);
+                metadata.Entries.TryGetValue(file, out ThumbnailCacheEntry? cachedInfo);
+                // A file created after prefetch still gets the public constructor's fresh lookup.
+                var fileInfo = metadata.QueriedPaths.Contains(file) ? new ImageFileInfo(file, cachedInfo) : new ImageFileInfo(file);
+                if (_disposed || generation != _loadGeneration) return;
                 ImageFiles.Add(fileInfo);
             }
 
+            if (_disposed || generation != _loadGeneration) return;
             UpdateFileCountText();
+            if (_disposed || generation != _loadGeneration) return;
 
             // 异步加载缩略图
             if (Config.ShowThumbnail)
@@ -188,7 +207,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 await LoadThumbnailsAsync();
             }
 
-            if (!_disposed && ImageFiles.Count > 0)
+            if (!_disposed && generation == _loadGeneration && ImageFiles.Count > 0)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -337,6 +356,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public void Clear()
         {
+            _loadGeneration++;
             ImageFiles.Clear();
             ImageView.Clear();
             CurrentFolderPath = null;

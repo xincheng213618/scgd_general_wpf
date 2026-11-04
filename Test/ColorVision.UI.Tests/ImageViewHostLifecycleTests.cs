@@ -208,6 +208,67 @@ public sealed class ImageViewHostLifecycleTests
     }
 
     [Fact]
+    public async Task ClearingDuringMetadataQueryDoesNotRestoreThePreviousList()
+    {
+        using var file = new ImageFile();
+        string databasePath = Path.Combine(Path.GetDirectoryName(file.Path)!, "ThumbnailCache.db");
+        SqlSugar.SqlSugarClient? database = null;
+        FieldInfo instanceField = typeof(ThumbnailCacheManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? previousInstance = instanceField.GetValue(null);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        PresentationScope? scope = null;
+        MultiImageViewer? viewer = null;
+        Task? loading = null;
+        try
+        {
+            database = new SqlSugar.SqlSugarClient(new SqlSugar.ConnectionConfig
+            {
+                ConnectionString = $"Data Source={databasePath};Pooling=False", DbType = SqlSugar.DbType.Sqlite, IsAutoCloseConnection = true
+            });
+            database.CodeFirst.InitTables<ThumbnailCacheEntry>();
+            var reader = (ThumbnailCacheManager)RuntimeHelpers.GetUninitializedObject(typeof(ThumbnailCacheManager));
+            typeof(ThumbnailCacheManager).GetField("_db", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(reader, database);
+            database.Aop.OnLogExecuting = (_, _) =>
+            {
+                started.TrySetResult();
+                // Safety timeout only; the test releases the query explicitly after Clear.
+                if (!release.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Metadata query gate was not released.");
+            };
+            instanceField.SetValue(null, reader);
+            loading = WpfTestHost.Invoke(() =>
+            {
+                scope = new PresentationScope();
+                MultiImageViewer.Config.ShowThumbnail = false;
+                viewer = new MultiImageViewer();
+                return viewer.LoadFromFilesAsync([file.Path]);
+            });
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() => viewer!.Clear());
+            release.Set();
+            await loading.WaitAsync(TimeSpan.FromSeconds(30));
+            WpfTestHost.Invoke(() => Assert.Empty(viewer!.ImageFiles));
+        }
+        finally
+        {
+            release.Set();
+            try
+            {
+                // The query owns the manager lock; wait for it before restoring or disposing anything.
+                if (loading != null) await loading.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            finally
+            {
+                instanceField.SetValue(null, previousInstance);
+                WpfTestHost.Invoke(() => { viewer?.Dispose(); scope?.Dispose(); });
+                database?.Dispose();
+                foreach (string suffix in new[] { "", "-wal", "-shm", "-journal" })
+                    if (File.Exists(databasePath + suffix)) File.Delete(databasePath + suffix);
+            }
+        }
+    }
+
+    [Fact]
     public void ClosedEditorsAndPreviewsCanBeCollected()
     {
         var scope = WpfTestHost.Invoke(() => new PresentationScope());
