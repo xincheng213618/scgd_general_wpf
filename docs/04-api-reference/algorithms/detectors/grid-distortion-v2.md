@@ -5,7 +5,7 @@ status: "current"
 summary: "本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。"
 aliases: ["点阵畸变分析(V2)","本地点阵畸变(V2)","漏光畸变失败","7x7畸变","GridDistortionAnalysis","LocalGridDistortionNode","M_CalDistortionGridV2","HorizontalTVDistortion","VerticalTVDistortion","Optic_Distortion","KeystoneHoriz","KeystoneVert","DIFF_H","DIFF_V"]
 code_paths: ["Native/opencv_helper/algorithm/distortion","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp","UI/ColorVision.Core/GridDistortion.cs","UI/ColorVision.Core/GridDistortionAnalysis.cs","UI/ColorVision.Core/GridDistortionOpticalModel.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Projects/ProjectARVRPro/Process/Distortion"]
-test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp","Test/opencv_helper_test/benchmark_grid_distortion.py","Test/opencv_helper_test/benchmark_public_grid_distortion.py","Test/ColorVision.UI.Tests/GridDistortionTests.cs","Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs","Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"]
+test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp", "Test/opencv_helper_test/benchmark_grid_distortion.py", "Test/opencv_helper_test/benchmark_public_grid_distortion.py", "Test/ColorVision.UI.Tests/GridDistortionTests.cs", "Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs", "Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs", "Test/ColorVision.UI.Tests/DistortionHistoryOverlayTests.cs"]
 related: ["algorithms.arvr","algorithms.find-light-area","algorithms.find-cross","engine.native-integration","engine.results","flow.node-extension"]
 ---
 
@@ -38,6 +38,8 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 节点自动输出 TV、九点及有效的相对光学估计，完整分析保存全部口径，无需配置输出选择。`TV_distortion` 和 `LocalGridDistortionMetrics.TV` 固定使用标准 TV，`Point9_distortion` 和 `LocalGridDistortionMetrics.Point9` 固定使用对边均值九点，沿用原默认口径供后续 ARVR 读取和判定。
 
 流程执行会写入既有结果数据库和节点结果目录，需要已有流程批次及数据库连接；ImageView 单次分析不要求数据库。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，一条 `DetailCommon` 指向唯一结果 JSON 文件。默认把对边均值九点的六项数值写入既有 `Point9_distortion` 字段名，`TV_distortion`、`Point9_distortion`、`Optic_Distortion` 保持 `Distortion2View` 与 ProjectARVRPro 消费的 JSON 结构；兼容的是读取格式，不代表沿用旧 P9 公式或旧梯形轴定义。数值已经是百分数，不再乘 100。
+
+主程序历史结果标注 P 编号和原图坐标，完整有序点阵显示行列连线及四角参考框；较大点阵需保存的行列元数据，不猜测旧结果布局。侧栏先列主要指标，再保留完整原始 JSON；仅对明确声明百分数的结果标 `%`，不改变历史数值。等待原图加载后才画叠图，切换结果时丢弃迟到绘制；非法或越界点不画标记，也不拼接残缺网格。
 
 全部分析同时保存在 `LocalGridDistortionAnalysis`、结果文件和主记录参数中。节点共用一次定位和分析，自动输出 TV、九点以及通过残差校验的相对光学估计；`Optic_Distortion` 仍标明是未标定估计，并省略含义未确认的 `t`。光学模型无效时该字段为 null，CSV 留空，不补零。旧节点配置可继续加载，其中的光学输出开关和 `TvFormula` / `Point9Formula` 选择均忽略，重新保存后不再写入；原先选择半值 TV 或旧 P9 三跨度的节点统一使用上述默认口径，其他口径保留在完整分析中。原有客户配方、判定限和协议字段由 ProjectARVRPro 负责。
 
