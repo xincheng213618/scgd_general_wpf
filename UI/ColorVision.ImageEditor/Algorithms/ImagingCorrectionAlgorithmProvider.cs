@@ -523,19 +523,18 @@ namespace ColorVision.ImageEditor.Algorithms
                                 else corrected *= shadingGain;
                             }
                         }
-                        string invalidMessage = $"Invalid source/reference or non-representable output sample at ({x}, {y}), channel {channel}.";
-                        if (!valid) corrected = ResolveInvalid(parameters, original, invalidMessage);
+                        if (!valid) corrected = ResolveInvalid(parameters, original, x, y, channel);
                         if (!TryWriteSample(outputRow, source.Format, sampleIndex, corrected, parameters.OutputRangePolicy, statistics))
                         {
                             statistics.NonFiniteOutputSamples++;
-                            if (valid) corrected = ResolveInvalid(parameters, original, invalidMessage);
+                            if (valid) corrected = ResolveInvalid(parameters, original, x, y, channel);
                             if (!TryWriteSample(outputRow, source.Format, sampleIndex, corrected, parameters.OutputRangePolicy, statistics))
                             {
                                 // PreserveSource cannot preserve NaN/Infinity. A finite zero is the only
                                 // format-independent safe representation; the validity mask and diagnostics
                                 // retain the loss instead of publishing a non-finite sample as valid.
                                 if (!TryWriteSample(outputRow, source.Format, sampleIndex, 0, parameters.OutputRangePolicy, statistics))
-                                    throw new InvalidReferenceException("invalid_output_sample", invalidMessage, "output");
+                                    throw new InvalidReferenceException("invalid_output_sample", InvalidSampleMessage(x, y, channel), "output");
                             }
                             valid = false;
                         }
@@ -639,10 +638,13 @@ namespace ColorVision.ImageEditor.Algorithms
         private static double ClampGain(double value, ImagingCorrectionParameters parameters)
             => Math.Clamp(value, parameters.MinimumGain, parameters.MaximumGain);
 
-        private static double ResolveInvalid(ImagingCorrectionParameters parameters, double original, string message)
+        private static string InvalidSampleMessage(int x, int y, int channel)
+            => $"Invalid source/reference or non-representable output sample at ({x}, {y}), channel {channel}.";
+
+        private static double ResolveInvalid(ImagingCorrectionParameters parameters, double original, int x, int y, int channel)
             => parameters.InvalidReferencePolicy switch
             {
-                InvalidReferencePixelPolicy.RejectInvocation => throw new InvalidReferenceException("invalid_reference_pixel", message, "inputs"),
+                InvalidReferencePixelPolicy.RejectInvocation => throw new InvalidReferenceException("invalid_reference_pixel", InvalidSampleMessage(x, y, channel), "inputs"),
                 InvalidReferencePixelPolicy.FillConstant => parameters.InvalidReferenceFillNormalized,
                 _ => original,
             };

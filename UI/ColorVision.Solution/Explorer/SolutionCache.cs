@@ -83,6 +83,11 @@ namespace ColorVision.Solution.Explorer
                 nameof(FileTreeCacheEntry.Extension), nameof(FileTreeCacheEntry.FileSize),
                 nameof(FileTreeCacheEntry.LastWriteTicks)]))
                 _db.CodeFirst.InitTables<FileTreeCacheEntry>();
+
+            // Directory expansion must read only that directory's rows, even in a large cache.
+            // Run after schema repair so existing caches receive the index without a rebuild.
+            command.CommandText = "CREATE INDEX IF NOT EXISTS IX_file_tree_cache_ParentPath_IsDirectory_Name ON file_tree_cache (ParentPath, IsDirectory DESC, Name)";
+            command.ExecuteNonQuery();
         }
 
         /// <summary>
