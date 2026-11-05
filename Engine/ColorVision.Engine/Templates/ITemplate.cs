@@ -344,6 +344,9 @@ namespace ColorVision.Engine.Templates
             }
         }
 
+        /// <summary>Keep the original per-parent detail query for collections with meaningful record order.</summary>
+        protected virtual bool PreserveDetailReadOrder => false;
+
         public override void Load()
         { 
             SaveIndex.Clear();
@@ -354,10 +357,12 @@ namespace ColorVision.Engine.Templates
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x => x.Pid == TemplateDicId).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
+                var detailReader = new TemplateDetailReader(Db, smus.Select(master => master.Id),
+                    static id => SymbolCache.Instance.Cache.TryGetValue(id, out var definition) ? definition.Symbol : null, PreserveDetailReadOrder);
                 foreach (var dbModel in smus)
                 {
                     
-                    List<ModDetailModel> smuDetails = Db.Queryable<ModDetailModel>().Where(x => x.Pid == dbModel.Id).ToList();
+                    List<ModDetailModel> smuDetails = detailReader.Read(dbModel.Id);
                     if (dbModel != null && smuDetails != null)
                     {
                         if (Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails }) is T t)

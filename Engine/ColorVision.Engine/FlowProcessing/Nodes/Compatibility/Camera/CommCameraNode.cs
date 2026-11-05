@@ -1,8 +1,11 @@
 #nullable disable
 using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.FileIO;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Camera;
@@ -29,7 +32,7 @@ public class CommCameraNode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_camTemp;
 
-	[STNodeProperty("HDR", "HDR", true)]
+	[STNodeProperty("HDR", "服务取图使用 HDR。本地取图使用设备采集参数拍摄普通图像。", true)]
 	public bool IsHDR
 	{
 		get
@@ -91,6 +94,8 @@ public class CommCameraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("曝光模板", "曝光模板", true)]
+	[PropertyVisibility(nameof(IsAutoExp))]
+	[PropertyEditorType(typeof(AutoExposureTemplatePropertiesEditor))]
 	public string TempName
 	{
 		get
@@ -145,6 +150,12 @@ public class CommCameraNode : CVBaseServerNode
 		_IsAutoFocus = false;
 		_FocusTempName = string.Empty;
 	}
+
+	[Browsable(false), JsonIgnore]
+	public override bool RequiresRemoteService => !LocalCameraFlowExecution.UsesLocalCamera(DeviceCode);
+
+	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request)
+		=> LocalCameraFlowExecution.Create(request, CVFileSaveMode.Synchronous);
 
 	protected override void OnCreate()
 	{

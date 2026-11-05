@@ -307,7 +307,7 @@ namespace ColorVision.Engine.PropertyEditor
             void RefreshItems()
             {
                 isRefreshing = true;
-                var items = templates.SelectMany(template => template.ItemsSource.Cast<object>()).ToList();
+                var items = templates.SelectMany(template => template.ItemsSource.OfType<TemplateBase>()).DistinctBy(item => item.Key).ToList();
                 TemplateSelectionDisplay.Select(combo, items, property.GetValue(obj)?.ToString());
                 isRefreshing = false;
             }

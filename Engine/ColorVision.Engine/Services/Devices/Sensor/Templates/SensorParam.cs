@@ -23,6 +23,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateSensor));
 
+        // SensorParam builds its command sequence directly from the detail collection.
+        protected override bool PreserveDetailReadOrder => true;
+
         public static Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>>();
 
         public static ObservableCollection<TemplateModel<SensorParam>> AllParams { get => new(Params.SelectMany(p => p.Value)); }

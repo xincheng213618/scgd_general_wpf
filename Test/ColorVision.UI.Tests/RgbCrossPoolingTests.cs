@@ -107,7 +107,7 @@ public sealed class RgbCrossPoolingTests
         int width = searchWidth + 11, height = searchHeight + 13;
         AlgorithmImageBuffer Buffer(AlgorithmImageFormat format)
         {
-            int count = format.Channels(), stride = width * count * 2 + 7;
+            int count = format.Channels(), bytes = format.BitsPerChannel() / 8, stride = width * count * bytes + 7;
             var data = new byte[stride * height];
             Array.Fill(data, (byte)255); // Bright padding must stay outside the ROI.
             for (int y = 0; y < height; y++)
@@ -115,19 +115,58 @@ public sealed class RgbCrossPoolingTests
                     for (int c = 0; c < count; c++)
                     {
                         ushort value = c == 3 ? ushort.MaxValue : unchecked((ushort)(x * 73856093 ^ y * 19349663 ^ c * 83492791));
-                        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(y * stride + (x * count + c) * 2, 2), value);
+                        int offset = y * stride + (x * count + c) * bytes;
+                        if (bytes == 1) data[offset] = c == 3 ? byte.MaxValue : unchecked((byte)value);
+                        else BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(offset, 2), value);
                     }
             return new AlgorithmImageBuffer(width, height, stride, format, data);
         }
-        using var bgr = Buffer(AlgorithmImageFormat.Bgr48);
-        using var bgra = Buffer(AlgorithmImageFormat.Bgra64);
         var pool = typeof(DisplayMetrologyProvider).GetMethod("CrossLocatorImage", BindingFlags.Static | BindingFlags.NonPublic)!;
         (float[][] Channels, int Width, int Height, int Step) Pool(AlgorithmImageBuffer image)
             => ((float[][], int, int, int))pool.Invoke(null, [image, new Rect(3, 5, searchWidth, searchHeight), exponent, CancellationToken.None])!;
-        var actual = Pool(bgr);
-        var expected = Pool(bgra); // Opaque BGRA retains the independent generic path.
-        Assert.Equal((expected.Width, expected.Height, expected.Step), (actual.Width, actual.Height, actual.Step));
-        for (int c = 0; c < 3; c++)
-            Assert.True(actual.Channels[c].AsSpan().SequenceEqual(expected.Channels[c]), $"Channel {c} differs from the generic reader.");
+        foreach (var format in new[] { AlgorithmImageFormat.Bgr24, AlgorithmImageFormat.Bgra32, AlgorithmImageFormat.Bgr48, AlgorithmImageFormat.Bgra64 })
+        {
+            using var image = Buffer(format);
+            var actual = Pool(image);
+            int step = Math.Max(1, (Math.Max(searchWidth, searchHeight) + 1599) / 1600);
+            int pooledWidth = (searchWidth + step - 1) / step, pooledHeight = (searchHeight + step - 1) / step;
+            Assert.Equal((pooledWidth, pooledHeight, step), (actual.Width, actual.Height, actual.Step));
+            float[][] expected = [new float[pooledWidth * pooledHeight], new float[pooledWidth * pooledHeight], new float[pooledWidth * pooledHeight]];
+            // Decode each original sample before pooling. This scalar reference is
+            // independent of the optimized integer paths and their decoding order.
+            for (int py = 0; py < pooledHeight; py++)
+                for (int px = 0; px < pooledWidth; px++)
+                    for (int y = py * step; y < Math.Min((py + 1) * step, searchHeight); y++)
+                        for (int x = px * step; x < Math.Min((px + 1) * step, searchWidth); x++)
+                            for (int c = 0; c < 3; c++)
+                            {
+                                int hash = unchecked((x + 3) * 73856093 ^ (y + 5) * 19349663 ^ c * 83492791);
+                                double value = format.BitsPerChannel() == 8 ? unchecked((byte)hash) / 255d : unchecked((ushort)hash) / 65535d;
+                                float decoded = (float)(exponent == 1 ? value : Math.Pow(value, exponent));
+                                int index = py * pooledWidth + px;
+                                expected[2 - c][index] = Math.Max(expected[2 - c][index], decoded);
+                            }
+            for (int c = 0; c < 3; c++)
+                Assert.True(actual.Channels[c].AsSpan().SequenceEqual(expected[c]), $"{format} channel {c} differs from decoding original samples before pooling.");
+        }
+    }
+
+    [Theory]
+    [InlineData(AlgorithmImageFormat.Bgra32)]
+    [InlineData(AlgorithmImageFormat.Bgra64)]
+    public void IntegerPoolingValidatesAlphaInsideTheSearchRegion(AlgorithmImageFormat format)
+    {
+        const int width = 1614, height = 45;
+        int bytes = format.BitsPerChannel() / 8, stride = width * format.BytesPerPixel() + 7;
+        byte[] data = new byte[stride * height];
+        Array.Fill(data, byte.MaxValue);
+        Array.Clear(data, 3 * bytes, bytes); // Transparent pixel outside the search region.
+        var pool = typeof(DisplayMetrologyProvider).GetMethod("CrossLocatorImage", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? Pool(AlgorithmImageBuffer image) => pool.Invoke(null, [image, new Rect(3, 5, 1603, 32), 2.2, CancellationToken.None]);
+        using (var image = new AlgorithmImageBuffer(width, height, stride, format, data)) Assert.NotNull(Pool(image));
+        Array.Clear(data, 5 * stride + (3 * 4 + 3) * bytes, bytes);
+        using var transparent = new AlgorithmImageBuffer(width, height, stride, format, data);
+        TargetInvocationException error = Assert.Throws<TargetInvocationException>(() => Pool(transparent));
+        Assert.Equal("transparent_input", error.InnerException!.GetType().GetProperty("Code")!.GetValue(error.InnerException));
     }
 }

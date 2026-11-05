@@ -1,6 +1,8 @@
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.POI;
@@ -8,6 +10,7 @@ using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.UI;
 using FlowEngineLib;
+using FlowEngineLib.Node.Camera;
 using FlowEngineLib.Node.POI;
 using ST.Library.UI.NodeEditor;
 using System.Collections;
@@ -136,6 +139,37 @@ public sealed class CompatibilityCameraPropertyEditorTests
             Assert.Equal("unavailable-template", node.TempName);
         }
         finally { panel.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
+    });
+
+    [Theory]
+    [InlineData(typeof(LocalCameraNode), nameof(LocalCameraNode.AutoExpTempName))]
+    [InlineData(typeof(CommCameraNode), nameof(CommCameraNode.TempName))]
+    public void AutoExposureSwitchShowsTemplateEditorAndKeepsItsSelection(Type nodeType, string propertyName) => WpfTestHost.Invoke(() =>
+    {
+        using var resources = new EditorResources();
+        var template = new TemplateModel<AutoExpTimeParam>("editor-test-auto-exposure", new AutoExpTimeParam { Name = "editor-test-auto-exposure" });
+        TemplateAutoExpTime.Params.Add(template);
+        try
+        {
+            var node = (STNode)Activator.CreateInstance(nodeType)!;
+            var property = nodeType.GetProperty(propertyName)!;
+            var isAutoExp = nodeType.GetProperty(nameof(LocalCameraNode.IsAutoExp))!;
+            DockPanel panel = PropertyEditorHelper.GenProperties(property, node);
+            Assert.Equal(Visibility.Collapsed, panel.Visibility);
+            isAutoExp.SetValue(node, true);
+            Assert.Equal(Visibility.Visible, panel.Visibility);
+
+            var grid = Assert.IsType<Grid>(Assert.Single(panel.Children));
+            var combo = Assert.Single(grid.Children.OfType<HandyControl.Controls.ComboBox>());
+            Assert.Single(grid.Children.OfType<Button>());
+            combo.SelectedItem = template;
+            Assert.Equal(template.Key, property.GetValue(node));
+
+            isAutoExp.SetValue(node, false);
+            Assert.Equal(Visibility.Collapsed, panel.Visibility);
+            Assert.Equal(template.Key, property.GetValue(node));
+        }
+        finally { TemplateAutoExpTime.Params.Remove(template); }
     });
 
     [Fact]

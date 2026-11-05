@@ -436,6 +436,9 @@ namespace ColorVision.Solution.Explorer
             if (SolutionManager.IsSolutionFilePath(fileName)) return true;
             if (ProjectProviderRegistry.IsSupportedProjectFilePath(fileName)) return true;
             if (fileName.EndsWith(".cvsln.cache.db", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.EndsWith(".cvsln.cache.db-journal", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.EndsWith(".cvsln.cache.db-wal", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.EndsWith(".cvsln.cache.db-shm", StringComparison.OrdinalIgnoreCase)) return true;
             if (fileName.EndsWith(".cvsln.bak", StringComparison.OrdinalIgnoreCase)) return true;
             if (fileName.Contains(".cvsln.corrupt-", StringComparison.OrdinalIgnoreCase)) return true;
             if (fileName.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)

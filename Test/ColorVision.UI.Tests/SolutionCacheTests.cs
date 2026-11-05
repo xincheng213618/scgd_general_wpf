@@ -1,6 +1,8 @@
 using ColorVision.Solution.Explorer;
 using Microsoft.Data.Sqlite;
+using SqlSugar;
 using System.IO;
+using System.Reflection;
 using Xunit;
 
 namespace ColorVision.UI.Tests;
@@ -11,6 +13,9 @@ public sealed class SolutionCacheTests
     [InlineData("Workspace.cvsln")]
     [InlineData("Workspace.cvsln.bak")]
     [InlineData("Workspace.cvsln.save.tmp")]
+    [InlineData("Other.cvsln.cache.db-journal")]
+    [InlineData("Other.cvsln.cache.db-wal")]
+    [InlineData("Other.cvsln.cache.db-shm")]
     public void IncrementalWritesKeepInternalFilesOutOfTheTreeCache(string internalName)
     {
         using CacheFixture fixture = new();
@@ -26,17 +31,22 @@ public sealed class SolutionCacheTests
         Assert.Equal("fixture", File.ReadAllText(internalFile));
     }
 
-    [Fact]
-    public void LegacyInternalEntriesAreRepairedWithoutChangingWorkspaceFiles()
+    [Theory]
+    [InlineData("Workspace.cvsln.bak", true)]
+    [InlineData("Workspace.cvsln.cache.db-journal", false)]
+    [InlineData("Workspace.cvsln.cache.db-wal", false)]
+    [InlineData("Workspace.cvsln.cache.db-shm", false)]
+    public void LegacyInternalEntriesAreRepairedWithoutChangingWorkspaceFiles(string internalName, bool physicalFileExists)
     {
         using CacheFixture fixture = new();
         string visible = fixture.WriteFile("visible.txt");
-        string backup = fixture.WriteFile("Workspace.cvsln.bak");
+        string internalFile = Path.Combine(fixture.Root, internalName);
+        if (physicalFileExists) fixture.WriteFile(internalName);
         using (SolutionCache cache = new(fixture.SolutionPath))
         {
             cache.AddFile(visible, fixture.Root);
             fixture.InsertLegacyFile(fixture.SolutionPath);
-            fixture.InsertLegacyFile(backup);
+            fixture.InsertLegacyFile(internalFile);
             Assert.Equal(3, cache.GetChildren(fixture.Root).Count);
 
             Assert.True(cache.ValidateDirectory(fixture.Root));
@@ -54,7 +64,8 @@ public sealed class SolutionCacheTests
         Assert.Equal(new FileInfo(visible).Length, entry.FileSize);
         Assert.Equal(File.GetLastWriteTimeUtc(visible).Ticks, entry.LastWriteTicks);
         Assert.Equal("fixture", File.ReadAllText(fixture.SolutionPath));
-        Assert.Equal("fixture", File.ReadAllText(backup));
+        if (physicalFileExists) Assert.Equal("fixture", File.ReadAllText(internalFile));
+        else Assert.False(File.Exists(internalFile));
     }
 
     [Fact]
@@ -71,16 +82,81 @@ public sealed class SolutionCacheTests
         Assert.Equal("old.txt", Assert.Single(cache.GetChildren(fixture.Root)).Name);
     }
 
-    [Fact]
-    public void AnInternalFileSuffixDoesNotHideARealDirectory()
+    [Theory]
+    [InlineData("assets.cvsln.bak")]
+    [InlineData("assets.cvsln.cache.db-journal")]
+    [InlineData("assets.cvsln.cache.db-wal")]
+    [InlineData("assets.cvsln.cache.db-shm")]
+    [InlineData("Workspace.cvsln.cache.db-wal")]
+    [InlineData("Workspace.cvsln.cache.db-shm")]
+    public void AnInternalFileSuffixDoesNotHideARealDirectory(string directoryName)
     {
         using CacheFixture fixture = new();
-        string directory = Directory.CreateDirectory(Path.Combine(fixture.Root, "assets.cvsln.bak")).FullName;
+        string directory = Directory.CreateDirectory(Path.Combine(fixture.Root, directoryName)).FullName;
         using SolutionCache cache = new(fixture.SolutionPath);
         cache.AddDirectory(directory, fixture.Root);
 
         Assert.True(cache.ValidateDirectory(fixture.Root));
         Assert.True(Assert.Single(cache.GetChildren(fixture.Root)).IsDirectory);
+
+        Directory.Delete(directory);
+        cache.Remove(directory);
+        Assert.Empty(cache.GetChildren(fixture.Root));
+        Assert.True(cache.ValidateDirectory(fixture.Root));
+    }
+
+    [Fact]
+    public void RebuildingBesideTheDatabaseLeavesRootAndChildCachesValid()
+    {
+        using CacheFixture fixture = new();
+        string child = Directory.CreateDirectory(Path.Combine(fixture.Root, "assets.cvsln.cache.db-journal")).FullName;
+        fixture.WriteFile(Path.Combine("assets.cvsln.cache.db-journal", "child.txt"));
+        fixture.WriteFile("visible.txt");
+        fixture.WriteFile("notes.db-journal");
+        using (SolutionCache cache = new(fixture.SolutionPath))
+        {
+            cache.RebuildCache(fixture.Root);
+
+            Assert.True(cache.ValidateDirectory(fixture.Root));
+            Assert.True(cache.ValidateDirectory(child));
+            Assert.Equal(new[] { "assets.cvsln.cache.db-journal", "notes.db-journal", "visible.txt" }, cache.GetChildren(fixture.Root).Select(entry => entry.Name));
+            Assert.Equal("child.txt", Assert.Single(cache.GetChildren(child)).Name);
+        }
+
+        using SolutionCache reopened = new(fixture.SolutionPath);
+        Assert.True(reopened.ValidateDirectory(fixture.Root));
+        Assert.True(reopened.ValidateDirectory(child));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("-journal")]
+    [InlineData("-wal")]
+    [InlineData("-shm")]
+    public void DeletingTheOwnedDatabaseOrSidecarDoesNotWriteSql(string suffix)
+    {
+        using CacheFixture fixture = new();
+        string visible = fixture.WriteFile("visible.txt");
+        using SolutionCache cache = new(fixture.SolutionPath);
+        cache.AddFile(visible, fixture.Root);
+        var database = (SqlSugarClient)typeof(SolutionCache).GetField("_db", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(cache)!;
+        int writes = 0;
+        database.Aop.OnLogExecuting = (sql, _) =>
+        {
+            if (sql.TrimStart().StartsWith("INSERT", StringComparison.OrdinalIgnoreCase)
+                || sql.TrimStart().StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase)
+                || sql.TrimStart().StartsWith("DELETE", StringComparison.OrdinalIgnoreCase))
+                writes++;
+        };
+
+        cache.Remove((fixture.SolutionPath + ".cache.db" + suffix).ToUpperInvariant());
+
+        Assert.Equal(0, writes);
+        Assert.Equal("visible.txt", Assert.Single(cache.GetChildren(fixture.Root)).Name);
+        cache.Remove(visible);
+        Assert.True(writes > 0);
+        Assert.Empty(cache.GetChildren(fixture.Root));
+        Assert.Equal("fixture", File.ReadAllText(visible));
     }
 
     [Fact]

@@ -2,11 +2,14 @@ using ColorVision.Engine;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Node.Camera;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeContainer;
@@ -81,6 +84,71 @@ public sealed class LvCameraLocalForwardingTests
             Assert.False(request.SaveFiles); // Persistence must precede the file/cache publication.
         }
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
+    });
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void CommonCameraRoutesByOwnershipAndUsesOrdinaryCaptureLocally(bool serviceOwned, bool hdr) => Run(async () =>
+    {
+        using var scope = new CaptureScope(localOpen: false, preferLocal: true);
+        scope.Backend.ObserveService(serviceOwned ? DeviceStatusType.Opened : DeviceStatusType.Closed);
+        scope.Camera.Config.CameraMode = cvColorVision.CameraMode.CV_MODE;
+        scope.Camera.Config.Channel = cvColorVision.ImageChannel.Three;
+        var display = scope.Camera.DisplayConfig;
+        display.ExpTimeR = 41;
+        display.ExpTimeG = 42;
+        display.ExpTimeB = 43;
+        display.Gain = 7;
+        display.AvgCount = 2;
+        display.LocalAutoExposureConfig.AutoExpSyncFreq = 75;
+        var template = new TemplateModel<CameraRunParam>("common-camera-test", new CameraRunParam
+        {
+            Name = "common-camera-test", ExpTimeR = 11, ExpTimeG = 12, ExpTimeB = 13, Gain = 5, AvgCount = 3
+        });
+        TemplateCameraRunParam.Params.Add(template);
+        try
+        {
+            var node = new TestCommNode(scope)
+            {
+                IsHDR = hdr, CamTempName = hdr ? "service-hdr-template" : template.Key,
+                IsAutoExp = true, TempName = serviceOwned ? "service-exposure-template" : string.Empty,
+                IsWithND = serviceOwned, FlipMode = CVImageFlipMode.Y
+            };
+            using var graph = new Graph(node);
+            graph.Start.OnPublish = message =>
+            {
+                var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
+                var data = (JObject)request.Data;
+                Assert.True(data.Value<bool>("IsHDR"));
+                Assert.True(data.Value<bool>("IsAutoExpWithND"));
+                Assert.Equal("service-hdr-template", (string?)data["CamParamTemplate"]!["Name"]);
+                Assert.Equal("service-exposure-template", (string?)data["AutoExpTimeTemplate"]!["Name"]);
+                Respond(node, request);
+            };
+
+            Assert.Equal(StatusTypeEnum.Completed, (await graph.StartAsync()).Status);
+            Assert.Equal(serviceOwned ? 1 : 0, graph.Start.PublishCount);
+            if (serviceOwned)
+            {
+                Assert.Empty(scope.Services.Requests);
+                return;
+            }
+
+            await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            LocalCameraCaptureRequest local = Assert.Single(scope.Services.Requests);
+            Assert.Single(scope.Services.Saved);
+            Assert.True(local.IsAutoExposure);
+            Assert.Equal(75, (int?)JObject.Parse(local.AutoExposureConfiguration!)["expTimeCfg"]!["autoExpSyncFreq"]);
+            Assert.Equal(CVImageFlipMode.Y, local.FlipMode);
+            CameraRunParam parameters = Assert.IsType<CameraRunParam>(local.CameraParameters);
+            Assert.NotSame(template.Value, parameters);
+            Assert.Equal(hdr ? new[] { 41f, 42f, 43f } : new[] { 11f, 12f, 13f }, new[] { parameters.ExpTimeR, parameters.ExpTimeG, parameters.ExpTimeB });
+            Assert.Equal(hdr ? 7 : 5, parameters.Gain);
+            Assert.Equal(hdr ? 2 : 3, parameters.AvgCount);
+        }
+        finally { TemplateCameraRunParam.Params.Remove(template); }
     });
 
     [Theory]
@@ -355,6 +423,11 @@ public sealed class LvCameraLocalForwardingTests
     {
         protected override int GetMaxDelay() => immediateTimeout ? 0 : base.GetMaxDelay();
         protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request, SaveMode);
+    }
+
+    private sealed class TestCommNode(CaptureScope scope) : CommCameraNode
+    {
+        protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request, CVFileSaveMode.Synchronous);
     }
 
     private sealed class InspectEndNode : CVEndNode

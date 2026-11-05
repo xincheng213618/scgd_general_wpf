@@ -44,7 +44,7 @@ namespace ColorVision.Solution.Explorer
 
         public SolutionCache(string solutionFilePath)
         {
-            _dbPath = solutionFilePath + ".cache.db";
+            _dbPath = Path.GetFullPath(solutionFilePath + ".cache.db");
             _connectionString = $"Data Source={_dbPath}";
             _db = new SqlSugarClient(new ConnectionConfig
             {
@@ -437,6 +437,18 @@ namespace ColorVision.Solution.Explorer
                 if (_disposed) return;
                 try
                 {
+                    string normalizedPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(fullPath));
+                    if (string.Equals(normalizedPath, _dbPath, StringComparison.OrdinalIgnoreCase))
+                        return;
+
+                    bool isOwnSidecar = string.Equals(normalizedPath, _dbPath + "-journal", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(normalizedPath, _dbPath + "-wal", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(normalizedPath, _dbPath + "-shm", StringComparison.OrdinalIgnoreCase);
+                    // A directory can use a sidecar name in DELETE journal mode.
+                    // Skip file cleanup writes, but retain those real tree deletions.
+                    if (isOwnSidecar && !_db.Queryable<FileTreeCacheEntry>().Any(entry => entry.FullPath == normalizedPath && entry.IsDirectory))
+                        return;
+
                     RemoveEntryInternal(fullPath, isDirectory: true);
                 }
                 catch (Exception ex)

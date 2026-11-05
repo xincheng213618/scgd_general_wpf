@@ -75,8 +75,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
             var node = (FlowEngineLib.Node.Camera.CommCameraNode)context.Node;
             context.AddTemplatePanel(nameof(node.CamTempName), Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
             context.AddTemplateJsonPanel(nameof(node.CamTempName), Properties.Resources.HdrTemplate, new TemplateHDR());
-            context.AddTemplatePanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
-            context.AddTemplateJsonPanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
         }
     }
 }

@@ -436,7 +436,7 @@ namespace ColorVision.Solution.Explorer
         private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
         {
             // Skip internal solution files (e.g. .cvsln, .cache.db)
-            if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
+            if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name) && !Directory.Exists(e.FullPath))
             {
                 if (SolutionManager.IsProjectFilePath(e.FullPath))
                     RefreshProjectFileState(e.FullPath);

@@ -53,7 +53,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     public sealed class LocalCameraNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
     {
         private sealed record CameraExecutionParameters(DeviceCamera Device, CameraRunParam CameraParameters, CalibrationParam? Calibration,
-            CVImageFlipMode FlipMode, bool IsAutoExp, bool AutoConnect, bool SaveFiles, string CalibTempName);
+            CVImageFlipMode FlipMode, string? AutoExposureConfiguration, string AutoExpTempName, bool AutoConnect, bool SaveFiles, string CalibTempName)
+        {
+            public bool IsAutoExp => AutoExposureConfiguration != null;
+        }
         private const int CameraMasterResultType = 100;
         private string _CalibTempName = string.Empty;
         private float _ExpTime = 100;
@@ -61,6 +64,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private int _AvgCount = 1;
         private bool _AutoConnect = true;
         private bool _IsAutoExp;
+        private string _AutoExpTempName = string.Empty;
         private bool _SaveFiles = true;
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
@@ -88,6 +92,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Category("本地相机")]
         [STNodeProperty("自动曝光", "启用相机本地自动曝光", true)]
         public bool IsAutoExp { get => _IsAutoExp; set { _IsAutoExp = value; OnPropertyChanged(); } }
+
+        [Category("本地相机")]
+        [STNodeProperty("自动曝光模板", "用于设置同步频率、目标饱和度和曝光范围；为空时使用该设备的本机自动曝光参数", true)]
+        [PropertyVisibility(nameof(IsAutoExp))]
+        [PropertyEditorType(typeof(AutoExposureTemplatePropertiesEditor))]
+        public string AutoExpTempName { get => _AutoExpTempName; set { _AutoExpTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("本地相机")]
         [STNodeProperty("保存文件", "启用时保存 CVRAW，写入完成后继续；关闭时仅保留缓存。数据库记录始终先写入，后续色度参数沿用此设置。", true)]
@@ -145,7 +155,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CalibrationParam? calibration = ResolveCalibration(device);
             if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
                 cameraParameters.Gain = calibrationGain;
-            return new CameraExecutionParameters(device, cameraParameters, calibration, FlipMode, IsAutoExp, AutoConnect, SaveFiles, CalibTempName);
+            string autoExpTempName = AutoExpTempName;
+            string? autoExposureConfiguration = IsAutoExp
+                ? LocalAutoExposureTemplate.BuildFlowConfiguration(autoExpTempName, device.DisplayConfig.LocalAutoExposureConfig)
+                : null;
+            return new CameraExecutionParameters(device, cameraParameters, calibration, FlipMode, autoExposureConfiguration, autoExpTempName, AutoConnect, SaveFiles, CalibTempName);
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
@@ -162,6 +176,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Calibration = calibration,
                 FlipMode = parameters.FlipMode,
                 IsAutoExposure = parameters.IsAutoExp,
+                AutoExposureConfiguration = parameters.AutoExposureConfiguration,
                 SaveFiles = false,
                 AllowAcceleration = true
             });
@@ -211,7 +226,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CameraExecutionParameters parameters = GetExecutionParameters<CameraExecutionParameters>(action);
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode = parameters.Device.Code, EventName = OperatorCode,
                 action.SerialNumber, parameters.CameraParameters.ExpTime, parameters.CameraParameters.Gain, parameters.CameraParameters.AvgCount,
-                parameters.CalibTempName, parameters.FlipMode, parameters.AutoConnect, parameters.IsAutoExp, parameters.SaveFiles, AllowAcceleration = true });
+                parameters.CalibTempName, parameters.FlipMode, parameters.AutoConnect, parameters.IsAutoExp, parameters.AutoExpTempName, parameters.SaveFiles, AllowAcceleration = true });
         }
 
         internal CVFileSaveMode SaveMode => SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly;

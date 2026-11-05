@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.ImageEditor.Realtime;
 using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
@@ -32,13 +33,43 @@ public class CameraCaptureSettingsTests
     [Fact]
     public void LocalDefaultsAreExplicitAndMalformedTemplateCannotSilentlyUsePreviousSettings()
     {
-        var defaults = new PhyExpTimeCfg { AutoExpSaturation = 65, MaxExpTime = 800 };
-        JObject configuration = JObject.Parse(LocalAutoExposureTemplate.BuildConfiguration(new ParamBase { Id = -2 }, defaults));
+        var defaults = new PhyExpTimeCfg { AutoExpSaturation = 65, MaxExpTime = 800, AutoExpSyncFreq = 75 };
+        JObject configuration = JObject.Parse(LocalAutoExposureTemplate.BuildFlowConfiguration(null, defaults));
         Assert.Equal(65, configuration["expTimeCfg"]!["autoExpSaturation"]);
         Assert.Equal(800, configuration["expTimeCfg"]!["maxExpTime"]);
+        Assert.Equal(75, configuration["expTimeCfg"]!["autoExpSyncFreq"]);
+        Assert.Throws<InvalidOperationException>(() => LocalAutoExposureTemplate.BuildFlowConfiguration("missing-exposure", defaults));
         var invalid = new TemplateJsonParam { Id = 10, JsonValue = "{\"expTimeCfg\":{\"minExpTime\":1}}" };
         Assert.Throws<InvalidOperationException>(() => LocalAutoExposureTemplate.BuildConfiguration(invalid, defaults));
         Assert.Throws<InvalidOperationException>(() => LocalAutoExposureTemplate.BuildConfiguration(new ParamBase { Id = -1 }, defaults));
+    }
+
+    [Fact]
+    public void FlowExposureTemplateLookupPrefersV2AndPreservesV1Frequency()
+    {
+        StaTest.Run(() =>
+        {
+            const string name = "flow-exposure-test";
+            var defaults = new PhyExpTimeCfg();
+            var v1 = new TemplateModel<AutoExpTimeParam>(name, new AutoExpTimeParam { Name = name, autoExpSyncFreq = 60 });
+            JObject settings = JObject.Parse(LocalAutoExposureTemplate.BuildConfiguration(v1.Value, defaults));
+            settings["expTimeCfg"]!["autoExpSyncFreq"] = 90;
+            settings["expTimeCfg"]!["type"] = 1;
+            var v2 = new TemplateModel<TemplateJsonParam>(name, new TemplateJsonParam { Name = name, JsonValue = settings.ToString() });
+            TemplateAutoExpTime.Params.Add(v1);
+            try
+            {
+                JObject v1Snapshot = JObject.Parse(LocalAutoExposureTemplate.BuildFlowConfiguration(name, defaults));
+                Assert.Equal(60, v1Snapshot["expTimeCfg"]!["autoExpSyncFreq"]);
+                TemplateAutoExpTimeV2.Params.Add(v2);
+                Assert.True(JToken.DeepEquals(settings, JObject.Parse(LocalAutoExposureTemplate.BuildFlowConfiguration(name, defaults))));
+            }
+            finally
+            {
+                TemplateAutoExpTimeV2.Params.Remove(v2);
+                TemplateAutoExpTime.Params.Remove(v1);
+            }
+        });
     }
 
     [Theory]

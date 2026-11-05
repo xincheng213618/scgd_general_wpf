@@ -103,6 +103,39 @@ public sealed partial class DisplayMetrologyProvider
             }
             return (channels, width, height, step);
         }
+        if (step > 1 && (bytes is 1 or 2))
+        {
+            int maximum = bytes == 1 ? byte.MaxValue : ushort.MaxValue;
+            // Integer codes are exact in float storage. Pool them in source row order,
+            // preserving alpha validation, then decode only the preview cell maxima.
+            for (int y = 0; y < search.Height; y++)
+            {
+                token.ThrowIfCancellationRequested();
+                for (int x = 0; x < search.Width; x++)
+                {
+                    int offset = (search.Y + y) * input.Stride + (search.X + x) * count * bytes;
+                    int index = y / step * width + x / step;
+                    for (int c = 0; c < count; c++)
+                    {
+                        int sample = bytes == 1 ? data[offset + c] : System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset + c * bytes, 2));
+                        if (c == 3 && sample != maximum) throw new MeasurementException("transparent_input", "显示计量要求不透明图像。");
+                        if (c < 3) channels[2 - c][index] = Math.Max(channels[2 - c][index], (float)sample);
+                    }
+                }
+            }
+            for (int c = 0; c < channels.Length; c++)
+                for (int y = 0; y < height; y++)
+                {
+                    token.ThrowIfCancellationRequested();
+                    for (int x = 0; x < width; x++)
+                    {
+                        int index = y * width + x;
+                        double value = bytes == 1 ? channels[c][index] / 255d : channels[c][index] / 65535d;
+                        channels[c][index] = (float)(exponent == 1 ? value : Math.Pow(value, exponent));
+                    }
+                }
+            return (channels, width, height, step);
+        }
         for (int y = 0; y < search.Height; y++)
         {
             token.ThrowIfCancellationRequested();
