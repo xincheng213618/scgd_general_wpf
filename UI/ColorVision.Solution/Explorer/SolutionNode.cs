@@ -60,6 +60,30 @@ namespace ColorVision.Solution.Explorer
             VisualChildren.SortedAdd(node);
         }
 
+        internal void AppendChildrenInOrder(IEnumerable<SolutionNode> loadedChildren)
+        {
+            var existingPaths = VisualChildren
+                .Where(child => !string.IsNullOrEmpty(child.FullPath))
+                .Select(child => child.FullPath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            bool added = false;
+            foreach (SolutionNode child in loadedChildren)
+            {
+                if (!string.IsNullOrEmpty(child.FullPath) && !existingPaths.Add(child.FullPath))
+                {
+                    if (child is IDisposable disposable)
+                        disposable.Dispose();
+                    continue;
+                }
+                child.Parent = this;
+                child.UpdateProjectMembershipState();
+                VisualChildren.Add(child);
+                added = true;
+            }
+            if (added)
+                AddChildEventHandler?.Invoke(this, EventArgs.Empty);
+        }
+
         internal void ReplaceLazyChildren(
             IEnumerable<SolutionNode> loadedChildren,
             bool loadedChildrenAreSorted = false)
