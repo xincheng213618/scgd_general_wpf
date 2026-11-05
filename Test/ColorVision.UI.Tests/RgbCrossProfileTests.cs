@@ -77,25 +77,34 @@ public sealed class RgbCrossProfileTests
     }
 
     [Theory]
-    [InlineData(0.1)]
-    [InlineData(1.0)]
-    [InlineData(2.2)]
-    [InlineData(5.0)]
-    public async Task ProfilesKeepIndependentValuesAndNullEdgesWhenSomeSectionsAreMissing(double exponent)
+    [InlineData(AlgorithmImageFormat.Bgr48, 0.1)]
+    [InlineData(AlgorithmImageFormat.Bgr48, 1.0)]
+    [InlineData(AlgorithmImageFormat.Bgr48, 2.2)]
+    [InlineData(AlgorithmImageFormat.Bgr48, 5.0)]
+    [InlineData(AlgorithmImageFormat.Bgr24, 0.1)]
+    [InlineData(AlgorithmImageFormat.Bgra32, 2.2)]
+    [InlineData(AlgorithmImageFormat.Bgra64, 5.0)]
+    public async Task ProfilesKeepIndependentValuesAndNullEdgesWhenSomeSectionsAreMissing(AlgorithmImageFormat format, double exponent)
     {
         const int width = 600, height = 500;
-        var data = new byte[width * height * 6];
+        int channels = format.Channels(), bytes = format.BitsPerChannel() / 8, stride = width * format.BytesPerPixel() + 7;
+        var data = new byte[stride * height];
         for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
-                for (int channel = 0; channel < 3; channel++)
+                for (int channel = 0; channel < channels; channel++)
                 {
                     int shift = channel == 2 ? 2 : channel == 0 ? -3 : 0;
                     int u = x - 300 - shift, v = y - 250;
                     bool bright = Math.Abs(u) <= 2 && Math.Abs(v) <= 80 || Math.Abs(v) <= 2 && Math.Abs(u) <= 80;
                     if (channel == 0 && x - 300 is >= -60 and <= -55) bright = false;
-                    BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan((y * width + x) * 6 + channel * 2, 2), bright ? (ushort)52428 : (ushort)0);
+                    // A nonzero background exercises the decoded median, including 8-bit
+                    // normalization and 16-bit BGRA with an unaligned source row stride.
+                    ushort value = channel == 3 ? ushort.MaxValue : bright ? (ushort)52428 : (ushort)514;
+                    int offset = y * stride + (x * channels + channel) * bytes;
+                    if (bytes == 1) data[offset] = (byte)(value / 257);
+                    else BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(offset, 2), value);
                 }
-        using var image = new AlgorithmImageBuffer(width, height, width * 6, AlgorithmImageFormat.Bgr48, data);
+        using var image = new AlgorithmImageBuffer(width, height, stride, format, data);
         using var result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
         {
             Invocation = AlgorithmInvocation.Create(DisplayMetrologyIds.RgbCrossRegistration,

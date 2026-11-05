@@ -331,15 +331,27 @@ public sealed partial class DisplayMetrologyProvider
             return new(false, "cross_clipped");
         int channels = input.Format.Channels(), bytes = input.Format.BitsPerChannel() / 8;
         var values = new float[roi.Width * roi.Height];
-        const int histogramBins = ushort.MaxValue + 1;
-        // Large BGR16 ROIs can select the exact upper median by counting samples.
+        int histogramBins = bytes == 1 ? byte.MaxValue + 1 : ushort.MaxValue + 1;
+        // Integer ROIs can select the exact upper median by counting samples.
         // Positive decoding preserves their ordering, including float rounding ties.
         // For smaller ROIs, sorting a copy uses less scratch space than the bins.
-        int[]? histogram = input.Format == AlgorithmImageFormat.Bgr48 && values.Length >= histogramBins ? new int[histogramBins] : null;
+        int[]? histogram = (bytes is 1 or 2) && values.Length >= histogramBins ? new int[histogramBins] : null;
         ReadOnlySpan<byte> data = input.Data.Span;
         for (int y = 0; y < roi.Height; y++)
         {
             token.ThrowIfCancellationRequested();
+            if (histogram != null && bytes == 1)
+            {
+                for (int x = 0; x < roi.Width; x++)
+                {
+                    int offset = (roi.Y + y) * input.Stride + (roi.X + x) * channels + channel;
+                    byte sample = data[offset];
+                    histogram[sample]++;
+                    double value = sample / 255d;
+                    values[y * roi.Width + x] = (float)(p.DecodeExponent == 1 ? value : Math.Pow(value, p.DecodeExponent));
+                }
+                continue;
+            }
             for (int x = 0; x < roi.Width; x++)
             {
                 int offset = (roi.Y + y) * input.Stride + (roi.X + x) * channels * bytes + channel * bytes;
@@ -361,7 +373,8 @@ public sealed partial class DisplayMetrologyProvider
         {
             int remaining = values.Length / 2, median = 0;
             while (remaining >= histogram[median]) remaining -= histogram[median++];
-            minimum = (float)(p.DecodeExponent == 1 ? median / 65535d : Math.Pow(median / 65535d, p.DecodeExponent));
+            double normalizedMedian = bytes == 1 ? median / 255d : median / 65535d;
+            minimum = (float)(p.DecodeExponent == 1 ? normalizedMedian : Math.Pow(normalizedMedian, p.DecodeExponent));
         }
         else
         {
