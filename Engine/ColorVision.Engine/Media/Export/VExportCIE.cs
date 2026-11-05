@@ -139,18 +139,17 @@ namespace ColorVision.Engine.Media
             return Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), data);
         }
 
-        private static byte[] CopyChannelData(CVCIEFile fileInfo, int channelIndex)
+        private static Mat CreateChannelMat(CVCIEFile fileInfo, int channelIndex, IntPtr pixels)
         {
             int len = GetSingleChannelByteCount(fileInfo);
             int offset = checked(channelIndex * len);
-            if (fileInfo.Data == null || fileInfo.Data.Length < offset + len)
+            if (fileInfo.Data == null || fileInfo.Data.LongLength < (long)offset + len)
             {
                 throw new InvalidDataException($"CIE data length is insufficient for channel {channelIndex}.");
             }
 
-            byte[] data = new byte[len];
-            Buffer.BlockCopy(fileInfo.Data, offset, data, 0, len);
-            return data;
+            ValidateImageBuffer(fileInfo, 1, fileInfo.Data);
+            return Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), IntPtr.Add(pixels, offset));
         }
 
         private static int GetSingleChannelByteCount(CVCIEFile fileInfo)
@@ -404,7 +403,8 @@ namespace ColorVision.Engine.Media
                         }
 
                     }
-                    if (CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
+                    if ((export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ)
+                        && CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
                     {
                         if (cvcie.Channels == 1)
                         {
@@ -418,31 +418,34 @@ namespace ColorVision.Engine.Media
                         }
                         else if (cvcie.Channels == 3)
                         {
-                            if (export.IsExportChannelX)
+                            // Views borrow the selected planes; keep the payload pinned through synchronous encoding.
+                            GCHandle pixels = GCHandle.Alloc(cvcie.Data, GCHandleType.Pinned);
+                            try
                             {
-                                byte[] data = CopyChannelData(cvcie, 0);
-                                using (src = CreateSingleChannelMat(cvcie, data))
+                                IntPtr start = pixels.AddrOfPinnedObject();
+                                if (export.IsExportChannelX)
                                 {
-                                    SaveImage(src, "_X", cvcie, "X");
+                                    using (src = CreateChannelMat(cvcie, 0, start))
+                                    {
+                                        SaveImage(src, "_X", cvcie, "X");
+                                    }
+                                }
+                                if (export.IsExportChannelY)
+                                {
+                                    using (src = CreateChannelMat(cvcie, 1, start))
+                                    {
+                                        SaveImage(src, "_Y", cvcie, "Y");
+                                    }
+                                }
+                                if (export.IsExportChannelZ)
+                                {
+                                    using (src = CreateChannelMat(cvcie, 2, start))
+                                    {
+                                        SaveImage(src, "_Z", cvcie, "Z");
+                                    }
                                 }
                             }
-                            if (export.IsExportChannelY)
-                            {
-                                byte[] data = CopyChannelData(cvcie, 1);
-                                using (src = CreateSingleChannelMat(cvcie, data))
-                                {
-                                    SaveImage(src, "_Y", cvcie, "Y");
-                                }
-
-                            }
-                            if (export.IsExportChannelZ)
-                            {
-                                byte[] data = CopyChannelData(cvcie, 2);
-                                using (src = CreateSingleChannelMat(cvcie, data))
-                                {
-                                    SaveImage(src, "_Z", cvcie, "Z");
-                                }
-                            }
+                            finally { pixels.Free(); }
                         }
                     }
                     break;

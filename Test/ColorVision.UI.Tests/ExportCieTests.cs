@@ -451,8 +451,10 @@ public sealed class ExportCieTests
         }
     }
 
-    [Fact]
-    public void Cvcie32BitExportWritesOnlyTheSelectedFloatChannel()
+    [Theory]
+    [InlineData(32)]
+    [InlineData(64)]
+    public void CvcieFloatExportWritesOnlyTheSelectedChannel(int bpp)
     {
         string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-cvcie-{Guid.NewGuid():N}");
         string sourcePath = Path.Combine(root, "sample.cvcie");
@@ -461,7 +463,7 @@ public sealed class ExportCieTests
         {
             const int rows = 3;
             const int cols = 4;
-            float[] sourceValues = WriteCieFixture(sourcePath, rows, cols, channels: 3);
+            float[] sourceValues = WriteCieFixture(sourcePath, rows, cols, channels: 3, bpp: bpp);
             var viewModel = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = root,
@@ -479,15 +481,62 @@ public sealed class ExportCieTests
             Assert.True(File.Exists(yPath));
             Assert.Single(Directory.EnumerateFiles(root, "*.tiff"));
             using Mat exported = Cv2.ImRead(yPath, ImreadModes.Unchanged);
-            Assert.Equal(MatType.CV_32F, exported.Depth());
+            Assert.Equal(bpp == 32 ? MatType.CV_32F : MatType.CV_64F, exported.Depth());
             Assert.Equal(1, exported.Channels());
             Assert.True(exported.IsContinuous());
-            float[] actual = new float[rows * cols];
-            Marshal.Copy(exported.Data, actual, 0, actual.Length);
-            Assert.Equal(sourceValues.Skip(rows * cols).Take(rows * cols), actual);
+            double[] actual = new double[rows * cols];
+            if (bpp == 32)
+            {
+                float[] values = new float[actual.Length];
+                Marshal.Copy(exported.Data, values, 0, values.Length);
+                actual = values.Select(value => (double)value).ToArray();
+            }
+            else Marshal.Copy(exported.Data, actual, 0, actual.Length);
+            Assert.Equal(sourceValues.Skip(rows * cols).Take(rows * cols).Select(value => (double)value), actual);
         }
         finally
         {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // Preserve both selected-plane bounds and the existing complete-payload metadata validation.
+    [Theory]
+    [InlineData(32, 1)]
+    [InlineData(64, 1)]
+    [InlineData(32, 2)]
+    [InlineData(64, 2)]
+    public void CvcieExportRejectsIncompletePayload(int bpp, int selectedChannel)
+    {
+        string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), $"colorvision-export-plane-{Guid.NewGuid():N}"));
+        string sourcePath = Path.Combine(root, "partial.cvcie");
+        Directory.CreateDirectory(root);
+        try
+        {
+            WriteCieFixture(sourcePath, rows: 2, cols: 3, channels: 3, bpp: bpp);
+            int offset = CVFileUtil.ReadCIEFileHeader(sourcePath, out CVCIEFile header);
+            using (header)
+            using (FileStream file = File.OpenWrite(sourcePath))
+            using (BinaryWriter writer = new(file))
+            {
+                int availableBytes = 2 * 3 * (bpp / 8) * 2;
+                file.Position = offset;
+                writer.Write(availableBytes);
+                file.SetLength(offset + sizeof(int) + availableBytes);
+            }
+            var export = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = root, Name = "selected", IsExportSrc = false,
+                IsExportChannelX = false, IsExportChannelY = selectedChannel == 1, IsExportChannelZ = selectedChannel == 2,
+            };
+            byte[] original = File.ReadAllBytes(sourcePath);
+            Assert.Throws<InvalidDataException>(() => VExportCIE.SaveToTifOrThrow(export));
+            Assert.Empty(Directory.EnumerateFiles(root, "*.tiff"));
+            Assert.Equal(original, File.ReadAllBytes(sourcePath));
+        }
+        finally
+        {
+            Assert.StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())) + Path.DirectorySeparatorChar, root, StringComparison.OrdinalIgnoreCase);
             Directory.Delete(root, recursive: true);
         }
     }
@@ -542,8 +591,10 @@ public sealed class ExportCieTests
         }
     }
 
-    [Fact]
-    public void CvcieResolvesARelativeAssociatedSourceBeforeOfferingAndExportingIt()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CvcieResolvesARelativeAssociatedSourceBeforeOfferingAndExportingIt(bool missingCiePayload)
     {
         string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-associated-{Guid.NewGuid():N}");
         string rawPath = Path.Combine(root, "renamed-source.cvraw");
@@ -553,6 +604,12 @@ public sealed class ExportCieTests
         {
             byte[] sourceData = WritePatternedRawFixture(rawPath, rows: 3, cols: 4, channels: 3);
             WriteCieFixture(ciePath, rows: 3, cols: 4, channels: 3, srcFileName: Path.GetFileName(rawPath));
+            if (missingCiePayload)
+            {
+                int offset = CVFileUtil.ReadCIEFileHeader(ciePath, out CVCIEFile header);
+                using (header)
+                using (FileStream file = File.OpenWrite(ciePath)) file.SetLength(offset);
+            }
             var viewModel = new VExportCIE(ciePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = root,
@@ -694,12 +751,13 @@ public sealed class ExportCieTests
         return data;
     }
 
-    private static float[] WriteCieFixture(string filePath, int rows, int cols, int channels, string? srcFileName = null)
+    private static float[] WriteCieFixture(string filePath, int rows, int cols, int channels, string? srcFileName = null, int bpp = 32)
     {
         float[] values = Enumerable.Range(0, rows * cols * channels).Select(index => index + 0.25f).ToArray();
-        byte[] data = new byte[values.Length * sizeof(float)];
-        Buffer.BlockCopy(values, 0, data, 0, data.Length);
-        WriteCieFile(filePath, CVType.CIE, rows, cols, bpp: 32, channels, data, srcFileName);
+        byte[] data = new byte[values.Length * (bpp / 8)];
+        if (bpp == 32) Buffer.BlockCopy(values, 0, data, 0, data.Length);
+        else Buffer.BlockCopy(values.Select(value => (double)value).ToArray(), 0, data, 0, data.Length);
+        WriteCieFile(filePath, CVType.CIE, rows, cols, bpp, channels, data, srcFileName);
         return values;
     }
 
