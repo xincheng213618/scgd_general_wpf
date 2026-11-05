@@ -3675,7 +3675,7 @@
   <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>在光谱图上移动鼠标读取采样值</value></data>
   <data name="导出测量结果 CSV" xml:space="preserve"><value>导出测量结果 CSV</value></data>
   <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>导出完整原始光谱 CSV</value></data>
-  <data name="保留全部采样点和负值，可能包含采集时的平滑处理" xml:space="preserve"><value>保留全部采样点和负值，可能包含采集时的平滑处理</value></data>
+  <data name="每个波长一行，保留全部采样点和负值" xml:space="preserve"><value>每个波长一行，保留全部采样点和负值</value></data>
   <data name="请先选择要导出的数据。" xml:space="preserve"><value>请先选择要导出的数据。</value></data>
   <data name="导出失败：{0}" xml:space="preserve"><value>导出失败：{0}</value></data>
   <data name="显示或隐藏测量列表" xml:space="preserve"><value>显示或隐藏测量列表</value></data>
@@ -3683,7 +3683,7 @@
   <data name="分析选中的光谱" xml:space="preserve"><value>分析选中的光谱</value></data>
   <data name="分析此光谱" xml:space="preserve"><value>分析此光谱</value></data>
   <data name="导出此条测量结果 CSV" xml:space="preserve"><value>导出此条测量结果 CSV</value></data>
-  <data name="导出此条完整原始光谱 CSV" xml:space="preserve"><value>导出此条完整原始光谱 CSV</value></data>
+  <data name="导出此条完整光谱 CSV" xml:space="preserve"><value>导出此条完整光谱 CSV</value></data>
   <data name="光谱分析" xml:space="preserve"><value>光谱分析</value></data>
   <data name="多曲线比较" xml:space="preserve"><value>多曲线比较</value></data>
 <data name="LocalCleanup_NodeName" xml:space="preserve"><value>缓存清理</value></data><data name="LocalCleanup_NodeDescription" xml:space="preserve"><value>超过容量上限后按时间清理旧文件，保护当前流程输入图像。</value></data><data name="LocalCleanup_FoldersRequired" xml:space="preserve"><value>请至少配置一个缓存清理目录。</value></data><data name="LocalCleanup_InvalidThresholds" xml:space="preserve"><value>缓存上限必须大于 0，清理目标必须不小于 0 且小于缓存上限。</value></data><data name="LocalCleanup_Completed" xml:space="preserve"><value>缓存清理完成</value></data><data name="LocalCleanup_Stopped" xml:space="preserve"><value>流程已停止，取消缓存清理。</value></data><data name="清理目录必须使用绝对路径：{0}" xml:space="preserve"><value>清理目录必须使用绝对路径：{0}</value></data><data name="清理目录不能是磁盘或共享根目录：{0}" xml:space="preserve"><value>清理目录不能是磁盘或共享根目录：{0}</value></data><data name="清理文件超出指定目录：{0}" xml:space="preserve"><value>清理文件超出指定目录：{0}</value></data><data name="清理时不访问链接或联接点：{0}" xml:space="preserve"><value>清理时不访问链接或联接点：{0}</value></data><data name="LocalCleanup_CompletedWithFailures" xml:space="preserve"><value>缓存清理完成，部分文件未能清理</value></data>

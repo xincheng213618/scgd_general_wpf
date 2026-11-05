@@ -548,8 +548,7 @@
                                                     <Button Width="30" Height="30" Margin="0,1,5,0" Padding="2" Click="OpenCieWindow_Click" ToolTip="{x:Static properties:Resources.CieChromaticityDiagram}">
                                                         <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Stretch="Uniform" />
                                                     </Button>
-                                                    <Button Width="30" Height="30" Margin="0,1,5,0" Padding="2" Click="OpenSpectrumExportMenu_Click" ToolTip="{display:DisplayText Key=导出}">
-<Button.ContextMenu><ContextMenu><MenuItem Header="{display:DisplayText Key=导出测量结果 CSV}" Click="Export_Click"/><MenuItem Header="{display:DisplayText Key=导出完整原始光谱 CSV}" Click="ExportRawSpectrum_Click" ToolTip="{display:DisplayText Key=保留全部采样点和负值，可能包含采集时的平滑处理}"/></ContextMenu></Button.ContextMenu>
+                                                    <Button Width="30" Height="30" Margin="0,1,5,0" Padding="2" Click="Export_Click" ToolTip="{display:DisplayText Key=导出测量结果 CSV}">
                                                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                                                     </Button>
                                                     <Button Width="30" Height="30" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click" ToolTip="{display:DisplayText Key='清空当前视图（不删除数据库记录）'}">

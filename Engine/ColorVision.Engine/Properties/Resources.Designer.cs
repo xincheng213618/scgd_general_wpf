@@ -18623,11 +18623,11 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 导出此条完整原始光谱 CSV 的本地化字符串。
+        ///   查找类似 导出此条完整光谱 CSV 的本地化字符串。
         /// </summary>
-        public static string 导出此条完整原始光谱_CSV {
+        public static string 导出此条完整光谱_CSV {
             get {
-                return ResourceManager.GetString("导出此条完整原始光谱 CSV", resourceCulture);
+                return ResourceManager.GetString("导出此条完整光谱 CSV", resourceCulture);
             }
         }
         

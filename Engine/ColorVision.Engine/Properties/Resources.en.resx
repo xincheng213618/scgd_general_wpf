@@ -6583,7 +6583,7 @@ Continue investigating with the original error below.</value></data>
   <data name="在光谱图上移动鼠标读取采样值" xml:space="preserve"><value>Move over the spectrum to read measured samples</value></data>
   <data name="导出测量结果 CSV" xml:space="preserve"><value>Export measurement results CSV</value></data>
   <data name="导出完整原始光谱 CSV" xml:space="preserve"><value>Export full spectrum CSV</value></data>
-  <data name="保留全部采样点和负值，可能包含采集时的平滑处理" xml:space="preserve"><value>Preserves all stored samples and negative values, including any acquisition smoothing</value></data>
+  <data name="每个波长一行，保留全部采样点和负值" xml:space="preserve"><value>One row per wavelength, preserving all samples and negative values</value></data>
   <data name="请先选择要导出的数据。" xml:space="preserve"><value>Select measurements to export first.</value></data>
   <data name="导出失败：{0}" xml:space="preserve"><value>Export failed: {0}</value></data>
   <data name="显示或隐藏测量列表" xml:space="preserve"><value>Show or hide measurement list</value></data>
@@ -6591,7 +6591,7 @@ Continue investigating with the original error below.</value></data>
   <data name="分析选中的光谱" xml:space="preserve"><value>Analyze selected spectrum</value></data>
   <data name="分析此光谱" xml:space="preserve"><value>Analyze this spectrum</value></data>
   <data name="导出此条测量结果 CSV" xml:space="preserve"><value>Export this measurement as CSV</value></data>
-  <data name="导出此条完整原始光谱 CSV" xml:space="preserve"><value>Export this full stored spectrum as CSV</value></data>
+  <data name="导出此条完整光谱 CSV" xml:space="preserve"><value>Export this full spectrum as CSV</value></data>
   <data name="光谱分析" xml:space="preserve"><value>Spectrum analysis</value></data>
   <data name="多曲线比较" xml:space="preserve"><value>Compare multiple spectra</value></data>
 <data name="LocalCleanup_NodeName" xml:space="preserve"><value>Cache Cleanup</value></data><data name="LocalCleanup_NodeDescription" xml:space="preserve"><value>Delete the oldest files above the size limit while protecting the current input image.</value></data><data name="LocalCleanup_FoldersRequired" xml:space="preserve"><value>Configure at least one cache cleanup folder.</value></data><data name="LocalCleanup_InvalidThresholds" xml:space="preserve"><value>The cache limit must be positive, and the cleanup target must be nonnegative and smaller than the limit.</value></data><data name="LocalCleanup_Completed" xml:space="preserve"><value>Cache cleanup completed</value></data><data name="LocalCleanup_Stopped" xml:space="preserve"><value>The flow stopped; cache cleanup was canceled.</value></data><data name="清理目录必须使用绝对路径：{0}" xml:space="preserve"><value>Cleanup folders must use absolute paths: {0}</value></data><data name="清理目录不能是磁盘或共享根目录：{0}" xml:space="preserve"><value>A cleanup folder cannot be a drive or share root: {0}</value></data><data name="清理文件超出指定目录：{0}" xml:space="preserve"><value>The cleanup file is outside the configured folder: {0}</value></data><data name="清理时不访问链接或联接点：{0}" xml:space="preserve"><value>Cleanup does not access symbolic links or junctions: {0}</value></data><data name="LocalCleanup_CompletedWithFailures" xml:space="preserve"><value>Cache cleanup completed; some files could not be cleaned</value></data>
