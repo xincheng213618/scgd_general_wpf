@@ -172,15 +172,6 @@
       }
     },
     {
-      "id": 43,
-      "code": "Camera.RunParams",
-      "name": "相机HDR参数",
-      "version": "HDR",
-      "file": "HDR/Camera.RunParams.schema.json",
-      "templateFolder": "HDR",
-      "schemaFile": "Camera.RunParams.schema.json"
-    },
-    {
       "id": 44,
       "code": "PoiAnalysis",
       "name": "POI分析",

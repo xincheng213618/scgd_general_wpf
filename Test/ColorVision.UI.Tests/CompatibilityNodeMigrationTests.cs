@@ -205,6 +205,8 @@ public sealed class CompatibilityNodeMigrationTests
             JToken? expected = contracts[i]["request"]?.DeepClone();
             if (request is FlowEngineLib.CameraData or FlowEngineLib.Node.Camera.CommCameraData)
                 ((JObject)expected!).Remove("POIParam");
+            if (request is FlowEngineLib.Node.Camera.CommCameraData)
+                ((JObject)expected!).Remove("IsHDR");
             if (request is FlowEngineLib.Algorithm.CalibrationData)
             {
                 ((JObject)expected!).Remove("POIParam");
@@ -337,6 +339,11 @@ public sealed class CompatibilityNodeMigrationTests
                     oldProperties.Remove(key);
                     Assert.DoesNotContain(key, newProperties.Keys);
                 }
+            }
+            if (modelKey == "FlowEngineLib.dll|FlowEngineLib.Node.Camera.CommCameraNode")
+            {
+                oldProperties.Remove("IsHDR");
+                Assert.DoesNotContain("IsHDR", newProperties.Keys);
             }
             if (modelKey == "FlowEngineLib.dll|FlowEngineLib.Algorithm.CalibrationNode")
             {

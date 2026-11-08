@@ -95,6 +95,49 @@ public class FlowPackageCompatibilityTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LegacyLocalCameraExposureTemplateIsImportedOnlyWhenStillReferenced(bool sharedWithOtherNode)
+    {
+        StaTest.Run(() =>
+        {
+            const string templateName = "retired-exposure-template";
+            using var editor = new STNodeEditor();
+            var node = new LegacyLocalCameraNode { AutoExpTempName = templateName };
+            node.Create();
+            editor.Nodes.Add(node);
+            if (sharedWithOtherNode)
+            {
+                var otherNode = new AlternateTemplateReferenceNode { AutoExpTempName = templateName };
+                otherNode.Create();
+                editor.Nodes.Add(otherNode);
+            }
+            byte[] flowData = editor.GetCanvasData();
+            Assert.Equal(sharedWithOtherNode, FlowPackageHelper.ExtractTemplateNames(flowData).Contains(templateName));
+            if (!sharedWithOtherNode)
+                Assert.Empty(FlowPackageHelper.CollectTemplatesForExport("Legacy camera flow", flowData).Templates);
+
+            var manifest = new FlowPackageManifest
+            {
+                FlowName = "Legacy camera flow",
+                Templates =
+                {
+                    new FlowPackageTemplate { TemplateName = templateName, TemplateCode = "auto_exp_time", SerializedContent = "{}" }
+                }
+            };
+            string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cvflow");
+            try
+            {
+                FlowPackageHelper.ExportFlowPackage(path, manifest.FlowName, flowData, manifest);
+                var imported = FlowPackageHelper.ImportFlowPackage(path);
+                Assert.Equal(flowData, imported.StnData);
+                Assert.Equal(sharedWithOtherNode, imported.Manifest!.Templates.Any(template => template.TemplateName == templateName));
+            }
+            finally { File.Delete(path); }
+        });
+    }
+
     [Fact]
     public void CameraCalibrationNamesRemainExternalToFlowPackage()
     {
@@ -940,6 +983,13 @@ public class FlowPackageCompatibilityTests
 
         [STNodeProperty("Legacy calibration", "Camera-owned reference")]
         public string CaliTempName { get; set; } = string.Empty;
+    }
+
+    [STNodeSerializationModel("ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LocalCameraNode")]
+    private sealed class LegacyLocalCameraNode : STNode
+    {
+        [STNodeProperty("Auto exposure", "Template reference")]
+        public string AutoExpTempName { get; set; } = string.Empty;
     }
 
     private sealed class AlternateTemplateReferenceNode : STNode

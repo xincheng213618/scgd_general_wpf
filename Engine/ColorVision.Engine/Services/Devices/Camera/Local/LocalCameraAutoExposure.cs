@@ -1,8 +1,10 @@
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using cvColorVision;
 using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 using System.Windows;
@@ -11,6 +13,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal static class LocalCameraAutoExposure
     {
+        internal static string BuildConfiguration(string? json, PhyExpTimeCfg defaults)
+        {
+            JObject settings = string.IsNullOrWhiteSpace(json)
+                ? JObject.FromObject(defaults)
+                : JObject.Parse(json)["expTimeCfg"] as JObject ?? throw new InvalidOperationException("自动曝光参数缺少 expTimeCfg。");
+            return NormalizeConfiguration(settings);
+        }
+
+        internal static string NormalizeConfiguration(JObject settings)
+        {
+            foreach (string name in new[] { "autoExpTimeBegin", "autoExpSyncFreq", "autoExpSaturation", "autoExpSatMaxAD",
+                "autoExpMaxPecentage", "autoExpSatDev", "maxExpTime", "minExpTime", "burstThreshold" })
+            {
+                JToken? value = settings[name];
+                if (value?.Type is not (JTokenType.Integer or JTokenType.Float) || !double.IsFinite(value.Value<double>()))
+                    throw new InvalidOperationException($"自动曝光参数 {name} 无效。");
+            }
+            if (settings["autoExpFlag"]?.Type != JTokenType.Boolean
+                || settings.Value<double>("minExpTime") <= 0
+                || settings.Value<double>("maxExpTime") < settings.Value<double>("minExpTime")
+                || settings.Value<double>("autoExpTimeBegin") <= 0)
+                throw new InvalidOperationException("自动曝光参数的开关或曝光范围无效。");
+            return new JObject { ["expTimeCfg"] = settings.DeepClone() }.ToString(Formatting.None);
+        }
+
         internal static void Measure(DeviceCamera device, IntPtr handle, CameraRunParam parameters, string? configuration = null)
         {
             Prepare(device, handle, parameters, configuration);
@@ -74,7 +101,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 int configurationResult = cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_ExpTime, configuration);
                 if (configurationResult != cvErrorDefine.CV_ERR_SUCCESS)
-                    throw LocalCameraCaptureService.CreateNativeException("本地自动曝光加载模板失败", configurationResult);
+                    throw LocalCameraCaptureService.CreateNativeException("本地自动曝光加载参数失败", configurationResult);
             }
             int gainResult = cvCameraCSLib.CM_SetGain(handle, parameters.Gain);
             if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地自动曝光设置增益失败", gainResult);

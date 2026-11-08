@@ -45,6 +45,19 @@ public class CameraCaptureSettingsTests
     }
 
     [Fact]
+    public void InlineAutoExposureUsesDeviceDefaultsOnlyWhenBlank()
+    {
+        var defaults = new PhyExpTimeCfg { AutoExpSyncFreq = 75 };
+        var settings = JObject.Parse(LocalCameraAutoExposure.BuildConfiguration(string.Empty, defaults));
+        Assert.Equal(75, settings["expTimeCfg"]!["autoExpSyncFreq"]);
+        settings["expTimeCfg"]!["autoExpSyncFreq"] = 60;
+        Assert.True(JToken.DeepEquals(settings, JObject.Parse(LocalCameraAutoExposure.BuildConfiguration(settings.ToString(), defaults))));
+        Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.BuildConfiguration("{}", defaults));
+        settings["expTimeCfg"]!["minExpTime"] = 0;
+        Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.BuildConfiguration(settings.ToString(), defaults));
+    }
+
+    [Fact]
     public void FlowExposureTemplateLookupPrefersV2AndPreservesV1Frequency()
     {
         StaTest.Run(() =>

@@ -51,32 +51,6 @@
             </DockPanel>
         </DockPanel>
         <StackPanel x:Name="CaptureOnlyPanel">
-            <DockPanel Margin="0,0,0,2" x:Name="HdrPanel">
-                <Button Width="24" Height="24" Margin="4,0,0,0" Padding="2" ToolTip="{x:Static properties:Resources.Property}" DockPanel.Dock="Right" x:Name="EditHdrButton">
-                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="14" HorizontalAlignment="Center"/>
-                </Button>
-                <TextBlock Width="52" Margin="0,0,4,0" Text="{engine:EngineLang CameraPanel_HDR}"/>
-                <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboBoxHDRTemplate" SelectedIndex="{Binding HDRTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock>
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                        <Setter Property="Text" Value="{Binding Key}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Value.Id}" Value="-1">
-                                                <Setter Property="Text" Value="{engine:EngineLang CameraPanel_NotUsed}"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </DockPanel>
             <DockPanel Margin="0,0,0,2">
                 <Button Content="{x:Static properties:Resources.AutoExposure}" Padding="3,1" x:Name="AutoExposureButton" DockPanel.Dock="Right"/>
                 <DockPanel x:Name="AutoExposureTemplatePanel">

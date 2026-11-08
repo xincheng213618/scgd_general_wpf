@@ -283,10 +283,7 @@ namespace ColorVision.Engine.Templates.Flow
                         $"不支持 cvflow v{manifest.Version}，"
                         + $"当前最高支持 {CurrentPackageVersion}。");
                 }
-                if (stnData != null)
-                {
-                    ValidateStndV1Payload(stnData);
-                }
+                byte[]? decompressedStn = stnData == null ? null : ValidateStndV1Payload(stnData);
                 bool versionThree = packageMajorVersion == 3;
                 if (versionThree)
                 {
@@ -320,6 +317,8 @@ namespace ColorVision.Engine.Templates.Flow
                             "cvflow 中 flow.stn 的内容校验失败。");
                     }
                 }
+                if (decompressedStn != null && manifest.Templates is { Count: > 0 })
+                    RemoveRetiredLocalCameraExposureTemplates(decompressedStn, manifest.Templates);
             }
             else if (stnData != null)
             {
@@ -889,12 +888,12 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        private static void ValidateStndV1Payload(
+        private static byte[] ValidateStndV1Payload(
             byte[] stnData)
         {
             try
             {
-                _ = FlowPackageStnValidator
+                return FlowPackageStnValidator
                     .ValidateAndDecompress(stnData);
             }
             catch (InvalidDataException ex)
@@ -943,7 +942,7 @@ namespace ColorVision.Engine.Templates.Flow
         /// <summary>
         /// 解析解压后的数据，提取模板名称
         /// </summary>
-        private static void ParseNodesForTemplateNames(byte[] data, HashSet<string> templateNames, Dictionary<string, string> nameMap)
+        private static void ParseNodesForTemplateNames(byte[] data, HashSet<string> templateNames, HashSet<string>? retiredLocalCameraExposureNames)
         {
             int pos = 0;
 
@@ -968,19 +967,38 @@ namespace ColorVision.Engine.Templates.Flow
                 pos += nodeDataLength;
 
                 // 解析节点数据中的属性
-                var properties = ParseNodeProperties(nodeData);
+                var properties = ParseNodeProperties(nodeData, out string model);
                 foreach (var kvp in properties)
                 {
-                    if (TemplatePropertyNames.Contains(kvp.Key))
-                    {
-                        string value = Encoding.UTF8.GetString(kvp.Value);
-                        if (!string.IsNullOrWhiteSpace(value))
-                        {
-                            templateNames?.Add(value);
-                        }
-                    }
+                    if (!TemplatePropertyNames.Contains(kvp.Key))
+                        continue;
+                    string value = Encoding.UTF8.GetString(kvp.Value);
+                    if (string.IsNullOrWhiteSpace(value))
+                        continue;
+                    if (kvp.Key == "AutoExpTempName" && model is
+                        "ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LocalCameraNode" or "ColorVision.Engine.dll|LocalCameraNode")
+                        retiredLocalCameraExposureNames?.Add(value);
+                    else
+                        templateNames.Add(value);
                 }
             }
+        }
+
+        private static void RemoveRetiredLocalCameraExposureTemplates(byte[] data, List<FlowPackageTemplate> templates)
+        {
+            var referencedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var retiredNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            ParseNodesForTemplateNames(data, referencedNames, retiredNames);
+            retiredNames.ExceptWith(referencedNames);
+            if (retiredNames.Count == 0)
+                return;
+
+            foreach (FlowPackageTemplate template in templates)
+            {
+                retiredNames.ExceptWith(ExtractTemplateNamesFromSerializedContent(template.SerializedContent, template.TemplateName));
+                retiredNames.ExceptWith(ExtractTemplateNamesFromDetails(template.Details));
+            }
+            templates.RemoveAll(template => retiredNames.Contains(template.TemplateName));
         }
 
         /// <summary>
@@ -1036,14 +1054,16 @@ namespace ColorVision.Engine.Templates.Flow
         /// <summary>
         /// 解析单个节点数据，提取所有属性键值对
         /// </summary>
-        private static Dictionary<string, byte[]> ParseNodeProperties(byte[] nodeData)
+        private static Dictionary<string, byte[]> ParseNodeProperties(byte[] nodeData, out string model)
         {
             var properties = new Dictionary<string, byte[]>();
             int pos = 0;
 
-            // 跳过 class info
+            model = string.Empty;
             if (pos >= nodeData.Length) return properties;
             int classInfoLen = nodeData[pos];
+            if (classInfoLen > nodeData.Length - 1) return properties;
+            model = Encoding.UTF8.GetString(nodeData, 1, classInfoLen);
             pos += 1 + classInfoLen;
 
             // 跳过 type GUID

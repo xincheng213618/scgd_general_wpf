@@ -3,8 +3,8 @@ knowledge_id: "algorithms.json-templates"
 knowledge_type: "reference"
 status: "current"
 summary: "JSON模板的分组参数与文本编辑、语法检查、输入草稿、保存保护和默认参数；Schema提供字段提示而不补默认值或执行完整校验。"
-aliases: ["JSON模板","JSON模板保存和V2结果如何对应","属性编辑","文本编辑","校验Json","设置为默认参数","无法重置，请检查数据库相关配置","JSON Schema默认值","Schema default","JSON模板重置","HDR参数Schema","ITemplateJson","TemplateJsonParam","EditTemplateJson","JsonPropertyEditorControl","JsonEditorSchemaDocument","CanHandle1","SchemaIndexResourceName","TryLoadTemplateSchema"]
-code_paths: ["Engine/ColorVision.Engine/Templates/Jsons","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/TemplateHDR.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/Camera.RunParams.schema.json","UI/ColorVision.UI/PropertyEditor/Json","UI/ColorVision.UI/Utilities/JsonHelper.cs","UI/ColorVision.Common/Utilities/DebounceTimer.cs"]
+aliases: ["JSON模板","JSON模板保存和V2结果如何对应","属性编辑","文本编辑","校验Json","设置为默认参数","无法重置，请检查数据库相关配置","JSON Schema默认值","Schema default","JSON模板重置","ITemplateJson","TemplateJsonParam","EditTemplateJson","JsonPropertyEditorControl","JsonEditorSchemaDocument","CanHandle1","SchemaIndexResourceName","TryLoadTemplateSchema"]
+code_paths: ["Engine/ColorVision.Engine/Templates/Jsons","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","UI/ColorVision.UI/PropertyEditor/Json","UI/ColorVision.UI/Utilities/JsonHelper.cs","UI/ColorVision.Common/Utilities/DebounceTimer.cs"]
 test_paths: []
 related: ["algorithms.index","algorithms.template-management","engine.host","engine.template-design","engine.results","copilot.tool-contracts"]
 ---
@@ -91,8 +91,6 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 
 查找阶段只解析索引，不验证 Schema 内容。非空但无效的嵌入 Schema 仍会优先返回，后续解析失败不会重新触发磁盘回退。工程嵌入规则见 [Engine 资源打包](../../engine-components/ColorVision.Engine.md#资源不是同一种输出文件)：输出目录没有散文件不等于漏包，开发机磁盘回退成功也不能证明交付程序集正确。
 
-**HDR 有明确的路径缺口。** `TemplateHDR`（字典 `43`、Code `Camera.RunParams`）仍在 `Services/Devices/Camera/Templates/HDR/` 使用通用 JSON 编辑器，Schema 也在该目录；索引的 `HDR/Camera.RunParams.schema.json` 却相对 `Templates/Jsons/` 解析，该位置没有文件，且实际位置不在工程 `Templates/Jsons/**/*.schema.json` 嵌入范围内。按当前源码构建不能保证该条目被正常加载。排查应核对索引路径与嵌入资源，不应把它解释为 HDR 功能不存在；普通相机参数也使用 `Camera.RunParams` Code，Code 本身不足以区分两类模板。
-
 ### 维护字段说明
 
 在对应算法目录维护 Schema，在 `Schemas/schema-index.json` 登记 Code 和相对路径。保留算法约定的 JSON 字段名；只改善标题或单位不应重命名参数。字段片段例如：
@@ -135,7 +133,6 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | BlackMura | `37` / `BlackMura.Caculate` |
 | Ghost / FOV / Distortion | `38` / `ghost`，`39` / `FOV`，`40` / `distortion` |
 | AA 构建 POI / 找点 | `41` / `BuildPOI`，`42` / `FindLightArea` |
-| 相机 HDR | `43` / `Camera.RunParams`，位置与 Schema 缺口见上文 |
 | POI 分析 / 十字计算 | `44` / `PoiAnalysis`，`45` / `FindCross` |
 | MTF / SFR | `48` / `MTF`，`49` / `SFR` |
 | KB | `150` / `KB`，使用专用编辑器 |

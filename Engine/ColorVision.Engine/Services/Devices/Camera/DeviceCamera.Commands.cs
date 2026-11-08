@@ -181,7 +181,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal MsgRecord CaptureLocally(double[] exposure, CalibrationParam calibration, ParamBase autoExposure, ParamBase hdr)
+        internal MsgRecord CaptureLocally(double[] exposure, CalibrationParam calibration, ParamBase autoExposure)
         {
             CameraRunParam parameters = BuildLocalCameraParameters(exposure, calibration);
             string? configuration;
@@ -195,7 +195,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return RunLocalCommand("GetData", () =>
             {
-                if (hdr.Id != -1) throw new NotSupportedException("本地取图尚不支持服务 HDR 模板，请选择空 HDR 模板。");
                 EnsureLocalMeasurementConnected(autoConnect: false);
                 bool persistResults = MySqlSetting.IsConnect;
                 LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(request);

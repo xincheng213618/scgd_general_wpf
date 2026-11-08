@@ -867,7 +867,6 @@
         "JSON Schema默认值",
         "Schema default",
         "JSON模板重置",
-        "HDR参数Schema",
         "ITemplateJson",
         "TemplateJsonParam",
         "EditTemplateJson",
@@ -880,8 +879,6 @@
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/Jsons",
         "Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/TemplateHDR.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/Camera.RunParams.schema.json",
         "UI/ColorVision.UI/PropertyEditor/Json",
         "UI/ColorVision.UI/Utilities/JsonHelper.cs",
         "UI/ColorVision.Common/Utilities/DebounceTimer.cs"

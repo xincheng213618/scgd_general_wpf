@@ -133,8 +133,7 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
     private static CameraRunParam BuildCommCameraParameters(DeviceCamera device, CommCameraData parameters)
     {
         string? templateName = parameters.CamParamTemplate?.Name;
-        // The saved template name refers to an HDR template when HDR is selected.
-        if (parameters.IsHDR || string.IsNullOrWhiteSpace(templateName))
+        if (string.IsNullOrWhiteSpace(templateName))
             return device.BuildLocalCameraParameters();
 
         CameraRunParam template = TemplateCameraRunParam.Params.FirstOrDefault(item => item.Key == templateName)?.Value

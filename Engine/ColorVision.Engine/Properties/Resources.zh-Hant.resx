@@ -2972,6 +2972,7 @@
   <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>啟用ND濾輪(自動曝光)</value></data>
   <data name="布点ROI(区域)" xml:space="preserve"><value>布點ROI(區域)</value></data>
   <data name="自动曝光模板" xml:space="preserve"><value>自動曝光範本</value></data>
+  <data name="自动曝光参数" xml:space="preserve"><value>自動曝光參數</value></data>
   <data name="电压量程（V）" xml:space="preserve"><value>電壓量程（V）</value></data>
   <data name="电流量程（mA）" xml:space="preserve"><value>電流量程（mA）</value></data>
   <data name="增益由校正组“{0}”固定为 {1:0.##}" xml:space="preserve"><value>增益由校正組「{0}」固定為 {1:0.##}</value></data>
@@ -3426,12 +3427,6 @@
   </data>
   <data name="Gain" xml:space="preserve">
     <value>增益</value>
-  </data>
-  <data name="HdrTemplate" xml:space="preserve">
-    <value>HDR模板</value>
-  </data>
-  <data name="HdrTemplateManagement" xml:space="preserve">
-    <value>HDR模板管理</value>
   </data>
   <data name="HeaderFilterWheel1" xml:space="preserve">
     <value>濾輪 1</value>
@@ -7340,7 +7335,6 @@
   <data name="CameraPanel_Averages" xml:space="preserve"><value>平均</value></data>
   <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>自曝 ND</value></data>
   <data name="CameraPanel_NDHint" xml:space="preserve"><value>僅服務模式支援 ND 自動切換；本地自動曝光前請取消勾選</value></data>
-  <data name="CameraPanel_HDR" xml:space="preserve"><value>HDR</value></data>
   <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>預覽設定</value></data>
   <data name="CameraPanel_NotUsed" xml:space="preserve"><value>不使用</value></data>
   <data name="CameraPanel_NoAutoExposureTemplate" xml:space="preserve"><value>不使用自動曝光範本</value></data>

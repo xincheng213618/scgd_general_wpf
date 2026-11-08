@@ -14,8 +14,6 @@ namespace FlowEngineLib.Node.Camera;
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Camera.CommCameraNode")]
 public class CommCameraNode : CVBaseServerNode
 {
-	protected bool _IsHDR;
-
 	private string _CamTempName;
 
 	protected CVImageFlipMode _FlipMode;
@@ -32,22 +30,8 @@ public class CommCameraNode : CVBaseServerNode
 
 	private STNodeEditText<string> m_ctrl_camTemp;
 
-	[STNodeProperty("HDR", "服务取图使用 HDR。本地取图使用设备采集参数拍摄普通图像。", true)]
-	public bool IsHDR
-	{
-		get
-		{
-			return _IsHDR;
-		}
-		set
-		{
-			_IsHDR = value;
-			CamTempName = string.Empty;
-			OnPropertyChanged();
-		}
-	}
-
 	[STNodeProperty("相机模板", "相机参数模板", true)]
+	[PropertyEditorType(typeof(CameraRunTemplatePropertiesEditor))]
 	public string CamTempName
 	{
 		get
@@ -176,6 +160,6 @@ public class CommCameraNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new CommCameraData(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, _IsHDR, _FlipMode);
+		return new CommCameraData(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, _FlipMode);
 	}
 }

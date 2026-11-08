@@ -3,6 +3,7 @@ using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.POI;
@@ -16,6 +17,7 @@ using ST.Library.UI.NodeEditor;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -96,6 +98,25 @@ public sealed class CompatibilityCameraPropertyEditorTests
     });
 
     [Fact]
+    public void CommonCameraPropertyRowEditsTheOrdinaryTemplate() => WpfTestHost.Invoke(() =>
+    {
+        using var resources = new EditorResources();
+        var originalTemplates = TemplateCameraRunParam.Params;
+        var template = new TemplateModel<CameraRunParam>("editor-test-camera", new CameraRunParam());
+        TemplateCameraRunParam.Params = [template];
+        try
+        {
+            var node = new CommCameraNode();
+            node.Create();
+            PropertyInfo property = typeof(CommCameraNode).GetProperty(nameof(CommCameraNode.CamTempName))!;
+            Assert.Equal(typeof(CameraRunTemplatePropertiesEditor), property.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType);
+            Assert.Null(NodeConfiguratorRegistry.GetConfigurator(typeof(CommCameraNode)));
+            VerifySelection(new CameraRunTemplatePropertiesEditor(), node, property, template);
+        }
+        finally { TemplateCameraRunParam.Params = originalTemplates; }
+    });
+
+    [Fact]
     public void DirectCalibrationEditorDisplaysAndCanClearUnavailableTemplateWithoutADevice() => WpfTestHost.Invoke(() =>
     {
         using var resources = new EditorResources();
@@ -141,22 +162,50 @@ public sealed class CompatibilityCameraPropertyEditorTests
         finally { panel.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
     });
 
-    [Theory]
-    [InlineData(typeof(LocalCameraNode), nameof(LocalCameraNode.AutoExpTempName))]
-    [InlineData(typeof(CommCameraNode), nameof(CommCameraNode.TempName))]
-    public void AutoExposureSwitchShowsTemplateEditorAndKeepsItsSelection(Type nodeType, string propertyName) => WpfTestHost.Invoke(() =>
+    [Fact]
+    public void LocalCameraStoresInlineAutoExposureJsonAndIgnoresLegacyTemplateNames() => WpfTestHost.Invoke(() =>
+    {
+        using var resources = new EditorResources();
+        var node = new LocalCameraNode();
+        node.Create();
+        node.OnLoadNode(new Dictionary<string, byte[]>
+        {
+            [nameof(LocalCameraNode.IsAutoExp)] = Encoding.UTF8.GetBytes(bool.TrueString),
+            ["AutoExpTempName"] = Encoding.UTF8.GetBytes("old-exposure-template")
+        });
+        Assert.Empty(node.AutoExposureJson);
+        Assert.True(node.IsAutoExp);
+
+        PropertyInfo property = typeof(LocalCameraNode).GetProperty(nameof(LocalCameraNode.AutoExposureJson))!;
+        Assert.Equal(typeof(TextJsonPropertiesEditor), property.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType);
+        DockPanel panel = PropertyEditorHelper.GenProperties(property, node);
+        Assert.Equal(Visibility.Visible, panel.Visibility);
+        Assert.Single(panel.Children.OfType<TextBox>());
+        node.AutoExposureJson = "{\"expTimeCfg\":{\"autoExpSaturation\":70}}";
+        node.IsAutoExp = false;
+        Assert.Equal(Visibility.Collapsed, panel.Visibility);
+
+        var saved = STNodeSavedState.Parse(node.GetSaveData()).Properties;
+        Assert.DoesNotContain("AutoExpTempName", saved.Keys);
+        var reloaded = new LocalCameraNode();
+        reloaded.Create();
+        reloaded.OnLoadNode(saved);
+        Assert.Equal(node.AutoExposureJson, reloaded.AutoExposureJson);
+    });
+
+    [Fact]
+    public void CommonCameraAutoExposureSwitchShowsTemplateEditorAndKeepsItsSelection() => WpfTestHost.Invoke(() =>
     {
         using var resources = new EditorResources();
         var template = new TemplateModel<AutoExpTimeParam>("editor-test-auto-exposure", new AutoExpTimeParam { Name = "editor-test-auto-exposure" });
         TemplateAutoExpTime.Params.Add(template);
         try
         {
-            var node = (STNode)Activator.CreateInstance(nodeType)!;
-            var property = nodeType.GetProperty(propertyName)!;
-            var isAutoExp = nodeType.GetProperty(nameof(LocalCameraNode.IsAutoExp))!;
+            var node = new CommCameraNode();
+            var property = typeof(CommCameraNode).GetProperty(nameof(CommCameraNode.TempName))!;
             DockPanel panel = PropertyEditorHelper.GenProperties(property, node);
             Assert.Equal(Visibility.Collapsed, panel.Visibility);
-            isAutoExp.SetValue(node, true);
+            node.IsAutoExp = true;
             Assert.Equal(Visibility.Visible, panel.Visibility);
 
             var grid = Assert.IsType<Grid>(Assert.Single(panel.Children));
@@ -165,7 +214,7 @@ public sealed class CompatibilityCameraPropertyEditorTests
             combo.SelectedItem = template;
             Assert.Equal(template.Key, property.GetValue(node));
 
-            isAutoExp.SetValue(node, false);
+            node.IsAutoExp = false;
             Assert.Equal(Visibility.Collapsed, panel.Visibility);
             Assert.Equal(template.Key, property.GetValue(node));
         }

@@ -289,9 +289,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public MsgRecord GetData(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam, ParamBase HDRparamBase)
+        public MsgRecord GetData(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam)
         {
-            if (Device.RoutesLocally) return Device.CaptureLocally(expTime, param, autoExpTimeParam, HDRparamBase);
+            if (Device.RoutesLocally) return Device.CaptureLocally(expTime, param, autoExpTimeParam);
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
@@ -331,17 +331,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
                 }
             }
-
-            if (HDRparamBase.Id == -1)
-            {
-                Params.Add("IsHDR", false);
-            }
-            else
-            {
-                Params.Add("IsHDR", true);
-                Params.Add("CamParamTemplate", new CVTemplateParam() { ID = HDRparamBase.Id, Name = HDRparamBase.Name });
-            }
-
 
             Params.Add("ScaleFactor",1);
             Params.Add("Gain", Device.DisplayConfig.Gain);

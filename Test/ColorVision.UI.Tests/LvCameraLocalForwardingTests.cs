@@ -90,7 +90,7 @@ public sealed class LvCameraLocalForwardingTests
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
-    public void CommonCameraRoutesByOwnershipAndUsesOrdinaryCaptureLocally(bool serviceOwned, bool hdr) => Run(async () =>
+    public void CommonCameraRoutesByOwnershipAndUsesOrdinaryCapture(bool serviceOwned, bool useTemplate) => Run(async () =>
     {
         using var scope = new CaptureScope(localOpen: false, preferLocal: true);
         scope.Backend.ObserveService(serviceOwned ? DeviceStatusType.Opened : DeviceStatusType.Closed);
@@ -112,18 +112,19 @@ public sealed class LvCameraLocalForwardingTests
         {
             var node = new TestCommNode(scope)
             {
-                IsHDR = hdr, CamTempName = hdr ? "service-hdr-template" : template.Key,
                 IsAutoExp = true, TempName = serviceOwned ? "service-exposure-template" : string.Empty,
                 IsWithND = serviceOwned, FlipMode = CVImageFlipMode.Y
             };
+            string expectedTemplateName = useTemplate ? template.Key : string.Empty;
+            node.CamTempName = expectedTemplateName;
             using var graph = new Graph(node);
             graph.Start.OnPublish = message =>
             {
                 var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
                 var data = (JObject)request.Data;
-                Assert.True(data.Value<bool>("IsHDR"));
+                Assert.Null(data.Property("IsHDR"));
                 Assert.True(data.Value<bool>("IsAutoExpWithND"));
-                Assert.Equal("service-hdr-template", (string?)data["CamParamTemplate"]!["Name"]);
+                Assert.Equal(expectedTemplateName, (string?)data["CamParamTemplate"]!["Name"]);
                 Assert.Equal("service-exposure-template", (string?)data["AutoExpTimeTemplate"]!["Name"]);
                 Respond(node, request);
             };
@@ -144,9 +145,9 @@ public sealed class LvCameraLocalForwardingTests
             Assert.Equal(CVImageFlipMode.Y, local.FlipMode);
             CameraRunParam parameters = Assert.IsType<CameraRunParam>(local.CameraParameters);
             Assert.NotSame(template.Value, parameters);
-            Assert.Equal(hdr ? new[] { 41f, 42f, 43f } : new[] { 11f, 12f, 13f }, new[] { parameters.ExpTimeR, parameters.ExpTimeG, parameters.ExpTimeB });
-            Assert.Equal(hdr ? 7 : 5, parameters.Gain);
-            Assert.Equal(hdr ? 2 : 3, parameters.AvgCount);
+            Assert.Equal(useTemplate ? new[] { 11f, 12f, 13f } : new[] { 41f, 42f, 43f }, new[] { parameters.ExpTimeR, parameters.ExpTimeG, parameters.ExpTimeB });
+            Assert.Equal(useTemplate ? 5 : 7, parameters.Gain);
+            Assert.Equal(useTemplate ? 3 : 2, parameters.AvgCount);
         }
         finally { TemplateCameraRunParam.Params.Remove(template); }
     });

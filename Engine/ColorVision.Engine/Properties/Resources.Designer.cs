@@ -1850,15 +1850,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 HDR 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_HDR {
-            get {
-                return ResourceManager.GetString("CameraPanel_HDR", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 本机参数 的本地化字符串。
         /// </summary>
         public static string CameraPanel_LocalExposure {
@@ -6943,24 +6934,6 @@ namespace ColorVision.Engine.Properties {
         public static string HalfBandwidth {
             get {
                 return ResourceManager.GetString("HalfBandwidth", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 HDR模板 的本地化字符串。
-        /// </summary>
-        public static string HdrTemplate {
-            get {
-                return ResourceManager.GetString("HdrTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 HDR模板管理 的本地化字符串。
-        /// </summary>
-        public static string HdrTemplateManagement {
-            get {
-                return ResourceManager.GetString("HdrTemplateManagement", resourceCulture);
             }
         }
         

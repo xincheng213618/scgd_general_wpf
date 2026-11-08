@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Controls;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Services.Devices.Camera.Templates.HDR;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
@@ -95,7 +94,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public int ExpTimeParamTemplate1Index { get; set; } = 0;
         [Browsable(false)]
         public PhyExpTimeCfg LocalAutoExposureConfig { get; set; } = new();
-        public int HDRTemplateIndex { get; set; }
 
         public int AutoFocusTemplateIndex { get; set; }
 
@@ -357,7 +355,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.ComboxCalibrationTemplate.SelectionChanged += ComboxCalibrationTemplate_SelectionChanged;
             Capture.EditCaptureExposureButton.Click += EditAutoExpTime1;
             Capture.ComboxAutoExpTimeParamTemplate1.SelectionChanged += ComboxAutoExpTimeParamTemplate1_SelectionChanged;
-            Capture.EditHdrButton.Click += EditHDRTemplate;
             Capture.ReadFilterButton.Click += GetNDport_Click;
             Capture.ChangeFilterButton.Click += NDport_Click;
             Capture.AutoFocusButton.Click += AutoFocus_Click;
@@ -366,7 +363,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.ApertureButton.Click += Move1_Click;
             Capture.HomeButton.Click += GoHome_Click;
             Capture.ReadPositionButton.Click += GetPosition_Click;
-            Capture.ComboBoxHDRTemplate.SelectionChanged += (_, _) => RefreshPanelState();
             Preview.DefaultRegionButton.Click += LocalVideoRoiDefault_Click;
             Preview.FullFrameButton.Click += LocalVideoRoiFull_Click;
 
@@ -391,10 +387,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.ComboxAutoFocus.ItemsSource = TemplateAutoFocus.Params;
             Capture.ComboxAutoFocus.SelectedIndex = 0;
             Capture.ComboxAutoFocus.DataContext = Device.DisplayConfig;
-
-            Capture.ComboBoxHDRTemplate.ItemsSource = TemplateHDR.Params.CreateEmpty();
-            Capture.ComboBoxHDRTemplate.SelectedIndex = 0;
-            Capture.ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
             DisplayCameraConfig.PropertyChanged += DisplayCameraConfig_PropertyChanged;
             Device.RealtimeCameraConfig.PropertyChanged += RealtimeCameraConfig_PropertyChanged;
@@ -1005,8 +997,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.CaptureOnlyPanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             Capture.AveragePanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             bool calibrationGain = DisplayCameraConfig.IsGainControlledByCalibrationGroup;
-            bool hdrGain = state.ShowServiceSettings && CameraTemplateSelection.TryResolveRequired(Capture.ComboBoxHDRTemplate.SelectedValue, out ParamBase _);
-            Capture.GainPanel.Visibility = Visible(previewing || calibrationGain || !hdrGain);
             Capture.GainPanel.IsEnabled = previewing || !calibrationGain;
             Capture.GainPanel.ToolTip = calibrationGain
                 ? previewing ? EngineLocalization.Get("预览增益；测量使用校正组增益") : DisplayCameraConfig.GainSourceHint
@@ -1016,7 +1006,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.RgbExposure.Visibility = Visible(rgb);
             Capture.AutoExposureTemplatePanel.Visibility = Visibility.Visible;
             Capture.CaptureAutoExposureTemplatePanel.Visibility = Visibility.Visible;
-            Capture.HdrPanel.Visibility = Visible(state.ShowServiceSettings);
             // A previously enabled ND option remains reachable so it can be cleared locally.
             Capture.AutoExposureND.Visibility = Visible(Device.Config.IsAutoExpWithND || (state.ShowServiceSettings && Device.Config.CFW.IsNDPort));
             Preview.Visibility = Visible(previewing);
@@ -1248,16 +1237,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
             else expTime = new double[] { Device.DisplayConfig.ExpTime };
 
-
-
-
-
-
-            ParamBase HDRparamBase = CameraTemplateSelection.ResolveOptional<ParamBase>(Capture.ComboBoxHDRTemplate.SelectedValue);
-
             int latestMeasureResultId = MeasureImgResultDao.Instance.GetLatestId(Device.Config.Code);
             EnsureTimedButtonOperations();
-            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
+            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
             logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
 
@@ -1368,11 +1350,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 else expTime = new double[] { exp };
             }
 
-            ParamBase HDRparamBase = CameraTemplateSelection.ResolveOptional<ParamBase>(Capture.ComboBoxHDRTemplate.SelectedValue);
-
             return Device.RoutesLocally
-                ? Device.CaptureLocally(expTime, param, autoExpTimeParam, TemplatesExtension.CreateEmptyParam<ParamBase>())
-                : DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
+                ? Device.CaptureLocally(expTime, param, autoExpTimeParam)
+                : DService.GetData(expTime, param, autoExpTimeParam);
 
         }
 
@@ -1386,12 +1366,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (UsesThreeCaptureExposures) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
             else expTime = new double[] { Device.DisplayConfig.ExpTime };
 
-
-            ParamBase HDRparamBase = CameraTemplateSelection.ResolveOptional<ParamBase>(Capture.ComboBoxHDRTemplate.SelectedValue);
-
             return Device.RoutesLocally
-                ? Device.CaptureLocally(expTime, param, autoExpTimeParam, TemplatesExtension.CreateEmptyParam<ParamBase>())
-                : DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
+                ? Device.CaptureLocally(expTime, param, autoExpTimeParam)
+                : DService.GetData(expTime, param, autoExpTimeParam);
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
@@ -1659,12 +1636,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.Config.IsAutoExpose = CameraTemplateSelection.TryResolveRequired(Capture.ComboxAutoExpTimeParamTemplate1.SelectedValue, out ParamBase _);
         }
 
-        private void EditHDRTemplate(object sender, RoutedEventArgs e)
-        {
-            var windowTemplate = new TemplateEditorWindow(new TemplateHDR(), Capture.ComboBoxHDRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
-        }
-
         private void NDport_Click(object sender, RoutedEventArgs e)
         {
             ServicesHelper.SendCommandEx(sender, () => DService.SetNDPort());
@@ -1770,8 +1741,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.ComboxAutoExpTimeParamTemplate1.DataContext = null;
             Capture.ComboxAutoFocus.ItemsSource = null;
             Capture.ComboxAutoFocus.DataContext = null;
-            Capture.ComboBoxHDRTemplate.ItemsSource = null;
-            Capture.ComboBoxHDRTemplate.DataContext = null;
             DataContext = null;
         }
 
