@@ -32,6 +32,9 @@ next: false
 - [Web账号、角色与会话生命周期](../../02-developer-guide/backend/accounts.md) — `delivery.backend-accounts`
   Backend注册、角色权限、改密与找回、数据库Session撤销；配置管理员不走auth\_version，跨服务安全操作可能部分成功。
 
+- [许可证激活与设备名额](../../02-developer-guide/backend/activation.md) — `delivery.backend-activation`
+  用户中心的可选许可证激活、TPM 离线凭据、在线租约和后台设备名额。
+
 - [HTTP认证、API key与浏览器CSRF](../../02-developer-guide/backend/authentication.md) — `delivery.backend-auth`
   Backend HTTP凭据优先级、Session权限与API key scopes、key轮换失败副作用和浏览器CSRF；认证成功不等于端点授权或全流程完成。
 

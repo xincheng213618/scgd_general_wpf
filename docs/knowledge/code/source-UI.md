@@ -396,6 +396,9 @@ next: false
 
 ## UI/ColorVision.Rbac {#module-55492f436f6c6f72566973696f6e2e52626163}
 
+- [许可证激活与设备名额](../../02-developer-guide/backend/activation.md) — `delivery.backend-activation`
+  用户中心的可选许可证激活、TPM 离线凭据、在线租约和后台设备名额。
+
 - [文件中转、覆盖与公开分享](../../02-developer-guide/backend/file-transfer.md) — `delivery.file-transfer`
   Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。
 

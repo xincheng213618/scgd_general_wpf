@@ -39,6 +39,9 @@ next: false
 - [Web账号、角色与会话生命周期](../../02-developer-guide/backend/accounts.md) — `delivery.backend-accounts`
   Backend注册、角色权限、改密与找回、数据库Session撤销；配置管理员不走auth\_version，跨服务安全操作可能部分成功。
 
+- [许可证激活与设备名额](../../02-developer-guide/backend/activation.md) — `delivery.backend-activation`
+  用户中心的可选许可证激活、TPM 离线凭据、在线租约和后台设备名额。
+
 - [HTTP认证、API key与浏览器CSRF](../../02-developer-guide/backend/authentication.md) — `delivery.backend-auth`
   Backend HTTP凭据优先级、Session权限与API key scopes、key轮换失败副作用和浏览器CSRF；认证成功不等于端点授权或全流程完成。
 
@@ -88,6 +91,9 @@ next: false
 
 - [插件市场后端](../../02-developer-guide/backend/README.md) — `delivery.backend`
   Flask 后端的组成、配置、CLI 参数、管理入口与探测边界；--storage 不隔离配置或 SQLite，命令退出 0 仍须核对业务结果。
+
+- [许可证激活与设备名额](../../02-developer-guide/backend/activation.md) — `delivery.backend-activation`
+  用户中心的可选许可证激活、TPM 离线凭据、在线租约和后台设备名额。
 
 - [反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
   反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。
