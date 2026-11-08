@@ -32,6 +32,7 @@ const documentTitles: Record<string, string> = {
   '/admin/deployments': '部署历史 - ColorVision',
   '/admin/operations/hosts': '终端运维 - ColorVision',
   '/admin/feedback': '反馈收件箱 - ColorVision',
+  '/admin/activation': '许可证激活 - ColorVision',
   '/admin/users': '账号管理 - ColorVision',
   '/admin/login-security': '账号安全 - ColorVision',
   '/admin/permissions': '权限管理 - ColorVision',
@@ -77,6 +78,7 @@ function WebExperienceTracker() {
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 const AccountPage = lazy(() => import('./pages/AccountPage').then((module) => ({ default: module.AccountPage })))
+const ActivationPage = lazy(() => import('./pages/ActivationPage').then((module) => ({ default: module.ActivationPage })))
 const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })))
 const AuditPage = lazy(() => import('./pages/AuditPage').then((module) => ({ default: module.AuditPage })))
 const BrowsePage = lazy(() => import('./pages/BrowsePage').then((module) => ({ default: module.BrowsePage })))
@@ -317,6 +319,7 @@ function App() {
               <Route path="deployments" element={<DeploymentHistoryPage />} />
               <Route path="operations/hosts" element={<OperationsPage />} />
               <Route path="feedback" element={<FeedbackPage session={session} />} />
+              <Route path="activation" element={<ActivationPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="login-security" element={<LoginSecurityPage />} />
               <Route path="permissions" element={<PermissionsPage onPermissionsChanged={refreshSession} />} />

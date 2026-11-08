@@ -39,6 +39,7 @@ const routeTitles: Record<string, string> = {
   '/admin/deployments': '部署历史',
   '/admin/operations/hosts': '终端运维',
   '/admin/feedback': '反馈收件箱',
+  '/admin/activation': '许可证激活',
   '/admin/users': '账号管理',
   '/admin/login-security': '账号安全',
   '/admin/permissions': '权限管理',
@@ -129,6 +130,11 @@ const route = {
           path: '/admin/users',
           name: '账号管理',
           icon: <TeamOutlined />,
+        },
+        {
+          path: '/admin/activation',
+          name: '许可证激活',
+          icon: <SafetyCertificateOutlined />,
         },
         {
           path: '/admin/login-security',

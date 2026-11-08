@@ -1,6 +1,26 @@
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type UiDensity = 'middle' | 'small'
 
+export interface ActivationLicense {
+  id: string
+  device_limit: number
+  active_devices: number
+  issued_at: number
+  expires_at: number
+  status: 'active' | 'expired'
+}
+
+export interface ActivationDevice {
+  device_id: string
+  device_name: string
+  mode: 'offline' | 'online'
+  activated_at: number
+  last_seen_at: number
+  expires_at: number
+  released_at: number | null
+  status: 'active' | 'expired' | 'released'
+}
+
 export interface AdminStats {
   totalDownloads: number
   downloadsToday: number

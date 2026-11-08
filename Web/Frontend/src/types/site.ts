@@ -321,6 +321,7 @@ export interface AuthSession {
   csrf_token?: string
   can_access_admin?: boolean
   is_admin?: boolean
+  is_config_admin?: boolean
   must_change_password?: boolean
   permissions?: string[]
   public_registration_enabled?: boolean
