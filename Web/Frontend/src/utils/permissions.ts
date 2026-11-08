@@ -163,6 +163,7 @@ export function sessionAuthorizationKey(session: AuthSession | null): string {
     session.username ?? '',
     session.role ?? '',
     session.is_admin === true,
+    session.is_config_admin === true,
     session.can_access_admin === true,
     session.must_change_password === true,
     [...new Set(session.permissions ?? [])].sort(),
@@ -178,6 +179,7 @@ export const adminRoutePermissions: Record<string, string[]> = {
   '/admin/deployments': ['deployments:read'],
   '/admin/operations/hosts': ['operations:manage'],
   '/admin/feedback': ['feedback:read', 'feedback:manage'],
+  '/admin/activation': ['admin:*'],
   '/admin/users': ['users:manage'],
   '/admin/login-security': ['users:manage'],
   '/admin/permissions': ['permissions:manage'],
@@ -189,6 +191,7 @@ export const adminRoutePermissions: Record<string, string[]> = {
 
 export function canOpenAdminRoute(session: AuthSession | null, path: string): boolean {
   if (!hasPermission(session, 'admin:access')) return false
+  if (path === '/admin/activation') return session?.is_config_admin === true
   const required = adminRoutePermissions[path] ?? ['admin:access']
   return hasPermission(session, ...required)
 }

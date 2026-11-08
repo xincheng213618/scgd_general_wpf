@@ -2,6 +2,8 @@ import type {
   AccountSettingsResponse,
   AccountSettingsUpdateResponse,
   AccountSettingsValues,
+  ActivationDevice,
+  ActivationLicense,
   AdminStats,
   AllIndexRefreshResult,
   ApiKeyItem,
@@ -68,6 +70,19 @@ import { deleteJson, getJson, postJson, putJson } from './request'
 
 export function getAdminStats(signal?: AbortSignal) {
   return getJson<AdminStats>('/api/admin/stats/overview', signal)
+}
+
+export function getActivationLicenses(params: { current?: number; pageSize?: number; q?: string; status?: string }) {
+  const limit = params.pageSize ?? 20
+  const search = new URLSearchParams({ limit: String(limit), offset: String(((params.current ?? 1) - 1) * limit) })
+  if (params.q?.trim()) search.set('q', params.q.trim())
+  if (params.status) search.set('status', params.status)
+  return getJson<{ licenses: ActivationLicense[]; total: number }>(`/api/admin/activation/licenses?${search}`)
+}
+
+export function getActivationDevices(licenseId: string, current = 1, limit = 20) {
+  const search = new URLSearchParams({ limit: String(limit), offset: String((current - 1) * limit) })
+  return getJson<{ devices: ActivationDevice[]; total: number }>(`/api/admin/activation/licenses/${encodeURIComponent(licenseId)}/devices?${search}`)
 }
 
 export function getTrafficStats(days: number, limit = 10, signal?: AbortSignal) {

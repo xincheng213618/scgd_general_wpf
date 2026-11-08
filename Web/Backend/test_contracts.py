@@ -17,6 +17,7 @@ import copy
 import io
 import json
 import tempfile
+import time
 import unittest
 import zipfile
 from pathlib import Path
@@ -1099,7 +1100,84 @@ class AdminApiContracts(ContractTestBase):
         for endpoint, required_scopes in ENDPOINT_SCOPES.items():
             with self.subTest(endpoint=endpoint):
                 self.assertTrue(required_scopes)
-                self.assertLessEqual(set(required_scopes), ALL_PERMISSION_CODES)
+                self.assertLessEqual(set(required_scopes), ALL_PERMISSION_CODES | {"admin:*"})
+
+    def test_activation_inventory_requires_configured_administrator_and_reports_device_occupancy(self):
+        from services.auth_service import create_user
+
+        path = "/api/admin/activation/licenses"
+        license_id = "a" * 32
+        devices_path = f"{path}/{license_id}/devices"
+        self.assertEqual(self.client.get(path).status_code, 401)
+        _, error = create_user(marketplace_app._cache, "activation-user", "test password phrase 123", role="user")
+        self.assertIsNone(error)
+        user = marketplace_app.app.test_client()
+        login = user.post("/api/auth/login", json={"username": "activation-user", "password": "test password phrase 123"})
+        self.assertEqual(login.status_code, 200)
+        self.assertFalse(login.get_json()["is_config_admin"])
+        self.assertEqual(user.get(path).status_code, 403)
+        self.assertEqual(user.get(devices_path).status_code, 403)
+
+        _, error = create_user(marketplace_app._cache, "activation-db-admin", "test password phrase 456", role="admin")
+        self.assertIsNone(error)
+        db_admin = marketplace_app.app.test_client()
+        login = db_admin.post("/api/auth/login", json={"username": "activation-db-admin", "password": "test password phrase 456"})
+        self.assertTrue(login.get_json()["is_admin"])
+        self.assertFalse(login.get_json()["is_config_admin"])
+        self.assertEqual(db_admin.get(path).status_code, 403)
+
+        wildcard_key = self.create_admin_key("admin:*")["key"]
+        self.assertEqual(self.client.get(path, headers={"Authorization": f"Bearer {wildcard_key}"}).status_code, 403)
+        config_admin = marketplace_app.app.test_client()
+        login = config_admin.post("/api/auth/login", json={"username": "admin", "password": "secret"})
+        self.assertTrue(login.get_json()["is_config_admin"])
+        self.assertEqual(config_admin.get(path).status_code, 200)
+
+        now = int(time.time())
+        db = marketplace_app._cache.get_db()
+        try:
+            db.executemany(
+                """INSERT INTO activation_licenses
+                   (id, code_hash, owner_device_id, device_limit, issued_at, expires_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                [
+                    (license_id, "private-code-hash", "device-offline", 3, now - 100, now + 100),
+                    ("b" * 32, "expired-code-hash", "device-old-license", 3, now - 200, now - 10),
+                ],
+            )
+            db.executemany(
+                """INSERT INTO activation_devices
+                   (device_id, license_id, device_name, mode, activated_at, last_seen_at, expires_at, released_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                [
+                    ("device-offline", license_id, "Inspection_1", "offline", now - 100, now - 10, now + 50, None),
+                    ("device-expired", license_id, "InspectionX1", "online", now - 100, now - 5, now - 1, None),
+                    ("device-released", license_id, "Released PC", "online", now - 100, now - 3, now + 10, now - 3),
+                    ("device-old-license", "b" * 32, "Old PC", "offline", now - 200, now - 20, now + 10, None),
+                ],
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        headers = self.basic_auth()
+        response = self.client.get(f"{path}?status=active&q=inspection_1", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("no-store", response.headers["Cache-Control"])
+        self.assertEqual(response.get_json(), {"total": 1, "licenses": [{
+            "id": license_id, "device_limit": 3, "active_devices": 1, "issued_at": now - 100,
+            "expires_at": now + 100, "status": "active",
+        }]})
+        expired = self.client.get(f"{path}?status=expired", headers=headers).get_json()["licenses"]
+        self.assertEqual([(row["id"], row["active_devices"]) for row in expired], [("b" * 32, 0)])
+        devices = self.client.get(f"{devices_path}?limit=2", headers=headers).get_json()
+        self.assertEqual(devices["total"], 3)
+        self.assertEqual([(row["device_id"], row["status"]) for row in devices["devices"]], [
+            ("device-offline", "active"), ("device-released", "released"),
+        ])
+        self.assertEqual(devices["devices"][1]["released_at"], now - 3)
+        self.assertEqual(self.client.get(f"{path}/unknown/devices", headers=headers).status_code, 404)
+        self.assertEqual(self.client.get(f"{path}?limit=101", headers=headers).status_code, 400)
 
     def test_admin_created_account_must_change_temporary_password_before_access(self):
         created_response = self.client.post(

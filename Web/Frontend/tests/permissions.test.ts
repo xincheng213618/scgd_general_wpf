@@ -28,6 +28,7 @@ test('registered users can enter the admin area with default role permissions', 
   assert.equal(canOpenAdminRoute(session, '/admin/users'), true)
   assert.equal(canOpenAdminRoute(session, '/admin/login-security'), true)
   assert.equal(canOpenAdminRoute(session, '/admin/permissions'), true)
+  assert.equal(canOpenAdminRoute(session, '/admin/activation'), false)
   assert.equal(canOpenAdminRoute(session, '/admin/cache'), false)
 })
 
@@ -39,6 +40,8 @@ test('existing administrators retain full access independently of the role matri
   }
 
   assert.equal(canOpenAdminRoute(administrator, '/admin/settings'), true)
+  assert.equal(canOpenAdminRoute(administrator, '/admin/activation'), false)
+  assert.equal(canOpenAdminRoute({ ...administrator, is_config_admin: true }, '/admin/activation'), true)
   assert.equal(hasPermission(administrator, 'permissions:manage'), true)
   assert.equal(hasPermission({ authenticated: false }, 'admin:access'), false)
   assert.equal(canOpenAdminRoute({

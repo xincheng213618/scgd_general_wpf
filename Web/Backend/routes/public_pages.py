@@ -16,6 +16,7 @@ from urllib.parse import unquote, urlencode
 from flask import Blueprint, current_app, jsonify, redirect, request, send_from_directory, session
 
 from db_cache import CacheManager
+from routes.auth_adapters import is_configured_admin_session
 
 
 @dataclass(frozen=True)
@@ -135,6 +136,7 @@ def _session_payload() -> dict[str, Any]:
     return {
         "authenticated": is_user,
         "is_admin": is_admin,
+        "is_config_admin": is_configured_admin_session(_get_ctx().get_upload_auth()[0]),
         "can_access_admin": can_access_admin,
         "username": session.get("username", ""),
         "role": role,
