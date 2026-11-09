@@ -104,14 +104,10 @@ namespace ColorVision.UI.Desktop.Download
             db.Updateable<DownloadEntry>().SetColumns(x => x.ContentSha256 == hash).Where(x => x.Id == id).ExecuteCommand();
         }
 
-        public DownloadRecordPage LoadPage(string? searchKeyword, int pageSize, int page)
+        public List<DownloadEntry> LoadRecent(int limit)
         {
             using var db = CreateDbClient(_dbPath);
-            var query = db.Queryable<DownloadEntry>();
-            if (!string.IsNullOrWhiteSpace(searchKeyword)) query = query.Where(x => x.FileName.Contains(searchKeyword) || x.Url.Contains(searchKeyword));
-            int total = query.Count();
-            page = Math.Clamp(page, 1, Math.Max(1, (total + pageSize - 1) / pageSize));
-            return new DownloadRecordPage(query.OrderByDescending(x => x.CreateTime).OrderByDescending(x => x.Id).Skip((page - 1) * pageSize).Take(pageSize).ToList(), total, page);
+            return db.Queryable<DownloadEntry>().OrderByDescending(x => x.CreateTime).OrderByDescending(x => x.Id).Take(limit).ToList();
         }
 
         public void UpdatePath(int id, string path, string fileName)
@@ -129,49 +125,10 @@ namespace ColorVision.UI.Desktop.Download
                 .ToList();
         }
 
-        public void Delete(int id)
-        {
-            using var db = CreateDbClient(_dbPath);
-            db.Deleteable<DownloadEntry>().In(id).ExecuteCommand();
-        }
-
         public void DeleteMany(int[] ids)
         {
             using var db = CreateDbClient(_dbPath);
             db.Deleteable<DownloadEntry>().In(ids).ExecuteCommand();
-        }
-
-        public void Clear()
-        {
-            using var db = CreateDbClient(_dbPath);
-            db.Deleteable<DownloadEntry>().ExecuteCommand();
-        }
-
-        public List<DownloadEntry> LoadRecords(string? searchKeyword, int pageSize, int page)
-        {
-            using var db = CreateDbClient(_dbPath);
-            var query = db.Queryable<DownloadEntry>();
-
-            if (!string.IsNullOrWhiteSpace(searchKeyword))
-            {
-                query = query.Where(x => x.FileName.Contains(searchKeyword) || x.Url.Contains(searchKeyword));
-            }
-
-            return query.OrderByDescending(x => x.CreateTime)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-        }
-
-        public int GetTotalCount(string? searchKeyword)
-        {
-            using var db = CreateDbClient(_dbPath);
-            var query = db.Queryable<DownloadEntry>();
-            if (!string.IsNullOrWhiteSpace(searchKeyword))
-            {
-                query = query.Where(x => x.FileName.Contains(searchKeyword) || x.Url.Contains(searchKeyword));
-            }
-            return query.Count();
         }
 
         public void UpdateStatus(int id, DownloadStatus status, string? errorMessage = null)
@@ -215,6 +172,4 @@ namespace ColorVision.UI.Desktop.Download
                 .ExecuteCommand();
         }
     }
-
-    internal sealed record DownloadRecordPage(List<DownloadEntry> Entries, int TotalCount, int Page);
 }

@@ -16,6 +16,36 @@ public sealed class SocketControlTests
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
     [Fact]
+    public async Task JsonVidValidationAndBusyRepliesDoNotTakeOverTheFlowConnection()
+    {
+        using var stationA = await LoopbackPair.OpenAsync();
+        using var stationB = await LoopbackPair.OpenAsync();
+        SocketControl previous = SocketControl.Current;
+        SocketControl.Current = new SocketControl { Stream = stationB.Stream };
+        try
+        {
+            int dispatches = 0;
+            var handler = new MeasureVidSocket(() =>
+            {
+                dispatches++;
+                return Task.FromResult<(bool Busy, ObjectiveTestItem? Result)>((true, null));
+            });
+            var request = new SocketRequest { EventName = "MeasureVID", MsgID = "vid-002" };
+            Assert.Equal(-1, handler.Handle(stationA.Stream, request).Code);
+            Assert.Equal(0, dispatches);
+
+            request.SerialNumber = "SN002";
+            SocketResponse busy = handler.Handle(stationA.Stream, request);
+            Assert.Equal(-4, busy.Code);
+            Assert.Equal(request.MsgID, busy.MsgID);
+            Assert.Equal(request.SerialNumber, busy.SerialNumber);
+            Assert.Equal(1, dispatches);
+            Assert.Same(stationB.Stream, SocketControl.Current.Stream);
+        }
+        finally { SocketControl.Current = previous; }
+    }
+
+    [Fact]
     public async Task NonExecutingRequestsReplyNormallyWithoutStealingTheAsyncResultConnection()
     {
         using var stationA = await LoopbackPair.OpenAsync();

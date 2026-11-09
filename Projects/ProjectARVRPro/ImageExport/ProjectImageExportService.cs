@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace ProjectARVRPro.ImageExport;
 
@@ -124,6 +125,9 @@ internal sealed class ProjectImageExportAttempt : IDisposable
 internal static class ProjectImageExportService
 {
     internal const int ResultJpegQuality = 100;
+    internal const string DefaultResultFileNameTemplate = "{FlowName}";
+    internal const string DefaultSourceFileNameTemplate = "{FlowName}_source";
+    private static readonly Regex FileNameToken = new(@"\{(?:FlowName|SN)\}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     internal static string BuildOutputDirectory(
         string rootDirectory,
@@ -144,18 +148,48 @@ internal static class ProjectImageExportService
         return directory;
     }
 
-    internal static string BuildResultFileStem(string sourceFileName, string? model)
+    internal static (string Rendered, string Source) BuildFileStems(
+        string sourceFileName, string? model, string? serialNumber, string? resultTemplate, string? sourceTemplate)
     {
         string sourceStem = SanitizePathSegment(Path.GetFileNameWithoutExtension(sourceFileName), "image");
         string modelStem = SanitizePathSegment(model);
-        return $"{sourceStem}_{modelStem}result";
+        string flowName = modelStem.Length == 0 ? "image" : modelStem;
+        string sn = SanitizePathSegment(serialNumber);
+        string rendered = resultTemplate == null
+            ? $"{sourceStem}_{modelStem}result"
+            : ExpandFileNameTemplate(resultTemplate, DefaultResultFileNameTemplate, flowName, sn);
+        string source = sourceTemplate == null
+            ? $"{sourceStem}_{modelStem}source"
+            : ExpandFileNameTemplate(sourceTemplate, DefaultSourceFileNameTemplate, flowName, sn);
+        return (rendered, source);
     }
 
-    internal static string BuildSourceFileStem(string sourceFileName, string? model)
+    internal static bool IsValidFileNameTemplate(string? template)
     {
-        string sourceStem = SanitizePathSegment(Path.GetFileNameWithoutExtension(sourceFileName), "image");
-        string modelStem = SanitizePathSegment(model);
-        return $"{sourceStem}_{modelStem}source";
+        if (string.IsNullOrWhiteSpace(template))
+            return false;
+
+        string sample = FileNameToken.Replace(template.Trim(), "image");
+        return sample.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && !sample.Contains('{') && !sample.Contains('}')
+            && !sample.EndsWith('.') && Path.GetExtension(sample).ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".tif" or ".tiff" or ".bmp");
+    }
+
+    private static string ExpandFileNameTemplate(string template, string defaultTemplate, string flowName, string serialNumber)
+    {
+        if (!IsValidFileNameTemplate(template))
+            template = defaultTemplate;
+
+        string expanded = FileNameToken.Replace(template,
+            match => string.Equals(match.Value, "{SN}", StringComparison.OrdinalIgnoreCase) ? serialNumber : flowName);
+        return SanitizePathSegment(expanded, "image");
+    }
+
+    internal static string BuildSourceFilePath(string outputDirectory, string fileStem, string extension, string? renderedFilePath)
+    {
+        string sourcePath = BuildFilePath(outputDirectory, fileStem, extension);
+        return string.Equals(sourcePath, renderedFilePath, StringComparison.OrdinalIgnoreCase)
+            ? BuildFilePath(outputDirectory, $"{fileStem}_source", extension)
+            : sourcePath;
     }
 
     internal static string GetResultExtension(ResultImageFormat format) => format switch

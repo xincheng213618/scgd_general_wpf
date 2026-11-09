@@ -157,20 +157,17 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             IEnumerable<FlowNodeRecord> source,
             DateTime now,
             long warningThresholdMs,
-            IEnumerable<FlowNodeMessage>? messages = null)
+            NodeMessageLookup messages)
         {
             List<FlowNodeRecord> records = source?
                 .OrderBy(item => item.StartTime)
                 .ThenBy(item => item.Id)
                 .ToList() ?? new List<FlowNodeRecord>();
-            List<FlowNodeMessage> messageList = messages?.ToList()
-                ?? new List<FlowNodeMessage>();
-
             List<FlowNodeDurationAnalysis> items = records
                 .Select(record =>
                 {
                     IReadOnlyList<FlowNodeMessage> executionMessages =
-                        GetMessagesForNodeExecution(record, messageList, records);
+                        messages.GetMessages(record, records);
                     bool isTimedOut = !record.EndTime.HasValue
                         || executionMessages.Any(message =>
                             message.State == FlowMessageState.Timeout
@@ -213,13 +210,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 .OrderByDescending(item => item.StartTime)
                 .ThenByDescending(item => item.Id)
                 .ToList() ?? new List<FlowNodeRecord>();
-            List<FlowNodeMessage> messageList = messages?.ToList() ?? new List<FlowNodeMessage>();
+            var messageLookup = new NodeMessageLookup(messages);
 
             return records
                 .Select(record =>
                 {
                     IReadOnlyList<FlowNodeMessage> executionMessages =
-                        GetMessagesForNodeExecution(record, messageList, records);
+                        messageLookup.GetMessages(record, records);
                     FlowNodeExecutionOutcome outcome =
                         GetNodeExecutionOutcome(record, executionMessages);
                     bool isTimedOut =
@@ -431,52 +428,56 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return false;
         }
 
-        internal static IReadOnlyList<FlowNodeMessage> GetMessagesForNodeExecution(
-            FlowNodeRecord record,
-            IEnumerable<FlowNodeMessage> source,
-            IEnumerable<FlowNodeRecord>? runRecords = null)
+        internal sealed class NodeMessageLookup
         {
-            List<FlowNodeMessage> runMessages = source?
-                .Where(message => message.BatchId == record.BatchId
-                    && IsSameRun(record, message))
-                .OrderBy(message => message.SendTime)
-                .ToList() ?? new List<FlowNodeMessage>();
-            if (runMessages.Count == 0)
-                return runMessages;
+            private readonly ILookup<(int BatchId, int? NodeRecordId), FlowNodeMessage> _byExecution;
 
-            if (record.Id > 0)
+            internal NodeMessageLookup(IEnumerable<FlowNodeMessage>? messages)
             {
-                List<FlowNodeMessage> exact = runMessages
-                    .Where(message => message.NodeRecordId == record.Id)
-                    .ToList();
-                if (exact.Count > 0)
-                    return exact;
+                _byExecution = (messages ?? [])
+                    .OrderBy(message => message.SendTime)
+                    .ToLookup(message => (message.BatchId, message.NodeRecordId));
             }
 
-            List<FlowNodeMessage> legacyMessages = runMessages
-                .Where(message => !message.NodeRecordId.HasValue
-                    && IsSameNode(record, message))
-                .ToList();
-            if (legacyMessages.Count == 0)
-                return legacyMessages;
-
-            List<FlowNodeRecord> candidateRecords = (runRecords ?? new[] { record })
-                .Where(candidate => candidate.BatchId == record.BatchId
-                    && IsSameRun(record, candidate)
-                    && IsSameNode(record, candidate))
-                .OrderBy(candidate => candidate.StartTime)
-                .ThenBy(candidate => candidate.Id)
-                .ToList();
-            if (!candidateRecords.Any(candidate => IsSameRecord(candidate, record)))
-                candidateRecords.Add(record);
-
-            return legacyMessages
-                .Where(message =>
+            internal IReadOnlyList<FlowNodeMessage> GetMessages(FlowNodeRecord record, IEnumerable<FlowNodeRecord> runRecords)
+            {
+                if (record.Id > 0)
                 {
-                    FlowNodeRecord? owner = FindLegacyMessageOwner(message, candidateRecords);
-                    return owner != null && IsSameRecord(owner, record);
-                })
-                .ToList();
+                    List<FlowNodeMessage> exact = _byExecution[(record.BatchId, record.Id)]
+                        .Where(message => IsSameRun(record, message))
+                        .ToList();
+                    if (exact.Count > 0)
+                        return exact;
+                }
+
+                // Rows predating node_record_id still use the original matching window.
+                var legacyKey = (record.BatchId, (int?)null);
+                if (!_byExecution.Contains(legacyKey))
+                    return [];
+                List<FlowNodeMessage> legacyMessages = _byExecution[legacyKey]
+                    .Where(message => IsSameRun(record, message) && IsSameNode(record, message))
+                    .ToList();
+                if (legacyMessages.Count == 0)
+                    return legacyMessages;
+
+                List<FlowNodeRecord> candidateRecords = runRecords
+                    .Where(candidate => candidate.BatchId == record.BatchId
+                        && IsSameRun(record, candidate)
+                        && IsSameNode(record, candidate))
+                    .OrderBy(candidate => candidate.StartTime)
+                    .ThenBy(candidate => candidate.Id)
+                    .ToList();
+                if (!candidateRecords.Any(candidate => IsSameRecord(candidate, record)))
+                    candidateRecords.Add(record);
+
+                return legacyMessages
+                    .Where(message =>
+                    {
+                        FlowNodeRecord? owner = FindLegacyMessageOwner(message, candidateRecords);
+                        return owner != null && IsSameRecord(owner, record);
+                    })
+                    .ToList();
+            }
         }
 
         internal static long GetEffectiveElapsedMs(FlowNodeRecord record, DateTime now)

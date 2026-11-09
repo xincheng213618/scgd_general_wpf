@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -72,7 +73,7 @@ namespace ColorVision.Copilot
     public static class CopilotSearchFilesCapability
     {
         private const int MaxFilesToScan = 20000;
-        private const int MaxResults = 15;
+        private const int MaxResults = 40;
         private const int MaxExplicitQueryCharacters = 256;
 
         private static readonly string[] FileSearchKeywords =
@@ -419,7 +420,13 @@ namespace ColorVision.Copilot
 
             foreach (var term in terms)
             {
-                if (string.Equals(fileName, term, StringComparison.OrdinalIgnoreCase))
+                // Windows file names cannot contain these, so a wildcard can never be a literal fragment.
+                if (term.IndexOfAny(['*', '?']) >= 0)
+                {
+                    if (MatchesWildcard(term, fileName, displayPath.Replace('\\', '/')))
+                        score = Math.Max(score, 220);
+                }
+                else if (string.Equals(fileName, term, StringComparison.OrdinalIgnoreCase))
                     score = Math.Max(score, 400);
                 else if (string.Equals(fileNameWithoutExtension, term, StringComparison.OrdinalIgnoreCase))
                     score = Math.Max(score, 320);
@@ -430,6 +437,19 @@ namespace ColorVision.Copilot
             }
 
             return score;
+        }
+
+        private static bool MatchesWildcard(string term, string fileName, string displayPath)
+        {
+            CopilotWorkspaceSearchSupport.TryExpandBraceGroup(term, out var expressions);
+            return expressions.Any(expression =>
+            {
+                var simple = expression.Replace("**/", "*", StringComparison.Ordinal).Replace("**", "*", StringComparison.Ordinal);
+                return expression.Contains('/')
+                    ? FileSystemName.MatchesSimpleExpression(simple, displayPath, ignoreCase: true)
+                        || FileSystemName.MatchesSimpleExpression("*/" + simple, displayPath, ignoreCase: true)
+                    : FileSystemName.MatchesSimpleExpression(simple, fileName, ignoreCase: true);
+            });
         }
     }
 }

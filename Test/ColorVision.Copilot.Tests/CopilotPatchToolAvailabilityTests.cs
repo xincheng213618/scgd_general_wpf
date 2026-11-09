@@ -23,6 +23,61 @@ public sealed class CopilotPatchToolAvailabilityTests
     }
 
     [Theory]
+    [InlineData("修复这个 bug，不要改接口", true)]
+    [InlineData("不要改接口，修复这个空引用", true)]
+    [InlineData("修复这个 bug，接口不要改", true)]
+    [InlineData("帮我看下代码，不用改", false)]
+    [InlineData("排查一下这个报错，不要动代码", false)]
+    public void ClosingOptOutHidesWorkspaceEditsButAConstraintOnOnePartDoesNot(string prompt, bool canEdit)
+    {
+        var tools = new CopilotToolRegistry(CreateTools()).FindTools(CreateRequest(prompt));
+
+        Assert.Equal(canEdit, tools.Any(tool => tool is CopilotApplyWorkspacePatchEnvelopeTool));
+    }
+
+    [Theory]
+    [InlineData("帮我执行一下 ipconfig 命令", true)]
+    [InlineData("跑一下 build.py 这个脚本", true)]
+    [InlineData("这条命令执行失败了", false)]
+    [InlineData("程序跑起来很卡", false)]
+    [InlineData("什么是后台运行", false)]
+    public void ColloquialRequestsReachTheShellButReportsAndQuestionsDoNot(string prompt, bool needsShell)
+    {
+        Assert.Equal(needsShell, CopilotToolIntentPolicy.NeedsShellExecution(CreateRequest(prompt)));
+    }
+
+    [Theory]
+    [InlineData("把数据库里 id=3 的记录删除", true)]
+    [InlineData("把这张表的状态都改成 NG", true)]
+    [InlineData("把数据库表 A 的状态改成 NG，其他字段不要改", true)]
+    [InlineData("别删数据库，看下有多少记录", false)]
+    [InlineData("数据库里的结果为什么被删除了", false)]
+    [InlineData("把配置里的数据库地址改成 127.0.0.1", false)]
+    [InlineData("给数据库页面加一个按钮", false)]
+    public void DatabaseWriteFollowsARequestedChangeNotAMentionOfOne(string prompt, bool needsWrite)
+    {
+        Assert.Equal(needsWrite, CopilotToolIntentPolicy.NeedsDatabaseWrite(CreateRequest(prompt)));
+    }
+
+    [Theory]
+    [InlineData("搜索一下 MQTT 协议的规范", true)]
+    [InlineData("上网搜一下 Halcon 的价格", true)]
+    [InlineData("搜索一下这个函数的引用", false)]
+    [InlineData("不要联网，搜索一下 MQTT 协议", false)]
+    public void WebSearchWordsDoNotCaptureLocalSearchOrOverrideAnOptOut(string prompt, bool needsWeb)
+    {
+        Assert.Equal(needsWeb, CopilotToolIntentPolicy.NeedsPublicWebSearch(CreateRequest(prompt)));
+    }
+
+    [Theory]
+    [InlineData("搜索一下 LoginManager 在哪", false)]
+    [InlineData("上网搜一下 Halcon 的价格", true)]
+    public void OnlyAnExplicitWebPhraseCanBecomeARequiredSearch(string prompt, bool required)
+    {
+        Assert.Equal(required, CopilotToolIntentPolicy.ExplicitlyRequiresPublicWebSearch(CreateRequest(prompt)));
+    }
+
+    [Theory]
     [InlineData("请修改流程节点的超时为 5000，并解释为什么")]
     [InlineData("把流程节点的超时改成 5000")]
     [InlineData("Update node timeout in the flow graph to 5000 and explain why.")]

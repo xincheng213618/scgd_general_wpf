@@ -56,6 +56,9 @@ namespace ColorVision.ImageEditor.Realtime
 
         public RealtimeFrameOptions Options { get; private set; }
 
+        /// <summary>Raised on the dispatcher when a new frame from this presenter reaches the display.</summary>
+        public event EventHandler? FrameDisplayed;
+
         internal Task Completion { get { lock (_gate) return _completion; } }
 
         public void Configure(RealtimeFrameOptions options)
@@ -231,6 +234,7 @@ namespace ColorVision.ImageEditor.Realtime
         private void OnFramePresented(Guid sourceId, WriteableBitmap source)
         {
             if (_disposed || sourceId != _sourceId || !ReferenceEquals(_context.ViewBitmapSource, source)) return;
+            bool newFrame = !ReferenceEquals(_lastPresentedSource, source);
             bool geometryChanged = !_hasRenderedFrame || _lastPresentedSource == null
                 || _lastPresentedSource.Width != source.Width || _lastPresentedSource.Height != source.Height;
             _lastPresentedSource = source;
@@ -241,6 +245,8 @@ namespace ColorVision.ImageEditor.Realtime
             if (Options.AutoZoomOnFirstFrame && geometryChanged) _context.UpdateZoomAndScale();
             _hasRenderedFrame = true;
             _refreshPixelOverlay();
+            // Applying display effects again can republish the same acquired frame.
+            if (newFrame && _lastPresentedDisplay != null) FrameDisplayed?.Invoke(this, EventArgs.Empty);
         }
 
         private static unsafe bool WriteTransformedPixels(WriteableBitmap bitmap, byte[] pixels, FrameInfo frame)
@@ -371,6 +377,7 @@ namespace ColorVision.ImageEditor.Realtime
             }
             void Detach()
             {
+                FrameDisplayed = null;
                 _lastPresentedSource = null;
                 _lastPresentedDisplay = null;
                 _context.StreamPresentation.FramePresented -= OnFramePresented;

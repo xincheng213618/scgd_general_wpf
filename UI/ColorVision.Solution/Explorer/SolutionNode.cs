@@ -60,16 +60,17 @@ namespace ColorVision.Solution.Explorer
             VisualChildren.SortedAdd(node);
         }
 
-        internal void AppendChildrenInOrder(IEnumerable<SolutionNode> loadedChildren)
+        internal void AppendChildrenInOrder(IEnumerable<SolutionNode> loadedChildren, Func<bool> canAttach, SolutionChildPathIndex? pathIndex)
         {
-            var existingPaths = VisualChildren
+            var existingPaths = pathIndex == null && canAttach() ? VisualChildren
                 .Where(child => !string.IsNullOrEmpty(child.FullPath))
                 .Select(child => child.FullPath)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToHashSet(StringComparer.OrdinalIgnoreCase) : null;
             bool added = false;
             foreach (SolutionNode child in loadedChildren)
             {
-                if (!string.IsNullOrEmpty(child.FullPath) && !existingPaths.Add(child.FullPath))
+                string path = child.FullPath;
+                if (!canAttach() || (!string.IsNullOrEmpty(path) && (pathIndex?.Contains(VisualChildren, path) ?? !existingPaths!.Add(path))))
                 {
                     if (child is IDisposable disposable)
                         disposable.Dispose();
@@ -80,7 +81,7 @@ namespace ColorVision.Solution.Explorer
                 VisualChildren.Add(child);
                 added = true;
             }
-            if (added)
+            if (added && canAttach())
                 AddChildEventHandler?.Invoke(this, EventArgs.Empty);
         }
 

@@ -97,7 +97,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     channel = 0;
                 }
                 cancellationToken.ThrowIfCancellationRequested();
-                using Mat ramp = CreateRamp(integer ? samples.Depth() : MatType.CV_8U);
+                using Mat ramp = OpenCvImageAlgorithms.CreateUnsignedRamp(integer ? samples.Depth() : MatType.CV_8U);
                 Mat lut;
                 if (integer)
                 {
@@ -118,23 +118,6 @@ namespace ColorVision.ImageEditor.Algorithms
                 normalized?.Dispose();
                 selected?.Dispose();
             }
-        }
-
-        private static unsafe Mat CreateRamp(MatType depth)
-        {
-            int length = depth == MatType.CV_16U ? 65536 : 256;
-            Mat ramp = new(1, length, depth);
-            if (depth == MatType.CV_16U)
-            {
-                ushort* pixels = (ushort*)ramp.Data;
-                for (int i = 0; i < length; i++) pixels[i] = (ushort)i;
-            }
-            else
-            {
-                byte* pixels = (byte*)ramp.Data;
-                for (int i = 0; i < length; i++) pixels[i] = (byte)i;
-            }
-            return ramp;
         }
 
         // Keep OpenCV's rounding and scalar comparison semantics. Computing this small table

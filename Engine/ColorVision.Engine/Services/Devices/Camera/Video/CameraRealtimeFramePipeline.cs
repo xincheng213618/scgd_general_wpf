@@ -15,11 +15,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private readonly DefaultRealtimeCameraConfig _config = DefaultRealtimeCameraConfig.Current;
         private readonly RealtimeCameraOverlayVisual _overlayVisual;
         private readonly object _processorGate = new();
+        private readonly TimeProvider _clock;
 
         private CameraFocusFrameProcessor? _processor;
         private ImageView? _imageView;
+        private Action<double>? _onArticulation;
+        private Action<RealtimeCameraMetrics>? _onFrameRateChanged;
+        private volatile EventHandler? _frameDisplayedHandler;
+        private long _displayedFrameCount;
         private int _frameCount;
-        private readonly System.Diagnostics.Stopwatch _fpsTimer = new();
+        private long _fpsStartedAt;
         private double _lastFps;
         private double _articulation;
         private bool _overlaysAdded;
@@ -28,11 +33,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _isRunning;
         private long _generation;
         private bool _showOverlayRoi = true;
-        private bool _showOverlayMetrics = true;
         private int _transform = RealtimeFramePresenter.TransformNone;
 
-        public CameraRealtimeFramePipeline()
+        public CameraRealtimeFramePipeline(TimeProvider? clock = null)
         {
+            _clock = clock ?? TimeProvider.System;
             _overlayVisual = new RealtimeCameraOverlayVisual(_config);
         }
 
@@ -42,27 +47,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             set => System.Threading.Volatile.Write(ref _transform, value & RealtimeFramePresenter.TransformFlipXY);
         }
 
-        public bool IsMetricsVisible
-        {
-            get => _showOverlayMetrics;
-            set
-            {
-                if (_showOverlayMetrics == value) return;
-                _showOverlayMetrics = value;
-                _overlayVisual.IsStatusVisible = value;
-            }
-        }
-
         public RealtimeCameraMetrics CurrentMetrics => new(_lastFps, IsArticulationEnabled ? _articulation : null);
 
-        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone, bool showOverlayRoi = true, bool showOverlayMetrics = true)
+        public long CurrentDisplayedFrameCount => Interlocked.Read(ref _displayedFrameCount);
+
+        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone, bool showOverlayRoi = true,
+            bool showOverlayMetrics = true, Action<double>? onArticulation = null, bool preserveDisplayedFrameCount = false,
+            Action<RealtimeCameraMetrics>? onFrameRateChanged = null)
         {
             ArgumentNullException.ThrowIfNull(imageView);
             ThrowIfDisposed();
 
             if (!imageView.Dispatcher.CheckAccess())
             {
-                imageView.Dispatcher.Invoke(() => Start(imageView, transform, showOverlayRoi, showOverlayMetrics));
+                imageView.Dispatcher.Invoke(() => Start(imageView, transform, showOverlayRoi, showOverlayMetrics, onArticulation,
+                    preserveDisplayedFrameCount, onFrameRateChanged));
                 return;
             }
 
@@ -74,18 +73,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             imageView.SetLayerController(null);
             imageView.Config.ClearProperties();
             imageView.Realtime.Reset();
+            if (!preserveDisplayedFrameCount) Interlocked.Exchange(ref _displayedFrameCount, 0);
+            EventHandler? frameDisplayedHandler = null;
+            frameDisplayedHandler = (_, _) =>
+            {
+                if (ReferenceEquals(_frameDisplayedHandler, frameDisplayedHandler))
+                    Interlocked.Increment(ref _displayedFrameCount);
+            };
+            _frameDisplayedHandler = frameDisplayedHandler;
+            imageView.Realtime.FrameDisplayed += frameDisplayedHandler;
             Interlocked.Increment(ref _generation);
             _imageView = imageView;
+            _onArticulation = onArticulation;
+            _onFrameRateChanged = onFrameRateChanged;
             Transform = transform;
             _showOverlayRoi = showOverlayRoi;
-            _showOverlayMetrics = showOverlayMetrics;
             _overlayVisual.IsRoiVisible = showOverlayRoi && IsArticulationEnabled;
             _overlayVisual.IsStatusVisible = showOverlayMetrics;
-            _isRunning = true;
             _frameCount = 0;
             _lastFps = 0;
             _articulation = 0;
-            _fpsTimer.Restart();
+            _fpsStartedAt = _clock.GetTimestamp();
+            _isRunning = true;
             EnsureConfigSubscription();
 
             imageView.Realtime.Configure(new RealtimeFrameOptions
@@ -99,9 +108,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Stop(bool resetRealtime = false, bool clearImageSource = false)
         {
-            _fpsTimer.Stop();
             ImageView? imageView = _imageView;
+            EventHandler? frameDisplayedHandler = _frameDisplayedHandler;
+            _frameDisplayedHandler = null;
             _imageView = null;
+            _onArticulation = null;
+            _onFrameRateChanged = null;
             _isRunning = false;
             Interlocked.Increment(ref _generation);
             ReleaseConfigSubscription();
@@ -117,6 +129,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             void StopCore()
             {
+                imageView.Realtime.FrameDisplayed -= frameDisplayedHandler;
                 if (_overlaysAdded)
                 {
                     imageView.ImageShow.RemoveOverlayVisual(_overlayVisual);
@@ -159,7 +172,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             imageView.Realtime.SubmitFrame(sourceBuffer, width, height,
                 RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, Transform);
-            RecordFrameRate();
+            RecordFrameRate(imageView);
         }
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int bitsPerPixel, int stride)
@@ -180,7 +193,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             imageView.Realtime.SubmitFrame(sourcePointer, width, height,
                 RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, Transform);
-            RecordFrameRate();
+            RecordFrameRate(imageView);
         }
 
         private CameraFocusFrameRequest CreateFocusRequest(int width, int height)
@@ -240,26 +253,37 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     || generation != Volatile.Read(ref _generation)) return;
                 _articulation = result.Articulation;
                 UpdateOverlayMetrics();
+                _onArticulation?.Invoke(result.Articulation);
             }));
         }
 
-        private void RecordFrameRate()
+        private void RecordFrameRate(ImageView imageView)
         {
-            System.Threading.Interlocked.Increment(ref _frameCount);
-            if (_fpsTimer.ElapsedMilliseconds < 1000)
+            EventHandler? session = _frameDisplayedHandler;
+            if (session == null || !ReferenceEquals(imageView, _imageView)) return;
+            Interlocked.Increment(ref _frameCount);
+            long now = _clock.GetTimestamp();
+            double elapsedSeconds = _clock.GetElapsedTime(Volatile.Read(ref _fpsStartedAt), now).TotalSeconds;
+            if (elapsedSeconds < 1) return;
+
+            double fps = Interlocked.Exchange(ref _frameCount, 0) / elapsedSeconds;
+            Volatile.Write(ref _fpsStartedAt, now);
+            void Publish()
             {
-                return;
+                if (!ReferenceEquals(session, _frameDisplayedHandler)) return;
+                _lastFps = fps;
+                RealtimeCameraMetrics metrics = CurrentMetrics;
+                if (_overlayVisual.IsStatusVisible) _overlayVisual.UpdateMetrics(metrics.Fps, metrics.Articulation);
+                _onFrameRateChanged?.Invoke(metrics);
             }
 
-            _lastFps = (double)_frameCount * 1000 / _fpsTimer.ElapsedMilliseconds;
-            System.Threading.Interlocked.Exchange(ref _frameCount, 0);
-            _fpsTimer.Restart();
-            UpdateOverlayMetrics();
+            if (imageView.Dispatcher.CheckAccess()) Publish();
+            else if (!imageView.Dispatcher.HasShutdownStarted) imageView.Dispatcher.BeginInvoke(new Action(Publish));
         }
 
         private void UpdateOverlayMetrics()
         {
-            _overlayVisual.UpdateMetrics(_lastFps, IsArticulationEnabled ? _articulation : null);
+            if (_overlayVisual.IsStatusVisible) _overlayVisual.UpdateMetrics(_lastFps, IsArticulationEnabled ? _articulation : null);
         }
 
         private void EnsureConfigSubscription()
@@ -291,8 +315,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             void ApplyConfigChange()
             {
+                if (!_isRunning || !ReferenceEquals(imageView, _imageView)) return;
                 if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsCalArtculation))
                     UpdateOverlayVisibility(imageView);
+                if (e.PropertyName == nameof(DefaultRealtimeCameraConfig.EvaFunc))
+                {
+                    Interlocked.Increment(ref _generation);
+                    ReleaseProcessor();
+                }
             }
 
             if (imageView.Dispatcher.CheckAccess())

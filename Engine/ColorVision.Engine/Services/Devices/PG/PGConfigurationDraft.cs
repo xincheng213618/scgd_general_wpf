@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
 using System.Net;
@@ -11,8 +12,12 @@ namespace ColorVision.Engine.Services.Devices.PG;
 public sealed class PGConfigurationDraft : ViewModelBase
 {
     private static readonly JsonSerializerSettings CopySettings = new() { ObjectCreationHandling = ObjectCreationHandling.Replace };
+    private JObject appliedServiceSettings;
+    private (bool UseLocal, int ConnectTimeout, int CommandTimeout) appliedDisplaySettings;
     public ConfigPG Config { get; }
     public DisplayPGConfig DisplayConfig { get; }
+    internal bool ServiceSettingsChanged { get; private set; }
+    internal bool DisplaySettingsChanged { get; private set; }
 
     public PGConfigurationDraft(ConfigPG source, DisplayPGConfig? display = null)
     {
@@ -22,6 +27,8 @@ public sealed class PGConfigurationDraft : ViewModelBase
         if (IsI2C) { i2CDeviceIndex = source.Addr ?? string.Empty; i2CDeviceAddress = source.Port; }
         else if (source.IsNet) { networkAddress = source.Addr ?? string.Empty; networkPort = source.Port; }
         else { serialPortName = source.Addr ?? string.Empty; serialBaudRate = source.Port; }
+        appliedServiceSettings = GetServiceSettings(source.Addr?.Trim() ?? string.Empty, source.Port);
+        appliedDisplaySettings = (DisplayConfig.UseLocalPG, DisplayConfig.ConnectTimeout, DisplayConfig.CommandTimeout);
         Config.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName is not (nameof(ConfigPG.IsNet) or nameof(ConfigPG.Category))) return;
@@ -58,9 +65,62 @@ public sealed class PGConfigurationDraft : ViewModelBase
 
     internal bool TryApply(ConfigPG target, out string error, DisplayPGConfig? displayTarget = null)
     {
+        ServiceSettingsChanged = false;
+        DisplaySettingsChanged = false;
         string address = (IsI2C ? I2CDeviceIndex : Config.IsNet ? NetworkAddress : SerialPortName)?.Trim() ?? string.Empty;
         int port = IsI2C ? I2CDeviceAddress : Config.IsNet ? NetworkPort : SerialBaudRate;
-        error = string.Empty;
+        var serviceSettings = GetServiceSettings(address, port);
+        var displaySettings = (UseLocal: DisplayConfig.UseLocalPG, DisplayConfig.ConnectTimeout, DisplayConfig.CommandTimeout);
+        bool serviceEdited = displayTarget == null || !JToken.DeepEquals(appliedServiceSettings, serviceSettings);
+        bool localEdited = displayTarget != null && appliedDisplaySettings != displaySettings;
+        error = serviceEdited || (localEdited && DisplayConfig.UseLocalPG) ? Validate(address, port) : string.Empty;
+        if (error.Length != 0) return false;
+
+        if (serviceEdited)
+        {
+            Config.Addr = address;
+            Config.Port = port;
+            ServiceSettingsChanged = !JToken.DeepEquals(serviceSettings, JObject.FromObject(target));
+            if (ServiceSettingsChanged)
+            {
+                // Preserve the live configuration object and its subscribers.
+                JsonConvert.PopulateObject(serviceSettings.ToString(Formatting.None), target, CopySettings);
+            }
+            appliedServiceSettings = serviceSettings;
+        }
+        if (localEdited && displayTarget != null)
+        {
+            if (appliedDisplaySettings.ConnectTimeout != displaySettings.ConnectTimeout && displayTarget.ConnectTimeout != displaySettings.ConnectTimeout)
+            {
+                displayTarget.ConnectTimeout = displaySettings.ConnectTimeout;
+                DisplaySettingsChanged = true;
+            }
+            if (appliedDisplaySettings.CommandTimeout != displaySettings.CommandTimeout && displayTarget.CommandTimeout != displaySettings.CommandTimeout)
+            {
+                displayTarget.CommandTimeout = displaySettings.CommandTimeout;
+                DisplaySettingsChanged = true;
+            }
+            if (appliedDisplaySettings.UseLocal != displaySettings.UseLocal && displayTarget.UseLocalPG != displaySettings.UseLocal)
+            {
+                displayTarget.UseLocalPG = displaySettings.UseLocal;
+                DisplaySettingsChanged = true;
+            }
+            appliedDisplaySettings = displaySettings;
+        }
+        return true;
+    }
+
+    private JObject GetServiceSettings(string address, int port)
+    {
+        var settings = JObject.FromObject(Config);
+        settings[nameof(ConfigPG.Addr)] = address;
+        settings[nameof(ConfigPG.Port)] = port;
+        return settings;
+    }
+
+    private string Validate(string address, int port)
+    {
+        string error = string.Empty;
         if (string.IsNullOrWhiteSpace(Config.Category)) error = "请选择或填写 PG 类型。";
         else if (IsI2C)
         {
@@ -80,18 +140,6 @@ public sealed class PGConfigurationDraft : ViewModelBase
             try { LocalPGProtocol.Validate(Config, DisplayConfig); }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { error = ex.Message; }
         }
-        if (error.Length != 0) return false;
-
-        Config.Addr = address;
-        Config.Port = port;
-        // Preserve the live configuration object and its subscribers.
-        JsonConvert.PopulateObject(JsonConvert.SerializeObject(Config), target, CopySettings);
-        if (displayTarget != null)
-        {
-            displayTarget.ConnectTimeout = DisplayConfig.ConnectTimeout;
-            displayTarget.CommandTimeout = DisplayConfig.CommandTimeout;
-            displayTarget.UseLocalPG = DisplayConfig.UseLocalPG;
-        }
-        return true;
+        return error;
     }
 }

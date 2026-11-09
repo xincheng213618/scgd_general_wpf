@@ -13,6 +13,10 @@ namespace ColorVision.Copilot
     {
         internal sealed partial class HarnessToolBridge
         {
+            // The framework still invokes a call whose arguments failed to parse, with no arguments at
+            // all, which a tool without required parameters would accept and run on its defaults.
+            private const string InvalidToolInputError = "The tool input was not valid JSON, so the tool did not run. Send the call again with valid JSON, escaping quotes and line breaks inside string values.";
+
             private sealed class HarnessToolFunction : AIFunction
             {
                 private readonly HarnessToolBridge _owner;
@@ -34,7 +38,11 @@ namespace ColorVision.Copilot
 
                 protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
                 {
-                    var providerCallId = FunctionInvokingChatClient.CurrentContext?.CallContent?.CallId;
+                    var callContent = FunctionInvokingChatClient.CurrentContext?.CallContent;
+                    var providerCallId = callContent?.CallId;
+                    if (callContent?.Exception != null)
+                        return _owner.RecordRejectedToolCall(_tool, arguments, InvalidToolInputError, providerCallId);
+
                     if (!_tool.InputSchema.TryBind(arguments, out var toolInput, out var error))
                         return _owner.RecordRejectedToolCall(_tool, arguments, error, providerCallId);
 

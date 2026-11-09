@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -12,6 +13,7 @@ namespace ColorVision.Database
     public static class GzipTextPayloadCodec
     {
         public const int DefaultMaximumUtf8Bytes = 64 * 1024 * 1024;
+        private const int Utf8BufferSize = 64 * 1024;
         private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
         public static GzipTextPayload Encode(string? text)
@@ -19,11 +21,44 @@ namespace ColorVision.Database
             if (text == null)
                 return new GzipTextPayload(null, null);
 
-            byte[] utf8 = StrictUtf8.GetBytes(text);
+            int utf8Length;
             using var output = new MemoryStream();
             using (var gzip = new GZipStream(output, CompressionLevel.Optimal, leaveOpen: true))
-                gzip.Write(utf8, 0, utf8.Length);
-            return new GzipTextPayload(output.ToArray(), utf8.Length);
+                utf8Length = WriteUtf8(gzip, text);
+            return new GzipTextPayload(output.ToArray(), utf8Length);
+        }
+
+        private static int WriteUtf8(GZipStream gzip, string text)
+        {
+            if (text.Length <= Utf8BufferSize / 3)
+            {
+                byte[] utf8 = StrictUtf8.GetBytes(text);
+                gzip.Write(utf8);
+                return utf8.Length;
+            }
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);
+            try
+            {
+                Encoder encoder = StrictUtf8.GetEncoder();
+                ReadOnlySpan<char> remaining = text.AsSpan();
+                int utf8Length = 0;
+                bool completed;
+                do
+                {
+                    encoder.Convert(remaining, buffer.AsSpan(0, Utf8BufferSize), flush: true,
+                        out int charsUsed, out int bytesUsed, out completed);
+                    gzip.Write(buffer.AsSpan(0, bytesUsed));
+                    remaining = remaining[charsUsed..];
+                    utf8Length = checked(utf8Length + bytesUsed);
+                }
+                while (!completed);
+                return utf8Length;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         public static string? Decode(
@@ -50,22 +85,27 @@ namespace ColorVision.Database
                 using var input = new MemoryStream(compressedBytes, writable: false);
                 using var gzip = new GZipStream(input, CompressionMode.Decompress);
                 using var output = new MemoryStream(expectedUtf8Length.GetValueOrDefault());
-                byte[] buffer = new byte[81920];
-                while (true)
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(Utf8BufferSize);
+                try
                 {
-                    int read = gzip.Read(buffer, 0, buffer.Length);
-                    if (read == 0)
-                        break;
-                    if (output.Length + read > maximumUtf8Bytes)
-                        throw new InvalidDataException($"解压后的载荷超过允许上限 {maximumUtf8Bytes:N0} 字节。");
-                    output.Write(buffer, 0, read);
+                    int read;
+                    while ((read = gzip.Read(buffer, 0, Utf8BufferSize)) != 0)
+                    {
+                        if (output.Length + read > maximumUtf8Bytes)
+                            throw new InvalidDataException($"解压后的载荷超过允许上限 {maximumUtf8Bytes:N0} 字节。");
+                        output.Write(buffer, 0, read);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
                 }
 
-                byte[] utf8 = output.ToArray();
-                if (expectedUtf8Length != null && utf8.Length != expectedUtf8Length.Value)
+                int utf8Length = checked((int)output.Length);
+                if (expectedUtf8Length != null && utf8Length != expectedUtf8Length.Value)
                     throw new InvalidDataException(
-                        $"解压后的 UTF-8 长度不一致，期望 {expectedUtf8Length.Value:N0}，实际 {utf8.Length:N0} 字节。");
-                return StrictUtf8.GetString(utf8);
+                        $"解压后的 UTF-8 长度不一致，期望 {expectedUtf8Length.Value:N0}，实际 {utf8Length:N0} 字节。");
+                return StrictUtf8.GetString(output.GetBuffer(), 0, utf8Length);
             }
             catch (InvalidDataException)
             {

@@ -42,7 +42,26 @@ namespace ColorVision.Copilot
         {
             var selected = GetEffectiveMode(profile);
             CopilotReasoningMode[] modes;
-            if (profile != null && SupportsOpenAiReasoningModes(profile))
+            if (profile != null && SupportsClaudeEffort(profile))
+            {
+                modes = SupportsClaudeExtraHighEffort(profile.Model)
+                    ? new[]
+                    {
+                        CopilotReasoningMode.Default,
+                        CopilotReasoningMode.Low,
+                        CopilotReasoningMode.Medium,
+                        CopilotReasoningMode.High,
+                        CopilotReasoningMode.XHigh,
+                    }
+                    : new[]
+                    {
+                        CopilotReasoningMode.Default,
+                        CopilotReasoningMode.Low,
+                        CopilotReasoningMode.Medium,
+                        CopilotReasoningMode.High,
+                    };
+            }
+            else if (profile != null && SupportsOpenAiReasoningModes(profile))
             {
                 modes = HasMandatoryOpenAiReasoning(profile)
                     ? new[]
@@ -104,6 +123,15 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(profile);
             var normalized = Normalize(profile.VendorType, mode);
+            if (profile.VendorType == CopilotVendorType.Claude)
+            {
+                if (!SupportsClaudeEffort(profile))
+                    return CopilotReasoningMode.Default;
+                return normalized == CopilotReasoningMode.XHigh && !SupportsClaudeExtraHighEffort(profile.Model)
+                    ? CopilotReasoningMode.High
+                    : normalized;
+            }
+
             if (!SupportsOpenAiReasoningModes(profile))
                 return profile.VendorType == CopilotVendorType.OpenAI
                     ? CopilotReasoningMode.Default
@@ -155,6 +183,16 @@ namespace ColorVision.Copilot
                         or CopilotReasoningMode.Max => mode,
                     _ => CopilotReasoningMode.Default,
                 },
+                // Thinking cannot be turned off on current Claude models, and "max" has no shared effort value.
+                CopilotVendorType.Claude => mode switch
+                {
+                    CopilotReasoningMode.Max => CopilotReasoningMode.XHigh,
+                    _ when mode is CopilotReasoningMode.Low
+                        or CopilotReasoningMode.Medium
+                        or CopilotReasoningMode.High
+                        or CopilotReasoningMode.XHigh => mode,
+                    _ => CopilotReasoningMode.Default,
+                },
                 _ => CopilotReasoningMode.Default,
             };
         }
@@ -186,7 +224,64 @@ namespace ColorVision.Copilot
         public static bool HasConfigurableReasoning(CopilotProfileConfig? profile)
         {
             return profile?.VendorType is CopilotVendorType.DeepSeek or CopilotVendorType.Xiaomi
-                || profile != null && SupportsOpenAiReasoningModes(profile);
+                || profile != null && (SupportsOpenAiReasoningModes(profile) || SupportsClaudeEffort(profile));
+        }
+
+        // Compatible gateways and older models may reject adaptive thinking, which effort always sends here.
+        private const int ClaudeThinkingHeadroomTokens = 4096;
+
+        internal static bool SupportsClaudeEffort(CopilotProfileConfig profile)
+        {
+            return profile.VendorType == CopilotVendorType.Claude
+                && CopilotAnthropicPromptCacheChatClient.IsOfficialEndpoint(profile)
+                && (SupportsClaudeExtraHighEffort(profile.Model)
+                    || profile.Model.StartsWith("claude-opus-4-6", StringComparison.OrdinalIgnoreCase)
+                    || profile.Model.StartsWith("claude-sonnet-4-6", StringComparison.OrdinalIgnoreCase));
+        }
+
+        // These models think whether or not it is requested, and by default stream nothing while they do.
+        // A summary therefore changes no reasoning, shows the user the progress, and keeps a long silent
+        // thinking phase from reading as a stalled provider to the inactivity timeouts.
+        internal static bool RequestsClaudeThinkingSummaryByDefault(CopilotProfileConfig profile)
+        {
+            return profile.VendorType == CopilotVendorType.Claude
+                && CopilotAnthropicPromptCacheChatClient.IsOfficialEndpoint(profile)
+                && ClaudeModelAlwaysThinks(profile.Model);
+        }
+
+        // max_tokens caps thinking and text together on these models and thinking cannot be turned off,
+        // so a budget sized for the visible answer alone can stop with max_tokens before any text.
+        // The model decides this, so it also applies through a gateway.
+        internal static int GetBackgroundOutputTokens(CopilotProfileConfig profile, int visibleTokens)
+        {
+            return Math.Min(profile.MaxTokens, ClaudeModelAlwaysThinks(profile.Model) ? visibleTokens + ClaudeThinkingHeadroomTokens : visibleTokens);
+        }
+
+        // For calls with nothing to reason about, which should not run at the effort chosen for real work.
+        internal static void UseLowClaudeEffort(CopilotProfileConfig profile)
+        {
+            if (SupportsClaudeEffort(profile))
+                profile.ReasoningMode = CopilotReasoningMode.Low;
+        }
+
+        private static bool ClaudeModelAlwaysThinks(string model)
+        {
+            return model.StartsWith("claude-fable-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-mythos-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-opus-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-sonnet-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-haiku-5-5", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool SupportsClaudeExtraHighEffort(string model)
+        {
+            return model.StartsWith("claude-fable-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-mythos-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-opus-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-opus-4-7", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-sonnet-5", StringComparison.OrdinalIgnoreCase)
+                || model.StartsWith("claude-haiku-5-5", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool SupportsOpenAiReasoningModes(CopilotProfileConfig profile)
@@ -301,6 +396,18 @@ namespace ColorVision.Copilot
                 };
             }
 
+            if (vendorType == CopilotVendorType.Claude)
+            {
+                return mode switch
+                {
+                    CopilotReasoningMode.Low => "使用 Claude 低推理强度，响应更快、消耗更少 Token。",
+                    CopilotReasoningMode.Medium => "使用 Claude 中等推理强度。",
+                    CopilotReasoningMode.High => "使用 Claude 高推理强度。",
+                    CopilotReasoningMode.XHigh => "使用 Claude 极高推理强度，适合复杂的编码和智能体任务；最大输出 Token 建议不低于 64000，避免回答被截断。",
+                    _ => "由 Claude 使用模型默认的推理强度。",
+                };
+            }
+
             return "当前供应商没有声明可配置的推理强度，使用服务端默认值。";
         }
     }
@@ -311,7 +418,11 @@ namespace ColorVision.Copilot
         {
             var mode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
             if (mode == CopilotReasoningMode.Default)
+            {
+                if (CopilotReasoningCapabilities.RequestsClaudeThinkingSummaryByDefault(profile))
+                    payload["thinking"] = CreateClaudeThinking();
                 return;
+            }
 
             if (CopilotOpenAiRequestPolicy.UsesResponsesApi(profile))
             {
@@ -346,7 +457,19 @@ namespace ColorVision.Copilot
             }
 
             if (profile.VendorType == CopilotVendorType.Xiaomi)
+            {
                 payload["thinking"] = CreateThinking(mode != CopilotReasoningMode.Disabled);
+                return;
+            }
+
+            if (profile.VendorType == CopilotVendorType.Claude)
+            {
+                payload["thinking"] = CreateClaudeThinking();
+                payload["output_config"] = new Dictionary<string, object?>
+                {
+                    ["effort"] = CopilotReasoningCapabilities.GetCommandToken(mode),
+                };
+            }
         }
 
         public static bool ShouldIncludeTemperature(CopilotProfileConfig profile)
@@ -355,13 +478,15 @@ namespace ColorVision.Copilot
                 return false;
 
             if (profile.VendorType == CopilotVendorType.Claude
-                && profile.ProviderType == CopilotProviderType.AnthropicCompatible
-                && Uri.TryCreate(profile.BaseUrl, UriKind.Absolute, out var endpoint)
-                && string.Equals(endpoint.Host.TrimEnd('.'), "api.anthropic.com", StringComparison.OrdinalIgnoreCase)
+                && CopilotAnthropicPromptCacheChatClient.IsOfficialEndpoint(profile)
                 && ClaudeRejectsSampling(profile.Model))
                 return false;
 
             var mode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
+            // Adaptive thinking does not take a custom temperature on the older models that still accept one.
+            if (profile.VendorType == CopilotVendorType.Claude)
+                return mode == CopilotReasoningMode.Default;
+
             if (profile.VendorType == CopilotVendorType.DeepSeek)
                 return mode is CopilotReasoningMode.Default or CopilotReasoningMode.Disabled;
 
@@ -377,6 +502,11 @@ namespace ColorVision.Copilot
                 || model.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase)
                 || model.StartsWith("claude-sonnet-5", StringComparison.OrdinalIgnoreCase)
                 || model.StartsWith("claude-haiku-5-5", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static Dictionary<string, object?> CreateClaudeThinking()
+        {
+            return new Dictionary<string, object?> { ["type"] = "adaptive", ["display"] = "summarized" };
         }
 
         private static Dictionary<string, object?> CreateThinking(bool enabled)

@@ -1,5 +1,6 @@
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectARVRPro.ImageExport;
 using System.ComponentModel;
 using System.Reflection;
 using System.IO;
@@ -124,6 +125,9 @@ internal sealed class ProjectSettingsSession
                 try { _ = DateTime.Now.ToString(value as string); }
                 catch (FormatException) { return "编号时间格式无效，请使用有效的日期时间格式。"; }
             }
+            if (property is nameof(ViewResultManagerConfig.ResultImageFileNameTemplate) or nameof(ViewResultManagerConfig.SourceImageFileNameTemplate)
+                && !ProjectImageExportService.IsValidFileNameTemplate(value as string))
+                return "请输入不含路径或扩展名的有效文件名模板。支持 {FlowName} 和 {SN}。";
             if (property is nameof(ViewResultManagerConfig.CsvSavePath) or nameof(ViewResultManagerConfig.CustomXlsxSavePath))
             {
                 string path = value as string ?? "";

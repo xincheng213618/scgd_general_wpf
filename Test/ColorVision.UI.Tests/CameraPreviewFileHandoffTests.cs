@@ -233,6 +233,77 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
         WpfTestHost.Invoke(() => Assert.Equal(new byte[] { 71, 72, 73, 74, 75, 76 }, Pixels((BitmapSource)view.ViewBitmapSource)));
     }
 
+    [Fact]
+    public async Task DisplayedFrameCountSkipsRepaintsAndSurvivesViewReattachment()
+    {
+        WpfTestHost.Invoke(() => pipeline.Start(view));
+        Assert.Equal(0, pipeline.CurrentDisplayedFrameCount);
+        await PresentAsync([11, 12, 13, 14, 15, 16], 8, 1);
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Equal(1, pipeline.CurrentDisplayedFrameCount);
+            var stream = view.EditorContext.ProcessingContext.StreamPresentation;
+            var source = view.Presentation.DisplaySource;
+            stream.RefreshCurrent();
+            Assert.Same(source, view.Presentation.DisplaySource);
+            Assert.Equal(1, pipeline.CurrentDisplayedFrameCount);
+
+            pipeline.Stop(resetRealtime: true);
+            pipeline.Start(view, preserveDisplayedFrameCount: true);
+            Assert.Equal(1, pipeline.CurrentDisplayedFrameCount);
+        });
+        await PresentAsync([71, 72, 73, 74, 75, 76], 8, 1);
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Equal(2, pipeline.CurrentDisplayedFrameCount);
+            pipeline.Start(view);
+            Assert.Equal(0, pipeline.CurrentDisplayedFrameCount);
+        });
+    }
+
+    [Fact]
+    public async Task FrameRateNotificationUsesThePublishedOverlaySample()
+    {
+        var clock = new FrameRateTestClock();
+        var framePipeline = WpfTestHost.Invoke(() => new CameraRealtimeFramePipeline(clock));
+        List<(double Fps, double PublishedFps, bool OnDispatcher)> samples = [];
+        TaskCompletionSource completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            WpfTestHost.Invoke(() => framePipeline.Start(view, onFrameRateChanged: metrics =>
+            {
+                samples.Add((metrics.Fps, framePipeline.CurrentMetrics.Fps, view.Dispatcher.CheckAccess()));
+                if (samples.Count == 2) completed.TrySetResult();
+            }));
+            await Task.Run(() =>
+            {
+                byte[] frame = [1, 2, 3, 4, 5, 6];
+                framePipeline.SubmitFrame(frame, frame.Length, 3, 2, 1, 8, 3);
+                clock.Timestamp += TimeSpan.TicksPerSecond;
+                framePipeline.SubmitFrame(frame, frame.Length, 3, 2, 1, 8, 3);
+                clock.Timestamp += TimeSpan.TicksPerSecond;
+                framePipeline.SubmitFrame(frame, frame.Length, 3, 2, 1, 8, 3);
+            });
+            await completed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(new[] { (2.0, 2.0, true), (1.0, 1.0, true) }, samples);
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                framePipeline.Stop(resetRealtime: true);
+                framePipeline.Dispose();
+            });
+        }
+    }
+
+    private sealed class FrameRateTestClock : TimeProvider
+    {
+        public long Timestamp { get; set; }
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+        public override long GetTimestamp() => Timestamp;
+    }
+
     [Theory]
     [InlineData(8, 1, RealtimeFramePresenter.TransformNone)]
     [InlineData(16, 1, RealtimeFramePresenter.TransformFlipX)]
@@ -346,6 +417,7 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
             WpfTestHost.Invoke(() =>
             {
                 Assert.Equal(2, presented.Count);
+                Assert.Equal(2, pipeline.CurrentDisplayedFrameCount);
                 Assert.Equal(new byte[] { 11 }, Pixels(presented[0]));
                 Assert.Equal(new byte[] { 33 }, Pixels(presented[1]));
                 Assert.All(presented, source => Assert.True(source.IsFrozen));
@@ -354,7 +426,7 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
         finally { WpfTestHost.Invoke(() => view.EditorContext.ProcessingContext.StreamPresentation.FramePresented -= OnFrame); }
     }
 
-    private SemaphoreSlim OpenGate => (SemaphoreSlim)typeof(CalibratedImageCapability).GetField("_rawOpenGate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener)!;
+    private SemaphoreSlim OpenGate => (SemaphoreSlim)typeof(CalibratedImageCapability).GetField("_fileOpenGate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener)!;
     private PoiMeasurementBuffer? Measurement => (PoiMeasurementBuffer?)typeof(CalibratedImageCapability).GetField("_measurementBuffer", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener);
     private string WriteRaw(string name, byte value)
     {

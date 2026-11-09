@@ -43,8 +43,7 @@
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs",
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/OLEDNodeConfigurators.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/AlgorithmTemplatePropertiesEditor.cs",
         "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs",
         "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs",
@@ -2030,6 +2029,7 @@
         "CopilotCodeReviewSnapshot"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/CopilotAnthropicThinkingBindingChatClient.cs",
         "ColorVision/Copilot/Agent/CopilotWebEvidenceSourceLedger.cs",
         "ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspaceValidationTool.cs",
         "ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs",
@@ -2069,6 +2069,7 @@
         "ColorVision/Copilot/Agent/CopilotOpenAiAgentChatClientFactory.cs",
         "ColorVision/Copilot/Agent/CopilotOpenAiPromptCacheChatClient.cs",
         "ColorVision/Copilot/Agent/CopilotDeepSeekAnthropicChatClient.cs",
+        "ColorVision/Copilot/Agent/CopilotAnthropicPromptCacheChatClient.cs",
         "ColorVision/Copilot/Capabilities/CopilotWorkspacePatchScope.cs",
         "Scripts/evaluate_copilot.ps1",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ProviderClientPipeline.cs",
@@ -2091,6 +2092,7 @@
         "ColorVision/Copilot/Capabilities/CopilotBackgroundShellCommandRegistry.Observation.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotAnthropicThinkingBindingTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationFullAccessTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWebEvidenceOutputFormatTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWorkspaceValidationAdmissionTests.cs",
@@ -2108,6 +2110,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotOpenAiProviderRetryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotOpenAiPromptCacheDiagnosticsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotDeepSeekAnthropicChatClientTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAnthropicPromptCacheTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotUnicodeFileReadTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTextSearchCoverageTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTextFileCoordinateTests.cs",
@@ -3334,6 +3337,51 @@
       "title": "Web账号、角色与会话生命周期",
       "source": "docs/02-developer-guide/backend/accounts.md",
       "url": "/02-developer-guide/backend/accounts",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "delivery.backend-activation",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "用户中心的可选许可证激活、TPM 离线凭据、在线租约和后台设备名额。",
+      "aliases": [
+        "许可证激活",
+        "联网申请并激活",
+        "使用中的设备",
+        "释放本机",
+        "TPM 离线",
+        "在线租约",
+        "ActivationService",
+        "COLORVISION_ACTIVATION_URL"
+      ],
+      "code_paths": [
+        "UI/ColorVision.Rbac/Activation",
+        "UI/ColorVision.Rbac/ColorVision.Rbac.csproj",
+        "UI/ColorVision.Rbac/RbacManagerWindow.xaml",
+        "Web/Backend/routes/activation_api.py",
+        "Web/Backend/services/activation.py",
+        "Web/Backend/services/activation_http.py",
+        "Web/Backend/db/repositories/activation_admin.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Frontend/src/pages/ActivationPage.tsx"
+      ],
+      "test_paths": [
+        "Web/Backend/test_activation.py",
+        "Web/Backend/test_contracts.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "platform.rbac"
+      ],
+      "code_scopes": [
+        "UI/ColorVision.Rbac",
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "许可证激活与设备名额",
+      "source": "docs/02-developer-guide/backend/activation.md",
+      "url": "/02-developer-guide/backend/activation",
       "searchable": true
     },
     {
@@ -6025,7 +6073,9 @@
         "src/ColorVisionServiceHost/Tasks/UnregisterThumbnail.ps1",
         "src/ColorVisionServiceHost/Tasks/RegisterFileAssociations.ps1"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ShellThumbnailProviderTests.cs"
+      ],
       "related": [
         "engine.index",
         "engine.file-io",
@@ -6128,6 +6178,8 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/ITemplate.cs",
+        "Engine/ColorVision.Engine/Templates/TemplateDetailReader.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Sensor/Templates/SensorParam.cs",
         "Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs",
         "Engine/ColorVision.Engine/Templates/TemplateControl.cs",
         "Engine/ColorVision.Engine/Templates/ModelBase.cs",
@@ -6143,7 +6195,8 @@
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"
+        "Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs",
+        "Test/ColorVision.UI.Tests/TemplateDetailReaderTests.cs"
       ],
       "related": [
         "engine.index",
@@ -6893,7 +6946,6 @@
         "FlowTemplateWorkspaceController",
         "流程编辑器",
         "流程引擎模板管理",
-        "导入模板为模块",
         "自动对齐",
         "适应全部节点"
       ],
@@ -6905,9 +6957,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs",
@@ -7340,7 +7390,7 @@
         "LocalVideoRoi",
         "includeCameraId",
         "本地相机ID",
-        "应用设置",
+        "逻辑相机绑定",
         "相机数据路径",
         "光心",
         "畸变光心",
@@ -8115,9 +8165,6 @@
         "MQTTSMU",
         "SMUParam",
         "SMUSweepModelNode",
-        "IVL",
-        "实时曲线",
-        "LiveIvlWindow",
         "LocalSmuWindow",
         "电阻测量",
         "脉冲",
@@ -8128,14 +8175,12 @@
         "Engine/cvColorVision/Devices/PassSx/PassSx.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU",
         "Engine/FlowEngineLib/SMUBaseNode.cs",
-        "Engine/FlowEngineLib/Node/SMU",
-        "Engine/ColorVision.Engine/FlowProcessing/Monitoring"
+        "Engine/FlowEngineLib/Node/SMU"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalSmuSessionTests.cs",
         "Test/ColorVision.UI.Tests/LocalSmuFlowTests.cs",
         "Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs",
-        "Test/ColorVision.UI.Tests/LiveIvlTests.cs",
         "Test/ColorVision.UI.Tests/LocalSmuAdvancedTests.cs"
       ],
       "related": [

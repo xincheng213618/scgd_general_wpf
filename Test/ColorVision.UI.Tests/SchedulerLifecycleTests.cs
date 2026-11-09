@@ -1,8 +1,12 @@
 using ColorVision.Scheduler;
 using ColorVision.Scheduler.Data;
+using ColorVision.Scheduler.Properties;
 using Quartz;
+using System.Globalization;
 using System.IO;
 using System.Threading.Channels;
+using System.Windows.Controls;
+using System.Windows.Threading;
 using SchedulerStatus = ColorVision.Scheduler.SchedulerStatus;
 
 namespace ColorVision.UI.Tests;
@@ -141,6 +145,56 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task StatusBar_TracksInFlightRoundAfterPauseAndNextTimeAfterResume()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finish = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _scheduler.Context[nameof(StatusProbeJob)] = (started, finish);
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(StatusProbeJob);
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 1;
+        info.Interval = TimeSpan.FromDays(2);
+        Assert.True((await _manager.CreateJob(info)).Success);
+
+        // Exercise the real status bar binding with no task window open.
+        TextBlock status = WpfTestHost.Invoke(() =>
+        {
+            var provider = new SchedulerStatusBarProvider(_manager);
+            var statusBar = new StatusBarControl();
+            statusBar.LoadItems(provider.GetStatusBarIconMetadata());
+            var right = Assert.IsType<StackPanel>(statusBar.FindName("RightItemsPanel"));
+            var item = Assert.IsType<Border>(Assert.Single(right.Children));
+            var host = Assert.IsType<ContentControl>(item.Child);
+            var content = Assert.IsType<StackPanel>(host.Content);
+            return Assert.IsType<TextBlock>(content.Children[0]);
+        });
+        Task<string> ReadStatusAsync() => status.Dispatcher.InvokeAsync(() => status.Text, DispatcherPriority.Background).Task;
+
+        try
+        {
+            await _scheduler.Start();
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(15));
+            Assert.Equal(Resources.Sched_StatusBarRunning, await ReadStatusAsync());
+
+            await WpfTestHost.Invoke(() => _manager.StopJob(info.JobName, info.GroupName));
+            Assert.Equal(Resources.Sched_StatusBarPausedRunning, await ReadStatusAsync());
+        }
+        finally
+        {
+            finish.TrySetResult();
+        }
+
+        await NextExecution();
+        Assert.Empty(await ReadStatusAsync());
+
+        await WpfTestHost.Invoke(() => _manager.ResumeJob(info.JobName, info.GroupName));
+        DateTimeOffset next = Assert.IsType<DateTimeOffset>(info.NextScheduledFireTimeUtc);
+        string time = next.LocalDateTime.ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.CurrentCulture);
+        Assert.Equal(string.Format(CultureInfo.CurrentCulture, Resources.Sched_StatusBarNextRun, time), await ReadStatusAsync());
+    }
+
+    [Fact]
     public async Task PauseAndResumeAll_KeepCompletedSchedulesUnarmed()
     {
         SchedulerInfo pending = CreateInfo();
@@ -265,6 +319,16 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     public sealed class NoOpJob : IJob
     {
         public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default) => ValueTask.CompletedTask;
+    }
+
+    public sealed class StatusProbeJob : IJob
+    {
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            var (started, finish) = ((TaskCompletionSource, TaskCompletionSource))context.Scheduler.Context[nameof(StatusProbeJob)]!;
+            started.TrySetResult();
+            await finish.Task.WaitAsync(cancellationToken);
+        }
     }
 
     public async Task DisposeAsync()

@@ -425,6 +425,7 @@ namespace ColorVision.Solution.Explorer
 
         private void RefreshProjectFileState(string projectFilePath)
         {
+            InvalidateStartupProjectDiscovery();
             if (!IsExplicitProjectMode)
             {
                 RefreshDirectoryNode(Path.GetDirectoryName(projectFilePath));
@@ -645,6 +646,9 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
+        private HashSet<string>? _pendingReloadExpansion;
+        internal bool IsRootReloadPending => _pendingReloadExpansion != null;
+
         internal void ReloadSolutionState()
         {
             var dispatcher = Application.Current?.Dispatcher;
@@ -653,48 +657,91 @@ namespace ColorVision.Solution.Explorer
                 dispatcher.BeginInvoke(ReloadSolutionState);
                 return;
             }
+            if (_disposed)
+                return;
 
+            InvalidateStartupProjectDiscovery();
+            int reloadVersion = BeginRootPopulation();
             _projectChangedDebounceTimer.Stop();
             SolutionStateReloading?.Invoke(this, EventArgs.Empty);
+            if (!IsRootPopulationCurrent(reloadVersion))
+                return;
             var expandedPaths = VisualChildren.GetAllVisualChildren()
                 .Where(node => node.IsExpanded && !string.IsNullOrWhiteSpace(node.FullPath))
                 .Select(node => node.FullPath)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (_pendingReloadExpansion != null)
+                expandedPaths.UnionWith(_pendingReloadExpansion);
+            _pendingReloadExpansion = expandedPaths;
 
-            DisposeVisualChildren(this);
-            VisualChildren.Clear();
-
-            // A user-requested refresh must observe the current file system,
-            // rather than replaying a possibly stale persisted tree cache.
-            if (!HasRootProjectReference())
-                SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache: null);
-            ReconcileExplicitProjects();
-
-            foreach (SolutionNode node in VisualChildren.GetAllVisualChildren()
-                .Where(node => expandedPaths.Contains(node.FullPath)))
+            try
             {
+                DisposeVisualChildren(this);
+                VisualChildren.Clear();
+
+                // Read the current directory instead of replaying a persisted listing on refresh.
+                Task population = HasRootProjectReference() ? Task.CompletedTask
+                    : SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache: null, rootPopulationVersion: reloadVersion);
+                ReconcileExplicitProjects();
+                RestoreReloadExpansion(reloadVersion, expandedPaths);
+
+                EnsureStartupProject();
+                RefreshConfigurationCommandSurfaces();
+
+                if (Cache != null)
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            Cache.RebuildCache(DirectoryInfo.FullName);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Warn($"刷新后重建缓存失败: {ex.Message}");
+                        }
+                    });
+                }
+
+                _ = CompleteRootReloadAsync(population, reloadVersion, expandedPaths);
+            }
+            catch
+            {
+                if (IsRootPopulationCurrent(reloadVersion)) _pendingReloadExpansion = null;
+                throw;
+            }
+        }
+
+        private async Task CompleteRootReloadAsync(Task population, int reloadVersion, HashSet<string> expandedPaths)
+        {
+            try
+            {
+                await population;
+                if (IsRootPopulationCurrent(reloadVersion))
+                    RestoreReloadExpansion(reloadVersion, expandedPaths);
+            }
+            catch (Exception ex)
+            {
+                if (IsRootPopulationCurrent(reloadVersion)) Logger.Warn("刷新后加载根目录或恢复展开状态失败。", ex);
+            }
+
+            if (!IsRootPopulationCurrent(reloadVersion))
+                return;
+            _pendingReloadExpansion = null;
+            SolutionStateReloaded?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void RestoreReloadExpansion(int reloadVersion, HashSet<string> expandedPaths)
+        {
+            if (expandedPaths.Count == 0) return;
+            SolutionNode[] nodes = VisualChildren.GetAllVisualChildren()
+                .Where(node => expandedPaths.Contains(node.FullPath)).ToArray();
+            foreach (SolutionNode node in nodes)
+            {
+                if (!IsRootPopulationCurrent(reloadVersion)) return;
+                expandedPaths.Remove(node.FullPath);
                 node.IsExpanded = true;
             }
-
-            EnsureStartupProject();
-            RefreshConfigurationCommandSurfaces();
-
-            if (Cache != null)
-            {
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        Cache.RebuildCache(DirectoryInfo.FullName);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Warn($"刷新后重建缓存失败: {ex.Message}");
-                    }
-                });
-            }
-
-            SolutionStateReloaded?.Invoke(this, EventArgs.Empty);
         }
 
         private void RefreshConfigurationCommandSurfaces()

@@ -549,4 +549,13 @@
   <data name="Sched_TaskNotFound" xml:space="preserve">
     <value>找不到该任务，请刷新任务列表。</value>
   </data>
+  <data name="Sched_StatusBarRunning" xml:space="preserve">
+    <value>定时任务 · 执行中</value>
+  </data>
+  <data name="Sched_StatusBarPausedRunning" xml:space="preserve">
+    <value>计划已暂停 · 本轮执行中</value>
+  </data>
+  <data name="Sched_StatusBarNextRun" xml:space="preserve">
+    <value>下次 {0}</value>
+  </data>
 </root>

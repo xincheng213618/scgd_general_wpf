@@ -96,6 +96,15 @@ namespace ColorVision.Database
         }
         protected virtual void OnPreQuery() => PreQuery?.Invoke(this, EventArgs.Empty);
         protected virtual void OnQueryCompleted(QueryCompletedEventArgs e) => QueryCompleted?.Invoke(this, e);
+
+        internal static void AddResults<T>(IList<T> target, IEnumerable<T> rows)
+        {
+            if (target is IQueryResultList<T> batch)
+                batch.AddRange(rows);
+            else
+                foreach (T row in rows) target.Add(row);
+        }
+
         protected void OnConditionsChanged(int conditionCount)
         {
             ConditionCount = conditionCount;
@@ -232,10 +241,7 @@ namespace ColorVision.Database
             var dbList = QueryConfig.Count > 0 ? query.Take(QueryConfig.Count).ToList() : query.ToList();
 
             ViewResluts.Clear();
-            foreach (var dbItem in dbList)
-            {
-                ViewResluts.Add(dbItem);
-            }
+            AddResults(ViewResluts, dbList);
 
 
             _stopwatch.Stop();
@@ -386,10 +392,7 @@ namespace ColorVision.Database
 
             ViewResluts.Clear();
             IEnumerable<T1> converted = BatchConverter is { } batchConverter ? batchConverter(dbList) : dbList.Select(Converter);
-            foreach (var item in converted)
-            {
-                ViewResluts.Add(item);
-            }
+            AddResults(ViewResluts, converted);
 
             _stopwatch.Stop();
             OnQueryCompleted(new QueryCompletedEventArgs() { Sql =Sql,ResultCount = dbList.Count,Elapsed = _stopwatch.Elapsed });

@@ -176,6 +176,10 @@ namespace ColorVision.ImageEditor.Algorithms
             IProgress<AlgorithmProgress>? progress)
         {
             long included = 0;
+            ReadOnlySpan<byte> data = image.Data.Span;
+            int stride = image.Stride;
+            int pixelBytes = image.Format.BytesPerPixel();
+            int channelBytes = pixelBytes / channels.Length;
             int height = Math.Max(1, roi.MaximumYExclusive - roi.MinimumY);
             for (int y = roi.MinimumY; y < roi.MaximumYExclusive; y++)
             {
@@ -188,8 +192,9 @@ namespace ColorVision.ImageEditor.Algorithms
                 {
                     if (!roi.Contains(x, y)) continue;
                     included++;
+                    int pixelOffset = y * stride + x * pixelBytes;
                     for (int channel = 0; channel < channels.Length; channel++)
-                        channels[channel].Add(ReadValue(image, x, y, channel));
+                        channels[channel].Add(ReadValue(data, pixelOffset + channel * channelBytes, channelBytes));
                 }
             }
             return included;
@@ -210,6 +215,11 @@ namespace ColorVision.ImageEditor.Algorithms
             int radius = parameters.BadPixelNeighborhoodRadius;
             int maximumNeighbors = checked((radius * 2 + 1) * (radius * 2 + 1) - 1);
             double[] neighbors = new double[maximumNeighbors];
+            ReadOnlySpan<byte> data = image.Data.Span;
+            int stride = image.Stride;
+            int pixelBytes = image.Format.BytesPerPixel();
+            int channelBytes = pixelBytes / channels.Length;
+            double minimumDeviation = parameters.BadPixelMinimumDeviationFraction * channels[0].NominalMaximum;
             int height = Math.Max(1, roi.MaximumYExclusive - roi.MinimumY);
             for (int y = roi.MinimumY; y < roi.MaximumYExclusive; y++)
             {
@@ -223,35 +233,43 @@ namespace ColorVision.ImageEditor.Algorithms
                     if (((x - roi.MinimumX) & 255) == 0) cancellationToken.ThrowIfCancellationRequested();
                     if (!roi.Contains(x, y)) continue;
                     bool pixelIsCandidate = false;
+                    int pixelOffset = y * stride + x * pixelBytes;
                     for (int channelIndex = 0; channelIndex < channels.Length; channelIndex++)
                     {
-                        double value = ReadValue(image, x, y, channelIndex);
+                        int channelOffset = channelIndex * channelBytes;
+                        double value = ReadValue(data, pixelOffset + channelOffset, channelBytes);
                         if (!double.IsFinite(value)) continue;
                         int count = 0;
+                        bool hasDistantNeighbor = false;
                         for (int offsetY = -radius; offsetY <= radius; offsetY++)
                         {
                             int neighborY = y + offsetY;
                             if (neighborY < roi.MinimumY || neighborY >= roi.MaximumYExclusive) continue;
+                            int neighborRowOffset = neighborY * stride + channelOffset;
                             for (int offsetX = -radius; offsetX <= radius; offsetX++)
                             {
                                 if (offsetX == 0 && offsetY == 0) continue;
                                 int neighborX = x + offsetX;
                                 if (neighborX < roi.MinimumX || neighborX >= roi.MaximumXExclusive || !roi.Contains(neighborX, neighborY)) continue;
-                                double neighbor = ReadValue(image, neighborX, neighborY, channelIndex);
-                                if (double.IsFinite(neighbor)) neighbors[count++] = neighbor;
+                                double neighbor = ReadValue(data, neighborRowOffset + neighborX * pixelBytes, channelBytes);
+                                if (!double.IsFinite(neighbor)) continue;
+                                neighbors[count++] = neighbor;
+                                hasDistantNeighbor |= Math.Abs(value - neighbor) > minimumDeviation;
                             }
                         }
-                        if (count < 3) continue;
+                        // The median lies between the finite neighbors, so it cannot be farther
+                        // than the minimum deviation if every neighbor is within that distance.
+                        if (count < 3 || !hasDistantNeighbor) continue;
 
                         Array.Sort(neighbors, 0, count);
                         double median = Median(neighbors, count);
+                        double deviation = Math.Abs(value - median);
+                        if (deviation <= minimumDeviation) continue;
                         for (int index = 0; index < count; index++) neighbors[index] = Math.Abs(neighbors[index] - median);
                         Array.Sort(neighbors, 0, count);
                         double madSigma = 1.4826 * Median(neighbors, count);
-                        double minimumDeviation = parameters.BadPixelMinimumDeviationFraction * channels[channelIndex].NominalMaximum;
                         double threshold = Math.Max(minimumDeviation, parameters.BadPixelSigmaThreshold * madSigma);
-                        double deviation = Math.Abs(value - median);
-                        if (deviation <= threshold || deviation <= 0) continue;
+                        if (deviation <= threshold) continue;
 
                         ChannelAccumulator channel = channels[channelIndex];
                         channel.BadPixelCandidateCount++;
@@ -447,19 +465,14 @@ namespace ColorVision.ImageEditor.Algorithms
         private static double Median(double[] sorted, int count)
             => count % 2 == 1 ? sorted[count / 2] : (sorted[count / 2 - 1] + sorted[count / 2]) / 2;
 
-        private static double ReadValue(AlgorithmImageBuffer image, int x, int y, int channel)
-        {
-            ReadOnlySpan<byte> data = image.Data.Span;
-            int bytesPerChannel = image.Format.BitsPerChannel() / 8;
-            int offset = checked(y * image.Stride + x * image.Format.BytesPerPixel() + channel * bytesPerChannel);
-            return image.Format.BitsPerChannel() switch
+        private static double ReadValue(ReadOnlySpan<byte> data, int offset, int channelBytes)
+            => channelBytes switch
             {
-                8 => data[offset],
-                16 => BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2)),
-                32 => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4))),
-                _ => throw new ArgumentOutOfRangeException(nameof(image)),
+                1 => data[offset],
+                2 => BinaryPrimitives.ReadUInt16LittleEndian(data[offset..]),
+                4 => BinaryPrimitives.ReadSingleLittleEndian(data[offset..]),
+                _ => throw new ArgumentOutOfRangeException(nameof(channelBytes)),
             };
-        }
 
         private static string ChannelName(AlgorithmImageFormat format, int channel)
         {

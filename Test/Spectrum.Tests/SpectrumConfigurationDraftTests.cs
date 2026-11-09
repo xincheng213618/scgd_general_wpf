@@ -126,6 +126,72 @@ public sealed class SpectrumConfigurationDraftTests
     }
 
     [Theory]
+    [InlineData(" 0 ", null)]
+    [InlineData(" 0 ", " LEGACY ")]
+    [InlineData("999", " LEGACY ")]
+    public void DisplayOnlyChangesStayLocalAndNotifyTheLiveSpectrum(string savedPort, string? savedSerial)
+    {
+        var config = new ConfigSpectrum { ComPort = savedPort, SN = savedSerial! };
+        var display = new DisplaySpectrumConfig { UseLocalSpectrum = false, Divisor = 3 };
+        var draft = new SpectrumConfigurationDraft(config, display);
+        bool? notifiedFluxMode = null;
+        display.IsIsLuminousFluxModeChanged += (_, value) => notifiedFluxMode = value;
+        var originalConfig = JObject.FromObject(config);
+        Assert.False(draft.DisplayConfig.UseLocalSpectrum);
+        Assert.False(draft.DisplayConfig.IsLuminousFluxMode);
+
+        draft.DisplayConfig.UseLocalSpectrum = true;
+        draft.DisplayConfig.IsLuminousFluxMode = true;
+        draft.Config.SN = savedSerial?.Trim() ?? string.Empty;
+        Assert.False(display.UseLocalSpectrum);
+        Assert.False(display.IsLuminousFluxMode);
+        Assert.Null(notifiedFluxMode);
+
+        Assert.True(draft.TryApply(config, out _, display));
+        Assert.True(draft.DisplaySettingsChanged);
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.True(JToken.DeepEquals(originalConfig, JObject.FromObject(config)));
+        Assert.True(display.UseLocalSpectrum);
+        Assert.True(display.IsLuminousFluxMode);
+        Assert.True(notifiedFluxMode);
+        Assert.Equal(3, display.Divisor);
+        var restored = JObject.FromObject(display).ToObject<DisplaySpectrumConfig>()!;
+        Assert.True(restored.UseLocalSpectrum);
+        Assert.True(restored.IsLuminousFluxMode);
+    }
+
+    [Fact]
+    public void InvalidServiceEditDoesNotApplyLocalDisplaySettings()
+    {
+        var config = new ConfigSpectrum();
+        var display = new DisplaySpectrumConfig();
+        var draft = new SpectrumConfigurationDraft(config, display) { IsSerialConnection = true };
+        draft.DisplayConfig.UseLocalSpectrum = false;
+        draft.DisplayConfig.IsLuminousFluxMode = true;
+
+        Assert.False(draft.TryApply(config, out _, display));
+        Assert.False(draft.DisplaySettingsChanged);
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.True(display.UseLocalSpectrum);
+        Assert.False(display.IsLuminousFluxMode);
+    }
+
+    [Fact]
+    public void ApplyKeepsLiveChangesToUntouchedDisplaySettings()
+    {
+        var config = new ConfigSpectrum();
+        var display = new DisplaySpectrumConfig();
+        var draft = new SpectrumConfigurationDraft(config, display);
+        draft.DisplayConfig.IsLuminousFluxMode = true;
+        display.UseLocalSpectrum = false;
+
+        Assert.True(draft.TryApply(config, out _, display));
+        Assert.True(draft.DisplaySettingsChanged);
+        Assert.False(display.UseLocalSpectrum);
+        Assert.True(display.IsLuminousFluxMode);
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public void ApplyKeepsOnlyTheSelectedNdConnection(bool bound)

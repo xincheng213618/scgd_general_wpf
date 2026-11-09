@@ -42,6 +42,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 
 namespace ColorVision.Engine.Services.Devices.Camera
@@ -304,6 +305,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _crossGuideOverlayAdded;
         private readonly object _localVideoHandleSync = new();
         private readonly CameraPreviewParameterQueue _previewParameterUpdates;
+        private readonly LocalVideoFrameWatchdog _localVideoWatchdog = new();
+        private readonly DispatcherTimer _localVideoTimer;
         private int _disposeState;
         private bool _isInitialized;
         private bool _templateOptionsAreLocal;
@@ -332,6 +335,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _crossGuideProcessor = new VideoCrossGuideProcessor(HandleCrossGuideResult);
             _crossGuideOverlayVisual = new CrossGuideOverlayVisual();
             _previewParameterUpdates = new CameraPreviewParameterQueue(ApplyPreviewParameterCore, ex => logger.Error("更新本地预览参数失败", ex));
+            _localVideoTimer = new DispatcherTimer(DispatcherPriority.Background, Dispatcher) { Interval = TimeSpan.FromSeconds(1) };
+            _localVideoTimer.Tick += UpdateLocalVideoState;
             InitializeComponent();
         }
 
@@ -515,6 +520,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed || _isSyncingLocalVideoRoi) return;
             if (e.PropertyName == nameof(DisplayCameraConfig.IsLocalVideoOpen))
             {
+                if (!DisplayCameraConfig.IsLocalVideoOpen)
+                {
+                    _localVideoTimer.Stop();
+                    Device.ExistingView?.FocusChart?.EndVideo();
+                }
                 _previewParameterUpdates.Clear();
                 EnsureTimedButtonOperations().RefreshIdleState(Actions.LocalVideoButton);
                 RefreshPanelState();
@@ -526,6 +536,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 _localRealtimePipeline.Transform = DisplayCameraConfig.LocalVideoTransform;
                 _crossGuideOverlayVisual.Clear();
                 _crossGuideProcessor.Reset();
+                ClearCrossGuideStatus();
             }
             if (e.PropertyName is nameof(DisplayCameraConfig.IsGainControlledByCalibrationGroup) or nameof(DisplayCameraConfig.GainSourceHint)) RefreshPanelState();
 
@@ -543,8 +554,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     RefreshLocalVideoRoiVisual(selectNewVisual: true);
 
                 RefreshCrossGuideOverlay();
-                if (e.PropertyName != nameof(DisplayCameraConfig.CrossGuideStatus))
-                    SaveDisplayConfig();
+                SaveDisplayConfig();
             }
         }
 
@@ -702,9 +712,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void RealtimeCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (IsDisposed) return;
-            if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(DefaultRealtimeCameraConfig.IsCalArtculation)) return;
-
-            RefreshLocalVideoRoiVisual(selectNewVisual: true);
+            bool calculationChanged = string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsCalArtculation);
+            if (!calculationChanged && e.PropertyName != nameof(DefaultRealtimeCameraConfig.EvaFunc)) return;
+            if (calculationChanged) RefreshLocalVideoRoiVisual(selectNewVisual: true);
+            void ResetChart()
+            {
+                if (!IsDisposed) Device.ExistingView?.FocusChart?.ResetVideoSamples(IsRealtimeArticulationEnabled);
+            }
+            if (Dispatcher.CheckAccess()) ResetChart();
+            else Dispatcher.BeginInvoke(ResetChart);
         }
 
         private void CaptureLocalVideoImageEditMode(ColorVision.ImageEditor.ImageView imageView)
@@ -848,15 +864,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed) return;
 
-            _localRealtimePipeline.IsMetricsVisible = !Device.DisplayConfig.IsCrossGuideEnabled;
-
             if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
             {
                 RemoveCrossGuideOverlay();
-                if (!Device.DisplayConfig.IsCrossGuideEnabled)
-                {
-                    Device.DisplayConfig.CrossGuideStatus = string.Empty;
-                }
                 return;
             }
 
@@ -886,8 +896,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void RemoveCrossGuideOverlay()
         {
             _crossGuideProcessor.Stop();
-            if (Device.ExistingView is not { IsContentInitialized: true }) return;
-            var imageView = Device.View.ImageView;
+            ClearCrossGuideStatus();
+            if (Device.ExistingView is not { IsContentInitialized: true } view) return;
+            var imageView = view.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
             {
                 imageView.Dispatcher.BeginInvoke(new Action(RemoveCrossGuideOverlay));
@@ -895,12 +906,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _crossGuideOverlayVisual.Detach();
-            _crossGuideOverlayVisual.Clear();
             if (_crossGuideOverlayAdded || imageView.ImageShow.ContainsVisual(_crossGuideOverlayVisual))
             {
                 imageView.ImageShow.RemoveOverlayVisual(_crossGuideOverlayVisual);
                 _crossGuideOverlayAdded = false;
             }
+        }
+
+        private void ClearCrossGuideStatus()
+        {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(ClearCrossGuideStatus); return; }
+            Device.DisplayConfig.CrossGuideStatus = string.Empty;
+            Device.ExistingView?.FocusChart?.UpdateVideoCrossGuideStatus(null);
         }
 
         private bool TryCreateCrossGuideRequest(int width, int height, out VideoCrossGuideRequest request)
@@ -933,13 +950,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (IsDisposed || Device.ExistingView is not { IsContentInitialized: true }
+                if (IsDisposed || Device.ExistingView is not { IsContentInitialized: true } view
                     || !Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
                     return;
 
                 EnsureCrossGuideOverlay();
-                _crossGuideOverlayVisual.Update(result, _localRealtimePipeline.CurrentMetrics);
-                Device.DisplayConfig.CrossGuideStatus = BuildCrossGuideStatus(result);
+                _crossGuideOverlayVisual.Update(result);
+                string status = BuildCrossGuideStatus(result);
+                Device.DisplayConfig.CrossGuideStatus = status;
+                view.FocusChart.UpdateVideoCrossGuideStatus(status);
             }));
         }
 
@@ -948,7 +967,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (!result.Found) return result.Message;
 
             string state = result.IsPass ? "PASS" : "NG";
-            return $"dx(center):{result.OffsetX:F2}px  dy(center):{result.OffsetY:F2}px  d:{result.Distance:F2}px  Rotation:{result.RotationZDeg:+0.00;-0.00;0.00}deg  XRotation:{result.XRotationDeg:+0.00;-0.00;0.00}deg  YRotation:{result.YRotationDeg:+0.00;-0.00;0.00}deg  {state}";
+            return $"{state} · ΔX {result.OffsetX:F2} · ΔY {result.OffsetY:F2} · d {result.Distance:F2} px" + Environment.NewLine
+                + $"Rz {result.RotationZDeg:+0.00;-0.00;0.00}° · Rx {result.XRotationDeg:+0.00;-0.00;0.00}° · Ry {result.YRotationDeg:+0.00;-0.00;0.00}°";
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e) => RefreshPanelState();
@@ -1663,13 +1683,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal void AttachImageView(ViewCamera view)
         {
             if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen || (_sharedLocalVideo && !_sharedVideoActive)) return;
-            view.EnsureInitialized();
-            view.ClearFocusEvaluation();
-            _localRealtimePipeline.Start(view.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false,
-                showOverlayMetrics: !Device.DisplayConfig.IsCrossGuideEnabled);
+            StartRealtimeView(view, preserveDisplayedFrameCount: true);
             SetLocalVideoPoiTemplateSupported(true);
             RefreshLocalVideoRoiVisual(selectNewVisual: false);
             RefreshCrossGuideOverlay();
+        }
+
+        private void StartRealtimeView(ViewCamera view, bool preserveDisplayedFrameCount)
+        {
+            view.EnsureInitialized();
+            _localRealtimePipeline.Start(view.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false,
+                showOverlayMetrics: false, onArticulation: view.FocusChart.AddVideoSample,
+                preserveDisplayedFrameCount: preserveDisplayedFrameCount, onFrameRateChanged: metrics =>
+                    view.FocusChart.UpdateVideoDisplayMetrics(metrics.Fps, _localRealtimePipeline.CurrentDisplayedFrameCount));
+            view.FocusChart.BeginVideo(IsRealtimeArticulationEnabled);
+            UpdateLocalVideoReadout(view);
         }
 
         internal void ReleaseImageView(ViewCamera view)
@@ -1678,7 +1706,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _localRealtimePipeline.Stop(resetRealtime: true);
             _crossGuideProcessor.Stop();
             _crossGuideOverlayVisual.Detach();
-            _crossGuideOverlayVisual.Clear();
+            ClearCrossGuideStatus();
             _crossGuideOverlayAdded = false;
             if (_localVideoRoiVisual != null)
                 _localVideoRoiVisual.Attribute.PropertyChanged -= LocalVideoRoiVisual_PropertyChanged;
@@ -1707,6 +1735,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void DisposeCore()
         {
+            _localVideoTimer.Stop();
             _previewParameterUpdates.Dispose();
             Device.ConfigChanged -= Device_ConfigChanged;
             Device.PropertyChanged -= CameraPanel_PropertyChanged;
@@ -1725,7 +1754,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             SetLocalVideoPoiTemplateSupported(false);
             RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
             RemoveCrossGuideOverlay();
-            Device.DisplayConfig.CrossGuideStatus = string.Empty;
             _localRealtimePipeline.Stop(resetRealtime: true);
             ReleaseLocalVideoHandle();
 
@@ -1791,14 +1819,92 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Dispatcher.BeginInvoke(() =>
             {
                 if (IsDisposed || _sharedVideoActive) return;
+                if (_localVideoTimer.IsEnabled) SetLocalVideoStatus(null);
                 Device.DisplayConfig.IsLocalVideoOpen = false;
                 SetLocalVideoPoiTemplateSupported(false);
                 RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
                 RemoveCrossGuideOverlay();
-                Device.DisplayConfig.CrossGuideStatus = string.Empty;
                 EnsureTimedButtonOperations().RefreshIdleState(Actions.LocalVideoButton);
             });
         }
+
+        private void SetLocalVideoStatus(string? key)
+        {
+            LocalVideoStatus.Text = key == null ? string.Empty : EngineLocalization.Get(key);
+            LocalVideoStatus.Visibility = key == null ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void UpdateLocalVideoReadout(ViewCamera? view)
+        {
+            view?.FocusChart?.UpdateVideoDisplayMetrics(_localRealtimePipeline.CurrentMetrics.Fps, _localRealtimePipeline.CurrentDisplayedFrameCount);
+        }
+
+        private async void UpdateLocalVideoState(object? sender, EventArgs e)
+        {
+            if (IsDisposed || !DisplayCameraConfig.IsLocalVideoOpen) return;
+            UpdateLocalVideoReadout(Device.ExistingView);
+            if (!_sharedVideoActive || _isOpeningLocalVideo || _panelOperation != null) return;
+            var action = _localVideoWatchdog.Check(Environment.TickCount64, DisplayCameraConfig.ExpTime, out long lastFrameAt);
+            if (!_localVideoWatchdog.IsRecovering && LocalVideoStatus.Visibility == Visibility.Visible) SetLocalVideoStatus(null);
+            if (action == LocalVideoRecoveryAction.None || _localVideoWatchdog.HasNewFrame(lastFrameAt)) return;
+
+            _isOpeningLocalVideo = true;
+            RefreshPanelState();
+            try
+            {
+                if (action == LocalVideoRecoveryAction.Restart)
+                {
+                    SetLocalVideoStatus("CameraPanel_PreviewRecovering");
+                    bool restarted = await Task.Run(() =>
+                    {
+                        lock (_localVideoHandleSync)
+                        {
+                            var session = Device.LocalCameraSession;
+                            lock (session.SyncRoot)
+                            {
+                                if (IsDisposed || !_sharedVideoActive || _localVideoWatchdog.HasNewFrame(lastFrameAt)) return false;
+                                logger.Warn("本地视频未收到新帧，正在重新注册预览回调。");
+                                return session.TryRestartPreview(StopSharedVideoPreview, RegisterLocalVideoCallback);
+                            }
+                        }
+                    });
+                    if (restarted) _localVideoWatchdog.RestartCompleted(Environment.TickCount64);
+                    return;
+                }
+
+                if (!_localVideoWatchdog.HasNewFrame(lastFrameAt)) await EndStalledLocalVideoAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.Error("自动恢复本地视频失败", ex);
+                await EndStalledLocalVideoAsync();
+            }
+            finally
+            {
+                _isOpeningLocalVideo = false;
+                RefreshPanelState();
+            }
+        }
+
+        private async Task EndStalledLocalVideoAsync()
+        {
+            if (IsDisposed || !_sharedVideoActive) return;
+            logger.Warn("本地视频自动恢复失败，停止预览。");
+            StopLocalVideoDisplay();
+            await CloseLocalVideoInternalAsync();
+            if (!IsDisposed) SetLocalVideoStatus("CameraPanel_PreviewRecoveryFailed");
+        }
+
+        private void StopLocalVideoDisplay()
+        {
+            Device.DisplayConfig.IsLocalVideoOpen = false;
+            SetLocalVideoStatus(null);
+            SetLocalVideoPoiTemplateSupported(false);
+            RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
+            RemoveCrossGuideOverlay();
+            _localRealtimePipeline.Stop(resetRealtime: true);
+        }
+
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
@@ -1865,11 +1971,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         int QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
-            if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen || (_sharedLocalVideo && !_sharedVideoActive))
+            if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen || (_sharedLocalVideo && !_sharedVideoActive)
+                || pData == IntPtr.Zero || width <= 0 || height <= 0)
             {
                 return 0;
             }
 
+            if (_sharedLocalVideo) _localVideoWatchdog.MarkFrame(Environment.TickCount64);
             var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
             int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = sourceStride * height;
@@ -1885,6 +1993,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         cvCameraCSLib.QHYCCDProcCallBack callback;
 
+        private int RegisterLocalVideoCallback(IntPtr handle)
+        {
+            callback ??= QHYCCDProcCallBackFunction;
+            return cvCameraCSLib.CM_SetCallBack(handle, callback, IntPtr.Zero);
+        }
+
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
             if (IsDisposed || _panelOperation != null || _isOpeningLocalVideo || sender is not Button button) return;
@@ -1899,13 +2013,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 try
                 {
-                    Device.DisplayConfig.IsLocalVideoOpen = false;
-                    SetLocalVideoPoiTemplateSupported(false);
-                    RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
-                    RemoveCrossGuideOverlay();
-                    Device.DisplayConfig.CrossGuideStatus = string.Empty;
-                    _localRealtimePipeline.Stop(resetRealtime: true);
-
+                    StopLocalVideoDisplay();
                     (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync();
                 }
                 finally
@@ -1949,12 +2057,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 void StartPreview()
                 {
-                    Device.View.ClearFocusEvaluation();
+                    SetLocalVideoStatus(null);
                     button.Content = EngineLocalization.Get("CameraPanel_StopPreview");
                     ApplyLocalVideoRoiToRealtimeConfig();
-                    _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false, showOverlayMetrics: !Device.DisplayConfig.IsCrossGuideEnabled);
+                    StartRealtimeView(Device.View, preserveDisplayedFrameCount: false);
                     SetLocalVideoPoiTemplateSupported(true);
+                    if (_sharedLocalVideo) _localVideoWatchdog.Start(Environment.TickCount64);
                     Device.DisplayConfig.IsLocalVideoOpen = true;
+                    _localVideoTimer.Start();
                     RefreshLocalVideoRoiVisual(selectNewVisual: true);
                     RefreshCrossGuideOverlay();
                     localVideoOpened = true;
@@ -2033,8 +2143,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         if (code != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地视频设置增益失败", code);
                         return code;
                     });
-                    callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
-                    session.RegisterPreview(handle => cvCameraCSLib.CM_SetCallBack(handle, callback, IntPtr.Zero), StopSharedVideoPreview);
+                    session.RegisterPreview(RegisterLocalVideoCallback, StopSharedVideoPreview);
                     _sharedVideoActive = true;
                 }
                 return (true, string.Empty);
@@ -2140,8 +2249,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 logger.Error(error);
                 return (false, error.Message);
             }
-            callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
-            int callbackResult = cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
+            int callbackResult = RegisterLocalVideoCallback(m_hCamHandle);
             if (callbackResult != cvErrorDefine.CV_ERR_SUCCESS)
             {
                 var error = LocalCameraCaptureService.CreateNativeException("注册本地视频回调失败", callbackResult);

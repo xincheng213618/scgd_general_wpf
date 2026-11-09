@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates;
@@ -111,8 +112,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     Device = this, CameraParameters = BuildLocalCameraParameters(), SaveFiles = false, FlipMode = DisplayConfig.FlipMode
                 });
-                using (capture.Frame) PublishLocalPreview(capture.Frame, null, forceDisplay: true);
-                PublishFocusEvaluation(settings.Evaluation, result.Score);
+                using (capture.Frame) PublishLocalPreview(capture.Frame, null, forceDisplay: true, focusFrame: true);
                 return new { result.Position, result.Score, result.Samples, result.TotalTime, result.VidPosition };
             });
         }
@@ -120,25 +120,35 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default, bool showProgress = false)
         {
             Action<LocalAutoFocusFrame>? preview = showProgress ? source => PublishLocalFocusPreview(source, exposure, gain) : null;
-            if (showProgress) PublishFocusEvaluation(settings.Evaluation, null);
-            LocalAutoFocusResult result = LocalCameraSession.AutoFocus(settings, exposure, gain, stop, preview, (position, vid, score) =>
+            if (showProgress) DispatchFocusView(view => view.FocusChart.BeginAutoFocus(settings.Evaluation.ToString()));
+            try
             {
-                if (!score.HasValue) PublishLocalMotorPosition(position, vid);
-                if (showProgress && score.HasValue) PublishFocusEvaluation(settings.Evaluation, score.Value);
-            });
-            stop.ThrowIfCancellationRequested();
-            PublishLocalMotorPosition(result.Position, result.VidPosition);
-            return result;
+                LocalAutoFocusResult result = LocalCameraSession.AutoFocus(settings, exposure, gain, stop, preview, (position, vid, score) =>
+                {
+                    if (!score.HasValue) PublishLocalMotorPosition(position, vid);
+                    else if (showProgress) DispatchFocusView(view => view.FocusChart.AddAutoFocusSample(position, score.Value));
+                });
+                stop.ThrowIfCancellationRequested();
+                PublishLocalMotorPosition(result.Position, result.VidPosition);
+                if (showProgress) DispatchFocusView(view => view.FocusChart.CompleteAutoFocus(result));
+                return result;
+            }
+            catch
+            {
+                if (showProgress) DispatchFocusView(view => view.FocusChart.FailAutoFocus());
+                throw;
+            }
         }
 
-        private void PublishFocusEvaluation(EvaFunc evaluation, double? score)
+        private void DispatchFocusView(Action<ViewCamera> update)
         {
-            if (IsDisposed || ExistingView == null) return;
+            ViewCamera? view = ExistingView;
+            if (IsDisposed || view == null || !_view.IsVisible) return;
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (IsDisposed || ExistingView == null) return;
-                if (score.HasValue) ExistingView.ShowFocusEvaluation(evaluation.ToString(), score.Value);
-                else ExistingView.ClearFocusEvaluation();
+                if (IsDisposed || !_view.IsVisible || !ReferenceEquals(ExistingView, view)) return;
+                view.EnsureInitialized();
+                update(view);
             });
         }
 
@@ -156,7 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }, length, 0, LocalCameraSession.RawBufferPool);
             using (LocalFlowFrameLease lease = frame.Acquire()) Buffer.MemoryCopy(source.Pixels.ToPointer(), lease.RawPointer.ToPointer(), lease.RawLength, length);
             // Publish synchronously copies a frozen snapshot before the native evaluation releases its frame.
-            PublishLocalPreview(frame, null, forceDisplay: true);
+            PublishLocalPreview(frame, null, forceDisplay: true, focusFrame: true);
         }
 
         internal MsgRecord AutoExposeLocally(ParamBase template, CalibrationParam? calibration)

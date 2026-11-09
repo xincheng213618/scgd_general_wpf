@@ -38,8 +38,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
-                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-                    Save();
+                    if (window.Draft.DisplaySettingsChanged) ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+                    if (window.Draft.ServiceSettingsChanged) Save();
                 }
             });
 

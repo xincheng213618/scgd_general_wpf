@@ -1,6 +1,8 @@
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using System.IO;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
@@ -188,6 +190,103 @@ public sealed class CvFilePixelSafetyTests
         finally
         {
             File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CvcieThumbnailUsesEmbeddedXOnlyAfterValidatingTheCompletePayload(bool missingPlanes)
+    {
+        string basePath = Path.Combine(Path.GetTempPath(), $"CieThumbnail_{Guid.NewGuid():N}");
+        string ciePath = basePath + ".cvcie";
+        string rawPath = basePath + ".cvraw";
+        try
+        {
+            using CVCIEFile raw = new()
+            {
+                Version = 2, Cols = 2, Rows = 1, Bpp = 8, Channels = 1, FileExtType = CVType.Raw,
+                Exp = [1], Data = [0, 255],
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+            float[] samples = missingPlanes ? [2, 1] : [2, 1, 1, 2, 1, 2];
+            using CVCIEFile cie = new()
+            {
+                Version = 2, Cols = 2, Rows = 1, Bpp = 32, Channels = 3, FileExtType = CVType.CIE,
+                SrcFileName = Path.GetFileName(rawPath), Exp = [1, 1, 1], Data = samples.SelectMany(BitConverter.GetBytes).ToArray(),
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(ciePath, cie));
+
+            var provider = new CVRawThumbnailProvider();
+            BitmapSource? thumbnail = await WpfTestHost.Invoke(() => provider.GenerateThumbnailAsync(ciePath, 384));
+            if (missingPlanes)
+            {
+                Assert.Null(thumbnail);
+                return;
+            }
+
+            Assert.NotNull(thumbnail);
+            Assert.True(thumbnail.IsFrozen);
+            Assert.Equal(PixelFormats.Gray8, thumbnail.Format);
+            Assert.Equal((2, 1), (thumbnail.PixelWidth, thumbnail.PixelHeight));
+            byte[] pixels = new byte[2];
+            thumbnail.CopyPixels(pixels, 2, 0);
+            Assert.Equal(new byte[] { 255, 0 }, pixels);
+        }
+        finally
+        {
+            File.Delete(ciePath);
+            File.Delete(rawPath);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StrictPixelReadStopsBeforePublishingWhenCancelledOrLengthDoesNotMatch(bool extraPayload)
+    {
+        const int width = 256, height = 256, channels = 3;
+        int payloadBytes = width * height * channels * sizeof(float);
+        using CVCIEFile fixture = new()
+        {
+            Version = 2, Cols = width, Rows = height, Bpp = 32, Channels = channels, FileExtType = CVType.CIE,
+            Exp = [1, 1, 1], Data = new byte[payloadBytes + (extraPayload ? 1 : 0)],
+        };
+        Assert.True(CVFileUtil.WriteCIEFile(fixture, out byte[] bytes));
+        using var cancellation = new CancellationTokenSource();
+        using var stream = new CancelOnPayloadReadStream(bytes, cancellation);
+        int offset = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header);
+        using (header)
+        {
+            Assert.True(offset > 0);
+            stream.PayloadStart = offset + sizeof(long);
+            if (extraPayload)
+            {
+                Assert.False(CVFileUtil.ReadCIEFilePixels(stream, header, offset, requireExactPayload: true, cancellation.Token));
+                Assert.False(cancellation.IsCancellationRequested);
+                Assert.Equal(stream.PayloadStart, stream.Position);
+            }
+            else
+            {
+                OperationCanceledException error = Assert.Throws<OperationCanceledException>(() =>
+                    CVFileUtil.ReadCIEFilePixels(stream, header, offset, requireExactPayload: true, cancellation.Token));
+                Assert.Equal(cancellation.Token, error.CancellationToken);
+                Assert.InRange(stream.Position, stream.PayloadStart + 1, stream.Length - 1);
+            }
+            Assert.Null(header.Data);
+        }
+    }
+
+    private sealed class CancelOnPayloadReadStream(byte[] bytes, CancellationTokenSource cancellation) : MemoryStream(bytes, writable: false)
+    {
+        public long PayloadStart { get; set; } = long.MaxValue;
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            bool readingPixels = Position >= PayloadStart;
+            int read = base.Read(buffer, offset, count);
+            if (readingPixels && read > 0) cancellation.Cancel();
+            return read;
         }
     }
 

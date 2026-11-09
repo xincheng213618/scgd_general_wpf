@@ -16,6 +16,21 @@ internal static class LuxDeviceMeasurements
 {
     private static readonly ILog log = LogManager.GetLogger(typeof(LuxDeviceMeasurements));
 
+    internal static async Task<(bool Succeeded, ObjectiveTestItem Item)> MeasureVidResultAsync(CancellationToken cancellationToken)
+    {
+        var config = ProjectARVRProConfig.Instance;
+        double min = config.LuxVidMin, max = config.LuxVidMax;
+        double factor = config.LuxVidFix, offset = config.LuxVidB;
+        double? measured = await MeasureVidAsync(cancellationToken);
+        double value = measured.HasValue ? measured.Value * factor + offset : 0;
+        if (!double.IsFinite(value)) throw new InvalidOperationException("VID 结果不是有效数值。");
+
+        return (measured.HasValue, new ObjectiveTestItem
+        {
+            Name = "VID", Unit = "cd/m^2", Value = value, LowLimit = min, UpLimit = max
+        });
+    }
+
     internal static async Task<double?> MeasureVidAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

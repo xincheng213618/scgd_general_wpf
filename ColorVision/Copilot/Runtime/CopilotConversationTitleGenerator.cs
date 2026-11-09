@@ -82,7 +82,8 @@ namespace ColorVision.Copilot
 
             var profile = request.Profile.Clone();
             profile.UseSystemPromptOverride(SystemPrompt);
-            profile.MaxTokens = Math.Min(profile.MaxTokens, MaximumOutputTokens);
+            profile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(profile, MaximumOutputTokens);
+            CopilotReasoningCapabilities.UseLowClaudeEffort(profile);
             profile.Temperature = 0.2;
 
             CopilotCompletedReplyResult completion;

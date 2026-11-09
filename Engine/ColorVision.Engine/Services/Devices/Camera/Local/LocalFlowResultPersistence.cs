@@ -166,7 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 TotalTime = totalTime,
                 CreateDate = DateTime.Now
             };
-            // Preserve this execution's upstream measurement; live IVL must not infer it from row counts.
+            // Associate the result with the upstream measurement from this execution.
             if (action.Data.TryGetValue("SMUResult", out var value) && value is FlowEngineLib.SMUResultData { MasterId: > 0, MasterResultType: 200 } smu)
             {
                 model.SMUDataID = smu.MasterId;

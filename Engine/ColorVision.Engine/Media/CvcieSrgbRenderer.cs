@@ -1,12 +1,15 @@
 using ColorVision.FileIO;
+using Microsoft.Win32.SafeHandles;
 using System;
+using System.Buffers;
+using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -15,6 +18,10 @@ namespace ColorVision.Engine.Media
     internal static class CvcieSrgbRenderer
     {
         private const int ChunkSize = 65536;
+        private const int MaxFileWorkers = 16;
+        private const int SrgbBucketCount = 8192;
+        private const double SrgbLinearCutoff = 0.0031308;
+        private static readonly short[] SrgbBuckets = BuildSrgbBuckets();
 
         public static bool Supports(int channels, int bpp) => channels == 3 && (bpp == 32 || bpp == 64);
 
@@ -22,6 +29,41 @@ namespace ColorVision.Engine.Media
         {
             ArgumentNullException.ThrowIfNull(file);
             cancellationToken.ThrowIfCancellationRequested();
+            int pixelCount = ValidateRender(file, brightnessMode, referenceWhiteLuminance);
+            long expectedLength = GetXyzByteLength(pixelCount, file.Bpp);
+            byte[]? data = file.Data;
+            if (data == null || data.LongLength != expectedLength)
+                throw new InvalidOperationException($"CVCIE XYZ 数据长度不匹配：需要 {expectedLength} 字节，实际 {data?.LongLength ?? 0} 字节。请检查文件是否完整。");
+
+            return RenderCore(new XyzInput(data, null, 0), file, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken);
+        }
+
+        public static WriteableBitmap RenderFile(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            int offset = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 3);
+            using (header)
+            {
+                int prefixLength = header.Version == 2 ? sizeof(long) : sizeof(int);
+                if (offset <= 0 || !Supports(header.Channels, header.Bpp) || stream.Length - offset < prefixLength)
+                    throw new InvalidDataException($"读取 CVCIE 内嵌 XYZ 失败：{filePath}");
+                int pixelCount = ValidateRender(header, brightnessMode, referenceWhiteLuminance);
+                using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+                stream.Position = offset;
+                long declaredLength = header.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
+                long payloadStart = stream.Position;
+                if (declaredLength != GetXyzByteLength(pixelCount, header.Bpp) || declaredLength > stream.Length - payloadStart)
+                    throw new InvalidDataException($"CVCIE 内嵌 XYZ 数据长度不匹配：{filePath}");
+
+                // Keep the validated file open for both passes. Workers read independent ranges on the same handle.
+                return RenderCore(new XyzInput(null, stream.SafeFileHandle, payloadStart), header, pixelCount,
+                    brightnessMode, referenceWhiteLuminance, cancellationToken);
+            }
+        }
+
+        private static int ValidateRender(CVCIEFile file, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance)
+        {
             if (!Supports(file.Channels, file.Bpp))
                 throw new InvalidOperationException("XYZ 真彩显示仅支持三通道的 32 位或 64 位浮点 CVCIE 数据。");
             if (file.Cols <= 0 || file.Rows <= 0)
@@ -31,66 +73,56 @@ namespace ColorVision.Engine.Media
             if (brightnessMode == CvcieBrightnessMode.ReferenceWhite && (!double.IsFinite(referenceWhiteLuminance) || referenceWhiteLuminance <= 0))
                 throw new InvalidOperationException("CVCIE 真彩参考白亮度必须为大于 0 的有限数值。");
 
-            int pixelCount;
-            int planeBytes;
-            int expectedLength;
-            int stride;
-            int outputLength;
-            int bytesPerValue = file.Bpp / 8;
             try
             {
-                pixelCount = checked(file.Cols * file.Rows);
-                planeBytes = checked(pixelCount * bytesPerValue);
-                expectedLength = checked(planeBytes * 3);
-                stride = checked(file.Cols * 3);
-                outputLength = checked(stride * file.Rows);
+                int pixelCount = checked(file.Cols * file.Rows);
+                _ = checked(pixelCount * 3); // Bgr24 output must fit an int-sized image buffer.
+                return pixelCount;
             }
             catch (OverflowException ex)
             {
                 throw new InvalidOperationException("CVCIE 图像尺寸或数据长度过大，无法生成 XYZ 真彩显示。", ex);
             }
-
-            byte[]? data = file.Data;
-            if (data == null || data.Length != expectedLength)
-                throw new InvalidOperationException($"CVCIE XYZ 数据长度不匹配：需要 {expectedLength} 字节，实际 {data?.Length ?? 0} 字节。请检查文件是否完整。");
-
-            // One divisor for the whole image preserves the relative XYZ/linear RGB values.
-            // Measured XYZ already includes calibration: exposure and gain are not applied here.
-            byte[] pixels = file.Bpp == 32
-                ? RenderPixels<float>(data, pixelCount, outputLength, brightnessMode, referenceWhiteLuminance, cancellationToken)
-                : RenderPixels<double>(data, pixelCount, outputLength, brightnessMode, referenceWhiteLuminance, cancellationToken);
-
-            cancellationToken.ThrowIfCancellationRequested();
-            WriteableBitmap bitmap = new(file.Cols, file.Rows, 96, 96, PixelFormats.Bgr24, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, file.Cols, file.Rows), pixels, stride, 0);
-            bitmap.Freeze();
-            return bitmap;
         }
 
-        private static byte[] RenderPixels<T>(byte[] data, int pixelCount, int outputLength, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken)
+        private static long GetXyzByteLength(int pixelCount, int bpp) => (long)pixelCount * (bpp / 8) * 3;
+
+        private static WriteableBitmap RenderCore(XyzInput input, CVCIEFile file, int pixelCount,
+            CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken)
+        {
+            // One divisor for the whole image preserves the relative XYZ/linear RGB values.
+            // Measured XYZ already includes calibration: exposure and gain are not applied here.
+            return file.Bpp == 32
+                ? RenderBitmap<float>(input, file.Cols, file.Rows, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken)
+                : RenderBitmap<double>(input, file.Cols, file.Rows, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken);
+        }
+
+        private static WriteableBitmap RenderBitmap<T>(XyzInput input, int width, int height, int pixelCount,
+            CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken)
             where T : unmanaged, IFloatingPointIeee754<T>
         {
             int chunkCount = (pixelCount + ChunkSize - 1) / ChunkSize;
+            int workers = Math.Max(1, Environment.ProcessorCount / 2);
+            if (input.FileHandle != null) workers = Math.Min(workers, MaxFileWorkers);
             double divisor = referenceWhiteLuminance;
             if (brightnessMode == CvcieBrightnessMode.Auto)
             {
                 double[] maxima = new double[chunkCount];
-                RunChunks(chunkCount, pixelCount, cancellationToken, chunk =>
-                    maxima[chunk] = ConvertChunk<T>(data, pixelCount, chunk, null, 1));
+                RunChunks(chunkCount, pixelCount, workers, cancellationToken, chunk =>
+                    maxima[chunk] = FindChunkMaximum<T>(input, pixelCount, chunk, cancellationToken));
                 double maximum = 0;
                 foreach (double value in maxima) maximum = Math.Max(maximum, value);
                 divisor = maximum > 0 ? maximum : 1;
             }
 
-            byte[] pixels = new byte[outputLength];
-            RunChunks(chunkCount, pixelCount, cancellationToken, chunk =>
-                ConvertChunk<T>(data, pixelCount, chunk, pixels, divisor));
-            return pixels;
+            return MediaHelper.CreateFrozenDisplayBitmap(width, height, PixelFormats.Bgr24, (buffer, stride) =>
+                RunChunks(chunkCount, pixelCount, workers, cancellationToken,
+                    chunk => WriteChunk<T>(input, pixelCount, chunk, buffer, width, stride, divisor, cancellationToken)), cancellationToken);
         }
 
-        private static void RunChunks(int chunkCount, int pixelCount, CancellationToken cancellationToken, Action<int> action)
+        private static void RunChunks(int chunkCount, int pixelCount, int workers, CancellationToken cancellationToken, Action<int> action)
         {
-            if (pixelCount < 1024 * 1024 || Environment.ProcessorCount < 2)
+            if (pixelCount < 1024 * 1024 || workers == 1)
             {
                 for (int chunk = 0; chunk < chunkCount; chunk++)
                 {
@@ -106,7 +138,7 @@ namespace ColorVision.Engine.Media
                 Parallel.For(0, chunkCount, new ParallelOptions
                 {
                     CancellationToken = cancellationToken,
-                    MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
+                    MaxDegreeOfParallelism = workers,
                 }, action);
             }
             catch (AggregateException ex)
@@ -117,37 +149,114 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private static double ConvertChunk<T>(byte[] data, int pixelCount, int chunk, byte[]? pixels, double divisor)
+        private static double FindChunkMaximum<T>(XyzInput input, int pixelCount, int chunk, CancellationToken token)
             where T : unmanaged, IFloatingPointIeee754<T>
         {
-            ReadOnlySpan<T> planes = MemoryMarshal.Cast<byte, T>(data.AsSpan());
-            ReadOnlySpan<T> xPlane = planes[..pixelCount];
-            ReadOnlySpan<T> yPlane = planes.Slice(pixelCount, pixelCount);
-            ReadOnlySpan<T> zPlane = planes.Slice(pixelCount * 2, pixelCount);
             int start = chunk * ChunkSize;
-            int end = Math.Min(start + ChunkSize, pixelCount);
+            using var planes = new XyzChunk<T>(input, pixelCount, start, token);
             double maximum = 0;
-            for (int pixelIndex = start; pixelIndex < end; pixelIndex++)
+            for (int index = 0; index < planes.X.Length; index++)
             {
-                var (red, green, blue) = ToLinearRgb(double.CreateChecked(xPlane[pixelIndex]), double.CreateChecked(yPlane[pixelIndex]), double.CreateChecked(zPlane[pixelIndex]), pixelIndex);
-                if (pixels == null)
-                {
-                    maximum = Math.Max(maximum, Math.Max(red, Math.Max(green, blue)));
-                }
-                else
-                {
-                    int offset = pixelIndex * 3;
-                    pixels[offset] = EncodeSrgb(blue / divisor);
-                    pixels[offset + 1] = EncodeSrgb(green / divisor);
-                    pixels[offset + 2] = EncodeSrgb(red / divisor);
-                }
+                var (red, green, blue) = ToLinearRgb(planes.X[index], planes.Y[index], planes.Z[index], start + index);
+                maximum = Math.Max(maximum, Math.Max(red, Math.Max(green, blue)));
             }
             return maximum;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (double Red, double Green, double Blue) ToLinearRgb(double x, double y, double z, int pixelIndex)
+        private static unsafe void WriteChunk<T>(XyzInput input, int pixelCount, int chunk, IntPtr buffer, int width, int stride, double divisor, CancellationToken token)
+            where T : unmanaged, IFloatingPointIeee754<T>
         {
+            int start = chunk * ChunkSize;
+            using var planes = new XyzChunk<T>(input, pixelCount, start, token);
+            int end = start + planes.X.Length;
+            for (int index = start; index < end;)
+            {
+                int row = Math.DivRem(index, width, out int column);
+                int count = Math.Min(width - column, end - index);
+                Span<byte> pixels = new((byte*)buffer + (long)row * stride + column * 3, count * 3);
+                for (int x = 0; x < count; x++)
+                {
+                    int local = index + x - start;
+                    var (red, green, blue) = ToLinearRgb(planes.X[local], planes.Y[local], planes.Z[local], index + x);
+                    int offset = x * 3;
+                    pixels[offset] = EncodeSrgb(blue / divisor);
+                    pixels[offset + 1] = EncodeSrgb(green / divisor);
+                    pixels[offset + 2] = EncodeSrgb(red / divisor);
+                }
+                index += count;
+            }
+        }
+
+        private readonly record struct XyzInput(byte[]? Data, SafeFileHandle? FileHandle, long PayloadOffset);
+
+        private readonly ref struct XyzChunk<T> where T : unmanaged
+        {
+            private readonly byte[]? _rented;
+            public ReadOnlySpan<T> X { get; }
+            public ReadOnlySpan<T> Y { get; }
+            public ReadOnlySpan<T> Z { get; }
+
+            public XyzChunk(XyzInput input, int pixelCount, int start, CancellationToken token)
+            {
+                int count = Math.Min(ChunkSize, pixelCount - start);
+                if (input.Data is byte[] data)
+                {
+                    ReadOnlySpan<T> planes = MemoryMarshal.Cast<byte, T>(data);
+                    X = planes.Slice(start, count);
+                    Y = planes.Slice(pixelCount + start, count);
+                    Z = planes.Slice(2 * pixelCount + start, count);
+                    return;
+                }
+
+                int bytesPerValue = Unsafe.SizeOf<T>();
+                int bytesPerChunkPlane = count * bytesPerValue;
+                long planeStride = (long)pixelCount * bytesPerValue;
+                long offset = input.PayloadOffset + (long)start * bytesPerValue;
+                byte[] rented = ArrayPool<byte>.Shared.Rent(3 * bytesPerChunkPlane);
+                try
+                {
+                    Span<byte> bytes = rented.AsSpan(0, 3 * bytesPerChunkPlane);
+                    for (int channel = 0; channel < 3; channel++)
+                        ReadExactly(input.FileHandle!, bytes.Slice(channel * bytesPerChunkPlane, bytesPerChunkPlane), offset + channel * planeStride, token);
+
+                    ReadOnlySpan<T> planes = MemoryMarshal.Cast<byte, T>(bytes);
+                    X = planes[..count];
+                    Y = planes.Slice(count, count);
+                    Z = planes.Slice(2 * count, count);
+                    _rented = rented;
+                }
+                catch
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                    throw;
+                }
+            }
+
+            private static void ReadExactly(SafeFileHandle handle, Span<byte> destination, long offset, CancellationToken token)
+            {
+                while (!destination.IsEmpty)
+                {
+                    token.ThrowIfCancellationRequested();
+                    int read = RandomAccess.Read(handle, destination, offset);
+                    if (read == 0) throw new EndOfStreamException("CVCIE 内嵌 XYZ 数据提前结束。");
+                    destination = destination[read..];
+                    offset += read;
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_rented != null) ArrayPool<byte>.Shared.Return(_rented);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (double Red, double Green, double Blue) ToLinearRgb<T>(T sampleX, T sampleY, T sampleZ, int pixelIndex)
+            where T : unmanaged, IFloatingPointIeee754<T>
+        {
+            double x = double.CreateChecked(sampleX);
+            double y = double.CreateChecked(sampleY);
+            double z = double.CreateChecked(sampleZ);
             if (!double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(z))
                 throw new InvalidOperationException($"CVCIE 第 {pixelIndex + 1} 个像素的 XYZ 包含 NaN 或无穷值，无法生成真彩显示。请检查校正结果和文件数据。");
 
@@ -160,10 +269,33 @@ namespace ColorVision.Engine.Media
             return (red, green, blue);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte EncodeSrgb(double linear)
         {
             double clamped = Math.Clamp(linear, 0, 1);
-            double encoded = clamped <= 0.0031308 ? 12.92 * clamped : 1.055 * Math.Pow(clamped, 1 / 2.4) - 0.055;
+            short code = SrgbBuckets[(int)(clamped * SrgbBucketCount)];
+            return code >= 0 ? (byte)code : QuantizeSrgb(clamped);
+        }
+
+        private static short[] BuildSrgbBuckets()
+        {
+            var buckets = new short[SrgbBucketCount + 1];
+            int cutoffBucket = (int)(SrgbLinearCutoff * SrgbBucketCount);
+            for (int bucket = 0; bucket < SrgbBucketCount; bucket++)
+            {
+                // Include a neighboring interval on each side to stay clear of rounding boundaries.
+                // The bucket crossing the piecewise cutoff always uses the original transfer function.
+                byte lower = QuantizeSrgb((double)Math.Max(0, bucket - 1) / SrgbBucketCount);
+                byte upper = QuantizeSrgb((double)Math.Min(SrgbBucketCount, bucket + 2) / SrgbBucketCount);
+                buckets[bucket] = bucket != cutoffBucket && lower == upper ? lower : (short)-1;
+            }
+            buckets[SrgbBucketCount] = byte.MaxValue;
+            return buckets;
+        }
+
+        private static byte QuantizeSrgb(double clamped)
+        {
+            double encoded = clamped <= SrgbLinearCutoff ? 12.92 * clamped : 1.055 * Math.Pow(clamped, 1 / 2.4) - 0.055;
             return (byte)Math.Round(Math.Clamp(encoded, 0, 1) * 255);
         }
     }

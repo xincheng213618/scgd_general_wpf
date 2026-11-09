@@ -96,6 +96,46 @@ public sealed class FlowAnalysisLoadingTests : IDisposable
         });
     }
 
+    [Fact]
+    public void NavigationSummariesPreserveLegacyTimesAndBatchSerialOrdering()
+    {
+        string path = Path.Combine(_directory, "navigation.db");
+        using (var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = $"Data Source={path};Pooling=False", DbType = DbType.Sqlite, IsAutoCloseConnection = false }))
+        {
+            db.Ado.ExecuteCommand("""
+                CREATE TABLE FlowNodeRecord (id INTEGER PRIMARY KEY, batch_id INTEGER, serial_number TEXT,
+                    node_id TEXT, start_time TEXT, elapsed_ms INTEGER);
+                INSERT INTO FlowNodeRecord VALUES
+                    (1, 100, 'sn', 'node', '2026-10-03 08:00:00', 0),
+                    (2, 101, 'sn', 'node', '2026-10-03 08:00:00.0000002', 0),
+                    (3, 101, 'sn', 'node', '2026-10-03 08:00:00.0000001', 0),
+                    (4, 101, 'SN', 'node', '2026-10-03 08:00:00.0000001', 0),
+                    (5, 101, NULL, 'node', '2026-10-03 08:01:00', 0),
+                    (6, 101, '　', 'node', '2026-10-03 08:00:00', 0),
+                    (7, 102, 'sn', 'node', '2026-10-03 09:00:00', 0),
+                    (8, 102, 'sn', 'node', '2026-10-03T09:01:00+14:00', 0),
+                    (9, 102, 'quoted''sn', 'node', '2026-10-03 09:02:00', 0);
+                """);
+        }
+
+        byte[] before = File.ReadAllBytes(path);
+        var source = new FlowAnalysisDataSource(path);
+        var recent = FlowExecutionAnalysisWindow.BuildFlowRunOrder(source.GetRecentRunSummaries(2, default));
+        var rows = source.GetByRun(101, null).Concat(source.GetByRun(102, null)).ToArray();
+        var expected = rows.GroupBy(row => (row.BatchId, Serial: string.IsNullOrWhiteSpace(row.SerialNumber) ? "" : row.SerialNumber))
+            .OrderBy(run => run.Min(row => row.StartTime)).ThenBy(run => run.Min(row => row.Id))
+            .Select(run => new FlowRunNavigationItem(run.Key.BatchId, run.Key.Serial, run.Min(row => row.StartTime)));
+
+        Assert.Equal(expected, recent);
+        var bySerial = source.GetRunSummariesBySerialNumbers(["sn", "sn", "quoted'sn", "　"], default);
+        Assert.Equal(new[] { "quoted'sn", "sn" }, bySerial.Select(row => row.SerialNumber).Distinct().Order(StringComparer.Ordinal));
+        var sameFlow = FlowExecutionAnalysisWindow.BuildSameFlowRunOrder(
+            [new FlowRunRecord { SerialNumber = "sn", CompletedTime = new DateTime(2026, 10, 4) }], bySerial);
+        var latest = expected.Where(run => run.SerialNumber == "sn").OrderByDescending(run => run.ExecutedTime).First();
+        Assert.Equal(latest.BatchId, Assert.Single(sameFlow).BatchId);
+        Assert.Equal(before, File.ReadAllBytes(path));
+    }
+
     private string CreateDatabase()
     {
         string path = Path.Combine(_directory, "analysis.db");

@@ -402,10 +402,20 @@ public class LocalCameraSessionTests
         native.Events.Clear();
 
         session.StopPreview(first, closeCamera: true);
+        Assert.False(session.TryRestartPreview(first, _ => throw new Xunit.Sdk.XunitException("Previous owner must not restart preview.")));
         Assert.Equal(1, firstStops);
         Assert.Equal(0, secondStops);
         Assert.Empty(native.Events);
         Assert.True(session.IsOpen);
+        Assert.True(session.TryRestartPreview(second, handle =>
+        {
+            Assert.Equal(session.Handle, handle);
+            native.Events.Add("restart");
+            return cvErrorDefine.CV_ERR_SUCCESS;
+        }));
+        Assert.Equal(new[] { "restart" }, native.Events);
+        Assert.Equal(0, secondStops);
+        native.Events.Clear();
         session.StopPreview(second, closeCamera: false);
         Assert.Equal(1, secondStops);
         Assert.Equal(new[] { "detach" }, native.Events);

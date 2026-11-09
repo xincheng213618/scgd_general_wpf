@@ -135,7 +135,18 @@ namespace ColorVision.Scheduler
         public bool HasScheduleCheckpoint { get; set; }
         public long ScheduledFireCount { get; set; }
         public bool ScheduleCompleted { get; set; }
-        public DateTimeOffset? NextScheduledFireTimeUtc { get; set; }
+        public DateTimeOffset? NextScheduledFireTimeUtc
+        {
+            get => _nextScheduledFireTimeUtc;
+            set
+            {
+                if (_nextScheduledFireTimeUtc == value)
+                    return;
+                _nextScheduledFireTimeUtc = value;
+                OnPropertyChanged();
+            }
+        }
+        private DateTimeOffset? _nextScheduledFireTimeUtc;
 
         // Phase 3: 新增功能字段
         

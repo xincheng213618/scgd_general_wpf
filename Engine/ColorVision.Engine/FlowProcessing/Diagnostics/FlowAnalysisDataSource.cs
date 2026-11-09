@@ -3,6 +3,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics;
 
@@ -36,27 +37,29 @@ internal sealed class FlowAnalysisDataSource
     internal List<FlowNodeRecord> GetByRun(int batchId, string? serialNumber) => Read<FlowNodeRecord>(
         q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderBy(x => x.StartTime),
         () => FlowNodeRecordDataBaseHelper.GetByRun(batchId, serialNumber));
-    internal List<FlowNodeRecord> GetByBatchIds(List<int> ids) => Read<FlowNodeRecord>(
-        q => q.Where(x => ids.Contains(x.BatchId)).OrderBy(x => x.StartTime), () => FlowNodeRecordDataBaseHelper.GetByBatchIds(ids));
-    internal List<FlowNodeRecord> GetBySerialNumbers(IEnumerable<string> serialNumbers)
-    {
-        string[] serials = serialNumbers.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToArray();
-        if (serials.Length == 0) return [];
-        return Read<FlowNodeRecord>(q => q.Where(x => serials.Contains(x.SerialNumber)).OrderBy(x => x.StartTime),
-            () => FlowNodeRecordDataBaseHelper.GetBySerialNumbers(serials));
-    }
     internal FlowNodeRecord? GetLatestRecord() => Read<FlowNodeRecord>(
         q => q.OrderByDescending(x => x.StartTime).Take(1), () => One(FlowNodeRecordDataBaseHelper.GetLatestRecord())).FirstOrDefault();
     internal FlowNodeRecord? GetLastByNodeId(string nodeId) => _database == null
         ? FlowNodeRecordDataBaseHelper.GetLastByNodeId(nodeId) : GetByNodeId(nodeId, 1).FirstOrDefault();
     internal List<FlowNodeRecord> GetByNodeId(string nodeId, int limit) => Read<FlowNodeRecord>(
         q => q.Where(x => x.NodeId == nodeId).OrderByDescending(x => x.StartTime).Take(limit), () => FlowNodeRecordDataBaseHelper.GetByNodeId(nodeId, limit));
-    internal List<int> GetDistinctBatchIds(int limit)
+    internal List<FlowRunNavigationSummary> GetRecentRunSummaries(int batchLimit, CancellationToken cancellationToken)
+        => ReadRunNavigation(db => FlowRunNavigationReader.ReadRecent(db, batchLimit, cancellationToken));
+
+    internal List<FlowRunNavigationSummary> GetRunSummariesBySerialNumbers(IEnumerable<string> serialNumbers, CancellationToken cancellationToken)
     {
-        if (_database == null) return FlowNodeRecordDataBaseHelper.GetDistinctBatchIds(limit);
-        using var db = _database.OpenClient();
-        return _database.Query<FlowNodeRecord>(db).GroupBy(x => x.BatchId).OrderByDescending(x => x.BatchId).Select(x => x.BatchId).Take(limit).ToList();
+        string[] serials = serialNumbers.Where(serial => !string.IsNullOrWhiteSpace(serial)).Distinct(StringComparer.Ordinal).ToArray();
+        return serials.Length == 0 ? [] : ReadRunNavigation(db => FlowRunNavigationReader.ReadBySerials(db, serials, cancellationToken));
     }
+
+    private List<FlowRunNavigationSummary> ReadRunNavigation(Func<SqlSugarClient, List<FlowRunNavigationSummary>> read)
+    {
+        if (_database == null)
+            return FlowNodeRecordDataBaseHelper.ReadRunNavigation(read);
+        using var db = _database.OpenClient();
+        return read(db);
+    }
+
     internal List<FlowNodeMessage> GetMessagesByRun(int batchId, string? serialNumber) => Read<FlowNodeMessage>(
         q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderBy(x => x.SendTime),
         () => FlowNodeRecordDataBaseHelper.GetMessagesByRun(batchId, serialNumber));

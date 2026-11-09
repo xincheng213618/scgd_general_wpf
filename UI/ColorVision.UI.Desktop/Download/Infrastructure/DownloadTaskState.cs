@@ -8,6 +8,7 @@ namespace ColorVision.UI.Desktop.Download
         private long _version;
         private DownloadStatus _desiredStatus;
         private bool _deleted;
+        private bool _terminalReported;
         private readonly List<CancellationTokenSource> _sources = new();
         private CancellationTokenSource? _current;
         private readonly Dictionary<string, Newtonsoft.Json.Linq.JObject?> _statuses = new();
@@ -31,6 +32,7 @@ namespace ColorVision.UI.Desktop.Download
                 _current = CancellationTokenSource.CreateLinkedTokenSource(lifetime);
                 _sources.Add(_current);
                 _desiredStatus = DownloadStatus.Waiting;
+                _terminalReported = false;
                 return (++_version, _current.Token);
             }
         }
@@ -72,6 +74,18 @@ namespace ColorVision.UI.Desktop.Download
             {
                 if (!IsRunning(version)) return false;
                 _desiredStatus = status;
+                _terminalReported = true;
+                return true;
+            }
+        }
+
+        // A deleted task can no longer finish, so its waiting caller is told exactly once unless it already finished.
+        public bool TakeDeletedNotification()
+        {
+            lock (_sync)
+            {
+                if (!_deleted || _terminalReported) return false;
+                _terminalReported = true;
                 return true;
             }
         }

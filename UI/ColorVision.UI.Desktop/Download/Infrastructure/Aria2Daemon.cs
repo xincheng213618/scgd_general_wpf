@@ -150,7 +150,7 @@ namespace ColorVision.UI.Desktop.Download
 
         private static string BuildArguments(int port, string rpcSecret, DownloadManagerConfig config, bool disableSystemProxy)
         {
-            string args = $"--no-conf --enable-rpc --rpc-listen-port={port} --rpc-secret={rpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=false --summary-interval=0 --console-log-level=warn -j {config.MaxConcurrentTasks}" +
+            string args = $"--no-conf --enable-rpc --rpc-listen-port={port} --rpc-secret={rpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=false --summary-interval=0 --console-log-level=warn --file-allocation=none --retry-wait=3 -j {config.MaxConcurrentTasks}" +
                 $" --enable-dht=true --bt-enable-lpd=true --enable-peer-exchange=true --follow-torrent=mem --seed-time=0 --bt-save-metadata=true --stop-with-process={Environment.ProcessId}";
 
             if (disableSystemProxy)

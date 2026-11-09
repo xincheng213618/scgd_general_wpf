@@ -14,25 +14,9 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 
 	private Algorithm2Type _Algorithm;
 
-	private int _BufferLen;
-
 	private bool _IsAdd;
 
 	private STNodeEditText<Algorithm2Type> m_ctrl_editText;
-
-	[STNodeProperty("参数模板", "参数模板", true)]
-	public string TempName
-	{
-		get
-		{
-			return _TempName;
-		}
-		set
-		{
-			setTempName(value);
-			OnPropertyChanged();
-		}
-	}
 
 	[STNodeProperty("算子", "算子", true)]
 	public Algorithm2Type Algorithm
@@ -49,16 +33,16 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		}
 	}
 
-	[STNodeProperty("缓存大小", "缓存大小", true)]
-	public int BufferLen
+	[STNodeProperty("参数模板", "参数模板", true)]
+	public string TempName
 	{
 		get
 		{
-			return _BufferLen;
+			return _TempName;
 		}
 		set
 		{
-			_BufferLen = value;
+			setTempName(value);
 			OnPropertyChanged();
 		}
 	}
@@ -80,8 +64,8 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 	public Algorithm2InNode()
 		: base("AI算法2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
-		operatorCode = "OLED.JND.CalVas";
-		_Algorithm = Algorithm2Type.JND;
+		operatorCode = "MTF";
+		_Algorithm = Algorithm2Type.MTF;
 		_TempName = "";
 		_TempId = -1;
 		m_in_text = "IN_IMG";
@@ -90,7 +74,6 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		base.Height += 25;
 		_IsAdd = false;
 		_OrderIndex = -1;
-		_BufferLen = 1024;
 	}
 
 	protected override void OnCreate()
@@ -108,12 +91,6 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		{
 		case Algorithm2Type.MTF:
 			operatorCode = "MTF";
-			break;
-		case Algorithm2Type.灯带检测:
-			operatorCode = "LEDStripDetection";
-			break;
-		case Algorithm2Type.JND:
-			operatorCode = "OLED.JND.CalVas";
 			break;
 		case Algorithm2Type.SFR:
 			operatorCode = "SFR";
@@ -133,10 +110,10 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		if (!System.Enum.IsDefined(_Algorithm))
+		if (string.IsNullOrEmpty(operatorCode))
 			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		Algorithm2InParam algorithm2InParam = new Algorithm2InParam(_IsAdd, -1, _OrderIndex, _BufferLen);
+		Algorithm2InParam algorithm2InParam = new Algorithm2InParam(_IsAdd, -1, _OrderIndex, bufferLen: 1024);
 		getPreStepParam(0, algorithm2InParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		algorithm2InParam.POI_MasterId = algorithmPreStepParam.MasterId;

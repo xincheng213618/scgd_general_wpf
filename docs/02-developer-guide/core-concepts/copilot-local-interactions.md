@@ -125,6 +125,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 Markdown 保留代码字面语义与复制内容：围栏优先于公式/表格，正确处理同字符闭合、缩进、空块和未闭合块；行内代码需同长度反引号配对，不解析内部公式/链接，转义竖线不当表格边界。公式支持常用行内/块分隔符，失败回退文本，显示不代表数学验证。语法细节与复制边界直接查 `CopilotMarkdownViewTests`、`CopilotMarkdownTableBoundaryTests`。
 
+流式回答不能每次更新都重建全文：3 万字符时单次重建和布局约 265ms，超过 100ms 的刷新间隔，UI 线程会一直被占满。因此 `CopilotMarkdownView` 只重建最后一个稳定边界之后的块；代码块和公式之外已结束的空行不携带解析状态，之前的块也不依赖其后文本，所以前缀不变时复用已完成的块及其选区和代码视口。内容被改写、宽度变化或换了消息时仍整篇重建。查看器关闭撤销，否则从已挂载文档移除块时 WPF 会序列化被删元素，公式控件会因此抛异常。刷新间隔随渲染耗时在 100ms 到 1s 间调整，单个超长代码块也不会占满 UI 线程。等价性由 `CopilotMarkdownRenderSchedulingTests` 逐字符对比整篇重建来保证。
+
 渲染合并连续更新但不因每片新文本无限推迟；宽度变化可重排，流式更新/同正文重排尽量保留可核对选区，歧义不猜。消息容器换消息清掉旧正文/代码选择与滚动，即使正文相同；同消息重载可保留。代码焦点仅在原控件仍持焦点且窗口活动时恢复，不从输入框抢焦点。渲染仍在 UI 线程，合并间隔不是繁忙 UI 延迟保证。定位 `CopilotMarkdownRenderSchedulingTests`。
 
 桌宠启用集成后只从 TaskHost/confirmation store 投影有界多会话活动，优先级 `NeedsInput → Blocked → Ready → Running`；打开 Ready/Blocked 消除待查看，NeedsInput 不因打开而消失，取消队列不覆盖活动导航目标。批准卡先显示原生完整确认并重查上下文，图标不授予执行权；投影不改变调度/审批/恢复。启用与素材见[桌面宠物](../../04-api-reference/ui-components/desktop-pet.md)。

@@ -19,6 +19,15 @@ def check_web_session_auth() -> bool:
     )
 
 
+def is_configured_admin_session(username: str) -> bool:
+    return bool(
+        username
+        and check_web_session_auth()
+        and session.get("user_id") is None
+        and session.get("username") == username
+    )
+
+
 def require_web_auth(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):

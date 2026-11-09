@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
@@ -72,6 +73,8 @@ namespace ColorVision.Solution
             }
             catch (Exception ex)
             {
+                if (cancellation.IsCancellationRequested || version != _searchVersion)
+                    return;
                 SearchStatusText.Text = LocalizedText.Format($"搜索失败：{ex.Message}");
                 SearchStatusText.Visibility = Visibility.Visible;
             }
@@ -180,6 +183,8 @@ namespace ColorVision.Solution
         {
             if (!_isClearingSearchForReveal)
                 CancelPendingReveal();
+            if (!string.IsNullOrWhiteSpace(SearchBar1?.Text))
+                CancelPendingSearch();
             SearchBar1TextChanged();
         }
 
@@ -189,43 +194,64 @@ namespace ColorVision.Solution
                 current.IsExpanded = true;
         }
 
-        private void BringNodeIntoView(SolutionNode node)
+        internal void BringNodeIntoView(SolutionNode node)
         {
             var path = new Stack<SolutionNode>();
             for (SolutionNode? current = node; current != null; current = current.Parent)
                 path.Push(current);
 
-            ItemsControl parent = SolutionTreeView;
-            TreeViewItem? container = null;
-            SolutionTreeView.UpdateLayout();
-            while (path.Count > 0)
-            {
-                SolutionNode pathNode = path.Pop();
-                container = parent.ItemContainerGenerator.ContainerFromItem(pathNode) as TreeViewItem;
-                if (container == null)
-                {
-                    parent.UpdateLayout();
-                    container = parent.ItemContainerGenerator.ContainerFromItem(pathNode) as TreeViewItem;
-                }
-                if (container == null)
-                    return;
-
-                if (path.Count > 0)
-                    container.IsExpanded = true;
-                parent = container;
-            }
-
-            if (container == null)
-                return;
             _allowProgrammaticBringIntoView = true;
             try
             {
-                container.BringIntoView();
+                ItemsControl parent = SolutionTreeView;
+                SolutionTreeView.UpdateLayout();
+                while (path.TryPop(out SolutionNode? pathNode))
+                {
+                    TreeViewItem? container = GetOrRealizeContainer(parent, pathNode);
+                    if (container == null)
+                        return;
+
+                    if (path.Count == 0)
+                        container.BringIntoView();
+                    else
+                        container.SetCurrentValue(TreeViewItem.IsExpandedProperty, true);
+                    parent = container;
+                }
             }
             finally
             {
                 _allowProgrammaticBringIntoView = false;
             }
+        }
+
+        private static TreeViewItem? GetOrRealizeContainer(ItemsControl owner, SolutionNode node)
+        {
+            if (owner.ItemContainerGenerator.ContainerFromItem(node) is TreeViewItem container)
+                return container;
+
+            owner.UpdateLayout();
+            if (owner.ItemContainerGenerator.ContainerFromItem(node) is TreeViewItem realized)
+                return realized;
+
+            int index = owner.Items.IndexOf(node);
+            if (index < 0 || FindItemsHost(owner) is not { } panel)
+                return null;
+
+            panel.BringIndexIntoViewPublic(index);
+            return owner.ItemContainerGenerator.ContainerFromIndex(index) as TreeViewItem;
+        }
+
+        private static VirtualizingStackPanel? FindItemsHost(DependencyObject parent)
+        {
+            for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+                if (child is VirtualizingStackPanel { IsItemsHost: true } panel)
+                    return panel;
+                if (child is not ItemsControl && FindItemsHost(child) is { } nestedPanel)
+                    return nestedPanel;
+            }
+            return null;
         }
 
         private void TreeViewItem_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)

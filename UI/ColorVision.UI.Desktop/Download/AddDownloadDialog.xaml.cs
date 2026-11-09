@@ -6,7 +6,6 @@ namespace ColorVision.UI.Desktop.Download
 {
     public partial class AddDownloadDialog : Window
     {
-        public string DownloadUrl => UrlTextBox.Text?.Trim() ?? string.Empty;
         public string SaveDirectory => SaveDirTextBox.Text?.Trim() ?? string.Empty;
         public string UserName => UserNameTextBox.Text?.Trim() ?? string.Empty;
         public string Password => PasswordTextBox.Password?.Trim() ?? string.Empty;

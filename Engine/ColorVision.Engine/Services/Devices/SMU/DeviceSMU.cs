@@ -152,9 +152,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 var window = new EditSMU(Config, DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 if (window.ShowDialog() == true)
                 {
-                    // Local preferences remain usable even if saving the service configuration fails.
-                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-                    Save();
+                    if (window.Draft.DisplaySettingsChanged) ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+                    if (window.Draft.ServiceSettingsChanged) Save();
                 }
             });
 

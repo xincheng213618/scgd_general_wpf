@@ -158,15 +158,10 @@
     </Window.Resources>
     <Grid Margin="24,18,24,16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <StackPanel Margin="0,0,0,20">
-            <TextBlock Text="{x:Static properties:Resources.DisplayControlsTitle}" FontSize="22" FontWeight="SemiBold" />
-            <TextBlock Text="{x:Static properties:Resources.DisplayControlsDescription}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,6,0,0" />
-        </StackPanel>
-        <Border Grid.Row="1" BorderBrush="{DynamicResource CV.Border.Control}" BorderThickness="1" CornerRadius="8">
+        <Border BorderBrush="{DynamicResource CV.Border.Control}" BorderThickness="1" CornerRadius="8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="194" />
@@ -278,7 +273,7 @@
                 </Grid>
             </Grid>
         </Border>
-        <Grid Grid.Row="2" Margin="0,16,0,0">
+        <Grid Grid.Row="1" Margin="0,16,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <TextBlock Text="{x:Static properties:Resources.DisplayControlVisibilityHint}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,20,0" />
             <Button Grid.Column="1" MinWidth="84" Height="32" Padding="16,4" IsCancel="True" Content="{x:Static properties:Resources.Close}" />

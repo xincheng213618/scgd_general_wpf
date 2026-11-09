@@ -562,7 +562,7 @@ namespace ColorVision.Copilot
                 agentDefaults).MaximumContentCharacters;
             var compactProfile = profile.Clone();
             compactProfile.UseSystemPromptOverride(CopilotConversationCompactionPrompt.SystemPrompt);
-            compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
+            compactProfile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(compactProfile, CompactSummaryOutputTokens);
             compactProfile.Temperature = 0.1;
 
             var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(
@@ -572,8 +572,8 @@ namespace ColorVision.Copilot
                 compactProfile,
                 compactionConfig,
                 agentDefaults);
-            compactProfile.MaxTokens = Math.Min(
-                compactProfile.MaxTokens,
+            compactProfile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(
+                compactProfile,
                 ResolveCompactSummaryOutputTokens(summaryMaximumWeight));
             CopilotConversationCompactionPlan compactionPlan;
             try

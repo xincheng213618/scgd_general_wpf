@@ -21,6 +21,7 @@ namespace ColorVision.Engine.Templates
             {
                 string registrationKey = registration.Key;
                 ITemplate registered = registration.Value;
+                if (registered.IsRetired) continue;
                 foreach (string name in registered.GetTemplateNames().Where(name => !string.IsNullOrWhiteSpace(name)).Distinct(StringComparer.OrdinalIgnoreCase))
                 {
                     yield return new SearchMeta
@@ -34,7 +35,7 @@ namespace ColorVision.Engine.Templates
                         Command = new RelayCommand(_ =>
                         {
                             ITemplate? template = resolve(registrationKey);
-                            if (template == null || !template.GetTemplateNames().Contains(name, StringComparer.OrdinalIgnoreCase)) return;
+                            if (template == null || template.IsRetired || !template.GetTemplateNames().Contains(name, StringComparer.OrdinalIgnoreCase)) return;
                             int index = template.GetTemplateIndex(name);
                             if (index < 0) return;
                             if (template.IsSideHide)
@@ -45,7 +46,7 @@ namespace ColorVision.Engine.Templates
                             {
                                 new TemplateEditorWindow(template, index) { Owner = Application.Current.GetActiveWindow() }.Show();
                             }
-                        }, _ => resolve(registrationKey)?.GetTemplateNames().Contains(name, StringComparer.OrdinalIgnoreCase) == true)
+                        }, _ => resolve(registrationKey) is { IsRetired: false } template && template.GetTemplateNames().Contains(name, StringComparer.OrdinalIgnoreCase))
                     };
                 }
             }

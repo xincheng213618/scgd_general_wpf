@@ -34,9 +34,11 @@ public sealed class CvcieFloatChannelRendererTests
     {
         StaTest.Run(() =>
         {
-            using CVCIEFile file = CreatePlane(bpp, 7, 7, 7);
+            using CVCIEFile file = CreatePlane(bpp, 7, 7, 7, 7, 7, 7);
+            file.Cols = 3;
+            file.Rows = 2;
 
-            Assert.Equal(new byte[3], ReadPixels(MediaHelper.RenderFloatChannel(file)));
+            Assert.Equal(new byte[6], ReadPixels(MediaHelper.RenderFloatChannel(file)));
         });
     }
 
@@ -100,12 +102,14 @@ public sealed class CvcieFloatChannelRendererTests
     {
         StaTest.Run(() =>
         {
-            double[] values = new double[2048 * 513];
+            const int width = 2049;
+            const int height = 513;
+            double[] values = new double[width * height];
             for (int index = 0; index < values.Length; index++)
                 values[index] = ((index * 104729L) % 1000003 - 500001) * 0.125;
             using CVCIEFile file = CreatePlane(bpp, values);
-            file.Cols = 2048;
-            file.Rows = 513;
+            file.Cols = width;
+            file.Rows = height;
             double minimum = values.Min();
             double range = values.Max() - minimum;
             byte[] expected = values.Select(value => (byte)Math.Round(Math.Clamp((value - minimum) / range, 0, 1) * 255)).ToArray();

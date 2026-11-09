@@ -981,7 +981,6 @@ public sealed class FlowExecutionEditingTests
             Assert.False(View.ClearCommand.CanExecute(null));
             Assert.False(View.NewFlowCommand.CanExecute(null));
             Assert.False(View.ImportFlowCommand.CanExecute(null));
-            Assert.False(View.ImportModuleCommand.CanExecute(null));
             Assert.False(View.AutoAlignmentCommand.CanExecute(null));
             Assert.False(editor.CanUndo);
             Assert.False(editor.CanRedo);
@@ -990,7 +989,6 @@ public sealed class FlowExecutionEditingTests
             View.Clear();
             View.NewFlowCommand.Execute(null);
             View.ImportFlow();
-            View.ImportModule();
             View.AutoAlignment();
             View.DeleteFlow();
             editor.Undo();

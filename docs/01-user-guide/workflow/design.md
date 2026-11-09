@@ -3,8 +3,8 @@ knowledge_id: "flow.workspace"
 knowledge_type: "topic"
 status: "current"
 summary: "流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。"
-aliases: ["流程设计","拖节点","节点参数","保存流程","ViewFlow","FlowEditorCanvas","ActiveFlowParam","FlowTemplateWorkspaceController","流程编辑器","流程引擎模板管理","导入模板为模块","自动对齐","适应全部节点"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml.cs"]
+aliases: ["流程设计","拖节点","节点参数","保存流程","ViewFlow","FlowEditorCanvas","ActiveFlowParam","FlowTemplateWorkspaceController","流程编辑器","流程引擎模板管理","自动对齐","适应全部节点"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"]
 related: ["flow.architecture","flow.editor","flow.templates","flow.session","flow.headless","ui.property-grid"]
 ---
@@ -19,14 +19,14 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 
 画布右下角将“流程结果管理”“执行分析”和按需显示的“节点执行详情”集中为同一组图文按钮，与左侧运行/停止按钮垂直居中对齐，中间显示执行状态；有可定位的执行节点时才显示详情入口。
 
-画布右上角的半明半暗按钮可选择“跟随软件主题”“浅色”“深色”或“自定义配色”，默认跟随软件主题并响应软件主题切换。旁边的齿轮打开“工作流程设置”：可调整网格、节点对齐辅助、阴影、圆角和连线弯曲度；选择自定义配色后可修改画布、节点、网格线、文字、边框和状态颜色。设置即时预览，窗口关闭后保存，可恢复本次打开前的值或恢复默认。主题选择和设置由所有流程编辑器共享，重启后保留；仅影响本机显示，不改变软件全局主题、流程模板内容或画布撤销记录。
+单击画布右上角的半明半暗按钮，按“浅色 → 深色 → 自定义配色 → 跟随软件主题”的顺序循环切换。底部执行区与画布同步换色。旁边的齿轮打开“工作流程设置”，可直接选主题、编辑自定义配色或调整画布外观。设置即时预览，窗口关闭后保存，可恢复本次打开前的值或恢复默认。主题选择和设置由所有流程编辑器共享，重启后保留，仅影响本机的流程编辑器显示。
 
 编辑、导入模块和布局改变当前文档；保存或删除数据库模板会改持久数据，导入流程包还可能创建关联模板。切换文档可能触发保存提示或结束当前运行。必须确认目标文档、备份和已授权动作，不能用实际运行设备来代替只读排查。
 
 ## 打开并编辑流程
 
 1. 从“模板 > 流程”打开“流程引擎模板管理”，双击目标流程进入编辑器。“工作流程”区域的模板下拉框右侧依次为刷新和设置按钮；设置齿轮打开模板管理，刷新按当前模板重新加载画布并重新绑定服务。通过 `.stn` / `.cvflow` 文件打开的窗口则使用文件文档模式。
-2. 在画布空白处右击添加节点，或选择“导入模板为模块”插入已有流程的节点图。选中节点后编辑属性，再核对端口连接、设备 Code 和模板绑定。
+2. 在画布空白处右击添加节点。选中节点后编辑属性，再核对端口连接、设备 Code 和模板绑定。
 3. 用“自动对齐”（画布内 Ctrl+L）整理位置，用“适应全部节点”查看完整图。布局和视口调整不会代替保存。
 4. 核对窗口标题及下表中的保存目标，点击“保存”。切换模板或刷新时，若画布有未保存修改，会询问保存、放弃或取消；选择保存时，需保存成功才继续。导出前仍需自行确认保存成功。
 
@@ -66,7 +66,6 @@ ARVRPro、KB 的流程编辑按钮在未选择模板时仍可打开空白独立�
 | 重复框 | 框选一个节点或连续的一段，右键“重复执行…”设置总次数（包含第一次）。框内整段按原顺序执行完才进入下一轮，中间结果覆盖，只向框外传出最后一轮的结果；相机单独重复 10 次时，后面的算法仅运行一次 |
 | 自动布局 | `ViewFlow.AutoAlignment` 调用布局服务整理节点位置；画布局部快捷键仅精确匹配 Ctrl+L，不接受额外 Alt/Shift/Win，避免误接管日志的 Ctrl+Alt+L |
 | 自动适配 | `AutoSizeCommand` 调用 `FitToViewport` 调整视口，不是保存操作 |
-| 导入模块 | 工具栏命令和画布空白处右键“导入模板为模块”复用 `ImportModule`：点击后重新加载模板并打开 `TemplateSelectionDialog`，选择画布后交给 `FlowEditorOperations.ImportCanvasAsModule` 加入当前图；没有模板、模板无画布数据或导入异常时显示提示；随后仍需检查参数并保存当前文档 |
 
 重复框允许多个，每框独立设置次数，成员固定；移动节点不改变归属。双击框标题或右键“编辑重复框…”可修改次数及逐轮参数，拖动标题会一起移动框内节点，整次拖动可一次撤销；若框内有位置锁定的节点，整框不移动。右键框内节点或边框区域可“取消重复框”，取消保留节点和连线并清除逐轮参数。创建、修改、取消可撤销，框随画布保存；整框复制生成独立的新框及参数数组，部分复制只保留节点。框内允许分流后再汇合，例如相机同时连接 AI 的图像输入和关注点布点，布点结果连接 AI 的 ROI 输入；三节点共同重复时，每轮等待本轮图像与 ROI 到齐并完成 AI 后才进入下一轮。区域必须单入口、单出口、无环，内部节点的所有流程输入须来自框内，分流须在框内汇合，只有出口可向框外传递最终结果。当前不支持多入口、多出口、嵌套、重叠成员及包含开始、结束、旧循环节点的框。删除成员或改变连接后，须重新框选有效的一段；不会静默改成另一段继续执行。
 
@@ -123,7 +122,6 @@ UI 手动运行及未指定模板的运行接口读取当前画布，可执行�
 | 改了画布但调度像没变 | 区分 `FlowJob` 与 `HeadlessFlowJob`，核对当前画布和已保存版本 |
 | 快速切模板显示错对象 | generation、latest-wins 和失败恢复，不只看下拉框文字 |
 | 图能运行但参数不对 | 节点属性、设备/模板绑定及输入来源；再进入[执行诊断](./execution.md) |
-| 右键“导入模板为模块”无响应 | 入口应是直接点击项并打开模板选择窗口；检查模板重新加载、窗口 Owner，以及无模板、空画布数据和导入异常的提示 |
 
 `FlowTemplateWorkspaceControllerTests` 覆盖选择、起点、刷新门禁与快照身份；`ViewFlowDocumentBehaviorTests` 覆盖命令分流与修改文档替换决定；`STNodeCopyPasteTests` 实际覆盖节点保存/加载、类型重定位和损坏画布不替换旧图，不能仅凭文件名声称模块导入 UI 已验证。这些测试不证明完整 WPF 保存交互或真实 MySQL 已验收。需要相应验证时，检查新增节点/参数保存重开、模块插入、快速 A→B 选择、坏模板失败恢复、独立窗口不污染主窗口，以及取消/保存失败不丢文档。
 

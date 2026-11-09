@@ -17,6 +17,7 @@
                      IsDocumentEnabled="True"
                      IsReadOnly="True"
                      IsReadOnlyCaretVisible="False"
+                     IsUndoEnabled="False"
                      Padding="0"
                      VerticalScrollBarVisibility="Disabled" />
     </Grid>

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -23,7 +24,23 @@ namespace ColorVision.Copilot
 
         public string DisplayPath => CopilotWorkspaceSearchSupport.GetDisplayPath(RootPath, FullPath);
 
-        public string AgentLine => $"[Match] {DisplayPath}:{LineNumber} {CopilotWorkspaceSearchSupport.TruncateLine(LineText, 220)}";
+        public int MatchIndex { get; init; }
+
+        public string AgentLine => $"[Match] {DisplayPath}:{LineNumber} {BuildSnippet()}";
+
+        // A match deep in a long line must stay visible, or the result looks like a false positive.
+        private string BuildSnippet()
+        {
+            if (MatchIndex + 40 <= MaxAgentLineCharacters)
+                return CopilotWorkspaceSearchSupport.TruncateLine(LineText, MaxAgentLineCharacters);
+            var start = MatchIndex - MatchLeadCharacters;
+            if (char.IsLowSurrogate(LineText[start]))
+                start--;
+            return "..." + CopilotWorkspaceSearchSupport.TruncateLine(LineText[start..], MaxAgentLineCharacters);
+        }
+
+        private const int MaxAgentLineCharacters = 220;
+        private const int MatchLeadCharacters = 60;
     }
 
     public sealed class CopilotTextSearchResult
@@ -71,9 +88,11 @@ namespace ColorVision.Copilot
         }
     }
 
+    public sealed record CopilotTextSearchOptions(string Glob = "", bool IsRegex = false);
+
     public static class CopilotGrepTextCapability
     {
-        private const int MaxFilesToScan = 5000;
+        private const int MaxFilesToScan = 20000;
         private const int MaxMatches = 40;
         private const int MaxExplicitPatternCharacters = 256;
 
@@ -149,6 +168,18 @@ namespace ColorVision.Copilot
             string? cursor,
             CancellationToken cancellationToken)
         {
+            return SearchWithinScope(searchRootPaths, displayRootPaths, query, fallbackText, cursor, new CopilotTextSearchOptions(), cancellationToken);
+        }
+
+        public static CopilotTextSearchResult SearchWithinScope(
+            IEnumerable<string> searchRootPaths,
+            IEnumerable<string> displayRootPaths,
+            string? query,
+            string? fallbackText,
+            string? cursor,
+            CopilotTextSearchOptions options,
+            CancellationToken cancellationToken)
+        {
             var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchScopes(searchRootPaths);
             var displayRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(displayRootPaths);
             var displayRootMap = searchRoots.ToDictionary(
@@ -173,6 +204,37 @@ namespace ColorVision.Copilot
                 };
             }
 
+            Regex? regex = null;
+            if (!TryResolveFileNameExpressions(options.Glob, out var fileNameExpressions, out var optionError)
+                || options.IsRegex && !TryCreateRegex(patterns[0], out regex, out optionError))
+            {
+                return new CopilotTextSearchResult
+                {
+                    Success = false,
+                    SearchRoots = searchRoots,
+                    Patterns = patterns,
+                    Summary = "The text-search options are invalid.",
+                    ErrorMessage = optionError,
+                };
+            }
+
+            int FindMatch(string line)
+            {
+                if (regex != null)
+                {
+                    var match = regex.Match(line);
+                    return match.Success ? match.Index : -1;
+                }
+                var first = -1;
+                foreach (var pattern in patterns)
+                {
+                    var index = line.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
+                    if (index >= 0 && (first < 0 || index < first))
+                        first = index;
+                }
+                return first;
+            }
+
             var incompletePathCount = 0;
             var warnings = new List<string>(5);
             void AddWarning(string path, string reason)
@@ -186,6 +248,8 @@ namespace ColorVision.Copilot
                     incompletePathCount++;
                     AddWarning(path, reason);
                 })
+                .Where(entry => fileNameExpressions.Length == 0 || fileNameExpressions.Any(expression =>
+                    FileSystemName.MatchesSimpleExpression(expression, Path.GetFileName(entry.FullPath), ignoreCase: true)))
                 .Take(MaxFilesToScan + 1)
                 .ToArray();
             var fileListComplete = candidateFiles.Length <= MaxFilesToScan;
@@ -194,7 +258,7 @@ namespace ColorVision.Copilot
                 .OrderBy(entry => CopilotWorkspaceSearchSupport.GetDisplayPath(displayRootMap[entry.RootPath], entry.FullPath), StringComparer.OrdinalIgnoreCase)
                 .ThenBy(entry => entry.FullPath, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-            var revision = BuildSearchRevision(searchRoots, patterns, orderedFiles);
+            var revision = BuildSearchRevision(searchRoots, [.. patterns, $"glob={options.Glob.Trim()};regex={options.IsRegex}"], orderedFiles);
             if (!TryResolveCursor(cursor, revision, orderedFiles.Length, out var startFileIndex, out var startLineNumber, out var previousReadFailure, out var cursorError))
             {
                 return new CopilotTextSearchResult
@@ -211,6 +275,7 @@ namespace ColorVision.Copilot
             var matches = new List<CopilotTextSearchMatch>(MaxMatches);
             var matchedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var readFailureCount = 0;
+            var legacyEncodedFileCount = 0;
             var hasMoreMatches = false;
             var pageEndFileIndex = 0;
             var pageEndLineNumber = 0;
@@ -223,34 +288,51 @@ namespace ColorVision.Copilot
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    using var stream = new FileStream(entry.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    var preview = new byte[(int)Math.Min(CopilotLocalFileToolSupport.BinaryPreviewBytes, stream.Length)];
-                    var previewRead = stream.ReadAtLeast(preview, preview.Length, throwOnEndOfStream: false);
-                    using var reader = CopilotLocalFileToolSupport.CreateTextReader(stream, preview.AsSpan(0, previewRead));
                     var lineNumber = 0;
-                    while (reader.ReadLine() is { } line)
+                    void ScanFile(bool useLegacyEncoding)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        if (line.Contains('\0'))
-                            throw new InvalidDataException("The file contains NUL characters and appears to be binary.");
-                        lineNumber++;
-                        if (fileIndex == startFileIndex && lineNumber <= startLineNumber)
-                            continue;
-                        if (!patterns.Any(pattern => line.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
-                            continue;
-                        if (matches.Count + fileMatches.Count >= MaxMatches)
+                        fileMatches.Clear();
+                        lineNumber = 0;
+                        using var stream = new FileStream(entry.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        var preview = new byte[(int)Math.Min(CopilotLocalFileToolSupport.BinaryPreviewBytes, stream.Length)];
+                        var previewRead = stream.ReadAtLeast(preview, preview.Length, throwOnEndOfStream: false);
+                        using var reader = CopilotLocalFileToolSupport.CreateTextReader(stream, preview.AsSpan(0, previewRead), useLegacyEncoding);
+                        while (reader.ReadLine() is { } line)
                         {
-                            hasMoreMatches = true;
-                            break;
-                        }
+                            cancellationToken.ThrowIfCancellationRequested();
+                            if (line.Contains('\0'))
+                                throw new InvalidDataException("The file contains NUL characters and appears to be binary.");
+                            lineNumber++;
+                            if (fileIndex == startFileIndex && lineNumber <= startLineNumber)
+                                continue;
+                            var matchIndex = FindMatch(line);
+                            if (matchIndex < 0)
+                                continue;
+                            if (matches.Count + fileMatches.Count >= MaxMatches)
+                            {
+                                hasMoreMatches = true;
+                                break;
+                            }
 
-                        fileMatches.Add(new CopilotTextSearchMatch
-                        {
-                            RootPath = displayRootMap[entry.RootPath],
-                            FullPath = entry.FullPath,
-                            LineNumber = lineNumber,
-                            LineText = line,
-                        });
+                            fileMatches.Add(new CopilotTextSearchMatch
+                            {
+                                RootPath = displayRootMap[entry.RootPath],
+                                FullPath = entry.FullPath,
+                                LineNumber = lineNumber,
+                                LineText = line,
+                                MatchIndex = matchIndex,
+                            });
+                        }
+                    }
+
+                    try
+                    {
+                        ScanFile(useLegacyEncoding: false);
+                    }
+                    catch (DecoderFallbackException)
+                    {
+                        ScanFile(useLegacyEncoding: true);
+                        legacyEncodedFileCount++;
                     }
                     if (fileIndex == startFileIndex && lineNumber < startLineNumber)
                     {
@@ -313,11 +395,15 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             builder.AppendLine($"[Search Keywords] {string.Join(", ", patterns)}");
             builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
+            if (fileNameExpressions.Length > 0)
+                builder.AppendLine($"[File Filter] {options.Glob.Trim()}");
             builder.AppendLine($"[Candidate Text Files] {orderedFiles.Length}");
             builder.AppendLine($"[Scanned Text Files] {scannedFiles}");
             builder.AppendLine("[Search Policy] Text extensions only; generated/dependency directories and reparse points are excluded.");
             builder.AppendLine($"[Scope Inspection Failures] {incompletePathCount}");
             builder.AppendLine($"[Unreadable Text Files This Page] {readFailureCount}");
+            if (legacyEncodedFileCount > 0)
+                builder.AppendLine($"[Files Decoded As GB18030] {legacyEncodedFileCount}");
             builder.AppendLine($"[Matches Shown] {matches.Count}");
             builder.AppendLine($"[Scan Complete] {scanComplete.ToString().ToLowerInvariant()}");
             builder.AppendLine($"[Results Complete] {resultsComplete.ToString().ToLowerInvariant()}");
@@ -333,10 +419,13 @@ namespace ColorVision.Copilot
                 builder.AppendLine($"[Search Warning] {warning}");
             builder.AppendLine();
 
+            var queryLabel = options.IsRegex ? "regular expression" : "literal query";
             if (matches.Count == 0)
             {
+                if (!options.IsRegex && LooksLikeRegex(patterns[0]))
+                    builder.AppendLine("[Search Hint] The query was matched literally, including its regex-like characters. Set regex to true if a pattern was intended.");
                 builder.AppendLine(scanComplete
-                    ? "[Result] No text lines matched the literal query in the completed search scope."
+                    ? $"[Result] No text lines matched the {queryLabel} in the completed search scope."
                     : "[Search Warning] No match was found in the inspected text files, but a scan limit or unreadable file left the result partial.");
                 return new CopilotTextSearchResult
                 {
@@ -350,7 +439,7 @@ namespace ColorVision.Copilot
                     PartialResultMessage = partialResultMessage,
                     Matches = matches,
                     Summary = scanComplete
-                        ? $"Scanned {scannedFiles} text files; no lines matched the literal query."
+                        ? $"Scanned {scannedFiles} text files; no lines matched the {queryLabel}."
                         : $"Scanned {scannedFiles} text files without a match; the result is partial because the scope was not fully inspected.",
                     Content = builder.ToString().TrimEnd(),
                 };
@@ -383,6 +472,55 @@ namespace ColorVision.Copilot
                     .Take(3)
                     .ToArray(),
             };
+        }
+
+        private static bool TryCreateRegex(string pattern, out Regex? regex, out string error)
+        {
+            regex = null;
+            error = string.Empty;
+            try
+            {
+                // NonBacktracking runs in linear time, so a model-written pattern cannot hang the scan.
+                var candidate = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+                if (candidate.IsMatch(string.Empty))
+                {
+                    error = "The regular expression also matches empty text, so it would match every line. Make it more specific.";
+                    return false;
+                }
+                regex = candidate;
+                return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                error = "The regular expression is invalid or uses an unsupported lookaround or backreference: " + ex.Message;
+                return false;
+            }
+        }
+
+        private static bool TryResolveFileNameExpressions(string? glob, out string[] expressions, out string error)
+        {
+            expressions = [];
+            error = string.Empty;
+            var text = (glob ?? string.Empty).Trim().Replace('\\', '/');
+            while (text.StartsWith("**/", StringComparison.Ordinal))
+                text = text[3..];
+            if (text.Length == 0)
+                return true;
+            if (text.Contains('/'))
+            {
+                error = "glob filters file names only. Put the directory in path and keep a pattern such as *.cs in glob.";
+                return false;
+            }
+
+            if (CopilotWorkspaceSearchSupport.TryExpandBraceGroup(text, out expressions))
+                return true;
+            error = "glob supports at most one {a,b} group.";
+            return false;
+        }
+
+        private static bool LooksLikeRegex(string query)
+        {
+            return query.Contains('|') || new[] { @"\s", @"\w", @"\d", @"\b", ".*", ".+" }.Any(token => query.Contains(token, StringComparison.Ordinal));
         }
 
         private static string BuildSearchRevision(

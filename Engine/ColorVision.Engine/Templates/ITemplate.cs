@@ -43,6 +43,9 @@ namespace ColorVision.Engine.Templates
 
         public string Code { get; set; }
 
+        /// <summary>Retired templates stay registered so existing data can be resolved.</summary>
+        public virtual bool IsRetired => false;
+
         public virtual int Count { get; }
 
         /// <summary>Restricts the new-template chooser to built-in presets and existing copies; prepared imports remain supported.</summary>

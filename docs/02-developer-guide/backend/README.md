@@ -15,6 +15,8 @@ related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.
 
 跨模块依赖、现有持久化接口和演进约束见[Web 架构](../../03-architecture/components/web.md)；本地启动脚本、NAS 更新步骤、备份和失败恢复见[Web 本地启动与 NAS 部署](../deployment/web.md)。React/VitePress 路由、压缩与缓存、文档状态和索引见[Web 页面与文档托管](./web-pages.md)。
 
+桌面端可选许可证和管理后台的设备名额规则见[许可证激活与设备名额](./activation.md)。
+
 ## 代码责任
 
 | 责任 | 当前入口 |

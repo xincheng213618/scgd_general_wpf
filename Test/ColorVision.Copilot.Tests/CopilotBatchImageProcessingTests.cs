@@ -203,6 +203,8 @@ public sealed class CopilotBatchImageProcessingTests
     [InlineData("不要对这些图片应用白平衡")]
     [InlineData("这些图片已经做过白平衡")]
     [InlineData("请对这张图片降噪")]
+    [InlineData("这些图片需要做白平衡吗")]
+    [InlineData("这些图片有必要做白平衡吗？")]
     public void ReadOnlyAlgorithmAssessmentDoesNotCreateABatchImageWriteContract(string userText)
     {
         CopilotAgentRequest request = new() { UserText = userText, Mode = CopilotAgentMode.Auto };
@@ -229,6 +231,7 @@ public sealed class CopilotBatchImageProcessingTests
     [InlineData("请对这些图片降噪")]
     [InlineData("Run denoise on all images")]
     [InlineData("对多张图像应用阈值处理")]
+    [InlineData("能帮我对这些图片做白平衡吗")]
     public void ExplicitAlgorithmMutationStillRequiresTheAlwaysApprovedBatchTool(string userText)
     {
         CopilotAgentRequest request = new() { UserText = userText, Mode = CopilotAgentMode.Auto };

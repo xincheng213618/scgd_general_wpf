@@ -9,6 +9,31 @@ namespace ProjectARVRPro.Tests;
 public sealed class ProjectSettingsSessionTests
 {
     [Fact]
+    public void ImageNamingSettingsDefaultOffAndSaveIndependently()
+    {
+        var results = JsonConvert.DeserializeObject<ViewResultManagerConfig>("{}")!;
+        Assert.False(results.UseFlowNameForResultImage);
+        Assert.False(results.UseFlowNameForSourceImage);
+        Assert.Equal("{FlowName}", results.ResultImageFileNameTemplate);
+        Assert.Equal("{FlowName}_source", results.SourceImageFileNameTemplate);
+        var session = new ProjectSettingsSession(new(), results, false);
+        Assert.Equal(ProjectSettingsPage.Images, Assert.Single(session.Sections, section => section.Matches("标记图文件名模板")).Id);
+        Assert.Equal(ProjectSettingsPage.Images, Assert.Single(session.Sections, section => section.Matches("原图文件名模板")).Id);
+
+        session.Results.UseFlowNameForResultImage = true;
+        session.Results.ResultImageFileNameTemplate = "{WrongToken}";
+        Assert.Throws<InvalidOperationException>(() => session.SaveChange(session.Results, nameof(results.ResultImageFileNameTemplate), () => { }));
+        session.Results.ResultImageFileNameTemplate = "{SN}_{FlowName}";
+        session.Save(() => { });
+
+        var restored = JsonConvert.DeserializeObject<ViewResultManagerConfig>(JsonConvert.SerializeObject(results))!;
+        Assert.True(restored.UseFlowNameForResultImage);
+        Assert.Equal("{SN}_{FlowName}", restored.ResultImageFileNameTemplate);
+        Assert.False(restored.UseFlowNameForSourceImage);
+        Assert.Equal("{FlowName}_source", restored.SourceImageFileNameTemplate);
+    }
+
+    [Fact]
     public void StorageReserveDefaultsRemainCompatibleAndInvalidValuesCannotBeSaved()
     {
         var results = JsonConvert.DeserializeObject<ViewResultManagerConfig>("{}")!;

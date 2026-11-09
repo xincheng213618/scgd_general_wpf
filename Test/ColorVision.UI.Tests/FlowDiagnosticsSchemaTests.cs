@@ -66,6 +66,11 @@ public class FlowDiagnosticsSchemaTests
             FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
             FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
 
+            Assert.Equal("idx_flow_run_normalized_key_id", db.Ado.GetString("""
+                SELECT name FROM sqlite_master
+                WHERE type = 'index' AND tbl_name = 'FlowRunRecord' AND name = 'idx_flow_run_normalized_key_id'
+                """));
+
             HashSet<string> columns = db.DbMaintenance
                 .GetColumnInfosByTableName("FlowRunRecord")
                 .Select(column => column.DbColumnName)
@@ -148,6 +153,41 @@ public class FlowDiagnosticsSchemaTests
             if (File.Exists(dbPath))
                 File.Delete(dbPath);
         }
+    }
+
+    [Fact]
+    public void LatestNodeDurationUsesCompletedPositiveRowsAndPreservesTiesAcrossBatches()
+    {
+        using var db = new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = "Data Source=:memory:",
+            DbType = DbType.Sqlite,
+            IsAutoCloseConnection = false,
+        });
+        db.CodeFirst.InitTables<FlowNodeRecord>();
+        db.Ado.ExecuteCommand("""
+            INSERT INTO FlowNodeRecord (id, batch_id, node_id, start_time, end_time, elapsed_ms) VALUES
+                (1, 1, 'node', '2026-10-01 08:00:01', '2026-10-01 08:00:08', 90),
+                (2, 2, 'node', '2026-10-01 08:00:05', '2026-10-01 08:00:08', 30),
+                (3, 3, 'node', '2026-10-01 08:00:05', '2026-10-01 08:00:08', 40),
+                (4, 4, 'node', '2026-10-01 08:00:06', '2026-10-01 08:00:09', 0),
+                (5, 5, 'node', '2026-10-01 08:00:07', '2026-10-01 08:00:10', -1),
+                (6, 6, 'node', '2026-10-01 08:00:08', NULL, 70),
+                (7, 7, 'quoted''node', '2026-10-01 08:00:08', '2026-10-01 08:00:10', 25),
+                (8, 8, 'unfinished', '2026-10-01 08:00:08', NULL, 45);
+            """);
+        FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
+        FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
+
+        string indexSql = db.Ado.GetString("SELECT sql FROM sqlite_master WHERE name = 'idx_flow_node_record_completed_end'");
+        Assert.Contains("WHERE end_time IS NOT NULL AND elapsed_ms > 0", indexSql, StringComparison.OrdinalIgnoreCase);
+        var requested = Enumerable.Range(0, 300).Select(index => $"missing-{index}")
+            .Prepend("node").Append("quoted'node").Append("unfinished");
+        var durations = new Dictionary<string, long>(StringComparer.Ordinal);
+        FlowNodeRecordDataBaseHelper.ReadLatestCompletedDurations(db, requested, durations);
+        Assert.Equal(2, durations.Count);
+        Assert.Equal(30, durations["node"]);
+        Assert.Equal(25, durations["quoted'node"]);
     }
 
     [Fact]

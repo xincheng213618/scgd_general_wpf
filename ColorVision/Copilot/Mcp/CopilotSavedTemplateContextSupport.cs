@@ -308,7 +308,7 @@ namespace ColorVision.Copilot.Mcp
             out string error)
         {
             var entries = TemplateControl.ITemplateNames
-                .Where(pair => pair.Value != null)
+                .Where(pair => pair.Value is { IsRetired: false })
                 .ToArray();
             var matches = DistinctTemplates(entries.Where(pair =>
                 string.Equals(pair.Key, templateCode, StringComparison.OrdinalIgnoreCase)));

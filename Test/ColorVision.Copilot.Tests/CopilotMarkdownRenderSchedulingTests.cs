@@ -41,6 +41,8 @@ public sealed class CopilotMarkdownRenderSchedulingTests
     [InlineData("Read [reference](https://example.test)", "Read [reference](https://example.test) while streaming", "reference", "while streaming")]
     [InlineData("| Name | Value |\n| --- | --- |\n| selected | one |", "| Name | Value |\n| --- | --- |\n| selected | one |\n| next | two |", "selected", "next")]
     [InlineData("**selected words", "**selected words** while streaming", "selected words", "while streaming")]
+    [InlineData("Finished selected words\n\nTail", "Finished selected words\n\nTail while streaming", "selected words", "while streaming")]
+    [InlineData("Finished\n\nTail selected words", "Finished\n\nTail selected words while streaming", "selected words", "while streaming")]
     public void AppendingToAResponsePreservesSelectedTextAndStillRendersTheNewContent(
         string initialMarkdown, string appendedMarkdown, string selectedText, string addedText)
     {
@@ -49,10 +51,9 @@ public sealed class CopilotMarkdownRenderSchedulingTests
             using var fixture = new LoadedMarkdownFixture(initialMarkdown);
             PumpUntil(() => fixture.DocumentText.Contains(selectedText, StringComparison.Ordinal), "Initial content did not render.");
             fixture.SelectText(selectedText);
-            var originalDocument = fixture.Viewer.Document;
 
             fixture.View.Markdown = appendedMarkdown;
-            PumpUntil(() => !ReferenceEquals(originalDocument, fixture.Viewer.Document), "The appended content did not render.");
+            PumpUntil(() => fixture.DocumentText.Contains(addedText, StringComparison.Ordinal), "The appended content did not render.");
 
             Assert.Equal(selectedText, fixture.Viewer.Selection.Text);
             Assert.Contains(addedText, fixture.DocumentText, StringComparison.Ordinal);
@@ -98,6 +99,107 @@ public sealed class CopilotMarkdownRenderSchedulingTests
             Assert.Equal(0, fixture.CodeEditors[0].HorizontalOffset);
             Assert.Equal(0, fixture.CodeEditors[0].VerticalOffset);
         });
+    }
+
+    // The renderer keeps finished blocks instead of rebuilding them, so any text that could still change
+    // an earlier block would leave stale content on screen: this holds it to a rebuild at every length.
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void StreamingEveryPrefixRendersTheSameBlocksAsARebuild(string newline)
+    {
+        Run(() =>
+        {
+            var markdown = string.Join(newline,
+                "# Title", "", "First **bold** paragraph", "still the same paragraph", "",
+                "- item one", "- item two", "", "",
+                "```csharp", "var a = 1;", "", "var b = 2;", "", "```", "",
+                "| Name | Value |", "| --- | --- |", "| one | 1 |", "| two | 2 |", "",
+                "$$", "x = 1", "", "y = 2", "$$", "",
+                "> quoted", "", "---", "", "Last paragraph");
+            using var fixture = new LoadedMarkdownFixture(string.Empty);
+            using var rebuilt = new LoadedMarkdownFixture(string.Empty);
+            var renderedMarkdown = typeof(CopilotMarkdownView).GetField("_renderedMarkdown", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("The rendered Markdown state is unavailable.");
+            for (var length = 1; length <= markdown.Length; length++)
+            {
+                var prefix = markdown[..length];
+                Invoke(fixture.View, "RenderMarkdown", prefix);
+                // Clearing the rendered text is how a recycled view forces a whole new document.
+                renderedMarkdown.SetValue(rebuilt.View, null);
+                Invoke(rebuilt.View, "RenderMarkdown", prefix);
+                var expected = Describe(rebuilt.Viewer.Document);
+                Assert.True(expected == Describe(fixture.Viewer.Document), $"At length {length} of {JsonText(prefix)}:\n{expected}\n---\n{Describe(fixture.Viewer.Document)}");
+            }
+        });
+    }
+
+    [Fact]
+    public void AppendingKeepsFinishedBlocksTheirSelectionAndTheirCodeViewport()
+    {
+        Run(() =>
+        {
+            var code = string.Join("\n", Enumerable.Range(0, 40).Select(index => $"line {index:D2} " + new string('x', 100)));
+            var markdown = "Finished selected words\n\n```text\n" + code + "\n```\n\nTail";
+            using var fixture = new LoadedMarkdownFixture(markdown);
+            fixture.WaitForCodeText(code.Replace("\n", "\r\n", StringComparison.Ordinal));
+            fixture.SelectText("selected words");
+            var editor = fixture.CodeEditors[0];
+            editor.ScrollToVerticalOffset(72);
+            fixture.Host.UpdateLayout();
+            var offset = editor.VerticalOffset;
+            Assert.True(offset > 0);
+            var document = fixture.Viewer.Document;
+            var firstBlock = document.Blocks.FirstBlock;
+
+            Invoke(fixture.View, "RenderMarkdown", markdown + " grows\n\nand more");
+
+            Assert.Same(document, fixture.Viewer.Document);
+            Assert.Same(firstBlock, document.Blocks.FirstBlock);
+            Assert.Same(editor, fixture.CodeEditors[0]);
+            Assert.Equal("selected words", fixture.Viewer.Selection.Text);
+            fixture.Host.UpdateLayout();
+            Assert.Equal(offset, editor.VerticalOffset);
+            Assert.Contains("Tail grows", fixture.DocumentText, StringComparison.Ordinal);
+            Assert.EndsWith("and more", fixture.DocumentText, StringComparison.Ordinal);
+        });
+    }
+
+    [Theory]
+    [InlineData("Finished\n\nTail", "Replaced\n\nTail", 600)]
+    [InlineData("Finished\n\nTail", "Fin", 600)]
+    [InlineData("Finished\n\nTail", "Finished\n\nTail again", 300)]
+    public void AnEditedResponseOrANewWidthRebuildsTheDocument(string markdown, string next, double width)
+    {
+        Run(() =>
+        {
+            using var fixture = new LoadedMarkdownFixture(markdown);
+            PumpUntil(() => fixture.DocumentText.Contains("Tail", StringComparison.Ordinal), "Initial content did not render.");
+            var document = fixture.Viewer.Document;
+
+            fixture.View.Width = width;
+            fixture.Host.UpdateLayout();
+            Invoke(fixture.View, "RenderMarkdown", next);
+
+            Assert.NotSame(document, fixture.Viewer.Document);
+            Assert.Equal(next.Replace("\n\n", "\r\n", StringComparison.Ordinal), fixture.DocumentText);
+        });
+    }
+
+    private static object? Invoke(CopilotMarkdownView view, string method, string markdown)
+        => (typeof(CopilotMarkdownView).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"{method} is unavailable.")).Invoke(view, [markdown]);
+
+    private static string JsonText(string text) => System.Text.Json.JsonSerializer.Serialize(text);
+
+    private static string Describe(FlowDocument document)
+    {
+        static string Text(TextElement element) => new TextRange(element.ContentStart, element.ContentEnd).Text;
+        return string.Join("\n", document.Blocks.Select(block => block switch
+        {
+            BlockUIContainer { Tag: TextBox editor } => "code:" + editor.Text,
+            _ => block.GetType().Name + ":" + Text(block),
+        }));
     }
 
     private static void Run(Action action) => StaTest.Run(action, TimeSpan.FromSeconds(25), "The loaded Markdown scheduling test did not finish.");

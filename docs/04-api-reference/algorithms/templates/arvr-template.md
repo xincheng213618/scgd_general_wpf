@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "ARVR 远端模板与请求对应关系、结果版本及 SFR 曲线与 CSV 范围；本地条纹 MTF 另有独立主题。"
 aliases: ["CV_Ali_calcMtf", "ARVR算法", "MTF SFR FOV模板对应哪个结果", "SFR2.0", "MTF2.0", "FOV2.0", "Ghost2.0", "Ghost1.0", "畸变2.0", "StereoFusion", "SFR寻边", "ARVR屏幕缺陷检测", "SFR曲线", "SFR导出CSV", "MTF@Freq", "Freq@MTF", "AlgorithmARVRNode", "TemplateMTF2", "ViewHandleSFR2", "Sfr2PlotWindow"]
-code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/SFR2", "Engine/ColorVision.Engine/Templates/Jsons/Ghost2", "Engine/ColorVision.Engine/Templates/Jsons/MTF2", "Engine/ColorVision.Engine/Templates/Jsons/FOV2", "Engine/ColorVision.Engine/Templates/Jsons/Distortion2", "Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion", "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI", "Engine/ColorVision.Engine/Templates/Jsons/FindCross", "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects", "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs", "Engine/FlowEngineLib/Base/CVBaseServerNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs", "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/OLEDNodeConfigurators.cs", "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs", "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs", "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/SFR2", "Engine/ColorVision.Engine/Templates/Jsons/Ghost2", "Engine/ColorVision.Engine/Templates/Jsons/MTF2", "Engine/ColorVision.Engine/Templates/Jsons/FOV2", "Engine/ColorVision.Engine/Templates/Jsons/Distortion2", "Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion", "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI", "Engine/ColorVision.Engine/Templates/Jsons/FindCross", "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects", "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs", "Engine/FlowEngineLib/Base/CVBaseServerNode.cs", "Engine/ColorVision.Engine/PropertyEditor/AlgorithmTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs", "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs", "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
 related: ["algorithms.index", "algorithms.json-templates", "algorithms.template-menus", "algorithms.find-cross", "algorithms.grid-distortion", "engine.results", "algorithms.stripe-mtf"]
 ---
@@ -45,7 +45,7 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 
 ## Flow 接入
 
-在流程编辑器中配置 **ARVR算法** 节点，通过 **算子** 选择算法、**参数模板** 选择参数。`AlgorithmARVRNode` 设置 `operatorCode`，`AlgorithmARVRNodeConfigurator` 随算法变化刷新模板面板。
+在 **ARVR算法**、**AI算法** 和 **AI算法2** 的配置列表里，先选 **算子**，再从 **参数模板** 行选择或管理对应模板。**ARVR.Ghost算法** 的同一行直接选择 Ghost2.0 模板。
 
 | Flow 算子 | `operatorCode` | 参数模板 |
 | --- | --- | --- |
@@ -58,7 +58,11 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | 十字计算 | `FindCross` | `TemplateFindCross` |
 | 屏幕缺陷检测 | `ARVR.DetectScreenDefects` | `TemplateDetectScreenDefects` |
 
-**POI模板** 是节点的公共属性行，由 `PoiTemplatePropertiesEditor` 编辑，对所有算子都存在。
+**AI算法** 和 **ARVR算法** 将 **POI模板** 作为独立属性行，供使用 POI 输入的算子引用。
+
+**AI算法**、**AI算法2**、**ARVR算法** 和 **ARVR.Ghost算法** 使用 `1024` 缓存大小。**AI算法** 和 **ARVR算法** 发送默认绿色。旧流程中这些节点原有的自定义 `Color` 和 `BufferLen` 在加载时忽略，重新保存时省略。
+
+旧 **AI算法** 流程里的灯带检测和像素级灯珠检测、旧 **AI算法2** 流程里的灯带检测和 JND 仍能读取原配置。运行到这些算子时会提示重新选择。新建 **AI算法2** 节点默认选用 MTF。
 
 ARVR算法、通用算法和 AI算法2 的 SFR 参数选择器均使用 SFR2.0 JSON 模板。已有流程保存的旧 SFR 模板名称不会自动迁移，应重新选择 SFR2.0 模板并保存流程；字典号 `9` 的 Gamma 模板不能直接作为字典号 `49` 的 JSON 模板使用。
 
@@ -70,17 +74,17 @@ ARVR.Ghost算法与通用算法的鬼影参数选择器使用 `TemplateGhostQK`�
 
 ### 公共请求字段
 
-新节点默认算子为 `MTF`、颜色为 `GREEN`、输出文件为 `result.json`、缓存大小为 `1024`。流程请求使用 `AlgorithmParam_ROI`，由节点及 `CVBaseServerNode` 填充：
+**ARVR算法** 默认算子为 `MTF`，输出文件为 `result.json`。流程请求使用 `AlgorithmParam_ROI`，由节点及 `CVBaseServerNode` 填充。
 
 | 字段 | 来源与限制 |
 | --- | --- |
 | `TemplateParam` | `BuildTemp()` 使用节点模板 ID、名称；未解析 ID 初值为 `-1` |
 | `POITemplateParam` | 对所有算子创建 `{ ID: -1, Name: POITempName }`，不是手动界面解析后的 POI ID |
 | `ImgFileName`、`FileType` | 非空节点图像路径才填充；空路径不自动补成上一步图像路径 |
-| `Color`、`Channel` | 图像助手设置节点 `Color`，没有同步赋值 `Channel`；后者保留 DTO 初值 `GREEN` |
+| `Color`、`Channel` | 两者均使用 `GREEN` |
 | `MasterId`、`MasterValue`、`MasterResultType` | 优先读取连接的上一步服务节点响应，否则尝试开始节点同名数据；有引用字段不证明对应结果有效 |
 | `SMUData` | 仅从开始节点的 `SMUResult` 读取并转换，没有值则为 `null` |
-| `OutputFileName`、`BufferLen`、`IsInversion` | 前两项取节点配置，反转固定为 `false`；文件名存在不代表文件已生成 |
+| `OutputFileName`、`BufferLen`、`IsInversion` | 输出文件取节点配置，缓存为 `1024`，反转为 `false`。文件名存在不代表文件已生成 |
 
 这条 Flow 请求模型没有手动 2.0 入口的 `Params.Version`、`CIEFileName` 字段。手动成功而流程失败时，应比对完整请求及服务协议，不能仅比较事件名或模板名称。图像路径、上一步结果引用、SMU 数据也应分别核对。
 
@@ -102,6 +106,6 @@ ARVR.Ghost算法与通用算法的鬼影参数选择器使用 `TemplateGhostQK`�
 
 ## 源码与验证边界
 
-手动适配器和结果处理器与模板位于同一算法目录；SFR 曲线及查询位于 `Templates/Jsons/SFR2/Sfr2PlotWindow.xaml.cs` 和 `Sfr2PlotControl.xaml.cs`。流程的入口是 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs`，面板配置位于 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs`。本页讨论的是宿主请求与显示契约，不定义算法服务内部计算公式或客户项目判定标准。
+手动适配器和结果处理器与模板位于同一算法目录。SFR 曲线及查询位于 `Templates/Jsons/SFR2/Sfr2PlotWindow.xaml.cs` 和 `Sfr2PlotControl.xaml.cs`。`AlgorithmARVRNode` 组装流程请求，`AlgorithmTemplatePropertiesEditor` 负责参数模板选择。
 
 `FindCrossResultOverlayTests.cs` 验证本地诊断数据与旧结果的叠图中心坐标选择，不验证远端 ARVR 服务或真实绘制。算法请求、返回版本、SFR 曲线和导出仍需用对应结果样例验证；测试文件存在不表示这些链路已通过端到端测试。

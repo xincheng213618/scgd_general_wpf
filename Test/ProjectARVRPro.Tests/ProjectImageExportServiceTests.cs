@@ -19,19 +19,43 @@ public sealed class ProjectImageExportServiceTests
             context);
     }
 
-    [Fact]
-    public void FileNames_KeepRenderedAndSourceArtifactsDistinctAndSanitized()
+    [Theory]
+    [InlineData(null, null, "AB_White51result", "AB_White51source")]
+    [InlineData(ProjectImageExportService.DefaultResultFileNameTemplate, null, "White51", "AB_White51source")]
+    [InlineData(null, ProjectImageExportService.DefaultSourceFileNameTemplate, "AB_White51result", "White51_source")]
+    [InlineData("{FlowName}", "{FlowName}_source", "White51", "White51_source")]
+    [InlineData("AOI_{SN}_{FlowName}", "raw_{FlowName}", "AOI_SN42_White51", "raw_White51")]
+    public void FileNames_UseEachTemplateIndependentlyAndSanitizeValues(
+        string? resultTemplate, string? sourceTemplate, string expectedRendered, string expectedSource)
     {
-        string rendered = ProjectImageExportService.BuildResultFileStem(
-            @"C:\capture\A:B.cvraw",
-            "White/51");
-        string source = ProjectImageExportService.BuildSourceFileStem(
-            @"C:\capture\A:B.cvraw",
-            "White/51");
+        var names = ProjectImageExportService.BuildFileStems(
+            @"C:\capture\A:B.cvraw", "White/51", "SN:42", resultTemplate, sourceTemplate);
 
-        Assert.Equal("AB_White51result", rendered);
-        Assert.Equal("AB_White51source", source);
-        Assert.NotEqual(rendered, source);
+        Assert.Equal((expectedRendered, expectedSource), names);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("{FlowName")]
+    [InlineData("{Unknown}")]
+    [InlineData(@"..\{FlowName}")]
+    [InlineData("{FlowName}.png")]
+    public void InvalidStoredTemplatesFallBackToTheChannelDefaults(string template)
+    {
+        Assert.False(ProjectImageExportService.IsValidFileNameTemplate(template));
+        var names = ProjectImageExportService.BuildFileStems("Capture.cvraw", "White51", null, template, template);
+        Assert.Equal(("White51", "White51_source"), names);
+    }
+
+    [Theory]
+    [InlineData(".png", "WHITE51_source.png")]
+    [InlineData(".tif", "WHITE51.tif")]
+    public void RawExportKeepsTheMarkedPngWhenTemplatesResolveToTheSameName(string sourceExtension, string expected)
+    {
+        const string directory = @"C:\exports";
+        string markedPath = ProjectImageExportService.BuildFilePath(directory, "White51", ".png");
+        string rawPath = ProjectImageExportService.BuildSourceFilePath(directory, "WHITE51", sourceExtension, markedPath);
+        Assert.Equal(System.IO.Path.Combine(directory, expected), rawPath);
     }
 
     [Fact]

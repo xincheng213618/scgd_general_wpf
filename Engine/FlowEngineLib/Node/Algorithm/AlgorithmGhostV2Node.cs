@@ -7,8 +7,6 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("Algorithm", CategoryOrder = 320)]
 public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 {
-	private int _BufferLen;
-
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
 	{
@@ -39,20 +37,6 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 		}
 	}
 
-	[STNodeProperty("缓存大小", "缓存大小", true)]
-	public int BufferLen
-	{
-		get
-		{
-			return _BufferLen;
-		}
-		set
-		{
-			_BufferLen = value;
-			OnPropertyChanged();
-		}
-	}
-
 	public AlgorithmGhostV2Node()
 		: base("ARVR.Ghost算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -60,7 +44,6 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 		m_in_text = "IN_IMG";
 		m_in_textHub[0] = "IN_IMG";
 		m_in_textHub[1] = "IN_CIE";
-		_BufferLen = 1024;
 		base.MaxTime = 15000;
 	}
 
@@ -72,7 +55,7 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmGhostInputParam algorithmGhostInputParam = new AlgorithmGhostInputParam(_BufferLen);
+		AlgorithmGhostInputParam algorithmGhostInputParam = new AlgorithmGhostInputParam(bufferLen: 1024);
 		getPreStepParam(0, algorithmGhostInputParam);
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		getPreStepParam(1, algorithmPreStepParam);

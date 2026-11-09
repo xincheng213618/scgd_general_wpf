@@ -47,6 +47,14 @@ namespace ColorVision.Copilot
 
         public int EffectiveCachedInputTokens => Math.Clamp(CachedInputTokens ?? 0, 0, Math.Max(0, InputTokens));
 
+        // What a run budget charges. A cached read costs about a tenth of fresh input on the providers that
+        // report one, and every tool round re-reads the whole history, so counting it in full would end a
+        // long run on tokens that were barely billed.
+        public int BudgetChargeTokens => (int)CachedReadDiscount(EffectiveTotalTokens, EffectiveCachedInputTokens);
+
+        public static long CachedReadDiscount(long tokens, int cachedInputTokens) =>
+            Math.Max(0, tokens - cachedInputTokens * 9L / 10);
+
         public double CachedInputPercentage => InputTokens > 0
             ? EffectiveCachedInputTokens * 100d / InputTokens
             : 0d;

@@ -533,6 +533,13 @@ namespace ColorVision.UI.Desktop.Marketplace
                         return;
                     }
 
+                    if (task.Status == DownloadStatus.Deleted)
+                    {
+                        log.Info($"Marketplace package download was deleted by the user: {request.PluginId} v{request.Version}.");
+                        completionSource.TrySetResult(null);
+                        return;
+                    }
+
                     if (task.Status != DownloadStatus.Completed)
                     {
                         log.Error($"Marketplace package download failed for {request.PluginId} v{request.Version}: {task.ErrorMessage}");

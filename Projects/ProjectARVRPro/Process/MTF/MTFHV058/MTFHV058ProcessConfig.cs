@@ -1,5 +1,6 @@
 #pragma warning disable CA1707
 using System.ComponentModel;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV058
 {
@@ -7,6 +8,11 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
     {
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F3";
+
+        [Category("显示配置"), DisplayName("图像文字颜色")]
+        [Description("图像上叠加的 MTF 数值文字颜色")]
+        public Color OverlayTextColor { get => _overlayTextColor; set => SetProperty(ref _overlayTextColor, value); }
+        private Color _overlayTextColor = Colors.RoyalBlue;
 
         [Category("输出配置")]
         [DisplayName("输出Key")]

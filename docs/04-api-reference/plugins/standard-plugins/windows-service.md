@@ -84,6 +84,8 @@ MySQL页的“ZIP全安装”和“注册服务”会在调用后台前检查运
 
 MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHelper` 将带UTF-8 BOM的SQL按UTF-8读取，其余先严格UTF-8解码、失败回退GB18030，再向mysql.exe传UTF-8。[Engine重置与资源保留](../../engine-components/mysql-recovery.md)负责保留表、字典依赖和SQL失败语义，不是整库或全部结果无损迁移。安装器要求SQL存在，而直接调用部分MySQL helper找不到SQL时会记录跳过并返回true，二者成功判据不同。
 
+重置 MySQL `root` 密码前会等待 `mysqld` 进程退出。若进程退出超时，安装日志会列出仍运行的进程 ID，供操作员确认应停止的实例。
+
 配置来自ServiceManagerConfig、MySqlServiceConfig和RC设置，写到实际服务目录cfg/MySql.config、WinService.config等；现有MQTT.config固定同步为127.0.0.1:1883、空用户名和密码。MQTT服务对象只保存安装及运行状态。注册中心监控列表还会同步到当前 `RCName` 引用的 `t_scgd_sys_config_monitor` 记录，因为注册中心启动时以数据库值为准并回写本地文件：常规配置同步固定只写 `MySQL,CVMainService_x64,CVMainService_dev`，数据库记录和 `cfg/WinService.config` 的 `Monitor.Services` 保持一致；本地缺少该键时补齐。数据库中找不到当前注册中心对应的监控记录或匹配多个监控记录会使配置同步失败，避免修改错误目标。其它已存在的受管理配置写异常也可传播到安装编排、阻止后续启动，但缺配置文件会跳过。不能沿用“所有同步失败都阻止带旧配置启动”的保证。
 
 服务管理器的 CVWindowsService 页在“注册中心服务”的“更多操作”菜单中提供“移除归档服务检测”，其它服务行不显示此入口，用于旧部署仍按 `Monitor.Services` 反复尝试启动 `CVArchService` 的情况。`ServiceManagerViewModel.Monitoring.cs` 优先从已注册的注册中心程序路径定位 `cfg/WinService.config`，未注册时回退到安装根目录；`RegistrationCenterMonitorConfiguration` 从当前 `RCName` 对应数据库列表中，仅按完整服务名忽略大小写移除归档项，保留其它监控服务，并将清理后的数据库列表同步到本地文件，保留检测周期等其它配置。配置里的非空 `NodeName` 必须与当前 `RCName` 一致；缺文件、缺监控记录或匹配多个记录都报错。

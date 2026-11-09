@@ -578,6 +578,13 @@ namespace ColorVision.Update
                     return;
                 }
 
+                // Deleting the package task abandons this update; it must not start the full installer fallback.
+                if (task.Status == DownloadStatus.Deleted)
+                {
+                    completion.TrySetCanceled();
+                    return;
+                }
+
                 bool ready = task.Status == DownloadStatus.Completed
                     && IsApplicationPackageFileReady(task.SavePath, isIncremental, expectedVersion);
                 if (!ready && task.Status == DownloadStatus.Completed)

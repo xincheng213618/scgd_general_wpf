@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System.Reflection;
 using System.Text;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV058
 {
@@ -278,13 +279,15 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
             int id = 0;
             if (testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
             {
+                var foreground = new SolidColorBrush(Config.OverlayTextColor);
+                foreground.Freeze();
                 foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
                 {
                     id++;
-                    if (!ProcessExtensions.TryCreateMtfOverlay(item, id, Config.ShowConfig, out DVRectangleText Rectangle))
+                    if (!ProcessExtensions.TryCreateMtfOverlay(item, id, Config.ShowConfig, out DVRectangleText rectangle, foreground))
                         continue;
 
-                    ctx.ImageView.AddVisual(Rectangle);
+                    ctx.ImageView.AddVisual(rectangle);
                 }
             }
         }

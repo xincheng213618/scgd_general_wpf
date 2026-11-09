@@ -75,7 +75,8 @@ namespace ColorVision.Copilot
                     onUsageChanged: usage => reportedUsage = reportedUsage.MergeProgress(usage),
                     requestSystemContext: null,
                     imageAttachments: imageAttachments,
-                    cancellationToken: cancellationToken).ConfigureAwait(false);
+                    cancellationToken: cancellationToken,
+                    oneShot: true).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -220,7 +221,8 @@ namespace ColorVision.Copilot
             Action<CopilotTokenUsage>? onUsageChanged,
             string? requestSystemContext,
             IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool oneShot = false)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(messages);
@@ -276,6 +278,7 @@ namespace ColorVision.Copilot
                         requestMessages,
                         imagePayloads,
                         requestSystemContext,
+                        oneShot,
                         delta =>
                         {
                             responseStarted = true;
@@ -339,6 +342,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads,
             string? requestSystemContext,
+            bool oneShot,
             Action<CopilotStreamDelta> onDelta,
             Action<CopilotTokenUsage> onUsageChanged,
             CopilotProviderInactivityTimeouts inactivityTimeouts,
@@ -348,7 +352,8 @@ namespace ColorVision.Copilot
                 config,
                 messages,
                 imagePayloads,
-                requestSystemContext);
+                requestSystemContext,
+                oneShot);
             var firstResponseStopwatch = Stopwatch.StartNew();
             using var response = await SendResponseHeadersAsync(
                 request,
@@ -586,7 +591,8 @@ namespace ColorVision.Copilot
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads,
-            string? requestSystemContext)
+            string? requestSystemContext,
+            bool oneShot = false)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, CopilotProviderEndpoint.Build(config));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
@@ -621,6 +627,9 @@ namespace ColorVision.Copilot
 
                 if (CopilotReasoningRequestMapper.ShouldIncludeTemperature(config))
                     payload["temperature"] = config.Temperature;
+                // Writing to the cache costs extra, and titles, evaluations and compaction summaries are never sent again.
+                if (!oneShot && CopilotAnthropicPromptCacheChatClient.IsOfficialEndpoint(config))
+                    payload["cache_control"] = new { type = "ephemeral" };
             }
             else if (CopilotOpenAiRequestPolicy.UsesResponsesApi(config))
             {

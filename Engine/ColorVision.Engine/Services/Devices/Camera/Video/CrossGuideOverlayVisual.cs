@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -15,12 +14,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private static readonly Brush ExtensionBrush = new SolidColorBrush(Color.FromArgb(150, 185, 145, 255));
         private static readonly Brush LinkBrush = new SolidColorBrush(Color.FromArgb(210, 255, 210, 64));
         private static readonly Brush RotationBrush = new SolidColorBrush(Color.FromArgb(240, 255, 220, 64));
-        private static readonly Brush PassBrush = new SolidColorBrush(Color.FromArgb(230, 80, 255, 120));
-        private static readonly Brush FailBrush = new SolidColorBrush(Color.FromArgb(230, 255, 80, 80));
-        private static readonly Brush TextBackgroundBrush = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
 
         private VideoCrossGuideResult? _result;
-        private RealtimeCameraMetrics? _metrics;
         private bool _isAttached;
 
         public void Attach()
@@ -40,10 +35,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             RequestRender();
         }
 
-        public void Update(VideoCrossGuideResult result, RealtimeCameraMetrics metrics)
+        public void Update(VideoCrossGuideResult result)
         {
             _result = result;
-            _metrics = metrics;
             RequestRender();
         }
 
@@ -124,8 +118,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 dc.DrawLine(linkPen, result.StandardCenter, result.CrossCenter);
                 dc.DrawEllipse(null, xAxisPen, result.CrossCenter, markerHalfSize * 0.45, markerHalfSize * 0.45);
             }
-
-            DrawStatus(dc, result);
         }
 
         private static double GetLineThickness(VideoCrossGuideResult result)
@@ -231,74 +223,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             double dx = a.X - b.X;
             double dy = a.Y - b.Y;
             return dx * dx + dy * dy;
-        }
-
-        private void DrawStatus(DrawingContext dc, VideoCrossGuideResult result)
-        {
-            string text = BuildStatusText(result);
-
-            Brush textBrush = result.Found && result.IsPass ? PassBrush : FailBrush;
-            FormattedText formattedText = new(
-                text,
-                CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
-                new Typeface("Segoe UI"),
-                GetStatusFontSize(result),
-                textBrush,
-                VisualTreeHelper.GetDpi(this).PixelsPerDip);
-
-            Point origin = GetStatusOrigin(result, formattedText);
-            Rect background = new(origin.X - 4, origin.Y - 2, formattedText.Width + 8, formattedText.Height + 4);
-            dc.DrawRoundedRectangle(TextBackgroundBrush, null, background, 3, 3);
-            dc.DrawText(formattedText, origin);
-        }
-
-        private static double GetStatusFontSize(VideoCrossGuideResult result)
-            => Math.Clamp(Math.Min(result.FrameWidth, result.FrameHeight) * 0.022, 36, 180);
-
-        private string BuildStatusText(VideoCrossGuideResult result)
-        {
-            string metricsText = string.Empty;
-            if (_metrics.HasValue)
-            {
-                RealtimeCameraMetrics metrics = _metrics.Value;
-                metricsText = metrics.Articulation.HasValue
-                    ? string.Format(CultureInfo.InvariantCulture, Properties.Resources.VideoCrossGuide_MetricsWithClarity, metrics.Fps, metrics.Articulation.Value)
-                    : string.Format(CultureInfo.InvariantCulture, "fps:{0:F1}", metrics.Fps);
-            }
-
-            string resultText = result.Found
-                ? string.Format(
-                    CultureInfo.InvariantCulture,
-                    "dx(center):{0:F2}px  dy(center):{1:F2}px  d:{2:F2}px  {3}{4}Rotation:{5:+0.00;-0.00;0.00}deg  XRotation:{6:+0.00;-0.00;0.00}deg  YRotation:{7:+0.00;-0.00;0.00}deg",
-                    result.OffsetX,
-                    result.OffsetY,
-                    result.Distance,
-                    result.IsPass ? "PASS" : "NG",
-                    Environment.NewLine,
-                    result.RotationZDeg,
-                    result.XRotationDeg,
-                    result.YRotationDeg)
-                : result.Message;
-
-            return string.IsNullOrWhiteSpace(metricsText)
-                ? resultText
-                : metricsText + Environment.NewLine + resultText;
-        }
-
-        private static Point GetStatusOrigin(VideoCrossGuideResult result, FormattedText formattedText)
-        {
-            if (result.Roi.Width > 0 && result.Roi.Height > 0)
-            {
-                double x = Math.Max(0, Math.Min(result.Roi.Left, result.FrameWidth - formattedText.Width - 8));
-                double y = result.Roi.Top - formattedText.Height - 14;
-                if (y >= 0) return new Point(x, y);
-
-                y = Math.Min(result.Roi.Bottom + 6, Math.Max(0, result.FrameHeight - formattedText.Height - 4));
-                return new Point(x, y);
-            }
-
-            return new Point(6, 6);
         }
     }
 }

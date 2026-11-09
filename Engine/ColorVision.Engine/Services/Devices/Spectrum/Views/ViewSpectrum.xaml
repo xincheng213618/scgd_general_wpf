@@ -271,7 +271,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.Ra}" >
+                            <GridViewColumn x:Name="RaColumn" Header="{x:Static properties:Resources.Ra}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding ColorRendering.Ra, StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}"/>
@@ -285,112 +285,112 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R1">
+                            <GridViewColumn x:Name="R1Column" Header="R1">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[0], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R2">
+                            <GridViewColumn x:Name="R2Column" Header="R2">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[1], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R3">
+                            <GridViewColumn x:Name="R3Column" Header="R3">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[2], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R4">
+                            <GridViewColumn x:Name="R4Column" Header="R4">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[3], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R5">
+                            <GridViewColumn x:Name="R5Column" Header="R5">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[4], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R6">
+                            <GridViewColumn x:Name="R6Column" Header="R6">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[5], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R7">
+                            <GridViewColumn x:Name="R7Column" Header="R7">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[6], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R8">
+                            <GridViewColumn x:Name="R8Column" Header="R8">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[7], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R9">
+                            <GridViewColumn x:Name="R9Column" Header="R9">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[8], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R10">
+                            <GridViewColumn x:Name="R10Column" Header="R10">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[9], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R11">
+                            <GridViewColumn x:Name="R11Column" Header="R11">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[10], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R12">
+                            <GridViewColumn x:Name="R12Column" Header="R12">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[11], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R13">
+                            <GridViewColumn x:Name="R13Column" Header="R13">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[12], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R14">
+                            <GridViewColumn x:Name="R14Column" Header="R14">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[13], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="R15 (JIS)">
+                            <GridViewColumn x:Name="R15Column" Header="R15 (JIS)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingIndices[14], StringFormat={}{0:F2}, TargetNullValue=—}" ToolTip="{Binding RenderingStatusText}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="{display:EngineLang Key='显色性状态'}">
+                            <GridViewColumn x:Name="RenderingStatusColumn" Header="{display:EngineLang Key='显色性状态'}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RenderingStatusText}" ToolTip="{Binding RenderingStatusText}" />

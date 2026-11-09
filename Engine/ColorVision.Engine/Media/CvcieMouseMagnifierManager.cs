@@ -2,6 +2,7 @@ using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -25,6 +26,7 @@ namespace ColorVision.Engine.Media
     {
         private readonly EditorContext _context;
         private readonly ImageMouseInfoProvider _mouseInfoProvider;
+        private readonly CvcieProbeUpdates _updates;
         private readonly Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> _calculatePoi;
         private readonly Func<bool> _showDateFilePath;
         private readonly Func<int, int, (int pointIndex, int listIndex)> _findNearbyPoints;
@@ -35,6 +37,7 @@ namespace ColorVision.Engine.Media
 
         public CvcieMouseMagnifierManager(
             EditorContext editorContext,
+            Func<ValueTask<bool>> prepare,
             Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> calculatePoi,
             Func<bool> showDateFilePath,
             Func<int, int, (int pointIndex, int listIndex)> findNearbyPoints,
@@ -42,6 +45,7 @@ namespace ColorVision.Engine.Media
         {
             _context = editorContext;
             _mouseInfoProvider = editorContext.MouseInfoProvider;
+            _updates = new CvcieProbeUpdates(editorContext.ImageView, prepare, RenderSample);
             _calculatePoi = calculatePoi;
             _showDateFilePath = showDateFilePath;
             _findNearbyPoints = findNearbyPoints;
@@ -73,6 +77,7 @@ namespace ColorVision.Engine.Media
                 }
                 else
                 {
+                    _updates.Reset();
                     _mouseInfoProvider.PixelSampleChanged -= HandlePixelSampleChanged;
                     Image.MouseEnter -= MouseEnter;
                     Image.MouseLeave -= MouseLeave;
@@ -83,11 +88,11 @@ namespace ColorVision.Engine.Media
 
         private void HandlePixelSampleChanged(object? sender, ImagePixelSample pixelSample)
         {
-            if (!IsChecked)
-            {
-                return;
-            }
+            if (IsChecked) _updates.Update(pixelSample);
+        }
 
+        private void RenderSample(ImagePixelSample pixelSample)
+        {
             if (!TryRenderOverlay(pixelSample))
             {
                 DrawDefaultOverlay(pixelSample);
@@ -96,7 +101,11 @@ namespace ColorVision.Engine.Media
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
 
-        public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(false);
+        public void MouseLeave(object sender, MouseEventArgs e)
+        {
+            _updates.Reset();
+            DrawVisualImageControl(false);
+        }
 
         private bool TryRenderOverlay(ImagePixelSample pixelSample)
         {

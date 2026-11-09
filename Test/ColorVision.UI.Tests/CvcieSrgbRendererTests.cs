@@ -1,5 +1,6 @@
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -28,6 +29,70 @@ public sealed class CvcieSrgbRendererTests
         });
     }
 
+    [Fact]
+    public void FileTrueColorRendersTheEmbeddedXyz()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-true-color-{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = CreateFile(64, White(1), White(0));
+            file.Version = 2;
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+
+            StaTest.Run(() =>
+            {
+                WriteableBitmap bitmap = CvRawLayerController.LoadSrgb(path, CvcieBrightnessMode.Auto, 1);
+                Assert.Equal(new byte[] { 255, 255, 255, 0, 0, 0 }, ReadPixels(bitmap));
+            });
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(32, CvcieBrightnessMode.Auto)]
+    [InlineData(64, CvcieBrightnessMode.Auto)]
+    [InlineData(32, CvcieBrightnessMode.ReferenceWhite)]
+    [InlineData(64, CvcieBrightnessMode.ReferenceWhite)]
+    public void FileRenderingMatchesTheSerialOracleAcrossPaddedRowsAndPartialChunks(int bpp, CvcieBrightnessMode mode)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-srgb-chunks-{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = CreateLargeRandomFile(bpp);
+            file.Version = bpp == 32 ? 1u : 2u;
+            file.FileExtType = CVType.CIE;
+            file.Exp = [1, 1, 1];
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            byte[] expected = RenderSerialReference(file, mode, 0.7);
+
+            StaTest.Run(() => Assert.Equal(expected, ReadPixels(CvRawLayerController.LoadSrgb(path, mode, 0.7))));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FileRenderingRejectsTruncatedAndOversizedDeclaredPayloads(bool oversized)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-srgb-length-{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = CreateFile(32, White(1), White(0));
+            file.Version = 2;
+            if (oversized) file.Data = [.. file.Data, 0];
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            if (!oversized)
+            {
+                using FileStream stream = new(path, FileMode.Open, FileAccess.Write);
+                stream.SetLength(stream.Length - 1);
+            }
+
+            Assert.Throws<InvalidDataException>(() => CvRawLayerController.LoadSrgb(path, CvcieBrightnessMode.Auto, 1));
+        }
+        finally { File.Delete(path); }
+    }
+
     [Theory]
     [InlineData(0.001, 3)]
     [InlineData(0.0031308, 10)]
@@ -42,6 +107,30 @@ public sealed class CvcieSrgbRendererTests
             byte[] pixels = ReadPixels(CvcieSrgbRenderer.Render(file, CvcieBrightnessMode.ReferenceWhite, 1));
 
             Assert.Equal(new[] { encoded, encoded, encoded }, pixels);
+        });
+    }
+
+    [Fact]
+    public void SrgbEncodingMatchesTheOriginalFormulaAroundEveryByteTransition()
+    {
+        StaTest.Run(() =>
+        {
+            List<double> samples = [0, 1, 0.0031308 - 1e-10, 0.0031308, 0.0031308 + 1e-10];
+            for (int code = 0; code < byte.MaxValue; code++)
+            {
+                double encoded = (code + 0.5) / byte.MaxValue;
+                double linear = encoded <= 0.04045 ? encoded / 12.92 : Math.Pow((encoded + 0.055) / 1.055, 2.4);
+                samples.Add(linear - 1e-10);
+                samples.Add(linear);
+                samples.Add(linear + 1e-10);
+            }
+
+            // With Y and Z at zero, the blue component is 0.0556434 * X.
+            using CVCIEFile file = CreateFile(64, samples.Select(linear => (linear / 0.0556434, 0d, 0d)).ToArray());
+            const CvcieBrightnessMode mode = CvcieBrightnessMode.ReferenceWhite;
+            byte[] expected = RenderSerialReference(file, mode, 1);
+
+            Assert.Equal(expected, ReadPixels(CvcieSrgbRenderer.Render(file, mode, 1)));
         });
     }
 
@@ -263,7 +352,7 @@ public sealed class CvcieSrgbRendererTests
 
     private static CVCIEFile CreateLargeRandomFile(int bpp)
     {
-        const int width = 2048;
+        const int width = 2049; // Requires Bgr24 row padding and splits rows across chunks.
         const int height = 513; // Crosses the parallel threshold and ends in a partial chunk.
         byte[] data = new byte[width * height * 3 * (bpp / 8)];
         Random random = new(20260902);

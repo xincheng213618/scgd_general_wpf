@@ -1,6 +1,8 @@
 using ColorVision.Algorithms;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -15,6 +17,7 @@ namespace ColorVision.ImageEditor.Algorithms
         private const string ResultSchema = "colorvision.analysis.image-profile/v1";
         private const int EstimatedRowBaseBytes = 256;
         private const int EstimatedCellBytes = 256;
+        private const int MeasurementBatchSamples = 256;
         private static readonly IReadOnlySet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
 
         public AlgorithmProviderMetadata Metadata { get; } = new(
@@ -160,9 +163,20 @@ namespace ColorVision.ImageEditor.Algorithms
             int outputIndex = 0;
             int segmentIndex = 0;
             double[] raw = new double[image.Source?.RawChannelCount ?? image.Format.Channels()];
+            IBatchedImageProfileMeasurementSource? batchSource = image.Source as IBatchedImageProfileMeasurementSource;
+            int batchCapacity = batchSource == null ? 0 : Math.Min(requestedSamples, MeasurementBatchSamples);
+            bool bilinear = parameters.Interpolation != ImageProfileInterpolation.Nearest;
+            int neighbors = bilinear ? 4 : 1;
+            ProfileSample[] batch = batchCapacity == 0 ? [] : new ProfileSample[batchCapacity];
+            (int X, int Y)[] pixels = batchCapacity == 0 ? [] : new (int, int)[batchCapacity * neighbors];
+            (double X, double Y)[] weights = !bilinear || batchCapacity == 0 ? [] : new (double, double)[batchCapacity];
+            double[] pixelValues = batchCapacity == 0 ? [] : new double[pixels.Length * raw.Length];
+            int batchCount = 0;
             context.Progress?.Report(new AlgorithmProgress(0.05, "profile.sample", "Sampling image profile"));
-            Dictionary<string, object?> rowValues = new(columns.Count, StringComparer.Ordinal);
-            string[] statusNames = channels.Select(channel => channel.Name + "Status").ToArray();
+            using ProfileRowWriter rowWriter = new(columns, rows);
+            ProfileCell[] rowValues = new ProfileCell[rowWriter.ColumnCount];
+            int[] valueColumns = channels.Select(channel => rowWriter.GetColumn(channel.Name)).ToArray();
+            int[] statusColumns = channels.Select(channel => rowWriter.GetColumn(channel.Name + "Status")).ToArray();
             for (int requestedIndex = 0; requestedIndex < requestedSamples; requestedIndex++)
             {
                 if ((requestedIndex & 1023) == 0)
@@ -200,23 +214,84 @@ namespace ColorVision.ImageEditor.Algorithms
                     clamped++;
                 }
 
-                SampleRaw(image, x, y, parameters.Interpolation, raw);
-                rowValues["SampleIndex"] = outputIndex;
-                rowValues["RequestedIndex"] = requestedIndex;
-                rowValues["SegmentIndex"] = segment.OriginalIndex;
-                rowValues["DistancePixels"] = distance;
-                rowValues["DistanceMillimetres"] = segment.PhysicalStart + ratio * segment.PhysicalLength;
-                rowValues["XPixel"] = x;
-                rowValues["YPixel"] = y;
+                ProfileSample sample = new(requestedIndex, segment.OriginalIndex, distance,
+                    segment.PhysicalStart + ratio * segment.PhysicalLength, x, y);
+                if (batchSource == null)
+                {
+                    SampleRaw(image, x, y, parameters.Interpolation, raw);
+                    AppendSample(sample);
+                }
+                else
+                {
+                    batch[batchCount++] = sample;
+                    if (batchCount == batch.Length) FlushSamples();
+                }
+            }
+            FlushSamples();
+            rowWriter.Flush();
+
+            void FlushSamples()
+            {
+                if (batchCount == 0) return;
+                cancellationToken.ThrowIfCancellationRequested();
+                for (int index = 0; index < batchCount; index++)
+                {
+                    ProfileSample sample = batch[index];
+                    if (!bilinear)
+                        pixels[index] = (NearestPixel(sample.X, image.Width), NearestPixel(sample.Y, image.Height));
+                    else
+                    {
+                        var (x0, y0, x1, y1, tx, ty) = BilinearFootprint(image, sample.X, sample.Y);
+                        int first = index * neighbors;
+                        pixels[first] = (x0, y0);
+                        pixels[first + 1] = (x1, y0);
+                        pixels[first + 2] = (x0, y1);
+                        pixels[first + 3] = (x1, y1);
+                        weights[index] = (tx, ty);
+                    }
+                }
+
+                int channelsPerPixel = raw.Length;
+                int pixelCount = batchCount * neighbors;
+                batchSource!.ReadPixels(pixels.AsMemory(0, pixelCount), pixelValues.AsMemory(0, pixelCount * channelsPerPixel));
+                cancellationToken.ThrowIfCancellationRequested();
+                for (int index = 0; index < batchCount; index++)
+                {
+                    int offset = index * neighbors * channelsPerPixel;
+                    if (!bilinear) pixelValues.AsSpan(offset, channelsPerPixel).CopyTo(raw);
+                    else
+                    {
+                        var (tx, ty) = weights[index];
+                        for (int channel = 0; channel < channelsPerPixel; channel++, offset++)
+                        {
+                            double top = Lerp(pixelValues[offset], pixelValues[offset + channelsPerPixel], tx);
+                            double bottom = Lerp(pixelValues[offset + 2 * channelsPerPixel], pixelValues[offset + 3 * channelsPerPixel], tx);
+                            raw[channel] = Lerp(top, bottom, ty);
+                        }
+                    }
+                    AppendSample(batch[index]);
+                }
+                batchCount = 0;
+            }
+
+            void AppendSample(ProfileSample sample)
+            {
+                // The fixed columns occupy the first seven slots in the table layout above.
+                rowValues[0] = new(outputIndex++, IsInteger: true);
+                rowValues[1] = new(sample.RequestedIndex, IsInteger: true);
+                rowValues[2] = new(sample.SegmentIndex, IsInteger: true);
+                rowValues[3] = new(sample.Distance);
+                rowValues[4] = new(sample.PhysicalDistance);
+                rowValues[5] = new(sample.X);
+                rowValues[6] = new(sample.Y);
                 for (int channelIndex = 0; channelIndex < channels.Length; channelIndex++)
                 {
                     double value = channels[channelIndex].Read(raw);
-                    rowValues[channels[channelIndex].Name] = double.IsFinite(value) ? value : null;
-                    rowValues[statusNames[channelIndex]] = Classification(value);
+                    rowValues[valueColumns[channelIndex]] = double.IsFinite(value) ? new(value) : new(0, IsNull: true);
+                    rowValues[statusColumns[channelIndex]] = new(0, Status: Classification(value));
                     statistics[channelIndex].Add(value);
                 }
-                rows.Add(SnapshotRow(rowValues));
-                outputIndex++;
+                rowWriter.Append(rowValues);
             }
 
             if (rows.Count == 0)
@@ -336,22 +411,27 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             if (interpolation == ImageProfileInterpolation.Nearest)
             {
-                ReadRaw(image, Math.Clamp((int)Math.Floor(x + 0.5), 0, image.Width - 1), Math.Clamp((int)Math.Floor(y + 0.5), 0, image.Height - 1), result);
+                ReadRaw(image, NearestPixel(x, image.Width), NearestPixel(y, image.Height), result);
                 return;
             }
 
-            int x0 = Math.Clamp((int)Math.Floor(x), 0, image.Width - 1);
-            int y0 = Math.Clamp((int)Math.Floor(y), 0, image.Height - 1);
-            int x1 = Math.Min(x0 + 1, image.Width - 1);
-            int y1 = Math.Min(y0 + 1, image.Height - 1);
-            double tx = x - Math.Floor(x);
-            double ty = y - Math.Floor(y);
+            var (x0, y0, x1, y1, tx, ty) = BilinearFootprint(image, x, y);
             for (int channel = 0; channel < result.Length; channel++)
             {
                 double top = Lerp(ReadRaw(image, x0, y0, channel), ReadRaw(image, x1, y0, channel), tx);
                 double bottom = Lerp(ReadRaw(image, x0, y1, channel), ReadRaw(image, x1, y1, channel), tx);
                 result[channel] = Lerp(top, bottom, ty);
             }
+        }
+
+        private static int NearestPixel(double coordinate, int size) => Math.Clamp((int)Math.Floor(coordinate + 0.5), 0, size - 1);
+
+        private static (int X0, int Y0, int X1, int Y1, double Tx, double Ty) BilinearFootprint(ProfileRaster image, double x, double y)
+        {
+            double floorX = Math.Floor(x), floorY = Math.Floor(y);
+            int x0 = Math.Clamp((int)floorX, 0, image.Width - 1);
+            int y0 = Math.Clamp((int)floorY, 0, image.Height - 1);
+            return (x0, y0, Math.Min(x0 + 1, image.Width - 1), Math.Min(y0 + 1, image.Height - 1), x - floorX, y - floorY);
         }
 
         private static double Lerp(double start, double end, double amount)
@@ -416,19 +496,99 @@ namespace ColorVision.ImageEditor.Algorithms
                 Failures = [new AlgorithmFailure(code, message, path)],
             };
 
-        private static Dictionary<string, JsonElement> SnapshotRow(Dictionary<string, object?> values)
+        private readonly record struct ProfileSample(int RequestedIndex, int SegmentIndex, double Distance, double PhysicalDistance, double X, double Y);
+
+        private readonly record struct ProfileCell(double Number, string? Status = null, bool IsInteger = false, bool IsNull = false)
         {
-            // One independent JSON owner per row. Pair its properties with the same
-            // dictionary's insertion order to retain existing column-name strings.
-            JsonElement serialized = AlgorithmJson.ToElement(values);
-            JsonElement.ObjectEnumerator properties = serialized.EnumerateObject();
-            Dictionary<string, JsonElement> row = new(values.Count, StringComparer.Ordinal);
-            foreach (string name in values.Keys)
+            public void Write(Utf8JsonWriter writer)
             {
-                properties.MoveNext();
-                row.Add(name, properties.Current.Value);
+                if (Status != null) writer.WriteStringValue(Status);
+                else if (IsNull) writer.WriteNullValue();
+                else if (IsInteger) writer.WriteNumberValue((int)Number);
+                else if (double.IsFinite(Number)) writer.WriteNumberValue(Number);
+                else writer.WriteStringValue(double.IsNaN(Number) ? "NaN" : double.IsPositiveInfinity(Number) ? "Infinity" : "-Infinity");
             }
-            return row;
+        }
+
+        private sealed class ProfileRowWriter : IDisposable
+        {
+            private const int BlockRows = 256;
+            private readonly ArrayBufferWriter<byte> _buffer = new();
+            private readonly Utf8JsonWriter _writer;
+            private readonly List<IReadOnlyDictionary<string, JsonElement>> _rows;
+            private readonly Dictionary<string, int> _columns = new(StringComparer.Ordinal);
+            private readonly IReadOnlyList<string> _names;
+            private int _pendingRows;
+
+            public ProfileRowWriter(List<AlgorithmTableColumn> columns, List<IReadOnlyDictionary<string, JsonElement>> rows)
+            {
+                List<string> names = new(columns.Count);
+                foreach (AlgorithmTableColumn column in columns)
+                {
+                    // Preserve the first position and last assigned value when names overlap.
+                    if (_columns.TryAdd(column.Name, names.Count)) names.Add(column.Name);
+                }
+                _names = names.AsReadOnly();
+                _rows = rows;
+                _writer = new Utf8JsonWriter(_buffer);
+            }
+
+            public int ColumnCount => _names.Count;
+            public int GetColumn(string name) => _columns[name];
+
+            public void Append(ReadOnlySpan<ProfileCell> values)
+            {
+                if (_pendingRows == 0) _writer.WriteStartArray();
+                _writer.WriteStartArray();
+                foreach (ProfileCell value in values) value.Write(_writer);
+                _writer.WriteEndArray();
+                if (++_pendingRows == BlockRows) Flush();
+            }
+
+            public void Flush()
+            {
+                if (_pendingRows == 0) return;
+                _writer.WriteEndArray();
+                _writer.Flush();
+                // A block owns only its typed cells. Rows share the column map and keep the block
+                // alive independently of the reusable encoding buffer and the result's other rows.
+                using (JsonDocument document = JsonDocument.Parse(_buffer.WrittenMemory))
+                {
+                    foreach (JsonElement cells in document.RootElement.Clone().EnumerateArray())
+                        _rows.Add(new ProfileRow(_names, _columns, cells));
+                }
+                _buffer.ResetWrittenCount();
+                _writer.Reset(_buffer);
+                _pendingRows = 0;
+            }
+
+            public void Dispose() => _writer.Dispose();
+        }
+
+        private sealed class ProfileRow(IReadOnlyList<string> names, Dictionary<string, int> columns, JsonElement cells)
+            : IReadOnlyDictionary<string, JsonElement>
+        {
+            public int Count => names.Count;
+            public IEnumerable<string> Keys => names;
+            public IEnumerable<JsonElement> Values => cells.EnumerateArray();
+            public JsonElement this[string key] => cells[columns[key]];
+
+            public bool ContainsKey(string key) => columns.ContainsKey(key);
+
+            public bool TryGetValue(string key, out JsonElement value)
+            {
+                bool found = columns.TryGetValue(key, out int column);
+                value = found ? cells[column] : default;
+                return found;
+            }
+
+            public IEnumerator<KeyValuePair<string, JsonElement>> GetEnumerator()
+            {
+                int index = 0;
+                foreach (JsonElement cell in cells.EnumerateArray()) yield return new(names[index++], cell);
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         private sealed class ProfileRaster

@@ -10,6 +10,7 @@ using System.Collections.Specialized;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -162,6 +163,7 @@ public sealed class ExportCieTests
                 BitmapFrame reopened = ReadFrame(secondPath);
                 Assert.True(ColorVisionTiffParameters.TryRead(reopened.Metadata as BitmapMetadata, out var copied));
                 Assert.True(JToken.DeepEquals(parameters.Calibration, copied!.Calibration));
+                Assert.Equal("calibration-input", copied.PixelRole);
                 Assert.Equal(parameters.PixelSha256, copied.PixelSha256);
 
                 // An edit with identical dimensions cannot acquire replay rights from the old metadata.
@@ -177,6 +179,35 @@ public sealed class ExportCieTests
             });
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void BindsRgb48AcrossBlocksWithoutHashingPaddingOrChangingSource()
+    {
+        const int width = 1025;
+        const int height = 173;
+        const int rowBytes = width * 6;
+        using Mat owner = new(height + 2, width + 2, MatType.CV_16UC3, Scalar.All(54321));
+        using Mat image = new(owner, new OpenCvSharp.Rect(1, 1, width, height));
+        Assert.False(image.IsContinuous());
+        byte[] bgr = new byte[rowBytes * height];
+        new Random(71).NextBytes(bgr);
+        for (int y = 0; y < height; y++) Marshal.Copy(bgr, y * rowBytes, image.Ptr(y), rowBytes);
+        using Mat original = owner.Clone();
+        byte[] rgb = bgr.ToArray();
+        for (int pixel = 0; pixel < rgb.Length; pixel += 6)
+        {
+            (rgb[pixel], rgb[pixel + 4]) = (rgb[pixel + 4], rgb[pixel]);
+            (rgb[pixel + 1], rgb[pixel + 5]) = (rgb[pixel + 5], rgb[pixel + 1]);
+        }
+
+        ColorVisionTiffParameters parameters = new();
+        CalibratedImageExport.BindPixels(parameters, image);
+
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(rgb)), parameters.PixelSha256);
+        Assert.Equal(3, parameters.PixelChannels);
+        Assert.Equal("Rgb48", parameters.PixelLayout);
+        Assert.Equal(0d, Cv2.Norm(original, owner, NormTypes.INF));
     }
 
     [Fact]

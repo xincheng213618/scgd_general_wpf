@@ -6,6 +6,7 @@ using ProjectARVRPro.Process.KeyedResults;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
+using ProjectARVRPro.Process.Uniformity;
 using System.Collections;
 using System.ComponentModel;
 using System.Globalization;
@@ -17,7 +18,7 @@ namespace ProjectARVRPro.Exports.Lux;
 internal static class LuxCsvProjector
 {
     internal static IReadOnlyList<ObjectiveTestCsvRow> CollectRows(ObjectiveTestResult result, LuxCsvFormat format, IReadOnlyList<ProjectARVRReuslt>? flowResults = null,
-        LuxMtfPointFormat mtfPointFormat = LuxMtfPointFormat.Mtf058)
+        LuxMtfPointFormat mtfPointFormat = LuxMtfPointFormat.Mtf058, UniformityDisplayFormat luminanceUniformityFormat = UniformityDisplayFormat.Percentage)
     {
         ArgumentNullException.ThrowIfNull(result);
         var rows = new List<ObjectiveTestCsvRow>();
@@ -28,7 +29,7 @@ internal static class LuxCsvProjector
         object? fov = KeyedTestResultDictionary.TryGetValue(result.FieldOfViewTestResults, "White", out var keyedFov)
             ? keyedFov : result.W51TestResult;
         if (white != null)
-            CollectWhite(white, fov, format, rows);
+            CollectWhite(white, fov, format, luminanceUniformityFormat, rows);
         else if (fov != null)
             AddObject(fov, "W255", format, rows, null, mtfPointFormat);
 
@@ -123,7 +124,7 @@ internal static class LuxCsvProjector
         rows.Add(ItemRow(Read("ChessboardContrast"), screen, "Contrast_radio", "", 1));
     }
 
-    private static void CollectWhite(object source, object? fov, LuxCsvFormat format, List<ObjectiveTestCsvRow> rows)
+    private static void CollectWhite(object source, object? fov, LuxCsvFormat format, UniformityDisplayFormat luminanceUniformityFormat, List<ObjectiveTestCsvRow> rows)
     {
         PoixyuvData[] points = (source.GetType().GetProperty("PoixyuvDatas")?.GetValue(source) as IEnumerable<PoixyuvData>)?.ToArray() ?? [];
         foreach (LuxCsvField field in LuxCsvSchema.White)
@@ -160,7 +161,9 @@ internal static class LuxCsvProjector
                 item = new ObjectiveTestItem { Value = points.Average(point => point.Y) };
             if (field.PropertyName.EndsWith("FieldOfViewAngle", StringComparison.Ordinal))
                 item = ReadItem(fov, field.PropertyName) ?? item;
-            rows.Add(ItemRow(item, "W255", name, unit, field.PropertyName == "LuminanceUniformity" ? 100 : 1));
+            // LUX clients identify this item by its archived name in both numeric formats.
+            double factor = field.PropertyName == "LuminanceUniformity" && luminanceUniformityFormat != UniformityDisplayFormat.Decimal ? 100 : 1;
+            rows.Add(ItemRow(item, "W255", name, unit, factor));
         }
     }
 

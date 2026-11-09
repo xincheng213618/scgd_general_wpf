@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 28
+CURRENT_SCHEMA_VERSION = 29
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -101,6 +101,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v27(db)
     if from_version < 28:
         _migration_v28(db)
+    if from_version < 29:
+        _migration_v29(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -703,6 +705,64 @@ def _migration_v28(db: sqlite3.Connection):
                 "UPDATE api_keys SET scopes = ? WHERE id = ?",
                 (",".join(scopes), row["id"]),
             )
+
+
+def _migration_v29(db: sqlite3.Connection):
+    """v29: Persist optional desktop licenses, device leases and proofs."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS activation_licenses (
+            id              TEXT PRIMARY KEY,
+            code_hash       TEXT NOT NULL UNIQUE,
+            owner_device_id TEXT NOT NULL UNIQUE,
+            device_limit    INTEGER NOT NULL CHECK(device_limit > 0),
+            issued_at       INTEGER NOT NULL,
+            expires_at      INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS activation_devices (
+            device_id       TEXT PRIMARY KEY,
+            license_id      TEXT NOT NULL REFERENCES activation_licenses(id),
+            device_name    TEXT NOT NULL,
+            mode           TEXT NOT NULL CHECK(mode IN ('online', 'offline')),
+            activated_at   INTEGER NOT NULL,
+            last_seen_at   INTEGER NOT NULL,
+            expires_at     INTEGER NOT NULL,
+            released_at    INTEGER
+        );
+        CREATE INDEX IF NOT EXISTS idx_activation_device_seats
+            ON activation_devices(license_id, expires_at) WHERE released_at IS NULL;
+        CREATE INDEX IF NOT EXISTS idx_activation_device_history
+            ON activation_devices(license_id, last_seen_at);
+
+        CREATE TABLE IF NOT EXISTS activation_challenges (
+            id              TEXT PRIMARY KEY,
+            challenge       BLOB NOT NULL,
+            action          TEXT NOT NULL,
+            public_key      BLOB NOT NULL,
+            device_name     TEXT,
+            mode            TEXT,
+            code_hash       TEXT,
+            source          TEXT NOT NULL,
+            expires_at      INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_activation_challenge_expiry
+            ON activation_challenges(expires_at);
+
+        CREATE TABLE IF NOT EXISTS activation_rate_limits (
+            bucket          TEXT PRIMARY KEY,
+            expires_at      INTEGER NOT NULL,
+            attempt_count   INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_activation_rate_limit_expiry
+            ON activation_rate_limits(expires_at);
+
+        CREATE TABLE IF NOT EXISTS activation_secrets (
+            id              INTEGER PRIMARY KEY CHECK(id = 1),
+            code_key        BLOB NOT NULL,
+            signing_key     BLOB NOT NULL
+        );
+        """
+    )
 
 
 def _table_exists(db: sqlite3.Connection, table: str) -> bool:

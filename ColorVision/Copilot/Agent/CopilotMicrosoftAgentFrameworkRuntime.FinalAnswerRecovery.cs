@@ -62,9 +62,10 @@ namespace ColorVision.Copilot
             CopilotAgentBlockerSnapshot? providerFailure = null;
             try
             {
-                var repairResponse = await contextRecoveryChatClient.GetResponseAsync(
+                var repairResponse = await GetFinalAnswerResponseAsync(
+                    contextRecoveryChatClient,
                     repairMessages,
-                    BuildFinalAnswerOptions(request),
+                    request,
                     cancellationToken);
                 usage = usage.Add(CopilotTokenBudgetChatClient.ExtractResponseUsage(repairResponse));
                 var repairLengthLimited = IsLengthLimitedOutput(repairResponse.FinishReason);

@@ -19,8 +19,7 @@ namespace ColorVision.Copilot
             }
 
             if (ContainsAnyEnglishWordForm(request.UserText, LocalScopeMarkers)
-                || ContainsAny(request.UserText, WorkspaceEditMarkers)
-                    && !ContainsAny(request.UserText, WorkspaceEditExplanationMarkers)
+                || AsksToEditWorkspace(request)
                 || ContainsAny(request.UserText, WorkspaceCreateMarkers)
                     && !ContainsAny(request.UserText, WorkspaceCreateExplanationMarkers)
                 || ContainsAny(request.UserText, WorkspaceRollbackMarkers))
@@ -76,7 +75,18 @@ namespace ColorVision.Copilot
                 && !string.IsNullOrWhiteSpace(request!.UserText)
                 && !ExplicitlyDisallowsWriteAccess(request)
                 && (request.WritableLocalRootPaths.Count > 0 || request.WritableLocalFilePaths.Count > 0)
-                && !ContainsAny(request.UserText, WorkspaceEditOptOutMarkers);
+                && !OptsOutOfEditing(request.UserText);
+        }
+
+        // "修复这个 bug，接口不要改" still asks for an edit, so a bare "不要改" counts only as the whole
+        // closing clause; phrases naming the code or files count anywhere.
+        private static bool OptsOutOfEditing(string? text)
+        {
+            if (ContainsAny(text, WorkspaceEditOptOutMarkers))
+                return true;
+            var trimmed = (text ?? string.Empty).TrimEnd(ClosingPunctuation);
+            var lastClause = trimmed[(trimmed.LastIndexOfAny(ClauseSeparators) + 1)..].Trim();
+            return EditOptOutClauses.Contains(lastClause, StringComparer.Ordinal);
         }
 
         public static bool NeedsWorkspaceEdit(CopilotAgentRequest? request)
@@ -86,13 +96,27 @@ namespace ColorVision.Copilot
                 || request.Mode == CopilotAgentMode.Review
                 || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0
-                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers)
-                || ContainsAny(request.UserText, WorkspaceEditExplanationMarkers))
+                || OptsOutOfEditing(request.UserText))
             {
                 return false;
             }
 
-            return ContainsAny(request.UserText, WorkspaceEditMarkers);
+            return AsksToEditWorkspace(request);
+        }
+
+        private static bool AsksToEditWorkspace(CopilotAgentRequest request)
+        {
+            return ContainsAny(request.UserText, WorkspaceEditMarkers)
+                && !ContainsAny(request.UserText, WorkspaceEditExplanationMarkers)
+                && !RewritesConversationText(request);
+        }
+
+        private static bool RewritesConversationText(CopilotAgentRequest request)
+        {
+            return ContainsAny(request.UserText, ProseRewriteTargetMarkers)
+                && request.ReadableLocalFilePaths.Count == 0
+                && request.WritableLocalFilePaths.Count == 0
+                && !ContainsAny(request.UserText, LocalArtifactMarkers);
         }
 
         public static bool NeedsWorkspaceRollback(CopilotAgentRequest? request)
@@ -116,7 +140,7 @@ namespace ColorVision.Copilot
                 || request.Mode == CopilotAgentMode.Review
                 || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0
-                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers)
+                || OptsOutOfEditing(request.UserText)
                 || ContainsAny(request.UserText, WorkspaceCreateExplanationMarkers))
             {
                 return false;
@@ -138,7 +162,9 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var explicitlyRequestsValidation = ContainsAny(request.UserText, WorkspaceValidationMarkers);
+            var explicitlyRequestsValidation = ContainsAny(request.UserText, WorkspaceValidationMarkers)
+                || ContainsAny(request.UserText, ColloquialWorkspaceValidationMarkers)
+                    && !ContainsAny(request.UserText, ConceptualQuestionMarkers);
             if (request.Mode == CopilotAgentMode.Review)
                 return explicitlyRequestsValidation;
 
@@ -154,6 +180,10 @@ namespace ColorVision.Copilot
                 return false;
 
             return ContainsAny(request.UserText, ShellMarkers)
+                || !ContainsAny(request.UserText, ConceptualQuestionMarkers)
+                    && (ContainsAny(request.UserText, BackgroundShellStartMarkers)
+                        || request.UserText.Contains("命令", StringComparison.Ordinal)
+                            && ContainsAny(request.UserText, ShellCommandVerbMarkers))
                 || ContainsAny(request.UserText, ScriptRuntimeMarkers)
                     && ContainsAny(request.UserText, ScriptExecutionMarkers)
                 || ContainsAny(request.UserText, ScriptExecutionMarkers)
@@ -205,6 +235,7 @@ namespace ColorVision.Copilot
                 && !ExplicitlyDisallowsWriteAccess(request)
                 && !ContainsAny(request!.UserText, ConceptualQuestionMarkers)
                 && !ContainsAny(request.UserText, BatchImageAlgorithmAdvisoryMarkers)
+                && !IsBatchImageAdvisoryQuestion(request.UserText)
                 && !(ContainsAny(request.UserText, ScriptRuntimeMarkers)
                     && ContainsAny(request.UserText, ScriptExecutionMarkers))
                 && ContainsAny(request.UserText, BatchImageMarkers)
@@ -217,6 +248,13 @@ namespace ColorVision.Copilot
             return NeedsBatchImageProcessing(request)
                 && (ContainsAny(request!.UserText, BatchImageConversionMarkers)
                     || IsBatchImageAlgorithmMutation(request.UserText));
+        }
+
+        // "能把这些图片转成 PNG 吗" is a polite request; only asking whether the work is needed is advice.
+        private static bool IsBatchImageAdvisoryQuestion(string? text)
+        {
+            return ContainsAny(text, BatchImageAdvisoryQuestionMarkers)
+                && (text ?? string.Empty).TrimEnd(ClosingPunctuation).EndsWith('吗');
         }
 
         private static bool IsBatchImageAlgorithmMutation(string text)

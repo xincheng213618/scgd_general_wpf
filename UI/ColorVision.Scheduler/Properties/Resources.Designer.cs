@@ -30,6 +30,9 @@ namespace ColorVision.Scheduler.Properties {
         public static string Sched_ReenablePlan => ResourceManager.GetString("Sched_ReenablePlan", resourceCulture);
         public static string Sched_PlanEnabled => ResourceManager.GetString("Sched_PlanEnabled", resourceCulture);
         public static string Sched_WaitingExecution => ResourceManager.GetString("Sched_WaitingExecution", resourceCulture);
+        public static string Sched_StatusBarRunning => ResourceManager.GetString("Sched_StatusBarRunning", resourceCulture);
+        public static string Sched_StatusBarPausedRunning => ResourceManager.GetString("Sched_StatusBarPausedRunning", resourceCulture);
+        public static string Sched_StatusBarNextRun => ResourceManager.GetString("Sched_StatusBarNextRun", resourceCulture);
         public static string Sched_OnlyRunOnce => ResourceManager.GetString("Sched_OnlyRunOnce", resourceCulture);
         public static string Sched_ExecuteTaskHint => ResourceManager.GetString("Sched_ExecuteTaskHint", resourceCulture);
         public static string Sched_EnablePlanHint => ResourceManager.GetString("Sched_EnablePlanHint", resourceCulture);

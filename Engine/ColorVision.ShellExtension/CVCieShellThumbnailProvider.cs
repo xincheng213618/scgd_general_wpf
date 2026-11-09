@@ -24,6 +24,8 @@ namespace ColorVision.ShellExtension
         /// </summary>
         protected override CVType FileType => CVType.CIE;
 
+        protected override bool ReadsFirstCiePlane => true;
+
         /// <summary>
         /// Gets the provider name for logging.
         /// </summary>

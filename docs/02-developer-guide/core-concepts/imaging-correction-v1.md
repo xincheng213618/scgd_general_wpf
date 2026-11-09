@@ -151,7 +151,7 @@ JSON/CSV 使用 UTF-8 BOM，拒绝覆盖主文件及任何伴随文件。统一�
 
 Catalog 别名 `ImagingCorrection`、`DarkFrameCorrection`、`FlatFieldCorrection`、`ShadingCorrection`、`BadPixelCorrection` 都解析到同一个参数化算法，不自动开启某个阶段。
 
-批量图像处理列表可选择成像校正并编辑同一参数对象，默认后缀为 `_corrected`。每张源图执行时重新从启用路径加载参考，source Mat 使用默认 96 DPI；同批尺寸/格式不同的图像不能自动匹配同一参考。标准 Batch 只取得 primary 校正图，mask 和追溯 artifact 随结果释放，不自动另存；最终编码格式遵循批量输出策略。
+批量图像处理可选择成像校正，默认后缀为 `_corrected`。每张源图执行前核对启用路径的文件哈希，哈希一致时复用本批参考像素，内容变化时重新解码。source Mat 使用默认 96 DPI，各参考仍按对应阶段校验尺寸和格式。Batch 按输出设置保存 primary 校正图，mask 和追溯 artifact 随结果释放。
 
 `LocalFlowImageAlgorithmAdapter.ExecuteRawSetAsync` 接受含 `source` 的命名帧集合，复制 RAW 输入、不取得外层 lease 所有权；当前桥接支持 8/16-bit、1/3/4 通道、默认 96 DPI。它不从参数路径读取参考，也不注册生产 Flow 节点，接入边界见[统一平台](./image-algorithm-platform-v1.md#执行平面与兼容层)。本算法未进入 Copilot 白名单。
 

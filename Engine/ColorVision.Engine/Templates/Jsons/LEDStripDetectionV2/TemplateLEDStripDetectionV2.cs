@@ -23,6 +23,8 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 
     public class TemplateLEDStripDetectionV2 : ITemplateJson<TJLEDStripDetectionV2Param>, IITemplateLoad
     {
+        public override bool IsRetired => true;
+
         public static ObservableCollection<TemplateModel<TJLEDStripDetectionV2Param>> Params { get; set; } = new ObservableCollection<TemplateModel<TJLEDStripDetectionV2Param>>();
 
         public TemplateLEDStripDetectionV2()

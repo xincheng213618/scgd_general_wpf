@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Database;
 using Newtonsoft.Json;
 using SqlSugar;
+using System.Collections.Specialized;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
@@ -125,7 +126,8 @@ public sealed class ResultHistoryTests
             using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite, IsAutoCloseConnection = false });
             db.CodeFirst.InitTables<Row>();
             db.Insertable(Enumerable.Range(1, 10).Select(id => new Row { Id = id }).ToArray()).ExecuteCommand();
-            var rows = new ResultHistoryCollection<Row>(row => row.Id, 3);
+            var rows = new ResultHistoryCollection<Row>(row => row.Id, 3) { new() { Id = 100 } };
+            ListView list = new() { ItemsSource = rows, SelectedItem = rows[0] };
             int conversions = 0;
             var batchInputs = new List<int[]>();
             var batchOutputs = new List<Row[]>();
@@ -148,7 +150,14 @@ public sealed class ResultHistoryTests
                 query = convertedQuery;
             }
             query.QueryConfig.Count = requested;
+            var changes = new List<NotifyCollectionChangedAction>();
+            NotifyCollectionChangedEventHandler onChanged = (_, e) => changes.Add(e.Action);
+            rows.CollectionChanged += onChanged;
             query.QueryDB();
+            rows.CollectionChanged -= onChanged;
+            Assert.Equal(new[] { NotifyCollectionChangedAction.Reset, NotifyCollectionChangedAction.Reset }, changes);
+            Assert.Null(list.SelectedItem);
+            Assert.Equal(expected, list.Items.Count);
             Assert.Equal(expected, rows.Count);
             Assert.Equal(Enumerable.Range(11 - expected, expected).Reverse(), rows.Select(row => row.Id));
             Assert.Equal(conversionMode == 1 ? expected : 0, conversions);
@@ -174,19 +183,57 @@ public sealed class ResultHistoryTests
             }
             rows.Add(new Row { Id = 14 });
             Assert.Equal(14, Assert.Single(rows).Id);
+            list.ItemsSource = null;
         });
     }
 
     [Fact]
-    public void LargeSearchLoadsFullyAndContinuousTestingCanEvictItsRecords()
+    public void BatchQueryKeepsTheUniqueRowsAlreadyConvertedIfEnumerationFails()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var rows = new ResultHistoryCollection<Row>(row => row.Id, 1);
+            ListView list = new() { ItemsSource = rows };
+            var first = new Row { Id = 3 };
+
+            IEnumerable<Row> ConvertRows()
+            {
+                yield return first;
+                yield return new Row { Id = first.Id };
+                throw new InvalidOperationException("Conversion failed.");
+            }
+
+            Assert.Throws<InvalidOperationException>(() => rows.QueryResults.AddRange(ConvertRows()));
+            Assert.Same(first, Assert.Single(list.Items.Cast<Row>()));
+            Assert.True(rows.ContainsId(first.Id));
+            rows.Add(new Row { Id = 4 });
+            Assert.Equal(4, Assert.Single(list.Items.Cast<Row>()).Id);
+            list.ItemsSource = null;
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LargeSearchLoadsFullyAndResumingLiveResultsPreservesSelectionOnlyForRetainedRows(bool selectRetained)
     {
         WpfTestHost.Invoke(() =>
         {
             var rows = new ResultHistoryCollection<Row>(row => row.Id, 500);
             for (int id = 1; id <= 1000; id++) rows.QueryResults.Add(new Row { Id = id });
-            Row selected = rows[0];
+            Row selected = selectRetained ? rows[^1] : rows[0];
             ListView list = new() { ItemsSource = rows, SelectedItem = selected };
-            for (int id = 1001; id <= 1600; id++) rows.Insert(0, new Row { Id = id });
+            var changes = new List<NotifyCollectionChangedAction>();
+            NotifyCollectionChangedEventHandler onChanged = (_, e) => changes.Add(e.Action);
+            rows.CollectionChanged += onChanged;
+            rows.Insert(0, new Row { Id = 1001 });
+            rows.CollectionChanged -= onChanged;
+            Assert.Equal(new[] { NotifyCollectionChangedAction.Reset, NotifyCollectionChangedAction.Remove, NotifyCollectionChangedAction.Add }, changes);
+            Assert.Same(selectRetained ? selected : null, list.SelectedItem);
+            Assert.Equal(Enumerable.Range(502, 499).Prepend(1001), rows.Select(row => row.Id));
+            Assert.False(rows.ContainsId(501));
+
+            for (int id = 1002; id <= 1600; id++) rows.Insert(0, new Row { Id = id });
             rows.Move(0, rows.Count - 1);
             rows.Add(new Row { Id = 1600 });
             rows.Add(new Row { Id = 1001 });

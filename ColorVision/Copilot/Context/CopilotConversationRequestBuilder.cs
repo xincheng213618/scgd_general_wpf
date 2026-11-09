@@ -574,6 +574,13 @@ namespace ColorVision.Copilot
             cancellationToken.ThrowIfCancellationRequested();
             var prefix = new byte[BinaryInspectionBytes];
             var prefixLength = await ReadPrefixAsync(stream, prefix, cancellationToken).ConfigureAwait(false);
+            if (CopilotPdfTextExtractor.HasPdfSignature(prefix.AsSpan(0, prefixLength)))
+            {
+                var pdfText = await Task.Run(() => CopilotPdfTextExtractor.Extract(filePath, cancellationToken), cancellationToken).ConfigureAwait(false);
+                return pdfText.Length > AttachmentContentLimit
+                    ? new CopilotBoundedTextFileContent(pdfText[..AttachmentContentLimit], WasTruncated: true, IsBinary: false)
+                    : new CopilotBoundedTextFileContent(pdfText, WasTruncated: false, IsBinary: false);
+            }
             if (IsBinaryFilePrefix(prefix.AsSpan(0, prefixLength)))
                 return new CopilotBoundedTextFileContent(string.Empty, WasTruncated: false, IsBinary: true);
 

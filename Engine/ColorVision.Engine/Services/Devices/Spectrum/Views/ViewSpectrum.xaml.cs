@@ -147,6 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
                 ViewSpectrumConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 ViewSpectrumConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                ApplyColorRenderingColumnVisibility();
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
@@ -157,6 +158,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             DisplayConfig_IsIsLuminousFluxModeChanged();
             DisplayConfig.IsIsLuminousFluxModeChanged += LuminousFluxModeChanged;
             PropertyChangedEventManager.AddHandler(Config, SpectrumConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowSpectrumFill));
+            PropertyChangedEventManager.AddHandler(Config, ColorRenderingConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowColorRendering));
             ThemeManager.Current.CurrentUIThemeChanged += ApplySpectrumTheme;
             ApplySpectrumTheme(ThemeManager.Current.CurrentUITheme);
             InitializeSpectrumAnalysis();
@@ -175,6 +177,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 DisplayConfig.IsIsLuminousFluxModeChanged -= LuminousFluxModeChanged;
                 PropertyChangedEventManager.RemoveHandler(Config, SpectrumConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowSpectrumFill));
+                PropertyChangedEventManager.RemoveHandler(Config, ColorRenderingConfig_PropertyChanged, nameof(ViewSpectrumConfig.IsShowColorRendering));
                 ThemeManager.Current.CurrentUIThemeChanged -= ApplySpectrumTheme;
             }
             relativeCursor?.Dispose();
@@ -235,6 +238,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
         }
 
+        private void ColorRenderingConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+            => Dispatcher.Invoke(ApplyColorRenderingColumnVisibility);
+
+        private void ApplyColorRenderingColumnVisibility()
+        {
+            if (listView1.View is not GridView gridView) return;
+
+            HashSet<GridViewColumn> columns =
+            [
+                RaColumn, R1Column, R2Column, R3Column, R4Column, R5Column, R6Column, R7Column, R8Column,
+                R9Column, R10Column, R11Column, R12Column, R13Column, R14Column, R15Column, RenderingStatusColumn
+            ];
+            bool hideColumns = !Config.IsShowColorRendering;
+            foreach (var column in GridViewColumnVisibilitys)
+                if (columns.Contains(column.GridViewColumn))
+                    column.IsSuppressed = hideColumns;
+
+            GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+        }
+
         private void Delete()
         {
             var selected = listView1.SelectedItems.Cast<ViewResultSpectrum>().ToArray();
@@ -259,9 +282,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
             foreach (var item in contextMenu.Items.OfType<MenuItem>())
             {
-                if (BindingOperations.GetBinding(item, MenuItem.IsCheckedProperty)?.Source is GridViewColumnVisibility column
-                    && (column.GridViewColumn == VoltageColumn || column.GridViewColumn == CurrentColumn))
-                    item.Visibility = DisplayConfig.IsLuminousFluxMode ? Visibility.Visible : Visibility.Collapsed;
+                if (BindingOperations.GetBinding(item, MenuItem.IsCheckedProperty)?.Source is GridViewColumnVisibility column)
+                {
+                    bool isFluxOnly = column.GridViewColumn == VoltageColumn || column.GridViewColumn == CurrentColumn;
+                    item.Visibility = column.IsSuppressed || (isFluxOnly && !DisplayConfig.IsLuminousFluxMode)
+                        ? Visibility.Collapsed : Visibility.Visible;
+                }
             }
         }
 

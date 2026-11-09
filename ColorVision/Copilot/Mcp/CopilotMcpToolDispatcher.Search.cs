@@ -95,7 +95,10 @@ namespace ColorVision.Copilot.Mcp
             }
 
             var cursor = GetString(arguments, "cursor");
-            var result = CopilotGrepTextCapability.SearchWithinScope(searchRoots, roots, query, null, cursor, cancellationToken);
+            var result = CopilotGrepTextCapability.SearchWithinScope(
+                searchRoots, roots, query, null, cursor,
+                new CopilotTextSearchOptions(GetString(arguments, "glob"), GetBool(arguments, "regex") ?? false),
+                cancellationToken);
             return ToMcpResult(result.ToCapabilityResult(), "grep_failed");
         }
 

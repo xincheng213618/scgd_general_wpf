@@ -94,6 +94,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen = true;
 
+        // Remote camera services still read this value from the saved configuration.
+        [Browsable(false)]
         public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; OnPropertyChanged(); } }
         private ZBDebayer _ZBDebayer = new ZBDebayer();
 

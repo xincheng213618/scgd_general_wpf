@@ -266,6 +266,46 @@ public sealed class DockViewLifecycleTests
         }
     }
 
+    [Fact]
+    public void SpectrumRenderingVisibilityPreservesIndividualColumnPreferences()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var device = new DeviceSpectrum(Resource("spectrum"));
+            var config = ViewSpectrumConfig.Instance;
+            Assert.True(config.IsShowColorRendering);
+            config.IsShowColorRendering = false;
+            using var view = new ViewSpectrum(device);
+            var list = Assert.IsType<ListView>(view.FindName("listView1"));
+            var grid = Assert.IsType<GridView>(list.View);
+            var renderingColumns = Enumerable.Range(1, 15).Select(index => $"R{index}Column")
+                .Prepend("RaColumn").Append("RenderingStatusColumn")
+                .Select(name => Assert.IsType<GridViewColumn>(view.FindName(name))).ToArray();
+            Assert.All(renderingColumns, column => Assert.DoesNotContain(column, grid.Columns));
+
+            config.IsShowColorRendering = true;
+            Assert.All(renderingColumns, column => Assert.Contains(column, grid.Columns));
+            var columnMenu = Assert.IsType<ContextMenu>(list.FindResource("ItemContextMenu"));
+            columnMenu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent));
+            var r9 = Assert.Single(columnMenu.Items.OfType<MenuItem>(), item => Equals(item.Header, "R9"));
+            var r9Column = Assert.Single(renderingColumns, column => Equals(column.Header, r9.Header));
+            r9.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Assert.DoesNotContain(r9Column, grid.Columns);
+
+            config.IsShowColorRendering = false;
+            device.DisplayConfig.IsLuminousFluxMode = true;
+            columnMenu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent));
+            Assert.Equal(Visibility.Collapsed, r9.Visibility);
+            Assert.All(renderingColumns, column => Assert.DoesNotContain(column, grid.Columns));
+
+            config.IsShowColorRendering = true;
+            Assert.All(renderingColumns.Where(column => column != r9Column),
+                column => Assert.Contains(column, grid.Columns));
+            Assert.DoesNotContain(r9Column, grid.Columns);
+        });
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static WeakReference[] HideChartAndCapture(DeviceService device)
     {
@@ -508,6 +548,33 @@ public sealed class DockViewLifecycleTests
         });
     }
 
+    [Fact]
+    public void CameraViewBindsTheCurrentMotorVidWhenMappingIsEnabled()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var camera = new DeviceCamera(Resource("motor-vid"));
+            DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+            var view = camera.View;
+            view.EnsureInitialized();
+
+            camera.Config.MotorConfig.IsUseMotor = true;
+            camera.Config.MotorConfig.VID.IsUseVID = true;
+            camera.Config.MotorConfig.VIDPosition = 42.5;
+            Pump();
+            Assert.Null(view.FocusChart.MotorVid);
+
+            camera.CameraBackend.SetLocalStatus(DeviceStatusType.Opened);
+            Pump();
+            Assert.Equal(42.5, view.FocusChart.MotorVid);
+
+            camera.Config.MotorConfig.VID.IsUseVID = false;
+            Pump();
+            Assert.Null(view.FocusChart.MotorVid);
+        });
+    }
+
     [Theory]
     [InlineData("camera")]
     [InlineData("algorithm")]
@@ -527,7 +594,7 @@ public sealed class DockViewLifecycleTests
                 // Publication runs before the opener releases its load gate. Await that completion,
                 // so the close assertions observe cleanup rather than an in-flight load continuation.
                 SemaphoreSlim gate = WpfTestHost.Invoke(() => (SemaphoreSlim)typeof(CalibratedImageCapability)
-                    .GetField("_rawOpenGate", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetField("_fileOpenGate", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .GetValue(Image(device!).EditorContext.IImageOpen)!);
                 Assert.True(await gate.WaitAsync(TimeSpan.FromSeconds(15)));
                 gate.Release();
@@ -691,7 +758,7 @@ public sealed class DockViewLifecycleTests
             WpfTestHost.Invoke(() => { scope = new Scope(); device = CreateDevice("camera"); });
             await WpfTestHost.Invoke(() => OpenRaw(device!, first.Path)).WaitAsync(TimeSpan.FromSeconds(15));
             CVRawOpen opener = WpfTestHost.Invoke(() => Assert.IsType<CVRawOpen>(Image(device!).EditorContext.IImageOpen));
-            gate = GetOpenerField<SemaphoreSlim>(opener, "_rawOpenGate")!;
+            gate = GetOpenerField<SemaphoreSlim>(opener, "_fileOpenGate")!;
             Assert.True(await gate.WaitAsync(TimeSpan.FromSeconds(15)));
             held = true;
             CvRawPixelBuffer retired = GetOpenerField<CvRawPixelBuffer>(opener, "_rawPixels")!;

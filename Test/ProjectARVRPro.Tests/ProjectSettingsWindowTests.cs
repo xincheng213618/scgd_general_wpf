@@ -253,6 +253,49 @@ public sealed class ProjectSettingsWindowTests
         });
     }
 
+    [Theory]
+    [InlineData(nameof(ViewResultManagerConfig.IsSaveImageReuslt), nameof(ViewResultManagerConfig.UseFlowNameForResultImage), nameof(ViewResultManagerConfig.ResultImageFileNameTemplate))]
+    [InlineData(nameof(ViewResultManagerConfig.IsSaveSourceImage), nameof(ViewResultManagerConfig.UseFlowNameForSourceImage), nameof(ViewResultManagerConfig.SourceImageFileNameTemplate))]
+    public void ImageNamingControlsFollowTheCorrespondingSaveToggle(string saveProperty, string namingProperty, string templateProperty)
+    {
+        RunUi(true, () =>
+        {
+            var results = new ViewResultManagerConfig { IsSaveLink = true };
+            var window = CreateWindow(new(new(), results, true), ProjectSettingsPage.Images, 840, () => { });
+            try
+            {
+                window.Show();
+                Pump();
+                var save = FindEditor<ToggleButton>(window, saveProperty);
+                var naming = FindEditor<ToggleButton>(window, namingProperty);
+                var template = FindEditor<TextBox>(window, templateProperty);
+                Assert.False(naming.IsVisible);
+                Assert.False(template.IsVisible);
+
+                save.IsChecked = true;
+                Pump();
+                Assert.True(naming.IsVisible);
+                Assert.False(template.IsVisible);
+
+                naming.IsChecked = true;
+                Pump();
+                Assert.True(template.IsVisible);
+
+                save.IsChecked = false;
+                Pump();
+                Assert.False(naming.IsVisible);
+                Assert.False(template.IsVisible);
+
+                save.IsChecked = true;
+                Pump();
+                Assert.True(naming.IsVisible);
+                Assert.True(naming.IsChecked);
+                Assert.True(template.IsVisible);
+            }
+            finally { window.Close(); }
+        });
+    }
+
     private static ProjectSettingsWindow CreateWindow(ProjectSettingsSession session, ProjectSettingsPage initial, double width, Action persist) =>
         new(session, initial, persist, () => true) { Width = width, ShowActivated = false, ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.Manual, Left = -10000, Top = -10000 };
 

@@ -35,6 +35,8 @@ public sealed class SensorConfigurationDraftTests
             notified = true;
         };
         Assert.True(draft.TryApply(config, display, out string error), error);
+        Assert.True(draft.ServiceSettingsChanged);
+        Assert.True(draft.DisplaySettingsChanged);
         Assert.True(notified);
         Assert.Equal("Edited", config.Name);
         Assert.True(config.IsNet);
@@ -50,6 +52,32 @@ public sealed class SensorConfigurationDraftTests
         draft.DisplayConfig.UseLocalSensor = false;
         Assert.Equal("Edited", config.Name);
         Assert.True(display.UseLocalSensor);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EditingOneStorePreservesTheOtherStore(bool editService)
+    {
+        var config = new ConfigSensor { Name = "Original", Addr = "COM3", Port = 9600 };
+        var display = new DisplaySensorConfig();
+        var draft = new SensorConfigurationDraft(config, display);
+        if (editService)
+        {
+            draft.Config.Name = "Edited";
+            display.ConnectTimeout = 2500;
+        }
+        else
+        {
+            draft.DisplayConfig.ConnectTimeout = 2500;
+            config.Name = "Edited";
+        }
+
+        Assert.True(draft.TryApply(config, display, out string error), error);
+        Assert.Equal(editService, draft.ServiceSettingsChanged);
+        Assert.Equal(!editService, draft.DisplaySettingsChanged);
+        Assert.Equal("Edited", config.Name);
+        Assert.Equal(2500, display.ConnectTimeout);
     }
 
     [Theory]
@@ -70,6 +98,8 @@ public sealed class SensorConfigurationDraftTests
         draft.DisplayConfig.ConnectTimeout = timeout;
         draft.DisplayConfig.DataBits = bits;
         Assert.False(draft.TryApply(config, display, out string error));
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.False(draft.DisplaySettingsChanged);
         Assert.NotEmpty(error);
         Assert.Equal("Original", config.Name);
         Assert.Equal("COM3", config.Addr);

@@ -119,7 +119,11 @@ namespace ColorVision.Copilot
         public static bool HasProgress(ChatResponseUpdate update) => HasAny(update.Contents)
             // The SDK assembles FunctionCallContent only after all arguments arrive.
             // Nonempty argument fragments are response progress, not idle metadata.
-            || update.RawRepresentation is StreamingResponseFunctionCallArgumentsDeltaUpdate { Delta: { Length: > 0 } };
+            || update.RawRepresentation is StreamingResponseFunctionCallArgumentsDeltaUpdate { Delta: { Length: > 0 } }
+            || update.RawRepresentation is Anthropic.Models.Messages.RawMessageStreamEvent anthropicEvent
+                && anthropicEvent.TryPickContentBlockDelta(out var anthropicDelta)
+                && anthropicDelta.Delta.TryPickInputJson(out var anthropicInput)
+                && !string.IsNullOrEmpty(anthropicInput.PartialJson);
 
         public static bool HasAny(IEnumerable<AIContent>? contents)
         {

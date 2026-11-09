@@ -69,6 +69,29 @@ namespace ColorVision.Copilot
             ".xaml",
             ".yaml",
             ".yml",
+            // Omitting a real source format makes a completed search falsely report absence.
+            ".cc",
+            ".cjs",
+            ".editorconfig",
+            ".filters",
+            ".gitattributes",
+            ".gitignore",
+            ".gradle",
+            ".htm",
+            ".html",
+            ".hxx",
+            ".inc",
+            ".json5",
+            ".jsx",
+            ".manifest",
+            ".mjs",
+            ".properties",
+            ".psm1",
+            ".resx",
+            ".slnx",
+            ".toml",
+            ".vcxproj",
+            ".vue",
         };
 
         // Business exports can supply evidence without expanding the separate patch allowlist.
@@ -191,6 +214,19 @@ namespace ColorVision.Copilot
         {
             var extension = Path.GetExtension(filePath);
             return !string.IsNullOrWhiteSpace(extension) && TextFileExtensions.Contains(extension);
+        }
+
+        internal static bool TryExpandBraceGroup(string text, out string[] expressions)
+        {
+            var open = text.IndexOf('{');
+            var close = text.IndexOf('}');
+            expressions = [text];
+            if (open < 0 && close < 0)
+                return true;
+            if (open < 0 || close < open || text.IndexOf('{', open + 1) >= 0)
+                return false;
+            expressions = text[(open + 1)..close].Split(',').Select(option => text[..open] + option.Trim() + text[(close + 1)..]).ToArray();
+            return true;
         }
 
         public static bool IsReadableTextFile(string filePath) =>

@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Buffers;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
 using System.IO;
 using System.Windows.Interop;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.Common.Utilities
 {
@@ -29,75 +31,76 @@ namespace ColorVision.Common.Utilities
 
         public static (int[] c1, int[] c2, int[] c3) RenderHistogram(BitmapSource bitmapSource)
         {
+            int[] channel1 = new int[256];
+            int[] channel2 = new int[256];
+            int[] channel3 = new int[256];
+            PixelFormat format = bitmapSource.Format;
+            bool isGray = format == PixelFormats.Gray8 || format == PixelFormats.Gray16;
+            bool isRgb48 = format == PixelFormats.Rgb48;
+            if (!isGray && !isRgb48 && format != PixelFormats.Bgr24 && format != PixelFormats.Bgra32 && format != PixelFormats.Bgr32)
+                return (channel1, channel2, channel3);
+
             int width = bitmapSource.PixelWidth;
             int height = bitmapSource.PixelHeight;
-            int stride = width * ((bitmapSource.Format.BitsPerPixel + 7) / 8);
-            byte[] pixelData = new byte[height * stride];
-            bitmapSource.CopyPixels(pixelData, stride, 0);
-
-            int[] Channel1 = new int[256];
-            int[] Channel2 = new int[256];
-            int[] Channel3 = new int[256];
-
-            if (bitmapSource.Format == PixelFormats.Gray8)
+            int pixelBytes = format.BitsPerPixel / 8;
+            int stride = checked(width * pixelBytes);
+            const int targetBufferBytes = 64 * 1024;
+            int rowsPerChunk = Math.Min(height, Math.Max(1, targetBufferBytes / stride));
+            byte[] pixelData = ArrayPool<byte>.Shared.Rent(checked(rowsPerChunk * stride));
+            try
             {
-                for (int i = 0; i < pixelData.Length; i++)
+                for (int top = 0; top < height;)
                 {
-                    byte gray = pixelData[i];
-                    Channel1[gray]++;
-                    Channel2[gray]++;
-                    Channel3[gray]++;
+                    int rowCount = Math.Min(rowsPerChunk, height - top);
+                    bitmapSource.CopyPixels(new Int32Rect(0, top, width, rowCount), pixelData, stride, 0);
+                    int length = rowCount * stride;
+                    if (isGray)
+                    {
+                        for (int i = pixelBytes - 1; i < length; i += pixelBytes)
+                            channel1[pixelData[i]]++;
+                    }
+                    else if (pixelBytes == 4)
+                    {
+                        foreach (uint pixel in MemoryMarshal.Cast<byte, uint>(pixelData.AsSpan(0, length)))
+                        {
+                            channel1[(pixel >> 16) & 255]++;
+                            channel2[(pixel >> 8) & 255]++;
+                            channel3[pixel & 255]++;
+                        }
+                    }
+                    else if (isRgb48)
+                    {
+                        // Each little-endian 16-bit channel uses its high byte as the bin index.
+                        for (int i = 0; i < length; i += 6)
+                        {
+                            channel1[pixelData[i + 1]]++;
+                            channel2[pixelData[i + 3]]++;
+                            channel3[pixelData[i + 5]]++;
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < length; i += 3)
+                        {
+                            channel1[pixelData[i + 2]]++;
+                            channel2[pixelData[i + 1]]++;
+                            channel3[pixelData[i]]++;
+                        }
+                    }
+                    top += rowCount;
                 }
             }
-            if (bitmapSource.Format == PixelFormats.Gray16)
+            finally
             {
-                for (int i = 0; i < pixelData.Length; i+=2)
-                {
-                    ushort gray = BitConverter.ToUInt16(pixelData, i);
-                    Channel1[gray >> 8]++;
-                }
-            }
-            else if (bitmapSource.Format == PixelFormats.Bgr24)
-            {
-                for (int i = 0; i < pixelData.Length; i += 3)
-                {
-                    byte blue = pixelData[i];
-                    byte green = pixelData[i + 1];
-                    byte red = pixelData[i + 2];
-
-                    Channel1[red]++;
-                    Channel2[green]++;
-                    Channel3[blue]++;
-                }
-            }else if (bitmapSource.Format == PixelFormats.Bgra32 || bitmapSource.Format == PixelFormats.Bgr32)
-            {
-                for (int i = 0; i < pixelData.Length; i += 4)
-                {
-                    byte blue = pixelData[i];
-                    byte green = pixelData[i + 1];
-                    byte red = pixelData[i + 2];
-
-                    Channel1[red]++;
-                    Channel2[green]++;
-                    Channel3[blue]++;
-                }
-            }
-            else if (bitmapSource.Format == PixelFormats.Rgb48)
-            {
-                for (int i = 0; i < pixelData.Length; i += 6)
-                {
-                    ushort red = BitConverter.ToUInt16(pixelData, i);
-                    ushort green = BitConverter.ToUInt16(pixelData, i + 2);
-                    ushort blue = BitConverter.ToUInt16(pixelData, i + 4);
-
-                    // Map 16-bit values to 8-bit range
-                    Channel1[red >> 8]++;
-                    Channel2[green >> 8]++;
-                    Channel3[blue >> 8]++;
-                }
+                ArrayPool<byte>.Shared.Return(pixelData);
             }
 
-            return (Channel1, Channel2, Channel3);
+            if (format == PixelFormats.Gray8)
+            {
+                channel1.CopyTo(channel2, 0);
+                channel1.CopyTo(channel3, 0);
+            }
+            return (channel1, channel2, channel3);
         }
 
 

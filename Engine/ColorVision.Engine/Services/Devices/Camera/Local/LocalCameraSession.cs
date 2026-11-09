@@ -351,6 +351,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             finally { native.DetachCallback(handle); }
         }
 
+        internal bool TryRestartPreview(Action owner, Func<IntPtr, int> register)
+        {
+            lock (SyncRoot)
+            {
+                if (stopPreview != owner || OpenedMode != TakeImageMode.Live) return false;
+                UseOpened(manager =>
+                {
+                    // CM_SetCallBack replaces the native callback and restarts the worker.
+                    int result = register(manager);
+                    if (result != cvErrorDefine.CV_ERR_SUCCESS)
+                        throw LocalCameraCaptureService.CreateNativeException("恢复本地相机视频失败", result);
+                    return result;
+                });
+                return true;
+            }
+        }
+
         internal static string BuildCameraConfigurationJson(PhyCameraCfg cameraConfig)
         {
             ArgumentNullException.ThrowIfNull(cameraConfig);
@@ -455,7 +472,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 if (stopPreview != owner) return;
                 if (closeCamera) Close(unregisterCallback: true);
-                else DetachCallback();
+                else if (IsOpen) DetachPreviewCore();
+                else
+                {
+                    stopPreview = null;
+                    owner();
+                }
             }
         }
 

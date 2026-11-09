@@ -82,16 +82,31 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        public static async Task PopulateChildren(ISolutionNode parent, DirectoryInfo directoryInfo, SolutionCache? cache = null)
+        public static Task PopulateChildren(ISolutionNode parent, DirectoryInfo directoryInfo, SolutionCache? cache = null) =>
+            PopulateChildren(parent, directoryInfo, cache, rootPopulationVersion: null);
+
+        internal static async Task PopulateChildren(ISolutionNode parent, DirectoryInfo directoryInfo, SolutionCache? cache,
+            int? rootPopulationVersion)
         {
             if (parent.VisualChildren.Count > 0)
                 return;
 
+            var root = parent as SolutionExplorer;
+            bool appendInOrder = parent.GetType() == typeof(SolutionExplorer);
+            int populationVersion = rootPopulationVersion ?? root?.BeginRootPopulation() ?? 0;
+            Func<bool> canAttach = () => root == null || root.IsRootPopulationCurrent(populationVersion);
+            if (!canAttach())
+                return;
+
             SolutionExplorer? solutionExplorer = FindSolutionExplorer(parent);
-            if (cache != null && cache.HasCache() && cache.ValidateDirectory(directoryInfo.FullName) && TryPopulateChildrenFromCache(parent, directoryInfo, cache, solutionExplorer))
+            if (cache?.GetValidatedChildren(directoryInfo.FullName) is { Count: > 0 } cachedChildren
+                && TryPopulateChildrenFromCache(parent, cachedChildren, solutionExplorer, canAttach))
+                return;
+            if (!canAttach())
                 return;
 
             var pendingChildren = new List<SolutionNode>();
+            var pathIndex = appendInOrder ? new SolutionChildPathIndex() : null;
             try
             {
                 int directoryCount = 0;
@@ -100,8 +115,9 @@ namespace ColorVision.Solution.Explorer
                     directoryCount++;
                     if (directoryCount % 50 == 0)
                     {
-                        AttachPendingChildren(parent, pendingChildren);
+                        AttachPendingChildren(parent, pendingChildren, canAttach, pathIndex);
                         await Task.Yield();
+                        if (!canAttach()) return;
                     }
 
                     if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
@@ -114,12 +130,13 @@ namespace ColorVision.Solution.Explorer
                         continue;
 
                     var folder = CreateFolderNode(item, solutionExplorer);
-                    if (parent.GetType() == typeof(SolutionExplorer))
+                    if (appendInOrder)
                         pendingChildren.Add(folder);
                     else
                         parent.AddChild(folder);
                 }
-                AttachPendingChildren(parent, pendingChildren);
+                AttachPendingChildren(parent, pendingChildren, canAttach, pathIndex);
+                if (!canAttach()) return;
 
                 int fileCount = 0;
                 foreach (var item in directoryInfo.GetFiles())
@@ -127,15 +144,16 @@ namespace ColorVision.Solution.Explorer
                     fileCount++;
                     if (fileCount % 50 == 0)
                     {
-                        AttachPendingChildren(parent, pendingChildren);
+                        AttachPendingChildren(parent, pendingChildren, canAttach, pathIndex);
                         await Task.Yield();
+                        if (!canAttach()) return;
                     }
 
                     if (!ShouldIncludeProjectPath(parent, item.FullName))
                         continue;
 
                     var sw = Stopwatch.StartNew();
-                    if (parent.GetType() == typeof(SolutionExplorer))
+                    if (appendInOrder)
                     {
                         FileNode? file = CreateIncludedFileNode(parent, item);
                         if (file != null)
@@ -149,11 +167,20 @@ namespace ColorVision.Solution.Explorer
             }
             finally
             {
-                AttachPendingChildren(parent, pendingChildren);
+                try
+                {
+                    AttachPendingChildren(parent, pendingChildren, canAttach, pathIndex);
+                }
+                finally
+                {
+                    if (pathIndex != null)
+                        await InvokeOnDispatcherAsync(pathIndex.Dispose, CancellationToken.None).ConfigureAwait(false);
+                }
             }
         }
 
-        private static void AttachPendingChildren(ISolutionNode parent, List<SolutionNode> pendingChildren)
+        private static void AttachPendingChildren(ISolutionNode parent, List<SolutionNode> pendingChildren,
+            Func<bool> canAttach, SolutionChildPathIndex? pathIndex = null)
         {
             if (pendingChildren.Count == 0)
                 return;
@@ -165,9 +192,9 @@ namespace ColorVision.Solution.Explorer
                 var root = (SolutionExplorer)parent;
                 var dispatcher = Application.Current?.Dispatcher;
                 if (dispatcher == null || dispatcher.CheckAccess())
-                    root.AppendChildrenInOrder(children);
+                    root.AppendChildrenInOrder(children, canAttach, pathIndex);
                 else
-                    dispatcher.BeginInvoke(() => root.AppendChildrenInOrder(children));
+                    dispatcher.BeginInvoke(() => root.AppendChildrenInOrder(children, canAttach, pathIndex: null));
             }
             else
                 foreach (SolutionNode child in children)
@@ -308,15 +335,11 @@ namespace ColorVision.Solution.Explorer
 
             try
             {
-                if (!fileSystemView && cache?.HasCache() == true && cache.ValidateDirectory(directoryInfo.FullName))
+                if (!fileSystemView && cache?.GetValidatedChildren(directoryInfo.FullName) is { } cachedChildren)
                 {
-                    List<FileTreeCacheEntry> cachedChildren = cache.GetChildren(directoryInfo.FullName);
-                    if (cachedChildren.Count > 0)
-                    {
-                        return cachedChildren
-                            .Select(entry => new SolutionDirectoryEntrySnapshot(entry.FullPath, entry.IsDirectory))
-                            .ToList();
-                    }
+                    return cachedChildren
+                        .Select(entry => new SolutionDirectoryEntrySnapshot(entry.FullPath, entry.IsDirectory))
+                        .ToList();
                 }
 
                 var entries = new List<SolutionDirectoryEntrySnapshot>();
@@ -348,17 +371,14 @@ namespace ColorVision.Solution.Explorer
 
         private static bool TryPopulateChildrenFromCache(
             ISolutionNode parent,
-            DirectoryInfo directoryInfo,
-            SolutionCache cache,
-            SolutionExplorer? solutionExplorer)
+            List<FileTreeCacheEntry> cachedChildren,
+            SolutionExplorer? solutionExplorer,
+            Func<bool> canAttach)
         {
-            var cachedChildren = cache.GetChildren(directoryInfo.FullName);
-            if (cachedChildren.Count == 0)
-                return false;
-
             var pendingChildren = new List<SolutionNode>();
             foreach (var entry in cachedChildren)
             {
+                if (!canAttach()) break;
                 try
                 {
                     if (entry.IsDirectory)
@@ -401,7 +421,7 @@ namespace ColorVision.Solution.Explorer
                 }
             }
 
-            AttachPendingChildren(parent, pendingChildren);
+            AttachPendingChildren(parent, pendingChildren, canAttach);
             return parent.VisualChildren.Count > 0;
         }
 

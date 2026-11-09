@@ -217,8 +217,9 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             var provenance = new List<CopilotContextProvenanceEntry>();
             var contributionStart = builder.Length;
+            var userText = (request.UserText ?? string.Empty).Trim();
             builder.AppendLine("# User question");
-            builder.AppendLine((request.UserText ?? string.Empty).Trim());
+            builder.AppendLine(userText);
             provenance.Add(new CopilotContextProvenanceEntry(
                 CopilotContextSourceKind.UserQuestion,
                 CopilotContextSourceForm.Instructions,
@@ -235,10 +236,11 @@ namespace ColorVision.Copilot
                 out var attachmentContextItemCount);
             var projectInstructions = CopilotAgentProjectInstructions.BuildPromptBlock(request.ProjectInstructions);
             var hasObservations = observations.Count > 0;
-            if (!string.IsNullOrWhiteSpace(applicationContext)
+            var hasContext = !string.IsNullOrWhiteSpace(applicationContext)
                 || hasObservations
                 || !string.IsNullOrWhiteSpace(extraAttachmentContext)
-                || !string.IsNullOrWhiteSpace(projectInstructions))
+                || !string.IsNullOrWhiteSpace(projectInstructions);
+            if (hasContext)
             {
                 builder.AppendLine();
                 builder.AppendLine("# Available context");
@@ -342,6 +344,14 @@ namespace ColorVision.Copilot
                     1,
                     builder.Length - contributionStart));
             }
+
+            // A bare question goes out as later turns replay it from history, so their prompt cache reads
+            // can reach it. The heading still separates a question from a goal or context around it.
+            if (!hasContext
+                && !includeAnswerRequirements
+                && userText.Length > 0
+                && string.IsNullOrWhiteSpace(request.ActiveGoalText))
+                return new PreparedUserMessage(userText, provenance.ToArray());
 
             return new PreparedUserMessage(builder.ToString().TrimEnd(), provenance.ToArray());
         }

@@ -98,6 +98,48 @@ public class BatchImageProcessingTests
         Assert.NotSame(source, result);
         Assert.Equal(source.Type(), result.Type());
         Assert.Equal((ushort)1234, result.At<ushort>(0, 0));
+        result.SetTo(Scalar.All(4321));
+        Assert.Equal((ushort)1234, source.At<ushort>(0, 0));
+    }
+
+    [Fact]
+    public void CatalogBatchOutputRemainsAvailableWhenSaveRetriesANameCollision()
+    {
+        string directory = Directory.CreateTempSubdirectory("ColorVision-BatchRetry-").FullName;
+        try
+        {
+            string sourcePath = Path.Combine(directory, "source.png");
+            using Mat source = Mat.FromArray(new ushort[,] { { 1234, 5678 }, { 1111, 2222 } });
+            BatchImageOutput.Save(source, sourcePath);
+            BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+                .Single(entry => entry.Descriptor?.Id == StandardAlgorithmIds.ImagingCorrection);
+            string? collision = null;
+            var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
+
+            var run = processor.Process(new BatchImageProcessingRequest
+            {
+                Items = [new BatchImageItem(sourcePath)],
+                Algorithm = algorithm,
+                Suffix = "_corrected",
+                ValidateOutputPath = path =>
+                {
+                    if (collision != null) return;
+                    collision = path;
+                    File.WriteAllBytes(path, [1, 2, 3]);
+                },
+            });
+
+            BatchImageFileResult result = Assert.Single(run.Files);
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(Path.Combine(directory, "source_corrected_2.png"), result.OutputPath);
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(collision!));
+            using Mat pixels = Cv2.ImRead(result.OutputPath, ImreadModes.Unchanged);
+            AssertMatsEqual(source, pixels);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]
@@ -464,10 +506,80 @@ public class BatchImageProcessingTests
             Assert.False(loaded.Empty());
             Assert.Equal(2, loaded.Rows);
             Assert.Equal(3, loaded.Cols);
+            Assert.Equal((byte)0, Marshal.ReadByte(loaded.Data));
+            Cv2.BitwiseNot(loaded, loaded);
+            Assert.Equal((byte)255, Marshal.ReadByte(loaded.Data));
+            using Mat reloaded = loader.Load(filePath);
+            Assert.Equal((byte)0, Marshal.ReadByte(reloaded.Data));
         }
         finally
         {
             Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("sample.cvcie", true, true)]
+    [InlineData("sample.cvcie", false, false)]
+    [InlineData("sample.CVCIE", true, false)]
+    public void BatchCiePreservesSourceSelectionAndReadsOnlyTheDisplayedPlane(string fileName, bool hasAssociatedSource, bool usesAssociatedSource)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-batch-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, fileName);
+        string rawName = $"source-{Guid.NewGuid():N}.cvraw";
+        try
+        {
+            if (hasAssociatedSource)
+            {
+                using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 2, 16, 3);
+                Assert.True(CVFileUtil.WriteCIEFile(Path.Combine(directory, rawName), raw));
+            }
+            using CVCIEFile file = new()
+            {
+                Version = 2, FileExtType = CVType.CIE, Cols = 3, Rows = 2, Bpp = 32, Channels = 3,
+                SrcFileName = rawName, Exp = [1, 1, 1], Gain = 1, Data = new byte[18 * sizeof(float)]
+            };
+            float[] samples = Enumerable.Range(0, 18).Select(index => (float)(index * index - 3)).ToArray();
+            Buffer.BlockCopy(samples, 0, file.Data, 0, file.Data.Length);
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            using CVCIEFile legacy = CVFileUtil.OpenLocalCVFile(path);
+            using Mat expected = legacy.ToMat(showErrors: false);
+            using CVCIEFile display = CVFileUtil.OpenLocalCVFileForDisplay(path);
+            using Mat loaded = new CVRawBatchImageLoader().Load(path);
+
+            Assert.Equal(usesAssociatedSource ? MatType.CV_16UC3 : MatType.CV_8UC1, loaded.Type());
+            Assert.Equal(usesAssociatedSource ? 36 : 24, display.Data.Length);
+            AssertMatsEqual(expected, loaded);
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(Path.Combine(directory, rawName));
+            Directory.Delete(directory);
+        }
+    }
+
+    [Fact]
+    public void DisplayReadRejectsExtraDeclaredCiePayloadWhileChannelReadRemainsPermissive()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-batch-extra-payload-{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                Version = 2, FileExtType = CVType.CIE, Cols = 2, Rows = 1, Bpp = 16, Channels = 3,
+                Exp = [1, 1, 1], Gain = 1, Data = new byte[13]
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            using CVCIEFile display = CVFileUtil.OpenLocalCVFileForDisplay(path);
+            Assert.Null(display.Data);
+            Assert.True(CVFileUtil.ReadCIEFileChannel(path, 0, out CVCIEFile channel));
+            using (channel) Assert.Equal(4, channel.Data.Length);
+        }
+        finally
+        {
+            File.Delete(path);
         }
     }
 

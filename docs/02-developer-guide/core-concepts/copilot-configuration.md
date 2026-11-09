@@ -148,6 +148,8 @@ DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官
 
 官方 `api.openai.com` 上的 GPT-6 Astra 与 GPT-6.1 Sol 提供 `Default/Low/Medium/High/XHigh/Max`，不提供 `Disabled/Enabled`；历史 `Disabled` 配置或 Codex `none/minimal` 覆盖发送前收敛为 `low`，`ultra` 收敛为 `max`。本机 Codex 显式选择这两个模型时也不提供关闭档位；动态模型列表仍由本机运行时决定。枚举新增值追加在已有数值之后，避免改变旧 JSON 中 `Default/Disabled/Enabled/High/Max` 的数字含义。伪装成 OpenAI vendor 的第三方兼容端点不会因此获得官方推理档位。
 
+官方 `api.anthropic.com` 上的 Claude 按模型提供档位：Fable、Mythos、Opus 5、Opus 4.7/4.8、Sonnet 5、Haiku 5.5 为 `Default/Low/Medium/High/XHigh`，Opus 4.6、Sonnet 4.6 没有 `XHigh`，历史值收敛为 `High`；Haiku 4.5 等旧模型和兼容网关只有 `Default`，因为这些档位都会发送它们可能拒绝的自适应 thinking。当前模型不能关闭 thinking，共享枚举也没有 `max`，所以不提供 `Disabled/Max`。非默认档不发送 `temperature`。`XHigh` 建议最大输出 Token 不低于 64000。
+
 `SetSelectedProfileReasoningMode` 返回是否完成设置（或已是所选值）；`SelectReasoningMode` 只有成功时才回显“已设置／保持”，否则展示同一保存失败或刷新失败说明。已是所选值时不重复保存。测试专用的无 `ConfigHandler` 构造路径只提交内存，即使内部复用 `PersistedAndPublished` 枚举也不代表写了磁盘。
 
 `/personality` 则修改会话回答风格，不属于 Profile 或 `CopilotConfig` 的保存；交互入口见[本地交互](./copilot-local-interactions.md)。这三个命令不授权模型执行工具或更改审批策略。
@@ -164,7 +166,7 @@ DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官
 
 | 入口 | 读取什么、产生什么 |
 | --- | --- |
-| Test Model | 使用当前选中的未保存 Profile 的克隆，固定短提示要求回答 OK，覆盖系统提示、`MaxTokens=128`、`Temperature=0`，经 `CopilotChatService` 发起真实流式模型请求；可能产生供应商用量和传输重试，不保存设置、不运行 Agent 工具 |
+| Test Model | 使用当前选中的未保存 Profile 的克隆，固定短提示要求回答 OK，覆盖系统提示、`MaxTokens=128`（始终 thinking 的 Claude 模型另留 4096，官方端点固定低档）、`Temperature=0`，经 `CopilotChatService` 发起真实流式模型请求；可能产生供应商用量和传输重试，不保存设置、不运行 Agent 工具 |
 | Local MCP / Test Connection | 用窗口当前端口和 token 向 loopback 发送 HTTP；不先替用户保存或启用 server，不能据此验证未应用草稿已在运行 |
 | External MCP / Refresh Discovery | 从当前未保存的配置文本构造请求，强制实时连接与工具发现，更新进程内健康／缓存状态并释放本次 lease；不持久保存这份配置，也不调用发现到的业务工具 |
 | Refresh Diagnostics、`/doctor`、`/mcp` | 读取本地配置或已有健康快照，不等于执行 Test Model 或实时远端发现；命令范围见本地交互主题 |

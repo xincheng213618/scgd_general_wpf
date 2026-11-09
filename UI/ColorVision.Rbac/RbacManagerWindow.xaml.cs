@@ -163,6 +163,8 @@ namespace ColorVision.Rbac
 
         private void Window_Closed(object? sender, EventArgs e) => Dispose();
 
+        private void OpenActivation_Click(object sender, RoutedEventArgs e) => new Activation.ActivationWindow { Owner = this }.ShowDialog();
+
         private void OpenCloudDrive_Click(object sender, RoutedEventArgs e)
         {
             try

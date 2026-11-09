@@ -30,6 +30,7 @@ namespace ColorVision.Solution.Explorer
         private CancellationTokenSource? _projectRefreshCancellation;
         private readonly EventHandler _processExitHandler;
         private bool _disposed;
+        private int _rootPopulationVersion;
         private int _cacheRebuildPending;
         private readonly object _directoryIndexSync = new();
         private readonly Dictionary<string, string> _pendingDirectoryIndexes = new(StringComparer.OrdinalIgnoreCase);
@@ -51,6 +52,12 @@ namespace ColorVision.Solution.Explorer
         public override bool CanOpen => DirectoryInfo.Exists;
         public override bool CanRefresh => true;
         public override bool CanShowProperties => DirectoryInfo.Exists;
+
+        internal int BeginRootPopulation() => Interlocked.Increment(ref _rootPopulationVersion);
+
+        internal bool IsRootPopulationCurrent(int version) =>
+            Volatile.Read(ref _rootPopulationVersion) == version && !Volatile.Read(ref _disposed);
+
         public override string? ExplorerResourcePath => DirectoryInfo.Exists
             ? DirectoryInfo.FullName
             : null;
@@ -156,10 +163,13 @@ namespace ColorVision.Solution.Explorer
             InitializeFileSystemWatcher();
 
             var stopwatch = Stopwatch.StartNew();
-            if (!HasRootProjectReference())
-                SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, Cache);
+            int populationVersion = BeginRootPopulation();
+            Task population = HasRootProjectReference() ? Task.CompletedTask
+                : SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, Cache, populationVersion);
             ReconcileExplicitProjects();
             EnsureStartupProject();
+            if (!population.IsCompletedSuccessfully)
+                _ = CompleteInitialStartupSelectionAsync(population, populationVersion);
             stopwatch.Stop();
             Logger.Info($"Solution workspace initialized in {stopwatch.Elapsed.TotalMilliseconds:0.###} ms.");
 
@@ -198,6 +208,20 @@ namespace ColorVision.Solution.Explorer
                 }
             };
             AppDomain.CurrentDomain.ProcessExit += _processExitHandler;
+        }
+
+        private async Task CompleteInitialStartupSelectionAsync(Task population, int populationVersion)
+        {
+            try
+            {
+                await population;
+                if (IsRootPopulationCurrent(populationVersion) && string.IsNullOrWhiteSpace(Config.StartupProject))
+                    EnsureStartupProjectCore();
+            }
+            catch (Exception ex)
+            {
+                if (IsRootPopulationCurrent(populationVersion)) Logger.Warn("打开工作区后加载根目录或选择启动项目失败。", ex);
+            }
         }
 
         private void ProjectProviderRegistry_ProvidersChanged(object? sender, EventArgs e)
@@ -458,12 +482,12 @@ namespace ColorVision.Solution.Explorer
                 return;
 
             // Update cache
-            if (Cache != null)
+            if (File.Exists(e.FullPath))
+                Cache?.AddFile(e.FullPath, parentPath);
+            else if (Directory.Exists(e.FullPath))
             {
-                if (File.Exists(e.FullPath))
-                    Cache.AddFile(e.FullPath, parentPath);
-                else if (Directory.Exists(e.FullPath))
-                    QueueDirectoryIndex(e.FullPath, parentPath);
+                InvalidateStartupProjectDiscovery();
+                QueueDirectoryIndex(e.FullPath, parentPath);
             }
 
             NotifyVisualTreeChanged();
@@ -494,6 +518,7 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
         {
+            InvalidateStartupProjectDiscovery(e.FullPath);
             if (IsRegisteredSolutionItemPath(e.FullPath))
             {
                 Cache?.Remove(e.FullPath);
@@ -531,6 +556,7 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Renamed(object sender, RenamedEventArgs e)
         {
+            InvalidateStartupProjectDiscovery(e.OldFullPath);
             bool oldPathIsSolutionItem = IsRegisteredSolutionItemPath(e.OldFullPath);
             if (IsRegisteredSolutionItemPath(e.FullPath))
             {
@@ -557,7 +583,10 @@ namespace ColorVision.Solution.Explorer
             if (File.Exists(e.FullPath))
                 Cache?.AddFile(e.FullPath, parentPath);
             else if (Directory.Exists(e.FullPath))
+            {
+                InvalidateStartupProjectDiscovery();
                 QueueDirectoryIndex(e.FullPath, parentPath);
+            }
 
             NotifyVisualTreeChanged();
 
@@ -593,6 +622,7 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Error(object sender, ErrorEventArgs e)
         {
+            InvalidateStartupProjectDiscovery();
             Logger.Warn("解决方案文件监视器发生错误，将重建搜索缓存。", e.GetException());
             QueueCacheRebuild();
         }

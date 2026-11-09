@@ -192,7 +192,7 @@ namespace WindowsServicePlugin.ServiceManager
                             SetProgress(progress += 15, "初始化数据库...");
                             if (!InitializeColorVisionDatabase(basePath, targetDatabase))
                             {
-                                throw new InvalidOperationException("初始化数据库失败");
+                                throw new InvalidOperationException("初始化数据库失败，请在安装日志中查看具体原因。");
                             }
                             databaseUpdated = true;
                         }
@@ -201,7 +201,7 @@ namespace WindowsServicePlugin.ServiceManager
                             SetProgress(progress += 15, "更新数据库到最近版本...");
                             if (!ExecuteColorVisionAllSql(basePath, sourceDatabase, targetDatabase))
                             {
-                                throw new InvalidOperationException("更新数据库到最近版本失败");
+                                throw new InvalidOperationException("更新数据库到最近版本失败，请在安装日志中查看具体原因。");
                             }
                             databaseUpdated = true;
                         }

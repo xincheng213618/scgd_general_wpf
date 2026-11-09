@@ -100,6 +100,7 @@ internal static class CopilotIntentSamples
         S("edit-18", "rename this method to LoadAsync everywhere", [WorkspaceWrite], evidence: Edit),
         S("edit-19", "把这个 bug 修好，然后跑一下测试", [WorkspaceWrite, Execute], evidence: Edit | CopilotIntentEvidence.Execute),
         S("edit-20", "改完之后编译一下确认能过", [WorkspaceWrite, Execute], evidence: Edit | CopilotIntentEvidence.Execute),
+        S("edit-21", "帮我修改回复解析的代码", [WorkspaceWrite], evidence: Edit),
 
         // Rewriting text in the chat is not a workspace change.
         S("text-01", "帮我改一下这句话的语气", []),

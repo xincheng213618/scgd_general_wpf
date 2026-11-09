@@ -49,6 +49,7 @@ namespace ColorVision.Copilot
                 toolInput?.Query,
                 request.UserText,
                 toolInput?.Cursor,
+                new CopilotTextSearchOptions(toolInput.GetStringArgument("glob"), toolInput.GetBooleanArgument("regex")),
                 cancellationToken);
             return Task.FromResult(result.ToCapabilityResult().ToToolResult(Name));
         }

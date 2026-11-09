@@ -67,6 +67,13 @@ namespace ColorVision.Copilot
             return string.Empty;
         }
 
+        public static bool GetBooleanArgument(this CopilotAgentToolInput? input, string name)
+        {
+            return input != null
+                && TryGetValue(input.Arguments, name, out var value)
+                && value is true or JsonElement { ValueKind: JsonValueKind.True };
+        }
+
         public static int? GetInt32Argument(
             this CopilotAgentToolInput? input,
             params string[] names)

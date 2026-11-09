@@ -36,7 +36,8 @@ namespace ColorVision.Engine.Services.Devices.PG
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
-                    TryCommitConfiguration(window, () => ConfigService.Instance.Save<DisplayConfigManager>());
+                    if (window.Draft.DisplaySettingsChanged) ConfigService.Instance.Save<DisplayConfigManager>();
+                    if (window.Draft.ServiceSettingsChanged) TryCommitConfiguration(window);
                 }
             }, a => CanConfigure);
 

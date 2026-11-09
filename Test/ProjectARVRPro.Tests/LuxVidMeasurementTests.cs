@@ -5,8 +5,10 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Templates;
+using ColorVision.SocketProtocol;
 using ColorVision.UI;
 using cvColorVision;
+using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Services;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -79,6 +81,51 @@ public sealed class LuxVidMeasurementTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => measurement.WaitAsync(Timeout));
         camera.Complete(open, MsgRecordState.Success);
         Assert.False(camera.Service.Measured.Task.IsCompleted);
+    }
+
+    [Theory]
+    [InlineData(100.0, 0.0, false)]
+    [InlineData(110.0, 20.0, true)]
+    [InlineData(null, null, false)]
+    public async Task JsonVidReturnsOnlyTheFinalMeasurementAndDistinguishesZeroFromFailure(double? raw, double? expected, bool pass)
+    {
+        using var camera = new CameraScope(DeviceStatusType.Opened, LuxVidMeasurementMode.GetPosition);
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            var config = ProjectARVRProConfig.Instance;
+            config.LuxVidFix = 2;
+            config.LuxVidB = -200;
+            config.LuxVidMin = 10;
+        });
+        var handler = new MeasureVidSocket(async () =>
+        {
+            Task<(bool Succeeded, ObjectiveTestItem Item)> measurement = null!;
+            ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() => measurement = LuxDeviceMeasurements.MeasureVidResultAsync(CancellationToken.None));
+            var (succeeded, item) = await measurement;
+            return (false, succeeded ? item : null);
+        });
+        var request = new SocketRequest { EventName = "MeasureVID", Version = "1.0", MsgID = "vid-001", SerialNumber = "SN001" };
+        Task<SocketResponse> response = Task.Run(() => handler.Handle(null!, request));
+
+        MsgRecord command = await camera.Service.Measured.Task.WaitAsync(Timeout);
+        Assert.False(response.IsCompleted);
+        camera.Complete(command, MsgRecordState.Success, new { VidPos = raw });
+
+        JObject reply = JObject.FromObject(await response.WaitAsync(Timeout));
+        Assert.Equal("MeasureVID", reply.Value<string>("EventName"));
+        Assert.Equal(request.MsgID, reply.Value<string>("MsgID"));
+        Assert.Equal(request.SerialNumber, reply.Value<string>("SerialNumber"));
+        Assert.Equal(expected.HasValue ? 0 : -2, reply.Value<int>("Code"));
+        if (expected.HasValue)
+        {
+            Assert.Equal(expected.Value, reply["Data"]!.Value<double>("VID"));
+            Assert.Equal(pass, reply["Data"]!.Value<bool>("Pass"));
+        }
+        else
+        {
+            Assert.Equal(JTokenType.Null, reply["Data"]!.Type);
+        }
+        Assert.Equal(["GetPosition"], camera.Service.Commands);
     }
 
     // Exercise the production VID method and camera API with controllable command completion, without native devices.

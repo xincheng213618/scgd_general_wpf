@@ -1,6 +1,9 @@
+using ColorVision.Database;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 
 namespace ColorVision.Engine.Services.Results
@@ -9,10 +12,10 @@ namespace ColorVision.Engine.Services.Results
     internal sealed class ResultHistoryCollection<T>(Func<T, int> getId, int maxCount) : ObservableCollection<T> where T : class
     {
         private readonly SortedDictionary<int, T> _byId = new();
-        private Collection<T>? _queryResults;
+        private IQueryResultList<T>? _queryResults;
         private int _maxCount = Math.Max(1, maxCount);
 
-        public IList<T> QueryResults => _queryResults ??= new QueryResultList(this);
+        public IQueryResultList<T> QueryResults => _queryResults ??= new QueryResultList(this);
 
         public int MaxCount
         {
@@ -20,7 +23,7 @@ namespace ColorVision.Engine.Services.Results
             set
             {
                 _maxCount = Math.Max(1, value);
-                while (Count > _maxCount) RemoveOldest();
+                TrimToCount(_maxCount, 0);
             }
         }
 
@@ -31,12 +34,14 @@ namespace ColorVision.Engine.Services.Results
             CheckReentrancy();
             int id = getId(item);
             if (_byId.ContainsKey(id)) return;
-            while (Count >= MaxCount)
+            if (Count > MaxCount)
+                index = TrimToCount(MaxCount, index);
+            if (Count == MaxCount)
             {
-                int oldestId = _byId.First().Key;
+                var oldest = _byId.First();
                 // An old notification must not evict a newer record already in the bounded history.
-                if (Count == MaxCount && id < oldestId) return;
-                int removedIndex = IndexOf(_byId[oldestId]);
+                if (id < oldest.Key) return;
+                int removedIndex = IndexOf(oldest.Value);
                 RemoveAt(removedIndex);
                 if (removedIndex < index) index--;
             }
@@ -71,7 +76,61 @@ namespace ColorVision.Engine.Services.Results
             base.ClearItems();
         }
 
-        private void RemoveOldest() => Remove(_byId.First().Value);
+        private int TrimToCount(int limit, int insertionIndex)
+        {
+            int removeCount = Count - limit;
+            if (removeCount <= 0) return insertionIndex;
+            if (removeCount == 1)
+            {
+                int removedIndex = IndexOf(_byId.First().Value);
+                RemoveAt(removedIndex);
+                return removedIndex < insertionIndex ? insertionIndex - 1 : insertionIndex;
+            }
+
+            CheckReentrancy();
+            int cutoffId = _byId.Keys.ElementAt(removeCount - 1);
+            int retainedCount = 0;
+            int adjustedIndex = insertionIndex;
+            for (int index = 0; index < Count; index++)
+            {
+                T item = Items[index];
+                int id = getId(item);
+                if (id <= cutoffId)
+                {
+                    _byId.Remove(id);
+                    if (index < insertionIndex) adjustedIndex--;
+                    continue;
+                }
+                if (retainedCount != index) Items[retainedCount] = item;
+                retainedCount++;
+            }
+            // WPF observes the finished list once instead of reprocessing every removed row.
+            while (Count > retainedCount) Items.RemoveAt(Count - 1);
+            PublishReset();
+            return adjustedIndex;
+        }
+
+        private void PublishReset()
+        {
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+            OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        private void AddQueryResults(IEnumerable<T> rows)
+        {
+            CheckReentrancy();
+            int initialCount = Count;
+            try
+            {
+                foreach (T row in rows)
+                    if (_byId.TryAdd(getId(row), row)) Items.Add(row);
+            }
+            finally
+            {
+                if (Count != initialCount) PublishReset();
+            }
+        }
 
         private void InsertQueryResult(int index, T item)
         {
@@ -82,9 +141,10 @@ namespace ColorVision.Engine.Services.Results
             base.InsertItem(index, item);
         }
 
-        // The existing query API writes through IList<T>; this adapter preserves its loading contract.
-        private sealed class QueryResultList(ResultHistoryCollection<T> history) : Collection<T>(history)
+        // Query writes may exceed the live retention limit.
+        private sealed class QueryResultList(ResultHistoryCollection<T> history) : Collection<T>(history), IQueryResultList<T>
         {
+            public void AddRange(IEnumerable<T> rows) => history.AddQueryResults(rows);
             protected override void InsertItem(int index, T item) => history.InsertQueryResult(index, item);
         }
     }

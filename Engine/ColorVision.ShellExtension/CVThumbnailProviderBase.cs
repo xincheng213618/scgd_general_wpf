@@ -20,12 +20,14 @@ namespace ColorVision.ShellExtension
         protected const int E_INVALIDARG = unchecked((int)0x80070057);
 
         private string? _filePath;
-        private byte[]? _streamData;
+        private CVCIEFile? _streamImage;
 
         /// <summary>
         /// Gets the file type this provider handles.
         /// </summary>
         protected abstract CVType FileType { get; }
+
+        protected virtual bool ReadsFirstCiePlane => false;
 
         /// <summary>
         /// Gets the provider name for logging.
@@ -41,10 +43,11 @@ namespace ColorVision.ShellExtension
             try
             {
                 ShellLog.Log($"{ProviderName}: IInitializeWithStream.Initialize called, grfMode={grfMode}");
-                _filePath = null;
-                _streamData = ReadAllBytesFromStream(pstream);
-                ShellLog.Log($"{ProviderName}: IInitializeWithStream.Initialize: read {_streamData?.Length ?? 0} bytes");
-                return _streamData != null ? S_OK : E_FAIL;
+                ReleaseRequestResources();
+                using var stream = new ComInputStream(pstream);
+                _streamImage = ReadThumbnailImage(stream);
+                ShellLog.Log($"{ProviderName}: IInitializeWithStream.Initialize: read {_streamImage?.Data.Length ?? 0} pixel bytes");
+                return _streamImage != null ? S_OK : E_FAIL;
             }
             catch (Exception ex)
             {
@@ -64,7 +67,7 @@ namespace ColorVision.ShellExtension
         {
             if (string.IsNullOrEmpty(pszFilePath))
                 return E_INVALIDARG;
-            _streamData = null;
+            ReleaseRequestResources();
             _filePath = pszFilePath;
             ShellLog.Log($"{ProviderName}: IInitializeWithFile.Initialize: {pszFilePath}");
             return S_OK;
@@ -77,43 +80,24 @@ namespace ColorVision.ShellExtension
         {
             phbmp = IntPtr.Zero;
             pdwAlpha = WtsAlphaType.WTSAT_RGB;
-            CVCIEFile? fileInfo = null;
+            CVCIEFile? fileInfo = _streamImage;
+            _streamImage = null;
 
             try
             {
                 if (cx == 0)
                     return E_INVALIDARG;
 
-                int index;
-
-                // Prefer stream data (from IInitializeWithStream), fall back to file path
-                if (_streamData != null)
-                {
-                    ShellLog.Log($"{ProviderName}: GetThumbnail using stream data ({_streamData.Length} bytes), cx={cx}");
-                    index = CVFileUtil.ReadCIEFileHeader(_streamData, out fileInfo);
-                    if (index <= 0)
-                    {
-                        ShellLog.Log($"{ProviderName}: GetThumbnail: ReadCIEFileHeader(bytes) returned {index}");
-                        return E_FAIL;
-                    }
-                    // Force the file type to the provider's designated type
-                    fileInfo.FileExtType = FileType;
-                }
-                else if (!string.IsNullOrEmpty(_filePath) && File.Exists(_filePath))
+                if (fileInfo == null && !string.IsNullOrEmpty(_filePath) && File.Exists(_filePath))
                 {
                     ShellLog.Log($"{ProviderName}: GetThumbnail using file path={_filePath}, cx={cx}");
-                    index = CVFileUtil.ReadCIEFileHeader(_filePath, out fileInfo);
-                    if (index <= 0)
-                    {
-                        ShellLog.Log($"{ProviderName}: GetThumbnail: ReadCIEFileHeader(path) returned {index} for {_filePath}");
-                        return E_FAIL;
-                    }
-                    // Force the file type to the provider's designated type
-                    fileInfo.FileExtType = FileType;
+                    using Stream stream = CVFileReadCache.OpenRead(_filePath);
+                    fileInfo = ReadThumbnailImage(stream);
+                    if (fileInfo != null) fileInfo.FilePath = _filePath;
                 }
-                else
+                if (fileInfo?.Data == null)
                 {
-                    ShellLog.Log($"{ProviderName}: GetThumbnail: no data available (stream={_streamData != null}, path={_filePath})");
+                    ShellLog.Log($"{ProviderName}: GetThumbnail: no thumbnail pixels available");
                     return E_FAIL;
                 }
 
@@ -122,18 +106,6 @@ namespace ColorVision.ShellExtension
 
                 try
                 {
-                    bool ret;
-                    if (_streamData != null)
-                        ret = CVFileUtil.ReadCIEFileData(_streamData, ref fileInfo, index);
-                    else
-                        ret = CVFileUtil.ReadCIEFileData(_filePath!, ref fileInfo, index);
-
-                    if (!ret || fileInfo.Data == null)
-                    {
-                        ShellLog.Log($"{ProviderName}: GetThumbnail: ReadCIEFileData failed");
-                        return E_FAIL;
-                    }
-
                     ShellLog.Log($"{ProviderName}: GetThumbnail: data read OK, type={fileInfo.FileExtType}, {fileInfo.Cols}x{fileInfo.Rows}, bpp={fileInfo.Bpp}, ch={fileInfo.Channels}");
 
                     mat = CreateMatFromFileData(fileInfo);
@@ -184,6 +156,46 @@ namespace ColorVision.ShellExtension
             }
         }
 
+        private CVCIEFile? ReadThumbnailImage(Stream stream)
+        {
+            CVType fileType = FileType;
+            bool validateLayout = fileType is CVType.Raw or CVType.CIE or CVType.Src;
+            int offset = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile fileInfo, validateLayout ? 4 : int.MaxValue);
+            if (offset <= 0)
+            {
+                fileInfo.Dispose();
+                ShellLog.Log($"{ProviderName}: invalid thumbnail file header");
+                return null;
+            }
+
+            fileInfo.FileExtType = fileType;
+            if (validateLayout && (fileInfo.Rows <= 0 || fileInfo.Cols <= 0 || fileInfo.Channels is not (1 or 3 or 4)
+                || fileInfo.Bpp is not (8 or 16 or 32 or 64)))
+            {
+                fileInfo.Dispose();
+                ShellLog.Log($"{ProviderName}: unsupported thumbnail pixel layout");
+                return null;
+            }
+
+            bool useXPlane = ReadsFirstCiePlane && fileInfo.Channels == 3;
+            bool read;
+            if (useXPlane)
+                read = CVFileUtil.ReadCIEFileData(stream, fileInfo, offset, channelIndex: 0);
+            else if (validateLayout)
+                read = CVFileUtil.ReadCIEFilePixels(stream, fileInfo, offset);
+            else
+                read = CVFileUtil.ReadCIEFileData(stream, fileInfo, offset);
+            if (!read)
+            {
+                fileInfo.Dispose();
+                ShellLog.Log($"{ProviderName}: invalid or incomplete thumbnail payload");
+                return null;
+            }
+
+            if (useXPlane) fileInfo.Channels = 1;
+            return fileInfo;
+        }
+
         private void ReleaseInputStream(IStream stream)
         {
             try
@@ -199,11 +211,9 @@ namespace ColorVision.ShellExtension
 
         private void ReleaseRequestResources()
         {
-            long bufferedBytes = _streamData?.LongLength ?? 0;
-            _streamData = null;
+            _streamImage?.Dispose();
+            _streamImage = null;
             _filePath = null;
-            if (bufferedBytes > 0)
-                ShellLog.Log($"{ProviderName}: released request buffer ({bufferedBytes} bytes)");
         }
 
         /// <summary>
@@ -268,6 +278,15 @@ namespace ColorVision.ShellExtension
         /// </summary>
         protected static IntPtr MatToHBitmap(Mat mat)
         {
+            if (mat.Empty() || mat.Channels() is not (1 or 3 or 4)) return IntPtr.Zero;
+            int width = mat.Cols;
+            int height = mat.Rows;
+            long rowBytes = (long)width * 3;
+            long alignedStride = (rowBytes + 3) & ~3L;
+            if (alignedStride > int.MaxValue / (long)height) return IntPtr.Zero;
+            int dibStride = (int)alignedStride;
+            int copyLen = (int)rowBytes;
+
             // Ensure mat is 8-bit for display
             using var displayMat = new Mat();
             if (mat.Depth() != MatType.CV_8U)
@@ -295,8 +314,8 @@ namespace ColorVision.ShellExtension
                 displayMat.CopyTo(bgrMat);
             }
 
-            int width = bgrMat.Cols;
-            int height = bgrMat.Rows;
+            long matStride = bgrMat.Step();
+            if (matStride < copyLen) return IntPtr.Zero;
 
             // Create BITMAPINFO for a 24bpp DIB
             var bmi = new BITMAPINFO();
@@ -321,15 +340,10 @@ namespace ColorVision.ShellExtension
             try
             {
                 // Copy pixel data row by row (DIB stride is DWORD-aligned)
-                int dibStride = ((width * 3 + 3) / 4) * 4;
-                int matStride = (int)bgrMat.Step();
-
                 unsafe
                 {
                     byte* dst = (byte*)ppvBits;
                     byte* src = (byte*)bgrMat.Data;
-                    int copyLen = width * 3;
-
                     if (matStride == dibStride)
                     {
                         // Strides match - copy entire image in one call

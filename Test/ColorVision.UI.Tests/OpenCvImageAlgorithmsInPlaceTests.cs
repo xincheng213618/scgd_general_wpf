@@ -247,11 +247,13 @@ public class OpenCvImageAlgorithmsInPlaceTests
         Assert.False(roi.IsContinuous());
     }
 
-    [Fact]
-    public void BasicAdjustmentNonNeutralBgra64RoiKeepsItsStorageAlphaAndOwnerBorder()
+    [Theory]
+    [InlineData(5, 4)]
+    [InlineData(513, 512)]
+    public void BasicAdjustmentNonNeutralBgra64RoiKeepsItsStorageAlphaAndOwnerBorder(int width, int height)
     {
-        Rect region = new(1, 1, 5, 4);
-        using Mat owner = new(7, 9, MatType.CV_16UC4, Scalar.All(1234));
+        Rect region = new(1, 1, width, height);
+        using Mat owner = new(height + 3, width + 4, MatType.CV_16UC4, Scalar.All(1234));
         using Mat roi = new(owner, region);
         for (int row = 0; row < region.Height; row++)
         {
@@ -279,6 +281,30 @@ public class OpenCvImageAlgorithmsInPlaceTests
         Assert.Equal(data, roi.Data);
         Assert.Equal(step, roi.Step());
         Assert.False(roi.IsContinuous());
+    }
+
+    [Fact]
+    public void BasicAdjustmentReadsOriginalPixelsWhenDestinationOverlapsSource()
+    {
+        byte[,] pixels = new byte[64, 66];
+        for (int row = 0; row < 64; row++)
+        {
+            for (int column = 0; column < 66; column++) pixels[row, column] = (byte)(row * 7 + column * 11);
+        }
+        Rect sourceRegion = new(0, 0, 64, 64);
+        Rect destinationRegion = new(1, 0, 64, 64);
+        using Mat owner = Mat.FromArray(pixels);
+        using Mat expectedOwner = owner.Clone();
+        using Mat source = new(owner, sourceRegion);
+        using Mat destination = new(owner, destinationRegion);
+        using Mat expected = new(expectedOwner, destinationRegion);
+        BasicAdjustmentReference.Apply(source, expected, 0.65, -15, 28, 1.8);
+        IntPtr data = destination.Data;
+
+        OpenCvImageAlgorithms.AdjustBasic(source, destination, 0.65, -15, 28, 1.8);
+
+        AssertMatsEqual(expectedOwner, owner);
+        Assert.Equal(data, destination.Data);
     }
 
     [Theory]

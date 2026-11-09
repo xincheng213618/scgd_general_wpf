@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -112,6 +113,10 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             var results = new List<BatchImageFileResult>(request.Items.Count);
             var reservedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            using AlgorithmReferenceImageLoader.BatchCache? references = request.Items.Count > 1
+                && request.Algorithm.Descriptor?.Id == StandardAlgorithmIds.ImagingCorrection
+                ? new AlgorithmReferenceImageLoader.BatchCache()
+                : null;
             for (var index = 0; index < request.Items.Count; index++)
             {
                 var item = request.Items[index];
@@ -147,28 +152,32 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     using Mat source = loader.Load(item.FilePath);
                     sourceRead = true;
                     cancellationToken.ThrowIfCancellationRequested();
-                    using Mat result = request.Algorithm.Apply(source, cancellationToken);
-                    while (true)
+                    request.Algorithm.UseOutputInRun(source, cancellationToken, references, SaveOutput);
+
+                    void SaveOutput(Mat result)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        validatingOutputPath = true;
-                        request.ValidateOutputPath?.Invoke(outputPath);
-                        validatingOutputPath = false;
-                        try
+                        while (true)
                         {
-                            BatchImageOutput.Save(result, outputPath, overwrite: !request.AvoidOverwrite);
-                            break;
-                        }
-                        catch (IOException) when (request.AvoidOverwrite && File.Exists(outputPath))
-                        {
-                            outputPath = BatchImageOutput.CreateOutputPath(
-                                item,
-                                request.OutputDirectory,
-                                request.Suffix,
-                                request.OutputFormat,
-                                request.PreserveFolderStructure,
-                                avoidOverwrite: true,
-                                reservedPaths);
+                            cancellationToken.ThrowIfCancellationRequested();
+                            validatingOutputPath = true;
+                            request.ValidateOutputPath?.Invoke(outputPath);
+                            validatingOutputPath = false;
+                            try
+                            {
+                                BatchImageOutput.Save(result, outputPath, overwrite: !request.AvoidOverwrite);
+                                return;
+                            }
+                            catch (IOException) when (request.AvoidOverwrite && File.Exists(outputPath))
+                            {
+                                outputPath = BatchImageOutput.CreateOutputPath(
+                                    item,
+                                    request.OutputDirectory,
+                                    request.Suffix,
+                                    request.OutputFormat,
+                                    request.PreserveFolderStructure,
+                                    avoidOverwrite: true,
+                                    reservedPaths);
+                            }
                         }
                     }
 

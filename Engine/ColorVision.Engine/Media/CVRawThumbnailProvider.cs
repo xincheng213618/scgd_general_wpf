@@ -95,19 +95,28 @@ namespace ColorVision.Engine.Media
 
                     try
                     {
-                        // Read file header first to get dimensions
-                     int index = CVFileUtil.ReadCIEFileHeader(filePath, out fileInfo);
+                        int index = CVFileUtil.ReadCIEFileHeader(filePath, out fileInfo);
                         if (index <= 0)
                         {
                             log.Warn($"ReadCIEFileHeader returned {index} for {filePath}");
                             return null;
                         }
 
-                        // Read the full file data
-                        bool ret = CVFileUtil.ReadCIEFileData(filePath, ref fileInfo, index);
-                        if (!ret)
+                        bool read;
+                        if (fileInfo.FileExtType == CVType.CIE && fileInfo.Channels == 3)
                         {
-                            log.Warn($"ReadCIEFileData returned {ret} for {filePath}");
+                            // XYZ thumbnails use the embedded X plane, regardless of any associated RAW.
+                            fileInfo.Dispose();
+                            read = CVFileUtil.ReadCIEFileChannel(filePath, 0, out fileInfo);
+                            if (read) fileInfo.Channels = 1;
+                        }
+                        else
+                        {
+                            read = CVFileUtil.ReadCIEFileData(filePath, ref fileInfo, index);
+                        }
+                        if (!read)
+                        {
+                            log.Warn($"Unable to read thumbnail pixels from {filePath}");
                             return null;
                         }
 
@@ -180,26 +189,7 @@ namespace ColorVision.Engine.Media
                 }
                 else if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
                 {
-                    if (fileInfo.FileExtType == CVType.CIE)
-                    {
-                        int len = (int)(fileInfo.Rows * fileInfo.Cols * (fileInfo.Bpp / 8));
-                        if (fileInfo.Channels == 3)
-                        {
-                            // For 3-channel CIE (XYZ), data is stored as 3 separate planes
-                            // Extract the first channel for thumbnail display
-                            byte[] channelData = new byte[len];
-                            Buffer.BlockCopy(fileInfo.Data, 0, channelData, 0, len);
-                            src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), channelData);
-                        }
-                        else
-                        {
-                            src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
-                        }
-                    }
-                    else
-                    {
-                        src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
-                    }
+                    src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
 
                     // Normalize 32-bit float images to 8-bit for display
                     if (fileInfo.Bpp == 32 && src != null)

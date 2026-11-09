@@ -263,6 +263,8 @@ public sealed class ImagingCorrectionV1Tests
         Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
         Assert.Equal(new byte[] { 0, 255 }, Image(result, "correction-validity-mask").Data.ToArray());
         Assert.Equal(0.5, Measurement(result, "imaging-correction.valid_fraction"), 12);
+        Assert.Equal(1, result.GetArtifact<AlgorithmStructuredDataArtifact>("imaging-correction")!
+            .Data.GetProperty("output").GetProperty("validPixels").GetInt64());
         Assert.Equal(0.5, Measurement(result, "imaging-correction.flat_valid_fraction"), 12);
         IReadOnlyDictionary<string, JsonElement> flatStage = Assert.Single(
             result.GetArtifact<AlgorithmTableArtifact>("imaging-correction-stages")!.Rows,
@@ -388,6 +390,7 @@ public sealed class ImagingCorrectionV1Tests
         }, [Input("bad-pixel-map", unresolvedMap)]);
         Assert.Equal(new byte[] { 64, 64, 64 }, Image(unresolved, "corrected-image").Data.ToArray());
         Assert.Equal(3, Measurement(unresolved, "imaging-correction.bad_pixels_unresolved"));
+        Assert.Equal(0, Measurement(unresolved, "imaging-correction.valid_pixel_count"));
     }
 
     [Fact]
@@ -532,6 +535,67 @@ public sealed class ImagingCorrectionV1Tests
         {
             if (File.Exists(path)) File.Delete(path);
             Directory.Delete(directory);
+        }
+    }
+
+    [Fact]
+    public void BatchCorrectionRereadsChangedReferenceWithTheSameLengthAndTimestamp()
+    {
+        string directory = Directory.CreateTempSubdirectory("ColorVision-CorrectionReference-").FullName;
+        try
+        {
+            string sourcePath = Path.Combine(directory, "source.png");
+            string referencePath = Path.Combine(directory, "dark.tiff");
+            string replacement = Path.Combine(directory, "replacement.tiff");
+            WpfTestHost.Invoke(() =>
+            {
+                SaveGray8Png(sourcePath, 2, 2, [100, 100, 100, 100]);
+                SaveDark(referencePath, 10);
+                SaveDark(replacement, 20);
+            });
+            var reference = new FileInfo(referencePath);
+            Assert.Equal(reference.Length, new FileInfo(replacement).Length);
+            DateTime stamp = reference.LastWriteTimeUtc;
+
+            BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+                .Single(value => value.Descriptor?.Id == StandardAlgorithmIds.ImagingCorrection);
+            var parameters = (ImagingCorrectionParameters)algorithm.Options;
+            parameters.EnableDarkFrame = true;
+            parameters.DarkFramePath = referencePath;
+            BatchImageItem[] items = [new(sourcePath), new(sourcePath), new(sourcePath)];
+            var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
+            BatchImageRunResult result = processor.Process(new BatchImageProcessingRequest
+            {
+                Algorithm = algorithm,
+                Items = items,
+                Suffix = "_corrected",
+            }, progress =>
+            {
+                if (progress.Item != items[2] || progress.Completed != 2) return;
+                File.Copy(replacement, referencePath, overwrite: true);
+                File.SetLastWriteTimeUtc(referencePath, stamp);
+            });
+
+            Assert.Equal(3, result.Succeeded);
+            byte[] values = result.Files.Select(file =>
+            {
+                using Mat pixels = Cv2.ImRead(file.OutputPath, ImreadModes.Unchanged);
+                return pixels.At<byte>(0, 0);
+            }).ToArray();
+            Assert.Equal(new byte[] { 90, 90, 80 }, values);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+
+        static void SaveDark(string path, byte value)
+        {
+            BitmapSource source = BitmapSource.Create(2, 2, 96, 96, PixelFormats.Gray8, null, new[] { value, value, value, value }, 2);
+            var encoder = new TiffBitmapEncoder { Compression = TiffCompressOption.None };
+            encoder.Frames.Add(BitmapFrame.Create(source));
+            using FileStream stream = File.Create(path);
+            encoder.Save(stream);
         }
     }
 

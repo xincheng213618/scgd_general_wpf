@@ -30,6 +30,7 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <controls:CameraActionsControl x:Name="Actions"/>
+                <TextBlock x:Name="LocalVideoStatus" Margin="0,2,0,0" TextWrapping="Wrap" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite"/>
                 <controls:CameraCaptureControl x:Name="Capture" Margin="0,2,0,0"/>
                 <controls:CameraPreviewControl x:Name="Preview"/>
             </StackPanel>

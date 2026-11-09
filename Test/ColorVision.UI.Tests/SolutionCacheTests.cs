@@ -82,6 +82,84 @@ public sealed class SolutionCacheTests
         Assert.Equal("old.txt", Assert.Single(cache.GetChildren(fixture.Root)).Name);
     }
 
+    [Fact]
+    public void SwappingDirectoryVisibilityInvalidatesCacheEvenWhenTheVisibleCountStaysTheSame()
+    {
+        using CacheFixture fixture = new();
+        DirectoryInfo first = Directory.CreateDirectory(Path.Combine(fixture.Root, "first"));
+        DirectoryInfo second = Directory.CreateDirectory(Path.Combine(fixture.Root, "second"));
+        second.Attributes |= FileAttributes.Hidden;
+        using SolutionCache cache = new(fixture.SolutionPath);
+        cache.AddDirectory(first.FullName, fixture.Root);
+        Assert.True(cache.ValidateDirectory(fixture.Root));
+
+        first.Attributes |= FileAttributes.Hidden;
+        second.Attributes &= ~FileAttributes.Hidden;
+
+        Assert.False(cache.ValidateDirectory(fixture.Root));
+        Assert.Equal(first.FullName, Assert.Single(cache.GetChildren(fixture.Root)).FullPath);
+    }
+
+    [Fact]
+    public void SearchRepairsMultipleStaleBatchesBeforeReturningLiveMatches()
+    {
+        using CacheFixture fixture = new();
+        string[] stale = Enumerable.Range(0, 261).Select(index => fixture.WriteFile($"hit-a'{index:D3}.txt")).ToArray();
+        string[] live = [fixture.WriteFile("hit-z1.txt"), fixture.WriteFile("hit-z2.txt")];
+        using SolutionCache cache = new(fixture.SolutionPath);
+        cache.RebuildCache(fixture.Root);
+        foreach (string path in stale) File.Delete(path);
+
+        Assert.Equal(live, cache.Search(["hit-"], 130, fixture.Root).Select(entry => entry.FullPath));
+        Assert.Equal(live, cache.GetChildren(fixture.Root).Select(entry => entry.FullPath));
+    }
+
+    [Fact]
+    public void SearchScopeAndStaleSubtreeRepairTreatPathMetacharactersLiterally()
+    {
+        using CacheFixture fixture = new();
+        string target = Directory.CreateDirectory(Path.Combine(fixture.Root, "project_!%a")).FullName;
+        string sibling = Directory.CreateDirectory(Path.Combine(fixture.Root, "projectX!texta")).FullName;
+        string stale = fixture.WriteFile(Path.Combine("project_!%a", "match-old.txt"));
+        string retained = fixture.WriteFile(Path.Combine("projectX!texta", "match-live.txt"));
+        using SolutionCache cache = new(fixture.SolutionPath);
+        cache.RebuildCache(fixture.Root);
+
+        Assert.Equal(stale, Assert.Single(cache.Search(["match"], rootPath: target)).FullPath);
+
+        File.Delete(stale);
+        Directory.Delete(target);
+        List<FileTreeCacheEntry> hits = cache.Search(["project"], rootPath: fixture.Root);
+
+        Assert.Equal(new[] { sibling, retained }, hits.Select(entry => entry.FullPath));
+        Assert.Empty(cache.GetChildren(target));
+        Assert.Equal(retained, Assert.Single(cache.GetChildren(sibling)).FullPath);
+    }
+
+    [Fact]
+    public void CancelingSearchDuringRepairRollsBackTheCurrentPageAndAllowsRetry()
+    {
+        using CacheFixture fixture = new();
+        string stale = fixture.WriteFile("hit-old.txt");
+        string live = fixture.WriteFile("hit-live.txt");
+        using SolutionCache cache = new(fixture.SolutionPath);
+        cache.RebuildCache(fixture.Root);
+        File.Delete(stale);
+        using var cancellation = new CancellationTokenSource();
+        var database = (SqlSugarClient)typeof(SolutionCache).GetField("_db", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(cache)!;
+        database.Aop.OnLogExecuted = (sql, _) =>
+        {
+            if (sql.TrimStart().StartsWith("DELETE", StringComparison.OrdinalIgnoreCase)) cancellation.Cancel();
+        };
+
+        Assert.ThrowsAny<OperationCanceledException>(() => cache.Search(["hit-"], 10, fixture.Root, cancellation.Token));
+        Assert.Equal(new[] { live, stale }, cache.GetChildren(fixture.Root).Select(entry => entry.FullPath));
+
+        database.Aop.OnLogExecuted = null;
+        Assert.Equal(live, Assert.Single(cache.Search(["hit-"], rootPath: fixture.Root)).FullPath);
+        Assert.Equal(live, Assert.Single(cache.GetChildren(fixture.Root)).FullPath);
+    }
+
     [Theory]
     [InlineData("assets.cvsln.bak")]
     [InlineData("assets.cvsln.cache.db-journal")]
@@ -126,6 +204,56 @@ public sealed class SolutionCacheTests
         using SolutionCache reopened = new(fixture.SolutionPath);
         Assert.True(reopened.ValidateDirectory(fixture.Root));
         Assert.True(reopened.ValidateDirectory(child));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BulkIndexingRollsBackCompletedBatchesOnWriteFailureAndCanBeRetried(bool replaceSubtree)
+    {
+        using CacheFixture fixture = new();
+        string child = Directory.CreateDirectory(Path.Combine(fixture.Root, "assets")).FullName;
+        string previous = fixture.WriteFile(Path.Combine("assets", "previous.txt"));
+        fixture.WriteFile("keep.txt");
+        using SolutionCache cache = new(fixture.SolutionPath);
+        cache.RebuildCache(fixture.Root);
+        File.Delete(previous);
+        const int fileCount = 140;
+        for (int index = 0; index < fileCount; index++)
+            fixture.WriteFile(Path.Combine("assets", $"图像'{index:D3}.txt"));
+
+        using var connection = new SqliteConnection($"Data Source={fixture.SolutionPath}.cache.db");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE TRIGGER fail_cache_insert BEFORE INSERT ON file_tree_cache
+            WHEN NEW.Name LIKE '图像%' AND (SELECT COUNT(*) FROM file_tree_cache WHERE Name LIKE '图像%') >= 128
+            BEGIN SELECT RAISE(ABORT, 'Test cache write failure'); END;
+            """;
+        command.ExecuteNonQuery();
+
+        void Index()
+        {
+            if (replaceSubtree) cache.AddDirectoryTree(child, fixture.Root);
+            else cache.RebuildCache(fixture.Root);
+        }
+
+        Index();
+        Assert.Equal(previous, Assert.Single(cache.GetChildren(child)).FullPath);
+        Assert.Equal(new[] { "assets", "keep.txt" }, cache.GetChildren(fixture.Root).Select(entry => entry.Name));
+
+        command.CommandText = "DROP TRIGGER fail_cache_insert";
+        command.ExecuteNonQuery();
+        Index();
+
+        Assert.True(cache.ValidateDirectory(fixture.Root));
+        Assert.True(cache.ValidateDirectory(child));
+        List<FileTreeCacheEntry> indexed = cache.GetChildren(child);
+        Assert.Equal(fileCount, indexed.Count);
+        FileTreeCacheEntry first = indexed[0];
+        Assert.Equal("图像'000.txt", first.Name);
+        Assert.Equal(Path.Combine(child, first.Name), first.FullPath);
+        Assert.Equal(7, first.FileSize);
     }
 
     [Theory]

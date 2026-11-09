@@ -41,7 +41,8 @@ namespace ProjectARVRPro.Process
             MTFItem item,
             int id,
             string numberFormat,
-            out DVRectangleText overlay)
+            out DVRectangleText overlay,
+            Brush? foreground = null)
         {
             ArgumentNullException.ThrowIfNull(item);
             if (!TryCreateOverlayRect(item.x, item.y, item.w, item.h, out System.Windows.Rect rect))
@@ -50,14 +51,18 @@ namespace ProjectARVRPro.Process
                 return false;
             }
 
-            overlay = new DVRectangleText(new RectangleTextProperties
+            var properties = new RectangleTextProperties
             {
                 Rect = rect,
                 Brush = Brushes.Transparent,
                 Pen = new Pen(Brushes.Red, 1),
                 Id = id,
                 Msg = item.mtfValue?.ToString(numberFormat),
-            });
+            };
+            if (foreground != null)
+                properties.Foreground = foreground;
+
+            overlay = new DVRectangleText(properties);
             return true;
         }
     }

@@ -214,22 +214,38 @@ public sealed class LocalCfwPortTests
         Assert.Null(backend.Endpoint);
     }
 
-    [Fact]
-    public void ConfigurationDraftKeepsLocalPreferenceOutOfServiceConfig()
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ConfigurationDraftKeepsLocalPreferenceOutOfServiceConfig(bool editService, bool editDisplay)
     {
         var config = new ConfigCfwPort { SzComName = "COM12", BaudRate = 9600, SN = "CAMERA-1" };
-        var display = new DisplayCfwPortConfig();
+        var display = new DisplayCfwPortConfig { PortNum = 2 };
         var draft = CfwPortConfigurationDraft.From(config, display);
-        draft.UseLocalCfwPort = true;
-        draft.BaudRate = 19200;
-        draft.SN = "SPECTRUM-1";
+        var session = PropertyEditSession.Create(draft, PropertyEditorEditMode.Transactional);
+        var editable = (CfwPortConfigurationDraft)session.EditableObject;
+        if (editDisplay) editable.UseLocalCfwPort = true;
+        if (editService)
+        {
+            editable.BaudRate = 19200;
+            editable.SN = "SPECTRUM-1";
+        }
         Assert.Equal("CAMERA-1", config.SN);
         Assert.False(display.UseLocalCfwPort);
         Assert.Equal(9600, config.BaudRate);
-        draft.Apply(config, display);
+
+        session.Commit();
+        if (!editService) config.BaudRate = 38400;
+        if (!editDisplay) display.UseLocalCfwPort = true;
+        display.PortNum = 3;
+        var (serviceChanged, displayChanged) = draft.Apply(config, display);
+        Assert.Equal(editService, serviceChanged);
+        Assert.Equal(editDisplay, displayChanged);
         Assert.True(display.UseLocalCfwPort);
-        Assert.Equal(19200, config.BaudRate);
-        Assert.Equal("SPECTRUM-1", JsonConvert.DeserializeObject<ConfigCfwPort>(JsonConvert.SerializeObject(config))!.SN);
+        Assert.Equal(3, display.PortNum);
+        Assert.Equal(editService ? 19200 : 38400, config.BaudRate);
+        Assert.Equal(editService ? "SPECTRUM-1" : "CAMERA-1", JsonConvert.DeserializeObject<ConfigCfwPort>(JsonConvert.SerializeObject(config))!.SN);
         Assert.DoesNotContain("UseLocalCfwPort", JsonConvert.SerializeObject(config));
         Assert.True(JsonConvert.DeserializeObject<DisplayCfwPortConfig>(JsonConvert.SerializeObject(display))!.UseLocalCfwPort);
     }

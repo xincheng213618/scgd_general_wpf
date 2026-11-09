@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                ValidatePixelData(sourceData, rows, cols, bpp, channels);
+                ValidatePixelData(sourceData.LongLength, rows, cols, bpp, channels);
                 using var src = Mat.FromPixelData(rows, cols, MatType.MakeType(GetMatDepth(bpp), channels), sourceData);
                 using var dst = new Mat();
                 var conversion = channels == 3 ? ColorConversionCodes.BGR2RGB : ColorConversionCodes.BGRA2RGBA;
@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Media
                 }
                 else if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
                 {
-                    ValidatePixelData(fileInfo.Data, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp, fileInfo.Channels);
+                    ValidatePixelData(fileInfo.Data?.LongLength ?? 0, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp, fileInfo.Channels);
                     if (fileInfo.FileExtType == CVType.CIE)
                     {
                         if (fileInfo.Channels == 3)
@@ -135,8 +135,11 @@ namespace ColorVision.Engine.Media
                     }
                     if (fileInfo.Bpp is 32 or 64)
                     {
-                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                        src.ConvertTo(src, OpenCvSharp.MatType.CV_8U);
+                        // The converted Mat owns its output. Release the original pixel pin on return.
+                        using Mat floatingPixels = src;
+                        src = new Mat();
+                        Cv2.Normalize(floatingPixels, floatingPixels, 0, 255, NormTypes.MinMax);
+                        floatingPixels.ConvertTo(src, MatType.CV_8U);
                     }
                 }
 
@@ -158,46 +161,47 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private static void ValidatePixelData(byte[]? data, int rows, int cols, int bpp, int channels)
+        private static void ValidatePixelData(long dataLength, int rows, int cols, int bpp, int channels)
         {
             if (rows <= 0 || cols <= 0) throw new InvalidDataException("图像尺寸必须为正数。");
             if (channels is not (1 or 3 or 4)) throw new InvalidDataException($"不支持的图像通道数：{channels}。");
             if (bpp is not (8 or 16 or 32 or 64)) throw new InvalidDataException($"不支持的图像位深：{bpp}。");
             long expectedLength = checked((long)rows * cols * (bpp / 8) * channels);
-            if (data == null || data.LongLength != expectedLength)
-                throw new InvalidDataException($"图像数据长度与尺寸不匹配：需要 {expectedLength} 字节，实际 {data?.LongLength ?? 0} 字节。");
+            if (dataLength != expectedLength)
+                throw new InvalidDataException($"图像数据长度与尺寸不匹配：需要 {expectedLength} 字节，实际 {dataLength} 字节。");
         }
 
         internal static WriteableBitmap RenderFloatChannel(CVCIEFile fileInfo, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(fileInfo);
             cancellationToken.ThrowIfCancellationRequested();
-            if (fileInfo.Channels != 1 || fileInfo.Bpp is not (32 or 64))
+            if (fileInfo.Channels != 1)
                 throw new InvalidDataException("浮点灰度显示要求单通道 32 位或 64 位数据。");
-            ValidatePixelData(fileInfo.Data, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp, fileInfo.Channels);
+            return RenderFloatChannel(fileInfo.Data, fileInfo.Cols, fileInfo.Rows, fileInfo.Bpp, cancellationToken);
+        }
 
-            int pixelCount = checked(fileInfo.Rows * fileInfo.Cols);
-            byte[] pixels = new byte[pixelCount];
-            if (fileInfo.Bpp == 32)
-                NormalizeFloatChannel<float>(fileInfo.Data, pixels, cancellationToken);
-            else
-                NormalizeFloatChannel<double>(fileInfo.Data, pixels, cancellationToken);
-
+        internal static WriteableBitmap RenderFloatChannel(ReadOnlyMemory<byte> samples, int width, int height, int bpp,
+            CancellationToken cancellationToken)
+        {
             cancellationToken.ThrowIfCancellationRequested();
-            WriteableBitmap bitmap = new(fileInfo.Cols, fileInfo.Rows, 96, 96, PixelFormats.Gray8, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, fileInfo.Cols, fileInfo.Rows), pixels, fileInfo.Cols, 0);
-            bitmap.Freeze();
-            return bitmap;
+            if (bpp is not (32 or 64))
+                throw new InvalidDataException("浮点灰度显示要求单通道 32 位或 64 位数据。");
+            ValidatePixelData(samples.Length, height, width, bpp, 1);
+            return bpp == 32
+                ? RenderFloatChannel<float>(samples, width, height, cancellationToken)
+                : RenderFloatChannel<double>(samples, width, height, cancellationToken);
         }
 
         private const int FloatChannelChunkSize = 65536;
 
-        private static void NormalizeFloatChannel<T>(byte[] data, byte[] pixels, CancellationToken cancellationToken)
+        private static WriteableBitmap RenderFloatChannel<T>(ReadOnlyMemory<byte> data, int width, int height,
+            CancellationToken cancellationToken)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            int chunkCount = (pixels.Length + FloatChannelChunkSize - 1) / FloatChannelChunkSize;
+            int pixelCount = checked(width * height);
+            int chunkCount = (pixelCount + FloatChannelChunkSize - 1) / FloatChannelChunkSize;
             (double Minimum, double Maximum)[] ranges = new (double, double)[chunkCount];
-            RunFloatChannelChunks(chunkCount, pixels.Length, cancellationToken, chunk => ranges[chunk] = FindFloatChannelRange<T>(data, chunk));
+            RunFloatChannelChunks(chunkCount, pixelCount, cancellationToken, chunk => ranges[chunk] = FindFloatChannelRange<T>(data, chunk));
             double minimum = double.PositiveInfinity;
             double maximum = double.NegativeInfinity;
             foreach (var local in ranges)
@@ -206,7 +210,6 @@ namespace ColorVision.Engine.Media
                 maximum = Math.Max(maximum, local.Maximum);
             }
 
-            if (minimum == maximum) return;
             double range = maximum - minimum;
             // Scale endpoints only when finite double extremes overflow their difference.
             // Divide by the range rather than forming an infinite factor for subnormal data.
@@ -216,14 +219,33 @@ namespace ColorVision.Engine.Media
                 minimum /= magnitude;
                 range = maximum / magnitude - minimum;
             }
-            RunFloatChannelChunks(chunkCount, pixels.Length, cancellationToken,
-                chunk => WriteFloatChannelChunk<T>(data, pixels, chunk, minimum, range, magnitude));
+            return CreateFrozenDisplayBitmap(width, height, PixelFormats.Gray8, (buffer, stride) =>
+                RunFloatChannelChunks(chunkCount, pixelCount, cancellationToken,
+                    chunk => WriteFloatChannelChunk<T>(data, buffer, width, stride, chunk, minimum, range, magnitude)), cancellationToken);
         }
 
-        private static (double Minimum, double Maximum) FindFloatChannelRange<T>(byte[] data, int chunk)
+        internal static WriteableBitmap CreateFrozenDisplayBitmap(int width, int height, PixelFormat format,
+            Action<IntPtr, int> fillBuffer, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteableBitmap bitmap = new(width, height, 96, 96, format, null);
+            bitmap.Lock();
+            try
+            {
+                // The writer must finish all work before the buffer is unlocked.
+                fillBuffer(bitmap.BackBuffer, bitmap.BackBufferStride);
+                cancellationToken.ThrowIfCancellationRequested();
+                bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+            }
+            finally { bitmap.Unlock(); }
+            bitmap.Freeze();
+            return bitmap;
+        }
+
+        private static (double Minimum, double Maximum) FindFloatChannelRange<T>(ReadOnlyMemory<byte> data, int chunk)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data);
+            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data.Span);
             int start = chunk * FloatChannelChunkSize;
             int end = Math.Min(start + FloatChannelChunkSize, values.Length);
             double minimum = double.PositiveInfinity;
@@ -238,17 +260,30 @@ namespace ColorVision.Engine.Media
             return (minimum, maximum);
         }
 
-        private static void WriteFloatChannelChunk<T>(byte[] data, byte[] pixels, int chunk, double minimum, double range, double magnitude)
+        private static unsafe void WriteFloatChannelChunk<T>(ReadOnlyMemory<byte> data, IntPtr buffer, int width, int stride,
+            int chunk, double minimum, double range, double magnitude)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data);
+            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data.Span);
             int start = chunk * FloatChannelChunkSize;
             int end = Math.Min(start + FloatChannelChunkSize, values.Length);
-            for (int index = start; index < end; index++)
+            for (int index = start; index < end;)
             {
-                double value = double.CreateChecked(values[index]);
-                double normalized = (value / magnitude - minimum) / range;
-                pixels[index] = (byte)Math.Round(Math.Clamp(normalized, 0, 1) * 255);
+                int row = Math.DivRem(index, width, out int column);
+                int count = Math.Min(width - column, end - index);
+                Span<byte> pixels = new((byte*)buffer + (long)row * stride + column, count);
+                if (range == 0)
+                    pixels.Clear();
+                else
+                {
+                    for (int x = 0; x < count; x++)
+                    {
+                        double value = double.CreateChecked(values[index + x]);
+                        double normalized = (value / magnitude - minimum) / range;
+                        pixels[x] = (byte)Math.Round(Math.Clamp(normalized, 0, 1) * 255);
+                    }
+                }
+                index += count;
             }
         }
 

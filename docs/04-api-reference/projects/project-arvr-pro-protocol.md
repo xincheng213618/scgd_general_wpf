@@ -60,6 +60,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 | --- | --- | --- |
 | 外部逐步切图 | `ProjectARVRInit` → `SwitchPG` → 外部切图 → `SwitchPGCompleted`；重复到 `ProjectARVRResult` | 外部控制程序掌握每一步普通 PG 画面切换 |
 | 一键运行 | `RunAll` → 开始确认 → 等待 `ProjectARVRResult` | 活动组及每步内部切图、设备和预处理已配置好 |
+| 单次 VID | `MeasureVID` → 等待同名结果 | 相机已配置 VID 映射及测量方式 |
 
 RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行过程中也不等待普通 `SwitchPGCompleted`。AOI Flow 内部的外部切图节点可以出现在任一种方式中，见[AOI 切图](#aoi-切图)。
 
@@ -114,6 +115,27 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 **开始确认不等于测试完成或 PASS。** 客户端应从建连起持续处理报文并等待最终事件，不依赖开始确认与异步推送的固定先后顺序。组中没有启用步骤也可能先被接受，然后产生失败的最终结果。
 
 RunAll 启动时取当前启用步骤列表，依次运行。`AllowTestFailures` 决定切图、预处理、执行或解析失败后是否继续；最终保留首次流程失败。测试中不要切换组或修改启用状态，管理接口并未统一拒绝这些操作。
+
+## 单次 VID 测量
+
+在 Json 模式发送一条 `MeasureVID`，需要产品 `SerialNumber`。服务端完成后在同一连接回一条 JSON，回显 `MsgID` 和 `SerialNumber`，沿用本页的 TCP 消息边界。
+
+```json
+{"Version":"1.0","MsgID":"vid-001","EventName":"MeasureVID","SerialNumber":"SN001"}
+```
+
+```json
+{"Version":"1.0","MsgID":"vid-001","EventName":"MeasureVID","SerialNumber":"SN001","Code":0,"Msg":"OK","Data":{"VID":123.45,"Pass":true}}
+```
+
+在 ProcessManager 的 **其他配置** 选择 VID 测量方式、K/B 和限值，自动聚焦方式需选好相机的自动对焦模板。与 [LUX VID 文本命令](./project-lux-protocol.md) 共用测量配置。JSON 命令直接采集 VID，省去流程初始化、切图和 CSV 保存，回包时机取决于本次相机命令的完成时间。
+
+| `Code` | 结果 |
+| --- | --- |
+| `0` | 得到有效 VID。`Data.VID` 是应用 K/B 后的数值。`Data.Pass` 表示是否符合限值，超限时仍返回数值 |
+| `-1` | 缺少 SN |
+| `-2` | 测量失败、取消或缺少有效 VID，`Data=null` |
+| `-4` | 项目正在执行或等待切图，当前请求未启动测量 |
 
 ## 切换流程组：SwitchGroup
 

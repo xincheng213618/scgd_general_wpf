@@ -54,7 +54,7 @@
                     <ComboBox x:Name="ComboBoxFlow"
                               Margin="0,0,5,0"
                               Height="24"
-                              Style="{StaticResource ComboBoxExtend.Small}"
+                              Style="{StaticResource ComboBox.Small}"
                               ItemsSource="{Binding FlowParams}"
                               SelectedIndex="{Binding TemplateFlowParamsIndex}" VerticalAlignment="Center"
                               DisplayMemberPath="Key"

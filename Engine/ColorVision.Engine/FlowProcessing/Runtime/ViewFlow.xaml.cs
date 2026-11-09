@@ -60,7 +60,6 @@ namespace ColorVision.Engine.FlowProcessing
         public RelayCommand DeleteFlowCommand { get; set; }
         public RelayCommand ExportFlowCommand { get; set; }
         public RelayCommand ImportFlowCommand { get; set; }
-        public RelayCommand ImportModuleCommand { get; set; }
 
 
         public STNodeEditor STNodeEditorMain => EditorCanvas.NodeEditor;
@@ -204,10 +203,11 @@ namespace ColorVision.Engine.FlowProcessing
             Config = FlowEngineManager.Config;
 
             InitializeComponent();
+            ExecutionOverlay.Resources.MergedDictionaries.Add(EditorCanvas.Resources);
             EditorCanvas.PropertyPanelMargin = new Thickness(0, 54, 10, 108);
             EditorCanvas.AttachEditCommandRouting(this);
             _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
-            _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator, ImportModule);
+            _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
             _executionSession = new FlowExecutionSession(flowEngineManager, this);
 
@@ -248,7 +248,6 @@ namespace ColorVision.Engine.FlowProcessing
                 else
                     ImportFlow();
             }, _ => CanEditFlow);
-            ImportModuleCommand = new RelayCommand(a => ImportModule(), a => CanEditFlow && TemplateFlow.Params.Count > 0);
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = true; }));
 
@@ -370,46 +369,6 @@ namespace ColorVision.Engine.FlowProcessing
             string importName = templateFlow.ImportName ?? $"Imported_{DateTime.Now:yyyyMMdd_HHmmss}";
             templateFlow.Create(importName);
             Refresh();
-        }
-
-        public void ImportModule()
-        {
-            if (!CanEditFlow) return;
-            var templateFlow = FlowEngineManager.CreateFlowTemplate();
-            templateFlow.Load();
-            var items = templateFlow.TemplateParams;
-            if (items.Count == 0)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoFlowTemplate, "ColorVision");
-                return;
-            }
-
-            var dialog = new TemplateSelectionDialog(items)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            if (dialog.ShowDialog() == true && dialog.SelectedTemplate != null && CanEditFlow)
-            {
-                string base64 = dialog.SelectedTemplate.Value.DataBase64;
-                if (string.IsNullOrEmpty(base64))
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_TemplateNoFlowData, "ColorVision");
-                    return;
-                }
-
-                try
-                {
-                    byte[] canvasData = Convert.FromBase64String(base64);
-                    FlowEditorOperations.ImportCanvasAsModule(STNodeEditorMain, canvasData);
-                }
-                catch (Exception ex)
-                {
-                    log.Error("ImportModule failed", ex);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_ImportModuleFailed, ex.Message), "ColorVision");
-                }
-            }
         }
 
         public void AutoAlignment()

@@ -3,10 +3,13 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -55,6 +58,7 @@ namespace ColorVision.UI.Desktop.Download
             }
             else
             {
+                if (_instance.WindowState == WindowState.Minimized) _instance.WindowState = WindowState.Normal;
                 _instance.Activate();
             }
         }
@@ -71,10 +75,7 @@ namespace ColorVision.UI.Desktop.Download
         }
 
         private Aria2cDownloadManager _manager;
-        private int _currentPage = 1;
-        private int _pageSize = 20;
-        private int _totalRecords;
-        private int _totalPages = 1;
+        private ListCollectionView? _view;
         private string? _searchKeyword;
         private DispatcherTimer? _searchTimer;
         private CancellationTokenSource? _loadCancellation;
@@ -90,10 +91,12 @@ namespace ColorVision.UI.Desktop.Download
                 _closed = true;
                 _searchTimer?.Stop();
                 _loadCancellation?.Cancel();
-                if (_manager != null)
+                _manager.StatusMessageChanged -= OnStatusMessageChanged;
+                if (_view != null)
                 {
-                    _manager.DownloadCompleted -= OnDownloadCompleted;
-                    _manager.StatusMessageChanged -= OnStatusMessageChanged;
+                    ((INotifyCollectionChanged)_view).CollectionChanged -= OnViewChanged;
+                    DownloadListView.ItemsSource = null;
+                    _view.DetachFromSourceCollection();
                 }
                 _instance = null;
             };
@@ -101,131 +104,58 @@ namespace ColorVision.UI.Desktop.Download
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            _manager ??= Aria2cDownloadManager.GetInstance();
-            _manager.DownloadCompleted -= OnDownloadCompleted;
-            _manager.DownloadCompleted += OnDownloadCompleted;
-            _manager.StatusMessageChanged -= OnStatusMessageChanged;
+            _manager = Aria2cDownloadManager.GetInstance();
             _manager.StatusMessageChanged += OnStatusMessageChanged;
-            DownloadListView.ItemsSource = _manager.Tasks;
-            LoadData();
-
-            if (!string.IsNullOrEmpty(_manager.StatusMessage))
-                StatusBarText.Text = _manager.StatusMessage;
-
-            UpdateStatusIndicator();
-
-            // Pre-load aria2c daemon so manual downloads don't wait
+            // Filtering in memory keeps selection and scrolling while tasks change state.
+            _view = new ListCollectionView(_manager.Tasks) { Filter = MatchesFilter, IsLiveFiltering = true };
+            _view.LiveFilteringProperties.Add(nameof(DownloadTask.Status));
+            ((INotifyCollectionChanged)_view).CollectionChanged += OnViewChanged;
+            DownloadListView.ItemsSource = _view;
+            UpdateTotalCount();
+            UpdateStatusBar();
+            _ = LoadRecordsAsync();
             _manager.PreloadAria2cAsync();
         }
+
+        private bool MatchesFilter(object item)
+        {
+            if (item is not DownloadTask task) return false;
+            if (FilterActive.IsChecked == true && !(task.IsDownloading || task.IsPaused)) return false;
+            if (FilterFailed.IsChecked == true && task.Status != DownloadStatus.Failed) return false;
+            return _searchKeyword == null
+                || task.FileName.Contains(_searchKeyword, StringComparison.OrdinalIgnoreCase)
+                || task.Url.Contains(_searchKeyword, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void OnViewChanged(object? sender, NotifyCollectionChangedEventArgs e) => UpdateTotalCount();
+        private void UpdateTotalCount() => TotalCountText.Text = (_view?.Count ?? 0).ToString();
 
         private void OnStatusMessageChanged(object? sender, string message)
         {
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
-                StatusBarText.Text = message;
-                UpdateStatusIndicator();
+                if (!_closed) UpdateStatusBar();
             });
         }
 
-        private void UpdateStatusIndicator()
+        private void UpdateStatusBar()
         {
-            StatusIndicator.Fill = _manager.IsAria2cRunning
+            bool running = _manager.IsAria2cRunning;
+            StatusBarText.Text = _manager.ActiveTaskCount > 0 ? _manager.StatusMessage : string.Empty;
+            StatusIndicator.Fill = running
                 ? new SolidColorBrush(Color.FromRgb(76, 175, 80))
                 : new SolidColorBrush(Color.FromRgb(158, 158, 158));
+            StatusIndicator.ToolTip = string.Format(Properties.Resources.Aria2cServiceStatus,
+                running ? Properties.Resources.Aria2cConnected : Properties.Resources.Aria2cDisconnected, _manager.CurrentRpcPort);
         }
 
-        private void OnDownloadCompleted(object? sender, DownloadTask task)
+        private async Task LoadRecordsAsync()
         {
-            // Skip global notification for tasks with per-task callback (e.g., programmatic downloads like auto-update)
-            if (task.OnCompletedCallback != null)
-            {
-                Application.Current?.Dispatcher.BeginInvoke(() => LoadData());
-                return;
-            }
-
-            var config = DownloadManagerConfig.Instance;
-
-            // Auto-run file after download
-            if (task.Status == DownloadStatus.Completed && config.RunFileAfterDownload)
-            {
-                if (System.IO.File.Exists(task.SavePath))
-                {
-                    try
-                    {
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
-                        {
-                            try { Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true }); }
-                            catch (Exception ex) { log4net.LogManager.GetLogger(nameof(DownloadWindow)).Error("Auto-run failed.", ex); }
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        log4net.LogManager.GetLogger(nameof(DownloadWindow)).Error($"Auto-run failed: {ex.Message}");
-                    }
-                }
-                Application.Current?.Dispatcher.BeginInvoke(() => LoadData());
-                return;
-            }
-
-            // Show notification if enabled
-            if (!config.ShowCompletedNotification)
-            {
-                Application.Current?.Dispatcher.BeginInvoke(() => LoadData());
-                return;
-            }
-
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                if (task.Status == DownloadStatus.Completed)
-                {
-                    var result = MessageBox.Show(
-                        string.Format(Properties.Resources.DownloadCompletedMessage, task.FileName) + "\n\n" + Properties.Resources.OpenFileQuestion,
-                        Properties.Resources.DownloadManager,
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Information);
-
-                    if (result == MessageBoxResult.Yes && System.IO.File.Exists(task.SavePath))
-                    {
-                        try
-                        {
-                            Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
-                    }
-                }
-                else if (task.Status == DownloadStatus.Failed)
-                {
-                    MessageBox.Show(
-                        string.Format(Properties.Resources.DownloadFailedMessage, task.FileName, task.ErrorMessage),
-                        Properties.Resources.DownloadManager,
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-                LoadData();
-            });
-        }
-
-        private void LoadData()
-        {
-            if (_closed) return;
-            _loadCancellation?.Cancel();
-            _loadCancellation = new CancellationTokenSource();
-            _ = LoadDataAsync(_loadCancellation);
-        }
-
-        private async Task LoadDataAsync(CancellationTokenSource cancellation)
-        {
+            using var cancellation = new CancellationTokenSource();
+            _loadCancellation = cancellation;
             try
             {
-                var page = await _manager.LoadRecordsAsync(_searchKeyword, _pageSize, _currentPage, cancellation.Token);
-                if (_closed || cancellation.IsCancellationRequested) return;
-                _totalRecords = page.TotalCount;
-                _currentPage = page.Page;
-                _totalPages = Math.Max(1, (int)Math.Ceiling((double)_totalRecords / _pageSize));
-                UpdatePaginationUI();
+                await _manager.LoadRecordsAsync(cancellation.Token);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -235,16 +165,8 @@ namespace ColorVision.UI.Desktop.Download
             }
             finally
             {
-                if (ReferenceEquals(_loadCancellation, cancellation)) _loadCancellation = null;
-                cancellation.Dispose();
+                _loadCancellation = null;
             }
-        }
-
-        private void UpdatePaginationUI()
-        {
-            TotalCountText.Text = _totalRecords.ToString();
-            TotalPagesText.Text = _totalPages.ToString();
-            CurrentPageTextBox.Text = _currentPage.ToString();
         }
 
         private async void BtnAddUrl_Click(object sender, RoutedEventArgs e)
@@ -262,38 +184,50 @@ namespace ColorVision.UI.Desktop.Download
                 try
                 {
                     await Task.Run(() => { foreach (var url in urls) _manager.AddDownload(url, savePath, auth); });
-                    LoadData();
+                    FilterAll.IsChecked = true;
                 }
                 catch (Exception ex) { MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
             }
         }
 
-        private async void ClearRecords_Click(object sender, RoutedEventArgs e)
+        private void MoreActions_Click(object sender, RoutedEventArgs e)
+        {
+            var menu = MoreActionsButton.ContextMenu;
+            menu.PlacementTarget = MoreActionsButton;
+            menu.Placement = PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+
+        private void ClearRecords_Click(object sender, RoutedEventArgs e)
+            => ClearRecords(Properties.Resources.ClearRecordsConfirm, _manager.ClearAllRecordsAsync);
+
+        private void ClearCompletedRecords_Click(object sender, RoutedEventArgs e)
+            => ClearRecords(Properties.Resources.ClearCompletedRecordsConfirm, _manager.ClearCompletedRecordsAsync);
+
+        private async void ClearRecords(string confirmation, Func<Task> clear)
         {
             if (_recordsBusy) return;
-            var result = MessageBox.Show(Properties.Resources.ClearRecordsConfirm, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.Yes)
-            {
-                _recordsBusy = true;
-                try { await _manager.ClearAllRecordsAsync(); _currentPage = 1; LoadData(); }
-                catch (Exception ex) { MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
-                finally { _recordsBusy = false; }
-            }
+            if (MessageBox.Show(confirmation, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            _recordsBusy = true;
+            try { await clear(); }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
+            finally { _recordsBusy = false; }
         }
+
+        private void Filter_Checked(object sender, RoutedEventArgs e) => _view?.Refresh();
 
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _searchTimer?.Stop();
             if (_searchTimer == null)
             {
-                _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
                 _searchTimer.Tick += (s, args) =>
                 {
                     _searchTimer.Stop();
                     _searchKeyword = SearchTextBox.Text?.Trim();
                     if (string.IsNullOrEmpty(_searchKeyword)) _searchKeyword = null;
-                    _currentPage = 1;
-                    LoadData();
+                    _view?.Refresh();
                 };
             }
             _searchTimer.Start();
@@ -327,6 +261,13 @@ namespace ColorVision.UI.Desktop.Download
 
             DownloadListView.SelectedItem = item.DataContext;
             item.Focus();
+        }
+
+        private void DownloadListView_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Delete) return;
+            DeleteTasks(GetSelectedTasks());
+            e.Handled = true;
         }
 
         private void DownloadContextMenu_Opened(object sender, RoutedEventArgs e)
@@ -466,9 +407,7 @@ namespace ColorVision.UI.Desktop.Download
 
         private static bool CanRetry(DownloadTask task)
         {
-            return task.Status == DownloadStatus.Waiting
-                || task.Status == DownloadStatus.Failed
-                || task.Status == DownloadStatus.FileDeleted;
+            return task.IsRetryable;
         }
 
         private static bool CanCancel(DownloadTask task)
@@ -528,9 +467,11 @@ namespace ColorVision.UI.Desktop.Download
             if (tasks.Count == 0 || _recordsBusy)
                 return;
 
-            bool deleteFiles = ShouldDeleteFiles(tasks);
+            if (AskDeleteFiles(tasks) is not bool deleteFiles)
+                return;
+
             _recordsBusy = true;
-            try { await _manager.DeleteRecordsAsync(tasks.Select(t => t.Id).ToArray(), deleteFiles); LoadData(); }
+            try { await _manager.DeleteRecordsAsync(tasks.Select(t => t.Id).ToArray(), deleteFiles); }
             catch (Exception ex) { MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
             finally { _recordsBusy = false; }
         }
@@ -549,67 +490,38 @@ namespace ColorVision.UI.Desktop.Download
         }
 
         /// <summary>
-        /// Ask user whether to delete files when deleting download records.
-        /// Returns true if files should be deleted.
+        /// Confirms deleting records. Returns whether files should also be deleted, or null when the user cancels.
         /// </summary>
-        private bool ShouldDeleteFiles(IEnumerable<DownloadTask> tasks)
+        private static bool? AskDeleteFiles(IReadOnlyCollection<DownloadTask> tasks)
         {
             var config = DownloadManagerConfig.Instance;
-            // Check if any file exists on disk
-            bool anyFileExists = tasks.Any(t => System.IO.File.Exists(t.SavePath));
-            if (!anyFileExists) return false;
-
+            bool anyFileExists = tasks.Any(t => t.HasLocalFiles);
             if (!config.PromptDeleteFile)
-                return config.DefaultDeleteFile;
+                return anyFileExists && config.DefaultDeleteFile;
 
-            var defaultButton = config.DefaultDeleteFile ? MessageBoxResult.Yes : MessageBoxResult.No;
+            if (!anyFileExists)
+            {
+                var confirmed = MessageBox.Show(
+                    string.Format(Properties.Resources.DeleteRecordsConfirm, tasks.Count),
+                    Properties.Resources.DownloadManager,
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Question,
+                    MessageBoxResult.Cancel);
+                return confirmed == MessageBoxResult.OK ? false : null;
+            }
+
             var result = MessageBox.Show(
                 Properties.Resources.ConfirmDeleteFile,
                 Properties.Resources.DownloadManager,
-                MessageBoxButton.YesNo,
+                MessageBoxButton.YesNoCancel,
                 MessageBoxImage.Question,
-                defaultButton);
-            return result == MessageBoxResult.Yes;
-        }
-
-        private void PageSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!IsInitialized) return;
-            if (PageSizeComboBox.SelectedItem is ComboBoxItem item && int.TryParse(item.Content.ToString(), out int pageSize))
+                config.DefaultDeleteFile ? MessageBoxResult.Yes : MessageBoxResult.No);
+            return result switch
             {
-                _pageSize = pageSize;
-                _currentPage = 1;
-                LoadData();
-            }
-        }
-
-        private void FirstPage_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPage != 1) { _currentPage = 1; LoadData(); }
-        }
-
-        private void PrevPage_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPage > 1) { _currentPage--; LoadData(); }
-        }
-
-        private void NextPage_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPage < _totalPages) { _currentPage++; LoadData(); }
-        }
-
-        private void LastPage_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPage != _totalPages) { _currentPage = _totalPages; LoadData(); }
-        }
-
-        private void CurrentPageTextBox_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter && int.TryParse(CurrentPageTextBox.Text, out int page))
-            {
-                page = Math.Max(1, Math.Min(page, _totalPages));
-                if (page != _currentPage) { _currentPage = page; LoadData(); }
-            }
+                MessageBoxResult.Yes => true,
+                MessageBoxResult.No => false,
+                _ => null
+            };
         }
     }
 }

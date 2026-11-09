@@ -48,11 +48,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         internal CameraBackendState CameraBackend { get; }
         private readonly object previewSync = new();
-        private (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;
+        private (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force, bool FocusFrame)? pendingPreview;
         private bool previewQueued;
         private long previewVersion;
 
-        internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay)
+        internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay, bool focusFrame = false)
         {
             ViewCamera? view = ExistingView;
             if (IsDisposed || !_view.IsVisible || Application.Current == null || view == null) return;
@@ -65,13 +65,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 lock (previewSync)
                 {
                     if (IsDisposed || !_view.IsVisible || !ReferenceEquals(ExistingView, view) || version != Volatile.Read(ref previewVersion)) return;
-                    pendingPreview = (view, model, preview, forceDisplay);
+                    pendingPreview = (view, model, preview, forceDisplay, focusFrame);
                     if (previewQueued) return;
                     previewQueued = true;
                 }
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pending;
+                    (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force, bool FocusFrame)? pending;
                     lock (previewSync)
                     {
                         pending = pendingPreview;
@@ -79,7 +79,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         previewQueued = false;
                     }
                     if (IsDisposed || !_view.IsVisible || pending == null || !ReferenceEquals(ExistingView, pending.Value.View)) return;
-                    try { pending.Value.View.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
+                    try { pending.Value.View.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force, pending.Value.FocusFrame); }
                     catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览显示失败。", ex); }
                 });
             }
@@ -100,6 +100,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Browsable(false)]
         public bool ServiceControlsEnabled => !RoutesLocally && !CameraBackend.VideoOwned;
 
+        [Browsable(false)]
+        public bool MotorReadoutAvailable => CameraBackend.Status is DeviceStatusType.Opened or DeviceStatusType.LiveOpened
+            or DeviceStatusType.Free or DeviceStatusType.Busy;
+
         private void CameraBackend_Changed(object? sender, EventArgs e)
         {
             // Never synchronously enter the dispatcher from a native/session lock.
@@ -109,6 +113,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 DService.RefreshBackendStatus();
                 OnPropertyChanged(nameof(RoutesLocally));
                 OnPropertyChanged(nameof(ServiceControlsEnabled));
+                OnPropertyChanged(nameof(MotorReadoutAvailable));
             });
         }
 

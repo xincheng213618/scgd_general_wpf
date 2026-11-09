@@ -64,8 +64,13 @@ namespace ColorVision.Copilot
                     bridge.ToolBudgetExhausted,
                     pipeline.UsedDelegatedDirectAnswer,
                     pipeline.ToolSurface))));
+            // Inside the retry and context recovery layers so a truncated resubmission is covered, and
+            // outside the budget so the rejected attempt stays visible in provider accounting.
             var retryChatClient = new CopilotProviderRetryChatClient(
-                chatClient,
+                CopilotAnthropicThinkingBindingChatClient.WrapIfSupported(
+                    chatClient,
+                    request.Profile,
+                    diagnostic => emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic))),
                 retry =>
                 {
                     chatClient.RecordProviderRetry(retry);

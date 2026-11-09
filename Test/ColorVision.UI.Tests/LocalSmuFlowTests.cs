@@ -2,7 +2,10 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Local;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using cvColorVision;
 using FlowEngineLib;
@@ -11,10 +14,12 @@ using FlowEngineLib.End;
 using FlowEngineLib.Node.SMU;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using Newtonsoft.Json.Linq;
 using Channel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType;
 using SMUResultData = FlowEngineLib.SMUResultData;
@@ -23,6 +28,40 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LocalSmuFlowTests
 {
+    [Fact]
+    public void TemplateScanInspectorSupportsSavedAndManuallyEnteredNames() => WpfTestHost.Invoke(() =>
+    {
+        var dictionaries = Application.Current.Resources.MergedDictionaries;
+        var theme = ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase)
+            .Select(uri => new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) }).ToArray();
+        foreach (var dictionary in theme) dictionaries.Add(dictionary);
+        var template = new TemplateModel<SMUParam>("editor-test-smu", new SMUParam());
+        TemplateSMUParam.Params.Add(template);
+        try
+        {
+            var node = new SMUSweepModelNode { ModelName = "service-only-template" };
+            node.Create();
+            PropertyInfo property = typeof(SMUSweepModelNode).GetProperty(nameof(node.ModelName))!;
+            Assert.Equal(typeof(SmuTemplatePropertiesEditor), FlowNodePropertyMetadataProvider.Instance.GetEditorType(property));
+            var editor = new SmuTemplatePropertiesEditor().GenProperties(property, node);
+            var grid = Assert.IsType<Grid>(Assert.Single(editor.Children));
+            var combo = Assert.Single(grid.Children.OfType<ComboBox>());
+            Assert.Equal("service-only-template", combo.Text);
+            Assert.True(Assert.Single(grid.Children.OfType<Button>()).IsEnabled);
+
+            combo.SelectedItem = template;
+            Assert.Equal(template.Key, node.ModelName);
+            Assert.Equal(template.Key, Encoding.UTF8.GetString(STNodeSavedState.Parse(node.GetSaveData()).Properties[property.Name]));
+            combo.SetCurrentValue(ComboBox.TextProperty, "another-service-template");
+            Assert.Equal("another-service-template", node.ModelName);
+        }
+        finally
+        {
+            TemplateSMUParam.Params.Remove(template);
+            foreach (var dictionary in theme) dictionaries.Remove(dictionary);
+        }
+    });
+
     // Keep saved legacy nodes on the local result and cleanup paths without MQTT.
     [Theory]
     [InlineData(0)]

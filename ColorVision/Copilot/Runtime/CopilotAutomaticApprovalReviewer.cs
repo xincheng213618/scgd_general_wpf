@@ -135,7 +135,7 @@ namespace ColorVision.Copilot
                         Instructions = BuildSystemPrompt(
                             request,
                             action.HasAutomaticReviewRetryOverride),
-                        MaxOutputTokens = MaximumOutputTokens,
+                        MaxOutputTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(request.Profile, MaximumOutputTokens),
                         Temperature = CopilotReasoningRequestMapper.ShouldIncludeTemperature(request.Profile)
                             ? 0
                             : null,

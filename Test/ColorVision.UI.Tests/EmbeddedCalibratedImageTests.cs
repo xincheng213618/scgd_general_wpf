@@ -1,6 +1,7 @@
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.POI;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Algorithms;
@@ -119,6 +120,64 @@ public sealed class EmbeddedCalibratedImageTests
     }
 
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task MultiBlockRgb48PublishesMeasurementsOnlyForTheBoundPixels(bool bound)
+    {
+        const int width = 1025, height = 173;
+        const int stride = width * 6 + 8;
+        ushort[] samples = new ushort[stride / sizeof(ushort) * height];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int offset = y * (stride / sizeof(ushort)) + x * 3;
+                samples[offset] = (ushort)(10 + x);
+                samples[offset + 1] = (ushort)(200 + y);
+                samples[offset + 2] = (ushort)(2000 + x + y);
+            }
+        }
+        BitmapSource pixels = BitmapSource.Create(width, height, 96, 96, PixelFormats.Rgb48, null, samples, stride);
+        pixels.Freeze();
+        ColorCalibrationSnapshot snapshot = new()
+        {
+            Width = width, Height = height, RawBpp = 16, Channels = 3, TransformKind = 0,
+            Coefficients = [1, 0, 0, 0, 1, 0, 0, 0, 1], Exposure = [1, 1, 1]
+        };
+        ColorVisionTiffParameters parameters = Parameters(pixels, snapshot, 3);
+        parameters.PixelSha256 = bound ? parameters.PixelSha256!.ToLowerInvariant() : new string('0', 64);
+
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await WpfTestHost.Invoke(() => Publish(view, new(pixels, parameters, "rgb48.tif")));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(bound, view.Config.GetProperties<bool>("HasCieMeasurements"));
+                Assert.NotNull(view.Config.GetProperties<ColorCalibrationSnapshot>(RawCalibrationInformationProvider.MetadataKey));
+                Assert.NotNull(view.ViewBitmapSource);
+                if (bound)
+                {
+                    var option = Assert.Single(view.EditorContext.ProcessingContext.ProfileMeasurementSources!);
+                    using IImageProfileMeasurementSource profile = option.Open(default);
+                    foreach ((int x, int y) in new[] { (0, 0), (40, 86), (width - 1, height - 1) })
+                    {
+                        Assert.Equal(2000 + x + y, profile.Read(x, y, 0));
+                        Assert.Equal(200 + y, profile.Read(x, y, 1));
+                        Assert.Equal(10 + x, profile.Read(x, y, 2));
+                    }
+                }
+                else
+                {
+                    Assert.Null(view.EditorContext.ProcessingContext.ProfileMeasurementSources);
+                    Assert.Empty(view.ImageContentCapability!.GetEditorTools());
+                }
+            });
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    [Theory]
     [InlineData("edit")]
     [InlineData("switch")]
     [InlineData("clear")]
@@ -166,6 +225,9 @@ public sealed class EmbeddedCalibratedImageTests
             });
             Assert.Throws<ObjectDisposedException>(() => profile.Read(0, 0, 0));
             Assert.Throws<ObjectDisposedException>(() => profile.Read(0, 0, 1));
+            var batch = Assert.IsAssignableFrom<IBatchedImageProfileMeasurementSource>(profile);
+            (int, int)[] pixels = [(0, 0)];
+            Assert.Throws<ObjectDisposedException>(() => batch.ReadPixels(pixels, new double[profile.RawChannelCount]));
             Assert.Throws<ObjectDisposedException>(() => option.Open(default));
         }
         finally { WpfTestHost.Invoke(view.Dispose); }
@@ -262,8 +324,17 @@ public sealed class EmbeddedCalibratedImageTests
                 PixelLayout = pixels.Format.ToString(), PixelSha256 = ColorVisionPixelBinding.ComputeSha256(pixels)
             };
             await WpfTestHost.Invoke(() => Publish(view, new(pixels, parameters, "y.tif")));
-            WpfTestHost.Invoke(() =>
+            await WpfTestHost.Invoke(async () =>
             {
+                var layers = view.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().ToArray();
+                await SelectFileLayer(view, Assert.Single(layers, layer => layer.Id == "cie-y"));
+                Assert.Equal(PixelFormats.Gray8, Assert.IsType<WriteableBitmap>(view.ViewBitmapSource).Format);
+                await SelectFileLayer(view, Assert.Single(layers, layer => layer.Id == "composite"));
+                WriteableBitmap restored = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                Assert.False(restored.IsFrozen);
+                Assert.Equal(PixelFormats.Gray32Float, restored.Format);
+                Assert.Equal(parameters.PixelSha256, ColorVisionPixelBinding.ComputeSha256(restored));
+
                 CalibratedImageCapability capability = Assert.IsAssignableFrom<CalibratedImageCapability>(view.ImageContentCapability);
                 Assert.Equal(-2, capability.CalculatePoi([new(0, 0, 1, 1, PoiMeasurementShape.Point)], true).Results[0].Y);
                 Assert.Equal(2, capability.CalculatePoi([new(0, 0, 2, 2, PoiMeasurementShape.Rect)], true).Results[0].Y);
@@ -277,6 +348,48 @@ public sealed class EmbeddedCalibratedImageTests
                 Assert.Throws<ObjectDisposedException>(() => profile.Read(0, 0, 0));
                 Assert.Throws<ObjectDisposedException>(() => option.Open(default));
             });
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    [Theory]
+    [InlineData(32)]
+    [InlineData(64)]
+    public async Task LiveXyzLayerSelectionReadsOnlyItsOwnPlane(int bpp)
+    {
+        double[] values = [-10, 0, 10, 20, 10, 0, 4, 4, 4];
+        byte[] data = bpp == 32
+            ? values.SelectMany(value => BitConverter.GetBytes((float)value)).ToArray()
+            : values.SelectMany(BitConverter.GetBytes).ToArray();
+        byte[] original = (byte[])data.Clone();
+        using CVCIEFile xyz = new() { Cols = 3, Rows = 1, Channels = 3, Bpp = bpp, Data = data, FileExtType = CVType.CIE };
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await WpfTestHost.Invoke(async () =>
+            {
+                WriteableBitmap composite = new(3, 1, 96, 96, PixelFormats.Gray8, null);
+                view.SetImageSource(composite);
+                view.SetLayerController(CvRawLayerController.CreateLive(view, xyz, composite, "composite"));
+                var layers = view.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().ToArray();
+                (string Id, byte[] Expected)[] channels =
+                [
+                    ("cie-x", [0, 128, 255]),
+                    ("cie-y", [255, 128, 0]),
+                    ("cie-z", [0, 0, 0]),
+                ];
+                foreach (var (id, expected) in channels)
+                {
+                    await SelectFileLayer(view, Assert.Single(layers, layer => layer.Id == id));
+                    Assert.Equal(id, view.SelectedLayer?.Id);
+                    WriteableBitmap display = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                    Assert.Equal(PixelFormats.Gray8, display.Format);
+                    byte[] pixels = new byte[3];
+                    display.CopyPixels(pixels, 3, 0);
+                    Assert.Equal(expected, pixels);
+                }
+            });
+            Assert.Equal(original, data);
         }
         finally { WpfTestHost.Invoke(view.Dispose); }
     }

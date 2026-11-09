@@ -103,7 +103,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Margin="0,0,0,24">
+        <Grid Margin="0,0,0,16">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock Text="{x:Static properties:Resources.ThirdPartyApps}" FontSize="28" FontWeight="SemiBold"
@@ -114,17 +114,16 @@
                     <TextBlock x:Name="AppCountText" FontSize="13" Foreground="{DynamicResource UpdateDialog.TextSecondary}"/>
                 </StackPanel>
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="BtnAddScript" Content="{x:Static properties:Resources.ThirdPartyAppsAddQuickScript}"
-                        Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,20,0" Click="BtnAddScript_Click"/>
-                <Button x:Name="BtnAddApp" Content="{x:Static properties:Resources.CustomApp_AddTooltip}"
-                        Style="{StaticResource UpdateDialogSecondaryButtonStyle}" Click="BtnAddApp_Click"/>
-            </StackPanel>
-        </Grid>
-        <Border Grid.Row="1" BorderBrush="{DynamicResource UpdateDialog.Border}" BorderThickness="0,1,0,0" Padding="0,20,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Border Width="320" HorizontalAlignment="Left" Background="{DynamicResource UpdateDialog.Surface}"
+            <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="BtnRefresh" Content="{x:Static properties:Resources.Refresh}"
+                            Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,20,0" Click="BtnRefresh_Click"/>
+                    <Button x:Name="BtnAddScript" Content="{x:Static properties:Resources.ThirdPartyAppsAddQuickScript}"
+                            Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,20,0" Click="BtnAddScript_Click"/>
+                    <Button x:Name="BtnAddApp" Content="{x:Static properties:Resources.CustomApp_AddTooltip}"
+                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" Click="BtnAddApp_Click"/>
+                </StackPanel>
+                <Border Width="260" Margin="0,10,0,0" HorizontalAlignment="Right" Background="{DynamicResource UpdateDialog.Surface}"
                         BorderBrush="{DynamicResource UpdateDialog.Border}" BorderThickness="1" CornerRadius="8" Padding="12,0">
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -144,16 +143,15 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBox x:Name="SearchBox" Height="38" BorderThickness="0" Background="Transparent" Padding="0"
+                            <TextBox x:Name="SearchBox" Height="34" BorderThickness="0" Background="Transparent" Padding="0"
                                      Foreground="{DynamicResource UpdateDialog.TextPrimary}" CaretBrush="{DynamicResource UpdateDialog.TextPrimary}"
                                      VerticalContentAlignment="Center" FontSize="13" TextChanged="SearchBox_TextChanged"/>
                         </Grid>
                     </Grid>
                 </Border>
-                <Button x:Name="BtnRefresh" Grid.Column="1" Content="{x:Static properties:Resources.Refresh}"
-                        Style="{StaticResource UpdateDialogTextButtonStyle}" Click="BtnRefresh_Click"/>
-            </Grid>
-        </Border>
+            </StackPanel>
+        </Grid>
+        <Border Grid.Row="1" BorderBrush="{DynamicResource UpdateDialog.Border}" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
         <ListBox x:Name="GroupListBox" Grid.Row="2" Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,0,20"
                  ItemContainerStyle="{StaticResource CategoryTabItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectionChanged="GroupListBox_SelectionChanged">

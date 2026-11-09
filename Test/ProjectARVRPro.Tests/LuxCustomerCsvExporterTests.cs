@@ -10,6 +10,7 @@ using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
+using ProjectARVRPro.Process.Uniformity;
 using ProjectARVRPro.Process.W255;
 using System.Globalization;
 using System.IO;
@@ -169,11 +170,17 @@ public sealed class LuxCustomerCsvExporterTests
         {
             W255TestResult = new W255TestResult { PoixyuvDatas = [new() { Name = "P1", Y = 99 }] }
         };
-        result.LuminanceChromaticityTestResults["White"] = new() { PoixyuvDatas = [new() { Name = "P1", Y = 200 }] };
+        result.LuminanceChromaticityTestResults["White"] = new()
+        {
+            PoixyuvDatas = [new() { Name = "P1", Y = 200 }],
+            LuminanceUniformity = new() { Name = "Luminance_uniformity(%)", TestValue = "85.0000", Unit = "%", Value = 0.85, LowLimit = 0.8 }
+        };
         result.FieldOfViewTestResults["White"] = new() { HorizontalFieldOfViewAngle = Item("Fov", 45) };
         result.LuminanceChromaticityTestResults["Red"] = new() { PoixyuvDatas = [new() { Name = "P1", Y = 300 }] };
-        IReadOnlyList<ObjectiveTestCsvRow> rows = LuxCsvProjector.CollectRows(result, LuxCsvFormat.Current);
+        IReadOnlyList<ObjectiveTestCsvRow> rows = LuxCsvProjector.CollectRows(result, LuxCsvFormat.Current, luminanceUniformityFormat: UniformityDisplayFormat.Decimal);
         Assert.Equal("200", Assert.Single(rows, row => row.TestScreen == "W255" && row.TestItem == "P1(Lv)").TestValue);
+        Assert.Equal("W255,Luminance_Uniformity(min_max_100),0.85,%,0.8,0,pass",
+            Assert.Single(rows, row => row.TestScreen == "W255" && row.TestItem == "Luminance_Uniformity(min_max_100)").ToCsvLine());
         Assert.Equal("45", Assert.Single(rows, row => row.TestItem == "Horizontal_Field_Of_View_Angle").TestValue);
         Assert.Contains(rows, row => row.TestScreen == "Red" && row.TestItem == "P1(Lv)" && row.TestValue == "300");
         Assert.DoesNotContain(rows, row => row.TestScreen is "R255" or "G255" or "B255");
@@ -194,6 +201,10 @@ public sealed class LuxCustomerCsvExporterTests
             {
                 Result = new()
                 {
+                    W255TestResult = new()
+                    {
+                        LuminanceUniformity = new() { Value = 1, TestValue = "100.0000", Unit = "%", LowLimit = 0.9, UpLimit = 1 }
+                    },
                     OpticCenterTestResult = new() { Key = "OC,\"A\"", OptCenterRotation = item },
                     DistortionTestResult = new()
                     {
@@ -201,12 +212,16 @@ public sealed class LuxCustomerCsvExporterTests
                     },
                     MTFHV058TestResults = [new() { MTF_HV_H_LeftUp_0_5F = Item("mtf", 0.58) }]
                 },
-                SerialNumber = "SN/001", OutputDirectory = directory, BaseFileName = "daily-name-is-not-used", LuxMtfFormat = pointFormat
+                SerialNumber = "SN/001", OutputDirectory = directory, BaseFileName = "daily-name-is-not-used", LuxMtfFormat = pointFormat,
+                LuxLuminanceUniformityFormat = UniformityDisplayFormat.Decimal
             };
             string expected = Path.Combine(directory, "C_SN_001.csv");
             Assert.Equal(expected, CustomTestResultExportService.GetOutputPath(context, profile));
             Assert.Equal(expected, CustomTestResultExportService.Export(context, profile));
             string csv = File.ReadAllText(expected);
+            string uniformityUnit = profile == CustomTestResultOutputProfile.LUX_Current_CSV ? "%" : "";
+            Assert.Equal($"W255,Luminance_Uniformity(min_max_100),1,{uniformityUnit},0.9,1,pass",
+                Assert.Single(File.ReadLines(expected), line => line.StartsWith("W255,Luminance_Uniformity(", StringComparison.Ordinal)));
             Assert.Contains("\"OC,\"\"A\"\"\",Rotation,1,degree,0,0,pass", csv, StringComparison.Ordinal);
             Assert.Contains("Distortion,MaximumTiltDegrees,1.505647,degree,0,0,pass", csv, StringComparison.Ordinal);
             Assert.DoesNotContain(",°,", csv, StringComparison.Ordinal);
@@ -289,7 +304,9 @@ public sealed class LuxCustomerCsvExporterTests
         var config = JsonConvert.DeserializeObject<ViewResultManagerConfig>("{\"IsSaveCustomXlsx\":true,\"CustomOutputProfile\":0,\"CustomXlsxSavePath\":\"old-directory\"}")!;
         Assert.True(config.ShowCustomProjectName);
         Assert.False(config.ShowLuxMtfFormat);
+        Assert.False(config.ShowLuxLuminanceUniformityFormat);
         Assert.Equal(LuxMtfPointFormat.Mtf058, config.LuxMtfFormat);
+        Assert.Equal(UniformityDisplayFormat.Percentage, config.LuxLuminanceUniformityFormat);
         var options = CustomTestResultExportOptions.Capture(config);
         config.CustomOutputProfile = CustomTestResultOutputProfile.LUX_Current_CSV;
         config.CustomXlsxSavePath = "new-directory";
@@ -299,16 +316,24 @@ public sealed class LuxCustomerCsvExporterTests
         Assert.True(CustomTestResultExportService.IsLuxProfile(config.CustomOutputProfile));
         Assert.False(CustomTestResultExportService.IsLuxProfile(options.Profile));
         Assert.False(config.ShowLuxMtfFormat);
+        Assert.True(config.ShowLuxLuminanceUniformityFormat);
         config.CustomOutputProfile = CustomTestResultOutputProfile.LUX_Legacy_CSV;
         Assert.True(config.ShowLuxMtfFormat);
+        Assert.True(config.ShowLuxLuminanceUniformityFormat);
         config.LuxMtfFormat = LuxMtfPointFormat.Mtf048;
+        config.LuxLuminanceUniformityFormat = UniformityDisplayFormat.Decimal;
         string saved = JsonConvert.SerializeObject(config);
-        Assert.Equal(LuxMtfPointFormat.Mtf048, JsonConvert.DeserializeObject<ViewResultManagerConfig>(saved)!.LuxMtfFormat);
+        var restored = JsonConvert.DeserializeObject<ViewResultManagerConfig>(saved)!;
+        Assert.Equal(LuxMtfPointFormat.Mtf048, restored.LuxMtfFormat);
+        Assert.Equal(UniformityDisplayFormat.Decimal, restored.LuxLuminanceUniformityFormat);
         var luxOptions = CustomTestResultExportOptions.Capture(config);
         config.LuxMtfFormat = LuxMtfPointFormat.Mtf058;
+        config.LuxLuminanceUniformityFormat = UniformityDisplayFormat.Percentage;
         Assert.Equal(LuxMtfPointFormat.Mtf048, luxOptions.LuxMtfFormat);
+        Assert.Equal(UniformityDisplayFormat.Decimal, luxOptions.LuxLuminanceUniformityFormat);
         config.IsSaveCustomXlsx = false;
         Assert.False(config.ShowLuxMtfFormat);
+        Assert.False(config.ShowLuxLuminanceUniformityFormat);
         Assert.DoesNotContain(nameof(config.ShowCustomProjectName), JsonConvert.SerializeObject(config), StringComparison.Ordinal);
         Assert.DoesNotContain(nameof(config.ShowLuxMtfFormat), saved, StringComparison.Ordinal);
     }

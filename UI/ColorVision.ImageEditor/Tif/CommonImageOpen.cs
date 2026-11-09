@@ -11,6 +11,7 @@ namespace ColorVision.ImageEditor.Tif
     [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|.gif")]
     public record class CommonImageOpen(EditorContext EditorContext) : IAsyncImageOpen, IImageOpenContentLifetime
     {
+        private const long BackgroundCopyMinimumBytes = 8L * 1024 * 1024;
         private readonly object _decodeSync = new();
         private Task _decodeTail = Task.CompletedTask;
         private long _latestRequestId;
@@ -78,14 +79,22 @@ namespace ColorVision.ImageEditor.Tif
 
                 BitmapSource bitmapSource = decodedImage.BitmapSource;
 
+                // Stage a private, editable copy before publishing any metadata for this request.
+                long pixelBytes = ((long)bitmapSource.PixelWidth * bitmapSource.Format.BitsPerPixel + 7) / 8 * bitmapSource.PixelHeight;
+                WriteableBitmap writeableBitmap = bitmapSource.IsFrozen && pixelBytes >= BackgroundCopyMinimumBytes
+                    ? await Opentif.PrepareDisplayBitmapAsync(bitmapSource, bitmapSource.DpiX, bitmapSource.DpiY,
+                        normalizeFloat: false, cancellationToken)
+                    : new WriteableBitmap(bitmapSource);
+
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!IsCurrentRequest(context, requestedFilePath, requestId))
+                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
+
                 // Add image dimensions
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, bitmapSource.PixelWidth, nameof(CommonImageOpen), "位图像素宽度");
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, bitmapSource.PixelHeight, nameof(CommonImageOpen), "位图像素高度");
 
                 ApplyMetadata(context, decodedImage.Metadata);
-
-                // Providers may await or cancel before publication; never stage into the current source.
-                WriteableBitmap writeableBitmap = new(bitmapSource);
 
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!IsCurrentRequest(context, requestedFilePath, requestId))

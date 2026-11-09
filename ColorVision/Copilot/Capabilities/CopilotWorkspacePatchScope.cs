@@ -30,6 +30,8 @@ namespace ColorVision.Copilot
             if (File.Exists(fullPath) || Directory.Exists(fullPath))
             {
                 error = "The requested path already exists: " + fullPath;
+                if (File.Exists(fullPath) && new FileInfo(fullPath).Length == 0)
+                    error += ". The file is empty and has no text to update; delete it in one patch, then add it in the next.";
                 return false;
             }
             if (!CopilotWorkspaceSearchSupport.IsTextLikeFile(fullPath))

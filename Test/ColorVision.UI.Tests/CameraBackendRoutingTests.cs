@@ -112,11 +112,12 @@ public class CameraBackendRoutingTests
     }
 
     [Fact]
-    public void DisplayPreferenceIsEditableAndNotifiesWithoutOpeningCamera()
+    public void DisplayPreferenceRemainsInAcquisitionDisplayAndNotifiesWithoutOpeningCamera()
     {
         var config = new DisplayCameraConfig { UseLocalCamera = false };
         var property = TypeDescriptor.GetProperties(config)[nameof(DisplayCameraConfig.UseLocalCamera)]!;
         Assert.True(property.IsBrowsable);
+        Assert.Equal("AcquisitionDisplay", property.Category);
         Assert.False(property.IsReadOnly);
         Assert.Equal("使用本地相机", property.DisplayName);
         Assert.Contains("下次打开", property.Description);

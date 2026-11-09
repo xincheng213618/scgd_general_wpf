@@ -15,6 +15,7 @@ using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
 using FlowEngineLib.Base;
+using FlowEngineLib.Node.SMU;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows.Controls;
@@ -74,7 +75,8 @@ public sealed class PoiGenCaliTemplatePropertiesEditor : IPropertyEditor
 
 public sealed class SmuTemplatePropertiesEditor : IPropertyEditor
 {
-    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateSMUParam());
+    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(
+        property, obj, new TemplateSMUParam(), allowUnlistedTemplateName: obj is SMUSweepModelNode);
 }
 
 public sealed class SmuRangePropertiesEditor : IPropertyEditor

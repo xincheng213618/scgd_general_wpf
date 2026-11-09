@@ -229,7 +229,34 @@ public sealed class LocalPoiTemplateStorageTests
             await CloseEditorAsync(editor!);
             WpfTestHost.Invoke(() => editor = new EditPoiParam(reopened));
             await WpfTestHost.Invoke(() => editor!.PoiLoadTask);
-            WpfTestHost.Invoke(() => Assert.Equal("已编辑", editor!.DrawingVisualLists.OfType<DVRectangleText>().Single().Attribute.Text));
+            await WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal("已编辑", editor!.DrawingVisualLists.OfType<DVRectangleText>().Single().Attribute.Text);
+                editor.PoiConfig.IsAreaMask = true;
+                editor.PoiConfig.IsPointRect = true;
+                editor.PoiConfig.Polygon1 = new Point(100, 100);
+                editor.PoiConfig.Polygon2 = new Point(500, 100);
+                editor.PoiConfig.Polygon3 = new Point(500, 300);
+                editor.PoiConfig.Polygon4 = new Point(100, 300);
+                editor.PoiConfig.AreaPolygonRow = 1;
+                editor.PoiConfig.AreaPolygonCol = 1;
+
+                editor.PointSizePercentageButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.Equal("40 × 20 px", editor.PointSizePercentagePreview.Text);
+                editor.PointSizePercentageCanvas.IsSelected = true;
+                Assert.Equal("64 × 48 px", editor.PointSizePercentagePreview.Text);
+                editor.ApplyPointSizePercentageButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+                Assert.Equal(2, editor.DrawingVisualLists.Count);
+                Assert.Equal(64, editor.PoiConfig.DefaultRectWidth);
+                Assert.Equal(48, editor.PoiConfig.DefaultRectHeight);
+                editor.button2.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.Equal(3, editor.DrawingVisualLists.Count);
+                return editor.SaveTemplateAsync();
+            });
+            var withPercentagePoint = Assert.Single(Offline(path).Load());
+            Assert.Equal(64, withPercentagePoint.PoiPoints[2].PixWidth);
+            Assert.Equal(48, withPercentagePoint.PoiPoints[2].PixHeight);
         }
         finally
         {

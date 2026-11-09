@@ -94,9 +94,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public bool IsAutoExp { get => _IsAutoExp; set { _IsAutoExp = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
-        [STNodeProperty("自动曝光参数", "填写包含 expTimeCfg 的 JSON；留空使用该设备的本机自动曝光参数", true)]
+        [STNodeProperty("自动曝光参数", "查看设备参数，或为本节点设置独立的自动曝光参数。", true)]
         [PropertyVisibility(nameof(IsAutoExp))]
-        [PropertyEditorType(typeof(TextJsonPropertiesEditor))]
+        [PropertyEditorType(typeof(LocalAutoExposurePropertiesEditor))]
         public string AutoExposureJson { get => _AutoExposureJson; set { _AutoExposureJson = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("本地相机")]

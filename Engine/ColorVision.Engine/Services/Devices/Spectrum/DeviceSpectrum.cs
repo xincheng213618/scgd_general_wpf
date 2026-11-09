@@ -238,12 +238,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EditCommand = new RelayCommand(a =>
             {
                 if (!CanConfigure) return;
-                EditSpectrum window = new EditSpectrum(Config);
+                EditSpectrum window = new EditSpectrum(Config, DisplayConfig);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 if (window.ShowDialog() == true)
                 {
-                    TryCommitConfiguration(window);
+                    if (window.Draft.DisplaySettingsChanged) ConfigService.Instance.Save<DisplayConfigManager>();
+                    if (window.Draft.ServiceSettingsChanged) TryCommitConfiguration(window);
                 }
 
             }, a => CanConfigure);

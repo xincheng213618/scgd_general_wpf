@@ -29,8 +29,6 @@ public sealed class FlowRunHistoryReader
     public const int MaximumAttemptsPerRun = 10;
     private const int MaximumIdentifierCharacters = 256;
     private const int MaximumNodeIdCharacters = 128;
-    private static readonly string IdentityWhitespace = new(Enumerable.Range(char.MinValue, char.MaxValue + 1)
-        .Select(value => (char)value).Where(char.IsWhiteSpace).ToArray());
     private static readonly string[] AttemptColumns =
         ["id", "run_record_id", "node_id", "attempt_no", "started_time_utc", "completed_time_utc", "outcome", "error_code"];
     private readonly string _databasePath;
@@ -62,7 +60,7 @@ public sealed class FlowRunHistoryReader
         connection.Open();
         using var transaction = connection.BeginTransaction(deferred: true);
         ProjectedRun anchor;
-        using (var command = Command(connection, transaction, $"SELECT {RunColumns("r")} FROM FlowRunRecord r WHERE r.id=$id LIMIT 1", runRecordId, usesIdentityWhitespace: true))
+        using (var command = Command(connection, transaction, $"SELECT {RunColumns("r")} FROM FlowRunRecord r WHERE r.id=$id LIMIT 1", runRecordId))
         using (var reader = command.ExecuteReader())
         {
             if (!reader.Read())
@@ -73,13 +71,14 @@ public sealed class FlowRunHistoryReader
         var previous = new List<ProjectedRun>();
         if (basis != "unavailable")
         {
-            var identityFilter = basis == "flow_key"
-                ? "h.flow_key IS NOT NULL AND trim(h.flow_key,$whitespace)<>'' AND trim(h.flow_key,$whitespace) COLLATE BINARY=trim(a.flow_key,$whitespace) COLLATE BINARY"
-                : "h.template_id=a.template_id AND (h.flow_key IS NULL OR trim(h.flow_key,$whitespace)='')";
+            var historyKey = FlowRunIdentitySql.TrimmedKey("h.flow_key");
+            var identityFilter = anchor.HasFlowKey
+                ? $"h.flow_key IS NOT NULL AND {historyKey}<>'' AND {historyKey} COLLATE BINARY={FlowRunIdentitySql.TrimmedKey("a.flow_key")} COLLATE BINARY"
+                : $"h.template_id=a.template_id AND (h.flow_key IS NULL OR {historyKey}='')";
             using var command = Command(connection, transaction, $"""
                 SELECT {RunColumns("h")} FROM FlowRunRecord h JOIN FlowRunRecord a ON a.id=$id
                 WHERE h.id<$id AND {identityFilter} ORDER BY h.id DESC LIMIT {maxRuns + 1}
-                """, runRecordId, usesIdentityWhitespace: true);
+                """, runRecordId);
             cancellationToken.ThrowIfCancellationRequested();
             using var reader = command.ExecuteReader();
             while (reader.Read())
@@ -117,7 +116,7 @@ public sealed class FlowRunHistoryReader
         {Identifier(alias + ".run_key")},{alias}.status,{alias}.final_outcome,{alias}.elapsed_ms,{alias}.started_time_utc,
         {alias}.completed_time_utc,{alias}.recovered_time_utc,{alias}.template_revision,
         {FlowJournalHashSql.Value(alias + ".content_hash")},{alias}.snapshot_id,
-        CASE WHEN {alias}.flow_key IS NOT NULL AND trim({alias}.flow_key,$whitespace)<>'' THEN 1 ELSE 0 END,
+        CASE WHEN {alias}.flow_key IS NOT NULL AND {FlowRunIdentitySql.TrimmedKey(alias + ".flow_key")}<>'' THEN 1 ELSE 0 END,
         {FlowJournalHashSql.Invalid(alias + ".content_hash")}
         """;
 
@@ -171,15 +170,13 @@ public sealed class FlowRunHistoryReader
         return attempts;
     }
 
-    private static SqliteCommand Command(SqliteConnection connection, SqliteTransaction transaction, string sql, int id, bool usesIdentityWhitespace = false)
+    private static SqliteCommand Command(SqliteConnection connection, SqliteTransaction transaction, string sql, int id)
     {
         var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandTimeout = 2;
         command.CommandText = sql;
         command.Parameters.AddWithValue("$id", id);
-        if (usesIdentityWhitespace)
-            command.Parameters.AddWithValue("$whitespace", IdentityWhitespace);
         return command;
     }
 

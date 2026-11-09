@@ -7,10 +7,11 @@ using ColorVision.ImageEditor.Tif;
 using Newtonsoft.Json;
 using System;
 using System.Buffers;
-using System.Windows;
 using System.IO;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -19,6 +20,8 @@ namespace ColorVision.Engine.Media;
 /// <summary>Optional computation adapter. Container decoding remains entirely in ImageEditor.</summary>
 public sealed class CalibratedImageContentProvider : IImageContentProvider, IImageComponent
 {
+    private const int PixelBlockBytes = 512 * 1024;
+
     public void Execute(ImageView imageView) => imageView.RegisterImageContentProvider(this);
 
     public async Task<IImageContentCapability?> PrepareAsync(EditorContext context, DecodedImageContent content, CancellationToken cancellationToken)
@@ -48,29 +51,28 @@ public sealed class CalibratedImageContentProvider : IImageContentProvider, IIma
             try
             {
                 BitmapSource pixels = content.Pixels;
-                bool bound = parameters.Schema == ColorVisionTiffParameters.CurrentSchema
-                    && parameters.Rows == pixels.PixelHeight && parameters.Cols == pixels.PixelWidth
-                    && parameters.PixelChannels > 0 && parameters.Bpp == pixels.Format.BitsPerPixel / parameters.PixelChannels
-                    && (parameters.PixelLayout == pixels.Format.ToString()
-                        || (parameters.PixelLayout is "Bgr24" or "Rgb24" && (pixels.Format == PixelFormats.Bgr24 || pixels.Format == PixelFormats.Rgb24)))
-                    && !string.IsNullOrWhiteSpace(parameters.PixelSha256)
-                    && string.Equals(parameters.PixelSha256, ColorVisionPixelBinding.ComputeSha256(pixels, cancellationToken), StringComparison.OrdinalIgnoreCase);
-                if (bound && parameters.PixelRole == "calibration-input" && snapshot?.CanReplay == true
-                    && snapshot.Width == pixels.PixelWidth && snapshot.Height == pixels.PixelHeight
-                    && parameters.PixelChannels == snapshot.Channels)
+                if (parameters.PixelSha256 is { Length: SHA256.HashSizeInBytes * 2 } expectedHash && HasBindingLayout(parameters, pixels))
                 {
-                    using CVCIEFile raw = CopyCalibrationInput(pixels, snapshot, cancellationToken, out ColorCalibrationSnapshot normalized);
-                    snapshot = normalized;
-                    buffer = new PoiMeasurementBuffer(raw, normalized);
-                }
-                else if (bound && parameters.PixelRole == "xyz-channel" && parameters.MeasurementChannel == "Y"
-                    && parameters.PixelChannels == 1 && pixels.Format == PixelFormats.Gray32Float)
-                {
-                    int stride = checked(pixels.PixelWidth * sizeof(float));
-                    byte[] data = GC.AllocateUninitializedArray<byte>(checked(stride * pixels.PixelHeight));
-                    pixels.CopyPixels(data, stride, 0);
-                    buffer = new PoiMeasurementBuffer(data, pixels.PixelWidth, pixels.PixelHeight, 32, 1);
-                    measurement = new CVCIEFile { Cols = pixels.PixelWidth, Rows = pixels.PixelHeight, Bpp = 32, Channels = 1, Data = data, FileExtType = CVType.CIE };
+                    if (parameters.PixelRole == "calibration-input" && snapshot?.CanReplay == true
+                        && snapshot.Width == pixels.PixelWidth && snapshot.Height == pixels.PixelHeight
+                        && parameters.PixelChannels == snapshot.Channels && MatchesRawFormat(pixels.Format, snapshot)
+                        && ReadBoundSamples(pixels, expectedHash, cancellationToken) is { } rawSamples)
+                    {
+                        using CVCIEFile raw = new()
+                        {
+                            Cols = pixels.PixelWidth, Rows = pixels.PixelHeight, Bpp = snapshot.RawBpp,
+                            Channels = snapshot.Channels, Data = rawSamples, FileExtType = CVType.Raw
+                        };
+                        snapshot = snapshot with { InterleavedBgr = raw.Channels == 3 && raw.Bpp == 8 };
+                        buffer = new PoiMeasurementBuffer(raw, snapshot);
+                    }
+                    else if (parameters.PixelRole == "xyz-channel" && parameters.MeasurementChannel == "Y"
+                        && parameters.PixelChannels == 1 && pixels.Format == PixelFormats.Gray32Float
+                        && ReadBoundSamples(pixels, expectedHash, cancellationToken) is { } data)
+                    {
+                        buffer = new PoiMeasurementBuffer(data, pixels.PixelWidth, pixels.PixelHeight, 32, 1);
+                        measurement = new CVCIEFile { Cols = pixels.PixelWidth, Rows = pixels.PixelHeight, Bpp = 32, Channels = 1, Data = data, FileExtType = CVType.CIE };
+                    }
                 }
             }
             catch (Exception error) when (error is InvalidDataException or NotSupportedException or ArgumentException or OverflowException)
@@ -86,46 +88,95 @@ public sealed class CalibratedImageContentProvider : IImageContentProvider, IIma
         }, cancellationToken);
     }
 
-    private static CVCIEFile CopyCalibrationInput(BitmapSource pixels, ColorCalibrationSnapshot snapshot, CancellationToken token, out ColorCalibrationSnapshot normalized)
+    private static bool HasBindingLayout(ColorVisionTiffParameters parameters, BitmapSource pixels) =>
+        parameters.Schema == ColorVisionTiffParameters.CurrentSchema
+        && pixels.PixelWidth > 0 && pixels.PixelHeight > 0
+        && parameters.Rows == pixels.PixelHeight && parameters.Cols == pixels.PixelWidth
+        && parameters.PixelChannels > 0 && parameters.Bpp == pixels.Format.BitsPerPixel / parameters.PixelChannels
+        && (parameters.PixelLayout == pixels.Format.ToString()
+            || (parameters.PixelLayout is "Bgr24" or "Rgb24" && (pixels.Format == PixelFormats.Bgr24 || pixels.Format == PixelFormats.Rgb24)));
+
+    private static bool MatchesRawFormat(PixelFormat format, ColorCalibrationSnapshot snapshot) => (snapshot.Channels, snapshot.RawBpp) switch
     {
-        int channels = snapshot.Channels;
-        int bpp = snapshot.RawBpp;
+        (1, 8) => format == PixelFormats.Gray8,
+        (1, 16) => format == PixelFormats.Gray16,
+        (3, 8) => format == PixelFormats.Bgr24 || format == PixelFormats.Rgb24,
+        (3, 16) => format == PixelFormats.Rgb48,
+        _ => false,
+    };
+
+    private static unsafe byte[]? ReadBoundSamples(BitmapSource pixels, string expectedHash, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        Span<byte> expectedDigest = stackalloc byte[SHA256.HashSizeInBytes];
+        if (Convert.FromHexString(expectedHash.AsSpan(), expectedDigest, out _, out _) != OperationStatus.Done) return null;
+        int width = pixels.PixelWidth;
+        int height = pixels.PixelHeight;
         PixelFormat format = pixels.Format;
-        if ((channels == 1 && (bpp == 8 ? format != PixelFormats.Gray8 : format != PixelFormats.Gray16))
-            || (channels == 3 && (bpp == 8 ? format != PixelFormats.Bgr24 && format != PixelFormats.Rgb24 : format != PixelFormats.Rgb48)))
-            throw new InvalidDataException("校正输入样本格式不受支持。");
-        int stride = checked(pixels.PixelWidth * channels * (bpp / 8));
-        byte[] bytes = GC.AllocateUninitializedArray<byte>(checked(stride * pixels.PixelHeight));
-        if (channels == 3 && bpp == 16)
+        bool planar = format == PixelFormats.Rgb48;
+        bool bgr = format == PixelFormats.Bgr24;
+        bool rgb = format == PixelFormats.Rgb24;
+        int stride = checked(width * (format.BitsPerPixel / 8));
+        int rowsPerBlock = Math.Max(1, Math.Min(height, PixelBlockBytes / stride));
+        byte[] bytes = GC.AllocateUninitializedArray<byte>(checked(stride * height));
+        int planeLength = bytes.Length / 3;
+        using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        byte[]? scratch = planar || bgr ? ArrayPool<byte>.Shared.Rent(stride * rowsPerBlock) : null;
+        try
         {
-            // Convert a row at a time into native planar RGB without another image-sized copy.
-            byte[] row = ArrayPool<byte>.Shared.Rent(stride);
-            try
+            fixed (byte* destination = bytes, staging = scratch)
             {
-                int planeLength = bytes.Length / 3;
-                for (int y = 0; y < pixels.PixelHeight; y++)
+                for (int top = 0; top < height;)
                 {
                     token.ThrowIfCancellationRequested();
-                    pixels.CopyPixels(new Int32Rect(0, y, pixels.PixelWidth, 1), row, stride, 0);
-                    for (int x = 0; x < pixels.PixelWidth; x++)
-                        for (int c = 0; c < 3; c++)
-                        {
-                            int source = x * 6 + c * 2;
-                            int target = c * planeLength + (y * pixels.PixelWidth + x) * 2;
-                            bytes[target] = row[source]; bytes[target + 1] = row[source + 1];
-                        }
+                    int rows = Math.Min(rowsPerBlock, height - top);
+                    int length = stride * rows;
+                    int pixelCount = width * rows;
+                    byte* packed = planar ? staging : destination + top * stride;
+                    pixels.CopyPixels(new Int32Rect(0, top, width, rows), (IntPtr)packed, length, stride);
+                    // The digest uses tight RGB samples. The RAW reader expects planar RGB16 or interleaved BGR8.
+                    if (bgr) SwapRedBlue24(packed, staging, pixelCount);
+                    hash.AppendData(new ReadOnlySpan<byte>(bgr ? staging : packed, length));
+                    if (planar) SplitRgb48(packed, destination + top * width * sizeof(ushort), planeLength, pixelCount);
+                    else if (rgb) SwapRedBlue24(packed, packed, pixelCount);
+                    top += rows;
                 }
             }
-            finally { ArrayPool<byte>.Shared.Return(row); }
         }
-        else
+        finally
         {
-            pixels.CopyPixels(bytes, stride, 0);
-            if (channels == 3 && format == PixelFormats.Rgb24)
-                for (int index = 0; index < bytes.Length; index += 3) (bytes[index], bytes[index + 2]) = (bytes[index + 2], bytes[index]);
+            if (scratch != null) ArrayPool<byte>.Shared.Return(scratch);
         }
-        normalized = snapshot with { InterleavedBgr = channels == 3 && bpp == 8 };
-        return new CVCIEFile { Cols = pixels.PixelWidth, Rows = pixels.PixelHeight, Bpp = bpp, Channels = channels, Data = bytes, FileExtType = CVType.Raw };
+
+        token.ThrowIfCancellationRequested();
+        Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
+        hash.GetHashAndReset(digest);
+        return digest.SequenceEqual(expectedDigest) ? bytes : null;
+    }
+
+    private static unsafe void SwapRedBlue24(byte* source, byte* destination, int pixelCount)
+    {
+        for (int pixel = 0; pixel < pixelCount; pixel++, source += 3, destination += 3)
+        {
+            byte first = source[0];
+            destination[0] = source[2];
+            destination[1] = source[1];
+            destination[2] = first;
+        }
+    }
+
+    private static unsafe void SplitRgb48(byte* source, byte* destination, int planeLength, int pixelCount)
+    {
+        ushort* packed = (ushort*)source;
+        ushort* red = (ushort*)destination;
+        ushort* green = (ushort*)(destination + planeLength);
+        ushort* blue = (ushort*)(destination + 2 * planeLength);
+        for (int pixel = 0; pixel < pixelCount; pixel++, packed += 3)
+        {
+            red[pixel] = packed[0];
+            green[pixel] = packed[1];
+            blue[pixel] = packed[2];
+        }
     }
 
     private sealed record EmbeddedCapability(EditorContext Context, string Path, ColorCalibrationSnapshot? Snapshot,
@@ -151,7 +202,11 @@ public sealed class CalibratedImageContentProvider : IImageContentProvider, IIma
             }
             InitializeEmbedded(Buffer, Snapshot, Path, Context.ImageView.ImageContent?.Pixels);
             if (Measurement != null && Context.ImageView.ViewBitmapSource is BitmapSource source)
-                Context.ImageView.SetLayerController(CvRawLayerController.CreateLive(Context.ImageView, Measurement, new WriteableBitmap(source), "composite"));
+            {
+                // The layer controller already takes a frozen snapshot of a mutable source.
+                WriteableBitmap display = source as WriteableBitmap ?? new WriteableBitmap(source);
+                Context.ImageView.SetLayerController(CvRawLayerController.CreateLive(Context.ImageView, Measurement, display, "composite"));
+            }
         }
         public override Action DetachForRetirement(long contentVersion)
         {

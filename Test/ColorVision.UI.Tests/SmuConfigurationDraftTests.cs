@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Themes;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -177,7 +178,7 @@ public sealed class SmuConfigurationDraftTests
         draft.DisplayConfig.LocalBaudRate = SMUSerialBaudRate.Baud19200;
         draft.DisplayConfig.IsUseLimitSigned = false;
         draft.DisplayConfig.IsSourceV = false;
-        draft.DisplayConfig.Channel = ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType.B;
+        draft.DisplayConfig.Channel = SMUChannelType.B;
         draft.Config.Nplc = 0.2;
         Assert.False(display.UseLocalSmu);
         Assert.Equal(SMUSerialBaudRate.Baud115200, display.LocalBaudRate);
@@ -188,13 +189,15 @@ public sealed class SmuConfigurationDraftTests
         channel.V = 12;
         source.MeasureVal = 17;
         Assert.True(draft.TryApply(config, display, out string error), error);
+        Assert.True(draft.ServiceSettingsChanged);
+        Assert.True(draft.DisplaySettingsChanged);
         Assert.Equal("COM23", config.DevName);
         Assert.Equal(0.2, config.Nplc);
         Assert.True(display.UseLocalSmu);
         Assert.Equal(SMUSerialBaudRate.Baud19200, display.LocalBaudRate);
         Assert.False(display.IsUseLimitSigned);
         Assert.False(display.IsSourceV);
-        Assert.Equal(ColorVision.Engine.Services.Devices.SMU.Dao.SMUChannelType.B, display.Channel);
+        Assert.Equal(SMUChannelType.B, display.Channel);
         Assert.Same(channel, display.ChannelA);
         Assert.Same(source, display.ChannelA.VoltageSource);
         Assert.Equal(12d, display.ChannelA.V);
@@ -212,6 +215,25 @@ public sealed class SmuConfigurationDraftTests
         draft.Config.Nplc = 0.3;
         Assert.True(display.UseLocalSmu);
         Assert.Equal(0.2, config.Nplc);
+    }
+
+    [Theory]
+    [InlineData(" com7 ")]
+    [InlineData("DEV.SMU.Default")]
+    public void DisplayOnlyEditsPreserveLegacyAddressAndUntouchedLiveSettings(string savedPort)
+    {
+        var config = new ConfigSMU { DevName = savedPort, DevType = Pss_Type.Keithley_2400 };
+        var display = new DisplaySMUConfig();
+        var draft = new SmuConfigurationDraft(config, display);
+        draft.DisplayConfig.LocalBaudRate = SMUSerialBaudRate.Baud19200;
+        display.Channel = SMUChannelType.B;
+
+        Assert.True(draft.TryApply(config, display, out string error), error);
+        Assert.False(draft.ServiceSettingsChanged);
+        Assert.True(draft.DisplaySettingsChanged);
+        Assert.Equal(savedPort, config.DevName);
+        Assert.Equal(SMUSerialBaudRate.Baud19200, display.LocalBaudRate);
+        Assert.Equal(SMUChannelType.B, display.Channel);
     }
 
     [Fact]

@@ -35,7 +35,13 @@ namespace ColorVision.Copilot
 
             return request.Mode == CopilotAgentMode.Web
                 || CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0
-                || ContainsAny(request.UserText, PublicWebMarkers);
+                || ContainsAny(request.UserText, PublicWebMarkers)
+                || ContainsAny(request.UserText, ExplicitPublicWebSearchMarkers)
+                // "搜索一下 Foo" may name a code symbol, so it offers the tool without requiring it.
+                || request.UserText.Contains("搜索一下", StringComparison.Ordinal)
+                    && !ContainsAny(request.UserText, LocalSearchTargetMarkers)
+                || request.UserText.Contains("最新", StringComparison.Ordinal)
+                    && request.UserText.Contains("版本", StringComparison.Ordinal);
         }
 
         public static bool NeedsUrlFetch(CopilotAgentRequest? request)
@@ -99,7 +105,7 @@ namespace ColorVision.Copilot
             return NeedsFlowGraph(request)
                 && !string.IsNullOrWhiteSpace(request!.UserText)
                 && !ExplicitlyDisallowsWriteAccess(request)
-                && !ContainsAny(request.UserText, WorkspaceEditOptOutMarkers);
+                && !OptsOutOfEditing(request.UserText);
         }
 
         public static bool NeedsFlowMutation(CopilotAgentRequest? request)
@@ -126,9 +132,13 @@ namespace ColorVision.Copilot
         {
             return IsAgentRequest(request)
                 && !ExplicitlyDisallowsWriteAccess(request)
-                && ContainsAny(request!.UserText, DatabaseMarkers)
-                && ContainsAny(request.UserText, DatabaseMutationMarkers)
-                && !ContainsAny(request.UserText, MutationExplanationMarkers);
+                && !ContainsAny(request!.UserText, MutationExplanationMarkers)
+                && !ContainsAny(request.UserText, DatabaseMutationNegationMarkers)
+                && !OptsOutOfEditing(request.UserText)
+                && (ContainsAny(request.UserText, DatabaseMarkers) && ContainsAny(request.UserText, DatabaseMutationMarkers)
+                    || ContainsAny(request.UserText, DatabaseWriteActionMarkers)
+                        && (ContainsAny(request.UserText, DatabaseTableTargetMarkers)
+                            || ContainsAny(request.UserText, DatabaseNameMarkers) && ContainsAny(request.UserText, DatabaseRowMarkers)));
         }
 
         public static bool NeedsRecentLogs(CopilotAgentRequest? request)

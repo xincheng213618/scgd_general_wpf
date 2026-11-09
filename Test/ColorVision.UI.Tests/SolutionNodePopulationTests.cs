@@ -1,7 +1,9 @@
 using ColorVision.Solution.Explorer;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -142,6 +144,216 @@ public sealed class SolutionNodePopulationTests
         });
     }
 
+    [Fact]
+    public void RenamedAndRemovedChildrenUpdateDeduplicationAcrossYields()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using PopulationFixture fixture = new();
+            for (int index = 0; index < 160; index++) fixture.WriteFile($"file{index:D3}.txt");
+            string[] paths = fixture.VisiblePaths();
+            SolutionExplorer root = fixture.CreateRoot();
+            using QueuedContext context = new();
+
+            Task loading = SolutionNodeFactory.PopulateChildren(root, new DirectoryInfo(fixture.Root));
+
+            string renamedPath = paths[70];
+            string removedPath = paths[140];
+            SolutionNode renamed = root.VisualChildren[0];
+            var transient = new SolutionNode { FullPath = removedPath };
+            root.AddChild(transient);
+            renamed.FullPath = renamedPath.ToUpperInvariant();
+
+            context.RunNext();
+
+            Assert.False(loading.IsCompleted);
+            Assert.Same(renamed, Assert.Single(root.VisualChildren,
+                node => string.Equals(node.FullPath, renamedPath, StringComparison.OrdinalIgnoreCase)));
+            root.RemoveChild(transient);
+            context.Complete(loading);
+
+            Assert.IsType<FileNode>(Assert.Single(root.VisualChildren, node => node.FullPath == removedPath));
+            Assert.DoesNotContain(transient, root.VisualChildren);
+        });
+    }
+
+    [Fact]
+    public void RefreshDuringRootPopulationDoesNotReplayADeletedEntryFromTheOldSnapshot()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using PopulationFixture fixture = new();
+            for (int index = 0; index < 60; index++) fixture.WriteFile($"file{index:D3}.txt");
+            SolutionExplorer root = fixture.CreateRoot();
+            typeof(SolutionExplorer).GetField("_projectChangedDebounceTimer", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(root, new DispatcherTimer());
+            using QueuedContext context = new();
+
+            Task original = SolutionNodeFactory.PopulateChildren(root, new DirectoryInfo(fixture.Root));
+            Assert.False(original.IsCompleted);
+            string removed = fixture.VisiblePaths()[^1];
+            Assert.DoesNotContain(root.VisualChildren, node => node.FullPath == removed);
+            File.Delete(removed);
+
+            root.Refresh();
+            context.Drain();
+            original.GetAwaiter().GetResult();
+
+            Assert.Equal(fixture.VisiblePaths(), root.VisualChildren.Select(node => node.FullPath));
+        });
+    }
+
+    [Fact]
+    public void ClosingDuringRootPopulationKeepsTheDisposedTreeEmpty()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using PopulationFixture fixture = new();
+            for (int index = 0; index < 60; index++) fixture.WriteFile($"file{index:D3}.txt");
+            SolutionExplorer root = fixture.CreateRoot();
+            using QueuedContext context = new();
+
+            Task loading = SolutionNodeFactory.PopulateChildren(root, new DirectoryInfo(fixture.Root));
+            Assert.False(loading.IsCompleted);
+            Assert.NotEmpty(root.VisualChildren);
+
+            root.Dispose();
+            context.Complete(loading);
+
+            Assert.Empty(root.VisualChildren);
+            context.Complete(SolutionNodeFactory.PopulateChildren(root, new DirectoryInfo(fixture.Root)));
+            Assert.Empty(root.VisualChildren);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RefreshRestoresLateFolderExpansionBeforeNotifyingCompletion(bool refreshAgain)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using PopulationFixture fixture = new();
+            for (int index = 0; index < 60; index++) fixture.CreateDirectory($"folder{index:D3}");
+            string[] paths = fixture.VisiblePaths();
+            string expandedPath = paths[^1];
+            using SolutionExplorer root = fixture.CreateRoot();
+            typeof(SolutionExplorer).GetField("_projectChangedDebounceTimer", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(root, new DispatcherTimer());
+            root.AddChild(new SolutionNode { FullPath = expandedPath, IsExpanded = true });
+            var notifications = new List<(int Count, bool TargetExpanded)>();
+            root.SolutionStateReloaded += (_, _) => notifications.Add((root.VisualChildren.Count,
+                root.VisualChildren.Any(node => node.FullPath == expandedPath && node.IsExpanded)));
+            using QueuedContext context = new();
+
+            root.Refresh();
+            Assert.DoesNotContain(root.VisualChildren, node => node.FullPath == expandedPath);
+            if (refreshAgain) root.Refresh();
+            Assert.Empty(notifications);
+            context.Drain();
+
+            Assert.True(Assert.Single(root.VisualChildren, node => node.FullPath == expandedPath).IsExpanded);
+            Assert.Equal((paths.Length, true), Assert.Single(notifications));
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OpeningWorkspaceSelectsStartupProjectDiscoveredInALaterBatch(bool lockConfigWhileLoading)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using PopulationFixture fixture = new();
+            for (int index = 0; index < 60; index++) fixture.CreateDirectory($"folder{index:D3}");
+            string lateFolder = fixture.VisiblePaths()[^1];
+            string projectPath = Path.Combine(lateFolder, "Runner.csproj");
+            File.WriteAllText(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>
+                """);
+            SolutionConfigStore.Save(fixture.SolutionPath, new SolutionConfig());
+            ProjectProviderRegistry.Initialize();
+            using QueuedContext context = new();
+            using var root = new SolutionExplorer(new SolutionEnvironments { SolutionPath = fixture.SolutionPath });
+            Assert.DoesNotContain(root.VisualChildren, node => node.FullPath == lateFolder);
+
+            using FileStream? configLock = lockConfigWhileLoading
+                ? new FileStream(fixture.SolutionPath, FileMode.Open, FileAccess.Read, FileShare.Read)
+                : null;
+            context.Drain();
+
+            ProjectNode project = Assert.Single(root.VisualChildren.OfType<ProjectNode>());
+            string expected = lockConfigWhileLoading ? string.Empty : Path.GetRelativePath(fixture.Root, projectPath);
+            Assert.Equal(expected, root.Config.StartupProject);
+            Assert.Equal(expected, SolutionConfigStore.Load(fixture.SolutionPath).Config.StartupProject);
+            Assert.Equal(!lockConfigWhileLoading, project.IsStartupProject);
+            Assert.False(root.OperationHistory.CanUndo);
+        });
+    }
+
+    [Fact]
+    public async Task StartupCommandRequeryUsesDiscoverySnapshotAndReloadsChangedProject()
+    {
+        using PopulationFixture fixture = new();
+        fixture.CreateDirectory("app");
+        string relativeProject = Path.Combine("app", "Runner.csproj");
+        string project = Path.Combine(fixture.Root, relativeProject);
+        File.WriteAllText(project, """
+            <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>
+            """);
+        SolutionConfigStore.Save(fixture.SolutionPath, new SolutionConfig { StartupProject = relativeProject });
+        ProjectProviderRegistry.Initialize();
+        SolutionExplorer root = WpfTestHost.Invoke(() => new SolutionExplorer(new SolutionEnvironments { SolutionPath = fixture.SolutionPath }));
+        try
+        {
+            const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+            var discoveryField = typeof(SolutionExplorer).GetField("_startupDiscovery", instance)!;
+            var scanField = discoveryField.FieldType.GetField("PendingTask")!;
+            var watcherField = typeof(SolutionExplorer).GetField("_fileSystemWatcher", instance)!;
+            var changed = typeof(SolutionExplorer).GetMethod("FileSystemWatcher_Changed", instance)!;
+            var deleted = typeof(SolutionExplorer).GetMethod("FileSystemWatcher_Deleted", instance)!;
+
+            Task? GetPendingScan() => (Task?)scanField.GetValue(discoveryField.GetValue(root));
+
+            async Task WaitForDiscoveryAsync()
+            {
+                Task? scan = WpfTestHost.Invoke(() =>
+                {
+                    Assert.False(root.CanExecuteStartupProject(ProjectCapabilityIds.Run));
+                    return GetPendingScan();
+                });
+                if (scan != null) await scan.WaitAsync(TimeSpan.FromSeconds(15));
+            }
+
+            // Deliver watcher callbacks deterministically after each file change.
+            WpfTestHost.Invoke(() => ((FileSystemWatcher)watcherField.GetValue(root)!).EnableRaisingEvents = false);
+            await WaitForDiscoveryAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.True(root.CanExecuteStartupProject(ProjectCapabilityIds.Run));
+                Assert.False(root.CanExecuteStartupProject(ProjectCapabilityIds.Debug));
+                deleted.Invoke(root, [null, new FileSystemEventArgs(WatcherChangeTypes.Deleted, fixture.Root, "image.txt")]);
+                Assert.True(root.CanExecuteStartupProject(ProjectCapabilityIds.Run));
+
+                File.WriteAllText(project, """
+                    <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Library</OutputType></PropertyGroup></Project>
+                    """);
+                changed.Invoke(root, [null, new FileSystemEventArgs(WatcherChangeTypes.Changed, fixture.Root, relativeProject)]);
+            });
+
+            await WaitForDiscoveryAsync();
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.False(root.CanExecuteStartupProject(ProjectCapabilityIds.Run));
+                Assert.Null(GetPendingScan());
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(root.Dispose);
+        }
+    }
+
     private sealed class RecordingNode : SolutionNode
     {
         public int AddCalls { get; private set; }
@@ -162,13 +374,22 @@ public sealed class SolutionNodePopulationTests
 
         public override void Post(SendOrPostCallback callback, object? state) => _callbacks.Enqueue(() => callback(state));
 
+        public void RunNext()
+        {
+            Assert.True(_callbacks.TryDequeue(out Action? callback), "Population must resume through its captured yield context.");
+            callback!();
+        }
+
+        public void Drain()
+        {
+            while (_callbacks.Count > 0)
+                RunNext();
+        }
+
         public void Complete(Task task)
         {
             while (!task.IsCompleted)
-            {
-                Assert.True(_callbacks.TryDequeue(out Action? callback), "Population must resume through its captured yield context.");
-                callback!();
-            }
+                RunNext();
             task.GetAwaiter().GetResult();
             Assert.Empty(_callbacks);
         }

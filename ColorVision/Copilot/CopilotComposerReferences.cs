@@ -340,7 +340,7 @@ namespace ColorVision.Copilot
             try
             {
                 foreach (var template in TemplateControl.ITemplateNames.Values
-                    .Where(template => template != null)
+                    .Where(template => template is { IsRetired: false })
                     .Distinct()
                     .Take(256))
                 {

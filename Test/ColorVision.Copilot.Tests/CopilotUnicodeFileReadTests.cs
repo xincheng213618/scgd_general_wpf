@@ -47,7 +47,7 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
         var path = Path.Combine(_directory.FullName, "preview.log");
         await File.WriteAllTextAsync(path, source, GetEncoding("utf8"));
 
-        var search = CopilotGrepTextCapability.Search([_directory.FullName], "tail", null, CancellationToken.None);
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "xxxx", null, CancellationToken.None);
 
         Assert.True(search.Success, search.ErrorMessage);
         var match = Assert.Single(search.Matches);

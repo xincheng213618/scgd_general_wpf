@@ -115,7 +115,7 @@
             </flow:FlowEditorCanvas.RightToolbarContent>
         </flow:FlowEditorCanvas>
 
-        <Grid>
+        <Grid x:Name="ExecutionOverlay">
             <!-- Compact execution details float above the progress bar. -->
             <Grid Margin="10,0,10,10"
                   HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
@@ -225,7 +225,7 @@
             <ProgressBar x:Name="ProgressBar1" Height="8"
                          HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
                          Panel.ZIndex="40"
-                         Maximum="100" Style="{StaticResource ProgressBarFlat}"
+                         Maximum="100" Style="{DynamicResource ProgressBarFlat}"
                          IsIndeterminate="{Binding IsExecutionProgressIndeterminate}"
                          Visibility="{Binding IsExecutionActive, Converter={StaticResource bool2VisibilityConverter}}"
                          Value="{Binding FlowEngineManager.BatchProgress}"/>

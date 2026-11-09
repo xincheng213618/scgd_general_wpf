@@ -1,7 +1,9 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.UI.Tests;
 
@@ -66,5 +68,22 @@ public sealed class ConfigPhyCameraApplyTests
         source.ApplyTo(target, includeCameraId: true);
 
         Assert.Equal("PHYSICAL-CAMERA-ID", target.CameraID);
+    }
+
+    [Fact]
+    public void SubmittingPhysicalCameraSettingsPreservesLegacyDebayerConfig()
+    {
+        const string savedJson = """
+            { "ZBDebayer": { "IsEnabled": true, "Method": 2, "Channeltype": 1 } }
+            """;
+        var config = JsonConvert.DeserializeObject<ConfigCamera>(savedJson)!;
+        var draft = config.Clone();
+        var physical = new ConfigPhyCamera { CameraID = "PHYSICAL-CAMERA-ID" };
+
+        physical.ApplyTo(draft, includeCameraId: true, includeCameraType: false);
+        draft.CopyTo(config);
+
+        Assert.Equal("PHYSICAL-CAMERA-ID", config.CameraID);
+        Assert.True(JToken.DeepEquals(JObject.Parse(savedJson)["ZBDebayer"], JObject.FromObject(config)["ZBDebayer"]));
     }
 }

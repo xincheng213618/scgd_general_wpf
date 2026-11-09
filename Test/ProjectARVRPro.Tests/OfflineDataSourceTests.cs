@@ -303,9 +303,8 @@ public sealed class OfflineDataSourceTests
         Assert.Equal("first-node", flowA.GetLastByNodeId("node")!.NodeName);
         Assert.Equal("first-node", flowA.GetMessagePayloads(1).SendPayload);
         Assert.Equal("second-node", flowB.GetMessagePayloads(1).SendPayload);
-        Assert.Single(flowA.GetByBatchIds([20]));
-        Assert.Single(flowA.GetBySerialNumbers(["sameSN_20260916T120000"]));
-        Assert.Equal(20, Assert.Single(flowA.GetDistinctBatchIds(5)));
+        Assert.Equal(20, Assert.Single(flowA.GetRecentRunSummaries(5, default)).BatchId);
+        Assert.Single(flowA.GetRunSummariesBySerialNumbers(["sameSN_20260916T120000"], default));
         Assert.Single(flowA.GetMessagesByRun(20, "sameSN_20260916T120000"));
         Assert.Single(flowA.GetHistoryMessagesByNodeId("node", [20]));
         Assert.Empty(flowA.GetSameFlowRuns("sameSN_20260916T120000"));

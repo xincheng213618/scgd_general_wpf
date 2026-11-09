@@ -569,4 +569,13 @@
   <data name="Sched_TaskNotFound" xml:space="preserve">
     <value>The task was not found. Refresh the task list.</value>
   </data>
+  <data name="Sched_StatusBarRunning" xml:space="preserve">
+    <value>Scheduled tasks · Running</value>
+  </data>
+  <data name="Sched_StatusBarPausedRunning" xml:space="preserve">
+    <value>Schedule paused · Run in progress</value>
+  </data>
+  <data name="Sched_StatusBarNextRun" xml:space="preserve">
+    <value>Next at {0}</value>
+  </data>
 </root>

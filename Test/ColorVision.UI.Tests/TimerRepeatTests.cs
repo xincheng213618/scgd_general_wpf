@@ -64,9 +64,17 @@ public sealed class TimerRepeatTests
         var records = new ConcurrentBag<FlowNodeRecord>();
         var messages = new ConcurrentBag<FlowNodeMessage>();
         int nextRecord = 0, nextMessage = 0;
-        using var recorder = new FlowNodeExecutionRecorder(record =>
-        { record.Id = Interlocked.Increment(ref nextRecord); records.Add(record); return record.Id; }, _ => { }, message =>
-        { message.Id = Interlocked.Increment(ref nextMessage); messages.Add(message); return message.Id; }, _ => { }, _ => true, _ => { });
+        using var recorder = new FlowNodeExecutionRecorder((record, message) =>
+        {
+            record.Id = Interlocked.Increment(ref nextRecord);
+            records.Add(record);
+            if (message != null)
+            {
+                message.Id = Interlocked.Increment(ref nextMessage);
+                messages.Add(message);
+            }
+            return Task.FromResult(record.Id);
+        }, (_, _) => Task.CompletedTask, _ => true, _ => { });
         recorder.AttachNodes([timer]);
         FlowInput(timer).DataTransfer += (_, _) => Interlocked.Increment(ref delays);
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

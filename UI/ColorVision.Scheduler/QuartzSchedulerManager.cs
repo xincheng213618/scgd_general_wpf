@@ -60,6 +60,20 @@ namespace ColorVision.Scheduler
         public RelayCommand ShutdownCommand { get; set; }
         public Task InitializationTask { get; }
 
+        internal event Action? ActiveExecutionsChanged;
+
+        internal void NotifyActiveExecutionsChanged()
+        {
+            try
+            {
+                ActiveExecutionsChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("An active execution state subscriber failed.", ex);
+            }
+        }
+
         public QuartzSchedulerManager()
         {
             ConfigFile = Path.Combine(Environments.DirStateScheduler, "scheduler_tasks.json");

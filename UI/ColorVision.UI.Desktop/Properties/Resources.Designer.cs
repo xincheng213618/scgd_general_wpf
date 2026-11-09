@@ -403,7 +403,7 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 确定要清除所有下载记录吗？ 的本地化字符串。
+        ///   查找类似 确定要清除所有下载记录吗？进行中的任务也会停止，已下载的文件会保留。 的本地化字符串。
         /// </summary>
         public static string ClearRecordsConfirm {
             get {
@@ -2992,6 +2992,87 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string zh_Hant {
             get {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载任务已被删除 的本地化字符串。
+        /// </summary>
+        public static string DownloadRecordDeleted {
+            get {
+                return ResourceManager.GetString("DownloadRecordDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校验中… 的本地化字符串。
+        /// </summary>
+        public static string DownloadVerifying {
+            get {
+                return ResourceManager.GetString("DownloadVerifying", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部 的本地化字符串。
+        /// </summary>
+        public static string DownloadFilterAll {
+            get {
+                return ResourceManager.GetString("DownloadFilterAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 进行中 的本地化字符串。
+        /// </summary>
+        public static string DownloadFilterActive {
+            get {
+                return ResourceManager.GetString("DownloadFilterActive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索文件名或链接 的本地化字符串。
+        /// </summary>
+        public static string DownloadSearchPlaceholder {
+            get {
+                return ResourceManager.GetString("DownloadSearchPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更多操作 的本地化字符串。
+        /// </summary>
+        public static string DownloadMoreActions {
+            get {
+                return ResourceManager.GetString("DownloadMoreActions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清除已完成记录 的本地化字符串。
+        /// </summary>
+        public static string ClearCompletedRecords {
+            get {
+                return ResourceManager.GetString("ClearCompletedRecords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要清除已完成的下载记录吗？已下载的文件会保留。 的本地化字符串。
+        /// </summary>
+        public static string ClearCompletedRecordsConfirm {
+            get {
+                return ResourceManager.GetString("ClearCompletedRecordsConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要删除选中的 {0} 条下载记录吗？ 的本地化字符串。
+        /// </summary>
+        public static string DeleteRecordsConfirm {
+            get {
+                return ResourceManager.GetString("DeleteRecordsConfirm", resourceCulture);
             }
         }
     }

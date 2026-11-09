@@ -27,7 +27,6 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
         }
     }
 
-    [DisplayAlgorithm(50, "灯条Poi中心计算", "Json")]
     public class AlgorithmLEDStripDetectionV2 : JsonDisplayAlgorithmBase<LEDStripDetectionV2DisplayAlgorithmConfig>
     {
 

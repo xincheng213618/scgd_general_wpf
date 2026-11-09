@@ -21,6 +21,29 @@ public partial class ARVRWindow
     private ProcessMeta? _luxFlowMeta;
     private TemplateModel<FlowParam>? _luxFlowTemplate;
 
+    internal bool IsJsonVidRunning { get; private set; }
+
+    internal async Task<(bool Busy, ObjectiveTestItem? Result)> MeasureVidForJsonAsync()
+    {
+        Dispatcher.VerifyAccess();
+        bool waitingForSwitch = !_objectiveSessionCompleted && _pendingSwitchRequestedAt.HasValue && !_pendingSwitchAcknowledgedAt.HasValue;
+        if (_isDisposed || IsTestExecutionBusy || waitingForSwitch)
+            return (true, null);
+
+        IsJsonVidRunning = true;
+        try
+        {
+            UpdateTestButtonState();
+            var (succeeded, item) = await LuxDeviceMeasurements.MeasureVidResultAsync(_luxLifetime.Token);
+            return (false, succeeded ? item : null);
+        }
+        finally
+        {
+            IsJsonVidRunning = false;
+            UpdateTestButtonState();
+        }
+    }
+
     internal string? HandleLuxRequest(NetworkStream stream, LuxCommandSession session)
     {
         Dispatcher.VerifyAccess();
@@ -116,8 +139,6 @@ public partial class ARVRWindow
     {
         // Keep this command's settings when another station handshakes during measurement.
         string directory = ViewResultManager.Config.CsvSavePath;
-        double min = ProjectConfig.LuxVidMin, max = ProjectConfig.LuxVidMax;
-        double factor = ProjectConfig.LuxVidFix, offset = ProjectConfig.LuxVidB;
         string operation = session.Request.SocketCode == "31" ? "光通量测量"
             : ProjectConfig.LuxVidMode == LuxVidMeasurementMode.GetPosition ? "VID 获取位置" : "VID 自动聚焦";
         var elapsed = Stopwatch.StartNew();
@@ -139,16 +160,12 @@ public partial class ARVRWindow
             log.Info($"LUX 设备测量开始: SocketCode={session.Request.SocketCode}, SN={session.Request.SerialNumber}");
             if (session.Request.SocketCode == "01")
             {
-                double? measured = await LuxDeviceMeasurements.MeasureVidAsync(_luxLifetime.Token);
-                succeeded = measured.HasValue;
-                double value = measured.HasValue ? measured.Value * factor + offset : 0;
-                if (!double.IsFinite(value)) throw new InvalidOperationException("VID 结果不是有效数值。");
-                var item = new ObjectiveTestItem { Name = "VID", Unit = "cd/m^2", Value = value, LowLimit = min, UpLimit = max };
+                (succeeded, var item) = await LuxDeviceMeasurements.MeasureVidResultAsync(_luxLifetime.Token);
                 string row = $"2pixel_linePair,{item.Name},{item.Value},{item.Unit},{item.LowLimit},{item.UpLimit},{(item.TestResult ? "pass" : "fail")}";
                 BeginSave();
                 await LuxDeviceReportWriter.WriteAsync(Path.Combine(directory, Tool.SanitizeFileName($"B_{session.Request.SerialNumber}.csv")),
                     path => File.WriteAllLines(path, [ProjectARVRResultCsvExporter.Header, row]), _luxLifetime.Token);
-                session.Complete(session.Request.MeasurementResponse(value));
+                session.Complete(session.Request.MeasurementResponse(item.Value));
             }
             else
             {

@@ -115,9 +115,7 @@ namespace ColorVision.Copilot
                 includeContent: true,
                 evidenceCharacterBudget);
             var finalizationProfile = explorationRequest.Profile.Clone();
-            finalizationProfile.MaxTokens = Math.Min(
-                finalizationProfile.MaxTokens,
-                MaximumFinalizationOutputTokens);
+            finalizationProfile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(finalizationProfile, MaximumFinalizationOutputTokens);
             finalizationProfile.UseSystemPromptOverride(DelegatedFinalizationSystemPrompt);
             var finalizationPrompt = new StringBuilder()
                 .AppendLine("# Delegated task")

@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using System;
@@ -84,6 +85,8 @@ namespace ColorVision.Engine.Services.Terminal
                 DeviceServiceFactoryRegistry.ApplyDefaultLicense(TerminalService.ServiceType, deviceConfig, licenses, DateTimeOffset.Now);
             }
             SysResourceModel sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+            var displayConfigs = DisplayConfigManager.Instance;
+            bool displayInitialized = DeviceServiceFactoryRegistry.TryInitializeNewDeviceDisplayConfig(TerminalService.ServiceType, deviceConfig.Code, displayConfigs);
             DeviceService deviceService = deviceServiceFactory.CreateService(sysDevModel);
 
             TerminalService.AddChild(deviceService);
@@ -91,6 +94,8 @@ namespace ColorVision.Engine.Services.Terminal
             if (!SysResourceDao.IsLocalId(sysDevModel.Id))
                 RC.MqttRCService.GetInstance().RestartServices(TerminalService.ServiceType.ToString(), TerminalService.SysResourceModel.Code, sysDevModel.Code);
             ServiceManager.GetInstance().GenDeviceDisplayControl();
+            if (displayInitialized && !ConfigHandler.GetInstance().TrySave(displayConfigs, out string displayError))
+                MessageBox1.Show(this, EngineLocalization.Format($"设备已创建，但本机显示配置保存失败：{displayError}"), "ColorVision");
             Close();
 
         }

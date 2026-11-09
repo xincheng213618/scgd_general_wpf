@@ -28,6 +28,8 @@ namespace ColorVision.Scheduler
 
         public event Action<IJobExecutionContext>? JobExecutedEvent;
 
+        internal JobKey[] GetActiveJobKeys() => _activeExecutions.Values.Select(execution => execution.JobKey).Distinct().ToArray();
+
         public async ValueTask JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
             JobKey jobKey = context.JobDetail.Key;
@@ -55,6 +57,7 @@ namespace ColorVision.Scheduler
             // Quartz awaits this listener before invoking the job, so record the
             // start after any UI dispatch delay to align with JobRunTime.
             _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
+            _schedulerManager.NotifyActiveExecutionsChanged();
         }
 
         public ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
@@ -138,6 +141,7 @@ namespace ColorVision.Scheduler
                 _logger.Error($"Failed to update completed state for job: {jobKey.Name}({jobKey.Group})", ex);
             }
 
+            _schedulerManager.NotifyActiveExecutionsChanged();
             await WriteHistoryAsync(executionRecord);
 
             RaiseJobExecuted(context);

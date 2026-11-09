@@ -44,7 +44,7 @@ Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把�
 
 只更新 journal 不会使旧执行会话重新变得可恢复。`CopilotAgentSessionCheckpoint.SessionResumeRestriction` 将未知工具结果或未闭合的 Provider 工具调用绑定到保留的 `SerializedSessionJson`；`CopyWithOutcome` 及其 journal 复制入口在替换 journal 前固化该限制，JSON 存储、快照、等价判断和 journal 裁剪继续保留它。非法限制值拒绝恢复。连续失败的 Finalize 不能靠新增无工具 run 清除限制；真正重新规划并创建新 Session 时不继承旧标记，也不会因历史 journal 中仍有未知结果而永久禁止恢复。`CopilotFinalAnswerRecoverySafetyTests` 覆盖实际恢复入口、两次失败、保存重开、复制与新 Session 对照，同时确认 Finalize 不发现或执行工具。本修复不自动迁移旧版本已经丢失会话关联限制的历史记录；这类记录仍需重新规划，不能根据缺失标记断言原操作安全。
 
-`CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。当已观测用量达到有效请求预算时，中间件在下一次供应商调用前抛出受控的 `CopilotAgentTokenBudgetExceededException`，由 Runtime 转成确定性的结束提示，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
+`CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。每轮工具循环都会重读全部历史，缓存读取的费用约为新输入的十分之一，全额计入会让长任务因几乎没有计费的 Token 提前结束，因此判断预算耗尽时把供应商报告的缓存读取按 10% 计入（`BudgetChargeTokens`），调用前的估算也沿用上一次的缓存读取量；`ConsumedTokens` 和 `Reported*` 仍是原始账单值，可能超过预算值而未耗尽。子 Agent 共享池仍按原始值扣减。当已观测用量达到有效请求预算时，中间件在下一次供应商调用前抛出受控的 `CopilotAgentTokenBudgetExceededException`，由 Runtime 转成确定性的结束提示，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
 
 同一次流式响应的 usage 更新通过 `CopilotTokenUsage.MergeProgress` 合并，各字段保留已观测最大值，总量还须覆盖合并后的输入与输出之和；后续片段省略或降低 total 不会让用量倒退、重新开放已耗尽的预算。不同供应商调用之间仍使用 `Add` 累加。`CopilotTokenUsageMergeTests` 覆盖不完整 usage、溢出饱和、缓存计数，以及通过 Framework 流式 usage 验证下一次调用在到达供应商前被拦截。
 

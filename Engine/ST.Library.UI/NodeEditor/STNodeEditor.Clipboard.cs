@@ -117,14 +117,6 @@ public partial class STNodeEditor
 		return CommitImportPlan(plan, "粘贴节点");
 	}
 
-	public IReadOnlyList<STNode> ImportCanvasAsModule(byte[] canvasData, Point targetCanvasPoint)
-	{
-		if (!EnableEdit) return Array.Empty<STNode>();
-		GraphImportPlan plan = DecodeCanvasData(canvasData);
-		MovePlanTo(plan, targetCanvasPoint);
-		return CommitImportPlan(plan, "导入流程模块");
-	}
-
 	public bool CopySelectionToClipboard()
 	{
 		byte[] data = GetSelectedNodesData();
@@ -203,35 +195,10 @@ public partial class STNodeEditor
 		{
 			throw new InvalidDataException("节点数据为空");
 		}
-		using MemoryStream stream = new MemoryStream(DecompressGZip(data, 0), writable: false);
+		using MemoryStream stream = new MemoryStream(DecompressGZip(data), writable: false);
 		int nodeCount = ReadCount(stream, MaximumImportedNodeCount, "节点");
 		ReadInt32(stream);
 		ReadInt32(stream);
-		return DecodeGraphBody(stream, nodeCount);
-	}
-
-	private GraphImportPlan DecodeCanvasData(byte[] data)
-	{
-		if (data == null || data.Length < STNodeConstant.NodeFlag.Length + 1)
-		{
-			throw new InvalidDataException("流程模块数据为空或不完整");
-		}
-		byte[] header = new byte[STNodeConstant.NodeFlag.Length + 1];
-		Array.Copy(data, header, header.Length);
-		for (int i = 0; i < STNodeConstant.NodeFlag.Length; i++)
-		{
-			if (header[i] != STNodeConstant.NodeFlag[i])
-			{
-				throw new InvalidDataException("无法识别的流程模块格式");
-			}
-		}
-		if (header[STNodeConstant.NodeFlag.Length] != STNodeConstant.Version)
-		{
-			throw new InvalidDataException("无法识别的流程模块版本");
-		}
-		using MemoryStream stream = new MemoryStream(DecompressGZip(data, header.Length), writable: false);
-		ReadBytes(stream, 12);
-		int nodeCount = ReadCount(stream, MaximumImportedNodeCount, "节点");
 		return DecodeGraphBody(stream, nodeCount);
 	}
 
@@ -490,14 +457,13 @@ public partial class STNodeEditor
 		stream.Write(bytes, 0, bytes.Length);
 	}
 
-	private static byte[] DecompressGZip(byte[] data, int offset)
+	private static byte[] DecompressGZip(byte[] data)
 	{
-		int compressedLength = data.Length - offset;
-		if (compressedLength < 18)
+		if (data.Length < 18)
 		{
 			throw new InvalidDataException("压缩节点数据不完整");
 		}
-		using MemoryStream input = new MemoryStream(data, offset, compressedLength, writable: false);
+		using MemoryStream input = new MemoryStream(data, writable: false);
 		using GZipStream gzip = new GZipStream(input, CompressionMode.Decompress);
 		using MemoryStream output = new MemoryStream();
 		byte[] buffer = new byte[81920];

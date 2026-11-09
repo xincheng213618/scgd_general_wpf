@@ -5,8 +5,13 @@ using ColorVision.ImageEditor.Abstractions;
 using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.POI;
+using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.Layers;
 using System.Threading;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -21,6 +26,149 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
 {
+    [Fact]
+    public async Task FloatTiffDisplayNormalizationPreservesSamplesAcrossPaddedRowsAndFinalChunk()
+    {
+        const int width = 513;
+        const int height = 513;
+        const float min = -3.25f;
+        const float max = 10.1f;
+        double range = (double)max - min;
+        float[] source = new float[width * height];
+        for (int index = 0; index < source.Length; index++)
+        {
+            int code = index % (ushort.MaxValue - 1) + 1;
+            float edge = (float)(min + range * code / ushort.MaxValue);
+            source[index] = (index % 3) switch
+            {
+                0 => MathF.BitIncrement(edge),
+                1 => MathF.BitDecrement(edge),
+                _ => edge,
+            };
+        }
+        source[0] = min;
+        source[width - 1] = float.NegativeInfinity;
+        source[width + 2] = float.NaN;
+        source[^2] = float.PositiveInfinity;
+        source[^1] = max;
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-float-open-{Guid.NewGuid():N}.tiff");
+        ImageView? view = null;
+        try
+        {
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                BitmapSource pixels = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray32Float, null, source, width * sizeof(float));
+                ColorVision.Engine.Media.CalibratedImageExport.Save(pixels, null, path);
+                view = new ImageView { EnableEditorImageServices = false };
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            });
+
+            WpfTestHost.Invoke(() =>
+            {
+                var display = Assert.IsType<WriteableBitmap>(view!.ViewBitmapSource);
+                Assert.Equal(PixelFormats.Gray16, display.Format);
+                Assert.False(display.IsFrozen);
+                ushort[] actual = new ushort[source.Length];
+                display.CopyPixels(actual, width * sizeof(ushort), 0);
+                ushort[] expected = source.Select(value => float.IsFinite(value)
+                    ? (ushort)(Math.Clamp(((double)value - min) / range, 0, 1) * ushort.MaxValue)
+                    : (ushort)0).ToArray();
+                Assert.Equal(expected, actual);
+
+                BitmapSource original = view.ImageContent!.Pixels;
+                Assert.Equal(PixelFormats.Gray32Float, original.Format);
+                float[] samples = new float[source.Length];
+                original.CopyPixels(samples, width * sizeof(float), 0);
+                Assert.Equal(source, samples);
+            });
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FloatDisplayWithoutAFiniteRangeIsBlack(bool allNonFinite)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            const int width = 9;
+            const int height = 3;
+            float[] samples = Enumerable.Repeat(allNonFinite ? float.NaN : -2.5f, width * height).ToArray();
+            samples[0] = float.PositiveInfinity;
+            samples[^1] = float.NegativeInfinity;
+            BitmapSource source = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray32Float, null, samples, width * sizeof(float));
+
+            WriteableBitmap display = Opentif.ConvertGray32FloatToBitmapSource(source);
+
+            Assert.Equal(PixelFormats.Gray16, display.Format);
+            ushort[] actual = new ushort[samples.Length];
+            display.CopyPixels(actual, width * sizeof(ushort), 0);
+            Assert.Equal(new ushort[samples.Length], actual);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LargePngPublishesEditablePixelsWithDecodedDpiAndPalette(bool indexed)
+    {
+        int width = indexed ? 4097 : 2049;
+        int height = indexed ? 2051 : 1025;
+        int stride = width * (indexed ? 1 : 4);
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-large-open-{Guid.NewGuid():N}.png");
+        ImageView? view = null;
+        BitmapSource? expected = null;
+        try
+        {
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                PixelFormat format = indexed ? PixelFormats.Indexed8 : PixelFormats.Bgra32;
+                BitmapPalette? palette = indexed ? new BitmapPalette(Enumerable.Range(0, 256)
+                    .Select(value => Color.FromRgb((byte)value, (byte)(255 - value), (byte)(value * 37))).ToArray()) : null;
+                byte[] data = new byte[stride * height];
+                for (int index = 0; index < data.Length; index++) data[index] = (byte)(index + (index >> 8));
+                BitmapSource source = BitmapSource.Create(width, height, 144, 120, format, palette, data, stride);
+                PngBitmapEncoder encoder = new();
+                encoder.Frames.Add(BitmapFrame.Create(source));
+                using (FileStream file = File.Create(path)) encoder.Save(file);
+                using (FileStream file = File.OpenRead(path))
+                    expected = new PngBitmapDecoder(file, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
+
+                view = new ImageView { EnableEditorImageServices = false };
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            });
+
+            WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap actual = Assert.IsType<WriteableBitmap>(view!.ViewBitmapSource);
+                Assert.False(actual.IsFrozen);
+                Assert.Equal(expected!.Format, actual.Format);
+                Assert.Equal((expected.DpiX, expected.DpiY), (actual.DpiX, actual.DpiY));
+                Assert.Equal(expected.Palette?.Colors.ToArray(), actual.Palette?.Colors.ToArray());
+                byte[] expectedPixels = new byte[stride * height];
+                byte[] actualPixels = new byte[expectedPixels.Length];
+                expected.CopyPixels(expectedPixels, stride, 0);
+                actual.CopyPixels(actualPixels, stride, 0);
+                Assert.True(expectedPixels.AsSpan().SequenceEqual(actualPixels));
+                Assert.Same(actual, view.ImageContent!.Pixels);
+            });
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            File.Delete(path);
+        }
+    }
+
     [Theory]
     [InlineData(".cvraw")]
     [InlineData(".cvcie")]
@@ -91,6 +239,240 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             if (view != null) WpfTestHost.Invoke(view.Dispose);
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public async Task DiskCvcieSharesPendingMeasurementAndCancelsItOnContentRetirement()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-measurement-{Guid.NewGuid():N}.cvcie");
+        ImageView? view = null;
+        try
+        {
+            WriteCvcieMeasurementFixture(path, firstValue: 1);
+            CVRawOpen opener = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                return new CVRawOpen(view.EditorContext);
+            });
+            Task Open() => WpfTestHost.Invoke(() =>
+            {
+                view!.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageOpenCompletionContractTests), "measurement target");
+                return opener.OpenImageAsync(view.EditorContext, path);
+            });
+            await Open().WaitAsync(TimeSpan.FromSeconds(10));
+            object sync = typeof(CalibratedImageCapability).GetField("_bufferSync", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(opener)!;
+            Task<PoiMeasurementBuffer> old = WpfTestHost.Invoke(() =>
+            {
+                lock (sync) // Hold publication until the UI retires the measurement source.
+                {
+                    Task<PoiMeasurementBuffer> first = opener.PrepareMeasurementAsync().AsTask();
+                    Assert.False(first.IsCompleted);
+                    Assert.Same(first, opener.PrepareMeasurementAsync().AsTask());
+                    view!.AttachImageContentCapability(null);
+                    return first;
+                }
+            });
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => old.WaitAsync(TimeSpan.FromSeconds(10)));
+
+            await Open().WaitAsync(TimeSpan.FromSeconds(10));
+            PoiMeasurementBuffer buffer = await WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()).WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Same(buffer, await WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()));
+            PoiMeasurementResult point = WpfTestHost.Invoke(() => opener.CalculatePoi([new(1, 0, 1, 1, PoiMeasurementShape.Point)], true).Results[0]);
+            Assert.Equal((2f, 6f, 10f), (point.X, point.Y, point.Z));
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DiskCvcieRejectsNewPixelsAtTheSamePathUntilReopened(bool measurementWasLoaded)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-measurement-revision-{Guid.NewGuid():N}.cvcie");
+        ImageView? view = null;
+        try
+        {
+            WriteCvcieMeasurementFixture(path, firstValue: 1);
+            CvcieFileRevision originalRevision = CvcieFileRevision.Capture(path);
+            CVRawOpen opener = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                return new CVRawOpen(view.EditorContext);
+            });
+            Task Open() => WpfTestHost.Invoke(() =>
+            {
+                view!.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageOpenCompletionContractTests), "measurement target");
+                return opener.OpenImageAsync(view.EditorContext, path);
+            });
+            await Open().WaitAsync(TimeSpan.FromSeconds(10));
+            if (measurementWasLoaded)
+                await WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()).WaitAsync(TimeSpan.FromSeconds(10));
+            var old = WpfTestHost.Invoke(() =>
+            {
+                var controller = (CvRawLayerController)typeof(ImageView).GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!;
+                var profile = view!.EditorContext.ProcessingContext.ProfileMeasurementSources!.Single(option => option.Name == "CIE XYZ");
+                return (Controller: controller, Profile: profile, Bitmap: view.ViewBitmapSource, Layer: view.SelectedLayer);
+            });
+
+            WriteCvcieMeasurementFixture(path, firstValue: 101);
+            File.SetLastWriteTimeUtc(path, originalRevision.LastWriteTimeUtc.AddMinutes(-5));
+            Assert.Equal(originalRevision.Length, new FileInfo(path).Length);
+
+            PoiMeasurementPoint[] points = [new(1, 0, 1, 1, PoiMeasurementShape.Point)];
+            if (measurementWasLoaded)
+            {
+                PoiMeasurementResult original = WpfTestHost.Invoke(() => opener.CalculatePoi(points, true).Results[0]);
+                Assert.Equal((2f, 6f, 10f), (original.X, original.Y, original.Z));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<CvcieFileChangedException>(() => WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()));
+            }
+            Assert.Throws<CvcieFileChangedException>(() => old.Profile.Open(default));
+            ImageLayerDescriptor layer = old.Controller.Layers.Single(item => item.Id == "cie-x");
+            await WpfTestHost.Invoke(() => old.Controller.SelectLayerAsync(layer)).WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(old.Bitmap, view!.ViewBitmapSource);
+                Assert.Same(old.Layer, view.SelectedLayer);
+            });
+
+            await Open().WaitAsync(TimeSpan.FromSeconds(10));
+            await WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()).WaitAsync(TimeSpan.FromSeconds(10));
+            PoiMeasurementResult point = WpfTestHost.Invoke(() => opener.CalculatePoi(points, true).Results[0]);
+            Assert.Equal((102f, 106f, 110f), (point.X, point.Y, point.Z));
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(".cvraw", false, false)]
+    [InlineData(".tif", true, false)]
+    [InlineData(".cvraw", false, true)]
+    public async Task CvcieDisplaySkipsAnAssociatedImageWithDifferentDimensions(string sourceExtension, bool trueColor, bool hasMatchingSibling)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-measurement-geometry-{Guid.NewGuid():N}.cvcie");
+        string linked = Path.ChangeExtension(path, null) + "-linked" + sourceExtension;
+        string sibling = Path.ChangeExtension(path, ".cvraw");
+        ImageView? view = null;
+        CvcieDisplayMode originalMode = WpfTestHost.Invoke(() => CvcieDisplayConfig.Current.DisplayMode);
+        try
+        {
+            if (sourceExtension == ".tif")
+            {
+                using var image = new OpenCvSharp.Mat(1, 4, OpenCvSharp.MatType.CV_8UC3, OpenCvSharp.Scalar.All(88));
+                Assert.True(OpenCvSharp.Cv2.ImWrite(linked, image));
+            }
+            else
+            {
+                WriteRaw(linked, rows: 1, cols: 4);
+            }
+            if (hasMatchingSibling) WriteRaw(sibling, rows: 2, cols: 2);
+            WriteCvcieMeasurementFixture(path, firstValue: 1, sourcePath: linked);
+
+            CVRawOpen opener = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                CvcieDisplayConfig.Current.EnableTrueColor = trueColor;
+                view = new ImageView();
+                view.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageOpenCompletionContractTests), "measurement target");
+                return new CVRawOpen(view.EditorContext);
+            });
+            await WpfTestHost.Invoke(() => opener.OpenImageAsync(view!.EditorContext, path)).WaitAsync(TimeSpan.FromSeconds(10));
+
+            if (trueColor)
+            {
+                await WpfTestHost.Invoke(() =>
+                {
+                    Assert.Equal("cie-srgb", view!.SelectedLayer?.Id);
+                    var controller = (CvRawLayerController)typeof(ImageView).GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!;
+                    return controller.SelectLayerAsync(controller.Layers.Single(item => item.Id == "red"));
+                }).WaitAsync(TimeSpan.FromSeconds(10));
+            }
+
+            await WpfTestHost.Invoke(() => opener.PrepareMeasurementAsync().AsTask()).WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                var bitmap = Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource);
+                Assert.Equal((2, 2), (bitmap.PixelWidth, bitmap.PixelHeight));
+                Assert.Equal(hasMatchingSibling ? "composite" : "cie-y", view.SelectedLayer?.Id);
+                Assert.Equal(hasMatchingSibling ? PixelFormats.Bgr24 : PixelFormats.Gray8, bitmap.Format);
+                PoiMeasurementResult point = opener.CalculatePoi([new(1, 1, 1, 1, PoiMeasurementShape.Point)], true).Results[0];
+                Assert.Equal((4f, 8f, 12f), (point.X, point.Y, point.Z));
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                view?.Dispose();
+                CvcieDisplayConfig.Current.DisplayMode = originalMode;
+            });
+            File.Delete(path);
+            File.Delete(linked);
+            File.Delete(sibling);
+        }
+
+        static void WriteRaw(string rawPath, int rows, int cols)
+        {
+            using CVCIEFile raw = new()
+            {
+                Version = 2, FileExtType = CVType.Raw, Rows = rows, Cols = cols, Bpp = 8, Channels = 3,
+                Exp = [1, 1, 1], Data = Enumerable.Repeat((byte)88, rows * cols * 3).ToArray()
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+        }
+    }
+
+    private static void WriteCvcieMeasurementFixture(string path, int firstValue, string? sourcePath = null)
+    {
+        using CVCIEFile file = new()
+        {
+            Version = 2, FileExtType = CVType.CIE, Rows = 2, Cols = 2, Bpp = 32, Channels = 3,
+            SrcFileName = sourcePath ?? string.Empty,
+            Exp = [1, 1, 1], Data = Enumerable.Range(firstValue, 12).SelectMany(value => BitConverter.GetBytes((float)value)).ToArray()
+        };
+        Assert.True(CVFileUtil.WriteCIEFile(path, file));
+    }
+
+    [Fact]
+    public async Task CvcieProbeRendersTheLatestSampleAfterPreparation()
+    {
+        var ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var rendered = new TaskCompletionSource<ImagePixelSample>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var latest = new ImagePixelSample { PixelX = 8, PixelY = 6 };
+        ImageView? view = null;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                int preparations = 0;
+                var updates = new CvcieProbeUpdates(view, () =>
+                {
+                    preparations++;
+                    return new ValueTask<bool>(ready.Task);
+                }, sample => rendered.TrySetResult(sample));
+                updates.Update(new ImagePixelSample { PixelX = 2, PixelY = 3 });
+                updates.Update(latest);
+                Assert.Equal(1, preparations);
+                Assert.False(rendered.Task.IsCompleted);
+            });
+            ready.SetResult(true);
+            Assert.Same(latest, await rendered.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        }
+        finally { if (view != null) WpfTestHost.Invoke(view.Dispose); }
     }
 
     [Theory]

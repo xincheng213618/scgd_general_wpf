@@ -151,7 +151,6 @@
                             <Button Content="{x:Static properties:Resources.AcquirePosition}" DockPanel.Dock="Right" x:Name="ReadPositionButton"/>
                             <TextBlock Width="60" Text="{x:Static properties:Resources.CurrentPosition}"/>
                             <TextBox Width="60" Margin="5,0" Background="Transparent" BorderThickness="0,0,0,0" IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}"/>
-                            <TextBox Margin="5,0" Background="Transparent" BorderThickness="0,0,0,0" IsReadOnly="True" Text="{Binding Config.MotorConfig.VIDPosition}" Visibility="{Binding Config.MotorConfig.VID.IsUseVID, Converter={StaticResource bool2VisibilityConverter}}"/>
                         </DockPanel>
                     </StackPanel>
                 </StackPanel>

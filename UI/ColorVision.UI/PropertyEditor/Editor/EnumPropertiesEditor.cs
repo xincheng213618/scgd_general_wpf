@@ -19,8 +19,7 @@ namespace System.ComponentModel
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             var enumType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
             var enumResources = PropertyEditorHelper.GetResourceManager(enumType);
-            var values = Enum.GetValues(enumType)
-                .Cast<Enum>()
+            var values = GetValues(enumType)
                 .Select(value => new KeyValuePair<object?, string>(
                     value,
                     GetDisplayText(rm, enumResources, value)))
@@ -47,6 +46,8 @@ namespace System.ComponentModel
             dockPanel.Children.Add(comboBox);
             return dockPanel;
         }
+
+        protected virtual IEnumerable<Enum> GetValues(Type enumType) => Enum.GetValues(enumType).Cast<Enum>();
 
         private static string GetDisplayText(ResourceManager? resourceManager, ResourceManager? enumResources, Enum value)
         {

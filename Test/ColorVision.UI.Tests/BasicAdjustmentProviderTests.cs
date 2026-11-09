@@ -32,15 +32,17 @@ public sealed class BasicAdjustmentProviderTests
     [Fact]
     public async Task PaddedBgra64InputProducesAnIndependentPackedImageWithAlphaDpiAndOwnedLifetime()
     {
-        const int width = 3;
-        const int height = 2;
+        const int width = 513;
+        const int height = 512;
         const int rowBytes = width * 4 * sizeof(ushort);
         const int inputStride = rowBytes + 8;
-        ushort[] pixels =
+        ushort[] samples =
         [
             0, 1, 32767, 7, 32768, 65534, 65535, 32768, 1203, 19997, 40321, 65535,
             65535, 0, 65534, 0, 1, 4095, 32768, 12345, 17, 32767, 60003, 54321,
         ];
+        ushort[] pixels = new ushort[width * height * 4];
+        for (int index = 0; index < pixels.Length; index++) pixels[index] = samples[index % samples.Length];
         byte[] packed = MemoryMarshal.AsBytes(pixels.AsSpan()).ToArray();
         byte[] padded = Enumerable.Repeat((byte)0xCD, inputStride * height).ToArray();
         for (int row = 0; row < height; row++)
@@ -131,14 +133,14 @@ public sealed class BasicAdjustmentProviderTests
     {
         if (format == AlgorithmImageFormat.Gray8)
         {
-            byte[,] values = new byte[16, 16];
-            for (int index = 0; index <= byte.MaxValue; index++) values[index / 16, index % 16] = (byte)index;
+            byte[,] values = new byte[64, 64];
+            for (int index = 0; index < values.Length; index++) values[index / 64, index % 64] = (byte)index;
             return Mat.FromArray(values);
         }
         if (format == AlgorithmImageFormat.Gray16)
         {
-            ushort[,] values = new ushort[256, 256];
-            for (int index = 0; index <= ushort.MaxValue; index++) values[index / 256, index % 256] = (ushort)index;
+            ushort[,] values = new ushort[512, 512];
+            for (int index = 0; index < values.Length; index++) values[index / 512, index % 512] = (ushort)index;
             return Mat.FromArray(values);
         }
         if (format == AlgorithmImageFormat.Gray32Float)

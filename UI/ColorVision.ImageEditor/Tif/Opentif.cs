@@ -4,6 +4,9 @@ using System;
 using System.Buffers;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -76,7 +79,13 @@ namespace ColorVision.ImageEditor.Tif
                 96,
                 PixelFormats.Gray16,
                 null);
-            CopyGray32FloatToGray16(bitmapSource, writeableBitmap);
+            writeableBitmap.Lock();
+            try
+            {
+                CopyGray32FloatToGray16(bitmapSource, writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride, default);
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+            }
+            finally { writeableBitmap.Unlock(); }
             return writeableBitmap;
         }
 
@@ -139,21 +148,15 @@ namespace ColorVision.ImageEditor.Tif
                     throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
 
                 BitmapSource source = decodedImage.BitmapSource;
-                WriteableBitmap writeableBitmap;
 
                 // Providers may await or cancel before publication; keep the display staging private.
                 // 测量型 Gray32Float 通常不是可直接显示的归一化范围；Gray16 仅作为显示代理，
                 // 测量和无损导出仍持有原始浮点样本，不能从此显示代理反推。
-                if (source.Format == PixelFormats.Gray32Float && TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen)
-                {
-                    writeableBitmap = new WriteableBitmap(source.PixelWidth, source.PixelHeight, 96, 96, PixelFormats.Gray16, null);
-                    CopyGray32FloatToGray16(source, writeableBitmap);
-                }
-                else
-                {
-                    writeableBitmap = new WriteableBitmap(source.PixelWidth, source.PixelHeight, 96, 96, source.Format, source.Palette);
-                    CopyPixels(source, writeableBitmap);
-                }
+                bool normalizeFloat = source.Format == PixelFormats.Gray32Float && TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen;
+                WriteableBitmap writeableBitmap = await PrepareDisplayBitmapAsync(source, 96, 96, normalizeFloat, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!IsCurrentRequest(context, requestedFilePath, requestId))
+                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
 
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(Opentif), "位图像素宽度");
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(Opentif), "位图像素高度");
@@ -200,87 +203,165 @@ namespace ColorVision.ImageEditor.Tif
             return new DecodedImage(frame, metadata);
         }
 
-        private static void CopyPixels(BitmapSource source, WriteableBitmap target)
+        internal static async Task<WriteableBitmap> PrepareDisplayBitmapAsync(BitmapSource source, double dpiX, double dpiY,
+            bool normalizeFloat, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            var bounds = new Int32Rect(0, 0, source.PixelWidth, source.PixelHeight);
+            WriteableBitmap target = new(bounds.Width, bounds.Height, dpiX, dpiY,
+                normalizeFloat ? PixelFormats.Gray16 : source.Format, normalizeFloat ? null : source.Palette);
+            // Only the UI thread touches the mutable bitmap. The worker fills its
+            // locked, unpublished buffer and must finish before it can be unlocked.
             target.Lock();
             try
             {
-                int bufferSize = checked(target.BackBufferStride * target.PixelHeight);
-                source.CopyPixels(new Int32Rect(0, 0, source.PixelWidth, source.PixelHeight), target.BackBuffer, bufferSize, target.BackBufferStride);
-                target.AddDirtyRect(new Int32Rect(0, 0, target.PixelWidth, target.PixelHeight));
+                IntPtr buffer = target.BackBuffer;
+                int stride = target.BackBufferStride;
+                await Task.Run(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (normalizeFloat)
+                        CopyGray32FloatToGray16(source, buffer, stride, cancellationToken);
+                    else
+                        CopyDisplayPixels(source, bounds, buffer, stride, cancellationToken);
+                }, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                target.AddDirtyRect(bounds);
             }
-            finally
+            finally { target.Unlock(); }
+            return target;
+        }
+
+        private static unsafe void CopyDisplayPixels(BitmapSource source, Int32Rect bounds, IntPtr buffer, int stride,
+            CancellationToken cancellationToken)
+        {
+            const int CopyBlockBytes = 8 * 1024 * 1024;
+            int rowsPerBlock = Math.Max(1, CopyBlockBytes / stride);
+            for (int top = 0; top < bounds.Height;)
             {
-                target.Unlock();
+                cancellationToken.ThrowIfCancellationRequested();
+                int rows = Math.Min(rowsPerBlock, bounds.Height - top);
+                Int32Rect block = new(0, top, bounds.Width, rows);
+                source.CopyPixels(block, (IntPtr)((byte*)buffer + (long)top * stride), checked(stride * rows), stride);
+                top += rows;
             }
         }
 
-        private static void CopyGray32FloatToGray16(BitmapSource source, WriteableBitmap target)
+        private static unsafe void CopyGray32FloatToGray16(BitmapSource source, IntPtr target, int targetStride, CancellationToken cancellationToken)
         {
             int width = source.PixelWidth;
             int height = source.PixelHeight;
             int rowsPerChunk = Math.Max(1, Math.Min(height, ConversionBufferPixelCount / Math.Max(1, width)));
             int bufferLength = checked(width * rowsPerChunk);
             int sourceStride = checked(width * sizeof(float));
-            int targetStride = checked(width * sizeof(ushort));
             float[] floatPixels = ArrayPool<float>.Shared.Rent(bufferLength);
-            ushort[] ushortPixels = ArrayPool<ushort>.Shared.Rent(bufferLength);
 
             try
             {
-                bool hasFiniteValue = false;
-                float min = float.MaxValue;
-                float max = float.MinValue;
+                float min = float.PositiveInfinity;
+                float max = float.NegativeInfinity;
 
                 for (int top = 0; top < height; top += rowsPerChunk)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     int rowCount = Math.Min(rowsPerChunk, height - top);
                     int pixelCount = checked(width * rowCount);
                     source.CopyPixels(new Int32Rect(0, top, width, rowCount), floatPixels, sourceStride, 0);
-
-                    for (int index = 0; index < pixelCount; index++)
-                    {
-                        float value = floatPixels[index];
-                        if (!float.IsFinite(value))
-                            continue;
-
-                        hasFiniteValue = true;
-                        if (value < min) min = value;
-                        if (value > max) max = value;
-                    }
+                    AccumulateFiniteRange(floatPixels.AsSpan(0, pixelCount), ref min, ref max);
                 }
 
-                double range = hasFiniteValue ? (double)max - min : 0;
+                double range = (double)max - min;
                 bool hasRange = range > 0 && double.IsFinite(range);
 
                 for (int top = 0; top < height; top += rowsPerChunk)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     int rowCount = Math.Min(rowsPerChunk, height - top);
-                    int pixelCount = checked(width * rowCount);
-                    source.CopyPixels(new Int32Rect(0, top, width, rowCount), floatPixels, sourceStride, 0);
+                    if (hasRange)
+                        source.CopyPixels(new Int32Rect(0, top, width, rowCount), floatPixels, sourceStride, 0);
 
-                    for (int index = 0; index < pixelCount; index++)
+                    for (int row = 0; row < rowCount; row++)
                     {
-                        float value = floatPixels[index];
-                        if (!float.IsFinite(value) || !hasRange)
-                        {
-                            ushortPixels[index] = 0;
-                        }
-                        else
-                        {
-                            double normalized = Math.Clamp(((double)value - min) / range, 0, 1);
-                            ushortPixels[index] = (ushort)(normalized * ushort.MaxValue);
-                        }
+                        Span<ushort> output = new((byte*)target + (long)(top + row) * targetStride, width);
+                        if (hasRange) NormalizeRow(floatPixels.AsSpan(row * width, width), output, min, range);
+                        else output.Clear();
                     }
-
-                    target.WritePixels(new Int32Rect(0, top, width, rowCount), ushortPixels, targetStride, 0);
                 }
             }
             finally
             {
                 ArrayPool<float>.Shared.Return(floatPixels);
-                ArrayPool<ushort>.Shared.Return(ushortPixels);
             }
+        }
+
+        private static void AccumulateFiniteRange(ReadOnlySpan<float> samples, ref float min, ref float max)
+        {
+            int index = 0;
+            if (Avx2.IsSupported && samples.Length >= Vector256<float>.Count)
+            {
+                Vector256<float> positiveInfinity = Vector256.Create(float.PositiveInfinity);
+                Vector256<float> negativeInfinity = Vector256.Create(float.NegativeInfinity);
+                Vector256<float> minimum = positiveInfinity;
+                Vector256<float> maximum = negativeInfinity;
+                ref float first = ref MemoryMarshal.GetReference(samples);
+                for (; index <= samples.Length - Vector256<float>.Count; index += Vector256<float>.Count)
+                {
+                    Vector256<float> values = Vector256.LoadUnsafe(ref first, (nuint)index);
+                    Vector256<float> finite = Vector256.IsFinite(values);
+                    minimum = Vector256.MinNative(minimum, Vector256.ConditionalSelect(finite, values, positiveInfinity));
+                    maximum = Vector256.MaxNative(maximum, Vector256.ConditionalSelect(finite, values, negativeInfinity));
+                }
+                for (int lane = 0; lane < Vector256<float>.Count; lane++)
+                {
+                    min = MathF.Min(min, minimum.GetElement(lane));
+                    max = MathF.Max(max, maximum.GetElement(lane));
+                }
+            }
+
+            for (; index < samples.Length; index++)
+            {
+                float value = samples[index];
+                if (!float.IsFinite(value)) continue;
+                if (value < min) min = value;
+                if (value > max) max = value;
+            }
+        }
+
+        private static void NormalizeRow(ReadOnlySpan<float> input, Span<ushort> output, float min, double range)
+        {
+            int x = 0;
+            if (Avx2.IsSupported && Sse41.IsSupported && input.Length >= Vector256<float>.Count)
+            {
+                Vector256<float> replacement = Vector256.Create(min);
+                Vector256<double> minimum = Vector256.Create((double)min);
+                Vector256<double> span = Vector256.Create(range);
+                ref float firstInput = ref MemoryMarshal.GetReference(input);
+                ref ushort firstOutput = ref MemoryMarshal.GetReference(output);
+                for (; x <= input.Length - Vector256<float>.Count; x += Vector256<float>.Count)
+                {
+                    Vector256<float> values = Vector256.LoadUnsafe(ref firstInput, (nuint)x);
+                    values = Vector256.ConditionalSelect(Vector256.IsFinite(values), values, replacement);
+                    Vector128<int> lower = QuantizeGray16(values.GetLower(), minimum, span);
+                    Vector128<int> upper = QuantizeGray16(values.GetUpper(), minimum, span);
+                    Sse41.PackUnsignedSaturate(lower, upper).StoreUnsafe(ref firstOutput, (nuint)x);
+                }
+            }
+
+            for (; x < input.Length; x++)
+            {
+                float value = input[x];
+                output[x] = float.IsFinite(value)
+                    ? (ushort)(Math.Clamp(((double)value - min) / range, 0, 1) * ushort.MaxValue)
+                    : (ushort)0;
+            }
+        }
+
+        private static Vector128<int> QuantizeGray16(Vector128<float> values, Vector256<double> minimum, Vector256<double> range)
+        {
+            // Keep the scalar formula's double precision and truncation at Gray16 boundaries.
+            Vector256<double> normalized = Avx.Divide(Avx.Subtract(Avx.ConvertToVector256Double(values), minimum), range);
+            normalized = Avx.Min(Avx.Max(normalized, Vector256<double>.Zero), Vector256.Create(1d));
+            return Avx.ConvertToVector128Int32WithTruncation(Avx.Multiply(normalized, Vector256.Create((double)ushort.MaxValue)));
         }
 
         private static ImageMetadata ReadMetadata(BitmapMetadata? metadata)

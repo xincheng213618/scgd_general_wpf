@@ -468,4 +468,157 @@ A new random password will be generated.</value>
   <data name="首次登录必须修改默认密码。" xml:space="preserve">
     <value>You must change the default password on first sign in.</value>
   </data>
+  <data name="激活" xml:space="preserve">
+    <value>Activation</value>
+  </data>
+  <data name="许可证激活" xml:space="preserve">
+    <value>License Activation</value>
+  </data>
+  <data name="申请许可证并查看设备占用。激活状态仅在此处显示，不影响软件功能。" xml:space="preserve">
+    <value>Request a license and view device usage. Activation status appears only here. All features are available regardless of activation.</value>
+  </data>
+  <data name="刷新状态" xml:space="preserve">
+    <value>Refresh Status</value>
+  </data>
+  <data name="复制许可证" xml:space="preserve">
+    <value>Copy License Code</value>
+  </data>
+  <data name="释放本机" xml:space="preserve">
+    <value>Release This PC</value>
+  </data>
+  <data name="选择设备类型" xml:space="preserve">
+    <value>Choose Device Type</value>
+  </data>
+  <data name="我的电脑（TPM 离线）" xml:space="preserve">
+    <value>My PC (TPM Offline)</value>
+  </data>
+  <data name="共享电脑（在线）" xml:space="preserve">
+    <value>Shared PC (Online)</value>
+  </data>
+  <data name="离线模式需要 TPM，联网可续期。在线模式在此窗口打开时续租，关闭后由服务器按租约到期回收。" xml:space="preserve">
+    <value>Offline mode requires TPM and renews online. Online leases renew while this window is open and expire after it closes.</value>
+  </data>
+  <data name="联网申请并激活" xml:space="preserve">
+    <value>Request and Activate</value>
+  </data>
+  <data name="使用已有许可证" xml:space="preserve">
+    <value>Use an Existing License</value>
+  </data>
+  <data name="激活本机" xml:space="preserve">
+    <value>Activate This PC</value>
+  </data>
+  <data name="请输入许可证。" xml:space="preserve">
+    <value>Enter a license code.</value>
+  </data>
+  <data name="释放后，本机需要联网重新激活。是否继续？" xml:space="preserve">
+    <value>This PC will need an internet connection to reactivate after release. Continue?</value>
+  </data>
+  <data name="已释放本机。" xml:space="preserve">
+    <value>This PC was released.</value>
+  </data>
+  <data name="许可证已复制。持有许可证的人可以占用可用设备名额。" xml:space="preserve">
+    <value>License code copied. Anyone with the code can use an available device slot.</value>
+  </data>
+  <data name="剪贴板暂不可用，请重试。" xml:space="preserve">
+    <value>The clipboard is unavailable. Try again.</value>
+  </data>
+  <data name="激活请求未完成，请重试。" xml:space="preserve">
+    <value>The activation request could not be completed. Try again.</value>
+  </data>
+  <data name="许可证已到期" xml:space="preserve">
+    <value>License Expired</value>
+  </data>
+  <data name="本机已激活 · TPM 离线" xml:space="preserve">
+    <value>This PC Is Activated · TPM Offline</value>
+  </data>
+  <data name="本机已激活 · 在线租约" xml:space="preserve">
+    <value>This PC Is Activated · Online Lease</value>
+  </data>
+  <data name="本机待联网续期" xml:space="preserve">
+    <value>Connect to Renew This PC</value>
+  </data>
+  <data name="本机未激活" xml:space="preserve">
+    <value>This PC Is Unactivated</value>
+  </data>
+  <data name="许可证到期 {0}" xml:space="preserve">
+    <value>License Expires {0}</value>
+  </data>
+  <data name="离线凭据到期 {0}" xml:space="preserve">
+    <value>Offline Grant Expires {0}</value>
+  </data>
+  <data name="正在读取激活状态…" xml:space="preserve">
+    <value>Checking activation status…</value>
+  </data>
+  <data name="使用中的设备（{0} / {1}）" xml:space="preserve">
+    <value>Devices in Use ({0} / {1})</value>
+  </data>
+  <data name="使用中的设备" xml:space="preserve">
+    <value>Devices in Use</value>
+  </data>
+  <data name="暂无使用中的设备。" xml:space="preserve">
+    <value>No devices in use.</value>
+  </data>
+  <data name="{0}（本机）" xml:space="preserve">
+    <value>{0} (This PC)</value>
+  </data>
+  <data name="TPM 离线" xml:space="preserve">
+    <value>TPM Offline</value>
+  </data>
+  <data name="在线租约" xml:space="preserve">
+    <value>Online Lease</value>
+  </data>
+  <data name="{0} · 到期 {1}" xml:space="preserve">
+    <value>{0} · Expires {1}</value>
+  </data>
+  <data name="本机无法创建 TPM 密钥。可选择共享电脑（在线）。" xml:space="preserve">
+    <value>This PC could not create a TPM key. You can choose Shared PC (Online).</value>
+  </data>
+  <data name="本机密钥不可用，请检查 Windows 账户或 TPM 状态。" xml:space="preserve">
+    <value>The device key is unavailable. Check the Windows account or TPM status.</value>
+  </data>
+  <data name="当前无法连接激活服务器，设备列表可能仅显示本机的离线凭据。" xml:space="preserve">
+    <value>The activation server is unreachable. The device list only shows a valid offline grant for this PC, if available.</value>
+  </data>
+  <data name="激活服务器地址无效。" xml:space="preserve">
+    <value>The activation server address is invalid.</value>
+  </data>
+  <data name="HTTP 激活需要预置服务器公钥，请联系维护人员。" xml:space="preserve">
+    <value>HTTP activation requires a provisioned server public key. Contact your administrator.</value>
+  </data>
+  <data name="激活服务器公钥无效，请联系维护人员。" xml:space="preserve">
+    <value>The activation server public key is invalid. Contact your administrator.</value>
+  </data>
+  <data name="无法读取或保存本机激活记录。" xml:space="preserve">
+    <value>The local activation record could not be read or saved.</value>
+  </data>
+  <data name="本机时间异常，请校准后联网刷新。" xml:space="preserve">
+    <value>Check this PC’s clock, then connect and refresh.</value>
+  </data>
+  <data name="本机没有可续期的激活记录。" xml:space="preserve">
+    <value>This PC has no activation to renew.</value>
+  </data>
+  <data name="许可证无效，请核对后重试。" xml:space="preserve">
+    <value>The license code is invalid. Check it and try again.</value>
+  </data>
+  <data name="许可证已到期。" xml:space="preserve">
+    <value>The license has expired.</value>
+  </data>
+  <data name="设备名额已满，请先在其他设备上释放，或等待租约到期。" xml:space="preserve">
+    <value>All device slots are in use. Release a device or wait for a lease to expire.</value>
+  </data>
+  <data name="请先释放本机的现有激活。" xml:space="preserve">
+    <value>Release the existing activation on this PC first.</value>
+  </data>
+  <data name="请求过于频繁，请稍后重试。" xml:space="preserve">
+    <value>Too many requests. Try again shortly.</value>
+  </data>
+  <data name="服务器返回的激活数据无法验证。" xml:space="preserve">
+    <value>The server’s activation response could not be verified.</value>
+  </data>
+  <data name="服务器记录设备名、公钥指纹和激活时间，用于识别设备及计算名额。" xml:space="preserve">
+    <value>The server records the device name, public key fingerprint, and activation time to identify the device and count occupied slots.</value>
+  </data>
+  <data name="另一个 ColorVision 窗口正在处理激活，请稍后重试。" xml:space="preserve">
+    <value>Another ColorVision window is processing activation. Try again shortly.</value>
+  </data>
 </root>

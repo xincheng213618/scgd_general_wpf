@@ -55,8 +55,13 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 var draft = CfwPortConfigurationDraft.From(Config, DisplayConfig);
                 var propertyEditorWindow = new PropertyEditorWindow(draft, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 ProtectConfigurationEditor(propertyEditorWindow);
-                propertyEditorWindow.Submitted += (s, e) => TryCommitConfiguration(propertyEditorWindow,
-                    () => { draft.Apply(Config, DisplayConfig); ConfigService.Instance.Save<DisplayConfigManager>(); });
+                propertyEditorWindow.Submitted += (_, _) =>
+                {
+                    if (!CanConfigure) return;
+                    var (serviceChanged, displayChanged) = draft.Apply(Config, DisplayConfig);
+                    if (displayChanged) ConfigService.Instance.Save<DisplayConfigManager>();
+                    if (serviceChanged) TryCommitConfiguration(propertyEditorWindow);
+                };
                 propertyEditorWindow.ShowDialog();
 
             }, a => CanConfigure);

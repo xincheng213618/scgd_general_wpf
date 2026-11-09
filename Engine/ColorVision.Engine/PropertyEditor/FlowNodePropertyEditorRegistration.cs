@@ -115,12 +115,12 @@ namespace ColorVision.Engine.PropertyEditor
             return dockPanel;
         }
 
-        internal static DockPanel CreateTemplateEditor(PropertyInfo property, object obj, ITemplate? template)
+        internal static DockPanel CreateTemplateEditor(PropertyInfo property, object obj, ITemplate? template, bool allowUnlistedTemplateName = false)
         {
             if (template == null)
                 return new TextboxPropertiesEditor().GenProperties(property, obj);
 
-            return CreateTemplateEditor(property, obj, () => template, null, HasDirectTemplateEditor(template));
+            return CreateTemplateEditor(property, obj, () => template, null, HasDirectTemplateEditor(template), allowUnlistedTemplateName: allowUnlistedTemplateName);
         }
 
         internal static DockPanel CreateTemplateEditor(
@@ -128,7 +128,9 @@ namespace ColorVision.Engine.PropertyEditor
             object obj,
             Func<ITemplate?> templateFactory,
             string? refreshPropertyName,
-            bool hasDirectTemplateEditor)
+            bool hasDirectTemplateEditor,
+            bool allowManualEntryWithoutTemplate = false,
+            bool allowUnlistedTemplateName = false)
         {
 
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -152,6 +154,15 @@ namespace ColorVision.Engine.PropertyEditor
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
+
+            TextBox? manualEntry = null;
+            if (allowManualEntryWithoutTemplate)
+            {
+                manualEntry = PropertyEditorHelper.CreateSmallTextBox(PropertyEditorHelper.CreateTwoWayBinding(obj, property, UpdateSourceTrigger.Default));
+                manualEntry.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
+                Grid.SetColumn(manualEntry, 1);
+                grid.Children.Add(manualEntry);
+            }
 
             bool isRefreshing = false;
             ITemplate? template = null;
@@ -198,9 +209,26 @@ namespace ColorVision.Engine.PropertyEditor
                 try
                 {
                     template = templateFactory();
+                    if (manualEntry != null)
+                    {
+                        bool useManualEntry = template == null;
+                        manualEntry.Visibility = useManualEntry ? Visibility.Visible : Visibility.Collapsed;
+                        combo.Visibility = editButton.Visibility = useManualEntry ? Visibility.Collapsed : Visibility.Visible;
+                        if (useManualEntry)
+                            return;
+                    }
+
                     IEnumerable items = template?.ItemsSource ?? Array.Empty<object>();
                     string? templateName = property.GetValue(obj)?.ToString();
-                    TemplateSelectionDisplay.Select(combo, items, templateName);
+                    if (allowUnlistedTemplateName)
+                    {
+                        combo.ItemsSource = items;
+                        combo.GetBindingExpression(ComboBox.TextProperty)?.UpdateTarget();
+                    }
+                    else
+                    {
+                        TemplateSelectionDisplay.Select(combo, items, templateName);
+                    }
                     editButton.SetCurrentValue(UIElement.IsEnabledProperty, template != null);
 
                     if (clearUnavailableSelection && combo.SelectedItem is TemplateSelectionDisplay.MissingTemplate)
@@ -218,7 +246,7 @@ namespace ColorVision.Engine.PropertyEditor
 
             combo.SelectionChanged += (_, _) =>
             {
-                if (isRefreshing)
+                if (isRefreshing || allowUnlistedTemplateName)
                     return;
 
                 SetValueAndNotify(property, obj, TemplateSelectionDisplay.GetName(combo.SelectedItem));
@@ -229,6 +257,8 @@ namespace ColorVision.Engine.PropertyEditor
             // Rendering an editor must not normalize or clear the source value. A stale
             // selection is cleared only after the user changes its dependency.
             RefreshItems();
+            if (allowUnlistedTemplateName)
+                combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property));
 
             if (refreshPropertyName != null && obj is INotifyPropertyChanged notifyPropertyChanged)
             {

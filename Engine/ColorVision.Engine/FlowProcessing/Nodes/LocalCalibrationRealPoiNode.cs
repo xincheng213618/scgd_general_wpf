@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
@@ -32,6 +33,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_LocalDevices", "校正+实时 POI", CategoryOrder = 9900, NodeOrder = 70)]
+    [FlowEngineLib.FlowNodeDocumentation("使用上游图像和布点结果测量实时 POI。",
+        Usage = "图像接 IN_IMG，布点结果接 IN_POI。相机已传入内存色度，或 CVRAW 附带可回放色度参数时，清空校正模板即可直接测量。")]
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
@@ -49,6 +52,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public LocalCalibrationRealPoiNode() : base("校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
         {
             AllowAcceleration = true;
+        }
+
+        private protected override void ValidateImageInputPath(string filePath)
+        {
+            if (string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase))
+                throw new NotSupportedException("校正+实时 POI 的 IN_IMG 不接受 .cvcie 文件。请接入相机取图节点，或加载带可回放色度校正参数的 CVRAW。");
         }
 
         private protected override float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame)
@@ -94,18 +103,24 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             _ = TryGetInputMasterResult(action, 1, out int poiInputMasterId, out int poiInputResultType, out _);
             LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(poiInputMasterId, poiInputResultType, InputPortNames[0]);
-            using LocalCalibrationExecution execution = ExecuteCalibration(action);
+            bool useInputColor = string.IsNullOrWhiteSpace(CalibTempName);
+            using LocalCalibrationExecution execution = ExecuteCalibration(action, useInputColor);
             if (!execution.Frame.HasCie && execution.Frame.ColorCalibration == null)
             {
                 throw new InvalidOperationException("实时 POI 需要 CIE 或带色度校正参数的 RAW，请在校正模板中选择一个亮度或颜色校正文件。");
             }
+            int inputImageMasterId = execution.Frame.MasterId;
             int calibrationMasterId = -1;
             int poiMasterId = -1;
             try
             {
-                MeasureResultImgModel persistedCalibration = SaveCalibrationResult(action, execution);
-                calibrationMasterId = persistedCalibration.Id;
-                execution.Frame.MasterId = calibrationMasterId;
+                MeasureResultImgModel? persistedCalibration = null;
+                if (!useInputColor)
+                {
+                    persistedCalibration = SaveCalibrationResult(action, execution);
+                    calibrationMasterId = persistedCalibration.Id;
+                    execution.Frame.MasterId = calibrationMasterId;
+                }
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalPoiResultSet result;
@@ -126,24 +141,25 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 int poiTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(execution.Frame.Metadata.Channels);
                 string algorithmDeviceCode = GetFirstAvailableDeviceCode<DeviceAlgorithm>();
+                string? rawFilePath = NullIfEmpty(execution.Frame.CvRawFilePath);
                 poiMasterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                     action,
                     resultType,
                     parameters.Poi.Id,
                     parameters.Poi.Name,
-                    NullIfEmpty(execution.Frame.CvCieFilePath) ?? NullIfEmpty(execution.Frame.CvRawFilePath),
+                    rawFilePath,
                     algorithmDeviceCode,
                     ZIndex,
                     poiTime,
                     new
                     {
-                        CieMasterId = calibrationMasterId,
+                        CieMasterId = persistedCalibration?.Id ?? inputImageMasterId,
                         POISourceMasterId = parameters.SourceMasterId > 0 ? (int?)parameters.SourceMasterId : null,
                         CalibrationTemplate = execution.Calibration?.Name ?? execution.Frame.Metadata.CalibrationTemplate,
                         POITemplate = parameters.Poi.Name,
                         AllowAcceleration,
                         NinePointCalibration = new { Enabled = EnableNinePointCalibration, Attempted = calibrationPoints != null, CorrectedCount = correctedCount, Points = calibrationPoints },
-                        MemoryOnly = string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath) && string.IsNullOrWhiteSpace(execution.Frame.CvRawFilePath)
+                        MemoryOnly = rawFilePath == null
                     });
                 LocalPoiCalculator.SaveDetails(poiMasterId, result);
 
@@ -153,8 +169,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.Data["LocalCalibrationMasterId"] = calibrationMasterId;
                 action.MasterValue(null, poiMasterId, (int)resultType);
                 execution.TransferFrameTo(action);
-                (string calibrationRoute, string calibrationDeviceCode) = ResolveCalibrationResultTarget(persistedCalibration.DeviceCode ?? string.Empty);
-                ResultMessageBus.Default.PublishPersisted(calibrationRoute, ResultKinds.Image, calibrationDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, calibrationMasterId, (int)ViewResultAlgType.Calibration);
+                if (persistedCalibration != null)
+                {
+                    (string calibrationRoute, string calibrationDeviceCode) = ResolveCalibrationResultTarget(persistedCalibration.DeviceCode ?? string.Empty);
+                    ResultMessageBus.Default.PublishPersisted(calibrationRoute, ResultKinds.Image, calibrationDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, calibrationMasterId, (int)ViewResultAlgType.Calibration);
+                }
                 ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, poiMasterId, (int)resultType);
                 return new LocalNodeExecutionResult
                 {
@@ -172,9 +191,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         Calibrated = execution.Calibrated,
                         HasRaw = execution.Frame.HasRaw,
                         HasCie = execution.Frame.HasCie,
-                        CvRawFilePath = NullIfEmpty(execution.Frame.CvRawFilePath),
-                        HasCieFile = !string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath),
-                        CvCieFilePath = NullIfEmpty(execution.Frame.CvCieFilePath),
+                        CvRawFilePath = rawFilePath,
                         PoiTemplateName = result.TemplateName,
                         PointCount = result.Points.Count,
                         NinePointCalibrationEnabled = EnableNinePointCalibration,

@@ -275,7 +275,9 @@ namespace ColorVision.Solution.Explorer
             if (_disposed)
                 return;
             _disposed = true;
+            Interlocked.Increment(ref _rootPopulationVersion);
             Disposing?.Invoke(this, EventArgs.Empty);
+            _pendingReloadExpansion = null;
             ProjectProviderRegistry.ProvidersChanged -= ProjectProviderRegistry_ProvidersChanged;
             AppDomain.CurrentDomain.ProcessExit -= _processExitHandler;
             _fileSystemWatcher?.Dispose();

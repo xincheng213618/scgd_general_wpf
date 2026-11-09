@@ -62,6 +62,14 @@ namespace ColorVision.Engine.Services
             }
         }
 
+        internal bool TryInitializeDisplayConfig(string key, IDisplayConfig config)
+        {
+            lock (_syncLock)
+            {
+                return !_savedObject.ContainsKey(key) && Configs.TryAdd(key, config);
+            }
+        }
+
         public T GetDisplayConfig<T>(string key) where T : IDisplayConfig, new()
         {
             // 5. 使用 ConcurrentDictionary 的 GetOrAdd 原子操作，或者双重检查锁定

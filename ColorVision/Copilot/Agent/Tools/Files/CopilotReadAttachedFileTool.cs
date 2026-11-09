@@ -15,7 +15,7 @@ namespace ColorVision.Copilot
 
         public string Name => "ReadAttachedFile";
 
-        public string Description => "Read up to three text file attachments from the current session, or one selected attachment with an optional line-and-column continuation range.";
+        public string Description => "Read up to three text or PDF file attachments from the current session, or one selected attachment with an optional line-and-column continuation range.";
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.FileRead();
 

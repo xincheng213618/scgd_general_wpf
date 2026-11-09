@@ -3,7 +3,6 @@ using OpenCvSharp;
 using System;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,10 +17,15 @@ namespace ColorVision.Engine.Media
             ArgumentNullException.ThrowIfNull(pixels);
             ColorVisionTiffParameters? copy = null;
             if (parameters != null) ColorVisionTiffParameters.TryParse(parameters.ToJson(), out copy);
-            if (copy != null && (copy.Rows != pixels.PixelHeight || copy.Cols != pixels.PixelWidth
-                || !HasMatchingLayout(copy, pixels)
-                || !string.Equals(copy.PixelSha256, ColorVisionPixelBinding.ComputeSha256(pixels), StringComparison.OrdinalIgnoreCase)))
-                copy.PixelRole = "display";
+            string? expectedPixelHash = null;
+            if (copy != null)
+            {
+                if (copy.Rows != pixels.PixelHeight || copy.Cols != pixels.PixelWidth
+                    || !HasMatchingLayout(copy, pixels) || string.IsNullOrEmpty(copy.PixelSha256))
+                    copy.PixelRole = "display";
+                else
+                    expectedPixelHash = copy.PixelSha256;
+            }
             System.Windows.Media.PixelFormat pixelFormat = pixels.Format;
             MatType type = pixelFormat == PixelFormats.Gray8 ? MatType.CV_8UC1
                 : pixelFormat == PixelFormats.Gray16 ? MatType.CV_16UC1
@@ -41,7 +45,7 @@ namespace ColorVision.Engine.Media
                 _ => throw new NotSupportedException("Measurement export supports TIFF and PNG only.")
             };
             return SaveCore(image, copy, fileName, format, VExportCIE.DefaultTiffCompression,
-                VExportCIE.DefaultPngCompressionLevel, VExportCIE.DefaultJpegQuality);
+                VExportCIE.DefaultPngCompressionLevel, VExportCIE.DefaultJpegQuality, expectedPixelHash);
         }
 
         private static bool HasMatchingLayout(ColorVisionTiffParameters parameters, BitmapSource pixels)
@@ -55,7 +59,7 @@ namespace ColorVision.Engine.Media
         }
 
         internal static string SaveCore(Mat src, ColorVisionTiffParameters? parameters, string fileName,
-            ImageFormat format, int tiffCompression, int pngCompression, int jpegQuality)
+            ImageFormat format, int tiffCompression, int pngCompression, int jpegQuality, string? expectedPixelHash = null)
         {
             string fullPath = Path.GetFullPath(fileName);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
@@ -66,7 +70,11 @@ namespace ColorVision.Engine.Media
                 if (IsFormat(format, ImageFormat.Png) && src.Depth() != MatType.CV_8U && src.Depth() != MatType.CV_16U)
                     throw new NotSupportedException("PNG cannot preserve floating point measurement samples; export TIFF instead.");
                 if (parameters != null)
+                {
                     BindPixels(parameters, src);
+                    if (expectedPixelHash != null && !string.Equals(expectedPixelHash, parameters.PixelSha256, StringComparison.OrdinalIgnoreCase))
+                        parameters.PixelRole = "display";
+                }
                 if (IsFormat(format, ImageFormat.Tiff))
                 {
                     if (!Cv2.ImWrite(temporaryPath, src, [new ImageEncodingParam(ImwriteFlags.TiffCompression, tiffCompression)]))
@@ -99,19 +107,44 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        internal static void BindPixels(ColorVisionTiffParameters parameters, Mat image)
+        internal static unsafe void BindPixels(ColorVisionTiffParameters parameters, Mat image)
         {
             int channels = image.Channels();
             int bytesPerSample = checked((int)image.ElemSize1());
             int width = image.Cols;
             int height = image.Rows;
             int rowLength = checked(width * channels * bytesPerSample);
-            byte[] row = new byte[rowLength];
+            MatType depth = image.Depth();
             using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            for (int y = 0; y < height; y++)
+            if (channels != 3)
             {
-                Marshal.Copy(image.Ptr(y), row, 0, row.Length);
-                if (channels == 3)
+                if (image.IsContinuous() && (long)rowLength * height <= int.MaxValue)
+                    hash.AppendData(new ReadOnlySpan<byte>((void*)image.Data, rowLength * height));
+                else
+                    for (int row = 0; row < height; row++)
+                        hash.AppendData(new ReadOnlySpan<byte>((void*)image.Ptr(row), rowLength));
+            }
+            else if (rowLength > 0 && (depth == MatType.CV_8U || depth == MatType.CV_16U || depth == MatType.CV_32F))
+            {
+                // Hash canonical RGB without changing encoder pixels or allocating another full frame.
+                int rowsPerBlock = Math.Max(1, (512 * 1024) / rowLength);
+                using Mat rgb = new();
+                for (int top = 0; top < height;)
+                {
+                    int rows = Math.Min(rowsPerBlock, height - top);
+                    using Mat bgr = image.RowRange(top, top + rows);
+                    Cv2.CvtColor(bgr, rgb, ColorConversionCodes.BGR2RGB);
+                    hash.AppendData(new ReadOnlySpan<byte>((void*)rgb.Data, rowLength * rows));
+                    top += rows;
+                }
+            }
+            else
+            {
+                // Keep byte-wise canonicalization for depths unsupported by CvtColor.
+                byte[] row = new byte[rowLength];
+                for (int y = 0; y < height; y++)
+                {
+                    new ReadOnlySpan<byte>((void*)image.Ptr(y), rowLength).CopyTo(row);
                     for (int x = 0; x < width; x++)
                         for (int sampleByte = 0; sampleByte < bytesPerSample; sampleByte++)
                         {
@@ -119,12 +152,13 @@ namespace ColorVision.Engine.Media
                             int last = first + 2 * bytesPerSample;
                             (row[first], row[last]) = (row[last], row[first]);
                         }
-                hash.AppendData(row);
+                    hash.AppendData(row);
+                }
             }
             parameters.PixelSha256 = Convert.ToHexString(hash.GetHashAndReset());
             parameters.PixelChannels = channels;
             parameters.PixelLayout = channels == 3 ? bytesPerSample == 1 ? "Bgr24" : "Rgb48"
-                : image.Depth() == MatType.CV_32F ? "Gray32Float" : bytesPerSample == 2 ? "Gray16" : "Gray8";
+                : depth == MatType.CV_32F ? "Gray32Float" : bytesPerSample == 2 ? "Gray16" : "Gray8";
         }
 
         private static bool IsFormat(ImageFormat value, ImageFormat expected) => value.Guid == expected.Guid;

@@ -96,7 +96,7 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 | 3 | `PropertyEditorRegistry.Find(property.PropertyType)` | 无类型注册时尝试嵌套对象 |
 | 4 | 可生成的嵌套对象属性面板 | 无有效控件则不生成该行 |
 
-通用 `TextboxPropertiesEditor` 对可空数值等文本属性将空文本映射为 `null`，允许清空可选参数；非可空字段继续使用其类型转换与校验规则。
+未指定编辑器类型时按属性类型匹配已注册的编辑器，包括只写了无参 `[PropertyEditorType]` 的属性。布尔值使用开关，枚举使用下拉框，文本和数值使用带类型绑定的文本框。无参标注仍可指定绑定更新时机。`TextboxPropertiesEditor` 将可空数值的空文本映射为 `null`，并支持通过 `DisplayFormat.DataFormatString` 指定显示格式。
 
 类型注册内部先找精确类型，再按注册顺序寻找第一个命中的谓词。谓词抛异常会记录警告并跳过该谓词。`TryGenerateEditor` 在构造或 `GenProperties` 失败时记录错误并返回空，让外层按上述路径继续；**不保证任意未知类型或所有编辑器失败后都会出现文本框**。
 

@@ -24,7 +24,7 @@ public sealed class TemplateSearchProviderTests
     }
 
     [Fact]
-    public void OldResultsResolveTheCurrentRegistrationAndCannotOpenARemovedTemplate()
+    public void OldResultsResolveTheCurrentRegistrationAndCannotOpenUnavailableTemplates()
     {
         FakeTemplate first = FakeTemplate.Create("First", "Preset");
         Dictionary<string, ITemplate> registrations = new() { ["kind"] = first };
@@ -34,6 +34,12 @@ public sealed class TemplateSearchProviderTests
         Assert.True(result.Command!.CanExecute(null));
         result.Command.Execute(null);
         Assert.Equal(0, first.OpenCalls);
+        Assert.Equal(1, replacement.OpenCalls);
+
+        replacement.Retired = true;
+        Assert.Empty(TemplateSearchProvider.CreateItems(registrations, key => registrations.GetValueOrDefault(key)));
+        Assert.False(result.Command.CanExecute(null));
+        result.Command.Execute(null);
         Assert.Equal(1, replacement.OpenCalls);
 
         registrations.Clear();
@@ -46,6 +52,8 @@ public sealed class TemplateSearchProviderTests
     {
         private List<string> _names = [];
         public int OpenCalls;
+        public bool Retired { get; set; }
+        public override bool IsRetired => Retired;
         public static FakeTemplate Create(string title, string name)
         {
             // Bypass ITemplate's production registry constructor; this fixture

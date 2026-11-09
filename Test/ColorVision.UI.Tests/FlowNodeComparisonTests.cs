@@ -109,6 +109,26 @@ public sealed class FlowNodeComparisonTests : IDisposable
     }
 
     [Fact]
+    public void LinkedMessagesKeepBatchAndSerialRulesAndTakePrecedenceOverLegacyMatches()
+    {
+        var record = new FlowNodeRecord
+        {
+            Id = 5, BatchId = 3, SerialNumber = "sn", NodeId = "fov", StartTime = _time,
+            EndTime = _time.AddSeconds(1), ElapsedMs = 1000,
+        };
+        var matching = new FlowNodeMessage { Id = 1, BatchId = 3, SerialNumber = "sn", NodeRecordId = 5, SendTime = _time.AddMilliseconds(2) };
+        var blankSerial = new FlowNodeMessage { Id = 2, BatchId = 3, SerialNumber = " ", NodeRecordId = 5, SendTime = _time };
+        var otherSerial = new FlowNodeMessage { Id = 3, BatchId = 3, SerialNumber = "other", NodeRecordId = 5, SendTime = _time, State = FlowMessageState.Timeout };
+        var otherBatch = new FlowNodeMessage { Id = 4, BatchId = 4, SerialNumber = "sn", NodeRecordId = 5, SendTime = _time, State = FlowMessageState.Timeout };
+        var legacy = new FlowNodeMessage { Id = 5, BatchId = 3, SerialNumber = "sn", NodeId = "fov", SendTime = _time, State = FlowMessageState.Timeout };
+        var session = new FlowExecutionAnalysisSession(3, "sn", null, null, [record],
+            [matching, blankSerial, otherSerial, otherBatch, legacy], [], _time, 30_000);
+
+        Assert.Equal(new[] { blankSerial, matching }, session.GetMessages(record));
+        Assert.False(Assert.Single(session.DurationItems).IsTimedOut);
+    }
+
+    [Fact]
     public void SelectingAndFilteringBatchesKeepsThePinnedPayload()
     {
         string path = Path.Combine(_directory, "ui.db");

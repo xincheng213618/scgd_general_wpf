@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.POI;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Algorithms;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -13,8 +14,9 @@ using System.Threading;
 namespace ColorVision.Engine.Media;
 
 /// <summary>Reads original RAW and replays calibration only at the sampled pixels.</summary>
-internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
+internal sealed class CvRawProfileSource : IBatchedImageProfileMeasurementSource
 {
+    private const int TransformBlockPixels = 1024;
     private readonly Stream? _stream;
     private readonly RawColorMeasurementSource? _rawSource;
     private readonly Action? _checkContent;
@@ -146,6 +148,93 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
         return _rawSource != null ? _rawSource.BorrowRaw(file => ReadCore(x, y, channel, file.Data)) : ReadCore(x, y, channel, null);
     }
 
+    public void ReadPixels(ReadOnlyMemory<(int X, int Y)> pixels, Memory<double> destination)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        int channelCount = RawChannelCount;
+        if (destination.Length < (long)pixels.Length * channelCount)
+            throw new ArgumentException("The destination is too small for the profile pixels.", nameof(destination));
+
+        for (int offset = 0; offset < pixels.Length;)
+        {
+            _token.ThrowIfCancellationRequested();
+            _checkContent?.Invoke();
+            int count = Math.Min(TransformBlockPixels, pixels.Length - offset);
+            ReadOnlyMemory<(int X, int Y)> block = pixels.Slice(offset, count);
+            Memory<double> target = destination.Slice(offset * channelCount, count * channelCount);
+            if (_rawSource != null)
+            {
+                _rawSource.BorrowRaw(file =>
+                {
+                    ReadPixelBlock(block.Span, target.Span, file.Data);
+                    return 0;
+                });
+            }
+            else ReadPixelBlock(block.Span, target.Span, null);
+            offset += count;
+        }
+        _token.ThrowIfCancellationRequested();
+        _checkContent?.Invoke();
+    }
+
+    private unsafe void ReadPixelBlock(ReadOnlySpan<(int X, int Y)> pixels, Span<double> destination, byte[]? livePixels)
+    {
+        byte[]? buffer = livePixels ?? _cachedPixels;
+        if (buffer != null)
+        {
+            fixed (byte* source = buffer) ReadPixelBlockCore(pixels, destination, source);
+            return;
+        }
+
+        // Hold one mapping reference for the block. The constructor validated the payload,
+        // and ReadPixelBlockCore bounds-checks each requested coordinate before dereferencing.
+        MemoryMappedViewAccessor view = _view!;
+        long payloadOffset = view.PointerOffset + _payloadStart;
+        var handle = view.SafeMemoryMappedViewHandle;
+        byte* mapped = null;
+        handle.AcquirePointer(ref mapped);
+        try { ReadPixelBlockCore(pixels, destination, mapped + payloadOffset); }
+        finally { handle.ReleasePointer(); }
+    }
+
+    private unsafe void ReadPixelBlockCore(ReadOnlySpan<(int X, int Y)> pixels, Span<double> destination, byte* source)
+    {
+        bool calibrated = _transform.HasValue;
+        int bytesPerSample = _bpp / 8;
+        int channelCount = RawChannelCount;
+        bool planar = !_interleaved && _channels == 3;
+        long planeSize = (long)Width * Height;
+        long channelStride = planar ? -planeSize : 1;
+        Span<byte> packed = calibrated ? stackalloc byte[pixels.Length * _channels * bytesPerSample] : Span<byte>.Empty;
+        for (int index = 0; index < pixels.Length; index++)
+        {
+            var (x, y) = pixels[index];
+            if ((uint)x >= (uint)Width || (uint)y >= (uint)Height)
+                throw new ArgumentOutOfRangeException(nameof(pixels));
+            long pixel = (long)y * Width + x;
+            long sourceElement = planar ? 2 * planeSize + pixel : pixel * _channels;
+            for (int channel = 0; channel < _channels; channel++, sourceElement += channelStride)
+            {
+                ushort value = bytesPerSample == 1 ? source[sourceElement]
+                    : BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(source + sourceElement * sizeof(ushort), sizeof(ushort)));
+                destination[index * channelCount + channel] = value;
+                if (!calibrated) continue;
+                int element = index * _channels + channel;
+                if (bytesPerSample == 1) packed[element] = (byte)value;
+                else BinaryPrimitives.WriteUInt16LittleEndian(packed.Slice(element * sizeof(ushort), sizeof(ushort)), value);
+            }
+        }
+        if (!calibrated) return;
+
+        // Each gathered row uses interleaved BGR (or Gray), independent of the source layout.
+        // Native conversion still produces planar float XYZ before any profile interpolation.
+        Span<float> xyz = stackalloc float[pixels.Length * _channels];
+        TransformRawSamples(packed, xyz, pixels.Length, interleavedBgr: true);
+        for (int index = 0; index < pixels.Length; index++)
+            for (int channel = 0; channel < _channels; channel++)
+                destination[index * channelCount + _channels + channel] = xyz[channel * pixels.Length + index];
+    }
+
     private double ReadCore(int x, int y, int channel, byte[]? livePixels)
     {
         long pixel = (long)y * Width + x;
@@ -157,7 +246,7 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
         return values[channel - _channels];
     }
 
-    private double ReadRaw(long pixel, int channel, byte[]? livePixels)
+    private ushort ReadRaw(long pixel, int channel, byte[]? livePixels)
     {
         long element = _interleaved || _channels == 1 ? pixel * _channels + channel : (2 - channel) * (long)Width * Height + pixel;
         long offset = checked(element * (_bpp / 8));
@@ -167,26 +256,33 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
         return _bpp == 8 ? _view!.ReadByte(offset) : _view!.ReadUInt16(offset);
     }
 
-    private unsafe float[] TransformPixel(long pixel, byte[]? livePixels)
+    private float[] TransformPixel(long pixel, byte[]? livePixels)
     {
-        byte* raw = stackalloc byte[6];
+        Span<byte> raw = stackalloc byte[_channels * (_bpp / 8)];
         for (int channel = 0; channel < _channels; channel++)
         {
             // A 1x1 planar RGB buffer and a 1x1 interleaved BGR buffer differ only in order.
             int inputChannel = _interleaved || _channels == 1 ? channel : 2 - channel;
-            double value = ReadRaw(pixel, inputChannel, livePixels);
+            ushort value = ReadRaw(pixel, inputChannel, livePixels);
             if (_bpp == 8) raw[channel] = (byte)value;
-            else ((ushort*)raw)[channel] = (ushort)value;
+            else BinaryPrimitives.WriteUInt16LittleEndian(raw.Slice(channel * sizeof(ushort), sizeof(ushort)), value);
         }
-        RawColorTransformV1 transform = _transform!.Value;
         float[] values = new float[_channels];
+        TransformRawSamples(raw, values, 1, _interleaved);
+        return values;
+    }
+
+    private unsafe void TransformRawSamples(ReadOnlySpan<byte> raw, Span<float> values, int pixelCount, bool interleavedBgr)
+    {
+        RawColorTransformV1 transform = _transform!.Value;
+        transform.InterleavedBgr = interleavedBgr ? 1 : 0;
+        fixed (byte* input = raw)
         fixed (float* output = values)
         {
-            int status = OpenCVMediaHelper.M_TransformRawColorV1(1, 1, _bpp, (IntPtr)raw, (ulong)(_channels * (_bpp / 8)),
-                in transform, -1, (IntPtr)output, (ulong)_channels);
+            int status = OpenCVMediaHelper.M_TransformRawColorV1(pixelCount, 1, _bpp, (IntPtr)input, (ulong)raw.Length,
+                in transform, -1, (IntPtr)output, (ulong)values.Length);
             if (status != OpenCVCalibration.PoiOk) throw new InvalidOperationException($"RAW 色度计算失败：{status}。");
         }
-        return values;
     }
 
     public void Dispose()

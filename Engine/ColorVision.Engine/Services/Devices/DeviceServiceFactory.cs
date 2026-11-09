@@ -146,15 +146,27 @@ namespace ColorVision.Engine.Services.Devices
             if (selectedLicense != null) config.SN = selectedLicense.MacAddress!;
         }
 
+        internal static bool TryInitializeNewDeviceDisplayConfig(ServiceTypes serviceType, string code, DisplayConfigManager displayConfigs)
+        {
+            return serviceType switch
+            {
+                ServiceTypes.PG => displayConfigs.TryInitializeDisplayConfig(code, new DisplayPGConfig { UseLocalPG = true }),
+                ServiceTypes.FilterWheel => displayConfigs.TryInitializeDisplayConfig(code, new DisplayCfwPortConfig { UseLocalCfwPort = true }),
+                _ => false
+            };
+        }
+
         private static void RegisterDefaults()
         {
             Register(new DeviceServiceFactory<ConfigCamera>(
                 ServiceTypes.Camera,
-                sysResourceModel => new DeviceCamera(sysResourceModel)));
+                sysResourceModel => new DeviceCamera(sysResourceModel),
+                configureConfig: static (config, _) => config.IsAutoOpen = false));
 
             Register(new DeviceServiceFactory<ConfigPG>(
                 ServiceTypes.PG,
-                sysResourceModel => new DevicePG(sysResourceModel)));
+                sysResourceModel => new DevicePG(sysResourceModel),
+                configureConfig: static (config, _) => config.IsAutoOpen = false));
 
             Register(new DeviceServiceFactory<ConfigSpectrum>(
                 ServiceTypes.Spectrum,
@@ -168,7 +180,8 @@ namespace ColorVision.Engine.Services.Devices
 
             Register(new DeviceServiceFactory<ConfigSensor>(
                 ServiceTypes.Sensor,
-                sysResourceModel => new DeviceSensor(sysResourceModel)));
+                sysResourceModel => new DeviceSensor(sysResourceModel),
+                configureConfig: static (config, _) => config.IsAutoOpen = false));
 
             Register(new DeviceServiceFactory<ConfigAlgorithm>(
                 ServiceTypes.Algorithm,
@@ -178,7 +191,8 @@ namespace ColorVision.Engine.Services.Devices
             Register(new DeviceServiceFactory<ConfigCfwPort>(
                 ServiceTypes.FilterWheel,
                 sysResourceModel => new DeviceCfwPort(sysResourceModel),
-                "CfwPortDrawingImage"));
+                "CfwPortDrawingImage",
+                configureConfig: static (config, _) => config.IsAutoOpen = false));
 
             Register(new DeviceServiceFactory<ConfigCalibration>(
                 ServiceTypes.Calibration,

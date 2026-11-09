@@ -17,6 +17,7 @@ namespace ColorVision.UI.Desktop.Download
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(Aria2cDownloadManager));
         private static readonly string[] TellStatusKeys = { "status", "totalLength", "completedLength", "downloadSpeed", "errorMessage", "bittorrent", "files", "followedBy" };
+        private const int MaxLoadedRecords = 1000;
         private static readonly object _locker = new();
         private static Aria2cDownloadManager? _instance;
         public static string DirectoryPath { get; set; } = Environments.DirDownloads;
@@ -77,6 +78,7 @@ namespace ColorVision.UI.Desktop.Download
         private string _statusMessage = string.Empty;
         public DownloadManagerConfig Config => _config;
         public int CurrentRpcPort => _rpcPort;
+        public int ActiveTaskCount => _activeTasks.Count;
         public bool IsAria2cRunning => _rpcReady && _daemon.IsRunning;
         private bool IsStopping => Volatile.Read(ref _disposeState) != 0 || _handoff;
         public string StatusMessage
@@ -291,9 +293,14 @@ namespace ColorVision.UI.Desktop.Download
                 _reservedPaths.Add(path);
                 _knownTasks[task.Id] = task;
             }
-            PostUI(() => Tasks.Insert(0, task));
+            PostUI(() => ShowTask(task));
             QueueStart(task, tryReuse: true, resume: false);
             return task;
+        }
+
+        private void ShowTask(DownloadTask task)
+        {
+            if (!task.Runtime.IsDeleted && !Tasks.Any(existing => existing.Id == task.Id)) Tasks.Insert(0, task);
         }
 
         private static DownloadTask CreateTask(DownloadEntry entry) => new()
@@ -374,6 +381,7 @@ namespace ColorVision.UI.Desktop.Download
                     }
                 }
                 token.ThrowIfCancellationRequested();
+                await ReassignOccupiedSavePathAsync(task, version).ConfigureAwait(false);
                 await EnsureAria2cRunningAsync().ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
                 if (!task.Runtime.IsRunning(version) || IsStopping) return;
@@ -425,6 +433,22 @@ namespace ColorVision.UI.Desktop.Download
                 await FailTaskAsync(task, version, ex.Message).ConfigureAwait(false);
             }
             finally { _localCopyTasks.TryRemove(task.Id, out _); }
+        }
+
+        // The destination is never overwritten, so a run that starts with it occupied must promote to another name.
+        private async Task ReassignOccupiedSavePathAsync(DownloadTask task, long version)
+        {
+            if (task.WorkingPath == null || !File.Exists(task.SavePath)) return;
+            string occupied = task.SavePath;
+            string path;
+            lock (_pathLock)
+            {
+                path = DownloadPathResolver.GetUniqueFilePath(task.DownloadDirectory!, Path.GetFileName(occupied), _reservedPaths.Contains);
+                _reservedPaths.Remove(Path.GetFullPath(occupied));
+                _reservedPaths.Add(path);
+            }
+            _store.UpdatePath(task.Id, path, Path.GetFileName(path));
+            await OnUIAsync(() => { task.SavePath = path; task.FileName = Path.GetFileName(path); }).ConfigureAwait(false);
         }
 
         private async Task RemoveGidsAsync(string[] gids)
@@ -490,7 +514,7 @@ namespace ColorVision.UI.Desktop.Download
             {
                 var task = _knownTasks.GetOrAdd(entry.Id, _ => CreateTask(entry));
                 if (task.Runtime.IsRunning(task.Runtime.Version)) continue;
-                PostUI(() => { if (!Tasks.Any(existing => existing.Id == task.Id)) Tasks.Insert(0, task); });
+                PostUI(() => ShowTask(task));
                 QueueStart(task, tryReuse: false, resume: false);
             }
         }
@@ -608,6 +632,7 @@ namespace ColorVision.UI.Desktop.Download
                 if (files.Length != 1 || !files[0].Equals(Path.GetFullPath(workingPath), StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("aria2 returned an unexpected output path.");
                 CancellationToken token = task.Runtime.GetCancellationToken(version);
+                await UpdateTaskAsync(task, version, DownloadStatus.Downloading, total, completed, Properties.Resources.DownloadVerifying, null).ConfigureAwait(false);
                 using var slot = await _copyGate.EnterAsync(() => Config.MaxConcurrentTasks, token).ConfigureAwait(false);
                 string hash = await DownloadReuseService.ComputeSha256Async(workingPath, token).ConfigureAwait(false);
                 if (task.ExpectedSha256 != null && !hash.Equals(task.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
@@ -671,8 +696,6 @@ namespace ColorVision.UI.Desktop.Download
                 try { handler(this, task); } catch (Exception ex) { log.Error("Download completion subscriber failed.", ex); }
         }
 
-        public void DeleteRecord(int id) => RunFireAndForget(() => DeleteRecordsAsync(new[] { id }), "Unable to delete download record.");
-        public void DeleteRecords(int[] ids, bool deleteFiles = false) => RunFireAndForget(() => DeleteRecordsAsync(ids, deleteFiles), "Unable to delete download records.");
         public async Task DeleteRecordsAsync(int[] ids, bool deleteFiles = false)
         {
             ids = ids.Distinct().ToArray();
@@ -680,9 +703,11 @@ namespace ColorVision.UI.Desktop.Download
             foreach (int id in ids)
                 if (_knownTasks.TryGetValue(id, out var active)) active.Runtime.Stop(delete: true);
             var entries = await Task.Run(() => _store.GetEntries(ids)).ConfigureAwait(false);
+            var deleted = new List<DownloadTask>(entries.Count);
             foreach (var entry in entries)
             {
                 var task = _knownTasks.GetOrAdd(entry.Id, _ => CreateTask(entry));
+                deleted.Add(task);
                 task.Runtime.Stop(delete: true);
                 await task.Runtime.Enqueue(() => RunSafeAsync(async () =>
                 {
@@ -707,32 +732,43 @@ namespace ColorVision.UI.Desktop.Download
                 _knownTasks.TryRemove(entry.Id, out _);
                 lock (_pathLock) _reservedPaths.Remove(Path.GetFullPath(entry.SavePath));
             }
+            foreach (var task in deleted) await NotifyDeletedAsync(task).ConfigureAwait(false);
         }
-        public void ClearAllRecords() => RunFireAndForget(ClearAllRecordsAsync, "Unable to clear download records.");
+        private async Task NotifyDeletedAsync(DownloadTask task)
+        {
+            if (IsStopping || task.OnCompletedCallback == null || !task.Runtime.TakeDeletedNotification()) return;
+            await OnUIAsync(() =>
+            {
+                task.Status = DownloadStatus.Deleted;
+                task.ErrorMessage = Properties.Resources.DownloadRecordDeleted;
+                task.SpeedText = string.Empty;
+            }).ConfigureAwait(false);
+            try { task.OnCompletedCallback?.Invoke(task); }
+            catch (Exception ex) { log.Error("Download deletion callback failed.", ex); }
+        }
         public async Task ClearAllRecordsAsync()
         {
             var entries = await Task.Run(_store.GetAllEntries).ConfigureAwait(false);
             // Delete the snapshot, so a download added while clearing is not accidentally removed.
             await DeleteRecordsAsync(entries.Select(entry => entry.Id).ToArray()).ConfigureAwait(false);
         }
+        public async Task ClearCompletedRecordsAsync()
+        {
+            var entries = await Task.Run(_store.GetAllEntries).ConfigureAwait(false);
+            await DeleteRecordsAsync(entries.Where(entry => entry.Status is (int)DownloadStatus.Completed or (int)DownloadStatus.FileDeleted)
+                .Select(entry => entry.Id).ToArray()).ConfigureAwait(false);
+        }
 
-        public int GetTotalCount(string? searchKeyword = null) => _store.GetTotalCount(searchKeyword);
-        public void LoadRecords(string? searchKeyword = null, int pageSize = 20, int page = 1)
+        public async Task LoadRecordsAsync(CancellationToken cancellationToken = default)
         {
-            var records = ReadPage(searchKeyword, pageSize, page);
-            OnUIAsync(() => ApplyPage(records)).GetAwaiter().GetResult();
-        }
-        public async Task<(int TotalCount, int Page)> LoadRecordsAsync(string? searchKeyword = null, int pageSize = 20, int page = 1, CancellationToken cancellationToken = default)
-        {
-            var records = await Task.Run(() => ReadPage(searchKeyword, pageSize, page), cancellationToken).ConfigureAwait(false);
+            var records = await Task.Run(ReadRecentRecords, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            await OnUIAsync(() => { cancellationToken.ThrowIfCancellationRequested(); ApplyPage(records); }).ConfigureAwait(false);
-            return (records.TotalCount, records.Page);
+            await OnUIAsync(() => { cancellationToken.ThrowIfCancellationRequested(); ApplyRecords(records); }).ConfigureAwait(false);
         }
-        private DownloadRecordPage ReadPage(string? keyword, int size, int page)
+        private List<DownloadEntry> ReadRecentRecords()
         {
-            var records = _store.LoadPage(keyword, Math.Clamp(size, 1, 1000), Math.Max(1, page));
-            foreach (var entry in records.Entries)
+            var records = _store.LoadRecent(MaxLoadedRecords);
+            foreach (var entry in records)
             {
                 if (_knownTasks.ContainsKey(entry.Id) || entry.Status != (int)DownloadStatus.Completed) continue;
                 if (Directory.Exists(entry.SavePath)) continue;
@@ -757,10 +793,10 @@ namespace ColorVision.UI.Desktop.Download
             }
             return records;
         }
-        private void ApplyPage(DownloadRecordPage records)
+        private void ApplyRecords(List<DownloadEntry> records)
         {
             Tasks.Clear();
-            foreach (var entry in records.Entries)
+            foreach (var entry in records)
             {
                 DownloadTask task = _knownTasks.TryGetValue(entry.Id, out var known) ? known : CreateTask(entry);
                 if (task.Runtime.IsDeleted) continue;
@@ -768,6 +804,8 @@ namespace ColorVision.UI.Desktop.Download
                     task = _knownTasks.GetOrAdd(task.Id, task);
                 Tasks.Add(task);
             }
+            // A task added after the records were read must stay visible.
+            foreach (var active in _activeTasks.Values) ShowTask(active);
         }
     }
 }

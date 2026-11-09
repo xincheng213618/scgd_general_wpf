@@ -22,6 +22,7 @@ namespace ColorVision.Engine.Media
         private readonly ImageView _imageView;
         private readonly string _filePath;
         private readonly bool _isCie;
+        private readonly CvcieFileRevision? _fileRevision;
         private readonly CVCIEFile? _liveXyz;
         private readonly RawColorMeasurementSource? _rawColor;
         private BitmapSource? _liveSource;
@@ -32,15 +33,16 @@ namespace ColorVision.Engine.Media
         private DisplayCache? _srgbCache;
         private DisplayCache? _channelCache;
         internal const long DisplayCacheBudgetBytes = 128L * 1024 * 1024;
-        private readonly record struct FileStamp(long Length, DateTime LastWriteTime);
-        private sealed record DisplayCache(string LayerId, CvcieBrightnessMode Mode, double White, FileStamp Stamp, WriteableBitmap Bitmap, long Bytes);
+        private sealed record DisplayCache(string LayerId, CvcieBrightnessMode Mode, double White, WriteableBitmap Bitmap, long Bytes);
 
         private CvRawLayerController(ImageView imageView, string filePath, bool isCie, IReadOnlyList<ImageLayerDescriptor> layers, string displayedLayerId,
-            CVCIEFile? liveXyz = null, BitmapSource? liveSource = null, RawColorMeasurementSource? rawColor = null)
+            CVCIEFile? liveXyz = null, BitmapSource? liveSource = null, RawColorMeasurementSource? rawColor = null,
+            CvcieFileRevision? fileRevision = null)
         {
             _imageView = imageView;
             _filePath = filePath;
             _isCie = isCie;
+            _fileRevision = fileRevision;
             Layers = layers;
             DefaultLayer = layers.FirstOrDefault(layer => layer.Id == displayedLayerId) ?? layers[0];
             _lastSuccessfulLayer = DefaultLayer;
@@ -57,9 +59,11 @@ namespace ColorVision.Engine.Media
 
         public ImageLayerDescriptor? DefaultLayer { get; private set; }
 
-        public static CvRawLayerController Create(ImageView imageView, string filePath, bool isCie, int channelCount, int bpp, bool hasRgbLayers, string displayedLayerId)
+        public static CvRawLayerController Create(ImageView imageView, string filePath, bool isCie, int channelCount, int bpp,
+            bool hasRgbLayers, string displayedLayerId, CvcieFileRevision? fileRevision = null)
         {
-            return new CvRawLayerController(imageView, filePath, isCie, BuildLayers(isCie, channelCount, bpp, hasRgbLayers), displayedLayerId);
+            return new CvRawLayerController(imageView, filePath, isCie, BuildLayers(isCie, channelCount, bpp, hasRgbLayers), displayedLayerId,
+                fileRevision: fileRevision);
         }
 
         public static IImageLayerController CreateLive(ImageView imageView, CVCIEFile xyz, WriteableBitmap source, string displayedLayerId)
@@ -76,15 +80,7 @@ namespace ColorVision.Engine.Media
         }
 
         public static WriteableBitmap LoadSrgb(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            bool read = CVFileUtil.Read(filePath, out CVCIEFile xyz);
-            using (xyz)
-            {
-                if (!read) throw new InvalidDataException($"读取 CVCIE 内嵌 XYZ 失败：{filePath}");
-                return CvcieSrgbRenderer.Render(xyz, brightnessMode, referenceWhiteLuminance, cancellationToken);
-            }
-        }
+            => CvcieSrgbRenderer.RenderFile(filePath, brightnessMode, referenceWhiteLuminance, cancellationToken);
 
         public static CVCIEFile LoadSourceFile(string filePath, out bool usesLuminance, CancellationToken cancellationToken = default)
         {
@@ -113,6 +109,7 @@ namespace ColorVision.Engine.Media
                 candidates.Add(Path.ChangeExtension(filePath, ".cvraw"));
                 foreach (string candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!File.Exists(candidate)) continue;
                     CVCIEFile? source = null;
                     try
@@ -121,26 +118,37 @@ namespace ColorVision.Engine.Media
                             || string.Equals(Path.GetExtension(candidate), ".cvcie", StringComparison.OrdinalIgnoreCase)) continue;
                         if (CVFileUtil.IsCIEFile(candidate))
                         {
-                            if (!CVFileUtil.Read(candidate, out source)) throw new InvalidDataException("无法读取关联原图。");
+                            using Stream stream = CVFileReadCache.OpenRead(candidate, populateCache: false);
+                            int sourceOffset = CVFileUtil.ReadCIEFileHeader(stream, out source, maximumChannels: 4);
+                            if (sourceOffset <= 0 || source.Rows <= 0 || source.Cols <= 0 || source.Channels is not (1 or 3 or 4)
+                                || source.Bpp is not (8 or 16 or 32 or 64))
+                                throw new InvalidDataException("关联原图文件头无效。");
+                            ValidateSourceGeometry(source);
+                            if (!CVFileUtil.ReadCIEFilePixels(stream, source, sourceOffset, requireExactPayload: true, cancellationToken))
+                                throw new InvalidDataException("关联原图像素长度无效。");
                             source.FileExtType = CVType.Raw;
-                            long expectedLength = checked((long)source.Rows * source.Cols * source.Channels * (source.Bpp / 8));
-                            if (source.Rows <= 0 || source.Cols <= 0 || source.Channels is not (1 or 3 or 4)
-                                || source.Bpp is not (8 or 16 or 32 or 64) || source.Data?.LongLength != expectedLength)
-                                throw new InvalidDataException("关联原图尺寸或数据长度无效。");
                         }
                         else
                         {
                             source = new CVCIEFile { FileExtType = CVType.Tif, Data = File.ReadAllBytes(candidate) };
+                            cancellationToken.ThrowIfCancellationRequested();
                             using OpenCvSharp.Mat decoded = source.ToMat(showErrors: false);
                             if (decoded == null || decoded.Empty()) throw new InvalidDataException("关联原图无法解码。");
                             source.Rows = decoded.Rows;
                             source.Cols = decoded.Cols;
                             source.Channels = decoded.Channels();
                             source.Bpp = checked((int)decoded.ElemSize1() * 8);
+                            ValidateSourceGeometry(source);
                         }
+                        cancellationToken.ThrowIfCancellationRequested();
                         source.SrcFileName = candidate;
                         source.FilePath = filePath;
                         return source;
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        source?.Dispose();
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -162,9 +170,17 @@ namespace ColorVision.Engine.Media
                 usesLuminance = true;
                 return luminance;
             }
+
+            void ValidateSourceGeometry(CVCIEFile source)
+            {
+                if (headerOffset > 0 && (source.Cols != header.Cols || source.Rows != header.Rows))
+                    throw new InvalidDataException($"关联原图尺寸 {source.Cols}×{source.Rows} 与 CVCIE {header.Cols}×{header.Rows} 不一致。");
+            }
         }
 
-        public async void SelectLayer(ImageLayerDescriptor layer)
+        public async void SelectLayer(ImageLayerDescriptor layer) => await SelectLayerAsync(layer);
+
+        internal async Task SelectLayerAsync(ImageLayerDescriptor layer)
         {
             if (_disposed) return;
             _selection?.Cancel();
@@ -186,39 +202,48 @@ namespace ColorVision.Engine.Media
                     return;
                 }
 
-                FileStamp stamp = GetFileStamp();
                 DisplayCache? cache = layer.Id == "cie-srgb" ? _srgbCache : _channelCache;
                 WriteableBitmap bitmap;
-                if (cache != null && cache.LayerId == layer.Id && cache.Stamp == stamp
+                ImageLayerDescriptor displayedLayer = layer;
+                if (cache != null && cache.LayerId == layer.Id
                     && (layer.Id != "cie-srgb" || (cache.Mode == mode && cache.White == white)))
                     bitmap = cache.Bitmap;
                 else
-                    bitmap = await RunLoadAsync(() => LoadLayer(layer, mode, white, selection.Token), selection.Token);
+                    (bitmap, displayedLayer) = await RunLoadAsync(() => LoadLayer(layer, mode, white, selection.Token), selection.Token);
 
                 if (!IsCurrent(selection)) return;
-                StoreCache(layer.Id, bitmap, mode, white, stamp);
+                StoreCache(displayedLayer.Id, bitmap, mode, white);
+                if (!ReferenceEquals(layer, displayedLayer))
+                {
+                    DefaultLayer = displayedLayer;
+                    _imageView.SetLayerController(this);
+                    if (!IsCurrent(selection)) return;
+                }
                 ShowLayer(bitmap);
                 if (IsCurrent(selection))
                 {
-                    if (layer.SourceChannelIndex is int channel) _imageView.ExtractChannel(channel);
-                    _lastSuccessfulLayer = layer;
+                    if (displayedLayer.SourceChannelIndex is int channel) _imageView.ExtractChannel(channel);
+                    _lastSuccessfulLayer = displayedLayer;
                 }
             }
             catch (OperationCanceledException) { }
+            catch (CvcieFileChangedException ex)
+            {
+                if (!IsCurrent(selection)) return;
+                Log.Warn(ex.Message);
+                RestoreLayerSelection();
+            }
             catch (Exception ex)
             {
                 if (!IsCurrent(selection)) return;
                 Log.Warn($"CVCIE 图层 {layer.Id} 显示失败，回退原图：{_filePath}", ex);
                 try
                 {
-                    var fallback = await RunLoadAsync(() =>
-                    {
-                        WriteableBitmap bitmap = LoadSource(out bool usesLuminance, selection.Token);
-                        return (Bitmap: bitmap, UsesLuminance: usesLuminance);
-                    }, selection.Token);
+                    var fallback = await RunLoadAsync(() => LoadSourceLayer(Layers[0], selection.Token), selection.Token);
                     if (!IsCurrent(selection)) return;
-                    DefaultLayer = Layers.FirstOrDefault(item => item.Id == (fallback.UsesLuminance ? "cie-y" : "composite")) ?? Layers[0];
+                    DefaultLayer = fallback.Layer;
                     _imageView.SetLayerController(this);
+                    if (!IsCurrent(selection)) return;
                     ShowLayer(fallback.Bitmap);
                     if (IsCurrent(selection)) _lastSuccessfulLayer = DefaultLayer;
                 }
@@ -227,14 +252,19 @@ namespace ColorVision.Engine.Media
                 {
                     if (!IsCurrent(selection)) return;
                     Log.Warn($"CVRAW 和 Y 灰度回退均不可用，保留当前图像：{_filePath}", fallbackError);
-                    DefaultLayer = _lastSuccessfulLayer;
-                    _imageView.SetLayerController(this);
+                    RestoreLayerSelection();
                 }
             }
             finally
             {
                 if (ReferenceEquals(_selection, selection)) _selection = null;
             }
+        }
+
+        private void RestoreLayerSelection()
+        {
+            DefaultLayer = _lastSuccessfulLayer;
+            _imageView.SetLayerController(this);
         }
 
         private bool IsCurrent(CancellationTokenSource selection) => !_disposed && !selection.IsCancellationRequested
@@ -244,36 +274,39 @@ namespace ColorVision.Engine.Media
         {
             // A superseded large read must finish before another payload is allocated in this view.
             await _loadGate.WaitAsync(token);
-            try { return await Task.Run(load, token); }
+            try
+            {
+                return await Task.Run(() =>
+                {
+                    // Display loaders may open the path again. Hold this revision until they finish.
+                    using FileStream? verified = _fileRevision?.OpenRead(_filePath);
+                    return load();
+                }, token);
+            }
             finally { _loadGate.Release(); }
         }
 
-        private WriteableBitmap LoadLayer(ImageLayerDescriptor layer, CvcieBrightnessMode mode, double white, CancellationToken token)
+        private (WriteableBitmap Bitmap, ImageLayerDescriptor Layer) LoadLayer(ImageLayerDescriptor layer, CvcieBrightnessMode mode, double white, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            return layer.Id switch
+            if (layer.Kind != ImageLayerKind.Derived) return LoadSourceLayer(layer, token);
+            WriteableBitmap bitmap = layer.Id switch
             {
                 "cie-srgb" => _liveXyz == null ? LoadSrgb(_filePath, mode, white, token) : CvcieSrgbRenderer.Render(_liveXyz, mode, white, token),
                 "cie-x" => LoadCieChannel(0, token),
                 "cie-y" => LoadCieChannel(1, token),
                 "cie-z" => LoadCieChannel(2, token),
-                _ => LoadSource(out _, token),
+                _ => throw new InvalidOperationException($"未知的 CVCIE 图层：{layer.Id}"),
             };
+            return (bitmap, layer);
         }
 
         public void CacheSrgb(WriteableBitmap bitmap, CvcieBrightnessMode mode, double white)
         {
-            StoreCache("cie-srgb", bitmap, mode, white, GetFileStamp());
+            StoreCache("cie-srgb", bitmap, mode, white);
         }
 
-        private FileStamp GetFileStamp()
-        {
-            if (_liveXyz != null || _rawColor != null || CVFileReadCache.GetCachedLength(_filePath).HasValue) return default;
-            FileInfo file = new(_filePath);
-            return new FileStamp(file.Length, file.LastWriteTimeUtc);
-        }
-
-        private void StoreCache(string layerId, WriteableBitmap bitmap, CvcieBrightnessMode mode, double white, FileStamp stamp)
+        private void StoreCache(string layerId, WriteableBitmap bitmap, CvcieBrightnessMode mode, double white)
         {
             if (layerId != "cie-srgb" && layerId is not ("cie-x" or "cie-y" or "cie-z")) return;
             // This is extra storage alongside the mutable display clone. Bound the sum, not each slot.
@@ -295,7 +328,7 @@ namespace ColorVision.Engine.Media
                 if (srgb) _channelCache = null;
                 else _srgbCache = null;
             }
-            var entry = new DisplayCache(layerId, mode, white, stamp, bitmap, bytes);
+            var entry = new DisplayCache(layerId, mode, white, bitmap, bytes);
             if (srgb) _srgbCache = entry;
             else _channelCache = entry;
         }
@@ -309,24 +342,25 @@ namespace ColorVision.Engine.Media
             _liveSource = null;
         }
 
-        private WriteableBitmap LoadSource(out bool usesLuminance, CancellationToken token)
+        private (WriteableBitmap Bitmap, ImageLayerDescriptor Layer) LoadSourceLayer(ImageLayerDescriptor layer, CancellationToken token)
         {
-            usesLuminance = false;
             BitmapSource? liveSource = _liveSource;
             if (liveSource != null)
             {
-                if (liveSource is WriteableBitmap writable) return writable;
+                if (liveSource is WriteableBitmap writable) return (writable, layer);
                 // Decoded samples may be RGB while native calibration uses planar RGB or BGR.
                 WriteableBitmap bitmap = new(liveSource);
                 bitmap.Freeze();
-                return bitmap;
+                return (bitmap, layer);
             }
             if (_rawColor != null)
             {
-                return _rawColor.BorrowRaw(raw => ConvertForDisplay(raw, token));
+                return (_rawColor.BorrowRaw(raw => ConvertForDisplay(raw, token)), layer);
             }
-            using CVCIEFile source = LoadSourceFile(_filePath, out usesLuminance, token);
-            return ConvertForDisplay(source, token);
+            using CVCIEFile source = LoadSourceFile(_filePath, out bool usesLuminance, token);
+            if (usesLuminance) layer = Layers.FirstOrDefault(item => item.Id == "cie-y") ?? Layers[0];
+            else if (source.Channels < 3 && layer.SourceChannelIndex.HasValue) layer = Layers[0];
+            return (ConvertForDisplay(source, token), layer);
         }
 
         private WriteableBitmap LoadCieChannel(int index, CancellationToken token)
@@ -360,8 +394,16 @@ namespace ColorVision.Engine.Media
 
             if (_liveXyz.Channels == 1) index = 0;
             int length = checked(_liveXyz.Cols * _liveXyz.Rows * (_liveXyz.Bpp / 8));
+            int offset = checked(index * length);
+            if (_liveXyz.Bpp is 32 or 64)
+            {
+                // The capture already owns the measurement data. Retain only a read-only view of this plane.
+                ReadOnlyMemory<byte> samples = _liveXyz.Data.AsMemory(offset, length);
+                return MediaHelper.RenderFloatChannel(samples, _liveXyz.Cols, _liveXyz.Rows, _liveXyz.Bpp, token);
+            }
+
             byte[] data = new byte[length];
-            Buffer.BlockCopy(_liveXyz.Data, checked(index * length), data, 0, length);
+            Buffer.BlockCopy(_liveXyz.Data, offset, data, 0, length);
             using CVCIEFile plane = new()
             {
                 Cols = _liveXyz.Cols, Rows = _liveXyz.Rows, Bpp = _liveXyz.Bpp,

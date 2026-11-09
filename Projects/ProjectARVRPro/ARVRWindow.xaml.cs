@@ -133,6 +133,7 @@ namespace ProjectARVRPro
 
         private bool IsTestExecutionBusy => IsSwitchRun
             || _luxSession != null
+            || IsJsonVidRunning
             || _isFlowCompletionPending
             || _isFlowStartPending
             || flowControl?.IsFlowRun == true
@@ -143,7 +144,7 @@ namespace ProjectARVRPro
 
         public string InitTest(string? serialNumber)
         {
-            if (_luxSession != null) return _objectiveSessionSerialNumber;
+            if (_luxSession != null || IsJsonVidRunning) return _objectiveSessionSerialNumber;
             if (IsResultExportPending)
             {
                 log.Warn("正在保存测试结果，暂不初始化下一次测试");
@@ -339,7 +340,7 @@ namespace ProjectARVRPro
 
         public async Task<bool> TryStartNextTemplateAsync(CancellationToken cancellationToken = default)
         {
-            if (_luxSession != null) return false;
+            if (_luxSession != null || IsJsonVidRunning) return false;
             if (IsSwitchRun)
             {
                 log.Warn("重复触发PG，忽略本次请求");
@@ -814,7 +815,7 @@ namespace ProjectARVRPro
 
         public async Task RunTemplate()
         {
-            if (_luxSession != null) return;
+            if (_luxSession != null || IsJsonVidRunning) return;
             if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
                 return;
 
@@ -2419,6 +2420,8 @@ namespace ProjectARVRPro
             bool includeOverlays = saveResultImage && config.ResultSnapshotIncludeOverlays;
             SourceImageFormat sourceFormat = config.SourceExportFormat;
             SourceTiffCompression sourceTiffCompression = config.SourceTiffCompressionMode;
+            string? resultFileNameTemplate = config.UseFlowNameForResultImage ? config.ResultImageFileNameTemplate : null;
+            string? sourceFileNameTemplate = config.UseFlowNameForSourceImage ? config.SourceImageFileNameTemplate : null;
             string outputRoot = config.CsvSavePath;
             bool saveByDate = config.SaveByDate;
             bool autoCleanupEnabled = config.AutoCleanupEnabled;
@@ -2488,6 +2491,8 @@ namespace ProjectARVRPro
                     includeOverlays,
                     sourceFormat,
                     sourceTiffCompression,
+                    resultFileNameTemplate,
+                    sourceFileNameTemplate,
                     result,
                     outputRoot,
                     saveByDate,
@@ -2522,6 +2527,8 @@ namespace ProjectARVRPro
             bool includeOverlays,
             SourceImageFormat sourceFormat,
             SourceTiffCompression sourceTiffCompression,
+            string? resultFileNameTemplate,
+            string? sourceFileNameTemplate,
             ProjectARVRReuslt result,
             string outputRoot,
             bool saveByDate,
@@ -2554,12 +2561,13 @@ namespace ProjectARVRPro
                 string sourceName = string.IsNullOrWhiteSpace(result.FileName)
                     ? $"Image_{result.Id}_{requestedAt:yyyyMMddTHHmmssfffffff}"
                     : result.FileName;
+                var (renderedStem, sourceStem) = ProjectImageExportService.BuildFileStems(
+                    sourceName, result.Model, result.SN, resultFileNameTemplate, sourceFileNameTemplate);
                 if (saveResultImage)
                 {
-                    string fileStem = ProjectImageExportService.BuildResultFileStem(sourceName, result.Model);
                     renderedFilePath = ProjectImageExportService.BuildFilePath(
                         outputDirectory,
-                        fileStem,
+                        renderedStem,
                         ProjectImageExportService.GetResultExtension(resultFormat));
                     string overlayDescription = includeOverlays ? "混合标记" : "仅底图";
                     log.Debug(
@@ -2568,11 +2576,11 @@ namespace ProjectARVRPro
                 }
                 if (saveSourceImage)
                 {
-                    string fileStem = ProjectImageExportService.BuildSourceFileStem(sourceName, result.Model);
-                    sourceFilePath = ProjectImageExportService.BuildFilePath(
+                    sourceFilePath = ProjectImageExportService.BuildSourceFilePath(
                         outputDirectory,
-                        fileStem,
-                        ProjectImageExportService.GetSourceExtension(sourceFormat));
+                        sourceStem,
+                        ProjectImageExportService.GetSourceExtension(sourceFormat),
+                        renderedFilePath);
                     string sourceDescription = sourceFormat switch
                     {
                         SourceImageFormat.TIFF => $"TIFF {sourceTiffCompression}无损压缩",
@@ -2781,7 +2789,7 @@ namespace ProjectARVRPro
         /// </summary>
         public async Task RunAllAsync()
         {
-            if (_luxSession != null) return;
+            if (_luxSession != null || IsJsonVidRunning) return;
             if (_isRunAllRunning)
             {
                 log.Info("一键执行已在运行中，忽略重复调用");

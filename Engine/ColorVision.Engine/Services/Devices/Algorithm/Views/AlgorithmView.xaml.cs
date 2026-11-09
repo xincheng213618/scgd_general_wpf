@@ -503,10 +503,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var query = db.Queryable<AlgResultMasterModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
-            foreach (ViewResultAlg result in AlgorithmResultHistory.CreateViews(dbList, MySqlSetting.IsConnect ? db : null))
-            {
-                _viewResults.QueryResults.Add(result);
-            }
+            _viewResults.QueryResults.AddRange(AlgorithmResultHistory.CreateViews(dbList, MySqlSetting.IsConnect ? db : null));
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)

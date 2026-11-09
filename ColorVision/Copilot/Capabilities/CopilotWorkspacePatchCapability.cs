@@ -70,14 +70,8 @@ namespace ColorVision.Copilot
                     "The target is not a supported text file.", decodeError);
             }
 
-            var newline = DetectNewline(originalText);
-            var replacements = requestedReplacements
-                .Select(replacement => new WorkspaceTextReplacement(
-                    NormalizeNewlines(replacement.OldText, newline),
-                    NormalizeNewlines(replacement.NewText, newline)))
-                .ToArray();
-            var unchangedReplacement = Array.FindIndex(replacements,
-                replacement => string.Equals(replacement.OldText, replacement.NewText, StringComparison.Ordinal));
+            var unchangedReplacement = requestedReplacements.ToList().FindIndex(replacement => string.Equals(
+                NormalizeNewlines(replacement.OldText, "\n"), NormalizeNewlines(replacement.NewText, "\n"), StringComparison.Ordinal));
             if (unchangedReplacement >= 0)
             {
                 return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
@@ -85,11 +79,11 @@ namespace ColorVision.Copilot
                     $"Replacement {unchangedReplacement + 1} has identical oldText and newText after newline normalization.");
             }
 
-            var matches = new List<WorkspaceTextReplacementMatch>(replacements.Length);
-            for (var index = 0; index < replacements.Length; index++)
+            var matches = new List<WorkspaceTextReplacementMatch>(requestedReplacements.Count);
+            for (var index = 0; index < requestedReplacements.Count; index++)
             {
-                var replacement = replacements[index];
-                var occurrenceCount = CountOccurrences(originalText, replacement.OldText);
+                var replacement = requestedReplacements[index];
+                var occurrenceCount = FindNewlineInsensitive(originalText, replacement.OldText, out var firstMatch);
                 if (occurrenceCount != 1)
                 {
                     return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Conflict,
@@ -102,10 +96,19 @@ namespace ColorVision.Copilot
                 }
 
                 matches.Add(new WorkspaceTextReplacementMatch(
-                    originalText.IndexOf(replacement.OldText, StringComparison.Ordinal),
-                    replacement));
+                    firstMatch.Index,
+                    new WorkspaceTextReplacement(firstMatch.Value, NormalizeNewlines(replacement.NewText, DetectNewlineNear(originalText, firstMatch)))));
             }
 
+            // Local line endings can lengthen the text past what the checkpoint accepts on restart.
+            var replacements = matches.Select(match => match.Replacement).ToArray();
+            if (replacements.Any(replacement => replacement.OldText.Length > MaxReplacementCharacters || replacement.NewText.Length > MaxReplacementCharacters)
+                || replacements.Sum(replacement => (long)replacement.OldText.Length + replacement.NewText.Length) > MaxTotalReplacementCharacters)
+            {
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
+                    "Workspace patch text is outside the allowed size.",
+                    "The replacements exceed the size limit once the file's line endings are applied; split them into smaller edits.");
+            }
             var orderedMatches = matches.OrderBy(match => match.StartIndex).ToArray();
             for (var index = 1; index < orderedMatches.Length; index++)
             {

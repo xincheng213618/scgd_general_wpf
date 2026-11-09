@@ -26,6 +26,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public bool IsShowSpectrumFill { get => _IsShowSpectrumFill; set { _IsShowSpectrumFill = value; OnPropertyChanged(); } }
         private bool _IsShowSpectrumFill = true;
 
+        [LocalizedDisplayName("Engine_PG_ShowColorRendering"), Category("View")]
+        public bool IsShowColorRendering { get => _IsShowColorRendering; set { _IsShowColorRendering = value; OnPropertyChanged(); } }
+        private bool _IsShowColorRendering = true;
+
         [Browsable(false)]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;

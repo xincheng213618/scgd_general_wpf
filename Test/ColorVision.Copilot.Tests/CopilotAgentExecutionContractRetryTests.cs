@@ -32,9 +32,9 @@ public sealed class CopilotAgentExecutionContractRetryTests
         Assert.Equal(shouldReinvoke, evaluation.ShouldReinvoke);
     }
 
-    // A rewording request that happens to contain an edit phrase must not end the turn as Blocked.
+    // Request text alone must not end the turn as Blocked; only an explicit signal enforces.
     [Theory]
-    [InlineData(CopilotAgentMode.Auto, "帮我改一下这句话的语气", nameof(CopilotAgentExecutionRequirement.None), nameof(CopilotAgentExecutionRequirement.WorkspaceEdit))]
+    [InlineData(CopilotAgentMode.Auto, "帮我改一下这个配置", nameof(CopilotAgentExecutionRequirement.None), nameof(CopilotAgentExecutionRequirement.WorkspaceEdit))]
     [InlineData(CopilotAgentMode.Code, "帮我改一下这段代码", nameof(CopilotAgentExecutionRequirement.WorkspaceEdit), nameof(CopilotAgentExecutionRequirement.None))]
     [InlineData(CopilotAgentMode.Auto, "帮我改一下，参考 https://example.com/spec", nameof(CopilotAgentExecutionRequirement.DirectUrlEvidence), nameof(CopilotAgentExecutionRequirement.WorkspaceEdit))]
     public void RequestTextOnlyHintsInAutoWhileExplicitSignalsEnforce(

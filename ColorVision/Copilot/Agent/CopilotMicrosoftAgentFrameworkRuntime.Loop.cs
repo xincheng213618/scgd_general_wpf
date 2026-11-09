@@ -621,7 +621,7 @@ namespace ColorVision.Copilot
             }
             var cacheUsage = request.Profile.IsLocalCodex ? CopilotTurnRuntime.GetReportedTokenUsage(budgetSnapshot) : usage;
             emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
+                $"Agent budget used {budgetSnapshot.ChargedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
                 + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"
                 + (budgetSnapshot.ProviderResponseCount > 0
                     ? $" · first response avg {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderFirstResponseLatencyTotalMs / budgetSnapshot.ProviderResponseCount))}"

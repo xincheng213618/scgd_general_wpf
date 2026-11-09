@@ -53,21 +53,18 @@ public sealed class CvcieProfileSource : IImageProfileMeasurementSource
 
     public static IReadOnlyList<ImageProfileSourceOption> CreateOptions(string path, int channels)
     {
-        FileInfo identity = new(path);
-        long length = identity.Length;
-        DateTime modified = identity.LastWriteTimeUtc;
+        CvcieFileRevision revision = CvcieFileRevision.Capture(path);
         string? rawPath = FindAssociatedRaw(path);
         FileInfo? rawIdentity = rawPath == null ? null : new FileInfo(rawPath);
         long? rawLength = rawIdentity?.Length;
         DateTime? rawModified = rawIdentity?.LastWriteTimeUtc;
         ImageProfileSourceOption Option(string name, int[] indices, bool chromaticity = false, bool includeY = false, bool allChannels = false) => new(name, token =>
         {
+            token.ThrowIfCancellationRequested();
+            using FileStream verified = revision.OpenRead(path);
             IImageProfileMeasurementSource source = new CvcieProfileSource(path, indices, token, chromaticity, includeY, allChannels);
             try
             {
-                FileInfo current = new(path);
-                if (current.Length != length || current.LastWriteTimeUtc != modified)
-                    throw new IOException("CVCIE 文件已改变，请重新打开图像后分析。");
                 if (allChannels && rawPath != null)
                 {
                     var raw = new CvRawProfileSource(rawPath, false, token);
@@ -99,7 +96,7 @@ public sealed class CvcieProfileSource : IImageProfileMeasurementSource
         _stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         try
         {
-            int headerEnd = CVFileUtil.ReadCIEFileHeader(path, out CVCIEFile header);
+            int headerEnd = CVFileUtil.ReadCIEFileHeader(_stream, out CVCIEFile header, maximumChannels: 3);
             using (header)
             {
                 if (headerEnd <= 0 || header.Version is < 1 or > 3 || header.Rows <= 0 || header.Cols <= 0

@@ -58,6 +58,8 @@ namespace ColorVision.UI.Desktop.Download
         Completed = 2,
         Failed = 3,
         Paused = 4,
-        FileDeleted = 5
+        FileDeleted = 5,
+        /// <summary>Terminal state reported to completion callbacks after the record was deleted; never persisted.</summary>
+        Deleted = 6
     }
 }

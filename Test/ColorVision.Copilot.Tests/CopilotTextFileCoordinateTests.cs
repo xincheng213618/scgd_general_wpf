@@ -36,6 +36,231 @@ public sealed class CopilotTextFileCoordinateTests : IDisposable
         Assert.Contains("beyond", beyond.ErrorMessage);
     }
 
+    [Theory]
+    [InlineData("Alpha|Gamma", true, "", "a.cs:1,a.cs:3,b.txt:1")]
+    [InlineData("Alpha", false, "*.cs", "a.cs:1")]
+    [InlineData("Alpha", false, "**/*.{cs,txt}", "a.cs:1,b.txt:1")]
+    [InlineData(@"al\w+a\s+end", true, "*.cs", "a.cs:1")]
+    public void RegexAndGlobNarrowTheSearch(string query, bool regex, string glob, string expected)
+    {
+        File.WriteAllLines(Path.Combine(_directory.FullName, "a.cs"), ["alpha end", "beta", "gamma"]);
+        File.WriteAllLines(Path.Combine(_directory.FullName, "b.txt"), ["ALPHA"]);
+
+        var search = CopilotGrepTextCapability.SearchWithinScope(
+            [_directory.FullName], [_directory.FullName], query, null, null, new CopilotTextSearchOptions(glob, regex), CancellationToken.None);
+
+        Assert.True(search.Success, search.ErrorMessage);
+        Assert.Equal(expected, string.Join(",", search.Matches.Select(match => $"{Path.GetFileName(match.FullPath)}:{match.LineNumber}")));
+    }
+
+    [Theory]
+    [InlineData("(unclosed", true, "")]
+    [InlineData("a(?=b)", true, "")]
+    [InlineData("x*", true, "")]
+    [InlineData("alpha", false, "src/*.cs")]
+    [InlineData("alpha", false, "*.{cs")]
+    public void InvalidSearchOptionsFailInsteadOfReportingNoMatches(string query, bool regex, string glob)
+    {
+        File.WriteAllText(Path.Combine(_directory.FullName, "a.cs"), "alpha");
+
+        var search = CopilotGrepTextCapability.SearchWithinScope(
+            [_directory.FullName], [_directory.FullName], query, null, null, new CopilotTextSearchOptions(glob, regex), CancellationToken.None);
+
+        Assert.False(search.Success);
+        Assert.NotEmpty(search.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("*.csproj", "App.csproj,Lib.csproj")]
+    [InlineData("**/*.csproj", "App.csproj,Lib.csproj")]
+    [InlineData("src/**/*.cs", "Deep.cs,Main.cs")]
+    [InlineData("deep/*.cs", "Deep.cs")]
+    [InlineData("*.{csproj,txt}", "App.csproj,Lib.csproj,note.txt")]
+    [InlineData("Ma?n.cs", "Main.cs")]
+    [InlineData("Main", "Main.cs")]
+    public void FileSearchTreatsWildcardsAsPatternsAndEverythingElseAsLiteral(string query, string expected)
+    {
+        Directory.CreateDirectory(Path.Combine(_directory.FullName, "src", "deep"));
+        Directory.CreateDirectory(Path.Combine(_directory.FullName, "lib"));
+        foreach (var file in new[] { "App.csproj", "note.txt", Path.Combine("lib", "Lib.csproj"), Path.Combine("src", "Main.cs"), Path.Combine("src", "deep", "Deep.cs") })
+            File.WriteAllText(Path.Combine(_directory.FullName, file), "x");
+
+        var search = CopilotSearchFilesCapability.Search([_directory.FullName], query, null, allowPlainSearchTerms: false, CancellationToken.None);
+
+        Assert.True(search.Success, search.ErrorMessage);
+        Assert.Equal(expected, string.Join(",", search.Matches.Select(match => Path.GetFileName(match.FullPath)).Order(StringComparer.OrdinalIgnoreCase)));
+    }
+
+    [Theory]
+    [InlineData("Resources.resx")]
+    [InlineData("index.html")]
+    [InlineData("App.vue")]
+    [InlineData("knowledge.mjs")]
+    public void CompletedSearchCoversTheSourceFormatsThisRepositoryUses(string fileName)
+    {
+        File.WriteAllText(Path.Combine(_directory.FullName, fileName), "相机曝光");
+
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "相机曝光", null, CancellationToken.None);
+
+        Assert.Single(search.Matches);
+    }
+
+    [Fact]
+    public void ALiteralQueryThatLooksLikeARegexExplainsItsEmptyResult()
+    {
+        File.WriteAllText(Path.Combine(_directory.FullName, "a.cs"), "alpha");
+
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "alpha|beta", null, CancellationToken.None);
+
+        Assert.True(search.Success);
+        Assert.Contains("regex to true", search.Content);
+    }
+
+    [Fact]
+    public async Task GrepToolBindsRegexAndGlobFromItsSchema()
+    {
+        File.WriteAllLines(Path.Combine(_directory.FullName, "a.cs"), ["alpha", "beta"]);
+        File.WriteAllLines(Path.Combine(_directory.FullName, "b.txt"), ["alpha"]);
+        var tool = new CopilotGrepTextTool();
+        Assert.False(tool.InputSchema.TryBind(new Dictionary<string, object?> { ["query"] = "a", ["regex"] = "true" }, out _, out var error));
+        Assert.Contains("boolean", error);
+        Assert.True(tool.InputSchema.TryBind(new Dictionary<string, object?> { ["query"] = "alpha|beta", ["regex"] = true, ["glob"] = "*.cs" }, out var input, out error), error);
+
+        var result = await tool.ExecuteAsync(new CopilotAgentRequest
+        {
+            Mode = CopilotAgentMode.Auto, UserText = "search", SearchRootPaths = [_directory.FullName],
+        }, input, CancellationToken.None);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.Contains("a.cs:2", result.Content);
+        Assert.DoesNotContain("b.txt", result.Content);
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(5000)]
+    public void AgentLineShowsTheMatchEvenDeepInALongLine(int prefixLength)
+    {
+        File.WriteAllText(Path.Combine(_directory.FullName, "wide.xaml"), new string('x', prefixLength) + "NEEDLE" + new string('y', 5000));
+
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "needle", null, CancellationToken.None);
+
+        Assert.Contains("NEEDLE", Assert.Single(search.Matches).AgentLine);
+    }
+
+    [Theory]
+    [InlineData("%PDF-1.7\nnot really a pdf", "PDF")]
+    [InlineData("PK\u0003\u0004body", "zip")]
+    public async Task DocumentFormatsAreNamedInsteadOfReportedAsBadEncoding(string header, string expected)
+    {
+        var path = Path.Combine(_directory.FullName, "manual.dat");
+        File.WriteAllText(path, header);
+
+        var result = await CopilotLocalFileToolSupport.ReadTextFileAsync(path, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Contains(expected, result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Gb18030FileIsReadableAndSearchableButNotPatchable()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var path = Path.Combine(_directory.FullName, "device.ini");
+        var bytes = Encoding.GetEncoding(54936).GetBytes("[相机]\r\n曝光=100\r\n");
+        File.WriteAllBytes(path, bytes);
+
+        var read = await ReadToolAsync(path, 1, 2);
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "曝光", null, CancellationToken.None);
+        var request = new CopilotAgentRequest { WorkspacePath = _directory.FullName, Mode = CopilotAgentMode.Code, UserText = "patch", WritableLocalRootPaths = [_directory.FullName], SearchRootPaths = [_directory.FullName] };
+        var patch = await new CopilotWorkspacePatchStore().PreviewPatchEnvelopeAsync(request, new()
+        {
+            Arguments = new Dictionary<string, object?> { ["operations"] = new[] { new { operation = "update", path, oldText = "100", newText = "200" } } },
+        }, CancellationToken.None);
+
+        Assert.True(read.Success, read.ErrorMessage);
+        Assert.Contains("L2: 曝光=100", read.Content);
+        Assert.Contains("[Encoding] GB18030", read.Content);
+        Assert.True(search.ScanComplete);
+        Assert.Equal(2, Assert.Single(search.Matches).LineNumber);
+        Assert.Contains("GB18030", search.Content);
+        Assert.False(patch.Success);
+        Assert.Equal(bytes, File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public async Task PdfTextIsReadByPageAndContinuesByLine()
+    {
+        var path = Path.Combine(_directory.FullName, "manual.pdf");
+        File.WriteAllBytes(path, BuildPdf("Exposure range 1 to 60000 us", "Gain range 0 to 24 dB"));
+
+        var whole = await ReadToolAsync(path, 1, 100);
+        var scope = Assert.Single(whole.LocalFileReadScopes);
+        var later = await CopilotLocalFileToolSupport.ReadTextFileAsync(path, 4, 100, CancellationToken.None);
+
+        Assert.True(whole.Success, whole.ErrorMessage);
+        Assert.Contains("[Page 1 of 2]", whole.Content);
+        Assert.Contains("Exposure range", whole.Content);
+        Assert.Contains("[Page 2 of 2]", whole.Content);
+        Assert.Contains("Gain range", whole.Content);
+        Assert.False(scope.WasTruncated);
+        Assert.True(later.Success, later.ErrorMessage);
+        Assert.DoesNotContain("Exposure range", later.Content);
+    }
+
+    [Fact]
+    public async Task PdfWithoutATextLayerSaysSoInsteadOfReturningEmptySuccess()
+    {
+        var path = Path.Combine(_directory.FullName, "scan.pdf");
+        File.WriteAllBytes(path, BuildPdf());
+
+        var result = await CopilotLocalFileToolSupport.ReadTextFileAsync(path, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Contains("no extractable text", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void GrepDoesNotScanPdfsSoTheyCannotMakeASearchLookPartial()
+    {
+        File.WriteAllBytes(Path.Combine(_directory.FullName, "manual.pdf"), BuildPdf("needle"));
+        File.WriteAllText(Path.Combine(_directory.FullName, "a.txt"), "needle");
+
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "needle", null, CancellationToken.None);
+
+        Assert.True(search.ScanComplete);
+        Assert.Equal("a.txt", Path.GetFileName(Assert.Single(search.Matches).FullPath));
+        Assert.False(CopilotWorkspaceSearchSupport.IsTextLikeFile("manual.pdf"));
+    }
+
+    private static byte[] BuildPdf(params string[] pageTexts)
+    {
+        var builder = new UglyToad.PdfPig.Writer.PdfDocumentBuilder();
+        var font = builder.AddStandard14Font(UglyToad.PdfPig.Fonts.Standard14Fonts.Standard14Font.Helvetica);
+        foreach (var text in pageTexts.DefaultIfEmpty(null))
+        {
+            var page = builder.AddPage(UglyToad.PdfPig.Content.PageSize.A4);
+            if (text != null)
+                page.AddText(text, 12, new UglyToad.PdfPig.Core.PdfPoint(50, 700), font);
+        }
+        return builder.Build();
+    }
+
+    [Fact]
+    public async Task EmptyFileReadsAsEmptyWhileLaterLinesStayBeyondIt()
+    {
+        var path = Path.Combine(_directory.FullName, "empty.log");
+        File.WriteAllText(path, string.Empty);
+
+        var result = await ReadToolAsync(path, 1, 1);
+        var beyond = await CopilotLocalFileToolSupport.ReadTextFileAsync(path, 2, 2, CancellationToken.None);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.Contains("observed_total_lines: 0", result.Content);
+        Assert.Contains("<empty>", result.Content);
+        Assert.False(beyond.Success);
+    }
+
     [Fact]
     public async Task MixedLineEndingsAndEmptyLinesShareOneCoordinateSystem()
     {

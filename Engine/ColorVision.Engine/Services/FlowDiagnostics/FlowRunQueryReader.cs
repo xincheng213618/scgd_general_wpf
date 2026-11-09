@@ -21,8 +21,6 @@ public sealed class FlowRunQueryReader
 {
     public const int MaximumRuns = 100;
     public const int MaximumIdentifierCharacters = 256;
-    private static readonly string IdentityWhitespace = new(Enumerable.Range(char.MinValue, char.MaxValue + 1)
-        .Select(value => (char)value).Where(char.IsWhiteSpace).ToArray());
     private readonly string _databasePath;
     private readonly string _sourceKey;
 
@@ -57,7 +55,8 @@ public sealed class FlowRunQueryReader
         using var connection = new SqliteConnection(database.ConnectionString);
         connection.Open();
         using var transaction = connection.BeginTransaction(deferred: true);
-        var identityFilter = flowKey == null ? string.Empty : " AND trim(flow_key,$whitespace) COLLATE BINARY=$flowKey COLLATE BINARY";
+        var trimmedKey = FlowRunIdentitySql.TrimmedKey("flow_key");
+        var identityFilter = flowKey == null ? string.Empty : $" AND {trimmedKey} COLLATE BINARY=$flowKey COLLATE BINARY";
         if (beforeRunRecordId.HasValue)
         {
             using var command = Command(connection, transaction,
@@ -66,10 +65,10 @@ public sealed class FlowRunQueryReader
                 throw new ArgumentException("The continuation run no longer belongs to this query. Restart without a cursor.", nameof(beforeRunRecordId));
         }
         using var query = Command(connection, transaction, $"""
-            SELECT id,template_id,{Identifier("trim(flow_key,$whitespace)")},{Identifier("flow_name")},status,
+            SELECT id,template_id,{Identifier(trimmedKey)},{Identifier("flow_name")},status,
                 final_outcome,elapsed_ms,started_time_utc,completed_time_utc,recovered_time_utc,template_revision,
                 {FlowJournalHashSql.Value("content_hash")},snapshot_id,{FlowJournalHashSql.Invalid("content_hash")},typeof(id),
-                CASE WHEN {WasTruncated("trim(flow_key,$whitespace)")} OR {WasTruncated("flow_name")} THEN 1 ELSE 0 END
+                CASE WHEN {WasTruncated(trimmedKey)} OR {WasTruncated("flow_name")} THEN 1 ELSE 0 END
             FROM FlowRunRecord WHERE 1=1{identityFilter}{(beforeRunRecordId.HasValue ? " AND id<$before" : string.Empty)}
             ORDER BY id DESC LIMIT {maxResults + 1}
             """, flowKey, beforeRunRecordId);
@@ -123,7 +122,6 @@ public sealed class FlowRunQueryReader
         command.Transaction = transaction;
         command.CommandTimeout = 2;
         command.CommandText = sql;
-        command.Parameters.AddWithValue("$whitespace", IdentityWhitespace);
         if (flowKey != null) command.Parameters.AddWithValue("$flowKey", flowKey);
         if (beforeRunRecordId.HasValue) command.Parameters.AddWithValue("$before", beforeRunRecordId.Value);
         return command;

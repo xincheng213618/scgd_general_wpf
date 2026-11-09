@@ -1060,7 +1060,7 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken)
         {
             var evaluationProfile = profile.Clone();
-            evaluationProfile.MaxTokens = Math.Min(evaluationProfile.MaxTokens, MaximumOutputTokens);
+            evaluationProfile.MaxTokens = CopilotReasoningCapabilities.GetBackgroundOutputTokens(evaluationProfile, MaximumOutputTokens);
             evaluationProfile.UseSystemPromptOverride(systemPrompt);
             try
             {

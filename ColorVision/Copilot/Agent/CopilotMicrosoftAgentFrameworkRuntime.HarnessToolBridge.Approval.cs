@@ -40,6 +40,12 @@ namespace ColorVision.Copilot
                 var arguments = functionCall.Arguments == null
                     ? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, object?>(functionCall.Arguments, StringComparer.OrdinalIgnoreCase);
+                if (functionCall.Exception != null)
+                {
+                    error = InvalidToolInputError;
+                    RecordRejectedToolCall(tool, arguments, error, functionCall.CallId);
+                    return false;
+                }
                 if (!tool.InputSchema.TryBind(arguments, out var toolInput, out error))
                 {
                     RecordRejectedToolCall(tool, arguments, error, functionCall.CallId);

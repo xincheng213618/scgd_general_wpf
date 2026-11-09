@@ -10,11 +10,16 @@
     <IncludeSymbols>True</IncludeSymbols>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>ColorVision user, role, permission, session, and audit management for WPF applications.</Description>
+    <ColorVisionActivationHttpPublicKeyFile Condition="'$(ColorVisionActivationHttpPublicKeyFile)' == '' And Exists('$(MSBuildProjectDirectory)\Activation\HttpPublicKey.der')">$(MSBuildProjectDirectory)\Activation\HttpPublicKey.der</ColorVisionActivationHttpPublicKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="SqlSugarCore" Version="5.1.4.221" />
     <PackageReference Include="QRCoder.Xaml" Version="1.8.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ColorVisionActivationHttpPublicKeyFile)' != ''">
+    <EmbeddedResource Include="$(ColorVisionActivationHttpPublicKeyFile)" LogicalName="ColorVision.Rbac.Activation.HttpPublicKey.der" WithCulture="false" />
   </ItemGroup>
 
   <ItemGroup>
