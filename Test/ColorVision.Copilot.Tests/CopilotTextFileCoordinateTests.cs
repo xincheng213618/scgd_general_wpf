@@ -106,6 +106,18 @@ public sealed class CopilotTextFileCoordinateTests : IDisposable
     }
 
     [Fact]
+    public void BinaryDatFileDoesNotMakeASearchPartial()
+    {
+        File.WriteAllBytes(Path.Combine(_directory.FullName, "curve.dat"), [1, 0, 2, 0]);
+        File.WriteAllText(Path.Combine(_directory.FullName, "a.txt"), "needle");
+
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "needle", null, CancellationToken.None);
+
+        Assert.True(search.ScanComplete);
+        Assert.Single(search.Matches);
+    }
+
+    [Fact]
     public void ALiteralQueryThatLooksLikeARegexExplainsItsEmptyResult()
     {
         File.WriteAllText(Path.Combine(_directory.FullName, "a.cs"), "alpha");
@@ -186,6 +198,27 @@ public sealed class CopilotTextFileCoordinateTests : IDisposable
         Assert.Contains("GB18030", search.Content);
         Assert.False(patch.Success);
         Assert.Equal(bytes, File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public void SearchesSkipGitIgnoredPathsUnlessScopedInsideThem()
+    {
+        var git = CopilotGitProcessSupport.FindTrustedGitExecutable();
+        Assert.False(string.IsNullOrWhiteSpace(git));
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(git!, "init -q") { WorkingDirectory = _directory.FullName, CreateNoWindow = true })!.WaitForExit();
+        File.WriteAllText(Path.Combine(_directory.FullName, ".gitignore"), "dist/\n*.tmp.txt\n");
+        Directory.CreateDirectory(Path.Combine(_directory.FullName, "dist", "nested"));
+        File.WriteAllText(Path.Combine(_directory.FullName, "dist", "nested", "out.txt"), "needle");
+        File.WriteAllText(Path.Combine(_directory.FullName, "scratch.tmp.txt"), "needle");
+        File.WriteAllText(Path.Combine(_directory.FullName, "kept.txt"), "needle");
+
+        var whole = CopilotGrepTextCapability.Search([_directory.FullName], "needle", null, CancellationToken.None);
+        var scoped = CopilotGrepTextCapability.Search([Path.Combine(_directory.FullName, "dist")], "needle", null, CancellationToken.None);
+        var files = CopilotSearchFilesCapability.Search([_directory.FullName], "*.txt", null, allowPlainSearchTerms: false, CancellationToken.None);
+        Assert.True(whole.ScanComplete);
+        Assert.Equal("kept.txt", Path.GetFileName(Assert.Single(whole.Matches).FullPath));
+        Assert.Equal("out.txt", Path.GetFileName(Assert.Single(scoped.Matches).FullPath));
+        Assert.Equal("kept.txt", Path.GetFileName(Assert.Single(files.Matches).FullPath));
     }
 
     [Fact]

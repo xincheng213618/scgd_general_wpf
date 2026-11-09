@@ -573,12 +573,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 if (!CvcieSrgbRenderer.Supports(file.Channels, file.Bpp))
                     throw new InvalidOperationException("用户校正需要三通道浮点 XYZ 图像。");
                 byte[] data = file.Data?.ToArray() ?? throw new InvalidOperationException("CVCIE 文件没有图像数据。");
-                using CVCIEFile sourceFile = CvRawLayerController.LoadSourceFile(filePath, out _);
+                using CVCIEFile sourceFile = CvRawLayerController.LoadSourceForDisplay(filePath, out _, out WriteableBitmap? sourceBitmap);
                 return new LumFourColorCieCapture(data, file.Cols, file.Rows, file.Bpp, file.Channels, file.Gain, file.Exp?.ToArray() ?? Array.Empty<float>())
                 {
                     Source = System.IO.Path.GetFullPath(filePath),
                     SourcePreview = sourceFile.Cols == file.Cols && sourceFile.Rows == file.Rows
-                        ? CvRawLayerController.ConvertForDisplay(sourceFile, default) : null,
+                        ? sourceBitmap ?? CvRawLayerController.ConvertForDisplay(sourceFile, default) : null,
                 };
             }
         }

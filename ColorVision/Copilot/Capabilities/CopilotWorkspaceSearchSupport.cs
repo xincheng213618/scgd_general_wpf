@@ -428,6 +428,8 @@ namespace ColorVision.Copilot
         {
             var pendingDirectories = new Stack<string>();
             pendingDirectories.Push(rootPath);
+            // An explicit scope inside an ignored directory still searches it: only its children are compared.
+            var ignoredPaths = CopilotGitIgnoredPathIndex.GetIgnoredPaths(rootPath);
 
             while (pendingDirectories.Count > 0)
             {
@@ -440,7 +442,7 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
-                    if (ShouldIgnoreDirectory(subDirectory))
+                    if (ShouldIgnoreDirectory(subDirectory) || ignoredPaths.Contains(subDirectory))
                         continue;
 
                     pendingDirectories.Push(subDirectory);
@@ -451,7 +453,7 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
-                    if (textFilesOnly && !IsSearchableTextFile(file, reportIncompletePath))
+                    if (ignoredPaths.Contains(file) || textFilesOnly && !IsSearchableTextFile(file, reportIncompletePath))
                         continue;
 
                     yield return file;

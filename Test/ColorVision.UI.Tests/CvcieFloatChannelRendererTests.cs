@@ -134,6 +134,27 @@ public sealed class CvcieFloatChannelRendererTests
         Assert.Throws<InvalidDataException>(() => MediaHelper.RenderFloatChannel(file));
     }
 
+    [Fact]
+    public void DiskYRejectsATruncatedXyzPayloadEvenWhenYIsComplete()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-short-gray-{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = CreatePlane(32, 1, 2, 3, 4, 5, 6);
+            file.FileExtType = CVType.CIE;
+            file.Version = 2;
+            file.Channels = 3;
+            file.Cols = 2;
+            file.Exp = [1, 1, 1];
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            using (FileStream stream = new(path, FileMode.Open, FileAccess.Write, FileShare.None))
+                stream.SetLength(stream.Length - sizeof(float));
+
+            Assert.Throws<InvalidDataException>(() => CvRawLayerController.LoadSourceForDisplay(path, out _, out _));
+        }
+        finally { File.Delete(path); }
+    }
+
     private static CVCIEFile CreatePlane(int bpp, params double[] values)
     {
         byte[] data = new byte[values.Length * (bpp / 8)];

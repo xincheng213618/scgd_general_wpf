@@ -445,6 +445,84 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         Assert.True(CVFileUtil.WriteCIEFile(path, file));
     }
 
+    [Theory]
+    [InlineData(32, 1u)]
+    [InlineData(64, 2u)]
+    public async Task DiskCvcieRendersDefaultYAndEachGrayLayerAcrossChunkBoundaries(int bpp, uint version)
+    {
+        const int width = 257, height = 257, pixelCount = width * height;
+        string path = Path.Combine(Path.GetTempPath(), $"cv-gray-layers-{Guid.NewGuid():N}.cvcie");
+        ImageView? view = null;
+        CvcieDisplayMode originalMode = WpfTestHost.Invoke(() => CvcieDisplayConfig.Current.DisplayMode);
+        try
+        {
+            int sampleBytes = bpp / 8;
+            byte[] data = new byte[3 * pixelCount * sampleBytes];
+            for (int channel = 0; channel < 3; channel++)
+            {
+                for (int index = 0; index < pixelCount; index++)
+                {
+                    int value = GrayValue(index, channel) - 128;
+                    int offset = (channel * pixelCount + index) * sampleBytes;
+                    if (bpp == 32) BitConverter.TryWriteBytes(data.AsSpan(offset), (float)value);
+                    else BitConverter.TryWriteBytes(data.AsSpan(offset), (double)value);
+                }
+            }
+            using CVCIEFile file = new()
+            {
+                Version = version, FileExtType = CVType.CIE, Rows = height, Cols = width, Bpp = bpp,
+                Channels = 3, Exp = [1, 1, 1], Data = data
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+
+            CVRawOpen opener = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                CvcieDisplayConfig.Current.EnableTrueColor = false;
+                view = new ImageView();
+                view.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageOpenCompletionContractTests), "gray layers");
+                using CVCIEFile source = CvRawLayerController.LoadSourceForDisplay(path, out bool usesLuminance, out WriteableBitmap? bitmap);
+                Assert.True(usesLuminance);
+                Assert.Null(source.Data);
+                Assert.NotNull(bitmap);
+                return new CVRawOpen(view.EditorContext);
+            });
+            await WpfTestHost.Invoke(() => opener.OpenImageAsync(view!.EditorContext, path)).WaitAsync(TimeSpan.FromSeconds(10));
+            CvRawLayerController controller = WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal("cie-y", view!.SelectedLayer?.Id);
+                AssertPlane(view, 1);
+                return (CvRawLayerController)typeof(ImageView).GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!;
+            });
+            foreach (var (id, channel) in new[] { ("cie-x", 0), ("cie-z", 2), ("cie-y", 1) })
+            {
+                await WpfTestHost.Invoke(() => controller.SelectLayerAsync(controller.Layers.Single(layer => layer.Id == id))).WaitAsync(TimeSpan.FromSeconds(10));
+                WpfTestHost.Invoke(() => AssertPlane(view!, channel));
+            }
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                view?.Dispose();
+                CvcieDisplayConfig.Current.DisplayMode = originalMode;
+            });
+            File.Delete(path);
+        }
+
+        static byte GrayValue(int index, int channel) => (byte)((index * (channel * 2 + 1) + channel * 37) % 256);
+
+        static void AssertPlane(ImageView imageView, int channel)
+        {
+            var bitmap = Assert.IsAssignableFrom<BitmapSource>(imageView.ViewBitmapSource);
+            Assert.Equal(PixelFormats.Gray8, bitmap.Format);
+            Assert.Equal((width, height), (bitmap.PixelWidth, bitmap.PixelHeight));
+            byte[] pixels = new byte[pixelCount];
+            bitmap.CopyPixels(pixels, width, 0);
+            Assert.Equal(Enumerable.Range(0, pixelCount).Select(index => GrayValue(index, channel)), pixels);
+        }
+    }
+
     [Fact]
     public async Task CvcieProbeRendersTheLatestSampleAfterPreparation()
     {

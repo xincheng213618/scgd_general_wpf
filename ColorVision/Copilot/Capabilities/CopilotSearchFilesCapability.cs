@@ -237,6 +237,7 @@ namespace ColorVision.Copilot
             builder.AppendLine($"[Search Terms] {string.Join(", ", terms)}");
             builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
             builder.AppendLine($"[Scanned Files] {scannedFiles}");
+            builder.AppendLine("[Search Policy] Git-ignored paths, generated/dependency directories and reparse points are excluded. Pass a path inside an ignored directory to search it.");
             builder.AppendLine($"[Scope Inspection Failures] {scopeInspectionFailureCount}");
             builder.AppendLine($"[Matched Files] {orderedMatches.Length}");
             builder.AppendLine($"[Page Offset] {offset}");

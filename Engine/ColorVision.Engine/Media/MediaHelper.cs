@@ -187,21 +187,29 @@ namespace ColorVision.Engine.Media
             if (bpp is not (32 or 64))
                 throw new InvalidDataException("浮点灰度显示要求单通道 32 位或 64 位数据。");
             ValidatePixelData(samples.Length, height, width, bpp, 1);
-            return bpp == 32
-                ? RenderFloatChannel<float>(samples, width, height, cancellationToken)
-                : RenderFloatChannel<double>(samples, width, height, cancellationToken);
+            return RenderFloatChannel(new FloatChannelInput(samples, null), width, height, bpp, cancellationToken);
         }
 
-        private const int FloatChannelChunkSize = 65536;
+        internal static WriteableBitmap RenderFloatChannel(CvcieDiskPixels plane, int width, int height, int bpp, CancellationToken token)
+            => RenderFloatChannel(new FloatChannelInput(default, plane), width, height, bpp, token);
 
-        private static WriteableBitmap RenderFloatChannel<T>(ReadOnlyMemory<byte> data, int width, int height,
+        private static WriteableBitmap RenderFloatChannel(FloatChannelInput source, int width, int height, int bpp, CancellationToken token)
+            => bpp == 32 ? RenderFloatChannel<float>(source, width, height, token) : RenderFloatChannel<double>(source, width, height, token);
+
+        private const int FloatChannelChunkSize = 65536;
+        private readonly record struct FloatChannelInput(ReadOnlyMemory<byte> Samples, CvcieDiskPixels? File);
+
+        private static WriteableBitmap RenderFloatChannel<T>(FloatChannelInput source, int width, int height,
             CancellationToken cancellationToken)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
             int pixelCount = checked(width * height);
-            int chunkCount = (pixelCount + FloatChannelChunkSize - 1) / FloatChannelChunkSize;
+            int chunkCount = (pixelCount - 1) / FloatChannelChunkSize + 1;
+            int workers = Math.Max(1, Environment.ProcessorCount / 2);
+            if (source.File.HasValue) workers = Math.Min(workers, 16);
             (double Minimum, double Maximum)[] ranges = new (double, double)[chunkCount];
-            RunFloatChannelChunks(chunkCount, pixelCount, cancellationToken, chunk => ranges[chunk] = FindFloatChannelRange<T>(data, chunk));
+            RunFloatChannelChunks(chunkCount, pixelCount, workers, cancellationToken,
+                chunk => ranges[chunk] = FindFloatChannelRange<T>(source, pixelCount, chunk, cancellationToken));
             double minimum = double.PositiveInfinity;
             double maximum = double.NegativeInfinity;
             foreach (var local in ranges)
@@ -220,8 +228,8 @@ namespace ColorVision.Engine.Media
                 range = maximum / magnitude - minimum;
             }
             return CreateFrozenDisplayBitmap(width, height, PixelFormats.Gray8, (buffer, stride) =>
-                RunFloatChannelChunks(chunkCount, pixelCount, cancellationToken,
-                    chunk => WriteFloatChannelChunk<T>(data, buffer, width, stride, chunk, minimum, range, magnitude)), cancellationToken);
+                RunFloatChannelChunks(chunkCount, pixelCount, workers, cancellationToken,
+                    chunk => WriteFloatChannelChunk<T>(source, pixelCount, buffer, width, stride, chunk, minimum, range, magnitude, cancellationToken)), cancellationToken);
         }
 
         internal static WriteableBitmap CreateFrozenDisplayBitmap(int width, int height, PixelFormat format,
@@ -242,31 +250,32 @@ namespace ColorVision.Engine.Media
             return bitmap;
         }
 
-        private static (double Minimum, double Maximum) FindFloatChannelRange<T>(ReadOnlyMemory<byte> data, int chunk)
+        private static (double Minimum, double Maximum) FindFloatChannelRange<T>(FloatChannelInput source, int pixelCount, int chunk, CancellationToken token)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data.Span);
             int start = chunk * FloatChannelChunkSize;
-            int end = Math.Min(start + FloatChannelChunkSize, values.Length);
+            using var block = new FloatChannelChunk<T>(source, pixelCount, start, token);
+            ReadOnlySpan<T> values = block.Samples;
             double minimum = double.PositiveInfinity;
             double maximum = double.NegativeInfinity;
-            for (int index = start; index < end; index++)
+            for (int index = 0; index < values.Length; index++)
             {
                 double value = double.CreateChecked(values[index]);
-                if (!double.IsFinite(value)) throw new InvalidDataException($"灰度通道第 {index + 1} 个像素包含非有限数值。");
+                if (!double.IsFinite(value)) throw new InvalidDataException($"灰度通道第 {start + index + 1} 个像素包含非有限数值。");
                 minimum = Math.Min(minimum, value);
                 maximum = Math.Max(maximum, value);
             }
             return (minimum, maximum);
         }
 
-        private static unsafe void WriteFloatChannelChunk<T>(ReadOnlyMemory<byte> data, IntPtr buffer, int width, int stride,
-            int chunk, double minimum, double range, double magnitude)
+        private static unsafe void WriteFloatChannelChunk<T>(FloatChannelInput source, int pixelCount, IntPtr buffer, int width, int stride,
+            int chunk, double minimum, double range, double magnitude, CancellationToken token)
             where T : unmanaged, System.Numerics.IFloatingPointIeee754<T>
         {
-            ReadOnlySpan<T> values = MemoryMarshal.Cast<byte, T>(data.Span);
             int start = chunk * FloatChannelChunkSize;
-            int end = Math.Min(start + FloatChannelChunkSize, values.Length);
+            using FloatChannelChunk<T> block = range == 0 ? default : new FloatChannelChunk<T>(source, pixelCount, start, token);
+            ReadOnlySpan<T> values = block.Samples;
+            int end = start + Math.Min(FloatChannelChunkSize, pixelCount - start);
             for (int index = start; index < end;)
             {
                 int row = Math.DivRem(index, width, out int column);
@@ -278,7 +287,7 @@ namespace ColorVision.Engine.Media
                 {
                     for (int x = 0; x < count; x++)
                     {
-                        double value = double.CreateChecked(values[index + x]);
+                        double value = double.CreateChecked(values[index + x - start]);
                         double normalized = (value / magnitude - minimum) / range;
                         pixels[x] = (byte)Math.Round(Math.Clamp(normalized, 0, 1) * 255);
                     }
@@ -287,9 +296,28 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private static void RunFloatChannelChunks(int chunkCount, int pixelCount, CancellationToken cancellationToken, Action<int> action)
+        private readonly ref struct FloatChannelChunk<T> where T : unmanaged
         {
-            if (pixelCount < 1024 * 1024 || Environment.ProcessorCount < 2)
+            private readonly CvcieDiskPixels.Chunk<T> _rented;
+            public ReadOnlySpan<T> Samples { get; }
+
+            public FloatChannelChunk(FloatChannelInput source, int pixelCount, int start, CancellationToken token)
+            {
+                int count = Math.Min(FloatChannelChunkSize, pixelCount - start);
+                if (source.File is { } file)
+                {
+                    _rented = new CvcieDiskPixels.Chunk<T>(file, pixelCount, 1, start, count, token);
+                    Samples = _rented.Samples;
+                }
+                else Samples = MemoryMarshal.Cast<byte, T>(source.Samples.Span).Slice(start, count);
+            }
+
+            public void Dispose() => _rented.Dispose();
+        }
+
+        private static void RunFloatChannelChunks(int chunkCount, int pixelCount, int workers, CancellationToken cancellationToken, Action<int> action)
+        {
+            if (pixelCount < 1024 * 1024 || workers == 1)
             {
                 for (int chunk = 0; chunk < chunkCount; chunk++)
                 {
@@ -303,7 +331,7 @@ namespace ColorVision.Engine.Media
                 Parallel.For(0, chunkCount, new ParallelOptions
                 {
                     CancellationToken = cancellationToken,
-                    MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2)
+                    MaxDegreeOfParallelism = workers
                 }, action);
             }
             catch (AggregateException ex)

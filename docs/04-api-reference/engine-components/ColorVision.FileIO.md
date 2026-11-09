@@ -187,7 +187,7 @@ Renderer 要求正尺寸和恰好三个平面，拒绝长度不符、非有限 X
 
 X/Y/Z 切换只直接读取所选平面。32/64 位单通道由 `MediaHelper.RenderFloatChannel` 在托管代码中校验有限值并按 MinMax 输出冻结 Gray8，大图采用同样的有界分块并行，输入保持不变，不再交给 native 原位 Normalize。单通道文件的 CIE Y 取第 0 平面。文件打开也以递增请求编号和当前路径共同拒绝过期结果，防止 A→B→A 或同路径重载时旧结果覆盖新参数。
 
-Engine 的 `CvRawLayerController.LoadSourceFile` 依次尝试头部记录的路径、相对 CVCIE 目录的路径和同名 `.cvraw`。读到 CVCIE 头部后，只接受行列数一致的原图，以保证画面、探针和 POI 使用同一像素坐标。没有可用原图时显示内嵌 Y，图层选择随实际画面更新。独立 CVRAW 打开使用上述可复用输入缓冲。
+`CvRawLayerController.LoadSourceForDisplay` 依次尝试记录路径、相对路径及同名 `.cvraw`，按尺寸匹配以对齐画面与 POI。无原图时显示内嵌 Y 并更新图层。磁盘浮点 X/Y/Z 灰度两遍分块读取目标平面，沿用全图灰度范围和原分辨率。
 
 真彩转换失败时写日志，并回退关联原图或有效 Y。图层切换失败且无法回退时保留当前画面，图层选择同步到实际显示内容。检测到 CVCIE 文件变化时直接保留画面，重新打开可读取新文件。
 

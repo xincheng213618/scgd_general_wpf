@@ -82,10 +82,12 @@ namespace ColorVision.Engine.Media
         public static WriteableBitmap LoadSrgb(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken = default)
             => CvcieSrgbRenderer.RenderFile(filePath, brightnessMode, referenceWhiteLuminance, cancellationToken);
 
-        public static CVCIEFile LoadSourceFile(string filePath, out bool usesLuminance, CancellationToken cancellationToken = default)
+        public static CVCIEFile LoadSourceForDisplay(string filePath, out bool usesLuminance, out WriteableBitmap? bitmap,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             usesLuminance = false;
+            bitmap = null;
             if (!string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase))
                 return CVFileUtil.OpenLocalCVFile(filePath, CVType.Raw);
 
@@ -158,23 +160,53 @@ namespace ColorVision.Engine.Media
                 }
 
                 if (headerOffset <= 0) throw new InvalidDataException($"CVCIE 文件头无效且没有可用 CVRAW：{filePath}");
-                int yIndex = header.Channels == 1 ? 0 : 1;
-                bool read = CVFileUtil.ReadCIEFileChannel(filePath, yIndex, out CVCIEFile luminance, cancellationToken);
-                if (!read)
-                {
-                    luminance.Dispose();
-                    throw new InvalidDataException($"没有可用 CVRAW，且无法读取 CVCIE Y 通道：{filePath}");
-                }
-                luminance.Channels = 1;
-                luminance.FileExtType = CVType.Raw;
                 usesLuminance = true;
-                return luminance;
+                return LoadFileChannel(filePath, 1, out bitmap, cancellationToken);
             }
 
             void ValidateSourceGeometry(CVCIEFile source)
             {
                 if (headerOffset > 0 && (source.Cols != header.Cols || source.Rows != header.Rows))
                     throw new InvalidDataException($"关联原图尺寸 {source.Cols}×{source.Rows} 与 CVCIE {header.Cols}×{header.Rows} 不一致。");
+            }
+        }
+
+        private static CVCIEFile LoadFileChannel(string filePath, int index, out WriteableBitmap? bitmap, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            int offset = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile plane);
+            try
+            {
+                if (plane.Channels == 1) index = 0;
+                if (offset <= 0 || plane.Cols <= 0 || plane.Rows <= 0 || (uint)index >= (uint)plane.Channels)
+                    throw new InvalidDataException($"CVCIE 通道或尺寸无效：{filePath}");
+                bitmap = null;
+                if (plane.Bpp is 32 or 64)
+                {
+                    long pixelCount = (long)plane.Cols * plane.Rows;
+                    if (pixelCount > int.MaxValue) throw new InvalidDataException($"CVCIE 通道尺寸过大：{filePath}");
+                    long planeBytes = pixelCount * (plane.Bpp / 8);
+                    if (planeBytes > stream.Length / plane.Channels) throw new InvalidDataException($"CVCIE 内嵌数据长度不足：{filePath}");
+                    CvcieDiskPixels pixels = CvcieDiskPixels.Locate(stream, plane, offset, planeBytes * plane.Channels, requireExactLength: false);
+                    pixels = pixels with { Offset = pixels.Offset + index * planeBytes };
+                    bitmap = MediaHelper.RenderFloatChannel(pixels, plane.Cols, plane.Rows, plane.Bpp, token);
+                }
+                else
+                {
+                    plane.Dispose();
+                    if (!CVFileUtil.ReadCIEFileChannel(filePath, index, out plane, token))
+                        throw new InvalidDataException($"无法读取 CVCIE 通道 {index}：{filePath}");
+                }
+                plane.FilePath = filePath;
+                plane.Channels = 1;
+                plane.FileExtType = CVType.Raw;
+                return plane;
+            }
+            catch
+            {
+                plane.Dispose();
+                throw;
             }
         }
 
@@ -357,10 +389,10 @@ namespace ColorVision.Engine.Media
             {
                 return (_rawColor.BorrowRaw(raw => ConvertForDisplay(raw, token)), layer);
             }
-            using CVCIEFile source = LoadSourceFile(_filePath, out bool usesLuminance, token);
+            using CVCIEFile source = LoadSourceForDisplay(_filePath, out bool usesLuminance, out WriteableBitmap? sourceBitmap, token);
             if (usesLuminance) layer = Layers.FirstOrDefault(item => item.Id == "cie-y") ?? Layers[0];
             else if (source.Channels < 3 && layer.SourceChannelIndex.HasValue) layer = Layers[0];
-            return (ConvertForDisplay(source, token), layer);
+            return (sourceBitmap ?? ConvertForDisplay(source, token), layer);
         }
 
         private WriteableBitmap LoadCieChannel(int index, CancellationToken token)
@@ -376,20 +408,8 @@ namespace ColorVision.Engine.Media
             }
             if (_liveXyz == null)
             {
-                if (CVFileUtil.ReadCIEFileHeader(_filePath, out CVCIEFile header) <= 0)
-                {
-                    header.Dispose();
-                    throw new InvalidDataException("CVCIE 文件头无效。");
-                }
-                using (header) { if (header.Channels == 1) index = 0; }
-                bool read = CVFileUtil.ReadCIEFileChannel(_filePath, index, out CVCIEFile file, token);
-                using (file)
-                {
-                    if (!read) throw new InvalidDataException($"无法读取 CVCIE 通道 {index}。");
-                    file.Channels = 1;
-                    file.FileExtType = CVType.Raw;
-                    return ConvertForDisplay(file, token);
-                }
+                using CVCIEFile planeFile = LoadFileChannel(_filePath, index, out WriteableBitmap? bitmap, token);
+                return bitmap ?? ConvertForDisplay(planeFile, token);
             }
 
             if (_liveXyz.Channels == 1) index = 0;

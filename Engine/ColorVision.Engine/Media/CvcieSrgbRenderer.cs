@@ -1,13 +1,10 @@
 using ColorVision.FileIO;
-using Microsoft.Win32.SafeHandles;
 using System;
-using System.Buffers;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
@@ -35,7 +32,7 @@ namespace ColorVision.Engine.Media
             if (data == null || data.LongLength != expectedLength)
                 throw new InvalidOperationException($"CVCIE XYZ 数据长度不匹配：需要 {expectedLength} 字节，实际 {data?.LongLength ?? 0} 字节。请检查文件是否完整。");
 
-            return RenderCore(new XyzInput(data, null, 0), file, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken);
+            return RenderCore(new XyzInput(data, null), file, pixelCount, brightnessMode, referenceWhiteLuminance, cancellationToken);
         }
 
         public static WriteableBitmap RenderFile(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken)
@@ -45,19 +42,11 @@ namespace ColorVision.Engine.Media
             int offset = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 3);
             using (header)
             {
-                int prefixLength = header.Version == 2 ? sizeof(long) : sizeof(int);
-                if (offset <= 0 || !Supports(header.Channels, header.Bpp) || stream.Length - offset < prefixLength)
+                if (offset <= 0 || !Supports(header.Channels, header.Bpp))
                     throw new InvalidDataException($"读取 CVCIE 内嵌 XYZ 失败：{filePath}");
                 int pixelCount = ValidateRender(header, brightnessMode, referenceWhiteLuminance);
-                using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
-                stream.Position = offset;
-                long declaredLength = header.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
-                long payloadStart = stream.Position;
-                if (declaredLength != GetXyzByteLength(pixelCount, header.Bpp) || declaredLength > stream.Length - payloadStart)
-                    throw new InvalidDataException($"CVCIE 内嵌 XYZ 数据长度不匹配：{filePath}");
-
-                // Keep the validated file open for both passes. Workers read independent ranges on the same handle.
-                return RenderCore(new XyzInput(null, stream.SafeFileHandle, payloadStart), header, pixelCount,
+                CvcieDiskPixels pixels = CvcieDiskPixels.Locate(stream, header, offset, GetXyzByteLength(pixelCount, header.Bpp), requireExactLength: true);
+                return RenderCore(new XyzInput(null, pixels), header, pixelCount,
                     brightnessMode, referenceWhiteLuminance, cancellationToken);
             }
         }
@@ -103,7 +92,7 @@ namespace ColorVision.Engine.Media
         {
             int chunkCount = (pixelCount + ChunkSize - 1) / ChunkSize;
             int workers = Math.Max(1, Environment.ProcessorCount / 2);
-            if (input.FileHandle != null) workers = Math.Min(workers, MaxFileWorkers);
+            if (input.File != null) workers = Math.Min(workers, MaxFileWorkers);
             double divisor = referenceWhiteLuminance;
             if (brightnessMode == CvcieBrightnessMode.Auto)
             {
@@ -187,11 +176,11 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private readonly record struct XyzInput(byte[]? Data, SafeFileHandle? FileHandle, long PayloadOffset);
+        private readonly record struct XyzInput(byte[]? Data, CvcieDiskPixels? File);
 
         private readonly ref struct XyzChunk<T> where T : unmanaged
         {
-            private readonly byte[]? _rented;
+            private readonly CvcieDiskPixels.Chunk<T> _rented;
             public ReadOnlySpan<T> X { get; }
             public ReadOnlySpan<T> Y { get; }
             public ReadOnlySpan<T> Z { get; }
@@ -208,46 +197,14 @@ namespace ColorVision.Engine.Media
                     return;
                 }
 
-                int bytesPerValue = Unsafe.SizeOf<T>();
-                int bytesPerChunkPlane = count * bytesPerValue;
-                long planeStride = (long)pixelCount * bytesPerValue;
-                long offset = input.PayloadOffset + (long)start * bytesPerValue;
-                byte[] rented = ArrayPool<byte>.Shared.Rent(3 * bytesPerChunkPlane);
-                try
-                {
-                    Span<byte> bytes = rented.AsSpan(0, 3 * bytesPerChunkPlane);
-                    for (int channel = 0; channel < 3; channel++)
-                        ReadExactly(input.FileHandle!, bytes.Slice(channel * bytesPerChunkPlane, bytesPerChunkPlane), offset + channel * planeStride, token);
-
-                    ReadOnlySpan<T> planes = MemoryMarshal.Cast<byte, T>(bytes);
-                    X = planes[..count];
-                    Y = planes.Slice(count, count);
-                    Z = planes.Slice(2 * count, count);
-                    _rented = rented;
-                }
-                catch
-                {
-                    ArrayPool<byte>.Shared.Return(rented);
-                    throw;
-                }
+                _rented = new CvcieDiskPixels.Chunk<T>(input.File!.Value, pixelCount, 3, start, count, token);
+                ReadOnlySpan<T> block = _rented.Samples;
+                X = block[..count];
+                Y = block.Slice(count, count);
+                Z = block.Slice(2 * count, count);
             }
 
-            private static void ReadExactly(SafeFileHandle handle, Span<byte> destination, long offset, CancellationToken token)
-            {
-                while (!destination.IsEmpty)
-                {
-                    token.ThrowIfCancellationRequested();
-                    int read = RandomAccess.Read(handle, destination, offset);
-                    if (read == 0) throw new EndOfStreamException("CVCIE 内嵌 XYZ 数据提前结束。");
-                    destination = destination[read..];
-                    offset += read;
-                }
-            }
-
-            public void Dispose()
-            {
-                if (_rented != null) ArrayPool<byte>.Shared.Return(_rented);
-            }
+            public void Dispose() => _rented.Dispose();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

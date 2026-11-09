@@ -359,6 +359,10 @@ namespace ColorVision.Copilot
                 {
                     throw;
                 }
+                // .dat is searched when it holds text; a binary one is expected, not a coverage gap.
+                catch (InvalidDataException) when (string.Equals(Path.GetExtension(entry.FullPath), ".dat", StringComparison.OrdinalIgnoreCase))
+                {
+                }
                 catch (Exception exception)
                 {
                     readFailureCount++;
@@ -399,7 +403,7 @@ namespace ColorVision.Copilot
                 builder.AppendLine($"[File Filter] {options.Glob.Trim()}");
             builder.AppendLine($"[Candidate Text Files] {orderedFiles.Length}");
             builder.AppendLine($"[Scanned Text Files] {scannedFiles}");
-            builder.AppendLine("[Search Policy] Text extensions only; generated/dependency directories and reparse points are excluded.");
+            builder.AppendLine("[Search Policy] Text extensions only; git-ignored paths, generated/dependency directories and reparse points are excluded. Pass a path inside an ignored directory to search it.");
             builder.AppendLine($"[Scope Inspection Failures] {incompletePathCount}");
             builder.AppendLine($"[Unreadable Text Files This Page] {readFailureCount}");
             if (legacyEncodedFileCount > 0)

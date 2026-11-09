@@ -274,7 +274,7 @@ namespace ColorVision.Engine.Media
                     try
                     {
                         if (EditorContext.ImageView.ContentVersion != contentVersion || !string.Equals(GetCurrentFilePath(), filePath, StringComparison.OrdinalIgnoreCase)) return;
-                        using CVCIEFile raw = CvRawLayerController.LoadSourceFile(filePath, out _);
+                        using CVCIEFile raw = CVFileUtil.OpenLocalCVFile(filePath, CVType.Raw);
                         using OpenCvSharp.Mat mat = raw.ToMat(showErrors: false);
                         if (mat != null && !mat.Empty())
                         {
@@ -1021,11 +1021,11 @@ namespace ColorVision.Engine.Media
                         }
                     }
                     bool usesLuminance = false;
+                    WriteableBitmap? displayBitmap = srgb;
                     // A successful XYZ render needs only metadata, not another RAW/Y payload and conversion.
                     using CVCIEFile cVCIEFile = srgb != null ? ReadDisplayHeader(requestedFilePath)
                         : isRaw ? rawPixels.Read(requestedFilePath)
-                        : CvRawLayerController.LoadSourceFile(requestedFilePath, out usesLuminance, cancellationToken);
-                    WriteableBitmap? displayBitmap = srgb;
+                        : CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken);
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
                         displayBitmap = MediaHelper.RenderFloatChannel(cVCIEFile, cancellationToken);
                     using OpenCvSharp.Mat? mat = displayBitmap == null ? cVCIEFile.ToMat(showErrors: false) : null;
