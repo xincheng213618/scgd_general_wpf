@@ -439,7 +439,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 添加未创建的相机 的本地化字符串。
+        ///   查找类似 添加相机 的本地化字符串。
         /// </summary>
         public static string AddUncreatedCamera {
             get {
@@ -1760,6 +1760,141 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动对焦曲线 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_AutoFocus {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_AutoFocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最佳位置 {0}　评价值 {1:G6} 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Best {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Best", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最佳位置 {0}　评价值 {1:G6}　VID {2:G8} 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_BestWithVid {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_BestWithVid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前 VID {0:G8} 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_CurrentVid {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_CurrentVid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请启用「计算清晰度」以显示趋势 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_EnableCalculation {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_EnableCalculation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 对焦未完成 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Failed {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 隐藏曲线 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Hide {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Hide", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电机位置 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Position {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Position", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 位置 {0}　评价值 {1:G6} 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Sample {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Sample", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 评价值 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Score {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Score", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 时间（秒） 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Seconds {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Seconds", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 曲线 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Show {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Show", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视频清晰度趋势 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Video {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Video", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 FPS {0:F1} · 已显示 {1:N0} 帧 · 清晰度 {2} 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_VideoReadout {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_VideoReadout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 等待采样… 的本地化字符串。
+        /// </summary>
+        public static string CameraFocusChart_Waiting {
+            get {
+                return ResourceManager.GetString("CameraFocusChart_Waiting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 相机四色校正文件 的本地化字符串。
         /// </summary>
         public static string CameraFourColorCalFile {
@@ -1900,6 +2035,24 @@ namespace ColorVision.Engine.Properties {
         public static string CameraPanel_Previewing {
             get {
                 return ResourceManager.GetString("CameraPanel_Previewing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未收到新帧，正在恢复视频… 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_PreviewRecovering {
+            get {
+                return ResourceManager.GetString("CameraPanel_PreviewRecovering", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视频自动恢复失败，预览已停止。可重新打开视频。 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_PreviewRecoveryFailed {
+            get {
+                return ResourceManager.GetString("CameraPanel_PreviewRecoveryFailed", resourceCulture);
             }
         }
         
@@ -4744,6 +4897,15 @@ namespace ColorVision.Engine.Properties {
         public static string Engine_PG_ScaleSize {
             get {
                 return ResourceManager.GetString("Engine_PG_ScaleSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示显色指数 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_ShowColorRendering {
+            get {
+                return ResourceManager.GetString("Engine_PG_ShowColorRendering", resourceCulture);
             }
         }
         
@@ -8137,7 +8299,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 许可证导入 的本地化字符串。
+        ///   查找类似 导入许可证 的本地化字符串。
         /// </summary>
         public static string LicenseImport {
             get {
@@ -9334,7 +9496,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开设备管理器 的本地化字符串。
+        ///   查找类似 设备管理器 的本地化字符串。
         /// </summary>
         public static string OpenDeviceManager {
             get {
@@ -19073,6 +19235,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前布点区域 的本地化字符串。
+        /// </summary>
+        public static string 当前布点区域 {
+            get {
+                return ResourceManager.GetString("当前布点区域", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 当前批次 的本地化字符串。
         /// </summary>
         public static string 当前批次 {
@@ -19240,6 +19411,15 @@ namespace ColorVision.Engine.Properties {
         public static string 恢复流程版本 {
             get {
                 return ResourceManager.GetString("恢复流程版本", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 恢复设备参数 的本地化字符串。
+        /// </summary>
+        public static string 恢复设备参数 {
+            get {
+                return ResourceManager.GetString("恢复设备参数", resourceCulture);
             }
         }
         
@@ -19604,6 +19784,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 按比例计算 的本地化字符串。
+        /// </summary>
+        public static string 按比例计算 {
+            get {
+                return ResourceManager.GetString("按比例计算", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 排序 的本地化字符串。
         /// </summary>
         public static string 排序 {
@@ -19888,6 +20077,15 @@ namespace ColorVision.Engine.Properties {
         public static string 整体亮度校正 {
             get {
                 return ResourceManager.GetString("整体亮度校正", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 整图或画布 的本地化字符串。
+        /// </summary>
+        public static string 整图或画布 {
+            get {
+                return ResourceManager.GetString("整图或画布", resourceCulture);
             }
         }
         
@@ -20293,6 +20491,15 @@ namespace ColorVision.Engine.Properties {
         public static string 曝光时间_ms_ {
             get {
                 return ResourceManager.GetString("曝光时间(ms)", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 曝光设置 的本地化字符串。
+        /// </summary>
+        public static string 曝光设置 {
+            get {
+                return ResourceManager.GetString("曝光设置", resourceCulture);
             }
         }
         
@@ -22439,6 +22646,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 用于处理 RAW 图像的相机校正模板 的本地化字符串。
+        /// </summary>
+        public static string 用于处理_RAW_图像的相机校正模板 {
+            get {
+                return ResourceManager.GetString("用于处理 RAW 图像的相机校正模板", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 用哪个模块 的本地化字符串。
         /// </summary>
         public static string 用哪个模块 {
@@ -22651,6 +22867,15 @@ namespace ColorVision.Engine.Properties {
         public static string 目标数据库 {
             get {
                 return ResourceManager.GetString("目标数据库", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 目标饱和度 (%) 的本地化字符串。
+        /// </summary>
+        public static string 目标饱和度____ {
+            get {
+                return ResourceManager.GetString("目标饱和度 (%)", resourceCulture);
             }
         }
         
@@ -23247,7 +23472,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("纵轴 log10", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 线性扫描 的本地化字符串。
         /// </summary>
@@ -23551,6 +23776,15 @@ namespace ColorVision.Engine.Properties {
         public static string 自动曝光 {
             get {
                 return ResourceManager.GetString("自动曝光", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自动曝光参数 的本地化字符串。
+        /// </summary>
+        public static string 自动曝光参数 {
+            get {
+                return ResourceManager.GetString("自动曝光参数", resourceCulture);
             }
         }
         
@@ -24446,6 +24680,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 起始曝光 (ms) 的本地化字符串。
+        /// </summary>
+        public static string 起始曝光__ms_ {
+            get {
+                return ResourceManager.GetString("起始曝光 (ms)", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 超大图标 的本地化字符串。
         /// </summary>
         public static string 超大图标 {
@@ -24469,6 +24712,15 @@ namespace ColorVision.Engine.Properties {
         public static string 跟随最新 {
             get {
                 return ResourceManager.GetString("跟随最新", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 跟随设备 的本地化字符串。
+        /// </summary>
+        public static string 跟随设备 {
+            get {
+                return ResourceManager.GetString("跟随设备", resourceCulture);
             }
         }
         
@@ -24977,6 +25229,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置有误 的本地化字符串。
+        /// </summary>
+        public static string 配置有误 {
+            get {
+                return ResourceManager.GetString("配置有误", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 采集光谱 的本地化字符串。
         /// </summary>
         public static string 采集光谱 {
@@ -25396,6 +25657,15 @@ namespace ColorVision.Engine.Properties {
         public static string 高级_JSON {
             get {
                 return ResourceManager.GetString("高级 JSON", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高级参数 的本地化字符串。
+        /// </summary>
+        public static string 高级参数 {
+            get {
+                return ResourceManager.GetString("高级参数", resourceCulture);
             }
         }
         
