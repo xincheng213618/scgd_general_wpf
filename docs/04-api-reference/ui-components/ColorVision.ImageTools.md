@@ -23,9 +23,9 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 | --- | --- | --- |
 | 文件夹编辑器 `MultiImageViewerEditor` | 以 `colorvision.folder.multi-image` 注册，调用 `EditorDocumentService.Open`，在工厂中发起文件夹加载 | 向文档服务传入 viewer 的 `Dispose` 回调，但不等待加载完成再返回 |
 | 图像工具菜单 `ZoomEditorToolContextMenu` | 当前图片存在且有父目录时，创建独立窗口，预设 `FilePath` 后加载父目录 | 加载在窗口打开后继续，窗口关闭时释放 viewer |
-| `LoadFromFolderAsync` / `LoadFromFilesAsync` | 重建列表后选中指定图片或首项 | 任务在列表和初始选择就绪后完成。大图解码和缩略图各自继续 |
+| `LoadFromFolderAsync` / `LoadFromFilesAsync` | 重建列表后选中指定图片或首项 | 列表和初始选择先发布，任务等缓存尺寸查询结束。大图解码和缩略图各自进行 |
 
-目录枚举、文件属性和缓存尺寸在后台准备。目录只枚举顶层，按扩展名过滤后取 `MaxDisplayCount`，沿用目录返回顺序。显式文件列表按请求时的顺序准备，允许缺失文件入列。当前列表接受 `.jpg/.jpeg/.png/.bmp/.gif/.tiff/.tif/.cvraw/.cvcie`，实际解码由宿主支持的格式决定。
+目录枚举和文件属性在后台准备。目录只枚举顶层，按扩展名过滤后取 `MaxDisplayCount`，沿用目录返回顺序。显式文件列表按请求时的顺序准备，允许缺失文件入列。当前列表接受 `.jpg/.jpeg/.png/.bmp/.gif/.tiff/.tif/.cvraw/.cvcie`，实际解码由宿主支持的格式决定。
 
 准备新列表时保留当前列表和大图，成功后一次替换并打开初始选择。目录无法读取或显式列表为空时保留当前内容。启用 `ShowThumbnail` 时，缩略图按列表实际创建的行生成，包含视口及上下预取区域。行回收或列表隐藏时取消需求并释放行持有的位图。替换列表、清空或关闭时取消旧请求。已开始的同步解码占用原并发配额直到结束，取消后的结果不会回填列表。
 
@@ -39,7 +39,7 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 
 - 缓存命中要求路径、文件修改时间、大小和请求的缩略图尺寸一致。旧库记录保留，缺少请求尺寸的 PNG 在下次使用该文件时按需重建。源文件同时保留相同修改时间和大小时，仍可能命中已有缩略图。
 - PNG 无法解码或像素尺寸与记录不符时，从源图重建。数据库不可用时仍可显示新生成的缩略图。生成时检测到源文件变化则放弃当次结果。
-- `ImageFileInfo` 仅用修改时间和文件大小匹配的记录填充初始原图尺寸。关闭 `EnableThumbnailCache` 或 `ShowThumbnail` 后，列表构造仍可查询已有尺寸记录。
+- 文件列表和首张图的打开无需等待 SQLite。缓存尺寸在后台补齐，记录的修改时间和文件大小须与源文件匹配。关闭 `EnableThumbnailCache` 或 `ShowThumbnail` 后仍可补齐已有记录的尺寸。
 - 新建缩略图时统一通过 `ThumbnailProviderFactory` 查自定义 provider，否则走 WPF 解码。关闭缓存仍沿用相同格式分流。`.cvraw/.cvcie` 的 `CVRawThumbnailProvider` 由 Engine 提供，要求宿主发现该实现。已选择的 provider 生成失败会返回空缩略图。
 
 视口缩略图在后台获取缓存连接、查询 SQLite 和核对文件状态，等待缓存时界面仍可响应。标准 WPF 缩略图生成和缓存 PNG 编解码也在后台执行，跨查看器最多同时生成两张标准缩略图。WPF 读取首帧并按目标尺寸缩小，每边至少一像素，结果冻结后交给界面。自定义 provider 仍从调用方线程进入，由自身决定解码线程。

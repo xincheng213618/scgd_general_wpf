@@ -204,7 +204,7 @@ namespace ColorVision.Solution.MultiImageViewer
             }
         }
 
-        internal IReadOnlyDictionary<string, ThumbnailCacheEntry> GetCachedInfos(IReadOnlyList<string> filePaths)
+        internal IReadOnlyDictionary<string, ThumbnailCacheEntry> GetCachedInfos(IReadOnlyList<string> filePaths, CancellationToken token)
         {
             var result = new Dictionary<string, ThumbnailCacheEntry>(StringComparer.Ordinal);
             lock (_locker)
@@ -212,6 +212,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 if (_db == null || _disposed) return result;
                 foreach (string[] paths in filePaths.Distinct(StringComparer.Ordinal).Chunk(500))
                 {
+                    token.ThrowIfCancellationRequested();
                     try
                     {
                         var rows = _db.Queryable<ThumbnailCacheEntry>().Where(x => paths.Contains(x.FilePath)).Select(MetadataProjection).ToList();
@@ -227,7 +228,10 @@ namespace ColorVision.Solution.MultiImageViewer
                         System.Diagnostics.Debug.WriteLine($"GetCachedInfos Error: {ex.Message}");
                         // One unreadable row must not hide metadata that individual reads can still load.
                         foreach (string path in paths)
+                        {
+                            token.ThrowIfCancellationRequested();
                             if (GetCachedInfo(path) is { } entry) result[path] = entry;
+                        }
                     }
                 }
             }

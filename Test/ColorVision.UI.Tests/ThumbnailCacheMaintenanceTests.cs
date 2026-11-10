@@ -117,9 +117,12 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
 
         ImageFileInfo CreateItem(string path)
         {
-            metadata.TryGetValue(path, out ThumbnailCacheEntry? cachedInfo);
-            return (ImageFileInfo)Activator.CreateInstance(typeof(ImageFileInfo), BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null, args: [path, cachedInfo], culture: null)!;
+            var item = (ImageFileInfo)Activator.CreateInstance(typeof(ImageFileInfo), BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null, args: [path, false], culture: null)!;
+            if (metadata.TryGetValue(path, out ThumbnailCacheEntry? cachedInfo))
+                typeof(ImageFileInfo).GetMethod("ApplyCachedDimensions", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(item, [cachedInfo]);
+            return item;
         }
     }
 
@@ -582,7 +585,7 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
 
     private static IReadOnlyDictionary<string, ThumbnailCacheEntry> ReadCachedInfos(ThumbnailCacheManager reader, IReadOnlyList<string> paths) =>
         (IReadOnlyDictionary<string, ThumbnailCacheEntry>)typeof(ThumbnailCacheManager).GetMethod("GetCachedInfos", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(reader, [paths])!;
+            .Invoke(reader, [paths, CancellationToken.None])!;
 
     private static async Task<object?> LoadWithDimensionsAsync(ThumbnailCacheManager reader, string source, CancellationToken cancellationToken = default)
     {

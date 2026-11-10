@@ -92,6 +92,7 @@ namespace ColorVision.Solution.MultiImageViewer
         private bool _disposed;
         private bool _publishingFileList;
         private CancellationTokenSource? _fileLoad;
+        private static readonly SemaphoreSlim CachedDimensionsSlot = new(1, 1);
 
         public MultiImageViewer()
         {
@@ -200,6 +201,7 @@ namespace ColorVision.Solution.MultiImageViewer
                     token.ThrowIfCancellationRequested();
                     FileListBox.ScrollIntoView(selected);
                 }
+                await LoadCachedDimensionsAsync(items, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
             finally
@@ -210,35 +212,49 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private static List<ImageFileInfo> PrepareFileList(Func<IEnumerable<string>> enumeratePaths, int limit, CancellationToken token)
         {
-            var files = new List<string>();
+            var items = new List<ImageFileInfo>();
             foreach (string path in enumeratePaths())
             {
                 token.ThrowIfCancellationRequested();
                 if (!MultiImageViewerConfig.SupportedExtensions.Contains(Path.GetExtension(path).ToLowerInvariant())) continue;
-                files.Add(path);
-                if (files.Count == limit) break;
-            }
-
-            var existingPaths = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string path in files)
-            {
-                token.ThrowIfCancellationRequested();
-                if (File.Exists(path)) existingPaths.Add(path);
-            }
-            token.ThrowIfCancellationRequested();
-            IReadOnlyDictionary<string, ThumbnailCacheEntry>? metadata = existingPaths.Count == 0
-                ? null : ThumbnailCacheManager.Instance.GetCachedInfos(existingPaths.ToArray());
-
-            var items = new List<ImageFileInfo>(files.Count);
-            foreach (string path in files)
-            {
-                token.ThrowIfCancellationRequested();
-                ThumbnailCacheEntry? cached = null;
-                metadata?.TryGetValue(path, out cached);
-                // A path created after prefetch still receives a fresh metadata lookup.
-                items.Add(existingPaths.Contains(path) ? new ImageFileInfo(path, cached) : new ImageFileInfo(path));
+                items.Add(new ImageFileInfo(path, loadCachedInfo: false));
+                if (items.Count == limit) break;
             }
             return items;
+        }
+
+        private static async Task LoadCachedDimensionsAsync(List<ImageFileInfo> items, CancellationToken token)
+        {
+            string[] paths = items.Where(item => item.FileExists).Select(item => item.FilePath).ToArray();
+            if (paths.Length == 0) return;
+
+            // At most one worker can wait on SQLite for a list. Retired queued lists cancel before taking a worker.
+            await CachedDimensionsSlot.WaitAsync(token);
+            IReadOnlyDictionary<string, ThumbnailCacheEntry> metadata;
+            try
+            {
+                metadata = await Task.Run(() =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    var cached = ThumbnailCacheManager.Instance.GetCachedInfos(paths, token);
+                    var current = new Dictionary<string, ThumbnailCacheEntry>(StringComparer.Ordinal);
+                    foreach (var (path, entry) in cached)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        var file = new FileInfo(path);
+                        if (file.Exists && file.Length == entry.FileSize && file.LastWriteTime == entry.FileLastModified)
+                            current.Add(path, entry);
+                    }
+                    return current;
+                }, token);
+            }
+            finally { CachedDimensionsSlot.Release(); }
+
+            foreach (ImageFileInfo item in items)
+            {
+                token.ThrowIfCancellationRequested();
+                if (metadata.TryGetValue(item.FilePath, out var entry)) item.ApplyCachedDimensions(entry);
+            }
         }
 
         private sealed class ImageFileCollection : ObservableCollection<ImageFileInfo>

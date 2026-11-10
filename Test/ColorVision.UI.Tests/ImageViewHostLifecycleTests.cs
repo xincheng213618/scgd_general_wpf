@@ -228,43 +228,56 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
         }
     }
 
-    [Fact]
-    public async Task ClearingDuringListPreparationDiscardsThePendingList()
+    [Theory]
+    [InlineData("cached")]
+    [InlineData("source changed")]
+    [InlineData("thumbnail first")]
+    public async Task FolderOpensTheInitialImageWhileCachedDimensionsArePending(string result)
     {
         using var file = new ImageFile();
-        using var pendingFile = new ImageFile();
         using var gate = new ThumbnailMetadataQueryGate(file);
+        gate.AddCachedDimensions(file.Path, 1024, 512);
         var scope = WpfTestHost.Invoke(() => new MultiImageScope(showThumbnails: false, cache: gate.Cache));
         Task? loading = null;
         try
         {
-            var (initialLoad, initialPublication) = WpfTestHost.Invoke(() => LoadObservingImage(scope, [file.Path]));
-            loading = initialLoad;
-            await loading.WaitAsync(TimeSpan.FromSeconds(10));
-            await initialPublication.WaitAsync(TimeSpan.FromSeconds(10));
-            var (currentItem, currentBitmap) = WpfTestHost.Invoke(() =>
-                (Assert.Single(scope.Viewer.ImageFiles), Assert.IsAssignableFrom<BitmapSource>(scope.View.ViewBitmapSource)));
-
             Task metadataQueryStarted = gate.HoldQueries();
-            string pendingFolder = Path.GetDirectoryName(pendingFile.Path)!;
-            loading = WpfTestHost.Invoke(() => scope.Viewer.LoadFromFolderAsync(pendingFolder));
-            await metadataQueryStarted.WaitAsync(TimeSpan.FromSeconds(10));
-            WpfTestHost.Invoke(() =>
+            string folder = Path.GetDirectoryName(file.Path)!;
+            var (request, published) = WpfTestHost.Invoke(() =>
             {
-                Assert.Null(scope.Viewer.CurrentFolderPath);
-                Assert.Same(currentItem, Assert.Single(scope.Viewer.ImageFiles));
-                Assert.Same(currentItem, scope.Viewer.GetSelectedFile());
-                Assert.Same(currentBitmap, scope.View.ViewBitmapSource);
-                scope.Viewer.Clear();
+                var publication = ObserveNextImagePublication(scope.View);
+                return (scope.Viewer.LoadFromFolderAsync(folder), publication);
             });
+            loading = request;
+            await metadataQueryStarted.WaitAsync(TimeSpan.FromSeconds(10));
+            await published.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.False(request.IsCompleted);
+            ImageFileInfo item = WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(folder, scope.Viewer.CurrentFolderPath);
+                var current = Assert.Single(scope.Viewer.ImageFiles);
+                Assert.Same(current, scope.Viewer.GetSelectedFile());
+                Assert.Equal(file.Path, scope.View.Config.FilePath);
+                Assert.Equal((0, 0), (current.ImageWidth, current.ImageHeight));
+                return current;
+            });
+
+            if (result == "source changed") File.SetLastWriteTime(file.Path, item.LastModified.AddMinutes(1));
+            if (result == "thumbnail first")
+                await WpfTestHost.Invoke(() => item.LoadThumbnailAsync(useCache: false)).WaitAsync(TimeSpan.FromSeconds(10));
+
             gate.Release();
-            await loading.WaitAsync(TimeSpan.FromSeconds(30));
+            await request.WaitAsync(TimeSpan.FromSeconds(10));
             WpfTestHost.Invoke(() =>
             {
-                Assert.Null(scope.Viewer.CurrentFolderPath);
-                Assert.Empty(scope.Viewer.ImageFiles);
-                Assert.Null(scope.Viewer.GetSelectedFile());
-                Assert.Null(scope.View.ViewBitmapSource);
+                var expected = result switch
+                {
+                    "cached" => (1024, 512),
+                    "thumbnail first" => (64, 32),
+                    _ => (0, 0),
+                };
+                Assert.Equal(expected, (item.ImageWidth, item.ImageHeight));
+                Assert.Same(item, scope.Viewer.GetSelectedFile());
             });
         }
         finally
@@ -276,6 +289,72 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
                 if (loading != null) await loading.WaitAsync(TimeSpan.FromSeconds(30));
             }
             finally { WpfTestHost.Invoke(scope.Dispose); }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ClearingOrReplacingAListRetiresPendingCachedDimensions(bool replace)
+    {
+        using var file = new ImageFile();
+        using var replacement = new ImageFile();
+        using var gate = new ThumbnailMetadataQueryGate(file);
+        gate.AddCachedDimensions(file.Path, 1024, 512);
+        gate.AddCachedDimensions(replacement.Path, 640, 480);
+        var scope = WpfTestHost.Invoke(() => new MultiImageScope(showThumbnails: false, cache: gate.Cache));
+        var requests = new List<Task>();
+        try
+        {
+            Task metadataQueryStarted = gate.HoldQueries();
+            ImageFileInfo first = await OpenListAsync(file.Path);
+            await metadataQueryStarted.WaitAsync(TimeSpan.FromSeconds(10));
+
+            ImageFileInfo? queued = null;
+            ImageFileInfo? latest = null;
+            if (replace)
+            {
+                queued = await OpenListAsync(replacement.Path);
+                latest = await OpenListAsync(file.Path);
+                // The superseded list was queued for the same slot. It completes while the first query remains held.
+                await requests[1].WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.NotSame(first, latest);
+            }
+            else WpfTestHost.Invoke(scope.Viewer.Clear);
+
+            gate.Release();
+            await Task.WhenAll(requests).WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal((0, 0), (first.ImageWidth, first.ImageHeight));
+                if (queued != null) Assert.Equal((0, 0), (queued.ImageWidth, queued.ImageHeight));
+                if (latest != null)
+                {
+                    Assert.Same(latest, Assert.Single(scope.Viewer.ImageFiles));
+                    Assert.Same(latest, scope.Viewer.GetSelectedFile());
+                    Assert.Equal((1024, 512), (latest.ImageWidth, latest.ImageHeight));
+                }
+                else
+                {
+                    Assert.Empty(scope.Viewer.ImageFiles);
+                    Assert.Null(scope.Viewer.GetSelectedFile());
+                    Assert.Null(scope.View.ViewBitmapSource);
+                }
+            });
+        }
+        finally
+        {
+            gate.Release();
+            try { await Task.WhenAll(requests).WaitAsync(TimeSpan.FromSeconds(30)); }
+            finally { WpfTestHost.Invoke(scope.Dispose); }
+        }
+
+        async Task<ImageFileInfo> OpenListAsync(string path)
+        {
+            var (request, published) = WpfTestHost.Invoke(() => LoadObservingImage(scope, [path]));
+            requests.Add(request);
+            await published.WaitAsync(TimeSpan.FromSeconds(10));
+            return WpfTestHost.Invoke(() => Assert.Single(scope.Viewer.ImageFiles));
         }
     }
 
@@ -776,6 +855,17 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
 
         public ThumbnailCacheManager Cache { get; }
 
+        public void AddCachedDimensions(string path, int width, int height)
+        {
+            File.SetLastWriteTime(path, new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Local));
+            var file = new FileInfo(path);
+            _database.Insertable(new ThumbnailCacheEntry
+            {
+                FilePath = path, FileLastModified = file.LastWriteTime, FileSize = file.Length,
+                OriginalWidth = width, OriginalHeight = height,
+            }).ExecuteCommand();
+        }
+
         public Task HoldQueries()
         {
             TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -808,7 +898,7 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
 
         public MultiImageScope(bool showThumbnails, ThumbnailCacheManager? cache = null)
         {
-            // Metadata is still queried with thumbnails disabled. Keep these scheduling fixtures off the user's cache.
+            // Cached dimensions can still be read with thumbnails disabled. Keep the fixtures off the user's cache.
             CacheInstance.SetValue(null, cache ?? RuntimeHelpers.GetUninitializedObject(typeof(ThumbnailCacheManager)));
             MultiImageViewer.Config.ShowThumbnail = showThumbnails;
             MultiImageViewer.Config.EnableThumbnailCache = false;

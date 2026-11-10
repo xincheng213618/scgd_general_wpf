@@ -13,6 +13,7 @@ namespace ColorVision.Solution.MultiImageViewer
         private string _filePath = string.Empty;
         private ImageSource? _thumbnail;
         private bool _isLoadingThumbnail;
+        private bool _hasLoadedThumbnailDimensions;
 
         /// <summary>
         /// 文件完整路径
@@ -24,6 +25,7 @@ namespace ColorVision.Solution.MultiImageViewer
             set
             {
                 _filePath = value;
+                _hasLoadedThumbnailDimensions = false;
                 Thumbnail = null;
                 ImageWidth = 0;
                 ImageHeight = 0;
@@ -31,7 +33,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 OnPropertyChanged(nameof(FileName));
                 OnPropertyChanged(nameof(Directory));
                 OnPropertyChanged(nameof(FileExtension));
-                LoadFileInfo(null, loadCachedInfo: true);
+                LoadFileInfo(loadCachedInfo: true);
             }
         }
 
@@ -96,7 +98,7 @@ namespace ColorVision.Solution.MultiImageViewer
         public int ImageWidth
         {
             get => _imageWidth;
-            set { _imageWidth = value; OnPropertyChanged(); OnPropertyChanged(nameof(ImageSizeDisplay)); }
+            set { _imageWidth = value; OnPropertyChanged(); OnPropertyChanged(nameof(ImageSizeDisplay)); OnPropertyChanged(nameof(ImageInfoTooltip)); }
         }
         private int _imageWidth;
 
@@ -107,7 +109,7 @@ namespace ColorVision.Solution.MultiImageViewer
         public int ImageHeight
         {
             get => _imageHeight;
-            set { _imageHeight = value; OnPropertyChanged(); OnPropertyChanged(nameof(ImageSizeDisplay)); }
+            set { _imageHeight = value; OnPropertyChanged(); OnPropertyChanged(nameof(ImageSizeDisplay)); OnPropertyChanged(nameof(ImageInfoTooltip)); }
         }
         private int _imageHeight;
 
@@ -162,18 +164,15 @@ namespace ColorVision.Solution.MultiImageViewer
         {
         }
 
-        public ImageFileInfo(string filePath)
-        {
-            FilePath = filePath;
-        }
+        public ImageFileInfo(string filePath) : this(filePath, loadCachedInfo: true) { }
 
-        internal ImageFileInfo(string filePath, ThumbnailCacheEntry? cachedInfo)
+        internal ImageFileInfo(string filePath, bool loadCachedInfo)
         {
             _filePath = filePath;
-            LoadFileInfo(cachedInfo, loadCachedInfo: false);
+            LoadFileInfo(loadCachedInfo);
         }
 
-        private void LoadFileInfo(ThumbnailCacheEntry? cachedInfo, bool loadCachedInfo)
+        private void LoadFileInfo(bool loadCachedInfo)
         {
             try
             {
@@ -185,12 +184,8 @@ namespace ColorVision.Solution.MultiImageViewer
                     LastModified = fileInfo.LastWriteTime;
 
                     // 尝试从缓存获取图像尺寸
-                    var cached = loadCachedInfo ? ThumbnailCacheManager.Instance.GetCachedInfo(_filePath) : cachedInfo;
-                    if (cached != null && cached.FileLastModified == LastModified && cached.FileSize == FileSize)
-                    {
-                        ImageWidth = cached.OriginalWidth;
-                        ImageHeight = cached.OriginalHeight;
-                    }
+                    if (loadCachedInfo && ThumbnailCacheManager.Instance.GetCachedInfo(_filePath) is { } cached)
+                        ApplyCachedDimensions(cached);
                 }
                 else
                 {
@@ -202,6 +197,14 @@ namespace ColorVision.Solution.MultiImageViewer
                 System.Diagnostics.Debug.WriteLine($"LoadFileInfo Error: {ex.Message}");
                 FileExists = false;
             }
+        }
+
+        internal void ApplyCachedDimensions(ThumbnailCacheEntry cached)
+        {
+            if (_hasLoadedThumbnailDimensions || !FileExists || cached.FileLastModified != LastModified || cached.FileSize != FileSize)
+                return;
+            if (ImageWidth != cached.OriginalWidth) ImageWidth = cached.OriginalWidth;
+            if (ImageHeight != cached.OriginalHeight) ImageHeight = cached.OriginalHeight;
         }
 
         /// <summary>
@@ -223,6 +226,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 token.ThrowIfCancellationRequested();
                 if (loaded != null && string.Equals(path, _filePath, StringComparison.Ordinal))
                 {
+                    _hasLoadedThumbnailDimensions = true;
                     Thumbnail = loaded.Thumbnail;
                     ImageWidth = loaded.OriginalWidth;
                     ImageHeight = loaded.OriginalHeight;
