@@ -31,6 +31,11 @@ public sealed class SolutionExtensionDiscoveryTests
         Assert.Throws<FileNotFoundException>(() => loaded.GetType("UnavailableProvider", throwOnError: true)!
             .GetCustomAttribute<ProjectProviderAttribute>());
 
+        // The host catalog excludes in-memory assemblies. Deliver the fixture through the
+        // registry's discovery callback so the test also works after another test starts the host.
+        typeof(ProjectProviderRegistry).GetMethod("OnAssembliesChanged", BindingFlags.Static | BindingFlags.NonPublic)!
+            .CreateDelegate<Action<IEnumerable<Assembly>>>()([loaded]);
+
         Assert.Contains("*.solution-discovery-healthy", ProjectProviderRegistry.GetProjectFilePatterns());
         Assert.DoesNotContain("*.solution-discovery-unavailable", ProjectProviderRegistry.GetProjectFilePatterns());
 
