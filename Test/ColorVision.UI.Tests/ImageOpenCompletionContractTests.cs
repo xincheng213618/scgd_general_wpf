@@ -698,6 +698,175 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task LargeRgb48RawOpenReplacesFrozenDisplayThenReusesMutableDisplayAndPreservesNativeLease()
+    {
+        const int width = 2049, height = 683, channels = 3;
+        const int rowBytes = width * channels * sizeof(ushort), pixelBytes = rowBytes * height;
+        const int firstSeed = 123, secondSeed = 20000;
+        string prefix = Path.Combine(Path.GetTempPath(), $"colorvision-large-raw-{Guid.NewGuid():N}");
+        string firstPath = prefix + "-first.cvraw";
+        string secondPath = prefix + "-second.cvraw";
+        ImageView? view = null;
+        System.Windows.Window? host = null;
+        System.Windows.Window? previousMainWindow = null;
+        CVRawOpen? opener = null;
+        WriteableBitmap? frozenDisplay = null;
+        ImageFrameLease? oldLease = null;
+        int loadedCount = 0;
+        Matrix viewport = new(1.375, 0, 0, 1.375, -37, 21);
+        TimeSpan testWait = TimeSpan.FromSeconds(10);
+        try
+        {
+            WriteFixture(firstPath, firstSeed);
+            WriteFixture(secondPath, secondSeed);
+            Task firstOpen = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView { EnableEditorImageServices = false };
+                frozenDisplay = new WriteableBitmap(width, height, 144, 120, PixelFormats.Rgb48, null);
+                frozenDisplay.Freeze();
+                view.SetImageSource(frozenDisplay);
+                opener = new CVRawOpen(view.EditorContext);
+                view.IEditorToolFactory.IImageOpens[".cvraw"] = opener;
+                view.ImageSourceLoaded += (_, _) => loadedCount++;
+                previousMainWindow = Application.Current.MainWindow;
+                host = new System.Windows.Window
+                {
+                    Content = view, Width = 640, Height = 480, Left = -30000, Top = -30000,
+                    ShowInTaskbar = false, ShowActivated = false, WindowStartupLocation = WindowStartupLocation.Manual,
+                };
+                host.Show();
+                host.UpdateLayout();
+                Assert.True(view.Zoombox1.ActualWidth > 0);
+                view.OpenImage(firstPath);
+                return view.ImageOpenCompletion;
+            });
+            await firstOpen.WaitAsync(testWait);
+
+            byte[] pixels = new byte[pixelBytes];
+            var (original, rawBuffer) = WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(1, loadedCount);
+                var display = Assert.IsType<WriteableBitmap>(view!.ViewBitmapSource);
+                Assert.NotSame(frozenDisplay, display);
+                Assert.Same(display, view.Presentation.DisplaySource);
+                AssertBitmap(display, firstSeed, pixels);
+                oldLease = Assert.IsType<ImageFrameLease>(view.AcquireImageFrame());
+                view.Zoombox1.RestoreView(viewport);
+                return (display, ReadRawBuffer(opener!));
+            });
+
+            Task secondOpen = WpfTestHost.Invoke(() =>
+            {
+                view!.OpenImage(secondPath);
+                return view.ImageOpenCompletion;
+            });
+            await secondOpen.WaitAsync(testWait);
+            WpfTestHost.Invoke(() =>
+            {
+                host!.UpdateLayout();
+                Assert.Equal(2, loadedCount);
+                Assert.Same(opener, view!.EditorContext.IImageOpen);
+                Assert.Same(rawBuffer, ReadRawBuffer(opener!));
+                AssertSamples(rawBuffer, secondSeed, rgb: false);
+                Assert.Equal(viewport, view.Zoombox1.ContentMatrix);
+                Assert.Equal(rowBytes, view.Config.GetProperties<int>(ImageViewPropertyKeys.Stride));
+
+                var next = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                Assert.Same(original, next);
+                Assert.Same(next, view.Presentation.DisplaySource);
+                AssertBitmap(next, secondSeed, pixels);
+                Assert.False(view.IsCurrentImageRevision(oldLease!.Revision));
+                Assert.True(frozenDisplay!.IsFrozen);
+                frozenDisplay.CopyPixels(pixels, rowBytes, 0);
+                Assert.Equal(-1, Array.FindIndex(pixels, value => value != 0));
+            });
+
+            HImage frame = oldLease!.Image;
+            Assert.Equal((width, height, channels, 16, rowBytes), (frame.cols, frame.rows, frame.channels, frame.depth, frame.stride));
+            Marshal.Copy(frame.pData, pixels, 0, pixels.Length);
+            AssertSamples(pixels, firstSeed, rgb: true);
+        }
+        finally
+        {
+            oldLease?.Dispose();
+            try
+            {
+                Task retirement = WpfTestHost.Invoke(() =>
+                {
+                    if (host != null)
+                    {
+                        host.Close();
+                        Application.Current.MainWindow = previousMainWindow;
+                    }
+                    view?.Dispose();
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                });
+                await retirement.WaitAsync(testWait);
+            }
+            finally
+            {
+                File.Delete(firstPath);
+                File.Delete(secondPath);
+            }
+        }
+
+        static ushort Sample(int pixel, int channel, int seed) => (ushort)(seed + channel * 10000 + pixel % 8191);
+
+        static void WriteFixture(string path, int seed)
+        {
+            using CVCIEFile raw = new()
+            {
+                Version = 2, FileExtType = CVType.Raw, Rows = height, Cols = width,
+                Bpp = 16, Channels = channels, Exp = [1, 1, 1],
+            };
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, pixelBytes, stream =>
+            {
+                byte[] row = new byte[rowBytes];
+                Span<ushort> samples = MemoryMarshal.Cast<byte, ushort>(row.AsSpan());
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    for (int channel = 0; channel < channels; channel++)
+                        samples[x * channels + channel] = Sample(y * width + x, channel, seed);
+                    stream.Write(row);
+                }
+            }));
+        }
+
+        static byte[] ReadRawBuffer(CVRawOpen opener)
+        {
+            var raw = Assert.IsType<CvRawPixelBuffer>(typeof(CalibratedImageCapability)
+                .GetField("_rawPixels", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(opener));
+            return Assert.IsType<byte[]>(typeof(CvRawPixelBuffer)
+                .GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(raw));
+        }
+
+        static void AssertBitmap(WriteableBitmap bitmap, int seed, byte[] pixels)
+        {
+            Assert.False(bitmap.IsFrozen);
+            Assert.Equal(PixelFormats.Rgb48, bitmap.Format);
+            Assert.Equal((width, height, 96d, 96d), (bitmap.PixelWidth, bitmap.PixelHeight, bitmap.DpiX, bitmap.DpiY));
+            Assert.True(bitmap.BackBufferStride > rowBytes);
+            bitmap.CopyPixels(pixels, rowBytes, 0);
+            AssertSamples(pixels, seed, rgb: true);
+        }
+
+        static void AssertSamples(byte[] pixels, int seed, bool rgb)
+        {
+            Assert.Equal(pixelBytes, pixels.Length);
+            ReadOnlySpan<ushort> samples = MemoryMarshal.Cast<byte, ushort>(pixels.AsSpan());
+            for (int pixel = 0; pixel < width * height; pixel++)
+            for (int channel = 0; channel < channels; channel++)
+            {
+                ushort expected = Sample(pixel, rgb ? channels - 1 - channel : channel, seed);
+                ushort actual = samples[pixel * channels + channel];
+                if (actual != expected) Assert.Fail($"Pixel {pixel}, channel {channel}: expected {expected}, found {actual}.");
+            }
+        }
+    }
+
+    [Fact]
     public async Task LargeCvcieLayerSwitchPreservesPreviousDisplayAndNativeLease()
     {
         const int width = 4097, height = 2048, pixelCount = width * height;

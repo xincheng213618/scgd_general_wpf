@@ -84,7 +84,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 缓存以规范化路径（忽略大小写）命中，命中后直接读取内存，不打开磁盘文件、不检查磁盘长度和修改时间，也不持有磁盘文件句柄。ARVR 结果筛选和图像打开入口同样优先查缓存；图像控件通过现有 `IImageOpen.GetCachedFileLength` 获取长度，普通打开器默认返回未命中。缓存驻留期间，外部修改、删除或占用磁盘文件不会改变这份内存内容；程序内保存和参数追加会同步更新缓存，清理或淘汰后再次读取才使用磁盘文件。完整读取/按通道读取未命中时可填充槽位；磁盘打开和整图读取在全局缓存锁外完成，填充中的槽位暂不可命中，并用已有读取占用保护内存。其他文件的缓存操作可继续，同路径保存或参数更新等此次读盘结束后再执行；填充完成即关闭磁盘句柄，已退役的槽位不会重新发布。只探测 header 或参数不会为未命中文件加载整幅图。若已达到数量上限且所有槽位都有活动读写，另一路未命中直接读文件，不额外分配缓存。返回给消费者的数据仍是独立数组/帧；消费者必须释放读取流，覆盖会退役仍被使用的旧缓冲，主动释放等待读取结束；同步写盘中的缓冲被清理或退役时，先移除缓存键，待本次写盘和已有读取结束后回收，避免释放写盘仍在使用的内存。
 
-`CVRawOpen` 打开独立 `.cvraw` 时，通过 `CvRawPixelBuffer` 在同一缓存/文件流上读取 header 与 payload，并校验长度恰好匹配像素布局。每个视图保留一份固定地址的 RAW 输入数组；宽、高、通道、位深均相同时直接填充，路径、曝光或 JSON 变化不重建数组，布局变化才替换。8/16 位显示位图继续沿用尺寸/格式一致且未冻结时的 `WriteableBitmap` 复用，冻结位图必须替换。该规则消除了连续同布局读图的整幅 RAW 数组分配，不代表浮点显示转换、图层提取或其它界面操作零分配。
+`CVRawOpen` 打开独立 `.cvraw` 时，`CvRawPixelBuffer` 在同一缓存或文件流读取并校验头部和像素。每个视图复用宽、高、通道和位深相同的固定地址 RAW 输入数组，路径、曝光或 JSON 变化不重建数组。显示缓冲独立于 RAW 输入。
 
 同一打开器串行加载文件。RAW 再次填充前先停用旧测量源，POI 和原图层借用受同步保护。带色度 JSON 的测量借用该输入数组，重开会重新读取参数。清空、销毁或切换打开器时，读取结束后释放退役数组，清理与新图使用的数组隔离。工具栏停用不结束图像内容。同一打开器连续加载时复用同布局数组。文件缓存流在 UI 更新前归还，避免槽位释放与 UI 调度互相等待。
 
@@ -163,7 +163,7 @@ FileIO 负责读取，显示转换由调用方完成。`MediaHelper.ToMat` 和 `
 
 `CVRawOpen` 和 `CvRawLayerController` 为 Engine 图像打开器提供 **真彩 sRGB（XYZ）** 模式。它读取 CVCIE 文件自身连续存储的 X、Y、Z 三个平面，不跟随 `SrcFileName` 来构造真彩。**FileIO 的 `ReadCVCIE`、`OpenLocalCVFile` 和文件写入语义没有因此改变**；其它直接使用这些 API 的消费方不会自动启用真彩。
 
-打开器将完整源替换交给 `SetImageSource`。复用同尺寸位图的原位更新分支先更新像素元数据，通过 `Presentation.Publish` 恢复此次源显示，再以 `CommitSourcePixels` 登记像素变更，最后通知 `ImageSourceLoaded`；不能将兼容源 setter 当成版本提交。`MediaHelper.CreateDisplayBitmap` 与 `MatUpdateWriteableBitmap` 共用格式映射，直接把像素写入锁定的 WPF back buffer；16 位 BGR/BGRA 在目标缓冲中转换为 RGB/RGBA，不再分配一份全幅通道转换 `Mat`，原始像素不变。更新方法对冻结目标返回 `false`，打开器据此分配新位图，不写入先前的视频或实时帧。该优化不移除 WPF 的显示缓冲，也不改变测量或算法源帧租约。源、显示和完成信号的责任见[编辑器上下文](../ui-components/image-editor-context.md)与[图像打开契约](../ui-components/ColorVision.ImageEditor.md#打开图像与完成信号)，FileIO 本身不持有编辑器状态。
+CVRAW 及 CVCIE 关联原图复用同尺寸、同格式的可写位图，用 `CommitSourcePixels` 提交并保留 DPI、缩放和平移。首次打开、已有位图冻结或布局不兼容时，若显示像素达到 8 MiB 且格式受支持，则后台写入独立位图，完成后用 `SetImageSource` 发布。两条路径共用像素转换，16 位 BGR/BGRA 直接写成 RGB/RGBA，原始测量和算法帧像素保持不变。源、显示和完成信号的责任见[编辑器上下文](../ui-components/image-editor-context.md)与[图像打开契约](../ui-components/ColorVision.ImageEditor.md#打开图像与完成信号)。
 
 全局持久设置位于 **图像设置 → 文件打开 → CVCIE**，配置 `CvcieDisplayConfig` 和两个显示枚举归属 `Engine/ColorVision.Engine/Media/`。Engine 的 `CvcieDisplaySettingProvider` 实现 `IImageComponent`，通过 `ImageView.RegisterSettings` 注册全局配置与保存委托；加载 Engine 后即可在文件打开页看到此组，不要求先打开 CVCIE。ImageEditor 只提供通用设置宿主与属性编辑器，FileIO 不承载显示偏好或新增 UI 依赖。点击保存或完成/关闭设置窗口时只保存发生改动的配置目标；当前图层调整不写全局默认，详见[图像设置的保存语义](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)：
 

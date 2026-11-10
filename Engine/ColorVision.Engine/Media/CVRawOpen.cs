@@ -27,6 +27,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
@@ -1017,6 +1018,17 @@ namespace ColorVision.Engine.Media
             bool preferSrgb = displayConfig.EnableTrueColor && isCie;
             CvcieBrightnessMode brightnessMode = displayConfig.BrightnessMode;
             double referenceWhite = displayConfig.ReferenceWhiteLuminance;
+            ImageView view = context.ImageView;
+
+            void VerifyOpenTarget()
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+                if (requestId != Volatile.Read(ref _latestOpenRequest)
+                    || !string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
+                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
+            }
+
             bool gateEntered = false;
             try
             {
@@ -1067,24 +1079,27 @@ namespace ColorVision.Engine.Media
                         throw new InvalidDataException("The file contains no displayable image pixels.");
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    WriteableBitmap? editableDisplay = null;
-                    if (displayBitmap is { IsFrozen: true } frozen && EditableBitmapCopy.ShouldCopyInBackground(frozen))
+                    await view.Dispatcher.InvokeAsync(async () =>
                     {
-                        editableDisplay = await context.ImageView.Dispatcher.InvokeAsync(
-                            () => EditableBitmapCopy.CreateAsync(frozen, cancellationToken)).Task.Unwrap().ConfigureAwait(false);
-                    }
-
-                    context.ImageView.Dispatcher.Invoke(() =>
-                    {
-                        string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-                        if (cancellationToken.IsCancellationRequested || requestId != Volatile.Read(ref _latestOpenRequest)
-                            || !string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
+                        VerifyOpenTarget();
+                        WriteableBitmap? editableDisplay = null;
+                        (ImageSource? Source, long Revision, long ContentVersion)? stagingTarget = null;
+                        if (displayBitmap is { IsFrozen: true } frozen && EditableBitmapCopy.ShouldCopyInBackground(frozen))
                         {
-                            log.DebugFormat("图像目标已切换，丢弃迟到的 CVCIE 加载结果：{0}", requestedFilePath);
-                            throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
+                            editableDisplay = await EditableBitmapCopy.CreateAsync(frozen, cancellationToken);
+                        }
+                        // Reusing a compatible bitmap avoids allocating a full display buffer.
+                        else if (mat != null && MediaHelper.TryGetDisplayPixelFormat(mat.Type(), out var format)
+                            && EditableBitmapCopy.ShouldCopyInBackground(mat.Cols, mat.Rows, format.BitsPerPixel)
+                            && !MediaHelper.IsCompatibleDisplayBitmap(view.ViewBitmapSource as WriteableBitmap, mat, format))
+                        {
+                            stagingTarget = (view.ViewBitmapSource, view.ImageRevision, view.ContentVersion);
+                            editableDisplay = await mat.PrepareDisplayBitmapAsync(format, cancellationToken);
                         }
 
-                        using var publication = context.ImageView.BeginImageContentPublication();
+                        VerifyStagingTarget();
+                        bool published = false;
+                        using var publication = view.BeginImageContentPublication(() => published);
                         int displayWidth = displayBitmap?.PixelWidth ?? mat!.Cols;
                         int displayHeight = displayBitmap?.PixelHeight ?? mat!.Rows;
                         context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(CVRawOpen), "打开器接收到的源文件路径");
@@ -1102,52 +1117,76 @@ namespace ColorVision.Engine.Media
 
                         bool hasRgbLayers = cVCIEFile.Channels >= 3 && (srgb != null
                             ? viewMetadata?.AssociatedRawPath != null : !usesLuminance);
-                        CvRawLayerController? controller = InitializeCvFileView(context.ImageView, requestedFilePath,
+                        CvRawLayerController? controller = InitializeCvFileView(view, requestedFilePath,
                             srgb != null ? "cie-srgb" : usesLuminance ? "cie-y" : "composite", hasRgbLayers, viewMetadata, cVCIEFile, fileRevision);
+                        VerifyStagingTarget();
                         if (srgb != null) controller?.CacheSrgb(srgb, brightnessMode, referenceWhite);
 
-                        if (displayBitmap != null)
+                        WriteableBitmap source;
+                        bool preservesView = false;
+                        if (editableDisplay != null || displayBitmap != null)
                         {
-                            context.ImageView.SetImageSource(editableDisplay ?? displayBitmap.Clone(), context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
-                            context.ImageView.UpdateZoomAndScale();
+                            source = editableDisplay ?? displayBitmap!.Clone();
                         }
-                        else if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
+                        else if (view.ViewBitmapSource is WriteableBitmap current && mat!.MatUpdateWriteableBitmap(current))
                         {
-                            OpenCvSharp.Mat sourceMat = mat!;
-                            if (!sourceMat.MatUpdateWriteableBitmap(writeableBitmap))
-                            {
-                                WriteableBitmap replacement = sourceMat.CreateDisplayBitmap();
-                                context.ImageView.SetImageSource(replacement, context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
-                                context.ImageView.UpdateZoomAndScale();
-                            }
-                            else
-                            {
-                                int displayChannels = sourceMat.Channels();
-                                int displayDepth = checked((int)sourceMat.ElemSize1() * 8);
-                                int displayStride = checked(sourceMat.Cols * displayChannels * (displayDepth / 8));
-                                context.Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, writeableBitmap.Format, nameof(CVRawOpen), "当前显示位图像素格式");
-                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, displayChannels, nameof(CVRawOpen), "当前显示位图通道数");
-                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, displayDepth, nameof(CVRawOpen), "当前显示位图位深");
-                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Stride, displayStride, nameof(CVRawOpen), "当前显示位图行跨度");
-                                context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(CVRawOpen), "当前 CVCIE 图像水平 DPI");
-                                context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
-                                // Publish the reused source before revision callbacks observe the update.
-                                context.ProcessingContext.Presentation.Publish(writeableBitmap, context.FunctionImage);
-                                var profileSources = context.ProcessingContext.ProfileMeasurementSources;
-                                context.CommitSourcePixels(writeableBitmap);
-                                // The pixel revision clears derived sources; restore this newly loaded file's measurement options.
-                                context.ProcessingContext.ProfileMeasurementSources = profileSources;
-                                context.ImageView.NotifyImageSourceLoaded();
-                            }
+                            source = current;
+                            preservesView = true;
                         }
                         else
                         {
-                            WriteableBitmap replacement = mat!.CreateDisplayBitmap();
-                            context.ImageView.SetImageSource(replacement, context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
-                            context.ImageView.UpdateZoomAndScale();
+                            source = mat!.CreateDisplayBitmap();
                         }
-                        context.ImageView.AttachImageContentCapability(this);
-                    });
+
+                        long revision = view.ImageRevision;
+                        long contentVersion = view.ContentVersion;
+                        if (preservesView)
+                        {
+                            int displayChannels = mat!.Channels();
+                            int displayDepth = checked((int)mat.ElemSize1() * 8);
+                            int displayStride = checked(mat.Cols * displayChannels * (displayDepth / 8));
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, source.Format, nameof(CVRawOpen), "当前显示位图像素格式");
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, displayChannels, nameof(CVRawOpen), "当前显示位图通道数");
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, displayDepth, nameof(CVRawOpen), "当前显示位图位深");
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.Stride, displayStride, nameof(CVRawOpen), "当前显示位图行跨度");
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, source.DpiX, nameof(CVRawOpen), "当前 CVCIE 图像水平 DPI");
+                            context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, source.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
+                            // Publish the reused source before revision callbacks observe the update.
+                            context.ProcessingContext.Presentation.Publish(source, context.FunctionImage);
+                            VerifyOpenTarget();
+                            var profileSources = context.ProcessingContext.ProfileMeasurementSources;
+                            context.CommitSourcePixels(source);
+                            VerifyPublishedSource();
+                            // The pixel revision invalidates derived sources, including the newly loaded options.
+                            context.ProcessingContext.ProfileMeasurementSources = profileSources;
+                        }
+                        else
+                        {
+                            view.SetImageSource(source, view.EnableEditorImageServices, configureDefaultLayerController: false);
+                            VerifyPublishedSource();
+                            view.UpdateZoomAndScale();
+                        }
+                        VerifyPublishedSource();
+                        view.AttachImageContentCapability(this);
+                        VerifyOpenTarget();
+                        published = true;
+
+                        void VerifyStagingTarget()
+                        {
+                            VerifyOpenTarget();
+                            if (stagingTarget is { } target && (!view.IsCurrentImageRevision(target.Revision)
+                                || view.ContentVersion != target.ContentVersion || !ReferenceEquals(view.ViewBitmapSource, target.Source)))
+                                throw new OperationCanceledException("The target image changed during display preparation.", cancellationToken);
+                        }
+
+                        void VerifyPublishedSource()
+                        {
+                            VerifyOpenTarget();
+                            if (!view.IsCurrentImageRevision(revision + 1) || view.ContentVersion != contentVersion + 1
+                                || !ReferenceEquals(view.ViewBitmapSource, source))
+                                throw new OperationCanceledException("The target image changed during source publication.", cancellationToken);
+                        }
+                    }).Task.Unwrap().ConfigureAwait(false);
                 }, cancellationToken);
             }
             catch (OperationCanceledException) { throw; }

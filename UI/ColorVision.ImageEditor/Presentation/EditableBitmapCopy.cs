@@ -13,7 +13,10 @@ public static class EditableBitmapCopy
     private const int CopyBlockBytes = 8 * 1024 * 1024;
 
     public static bool ShouldCopyInBackground(BitmapSource source)
-        => ((long)source.PixelWidth * source.Format.BitsPerPixel + 7) / 8 * source.PixelHeight >= CopyBlockBytes;
+        => ShouldCopyInBackground(source.PixelWidth, source.PixelHeight, source.Format.BitsPerPixel);
+
+    public static bool ShouldCopyInBackground(int width, int height, int bitsPerPixel)
+        => ((long)width * bitsPerPixel + 7) / 8 * height >= CopyBlockBytes;
 
     /// <summary>Call on the destination dispatcher with a frozen source.</summary>
     public static Task<WriteableBitmap> CreateAsync(BitmapSource source, CancellationToken cancellationToken)
@@ -25,7 +28,8 @@ public static class EditableBitmapCopy
             (buffer, stride) => CopyPixels(source, bounds, buffer, stride, cancellationToken), cancellationToken);
     }
 
-    internal static async Task<WriteableBitmap> CreateAsync(int width, int height, double dpiX, double dpiY,
+    /// <summary>Call on the destination dispatcher. The worker callback writes synchronously and must not access the back buffer after returning.</summary>
+    public static async Task<WriteableBitmap> CreateAsync(int width, int height, double dpiX, double dpiY,
         PixelFormat format, BitmapPalette? palette, Action<IntPtr, int> copyPixels, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

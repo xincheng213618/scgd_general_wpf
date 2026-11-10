@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Core;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Presentation;
 using ColorVision.Themes.Controls;
 using log4net;
 using OpenCvSharp;
@@ -353,7 +354,7 @@ namespace ColorVision.Engine.Media
             return bitmap;
         }
 
-        private static bool TryGetDisplayPixelFormat(MatType type, out PixelFormat format)
+        internal static bool TryGetDisplayPixelFormat(MatType type, out PixelFormat format)
         {
             if (type == MatType.CV_8UC1)
                 format = PixelFormats.Gray8;
@@ -377,50 +378,48 @@ namespace ColorVision.Engine.Media
             return true;
         }
 
+        internal static bool IsCompatibleDisplayBitmap(WriteableBitmap? bitmap, Mat source, PixelFormat format)
+            => bitmap is { IsFrozen: false } && bitmap.PixelWidth == source.Cols && bitmap.PixelHeight == source.Rows
+                && bitmap.Format == format;
+
+        internal static Task<WriteableBitmap> PrepareDisplayBitmapAsync(this Mat source, PixelFormat format, CancellationToken cancellationToken)
+            => EditableBitmapCopy.CreateAsync(source.Cols, source.Rows, 96, 96, format, null,
+                (buffer, stride) => CopyDisplayPixels(source, buffer, stride), cancellationToken);
+
         public static bool MatUpdateWriteableBitmap(this Mat srcMat, WriteableBitmap writeableBitmap)
         {
-            if (writeableBitmap.IsFrozen) return false;
-            if (writeableBitmap.PixelWidth != srcMat.Cols || writeableBitmap.PixelHeight != srcMat.Rows)
-                return false;
-
-            // Equal byte counts do not imply compatible formats (for example float gray and BGRA32).
-            MatType type = srcMat.Type();
-            if (!TryGetDisplayPixelFormat(type, out PixelFormat format) || writeableBitmap.Format != format)
+            if (!TryGetDisplayPixelFormat(srcMat.Type(), out PixelFormat format)
+                || !IsCompatibleDisplayBitmap(writeableBitmap, srcMat, format))
                 return false;
 
             writeableBitmap.Lock();
             try
             {
-                // 使用 srcMat.Type() 确保 dstMat 的元数据与源完全一致
-                using var dstMat = Mat.FromPixelData(srcMat.Rows, srcMat.Cols, srcMat.Type(), writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
-                if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3) // PixelFormats.Rgb48
-                {
-                    Cv2.CvtColor(srcMat, dstMat, ColorConversionCodes.BGR2RGB);
-                }
-                else if (type == MatType.CV_16UC4 || type == MatType.CV_16SC4) // PixelFormats.Rgba64
-                {
-                    Cv2.CvtColor(srcMat, dstMat, ColorConversionCodes.BGRA2RGBA);
-                }
-                else
-                {
-                    srcMat.CopyTo(dstMat);
-                }
-                // 标记脏区域
+                CopyDisplayPixels(srcMat, writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, srcMat.Cols, srcMat.Rows));
-
             }
             catch (Exception ex)
             {
-                log.Error("Failed to update WriteableBitmap from Mat.",ex);
-                // 可以在这里记录日志
+                log.Error("Failed to update WriteableBitmap from Mat.", ex);
                 return false;
             }
             finally
             {
-                // 无论是否发生异常，必须解锁，否则 UI 暴毙
                 writeableBitmap.Unlock();
             }
             return true;
+        }
+
+        private static void CopyDisplayPixels(Mat source, IntPtr buffer, int stride)
+        {
+            MatType type = source.Type();
+            using var destination = Mat.FromPixelData(source.Rows, source.Cols, type, buffer, stride);
+            if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3)
+                Cv2.CvtColor(source, destination, ColorConversionCodes.BGR2RGB);
+            else if (type == MatType.CV_16UC4 || type == MatType.CV_16SC4)
+                Cv2.CvtColor(source, destination, ColorConversionCodes.BGRA2RGBA);
+            else
+                source.CopyTo(destination);
         }
 
         public static WriteableBitmap? ToWriteableBitmap(this CVCIEFile fileInfo, bool showErrors = true)

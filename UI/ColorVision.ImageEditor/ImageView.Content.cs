@@ -31,7 +31,9 @@ public partial class ImageView
         Opentif.ApplyColorVisionMetadata(Config, parameters);
     }
 
-    public IDisposable BeginImageContentPublication()
+    public IDisposable BeginImageContentPublication() => BeginImageContentPublication(null);
+
+    public IDisposable BeginImageContentPublication(Func<bool>? shouldNotify)
     {
         Dispatcher.VerifyAccess();
         bool previous = _publishingDecodedContent;
@@ -39,7 +41,7 @@ public partial class ImageView
         return new PublicationScope(() =>
         {
             _publishingDecodedContent = previous;
-            if (!previous) NotifyImageSourceLoaded();
+            if (!previous && (shouldNotify?.Invoke() ?? true)) NotifyImageSourceLoaded();
         });
     }
 
