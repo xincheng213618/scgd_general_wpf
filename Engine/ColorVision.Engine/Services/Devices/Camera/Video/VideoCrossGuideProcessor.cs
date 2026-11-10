@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private static readonly ILog log = LogManager.GetLogger(typeof(VideoCrossGuideProcessor));
         private readonly object _gate = new();
         private readonly AutoResetEvent _frameReady = new(false);
-        private readonly CancellationTokenSource _cts = new();
+        private readonly TaskCompletionSource _retirement = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Action<VideoCrossGuideResult> _resultHandler;
         private readonly Func<HImage, VideoCrossGuideRequest, int, int, RoiRect, VideoCrossGuideResult> _frameProcessor;
         private readonly Task _workerTask;
@@ -71,9 +71,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _hasPendingFrame;
         private bool _processingFrame;
         private bool _acceptFrames = true;
-        private bool _disposed;
+        private int _disposeRequested;
         private long _generation;
         private long _lastSubmittedTick;
+
+        private bool IsDisposing => Volatile.Read(ref _disposeRequested) != 0;
+        internal Task Retirement => _retirement.Task;
 
         public VideoCrossGuideProcessor(Action<VideoCrossGuideResult> resultHandler)
             : this(resultHandler, VideoCrossGuideDetector.ProcessFrame)
@@ -88,12 +91,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             ArgumentNullException.ThrowIfNull(frameProcessor);
             _resultHandler = resultHandler;
             _frameProcessor = frameProcessor;
-            _workerTask = Task.Factory.StartNew(WorkerLoop, _cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            _workerTask = Task.Factory.StartNew(WorkerLoop, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, VideoCrossGuideRequest request)
         {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || _disposed) return;
+            if (sourcePointer == IntPtr.Zero || length <= 0 || IsDisposing) return;
             if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0) return;
 
             int interval = Math.Max(50, request.IntervalMs);
@@ -119,7 +122,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             lock (_gate)
             {
-                if (_disposed || !_acceptFrames) return;
+                if (IsDisposing || !_acceptFrames) return;
                 EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, sourceRoi.Width, sourceRoi.Height, channels, depth, rowBytes, requiredLength);
                 byte* sourceBase = (byte*)sourcePointer;
                 byte* targetBase = (byte*)_pendingFrame!.Value.pData;
@@ -141,10 +144,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void WorkerLoop()
         {
-            while (!_cts.IsCancellationRequested)
+            while (!IsDisposing)
             {
-                _frameReady.WaitOne(100);
-                if (_cts.IsCancellationRequested) break;
+                _frameReady.WaitOne();
 
                 HImage workingFrame;
                 VideoCrossGuideRequest request;
@@ -155,6 +157,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
                 lock (_gate)
                 {
+                    if (IsDisposing) break;
                     if (!_hasPendingFrame || _pendingFrame == null) continue;
 
                     (_pendingFrame, _workingFrame) = (_workingFrame, _pendingFrame);
@@ -188,7 +191,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
                     lock (_gate)
                     {
-                        if (_disposed || generation != _generation) continue;
+                        if (IsDisposing || generation != _generation) continue;
                     }
                     try { _resultHandler(result); }
                     catch { }
@@ -199,7 +202,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     {
                         _processingFrame = false;
                         // Stop/reset may retire this frame while native detection still reads it.
-                        if (_disposed || generation != _generation) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
+                        if (IsDisposing || generation != _generation) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
                     }
                 }
             }
@@ -233,9 +236,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Start()
         {
+            if (IsDisposing) return;
             lock (_gate)
             {
-                if (_disposed || _acceptFrames) return;
+                if (IsDisposing || _acceptFrames) return;
                 _acceptFrames = true;
                 Interlocked.Exchange(ref _lastSubmittedTick, 0);
             }
@@ -243,13 +247,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Reset()
         {
-            lock (_gate) ResetCore();
+            if (IsDisposing) return;
+            lock (_gate)
+            {
+                if (!IsDisposing) ResetCore();
+            }
         }
 
         public void Stop()
         {
+            if (IsDisposing) return;
             lock (_gate)
             {
+                if (IsDisposing) return;
                 _acceptFrames = false;
                 ResetCore();
             }
@@ -274,26 +284,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Dispose()
         {
-            lock (_gate)
-            {
-                if (_disposed) return;
-                _disposed = true;
-                _acceptFrames = false;
-                _cts.Cancel();
-                _frameReady.Set();
-            }
+            if (Interlocked.Exchange(ref _disposeRequested, 1) != 0) return;
+            // Wake an idle worker before scheduling cleanup of its event and buffers.
+            _frameReady.Set();
+            _ = Task.Run(FinishRetirementAsync);
+        }
 
+        private async Task FinishRetirementAsync()
+        {
             try
             {
-                _workerTask.Wait();
+                await _workerTask.ConfigureAwait(false);
             }
-            catch (AggregateException)
+            catch (Exception ex)
             {
+                log.Warn("Video cross-guide worker stopped unexpectedly.", ex);
             }
 
-            lock (_gate) ResetCore();
-            _frameReady.Dispose();
-            _cts.Dispose();
+            // A submit that was already copying can still own the pending buffer and signal.
+            lock (_gate)
+            {
+                _acceptFrames = false;
+                ResetCore();
+                _frameReady.Dispose();
+            }
+            _retirement.SetResult();
         }
     }
 

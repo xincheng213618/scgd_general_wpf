@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Camera.Video;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -155,6 +156,65 @@ public sealed class VideoProcessorResilienceTests
             finishProcessing.Set();
             processor?.Dispose();
             Marshal.FreeCoTaskMem(frame);
+        }
+    }
+
+    [Fact]
+    public async Task CrossGuideDisposeReturnsOnDispatcherBeforeRetiringTheBlockedDetection()
+    {
+        var dispatcher = WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher);
+        TimeSpan testWait = TimeSpan.FromSeconds(10);
+        TaskCompletionSource processingStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using ManualResetEventSlim finishProcessing = new();
+        int attempts = 0;
+        int results = 0;
+        int sampleAfterDispose = -1;
+        IntPtr frame = Marshal.AllocCoTaskMem(1);
+        var processor = new VideoCrossGuideProcessor(
+            _ => Interlocked.Increment(ref results),
+            (image, _, _, _, _) =>
+            {
+                Interlocked.Increment(ref attempts);
+                processingStarted.SetResult();
+                if (!finishProcessing.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Cross-guide gate was not released.");
+                sampleAfterDispose = Marshal.ReadByte(image.pData);
+                return default;
+            });
+        var request = new VideoCrossGuideRequest(new RoiRect(0, 0, 1, 1), new Point(), 0, 50, 0.5, 0.1, 1);
+
+        try
+        {
+            Marshal.WriteByte(frame, 17);
+            processor.SubmitFrame(frame, 1, 1, 1, 1, 8, 1, request);
+            await processingStarted.Task.WaitAsync(testWait);
+            Marshal.WriteByte(frame, 99);
+
+            await dispatcher.InvokeAsync(processor.Dispose).Task.WaitAsync(testWait);
+            await dispatcher.InvokeAsync(() =>
+            {
+                processor.Dispose();
+                processor.Reset();
+                processor.Stop();
+                processor.Start();
+                Assert.False(processor.Retirement.IsCompleted);
+                Assert.NotNull(ReadCrossGuideBuffers(processor).Working);
+            }).Task.WaitAsync(testWait);
+            processor.SubmitFrame(frame, 1, 1, 1, 1, 8, 1, request);
+            Assert.Null(ReadCrossGuideBuffers(processor).Pending);
+
+            finishProcessing.Set();
+            await processor.Retirement.WaitAsync(testWait);
+            Assert.True(ReadCrossGuideBuffers(processor) is (null, null));
+            Assert.Equal(17, sampleAfterDispose);
+            Assert.Equal(1, Volatile.Read(ref attempts));
+            Assert.Equal(0, Volatile.Read(ref results));
+        }
+        finally
+        {
+            finishProcessing.Set();
+            processor.Dispose();
+            try { await processor.Retirement.WaitAsync(testWait); }
+            finally { Marshal.FreeCoTaskMem(frame); }
         }
     }
 
