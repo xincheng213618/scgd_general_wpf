@@ -72,6 +72,8 @@ FlowHeadlessExecutionResult result =
 
 运行器在执行超时或运行中取消时调用 `StopNode(startNodeName, serialNumber)`，再构造终止结果。若指定 SN 仍有活动动作，`BaseStartNode.Stop` 将其改为停止并从活动映射移除、向节点图传递停止动作；这条链没有等待设备停止确认或回滚外部写入的完成屏障。`Canceled` / `TimedOut`、宿主回到 `Ready` 或随后释放，都不能单独证明硬件已经停稳；重试前须由相应设备/业务边界确认实际状态。
 
+并发 `StopAsync` 等待同一次托管运行收尾，各调用方可设置自己的等待时限。并发或重复 `DisposeAsync` 共用一次清理，先取消当前运行，再等托管运行和取消回调退出后释放节点图。节点长期不响应取消时，释放会继续等待，直到其退出。运行错误由 `RunAsync` 返回，释放仍会清理节点图。
+
 ## 结果与失败语义
 
 `FlowHeadlessExecutionResult` 返回 `Started`、`Termination`、`ContentHash`、`Data` 和 `ElapsedMilliseconds`。`Succeeded` 只有在已经启动、终止类型为 `Completed` 且引擎状态也为 `Completed` 时才为真。

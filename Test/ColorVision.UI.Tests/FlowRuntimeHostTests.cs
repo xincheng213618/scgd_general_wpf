@@ -11,6 +11,8 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowRuntimeHostTests
 {
+    private static readonly TimeSpan LifecycleTestTimeout = TimeSpan.FromSeconds(10);
+
     [Theory]
     [InlineData("SN-BARE", "SN-BARE")]
     [InlineData("SN?BARE", "SN_BARE")]
@@ -56,6 +58,129 @@ public sealed class FlowRuntimeHostTests
             Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
             Assert.Equal(StatusTypeEnum.Canceled, result.Data.Status);
             Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Fact]
+    public void DisposalCanBeRepeatedAfterCleanup()
+    {
+        RunInSta(async () =>
+        {
+            var host = new FlowRuntimeHost();
+
+            await host.DisposeAsync();
+            await host.DisposeAsync();
+            host.Dispose();
+
+            Assert.Equal(FlowRuntimeHostState.Disposed, host.State);
+        });
+    }
+
+    [Fact]
+    public void ConcurrentDisposalsWaitForActiveRunCleanup()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new CVEndNode(), new HeadlessPendingReadinessStartNode());
+            var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            var start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-DISPOSE");
+
+            Task firstDisposal;
+            Task secondDisposal;
+            bool firstWasPending;
+            bool secondWasPending;
+            try
+            {
+                await start.ReadinessEntered.Task.WaitAsync(LifecycleTestTimeout);
+                firstDisposal = host.DisposeAsync().AsTask();
+                secondDisposal = host.DisposeAsync().AsTask();
+                firstWasPending = !firstDisposal.IsCompleted;
+                secondWasPending = !secondDisposal.IsCompleted;
+            }
+            finally
+            {
+                start.Readiness.TrySetResult(false);
+            }
+
+            await Task.WhenAll(firstDisposal, secondDisposal).WaitAsync(LifecycleTestTimeout);
+            FlowEngineRunResult result = await execution.WaitAsync(LifecycleTestTimeout);
+
+            Assert.True(firstWasPending);
+            Assert.True(secondWasPending);
+            Assert.False(result.Started);
+            Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
+            Assert.Equal(FlowRuntimeHostState.Disposed, host.State);
+            Assert.Empty(host.Nodes);
+        });
+    }
+
+    [Fact]
+    public void DisposalClearsGraphWhenActiveRunFaults()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new CVEndNode(), new HeadlessPendingReadinessStartNode());
+            var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            var start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-DISPOSE-FAULT");
+            var readinessFailure = new InvalidOperationException("The test node failed readiness.");
+
+            Task disposal;
+            try
+            {
+                await start.ReadinessEntered.Task.WaitAsync(LifecycleTestTimeout);
+                disposal = host.DisposeAsync().AsTask();
+            }
+            finally
+            {
+                start.Readiness.TrySetException(readinessFailure);
+            }
+
+            var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => execution.WaitAsync(LifecycleTestTimeout));
+            await disposal.WaitAsync(LifecycleTestTimeout);
+
+            Assert.Same(readinessFailure, failure);
+            Assert.Equal(FlowRuntimeHostState.Disposed, host.State);
+            Assert.Empty(host.Nodes);
+        });
+    }
+
+    [Fact]
+    public void ConcurrentStopsJoinSettlementAndKeepSeparateWaitTimeouts()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new CVEndNode(), new HeadlessPendingReadinessStartNode());
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas);
+            var start = Assert.Single(host.Nodes.OfType<HeadlessPendingReadinessStartNode>());
+            Task<FlowEngineRunResult> execution = host.RunAsync("HeadlessStart", "SN-STOP");
+
+            Task firstStop;
+            Task secondStop;
+            try
+            {
+                await start.ReadinessEntered.Task.WaitAsync(LifecycleTestTimeout);
+                firstStop = host.StopAsync(Timeout.InfiniteTimeSpan);
+                secondStop = host.StopAsync(Timeout.InfiniteTimeSpan);
+                Assert.False(firstStop.IsCompleted);
+                Assert.False(secondStop.IsCompleted);
+                await Assert.ThrowsAsync<TimeoutException>(() => host.StopAsync(TimeSpan.Zero));
+                Assert.Equal(FlowRuntimeHostState.Stopping, host.State);
+            }
+            finally
+            {
+                start.Readiness.TrySetResult(false);
+            }
+
+            await Task.WhenAll(firstStop, secondStop).WaitAsync(LifecycleTestTimeout);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+            FlowEngineRunResult result = await execution.WaitAsync(LifecycleTestTimeout);
+            Assert.False(result.Started);
+            Assert.Equal(FlowEngineRunTermination.Canceled, result.Termination);
         });
     }
 
@@ -251,10 +376,15 @@ public sealed class HeadlessPendingReadinessStartNode : BaseStartNode
     }
 
     public TaskCompletionSource<bool> Readiness { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public TaskCompletionSource ReadinessEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public override bool RequiresConnectionReady => true;
 
-    public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default) => Readiness.Task;
+    public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default)
+    {
+        ReadinessEntered.TrySetResult();
+        return Readiness.Task;
+    }
 }
 
 public sealed class HeadlessNeverEndNode : STNode

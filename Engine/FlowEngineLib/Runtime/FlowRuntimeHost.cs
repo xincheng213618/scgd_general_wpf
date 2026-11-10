@@ -25,14 +25,15 @@ public enum FlowRuntimeHostState
 /// </summary>
 public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
 {
+    // Kept alive for callers that entered the gate while disposal was in progress.
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly CVNodeContainer _container;
     private readonly FlowNodeManager _nodeManager;
     private readonly FlowRuntimeServiceResolver _serviceResolver;
     private readonly FlowEngineControl _control;
     private readonly FlowEngineRunner _runner;
-    private CancellationTokenSource? _activeRunCts;
-    private Task<FlowEngineRunResult>? _activeRun;
+    private ActiveRun? _activeRun;
+    private Task? _disposal;
     private FlowRuntimeHostState _state;
     private bool _disposed;
 
@@ -138,7 +139,7 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        Task<FlowEngineRunResult> runTask;
+        ActiveRun run;
         try
         {
             ThrowIfDisposed();
@@ -148,16 +149,15 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
                     $"The runtime host is not ready. Current state: {_state}.");
             }
 
+            run = new ActiveRun(cancellationToken);
             _state = FlowRuntimeHostState.Running;
-            _activeRunCts = CancellationTokenSource.CreateLinkedTokenSource(
-                cancellationToken);
-            runTask = _runner.RunAsync(
+            run.Runner = _runner.RunAsync(
                 startNodeName,
                 serialNumber,
                 readinessTimeout ?? TimeSpan.FromSeconds(2),
                 executionTimeout,
-                _activeRunCts.Token);
-            _activeRun = runTask;
+                run.Source.Token);
+            _activeRun = run;
         }
         finally
         {
@@ -166,55 +166,58 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
 
         try
         {
-            return await runTask.ConfigureAwait(false);
+            return await run.Runner.ConfigureAwait(false);
         }
         finally
         {
-            await _lifecycleGate
-                .WaitAsync(CancellationToken.None)
-                .ConfigureAwait(false);
-            try
-            {
-                _activeRunCts?.Dispose();
-                _activeRunCts = null;
-                _activeRun = null;
-                if (!_disposed)
-                    _state = FlowRuntimeHostState.Ready;
-            }
-            finally
-            {
-                _lifecycleGate.Release();
-            }
+            await SettleRunAsync(run).ConfigureAwait(false);
         }
+    }
+
+    private async Task SettleRunAsync(ActiveRun run)
+    {
+        Task cancellation;
+        await _lifecycleGate.WaitAsync().ConfigureAwait(false);
+        try { cancellation = run.SealCancellation(); }
+        finally { _lifecycleGate.Release(); }
+
+        // The stop/dispose caller observes callback errors. The run retains its own outcome.
+        try { await cancellation.ConfigureAwait(false); }
+        catch (Exception) { }
+        run.Source.Dispose();
+
+        await _lifecycleGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            _activeRun = null;
+            if (!_disposed) _state = FlowRuntimeHostState.Ready;
+            run.Settled.SetResult();
+        }
+        finally { _lifecycleGate.Release(); }
     }
 
     public async Task StopAsync(
         TimeSpan? waitTimeout = null,
         CancellationToken cancellationToken = default)
     {
-        Task<FlowEngineRunResult>? activeRun;
+        Task stop;
         await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             ThrowIfDisposed();
-            if (_state != FlowRuntimeHostState.Running)
+            if (_activeRun is not { } run)
                 return;
 
             _state = FlowRuntimeHostState.Stopping;
-            _activeRunCts?.Cancel();
-            activeRun = _activeRun;
+            stop = Task.WhenAll(run.RequestCancellation(), run.Runner, run.Settled.Task);
         }
         finally
         {
             _lifecycleGate.Release();
         }
 
-        if (activeRun == null)
-            return;
-
         TimeSpan timeout = waitTimeout ?? TimeSpan.FromSeconds(5);
-        await activeRun.WaitAsync(timeout, cancellationToken)
-            .ConfigureAwait(false);
+        await stop.WaitAsync(timeout, cancellationToken).ConfigureAwait(false);
     }
 
     public void Dispose()
@@ -224,45 +227,82 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        Task<FlowEngineRunResult>? activeRun;
+        TaskCompletionSource? owner = null;
+        Task? activeSettlement = null;
+        Task cancellation = Task.CompletedTask;
+        Task disposal;
         await _lifecycleGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (_disposed)
-                return;
-
-            _disposed = true;
-            _state = FlowRuntimeHostState.Disposed;
-            _activeRunCts?.Cancel();
-            activeRun = _activeRun;
+            if (_disposal == null)
+            {
+                owner = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _disposal = owner.Task;
+                _disposed = true;
+                _state = FlowRuntimeHostState.Disposed;
+                if (_activeRun is { } run)
+                {
+                    activeSettlement = run.Settled.Task;
+                    cancellation = run.RequestCancellation();
+                }
+            }
+            disposal = _disposal;
         }
         finally
         {
             _lifecycleGate.Release();
         }
 
-        if (activeRun != null)
+        if (owner != null)
         {
             try
             {
-                await activeRun.WaitAsync(TimeSpan.FromSeconds(5))
-                    .ConfigureAwait(false);
+                // A wait timeout cannot transfer ownership of a graph still used by the runner.
+                if (activeSettlement != null) await activeSettlement.ConfigureAwait(false);
+                try { _control.FlowClear(); }
+                finally
+                {
+                    try { _control.Dispose(); }
+                    finally { _container.Dispose(); }
+                }
+                await cancellation.ConfigureAwait(false);
+                GC.SuppressFinalize(this);
+                owner.SetResult();
             }
-            catch (TimeoutException)
+            catch (Exception error)
             {
+                owner.SetException(error);
             }
         }
-
-        _control.FlowClear();
-        _control.Dispose();
-        _container.Dispose();
-        _activeRunCts?.Dispose();
-        _lifecycleGate.Dispose();
-        GC.SuppressFinalize(this);
+        await disposal.ConfigureAwait(false);
     }
 
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+    }
+
+    private sealed class ActiveRun
+    {
+        private Task? _cancellation;
+        private bool _settling;
+
+        public ActiveRun(CancellationToken cancellationToken)
+        {
+            Source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        }
+
+        public CancellationTokenSource Source { get; }
+        public Task<FlowEngineRunResult> Runner { get; set; } = null!;
+        public TaskCompletionSource Settled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Both transitions run under the host gate. CancelAsync dispatches callbacks outside it.
+        public Task RequestCancellation() => _cancellation ??= _settling ? Task.CompletedTask : Source.CancelAsync();
+
+        public Task SealCancellation()
+        {
+            _settling = true;
+            return _cancellation ?? Task.CompletedTask;
+        }
     }
 }
