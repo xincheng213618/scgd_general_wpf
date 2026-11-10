@@ -19,11 +19,7 @@ namespace ColorVision.ImageEditor.Tif
     public record class Opentif(EditorContext EditorContext) : IAsyncImageOpen, IImageOpenContentLifetime
     {
         private const int ConversionBufferPixelCount = 256 * 1024;
-        private readonly object _decodeSync = new();
-        private Task _decodeTail = Task.CompletedTask;
-        private long _latestRequestId;
-        private readonly object _requestSync = new();
-        private CancellationTokenSource? _pendingRequest;
+        private readonly BitmapOpenRequests _requests = new();
 
         public static int GetChannelCount(BitmapSource source)
         {
@@ -96,12 +92,7 @@ namespace ColorVision.ImageEditor.Tif
             catch (Exception) { /* Legacy fire-and-forget callers have no completion channel. */ }
         }
 
-        public Task ReleaseContentAsync(bool reuseBuffers)
-        {
-            Interlocked.Increment(ref _latestRequestId);
-            lock (_requestSync) _pendingRequest?.Cancel();
-            return _decodeTail;
-        }
+        public Task ReleaseContentAsync(bool reuseBuffers) => _requests.CancelAndDrain();
 
         public async Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default)
         {
@@ -110,7 +101,9 @@ namespace ColorVision.ImageEditor.Tif
             if (!File.Exists(filePath)) throw new FileNotFoundException("Image file does not exist.", filePath);
 
             string requestedFilePath = filePath;
-            long requestId = Interlocked.Increment(ref _latestRequestId);
+            using var request = _requests.Start(cancellationToken);
+            cancellationToken = request.Token;
+            cancellationToken.ThrowIfCancellationRequested();
 
             FileInfo fileInfo = new(requestedFilePath);
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(Opentif), "打开器接收到的源文件路径");
@@ -119,74 +112,32 @@ namespace ColorVision.ImageEditor.Tif
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileCreationTime, fileInfo.CreationTime, nameof(Opentif), "当前文件创建时间");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileModifiedTime, fileInfo.LastWriteTime, nameof(Opentif), "当前文件修改时间");
 
-            using CancellationTokenSource requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            lock (_requestSync)
+            var (decodedImage, writeableBitmap) = await _requests.PrepareAsync(async () =>
             {
-                _pendingRequest?.Cancel();
-                _pendingRequest = requestCancellation;
-            }
-            cancellationToken = requestCancellation.Token;
-
-            TaskCompletionSource decodeTurn = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            Task previousDecode;
-            lock (_decodeSync)
-            {
-                previousDecode = _decodeTail;
-                _decodeTail = decodeTurn.Task;
-            }
-
-            await previousDecode;
-            try
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!IsCurrentRequest(context, requestedFilePath, requestId))
-                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
-
-                DecodedImage decodedImage = await Task.Run(() => DecodeImage(requestedFilePath), cancellationToken);
-
-                if (!IsCurrentRequest(context, requestedFilePath, requestId))
-                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
-
-                BitmapSource source = decodedImage.BitmapSource;
+                BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
+                DecodedImage decoded = await Task.Run(() => DecodeImage(requestedFilePath), cancellationToken);
+                BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
 
                 // Providers may await or cancel before publication; keep the display staging private.
                 // 测量型 Gray32Float 通常不是可直接显示的归一化范围；Gray16 仅作为显示代理，
                 // 测量和无损导出仍持有原始浮点样本，不能从此显示代理反推。
+                BitmapSource source = decoded.BitmapSource;
                 bool normalizeFloat = source.Format == PixelFormats.Gray32Float && TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen;
-                WriteableBitmap writeableBitmap = await PrepareDisplayBitmapAsync(source, 96, 96, normalizeFloat, cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!IsCurrentRequest(context, requestedFilePath, requestId))
-                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
+                var display = await PrepareDisplayBitmapAsync(source, 96, 96, normalizeFloat, cancellationToken);
+                return (decoded, display);
+            }, cancellationToken);
 
-                context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(Opentif), "位图像素宽度");
-                context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(Opentif), "位图像素高度");
-                ApplyMetadata(context, decodedImage.Metadata);
+            BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(Opentif), "位图像素宽度");
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(Opentif), "位图像素高度");
+            ApplyMetadata(context, decodedImage.Metadata);
 
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!IsCurrentRequest(context, requestedFilePath, requestId))
-                    throw new OperationCanceledException("Image open request was superseded.", cancellationToken);
-                await context.ImageView.PublishDecodedImageContentAsync(
-                    new DecodedImageContent(decodedImage.Metadata.ColorVisionParameters == null && source.Format != PixelFormats.Gray32Float ? writeableBitmap : source, decodedImage.Metadata.ColorVisionParameters, requestedFilePath),
-                    writeableBitmap, cancellationToken);
-                context.ImageView.UpdateZoomAndScale();
-            }
-            finally
-            {
-                lock (_requestSync)
-                {
-                    if (ReferenceEquals(_pendingRequest, requestCancellation)) _pendingRequest = null;
-                }
-                decodeTurn.TrySetResult();
-            }
-        }
-
-        private bool IsCurrentRequest(EditorContext context, string requestedFilePath, long requestId)
-        {
-            if (requestId != Volatile.Read(ref _latestRequestId))
-                return false;
-
-            string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            return string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase);
+            BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
+            var parameters = decodedImage.Metadata.ColorVisionParameters;
+            BitmapSource original = decodedImage.BitmapSource;
+            await context.ImageView.PublishDecodedImageContentAsync(
+                new DecodedImageContent(parameters == null && original.Format != PixelFormats.Gray32Float ? writeableBitmap : original, parameters, requestedFilePath),
+                writeableBitmap, cancellationToken);
         }
 
         private static DecodedImage DecodeImage(string filePath)

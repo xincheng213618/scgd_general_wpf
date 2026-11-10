@@ -1123,6 +1123,83 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [InlineData(".png", typeof(CommonImageOpen))]
+    [InlineData(".tiff", typeof(Opentif))]
+    public async Task LatestStaticOpenPublishesWhileSupersededCapabilityIsPreparing(string extension, Type openerType)
+    {
+        string prefix = Path.Combine(Path.GetTempPath(), $"colorvision-superseded-content-{Guid.NewGuid():N}");
+        string supersededPath = prefix + "-old" + extension;
+        string latestPath = prefix + "-latest" + extension;
+        var provider = new DelayedContentProvider(supersededPath);
+        ImageView? view = null;
+        Task supersededOpen = Task.CompletedTask;
+        Task latestOpen = Task.CompletedTask;
+        var loadedPaths = new List<string?>();
+        try
+        {
+            IImageOpen opener = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                WriteEncodedImage(supersededPath);
+                WriteEncodedImage(latestPath, landscape: true);
+                view = new ImageView { EnableEditorImageServices = false };
+                view.RegisterImageContentProvider(provider);
+                view.ImageSourceLoaded += (_, _) => loadedPaths.Add(view.ImageContent?.FilePath);
+                view.OpenImage(supersededPath);
+                supersededOpen = view.ImageOpenCompletion;
+                var selectedOpener = Assert.IsAssignableFrom<IImageOpen>(view.EditorContext.IImageOpen);
+                Assert.IsType(openerType, selectedOpener);
+                return selectedOpener;
+            });
+            await provider.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            WpfTestHost.Invoke(() =>
+            {
+                view!.OpenImage(latestPath);
+                latestOpen = view.ImageOpenCompletion;
+                Assert.Same(opener, view.EditorContext.IImageOpen);
+            });
+            await latestOpen.WaitAsync(TimeSpan.FromSeconds(10));
+            var (latestSource, latestRevision, pendingRelease) = WpfTestHost.Invoke(() =>
+            {
+                BitmapSource source = Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource);
+                Assert.Equal((3, 2), (source.PixelWidth, source.PixelHeight));
+                Assert.Equal(latestPath, Assert.Single(loadedPaths));
+                Assert.Same(provider.ImmediateCapability, view.ImageContentCapability);
+                Assert.True(provider.ImmediateCapability.Activated);
+                return (source, view.ImageRevision, view.PendingContentRelease);
+            });
+            Assert.False(pendingRelease.IsCompleted);
+
+            provider.Continue.TrySetResult();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => supersededOpen.WaitAsync(TimeSpan.FromSeconds(10)));
+            await pendingRelease.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(latestPath, Assert.Single(loadedPaths));
+                Assert.Equal(latestRevision, view!.ImageRevision);
+                Assert.Same(latestSource, view.ViewBitmapSource);
+                Assert.Same(provider.ImmediateCapability, view.ImageContentCapability);
+                Assert.False(provider.ImmediateCapability.Disposed);
+                Assert.False(provider.Capability.Activated);
+                Assert.True(provider.Capability.Disposed);
+            });
+        }
+        finally
+        {
+            provider.Continue.TrySetResult();
+            try { await Task.WhenAll(supersededOpen, latestOpen).WaitAsync(TimeSpan.FromSeconds(10)); }
+            catch (Exception) when (supersededOpen.IsCompleted && latestOpen.IsCompleted) { }
+            finally
+            {
+                if (view != null) WpfTestHost.Invoke(view.Dispose);
+                File.Delete(supersededPath);
+                File.Delete(latestPath);
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(".png")]
     [InlineData(".tiff")]
     public async Task AwaitableStaticOpenerRejectsInvalidPaths(string extension)
@@ -1525,13 +1602,15 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         public void OnEditorToolsDeactivated(EditorContext context) { ToolsDeactivatedCalls++; ToolsActive = false; OnToolsDeactivated?.Invoke(); }
     }
 
-    private sealed class DelayedContentProvider : IImageContentProvider
+    private sealed class DelayedContentProvider(string? delayedPath = null) : IImageContentProvider
     {
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Continue { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public DelayedCapability Capability { get; } = new();
+        public DelayedCapability ImmediateCapability { get; } = new();
         public async Task<IImageContentCapability?> PrepareAsync(EditorContext context, DecodedImageContent content, CancellationToken cancellationToken)
         {
+            if (delayedPath != null && !string.Equals(delayedPath, content.FilePath, StringComparison.Ordinal)) return ImmediateCapability;
             Started.TrySetResult();
             // Deliberately return despite cancellation, as a third-party provider might.
             await Continue.Task;
@@ -1565,7 +1644,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             imageView.EditorContext.IImageOpen?.GetType());
     }
 
-    private static void WriteEncodedImage(string filePath)
+    private static void WriteEncodedImage(string filePath, bool landscape = false)
     {
         byte[] pixels =
         [
@@ -1576,15 +1655,17 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             0x00, 0xFF, 0xFF, 0xFF,
             0xFF, 0x00, 0xFF, 0xFF,
         ];
+        int width = landscape ? 3 : 2;
+        int height = landscape ? 2 : 3;
         BitmapSource source = BitmapSource.Create(
-            2,
-            3,
+            width,
+            height,
             96,
             96,
             PixelFormats.Bgra32,
             null,
             pixels,
-            8);
+            width * 4);
         BitmapEncoder encoder = Path.GetExtension(filePath).ToLowerInvariant() switch
         {
             ".png" => new PngBitmapEncoder(),
