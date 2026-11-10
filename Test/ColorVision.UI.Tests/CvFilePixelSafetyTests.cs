@@ -1,6 +1,9 @@
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
+using OpenCvSharp;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -238,6 +241,110 @@ public sealed class CvFilePixelSafetyTests
             File.Delete(ciePath);
             File.Delete(rawPath);
         }
+    }
+
+    [Fact]
+    public async Task LargeCvcieThumbnailMatchesLegacyAreaResizeWithTheUiDispatcherBlocked()
+    {
+        const int width = 311, height = 233, thumbWidth = 97, thumbHeight = 72;
+        const int planePixels = width * height;
+        float[] samples = new float[3 * planePixels];
+        for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
+        {
+            int pattern = (x * 7919 + y * 7381 + x * y * 13) % 10007 - 5003;
+            samples[y * width + x] = pattern * 0.03125f + (y - x) * 0.0001f;
+        }
+        Array.Fill(samples, 1000f, planePixels, planePixels);
+        Array.Fill(samples, -1000f, 2 * planePixels, planePixels);
+        byte[] data = new byte[samples.Length * sizeof(float)];
+        Buffer.BlockCopy(samples, 0, data, 0, data.Length);
+
+        using Mat source = Mat.FromPixelData(height, width, MatType.CV_32FC1, samples);
+        Cv2.Normalize(source, source, 0, 255, NormTypes.MinMax);
+        source.ConvertTo(source, MatType.CV_8U);
+        using Mat expected = new();
+        Cv2.Resize(source, expected, new OpenCvSharp.Size(thumbWidth, thumbHeight), 0, 0, InterpolationFlags.Area);
+        byte[] expectedPixels = new byte[thumbWidth * thumbHeight];
+        Marshal.Copy(expected.Data, expectedPixels, 0, expectedPixels.Length);
+
+        string path = Path.Combine(Path.GetTempPath(), $"CieThumbnail_{Guid.NewGuid():N}.cvcie");
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                Version = 2, Cols = width, Rows = height, Bpp = 32, Channels = 3, FileExtType = CVType.CIE,
+                Exp = [1, 1, 1], Data = data,
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+
+            var dispatcher = WpfTestHost.Invoke(() => Application.Current.Dispatcher);
+            using ManualResetEventSlim release = new();
+            TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task blocked = dispatcher.InvokeAsync(() =>
+            {
+                entered.SetResult();
+                if (!release.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("UI dispatcher gate was not released.");
+            }).Task;
+            Task<BitmapSource?>? generation = null;
+            TimeSpan testWait = TimeSpan.FromSeconds(10);
+            try
+            {
+                await entered.Task.WaitAsync(testWait);
+                generation = new CVRawThumbnailProvider().GenerateThumbnailAsync(path, thumbWidth);
+                BitmapSource? thumbnail = await generation.WaitAsync(testWait);
+
+                Assert.NotNull(thumbnail);
+                Assert.True(thumbnail.IsFrozen);
+                Assert.Equal(PixelFormats.Gray8, thumbnail.Format);
+                Assert.Equal((thumbWidth, thumbHeight), (thumbnail.PixelWidth, thumbnail.PixelHeight));
+                byte[] pixels = new byte[expectedPixels.Length];
+                thumbnail.CopyPixels(pixels, thumbWidth, 0);
+                Assert.Equal(expectedPixels, pixels);
+            }
+            finally
+            {
+                release.Set();
+                await blocked.WaitAsync(testWait);
+                if (generation != null) await generation.WaitAsync(testWait);
+            }
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(".CVRAW", false)]
+    [InlineData(".cvraw", true)]
+    public async Task RawThumbnailPreservesInterleavedBgrAndRejectsShortPayload(string extension, bool truncated)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"RawThumbnail_{Guid.NewGuid():N}{extension}");
+        try
+        {
+            byte[] bgr = [11, 42, 73, 21, 52, 83, 31, 62, 93, 41, 72, 103];
+            using CVCIEFile file = new()
+            {
+                Version = 2, Cols = 2, Rows = 2, Bpp = 8, Channels = 3, FileExtType = CVType.Raw,
+                Exp = [1, 1, 1], Data = truncated ? bgr[..^1] : bgr,
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+
+            var provider = new CVRawThumbnailProvider();
+            BitmapSource? thumbnail = await WpfTestHost.Invoke(() => provider.GenerateThumbnailAsync(path, 2));
+            if (truncated)
+            {
+                Assert.Null(thumbnail);
+                return;
+            }
+
+            Assert.NotNull(thumbnail);
+            Assert.True(thumbnail.IsFrozen);
+            Assert.Equal(PixelFormats.Bgr24, thumbnail.Format);
+            Assert.Equal((2, 2), (thumbnail.PixelWidth, thumbnail.PixelHeight));
+            byte[] actual = new byte[bgr.Length];
+            thumbnail.CopyPixels(actual, 2 * 3, 0);
+            Assert.Equal(bgr, actual);
+        }
+        finally { File.Delete(path); }
     }
 
     [Theory]

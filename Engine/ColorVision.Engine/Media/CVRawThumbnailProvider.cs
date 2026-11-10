@@ -6,7 +6,9 @@ using OpenCvSharp.WpfExtensions;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
@@ -20,6 +22,8 @@ namespace ColorVision.Engine.Media
     public class CVRawThumbnailProvider : IThumbnailProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawThumbnailProvider));
+        private const int FloatChunkSamples = 64 * 1024;
+        private const double DoubleMachineEpsilon = 2.2204460492503131e-16;
 
         // Cache the supported extensions from the attribute for CanHandle consistency
         private static readonly string[] SupportedExtensions;
@@ -63,9 +67,9 @@ namespace ColorVision.Engine.Media
             try
             {
                 int index = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
-                if (index > 0)
+                using (fileInfo)
                 {
-                    return (fileInfo.Cols, fileInfo.Rows);
+                    if (index > 0) return (fileInfo.Cols, fileInfo.Rows);
                 }
             }
             catch (Exception ex)
@@ -81,90 +85,11 @@ namespace ColorVision.Engine.Media
         /// </summary>
         public async Task<BitmapSource?> GenerateThumbnailAsync(string filePath, int maxSize)
         {
-            if (!File.Exists(filePath) || !CanHandle(filePath))
-                return null;
+            if (maxSize <= 0 || !CanHandle(filePath)) return null;
 
             try
             {
-                return await Task.Run(() =>
-                {
-                    BitmapSource? result = null;
-                    CVCIEFile? fileInfo = null;
-                    Mat? mat = null;
-                    Mat? thumbnail = null;
-
-                    try
-                    {
-                        int index = CVFileUtil.ReadCIEFileHeader(filePath, out fileInfo);
-                        if (index <= 0)
-                        {
-                            log.Warn($"ReadCIEFileHeader returned {index} for {filePath}");
-                            return null;
-                        }
-
-                        bool read;
-                        if (fileInfo.FileExtType == CVType.CIE && fileInfo.Channels == 3)
-                        {
-                            // XYZ thumbnails use the embedded X plane, regardless of any associated RAW.
-                            fileInfo.Dispose();
-                            read = CVFileUtil.ReadCIEFileChannel(filePath, 0, out fileInfo);
-                            if (read) fileInfo.Channels = 1;
-                        }
-                        else
-                        {
-                            read = CVFileUtil.ReadCIEFileData(filePath, ref fileInfo, index);
-                        }
-                        if (!read)
-                        {
-                            log.Warn($"Unable to read thumbnail pixels from {filePath}");
-                            return null;
-                        }
-
-                        mat = CreateMatFromCVCIEFile(fileInfo);
-                        if (mat == null)
-                            return null;
-
-                        // Calculate thumbnail dimensions maintaining aspect ratio
-                        double scale = Math.Min((double)maxSize / mat.Cols, (double)maxSize / mat.Rows);
-                        scale = Math.Min(scale, 1.0); // Don't upscale small images
-
-                        int thumbWidth = (int)(mat.Cols * scale);
-                        int thumbHeight = (int)(mat.Rows * scale);
-
-                        if (thumbWidth <= 0 || thumbHeight <= 0)
-                            return null;
-
-                        // Resize using OpenCV
-                        thumbnail = new Mat();
-                        Cv2.Resize(mat, thumbnail, new Size(thumbWidth, thumbHeight), 0, 0, InterpolationFlags.Area);
-
-                        // Convert to WriteableBitmap
-                        // Note: ToWriteableBitmap creates a frozen copy, safe to use across threads
-                        if (System.Windows.Application.Current != null)
-                        {
-                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                var bitmap = thumbnail.ToWriteableBitmap();
-                                bitmap?.Freeze();
-                                result = bitmap;
-                            });
-                        }
-                        else
-                        {
-                            // Fallback if Application.Current is not available
-                            log.Warn("Application.Current is null, cannot convert Mat to WriteableBitmap");
-                        }
-
-                        return result;
-                    }
-                    finally
-                    {
-                        // Ensure proper cleanup of all resources
-                        thumbnail?.Dispose();
-                        mat?.Dispose();
-                        fileInfo?.Dispose();
-                    }
-                });
+                return await Task.Run(() => ReadThumbnail(filePath, maxSize)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -173,39 +98,104 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        /// <summary>
-        /// Creates an OpenCV Mat from CVCIEFile data.
-        /// Based on the pattern from MediaHelper.ToWriteableBitmap().
-        /// </summary>
-        private static Mat? CreateMatFromCVCIEFile(CVCIEFile fileInfo)
+        private static BitmapSource? ReadThumbnail(string filePath, int maxSize)
+        {
+            if (!File.Exists(filePath)) return null;
+            using Stream stream = CVFileReadCache.OpenRead(filePath, populateCache: false);
+            int headerEnd = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 4);
+            using (header)
+            {
+                if (headerEnd <= 0 || header.Rows <= 0 || header.Cols <= 0
+                    || header.Bpp is not (8 or 16 or 32 or 64) || header.Channels is not (1 or 3 or 4))
+                    return null;
+
+                double scale = Math.Min(1, Math.Min((double)maxSize / header.Cols, (double)maxSize / header.Rows));
+                Size size = new((int)(header.Cols * scale), (int)(header.Rows * scale));
+                if (size.Width <= 0 || size.Height <= 0) return null;
+
+                // XYZ thumbnails use the embedded X plane, regardless of any associated RAW.
+                bool embeddedX = header.Channels == 3 && string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
+                int channels = embeddedX ? 1 : header.Channels;
+                long planeBytes = checked((long)header.Rows * header.Cols * (header.Bpp / 8));
+                long requiredBytes = checked(planeBytes * header.Channels);
+                long sourceBytes = checked(planeBytes * channels);
+                if (sourceBytes > Array.MaxLength) return null;
+                MatType type = MatType.MakeType(header.Depth, channels);
+                if (stream is FileStream file)
+                {
+                    CvcieDiskPixels pixels = CvcieDiskPixels.Locate(file, header, headerEnd, requiredBytes, requireExactLength: false);
+                    return ReadDiskThumbnail(file, pixels, header.Rows, header.Cols, type, (int)sourceBytes, size);
+                }
+
+                // An existing CVRAW cache entry is a borrowed stream, not a disk file that can be mapped.
+                if (!CVFileUtil.ReadCIEFilePixels(stream, header, headerEnd)) return null;
+                using Mat source = Mat.FromPixelData(header.Rows, header.Cols, type, header.Data);
+                return ResizeToBitmap(source, size);
+            }
+        }
+
+        private static unsafe BitmapSource ReadDiskThumbnail(FileStream file, CvcieDiskPixels pixels,
+            int rows, int columns, MatType type, int sourceBytes, Size size)
         {
             try
             {
-                Mat? src = null;
-
-                if (fileInfo.FileExtType == CVType.Tif)
+                using var mapping = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
+                using var view = mapping.CreateViewAccessor(pixels.Offset, sourceBytes, MemoryMappedFileAccess.Read);
+                byte* address = null;
+                view.SafeMemoryMappedViewHandle.AcquirePointer(ref address);
+                try
                 {
-                    src = Cv2.ImDecode(fileInfo.Data, ImreadModes.Unchanged);
+                    using Mat source = Mat.FromPixelData(rows, columns, type, (IntPtr)(address + view.PointerOffset));
+                    return ResizeToBitmap(source, size);
                 }
-                else if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
-                {
-                    src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
-
-                    // Normalize 32-bit float images to 8-bit for display
-                    if (fileInfo.Bpp == 32 && src != null)
-                    {
-                        // Normalize in-place and convert to 8-bit
-                        Cv2.Normalize(src, src, 0, 255, NormTypes.MinMax);
-                        src.ConvertTo(src, MatType.CV_8U);
-                    }
-                }
-
-                return src;
+                finally { view.SafeMemoryMappedViewHandle.ReleasePointer(); }
             }
-            catch (Exception ex)
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or NotSupportedException)
             {
-                log.Error($"CreateMatFromCVCIEFile Error: {ex.Message}");
-                return null;
+                using Mat source = new(rows, columns, type);
+                pixels.ReadExactly(new Span<byte>((void*)source.Data, sourceBytes), 0, CancellationToken.None);
+                return ResizeToBitmap(source, size);
+            }
+        }
+
+        private static BitmapSource ResizeToBitmap(Mat source, Size size)
+        {
+            using Mat? bytes = source.Depth() == MatType.CV_32F ? ConvertFloatToBytes(source) : null;
+            using Mat thumbnail = new();
+            Cv2.Resize(bytes ?? source, thumbnail, size, 0, 0, InterpolationFlags.Area);
+            var bitmap = thumbnail.ToWriteableBitmap();
+            bitmap.Freeze();
+            return bitmap;
+        }
+
+        private static Mat ConvertFloatToBytes(Mat source)
+        {
+            using Mat samples = source.Reshape(1, 1);
+            Cv2.MinMaxLoc(samples, out double min, out double max);
+            // Match OpenCV's CV_32F NORM_MINMAX scale and shift, then retain its separate rounding to 8-bit before Area resize.
+            float scale = (float)(255 * (max - min > DoubleMachineEpsilon ? 1 / (max - min) : 0));
+            float shift = 0f - (float)(min * scale);
+            Mat bytes = new(source.Rows, source.Cols, MatType.MakeType(MatType.CV_8U, source.Channels()));
+            try
+            {
+                using Mat normalized = new();
+                int sampleCount = samples.Cols;
+                IntPtr output = bytes.Data;
+                for (int start = 0; start < sampleCount;)
+                {
+                    int count = Math.Min(FloatChunkSamples, sampleCount - start);
+                    using Mat block = samples.ColRange(start, start + count);
+                    using Mat destination = Mat.FromPixelData(1, count, MatType.CV_8UC1, IntPtr.Add(output, start));
+                    block.ConvertTo(normalized, MatType.CV_32F, scale, shift);
+                    normalized.ConvertTo(destination, MatType.CV_8U);
+                    start += count;
+                }
+                return bytes;
+            }
+            catch
+            {
+                bytes.Dispose();
+                throw;
             }
         }
     }
