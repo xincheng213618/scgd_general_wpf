@@ -19,7 +19,7 @@ related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.s
 
 1. 核对源文件、尺寸、位深与通道数。
 2. CVCIE 可选择 Y；三通道文件另可选择 X、Z，关联原图可读取时才显示“原图”。带有效且 `CanReplay=true` 校正参数的 CVRAW 同样提供 CIE 通道选择，原图来自自身；单通道亮度校正只有 Y。无可重放参数的 CVRAW 只导出原图。
-3. 设置名称、输出目录和格式。CVRAW 原图提供 TIFF、PNG、JPEG；浮点 XYZ 通道必须选 TIFF，PNG 不能保存浮点样本，选择不支持的组合会明确报错。CVCIE 窗口提供 TIFF。TIFF 可选 LZW 或 ZIP。PNG 使用自动压缩，JPEG 使用质量 100。
+3. 设置名称、输出目录和格式。CVRAW 原图提供 TIFF、PNG、JPEG，CVCIE 窗口提供 TIFF。选择测量通道时须使用 TIFF，若选择 PNG 或 JPEG，可取消测量通道后重试，仅导出原图。TIFF 可选 LZW 或 ZIP，PNG 使用自动压缩，JPEG 使用质量 100。
 4. 点击导出。工作在后台执行，期间表单和按钮禁用；成功提示后关闭窗口，异常提示后保留窗口。进度条不表示通道完成比例。
 
 名称默认取源文件主干，可在窗口中修改。目录可新建，最近导出位置通过 `recent-image-export-locations.json` 保存。单个输出先在同目录编码临时文件，像素和参数写入成功后才替换目标；编码或元数据写入失败保留已有目标。没有同名覆盖确认或整组回滚；需要保留已有文件时选择新的空目录。
@@ -58,7 +58,7 @@ $colorVisionExe = 'C:\Program Files\ColorVision Inc\ColorVision\ColorVision.exe'
 | PNG | 默认自动；显式值限制在 0–9。需要自动时省略参数：解析器不会把以 `-` 开头的下一个参数当作数值，因此不要依赖 `-mx -1` |
 | JPEG | 默认 100，显式值限制在 0–100 |
 
-格式值与 Copilot 工具的 `tiff` / `jpeg` 枚举不同。不要把 `-t jpeg` 当作 JPEG：它会回退 TIFF。CVCIE 的静默 CLI 可以传 PNG/JPEG，但窗口只提供 TIFF；编码器是否能接收相应位深和通道需看实际结果。需要保留浮点测量通道时使用 TIFF；JPEG 路径转换为 8 位，不能作为原始测量数值的保存格式。
+格式值与 Copilot 工具的 `tiff` / `jpeg` 枚举不同，`-t jpeg` 回退 TIFF。CVCIE 和可重放校正的 CVRAW 默认选择测量通道，静默导出使用 `-t tif`。传入 `-t png` 或 `-t jpg` 时，程序在写图前报告失败。普通 CVRAW 仅导出原图时支持 JPEG，输出为 8 位。
 
 ## 通道与输出名称
 

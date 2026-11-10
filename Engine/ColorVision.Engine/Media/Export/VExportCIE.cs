@@ -304,27 +304,24 @@ namespace ColorVision.Engine.Media
 
             ColorCalibrationSnapshot? recordedCalibration = ReadCalibration(fileName, cvcie);
             ColorCalibrationSnapshot? calibration = recordedCalibration?.CanReplay == true ? recordedCalibration : null;
+            int measurementChannels = fileType == CVType.CIE ? cvcie.Channels : calibration?.Channels ?? 0;
+            bool exportX = measurementChannels == 3 && export.IsExportChannelX;
+            bool exportY = measurementChannels is 1 or 3 && export.IsExportChannelY;
+            bool exportZ = measurementChannels == 3 && export.IsExportChannelZ;
+            int selectedMeasurementCount = (exportX ? 1 : 0) + (exportY ? 1 : 0) + (exportZ ? 1 : 0);
+            if (selectedMeasurementCount > 0 && !export.IsTiff)
+                throw new NotSupportedException("Measurement channels require TIFF. Select TIFF or clear the CIE channels to export only the original image.");
+
             string? associatedSourcePath = cvcie.FileExtType == CVType.CIE
                 ? ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName)
                 : null;
-            int selectedImageCount = cvcie.FileExtType switch
+            bool exportSource = export.IsExportSrc && (cvcie.FileExtType switch
             {
-                CVType.Raw or CVType.Src => (export.IsExportSrc ? 1 : 0) +
-                    (calibration != null && export.IsExportChannelY ? 1 : 0) +
-                    (calibration?.Channels == 3 && export.IsExportChannelX ? 1 : 0) +
-                    (calibration?.Channels == 3 && export.IsExportChannelZ ? 1 : 0),
-                CVType.CIE =>
-                    (export.IsExportSrc && associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath) ? 1 : 0) +
-                    (cvcie.Channels == 1 && export.IsExportChannelY ? 1 : 0) +
-                    (cvcie.Channels == 3 && export.IsExportChannelX ? 1 : 0) +
-                    (cvcie.Channels == 3 && export.IsExportChannelY ? 1 : 0) +
-                    (cvcie.Channels == 3 && export.IsExportChannelZ ? 1 : 0),
-                _ => 0,
-            };
-            bool includesMeasurementChannels = (cvcie.FileExtType == CVType.CIE || calibration != null)
-                && (export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ);
-            if (export.IsPng && includesMeasurementChannels)
-                throw new NotSupportedException("PNG cannot preserve floating point XYZ samples; select source pixels only or export TIFF.");
+                CVType.Raw or CVType.Src => true,
+                CVType.CIE => associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath),
+                _ => false,
+            });
+            int selectedImageCount = selectedMeasurementCount + (exportSource ? 1 : 0);
             bool includeImageSuffix = selectedImageCount > 1;
 
             Mat src;
@@ -355,20 +352,20 @@ namespace ColorVision.Engine.Media
                     if (selectedImageCount == 0) break;
                     if (!CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
                         throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
-                    if (export.IsExportSrc)
+                    if (exportSource)
                     {
                         using (src = CreateSourceMat(cvcie, recordedCalibration))
                         {
                             SaveImage(src, "_Src", cvcie, "Src");
                         }
                     }
-                    if (calibration != null && (export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ))
+                    if (calibration != null && selectedMeasurementCount > 0)
                     {
                         using RawColorMeasurementSource colorSource = new(cvcie, calibration);
                         for (int channel = 0; channel < calibration.Channels; channel++)
                         {
                             string channelName = calibration.Channels == 1 ? "Y" : channel == 0 ? "X" : channel == 1 ? "Y" : "Z";
-                            bool selected = channelName == "X" ? export.IsExportChannelX : channelName == "Y" ? export.IsExportChannelY : export.IsExportChannelZ;
+                            bool selected = channelName == "X" ? exportX : channelName == "Y" ? exportY : exportZ;
                             if (!selected) continue;
                             using CVCIEFile channelFile = new()
                             {
@@ -384,24 +381,15 @@ namespace ColorVision.Engine.Media
                     break;
                 case CVType.CIE:
 
-                    if (export.IsExportSrc)
+                    if (exportSource && associatedSourcePath != null && CVFileUtil.Read(associatedSourcePath, out CVCIEFile cvraw))
                     {
-                        if (associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath))
+                        ColorCalibrationSnapshot? sourceCalibration = ReadCalibration(associatedSourcePath, cvraw);
+                        using (src = CreateSourceMat(cvraw, sourceCalibration))
                         {
-                            if (CVFileUtil.Read(associatedSourcePath, out CVCIEFile cvraw))
-                            {
-                                ColorCalibrationSnapshot? sourceCalibration = ReadCalibration(associatedSourcePath, cvraw);
-                                using (src = CreateSourceMat(cvraw, sourceCalibration))
-                                {
-                                    SaveImage(src, "_Src", cvraw, "Src", sourceCalibration);
-                                }
-                            }
+                            SaveImage(src, "_Src", cvraw, "Src", sourceCalibration);
                         }
-
                     }
-                    bool hasSelectedPlane = cvcie.Channels == 1 ? export.IsExportChannelY
-                        : cvcie.Channels == 3 && (export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ);
-                    if (hasSelectedPlane && CvcieDiskPixels.TryLocate(cieStream!, cvcie, index, out long declaredLength) is { } pixels)
+                    if (selectedMeasurementCount > 0 && CvcieDiskPixels.TryLocate(cieStream!, cvcie, index, out long declaredLength) is { } pixels)
                     {
                         int planeBytes = GetSingleChannelByteCount(cvcie);
                         if (declaredLength < (long)planeBytes * cvcie.Channels)
@@ -411,7 +399,7 @@ namespace ColorVision.Engine.Media
                         for (int channel = 0; channel < cvcie.Channels; channel++)
                         {
                             string channelName = cvcie.Channels == 1 ? "Y" : channel == 0 ? "X" : channel == 1 ? "Y" : "Z";
-                            bool selected = channelName == "X" ? export.IsExportChannelX : channelName == "Y" ? export.IsExportChannelY : export.IsExportChannelZ;
+                            bool selected = channelName == "X" ? exportX : channelName == "Y" ? exportY : exportZ;
                             if (!selected) continue;
                             pixels.ReadExactly(plane, (long)channel * planeBytes, CancellationToken.None);
                             using Mat channelImage = CreateSingleChannelMat(cvcie, plane);
