@@ -1,7 +1,9 @@
 using ColorVision.Engine;
 using ColorVision.Engine.Impl.SolutionImpl;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
@@ -10,12 +12,14 @@ using ColorVision.Solution.MultiImageViewer;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using FlowEngineLib.Algorithm;
 using Newtonsoft.Json.Linq;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -105,6 +109,65 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
                 window.Close();
                 view.Dispose();
             }
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CameraMeasurementPublishesTheCapturedOrientationAndExposure(bool withCie)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new PresentationScope();
+            using var device = new DeviceCamera(Resource("camera-capture"));
+            var window = new CameraLocalWindow(device);
+            RemoveHandler(window, "Window_Loaded", typeof(RoutedEventHandler));
+            RemoveHandler(window, "Window_Closing", typeof(CancelEventHandler));
+            ImageView view = Preview(window);
+            var opener = new CVRawOpen(view.EditorContext);
+            view.IEditorToolFactory.IImageOpens[".cvcie"] = opener;
+            try
+            {
+                byte[] raw = [1, 2, 3, 4, 5, 6], oriented = [3, 2, 1, 6, 5, 4];
+                byte[] capturedRaw;
+                LocalCameraPreview preview;
+                using (LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+                {
+                    Width = 3, Height = 2, Channels = 1, SourceBpp = 8, CieBpp = 32, Exposure = [9],
+                    FlipMode = CVImageFlipMode.Y, IsMirrorReady = withCie,
+                    PrimaryBufferKind = withCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
+                }, raw.Length, withCie ? raw.Length * sizeof(float) : 0))
+                {
+                    using LocalFlowFrameLease lease = frame.Acquire();
+                    Marshal.Copy(raw, 0, lease.RawPointer, raw.Length);
+                    if (withCie)
+                    {
+                        Marshal.Copy(raw.Select(value => (float)value).ToArray(), 0, lease.CiePointer, raw.Length);
+                        LocalFrameMirrorService.ApplyPending(frame);
+                    }
+                    preview = LocalCameraPreview.Create(frame);
+                    capturedRaw = lease.CopyRawToArray();
+                }
+
+                device.DisplayConfig.ExpTime = 99;
+                window.ShowCapturedFrame(preview, capturedRaw);
+                Assert.Same(preview.Bitmap, view.ViewBitmapSource);
+                Assert.True(preview.Bitmap.IsFrozen);
+                byte[] display = new byte[raw.Length];
+                preview.Bitmap.CopyPixels(display, 3, 0);
+                Assert.Equal(oriented, display);
+                Assert.Equal(raw, window.srcrawArray);
+                if (withCie)
+                {
+                    Assert.Same(opener, view.EditorContext.IImageOpen);
+                    Assert.Equal(new[] { 9f }, view.Config.GetProperties<float[]>("Exp"));
+                    Assert.Equal(oriented.Select(value => (float)value),
+                        Enumerable.Range(0, raw.Length).Select(i => BitConverter.ToSingle(window.rawArray, i * sizeof(float))));
+                }
+                else Assert.Empty(window.rawArray);
+            }
+            finally { window.Close(); }
         });
     }
 

@@ -1,6 +1,5 @@
 #pragma warning disable CA1051,CA1805,CA1806,CA1826,CA1859,CS8625
 using ColorVision.Engine.FlowProcessing.Nodes;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
@@ -19,7 +18,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -41,15 +39,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private sealed class LocalCaptureDisplayResult
         {
-            public required ColorVision.ImageEditor.Tif.ColorVisionTiffParameters Parameters { get; init; }
+            public required LocalCameraPreview Preview { get; init; }
             public required byte[] RawData { get; init; }
-            public required byte[] CieData { get; init; }
-            public required WriteableBitmap DisplayBitmap { get; init; }
-            public int Width { get; init; }
-            public int Height { get; init; }
-            public int SourceBpp { get; init; }
-            public int CieBpp { get; init; }
-            public int Channels { get; init; }
             public int CaptureTimeMs { get; init; }
             public int CalibrationTimeMs { get; init; }
             public int SaveTimeMs { get; init; }
@@ -941,9 +932,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             finally { _isCapturing = false; UpdateConnectionState(Device.CameraBackend.LocalOwned); }
         }
 
-        UInt32 src_w = 0, src_h = 0;
-        UInt32 src_bpp = 0, src_channels = 0;
-
         private async void btn_Meas_Click(object sender, RoutedEventArgs e)
         {
             await MeasureOnceAsync();
@@ -974,20 +962,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 };
                 LocalCaptureDisplayResult display = await Task.Run(() => CaptureAndPrepareDisplay(request));
 
-                srcrawArray = display.RawData;
-                rawArray = display.CieData;
-                src_w = checked((uint)display.Width);
-                src_h = checked((uint)display.Height);
-                src_bpp = checked((uint)display.SourceBpp);
-                src_channels = checked((uint)display.Channels);
-
-                ShowImageInView(display.DisplayBitmap);
-                if (display.CieData.Length > 0)
-                {
-                    AttachLiveCvcieResult(src_w, src_h, checked((uint)display.CieBpp), src_channels);
-                }
-                ImageView.SetImageParameterRecord(display.Parameters);
-                FitFirstCaptureToWindow();
+                ShowCapturedFrame(display.Preview, display.RawData);
 
                 CaptureStatusText.Text = EngineLocalization.Format($"取图 {display.CaptureTimeMs} ms · 校正 {display.CalibrationTimeMs} ms · 保存 {display.SaveTimeMs} ms · 总计 {display.TotalTimeMs} ms");
             }
@@ -1012,21 +987,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             // Temporary HK comparison marker; emitted after timed capture and before preview copies.
             string exposure = string.Join("/", lease.Metadata.Exposure.Select(value => value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             log.Info(FormattableString.Invariant($"[CameraCaptureCompare] Path=cvCamera HikUseMvs={request.Device.LocalCameraSession.OpenedUseHikMvs} HikBayerQuality={request.Device.LocalCameraSession.OpenedHikBayerQuality} HikOutputBgr={request.Device.LocalCameraSession.OpenedHikOutputBgr} Session={_captureComparisonSession} Index={++_captureComparisonIndex} Serial={request.Device.Config.CameraID} FrameId={frame.FrameId} ExposureMs={exposure} Gain={lease.Metadata.Gain} Width={lease.Metadata.Width} Height={lease.Metadata.Height} Bits={lease.Metadata.SourceBpp} Channels={lease.Metadata.Channels} Average={request.CameraParameters?.AvgCount} AutoExposure={request.IsAutoExposure} CaptureMs={capture.CaptureTimeMs} CalibrationMs={capture.CalibrationTimeMs} SaveMs={capture.SaveTimeMs} PipelineMs={capture.TotalTimeMs} SaveFiles={request.SaveFiles} Calibration={lease.Metadata.CalibrationTemplate} Flip={request.FlipMode}"));
-            byte[] rawData = lease.CopyRawToArray();
-            byte[] cieData = lease.CopyCieToArray();
-            WriteableBitmap displayBitmap = LocalCameraPreview.CreateRawBitmap(rawData, lease.Metadata.SourceBpp, lease.Metadata.Channels, lease.Metadata.Width, lease.Metadata.Height);
-            displayBitmap.Freeze();
             return new LocalCaptureDisplayResult
             {
-                Parameters = CameraFileMetadata.CreateParameters(lease.Metadata, lease.ColorCalibration, lease.CalibrationProvenance),
-                RawData = rawData,
-                CieData = cieData,
-                DisplayBitmap = displayBitmap,
-                Width = lease.Metadata.Width,
-                Height = lease.Metadata.Height,
-                SourceBpp = lease.Metadata.SourceBpp,
-                CieBpp = lease.Metadata.CieBpp,
-                Channels = lease.Metadata.Channels,
+                Preview = LocalCameraPreview.Create(frame),
+                RawData = lease.CopyRawToArray(),
                 CaptureTimeMs = capture.CaptureTimeMs,
                 CalibrationTimeMs = capture.CalibrationTimeMs,
                 SaveTimeMs = capture.SaveTimeMs,
@@ -1060,14 +1024,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
         }
 
-        private void ShowImageInView(WriteableBitmap writeableBitmap)
+        internal void ShowCapturedFrame(LocalCameraPreview preview, byte[] rawData)
         {
-            ImageView.ReleaseImageContent();
-            ImageView.IEditorToolFactory.ApplyImageOpenTools(null);
-            ImageView.SetLayerController(null);
-            ImageView.Config.ClearProperties();
-
-            ImageView.OpenImage(writeableBitmap);
+            srcrawArray = rawData;
+            rawArray = preview.CieData;
+            preview.Show(ImageView, copyBitmap: false);
+            FitFirstCaptureToWindow();
         }
 
         private float[] GetCurrentExposureValues(int channelCount)
@@ -1088,22 +1050,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 2 => new[] { exposureR, exposureG },
                 _ => new[] { exposureR, exposureG, exposureB },
             };
-        }
-
-        private void AttachLiveCvcieResult(uint width, uint height, uint bpp, uint channels)
-        {
-            if (rawArray == null || rawArray.Length == 0)
-            {
-                return;
-            }
-
-            if (!ImageView.IEditorToolFactory.IImageOpens.TryGetValue(".cvcie", out var imageOpen)
-                || imageOpen is not CVRawOpen cvRawOpen)
-            {
-                return;
-            }
-
-            cvRawOpen.AttachLiveCvcie(ImageView, width, height, bpp, channels, rawArray, GetCurrentExposureValues(GetSelectedChannelCount()));
         }
 
         private async void btn_CalAutoExp_Click(object sender, RoutedEventArgs e)
@@ -1131,10 +1077,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }));
                 rawArray = Array.Empty<byte>();
                 srcrawArray = Array.Empty<byte>();
-                src_w = checked((uint)preview.Metadata.Width);
-                src_h = checked((uint)preview.Metadata.Height);
-                src_bpp = checked((uint)preview.Metadata.SourceBpp);
-                src_channels = checked((uint)preview.Metadata.Channels);
                 // The preview owns its bitmap; the native/flow frame is already released.
                 preview.Show(ImageView);
                 FitFirstCaptureToWindow();

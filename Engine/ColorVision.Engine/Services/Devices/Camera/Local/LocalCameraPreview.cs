@@ -3,7 +3,7 @@ using ColorVision.ImageEditor;
 using FlowEngineLib.Algorithm;
 using OpenCvSharp;
 using System;
-using System.Windows.Media;
+using System.Windows;
 using System.Windows.Media.Imaging;
 using ColorVision.ImageEditor.Tif;
 
@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     // Copy before a flow hands its mutable buffers downstream. The view retains only the latest snapshot.
     internal sealed class LocalCameraPreview
     {
-        internal required BitmapSource Bitmap { get; init; }
+        internal required WriteableBitmap Bitmap { get; init; }
         internal required byte[] CieData { get; init; }
         internal required LocalFrameMetadata Metadata { get; init; }
         internal required float[] Exposure { get; init; }
@@ -23,14 +23,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             using LocalFlowFrameLease lease = frame.Acquire();
             LocalFrameMetadata metadata = lease.Metadata;
             // Borrow RAW only during the synchronous copy into an independently owned display bitmap.
-            BitmapSource bitmap = CreateRawBitmap(lease.RawPointer, lease.RawLength, metadata.SourceBpp, metadata.Channels, metadata.Width, metadata.Height);
-            if (!frame.IsRawFlipApplied && metadata.FlipMode != CVImageFlipMode.None)
-            {
-                LocalFrameMirrorService.ValidateFlipMode(metadata.FlipMode);
-                bool flipX = metadata.FlipMode is CVImageFlipMode.Y or CVImageFlipMode.XY;
-                bool flipY = metadata.FlipMode is CVImageFlipMode.X or CVImageFlipMode.XY;
-                bitmap = new TransformedBitmap(bitmap, new ScaleTransform(flipX ? -1 : 1, flipY ? -1 : 1));
-            }
+            CVImageFlipMode displayFlip = frame.IsRawFlipApplied ? CVImageFlipMode.None : metadata.FlipMode;
+            WriteableBitmap bitmap = CreateRawBitmap(lease.RawPointer, lease.RawLength, metadata.SourceBpp, metadata.Channels,
+                metadata.Width, metadata.Height, displayFlip);
             bitmap.Freeze();
             return new LocalCameraPreview
             {
@@ -46,7 +41,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 return CreateRawBitmap((IntPtr)pointer, raw.Length, bpp, channels, width, height);
         }
 
-        private static WriteableBitmap CreateRawBitmap(IntPtr raw, int length, int bpp, int channels, int width, int height)
+        private static WriteableBitmap CreateRawBitmap(IntPtr raw, int length, int bpp, int channels, int width, int height,
+            CVImageFlipMode displayFlip = CVImageFlipMode.None)
         {
             MatType matType = (bpp, channels) switch
             {
@@ -62,16 +58,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             // Use the CVRAW decoder's BGR-to-WPF conversion, including BGR16 -> Rgb48.
             // The converter owns the display copy; neither source samples nor their order are changed.
             using Mat mat = Mat.FromPixelData(height, width, matType, raw, stride);
-            return mat.CreateDisplayBitmap();
+            WriteableBitmap bitmap = mat.CreateDisplayBitmap();
+            if (displayFlip == CVImageFlipMode.None) return bitmap;
+
+            // Orient the private display buffer without modifying the frame or allocating a second bitmap.
+            bitmap.Lock();
+            try
+            {
+                using Mat display = Mat.FromPixelData(height, width, matType, bitmap.BackBuffer, bitmap.BackBufferStride);
+                Cv2.Flip(display, display, LocalFrameMirrorService.ToOpenCvFlipMode(displayFlip));
+                bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+            }
+            finally { bitmap.Unlock(); }
+            return bitmap;
         }
 
-        public void Show(ImageView view)
+        public void Show(ImageView view, bool copyBitmap = true)
         {
             view.ReleaseImageContent();
             view.IEditorToolFactory.ApplyImageOpenTools(null);
             view.SetLayerController(null);
             view.Config.ClearProperties();
-            view.OpenImage(new WriteableBitmap(Bitmap));
+            view.OpenImage(copyBitmap ? new WriteableBitmap(Bitmap) : Bitmap);
             if (CieData.Length > 0 && view.IEditorToolFactory.IImageOpens.TryGetValue(".cvcie", out var opener) && opener is CVRawOpen cvRaw)
             {
                 int cieChannels = CieData.Length / checked(Metadata.Width * Metadata.Height * sizeof(float));

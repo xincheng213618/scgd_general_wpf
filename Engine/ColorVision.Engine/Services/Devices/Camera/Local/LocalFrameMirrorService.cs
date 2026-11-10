@@ -121,7 +121,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : throw new NotSupportedException($"Mirror supports one- or three-plane CIE; actual planes: {channels}.");
         }
 
-        private static OpenCvSharp.FlipMode ToOpenCvFlipMode(CVImageFlipMode flipMode)
+        internal static OpenCvSharp.FlipMode ToOpenCvFlipMode(CVImageFlipMode flipMode)
             => flipMode switch
             {
                 CVImageFlipMode.X => OpenCvSharp.FlipMode.X,
