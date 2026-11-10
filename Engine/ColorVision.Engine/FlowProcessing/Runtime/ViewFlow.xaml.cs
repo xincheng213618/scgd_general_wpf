@@ -670,22 +670,24 @@ namespace ColorVision.Engine.FlowProcessing
             FlowParam? packageFlowParam = null;
             if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
             {
-                try
+                using FileStream stream = File.OpenRead(filePath);
+                Span<byte> signature = stackalloc byte[STNodeConstant.NodeFlag.Length];
+                bool legacyCanvas = stream.ReadAtLeast(signature, signature.Length, false) == signature.Length
+                    && signature.SequenceEqual(STNodeConstant.NodeFlag);
+                if (legacyCanvas)
                 {
-                    var (stnData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
-                    if (stnData != null && stnData.Length > 0)
-                    {
-                        packageFlowParam = new FlowParam
-                        {
-                            Name = Path.GetFileNameWithoutExtension(filePath),
-                            DataBase64 = Convert.ToBase64String(stnData)
-                        };
-                        canvasData = stnData;
-                    }
+                    canvasData = File.ReadAllBytes(filePath);
                 }
-                catch (Exception ex)
+                else
                 {
-                    log.Debug("Open cvflow package as legacy canvas file.", ex);
+                    (canvasData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
+                    if (canvasData.Length == 0)
+                        throw new InvalidDataException(LocalizedText.Get("流程包缺少 flow.stn。"));
+                    packageFlowParam = new FlowParam
+                    {
+                        Name = Path.GetFileNameWithoutExtension(filePath),
+                        DataBase64 = Convert.ToBase64String(canvasData)
+                    };
                 }
             }
 

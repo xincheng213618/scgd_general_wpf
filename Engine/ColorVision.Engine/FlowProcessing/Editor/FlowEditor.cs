@@ -9,14 +9,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
     public class FlowEditor : EditorBase
     {
         public override void Open(string filePath)
-        {
-            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow
-            {
-                Owner = Application.Current.GetActiveWindow()
-            };
-            flowEngineToolWindow.OpenFlow(filePath);
-            flowEngineToolWindow.Show();
-        }
+            => FlowEngineToolWindow.ShowFile(filePath, Application.Current.GetActiveWindow());
     }
 
 }

@@ -4,10 +4,12 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Flow.Versioning;
+using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -343,6 +345,112 @@ public class ViewFlowDocumentBehaviorTests
             }
         });
     }
+
+    [Theory]
+    [InlineData("invalid-stn", false)]
+    [InlineData("invalid-stn", true)]
+    [InlineData("corrupt-zip", false)]
+    [InlineData("corrupt-zip", true)]
+    [InlineData("missing-canvas", false)]
+    public void InvalidStandaloneFileReturnsItsFailureWithoutLeavingAWindow(string input, bool explicitEditor)
+    {
+        WithStandaloneWindow(_ =>
+        {
+            string extension = input == "invalid-stn" ? ".stn" : ".cvflow";
+            string path = Path.Combine(Path.GetTempPath(), $"flow-open-invalid-{Guid.NewGuid():N}{extension}");
+            FlowEngineToolWindow[] previous = GetStandaloneWindows();
+            try
+            {
+                string expectedError;
+                if (input == "invalid-stn")
+                {
+                    File.WriteAllBytes(path, new byte[5]);
+                    expectedError = "无法识别的文件类型";
+                }
+                else if (input == "corrupt-zip")
+                {
+                    File.WriteAllBytes(path, [80, 75, 3, 4, 0]);
+                    expectedError = Assert.Throws<InvalidDataException>(() => FlowPackageHelper.ImportFlowPackage(path)).Message;
+                }
+                else
+                {
+                    using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+                        archive.CreateEntry("readme.txt");
+                    expectedError = "流程包缺少 flow.stn。";
+                }
+
+                ResourceOpenResult result = OpenStandaloneResource(path, explicitEditor);
+
+                Assert.Equal(ResourceOpenKind.File, result.Kind);
+                Assert.False(result.Succeeded);
+                Assert.False(result.Canceled);
+                if (explicitEditor)
+                {
+                    Assert.Contains(Path.GetFileName(path), result.ErrorMessage);
+                    Assert.Contains(expectedError, result.ErrorMessage);
+                }
+                else Assert.Equal(expectedError, result.ErrorMessage);
+                Assert.Equal(previous, GetStandaloneWindows());
+            }
+            finally
+            {
+                foreach (FlowEngineToolWindow window in GetStandaloneWindows().Except(previous))
+                    window.Close();
+                File.Delete(path);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData("stn", false)]
+    [InlineData("cvflow", false)]
+    [InlineData("cvflow", true)]
+    [InlineData("legacy-cvflow", false)]
+    public void ValidStandaloneFileOpensOneWindowWithItsLoadedCanvas(string input, bool explicitEditor)
+    {
+        WithStandaloneWindow(_ =>
+        {
+            string extension = input == "stn" ? ".stn" : ".cvflow";
+            string path = Path.Combine(Path.GetTempPath(), $"flow-open-valid-{Guid.NewGuid():N}{extension}");
+            FlowEngineToolWindow[] previous = GetStandaloneWindows();
+            try
+            {
+                byte[] canvas = CreateCanvas("Opened from file");
+                if (input == "cvflow")
+                {
+                    using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+                    using var entry = archive.CreateEntry("flow.stn").Open();
+                    entry.Write(canvas);
+                }
+                else File.WriteAllBytes(path, canvas);
+
+                ResourceOpenResult result = OpenStandaloneResource(path, explicitEditor);
+
+                Assert.True(result.Succeeded, result.ErrorMessage);
+                FlowEngineToolWindow opened = Assert.Single(GetStandaloneWindows().Except(previous));
+                Assert.True(opened.IsVisible);
+                Assert.Equal("Opened from file", Assert.Single(opened.View.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
+                Assert.Equal(input == "cvflow" ? null : path, GetField(opened.View, "_standaloneFilePath"));
+            }
+            finally
+            {
+                foreach (FlowEngineToolWindow window in GetStandaloneWindows().Except(previous))
+                    window.Close();
+                File.Delete(path);
+            }
+        });
+    }
+
+    private static ResourceOpenResult OpenStandaloneResource(string path, bool explicitEditor)
+    {
+        if (explicitEditor) return ResourceOpenService.Instance.OpenWith(path, "colorvision.flow");
+        Task<ResourceOpenResult> pending = ResourceOpenService.Instance.OpenAsync(path);
+        PumpUntil(pending);
+        return pending.GetAwaiter().GetResult();
+    }
+
+    private static FlowEngineToolWindow[] GetStandaloneWindows()
+        => Application.Current.Windows.OfType<FlowEngineToolWindow>().ToArray();
 
     private static object? GetField(ViewFlow view, string name)
         => typeof(ViewFlow).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view);
