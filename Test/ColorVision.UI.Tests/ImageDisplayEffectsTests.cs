@@ -113,6 +113,76 @@ public sealed class ImageDisplayEffectsTests
     }
 
     [Theory]
+    [InlineData(8, false)]
+    [InlineData(8, true)]
+    [InlineData(16, false)]
+    [InlineData(16, true)]
+    public async Task ContinuousRgbCompositeAndAutoRangeMatchCanonicalBgrLuminance(int depth, bool autoRange)
+    {
+        const int width = 5, height = 3;
+        int sampleBytes = depth / 8;
+        int stride = width * 3 * sampleBytes;
+        byte[] rgb = new byte[stride * height];
+        new Random(537).NextBytes(rgb);
+        byte[] bgr = (byte[])rgb.Clone();
+        for (int pixel = 0; pixel < bgr.Length; pixel += 3 * sampleBytes)
+            for (int i = 0; i < sampleBytes; i++)
+                (bgr[pixel + i], bgr[pixel + 2 * sampleBytes + i]) = (bgr[pixel + 2 * sampleBytes + i], bgr[pixel + i]);
+        using HImage canonical = OpenCVMediaHelper.AllocateHImage(width, height, 3, depth);
+        Marshal.Copy(bgr, 0, canonical.pData, bgr.Length);
+        Assert.Equal(0, OpenCVMediaHelper.M_GetMinMax(canonical, out uint minimum, out uint maximum, -1));
+        Assert.True(maximum > minimum);
+
+        using ImageFrameStore store = new();
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture { SelectedChannel = -1 });
+        try
+        {
+            var (source, request, completion) = WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap bitmap = new(width, height, 96, 96, depth == 16 ? PixelFormats.Rgb48 : PixelFormats.Rgb24, null);
+                bitmap.WritePixels(new Int32Rect(0, 0, width, height), rgb, stride, 0);
+                bitmap.Freeze();
+                Assert.True(bitmap.BackBufferStride > stride);
+                fixture.Source = bitmap;
+                fixture.Context.Presentation.Publish(bitmap, null);
+                fixture.Context.StreamPresentation.Submit(bitmap, Guid.NewGuid());
+                fixture.AcquireFrame = () => store.AcquireOrCreate(() => bitmap.ToHImage());
+                fixture.Context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, depth, "test", "test");
+                fixture.State.IsAutoSetRange = autoRange;
+                fixture.State.IsEnabled = true;
+                Assert.True(fixture.Context.DisplayEffects.TryCapturePseudoColorRequest(out var settings));
+                Assert.Equal(autoRange, settings.HasValidAutoRange);
+                if (autoRange)
+                {
+                    Assert.Equal(minimum, settings.DataMin);
+                    Assert.Equal(maximum, settings.DataMax);
+                }
+                return (bitmap, settings, fixture.Context.StreamPresentation.Completion);
+            });
+            await completion.WaitAsync(TimeSpan.FromSeconds(10));
+
+            int status = autoRange
+                ? OpenCVMediaHelper.ApplyPseudoColorAutoRange(canonical, out HImage output, request.Min, request.Max, request.ColormapTypes, -1, minimum, maximum)
+                : OpenCVMediaHelper.ApplyPseudoColor(canonical, out output, request.Min, request.Max, request.ColormapTypes, -1);
+            using (output)
+            {
+                Assert.Equal(0, status);
+                byte[] expected = new byte[width * height * 3];
+                Marshal.Copy(output.pData, expected, 0, expected.Length);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Same(source, fixture.Context.ViewBitmapSource);
+                    var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                    byte[] actual = new byte[expected.Length];
+                    display.CopyPixels(actual, width * 3, 0);
+                    Assert.Equal(expected, actual);
+                });
+            }
+        }
+        finally { WpfTestHost.Invoke(fixture.Dispose); }
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]

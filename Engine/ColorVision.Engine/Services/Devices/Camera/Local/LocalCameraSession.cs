@@ -1,5 +1,6 @@
 using cvColorVision;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using log4net;
 using Newtonsoft.Json;
@@ -35,6 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public bool OpenedUseHikMvs { get; private set; }
         public int OpenedHikBayerQuality { get; private set; }
         public bool OpenedHikOutputBgr { get; private set; }
+        internal CameraPreviewColorOrder OpenedPreviewColorOrder { get; private set; }
         internal int OpenedBpp => openedBpp;
         private IntPtr handle;
         private string? loadedCalibrationJson;
@@ -167,6 +169,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     bool useHikMvs = getUseHikMvs();
                     int hikBayerQuality = getHikBayerQuality();
                     bool hikOutputBgr = getHikOutputBgr();
+                    CameraPreviewColorOrder previewColorOrder = CameraRealtimeFramePipeline.ResolveHikColorOrder(
+                        config.CameraModel, config.CameraMode, useHikMvs, hikOutputBgr);
                     int result = native.Open(manager, cameraId, takeImageMode, imageBpp, useHikMvs, hikBayerQuality, hikOutputBgr);
                     if (result == cvErrorDefine.CV_ERR_SUCCESS && !native.IsOpen(manager))
                         throw new InvalidOperationException("本地相机返回打开成功，但未建立会话。");
@@ -179,6 +183,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         OpenedUseHikMvs = useHikMvs;
                         OpenedHikBayerQuality = hikBayerQuality;
                         OpenedHikOutputBgr = hikOutputBgr;
+                        OpenedPreviewColorOrder = previewColorOrder;
                         openedBpp = imageBpp;
                         loadedCalibrationJson = null;
                         EnsureLicenseAvailable();

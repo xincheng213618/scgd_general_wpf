@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras;
@@ -18,6 +19,31 @@ namespace ColorVision.UI.Tests;
 
 public class LocalCameraSessionTests
 {
+    [Fact]
+    public void PreviewUsesTheColorOrderOfTheOpenedMvsSession()
+    {
+        var config = new ConfigCamera { CameraModel = CameraModel.HK_USB, CameraMode = CameraMode.BV_MODE };
+        bool useMvs = true, outputBgr = true;
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config,
+            getUseHikMvs: () => useMvs, getHikOutputBgr: () => outputBgr);
+
+        session.Open("camera-1", TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Bgr, session.OpenedPreviewColorOrder);
+        outputBgr = false;
+        session.SwitchMode(TakeImageMode.Measure_Normal, 16);
+        session.SwitchMode(TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Bgr, session.OpenedPreviewColorOrder);
+
+        session.Close(unregisterCallback: true);
+        session.Open("camera-1", TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Rgb, session.OpenedPreviewColorOrder);
+        session.Close(unregisterCallback: true);
+        useMvs = false;
+        session.Open("camera-1", TakeImageMode.Live, 16);
+        Assert.Equal(CameraPreviewColorOrder.Unspecified, session.OpenedPreviewColorOrder);
+    }
+
     [Fact]
     public void CvVideoStartsWithoutPreparingTheWheelAndFailedMeasurementPreservesPreview()
     {

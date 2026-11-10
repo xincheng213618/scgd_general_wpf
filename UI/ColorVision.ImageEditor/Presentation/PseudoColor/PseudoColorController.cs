@@ -469,7 +469,11 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
             }
 
             var channel = GetSelectedChannel();
-            var ret = OpenCVMediaHelper.M_GetMinMax(lease.Image, out uint minVal, out uint maxVal, channel);
+            HImage pixels = lease.Image;
+            using var luminance = _owner.StreamPresentation.IsActive && _owner.ViewBitmapSource is BitmapSource bitmap
+                && ImageStreamPresentation.NeedsRgbLuminance(bitmap.Format, pixels, channel)
+                ? ImageStreamPresentation.CreateRgbLuminance(pixels, out pixels) : null;
+            var ret = OpenCVMediaHelper.M_GetMinMax(pixels, out uint minVal, out uint maxVal, channel);
             if (ret != 0)
             {
                 return;

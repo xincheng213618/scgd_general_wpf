@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    internal readonly record struct CameraFocusFrameRequest(FocusAlgorithm FocusAlgorithm, RoiRect Roi);
+    internal readonly record struct CameraFocusFrameRequest(FocusAlgorithm FocusAlgorithm, RoiRect Roi, bool SourceIsRgb = false);
     internal readonly record struct CameraFocusFrameResult(double Articulation);
 
     internal sealed class CameraFocusFrameProcessor : IDisposable
@@ -180,8 +180,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
         }
 
-        private static CameraFocusFrameResult ProcessFrame(HImage frame, CameraFocusFrameRequest request)
-            => new(OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi));
+        private static unsafe CameraFocusFrameResult ProcessFrame(HImage frame, CameraFocusFrameRequest request)
+        {
+            if (request.SourceIsRgb && frame.channels == 3 && frame.depth is 8 or 16)
+            {
+                // The worker owns this snapshot. Normalize only its copied pixels for the BGR native metric.
+                int sampleBytes = frame.depth / 8;
+                int pixelBytes = 3 * sampleBytes;
+                int stride = frame.stride == 0 ? frame.cols * pixelBytes : frame.stride;
+                for (int y = 0; y < frame.rows; y++)
+                {
+                    byte* pixel = (byte*)frame.pData + (long)y * stride;
+                    for (int x = 0; x < frame.cols; x++, pixel += pixelBytes)
+                        for (int i = 0; i < sampleBytes; i++)
+                            (pixel[i], pixel[2 * sampleBytes + i]) = (pixel[2 * sampleBytes + i], pixel[i]);
+                }
+            }
+            return new(OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi));
+        }
 
         private static void EnsureBuffer(ref HImage? buffer, ref int capacity, int width, int height, int channels, int depth, int stride, int requiredLength)
         {

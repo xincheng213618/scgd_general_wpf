@@ -17,7 +17,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         int IntervalMs,
         double ThresholdRatio,
         double MinCoverageRatio,
-        double TolerancePx);
+        double TolerancePx,
+        bool SourceIsRgb = false);
 
     internal readonly record struct VideoCrossGuideResult(
         bool Found,
@@ -354,7 +355,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             double minCoverageRatio = Clamp(request.MinCoverageRatio, 0.01, 0.95);
 
             RoiRect localRoi = new(0, 0, frame.cols, frame.rows);
-            double maxGray = FindMaxGray(frame, localRoi);
+            double maxGray = FindMaxGray(frame, localRoi, request.SourceIsRgb);
             if (maxGray < 8)
                 return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_CrossNotFoundLowBrightness);
 
@@ -365,7 +366,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             int[] columnHits = new int[localRoi.Width];
             List<BrightPixel> brightPixels = new(Math.Min(MaxAngleSamples, Math.Max(0, localRoi.Width * localRoi.Height / 64)));
 
-            Accumulate(frame, localRoi, threshold, rowSum, columnSum, rowHits, columnHits, brightPixels);
+            Accumulate(frame, localRoi, threshold, rowSum, columnSum, rowHits, columnHits, brightPixels, request.SourceIsRgb);
 
             int rowPeak = IndexOfMax(rowSum);
             int columnPeak = IndexOfMax(columnSum);
@@ -514,7 +515,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return new Rect(x, y, right - x, bottom - y);
         }
 
-        private static unsafe double FindMaxGray(HImage frame, RoiRect roi)
+        private static unsafe double FindMaxGray(HImage frame, RoiRect roi, bool sourceIsRgb)
         {
             double max = 0;
             for (int y = roi.Y; y < roi.Y + roi.Height; y++)
@@ -522,7 +523,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 byte* row = (byte*)frame.pData + y * frame.stride;
                 for (int x = roi.X; x < roi.X + roi.Width; x++)
                 {
-                    double gray = ReadGray(row, x, frame.channels, frame.depth);
+                    double gray = ReadGray(row, x, frame.channels, frame.depth, sourceIsRgb);
                     if (gray > max) max = gray;
                 }
             }
@@ -530,7 +531,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return max;
         }
 
-        private static unsafe void Accumulate(HImage frame, RoiRect roi, double threshold, double[] rowSum, double[] columnSum, int[] rowHits, int[] columnHits, List<BrightPixel> brightPixels)
+        private static unsafe void Accumulate(HImage frame, RoiRect roi, double threshold, double[] rowSum, double[] columnSum,
+            int[] rowHits, int[] columnHits, List<BrightPixel> brightPixels, bool sourceIsRgb)
         {
             for (int y = roi.Y; y < roi.Y + roi.Height; y++)
             {
@@ -538,7 +540,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 byte* row = (byte*)frame.pData + y * frame.stride;
                 for (int x = roi.X; x < roi.X + roi.Width; x++)
                 {
-                    double gray = ReadGray(row, x, frame.channels, frame.depth);
+                    double gray = ReadGray(row, x, frame.channels, frame.depth, sourceIsRgb);
                     if (gray < threshold) continue;
 
                     int columnIndex = x - roi.X;
@@ -552,25 +554,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
         }
 
-        private static unsafe double ReadGray(byte* row, int x, int channels, int depth)
+        private static unsafe double ReadGray(byte* row, int x, int channels, int depth, bool sourceIsRgb)
         {
             int bytesPerSample = depth / 8;
             byte* pixel = row + x * channels * bytesPerSample;
+            int blueIndex = sourceIsRgb && channels >= 3 ? 2 : 0;
+            int redIndex = channels >= 3 ? 2 - blueIndex : channels - 1;
 
             if (depth == 8)
             {
                 if (channels == 1) return pixel[0];
-                double b = pixel[0];
-                double g = channels > 1 ? pixel[1] : b;
-                double r = channels > 2 ? pixel[2] : g;
+                double b = pixel[blueIndex];
+                double g = pixel[1];
+                double r = pixel[redIndex];
                 return (0.114 * b) + (0.587 * g) + (0.299 * r);
             }
 
             ushort* p16 = (ushort*)pixel;
             if (channels == 1) return p16[0] / 257.0;
-            double b16 = p16[0] / 257.0;
-            double g16 = channels > 1 ? p16[1] / 257.0 : b16;
-            double r16 = channels > 2 ? p16[2] / 257.0 : g16;
+            double b16 = p16[blueIndex] / 257.0;
+            double g16 = p16[1] / 257.0;
+            double r16 = p16[redIndex] / 257.0;
             return (0.114 * b16) + (0.587 * g16) + (0.299 * r16);
         }
 

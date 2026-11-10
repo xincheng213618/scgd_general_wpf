@@ -2,16 +2,20 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     internal readonly record struct RealtimeCameraMetrics(double Fps, double? Articulation);
+
+    internal enum CameraPreviewColorOrder { Unspecified, Bgr, Rgb }
 
     internal sealed record CameraPreviewGeometry(Rect DisplayRoi, int Transform)
     {
@@ -23,18 +27,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
     {
         private readonly CancellationTokenSource _retirement = new();
 
-        internal CameraPreviewSession(ImageView view, long fpsStartedAt, Action<double>? onArticulation, Action<RealtimeCameraMetrics>? onFrameRateChanged)
+        internal CameraPreviewSession(ImageView view, long fpsStartedAt, Action<double>? onArticulation,
+            Action<RealtimeCameraMetrics>? onFrameRateChanged, CameraPreviewColorOrder colorOrder)
         {
             View = view;
             FpsStartedAt = fpsStartedAt;
             OnArticulation = onArticulation;
             OnFrameRateChanged = onFrameRateChanged;
+            ColorOrder = colorOrder;
             Lifetime = _retirement.Token;
         }
 
         internal ImageView View { get; }
         internal Action<double>? OnArticulation { get; }
         internal Action<RealtimeCameraMetrics>? OnFrameRateChanged { get; }
+        internal CameraPreviewColorOrder ColorOrder { get; }
         internal CancellationToken Lifetime { get; }
         internal bool IsRetired => Lifetime.IsCancellationRequested;
         internal EventHandler? FrameDisplayedHandler { get; set; }
@@ -82,6 +89,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         internal CameraPreviewSession? CaptureSession() => _session;
 
+        internal static CameraPreviewColorOrder ResolveHikColorOrder(CameraModel model, CameraMode mode, bool useHikMvs, bool outputBgr)
+            => useHikMvs && model is CameraModel.HK_USB or CameraModel.HK_CARD && mode != CameraMode.CV_MODE
+                ? outputBgr ? CameraPreviewColorOrder.Bgr : CameraPreviewColorOrder.Rgb
+                : CameraPreviewColorOrder.Unspecified;
+
         public void SetPreviewGeometry(Rect displayRoi, int transform)
         {
             _previewGeometry = new(displayRoi, transform & RealtimeFramePresenter.TransformFlipXY);
@@ -97,7 +109,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone, bool showOverlayRoi = true,
             bool showOverlayMetrics = true, Action<double>? onArticulation = null, bool preserveDisplayedFrameCount = false,
-            Action<RealtimeCameraMetrics>? onFrameRateChanged = null, Rect displayRoi = default)
+            Action<RealtimeCameraMetrics>? onFrameRateChanged = null, Rect displayRoi = default, CameraPreviewColorOrder colorOrder = default)
         {
             ArgumentNullException.ThrowIfNull(imageView);
             ThrowIfDisposed();
@@ -105,7 +117,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             if (!imageView.Dispatcher.CheckAccess())
             {
                 imageView.Dispatcher.Invoke(() => Start(imageView, transform, showOverlayRoi, showOverlayMetrics, onArticulation,
-                    preserveDisplayedFrameCount, onFrameRateChanged, displayRoi));
+                    preserveDisplayedFrameCount, onFrameRateChanged, displayRoi, colorOrder));
                 return;
             }
 
@@ -118,7 +130,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             imageView.Config.ClearProperties();
             imageView.Realtime.Reset();
             if (!preserveDisplayedFrameCount) Interlocked.Exchange(ref _displayedFrameCount, 0);
-            CameraPreviewSession session = new(imageView, _clock.GetTimestamp(), onArticulation, onFrameRateChanged);
+            CameraPreviewSession session = new(imageView, _clock.GetTimestamp(), onArticulation, onFrameRateChanged, colorOrder);
             session.FrameDisplayedHandler = (_, _) =>
             {
                 if (ReferenceEquals(_session, session))
@@ -194,19 +206,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         }
 
-        public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int bitsPerPixel, int stride)
+        public unsafe void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int bitsPerPixel, int stride)
         {
             ArgumentNullException.ThrowIfNull(sourceBuffer);
-            CameraPreviewSession? session = CaptureSession();
-            if (session == null || session.IsRetired || length <= 0 || length > sourceBuffer.Length) return;
-
-            CameraPreviewGeometry geometry = PreviewGeometry;
-            if (IsArticulationEnabled)
-                GetFocusProcessor(session)?.SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
-
-            session.View.Realtime.SubmitFrame(sourceBuffer, width, height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform, session.Lifetime);
-            RecordFrameRate(session);
+            if (length <= 0 || length > sourceBuffer.Length) return;
+            fixed (byte* pixels = sourceBuffer)
+                SubmitFrame(CaptureSession(), (IntPtr)pixels, length, width, height, channels, bitsPerPixel, stride);
         }
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int bitsPerPixel, int stride,
@@ -219,16 +224,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             if (session == null || session.IsRetired || !ReferenceEquals(session, _session) || sourcePointer == IntPtr.Zero || length <= 0) return;
 
             geometry ??= PreviewGeometry;
+            bool sourceIsRgb = session.ColorOrder == CameraPreviewColorOrder.Rgb;
             if (IsArticulationEnabled)
-                GetFocusProcessor(session)?.SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
+                GetFocusProcessor(session)?.SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride,
+                    new CameraFocusFrameRequest(_config.EvaFunc, geometry.GetSourceRoi(width, height), sourceIsRgb));
 
-            session.View.Realtime.SubmitFrame(sourcePointer, width, height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform, session.Lifetime);
+            PixelFormat format = sourceIsRgb && channels == 3 && bitsPerPixel == 8
+                ? PixelFormats.Rgb24 : RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel);
+            bool sourceIsBgr48 = session.ColorOrder == CameraPreviewColorOrder.Bgr && format == PixelFormats.Rgb48;
+            session.View.Realtime.SubmitFrame(sourcePointer, width, height, format, stride, length, geometry.Transform, session.Lifetime, sourceIsBgr48);
             RecordFrameRate(session);
         }
-
-        private CameraFocusFrameRequest CreateFocusRequest(CameraPreviewGeometry geometry, int width, int height)
-            => new(_config.EvaFunc, geometry.GetSourceRoi(width, height));
 
         private bool IsArticulationEnabled => _config.IsCalArtculation;
 

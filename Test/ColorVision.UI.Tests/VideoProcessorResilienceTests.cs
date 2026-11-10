@@ -98,6 +98,54 @@ public sealed class VideoProcessorResilienceTests
     }
 
     [Fact]
+    public async Task RgbCameraSamplesPreserveBgrFocusAndCrossGuideMetrics()
+    {
+        const int width = 33, height = 23, depth = 16, channels = 3, pixelBytes = 6, stride = width * pixelBytes;
+        byte[] rgb = new byte[stride * height], bgr = new byte[rgb.Length];
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                int offset = y * stride + x * pixelBytes;
+                byte red = x == 12 || y == 10 ? (byte)255 : (byte)0;
+                byte blue = x == 18 ? (byte)85 : (byte)0;
+                rgb[offset] = rgb[offset + 1] = bgr[offset + 4] = bgr[offset + 5] = red;
+                rgb[offset + 4] = rgb[offset + 5] = bgr[offset] = bgr[offset + 1] = blue;
+            }
+        using HImage canonical = OpenCVMediaHelper.AllocateHImage(width, height, channels, depth);
+        Marshal.Copy(bgr, 0, canonical.pData, bgr.Length);
+        RoiRect focusRoi = new(4, 3, 20, 17);
+        double expectedFocus = OpenCVMediaHelper.M_CalArtculation(canonical, FocusAlgorithm.VarianceOfLaplacian, focusRoi);
+        Assert.True(expectedFocus > 0);
+        RoiRect guideRoi = new(0, 0, width, height);
+        var guide = new VideoCrossGuideRequest(guideRoi, new Point(), 0, 50, 0.4, 0.1, 1);
+        var expectedGuide = VideoCrossGuideDetector.ProcessFrame(canonical, guide, width, height, guideRoi);
+        Assert.True(expectedGuide.Found);
+
+        using HImage raw = OpenCVMediaHelper.AllocateHImage(width, height, channels, depth);
+        Marshal.Copy(rgb, 0, raw.pData, rgb.Length);
+        var actualGuide = VideoCrossGuideDetector.ProcessFrame(raw, guide with { SourceIsRgb = true }, width, height, guideRoi);
+        Assert.Equal(expectedGuide, actualGuide);
+
+        TimeSpan watchdog = TimeSpan.FromSeconds(10);
+        TaskCompletionSource<double> score = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var processor = new CameraFocusFrameProcessor(result => score.TrySetResult(result.Articulation));
+        try
+        {
+            processor.SubmitFrame(raw.pData, rgb.Length, width, height, channels, depth, stride,
+                new CameraFocusFrameRequest(FocusAlgorithm.VarianceOfLaplacian, focusRoi, SourceIsRgb: true));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expectedFocus), BitConverter.DoubleToInt64Bits(await score.Task.WaitAsync(watchdog)));
+            byte[] retained = new byte[rgb.Length];
+            Marshal.Copy(raw.pData, retained, 0, retained.Length);
+            Assert.Equal(rgb, retained);
+        }
+        finally
+        {
+            processor.Dispose();
+            await processor.Retirement.WaitAsync(watchdog);
+        }
+    }
+
+    [Fact]
     public async Task FocusRejectsMalformedLayoutsBeforeTakingOwnershipOfAnotherFrame()
     {
         TimeSpan testWait = TimeSpan.FromSeconds(5);

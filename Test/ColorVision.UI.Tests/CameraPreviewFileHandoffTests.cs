@@ -561,6 +561,47 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Theory]
+    [InlineData(true, 16, RealtimeFramePresenter.TransformNone)]
+    [InlineData(true, 16, RealtimeFramePresenter.TransformFlipX)]
+    [InlineData(true, 16, RealtimeFramePresenter.TransformFlipY)]
+    [InlineData(true, 16, RealtimeFramePresenter.TransformFlipXY)]
+    [InlineData(false, 16, RealtimeFramePresenter.TransformFlipXY)]
+    [InlineData(false, 8, RealtimeFramePresenter.TransformNone)]
+    [InlineData(true, 8, RealtimeFramePresenter.TransformNone)]
+    public async Task KnownCameraColorOrderPublishesPhysicalChannelsWithPaddedRows(bool sourceBgr, int depth, int transform)
+    {
+        const int width = 5, height = 3;
+        int sampleBytes = depth / 8, pixelBytes = 3 * sampleBytes, rowBytes = width * pixelBytes;
+        int stride = rowBytes + 4;
+        byte[] samples = new byte[(height - 1) * stride + rowBytes];
+        new Random(734).NextBytes(samples);
+        PixelFormat expectedFormat = depth == 16 ? PixelFormats.Rgb48 : sourceBgr ? PixelFormats.Bgr24 : PixelFormats.Rgb24;
+        byte[] expected = new byte[rowBytes * height];
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                int sourceY = (transform & RealtimeFramePresenter.TransformFlipX) != 0 ? height - 1 - y : y;
+                int sourceX = (transform & RealtimeFramePresenter.TransformFlipY) != 0 ? width - 1 - x : x;
+                int from = sourceY * stride + sourceX * pixelBytes;
+                int to = y * rowBytes + x * pixelBytes;
+                for (int channel = 0; channel < 3; channel++)
+                    Array.Copy(samples, from + (depth == 16 && sourceBgr ? 2 - channel : channel) * sampleBytes,
+                        expected, to + channel * sampleBytes, sampleBytes);
+            }
+
+        WpfTestHost.Invoke(() => pipeline.Start(view, transform,
+            colorOrder: sourceBgr ? CameraPreviewColorOrder.Bgr : CameraPreviewColorOrder.Rgb));
+        pipeline.SubmitFrame(samples, samples.Length, width, height, 3, depth, stride);
+        await view.Realtime.Completion.WaitAsync(TimeSpan.FromSeconds(10));
+        WpfTestHost.Invoke(() =>
+        {
+            BitmapSource bitmap = Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource);
+            Assert.Equal(expectedFormat, bitmap.Format);
+            Assert.Equal(expected, Pixels(bitmap));
+        });
+    }
+
+    [Theory]
     [InlineData(8, 1, RealtimeFramePresenter.TransformNone)]
     [InlineData(16, 1, RealtimeFramePresenter.TransformFlipX)]
     [InlineData(8, 3, RealtimeFramePresenter.TransformFlipY)]

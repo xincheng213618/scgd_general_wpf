@@ -2,6 +2,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Documents;
 using log4net;
+using OpenCvSharp;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -279,7 +280,7 @@ public sealed class ImageStreamPresentation : IDisposable
         PixelFormat format = work.Source.Format;
         if (_process == null && work.Settings is PseudoColorFrameRequest request && work.Source.IsFrozen
             && (format == PixelFormats.Gray8 || format == PixelFormats.Gray16 || format == PixelFormats.Bgr24
-                || format == PixelFormats.Rgb48 || format == PixelFormats.Bgra32))
+                || format == PixelFormats.Rgb24 || format == PixelFormats.Rgb48 || format == PixelFormats.Bgra32))
             return PreparePseudoColorBitmap(work.Source, request);
 
         using HImage source = work.Source.ToHImage();
@@ -292,11 +293,13 @@ public sealed class ImageStreamPresentation : IDisposable
     private static WriteableBitmap PreparePseudoColorBitmap(WriteableBitmap source, PseudoColorFrameRequest request)
     {
         // The native Into methods read the frozen source and write only to this private bitmap.
-        using HImage input = source.ForHImage();
+        using HImage sourcePixels = source.ForHImage();
         WriteableBitmap bitmap = new(source.PixelWidth, source.PixelHeight, 96, 96, PixelFormats.Bgr24, null);
         bitmap.Lock();
         try
         {
+            HImage input = sourcePixels;
+            using Mat? gray = NeedsRgbLuminance(source.Format, input, request.Channel) ? CreateRgbLuminance(input, out input) : null;
             using HImage output = bitmap.ForHImage();
             int status = request.HasValidAutoRange
                 ? OpenCVMediaHelper.M_PseudoColorAutoRangeInto(input, output, request.Min, request.Max, request.ColormapTypes, request.Channel, request.DataMin, request.DataMax)
@@ -310,6 +313,34 @@ public sealed class ImageStreamPresentation : IDisposable
             bitmap.Unlock();
         }
         return bitmap;
+    }
+
+    internal static bool NeedsRgbLuminance(PixelFormat format, HImage image, int channel)
+        => channel is < 0 or >= 3 && image.channels == 3
+            && ((format == PixelFormats.Rgb24 && image.depth == 8) || (format == PixelFormats.Rgb48 && image.depth == 16));
+
+    // Native pseudo-color and range calculation use BGR for composite luminance.
+    // RGB source snapshots need only one luminance plane, and selected channels stay in source order.
+    internal static Mat CreateRgbLuminance(HImage image, out HImage luminance)
+    {
+        using Mat rgb = Mat.FromPixelData(image.rows, image.cols, image.depth == 16 ? MatType.CV_16UC3 : MatType.CV_8UC3,
+            image.pData, image.stride);
+        Mat gray = new();
+        try
+        {
+            Cv2.CvtColor(rgb, gray, ColorConversionCodes.RGB2GRAY);
+            luminance = image;
+            luminance.pData = gray.Data;
+            luminance.channels = 1;
+            luminance.stride = checked((int)gray.Step());
+            luminance.isDispose = true;
+            return gray;
+        }
+        catch
+        {
+            gray.Dispose();
+            throw;
+        }
     }
 
     private static HImage ProcessPseudoColor(HImage source, PseudoColorFrameRequest request)

@@ -1,5 +1,6 @@
 #pragma warning disable CA1510,CS8625
 using ColorVision.Core;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Presentation;
 using log4net;
 using System;
@@ -28,7 +29,8 @@ namespace ColorVision.ImageEditor.Realtime
             int Length,
             PixelFormat Format,
             int Transform,
-            CancellationToken CancellationToken = default);
+            CancellationToken CancellationToken = default,
+            bool SourceIsBgr48 = false);
 
         private readonly ImageProcessingContext _context;
         private readonly Action _refreshPixelOverlay;
@@ -97,8 +99,14 @@ namespace ColorVision.ImageEditor.Realtime
 
         /// <summary>Copies the borrowed pixels synchronously and discards the frame if its producer session is canceled before publication.</summary>
         public bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride, int bufferLength, int transform, CancellationToken cancellationToken)
+            => SubmitFrame(sourcePointer, width, height, pixelFormat, sourceStride, bufferLength, transform, cancellationToken, sourceIsBgr48: false);
+
+        /// <summary>For an Rgb48 bitmap, accepts packed BGR16 samples and reorders them while writing the display snapshot.</summary>
+        public bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride, int bufferLength, int transform,
+            CancellationToken cancellationToken, bool sourceIsBgr48)
         {
-            if (sourcePointer == IntPtr.Zero || cancellationToken.IsCancellationRequested) return false;
+            if (sourcePointer == IntPtr.Zero || cancellationToken.IsCancellationRequested
+                || (sourceIsBgr48 && pixelFormat != PixelFormats.Rgb48)) return false;
             if (!CanAcceptFrame(width, height, pixelFormat, ref sourceStride, ref bufferLength)) return false;
 
             Guid sourceId;
@@ -127,7 +135,7 @@ namespace ColorVision.ImageEditor.Realtime
                 {
                     if (_disposed || sourceId != _sourceId || cancellationToken.IsCancellationRequested) return false;
                     _latestPixels = pixels;
-                    _latestFrame = new FrameInfo(width, height, sourceStride, bufferLength, pixelFormat, transform, cancellationToken);
+                    _latestFrame = new FrameInfo(width, height, sourceStride, bufferLength, pixelFormat, transform, cancellationToken, sourceIsBgr48);
                     _hasLatestFrame = true;
                     if (!_renderQueued)
                     {
@@ -226,7 +234,7 @@ namespace ColorVision.ImageEditor.Realtime
 
             try
             {
-                if (frame.Transform == TransformNone)
+                if (frame.Transform == TransformNone && !frame.SourceIsBgr48)
                 {
                     bitmap.WritePixels(new Int32Rect(0, 0, frame.Width, frame.Height), pixels, frame.Stride, 0);
                 }
@@ -279,25 +287,41 @@ namespace ColorVision.ImageEditor.Realtime
                     byte* targetBase = (byte*)bitmap.BackBuffer;
                     int targetStride = bitmap.BackBufferStride;
 
-                    for (int y = 0; y < frame.Height; y++)
+                    if (frame.SourceIsBgr48 && !flipY)
                     {
-                        int sourceY = flipX ? frame.Height - 1 - y : y;
-                        byte* sourceRow = sourceBase + sourceY * frame.Stride;
-                        byte* targetRow = targetBase + y * targetStride;
-
-                        if (!flipY)
+                        byte* firstRow = sourceBase + (flipX ? (long)(frame.Height - 1) * frame.Stride : 0);
+                        ImageAlgorithmInputFactory.CopyColor16(firstRow, flipX ? -frame.Stride : frame.Stride,
+                            targetBase, targetStride, frame.Width, frame.Height, pixelBytes);
+                    }
+                    else
+                    {
+                        for (int y = 0; y < frame.Height; y++)
                         {
-                            Buffer.MemoryCopy(sourceRow, targetRow, targetStride, rowBytes);
-                            continue;
-                        }
+                            int sourceY = flipX ? frame.Height - 1 - y : y;
+                            byte* sourceRow = sourceBase + sourceY * frame.Stride;
+                            byte* targetRow = targetBase + y * targetStride;
 
-                        for (int x = 0; x < frame.Width; x++)
-                        {
-                            Buffer.MemoryCopy(
-                                sourceRow + (frame.Width - 1 - x) * pixelBytes,
-                                targetRow + x * pixelBytes,
-                                pixelBytes,
-                                pixelBytes);
+                            if (!flipY)
+                            {
+                                Buffer.MemoryCopy(sourceRow, targetRow, targetStride, rowBytes);
+                                continue;
+                            }
+
+                            for (int x = 0; x < frame.Width; x++)
+                            {
+                                byte* source = sourceRow + (frame.Width - 1 - x) * pixelBytes;
+                                byte* target = targetRow + x * pixelBytes;
+                                if (frame.SourceIsBgr48)
+                                {
+                                    target[0] = source[4];
+                                    target[1] = source[5];
+                                    target[2] = source[2];
+                                    target[3] = source[3];
+                                    target[4] = source[0];
+                                    target[5] = source[1];
+                                }
+                                else Buffer.MemoryCopy(source, target, pixelBytes, pixelBytes);
+                            }
                         }
                     }
 

@@ -464,7 +464,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (Device.LocalCameraSession.OpenedMode != TakeImageMode.Live) return false;
                 Device.LocalCameraSession.RegisterPreview(handle => cvCameraCSLib.CM_SetCallBack(handle, callback, IntPtr.Zero), StopLivePreview);
                 var displayConfig = Device.DisplayConfig;
-                _localRealtimePipeline.Start(ImageView, displayConfig.LocalVideoTransform, displayRoi: displayConfig.LocalVideoRoi);
+                _localRealtimePipeline.Start(ImageView, displayConfig.LocalVideoTransform, displayRoi: displayConfig.LocalVideoRoi,
+                    colorOrder: Device.LocalCameraSession.OpenedPreviewColorOrder);
                 return true;
             });
         }

@@ -1686,7 +1686,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 showOverlayMetrics: false, onArticulation: view.FocusChart.AddVideoSample,
                 preserveDisplayedFrameCount: preserveDisplayedFrameCount, onFrameRateChanged: metrics =>
                     view.FocusChart.UpdateVideoDisplayMetrics(metrics.Fps, _localRealtimePipeline.CurrentDisplayedFrameCount),
-                displayRoi: Device.DisplayConfig.LocalVideoRoi);
+                displayRoi: Device.DisplayConfig.LocalVideoRoi,
+                colorOrder: _sharedLocalVideo ? Device.LocalCameraSession.OpenedPreviewColorOrder : _legacyVideoColorOrder);
             view.FocusChart.BeginVideo(IsRealtimeArticulationEnabled);
             UpdateLocalVideoReadout(view);
         }
@@ -1794,6 +1795,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
         private IntPtr _legacyVideoHandle;
+        private CameraPreviewColorOrder _legacyVideoColorOrder;
         private bool _sharedLocalVideo;
         private volatile bool _sharedVideoActive;
         public IntPtr m_hCamHandle
@@ -1980,7 +1982,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (!session.IsRetired && TryCreateCrossGuideRequest(width, height, geometry, out VideoCrossGuideRequest crossGuideRequest))
             {
                 _crossGuideProcessor.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride,
-                    crossGuideRequest, session.Lifetime, crossGuideGeneration);
+                    crossGuideRequest with { SourceIsRgb = session.ColorOrder == CameraPreviewColorOrder.Rgb },
+                    session.Lifetime, crossGuideGeneration);
             }
 
             _localRealtimePipeline.SubmitFrame(session, pData, frameBytes, width, height, channels, bpp, sourceStride, geometry);
@@ -2178,13 +2181,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private (bool isSuccess, string errorMessage) OpenLocalVideoInternalCore()
         {
             string configuredCameraId = Device.Config.CameraID ?? string.Empty;
+            CameraModel cameraModel = Device.Config.CameraModel;
+            CameraMode cameraMode = Device.Config.CameraMode;
             if (m_hCamHandle == IntPtr.Zero)
             {
                 cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-                m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, null);
+                m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(cameraModel, cameraMode, null);
                 if (m_hCamHandle == IntPtr.Zero) return (false, "创建本地视频相机管理器失败");
             }
-            int modelResult = cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
+            int modelResult = cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, cameraModel, cameraMode);
             if (modelResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("设置本地视频相机型号失败", modelResult);
 
             string cameraId = ResolveLocalCameraId();
@@ -2197,7 +2202,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
             logger.Info("CM_Open");
-            if (!TryOpenLocalVideoCamera(out nErr, out string errorMessage))
+            if (!TryOpenLocalVideoCamera(cameraModel, cameraMode, out nErr, out string errorMessage))
             {
                 string retryCameraId = ResolveLocalCameraId(ignoreConfiguredId: true);
                 if (!string.IsNullOrWhiteSpace(retryCameraId) && !retryCameraId.Equals(cameraId, StringComparison.OrdinalIgnoreCase))
@@ -2205,7 +2210,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     logger.Warn($"CM_Open failed, retry with refreshed CameraID. errorCode={nErr}, error={errorMessage}, old={cameraId}, new={retryCameraId}");
                     ApplyLocalVideoCameraSettings(retryCameraId);
                     cameraId = retryCameraId;
-                    if (!TryOpenLocalVideoCamera(out nErr, out errorMessage))
+                    if (!TryOpenLocalVideoCamera(cameraModel, cameraMode, out nErr, out errorMessage))
                     {
                         return (false, errorMessage);
                     }
@@ -2266,13 +2271,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("设置本地视频位深失败", result);
         }
 
-        private bool TryOpenLocalVideoCamera(out int errorCode, out string errorMessage)
+        private bool TryOpenLocalVideoCamera(CameraModel cameraModel, CameraMode cameraMode, out int errorCode, out string errorMessage)
         {
             var physicalConfig = Device.PhyCamera?.Config?.CameraCfg;
             JObject cameraConfig = physicalConfig == null ? new JObject() : JObject.Parse(LocalCameraSession.BuildCameraConfigurationJson(physicalConfig));
-            cameraConfig["useHikMvs"] = Device.DisplayConfig.UseHikMvs;
+            bool useHikMvs = Device.DisplayConfig.UseHikMvs;
+            bool outputBgr = Device.DisplayConfig.HikOutputBgr;
+            cameraConfig["useHikMvs"] = useHikMvs;
             cameraConfig["hikBayerQuality"] = (int)Device.DisplayConfig.HikBayerQuality;
-            cameraConfig["hikOutputBgr"] = Device.DisplayConfig.HikOutputBgr;
+            cameraConfig["hikOutputBgr"] = outputBgr;
             int configResult = cvCameraCSLib.UpdateCfgJson(m_hCamHandle, ConfigType.Cfg_Camera, cameraConfig.ToString());
             if (configResult != cvErrorDefine.CV_ERR_SUCCESS)
             {
@@ -2289,6 +2296,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             Device.EnsureLocalCameraLicense();
+            _legacyVideoColorOrder = CameraRealtimeFramePipeline.ResolveHikColorOrder(cameraModel, cameraMode, useHikMvs, outputBgr);
             errorMessage = string.Empty;
             return true;
         }
