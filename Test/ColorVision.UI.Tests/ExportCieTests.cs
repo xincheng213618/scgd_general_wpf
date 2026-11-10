@@ -4,6 +4,10 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.Mru;
+using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Repository.Hierarchy;
 using OpenCvSharp;
 using Newtonsoft.Json.Linq;
 using System.Collections.Specialized;
@@ -21,6 +25,135 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ExportCieTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CorruptOptionalRawTailStillExportsOriginalPixels(bool batch)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-corrupt-tail-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        string path = Path.Combine(root, "source.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = false;
+            byte[] expected = WritePatternedRawFixture(path, rows: 2, cols: 3, channels: 1);
+            new ColorCalibrationSnapshot
+            {
+                Width = 3, Height = 2, RawBpp = 16, Channels = 1, TransformKind = 2,
+                Coefficients = [2, 0, 0, 0, 0, 0, 0, 0, 0], Exposure = [1, 1, 1]
+            }.Save(path, canReplay: true);
+            using (FileStream file = File.Open(path, FileMode.Open, FileAccess.ReadWrite))
+            {
+                file.Position = file.Length - 1;
+                int checksum = file.ReadByte();
+                file.Position--;
+                file.WriteByte((byte)(checksum ^ 1));
+            }
+            Assert.Throws<InvalidDataException>(() => CVFileMetadata.Read(path));
+
+            string output;
+            if (batch)
+            {
+                Assert.Equal(1, CvRawBatchExporter.ExportFolder(root, 1).Exported);
+                output = Path.Combine(root, "source.tif");
+            }
+            else
+            {
+                var export = new VExportCIE(path, new MruPathService(new MemoryMruPathStore([]))) { SavePath = root, Name = "export" };
+                Assert.True(export.IsCanExportSrc);
+                Assert.False(export.HasCieChannels);
+                VExportCIE.SaveToTifOrThrow(export);
+                output = Path.Combine(root, "export.tiff");
+            }
+
+            Assert.Null(ReadTiffParameters(output).Calibration);
+            using Mat image = Cv2.ImRead(output, ImreadModes.Unchanged);
+            Assert.Equal(MatType.CV_16UC1, image.Type());
+            byte[] actual = new byte[expected.Length];
+            Marshal.Copy(image.Data, actual, 0, actual.Length);
+            Assert.Equal(expected, actual);
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
+            Directory.Delete(root);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CalibratedRawExportKeepsOneSnapshotWhenAcquisitionChangesBetweenOutputs(bool cacheEnabled)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-snapshot-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        string path = Path.Combine(root, "source.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        var logger = (Logger)LogManager.GetLogger(typeof(CameraFileMetadata).Assembly, typeof(CameraFileMetadata)).Logger;
+        Hierarchy hierarchy = Assert.IsType<Hierarchy>(logger.Repository);
+        bool previousConfigured = hierarchy.Configured;
+        Level previousLevel = logger.Level;
+        Exception? updateFailure = null;
+        int updates = 0;
+        var appender = new AcquisitionWarningAppender(() =>
+        {
+            if (++updates != 1) return;
+            try
+            {
+                CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new ImageAcquisitionRecord { NdPort = 17 });
+            }
+            catch (Exception error) { updateFailure = error; }
+        });
+        try
+        {
+            CVFileReadCache.IsEnabled = cacheEnabled;
+            byte[] raw = WritePatternedRawFixture(path, rows: 2, cols: 3, channels: 1);
+            new ColorCalibrationSnapshot
+            {
+                Width = 3, Height = 2, RawBpp = 16, Channels = 1, TransformKind = 2,
+                Coefficients = [2, 0, 0, 0, 0, 0, 0, 0, 0], Exposure = [1, 1, 1], Template = "original"
+            }.Save(path, canReplay: true);
+            CVFileMetadata.SetProperty(path, CameraFileMetadata.AcquisitionKind, 1, [(byte)'{']);
+            var export = new VExportCIE(path, new MruPathService(new MemoryMruPathStore([]))) { SavePath = root, Name = "export" };
+            hierarchy.Configured = true;
+            logger.Level = Level.Warn;
+            logger.AddAppender(appender);
+
+            VExportCIE.SaveToTifOrThrow(export);
+
+            Assert.Null(updateFailure);
+            Assert.True(updates > 0);
+            Assert.Equal(17, CameraFileMetadata.Read(path).Acquisition?.NdPort);
+            Assert.Null(ReadTiffParameters(Path.Combine(root, "export_Src.tiff")).Acquisition);
+            string channel = Path.Combine(root, "export_Y.tiff");
+            Assert.Null(ReadTiffParameters(channel).Acquisition);
+            using Mat image = Cv2.ImRead(channel, ImreadModes.Unchanged);
+            float[] actual = new float[6];
+            Marshal.Copy(image.Data, actual, 0, actual.Length);
+            Assert.Equal(Enumerable.Range(0, 6).Select(pixel => 2f * BitConverter.ToUInt16(raw, pixel * sizeof(ushort))), actual);
+        }
+        finally
+        {
+            logger.RemoveAppender(appender);
+            appender.Close();
+            logger.Level = previousLevel;
+            hierarchy.Configured = previousConfigured;
+            CVFileReadCache.IsEnabled = previousCache;
+            foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
+            Directory.Delete(root);
+        }
+    }
+
+    private sealed class AcquisitionWarningAppender(Action update) : AppenderSkeleton
+    {
+        protected override void Append(LoggingEvent loggingEvent)
+        {
+            if (loggingEvent.RenderedMessage == $"Invalid optional image record: {CameraFileMetadata.AcquisitionKind}") update();
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
@@ -20,6 +21,7 @@ namespace ColorVision.Engine.Media
     public class VExportCIE : ViewModelBase
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(VExportCIE));
+        private static readonly IReadOnlyDictionary<string, CVFileProperty> EmptyProperties = ReadOnlyDictionary<string, CVFileProperty>.Empty;
 
         public const int DefaultTiffCompression = 5;
         public const int ZipTiffCompression = 8;
@@ -230,18 +232,69 @@ namespace ColorVision.Engine.Media
             return parameters;
         }
 
-        internal static ColorCalibrationSnapshot? ReadCalibration(string filePath, CVCIEFile header)
+        internal static ColorCalibrationSnapshot? ReadCalibration(IReadOnlyDictionary<string, CVFileProperty> properties, CVCIEFile header)
         {
             if (header.FileExtType != CVType.Raw) return null;
             try
             {
-                return ColorCalibrationSnapshot.Read(filePath, header);
+                return ColorCalibrationSnapshot.Read(properties, header);
             }
             catch (Exception ex)
             {
                 Log.Warn("Acquisition parameters cannot be replayed; exporting source pixels only.", ex);
                 return null;
             }
+        }
+
+        private static CVType GetExportFileType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+        {
+            ".cvraw" => CVType.Raw,
+            ".cvsrc" => CVType.Src,
+            _ => CVType.CIE
+        };
+
+        private static int ReadExportHeader(Stream input, string path, out CVCIEFile header)
+        {
+            int index = CVFileUtil.ReadCIEFileHeader(input, out header);
+            header.FileExtType = GetExportFileType(path);
+            header.FilePath = path;
+            return index;
+        }
+
+        private static IReadOnlyDictionary<string, CVFileProperty> ReadExportProperties(Stream input)
+        {
+            try { return CVFileMetadata.ReadFromStream(input); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or DecoderFallbackException or NotSupportedException or UnauthorizedAccessException)
+            {
+                Log.Warn("Optional image export parameters are unavailable.", ex);
+                return EmptyProperties;
+            }
+        }
+
+        internal static CVCIEFile? ReadExportSource(string path, out IReadOnlyDictionary<string, CVFileProperty> properties,
+            CancellationToken cancellationToken)
+        {
+            properties = EmptyProperties;
+            CVCIEFile? source = null;
+            try
+            {
+                using (Stream input = CVFileReadCache.OpenRead(path, populateCache: false))
+                {
+                    int index = ReadExportHeader(input, path, out source);
+                    if (index <= 0 || !CVFileUtil.ReadCIEFileData(input, source, index)) return null;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    properties = ReadExportProperties(input);
+                }
+                CVCIEFile result = source;
+                source = null;
+                return result;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Warn("Unable to read image export source.", ex);
+                return null;
+            }
+            finally { source?.Dispose(); }
         }
 
         public static int SaveToTif(VExportCIE export)
@@ -288,24 +341,15 @@ namespace ColorVision.Engine.Media
             if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 throw new InvalidOperationException($"The export file name contains invalid characters: {name}");
 
-            string extension = Path.GetExtension(fileName);
-            CVType fileType = extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase)
-                ? CVType.Raw
-                : extension.Equals(".cvsrc", StringComparison.OrdinalIgnoreCase)
-                    ? CVType.Src
-                    : CVType.CIE;
-            // Embedded channels and their header come from one disk snapshot. RAW retains its cache-backed path.
-            using FileStream? cieStream = fileType == CVType.CIE
-                ? new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
-            int index = cieStream == null ? CVFileUtil.ReadCIEFileHeader(fileName, out CVCIEFile cvcie)
-                : CVFileUtil.ReadCIEFileHeader(cieStream, out cvcie);
+            using Stream input = CVFileReadCache.OpenRead(fileName, populateCache: false);
+            int index = ReadExportHeader(input, fileName, out CVCIEFile cvcie);
             using var headerLifetime = cvcie;
             if (index < 0)
                 throw new InvalidDataException($"Unable to read the CIE file header: {fileName}");
-            cvcie.FileExtType = fileType;
-            cvcie.FilePath = fileName;
 
-            ColorCalibrationSnapshot? recordedCalibration = ReadCalibration(fileName, cvcie);
+            CVType fileType = cvcie.FileExtType;
+            IReadOnlyDictionary<string, CVFileProperty> properties = fileType == CVType.Raw ? ReadExportProperties(input) : EmptyProperties;
+            ColorCalibrationSnapshot? recordedCalibration = ReadCalibration(properties, cvcie);
             ColorCalibrationSnapshot? calibration = recordedCalibration?.CanReplay == true ? recordedCalibration : null;
             int measurementChannels = fileType == CVType.CIE ? cvcie.Channels : calibration?.Channels ?? 0;
             bool exportX = measurementChannels == 3 && export.IsExportChannelX;
@@ -315,26 +359,17 @@ namespace ColorVision.Engine.Media
             if (selectedMeasurementCount > 0 && !export.IsTiff)
                 throw new NotSupportedException("Measurement channels require TIFF. Select TIFF or clear the CIE channels to export only the original image.");
 
-            string? associatedSourcePath = cvcie.FileExtType == CVType.CIE
-                ? ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName)
-                : null;
-            bool exportSource = export.IsExportSrc && (cvcie.FileExtType switch
-            {
-                CVType.Raw or CVType.Src => true,
-                CVType.CIE => associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath),
-                _ => false,
-            });
-            int selectedImageCount = selectedMeasurementCount + (exportSource ? 1 : 0);
-            bool includeImageSuffix = selectedImageCount > 1;
+            bool exportSource = export.IsExportSrc && fileType is CVType.Raw or CVType.Src;
+            bool includeImageSuffix = selectedMeasurementCount + (exportSource ? 1 : 0) > 1;
 
             Mat src;
             int exportedCount = 0;
-            void SaveImage(Mat image, string suffix, CVCIEFile parameterSource, string exportedChannel, ColorCalibrationSnapshot? sourceCalibrationOverride = null)
+            void SaveImage(Mat image, string suffix, CVCIEFile parameterSource, string exportedChannel,
+                IReadOnlyDictionary<string, CVFileProperty>? associatedProperties = null, ColorCalibrationSnapshot? associatedCalibration = null)
             {
                 string outputFileName = name + (includeImageSuffix ? suffix : string.Empty) + GetFileExtension(export.ExportImageFormat);
-                ColorVisionTiffParameters parameters = CreateTiffParameters(parameterSource, exportedChannel);
-                ColorCalibrationSnapshot? sourceCalibration = ReferenceEquals(parameterSource, cvcie) || exportedChannel != "Src"
-                    ? recordedCalibration : sourceCalibrationOverride;
+                ColorVisionTiffParameters parameters = CreateTiffParameters(parameterSource, exportedChannel, associatedProperties ?? properties);
+                ColorCalibrationSnapshot? sourceCalibration = associatedProperties == null ? recordedCalibration : associatedCalibration;
                 parameters.PixelRole = exportedChannel == "Src" ? "calibration-input" : "xyz-channel";
                 parameters.MeasurementChannel = exportedChannel == "Src" ? null : exportedChannel;
                 if (sourceCalibration != null)
@@ -352,9 +387,11 @@ namespace ColorVision.Engine.Media
             {
                 case CVType.Raw:
                 case CVType.Src:
-                    if (selectedImageCount == 0) break;
-                    if (!CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
+                    if (!exportSource && selectedMeasurementCount == 0) break;
+                    if (!CVFileUtil.ReadCIEFileData(input, cvcie, index))
                         throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
+                    if (fileType == CVType.Src) properties = ReadExportProperties(input);
+                    input.Dispose(); // Encoding uses only the captured data and never needs to lock the input.
                     if (exportSource)
                     {
                         using (src = CreateSourceMat(cvcie, recordedCalibration))
@@ -383,21 +420,24 @@ namespace ColorVision.Engine.Media
                     }
                     break;
                 case CVType.CIE:
-
-                    if (exportSource && associatedSourcePath != null && CVFileUtil.Read(associatedSourcePath, out CVCIEFile cvraw))
+                    if (export.IsExportSrc && ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName) is { } associatedSourcePath)
                     {
-                        ColorCalibrationSnapshot? sourceCalibration = ReadCalibration(associatedSourcePath, cvraw);
-                        using (src = CreateSourceMat(cvraw, sourceCalibration))
+                        using CVCIEFile? cvraw = ReadExportSource(associatedSourcePath, out var sourceProperties, CancellationToken.None);
+                        if (cvraw != null)
                         {
-                            SaveImage(src, "_Src", cvraw, "Src", sourceCalibration);
+                            includeImageSuffix = selectedMeasurementCount > 0;
+                            ColorCalibrationSnapshot? sourceCalibration = ReadCalibration(sourceProperties, cvraw);
+                            using (src = CreateSourceMat(cvraw, sourceCalibration))
+                                SaveImage(src, "_Src", cvraw, "Src", sourceProperties, sourceCalibration);
                         }
                     }
-                    if (selectedMeasurementCount > 0 && CvcieDiskPixels.TryLocate(cieStream!, cvcie, index, out long declaredLength) is { } pixels)
+                    if (selectedMeasurementCount > 0 && CvcieDiskPixels.TryLocate((FileStream)input, cvcie, index, out long declaredLength) is { } pixels)
                     {
                         int planeBytes = GetSingleChannelByteCount(cvcie);
                         if (declaredLength < (long)planeBytes * cvcie.Channels)
                             throw new InvalidDataException($"CIE data length is insufficient for the complete image: {fileName}");
 
+                        properties = ReadExportProperties(input);
                         byte[] plane = GC.AllocateUninitializedArray<byte>(planeBytes);
                         for (int channel = 0; channel < cvcie.Channels; channel++)
                         {
@@ -433,12 +473,7 @@ namespace ColorVision.Engine.Media
             ArgumentNullException.ThrowIfNull(recentExportLocations);
             RecentExportLocations = recentExportLocations;
             FilePath = filePath;
-            string extension = Path.GetExtension(filePath);
-            FileExtType = extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase)
-                ? CVType.Raw
-                : extension.Equals(".cvsrc", StringComparison.OrdinalIgnoreCase)
-                    ? CVType.Src
-                    : CVType.CIE;
+            FileExtType = GetExportFileType(filePath);
             if (FileExtType == CVType.CIE)
             {
                 IsExportChannelX = true;
@@ -459,9 +494,17 @@ namespace ColorVision.Engine.Media
             }
             else if (FileExtType is CVType.Raw or CVType.Src)
             {
-                IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(filePath, out _CVCIEFile) > 0;
-                _CVCIEFile.FileExtType = FileExtType;
-                HasCieChannels = IsCanExportSrc && ReadCalibration(filePath, _CVCIEFile)?.CanReplay == true;
+                _CVCIEFile = new CVCIEFile { FileExtType = FileExtType };
+                try
+                {
+                    using Stream input = CVFileReadCache.OpenRead(filePath, populateCache: false);
+                    IsCanExportSrc = ReadExportHeader(input, filePath, out _CVCIEFile) > 0;
+                    HasCieChannels = IsCanExportSrc && FileExtType == CVType.Raw && ReadCalibration(ReadExportProperties(input), _CVCIEFile)?.CanReplay == true;
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+                {
+                    Log.Warn("Unable to read image export options.", ex);
+                }
                 IsExportChannelX = IsExportChannelZ = HasCieChannels && Channels == 3;
                 IsExportChannelY = HasCieChannels;
                 IsChannelOne = CVCIEFile.Channels == 0;
