@@ -27,7 +27,7 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 | RAW 不另存 CVCIE，但要保留当时的色度参数和测量能力 | `CVFileMetadata`、`ColorCalibrationSnapshot`、`RawColorMeasurementSource`；见下文的动态参数契约 |
 | 大小写改名后类型变了 | 路径 header 使用大小写敏感的完整路径 `Contains`；不同便捷入口推断方式不一致 |
 | 写入返回 true，但再次读取失败 | 写入不验证完整格式；尤其检查 Version=3 的 `NDPort` 缺失和零长 Data |
-| 写失败后旧文件丢失或残缺 | 路径 writer 直接 `FileMode.Create`，没有临时文件替换或回滚 |
+| 非 CVRAW 写失败后旧文件丢失或残缺 | 路径 writer 直接 `FileMode.Create`；CVRAW 同步保存先在同目录暂存 |
 | Explorer 缩略图异常 | [ShellExtension](./ColorVision.ShellExtension.md)，其 provider 会覆盖解析出的类型 |
 | 显示或导出后的像素值变化 | `Engine/.../Media/MediaHelper.cs`、导出入口与[图像编辑器](../ui-components/ColorVision.ImageEditor.md)，不是文件解析本身 |
 
@@ -78,7 +78,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 通用路径 header 和 data 分别以 `FileShare.Read` 打开、关闭文件，**不是同一句柄上的一致性快照**。`ReadCIEFileHeader(Stream, ...)` 保留调用方的流，可在同一句柄上继续读取长度前缀与像素。每次调用结束会释放流，但读取期间不能承诺允许其它进程写入或删除。通用 `ReadFile` 只做一次 `BinaryReader.Read`，未核对实际读取字节数，不能借它宣称所有入口都有读满保证。
 
-`CVFileReadCache` 默认关闭，手动启用后使用当前进程共用的 **1 个 CVRAW 文件槽位**，可通过 `CvRawFileCacheConfig.MaximumEntries` 将数量上限调整为正整数，缓存完整文件字节（header、像素和参数尾部）。达到上限时优先淘汰最近最少访问且没有活动读写的文件；每个槽位容量足够时复用 native 指针，超过容量才扩容，释放后下次使用重新分配。`CVFileSaveMode` 提供保存（`Synchronous=0`）和仅缓存（`MemoryOnly=2`）；保留旧数值 `1` 的调用按保存处理，以兼容已编译调用方。保存先复制像素并发布缓存路径，再在调用线程写盘，完成后才返回；整图写入和参数追加共用写入锁，磁盘 I/O 不持有全局缓存查找锁。后续流程修改原生帧不会改变独立缓存副本。参数更新只写尾块。同步模式写盘成功后发布缓存，失败保留旧尾块；仅缓存直接发布，已有读取保留旧快照。
+`CVFileReadCache` 默认关闭，启用后进程共用 **1 个 CVRAW 文件槽位**，可用 `CvRawFileCacheConfig.MaximumEntries` 调整。缓存整份文件，容量足够时复用原生内存，槽位满时优先淘汰最久未访问的空闲槽位。`Synchronous=0` 和旧值 `1` 为同步保存，`MemoryOnly=2` 为仅缓存。同步整图在调用线程暂存，替换后更新缓存。暂存时命中仍读旧快照，未命中可读盘。整图和尾块更新共用写入锁，磁盘 I/O 不持有缓存查找锁。同步尾块写盘成功后发布，仅缓存直接发布。已有读取保留旧快照。
 
 “全局选项 → 常规 → 文件归档”与“本地缓存管理 → 图像文件缓存”共用 `CvRawFileCacheConfig.IsEnabled` 和 `MaximumEntries`，通过 `[ConfigSetting]` 注册，新配置默认关闭、启用后的数量上限为 1，并持久保存；已有保存的开关值保持不变，启动时应用到 `CVFileReadCache`。管理窗口中修改“数量上限”并点击“应用”后生效。减少数量时先释放多余的空闲旧条目，仍超限则将活动旧条目标为退役，最后一个读写归还后释放；普通读取未命中仍受数量限制。下一次保存等上一次保存调用完成后再继续，不积压后台整图缓冲。已有读取仍在使用旧快照时，可退役其缓存键并分配新槽位，旧快照由读取者归还后释放。关闭后立即停止命中及填充槽位，空闲条目立即释放，在途读写继续使用原缓冲并在归还后释放；保存和未命中的参数更新继续直接写盘；仅缓存保存要求缓存开启，否则报告保存失败。重新开启从下一次读写开始缓存；开关和数量调整不改变校正缓存、CVCIE、实时预览或每视图 RAW/显示缓冲复用。对比的是应用文件缓存效果，关闭不等于清空 Windows 文件缓存。
 
@@ -143,9 +143,9 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 重放速度取决于图幅、区域数量、CPU、缓存和存储；不保证与直接读取 CVCIE 等速。比较时分别测量读取、单通道计算、显示归一化、区域计算和文件参数更新，不把热文件缓存结果当作冷盘或实际相机吞吐。
 
-## 写入不是验证，也不是原子提交
+## 同步写入的提交与验证边界
 
-`WriteCIEFile(path, CVCIEFile)` 是 CVRAW 共用的底层容器 writer，直接以 `FileMode.Create` / `FileShare.None` 打开目标，已有文件会先被截断。随后异常返回 false **不恢复原文件**；也不自动创建父目录、临时文件或备份。`WriteCVRaw` 只是这个 writer 的包装，不增加扩展名、版本或尺寸检查。
+`WriteCIEFile` 是 CVRAW 共用的底层 writer。CVRAW 同步保存需要在目标目录创建、重命名和删除暂存文件的权限。Windows 覆盖沿用目标的 DACL，并拒绝只读、隐藏、系统或重解析点目标。临时文件完整写入后才替换目标，失败时旧缓存不变。如果系统已移走旧文件才报错，writer 尝试恢复原路径；恢复受阻时，可从同目录的 `.bak` 备份取回旧数据。非 CVRAW 路径仍直接截断目标。`WriteCVRaw` 不校验扩展名、版本或尺寸，也不创建父目录。同步返回表示文件提交完成，掉电持久性由存储系统决定。
 
 两个 writer 都按 GBK 编码源文件名，代码中有 UTF-8 回退；reader 固定 GBK，不能据此承诺编码自动识别。写出 Exp 不足的通道补 0、多余曝光截断；写出 Cols 再 Rows；仅 Version=2 使用 64 位数据长度。`FilePath`、`FileExtType` 不进入二进制格式，NDPort 当前也未写出。
 
@@ -243,7 +243,7 @@ CVCIE 首次打开和切换图层时，达到 8 MiB 的冻结显示图在后台�
 ## 验证入口与明确缺口
 
 - 当前托管套件不包含 CVRAW 真实样本与计时报告宿主；现场复核应只读输入，并把输出和计时报告写入独立目录。文件复制计时可能受操作系统缓存影响，不能作为现场 CT 收益。
-- `CvRawSaveModeTests`：三种模式、稳定像素副本、完整尾块替换、写入先后关系和后台任务持有的内存寿命。
+- `CvRawSaveModeTests` 覆盖同步及仅缓存。`CvRawFileCacheCapacityTests` 覆盖保存失败、读者寿命、缓存清理与覆盖权限。
 - `CVFileMetadataTests`：v1/v2/v3 读取兼容、像素字节不变、参数替换与收缩、未知记录保留、损坏尾部拒绝覆盖，以及只读/占用失败。
 - 16 位四通道仅验证输入缓冲，编辑器当前的 `ImageSourceMetadata` 不接受 Rgba64；本优化不扩展显示格式。使用同一真实样本环境变量可记录连续读取的托管分配和耗时；这些结果不证明其它处理链零分配或现场不会产生内存碎片。
 - `RawColorCalibrationTests` 与 Native `--calibration-smoke`：已加载参数快照、8/16 位及两种布局、亮度/单色/四色/多色重放与原校正输出逐字节一致、POI/封闭区域及完整缓存对照、仅成功校正写回和保存 RAW 的快照匹配。
@@ -258,6 +258,6 @@ CVCIE 首次打开和切换图层时，达到 8 MiB 的冻结显示图在后台�
 - `Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs`：32/64 位灰度范围、常量黑图、输入不变、有限极值、非法数据与取消。
 - `Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs`：8/16 位 BGR 输入到连续 XYZ、负矩阵系数保留、曝光/增益回退兼容、输入长度和维度校验，以及校正导入/计算的非有限数和输出溢出拒绝。
 - `Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs`：IP 端点与异常、原始负值和元数据保留、无效替换清除旧值、来源待核对、重复光谱 ID、文件指纹与副本保护、六项编辑与原值恢复、模板首点/尺寸/形状校验、POI 右键菜单，以及窗口输入变化 / 失败后的保存门禁；不替代真机采集、真实数据库历史选择或相机过曝检测。
-- 当前关联测试没有证明 v3 writer/reader 往返、恶意长度、所有大小写入口、源文件替换一致性、取消时序或写失败后原文件恢复。上面的实现缺口尚未修复；文档对齐不代表这些测试已运行或问题已消失。
+- 测试未覆盖 v3 完整往返、所有大小写入口、关联源替换和底层文件系统在部分替换后的恢复。
 
 修改 FileIO 时先用 `knowledge.mjs impact "Engine/ColorVision.FileIO/CVFileUtil.cs"` 找消费方主题，按变更补合成文件回归。只读理解协议不需要启动主程序、加载真实测量样本或执行 Explorer 注册脚本。
