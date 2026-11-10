@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraFocusFrameProcessor));
         private readonly object _gate = new();
         private readonly AutoResetEvent _frameReady = new(false);
-        private readonly CancellationTokenSource _cts = new();
+        private readonly TaskCompletionSource _retirement = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Action<CameraFocusFrameResult> _resultHandler;
         private readonly Func<HImage, CameraFocusFrameRequest, CameraFocusFrameResult> _frameProcessor;
         private readonly Task _workerTask;
@@ -26,7 +26,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private int _workingCapacity;
         private CameraFocusFrameRequest _pendingRequest;
         private bool _hasPendingFrame;
-        private bool _disposed;
+        private int _stopRequested;
+
+        internal Task Retirement => _retirement.Task;
 
         public CameraFocusFrameProcessor(Action<CameraFocusFrameResult> resultHandler)
             : this(resultHandler, ProcessFrame)
@@ -43,7 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _frameProcessor = frameProcessor;
             _workerTask = Task.Factory.StartNew(
                 WorkerLoop,
-                _cts.Token,
+                CancellationToken.None,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
         }
@@ -51,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int depth, int stride, CameraFocusFrameRequest request)
         {
             ArgumentNullException.ThrowIfNull(sourceBuffer);
-            if (length <= 0 || length > sourceBuffer.Length || _disposed) return;
+            if (length <= 0 || length > sourceBuffer.Length || Volatile.Read(ref _stopRequested) != 0) return;
 
             unsafe
             {
@@ -64,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, CameraFocusFrameRequest request)
         {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || _disposed) return;
+            if (sourcePointer == IntPtr.Zero || length <= 0 || Volatile.Read(ref _stopRequested) != 0) return;
             SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, request);
         }
 
@@ -72,7 +74,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         {
             lock (_gate)
             {
-                if (_disposed) return;
+                if (Volatile.Read(ref _stopRequested) != 0) return;
                 EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, width, height, channels, depth, stride, length);
                 Buffer.MemoryCopy((void*)sourcePointer, (void*)_pendingFrame!.Value.pData, _pendingCapacity, length);
                 _pendingRequest = request;
@@ -83,19 +85,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void WorkerLoop()
         {
-            while (!_cts.IsCancellationRequested)
+            while (Volatile.Read(ref _stopRequested) == 0)
             {
-                _frameReady.WaitOne(100);
-                if (_cts.IsCancellationRequested)
-                {
-                    break;
-                }
+                _frameReady.WaitOne();
 
                 HImage workingFrame;
                 CameraFocusFrameRequest request;
 
                 lock (_gate)
                 {
+                    if (Volatile.Read(ref _stopRequested) != 0) break;
                     if (!_hasPendingFrame || _pendingFrame == null)
                     {
                         continue;
@@ -122,7 +121,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
                 try
                 {
-                    if (_cts.IsCancellationRequested)
+                    if (Volatile.Read(ref _stopRequested) != 0)
                     {
                         break;
                     }
@@ -167,26 +166,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Dispose()
         {
-            lock (_gate)
-            {
-                if (_disposed) return;
-                _disposed = true;
-                _cts.Cancel();
-                _frameReady.Set();
-            }
+            if (Interlocked.Exchange(ref _stopRequested, 1) != 0) return;
+            // A camera callback may be copying a full frame and the worker may be in native code.
+            _frameReady.Set();
+            _ = Task.Run(FinishRetirementAsync);
+        }
 
+        private async Task FinishRetirementAsync()
+        {
             try
             {
-                _workerTask.Wait();
+                await _workerTask.ConfigureAwait(false);
             }
-            catch (AggregateException)
+            catch (Exception ex)
             {
+                log.Warn("Camera focus worker stopped unexpectedly.", ex);
             }
-
-            _pendingFrame?.Dispose();
-            _workingFrame?.Dispose();
-            _frameReady.Dispose();
-            _cts.Dispose();
+            lock (_gate)
+            {
+                _pendingFrame?.Dispose();
+                _workingFrame?.Dispose();
+                _pendingFrame = null;
+                _workingFrame = null;
+                _frameReady.Dispose();
+            }
+            _retirement.SetResult();
         }
     }
 }

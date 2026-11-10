@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
@@ -25,8 +26,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private readonly Dictionary<ImageView, EventHandler> _viewSessions = new();
         private readonly object _processorGate = new();
         private readonly TimeProvider _clock;
+        private readonly Func<Action<CameraFocusFrameResult>, CameraFocusFrameProcessor> _createFocusProcessor;
 
         private CameraFocusFrameProcessor? _processor;
+        private Task? _processorRetirement;
         private ImageView? _imageView;
         private Action<double>? _onArticulation;
         private Action<RealtimeCameraMetrics>? _onFrameRateChanged;
@@ -44,9 +47,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _showOverlayRoi = true;
         private volatile CameraPreviewGeometry _previewGeometry = new(Rect.Empty, RealtimeFramePresenter.TransformNone);
 
-        public CameraRealtimeFramePipeline(TimeProvider? clock = null)
+        public CameraRealtimeFramePipeline(TimeProvider? clock = null,
+            Func<Action<CameraFocusFrameResult>, CameraFocusFrameProcessor>? createFocusProcessor = null)
         {
             _clock = clock ?? TimeProvider.System;
+            _createFocusProcessor = createFocusProcessor ?? (resultHandler => new CameraFocusFrameProcessor(resultHandler));
             _overlayVisual = new RealtimeCameraOverlayVisual(_config);
         }
 
@@ -244,20 +249,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             lock (_processorGate)
             {
                 if (_disposed || !_isRunning || !IsArticulationEnabled) return null;
+                // A previous session can still own a full frame in native focus processing.
+                if (_processorRetirement is { IsCompleted: false }) return null;
+                _processorRetirement = null;
                 long generation = Volatile.Read(ref _generation);
-                return _processor ??= new CameraFocusFrameProcessor(result => HandleProcessedFrame(result, generation));
+                return _processor ??= _createFocusProcessor(result => HandleProcessedFrame(result, generation));
             }
         }
 
         private void ReleaseProcessor()
         {
-            CameraFocusFrameProcessor? processor;
             lock (_processorGate)
             {
-                processor = _processor;
+                if (_processor is not { } processor) return;
                 _processor = null;
+                _processorRetirement = processor.Retirement;
+                processor.Dispose();
             }
-            processor?.Dispose();
         }
 
         private void HandleProcessedFrame(CameraFocusFrameResult result, long generation)

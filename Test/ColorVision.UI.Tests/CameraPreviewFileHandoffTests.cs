@@ -262,6 +262,83 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Fact]
+    public async Task LivePreviewRestartsWhilePreviousFocusFrameRetainsItsBuffer()
+    {
+        TimeSpan testWait = TimeSpan.FromSeconds(10);
+        TaskCompletionSource enteredNative = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<double> nextScore = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using ManualResetEventSlim finishNative = new();
+        CameraFocusFrameProcessor? first = null;
+        CameraFocusFrameProcessor? second = null;
+        int processorCount = 0;
+        int oldSampleAfterStop = -1;
+        List<double> scores = [];
+        var focusPipeline = WpfTestHost.Invoke(() => new CameraRealtimeFramePipeline(createFocusProcessor: publish =>
+        {
+            if (Interlocked.Increment(ref processorCount) != 1)
+                return second = new CameraFocusFrameProcessor(publish, (_, _) => new CameraFocusFrameResult(42));
+            return first = new CameraFocusFrameProcessor(publish, (image, _) =>
+            {
+                enteredNative.SetResult();
+                if (!finishNative.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Focus gate was not released.");
+                oldSampleAfterStop = Marshal.ReadByte(image.pData);
+                return new CameraFocusFrameResult(17);
+            });
+        }));
+
+        void StartPreview() => focusPipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false, onArticulation: score =>
+        {
+            scores.Add(score);
+            nextScore.TrySetResult(score);
+        });
+
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                DefaultRealtimeCameraConfig.Current.IsCalArtculation = true;
+                StartPreview();
+                focusPipeline.SubmitFrame([17], 1, 1, 1, 1, 8, 1);
+            });
+            await enteredNative.Task.WaitAsync(testWait);
+
+            await view.Dispatcher.InvokeAsync(() =>
+            {
+                focusPipeline.Stop(resetRealtime: true);
+                StartPreview();
+            }).Task.WaitAsync(testWait);
+
+            byte[] restartedPixels = [71, 72, 73, 74, 75, 76];
+            focusPipeline.SubmitFrame(restartedPixels, restartedPixels.Length, 3, 2, 1, 8, 3);
+            await view.Realtime.Completion.WaitAsync(testWait);
+            Assert.Equal(1, Volatile.Read(ref processorCount));
+            var retiringProcessor = Assert.IsType<CameraFocusFrameProcessor>(first);
+            Assert.False(retiringProcessor.Retirement.IsCompleted);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(1, focusPipeline.CurrentDisplayedFrameCount);
+                Assert.Equal(restartedPixels, Pixels(Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource)));
+                Assert.Empty(scores);
+            });
+
+            finishNative.Set();
+            await retiringProcessor.Retirement.WaitAsync(testWait);
+            Assert.Equal(17, oldSampleAfterStop);
+            focusPipeline.SubmitFrame(restartedPixels, restartedPixels.Length, 3, 2, 1, 8, 3);
+            Assert.Equal(42.0, await nextScore.Task.WaitAsync(testWait));
+            Assert.Equal(2, Volatile.Read(ref processorCount));
+            WpfTestHost.Invoke(() => Assert.Equal(new[] { 42.0 }, scores));
+        }
+        finally
+        {
+            finishNative.Set();
+            WpfTestHost.Invoke(focusPipeline.Dispose);
+            if (first != null) await first.Retirement.WaitAsync(testWait);
+            if (second != null) await second.Retirement.WaitAsync(testWait);
+        }
+    }
+
+    [Fact]
     public async Task LiveSessionsUseIndependentFocusRois()
     {
         byte[] samples = [10, 10, 0, 20, 10, 10, 0, 20];
