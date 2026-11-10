@@ -178,7 +178,10 @@ namespace ColorVision.Engine.FlowProcessing
                 request.EngineResult,
                 finalOutcome,
                 postProcessResults,
-                DateTime.UtcNow);
+                DateTime.UtcNow)
+            {
+                FlowName = request.FlowName
+            };
         }
 
         internal static FlowStatus ResolveRecordedStatus(

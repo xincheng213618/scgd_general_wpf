@@ -7445,4 +7445,6 @@ Field: </value></data>
   <data name="SDK 切换 Burst 采集时使用的曝光阈值。" xml:space="preserve"><value>Exposure threshold used by the SDK for burst capture.</value></data>
   <data name="配置缺少 expTimeCfg。可恢复设备参数后重新配置。" xml:space="preserve"><value>The configuration lacks expTimeCfg. Restore the device settings to start again.</value></data>
   <data name="JSON 格式有误：{0}" xml:space="preserve"><value>Invalid JSON: {0}</value></data>
+  <data name="完成（有警告）" xml:space="preserve"><value>Completed with warnings</value></data>
+  <data name="任务绑定的流程模板不可用，请编辑任务并重新选择。" xml:space="preserve"><value>The assigned flow template is unavailable. Edit the task to select a template.</value></data>
 </root>

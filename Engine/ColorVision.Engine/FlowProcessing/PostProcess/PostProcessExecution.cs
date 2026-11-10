@@ -85,6 +85,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
         public FlowControlData EngineResult { get; }
 
+        public string FlowName { get; internal init; } = string.Empty;
+
         public FlowFinalOutcome FinalOutcome { get; }
 
         public IReadOnlyList<PostProcessExecutionResult> PostProcessResults { get; }

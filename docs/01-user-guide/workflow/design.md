@@ -107,7 +107,7 @@ ARVRPro、KB 的流程编辑按钮在未选择模板时仍可打开空白独立�
 
 ## 当前画布与已保存版本
 
-UI 手动运行及未指定模板的运行接口读取当前画布，可执行尚未保存的编辑。指定模板的运行接口先选择模板，只使用本次成功选择返回的执行快照；选择失败、被更新的选择替代或快照在启动前失效时返回失败，不启动旧图或其它模板。共享 Quartz `FlowJob` 经单例 `FlowEngineManager.View` 的主工作区运行并等待最终化，不是运行当前激活的任意独立窗口。`HeadlessFlowJob` / `RunSavedFlowHeadlessAsync` 按 `FlowKey` 取模板集合中的 `DataBase64`，不读取当前未保存画布。不能笼统声称“所有 Quartz 都只运行已保存版本”。
+UI 手动运行及未指定模板的运行接口读取当前画布，可执行尚未保存的编辑。指定模板的运行接口只使用本次成功选择返回的快照，选择失败或快照失效时停止启动。Quartz `FlowJob` 在主工作区运行并等待最终化，任务有模板绑定时选择该模板的已保存内容，旧任务无绑定时沿用当前画布。`HeadlessFlowJob` / `RunSavedFlowHeadlessAsync` 在独立运行时按 `FlowKey` 读取已保存模板。
 
 因此启用读取已保存模板的入口前，应保存并确认 `FlowKey`、起始节点和实际版本；无界面请求创建后的字节副本不再随继续编辑变化。执行完成判据见[执行会话](./execution.md)，无界面边界见[隔离执行](../../04-api-reference/algorithms/templates/flow-engine.md)。
 

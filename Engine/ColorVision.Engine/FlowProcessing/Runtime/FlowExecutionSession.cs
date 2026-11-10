@@ -196,9 +196,10 @@ namespace ColorVision.Engine.FlowProcessing
         /// </summary>
         public async Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
             FlowTemplateExecutionSnapshot? executionSnapshot = null,
-            TemplateModel<FlowParam>? flowTemplate = null)
+            TemplateModel<FlowParam>? flowTemplate = null,
+            bool reportStartupFailures = false)
         {
-            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber(), executionSnapshot, flowTemplate);
+            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber(), executionSnapshot, flowTemplate, reportStartupFailures);
             return result.FinalizedResult;
         }
 
@@ -1058,7 +1059,8 @@ namespace ColorVision.Engine.FlowProcessing
         private async Task<FlowRunCoreResult> RunFlowCoreAsync(
             string? requestedSerialNumber = null,
             FlowTemplateExecutionSnapshot? expectedSnapshot = null,
-            TemplateModel<FlowParam>? flowTemplate = null)
+            TemplateModel<FlowParam>? flowTemplate = null,
+            bool reportStartupFailures = false)
         {
             // Reserve the entire request before selecting a template. Selection
             // otherwise refreshes the workspace and can cancel another run.
@@ -1083,10 +1085,12 @@ namespace ColorVision.Engine.FlowProcessing
                         string message = selection.FailureReason ?? ColorVision.Engine.Properties.Resources.Flow_NoValidFlowTemplateSelected;
                         View.ShowExecutionSummary(message);
                         log.Warn(message);
+                        if (reportStartupFailures)
+                            throw new InvalidOperationException(message);
                         return default;
                     }
                 }
-                return await RunAdmittedFlowAsync(requestedSerialNumber, expectedSnapshot);
+                return await RunAdmittedFlowAsync(requestedSerialNumber, expectedSnapshot, reportStartupFailures);
             }
             finally
             {
@@ -1096,7 +1100,8 @@ namespace ColorVision.Engine.FlowProcessing
 
         private async Task<FlowRunCoreResult> RunAdmittedFlowAsync(
             string? requestedSerialNumber,
-            FlowTemplateExecutionSnapshot? expectedSnapshot)
+            FlowTemplateExecutionSnapshot? expectedSnapshot,
+            bool reportStartupFailures)
         {
             FlowTemplateExecutionSnapshotResult snapshotResult;
             if (expectedSnapshot != null)
@@ -1136,6 +1141,8 @@ namespace ColorVision.Engine.FlowProcessing
                 .Any(node => node.RequiresRemoteService);
             if (requiresServices && !MqttRCService.GetInstance().IsConnect)
             {
+                if (reportStartupFailures)
+                    throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
                 MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
                 return default;
             }
@@ -1144,6 +1151,8 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 MqttRCService.GetInstance().QueryServices();
                 View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
+                if (reportStartupFailures)
+                    throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 return default;
             }
@@ -1152,6 +1161,8 @@ namespace ColorVision.Engine.FlowProcessing
             string? startNodeName = SelectedStartNodeName;
             if (string.IsNullOrWhiteSpace(startNodeName))
             {
+                if (reportStartupFailures)
+                    throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed);
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                 return default;
             }

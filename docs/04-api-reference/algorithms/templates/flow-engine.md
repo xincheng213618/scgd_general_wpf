@@ -109,7 +109,7 @@ FlowHeadlessExecutionResult result =
 
 未设置这两个字段时沿用就绪 2 秒、执行不限时的默认值；JobDataMap 不接受用负数表示无限等待。
 
-这是 `HeadlessFlowJob` 的字段契约，不能套用到 `FlowJob`。后者通过 WPF Dispatcher 运行单例 `FlowEngineManager.View` 主工作区选中的流程，不跟随任意独立窗口的激活状态；它包含批次/前后处理并等待最终化结果，并非运行已保存快照的同义入口。
+这些字段由 `HeadlessFlowJob` 消费。普通[执行流程任务](../../ui-components/ColorVision.Scheduler.md)在主工作区运行，包含批次和前后处理，并等待最终化。新任务按配置选择已保存模板，旧的未绑定任务沿用主工作区流程。
 
 ## 源码定位
 

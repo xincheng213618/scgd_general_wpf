@@ -6,8 +6,11 @@ using ColorVision.Engine.FlowProcessing.Integration;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.PreProcess;
+using ColorVision.Engine.FlowProcessing.Scheduling;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Scheduler;
+using ColorVision.Scheduler.Data;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib.Algorithm;
@@ -15,11 +18,14 @@ using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Logical;
 using FlowEngineLib.Start;
+using Quartz;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -780,6 +786,123 @@ public sealed class FlowExecutionEditingTests
             Assert.False(sink.Started.Task.IsCompleted);
             Assert.False(fixture.PostProcess.Entered.Task.IsCompleted);
         });
+    }
+
+    [Fact]
+    public void ScheduledFlowUsesSavedSelectionAndRecordsItsFinalOutcome()
+    {
+        WithFixture(fixture => PumpUntil(VerifyAsync(fixture)));
+
+        static async Task VerifyAsync(EditingFixture fixture)
+        {
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.LoadAssembly(typeof(CVEndNode).Assembly);
+#pragma warning disable CS0618 // The manual start keeps this workflow fixture independent of MQTT.
+            var start = new ManualFlowStartNode();
+#pragma warning restore CS0618
+            var end = new CVEndNode();
+            start.Create();
+            end.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(end);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(end.m_in_start));
+            var templateA = new TemplateModel<FlowParam>("巡检 A", new FlowParam
+            {
+                Id = 710, FlowKey = "saved-flow-A", DataBase64 = Convert.ToBase64String(editor.GetCanvasData())
+            });
+            TemplateFlow.Params.Add(templateA);
+            fixture.MainSession.AdoptSavedCanvas(templateA);
+            editor.MarkSaved();
+
+            await using var factory = QuartzSchedulerBuilder.Create(builder =>
+            {
+                builder.ConfigureScheduler(options => options.InstanceName = $"scheduled-flow-{Guid.NewGuid():N}");
+                builder.UseDefaultThreadPool(1);
+                builder.UseInMemoryStore(_ => { });
+            }).Build();
+            var scheduler = await factory.GetScheduler();
+            string tasksFile = Path.Combine(Path.GetTempPath(), $"scheduled-flow-{Guid.NewGuid():N}.json");
+            var manager = new QuartzSchedulerManager(scheduler, tasksFile);
+            string taskTypeName = SchedulerPresentation.TaskTypeName(typeof(FlowJob));
+            Assert.NotEqual(nameof(FlowJob), taskTypeName);
+            manager.Jobs.Add(taskTypeName, typeof(FlowJob));
+            var history = Channel.CreateUnbounded<JobExecutionRecord>();
+            manager.Listener = new TaskExecutionListener(manager, record => history.Writer.TryWrite(record));
+            scheduler.ListenerManager.AddJobListener(manager.Listener);
+            var managerInstance = typeof(FlowEngineManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previousManager = managerInstance.GetValue(null);
+            managerInstance.SetValue(null, fixture.Manager);
+            try
+            {
+                var window = new CreateTask(manager)
+                {
+                    ShowActivated = false, ShowInTaskbar = false,
+                    WindowStartupLocation = WindowStartupLocation.Manual, Left = -10000, Top = -10000
+                };
+                try
+                {
+                    window.Show();
+                    await Dispatcher.Yield(DispatcherPriority.ContextIdle);
+                    Assert.Equal(typeof(FlowJob), window.SchedulerInfo.JobType);
+                    Assert.False(await window.SaveAsync());
+                    var configuration = (StackPanel)window.FindName("StackPanelConfig");
+                    var selector = Assert.Single(FindCombos(configuration));
+                    selector.SetCurrentValue(ComboBox.SelectedValueProperty, templateA.Value.FlowKey);
+                    Assert.Equal(templateA.Key, window.SchedulerInfo.JobName);
+                    Assert.True(await window.SaveAsync());
+                }
+                finally { window.Close(); }
+
+                var savedTask = Assert.Single(SchedulerTaskSerializer.LoadFromFile(tasksFile));
+                Assert.Equal(templateA.Value.FlowKey, Assert.IsType<FlowJobConfig>(savedTask.Config).FlowKey);
+                templateA.Key = "已改名的巡检 A";
+
+                var templateB = new TemplateModel<FlowParam>("当前 B", new FlowParam { Id = 711, FlowKey = "saved-flow-B" });
+                fixture.CreateMainGraph(templateB);
+                Assert.Same(templateB.Value, fixture.Manager.SelectedFlowParam);
+                fixture.PreProcess.Release.SetResult(true);
+                await scheduler.Start();
+                await fixture.PostProcess.Entered.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                Assert.False(history.Reader.TryRead(out _));
+
+                DateTime now = DateTime.UtcNow;
+                fixture.PostProcess.Release.SetResult([new PostProcessExecutionResult("归档", "Fixture", PostProcessFailurePolicy.Required,
+                    PostProcessExecutionStatus.ReturnedFalse, "归档失败", now, now)]);
+                var record = await history.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
+                Assert.False(record.Success);
+                Assert.Contains(templateA.Key, record.Message);
+                Assert.DoesNotContain(templateB.Key, record.Message);
+                Assert.Contains(Engine.Properties.Resources.BatchNumber, record.Message);
+                Assert.Contains("归档失败", record.Message);
+
+                TemplateFlow.Params.Remove(templateA);
+                fixture.CreateMainGraph(templateB);
+                await scheduler.TriggerJob(new JobKey(savedTask.JobName, savedTask.GroupName));
+                var missing = await history.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
+                Assert.False(missing.Success);
+                Assert.Contains(EngineLocalization.Get("任务绑定的流程模板不可用，请编辑任务并重新选择。"), missing.Message);
+                Assert.DoesNotContain(templateB.Key, missing.Message);
+                Assert.Same(templateB.Value, fixture.Manager.SelectedFlowParam);
+            }
+            finally
+            {
+                fixture.PreProcess.Release.TrySetResult(true);
+                fixture.PostProcess.Release.TrySetResult([]);
+                await scheduler.Shutdown(waitForJobsToComplete: true);
+                managerInstance.SetValue(null, previousManager);
+                File.Delete(tasksFile);
+                File.Delete(tasksFile + ".bak");
+            }
+        }
+
+        static IEnumerable<ComboBox> FindCombos(DependencyObject root)
+        {
+            if (root is ComboBox combo)
+                yield return combo;
+            foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
+                foreach (var descendant in FindCombos(child))
+                    yield return descendant;
+        }
     }
 
     [Theory]

@@ -609,9 +609,10 @@ namespace ColorVision.Engine.FlowProcessing
         }
 
         internal Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
-            TemplateModel<FlowParam>? flowTemplate = null)
+            TemplateModel<FlowParam>? flowTemplate = null,
+            bool reportStartupFailures = false)
         {
-            return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate);
+            return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate, reportStartupFailures: reportStartupFailures);
         }
 
         public void Clear()

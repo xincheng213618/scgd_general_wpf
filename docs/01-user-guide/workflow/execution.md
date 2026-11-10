@@ -92,9 +92,9 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 | --- | --- |
 | `FlowEngineManager.RunFlowAsync()` | 同样等待本会话执行链返回，但仅给出 `FlowControlData` 引擎结果；不能由此判定后处理成功 |
 | `RunFlowAndWaitForFinalizationAsync()` | 返回最终结果，应读取 `FinalOutcome` 与 `PostProcessResults`；未进入最终化时可返回 `null`，启动异常也可能抛出 |
-| `FlowJob.Execute()` | 经协调器回到 WPF Dispatcher，运行单例 `FlowEngineManager.View` 主工作区并等待最终化，再写入 `context.Result` |
+| `FlowJob.Execute()` | 在 WPF Dispatcher 上执行任务绑定的已保存模板，沿主工作区的流程链等待最终化，再写入 `context.Result`。旧的未绑定任务继续运行当前主工作区流程 |
 
-`FlowJob` 仅将 `Succeeded` / `SucceededWithWarnings` 映射为成功，并将失败后处理摘要加入消息。它与读取已保存快照的 `HeadlessFlowJob` 是两条入口。部分 `Projects/*` 窗口直接监听 `FlowCompleted` 后执行自己的 `Processing`、导出或协议响应，须继续核对所属项目的完成规则。
+`FlowJob` 将 `Succeeded` / `SucceededWithWarnings` 映射为成功，并将实际流程名、批次号和失败后处理摘要写入[任务历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md)。部分 `Projects/*` 窗口直接监听 `FlowCompleted` 后执行自己的 `Processing`、导出或协议响应，须继续核对所属项目的完成规则。
 
 ## 耗时与落库状态
 
