@@ -13,7 +13,6 @@ using ColorVision.ImageEditor.Navigation;
 using ColorVision.ImageEditor.Tooling;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
-using ColorVision.ImageEditor.Tif;
 using ColorVision.ImageEditor.Documents;
 using ColorVision.ImageEditor.Presentation;
 using ColorVision.UI;
@@ -924,9 +923,9 @@ namespace ColorVision.ImageEditor
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
-            if (imageOpen is IPreparedBitmapOpen bitmapOpen)
+            if (imageOpen is IPreparedImageOpen preparedOpen)
             {
-                OpenBitmapFile(bitmapOpen, filePath);
+                OpenPreparedFile(preparedOpen, filePath);
                 return;
             }
 
@@ -972,7 +971,12 @@ namespace ColorVision.ImageEditor
             Dispatcher.VerifyAccess();
             long contentVersion = _document.ContentVersion;
             var previousRequest = _staticOpenCancellation;
-            var opener = EditorContext.IImageOpen;
+            var activeOpener = EditorContext.IImageOpen;
+            var opener = activeOpener ?? _retainedOpenerDuringProbe;
+            bool reuse = ReferenceEquals(opener, nextOpener);
+            bool retainForProbe = nextRequest != null && reuse && opener is IImageOpenContentLifetime;
+            // Transfer the retained allocation before retirement callbacks can start another open.
+            _retainedOpenerDuringProbe = retainForProbe ? opener : null;
             _staticOpenCancellation = nextRequest;
             EditorContext.IImageOpen = null;
             try { previousRequest?.Cancel(); }
@@ -989,13 +993,19 @@ namespace ColorVision.ImageEditor
                 }
                 finally
                 {
-                    if (opener is IImageOpenContentLifetime lifetime && !ReferenceEquals(EditorContext.IImageOpen, opener))
+                    if (opener is IImageOpenContentLifetime lifetime && !ReferenceEquals(EditorContext.IImageOpen, opener)
+                        && (!retainForProbe || (activeOpener != null && ReferenceEquals(_retainedOpenerDuringProbe, opener))))
                     {
-                        Task release = ObserveContentReleaseAsync(lifetime, ReferenceEquals(opener, nextOpener));
-                        PendingContentRelease = Task.WhenAll(PendingContentRelease, release);
+                        TrackContentRelease(lifetime, reuse);
                     }
                 }
             }
+        }
+
+        private void TrackContentRelease(IImageOpenContentLifetime lifetime, bool reuseBuffers)
+        {
+            Task release = ObserveContentReleaseAsync(lifetime, reuseBuffers);
+            PendingContentRelease = Task.WhenAll(PendingContentRelease, release);
         }
 
         private static async Task ObserveContentReleaseAsync(IImageOpenContentLifetime lifetime, bool reuseBuffers)

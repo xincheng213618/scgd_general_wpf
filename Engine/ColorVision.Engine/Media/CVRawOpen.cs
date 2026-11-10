@@ -1225,5 +1225,5 @@ namespace ColorVision.Engine.Media
     }
 
     [FileExtension(".cvraw|.cvcie")]
-    public record class CVRawOpen(EditorContext EditorContext) : CalibratedImageCapability(EditorContext);
+    public record class CVRawOpen(EditorContext EditorContext) : CalibratedImageCapability(EditorContext), IPreparedImageOpen;
 }

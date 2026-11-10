@@ -14,6 +14,7 @@ public partial class ImageView
 {
     private readonly List<IImageContentProvider> _contentProviders = new();
     private CancellationTokenSource? _staticOpenCancellation;
+    private IImageOpen? _retainedOpenerDuringProbe;
     private bool _publishingDecodedContent;
     public Task ImageOpenCompletion { get; private set; } = Task.CompletedTask;
     public IImageContentCapability? ImageContentCapability => _document.Capability;
@@ -136,17 +137,18 @@ public partial class ImageView
         catch (Exception ex) { log.Error($"Failed to open image: {path}", ex); throw; }
     }
 
-    private void OpenBitmapFile(IPreparedBitmapOpen opener, string path)
+    private void OpenPreparedFile(IPreparedImageOpen opener, string path)
     {
         var request = new CancellationTokenSource();
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         ImageOpenCompletion = completion.Task;
-        _ = CompleteBitmapFileOpenAsync(opener, path, request, completion);
+        _ = CompletePreparedFileOpenAsync(opener, path, request, completion);
     }
 
-    private async Task CompleteBitmapFileOpenAsync(IPreparedBitmapOpen opener, string path, CancellationTokenSource request, TaskCompletionSource completion)
+    private async Task CompletePreparedFileOpenAsync(IPreparedImageOpen opener, string path, CancellationTokenSource request, TaskCompletionSource completion)
     {
         CancellationToken token = request.Token;
+        Exception? failure = null;
         try
         {
             ReleaseImageContent(opener, request);
@@ -159,33 +161,35 @@ public partial class ImageView
             token.ThrowIfCancellationRequested();
             Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FilePath);
 
-            BitmapFileMetadata file = await Task.Run(() => opener.ReadFileMetadata(path), token);
+            ImageFileMetadata file = await Task.Run(() => opener.ReadFileMetadata(path), token);
             BitmapOpenRequests.VerifyTarget(EditorContext, path, token);
             Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, file.Length, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
             IEditorToolFactory.ApplyImageOpenTools(opener);
             BitmapOpenRequests.VerifyTarget(EditorContext, path, token);
+            _retainedOpenerDuringProbe = null;
             EditorContext.IImageOpen = opener;
             await opener.OpenPreparedImageAsync(EditorContext, path, file, token);
-            completion.TrySetResult();
         }
-        catch (OperationCanceledException error) { completion.TrySetCanceled(error.CancellationToken); }
-        catch (Exception error)
-        {
-            if (token.IsCancellationRequested)
-            {
-                completion.TrySetCanceled(token);
-                return;
-            }
-            if (error is not FileNotFoundException) log.Error($"Failed to open image: {path}", error);
-            completion.TrySetException(error);
-        }
+        catch (Exception error) { failure = error; }
         finally
         {
             if (ReferenceEquals(_staticOpenCancellation, request) && EditorContext.IImageOpen == null)
             {
                 _staticOpenCancellation = null;
+                var retained = _retainedOpenerDuringProbe;
+                _retainedOpenerDuringProbe = null;
                 request.Dispose();
+                if (retained is IImageOpenContentLifetime lifetime) TrackContentRelease(lifetime, reuseBuffers: false);
             }
+        }
+
+        if (failure == null) completion.TrySetResult();
+        else if (failure is OperationCanceledException canceled) completion.TrySetCanceled(canceled.CancellationToken);
+        else if (token.IsCancellationRequested) completion.TrySetCanceled(token);
+        else
+        {
+            if (failure is not FileNotFoundException) log.Error($"Failed to open image: {path}", failure);
+            completion.TrySetException(failure);
         }
     }
 }

@@ -16,7 +16,7 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.ImageEditor.Tif
 {
     [FileExtension(".tif|.tiff")]
-    public record class Opentif(EditorContext EditorContext) : IPreparedBitmapOpen, IImageOpenContentLifetime
+    public record class Opentif(EditorContext EditorContext) : IPreparedImageOpen, IImageOpenContentLifetime
     {
         private const int ConversionBufferPixelCount = 256 * 1024;
         private readonly BitmapOpenRequests _requests = new();
@@ -97,10 +97,10 @@ namespace ColorVision.ImageEditor.Tif
         public Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default)
             => OpenImageAsync(context, filePath, null, cancellationToken);
 
-        Task IPreparedBitmapOpen.OpenPreparedImageAsync(EditorContext context, string filePath, BitmapFileMetadata file, CancellationToken cancellationToken)
+        Task IPreparedImageOpen.OpenPreparedImageAsync(EditorContext context, string filePath, ImageFileMetadata file, CancellationToken cancellationToken)
             => OpenImageAsync(context, filePath, file, cancellationToken);
 
-        private async Task OpenImageAsync(EditorContext context, string? filePath, BitmapFileMetadata? file, CancellationToken cancellationToken)
+        private async Task OpenImageAsync(EditorContext context, string? filePath, ImageFileMetadata? file, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ArgumentException.ThrowIfNullOrEmpty(filePath);
@@ -108,7 +108,7 @@ namespace ColorVision.ImageEditor.Tif
             string requestedFilePath = filePath;
             using var request = _requests.Start(cancellationToken);
             cancellationToken = request.Token;
-            BitmapFileMetadata metadata = file ?? await Task.Run(() => BitmapFileMetadata.Read(requestedFilePath), cancellationToken);
+            ImageFileMetadata metadata = file ?? await Task.Run(() => ImageFileMetadata.Read(requestedFilePath), cancellationToken);
             BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
             metadata.Apply(context, requestedFilePath, nameof(Opentif));
 
