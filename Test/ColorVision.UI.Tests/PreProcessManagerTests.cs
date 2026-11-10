@@ -93,6 +93,102 @@ public sealed class PreProcessManagerTests
         });
     }
 
+    [Fact]
+    public async Task EnabledUnreadableActionBlocksEveryPreprocessorAndPreservesItsRawConfiguration()
+    {
+        using var config = new IsolatedConfig();
+        const string brokenJson = """{"Marker":7,"Broken":@}""";
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(config.Path)!);
+        File.WriteAllText(config.Path, JsonConvert.SerializeObject(new[]
+        {
+            new { ProcessTypeFullName = typeof(CountingPreProcessor).FullName, ConfigJson = "{}", ActionName = "Healthy first", IsEnabled = true },
+            new { ProcessTypeFullName = typeof(PartiallyConfiguredPreProcessor).FullName, ConfigJson = brokenJson, ActionName = "Unreadable action", IsEnabled = true }
+        }));
+
+        var manager = WpfTestHost.Invoke(() =>
+        {
+            AssemblyHandler.GetInstance().RegisterAssembly(typeof(PartiallyConfiguredPreProcessor).Assembly);
+            return config.Load();
+        });
+        var healthy = Assert.IsType<CountingPreProcessor>(manager.Processes[0].Process);
+        var partial = Assert.IsType<PartiallyConfiguredPreProcessor>(manager.Processes[1].Process);
+        Assert.Equal(7, partial.Marker);
+
+        Assert.False(await WpfTestHost.Invoke(() => manager.ExecuteAsync("Flow", "SN")));
+        Assert.Equal(0, healthy.Executions);
+        Assert.Equal(0, partial.Executions);
+
+        WpfTestHost.Invoke(() =>
+        {
+            manager.Processes[1].ActionName = "Renamed unreadable action";
+            var saved = JArray.Parse(File.ReadAllText(config.Path));
+            Assert.Equal(brokenJson, saved[1]!["ConfigJson"]!.Value<string>());
+            Assert.True(saved[1]!["IsEnabled"]!.Value<bool>());
+
+            manager.Processes[1].IsEnabled = false;
+            Assert.Same(healthy, Assert.Single(manager.GetEnabledProcesses("Flow")));
+        });
+        Assert.True(await WpfTestHost.Invoke(() => manager.ExecuteAsync("Flow", "SN")));
+        Assert.Equal(1, healthy.Executions);
+        Assert.Equal(0, partial.Executions);
+
+        var restored = WpfTestHost.Invoke(() => config.Load());
+        Assert.False(restored.Processes[1].IsEnabled);
+        Assert.Equal(brokenJson, JArray.Parse(File.ReadAllText(config.Path))[1]!["ConfigJson"]!.Value<string>());
+    }
+
+    [Fact]
+    public void MalformedCacheCleanupConfigurationDoesNotExposeTheDefaultProcessorForExecution()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var config = new IsolatedConfig();
+            const string brokenJson = """{"FolderPaths":"not-an-array"}""";
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(config.Path)!);
+            File.WriteAllText(config.Path, JsonConvert.SerializeObject(new[]
+            {
+                new { ProcessTypeFullName = typeof(FolderSizePreProcessor).FullName, ConfigJson = brokenJson, ActionName = "Configured cleanup", IsEnabled = true }
+            }));
+
+            var manager = config.Load();
+            Assert.True(Assert.Single(manager.Processes).IsEnabled);
+            var failure = Assert.Throws<InvalidOperationException>(() => manager.GetEnabledProcesses("Flow"));
+            Assert.Contains("Configured cleanup", failure.Message);
+            manager.SavePersisted();
+            Assert.Equal(brokenJson, JArray.Parse(File.ReadAllText(config.Path))[0]!["ConfigJson"]!.Value<string>());
+        });
+    }
+
+    [PreProcess("Counting test action")]
+    public class CountingPreProcessor : IPreProcessor
+    {
+        public int Executions { get; private set; }
+
+        public Task<bool> PreProcess(PreProcessContext ctx)
+        {
+            Executions++;
+            return Task.FromResult(true);
+        }
+    }
+
+    [PreProcess("Partially configured test action")]
+    public sealed class PartiallyConfiguredPreProcessor : CountingPreProcessor, IPreProcessor
+    {
+        public int Marker { get; private set; }
+
+        public object GetConfig() => new { Marker };
+
+        public void SetConfig(string configJson)
+        {
+            using var reader = new JsonTextReader(new StringReader(configJson));
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonToken.PropertyName && Equals(reader.Value, nameof(Marker)))
+                    Marker = reader.ReadAsInt32() ?? 0;
+            }
+        }
+    }
+
     private sealed class IsolatedConfig : IDisposable
     {
         public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"ColorVision_PreProcess_{Guid.NewGuid():N}", "PreProcessConfig.json");

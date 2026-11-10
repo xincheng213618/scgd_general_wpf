@@ -144,8 +144,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
             AddActionSettingsSection(selectedAction);
 
-            var config = selectedAction.Process.GetConfig();
-            if (config != null)
+            if (!selectedAction.HasInvalidConfiguration && selectedAction.Process.GetConfig() is { } config)
             {
                 AddConfigSection(config);
             }
@@ -160,6 +159,17 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             AddSectionHeader(stack, Properties.Resources.Flow_PreProcess_ActionSettings);
             AddBoundTextBox(stack, Properties.Resources.Flow_PreProcess_ActionName, action, nameof(PreProcessAction.ActionName), null);
             AddBoundCheckBox(stack, Properties.Resources.IsEnable, action, nameof(PreProcessAction.IsEnabled));
+            if (action.HasInvalidConfiguration)
+            {
+                var warning = new TextBlock
+                {
+                    Text = EngineLocalization.Get("Flow_PreProcess_InvalidActionConfigHint"),
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 8, 0, 0)
+                };
+                warning.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                stack.Children.Add(warning);
+            }
 
             PropertyPanel.Children.Add(border);
         }

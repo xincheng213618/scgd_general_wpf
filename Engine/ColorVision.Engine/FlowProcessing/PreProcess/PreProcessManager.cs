@@ -72,7 +72,11 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         private bool _IsEnabled;
 
         public string DisplayName => string.IsNullOrWhiteSpace(ActionName) ? Metadata.DisplayName : ActionName.Trim();
-        public string EnabledText => IsEnabled ? Properties.Resources.Flow_PreProcess_EnabledStatus : Properties.Resources.Flow_PreProcess_DisabledStatus;
+        internal string? UnreadableConfigJson { get; init; }
+        internal bool HasInvalidConfiguration { get; init; }
+        public string EnabledText => HasInvalidConfiguration
+            ? EngineLocalization.Get("Flow_PreProcess_InvalidActionConfig")
+            : IsEnabled ? Properties.Resources.Flow_PreProcess_EnabledStatus : Properties.Resources.Flow_PreProcess_DisabledStatus;
 
         public PreProcessAction(IPreProcessor process)
         {
@@ -271,7 +275,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             action.PropertyChanged -= Action_PropertyChanged;
             action.PropertyChanged += Action_PropertyChanged;
 
-            if (action.Process.GetConfig() is INotifyPropertyChanged notifyConfig)
+            if (!action.HasInvalidConfiguration && action.Process.GetConfig() is INotifyPropertyChanged notifyConfig)
             {
                 notifyConfig.PropertyChanged -= ProcessConfig_PropertyChanged;
                 notifyConfig.PropertyChanged += ProcessConfig_PropertyChanged;
@@ -281,7 +285,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         private void UnsubscribeAction(PreProcessAction action)
         {
             action.PropertyChanged -= Action_PropertyChanged;
-            if (action.Process.GetConfig() is INotifyPropertyChanged notifyConfig)
+            if (!action.HasInvalidConfiguration && action.Process.GetConfig() is INotifyPropertyChanged notifyConfig)
             {
                 notifyConfig.PropertyChanged -= ProcessConfig_PropertyChanged;
             }
@@ -408,23 +412,17 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                         continue;
                     }
 
-                    try
-                    {
-                        process.SetConfig(item.ConfigJson ?? string.Empty);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Warn($"加载预处理动作 {item.ProcessTypeFullName} 配置失败: {ex.Message}");
-                    }
-
                     var action = CreateAction(process, item);
                     Processes.Add(action);
                 }
 
                 SelectedProcess = Processes.FirstOrDefault();
-                LastSaveStatus = skippedCount > 0
-                    ? string.Format(Properties.Resources.Flow_PreProcess_ConfigLoadedWithSkipped, DateTime.Now.ToString("HH:mm:ss"), skippedCount)
-                    : string.Format(Properties.Resources.Flow_PreProcess_ConfigLoaded, DateTime.Now.ToString("HH:mm:ss"));
+                if (Processes.Any(action => action.HasInvalidConfiguration))
+                    LastSaveStatus = Properties.Resources.Flow_PreProcess_ConfigLoadFailed;
+                else
+                    LastSaveStatus = skippedCount > 0
+                        ? string.Format(Properties.Resources.Flow_PreProcess_ConfigLoadedWithSkipped, DateTime.Now.ToString("HH:mm:ss"), skippedCount)
+                        : string.Format(Properties.Resources.Flow_PreProcess_ConfigLoaded, DateTime.Now.ToString("HH:mm:ss"));
                 return true;
             }
             catch (Exception ex)
@@ -443,7 +441,19 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private static PreProcessAction CreateAction(IPreProcessor process, PreProcessPersist item)
         {
-            var action = new PreProcessAction(process);
+            bool invalidConfiguration = false;
+            try { process.SetConfig(item.ConfigJson ?? string.Empty); }
+            catch (Exception error)
+            {
+                invalidConfiguration = true;
+                log.Warn($"加载预处理动作 {item.ProcessTypeFullName} 配置失败。", error);
+            }
+
+            var action = new PreProcessAction(process)
+            {
+                HasInvalidConfiguration = invalidConfiguration,
+                UnreadableConfigJson = invalidConfiguration ? item.ConfigJson : null
+            };
 
             if (!string.IsNullOrWhiteSpace(item.ActionName))
             {
@@ -468,7 +478,9 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                         var persist = new PreProcessPersist
                         {
                             ProcessTypeFullName = action.Process.GetType().FullName,
-                            ConfigJson = JsonConvert.SerializeObject(action.Process.GetConfig()),
+                            ConfigJson = action.HasInvalidConfiguration
+                                ? action.UnreadableConfigJson
+                                : JsonConvert.SerializeObject(action.Process.GetConfig()),
                             ActionName = action.ActionName,
                             IsEnabled = action.IsEnabled
                         };
@@ -499,7 +511,10 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private List<PreProcessAction> GetEnabledActions()
         {
-            return Processes.Where(a => a.IsEnabled).ToList();
+            List<PreProcessAction> enabled = Processes.Where(action => action.IsEnabled).ToList();
+            if (enabled.Find(action => action.HasInvalidConfiguration) is { } invalid)
+                throw new InvalidOperationException(string.Format(EngineLocalization.Get("Flow_PreProcess_InvalidEnabledAction"), invalid.DisplayName));
+            return enabled;
         }
 
         public async Task<bool> ExecuteAsync(string flowName, string serialNumber, ObservableCollection<CVBaseServerNode>? serverNodes = null)

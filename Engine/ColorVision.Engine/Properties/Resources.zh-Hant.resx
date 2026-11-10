@@ -8405,4 +8405,7 @@
   <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>磁碟上的流程檔案已變更或刪除。要將目前的變更儲存到新的 STN 檔案嗎？</value></data>
   <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>請選擇尚不存在的檔案名稱。</value></data>
   <data name="Flow_StandaloneCloseWhileRunning" xml:space="preserve"><value>請等待流程結束，或停止流程後再關閉視窗。</value></data>
+  <data name="Flow_PreProcess_InvalidActionConfig" xml:space="preserve"><value>設定無效</value></data>
+  <data name="Flow_PreProcess_InvalidActionConfigHint" xml:space="preserve"><value>無法讀取已儲存的參數。請停用此動作，或移除後重新新增並設定。</value></data>
+  <data name="Flow_PreProcess_InvalidEnabledAction" xml:space="preserve"><value>已啟用的前處理動作「{0}」設定無效。請停用或重新設定後再執行。</value></data>
 </root>

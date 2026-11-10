@@ -7452,4 +7452,7 @@ Field: </value></data>
   <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>The flow file was changed or deleted on disk. Save your changes to a new STN file?</value></data>
   <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>Choose a file name that does not already exist.</value></data>
   <data name="Flow_StandaloneCloseWhileRunning" xml:space="preserve"><value>Wait for the flow to finish, or stop it before closing the window.</value></data>
+  <data name="Flow_PreProcess_InvalidActionConfig" xml:space="preserve"><value>Invalid configuration</value></data>
+  <data name="Flow_PreProcess_InvalidActionConfigHint" xml:space="preserve"><value>The saved parameters could not be read. Disable this action, or remove it and configure a new action.</value></data>
+  <data name="Flow_PreProcess_InvalidEnabledAction" xml:space="preserve"><value>Enabled preprocessing action “{0}” has invalid configuration. Disable or reconfigure it before running.</value></data>
 </root>

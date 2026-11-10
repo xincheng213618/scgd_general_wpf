@@ -4563,4 +4563,7 @@
   <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>磁盘上的流程文件已更改或删除。是否将当前修改保存到新的 STN 文件？</value></data>
   <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>请选择一个尚不存在的文件名。</value></data>
   <data name="Flow_StandaloneCloseWhileRunning" xml:space="preserve"><value>请等待流程结束，或停止流程后再关闭窗口。</value></data>
+  <data name="Flow_PreProcess_InvalidActionConfig" xml:space="preserve"><value>配置无效</value></data>
+  <data name="Flow_PreProcess_InvalidActionConfigHint" xml:space="preserve"><value>已保存的参数无法读取。请禁用此动作，或删除后重新添加并配置。</value></data>
+  <data name="Flow_PreProcess_InvalidEnabledAction" xml:space="preserve"><value>启用的前处理动作“{0}”配置无效。请禁用或重新配置后再运行。</value></data>
 </root>
