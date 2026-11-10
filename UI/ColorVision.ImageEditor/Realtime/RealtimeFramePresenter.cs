@@ -4,6 +4,7 @@ using ColorVision.ImageEditor.Presentation;
 using log4net;
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -26,7 +27,8 @@ namespace ColorVision.ImageEditor.Realtime
             int Stride,
             int Length,
             PixelFormat Format,
-            int Transform);
+            int Transform,
+            CancellationToken CancellationToken = default);
 
         private readonly ImageProcessingContext _context;
         private readonly Action _refreshPixelOverlay;
@@ -76,7 +78,10 @@ namespace ColorVision.ImageEditor.Realtime
             return SubmitFrame(frame.pData, frame.cols, frame.rows, format, stride, stride * frame.rows);
         }
 
-        public unsafe bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
+        public bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
+            => SubmitFrame(sourceBuffer, width, height, pixelFormat, sourceStride, bufferLength, transform, CancellationToken.None);
+
+        public unsafe bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride, int bufferLength, int transform, CancellationToken cancellationToken)
         {
             if (sourceBuffer == null) throw new ArgumentNullException(nameof(sourceBuffer));
             if (sourceBuffer.Length == 0) return false;
@@ -84,40 +89,50 @@ namespace ColorVision.ImageEditor.Realtime
             bufferLength = bufferLength > 0 ? bufferLength : sourceBuffer.Length;
             if (bufferLength > sourceBuffer.Length) return false;
             fixed (byte* source = sourceBuffer)
-                return SubmitFrame((IntPtr)source, width, height, pixelFormat, sourceStride, bufferLength, transform);
+                return SubmitFrame((IntPtr)source, width, height, pixelFormat, sourceStride, bufferLength, transform, cancellationToken);
         }
 
         public bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
+            => SubmitFrame(sourcePointer, width, height, pixelFormat, sourceStride, bufferLength, transform, CancellationToken.None);
+
+        /// <summary>Copies the borrowed pixels synchronously and discards the frame if its producer session is canceled before publication.</summary>
+        public bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride, int bufferLength, int transform, CancellationToken cancellationToken)
         {
-            if (sourcePointer == IntPtr.Zero) return false;
+            if (sourcePointer == IntPtr.Zero || cancellationToken.IsCancellationRequested) return false;
             if (!CanAcceptFrame(width, height, pixelFormat, ref sourceStride, ref bufferLength)) return false;
+
+            Guid sourceId;
+            lock (_gate)
+            {
+                if (_disposed) return false;
+                sourceId = _sourceId;
+            }
 
             // The camera owns sourcePointer only until this call returns. Copy synchronously,
             // but never hold the state gate during a full-frame copy: Reset runs on the UI.
             lock (_submitGate)
             {
                 byte[]? pixels;
-                Guid sourceId;
                 lock (_gate)
                 {
-                    if (_disposed) return false;
+                    if (_disposed || sourceId != _sourceId || cancellationToken.IsCancellationRequested) return false;
                     pixels = _latestPixels;
                     _latestPixels = null;
                     _hasLatestFrame = false;
-                    sourceId = _sourceId;
                 }
 
                 if (pixels == null || pixels.Length < bufferLength) pixels = new byte[bufferLength];
                 Marshal.Copy(sourcePointer, pixels, 0, bufferLength);
                 lock (_gate)
                 {
-                    if (_disposed || sourceId != _sourceId) return false;
+                    if (_disposed || sourceId != _sourceId || cancellationToken.IsCancellationRequested) return false;
                     _latestPixels = pixels;
-                    SaveLatestFrame(width, height, pixelFormat, sourceStride, bufferLength, transform);
+                    _latestFrame = new FrameInfo(width, height, sourceStride, bufferLength, pixelFormat, transform, cancellationToken);
+                    _hasLatestFrame = true;
                     if (!_renderQueued)
                     {
                         _renderQueued = true;
-                        _completion = Task.Run(RenderLatestFramesAsync);
+                        _completion = Task.Run(RenderLatestFramesAsync, CancellationToken.None);
                     }
                 }
             }
@@ -143,6 +158,7 @@ namespace ColorVision.ImageEditor.Realtime
                 _hasRenderedFrame = false;
                 _latestPixels = null;
                 _drawingPixels = null;
+                _latestFrame = default;
             }
 
             _lastPresentedSource = null;
@@ -154,12 +170,6 @@ namespace ColorVision.ImageEditor.Realtime
         private bool CanAcceptFrame(int width, int height, PixelFormat format, ref int stride, ref int length)
         {
             return !_disposed && !Options.IsFrozen && TryNormalizeLayout(width, height, format, ref stride, ref length);
-        }
-
-        private void SaveLatestFrame(int width, int height, PixelFormat format, int stride, int length, int transform)
-        {
-            _latestFrame = new FrameInfo(width, height, stride, length, format, transform);
-            _hasLatestFrame = true;
         }
 
         private async Task RenderLatestFramesAsync()
@@ -179,12 +189,14 @@ namespace ColorVision.ImageEditor.Realtime
                     (_latestPixels, _drawingPixels) = (_drawingPixels, _latestPixels);
                     pixels = _drawingPixels!;
                     frame = _latestFrame;
+                    _latestFrame = default;
                     sourceId = _sourceId;
                     _hasLatestFrame = false;
                 }
 
                 try
                 {
+                    if (frame.CancellationToken.IsCancellationRequested) continue;
                     // Allocation, copying, flipping and freezing all belong to this worker.
                     // StreamPresentation can consume the frozen bitmap without cloning it on UI.
                     (WriteableBitmap? bitmap, BitmapSource? renderProxy) = await Task.Run(() =>
@@ -195,8 +207,9 @@ namespace ColorVision.ImageEditor.Realtime
                     if (bitmap == null || _context.Dispatcher.HasShutdownStarted) continue;
                     await _context.Dispatcher.InvokeAsync(() =>
                     {
-                        if (_disposed || _context.IsDisposed || Options.IsFrozen || sourceId != _sourceId) return;
-                        _context.StreamPresentation.Submit(bitmap, renderProxy, sourceId, () => !Options.IsFrozen && !_disposed && sourceId == _sourceId);
+                        bool CanPublish() => !frame.CancellationToken.IsCancellationRequested && !Options.IsFrozen && !_disposed && sourceId == _sourceId;
+                        if (_context.IsDisposed || !CanPublish()) return;
+                        _context.StreamPresentation.Submit(bitmap, renderProxy, sourceId, CanPublish, frame.CancellationToken);
                     }, DispatcherPriority.Background).Task.ConfigureAwait(false);
                 }
                 catch (Exception ex)
@@ -374,6 +387,7 @@ namespace ColorVision.ImageEditor.Realtime
                 _renderQueued = false;
                 _latestPixels = null;
                 _drawingPixels = null;
+                _latestFrame = default;
             }
             void Detach()
             {

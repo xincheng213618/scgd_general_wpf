@@ -246,6 +246,69 @@ public sealed class ImageDisplayEffectsTests
     }
 
     [Fact]
+    public async Task CanceledContinuousWorkCannotUseTheNextFrameGuard()
+    {
+        TimeSpan watchdog = TimeSpan.FromSeconds(10);
+        TaskCompletionSource firstEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource secondEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using ManualResetEventSlim finishFirst = new();
+        using ManualResetEventSlim finishSecond = new();
+        using CancellationTokenSource firstLifetime = new();
+        int attempts = 0;
+        var (fixture, stream, original, successor) = WpfTestHost.Invoke(() =>
+        {
+            EffectsFixture fixture = new();
+            ImageStreamPresentation stream = new(fixture.Context, (_, _) =>
+            {
+                bool first = Interlocked.Increment(ref attempts) == 1;
+                (first ? firstEntered : secondEntered).SetResult();
+                if (!(first ? finishFirst : finishSecond).Wait(watchdog)) throw new TimeoutException();
+                HImage output = OpenCVMediaHelper.AllocateHImage(1, 1, 1, 8);
+                Marshal.WriteByte(output.pData, 0);
+                return output;
+            });
+            WriteableBitmap original = new(1, 1, 96, 96, PixelFormats.Gray8, null);
+            WriteableBitmap successor = new(1, 1, 96, 96, PixelFormats.Gray8, null);
+            original.Freeze();
+            successor.Freeze();
+            fixture.Source = original;
+            fixture.Context.Presentation.Publish(original, null);
+            fixture.State.IsEnabled = true;
+            fixture.Context.DisplayEffects.Invalidate();
+            return (fixture, stream, original, successor);
+        });
+        try
+        {
+            Guid sourceId = Guid.NewGuid();
+            WpfTestHost.Invoke(() =>
+                stream.Submit(new WriteableBitmap(1, 1, 96, 96, PixelFormats.Gray8, null), null, sourceId,
+                    () => !firstLifetime.IsCancellationRequested, firstLifetime.Token));
+            await firstEntered.Task.WaitAsync(watchdog);
+            firstLifetime.Cancel();
+            WpfTestHost.Invoke(() => stream.Submit(successor, sourceId));
+            finishFirst.Set();
+            await secondEntered.Task.WaitAsync(watchdog);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(original, fixture.Context.ViewBitmapSource);
+                Assert.Same(original, fixture.Context.Presentation.DisplaySource);
+                Assert.Equal(1, fixture.Context.ImageRevision);
+            });
+
+            finishSecond.Set();
+            await stream.Completion.WaitAsync(watchdog);
+            WpfTestHost.Invoke(() => Assert.Same(successor, fixture.Context.ViewBitmapSource));
+        }
+        finally
+        {
+            finishFirst.Set();
+            finishSecond.Set();
+            WpfTestHost.Invoke(() => { stream.Dispose(); fixture.Dispose(); });
+            await stream.Completion.WaitAsync(watchdog);
+        }
+    }
+
+    [Fact]
     public async Task ContinuousPlainChannelRejectsInFlightPseudoColorAndPublishesOnlyLatestFrame()
     {
         using ManualResetEventSlim processing = new();

@@ -262,6 +262,92 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Fact]
+    public async Task PresenterSubmissionWaitingForCopyCannotJoinTheSourceCreatedByReset()
+    {
+        TimeSpan watchdog = TimeSpan.FromSeconds(10);
+        RealtimeFramePresenter presenter = WpfTestHost.Invoke(() => view.Realtime);
+        const BindingFlags privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        object submitGate = typeof(RealtimeFramePresenter).GetField("_submitGate", privateInstance)!.GetValue(presenter)!;
+        TaskCompletionSource<bool> submitted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Thread callback = new(() =>
+        {
+            try { submitted.SetResult(presenter.SubmitFrame([17], 1, 1, PixelFormats.Gray8)); }
+            catch (Exception ex) { submitted.SetException(ex); }
+        }) { IsBackground = true };
+
+        lock (submitGate)
+        {
+            callback.Start();
+            Assert.True(SpinWait.SpinUntil(() => (callback.ThreadState & ThreadState.WaitSleepJoin) != 0, watchdog));
+            WpfTestHost.Invoke(() => presenter.Reset(clearImageSource: true));
+        }
+
+        Assert.False(await submitted.Task.WaitAsync(watchdog));
+        Assert.True(presenter.SubmitFrame([42], 1, 1, PixelFormats.Gray8));
+        await presenter.Completion.WaitAsync(watchdog);
+        WpfTestHost.Invoke(() => Assert.Equal(new byte[] { 42 }, Pixels(Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource))));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CameraCallbackAlreadyInFocusSubmissionCannotPublishAfterStop(bool restart)
+    {
+        TimeSpan watchdog = TimeSpan.FromSeconds(10);
+        CameraFocusFrameProcessor? focus = null;
+        var focusPipeline = WpfTestHost.Invoke(() => new CameraRealtimeFramePipeline(createFocusProcessor: publish =>
+            focus = new CameraFocusFrameProcessor(publish, (_, _) => default)));
+        TaskCompletionSource submitted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Thread callback = new(() =>
+        {
+            try
+            {
+                focusPipeline.SubmitFrame([17], 1, 1, 1, 1, 8, 1);
+                submitted.SetResult();
+            }
+            catch (Exception ex) { submitted.SetException(ex); }
+        }) { IsBackground = true };
+
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                DefaultRealtimeCameraConfig.Current.IsCalArtculation = true;
+                focusPipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
+                focusPipeline.SubmitFrame([1], 1, 1, 1, 1, 8, 1);
+            });
+            await view.Realtime.Completion.WaitAsync(watchdog);
+            WpfTestHost.Invoke(() => Assert.Equal(new byte[] { 1 }, Pixels(Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource))));
+            CameraFocusFrameProcessor startedFocus = Assert.IsType<CameraFocusFrameProcessor>(focus);
+            const BindingFlags privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+            object focusGate = typeof(CameraFocusFrameProcessor).GetField("_gate", privateInstance)!.GetValue(startedFocus)!;
+
+            lock (focusGate)
+            {
+                callback.Start();
+                Assert.True(SpinWait.SpinUntil(() => (callback.ThreadState & ThreadState.WaitSleepJoin) != 0, watchdog));
+                WpfTestHost.Invoke(() =>
+                {
+                    focusPipeline.Stop(resetRealtime: restart, clearImageSource: restart);
+                    if (!restart) return;
+                    focusPipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
+                    focusPipeline.SubmitFrame([42], 1, 1, 1, 1, 8, 1);
+                });
+            }
+
+            await submitted.Task.WaitAsync(watchdog);
+            await view.Realtime.Completion.WaitAsync(watchdog);
+            WpfTestHost.Invoke(() => Assert.Equal(new byte[] { restart ? (byte)42 : (byte)1 },
+                Pixels(Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource))));
+        }
+        finally
+        {
+            WpfTestHost.Invoke(focusPipeline.Dispose);
+            if (focus != null) await focus.Retirement.WaitAsync(watchdog);
+        }
+    }
+
+    [Fact]
     public async Task LivePreviewRestartsWhilePreviousFocusFrameRetainsItsBuffer()
     {
         TimeSpan testWait = TimeSpan.FromSeconds(10);

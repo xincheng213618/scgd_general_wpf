@@ -473,10 +473,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         int QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
+            CameraPreviewSession? session = _localRealtimePipeline.CaptureSession();
+            if (session == null || pData == IntPtr.Zero || width <= 0 || height <= 0) return 0;
             var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
             int stride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = stride * height;
-            _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, stride);
+            _localRealtimePipeline.SubmitFrame(session, pData, frameBytes, width, height, channels, bpp, stride);
             return 0;
         }
 

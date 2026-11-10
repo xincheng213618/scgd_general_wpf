@@ -45,6 +45,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         string Message)
     {
         public bool IsPass => Found && Math.Abs(OffsetX) <= TolerancePx && Math.Abs(OffsetY) <= TolerancePx;
+        internal long Generation { get; init; }
+        internal CancellationToken PreviewLifetime { get; init; }
     }
 
     internal sealed class VideoCrossGuideProcessor : IDisposable
@@ -62,6 +64,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private int _pendingCapacity;
         private int _workingCapacity;
         private VideoCrossGuideRequest _pendingRequest;
+        private CancellationToken _pendingPreviewLifetime;
         private RoiRect _pendingSourceRoi;
         private RoiRect _workingSourceRoi;
         private int _pendingFrameWidth;
@@ -94,46 +97,51 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _workerTask = Task.Factory.StartNew(WorkerLoop, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
-        public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, VideoCrossGuideRequest request)
-        {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || IsDisposing) return;
-            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0) return;
+        internal long CaptureGeneration() => Interlocked.Read(ref _generation);
 
-            int interval = Math.Max(50, request.IntervalMs);
-            long now = Environment.TickCount64;
-            long last = Interlocked.Read(ref _lastSubmittedTick);
-            if (now - last < interval) return;
-            Interlocked.Exchange(ref _lastSubmittedTick, now);
+        internal bool IsCurrentResult(VideoCrossGuideResult result)
+            => !IsDisposing && !result.PreviewLifetime.IsCancellationRequested && result.Generation == CaptureGeneration();
+
+        public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride,
+            VideoCrossGuideRequest request, CancellationToken previewLifetime = default, long? requestGeneration = null)
+        {
+            long generation = requestGeneration ?? CaptureGeneration();
+            if (sourcePointer == IntPtr.Zero || length <= 0 || IsDisposing || previewLifetime.IsCancellationRequested) return;
+            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0) return;
 
             RoiRect sourceRoi = VideoCrossGuideDetector.NormalizeRoi(request.Roi, width, height);
             if (sourceRoi.Width <= 0 || sourceRoi.Height <= 0) return;
 
-            SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, sourceRoi, request);
+            SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, sourceRoi, request, previewLifetime, generation);
         }
 
-        private unsafe void SubmitFrameCore(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, RoiRect sourceRoi, VideoCrossGuideRequest request)
+        private unsafe void SubmitFrameCore(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride,
+            RoiRect sourceRoi, VideoCrossGuideRequest request, CancellationToken previewLifetime, long generation)
         {
-            int bytesPerSample = depth / 8;
-            int pixelBytes = channels * bytesPerSample;
-            int rowBytes = sourceRoi.Width * pixelBytes;
-            int requiredLength = rowBytes * sourceRoi.Height;
-            int sourceRowBytesNeeded = (sourceRoi.X + sourceRoi.Width) * pixelBytes;
-            if (rowBytes <= 0 || requiredLength <= 0 || stride < sourceRowBytesNeeded || length < stride * height) return;
+            long pixelBytes = channels * (depth / 8L);
+            if (stride <= 0 || pixelBytes > stride / width || (long)(height - 1) * stride + width * pixelBytes > length) return;
+            int rowBytes = (int)(sourceRoi.Width * pixelBytes);
+            int requiredLength = checked(rowBytes * sourceRoi.Height);
 
             lock (_gate)
             {
-                if (IsDisposing || !_acceptFrames) return;
+                if (IsDisposing || !_acceptFrames || generation != _generation || previewLifetime.IsCancellationRequested) return;
+                long now = Environment.TickCount64;
+                if (now - _lastSubmittedTick < Math.Max(50, request.IntervalMs)) return;
+                _lastSubmittedTick = now;
+
                 EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, sourceRoi.Width, sourceRoi.Height, channels, depth, rowBytes, requiredLength);
                 byte* sourceBase = (byte*)sourcePointer;
                 byte* targetBase = (byte*)_pendingFrame!.Value.pData;
                 for (int y = 0; y < sourceRoi.Height; y++)
                 {
-                    byte* sourceRow = sourceBase + (sourceRoi.Y + y) * stride + sourceRoi.X * pixelBytes;
+                    byte* sourceRow = sourceBase + (long)(sourceRoi.Y + y) * stride + sourceRoi.X * pixelBytes;
                     byte* targetRow = targetBase + y * rowBytes;
                     Buffer.MemoryCopy(sourceRow, targetRow, rowBytes, rowBytes);
                 }
 
                 _pendingRequest = request;
+                _pendingPreviewLifetime = previewLifetime;
                 _pendingSourceRoi = sourceRoi;
                 _pendingFrameWidth = width;
                 _pendingFrameHeight = height;
@@ -154,11 +162,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 int frameWidth;
                 int frameHeight;
                 long generation;
+                CancellationToken previewLifetime;
 
                 lock (_gate)
                 {
                     if (IsDisposing) break;
                     if (!_hasPendingFrame || _pendingFrame == null) continue;
+                    previewLifetime = _pendingPreviewLifetime;
+                    _pendingPreviewLifetime = default;
+                    if (previewLifetime.IsCancellationRequested)
+                    {
+                        _hasPendingFrame = false;
+                        continue;
+                    }
 
                     (_pendingFrame, _workingFrame) = (_workingFrame, _pendingFrame);
                     (_pendingCapacity, _workingCapacity) = (_workingCapacity, _pendingCapacity);
@@ -189,10 +205,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         continue;
                     }
 
-                    lock (_gate)
-                    {
-                        if (IsDisposing || generation != _generation) continue;
-                    }
+                    result = result with { Generation = generation, PreviewLifetime = previewLifetime };
+                    if (!IsCurrentResult(result)) continue;
                     try { _resultHandler(result); }
                     catch { }
                 }
@@ -220,7 +234,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             if (needsAllocation)
             {
-                buffer?.Dispose();
+                ReleaseBuffer(ref buffer, ref capacity);
                 buffer = new HImage
                 {
                     rows = height,
@@ -241,7 +255,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             {
                 if (IsDisposing || _acceptFrames) return;
                 _acceptFrames = true;
-                Interlocked.Exchange(ref _lastSubmittedTick, 0);
+                _lastSubmittedTick = 0;
             }
         }
 
@@ -267,12 +281,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void ResetCore()
         {
-            ++_generation;
+            Interlocked.Increment(ref _generation);
             _hasPendingFrame = false;
             _pendingRequest = default;
+            _pendingPreviewLifetime = default;
             ReleaseBuffer(ref _pendingFrame, ref _pendingCapacity);
             if (!_processingFrame) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
-            Interlocked.Exchange(ref _lastSubmittedTick, 0);
+            _lastSubmittedTick = 0;
         }
 
         private static void ReleaseBuffer(ref HImage? buffer, ref int capacity)

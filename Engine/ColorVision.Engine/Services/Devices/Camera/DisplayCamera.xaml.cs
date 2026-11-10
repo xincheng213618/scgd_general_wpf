@@ -936,11 +936,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void HandleCrossGuideResult(VideoCrossGuideResult result)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || !_crossGuideProcessor.IsCurrentResult(result)) return;
 
             Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (IsDisposed || Device.ExistingView is not { IsContentInitialized: true } view
+                if (IsDisposed || !_crossGuideProcessor.IsCurrentResult(result) || Device.ExistingView is not { IsContentInitialized: true } view
                     || !Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
                     return;
 
@@ -1962,24 +1962,28 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         int QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
+            CameraPreviewSession? session = _localRealtimePipeline.CaptureSession();
             if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen || (_sharedLocalVideo && !_sharedVideoActive)
                 || pData == IntPtr.Zero || width <= 0 || height <= 0)
             {
                 return 0;
             }
 
-            if (_sharedLocalVideo) _localVideoWatchdog.MarkFrame(Environment.TickCount64);
+            if (_sharedLocalVideo && session?.IsRetired != true) _localVideoWatchdog.MarkFrame(Environment.TickCount64);
+            if (session == null || session.IsRetired) return 0;
             var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
             int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = sourceStride * height;
 
+            long crossGuideGeneration = _crossGuideProcessor.CaptureGeneration();
             CameraPreviewGeometry geometry = _localRealtimePipeline.PreviewGeometry;
-            if (TryCreateCrossGuideRequest(width, height, geometry, out VideoCrossGuideRequest crossGuideRequest))
+            if (!session.IsRetired && TryCreateCrossGuideRequest(width, height, geometry, out VideoCrossGuideRequest crossGuideRequest))
             {
-                _crossGuideProcessor.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride, crossGuideRequest);
+                _crossGuideProcessor.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride,
+                    crossGuideRequest, session.Lifetime, crossGuideGeneration);
             }
 
-            _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride, geometry);
+            _localRealtimePipeline.SubmitFrame(session, pData, frameBytes, width, height, channels, bpp, sourceStride, geometry);
             return 0;
         }
 

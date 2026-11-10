@@ -249,6 +249,55 @@ public sealed class VideoProcessorResilienceTests
     }
 
     [Fact]
+    public async Task CrossGuideRejectsFramesFromRetiredPreviewAndInvalidatesQueuedResults()
+    {
+        using var firstPreview = new CancellationTokenSource();
+        var firstResult = new TaskCompletionSource<VideoCrossGuideResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondResult = new TaskCompletionSource<VideoCrossGuideResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        int results = 0;
+        IntPtr pixels = Marshal.AllocCoTaskMem(1);
+        var processor = new VideoCrossGuideProcessor(result =>
+        {
+            if (Interlocked.Increment(ref results) == 1) firstResult.TrySetResult(result);
+            else secondResult.TrySetResult(result);
+        }, (frame, _, _, _, _) => default(VideoCrossGuideResult) with { FrameWidth = Marshal.ReadByte(frame.pData) });
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        var request = new VideoCrossGuideRequest(new RoiRect(0, 0, 1, 1), new Point(), 0, 50, 0.5, 0.1, 1);
+        try
+        {
+            long oldGeneration = processor.CaptureGeneration();
+            Submit(17, firstPreview.Token, oldGeneration);
+            VideoCrossGuideResult first = await firstResult.Task.WaitAsync(timeout);
+            Assert.True(processor.IsCurrentResult(first));
+            firstPreview.Cancel();
+            Assert.False(processor.IsCurrentResult(first));
+
+            processor.Reset();
+            long currentGeneration = processor.CaptureGeneration();
+            Submit(29, CancellationToken.None, oldGeneration);
+            Submit(37, firstPreview.Token, currentGeneration);
+            Submit(71, CancellationToken.None, currentGeneration);
+            VideoCrossGuideResult second = await secondResult.Task.WaitAsync(timeout);
+            Assert.Equal(71, second.FrameWidth);
+            Assert.True(processor.IsCurrentResult(second));
+            processor.Reset();
+            Assert.False(processor.IsCurrentResult(second));
+        }
+        finally
+        {
+            processor.Dispose();
+            try { await processor.Retirement.WaitAsync(timeout); }
+            finally { Marshal.FreeCoTaskMem(pixels); }
+        }
+
+        void Submit(byte value, CancellationToken lifetime, long generation)
+        {
+            Marshal.WriteByte(pixels, value);
+            processor.SubmitFrame(pixels, 1, 1, 1, 1, 8, 1, request, lifetime, generation);
+        }
+    }
+
+    [Fact]
     public async Task CrossGuideDisposeReturnsOnDispatcherBeforeRetiringTheBlockedDetection()
     {
         var dispatcher = WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher);

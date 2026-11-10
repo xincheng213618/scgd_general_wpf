@@ -19,30 +19,53 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             => VideoCrossGuideDetector.TransformDisplayRoiToSource(DisplayRoi, width, height, Transform);
     }
 
+    internal sealed class CameraPreviewSession
+    {
+        private readonly CancellationTokenSource _retirement = new();
+
+        internal CameraPreviewSession(ImageView view, long fpsStartedAt, Action<double>? onArticulation, Action<RealtimeCameraMetrics>? onFrameRateChanged)
+        {
+            View = view;
+            FpsStartedAt = fpsStartedAt;
+            OnArticulation = onArticulation;
+            OnFrameRateChanged = onFrameRateChanged;
+            Lifetime = _retirement.Token;
+        }
+
+        internal ImageView View { get; }
+        internal Action<double>? OnArticulation { get; }
+        internal Action<RealtimeCameraMetrics>? OnFrameRateChanged { get; }
+        internal CancellationToken Lifetime { get; }
+        internal bool IsRetired => Lifetime.IsCancellationRequested;
+        internal EventHandler? FrameDisplayedHandler { get; set; }
+        internal int FrameCount;
+        internal long FpsStartedAt;
+
+        internal void Retire()
+        {
+            _retirement.Cancel();
+            _retirement.Dispose();
+        }
+    }
+
     internal sealed class CameraRealtimeFramePipeline : IDisposable
     {
         private readonly DefaultRealtimeCameraConfig _config = DefaultRealtimeCameraConfig.Current;
         private readonly RealtimeCameraOverlayVisual _overlayVisual;
-        private readonly Dictionary<ImageView, EventHandler> _viewSessions = new();
+        private readonly Dictionary<ImageView, CameraPreviewSession> _viewSessions = new();
         private readonly object _processorGate = new();
         private readonly TimeProvider _clock;
         private readonly Func<Action<CameraFocusFrameResult>, CameraFocusFrameProcessor> _createFocusProcessor;
 
         private CameraFocusFrameProcessor? _processor;
         private Task? _processorRetirement;
-        private ImageView? _imageView;
-        private Action<double>? _onArticulation;
-        private Action<RealtimeCameraMetrics>? _onFrameRateChanged;
-        private volatile EventHandler? _frameDisplayedHandler;
+        private volatile CameraPreviewSession? _session;
         private long _displayedFrameCount;
-        private int _frameCount;
-        private long _fpsStartedAt;
         private double _lastFps;
         private double _articulation;
         private ImageView? _overlayView;
         private bool _disposed;
         private bool _configSubscribed;
-        private bool _isRunning;
         private long _generation;
         private bool _showOverlayRoi = true;
         private volatile CameraPreviewGeometry _previewGeometry = new(Rect.Empty, RealtimeFramePresenter.TransformNone);
@@ -56,6 +79,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         }
 
         public CameraPreviewGeometry PreviewGeometry => _previewGeometry;
+
+        internal CameraPreviewSession? CaptureSession() => _session;
 
         public void SetPreviewGeometry(Rect displayRoi, int transform)
         {
@@ -84,7 +109,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
-            if (_isRunning) Stop(resetRealtime: true);
+            if (_session != null) Stop(resetRealtime: true);
             // A camera stream owns new pixels, not the previous file's path, layers or measurements.
             // Clearing the file identity also rejects a CVRAW load that is still finishing in the background.
             imageView.ReleaseImageContent();
@@ -93,29 +118,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             imageView.Config.ClearProperties();
             imageView.Realtime.Reset();
             if (!preserveDisplayedFrameCount) Interlocked.Exchange(ref _displayedFrameCount, 0);
-            EventHandler? frameDisplayedHandler = null;
-            frameDisplayedHandler = (_, _) =>
+            CameraPreviewSession session = new(imageView, _clock.GetTimestamp(), onArticulation, onFrameRateChanged);
+            session.FrameDisplayedHandler = (_, _) =>
             {
-                if (ReferenceEquals(_frameDisplayedHandler, frameDisplayedHandler))
+                if (ReferenceEquals(_session, session))
                     Interlocked.Increment(ref _displayedFrameCount);
             };
-            _frameDisplayedHandler = frameDisplayedHandler;
-            _viewSessions[imageView] = frameDisplayedHandler;
-            imageView.Realtime.FrameDisplayed += frameDisplayedHandler;
-            Interlocked.Increment(ref _generation);
-            _imageView = imageView;
-            _onArticulation = onArticulation;
-            _onFrameRateChanged = onFrameRateChanged;
+            _viewSessions[imageView] = session;
+            imageView.Realtime.FrameDisplayed += session.FrameDisplayedHandler;
             SetPreviewGeometry(displayRoi, transform);
             _showOverlayRoi = showOverlayRoi;
             _overlayVisual.IsRoiVisible = showOverlayRoi && IsArticulationEnabled;
             _overlayVisual.IsStatusVisible = showOverlayMetrics;
-            _frameCount = 0;
             _lastFps = 0;
             _articulation = 0;
-            _fpsStartedAt = _clock.GetTimestamp();
-            _isRunning = true;
-            EnsureConfigSubscription();
 
             imageView.Realtime.Configure(new RealtimeFrameOptions
             {
@@ -124,29 +140,34 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             });
 
             UpdateOverlayVisibility(imageView);
+            lock (_processorGate)
+            {
+                Interlocked.Increment(ref _generation);
+                EnsureConfigSubscription();
+                _session = session;
+            }
         }
 
         public void Stop(bool resetRealtime = false, bool clearImageSource = false)
         {
-            ImageView? imageView = _imageView;
-            EventHandler? frameDisplayedHandler = _frameDisplayedHandler;
-            _frameDisplayedHandler = null;
-            _imageView = null;
-            _onArticulation = null;
-            _onFrameRateChanged = null;
-            _isRunning = false;
-            Interlocked.Increment(ref _generation);
-            ReleaseConfigSubscription();
-
-            ReleaseProcessor();
-
-            if (imageView == null) return;
+            CameraPreviewSession? session;
+            lock (_processorGate)
+            {
+                session = _session;
+                if (session == null) return;
+                session.Retire();
+                _session = null;
+                Interlocked.Increment(ref _generation);
+                ReleaseConfigSubscription();
+                ReleaseProcessor();
+            }
+            ImageView imageView = session.View;
 
             void StopCore()
             {
-                imageView.Realtime.FrameDisplayed -= frameDisplayedHandler;
+                imageView.Realtime.FrameDisplayed -= session.FrameDisplayedHandler;
                 // The same view may already belong to a newer preview when this cleanup runs.
-                if (!_viewSessions.TryGetValue(imageView, out var owner) || !ReferenceEquals(owner, frameDisplayedHandler)) return;
+                if (!_viewSessions.TryGetValue(imageView, out var owner) || !ReferenceEquals(owner, session)) return;
                 _viewSessions.Remove(imageView);
 
                 if (ReferenceEquals(_overlayView, imageView))
@@ -176,47 +197,34 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int bitsPerPixel, int stride)
         {
             ArgumentNullException.ThrowIfNull(sourceBuffer);
-            if (length <= 0 || length > sourceBuffer.Length || !_isRunning)
-            {
-                return;
-            }
-
-            ImageView? imageView = _imageView;
-            if (imageView == null)
-            {
-                return;
-            }
+            CameraPreviewSession? session = CaptureSession();
+            if (session == null || session.IsRetired || length <= 0 || length > sourceBuffer.Length) return;
 
             CameraPreviewGeometry geometry = PreviewGeometry;
             if (IsArticulationEnabled)
-                GetFocusProcessor()?.SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
+                GetFocusProcessor(session)?.SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
 
-            imageView.Realtime.SubmitFrame(sourceBuffer, width, height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform);
-            RecordFrameRate(imageView);
+            session.View.Realtime.SubmitFrame(sourceBuffer, width, height,
+                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform, session.Lifetime);
+            RecordFrameRate(session);
         }
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int bitsPerPixel, int stride,
             CameraPreviewGeometry? geometry = null)
-        {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || !_isRunning)
-            {
-                return;
-            }
+            => SubmitFrame(CaptureSession(), sourcePointer, length, width, height, channels, bitsPerPixel, stride, geometry);
 
-            ImageView? imageView = _imageView;
-            if (imageView == null)
-            {
-                return;
-            }
+        internal void SubmitFrame(CameraPreviewSession? session, IntPtr sourcePointer, int length, int width, int height, int channels, int bitsPerPixel,
+            int stride, CameraPreviewGeometry? geometry = null)
+        {
+            if (session == null || session.IsRetired || !ReferenceEquals(session, _session) || sourcePointer == IntPtr.Zero || length <= 0) return;
 
             geometry ??= PreviewGeometry;
             if (IsArticulationEnabled)
-                GetFocusProcessor()?.SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
+                GetFocusProcessor(session)?.SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
 
-            imageView.Realtime.SubmitFrame(sourcePointer, width, height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform);
-            RecordFrameRate(imageView);
+            session.View.Realtime.SubmitFrame(sourcePointer, width, height,
+                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform, session.Lifetime);
+            RecordFrameRate(session);
         }
 
         private CameraFocusFrameRequest CreateFocusRequest(CameraPreviewGeometry geometry, int width, int height)
@@ -244,16 +252,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             UpdateOverlayMetrics();
         }
 
-        private CameraFocusFrameProcessor? GetFocusProcessor()
+        private CameraFocusFrameProcessor? GetFocusProcessor(CameraPreviewSession session)
         {
             lock (_processorGate)
             {
-                if (_disposed || !_isRunning || !IsArticulationEnabled) return null;
-                // A previous session can still own a full frame in native focus processing.
+                if (_disposed || !ReferenceEquals(_session, session) || !IsArticulationEnabled) return null;
+                // A previous session can still own pixels in native focus processing.
                 if (_processorRetirement is { IsCompleted: false }) return null;
                 _processorRetirement = null;
                 long generation = Volatile.Read(ref _generation);
-                return _processor ??= _createFocusProcessor(result => HandleProcessedFrame(result, generation));
+                return _processor ??= _createFocusProcessor(result => HandleProcessedFrame(result, session, generation));
             }
         }
 
@@ -268,42 +276,42 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
         }
 
-        private void HandleProcessedFrame(CameraFocusFrameResult result, long generation)
+        private void HandleProcessedFrame(CameraFocusFrameResult result, CameraPreviewSession session, long generation)
         {
-            ImageView? targetView = _imageView;
-            if (!_isRunning || targetView == null || targetView.Dispatcher.HasShutdownStarted
+            ImageView targetView = session.View;
+            if (!ReferenceEquals(_session, session) || targetView.Dispatcher.HasShutdownStarted
                 || generation != Volatile.Read(ref _generation)) return;
 
             targetView.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (!_isRunning || !ReferenceEquals(targetView, _imageView) || !IsArticulationEnabled
+                if (!ReferenceEquals(_session, session) || !IsArticulationEnabled
                     || generation != Volatile.Read(ref _generation)) return;
                 _articulation = result.Articulation;
                 UpdateOverlayMetrics();
-                _onArticulation?.Invoke(result.Articulation);
+                session.OnArticulation?.Invoke(result.Articulation);
             }));
         }
 
-        private void RecordFrameRate(ImageView imageView)
+        private void RecordFrameRate(CameraPreviewSession session)
         {
-            EventHandler? session = _frameDisplayedHandler;
-            if (session == null || !ReferenceEquals(imageView, _imageView)) return;
-            Interlocked.Increment(ref _frameCount);
+            if (!ReferenceEquals(session, _session)) return;
+            Interlocked.Increment(ref session.FrameCount);
             long now = _clock.GetTimestamp();
-            double elapsedSeconds = _clock.GetElapsedTime(Volatile.Read(ref _fpsStartedAt), now).TotalSeconds;
+            double elapsedSeconds = _clock.GetElapsedTime(Volatile.Read(ref session.FpsStartedAt), now).TotalSeconds;
             if (elapsedSeconds < 1) return;
 
-            double fps = Interlocked.Exchange(ref _frameCount, 0) / elapsedSeconds;
-            Volatile.Write(ref _fpsStartedAt, now);
+            double fps = Interlocked.Exchange(ref session.FrameCount, 0) / elapsedSeconds;
+            Volatile.Write(ref session.FpsStartedAt, now);
             void Publish()
             {
-                if (!ReferenceEquals(session, _frameDisplayedHandler)) return;
+                if (!ReferenceEquals(session, _session)) return;
                 _lastFps = fps;
                 RealtimeCameraMetrics metrics = CurrentMetrics;
                 if (_overlayVisual.IsStatusVisible) _overlayVisual.UpdateMetrics(metrics.Fps, metrics.Articulation);
-                _onFrameRateChanged?.Invoke(metrics);
+                session.OnFrameRateChanged?.Invoke(metrics);
             }
 
+            ImageView imageView = session.View;
             if (imageView.Dispatcher.CheckAccess()) Publish();
             else if (!imageView.Dispatcher.HasShutdownStarted) imageView.Dispatcher.BeginInvoke(new Action(Publish));
         }
@@ -337,12 +345,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            ImageView? imageView = _imageView;
-            if (imageView == null) return;
+            CameraPreviewSession? session = _session;
+            if (session == null) return;
+            ImageView imageView = session.View;
 
             void ApplyConfigChange()
             {
-                if (!_isRunning || !ReferenceEquals(imageView, _imageView)) return;
+                if (!ReferenceEquals(session, _session)) return;
                 if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsCalArtculation))
                     UpdateOverlayVisibility(imageView);
                 if (e.PropertyName == nameof(DefaultRealtimeCameraConfig.EvaFunc))
