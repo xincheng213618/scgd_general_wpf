@@ -6,6 +6,7 @@ using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Layers;
@@ -431,6 +432,179 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 Exp = [1, 1, 1], Data = Enumerable.Repeat((byte)88, rows * cols * 3).ToArray()
             };
             Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+        }
+    }
+
+    [Fact]
+    public async Task CacheOnlyCvRawOpensWithPixelsAndSerializedLengthWithoutADiskFile()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-cache-only-open-{Guid.NewGuid():N}.cvraw");
+        bool cacheWasEnabled = CVFileReadCache.IsEnabled;
+        int previousMaximumEntries = CVFileReadCache.MaximumEntries;
+        ImageView? view = null;
+        CVRawOpen? opener = null;
+        int loadedCount = 0;
+        byte[] samples = [5, 11, 19, 29, 47, 71];
+        try
+        {
+            CVFileReadCache.Release();
+            CVFileReadCache.IsEnabled = true;
+            CVFileReadCache.MaximumEntries = 1;
+            using CVCIEFile raw = new()
+            {
+                Version = 1, FileExtType = CVType.Raw, Rows = 2, Cols = 3, Bpp = 8, Channels = 1,
+                Exp = [1], Data = samples,
+            };
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, CVFileSaveMode.MemoryOnly));
+            Assert.False(File.Exists(path));
+            long cachedLength = Assert.NotNull(CVFileReadCache.GetCachedLength(path));
+            Assert.True(cachedLength > samples.Length);
+
+            Task completion = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView { EnableEditorImageServices = false };
+                opener = new CVRawOpen(view.EditorContext);
+                view.IEditorToolFactory.IImageOpens[".cvraw"] = opener;
+                view.ImageSourceLoaded += (_, _) => loadedCount++;
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            });
+            await completion.WaitAsync(TimeSpan.FromSeconds(10));
+
+            WpfTestHost.Invoke(() =>
+            {
+                BitmapSource source = Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource);
+                Assert.Equal((3, 2), (source.PixelWidth, source.PixelHeight));
+                Assert.Equal(PixelFormats.Gray8, source.Format);
+                byte[] pixels = new byte[samples.Length];
+                source.CopyPixels(pixels, 3, 0);
+                Assert.Equal(samples, pixels);
+                Assert.Equal(1, loadedCount);
+                Assert.Same(opener, view.EditorContext.IImageOpen);
+                Assert.Same(opener, view.ImageContentCapability);
+                Assert.Equal(path, view.Config.FilePath);
+                Assert.Equal(path, view.Config.GetProperties<string>(ImageViewPropertyKeys.FileSource));
+                Assert.Equal(Path.GetFileName(path), view.Config.GetProperties<string>(ImageViewPropertyKeys.FileName));
+                Assert.Equal(cachedLength, view.Config.GetProperties<long>(ImageViewPropertyKeys.FileSize));
+                Assert.False(view.Config.Properties.ContainsKey(ImageViewPropertyKeys.FileCreationTime));
+                Assert.False(view.Config.Properties.ContainsKey(ImageViewPropertyKeys.FileModifiedTime));
+            });
+            Assert.False(File.Exists(path));
+        }
+        finally
+        {
+            try
+            {
+                if (view != null)
+                {
+                    Task retirement = WpfTestHost.Invoke(() => { view.Dispose(); return view.PendingContentRelease; });
+                    await retirement.WaitAsync(TimeSpan.FromSeconds(10));
+                }
+            }
+            finally
+            {
+                CVFileReadCache.Release();
+                CVFileReadCache.MaximumEntries = previousMaximumEntries;
+                CVFileReadCache.IsEnabled = cacheWasEnabled;
+                File.Delete(path);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task DiskCvcieUsesPreparedPointsAndKeepsPixelsWhenNextFileIsMissing()
+    {
+        string prefix = Path.Combine(Path.GetTempPath(), $"colorvision-cvcie-publication-{Guid.NewGuid():N}");
+        string path = prefix + ".cvcie";
+        string missing = prefix + "-missing.cvcie";
+        string pointsPath = prefix + ".csv";
+        ImageView? view = null;
+        CVRawOpen? opener = null;
+        ViewAlgorithmConfig? settings = null;
+        string? previousPointsPath = null;
+        bool replacedPointsFile = false;
+        int loadedCount = 0;
+        try
+        {
+            WriteCvcieMeasurementFixture(path, firstValue: 1);
+            long fileSize = new FileInfo(path).Length;
+            File.WriteAllLines(pointsPath, ["1,2", "header", "1,2,0,0,3,4,0,0"]);
+            Task completion = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                settings = ViewAlgorithmConfig.Instance;
+                previousPointsPath = settings.ShowDateFilePath;
+                settings.ShowDateFilePath = pointsPath;
+                view = new ImageView { EnableEditorImageServices = false };
+                opener = new CVRawOpen(view.EditorContext);
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = opener;
+                view.ImageSourceLoaded += (_, _) => loadedCount++;
+                view.Config.PropertyChanged += (_, args) =>
+                {
+                    // The host sets the requested path without this notification. The opener's
+                    // publishing setter marks the point by which side-file reads must be done.
+                    if (args.PropertyName != nameof(ImageViewConfig.FilePath) || view.Config.FilePath != path || replacedPointsFile) return;
+                    File.WriteAllLines(pointsPath, ["1,2", "header", "10,20,0,0,30,40,0,0"]);
+                    replacedPointsFile = true;
+                };
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            });
+            await completion.WaitAsync(TimeSpan.FromSeconds(10));
+
+            BitmapSource current = WpfTestHost.Invoke(() =>
+            {
+                Assert.True(replacedPointsFile);
+                Assert.Equal(new[] { new System.Windows.Point(1, 2), new System.Windows.Point(3, 4) }, Assert.Single(opener!.Points));
+                Assert.Equal(1, loadedCount);
+                Assert.Same(opener, view!.ImageContentCapability);
+                Assert.Equal(path, view.Config.FilePath);
+                Assert.Equal(path, view.Config.GetProperties<string>(ImageViewPropertyKeys.FileSource));
+                Assert.Equal(Path.GetFileName(path), view.Config.GetProperties<string>(ImageViewPropertyKeys.FileName));
+                Assert.Equal(fileSize, view.Config.GetProperties<long>(ImageViewPropertyKeys.FileSize));
+                var parameters = Assert.IsType<ColorVisionTiffParameters>(view.Document.ParameterRecord);
+                Assert.Equal("CVCIE", parameters.SourceType);
+                Assert.Equal(3, parameters.SourceChannels);
+                Assert.Equal(32, parameters.Bpp);
+                return Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource);
+            });
+
+            Task missingOpen = WpfTestHost.Invoke(() =>
+            {
+                view!.OpenImage(missing);
+                return view.ImageOpenCompletion;
+            });
+            FileNotFoundException error = await Assert.ThrowsAsync<FileNotFoundException>(() => missingOpen.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.Equal(missing, error.FileName);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(1, loadedCount);
+                Assert.Same(current, view!.ViewBitmapSource);
+                Assert.Equal(missing, view.Config.FilePath);
+                Assert.Null(view.Config.GetProperties<string>(ImageViewPropertyKeys.FileSource));
+                Assert.False(view.Config.Properties.ContainsKey(ImageViewPropertyKeys.FileSize));
+                Assert.Null(view.EditorContext.IImageOpen);
+                Assert.Null(view.ImageContentCapability);
+            });
+        }
+        finally
+        {
+            try
+            {
+                Task retirement = WpfTestHost.Invoke(() =>
+                {
+                    if (settings != null) settings.ShowDateFilePath = previousPointsPath!;
+                    view?.Dispose();
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                });
+                await retirement.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+            finally
+            {
+                File.Delete(path);
+                File.Delete(pointsPath);
+            }
         }
     }
 

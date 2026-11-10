@@ -10,7 +10,9 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
@@ -237,7 +239,7 @@ namespace ColorVision.Engine.Media
                     {
                         var result = CVRawManualCieCalculator.Calculate(rawFile, config);
                         result.Snapshot.Save(filePath, canReplay: true);
-                        return (Result: result, Raw: rawFile);
+                        return (Result: result, Raw: rawFile, Metadata: ReadCvFileViewMetadata(filePath, null));
                     }
                     catch { rawFile.Dispose(); throw; }
                 });
@@ -258,7 +260,8 @@ namespace ColorVision.Engine.Media
                     }
                     EditorContext.Config.SetImageMetadata("srcFileName", Path.GetFileName(filePath), nameof(CVRawOpen), "手动 CIE 计算的源 CVRAW 文件名");
                     string layerId = (EditorContext.ImageView.ComboBoxLayers.SelectedItem as ColorVision.ImageEditor.Layers.ImageLayerDescriptor)?.Id ?? "composite";
-                    CvRawLayerController? controller = InitializeCvFileView(EditorContext.ImageView, filePath, layerId, true, calculatedRaw);
+                    CvRawLayerController? controller = InitializeCvFileView(EditorContext.ImageView, filePath, layerId, true,
+                        calculated.Metadata, calculatedRaw);
                     _measurementBuffer?.RawSource?.UseCalculatedXyz(result.XyzData);
                     EditorContext.ImageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
                     if (controller?.DefaultLayer != null) controller.SelectLayer(controller.DefaultLayer);
@@ -281,7 +284,8 @@ namespace ColorVision.Engine.Media
                             ReplaceMeasurementBuffer(null);
                             EditorContext.Config.SetOpenerRuntime("IsCVCIE", false, nameof(CVRawOpen), "校正失败，继续显示原始 CVRAW");
                             EditorContext.ImageView.OpenImage(mat.CreateDisplayBitmap());
-                            InitializeCvFileView(EditorContext.ImageView, filePath, "composite", raw.Channels >= 3);
+                            InitializeCvFileView(EditorContext.ImageView, filePath, "composite", raw.Channels >= 3,
+                                ReadCvFileViewMetadata(filePath, null));
                             EditorContext.ImageView.AttachImageContentCapability(this);
                         }
                     }
@@ -426,36 +430,78 @@ namespace ColorVision.Engine.Media
             imageView.Config.Cleared += _bufferCleanup;
         }
 
-        private CvRawLayerController? InitializeCvFileView(ImageView imageView, string filePath, string displayedLayerId, bool hasRgbLayers,
-            CVCIEFile? loadedRaw = null, CvcieFileRevision? fileRevision = null)
+        private sealed record CvFileViewMetadata(CVCIEFile Header, int HeaderEnd, ColorVisionTiffParameters Parameters, ColorCalibrationSnapshot? Calibration,
+            string? AssociatedRawPath, List<List<Point>>? PointRows, IReadOnlyList<ImageProfileSourceOption>? ProfileSources);
+
+        private static CvFileViewMetadata? ReadCvFileViewMetadata(string filePath, string? pointsPath, Stream? verifiedFile = null)
         {
-            imageView.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, null, nameof(CVRawOpen), "CVRAW 尾部保存的实际色度校正参数（只读）");
-            if (!CVFileUtil.IsCIEFile(filePath))
-            {
-                return null;
-            }
-
-            imageView.Config.FilePath = filePath;
-
-            int index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile meta);
-            imageView.EditorContext.ProcessingContext.ProfileMeasurementSources = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase)
-                ? CvcieProfileSource.CreateOptions(filePath, meta.Channels) : null;
+            int index = verifiedFile == null
+                ? CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile meta)
+                : CVFileUtil.ReadCIEFileHeader(verifiedFile, out meta);
             if (index <= 0)
             {
+                meta.Dispose();
                 return null;
             }
-            meta.FileExtType = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase) ? CVType.CIE : CVType.Raw;
-            var parameterRecord = VExportCIE.CreateTiffParameters(meta, "Src");
+
+            bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
+            meta.FileExtType = isCie ? CVType.CIE : CVType.Raw;
+            meta.FilePath = filePath;
+            ColorVisionTiffParameters parameters = VExportCIE.CreateTiffParameters(meta, "Src");
+            if (!isCie)
+            {
+                ColorCalibrationSnapshot? calibration = null;
+                try { calibration = ColorCalibrationSnapshot.Read(filePath, meta); }
+                catch (Exception ex) { log.Warn($"RAW 色度参数不可用，保留原图：{filePath}", ex); }
+                var profiles = calibration?.CanReplay == true ? CvRawProfileSource.CreateOptions(filePath) : null;
+                return new(meta, index, parameters, calibration, null, null, profiles);
+            }
+
+            List<List<Point>>? pointRows = null;
+            if (File.Exists(pointsPath))
+            {
+                log.Info("ShowDateFilePath:" + pointsPath);
+                string[] lines = File.ReadAllLines(pointsPath);
+                string[] dimensions = lines[0].Split(',');
+                _ = int.Parse(dimensions[0]);
+                _ = int.Parse(dimensions[1]);
+                pointRows = new();
+                for (int lineIndex = 2; lineIndex < lines.Length; lineIndex++)
+                {
+                    string[] xy = lines[lineIndex].Split(',');
+                    List<Point> points = new();
+                    for (int i = 0; i < xy.Length; i += 4)
+                    {
+                        if (double.TryParse(xy[i], out var x) && double.TryParse(xy[i + 1], out var y))
+                            points.Add(new Point(x, y));
+                    }
+                    pointRows.Add(points);
+                }
+            }
+
+            return new(meta, index, parameters, null, ResolveAssociatedRawFilePath(filePath, meta), pointRows,
+                CvcieProfileSource.CreateOptions(filePath, meta.Channels));
+        }
+
+        private CvRawLayerController? InitializeCvFileView(ImageView imageView, string filePath, string displayedLayerId, bool hasRgbLayers,
+            CvFileViewMetadata? metadata, CVCIEFile? loadedRaw = null, CvcieFileRevision? fileRevision = null)
+        {
+            imageView.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, null, nameof(CVRawOpen), "CVRAW 尾部保存的实际色度校正参数（只读）");
+            if (metadata == null) return null;
+
+            imageView.Config.FilePath = filePath;
+            CVCIEFile meta = metadata.Header;
+            int index = metadata.HeaderEnd;
+            imageView.EditorContext.ProcessingContext.ProfileMeasurementSources = metadata.ProfileSources;
+            ColorVisionTiffParameters parameterRecord = metadata.Parameters;
             imageView.SetImageParameterRecord(parameterRecord);
 
-            if (!string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase))
+            if (meta.FileExtType != CVType.CIE)
             {
                 ReplaceMeasurementBuffer(null);
                 imageView.Config.SetOpenerRuntime("IsCVCIE", false, nameof(CVRawOpen), "文件仍为 RAW");
                 imageView.Config.SetOpenerRuntime("HasCieMeasurements", false, nameof(CVRawOpen), "是否具有 CIE 测量数据源");
-                ColorCalibrationSnapshot? snapshot = null;
-                try { snapshot = ColorCalibrationSnapshot.Read(filePath, meta); }
-                catch (Exception ex) { log.Warn($"RAW 色度参数不可用，保留原图：{filePath}", ex); }
+                ColorCalibrationSnapshot? snapshot = metadata.Calibration;
                 imageView.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, snapshot, nameof(CVRawOpen), "CVRAW 尾部保存的实际色度校正参数（只读）");
                 if (snapshot != null)
                 {
@@ -464,7 +510,6 @@ namespace ColorVision.Engine.Media
                 }
                 if (snapshot?.CanReplay == true)
                 {
-                    imageView.EditorContext.ProcessingContext.ProfileMeasurementSources = CvRawProfileSource.CreateOptions(filePath);
                     CVCIEFile raw = loadedRaw ?? CVFileUtil.OpenLocalCVFile(filePath);
                     try { ReplaceMeasurementBuffer(new PoiMeasurementBuffer(raw, snapshot)); }
                     finally { if (loadedRaw == null) raw.Dispose(); }
@@ -484,7 +529,6 @@ namespace ColorVision.Engine.Media
                 imageView.SetLayerController(rawController);
                 return rawController;
             }
-            meta.FileExtType = CVType.CIE;
             CvcieFileRevision revision = fileRevision ?? throw new InvalidOperationException("缺少 CVCIE 文件版本。");
 
             ReplaceMeasurementBuffer(null);
@@ -508,27 +552,10 @@ namespace ColorVision.Engine.Media
             }
 
             ShowDateFilePath = false;
-            if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
+            if (metadata.PointRows != null)
             {
                 Points.Clear();
-                log.Info("ShowDateFilePath:" + ViewAlgorithmConfig.Instance.ShowDateFilePath);
-                string[] lines = File.ReadAllLines(ViewAlgorithmConfig.Instance.ShowDateFilePath);
-                string[] dates = lines[0].Split(',');
-                int rows = int.Parse(dates[0]);
-                int cols = int.Parse(dates[1]);
-                for (int lineIndex = 2; lineIndex < lines.Length; lineIndex++)
-                {
-                    string[] xy = lines[lineIndex].Split(',');
-                    List<Point> points = new List<Point>();
-                    for (int i = 0; i < xy.Length; i += 4)
-                    {
-                        if (double.TryParse(xy[i], out var x) && double.TryParse(xy[i + 1], out var y))
-                        {
-                            points.Add(new Point(x, y));
-                        }
-                    }
-                    Points.Add(points);
-                }
+                Points.AddRange(metadata.PointRows);
                 ShowDateFilePath = true;
             }
 
@@ -550,10 +577,9 @@ namespace ColorVision.Engine.Media
             imageView.Config.SetOpenerRuntime("index", index, nameof(CVRawOpen), "CVCIE 数据块索引");
             imageView.Config.SetOpenerRuntime("Exp", meta.Exp, nameof(CVRawOpen), "当前 CVCIE 曝光数组");
 
-            string? associatedRawFilePath = ResolveAssociatedRawFilePath(filePath, meta);
-            if (!string.IsNullOrWhiteSpace(associatedRawFilePath))
+            if (!string.IsNullOrWhiteSpace(metadata.AssociatedRawPath))
             {
-                meta.SrcFileName = associatedRawFilePath;
+                meta.SrcFileName = metadata.AssociatedRawPath;
             }
 
             imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
@@ -982,6 +1008,7 @@ namespace ColorVision.Engine.Media
             long requestId = Interlocked.Increment(ref _latestOpenRequest);
             bool isRaw = string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase);
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
+            string? pointsPath = isCie ? ViewAlgorithmConfig.Instance.ShowDateFilePath : null;
             CvRawPixelBuffer rawPixels = _rawPixels;
             // Config.ClearProperties normally does this first. Also protect callers that invoke the opener directly.
             ReplaceMeasurementBuffer(null);
@@ -1022,10 +1049,16 @@ namespace ColorVision.Engine.Media
                     }
                     bool usesLuminance = false;
                     WriteableBitmap? displayBitmap = srgb;
+                    // Keep the verified selected file stable through publication, even if the display uses an associated source.
+                    using FileStream? publicationRead = fileRevision?.OpenRead(requestedFilePath);
                     // A successful XYZ render needs only metadata, not another RAW/Y payload and conversion.
-                    using CVCIEFile cVCIEFile = srgb != null ? ReadDisplayHeader(requestedFilePath)
+                    using CVCIEFile? displayFile = srgb != null ? null
                         : isRaw ? rawPixels.Read(requestedFilePath)
                         : CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    CvFileViewMetadata? viewMetadata = ReadCvFileViewMetadata(requestedFilePath, pointsPath, publicationRead);
+                    CVCIEFile cVCIEFile = displayFile ?? viewMetadata?.Header
+                        ?? throw new InvalidDataException($"CVCIE 文件头无效：{requestedFilePath}");
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
                         displayBitmap = MediaHelper.RenderFloatChannel(cVCIEFile, cancellationToken);
                     using OpenCvSharp.Mat? mat = displayBitmap == null ? cVCIEFile.ToMat(showErrors: false) : null;
@@ -1033,8 +1066,6 @@ namespace ColorVision.Engine.Media
                         throw new InvalidDataException("The file contains no displayable image pixels.");
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    // Hold the verified file through metadata and capability publication.
-                    using FileStream? publicationRead = fileRevision?.OpenRead(requestedFilePath);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
@@ -1062,9 +1093,9 @@ namespace ColorVision.Engine.Media
                         context.Config.SetImageMetadata("srcFileName", cVCIEFile.SrcFileName, nameof(CVRawOpen), "CVCIE 关联源文件名");
 
                         bool hasRgbLayers = cVCIEFile.Channels >= 3 && (srgb != null
-                            ? ResolveAssociatedRawFilePath(requestedFilePath, cVCIEFile) != null : !usesLuminance);
+                            ? viewMetadata?.AssociatedRawPath != null : !usesLuminance);
                         CvRawLayerController? controller = InitializeCvFileView(context.ImageView, requestedFilePath,
-                            srgb != null ? "cie-srgb" : usesLuminance ? "cie-y" : "composite", hasRgbLayers, cVCIEFile, fileRevision);
+                            srgb != null ? "cie-srgb" : usesLuminance ? "cie-y" : "composite", hasRgbLayers, viewMetadata, cVCIEFile, fileRevision);
                         if (srgb != null) controller?.CacheSrgb(srgb, brightnessMode, referenceWhite);
 
                         if (displayBitmap != null)
@@ -1191,12 +1222,6 @@ namespace ColorVision.Engine.Media
             };
         }
 
-        private static CVCIEFile ReadDisplayHeader(string filePath)
-        {
-            if (CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile header) > 0) return header;
-            header.Dispose();
-            throw new InvalidDataException($"CVCIE 文件头无效：{filePath}");
-        }
     }
 
     [FileExtension(".cvraw|.cvcie")]
