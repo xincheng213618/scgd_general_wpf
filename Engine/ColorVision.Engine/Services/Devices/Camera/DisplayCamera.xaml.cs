@@ -395,7 +395,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             DisplayCameraConfig.PropertyChanged += DisplayCameraConfig_PropertyChanged;
             Device.RealtimeCameraConfig.PropertyChanged += RealtimeCameraConfig_PropertyChanged;
-            ApplyLocalVideoRoiToRealtimeConfig();
 
             Capture.CBFilp.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
@@ -533,7 +532,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 ApplyPreviewParameter(e.PropertyName == nameof(DisplayCameraConfig.ExpTime));
             if (e.PropertyName == nameof(DisplayCameraConfig.LocalVideoTransform))
             {
-                _localRealtimePipeline.Transform = DisplayCameraConfig.LocalVideoTransform;
+                UpdatePreviewGeometry();
                 _crossGuideOverlayVisual.Clear();
                 _crossGuideProcessor.Reset();
                 ClearCrossGuideStatus();
@@ -542,7 +541,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DisplayCameraConfig.LocalVideoRoi))
             {
-                ApplyLocalVideoRoiToRealtimeConfig();
+                UpdatePreviewGeometry();
                 RefreshLocalVideoRoiVisual(selectNewVisual: true);
                 RefreshCrossGuideOverlay();
                 SaveDisplayConfig();
@@ -566,17 +565,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             || propertyName == nameof(DisplayCameraConfig.CrossGuideThresholdRatio)
             || propertyName == nameof(DisplayCameraConfig.CrossGuideMinCoverageRatio);
 
-        private void ApplyLocalVideoRoiToRealtimeConfig()
-        {
-            RectangleTextProperties rectangle = Device.RealtimeCameraConfig.RectangleTextProperties;
-            rectangle.Rect = DisplayCameraConfig.LocalVideoRoi;
-            rectangle.Brush = Brushes.Transparent;
-            rectangle.Pen = new Pen(Brushes.LimeGreen, 4);
-            rectangle.Foreground = Brushes.DarkOrange;
-            rectangle.Position = RectangleTextPosition.Top;
-            rectangle.IsShowText = true;
-            if (rectangle.FontSize <= 0) rectangle.FontSize = 200;
-        }
+        private void UpdatePreviewGeometry()
+            => _localRealtimePipeline.SetPreviewGeometry(DisplayCameraConfig.LocalVideoRoi, DisplayCameraConfig.LocalVideoTransform);
 
         private bool IsRealtimeArticulationEnabled => Device.RealtimeCameraConfig.IsCalArtculation;
 
@@ -704,7 +694,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 _isSyncingLocalVideoRoi = false;
             }
 
-            ApplyLocalVideoRoiToRealtimeConfig();
+            UpdatePreviewGeometry();
             SyncLocalVideoRoiVisualFromConfig();
             SaveDisplayConfig();
         }
@@ -776,7 +766,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 _isSyncingLocalVideoRoi = false;
             }
 
-            ApplyLocalVideoRoiToRealtimeConfig();
+            UpdatePreviewGeometry();
             SaveDisplayConfig();
         }
 
@@ -920,15 +910,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.ExistingView?.FocusChart?.UpdateVideoCrossGuideStatus(null);
         }
 
-        private bool TryCreateCrossGuideRequest(int width, int height, out VideoCrossGuideRequest request)
+        private bool TryCreateCrossGuideRequest(int width, int height, CameraPreviewGeometry geometry, out VideoCrossGuideRequest request)
         {
             request = default;
             if (Device.ExistingView is not { IsContentInitialized: true }
                 || !Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled) return false;
             if (width <= 0 || height <= 0) return false;
 
-            int transform = Device.DisplayConfig.LocalVideoTransform;
-            RoiRect sourceRoi = VideoCrossGuideDetector.TransformDisplayRoiToSource(Device.DisplayConfig.LocalVideoRoi, width, height, transform);
+            int transform = geometry.Transform;
+            RoiRect sourceRoi = geometry.GetSourceRoi(width, height);
             ImageOpticalCenter? opticalCenter = Device.PhyCamera?.OpticalCenter;
             Point standardCenter = opticalCenter is { } center ? new Point(center.X, center.Y) : new Point(width / 2.0, height / 2.0);
             if (opticalCenter != null)
@@ -1695,7 +1685,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _localRealtimePipeline.Start(view.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false,
                 showOverlayMetrics: false, onArticulation: view.FocusChart.AddVideoSample,
                 preserveDisplayedFrameCount: preserveDisplayedFrameCount, onFrameRateChanged: metrics =>
-                    view.FocusChart.UpdateVideoDisplayMetrics(metrics.Fps, _localRealtimePipeline.CurrentDisplayedFrameCount));
+                    view.FocusChart.UpdateVideoDisplayMetrics(metrics.Fps, _localRealtimePipeline.CurrentDisplayedFrameCount),
+                displayRoi: Device.DisplayConfig.LocalVideoRoi);
             view.FocusChart.BeginVideo(IsRealtimeArticulationEnabled);
             UpdateLocalVideoReadout(view);
         }
@@ -1982,12 +1973,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = sourceStride * height;
 
-            if (TryCreateCrossGuideRequest(width, height, out VideoCrossGuideRequest crossGuideRequest))
+            CameraPreviewGeometry geometry = _localRealtimePipeline.PreviewGeometry;
+            if (TryCreateCrossGuideRequest(width, height, geometry, out VideoCrossGuideRequest crossGuideRequest))
             {
                 _crossGuideProcessor.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride, crossGuideRequest);
             }
 
-            _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride);
+            _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride, geometry);
             return 0;
         }
 
@@ -2059,7 +2051,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     SetLocalVideoStatus(null);
                     button.Content = EngineLocalization.Get("CameraPanel_StopPreview");
-                    ApplyLocalVideoRoiToRealtimeConfig();
                     StartRealtimeView(Device.View, preserveDisplayedFrameCount: false);
                     SetLocalVideoPoiTemplateSupported(true);
                     if (_sharedLocalVideo) _localVideoWatchdog.Start(Environment.TickCount64);

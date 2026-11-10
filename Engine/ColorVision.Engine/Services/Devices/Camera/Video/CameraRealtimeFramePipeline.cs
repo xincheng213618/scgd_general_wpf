@@ -6,10 +6,17 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     internal readonly record struct RealtimeCameraMetrics(double Fps, double? Articulation);
+
+    internal sealed record CameraPreviewGeometry(Rect DisplayRoi, int Transform)
+    {
+        public RoiRect GetSourceRoi(int width, int height)
+            => VideoCrossGuideDetector.TransformDisplayRoiToSource(DisplayRoi, width, height, Transform);
+    }
 
     internal sealed class CameraRealtimeFramePipeline : IDisposable
     {
@@ -35,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _isRunning;
         private long _generation;
         private bool _showOverlayRoi = true;
-        private int _transform = RealtimeFramePresenter.TransformNone;
+        private volatile CameraPreviewGeometry _previewGeometry = new(Rect.Empty, RealtimeFramePresenter.TransformNone);
 
         public CameraRealtimeFramePipeline(TimeProvider? clock = null)
         {
@@ -43,10 +50,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _overlayVisual = new RealtimeCameraOverlayVisual(_config);
         }
 
-        public int Transform
+        public CameraPreviewGeometry PreviewGeometry => _previewGeometry;
+
+        public void SetPreviewGeometry(Rect displayRoi, int transform)
         {
-            get => System.Threading.Volatile.Read(ref _transform);
-            set => System.Threading.Volatile.Write(ref _transform, value & RealtimeFramePresenter.TransformFlipXY);
+            _previewGeometry = new(displayRoi, transform & RealtimeFramePresenter.TransformFlipXY);
+            if (_overlayVisual.Dispatcher.CheckAccess())
+                _overlayVisual.DisplayRoi = _previewGeometry.DisplayRoi;
+            else
+                _overlayVisual.Dispatcher.BeginInvoke(() => _overlayVisual.DisplayRoi = _previewGeometry.DisplayRoi);
         }
 
         public RealtimeCameraMetrics CurrentMetrics => new(_lastFps, IsArticulationEnabled ? _articulation : null);
@@ -55,7 +67,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone, bool showOverlayRoi = true,
             bool showOverlayMetrics = true, Action<double>? onArticulation = null, bool preserveDisplayedFrameCount = false,
-            Action<RealtimeCameraMetrics>? onFrameRateChanged = null)
+            Action<RealtimeCameraMetrics>? onFrameRateChanged = null, Rect displayRoi = default)
         {
             ArgumentNullException.ThrowIfNull(imageView);
             ThrowIfDisposed();
@@ -63,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             if (!imageView.Dispatcher.CheckAccess())
             {
                 imageView.Dispatcher.Invoke(() => Start(imageView, transform, showOverlayRoi, showOverlayMetrics, onArticulation,
-                    preserveDisplayedFrameCount, onFrameRateChanged));
+                    preserveDisplayedFrameCount, onFrameRateChanged, displayRoi));
                 return;
             }
 
@@ -89,7 +101,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _imageView = imageView;
             _onArticulation = onArticulation;
             _onFrameRateChanged = onFrameRateChanged;
-            Transform = transform;
+            SetPreviewGeometry(displayRoi, transform);
             _showOverlayRoi = showOverlayRoi;
             _overlayVisual.IsRoiVisible = showOverlayRoi && IsArticulationEnabled;
             _overlayVisual.IsStatusVisible = showOverlayMetrics;
@@ -170,15 +182,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
+            CameraPreviewGeometry geometry = PreviewGeometry;
             if (IsArticulationEnabled)
-                GetFocusProcessor()?.SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(width, height));
+                GetFocusProcessor()?.SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
 
             imageView.Realtime.SubmitFrame(sourceBuffer, width, height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, Transform);
+                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform);
             RecordFrameRate(imageView);
         }
 
-        public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int bitsPerPixel, int stride)
+        public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int bitsPerPixel, int stride,
+            CameraPreviewGeometry? geometry = null)
         {
             if (sourcePointer == IntPtr.Zero || length <= 0 || !_isRunning)
             {
@@ -191,16 +205,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
+            geometry ??= PreviewGeometry;
             if (IsArticulationEnabled)
-                GetFocusProcessor()?.SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(width, height));
+                GetFocusProcessor()?.SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, CreateFocusRequest(geometry, width, height));
 
             imageView.Realtime.SubmitFrame(sourcePointer, width, height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, Transform);
+                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length, geometry.Transform);
             RecordFrameRate(imageView);
         }
 
-        private CameraFocusFrameRequest CreateFocusRequest(int width, int height)
-            => new(_config.EvaFunc, new RoiRect(_overlayVisual.GetProcessingRoi(width, height)));
+        private CameraFocusFrameRequest CreateFocusRequest(CameraPreviewGeometry geometry, int width, int height)
+            => new(_config.EvaFunc, geometry.GetSourceRoi(width, height));
 
         private bool IsArticulationEnabled => _config.IsCalArtculation;
 

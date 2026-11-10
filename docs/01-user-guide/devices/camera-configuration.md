@@ -67,7 +67,7 @@ Copilot 加节点默认保留节点构造初值；只有显式要求继承当前
 
 ## 两种 ROI 与物理保存约束
 
-物理 ROI 是 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height`（经 `PhyCameraCfg.ROI` 编辑）；`DisplayCameraConfig.LocalVideoRoi` 则用于实时分析/画面 ROI，由 `ApplyLocalVideoRoiToRealtimeConfig` 传给实时配置，不等于修改传感器采集 ROI。
+物理 ROI 由 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height` 定义，经 `PhyCameraCfg.ROI` 编辑。`DisplayCameraConfig.LocalVideoRoi` 按逻辑相机保存画面坐标，预览会话独立持有该 ROI 和当前翻转。主面板和本地相机窗口按当前翻转显示画面，清晰度与十字引导共用画面到原始帧的 ROI 换算。未选区域时使用整帧。
 
 `EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐。未对齐时显示当前值和未对齐项，询问是否继续保存，默认选择“否”；选择“是”按原值继续保存，选择“否”或关闭提示则停留在配置窗口。此提示不强制调整 ROI，也不包含所有型号/坐标合法性检查，不应宣称每个保存入口都执行了它。
 

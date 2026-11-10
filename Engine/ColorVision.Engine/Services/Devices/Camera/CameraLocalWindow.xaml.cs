@@ -115,6 +115,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void CaptureSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (sender is DisplayCameraConfig displayConfig
+                && e.PropertyName is null or "" or nameof(DisplayCameraConfig.LocalVideoRoi) or nameof(DisplayCameraConfig.LocalVideoTransform))
+                _localRealtimePipeline.SetPreviewGeometry(displayConfig.LocalVideoRoi, displayConfig.LocalVideoTransform);
+
             if (e.PropertyName is nameof(DisplayCameraConfig.UseHikMvs) or nameof(Configs.ConfigCamera.CameraModel) or nameof(Configs.ConfigCamera.CameraMode))
                 Dispatcher.BeginInvoke(() => { if (!_disposed) UpdateConnectionState(Device.CameraBackend.LocalOwned); });
             if (_sourceNode == null || _isInitializingNodeSettings)
@@ -459,7 +463,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (Device.LocalCameraSession.OpenedMode != TakeImageMode.Live) return false;
                 Device.LocalCameraSession.RegisterPreview(handle => cvCameraCSLib.CM_SetCallBack(handle, callback, IntPtr.Zero), StopLivePreview);
-                _localRealtimePipeline.Start(ImageView);
+                var displayConfig = Device.DisplayConfig;
+                _localRealtimePipeline.Start(ImageView, displayConfig.LocalVideoTransform, displayRoi: displayConfig.LocalVideoRoi);
                 return true;
             });
         }

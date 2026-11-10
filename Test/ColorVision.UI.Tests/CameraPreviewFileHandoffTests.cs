@@ -262,6 +262,71 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Fact]
+    public async Task LiveSessionsUseIndependentFocusRois()
+    {
+        byte[] samples = [10, 10, 0, 20, 10, 10, 0, 20];
+        Rect left = new(0, 0, 2, 2);
+        Rect right = new(2, 0, 2, 2);
+        var (secondView, secondPipeline) = WpfTestHost.Invoke(() =>
+            (new ImageView { EnableEditorImageServices = false }, new CameraRealtimeFramePipeline()));
+        var firstScore = new TaskCompletionSource<double>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondScore = new TaskCompletionSource<double>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                DefaultRealtimeCameraConfig.Current.EvaFunc = FocusAlgorithm.Variance;
+                DefaultRealtimeCameraConfig.Current.IsCalArtculation = true;
+                pipeline.Start(view, onArticulation: score => firstScore.TrySetResult(score), displayRoi: left);
+                secondPipeline.Start(secondView, onArticulation: score => secondScore.TrySetResult(score));
+                secondPipeline.SetPreviewGeometry(right, RealtimeFramePresenter.TransformNone);
+
+                pipeline.SubmitFrame(samples, samples.Length, 4, 2, 1, 8, 4);
+                secondPipeline.SubmitFrame(samples, samples.Length, 4, 2, 1, 8, 4);
+            });
+
+            Assert.Equal(0, await firstScore.Task.WaitAsync(TimeSpan.FromSeconds(10)), 6);
+            Assert.Equal(100, await secondScore.Task.WaitAsync(TimeSpan.FromSeconds(10)), 6);
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                secondPipeline.Dispose();
+                secondView.Dispose();
+            });
+        }
+    }
+
+    [Theory]
+    [InlineData(RealtimeFramePresenter.TransformFlipX, 36)]
+    [InlineData(RealtimeFramePresenter.TransformFlipY, 16)]
+    [InlineData(RealtimeFramePresenter.TransformFlipXY, 64)]
+    public async Task LiveFocusSamplesTheVisibleOffCenterRoiAfterFlip(int transform, int expectedVariance)
+    {
+        byte[] samples =
+        [
+            0, 4, 0, 8,
+            0, 4, 0, 8,
+            0, 12, 0, 16,
+            0, 12, 0, 16
+        ];
+        var score = new TaskCompletionSource<double>(TaskCreationOptions.RunContinuationsAsynchronously);
+        WpfTestHost.Invoke(() =>
+        {
+            DefaultRealtimeCameraConfig.Current.EvaFunc = FocusAlgorithm.Variance;
+            DefaultRealtimeCameraConfig.Current.IsCalArtculation = true;
+            pipeline.Start(view, transform, onArticulation: value => score.TrySetResult(value), displayRoi: new Rect(0, 0, 2, 2));
+            GCHandle pinned = GCHandle.Alloc(samples, GCHandleType.Pinned);
+            try { pipeline.SubmitFrame(pinned.AddrOfPinnedObject(), samples.Length, 4, 4, 1, 8, 4); }
+            finally { pinned.Free(); }
+        });
+
+        Assert.Equal(expectedVariance, await score.Task.WaitAsync(TimeSpan.FromSeconds(10)), 6);
+    }
+
+    [Fact]
     public async Task DisplayedFrameCountSkipsRepaintsAndSurvivesViewReattachment()
     {
         WpfTestHost.Invoke(() => pipeline.Start(view));
