@@ -12,6 +12,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Presentation;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -1028,7 +1029,7 @@ namespace ColorVision.Engine.Media
                     lock (_bufferSync) readers = _retiredReaders;
                     await readers.WaitAsync(cancellationToken);
                 }
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     if (requestId != Volatile.Read(ref _latestOpenRequest))
@@ -1066,7 +1067,14 @@ namespace ColorVision.Engine.Media
                         throw new InvalidDataException("The file contains no displayable image pixels.");
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    WriteableBitmap? editableDisplay = null;
+                    if (displayBitmap is { IsFrozen: true } frozen && EditableBitmapCopy.ShouldCopyInBackground(frozen))
+                    {
+                        editableDisplay = await context.ImageView.Dispatcher.InvokeAsync(
+                            () => EditableBitmapCopy.CreateAsync(frozen, cancellationToken)).Task.Unwrap().ConfigureAwait(false);
+                    }
+
+                    context.ImageView.Dispatcher.Invoke(() =>
                     {
                         string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
                         if (cancellationToken.IsCancellationRequested || requestId != Volatile.Read(ref _latestOpenRequest)
@@ -1100,7 +1108,7 @@ namespace ColorVision.Engine.Media
 
                         if (displayBitmap != null)
                         {
-                            context.ImageView.SetImageSource(displayBitmap.Clone(), context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
+                            context.ImageView.SetImageSource(editableDisplay ?? displayBitmap.Clone(), context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
                             context.ImageView.UpdateZoomAndScale();
                         }
                         else if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)

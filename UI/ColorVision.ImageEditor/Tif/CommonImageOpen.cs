@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Presentation;
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -11,7 +12,6 @@ namespace ColorVision.ImageEditor.Tif
     [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|.gif")]
     public record class CommonImageOpen(EditorContext EditorContext) : IPreparedImageOpen, IImageOpenContentLifetime
     {
-        private const long BackgroundCopyMinimumBytes = 8L * 1024 * 1024;
         private readonly BitmapOpenRequests _requests = new();
 
         public async void OpenImage(EditorContext context, string? filePath)
@@ -49,9 +49,8 @@ namespace ColorVision.ImageEditor.Tif
 
                 // Stage a private, editable copy before publishing any metadata for this request.
                 BitmapSource source = decoded.BitmapSource;
-                long pixelBytes = ((long)source.PixelWidth * source.Format.BitsPerPixel + 7) / 8 * source.PixelHeight;
-                WriteableBitmap display = source.IsFrozen && pixelBytes >= BackgroundCopyMinimumBytes
-                    ? await Opentif.PrepareDisplayBitmapAsync(source, source.DpiX, source.DpiY, normalizeFloat: false, cancellationToken)
+                WriteableBitmap display = source.IsFrozen && EditableBitmapCopy.ShouldCopyInBackground(source)
+                    ? await EditableBitmapCopy.CreateAsync(source, cancellationToken)
                     : new WriteableBitmap(source);
                 return (decoded, display);
             }, cancellationToken);

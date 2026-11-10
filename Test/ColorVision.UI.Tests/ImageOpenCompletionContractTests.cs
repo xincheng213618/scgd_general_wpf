@@ -698,6 +698,126 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task LargeCvcieLayerSwitchPreservesPreviousDisplayAndNativeLease()
+    {
+        const int width = 4097, height = 2048, pixelCount = width * height;
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-large-cie-layer-{Guid.NewGuid():N}.cvcie");
+        ImageView? view = null;
+        ImageFrameLease? oldLease = null;
+        CvcieDisplayMode originalMode = WpfTestHost.Invoke(() => CvcieDisplayConfig.Current.DisplayMode);
+        int loadedCount = 0;
+        TimeSpan testWait = TimeSpan.FromSeconds(10);
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                Version = 2, FileExtType = CVType.CIE, Rows = height, Cols = width,
+                Bpp = 32, Channels = 3, Exp = [1, 1, 1],
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file, 3L * pixelCount * sizeof(float), stream =>
+            {
+                byte[] row = new byte[width * sizeof(float)];
+                Span<float> samples = MemoryMarshal.Cast<byte, float>(row.AsSpan());
+                for (int channel = 0; channel < 3; channel++)
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++) samples[x] = ExpectedGray(y * width + x, channel) - 128;
+                    stream.Write(row);
+                }
+            }));
+
+            Task opened = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                CvcieDisplayConfig.Current.EnableTrueColor = false;
+                view = new ImageView { EnableEditorImageServices = false };
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = new CVRawOpen(view.EditorContext);
+                view.ImageSourceLoaded += (_, _) => loadedCount++;
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            });
+            await opened.WaitAsync(testWait);
+
+            byte[] pixels = new byte[pixelCount];
+            var (original, controller) = WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(1, loadedCount);
+                Assert.Equal("cie-y", view!.SelectedLayer?.Id);
+                var initial = Assert.IsType<WriteableBitmap>(view.ViewBitmapSource);
+                AssertPlane(initial, 1, pixels);
+                oldLease = Assert.IsType<ImageFrameLease>(view.AcquireImageFrame());
+                var layers = Assert.IsType<CvRawLayerController>(typeof(ImageView)
+                    .GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(view));
+                return (initial, layers);
+            });
+
+            ImageLayerDescriptor xLayer = controller.Layers.Single(layer => layer.Id == "cie-x");
+            await WpfTestHost.Invoke(() => controller.SelectLayerAsync(xLayer)).WaitAsync(testWait);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(2, loadedCount);
+                var selected = Assert.IsType<WriteableBitmap>(view!.ViewBitmapSource);
+                Assert.NotSame(original, selected);
+                AssertPlane(selected, 0, pixels);
+                AssertPlane(original, 1, pixels);
+                Assert.False(view.IsCurrentImageRevision(oldLease!.Revision));
+
+                var cache = Assert.IsAssignableFrom<object>(typeof(CvRawLayerController)
+                    .GetField("_channelCache", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(controller));
+                var cached = Assert.IsAssignableFrom<BitmapSource>(cache.GetType().GetProperty("Bitmap")?.GetValue(cache));
+                Assert.True(cached.IsFrozen);
+                Assert.NotSame(cached, selected);
+                var firstPixel = new Int32Rect(0, 0, 1, 1);
+                selected.WritePixels(firstPixel, new byte[] { 123 }, 1, 0);
+                byte[] sample = new byte[1];
+                cached.CopyPixels(firstPixel, sample, 1, 0);
+                Assert.Equal(ExpectedGray(0, 0), sample[0]);
+                Assert.Equal(2, loadedCount);
+            });
+
+            HImage oldFrame = oldLease!.Image;
+            Assert.Equal((width, height, width), (oldFrame.cols, oldFrame.rows, oldFrame.stride));
+            Marshal.Copy(oldFrame.pData, pixels, 0, pixels.Length);
+            AssertPixels(pixels, 1);
+        }
+        finally
+        {
+            oldLease?.Dispose();
+            try
+            {
+                Task retirement = WpfTestHost.Invoke(() =>
+                {
+                    view?.Dispose();
+                    CvcieDisplayConfig.Current.DisplayMode = originalMode;
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                });
+                await retirement.WaitAsync(testWait);
+            }
+            finally { File.Delete(path); }
+        }
+
+        static byte ExpectedGray(int index, int channel) => (byte)((index * (channel * 2 + 1) + channel * 37) & 255);
+
+        static void AssertPlane(WriteableBitmap bitmap, int channel, byte[] pixels)
+        {
+            Assert.False(bitmap.IsFrozen);
+            Assert.Equal(PixelFormats.Gray8, bitmap.Format);
+            Assert.Equal((width, height), (bitmap.PixelWidth, bitmap.PixelHeight));
+            bitmap.CopyPixels(pixels, width, 0);
+            AssertPixels(pixels, channel);
+        }
+
+        static void AssertPixels(byte[] pixels, int channel)
+        {
+            for (int index = 0; index < pixels.Length; index++)
+            {
+                byte expected = ExpectedGray(index, channel);
+                if (pixels[index] != expected) Assert.Fail($"Channel {channel}, pixel {index}: expected {expected}, found {pixels[index]}.");
+            }
+        }
+    }
+
+    [Fact]
     public async Task CvcieProbeRendersTheLatestSampleAfterPreparation()
     {
         var ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

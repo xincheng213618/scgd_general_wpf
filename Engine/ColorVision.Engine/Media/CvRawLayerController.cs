@@ -4,6 +4,7 @@ using ColorVision.FileIO;
 using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
+using ColorVision.ImageEditor.Presentation;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -235,23 +236,20 @@ namespace ColorVision.Engine.Media
                 }
 
                 DisplayCache? cache = layer.Id == "cie-srgb" ? _srgbCache : _channelCache;
-                WriteableBitmap bitmap;
-                ImageLayerDescriptor displayedLayer = layer;
-                if (cache != null && cache.LayerId == layer.Id
-                    && (layer.Id != "cie-srgb" || (cache.Mode == mode && cache.White == white)))
-                    bitmap = cache.Bitmap;
-                else
-                    (bitmap, displayedLayer) = await RunLoadAsync(() => LoadLayer(layer, mode, white, selection.Token), selection.Token);
+                (WriteableBitmap Bitmap, ImageLayerDescriptor Layer)? cached = cache != null && cache.LayerId == layer.Id
+                    && (layer.Id != "cie-srgb" || (cache.Mode == mode && cache.White == white)) ? (cache.Bitmap, layer) : null;
+                var (source, display, displayedLayer) = await PrepareLayerAsync(
+                    () => LoadLayer(layer, mode, white, selection.Token), selection.Token, cached);
 
                 if (!IsCurrent(selection)) return;
-                StoreCache(displayedLayer.Id, bitmap, mode, white);
+                StoreCache(displayedLayer.Id, source, mode, white);
                 if (!ReferenceEquals(layer, displayedLayer))
                 {
                     DefaultLayer = displayedLayer;
                     _imageView.SetLayerController(this);
                     if (!IsCurrent(selection)) return;
                 }
-                ShowLayer(bitmap);
+                _imageView.SetDisplayLayerSource(display);
                 if (IsCurrent(selection))
                 {
                     if (displayedLayer.SourceChannelIndex is int channel) _imageView.ExtractChannel(channel);
@@ -271,12 +269,12 @@ namespace ColorVision.Engine.Media
                 Log.Warn($"CVCIE 图层 {layer.Id} 显示失败，回退原图：{_filePath}", ex);
                 try
                 {
-                    var fallback = await RunLoadAsync(() => LoadSourceLayer(Layers[0], selection.Token), selection.Token);
+                    var fallback = await PrepareLayerAsync(() => LoadSourceLayer(Layers[0], selection.Token), selection.Token);
                     if (!IsCurrent(selection)) return;
                     DefaultLayer = fallback.Layer;
                     _imageView.SetLayerController(this);
                     if (!IsCurrent(selection)) return;
-                    ShowLayer(fallback.Bitmap);
+                    _imageView.SetDisplayLayerSource(fallback.Display);
                     if (IsCurrent(selection)) _lastSuccessfulLayer = DefaultLayer;
                 }
                 catch (OperationCanceledException) { }
@@ -302,20 +300,32 @@ namespace ColorVision.Engine.Media
         private bool IsCurrent(CancellationTokenSource selection) => !_disposed && !selection.IsCancellationRequested
             && ReferenceEquals(_selection, selection) && ReferenceEquals(_imageView.ComboBoxLayers.ItemsSource, Layers);
 
-        private async Task<T> RunLoadAsync<T>(Func<T> load, CancellationToken token)
+        private async Task<(WriteableBitmap Source, WriteableBitmap Display, ImageLayerDescriptor Layer)> PrepareLayerAsync(
+            Func<(WriteableBitmap Bitmap, ImageLayerDescriptor Layer)> load, CancellationToken token,
+            (WriteableBitmap Bitmap, ImageLayerDescriptor Layer)? cached = null)
         {
-            // A superseded large read must finish before another payload is allocated in this view.
-            await _loadGate.WaitAsync(token);
+            // Hold the slot through large copies and decoding, while keeping a small cache hit immediate.
+            bool useGate = cached is not { } hit || (hit.Bitmap.IsFrozen && EditableBitmapCopy.ShouldCopyInBackground(hit.Bitmap));
+            if (useGate) await _loadGate.WaitAsync(token);
             try
             {
-                return await Task.Run(() =>
+                var (bitmap, layer) = cached ?? await Task.Run(() =>
                 {
                     // Display loaders may open the path again. Hold this revision until they finish.
                     using FileStream? verified = _fileRevision?.OpenRead(_filePath);
                     return load();
                 }, token);
+                token.ThrowIfCancellationRequested();
+                WriteableBitmap display = bitmap;
+                if (bitmap.IsFrozen)
+                {
+                    display = EditableBitmapCopy.ShouldCopyInBackground(bitmap)
+                        ? await EditableBitmapCopy.CreateAsync(bitmap, token)
+                        : bitmap.Clone();
+                }
+                return (bitmap, display, layer);
             }
-            finally { _loadGate.Release(); }
+            finally { if (useGate) _loadGate.Release(); }
         }
 
         private (WriteableBitmap Bitmap, ImageLayerDescriptor Layer) LoadLayer(ImageLayerDescriptor layer, CvcieBrightnessMode mode, double white, CancellationToken token)
@@ -441,11 +451,6 @@ namespace ColorVision.Engine.Media
             WriteableBitmap bitmap = mat.CreateDisplayBitmap();
             bitmap.Freeze();
             return bitmap;
-        }
-
-        private void ShowLayer(WriteableBitmap writeableBitmap)
-        {
-            _imageView.SetDisplayLayerSource(writeableBitmap.IsFrozen ? writeableBitmap.Clone() : writeableBitmap);
         }
 
         private static IReadOnlyList<ImageLayerDescriptor> BuildLayers(bool isCie, int channelCount, int bpp, bool hasRgbLayers)

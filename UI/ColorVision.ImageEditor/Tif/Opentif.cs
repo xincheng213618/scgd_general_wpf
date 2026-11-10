@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Presentation;
 using Newtonsoft.Json;
 using System;
 using System.Buffers;
@@ -154,48 +155,21 @@ namespace ColorVision.ImageEditor.Tif
             return new DecodedImage(frame, metadata);
         }
 
-        internal static async Task<WriteableBitmap> PrepareDisplayBitmapAsync(BitmapSource source, double dpiX, double dpiY,
+        internal static Task<WriteableBitmap> PrepareDisplayBitmapAsync(BitmapSource source, double dpiX, double dpiY,
             bool normalizeFloat, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var bounds = new Int32Rect(0, 0, source.PixelWidth, source.PixelHeight);
-            WriteableBitmap target = new(bounds.Width, bounds.Height, dpiX, dpiY,
-                normalizeFloat ? PixelFormats.Gray16 : source.Format, normalizeFloat ? null : source.Palette);
-            // Only the UI thread touches the mutable bitmap. The worker fills its
-            // locked, unpublished buffer and must finish before it can be unlocked.
-            target.Lock();
-            try
-            {
-                IntPtr buffer = target.BackBuffer;
-                int stride = target.BackBufferStride;
-                await Task.Run(() =>
+            return EditableBitmapCopy.CreateAsync(bounds.Width, bounds.Height, dpiX, dpiY,
+                normalizeFloat ? PixelFormats.Gray16 : source.Format, normalizeFloat ? null : source.Palette,
+                (buffer, stride) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     if (normalizeFloat)
                         CopyGray32FloatToGray16(source, buffer, stride, cancellationToken);
                     else
-                        CopyDisplayPixels(source, bounds, buffer, stride, cancellationToken);
+                        EditableBitmapCopy.CopyPixels(source, bounds, buffer, stride, cancellationToken);
                 }, cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-                target.AddDirtyRect(bounds);
-            }
-            finally { target.Unlock(); }
-            return target;
-        }
-
-        private static unsafe void CopyDisplayPixels(BitmapSource source, Int32Rect bounds, IntPtr buffer, int stride,
-            CancellationToken cancellationToken)
-        {
-            const int CopyBlockBytes = 8 * 1024 * 1024;
-            int rowsPerBlock = Math.Max(1, CopyBlockBytes / stride);
-            for (int top = 0; top < bounds.Height;)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                int rows = Math.Min(rowsPerBlock, bounds.Height - top);
-                Int32Rect block = new(0, top, bounds.Width, rows);
-                source.CopyPixels(block, (IntPtr)((byte*)buffer + (long)top * stride), checked(stride * rows), stride);
-                top += rows;
-            }
         }
 
         private static unsafe void CopyGray32FloatToGray16(BitmapSource source, IntPtr target, int targetStride, CancellationToken cancellationToken)
