@@ -8408,4 +8408,5 @@
   <data name="Flow_PreProcess_InvalidActionConfig" xml:space="preserve"><value>設定無效</value></data>
   <data name="Flow_PreProcess_InvalidActionConfigHint" xml:space="preserve"><value>無法讀取已儲存的參數。請停用此動作，或移除後重新新增並設定。</value></data>
   <data name="Flow_PreProcess_InvalidEnabledAction" xml:space="preserve"><value>已啟用的前處理動作「{0}」設定無效。請停用或重新設定後再執行。</value></data>
+  <data name="Flow_PreProcess_ConfigUnavailable" xml:space="preserve"><value>無法讀取前處理設定。請還原有效的設定檔，再點選「重新載入」。</value></data>
 </root>

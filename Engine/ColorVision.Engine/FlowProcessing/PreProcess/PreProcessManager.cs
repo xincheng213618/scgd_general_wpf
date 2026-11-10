@@ -88,6 +88,8 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
     public class PreProcessManager : ViewModelBase
     {
+        private enum PersistedLoadOutcome { Loaded, Missing, Failed }
+
         private static readonly ILog log = LogManager.GetLogger(nameof(PreProcessManager));
 
         private const string PersistFileName = "PreProcessConfig.json";
@@ -99,6 +101,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         private readonly Dictionary<string, Type> _processTypesByFullName = new(StringComparer.Ordinal);
         private readonly string _persistFilePath;
         private bool _isLoading;
+        private bool _isConfigurationAvailable = true;
 
         public static PreProcessManager GetInstance() { lock (_locker) { _instance ??= new PreProcessManager(); return _instance; } }
         internal static PreProcessManager? Current { get { lock (_locker) { return _instance; } } }
@@ -108,6 +111,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         public RelayCommand EditCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
+        public RelayCommand ReloadCommand { get; }
         public RelayCommand AddProcessCommand { get; set; }
         public RelayCommand RemoveProcessCommand { get; set; }
         public RelayCommand MoveUpCommand { get; set; }
@@ -122,6 +126,18 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         public string PersistPath => _persistFilePath;
         public int ProcessCount => Processes.Count;
         public int EnabledCount => Processes.Count(p => p.IsEnabled);
+        public bool HasConfigurationLoadFailure => !IsConfigurationAvailable;
+
+        public bool IsConfigurationAvailable
+        {
+            get => _isConfigurationAvailable;
+            private set
+            {
+                if (!SetProperty(ref _isConfigurationAvailable, value)) return;
+                OnPropertyChanged(nameof(HasConfigurationLoadFailure));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
 
         public string LastSaveStatus { get => _LastSaveStatus; private set { _LastSaveStatus = value; OnPropertyChanged(); } }
         private string _LastSaveStatus = Properties.Resources.Flow_PreProcess_NotSaved;
@@ -136,20 +152,23 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             LoadAvailableProcessTypes();
             Processes.CollectionChanged += Processes_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
-            SaveCommand = new RelayCommand(a => SavePersisted());
-            AddProcessCommand = new RelayCommand(a => AddProcess(a), a => a is PreProcessTypeOption || SelectedProcessType != null);
+            SaveCommand = new RelayCommand(a => SavePersisted(), _ => IsConfigurationAvailable);
+            ReloadCommand = new RelayCommand(_ =>
+            {
+                if (HasConfigurationLoadFailure) LoadPersisted(allowMissingForFirstRun: false);
+            }, _ => HasConfigurationLoadFailure);
+            AddProcessCommand = new RelayCommand(a => AddProcess(a), a => IsConfigurationAvailable && (a is PreProcessTypeOption || SelectedProcessType != null));
             RemoveProcessCommand = new RelayCommand(a => RemoveSelectedProcess(), a => SelectedProcess != null);
             MoveUpCommand = new RelayCommand(a => MoveUp(), a => CanMoveUp());
             MoveDownCommand = new RelayCommand(a => MoveDown(), a => CanMoveDown());
 
             SelectedProcessType = AvailableProcessTypes.FirstOrDefault();
-            bool hasPersistedConfig = LoadPersisted();
-            if (!hasPersistedConfig)
+            if (LoadPersisted(allowMissingForFirstRun: true) == PersistedLoadOutcome.Missing)
             {
                 InitializeDefaultProcesses();
             }
 
-            SubscribeAllActions();
+            if (IsConfigurationAvailable) SubscribeAllActions();
             NotifyProcessSummaryChanged();
         }
 
@@ -319,6 +338,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private void AddProcess(object? parameter)
         {
+            if (!IsConfigurationAvailable) return;
             PreProcessTypeOption? option = parameter as PreProcessTypeOption ?? SelectedProcessType;
             if (option == null)
             {
@@ -379,27 +399,30 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
             Processes.Move(index, index + 1);
         }
 
-        private bool LoadPersisted()
+        private PersistedLoadOutcome LoadPersisted(bool allowMissingForFirstRun)
         {
             _isLoading = true;
             try
             {
-                if (!File.Exists(PersistPath))
+                string json;
+                try { json = File.ReadAllText(PersistPath); }
+                catch (Exception error) when (allowMissingForFirstRun && (error is FileNotFoundException or DirectoryNotFoundException))
                 {
                     LastSaveStatus = Properties.Resources.Flow_PreProcess_ConfigNotFound;
-                    return false;
+                    return PersistedLoadOutcome.Missing;
                 }
 
-                string json = File.ReadAllText(PersistPath);
-                var list = JsonConvert.DeserializeObject<List<PreProcessPersist>>(json) ?? new List<PreProcessPersist>();
-
-                Processes.Clear();
+                var list = JsonConvert.DeserializeObject<List<PreProcessPersist?>>(json)
+                    ?? throw new InvalidDataException("The preprocessing configuration must contain an array of actions.");
+                var loadedActions = new List<PreProcessAction>(list.Count);
                 int skippedCount = 0;
 
                 foreach (var item in list)
                 {
-                    if (string.IsNullOrWhiteSpace(item.ProcessTypeFullName)
-                        || !_processTypesByFullName.TryGetValue(item.ProcessTypeFullName, out Type processType))
+                    if (item == null || string.IsNullOrWhiteSpace(item.ProcessTypeFullName))
+                        throw new InvalidDataException("A preprocessing action must identify its processor type.");
+
+                    if (!_processTypesByFullName.TryGetValue(item.ProcessTypeFullName, out Type processType))
                     {
                         skippedCount++;
                         continue;
@@ -412,24 +435,28 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                         continue;
                     }
 
-                    var action = CreateAction(process, item);
-                    Processes.Add(action);
+                    loadedActions.Add(CreateAction(process, item));
                 }
 
+                foreach (var action in Processes) UnsubscribeAction(action);
+                Processes.Clear();
+                foreach (var action in loadedActions) Processes.Add(action);
                 SelectedProcess = Processes.FirstOrDefault();
+                IsConfigurationAvailable = true;
                 if (Processes.Any(action => action.HasInvalidConfiguration))
                     LastSaveStatus = Properties.Resources.Flow_PreProcess_ConfigLoadFailed;
                 else
                     LastSaveStatus = skippedCount > 0
                         ? string.Format(Properties.Resources.Flow_PreProcess_ConfigLoadedWithSkipped, DateTime.Now.ToString("HH:mm:ss"), skippedCount)
                         : string.Format(Properties.Resources.Flow_PreProcess_ConfigLoaded, DateTime.Now.ToString("HH:mm:ss"));
-                return true;
+                return PersistedLoadOutcome.Loaded;
             }
             catch (Exception ex)
             {
                 log.Error("加载预处理配置失败", ex);
-                LastSaveStatus = Properties.Resources.Flow_PreProcess_ConfigLoadFailed;
-                return true;
+                IsConfigurationAvailable = false;
+                LastSaveStatus = EngineLocalization.Get("Flow_PreProcess_ConfigUnavailable");
+                return PersistedLoadOutcome.Failed;
             }
             finally
             {
@@ -466,40 +493,57 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         public void SavePersisted()
         {
+            if (!IsConfigurationAvailable) return;
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(PersistPath)!);
-
-                var list = new List<PreProcessPersist>();
-                foreach (var action in Processes)
+                var list = Processes.Select(action => new PreProcessPersist
                 {
-                    try
-                    {
-                        var persist = new PreProcessPersist
-                        {
-                            ProcessTypeFullName = action.Process.GetType().FullName,
-                            ConfigJson = action.HasInvalidConfiguration
-                                ? action.UnreadableConfigJson
-                                : JsonConvert.SerializeObject(action.Process.GetConfig()),
-                            ActionName = action.ActionName,
-                            IsEnabled = action.IsEnabled
-                        };
-                        list.Add(persist);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Warn($"序列化预处理动作 {action.Process.GetType().Name} 配置失败: {ex.Message}");
-                    }
-                }
+                    ProcessTypeFullName = action.Process.GetType().FullName,
+                    ConfigJson = action.HasInvalidConfiguration
+                        ? action.UnreadableConfigJson
+                        : JsonConvert.SerializeObject(action.Process.GetConfig()),
+                    ActionName = action.ActionName,
+                    IsEnabled = action.IsEnabled
+                }).ToList();
 
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
-                File.WriteAllText(PersistPath, json);
+                WriteConfigAtomically(json);
                 LastSaveStatus = string.Format(Properties.Resources.Flow_PreProcess_AutoSaved, DateTime.Now.ToString("HH:mm:ss"));
             }
             catch (Exception ex)
             {
                 log.Error("保存预处理器配置失败", ex);
                 LastSaveStatus = Properties.Resources.Flow_PreProcess_SaveFailedCheckLog;
+            }
+        }
+
+        private void WriteConfigAtomically(string json)
+        {
+            string directory = Path.GetDirectoryName(PersistPath)!;
+            Directory.CreateDirectory(directory);
+            string temporaryPath = Path.Combine(directory, $".preprocess-config-{Guid.NewGuid():N}.tmp");
+            bool created = false;
+            try
+            {
+                using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    created = true;
+                    using var writer = new StreamWriter(stream);
+                    writer.Write(json);
+                }
+                File.Move(temporaryPath, PersistPath, overwrite: true);
+            }
+            catch
+            {
+                if (created)
+                {
+                    try { File.Delete(temporaryPath); }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                    {
+                        log.Warn($"Failed to remove preprocessing configuration temporary file {temporaryPath}.", error);
+                    }
+                }
+                throw;
             }
         }
 
@@ -511,6 +555,8 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private List<PreProcessAction> GetEnabledActions()
         {
+            if (!IsConfigurationAvailable)
+                throw new InvalidOperationException(EngineLocalization.Get("Flow_PreProcess_ConfigUnavailable"));
             List<PreProcessAction> enabled = Processes.Where(action => action.IsEnabled).ToList();
             if (enabled.Find(action => action.HasInvalidConfiguration) is { } invalid)
                 throw new InvalidOperationException(string.Format(EngineLocalization.Get("Flow_PreProcess_InvalidEnabledAction"), invalid.DisplayName));

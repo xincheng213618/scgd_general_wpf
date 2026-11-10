@@ -3,6 +3,9 @@ using ColorVision.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
 
@@ -159,10 +162,161 @@ public sealed class PreProcessManagerTests
         });
     }
 
+    [Theory]
+    [InlineData("[{")]
+    [InlineData("null")]
+    [InlineData(" ")]
+    [InlineData("[null]")]
+    [InlineData("[{}]")]
+    public async Task UnreadableExistingConfigurationStopsTheFlow(string content)
+    {
+        using var config = new IsolatedConfig();
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(config.Path)!);
+        File.WriteAllText(config.Path, content);
+        var manager = WpfTestHost.Invoke(() => config.Load());
+
+        Assert.False(await WpfTestHost.Invoke(() => manager.ExecuteAsync("Flow", "SN")));
+        Assert.Empty(manager.Processes);
+    }
+
+    [Fact]
+    public async Task ValidEmptyConfigurationStillAllowsExecutionWithoutCreatingDefaults()
+    {
+        using var config = new IsolatedConfig();
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(config.Path)!);
+        File.WriteAllText(config.Path, "[]");
+        var manager = WpfTestHost.Invoke(() => config.Load());
+
+        Assert.Empty(manager.Processes);
+        Assert.True(await WpfTestHost.Invoke(() => manager.ExecuteAsync("Flow", "SN")));
+        Assert.Equal("[]", File.ReadAllText(config.Path));
+    }
+
+    [Fact]
+    public void SavingUnreadableConfigurationPreservesEveryOriginalByte()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var config = new IsolatedConfig();
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(config.Path)!);
+            byte[] broken = [.. new UTF8Encoding(encoderShouldEmitUTF8Identifier: true).GetPreamble(), .. "[\r\n{"u8];
+            File.WriteAllBytes(config.Path, broken);
+            var manager = config.Load();
+
+            manager.SavePersisted();
+
+            Assert.Equal(broken, File.ReadAllBytes(config.Path));
+        });
+    }
+
+    [Fact]
+    public void ReloadButtonRecoversOnlyAfterAReadableConfigurationIsRestored()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var config = new IsolatedConfig();
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(config.Path)!);
+            File.WriteAllText(config.Path, "[");
+            var manager = config.Load();
+            var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
+            Application.Current.Resources.MergedDictionaries.Add(theme);
+            PreProcessManagerWindow? window = null;
+            try
+            {
+                window = new PreProcessManagerWindow { DataContext = manager, ShowActivated = false, Left = -10000, Top = -10000 };
+                window.Show();
+                var reload = Assert.IsType<Button>(window.FindName("ReloadConfigButton"));
+                Assert.Equal(Visibility.Visible, reload.Visibility);
+                Assert.False(manager.SaveCommand.CanExecute(null));
+
+                File.Delete(config.Path);
+                reload.Command.Execute(reload.CommandParameter);
+                Assert.True(manager.HasConfigurationLoadFailure);
+                Assert.False(File.Exists(config.Path));
+
+                File.WriteAllText(config.Path, JsonConvert.SerializeObject(new[]
+                {
+                    new { ProcessTypeFullName = typeof(FolderSizePreProcessor).FullName, ConfigJson = "{}", ActionName = "Restored cleanup", IsEnabled = false }
+                }));
+                using (new FileStream(config.Path, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    reload.Command.Execute(reload.CommandParameter);
+                    Assert.True(manager.HasConfigurationLoadFailure);
+                    Assert.Empty(manager.Processes);
+                }
+
+                reload.Command.Execute(reload.CommandParameter);
+                Assert.False(manager.HasConfigurationLoadFailure);
+                Assert.Equal(Visibility.Collapsed, reload.Visibility);
+                Assert.True(manager.SaveCommand.CanExecute(null));
+                PreProcessAction restored = Assert.Single(manager.Processes);
+                Assert.Equal("Restored cleanup", restored.ActionName);
+                Assert.False(restored.IsEnabled);
+            }
+            finally
+            {
+                window?.Close();
+                Application.Current.Resources.MergedDictionaries.Remove(theme);
+            }
+        });
+    }
+
+    [Fact]
+    public void FailedAtomicReplacementPreservesThePreviousConfigurationAndCanBeRetried()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var config = new IsolatedConfig();
+            string directory = System.IO.Path.GetDirectoryName(config.Path)!;
+            Directory.CreateDirectory(directory);
+            byte[] previous = "[]"u8.ToArray();
+            File.WriteAllBytes(config.Path, previous);
+            var manager = config.Load();
+            var option = Assert.Single(manager.AvailableProcessTypes, item => item.ProcessType == typeof(FolderSizePreProcessor));
+
+            using (File.OpenRead(config.Path))
+            {
+                manager.AddProcessCommand.Execute(option);
+                Assert.Equal(previous, File.ReadAllBytes(config.Path));
+                Assert.Equal(config.Path, Assert.Single(Directory.EnumerateFiles(directory)));
+            }
+
+            manager.SavePersisted();
+            Assert.Single(JArray.Parse(File.ReadAllText(config.Path)));
+            Assert.Equal(config.Path, Assert.Single(Directory.EnumerateFiles(directory)));
+        });
+    }
+
+    [Fact]
+    public void SerializationFailureCannotPublishOnlyPartOfTheConfiguration()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var config = new IsolatedConfig();
+            AssemblyHandler.GetInstance().RegisterAssembly(typeof(CountingPreProcessor).Assembly);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(config.Path)!);
+            byte[] previous = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new[]
+            {
+                new { ProcessTypeFullName = typeof(CountingPreProcessor).FullName, ConfigJson = "{}", ActionName = "First", IsEnabled = true },
+                new { ProcessTypeFullName = typeof(CountingPreProcessor).FullName, ConfigJson = "{}", ActionName = "Second", IsEnabled = true }
+            }));
+            File.WriteAllBytes(config.Path, previous);
+            var manager = config.Load();
+            Assert.IsType<CountingPreProcessor>(manager.Processes[1].Process).FailConfigRead = true;
+
+            manager.SavePersisted();
+
+            Assert.Equal(previous, File.ReadAllBytes(config.Path));
+        });
+    }
+
     [PreProcess("Counting test action")]
     public class CountingPreProcessor : IPreProcessor
     {
         public int Executions { get; private set; }
+        public bool FailConfigRead { get; set; }
+
+        public virtual object? GetConfig() => FailConfigRead ? throw new InvalidOperationException("Cannot read test configuration.") : null;
 
         public Task<bool> PreProcess(PreProcessContext ctx)
         {
@@ -176,7 +330,7 @@ public sealed class PreProcessManagerTests
     {
         public int Marker { get; private set; }
 
-        public object GetConfig() => new { Marker };
+        public override object GetConfig() => new { Marker };
 
         public void SetConfig(string configJson)
         {

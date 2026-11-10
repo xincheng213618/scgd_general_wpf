@@ -17,6 +17,7 @@
     <Window.Resources>
         <local:PreTypeNameConverter x:Key="TypeNameConverter"/>
         <local:PreProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
+        <local:PreBoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
 
         <Style x:Key="PreProcessTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}">
             <Setter Property="Template">
@@ -50,7 +51,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0" IsEnabled="{Binding IsConfigurationAvailable}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="410" MinWidth="340"/>
                 <ColumnDefinition Width="8"/>
@@ -193,9 +194,11 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Text="{Binding LastSaveStatus}" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" ToolTip="{Binding PersistPath}"/>
+            <TextBlock Text="{Binding LastSaveStatus}" TextWrapping="Wrap" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" ToolTip="{Binding PersistPath}"/>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="ReloadConfigButton" Content="{x:Static properties:Resources.重新加载}" MinWidth="86" Padding="14,5" Margin="0,0,8,0"
+                        Command="{Binding ReloadCommand}" Visibility="{Binding HasConfigurationLoadFailure, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 <Button Content="{x:Static properties:Resources.Flow_PreProcess_SaveNow}" MinWidth="86" Padding="14,5" Command="{Binding SaveCommand}"/>
                 <Button Content="{x:Static properties:Resources.Close}" MinWidth="90" Padding="18,5" Margin="8,0,0,0" Click="CloseButton_Click"/>
             </StackPanel>
