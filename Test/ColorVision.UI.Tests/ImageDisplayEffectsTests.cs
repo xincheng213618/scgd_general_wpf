@@ -113,6 +113,71 @@ public sealed class ImageDisplayEffectsTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task ContinuousPseudoColorMatchesNativePackedOutputForPaddedCameraFrames(bool color, bool autoRange)
+    {
+        const int width = 5, height = 3;
+        int sourceStride = width * (color ? 6 : 2);
+        byte[] sourcePixels = new byte[sourceStride * height];
+        new Random(1729).NextBytes(sourcePixels);
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture { SelectedChannel = color ? 2 : 0 });
+        try
+        {
+            var (source, request, completion) = WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap bitmap = new(width, height, 110, 120, color ? PixelFormats.Rgb48 : PixelFormats.Gray16, null);
+                bitmap.WritePixels(new Int32Rect(0, 0, width, height), sourcePixels, sourceStride, 0);
+                bitmap.Freeze();
+                Assert.True(bitmap.BackBufferStride > sourceStride);
+                fixture.Source = bitmap;
+                fixture.Context.Presentation.Publish(bitmap, null);
+                fixture.State.SliderMaximum = 65535;
+                fixture.State.SliderValueStart = 500;
+                fixture.State.SliderValueEnd = 50000;
+                fixture.State.IsAutoSetRange = autoRange;
+                fixture.State.DataMin = 1000;
+                fixture.State.DataMax = 60000;
+                fixture.State.IsEnabled = true;
+                fixture.Context.DisplayEffects.Invalidate();
+                Assert.True(fixture.Context.DisplayEffects.TryCapturePseudoColorRequest(out var settings));
+                Assert.Equal(autoRange, settings.HasValidAutoRange);
+                fixture.Context.StreamPresentation.Submit(bitmap, Guid.NewGuid());
+                return (bitmap, settings, fixture.Context.StreamPresentation.Completion);
+            });
+            await completion.WaitAsync(TimeSpan.FromSeconds(10));
+
+            using HImage packedSource = source.ToHImage();
+            int status = autoRange
+                ? OpenCVMediaHelper.ApplyPseudoColorAutoRange(packedSource, out HImage packedDisplay, request.Min, request.Max, request.ColormapTypes, request.Channel, request.DataMin, request.DataMax)
+                : OpenCVMediaHelper.ApplyPseudoColor(packedSource, out packedDisplay, request.Min, request.Max, request.ColormapTypes, request.Channel);
+            using (packedDisplay)
+            {
+                Assert.Equal(0, status);
+                byte[] expected = new byte[width * height * 3];
+                Marshal.Copy(packedDisplay.pData, expected, 0, expected.Length);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Same(source, fixture.Context.ViewBitmapSource);
+                    var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                    Assert.True(display.IsFrozen);
+                    Assert.Equal(PixelFormats.Bgr24, display.Format);
+                    Assert.Equal((96.0, 96.0), (display.DpiX, display.DpiY));
+                    byte[] actual = new byte[expected.Length];
+                    display.CopyPixels(actual, width * 3, 0);
+                    Assert.Equal(expected, actual);
+                    byte[] retainedSource = new byte[sourcePixels.Length];
+                    source.CopyPixels(retainedSource, sourceStride, 0);
+                    Assert.Equal(sourcePixels, retainedSource);
+                });
+            }
+        }
+        finally { WpfTestHost.Invoke(fixture.Dispose); }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task ContinuousPseudoColorPublishesIndependentWorkerSnapshotsAndRejectsResetWork(bool reset)

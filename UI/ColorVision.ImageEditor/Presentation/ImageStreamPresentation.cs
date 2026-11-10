@@ -4,6 +4,8 @@ using ColorVision.ImageEditor.Documents;
 using log4net;
 using System;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Presentation;
@@ -23,7 +25,7 @@ public sealed class ImageStreamPresentation : IDisposable
 {
     private static readonly ILog Log = LogManager.GetLogger(typeof(ImageStreamPresentation));
     private readonly ImageProcessingContext _context;
-    private readonly Func<HImage, PseudoColorFrameRequest, HImage> _process;
+    private readonly Func<HImage, PseudoColorFrameRequest, HImage>? _process;
     private FrameWork? _pending;
     private WriteableBitmap? _latestSource;
     private BitmapSource? _latestRenderProxy;
@@ -43,9 +45,9 @@ public sealed class ImageStreamPresentation : IDisposable
     private sealed record FrameWork(WriteableBitmap Source, PseudoColorFrameRequest? Settings, int Channel, long Epoch, long Sequence);
 
     internal ImageStreamPresentation(ImageProcessingContext context)
-        : this(context, ProcessPseudoColor) { }
+        : this(context, null) { }
 
-    internal ImageStreamPresentation(ImageProcessingContext context, Func<HImage, PseudoColorFrameRequest, HImage> process)
+    internal ImageStreamPresentation(ImageProcessingContext context, Func<HImage, PseudoColorFrameRequest, HImage>? process)
     {
         _context = context;
         _process = process;
@@ -164,13 +166,7 @@ public sealed class ImageStreamPresentation : IDisposable
                 {
                     (WriteableBitmap display, BitmapSource? displayProxy) = await Task.Run(() =>
                     {
-                        using HImage source = work.Source.ToHImage();
-                        using HImage output = work.Settings is PseudoColorFrameRequest settings
-                            ? _process(source, settings)
-                            : ExtractChannel(source, work.Channel);
-                        // Copy and freeze on the worker too. Large pseudo-color outputs must
-                        // not reintroduce a full-frame UI copy after native processing finishes.
-                        var bitmap = output.ToWriteableBitmap();
+                        WriteableBitmap bitmap = PrepareDisplayBitmap(work);
                         bitmap.Freeze();
                         return (bitmap, (BitmapSource?)ImageRenderProxy.TryCreate(bitmap));
                     }).ConfigureAwait(false);
@@ -269,6 +265,44 @@ public sealed class ImageStreamPresentation : IDisposable
         if (status == 0) return output;
         output.Dispose();
         throw new InvalidOperationException($"Channel extraction failed with status {status}.");
+    }
+
+    private WriteableBitmap PrepareDisplayBitmap(FrameWork work)
+    {
+        PixelFormat format = work.Source.Format;
+        if (_process == null && work.Settings is PseudoColorFrameRequest request && work.Source.IsFrozen
+            && (format == PixelFormats.Gray8 || format == PixelFormats.Gray16 || format == PixelFormats.Bgr24
+                || format == PixelFormats.Rgb48 || format == PixelFormats.Bgra32))
+            return PreparePseudoColorBitmap(work.Source, request);
+
+        using HImage source = work.Source.ToHImage();
+        using HImage output = work.Settings is PseudoColorFrameRequest settings
+            ? (_process ?? ProcessPseudoColor)(source, settings)
+            : ExtractChannel(source, work.Channel);
+        return output.ToWriteableBitmap();
+    }
+
+    private static WriteableBitmap PreparePseudoColorBitmap(WriteableBitmap source, PseudoColorFrameRequest request)
+    {
+        // The native Into methods read the frozen source and write only to this private bitmap.
+        using HImage input = source.ForHImage();
+        WriteableBitmap bitmap = new(source.PixelWidth, source.PixelHeight, 96, 96, PixelFormats.Bgr24, null);
+        bitmap.Lock();
+        try
+        {
+            using HImage output = bitmap.ForHImage();
+            int status = request.HasValidAutoRange
+                ? OpenCVMediaHelper.M_PseudoColorAutoRangeInto(input, output, request.Min, request.Max, request.ColormapTypes, request.Channel, request.DataMin, request.DataMax)
+                : OpenCVMediaHelper.M_PseudoColorInto(input, output, request.Min, request.Max, request.ColormapTypes, request.Channel);
+            if (status != 0) throw new InvalidOperationException($"Pseudo-color processing failed with status {status}.");
+            bitmap.AddDirtyRect(new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
+        }
+        finally
+        {
+            GC.KeepAlive(source);
+            bitmap.Unlock();
+        }
+        return bitmap;
     }
 
     private static HImage ProcessPseudoColor(HImage source, PseudoColorFrameRequest request)
