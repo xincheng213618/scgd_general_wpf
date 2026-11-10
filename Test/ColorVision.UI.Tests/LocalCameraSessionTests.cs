@@ -432,6 +432,69 @@ public class LocalCameraSessionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void PreviewOwnerCanRetryFailedNativeDetachWithoutStoppingTheReplacement(bool closeCamera)
+    {
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        int stops = 0, replacementStops = 0;
+        Action owner = () => stops++;
+        Action replacement = () => replacementStops++;
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, owner);
+        native.Events.Clear();
+
+        var failure = new InvalidOperationException("simulated detach failure");
+        native.DetachError = failure;
+        try { Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => session.StopPreview(owner, closeCamera: false))); }
+        finally { native.DetachError = null; }
+        Assert.Equal(1, stops);
+        Assert.True(session.IsOpen);
+        Assert.False(session.TryRestartPreview(owner, _ => throw new Xunit.Sdk.XunitException("A retired owner must not restart preview.")));
+
+        session.StopPreview(owner, closeCamera);
+        Assert.Equal(1, stops);
+        Assert.Equal(new[] { "detach", "detach" }, native.Events);
+        Assert.Equal(closeCamera ? 1 : 0, native.Closes);
+        Assert.Equal(!closeCamera, session.IsOpen);
+
+        if (closeCamera) session.Open("camera-1", TakeImageMode.Live, 8);
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, replacement);
+        native.Events.Clear();
+        session.StopPreview(owner, closeCamera: true);
+        Assert.Empty(native.Events);
+        Assert.Equal(0, replacementStops);
+        Assert.True(session.IsOpen);
+    }
+
+    [Fact]
+    public void PreviewOwnerCanRetryFailedNativeCloseWithoutRepeatingSuccessfulDetach()
+    {
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        int stops = 0;
+        Action owner = () => stops++;
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, owner);
+        native.Events.Clear();
+
+        var failure = new InvalidOperationException("simulated close failure");
+        native.CloseError = failure;
+        try { Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => session.StopPreview(owner, closeCamera: true))); }
+        finally { native.CloseError = null; }
+        Assert.Equal(1, stops);
+        Assert.True(session.IsOpen);
+        Assert.False(session.TryRestartPreview(owner, _ => throw new Xunit.Sdk.XunitException("A detached owner must not restart preview.")));
+
+        session.StopPreview(owner, closeCamera: true);
+        Assert.Equal(1, stops);
+        Assert.Equal(new[] { "detach" }, native.Events);
+        Assert.Equal(2, native.Closes);
+        Assert.False(session.IsOpen);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ClosedSessionHonorsAutoConnectAndNormalizesLivePreference(bool autoConnect)
     {
         var native = new FakeNative();
@@ -960,6 +1023,7 @@ public class LocalCameraSessionTests
         public bool FailDiscovery { get; init; }
         public bool IgnoreClose { get; set; }
         public Exception? CloseError { get; set; }
+        public Exception? DetachError { get; set; }
         public int Releases;
         public int Scans, Initializations, Opens, Closes, Switches;
         public int MeasurementPreparations;
@@ -1011,7 +1075,11 @@ public class LocalCameraSessionTests
             if (CloseError != null) throw CloseError;
             if (!IgnoreClose) opened = false;
         }
-        public void DetachCallback(IntPtr handle) { Events.Add("detach"); }
+        public void DetachCallback(IntPtr handle)
+        {
+            Events.Add("detach");
+            if (DetachError != null) throw DetachError;
+        }
         public bool UpdateCalibration(IntPtr handle, string json) => true;
         public void Release(IntPtr handle) { Releases++; }
     }

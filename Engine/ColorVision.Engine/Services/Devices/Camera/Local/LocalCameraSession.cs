@@ -39,6 +39,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private IntPtr handle;
         private string? loadedCalibrationJson;
         private Action? stopPreview;
+        private Action? retiringPreviewOwner;
+        private bool retiredPreviewDetached;
         private bool disposed;
         private bool identitySavePending;
         private bool filterWheelPrepared;
@@ -291,6 +293,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     // Keep the existing preview intact if first-time CFW preparation fails.
                     PrepareMeasurement(mode);
                     DetachPreviewCore();
+                    CompletePreviewRetirement();
                     int result = native.SwitchMode(handle, mode, imageBpp);
                     if (result == cvErrorDefine.CV_ERR_CAM_TYPE_NOT)
                     {
@@ -328,6 +331,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 if (OpenedMode != TakeImageMode.Live) throw new InvalidOperationException("本地视频需要 Live 会话。");
                 DetachPreviewCore();
+                CompletePreviewRetirement();
                 int result = register(manager);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS)
                 {
@@ -346,9 +350,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             Action? stopped = stopPreview;
             stopPreview = null;
-            if (stopped == null && OpenedMode != TakeImageMode.Live) return;
+            if (stopped == null && (retiredPreviewDetached || (retiringPreviewOwner == null && OpenedMode != TakeImageMode.Live))) return;
             try { stopped?.Invoke(); }
-            finally { native.DetachCallback(handle); }
+            finally
+            {
+                // Retire the managed callback once, while keeping its owner eligible to retry
+                // native detach or the subsequent camera close if either operation fails.
+                if (stopped != null) retiringPreviewOwner = stopped;
+                native.DetachCallback(handle);
+                retiredPreviewDetached = retiringPreviewOwner != null;
+            }
+        }
+
+        private void CompletePreviewRetirement()
+        {
+            retiringPreviewOwner = null;
+            retiredPreviewDetached = false;
         }
 
         internal bool TryRestartPreview(Action owner, Func<IntPtr, int> register)
@@ -461,6 +478,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (handle != IntPtr.Zero && native.IsOpen(handle))
                 {
                     DetachPreviewCore();
+                    CompletePreviewRetirement();
                 }
             }
         }
@@ -470,13 +488,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (SyncRoot)
             {
-                if (stopPreview != owner) return;
+                if (stopPreview != owner && retiringPreviewOwner != owner) return;
                 if (closeCamera) Close(unregisterCallback: true);
-                else if (IsOpen) DetachPreviewCore();
+                else if (IsOpen)
+                {
+                    DetachPreviewCore();
+                    CompletePreviewRetirement();
+                }
                 else
                 {
+                    Action? stopped = stopPreview;
                     stopPreview = null;
-                    owner();
+                    CompletePreviewRetirement();
+                    stopped?.Invoke();
                 }
             }
         }
@@ -539,6 +563,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             bool isOpen = IsOpen;
             if (!isOpen)
             {
+                CompletePreviewRetirement();
                 filterWheelPrepared = false;
                 RawBufferPool.Dispose();
                 try { motor.Close(); }
@@ -581,6 +606,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     finally
                     {
                         handle = IntPtr.Zero;
+                        CompletePreviewRetirement();
                         backend.SetLocalStatus(DeviceStatusType.Closed);
                     }
                 }
