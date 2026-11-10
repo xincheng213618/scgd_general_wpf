@@ -818,6 +818,34 @@ namespace ColorVision.Engine.Media
             return (buffer.Channels, results);
         }
 
+        private async Task<(int Channels, PoiMeasurementResult[] Results)> CalculateViewPoiAsync(
+            List<ViewPoiRequest> regions, CancellationToken token)
+        {
+            CvcieFileMeasurements? file;
+            lock (_bufferSync)
+            {
+                file = _measurementBuffer == null && _fileMeasurementTask is not { IsCompleted: false }
+                    ? _fileMeasurements : null;
+            }
+
+            if (file != null)
+            {
+                var requests = regions.Select(region => new CvcieFilePoiRequest(region.MeasurementPoint, region.Region, region.Point.Name)).ToArray();
+                var sparse = await Task.Run(() => file.TryCalculateSparse(requests, token), token);
+                token.ThrowIfCancellationRequested();
+                if (!ReferenceEquals(file, _fileMeasurements)) throw new OperationCanceledException(token);
+                if (sparse is { } measured) return measured;
+            }
+
+            PoiMeasurementBuffer buffer = await PrepareMeasurementAsync();
+            token.ThrowIfCancellationRequested();
+            if (!ReferenceEquals(buffer, _measurementBuffer)) throw new OperationCanceledException(token);
+            using PoiMeasurementBuffer? snapshot = buffer.SharePlanarData();
+            return snapshot == null
+                ? CalculateViewPoi(buffer, regions, token)
+                : await Task.Run(() => CalculateViewPoi(snapshot, regions, token), token);
+        }
+
         private static PoiPoint CreateCirclePoint(string name, int x, int y, int diameter)
             => new()
             {
@@ -876,12 +904,7 @@ namespace ColorVision.Engine.Media
                 List<ViewPoiRequest> regions = CreateViewPoiRequests();
                 if (regions.Count == 0) throw new ArgumentException("请先绘制圆、椭圆、矩形或闭合多边形；开放折线需要先闭合。");
 
-                PoiMeasurementBuffer buffer = await PrepareMeasurementAsync();
-                if (!IsCurrent() || !ReferenceEquals(buffer, _measurementBuffer)) return;
-                using PoiMeasurementBuffer? snapshot = buffer.SharePlanarData();
-                (int channels, PoiMeasurementResult[] measurements) = snapshot == null
-                    ? CalculateViewPoi(buffer, regions, token)
-                    : await Task.Run(() => CalculateViewPoi(snapshot, regions, token), token);
+                (int channels, PoiMeasurementResult[] measurements) = await CalculateViewPoiAsync(regions, token);
                 if (!IsCurrent()) return;
 
                 // Results describe the regions captured at command time. Only unchanged drawings receive labels.

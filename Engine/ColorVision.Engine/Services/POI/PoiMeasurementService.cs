@@ -114,12 +114,12 @@ namespace ColorVision.Engine.Services.POI
                 region.GetRuns(buffer.Width, buffer.Height), preserveNonPositiveValues));
         }
 
-        internal static PoiMeasurementResult CalculateCroppedEllipse(IntPtr pointer, int width, int height, int channels,
-            PoiMeasurementPoint point, System.Windows.Int32Rect crop)
-            => CalculateRegionCore(pointer, crop.Width, crop.Height, channels, GetEllipseRuns(point, width, height),
-                preserveNonPositiveValues: false, offsetX: crop.X, offsetY: crop.Y);
+        internal static PoiMeasurementResult CalculateCroppedRegion(IntPtr pointer, int channels, System.Windows.Int32Rect crop,
+            IEnumerable<PixelRowRun> originalRuns, bool preserveNonPositiveValues)
+            => CalculateRegionCore(pointer, crop.Width, crop.Height, channels, originalRuns,
+                preserveNonPositiveValues, offsetX: crop.X, offsetY: crop.Y);
 
-        private static IEnumerable<PixelRowRun> GetEllipseRuns(PoiMeasurementPoint point, int width, int height)
+        internal static IEnumerable<PixelRowRun> GetEllipseRuns(PoiMeasurementPoint point, int width, int height)
             => ClosedPixelRegion.Ellipse(new System.Windows.Point(point.X, point.Y), point.Width / 2.0, point.Height / 2.0)
                 .GetRuns(width, height);
 
@@ -233,7 +233,7 @@ namespace ColorVision.Engine.Services.POI
             return ConvertResults(results);
         }
 
-        private static PoiMeasurementResult[] CalculateCore(
+        internal static PoiMeasurementResult[] CalculateCore(
             IntPtr cieData,
             long cieByteLength,
             int width,

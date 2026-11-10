@@ -404,6 +404,108 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         });
     }
 
+    [Fact]
+    public async Task SparseViewPoiKeepsDiskPixelsUnloadedUntilADenseMeasurementNeedsThem()
+    {
+        const int width = 1024, height = 1024, planePixels = width * height;
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-view-poi-sparse-{Guid.NewGuid():N}.cvcie");
+        ImageView? view = null;
+        CVRawOpen? opener = null;
+        Window? previousMainWindow = null;
+        HashSet<WindowCVCIE>? previousWindows = null;
+        bool previousClamp = true;
+        FieldInfo bufferField = typeof(CalibratedImageCapability).GetField("_measurementBuffer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            using (CVCIEFile file = new()
+            {
+                Version = 2, FileExtType = CVType.CIE, Rows = height, Cols = width,
+                Bpp = 32, Channels = 3, Exp = [1, 1, 1], Data = CreateSamples(),
+            })
+                Assert.True(CVFileUtil.WriteCIEFile(path, file));
+
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                previousMainWindow = Application.Current.MainWindow;
+                previousWindows = Application.Current.Windows.OfType<WindowCVCIE>().ToHashSet();
+                previousClamp = CVCIEShowConfig.Instance.ClampNonPositiveValues;
+                CVCIEShowConfig.Instance.ClampNonPositiveValues = false;
+                view = new ImageView();
+                opener = new CVRawOpen(view.EditorContext);
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = opener;
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            }).WaitAsync(timeout);
+
+            await WpfTestHost.Invoke(() =>
+            {
+                view!.EditorContext.DrawingVisualLists.Add(new DVCircleText(new CircleTextProperties
+                {
+                    Text = "small", Center = new Point(80, 90), Radius = 5,
+                }));
+                return opener!.ShowViewPoiAsync();
+            }).WaitAsync(timeout);
+
+            await WpfTestHost.Invoke(() =>
+            {
+                Assert.Null(bufferField.GetValue(opener));
+                VerifyResultAndClose();
+                view!.EditorContext.DrawingVisualLists.Clear();
+                view.EditorContext.DrawingVisualLists.Add(new DVRectangle(new RectangleProperties
+                {
+                    Rect = new Rect(0, 0, width, height),
+                }));
+                return opener!.ShowViewPoiAsync();
+            }).WaitAsync(timeout);
+
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.IsType<PoiMeasurementBuffer>(bufferField.GetValue(opener));
+                VerifyResultAndClose();
+            });
+        }
+        finally
+        {
+            try
+            {
+                await WpfTestHost.Invoke(() =>
+                {
+                    if (previousWindows != null)
+                    {
+                        foreach (var window in Application.Current.Windows.OfType<WindowCVCIE>().Except(previousWindows).ToArray())
+                            window.Close();
+                        CVCIEShowConfig.Instance.ClampNonPositiveValues = previousClamp;
+                        Application.Current.MainWindow = previousMainWindow;
+                    }
+                    view?.Dispose();
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                }).WaitAsync(timeout);
+            }
+            finally { File.Delete(path); }
+        }
+
+        void VerifyResultAndClose()
+        {
+            var window = Assert.Single(Application.Current.Windows.OfType<WindowCVCIE>().Except(previousWindows!));
+            var row = Assert.Single(window.PoiResultCIExyuvDatas);
+            Assert.Equal((-2d, 4d, 6d), (row.X, row.Y, row.Z));
+            window.Close();
+            Application.Current.MainWindow = previousMainWindow;
+        }
+
+        static byte[] CreateSamples()
+        {
+            byte[] data = new byte[3 * planePixels * sizeof(float)];
+            Span<float> samples = MemoryMarshal.Cast<byte, float>(data.AsSpan());
+            samples[..planePixels].Fill(-2f);
+            samples.Slice(planePixels, planePixels).Fill(4f);
+            samples[(2 * planePixels)..].Fill(6f);
+            return data;
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -2774,6 +2876,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         application.Resources["ToolBarBaseStyle"] = new Style(typeof(ToolBar));
         application.Resources["ToolBarImage"] = new Style(typeof(Image));
         application.Resources["BaseStyle"] = new Style(typeof(Control));
+        application.Resources["InputElementBaseStyle"] ??= new Style(typeof(Control));
         application.Resources["RangeSliderBaseStyle"] = new Style(typeof(HandyControl.Controls.RangeSlider));
         application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
     }
