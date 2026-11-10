@@ -285,7 +285,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             // The writer consumes this span before returning, including cache-only saves.
             // The frame lease covers the entire save call.
-            stream.Write(new ReadOnlySpan<byte>(source.ToPointer(), length));
+            ReadOnlySpan<byte> pixels = new(source.ToPointer(), length);
+            if (stream is FileStream)
+            {
+                while (pixels.Length > CopyBufferSize)
+                {
+                    stream.Write(pixels[..CopyBufferSize]);
+                    pixels = pixels[CopyBufferSize..];
+                }
+            }
+            stream.Write(pixels);
         }
     }
 }

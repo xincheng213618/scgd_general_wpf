@@ -16,20 +16,32 @@ public sealed class CvRawSaveModeTests
         Assert.Equal(CVFileSaveMode.MemoryOnly, node.SaveMode);
     }
 
-    [Fact]
-    public void DisabledFileCacheKeepsSavedPixelsOnDiskWithoutRetainingAFileSlot()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CaptureSavesCompleteNativeFrameWithOrWithoutFileCache(bool cacheEnabled)
     {
         using CacheScope scope = new();
-        CVFileReadCache.IsEnabled = false;
+        CVFileReadCache.IsEnabled = cacheEnabled;
+        const int width = 1025, height = 1025;
+        byte[] pixels = new byte[width * height];
+        new Random(6819).NextBytes(pixels);
         using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
         {
-            Width = 3, Height = 2, SourceBpp = 8, Channels = 1, Exposure = [10]
-        }, 6, 0);
-        byte[] pixels = [1, 2, 3, 4, 5, 6];
+            Width = width, Height = height, SourceBpp = 8, Channels = 1, Exposure = [10]
+        }, pixels.Length, 0);
         using (var lease = frame.Acquire()) System.Runtime.InteropServices.Marshal.Copy(pixels, 0, lease.RawPointer, pixels.Length);
+
         LocalFrameFileService.SaveCapture(frame, scope.Path);
-        AssertPixels(scope.Path, pixels);
+
+        if (cacheEnabled)
+        {
+            Assert.Equal(new FileInfo(scope.Path).Length, CVFileReadCache.GetCachedLength(scope.Path));
+            AssertPixels(scope.Path, pixels);
+            CVFileReadCache.IsEnabled = false;
+        }
         Assert.Equal(0, CVFileReadCache.GetSnapshot().CapacityBytes);
+        AssertPixels(scope.Path, pixels);
         Assert.Equal(scope.Path, frame.CvRawFilePath);
     }
 
