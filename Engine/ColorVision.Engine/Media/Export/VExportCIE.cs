@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 
 namespace ColorVision.Engine.Media
@@ -139,24 +140,13 @@ namespace ColorVision.Engine.Media
             return Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), data);
         }
 
-        private static Mat CreateChannelMat(CVCIEFile fileInfo, int channelIndex, IntPtr pixels)
-        {
-            int len = GetSingleChannelByteCount(fileInfo);
-            int offset = checked(channelIndex * len);
-            if (fileInfo.Data == null || fileInfo.Data.LongLength < (long)offset + len)
-            {
-                throw new InvalidDataException($"CIE data length is insufficient for channel {channelIndex}.");
-            }
-
-            ValidateImageBuffer(fileInfo, 1, fileInfo.Data);
-            return Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), IntPtr.Add(pixels, offset));
-        }
-
         private static int GetSingleChannelByteCount(CVCIEFile fileInfo)
         {
+            if (fileInfo.Rows <= 0 || fileInfo.Cols <= 0)
+                throw new InvalidDataException($"Invalid image size: {fileInfo.Rows}x{fileInfo.Cols}.");
             int bytesPerPixel = GetBytesPerPixel(fileInfo.Bpp);
             long count = checked((long)fileInfo.Cols * fileInfo.Rows * bytesPerPixel);
-            if (count > int.MaxValue)
+            if (count > Array.MaxLength)
             {
                 throw new InvalidDataException("Image channel data is too large.");
             }
@@ -295,16 +285,22 @@ namespace ColorVision.Engine.Media
             if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 throw new InvalidOperationException($"The export file name contains invalid characters: {name}");
 
-            int index = CVFileUtil.ReadCIEFileHeader(fileName, out CVCIEFile cvcie);
-            if (index < 0)
-                throw new InvalidDataException($"Unable to read the CIE file header: {fileName}");
-
             string extension = Path.GetExtension(fileName);
-            cvcie.FileExtType = extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase)
+            CVType fileType = extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase)
                 ? CVType.Raw
                 : extension.Equals(".cvsrc", StringComparison.OrdinalIgnoreCase)
                     ? CVType.Src
                     : CVType.CIE;
+            // Embedded channels and their header come from one disk snapshot. RAW retains its cache-backed path.
+            using FileStream? cieStream = fileType == CVType.CIE
+                ? new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
+            int index = cieStream == null ? CVFileUtil.ReadCIEFileHeader(fileName, out CVCIEFile cvcie)
+                : CVFileUtil.ReadCIEFileHeader(cieStream, out cvcie);
+            using var headerLifetime = cvcie;
+            if (index < 0)
+                throw new InvalidDataException($"Unable to read the CIE file header: {fileName}");
+            cvcie.FileExtType = fileType;
+            cvcie.FilePath = fileName;
 
             ColorCalibrationSnapshot? recordedCalibration = ReadCalibration(fileName, cvcie);
             ColorCalibrationSnapshot? calibration = recordedCalibration?.CanReplay == true ? recordedCalibration : null;
@@ -403,49 +399,23 @@ namespace ColorVision.Engine.Media
                         }
 
                     }
-                    if ((export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ)
-                        && CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
+                    bool hasSelectedPlane = cvcie.Channels == 1 ? export.IsExportChannelY
+                        : cvcie.Channels == 3 && (export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ);
+                    if (hasSelectedPlane && CvcieDiskPixels.TryLocate(cieStream!, cvcie, index, out long declaredLength) is { } pixels)
                     {
-                        if (cvcie.Channels == 1)
+                        int planeBytes = GetSingleChannelByteCount(cvcie);
+                        if (declaredLength < (long)planeBytes * cvcie.Channels)
+                            throw new InvalidDataException($"CIE data length is insufficient for the complete image: {fileName}");
+
+                        byte[] plane = GC.AllocateUninitializedArray<byte>(planeBytes);
+                        for (int channel = 0; channel < cvcie.Channels; channel++)
                         {
-                            if (export.IsExportChannelY)
-                            {
-                                using (src = CreateSingleChannelMat(cvcie, cvcie.Data))
-                                {
-                                    SaveImage(src, "_Y", cvcie, "Y");
-                                }
-                            }
-                        }
-                        else if (cvcie.Channels == 3)
-                        {
-                            // Views borrow the selected planes; keep the payload pinned through synchronous encoding.
-                            GCHandle pixels = GCHandle.Alloc(cvcie.Data, GCHandleType.Pinned);
-                            try
-                            {
-                                IntPtr start = pixels.AddrOfPinnedObject();
-                                if (export.IsExportChannelX)
-                                {
-                                    using (src = CreateChannelMat(cvcie, 0, start))
-                                    {
-                                        SaveImage(src, "_X", cvcie, "X");
-                                    }
-                                }
-                                if (export.IsExportChannelY)
-                                {
-                                    using (src = CreateChannelMat(cvcie, 1, start))
-                                    {
-                                        SaveImage(src, "_Y", cvcie, "Y");
-                                    }
-                                }
-                                if (export.IsExportChannelZ)
-                                {
-                                    using (src = CreateChannelMat(cvcie, 2, start))
-                                    {
-                                        SaveImage(src, "_Z", cvcie, "Z");
-                                    }
-                                }
-                            }
-                            finally { pixels.Free(); }
+                            string channelName = cvcie.Channels == 1 ? "Y" : channel == 0 ? "X" : channel == 1 ? "Y" : "Z";
+                            bool selected = channelName == "X" ? export.IsExportChannelX : channelName == "Y" ? export.IsExportChannelY : export.IsExportChannelZ;
+                            if (!selected) continue;
+                            pixels.ReadExactly(plane, (long)channel * planeBytes, CancellationToken.None);
+                            using Mat channelImage = CreateSingleChannelMat(cvcie, plane);
+                            SaveImage(channelImage, "_" + channelName, cvcie, channelName);
                         }
                     }
                     break;

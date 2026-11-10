@@ -15,21 +15,28 @@ internal readonly record struct CvcieDiskPixels(SafeFileHandle Handle, long Offs
 {
     public static CvcieDiskPixels Locate(FileStream stream, CVCIEFile header, int headerEnd, long requiredBytes, bool requireExactLength)
     {
+        CvcieDiskPixels? pixels = TryLocate(stream, header, headerEnd, out long declared);
+        if (pixels == null || requiredBytes <= 0 || declared < requiredBytes || (requireExactLength && declared != requiredBytes))
+            throw new InvalidDataException("CVCIE 内嵌数据长度与图像布局不匹配。");
+        return pixels.Value;
+    }
+
+    public static CvcieDiskPixels? TryLocate(FileStream stream, CVCIEFile header, int headerEnd, out long declared)
+    {
+        declared = 0;
         int prefixLength = header.Version == 2 ? sizeof(long) : sizeof(int);
         if (headerEnd <= 0 || stream.Length - headerEnd < prefixLength)
-            throw new InvalidDataException("CVCIE 内嵌数据缺少长度字段。");
+            return null;
 
         stream.Position = headerEnd;
         using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
-        long declared = header.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
+        declared = header.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
         long payloadStart = stream.Position;
-        if (requiredBytes <= 0 || declared < requiredBytes || declared > stream.Length - payloadStart
-            || (requireExactLength && declared != requiredBytes))
-            throw new InvalidDataException("CVCIE 内嵌数据长度与图像布局不匹配。");
+        if (declared <= 0 || declared > stream.Length - payloadStart) return null;
         return new CvcieDiskPixels(stream.SafeFileHandle, payloadStart);
     }
 
-    private void ReadExactly(Span<byte> destination, long offset, CancellationToken token)
+    public void ReadExactly(Span<byte> destination, long offset, CancellationToken token)
     {
         long position = checked(Offset + offset);
         while (!destination.IsEmpty)

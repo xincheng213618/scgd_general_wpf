@@ -582,7 +582,7 @@ public sealed class ExportCieTests
         try
         {
             WritePatternedRawFixture(rawPath, rows: 2, cols: 3, channels: 3);
-            WriteCieFixture(ciePath, rows: 2, cols: 3, channels: 3, srcFileName: Path.GetFileName(rawPath));
+            float[] xyz = WriteCieFixture(ciePath, rows: 2, cols: 3, channels: 3, srcFileName: Path.GetFileName(rawPath));
             var viewModel = new VExportCIE(ciePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = root,
@@ -610,11 +610,23 @@ public sealed class ExportCieTests
             Assert.Equal("Src", sourceParameters.ExportedChannel);
             Assert.Equal("source.cvraw", sourceParameters.InputFileName);
 
-            ColorVisionTiffParameters xParameters = ReadTiffParameters(Path.Combine(root, "measurement.v1_X.tiff"));
-            Assert.Equal("CVCIE", xParameters.SourceType);
-            Assert.Equal("X", xParameters.ExportedChannel);
-            Assert.Equal("sample.cvcie", xParameters.InputFileName);
-            Assert.Equal("source.cvraw", xParameters.AssociatedSourceFileName);
+            for (int channel = 0; channel < 3; channel++)
+            {
+                string channelName = "XYZ"[channel].ToString();
+                string path = Path.Combine(root, $"measurement.v1_{channelName}.tiff");
+                ColorVisionTiffParameters parameters = ReadTiffParameters(path);
+                Assert.Equal("CVCIE", parameters.SourceType);
+                Assert.Equal(channelName, parameters.ExportedChannel);
+                Assert.Equal("sample.cvcie", parameters.InputFileName);
+                Assert.Equal("source.cvraw", parameters.AssociatedSourceFileName);
+                Assert.Equal(3, parameters.SourceChannels);
+
+                using Mat plane = Cv2.ImRead(path, ImreadModes.Unchanged);
+                Assert.Equal(MatType.CV_32FC1, plane.Type());
+                float[] actual = new float[6];
+                Marshal.Copy(plane.Data, actual, 0, actual.Length);
+                Assert.Equal(xyz.Skip(channel * actual.Length).Take(actual.Length), actual);
+            }
         }
         finally
         {
