@@ -784,7 +784,8 @@ namespace ProjectARVRPro.Process
             var dialog = new ProcessMetaEditWindow(
                 templateModels,
                 Processes,
-                "新增流程项")
+                "新增流程项",
+                isMetaNameTaken: name => HasDuplicateMetaName(name))
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -874,7 +875,7 @@ namespace ProjectARVRPro.Process
 
         private bool HasDuplicateMetaName(string name, ProcessMeta? ignoredMeta = null)
         {
-            return ProcessMetas.Any(m => !ReferenceEquals(m, ignoredMeta) && m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            return ProcessMetas.Any(m => !ReferenceEquals(m, ignoredMeta) && string.Equals(m.Name, name, StringComparison.OrdinalIgnoreCase));
         }
 
         private void BeginEditMetaName(ProcessMeta? meta)

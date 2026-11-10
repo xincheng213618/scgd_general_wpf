@@ -417,8 +417,8 @@
   <data name="可选中复制，双击全选" xml:space="preserve">
     <value>可选中复制，双击全选</value>
   </data>
-  <data name="名称用于流程组列表显示，后续可以单独修改。" xml:space="preserve">
-    <value>名称用于流程组列表显示，后续可以单独修改。</value>
+  <data name="选择流程模板后自动填入名称，可手动修改。" xml:space="preserve">
+    <value>选择流程模板后自动填入名称，可手动修改。</value>
   </data>
   <data name="启用 L/R 联合统计" xml:space="preserve">
     <value>启用 L/R 联合统计</value>
