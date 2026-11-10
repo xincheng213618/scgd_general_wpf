@@ -149,6 +149,49 @@ public class FlowEngineControlLifecycleTests
     }
 
     [Fact]
+    public void ReadinessSuccessAfterItsDeadlineDoesNotStartTheFlow()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Late");
+            var sink = new StartSinkNode();
+            sink.Create();
+            var deadlineReached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var reportReady = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            start.RequiresReady = true;
+            start.EnsureReadyHandler = async token =>
+            {
+                using var registration = token.Register(() => deadlineReached.TrySetResult());
+                return await reportReady.Task.ConfigureAwait(false);
+            };
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+
+            TimeSpan testWait = TimeSpan.FromSeconds(5);
+            Task<bool> readiness = control.EnsureStartNodeReadyAsync("Late", TimeSpan.FromMilliseconds(100));
+            try
+            {
+                deadlineReached.Task.WaitAsync(testWait).GetAwaiter().GetResult();
+                start.Ready = true;
+            }
+            finally
+            {
+                reportReady.TrySetResult(true);
+            }
+
+            bool ready = readiness.WaitAsync(testWait).GetAwaiter().GetResult();
+            bool started = ready && control.TryStartByName("Late", "SN-Late");
+            Assert.False(ready);
+            Assert.False(started);
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(control.IsRunning);
+        });
+    }
+
+    [Fact]
     public void AttachIsIdempotentAndNodeRemovalUnsubscribesStartNode()
     {
         StaTest.Run(() =>

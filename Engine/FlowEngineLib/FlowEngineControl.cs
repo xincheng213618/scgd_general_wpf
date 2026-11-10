@@ -138,7 +138,9 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		timeoutSource.CancelAfter(timeout);
 		try
 		{
-			if (!await startNode.EnsureReadyAsync(timeoutSource.Token).ConfigureAwait(false))
+			bool ready = await startNode.EnsureReadyAsync(timeoutSource.Token).ConfigureAwait(false);
+			timeoutSource.Token.ThrowIfCancellationRequested();
+			if (!ready)
 			{
 				return false;
 			}
