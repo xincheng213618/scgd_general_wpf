@@ -106,4 +106,7 @@
   <data name="景深融合(_F)" xml:space="preserve">
     <value>景深融合(_F)</value>
   </data>
+  <data name="正在打开 {0}…" xml:space="preserve"><value>正在打开 {0}…</value></data>
+  <data name="无法打开 {0}。可刷新重试。" xml:space="preserve"><value>无法打开 {0}。可刷新重试。</value></data>
+  <data name="画面仍为上一张图。" xml:space="preserve"><value>画面仍为上一张图。</value></data>
 </root>

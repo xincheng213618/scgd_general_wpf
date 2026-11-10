@@ -1,6 +1,7 @@
 #pragma warning disable CA1863,CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
+using ColorVision.ImageTools;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI.Menus;
@@ -91,6 +92,7 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private bool _disposed;
         private bool _publishingFileList;
+        private long _previewRequest;
         private CancellationTokenSource? _fileLoad;
         private static readonly SemaphoreSlim CachedDimensionsSlot = new(1, 1);
 
@@ -113,7 +115,9 @@ namespace ColorVision.Solution.MultiImageViewer
         /// 从文件夹加载图片
         /// </summary>
         /// <param name="folderPath">文件夹路径</param>
-        public Task LoadFromFolderAsync(string folderPath)
+        public Task LoadFromFolderAsync(string folderPath) => LoadFromFolderAsync(folderPath, null);
+
+        private Task LoadFromFolderAsync(string folderPath, string? preferredFilePath)
         {
             if (string.IsNullOrWhiteSpace(folderPath))
             {
@@ -121,7 +125,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 return Task.CompletedTask;
             }
 
-            return LoadFilesAsync(() => Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly), folderPath, null);
+            return LoadFilesAsync(() => Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly), folderPath, null, preferredFilePath);
         }
 
         /// <summary>
@@ -140,10 +144,10 @@ namespace ColorVision.Solution.MultiImageViewer
             return LoadFileListAsync(filePaths.ToList());
         }
 
-        private Task LoadFileListAsync(List<string> snapshot)
-            => snapshot.Count > 0 ? LoadFilesAsync(() => snapshot, null, snapshot) : Task.CompletedTask;
+        private Task LoadFileListAsync(List<string> snapshot, string? preferredFilePath = null)
+            => snapshot.Count > 0 ? LoadFilesAsync(() => snapshot, null, snapshot, preferredFilePath) : Task.CompletedTask;
 
-        private async Task LoadFilesAsync(Func<IEnumerable<string>> enumeratePaths, string? folderPath, List<string>? fileList)
+        private async Task LoadFilesAsync(Func<IEnumerable<string>> enumeratePaths, string? folderPath, List<string>? fileList, string? preferredFilePath)
         {
             if (_disposed) return;
             using var load = new CancellationTokenSource();
@@ -179,17 +183,17 @@ namespace ColorVision.Solution.MultiImageViewer
                 {
                     ResetThumbnailRows();
                     token.ThrowIfCancellationRequested();
+                    ResetPreviewStatus();
                     ImageView.Clear();
                     token.ThrowIfCancellationRequested();
                     CurrentFolderPath = folderPath;
                     _currentFileList = fileList;
                     _thumbnailSettings = thumbnailSettings;
-                    NoImageHint.Visibility = Visibility.Visible;
                     _imageFiles.ReplaceWith(items);
                     token.ThrowIfCancellationRequested();
                     UpdateFileCountText();
                     token.ThrowIfCancellationRequested();
-                    int index = items.FindLastIndex(item => item.FilePath.Equals(FilePath, StringComparison.OrdinalIgnoreCase));
+                    int index = items.FindLastIndex(item => item.FilePath.Equals(preferredFilePath ?? FilePath, StringComparison.OrdinalIgnoreCase));
                     FileListBox.SelectedIndex = items.Count == 0 ? -1 : Math.Max(0, index);
                 }
                 finally { _publishingFileList = wasPublishing; }
@@ -197,7 +201,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 token.ThrowIfCancellationRequested();
                 if (FileListBox.SelectedItem is ImageFileInfo selected)
                 {
-                    OpenImage(selected);
+                    _ = OpenSelectedImageAsync(selected);
                     token.ThrowIfCancellationRequested();
                     FileListBox.ScrollIntoView(selected);
                 }
@@ -274,22 +278,61 @@ namespace ColorVision.Solution.MultiImageViewer
         {
             if (!_disposed && !_publishingFileList && FileListBox.SelectedItem is ImageFileInfo selectedFile)
             {
-                OpenImage(selectedFile);
+                _ = OpenSelectedImageAsync(selectedFile);
             }
         }
 
-        private void OpenImage(ImageFileInfo fileInfo)
+        private async Task OpenSelectedImageAsync(ImageFileInfo fileInfo)
         {
             if (string.IsNullOrWhiteSpace(fileInfo.FilePath))
                 return;
 
-            // 检查是否是当前已打开的文件
-            if (fileInfo.FilePath.Equals(ImageView.Config?.FilePath, StringComparison.OrdinalIgnoreCase))
+            long request = ++_previewRequest;
+            Task? completion = null;
+            NoImageHint.Visibility = Visibility.Collapsed;
+            PreviewStatusText.Visibility = Visibility.Collapsed;
+            try
+            {
+                ImageView.OpenImage(fileInfo.FilePath);
+                completion = ImageView.ImageOpenCompletion;
+                if (IsCurrent() && !completion.IsCompleted)
+                    ShowPreviewStatus("正在打开 {0}…", fileInfo);
+                await completion;
+            }
+            catch (OperationCanceledException)
+            {
+                if (IsCurrent()) PreviewStatusText.Visibility = Visibility.Collapsed;
                 return;
+            }
+            catch (Exception error)
+            {
+                if (IsCurrent()) ShowPreviewStatus("无法打开 {0}。可刷新重试。", fileInfo, error.Message);
+                return;
+            }
 
-            ImageView.OpenImage(fileInfo.FilePath);
-            if (!_disposed && ReferenceEquals(FileListBox.SelectedItem, fileInfo))
-                NoImageHint.Visibility = Visibility.Collapsed;
+            if (IsCurrent()) PreviewStatusText.Visibility = Visibility.Collapsed;
+
+            bool IsCurrent() => !_disposed && request == _previewRequest && ReferenceEquals(FileListBox.SelectedItem, fileInfo)
+                && (completion == null || ReferenceEquals(ImageView.ImageOpenCompletion, completion));
+        }
+
+        private void ShowPreviewStatus(string key, ImageFileInfo file, string? detail = null)
+        {
+            string message = string.Format(DisplayText.Get(key), file.FileName);
+            if (ImageView.ViewBitmapSource != null)
+                message += " " + DisplayText.Get("画面仍为上一张图。");
+            PreviewStatusText.Text = message;
+            PreviewStatusText.ToolTip = detail == null ? file.FilePath : file.FilePath + Environment.NewLine + detail;
+            PreviewStatusText.Visibility = Visibility.Visible;
+        }
+
+        private void ResetPreviewStatus()
+        {
+            ++_previewRequest;
+            NoImageHint.Visibility = Visibility.Visible;
+            PreviewStatusText.Visibility = Visibility.Collapsed;
+            PreviewStatusText.Text = string.Empty;
+            PreviewStatusText.ToolTip = null;
         }
 
         private void UpdateFileCountText()
@@ -299,13 +342,14 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
+            string? preferredFilePath = GetSelectedFile()?.FilePath;
             if (!string.IsNullOrWhiteSpace(CurrentFolderPath))
             {
-                await LoadFromFolderAsync(CurrentFolderPath);
+                await LoadFromFolderAsync(CurrentFolderPath, preferredFilePath);
             }
             else if (_currentFileList != null)
             {
-                await LoadFromFilesAsync(_currentFileList);
+                await LoadFileListAsync(_currentFileList.ToList(), preferredFilePath);
             }
         }
 
@@ -383,12 +427,12 @@ namespace ColorVision.Solution.MultiImageViewer
         public void Clear()
         {
             _fileLoad?.Cancel();
+            ResetPreviewStatus();
             ResetThumbnailRows();
             ImageFiles.Clear();
             ImageView.Clear();
             CurrentFolderPath = null;
             _currentFileList = null;
-            NoImageHint.Visibility = Visibility.Visible;
             UpdateFileCountText();
         }
 

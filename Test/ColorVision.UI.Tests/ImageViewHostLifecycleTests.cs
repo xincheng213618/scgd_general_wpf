@@ -557,6 +557,69 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task MultiImageViewerIdentifiesFailedSelectionAndRefreshesThatFile(bool firstSelectionFails)
+    {
+        using var first = new ImageFile();
+        string unavailable = Path.Combine(Path.GetDirectoryName(first.Path)!, "unavailable.png");
+        var scope = WpfTestHost.Invoke(() => new MultiImageScope(showThumbnails: false));
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            string[] paths = firstSelectionFails ? [unavailable, first.Path] : [first.Path, unavailable];
+            await WpfTestHost.Invoke(() => scope.Viewer.LoadFromFilesAsync(paths)).WaitAsync(timeout);
+            BitmapSource? previous = null;
+            if (!firstSelectionFails)
+            {
+                await WpfTestHost.Invoke(() => scope.View.ImageOpenCompletion).WaitAsync(timeout);
+                previous = WpfTestHost.Invoke(() => Assert.IsAssignableFrom<BitmapSource>(scope.View.ViewBitmapSource));
+                WpfTestHost.Invoke(() => scope.Viewer.SelectFile(unavailable));
+            }
+            Task failed = WpfTestHost.Invoke(() => scope.View.ImageOpenCompletion);
+            await Assert.ThrowsAsync<FileNotFoundException>(() => failed.WaitAsync(timeout));
+
+            WpfTestHost.Invoke(() =>
+            {
+                PumpDispatcher();
+                Assert.Equal(unavailable, scope.Viewer.GetSelectedFile()?.FilePath);
+                Assert.Same(previous, scope.View.ViewBitmapSource);
+                var status = scope.Viewer.FindName("PreviewStatusText") as TextBlock;
+                Assert.True(status is { Visibility: Visibility.Visible }
+                    && status.Text.Contains(Path.GetFileName(unavailable), StringComparison.Ordinal),
+                    "A failed preview must identify the selected file even when old pixels remain visible.");
+            });
+
+            File.Copy(first.Path, unavailable);
+            Task recovered = WpfTestHost.Invoke(() =>
+            {
+                TaskCompletionSource ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                scope.View.ImageSourceLoaded += (_, _) => ready.TrySetResult();
+                var refresh = Assert.IsType<Button>(scope.Viewer.FindName("RefreshButton"));
+                refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                return ready.Task;
+            });
+            await recovered.WaitAsync(timeout);
+            await WpfTestHost.Invoke(() => scope.View.ImageOpenCompletion).WaitAsync(timeout);
+            WpfTestHost.Invoke(() =>
+            {
+                PumpDispatcher();
+                Assert.Equal(unavailable, scope.Viewer.GetSelectedFile()?.FilePath);
+                Assert.Equal(unavailable, scope.View.Config.FilePath);
+                Assert.NotNull(scope.View.ViewBitmapSource);
+                Assert.Equal(Visibility.Collapsed, Assert.IsType<TextBlock>(scope.Viewer.FindName("PreviewStatusText")).Visibility);
+                scope.Viewer.Clear();
+                Assert.Equal(Visibility.Visible, Assert.IsType<TextBlock>(scope.Viewer.FindName("NoImageHint")).Visibility);
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(scope.Dispose);
+            File.Delete(unavailable);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task MultiImageViewerRetiresPendingThumbnailsWithoutPublishingStaleResults(bool replace)
     {
         using var oldFile = new ImageFile();

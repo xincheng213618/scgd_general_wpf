@@ -195,6 +195,9 @@
             <TextBlock x:Name="NoImageHint" Text="{x:Static properties:Resources.Sol_Miv_SelectImage}"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        FontSize="16" Opacity="0.5" Visibility="Visible"/>
+            <TextBlock x:Name="PreviewStatusText" VerticalAlignment="Top" Visibility="Collapsed"
+                       Padding="8,5" TextWrapping="Wrap" MaxHeight="64"
+                       Background="{DynamicResource GlobalBorderBrush}"/>
         </Grid>
     </Grid>
 </UserControl>

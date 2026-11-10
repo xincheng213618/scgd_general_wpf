@@ -31,7 +31,7 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 
 ## 选择、刷新和外部文件变更
 
-选中与 `ImageView.Config.FilePath` 相同的项目会复用当前打开请求。刷新会清空该路径，因此仍能打开同一个文件。缩略图完成后保留用户当前选择。查看器没有文件监听器，外部文件变化可手动刷新。大图解码及其完成信号见[图像编辑器打开链](./ColorVision.ImageEditor.md)。
+正在打开或打开失败时，预览区标出选中的文件。若保留上一张图，提示会说明当前画面仍来自上一张图。刷新优先重新打开刷新时选中的文件，文件已离开列表时回到首项。缩略图完成后保留用户当前选择。外部文件变化可手动刷新。大图解码及其完成信号见[图像编辑器打开链](./ColorVision.ImageEditor.md)。
 
 ## SQLite 缓存与格式分流
 
