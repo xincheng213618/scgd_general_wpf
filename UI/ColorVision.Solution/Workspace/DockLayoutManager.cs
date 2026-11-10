@@ -100,15 +100,38 @@ namespace ColorVision.Solution.Workspace
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(LayoutFilePath)!);
                 var serializer = new XmlLayoutSerializer(_dockingManager);
-                using var stream = new StreamWriter(LayoutFilePath);
-                serializer.Serialize(stream);
+                WriteLayoutAtomically(LayoutFilePath, serializer.Serialize);
                 log.Info("主窗口布局已保存");
             }
             catch (Exception ex)
             {
                 log.Warn("保存主窗口布局失败", ex);
+            }
+        }
+
+        internal static void WriteLayoutAtomically(string path, Action<StreamWriter> serialize)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            string temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                using (var writer = new StreamWriter(temporaryPath))
+                    serialize(writer);
+
+                File.Move(temporaryPath, path, overwrite: true);
+            }
+            catch
+            {
+                try
+                {
+                    File.Delete(temporaryPath);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    log.Warn("删除未保存的主窗口布局临时文件失败", ex);
+                }
+                throw;
             }
         }
 

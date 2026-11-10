@@ -112,7 +112,7 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 `DockLayoutManager` 的注册表按 ContentId 保存内容与元数据，独立于 `EditorDocumentService` 的动态文档会话。主窗口先注册自身面板和各 `IDockPanelProvider`，再加载布局；只有已经注册的内容才有恢复入口。
 
-布局位置为 `Environments.DirStateLayout/MainWindowDockLayout.xml`，通常来自 `DirAppData/State/Layout`，不是工作区 `.cvsln` 内的文件标签清单，也不序列化 `DocumentTabPinManager` 的固定状态。`SaveLayout()` 建目录后用 `StreamWriter` 直接序列化 XML，捕获异常记警告，不返回失败状态；这里没有配置存储那样的临时文件原子替换、备份或写后验证，返回不证明布局文件完整落盘。
+布局保存在 `Environments.DirStateLayout/MainWindowDockLayout.xml`，通常位于 `DirAppData/State/Layout`。文件记录停靠布局，工作区文件清单和标签固定状态由各自的模块管理。`SaveLayout()` 将 XML 写入同目录临时文件，关闭后原子替换正式文件。序列化或写入失败时保留上次已保存的布局，失败记入日志。
 
 XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.XmlLayoutSerializer`。它可读取 AvalonDock 4.x 布局，包括旧版大写布尔值；新版保存的布局不保证能被 4.x 读取，回退至 4.x 宿主前应保留原布局副本。Spectrum 对无法绑定内容的工具面板显式使用 `UnresolvedContentHandling.Hide`，保留旧版隐藏面板的行为。
 
@@ -132,7 +132,7 @@ XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.Xm
 
 断言宿主及子内容引用、逻辑父子关系和工厂调用次数，并区分旧布局项的 Dispatcher 清理在重开之前或之后发生。
 
-`Test/ColorVision.UI.Tests/DockLayoutSerializationTests.cs` 在内存中读取合成的 4.x XML 并做新版序列化往返，验证注册内容与关闭限制，以及移除未知项、保留隐藏工具面板两种恢复策略。它不读写用户布局文件。
+`Test/ColorVision.UI.Tests/DockLayoutSerializationTests.cs` 用合成的 4.x XML 验证兼容读取和新版往返，并在临时目录模拟部分 XML 写入后失败，核对旧布局、临时文件清理和再次保存。
 
 同一测试文件还用离屏 WPF/AvalonDock 验证工厂面板在未选中或隐藏时不创建，首次选中或显式显示后只创建一次，并在内存布局恢复、隐藏重显、关闭重开后复用宿主与子内容。此回归保护共享按需加载与单一逻辑父节点的生命周期，不以耗时阈值断言启动加速。
 

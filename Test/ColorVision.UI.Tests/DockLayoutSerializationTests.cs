@@ -16,6 +16,41 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DockLayoutSerializationTests
 {
+    [Fact]
+    public void FailedLayoutSerializationPreservesThePreviousFileAndCanBeRetried()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-DockLayout-");
+        string path = Path.Combine(directory.FullName, "MainWindowDockLayout.xml");
+        const string originalLayout = "<LayoutRoot />";
+        const string updatedLayout = "<LayoutRoot><RootPanel /></LayoutRoot>";
+        try
+        {
+            DockLayoutManager.WriteLayoutAtomically(path, writer => writer.Write(originalLayout));
+            var failure = new IOException("Layout serialization interrupted.");
+
+            Assert.Same(failure, Assert.Throws<IOException>(() => DockLayoutManager.WriteLayoutAtomically(path, writer =>
+            {
+                writer.Write("<LayoutRoot>");
+                writer.Flush();
+                Assert.Equal(originalLayout, File.ReadAllText(path));
+                throw failure;
+            })));
+
+            Assert.Equal(originalLayout, File.ReadAllText(path));
+            Assert.Equal(path, Assert.Single(Directory.EnumerateFileSystemEntries(directory.FullName)));
+
+            DockLayoutManager.WriteLayoutAtomically(path, writer => writer.Write(updatedLayout));
+            Assert.Equal(updatedLayout, File.ReadAllText(path));
+            Assert.Equal(path, Assert.Single(Directory.EnumerateFileSystemEntries(directory.FullName)));
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles())
+                file.Delete();
+            directory.Delete();
+        }
+    }
+
     [Theory]
     [InlineData("document")]
     [InlineData("tool")]
