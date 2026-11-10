@@ -649,6 +649,8 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             {
                 EnsureImageViewTestResources();
                 WriteEncodedImage(filePath);
+                File.SetCreationTimeUtc(filePath, new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+                File.SetLastWriteTimeUtc(filePath, new DateTime(2021, 2, 3, 4, 5, 6, DateTimeKind.Utc));
 
                 imageView = new ImageView();
                 loadedHandler = (_, _) =>
@@ -665,7 +667,15 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             await openCompletion.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.True(completion.Task.IsCompletedSuccessfully);
 
-            OpenedImageState state = WpfTestHost.Invoke(() => CaptureState(imageView!, completionCount));
+            var file = new FileInfo(filePath);
+            var (length, created, modified) = (file.Length, file.CreationTime, file.LastWriteTime);
+            OpenedImageState state = WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(length, imageView!.Config.GetProperties<long>(ImageViewPropertyKeys.FileSize));
+                Assert.Equal(created, imageView.Config.GetProperties<DateTime>(ImageViewPropertyKeys.FileCreationTime));
+                Assert.Equal(modified, imageView.Config.GetProperties<DateTime>(ImageViewPropertyKeys.FileModifiedTime));
+                return CaptureState(imageView, completionCount);
+            });
 
             Assert.Equal(1, state.CompletionCount);
             Assert.Equal(2, state.PixelWidth);
@@ -995,6 +1005,9 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 afterCancellation = CapturePendingOpenSource(view!, original!);
                 retainedCanonicalPixels = retainedCanonical!.Data.ToArray();
                 retainedNativePixels = ReadPendingOpenNativePixels(retainedLease!);
+                Assert.Equal(missingPath, view!.Config.FilePath);
+                Assert.Null(view.EditorContext.IImageOpen);
+                Assert.False(view.Config.Properties.ContainsKey(ImageViewPropertyKeys.FileSize));
             });
             // Record all observations and the settled lifecycle before evaluating pixel assertions.
             output.WriteLine(JsonSerializer.Serialize(new
@@ -1145,19 +1158,19 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 view = new ImageView { EnableEditorImageServices = false };
                 view.RegisterImageContentProvider(provider);
                 view.ImageSourceLoaded += (_, _) => loadedPaths.Add(view.ImageContent?.FilePath);
+                var selectedOpener = Assert.IsAssignableFrom<IImageOpen>(view.IEditorToolFactory.IImageOpens[extension]);
+                Assert.IsType(openerType, selectedOpener);
                 view.OpenImage(supersededPath);
                 supersededOpen = view.ImageOpenCompletion;
-                var selectedOpener = Assert.IsAssignableFrom<IImageOpen>(view.EditorContext.IImageOpen);
-                Assert.IsType(openerType, selectedOpener);
                 return selectedOpener;
             });
             await provider.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             WpfTestHost.Invoke(() =>
             {
-                view!.OpenImage(latestPath);
+                Assert.Same(opener, view!.EditorContext.IImageOpen);
+                view.OpenImage(latestPath);
                 latestOpen = view.ImageOpenCompletion;
-                Assert.Same(opener, view.EditorContext.IImageOpen);
             });
             await latestOpen.WaitAsync(TimeSpan.FromSeconds(10));
             var (latestSource, latestRevision, pendingRelease) = WpfTestHost.Invoke(() =>
@@ -1165,6 +1178,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 BitmapSource source = Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource);
                 Assert.Equal((3, 2), (source.PixelWidth, source.PixelHeight));
                 Assert.Equal(latestPath, Assert.Single(loadedPaths));
+                Assert.Same(opener, view.EditorContext.IImageOpen);
                 Assert.Same(provider.ImmediateCapability, view.ImageContentCapability);
                 Assert.True(provider.ImmediateCapability.Activated);
                 return (source, view.ImageRevision, view.PendingContentRelease);
@@ -1194,6 +1208,104 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             {
                 if (view != null) WpfTestHost.Invoke(view.Dispose);
                 File.Delete(supersededPath);
+                File.Delete(latestPath);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PendingBitmapFileProbeDoesNotBlockDispatcherOrRestoreRetiredState(bool replace)
+    {
+        const string probeExtension = ".cv-gated-bitmap";
+        string prefix = Path.Combine(Path.GetTempPath(), $"colorvision-pending-file-probe-{Guid.NewGuid():N}");
+        string pendingPath = prefix + probeExtension;
+        string latestPath = prefix + ".png";
+        using var opener = new GatedBitmapOpen();
+        ImageView? view = null;
+        Task<Task>? start = null;
+        Task successor = Task.CompletedTask;
+        var loadedPaths = new List<string>();
+        TimeSpan testWait = TimeSpan.FromSeconds(10);
+        try
+        {
+            File.WriteAllBytes(pendingPath, [1]);
+            var dispatcher = WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                if (replace) WriteEncodedImage(latestPath);
+                view = new ImageView { EnableEditorImageServices = false };
+                view.IEditorToolFactory.IImageOpens[probeExtension] = opener;
+                view.ImageSourceLoaded += (_, _) => loadedPaths.Add(view.Config.FilePath);
+                return view.Dispatcher;
+            });
+            start = dispatcher.InvokeAsync<Task>(() =>
+            {
+                view!.OpenImage(pendingPath);
+                return view.ImageOpenCompletion;
+            }).Task;
+            Assert.Equal(pendingPath, await opener.Entered.Task.WaitAsync(testWait));
+            await dispatcher.InvokeAsync(() =>
+            {
+                Assert.Equal(pendingPath, view!.Config.FilePath);
+                Assert.Null(view.EditorContext.IImageOpen);
+                Assert.False(view.Config.Properties.ContainsKey(ImageViewPropertyKeys.FileSize));
+                Assert.Empty(loadedPaths);
+            }).Task.WaitAsync(testWait);
+            Task retired = await start.WaitAsync(testWait);
+            Assert.False(retired.IsCompleted);
+
+            WpfTestHost.Invoke(() =>
+            {
+                if (replace)
+                {
+                    view!.OpenImage(latestPath);
+                    successor = view.ImageOpenCompletion;
+                }
+                else view!.Clear();
+            });
+            await successor.WaitAsync(testWait);
+            opener.Release();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => retired.WaitAsync(testWait));
+            await opener.Exited.Task.WaitAsync(testWait);
+
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(0, opener.PreparedOpenCalls);
+                if (replace)
+                {
+                    Assert.Equal(latestPath, Assert.Single(loadedPaths));
+                    Assert.Equal(latestPath, view!.Config.FilePath);
+                    Assert.Equal(latestPath, view.ImageContent?.FilePath);
+                    Assert.Equal(Path.GetFileName(latestPath), view.Config.GetProperties<string>(ImageViewPropertyKeys.FileName));
+                    Assert.IsType<CommonImageOpen>(view.EditorContext.IImageOpen);
+                    Assert.Same(successor, view.ImageOpenCompletion);
+                }
+                else
+                {
+                    Assert.Empty(loadedPaths);
+                    Assert.Equal(string.Empty, view!.Config.FilePath);
+                    Assert.Null(view.ViewBitmapSource);
+                    Assert.Null(view.EditorContext.IImageOpen);
+                    Assert.False(view.Config.Properties.ContainsKey(ImageViewPropertyKeys.FileSize));
+                }
+            });
+        }
+        finally
+        {
+            opener.Release();
+            Task drain = Task.WhenAll(start?.Unwrap() ?? Task.CompletedTask, successor);
+            try
+            {
+                try { await drain.WaitAsync(testWait); }
+                catch (Exception) when (drain.IsCompleted) { }
+                if (opener.Entered.Task.IsCompleted) await opener.Exited.Task.WaitAsync(testWait);
+            }
+            finally
+            {
+                if (view != null) WpfTestHost.Invoke(view.Dispose);
+                File.Delete(pendingPath);
                 File.Delete(latestPath);
             }
         }
@@ -1627,6 +1739,36 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         public IEnumerable<IEditorTool> GetEditorTools() => [];
         public void OnEditorToolsActivated(EditorContext context) { }
         public void OnEditorToolsDeactivated(EditorContext context) { }
+    }
+
+    private sealed class GatedBitmapOpen : IPreparedBitmapOpen, IDisposable
+    {
+        private readonly ManualResetEventSlim _release = new();
+        public TaskCompletionSource<string> Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Exited { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int PreparedOpenCalls { get; private set; }
+
+        public BitmapFileMetadata ReadFileMetadata(string filePath)
+        {
+            Entered.TrySetResult(filePath);
+            try
+            {
+                if (!_release.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Bitmap file probe gate was not released.");
+                return new BitmapFileMetadata(Path.GetFileName(filePath), 1, DateTime.UnixEpoch, DateTime.UnixEpoch);
+            }
+            finally { Exited.TrySetResult(); }
+        }
+
+        public Task OpenPreparedImageAsync(EditorContext context, string filePath, BitmapFileMetadata file, CancellationToken cancellationToken)
+        {
+            PreparedOpenCalls++;
+            throw new InvalidOperationException("A retired file probe cannot start the opener.");
+        }
+
+        public void OpenImage(EditorContext context, string? filePath) => throw new NotSupportedException();
+        public Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public void Release() => _release.Set();
+        public void Dispose() => _release.Dispose();
     }
 
     private static OpenedImageState CaptureState(ImageView imageView, int completionCount)

@@ -16,7 +16,7 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.ImageEditor.Tif
 {
     [FileExtension(".tif|.tiff")]
-    public record class Opentif(EditorContext EditorContext) : IAsyncImageOpen, IImageOpenContentLifetime
+    public record class Opentif(EditorContext EditorContext) : IPreparedBitmapOpen, IImageOpenContentLifetime
     {
         private const int ConversionBufferPixelCount = 256 * 1024;
         private readonly BitmapOpenRequests _requests = new();
@@ -94,23 +94,23 @@ namespace ColorVision.ImageEditor.Tif
 
         public Task ReleaseContentAsync(bool reuseBuffers) => _requests.CancelAndDrain();
 
-        public async Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default)
+        public Task OpenImageAsync(EditorContext context, string? filePath, CancellationToken cancellationToken = default)
+            => OpenImageAsync(context, filePath, null, cancellationToken);
+
+        Task IPreparedBitmapOpen.OpenPreparedImageAsync(EditorContext context, string filePath, BitmapFileMetadata file, CancellationToken cancellationToken)
+            => OpenImageAsync(context, filePath, file, cancellationToken);
+
+        private async Task OpenImageAsync(EditorContext context, string? filePath, BitmapFileMetadata? file, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ArgumentException.ThrowIfNullOrEmpty(filePath);
-            if (!File.Exists(filePath)) throw new FileNotFoundException("Image file does not exist.", filePath);
 
             string requestedFilePath = filePath;
             using var request = _requests.Start(cancellationToken);
             cancellationToken = request.Token;
-            cancellationToken.ThrowIfCancellationRequested();
-
-            FileInfo fileInfo = new(requestedFilePath);
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(Opentif), "打开器接收到的源文件路径");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, fileInfo.Name, nameof(Opentif), "当前文件名");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileInfo.Length, nameof(Opentif), "当前文件大小（字节）");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileCreationTime, fileInfo.CreationTime, nameof(Opentif), "当前文件创建时间");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileModifiedTime, fileInfo.LastWriteTime, nameof(Opentif), "当前文件修改时间");
+            BitmapFileMetadata metadata = file ?? await Task.Run(() => BitmapFileMetadata.Read(requestedFilePath), cancellationToken);
+            BitmapOpenRequests.VerifyTarget(context, requestedFilePath, cancellationToken);
+            metadata.Apply(context, requestedFilePath, nameof(Opentif));
 
             var (decodedImage, writeableBitmap) = await _requests.PrepareAsync(async () =>
             {

@@ -13,6 +13,7 @@ using ColorVision.ImageEditor.Navigation;
 using ColorVision.ImageEditor.Tooling;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.ImageEditor.Documents;
 using ColorVision.ImageEditor.Presentation;
 using ColorVision.UI;
@@ -923,6 +924,12 @@ namespace ColorVision.ImageEditor
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
+            if (imageOpen is IPreparedBitmapOpen bitmapOpen)
+            {
+                OpenBitmapFile(bitmapOpen, filePath);
+                return;
+            }
+
             long? cachedLength = imageOpen.GetCachedFileLength(filePath);
             bool fileExists = cachedLength.HasValue || File.Exists(filePath);
             ReleaseImageContent(fileExists ? imageOpen : null);
@@ -958,18 +965,37 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>Ends the file opener's content before replacing it with another file or a camera source.</summary>
-        public void ReleaseImageContent(IImageOpen? nextOpener = null)
+        public void ReleaseImageContent(IImageOpen? nextOpener = null) => ReleaseImageContent(nextOpener, null);
+
+        private void ReleaseImageContent(IImageOpen? nextOpener, CancellationTokenSource? nextRequest)
         {
             Dispatcher.VerifyAccess();
-            _staticOpenCancellation?.Cancel();
-            _staticOpenCancellation?.Dispose();
-            _staticOpenCancellation = null;
-            _document.RetireCapability(true);
-            _document.ParameterRecord = null;
+            long contentVersion = _document.ContentVersion;
+            var previousRequest = _staticOpenCancellation;
             var opener = EditorContext.IImageOpen;
+            _staticOpenCancellation = nextRequest;
             EditorContext.IImageOpen = null;
-            if (opener is IImageOpenContentLifetime lifetime)
-                PendingContentRelease = Task.WhenAll(PendingContentRelease, ObserveContentReleaseAsync(lifetime, ReferenceEquals(opener, nextOpener)));
+            try { previousRequest?.Cancel(); }
+            finally
+            {
+                previousRequest?.Dispose();
+                try
+                {
+                    if (ReferenceEquals(_staticOpenCancellation, nextRequest) && EditorContext.IImageOpen == null && _document.ContentVersion == contentVersion)
+                    {
+                        _document.ParameterRecord = null;
+                        _document.RetireCapability(true);
+                    }
+                }
+                finally
+                {
+                    if (opener is IImageOpenContentLifetime lifetime && !ReferenceEquals(EditorContext.IImageOpen, opener))
+                    {
+                        Task release = ObserveContentReleaseAsync(lifetime, ReferenceEquals(opener, nextOpener));
+                        PendingContentRelease = Task.WhenAll(PendingContentRelease, release);
+                    }
+                }
+            }
         }
 
         private static async Task ObserveContentReleaseAsync(IImageOpenContentLifetime lifetime, bool reuseBuffers)

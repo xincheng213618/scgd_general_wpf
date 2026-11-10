@@ -2,6 +2,7 @@ using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Tif;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
@@ -133,5 +134,58 @@ public partial class ImageView
         try { await opener.OpenImageAsync(EditorContext, path, token); }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception ex) { log.Error($"Failed to open image: {path}", ex); throw; }
+    }
+
+    private void OpenBitmapFile(IPreparedBitmapOpen opener, string path)
+    {
+        var request = new CancellationTokenSource();
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ImageOpenCompletion = completion.Task;
+        _ = CompleteBitmapFileOpenAsync(opener, path, request, completion);
+    }
+
+    private async Task CompleteBitmapFileOpenAsync(IPreparedBitmapOpen opener, string path, CancellationTokenSource request, TaskCompletionSource completion)
+    {
+        CancellationToken token = request.Token;
+        try
+        {
+            ReleaseImageContent(opener, request);
+            token.ThrowIfCancellationRequested();
+            Config.ClearProperties();
+            token.ThrowIfCancellationRequested();
+            IEditorToolFactory.ApplyImageOpenTools(null);
+            token.ThrowIfCancellationRequested();
+            SetLayerController(null);
+            token.ThrowIfCancellationRequested();
+            Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FilePath);
+
+            BitmapFileMetadata file = await Task.Run(() => opener.ReadFileMetadata(path), token);
+            BitmapOpenRequests.VerifyTarget(EditorContext, path, token);
+            Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, file.Length, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
+            IEditorToolFactory.ApplyImageOpenTools(opener);
+            BitmapOpenRequests.VerifyTarget(EditorContext, path, token);
+            EditorContext.IImageOpen = opener;
+            await opener.OpenPreparedImageAsync(EditorContext, path, file, token);
+            completion.TrySetResult();
+        }
+        catch (OperationCanceledException error) { completion.TrySetCanceled(error.CancellationToken); }
+        catch (Exception error)
+        {
+            if (token.IsCancellationRequested)
+            {
+                completion.TrySetCanceled(token);
+                return;
+            }
+            if (error is not FileNotFoundException) log.Error($"Failed to open image: {path}", error);
+            completion.TrySetException(error);
+        }
+        finally
+        {
+            if (ReferenceEquals(_staticOpenCancellation, request) && EditorContext.IImageOpen == null)
+            {
+                _staticOpenCancellation = null;
+                request.Dispose();
+            }
+        }
     }
 }
