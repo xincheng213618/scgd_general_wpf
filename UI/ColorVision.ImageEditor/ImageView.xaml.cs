@@ -916,9 +916,9 @@ namespace ColorVision.ImageEditor
 
         private void OpenImageCore(string filePath, IImageOpen imageOpen, bool forceReload = false)
         {
-            // 普通打开会跳过同一路径；还原原图时强制重新走对应格式的打开器。
-
-            if (!forceReload && filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal))
+            // The configured path identifies the request even if no pixels were published.
+            if (!forceReload && !ImageOpenCompletion.IsFaulted && !ImageOpenCompletion.IsCanceled
+                && filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal))
             {
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;

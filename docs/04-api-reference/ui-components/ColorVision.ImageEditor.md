@@ -56,7 +56,7 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 `SetImageSource` 对 `WriteableBitmap` 接受 Bgr32、Bgra32、Pbgra32、Bgr24、Rgb24、Indexed8、Rgb48、Gray8、Gray16、Gray32Float；其他格式会报不支持。不要将“打开器识别扩展名”扩大成“该格式的任意位深、通道或编码均支持”。
 
 - 普通同路径打开会跳过重载；“还原原图”在源文件仍存在且有打开器时强制重走文件打开流程，不是撤销栈中的一次图元操作，也不是恢复任意历史像素。
-- 普通图片和 TIFF 在后台读取一次文件属性，打开器复用该快照并异步解码。探测或解码期间保留已发布的像素，换图和清空会取消旧请求，拒绝迟到结果。静态加载可等待 `ImageOpenCompletion`，文件缺失和解码失败通过 Task 返回。格式读取和可选色度能力在正式发布前完成交接，详见[上下文契约](./image-editor-context.md)。
+- 静态图片在后台探测和解码，期间保留已发布的像素。换图和清空取消旧请求，拒绝迟到结果。`ImageOpenCompletion` 报告文件缺失和解码失败。失败或取消后可直接重开同一路径。格式读取和可选色度能力在发布前交接，详见[上下文契约](./image-editor-context.md)。
 - `ImageSourceLoaded` 表示当前像素源已载入或更新；`ExternalRenderCompleted` 只在外部渲染者显式通知时发出。该事件也可携带 `Succeeded=false` 或空 `Source`，发生事件不等于渲染成功。需要导出结果叠图时，核对成功标志、当前任务 `Context` 与 `ImageRevision`，再在视图 Dispatcher 捕获；不能仅凭像素加载或事件名称判断标注已完整。快照 API 自身不会等待或校验外部渲染状态，事件字段见 `ImageViewLifecycleEventArgs.cs`。
 
 CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中配置，由 Engine 的 `CvcieDisplayConfig` 持久化，`CvcieDisplaySettingProvider` 注册到设置窗口，加载 Engine 后无需先打开 CVCIE 即可设置；开启“启用真彩显示”后新打开的 CVCIE 默认采用 XYZ 真彩 sRGB，关闭后默认原图；亮度可选择自动适配或固定参考白。图层下拉框允许临时切换当前图片，不改全局开关。XYZ 转换与原图/Y 灰度回退也由 Engine 提供，异常只记日志，详见 [CV 文件的显示与校正边界](../engine-components/ColorVision.FileIO.md)。

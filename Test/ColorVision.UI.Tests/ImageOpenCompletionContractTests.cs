@@ -1737,6 +1737,69 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     [Theory]
     [InlineData(".png")]
     [InlineData(".tiff")]
+    [InlineData(".cvraw")]
+    public async Task OpenImage_RetriesTheSamePathAfterTheFileBecomesAvailable(string extension)
+    {
+        string initialPath = Path.Combine(Path.GetTempPath(), $"colorvision-open-initial-{Guid.NewGuid():N}.png");
+        string retryPath = Path.Combine(Path.GetTempPath(), $"colorvision-open-retry-{Guid.NewGuid():N}{extension}");
+        ImageView? view = null;
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                WriteEncodedImage(initialPath);
+                view = new ImageView();
+                view.IEditorToolFactory.IImageOpens[".cvraw"] = new CVRawOpen(view.EditorContext);
+                view.OpenImage(initialPath);
+                return view.ImageOpenCompletion;
+            }).WaitAsync(timeout);
+
+            Task failure = WpfTestHost.Invoke(() =>
+            {
+                view!.OpenImage(retryPath);
+                return view.ImageOpenCompletion;
+            });
+            await Assert.ThrowsAsync<FileNotFoundException>(() => failure.WaitAsync(timeout));
+
+            var (retry, previous) = WpfTestHost.Invoke(() =>
+            {
+                var pixels = Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource);
+                if (extension == ".cvraw") WriteCvRaw(retryPath, 127);
+                else WriteEncodedImage(retryPath, landscape: true);
+                view.OpenImage(retryPath);
+                return (view.ImageOpenCompletion, pixels);
+            });
+            Assert.NotSame(failure, retry);
+            await retry.WaitAsync(timeout);
+
+            WpfTestHost.Invoke(() =>
+            {
+                var pixels = Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource);
+                Assert.NotSame(previous, pixels);
+                if (extension == ".cvraw")
+                {
+                    byte[] sample = new byte[1];
+                    pixels.CopyPixels(new Int32Rect(0, 0, 1, 1), sample, 1, 0);
+                    Assert.Equal((byte)127, sample[0]);
+                }
+                else Assert.Equal(2, pixels.PixelHeight);
+                view.OpenImage(retryPath);
+                Assert.Same(retry, view.ImageOpenCompletion);
+            });
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            File.Delete(initialPath);
+            File.Delete(retryPath);
+        }
+    }
+
+    [Theory]
+    [InlineData(".png")]
+    [InlineData(".tiff")]
     public async Task OpenImage_WhenPathChangesBeforeDecodeCompletes_DiscardsStaleFrame(string extension)
     {
         string filePath = Path.Combine(
