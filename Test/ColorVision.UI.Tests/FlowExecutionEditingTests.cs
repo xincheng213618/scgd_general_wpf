@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Integration;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -232,6 +233,60 @@ public sealed class FlowExecutionEditingTests
             fixture.Session.StopFlow();
             fixture.View.StopFlowCommand.Execute(null);
             Assert.Equal(completedSummary, fixture.View.logTextBox.Text);
+        });
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void RunExitPersistsTheKnownOutcomeOrRecordsEarlyTermination(bool preProcessSucceeded)
+    {
+        WithFixture(fixture =>
+        {
+            var journal = new FlowExecutionJournalCoordinatorTests.RecordingJournal
+            {
+                CompleteRunFailuresBeforeSuccess = preProcessSucceeded ? 2 : 0,
+            };
+            using var coordinator = new FlowExecutionJournalCoordinator(() => journal);
+            typeof(FlowExecutionSession).GetField("_journalCoordinator", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(fixture.Session, coordinator);
+
+            var run = fixture.Session.RunFlowAndWaitForFinalizationAsync();
+            fixture.Run = run;
+            PumpUntil(Task.WhenAny(fixture.PreProcess.Entered.Task, run));
+            Assert.True(fixture.PreProcess.Entered.Task.IsCompleted, fixture.View.logTextBox.Text);
+            fixture.PreProcess.Release.SetResult(preProcessSucceeded);
+            if (preProcessSucceeded)
+            {
+                PumpUntil(Task.WhenAny(fixture.Sink.Started.Task, run));
+                Assert.True(fixture.Sink.Started.Task.IsCompleted, fixture.View.logTextBox.Text);
+                fixture.Start.Complete(fixture.Sink.Started.Task.Result);
+                fixture.PostProcess.Release.SetResult([]);
+            }
+            PumpUntil(run);
+
+            if (preProcessSucceeded)
+            {
+                Assert.Equal(FlowFinalOutcome.Succeeded, run.Result!.FinalOutcome);
+                Assert.Equal(3, journal.CompletionRequests.Count);
+                var expected = (
+                    FlowStatus.Completed,
+                    journal.CompletionRequests[0].ElapsedMs,
+                    (FlowFinalOutcome?)FlowFinalOutcome.Succeeded);
+                Assert.All(journal.CompletionRequests, request => Assert.Equal(expected, request));
+                Assert.Equal(FlowFinalOutcome.Succeeded, journal.CompletedRun?.FinalOutcome);
+                Assert.DoesNotContain(journal.Events, item => item.EventType == "RunEndedBeforeFinalization");
+            }
+            else
+            {
+                Assert.Null(run.Result);
+                Assert.False(fixture.Sink.Started.Task.IsCompleted);
+                Assert.Single(journal.CompletionRequests);
+                Assert.Equal(FlowStatus.Failed, journal.CompletedRun?.Status);
+                Assert.Equal(FlowFinalOutcome.Failed, journal.CompletedRun?.FinalOutcome);
+                var ended = Assert.Single(journal.Events, item => item.EventType == "RunEndedBeforeFinalization");
+                Assert.Equal(nameof(FlowStatus.Failed), ended.Code);
+            }
         });
     }
 
@@ -1027,8 +1082,10 @@ public sealed class FlowExecutionEditingTests
 
         public EditingFixture()
         {
-            // Supply only the action list read by ExecuteAsync; never load or persist the user's processor configuration.
+            // Supply a healthy in-memory action list without touching the user's configuration.
             var preProcessManager = (PreProcessManager)RuntimeHelpers.GetUninitializedObject(typeof(PreProcessManager));
+            typeof(PreProcessManager).GetField("_isConfigurationAvailable", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(preProcessManager, true);
             typeof(PreProcessManager).GetField("<Processes>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(preProcessManager, new ObservableCollection<PreProcessAction> { new(PreProcess) { IsEnabled = true } });
             PreProcessInstance.SetValue(null, preProcessManager);

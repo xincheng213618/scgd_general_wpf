@@ -1384,23 +1384,15 @@ namespace ColorVision.Engine.FlowProcessing
                         StopRuntimeTimer();
                     }
 
-                    if (journalScope != null
-                        && !journalScope.IsCompletionRequested)
+                    if (journalScope != null)
                     {
-                        FlowFinalOutcome incompleteOutcome =
-                            GetFinalOutcome(unstartedBatchStatus);
-                        journalScope.TryAppendEvent(
-                            "run-ended-before-finalization",
-                            "RunEndedBeforeFinalization",
-                            code: unstartedBatchStatus.ToString(),
-                            message: unstartedBatchResult);
-                        journalScope.TryCompleteRun(
+                        journalScope.CompleteAtScopeExit(
                             unstartedBatchStatus,
                             _stopwatch.ElapsedMilliseconds,
-                            incompleteOutcome);
+                            GetFinalOutcome(unstartedBatchStatus),
+                            unstartedBatchResult);
                     }
-                    else if (journalScope == null
-                        && preparedBatch != null
+                    else if (preparedBatch != null
                         && !finalizationCompleted)
                     {
                         // Bounded fallback for journal initialization/snapshot

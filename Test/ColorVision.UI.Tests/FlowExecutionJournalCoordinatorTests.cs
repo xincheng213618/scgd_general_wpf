@@ -117,7 +117,6 @@ public sealed class FlowExecutionJournalCoordinatorTests
             654,
             FlowFinalOutcome.Succeeded));
 
-        Assert.True(scope.IsCompletionRequested);
         Assert.Equal(2, journal.CompleteRunCallCount);
         Assert.Equal(FlowStatus.Completed, journal.CompletedRun?.Status);
         Assert.Equal(654, journal.CompletedRun?.ElapsedMs);
@@ -131,7 +130,9 @@ public sealed class FlowExecutionJournalCoordinatorTests
             FlowStatus.Completed,
             654,
             FlowFinalOutcome.Succeeded));
+        scope.CompleteAtScopeExit(FlowStatus.Failed, 655, FlowFinalOutcome.Failed, "unused fallback");
         Assert.Equal(2, journal.CompleteRunCallCount);
+        Assert.DoesNotContain(journal.Events, item => item.EventType == "RunEndedBeforeFinalization");
     }
 
     [Fact]
@@ -151,12 +152,9 @@ public sealed class FlowExecutionJournalCoordinatorTests
             FlowStatus.Completed,
             777,
             FlowFinalOutcome.Succeeded));
-        Assert.False(scope.IsCompletionRequested);
         Assert.Equal(2, journal.CompleteRunCallCount);
 
-        // This mirrors FlowExecutionSession's defensive finally path. Once a
-        // successful terminal tuple is known, a default Failed tuple can
-        // neither replace it nor issue another database write.
+        // A caller cannot replace the remembered terminal tuple.
         Assert.False(scope.TryCompleteRun(
             FlowStatus.Failed,
             777,
@@ -167,7 +165,6 @@ public sealed class FlowExecutionJournalCoordinatorTests
             FlowStatus.Completed,
             777,
             FlowFinalOutcome.Succeeded));
-        Assert.True(scope.IsCompletionRequested);
         Assert.Equal(3, journal.CompleteRunCallCount);
         Assert.Equal(FlowStatus.Completed, journal.CompletedRun?.Status);
         Assert.Equal(
@@ -210,7 +207,7 @@ public sealed class FlowExecutionJournalCoordinatorTests
             }));
     }
 
-    private sealed class RecordingJournal : IFlowExecutionJournal
+    internal sealed class RecordingJournal : IFlowExecutionJournal
     {
         private long nextId = 100;
 
@@ -228,7 +225,8 @@ public sealed class FlowExecutionJournalCoordinatorTests
 
         public int CompleteRunFailuresBeforeSuccess { get; init; }
 
-        public int CompleteRunCallCount { get; private set; }
+        public int CompleteRunCallCount => CompletionRequests.Count;
+        public List<(FlowStatus Status, long ElapsedMs, FlowFinalOutcome? FinalOutcome)> CompletionRequests { get; } = [];
 
         public FlowRunRecord BeginRun(
             FlowTemplateSnapshot snapshot,
@@ -306,7 +304,7 @@ public sealed class FlowExecutionJournalCoordinatorTests
             DateTime? completedTimeUtc = null,
             FlowFinalOutcome? finalOutcome = null)
         {
-            CompleteRunCallCount++;
+            CompletionRequests.Add((status, elapsedMs, finalOutcome));
             if (CompleteRunCallCount <= CompleteRunFailuresBeforeSuccess)
                 throw new InvalidOperationException("simulated completion failure");
 

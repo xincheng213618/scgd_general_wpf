@@ -216,14 +216,9 @@ journal 会校验重复键对应的内容，不是拿相同键就能覆盖旧事
 
 `FlowExecutionJournalCoordinator.Shared` 默认每5秒更新 scope 心跳。首次初始化失败后，30秒内的后续访问不再重试工厂；到期后由新的访问触发重试，不是每30秒自动重新连接。成功创建 journal 时尝试一次 abandoned-run recovery；恢复查询失败会记日志，但不禁用新运行记录。
 
-`FlowRunFinalizer` 先解析后处理和最终业务状态，再尝试 journal 终态写入。最终化结果可以已经返回，而 SQLite 仍没有成功写入终态。因此“后处理完成”“收到最终结果”“本地记录已完成”需要分别核对。
+`FlowRunFinalizer` 先确定业务结果，再由 journal 固定 `(Status, ElapsedMs, FinalOutcome)` 并停止心跳。两次写入都失败时，运行退出前再补写同一终态一次。尚无终态请求的运行会记录 `RunEndedBeforeFinalization` 及提前退出的状态。收到业务结果后仍须单独核对 SQLite 终态。
 
-`FlowExecutionJournalScope.TryCompleteRun` 的重试规则：
-
-- 首次请求固定 `(Status, ElapsedMs, FinalOutcome)`，停止心跳，并对相同终态最多立即写两次。
-- 两次都失败时可再次请求同一结果，不能改用另一终态。`IsCompletionRequested` 表示终态已成功持久化，不是仅发起过请求。
-- 完成请求设置后，scope 拒绝后续普通事件/attempt 调用；检查与实际写入不是一个原子区间，已通过检查的并发写入或直接 journal 调用不受这项门禁完整隔离。
-- `Dispose()` 只停心跳和释放 timer，不补写终态，也不安排后台无限重试。
+终态请求阻止 scope 接受新的普通事件和节点尝试。已通过检查的并发调用仍可写入。`Dispose()` 只释放心跳计时器。
 
 底层 `CompleteRun` 重复收到同一终态会返回原记录并保留第一次完成时间；结果三元组冲突则拒绝。不要为了让界面状态变绿，把仍待核对的记录改成成功。
 
