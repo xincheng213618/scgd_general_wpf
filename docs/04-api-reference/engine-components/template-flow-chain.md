@@ -61,7 +61,9 @@ MySQL 未连接时，启动仍加载本地流程；MySQL 流程列表查询失�
 
 ## 保存与并发边界
 
-`ViewFlow.TrySave` 校验画布并取得 STN 后，调用 `TemplateFlow.Save2DB`。MySQL 保存更新主表、明细和资源，失败回滚事务并抛出异常；本地保存更新完整配置文档。调用方不能把错误吞掉后标记已保存。窗口保存传入自己的 `FlowTemplateSaveCondition`，按加载时内容 hash 判断并发冲突，不能借另一个窗口已更新的共享对象基线覆盖较新的内容。
+`ViewFlow.TrySave` 校验画布并取得 STN 后，模板保存调用 `TemplateFlow.Save2DB`。MySQL 保存更新主表、明细和资源，失败回滚事务并抛出异常；本地保存更新完整配置文档。窗口保存传入自己的 `FlowTemplateSaveCondition`，按加载时内容 hash 判断并发冲突。保存失败时保留未保存状态。
+
+独立 `.stn` 保存核对窗口打开或上次保存时的文件内容。磁盘文件已变更或被删除时，保留当前草稿，可另存为新文件。保存先写完同目录临时文件，再替换目标。同一 Windows 会话内的 ColorVision 实例按目标路径互斥保存，目标正被保存时提示稍后重试。新建流程首次保存仍由保存对话框确认目标及覆盖。
 
 锁定已有资源行时使用 `FOR UPDATE`，加载基线不符时抛 `FlowTemplateConcurrencyException`；这些是 Flow 的专用保存规则，不扩展为普通 `ITemplate<T>` 的事务保证。`FlowParam` 的 `ResourceId`、`ResourceCode`、`FlowKey`、revision 和内容 hash 标为 `JsonIgnore`，属于运行时身份/基线，不是普通参数 JSON 序列化能完整迁移的字段。
 

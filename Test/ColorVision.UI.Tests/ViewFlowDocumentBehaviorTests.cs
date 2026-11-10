@@ -127,7 +127,7 @@ public class ViewFlowDocumentBehaviorTests
                 var redoHistory = editor.RedoHistory.ToArray();
                 byte[] currentCanvas = editor.GetCanvasData();
                 string title = window.Title;
-                string[] identityFields = ["_standaloneFlowParam", "_standaloneFilePath", "_standaloneDocumentName", "_saveStandaloneFlowParam", "_documentLoadedContentHash", "_standaloneStartNodeName"];
+                string[] identityFields = ["_standaloneFlowParam", "_standaloneFilePath", "_standaloneFileContentHash", "_standaloneDocumentName", "_saveStandaloneFlowParam", "_documentLoadedContentHash", "_standaloneStartNodeName"];
                 var identity = identityFields.ToDictionary(name => name, name => GetField(view, name));
 
                 // Choosing Discard authorizes replacement; a failed target must still leave this document intact.
@@ -252,7 +252,8 @@ public class ViewFlowDocumentBehaviorTests
             string path = Path.Combine(Path.GetTempPath(), $"flow-reload-{Guid.NewGuid():N}.stn");
             try
             {
-                File.WriteAllBytes(path, CreateCanvas("Saved file"));
+                byte[] savedFile = CreateCanvas("Saved file");
+                File.WriteAllBytes(path, savedFile);
                 view.LoadStandaloneFile(path);
                 STNode original = Assert.Single(view.STNodeEditorMain.Nodes.Cast<STNode>());
                 original.Title = "Unsaved title";
@@ -266,6 +267,7 @@ public class ViewFlowDocumentBehaviorTests
                 view.LoadStandaloneFlowParam(template, true);
                 Assert.Same(template, GetField(view, "_standaloneFlowParam"));
                 Assert.Null(GetField(view, "_standaloneFilePath"));
+                Assert.Null(GetField(view, "_standaloneFileContentHash"));
                 Assert.Equal(true, GetField(view, "_saveStandaloneFlowParam"));
                 Assert.Equal("Template node", Assert.Single(view.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
                 Assert.Contains(template.Name, window.Title);
@@ -275,11 +277,70 @@ public class ViewFlowDocumentBehaviorTests
                 view.LoadStandaloneFile(path);
                 Assert.Null(GetField(view, "_standaloneFlowParam"));
                 Assert.Equal(path, GetField(view, "_standaloneFilePath"));
+                Assert.Equal(FlowSemanticHash.ComputeBinaryHash(savedFile), GetField(view, "_standaloneFileContentHash"));
                 Assert.Equal(false, GetField(view, "_saveStandaloneFlowParam"));
                 Assert.Null(GetField(view, "_documentLoadedContentHash"));
                 Assert.Contains(Path.GetFileName(path), window.Title);
             }
             finally { File.Delete(path); }
+        });
+    }
+
+    [Theory]
+    [InlineData("cancel")]
+    [InlineData("copy")]
+    [InlineData("existing-target")]
+    public void StandaloneSaveConflictCanKeepTheDraftOrBindItToANewCopy(string choice)
+    {
+        WithStandaloneWindow(window =>
+        {
+            ViewFlow view = window.View;
+            string path = Path.Combine(Path.GetTempPath(), $"flow-conflict-{Guid.NewGuid():N}.stn");
+            string copy = Path.Combine(Path.GetTempPath(), $"flow-copy-{Guid.NewGuid():N}.stn");
+            try
+            {
+                File.WriteAllBytes(path, CreateCanvas("Original"));
+                view.LoadStandaloneFile(path);
+                string? baseline = (string?)GetField(view, "_standaloneFileContentHash");
+                view.STNodeEditorMain.Nodes[0].Title = "Draft";
+                byte[] draft = view.STNodeEditorMain.GetCanvasData();
+                byte[] otherSave = CreateCanvas("Saved elsewhere");
+                File.WriteAllBytes(path, otherSave);
+
+                bool SaveDraft() => view.TrySaveStandaloneFile(draft,
+                    () => throw new InvalidOperationException("The document already has a file target."),
+                    source =>
+                    {
+                        Assert.Equal(path, source);
+                        return choice == "cancel" ? null : choice == "copy" ? copy : path;
+                    });
+
+                if (choice == "copy")
+                {
+                    Assert.True(SaveDraft());
+                    Assert.Equal(copy, GetField(view, "_standaloneFilePath"));
+                    Assert.Equal(FlowSemanticHash.ComputeBinaryHash(draft), GetField(view, "_standaloneFileContentHash"));
+                    Assert.Equal(draft, File.ReadAllBytes(copy));
+                    Assert.Contains(Path.GetFileName(copy), window.Title);
+                }
+                else
+                {
+                    if (choice == "cancel") Assert.False(SaveDraft());
+                    else Assert.ThrowsAny<IOException>(() => SaveDraft());
+                    Assert.Equal(path, GetField(view, "_standaloneFilePath"));
+                    Assert.Equal(baseline, GetField(view, "_standaloneFileContentHash"));
+                    Assert.True(view.STNodeEditorMain.IsModified);
+                    Assert.Equal(draft, view.STNodeEditorMain.GetCanvasData());
+                    Assert.False(File.Exists(copy));
+                }
+
+                Assert.Equal(otherSave, File.ReadAllBytes(path));
+            }
+            finally
+            {
+                File.Delete(path);
+                File.Delete(copy);
+            }
         });
     }
 

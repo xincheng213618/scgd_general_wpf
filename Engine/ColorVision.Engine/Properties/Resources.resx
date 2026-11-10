@@ -4558,4 +4558,8 @@
   <data name="SDK 切换 Burst 采集时使用的曝光阈值。" xml:space="preserve"><value>SDK 切换 Burst 采集时使用的曝光阈值。</value></data>
   <data name="配置缺少 expTimeCfg。可恢复设备参数后重新配置。" xml:space="preserve"><value>配置缺少 expTimeCfg。可恢复设备参数后重新配置。</value></data>
   <data name="JSON 格式有误：{0}" xml:space="preserve"><value>JSON 格式有误：{0}</value></data>
+  <data name="Flow_StandaloneFileConflict" xml:space="preserve"><value>流程文件已在磁盘上更改或删除，当前修改尚未保存。</value></data>
+  <data name="Flow_StandaloneFileSaveBusy" xml:space="preserve"><value>流程文件正在由另一个窗口保存，请稍后重试。</value></data>
+  <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>磁盘上的流程文件已更改或删除。是否将当前修改保存到新的 STN 文件？</value></data>
+  <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>请选择一个尚不存在的文件名。</value></data>
 </root>

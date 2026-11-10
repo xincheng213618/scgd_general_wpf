@@ -8400,4 +8400,8 @@
   <data name="JSON 格式有误：{0}" xml:space="preserve"><value>JSON 格式有誤：{0}</value></data>
   <data name="完成（有警告）" xml:space="preserve"><value>完成（有警告）</value></data>
   <data name="任务绑定的流程模板不可用，请编辑任务并重新选择。" xml:space="preserve"><value>工作綁定的流程範本無法使用，請編輯工作並重新選擇。</value></data>
+  <data name="Flow_StandaloneFileConflict" xml:space="preserve"><value>磁碟上的流程檔案已變更或刪除，目前的變更尚未儲存。</value></data>
+  <data name="Flow_StandaloneFileSaveBusy" xml:space="preserve"><value>另一個視窗正在儲存此流程檔案，請稍後再試。</value></data>
+  <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>磁碟上的流程檔案已變更或刪除。要將目前的變更儲存到新的 STN 檔案嗎？</value></data>
+  <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>請選擇尚不存在的檔案名稱。</value></data>
 </root>

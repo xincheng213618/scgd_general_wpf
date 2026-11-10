@@ -7447,4 +7447,8 @@ Field: </value></data>
   <data name="JSON 格式有误：{0}" xml:space="preserve"><value>Invalid JSON: {0}</value></data>
   <data name="完成（有警告）" xml:space="preserve"><value>Completed with warnings</value></data>
   <data name="任务绑定的流程模板不可用，请编辑任务并重新选择。" xml:space="preserve"><value>The assigned flow template is unavailable. Edit the task to select a template.</value></data>
+  <data name="Flow_StandaloneFileConflict" xml:space="preserve"><value>The flow file was changed or deleted on disk. Your changes are still unsaved.</value></data>
+  <data name="Flow_StandaloneFileSaveBusy" xml:space="preserve"><value>Another window is saving this flow file. Try again shortly.</value></data>
+  <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>The flow file was changed or deleted on disk. Save your changes to a new STN file?</value></data>
+  <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>Choose a file name that does not already exist.</value></data>
 </root>

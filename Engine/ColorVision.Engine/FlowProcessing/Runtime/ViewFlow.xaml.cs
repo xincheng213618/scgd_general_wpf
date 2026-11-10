@@ -123,6 +123,7 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly FlowExecutionSession _executionSession;
         private FlowParam? _standaloneFlowParam;
         private string? _standaloneFilePath;
+        private string? _standaloneFileContentHash;
         private string _standaloneDocumentName = string.Empty;
         private bool _saveStandaloneFlowParam;
         private CVCommonNode? _executionDetailsNode;
@@ -664,6 +665,7 @@ namespace ColorVision.Engine.FlowProcessing
         internal void LoadStandaloneFile(string filePath)
         {
             ThrowIfExecutionActive();
+            filePath = Path.GetFullPath(filePath);
             byte[]? canvasData = null;
             FlowParam? packageFlowParam = null;
             if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
@@ -688,6 +690,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
 
             canvasData ??= File.ReadAllBytes(filePath);
+            string? contentHash = packageFlowParam == null ? FlowSemanticHash.ComputeBinaryHash(canvasData) : null;
             // The loader parses and connects detached nodes before replacing the live graph.
             // Do not clear the current document or change its save target until loading succeeds.
             CVCommonNode[] previousNodes = STNodeEditorMain.Nodes.OfType<CVCommonNode>().ToArray();
@@ -695,6 +698,7 @@ namespace ColorVision.Engine.FlowProcessing
             StopStandaloneFlow(previousNodes: previousNodes);
             _standaloneFlowParam = packageFlowParam;
             _standaloneFilePath = packageFlowParam == null ? filePath : null;
+            _standaloneFileContentHash = contentHash;
             _standaloneDocumentName = Path.GetFileName(filePath);
             _saveStandaloneFlowParam = false;
             SetDocumentBaseline(packageFlowParam);
@@ -740,6 +744,7 @@ namespace ColorVision.Engine.FlowProcessing
             StopStandaloneFlow(previousNodes: previousNodes);
             _standaloneFlowParam = flowParam;
             _standaloneFilePath = null;
+            _standaloneFileContentHash = null;
             _standaloneDocumentName = flowParam.Name;
             _saveStandaloneFlowParam = saveToTemplate;
             SetDocumentBaseline(flowParam);
@@ -792,6 +797,7 @@ namespace ColorVision.Engine.FlowProcessing
             _standaloneFlowParam = null;
             _documentLoadedContentHash = null;
             _standaloneFilePath = null;
+            _standaloneFileContentHash = null;
             _standaloneDocumentName = Properties.Resources.New;
             _saveStandaloneFlowParam = false;
             StopStandaloneFlow();
@@ -860,27 +866,8 @@ namespace ColorVision.Engine.FlowProcessing
                     _documentLoadedContentHash =
                         _standaloneFlowParam.LoadedContentHash;
                 }
-                else
-                {
-                    if (string.IsNullOrEmpty(_standaloneFilePath))
-                    {
-                        using System.Windows.Forms.SaveFileDialog dialog = new()
-                        {
-                            Filter = "STN files (*.stn)|*.stn",
-                            DefaultExt = "stn",
-                            AddExtension = true,
-                            Title = Properties.Resources.Save
-                        };
-                        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                            return false;
-                        _standaloneFilePath = dialog.FileName;
-                        _standaloneFlowParam = null;
-                        _standaloneDocumentName = Path.GetFileName(dialog.FileName);
-                    }
-
-                    File.WriteAllBytes(_standaloneFilePath, canvasData);
-                    UpdateStandaloneWindowTitle(Path.GetFileName(_standaloneFilePath));
-                }
+                else if (!TrySaveStandaloneFile(canvasData, () => ChooseStandaloneFilePath(), ChooseStandaloneConflictCopy))
+                    return false;
 
                 STNodeEditorMain.MarkSaved();
                 MessageBox.Show(Properties.Resources.SaveSucess);
@@ -892,6 +879,68 @@ namespace ColorVision.Engine.FlowProcessing
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_SaveFailed, ex.Message));
                 return false;
             }
+        }
+
+        internal bool TrySaveStandaloneFile(byte[] canvasData, Func<string?> chooseDestination, Func<string, string?> chooseConflictCopy)
+        {
+            string? destination = _standaloneFilePath;
+            string? expectedHash = _standaloneFileContentHash;
+            if (destination == null)
+            {
+                destination = chooseDestination();
+                if (destination == null) return false;
+                expectedHash = StandaloneFlowFileStore.CaptureSelectedDestination(destination);
+            }
+
+            string savedHash;
+            try { savedHash = StandaloneFlowFileStore.Save(destination, canvasData, expectedHash); }
+            catch (StandaloneFlowFileConflictException) when (_standaloneFilePath != null)
+            {
+                destination = chooseConflictCopy(destination);
+                if (destination == null) return false;
+                savedHash = StandaloneFlowFileStore.Save(destination, canvasData, expectedContentHash: null);
+            }
+
+            _standaloneFilePath = destination;
+            _standaloneFileContentHash = savedHash;
+            _standaloneFlowParam = null;
+            _standaloneDocumentName = Path.GetFileName(destination);
+            UpdateStandaloneWindowTitle(_standaloneDocumentName);
+            return true;
+        }
+
+        private string? ChooseStandaloneConflictCopy(string sourcePath)
+        {
+            Window? owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow();
+            MessageBoxResult choice = MessageBox.Show(owner, LocalizedText.Get("Flow_StandaloneFileCopyPrompt"),
+                Properties.Resources.SaveAs, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            return choice == MessageBoxResult.Yes ? ChooseStandaloneFilePath(sourcePath) : null;
+        }
+
+        private string? ChooseStandaloneFilePath(string? copyOf = null)
+        {
+            using System.Windows.Forms.SaveFileDialog dialog = new()
+            {
+                Filter = "STN files (*.stn)|*.stn",
+                DefaultExt = "stn",
+                AddExtension = true,
+                Title = copyOf == null ? Properties.Resources.Save : Properties.Resources.SaveAs,
+                OverwritePrompt = copyOf == null,
+            };
+            if (copyOf != null)
+            {
+                dialog.InitialDirectory = Path.GetDirectoryName(copyOf);
+                dialog.FileName = Path.GetFileNameWithoutExtension(copyOf) + "-copy.stn";
+                dialog.FileOk += (_, args) =>
+                {
+                    if (!File.Exists(dialog.FileName)) return;
+                    args.Cancel = true;
+                    MessageBox.Show(Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                        LocalizedText.Get("Flow_StandaloneFileCopyTargetExists"), Properties.Resources.SaveAs,
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                };
+            }
+            return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.FileName : null;
         }
 
         internal bool ConfirmDocumentReplacement()
