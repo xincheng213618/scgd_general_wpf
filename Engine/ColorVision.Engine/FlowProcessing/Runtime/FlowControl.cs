@@ -82,6 +82,9 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly object lifecycleLock = new object();
         private readonly Dispatcher? uiDispatcher;
         public event EventHandler<FlowControlData> FlowCompleted;
+        // The executor only signals an asynchronous continuation from this event.
+        // It runs under lifecycleLock before the public UI notification.
+        internal event EventHandler<FlowControlData>? EngineCompleted;
 
         public string? SerialNumber { get; set; }
         private string? activeStartNodeName;
@@ -127,15 +130,24 @@ namespace ColorVision.Engine.FlowProcessing
                     uiDispatcher.BeginInvoke(() => OnPropertyChanged());
             }
         }
-        public void Stop()
+        public void Stop() => Stop(expectedStartNodeName: null, expectedSerialNumber: null);
+
+        internal void Stop(string? expectedStartNodeName, string? expectedSerialNumber)
         {
             string? serialNumber;
             string? startNodeName;
             lock (lifecycleLock)
             {
-                flowEngine.Finished -= FinishedAsync;
                 serialNumber = SerialNumber;
                 startNodeName = activeStartNodeName;
+                if (expectedSerialNumber != null
+                    && (!string.Equals(serialNumber, expectedSerialNumber, StringComparison.Ordinal)
+                        || !string.Equals(startNodeName, expectedStartNodeName, StringComparison.Ordinal)))
+                {
+                    return;
+                }
+
+                flowEngine.Finished -= FinishedAsync;
                 SerialNumber = null;
                 activeStartNodeName = null;
                 IsFlowRun = false;
@@ -262,6 +274,7 @@ namespace ColorVision.Engine.FlowProcessing
                 };
                 completedHandlers = FlowCompleted;
                 FlowRuntimeActivityRegistry.MarkCompleted(this, data.FlowStatus, data.TotalTime);
+                EngineCompleted?.Invoke(this, data);
             }
             Diagnostics.FlowPerformanceSampler.QueueIfDue(data.SerialNumber, null, null, data.StartNodeName);
             try

@@ -7,6 +7,7 @@ using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System.Globalization;
 using System.Runtime.ExceptionServices;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -40,6 +41,47 @@ public class FlowRunExecutorTests
             Assert.Equal("Selected", result.Data.StartNodeName);
             Assert.Equal(executionSerialNumber, result.Data.SerialNumber);
             Assert.False(fixture.FlowControl.IsFlowRun);
+        });
+    }
+
+    [Fact]
+    public void CompletedEngineResultSurvivesStopBeforeTheUiNotification()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var fixture = new FlowFixture();
+            using var cancellation = new CancellationTokenSource();
+            TestStartNode start = fixture.AddConnectedStart("Selected");
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            FlowControlData? notification = null;
+            bool notifiedOnUi = false;
+            fixture.FlowControl.FlowCompleted += (_, data) =>
+            {
+                notification = data;
+                notifiedOnUi = dispatcher.CheckAccess();
+            };
+
+            const string serialNumber = "SN-Terminal-Before-Stop";
+            Task<FlowRunExecutionResult> execution = fixture.Executor.RunAsync(
+                "Selected", serialNumber, executionTimeout: null, cancellation.Token);
+            Assert.True(fixture.FlowControl.IsFlowRun);
+
+            // Keep the UI dispatcher occupied until the worker reports the terminal result.
+            Task.Run(() => start.Complete(serialNumber, StatusTypeEnum.Failed))
+                .WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.Null(notification);
+
+            cancellation.Cancel();
+            FlowRunExecutionResult result = execution.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            Assert.Equal(FlowRunTermination.EngineCompleted, result.Termination);
+            Assert.Equal(StatusTypeEnum.Failed, result.Data.Status);
+
+            var frame = new DispatcherFrame();
+            dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+            Assert.True(notifiedOnUi);
+            Assert.Same(result.Data, notification);
         });
     }
 
