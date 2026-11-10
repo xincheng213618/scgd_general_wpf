@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
@@ -36,5 +37,13 @@ namespace ColorVision.UI
         /// <param name="filePath">Path to the file</param>
         /// <returns>Tuple of (width, height), or (0, 0) if dimensions cannot be determined</returns>
         (int width, int height) GetImageDimensions(string filePath);
+    }
+
+    /// <summary>Optional provider that returns a thumbnail and original dimensions from the same read.</summary>
+    public interface IThumbnailProviderWithDimensions : IThumbnailProvider
+    {
+        /// <summary>Returns a frozen bitmap and its source dimensions. Cancellation does not complete until active decoding has released its resources.</summary>
+        Task<(BitmapSource Thumbnail, int OriginalWidth, int OriginalHeight)?> GenerateThumbnailWithDimensionsAsync(
+            string filePath, int maxSize, CancellationToken cancellationToken);
     }
 }

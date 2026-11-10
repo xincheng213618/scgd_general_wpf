@@ -19,9 +19,11 @@ namespace ColorVision.Engine.Media
     /// Uses OpenCV for image processing and conversion.
     /// </summary>
     [FileExtension(".cvraw|.cvcie")]
-    public class CVRawThumbnailProvider : IThumbnailProvider
+    public class CVRawThumbnailProvider : IThumbnailProviderWithDimensions
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawThumbnailProvider));
+        // Bound mapped pages and native conversion buffers across every browser and direct caller.
+        private static readonly SemaphoreSlim DecodeSlots = new(2, 2);
         private const int FloatChunkSamples = 64 * 1024;
         private const double DoubleMachineEpsilon = 2.2204460492503131e-16;
 
@@ -84,27 +86,41 @@ namespace ColorVision.Engine.Media
         /// Generates a thumbnail for the cvraw/cvcie file.
         /// </summary>
         public async Task<BitmapSource?> GenerateThumbnailAsync(string filePath, int maxSize)
+            => (await GenerateThumbnailWithDimensionsAsync(filePath, maxSize, CancellationToken.None).ConfigureAwait(false))?.Thumbnail;
+
+        public async Task<(BitmapSource Thumbnail, int OriginalWidth, int OriginalHeight)?> GenerateThumbnailWithDimensionsAsync(
+            string filePath, int maxSize, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (maxSize <= 0 || !CanHandle(filePath)) return null;
 
+            await DecodeSlots.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                return await Task.Run(() => ReadThumbnail(filePath, maxSize)).ConfigureAwait(false);
+                var result = await Task.Run(() => ReadThumbnail(filePath, maxSize, cancellationToken), cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                return result;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 log.Error($"GenerateThumbnailAsync Error for {filePath}: {ex.Message}");
                 return null;
             }
+            finally { DecodeSlots.Release(); }
         }
 
-        private static BitmapSource? ReadThumbnail(string filePath, int maxSize)
+        private static (BitmapSource Thumbnail, int OriginalWidth, int OriginalHeight)? ReadThumbnail(
+            string filePath, int maxSize, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!File.Exists(filePath)) return null;
+            cancellationToken.ThrowIfCancellationRequested();
             using Stream stream = CVFileReadCache.OpenRead(filePath, populateCache: false);
             int headerEnd = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 4);
             using (header)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (headerEnd <= 0 || header.Rows <= 0 || header.Cols <= 0
                     || header.Bpp is not (8 or 16 or 32 or 64) || header.Channels is not (1 or 3 or 4))
                     return null;
@@ -124,19 +140,21 @@ namespace ColorVision.Engine.Media
                 if (stream is FileStream file)
                 {
                     CvcieDiskPixels pixels = CvcieDiskPixels.Locate(file, header, headerEnd, requiredBytes, requireExactLength: false);
-                    return ReadDiskThumbnail(file, pixels, header.Rows, header.Cols, type, (int)sourceBytes, size);
+                    BitmapSource thumbnail = ReadDiskThumbnail(file, pixels, header.Rows, header.Cols, type, (int)sourceBytes, size, cancellationToken);
+                    return (thumbnail, header.Cols, header.Rows);
                 }
 
                 // An existing CVRAW cache entry is a borrowed stream, not a disk file that can be mapped.
-                if (!CVFileUtil.ReadCIEFilePixels(stream, header, headerEnd)) return null;
+                if (!CVFileUtil.ReadCIEFilePixels(stream, header, headerEnd, requireExactPayload: false, cancellationToken)) return null;
                 using Mat source = Mat.FromPixelData(header.Rows, header.Cols, type, header.Data);
-                return ResizeToBitmap(source, size);
+                return (ResizeToBitmap(source, size, cancellationToken), header.Cols, header.Rows);
             }
         }
 
         private static unsafe BitmapSource ReadDiskThumbnail(FileStream file, CvcieDiskPixels pixels,
-            int rows, int columns, MatType type, int sourceBytes, Size size)
+            int rows, int columns, MatType type, int sourceBytes, Size size, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 using var mapping = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
@@ -146,32 +164,38 @@ namespace ColorVision.Engine.Media
                 try
                 {
                     using Mat source = Mat.FromPixelData(rows, columns, type, (IntPtr)(address + view.PointerOffset));
-                    return ResizeToBitmap(source, size);
+                    return ResizeToBitmap(source, size, cancellationToken);
                 }
                 finally { view.SafeMemoryMappedViewHandle.ReleasePointer(); }
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or NotSupportedException)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 using Mat source = new(rows, columns, type);
-                pixels.ReadExactly(new Span<byte>((void*)source.Data, sourceBytes), 0, CancellationToken.None);
-                return ResizeToBitmap(source, size);
+                pixels.ReadExactly(new Span<byte>((void*)source.Data, sourceBytes), 0, cancellationToken);
+                return ResizeToBitmap(source, size, cancellationToken);
             }
         }
 
-        private static BitmapSource ResizeToBitmap(Mat source, Size size)
+        private static BitmapSource ResizeToBitmap(Mat source, Size size, CancellationToken cancellationToken)
         {
-            using Mat? bytes = source.Depth() == MatType.CV_32F ? ConvertFloatToBytes(source) : null;
+            cancellationToken.ThrowIfCancellationRequested();
+            using Mat? bytes = source.Depth() == MatType.CV_32F ? ConvertFloatToBytes(source, cancellationToken) : null;
+            cancellationToken.ThrowIfCancellationRequested();
             using Mat thumbnail = new();
             Cv2.Resize(bytes ?? source, thumbnail, size, 0, 0, InterpolationFlags.Area);
+            cancellationToken.ThrowIfCancellationRequested();
             var bitmap = thumbnail.ToWriteableBitmap();
             bitmap.Freeze();
+            cancellationToken.ThrowIfCancellationRequested();
             return bitmap;
         }
 
-        private static Mat ConvertFloatToBytes(Mat source)
+        private static Mat ConvertFloatToBytes(Mat source, CancellationToken cancellationToken)
         {
             using Mat samples = source.Reshape(1, 1);
             Cv2.MinMaxLoc(samples, out double min, out double max);
+            cancellationToken.ThrowIfCancellationRequested();
             // Match OpenCV's CV_32F NORM_MINMAX scale and shift, then retain its separate rounding to 8-bit before Area resize.
             float scale = (float)(255 * (max - min > DoubleMachineEpsilon ? 1 / (max - min) : 0));
             float shift = 0f - (float)(min * scale);
@@ -183,6 +207,7 @@ namespace ColorVision.Engine.Media
                 IntPtr output = bytes.Data;
                 for (int start = 0; start < sampleCount;)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     int count = Math.Min(FloatChunkSamples, sampleCount - start);
                     using Mat block = samples.ColRange(start, start + count);
                     using Mat destination = Mat.FromPixelData(1, count, MatType.CV_8UC1, IntPtr.Add(output, start));

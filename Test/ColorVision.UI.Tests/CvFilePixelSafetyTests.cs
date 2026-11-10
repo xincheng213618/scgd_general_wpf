@@ -2,6 +2,7 @@ using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using OpenCvSharp;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -355,6 +356,70 @@ public sealed class CvFilePixelSafetyTests
             Assert.Equal(bgr, actual);
         }
         finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task CvThumbnailDecodeSlotsAreSharedAndQueuedCancellationDoesNotConsumeASlot()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"CvThumbnailSlots_{Guid.NewGuid():N}.cvcie");
+        var slots = Assert.IsType<SemaphoreSlim>(typeof(CVRawThumbnailProvider)
+            .GetField("DecodeSlots", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null));
+        TimeSpan testWait = TimeSpan.FromSeconds(10);
+        using var cancellation = new CancellationTokenSource();
+        var requests = new List<Task>();
+        int heldSlots = 0;
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                Version = 2, Cols = 4, Rows = 2, Bpp = 32, Channels = 1, FileExtType = CVType.CIE,
+                Exp = [1], Data = new byte[4 * 2 * sizeof(float)],
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(await slots.WaitAsync(testWait));
+                heldSlots++;
+            }
+            Assert.Equal(0, slots.CurrentCount);
+
+            var firstProvider = new CVRawThumbnailProvider();
+            var secondProvider = new CVRawThumbnailProvider();
+            var first = firstProvider.GenerateThumbnailWithDimensionsAsync(path, 2, CancellationToken.None);
+            requests.Add(first);
+            var canceled = secondProvider.GenerateThumbnailWithDimensionsAsync(path, 2, cancellation.Token);
+            requests.Add(canceled);
+            var last = secondProvider.GenerateThumbnailWithDimensionsAsync(path, 2, CancellationToken.None);
+            requests.Add(last);
+            Assert.All(requests, request => Assert.False(request.IsCompleted));
+
+            cancellation.Cancel();
+            var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled.WaitAsync(testWait));
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+            Assert.Equal(0, slots.CurrentCount);
+            Assert.False(first.IsCompleted);
+            Assert.False(last.IsCompleted);
+
+            slots.Release();
+            heldSlots--;
+            var survivors = await Task.WhenAll(first, last).WaitAsync(testWait);
+            Assert.All(survivors, result =>
+            {
+                var (thumbnail, width, height) = Assert.NotNull(result);
+                Assert.Equal((4, 2), (width, height));
+                Assert.Equal((2, 1), (thumbnail.PixelWidth, thumbnail.PixelHeight));
+                Assert.True(thumbnail.IsFrozen);
+            });
+            Assert.Equal(1, slots.CurrentCount);
+        }
+        finally
+        {
+            cancellation.Cancel();
+            if (heldSlots > 0) slots.Release(heldSlots);
+            try { await Task.WhenAll(requests).WaitAsync(testWait); }
+            catch (OperationCanceledException) when (requests.All(request => request.IsCompleted)) { }
+            finally { File.Delete(path); }
+        }
     }
 
     [Theory]

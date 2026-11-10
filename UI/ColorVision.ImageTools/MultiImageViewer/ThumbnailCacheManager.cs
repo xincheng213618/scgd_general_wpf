@@ -242,9 +242,20 @@ namespace ColorVision.Solution.MultiImageViewer
                 var customProvider = ThumbnailProviderFactory.GetProvider(filePath);
                 if (customProvider != null)
                 {
-                    var (width, height) = customProvider.GetImageDimensions(filePath);
-                    token.ThrowIfCancellationRequested();
-                    var thumbnail = await customProvider.GenerateThumbnailAsync(filePath, thumbnailSize);
+                    BitmapSource? thumbnail;
+                    int width, height;
+                    if (customProvider is IThumbnailProviderWithDimensions combinedProvider)
+                    {
+                        var result = await combinedProvider.GenerateThumbnailWithDimensionsAsync(filePath, thumbnailSize, token);
+                        if (result is not { } image) return null;
+                        (thumbnail, width, height) = image;
+                    }
+                    else
+                    {
+                        (width, height) = customProvider.GetImageDimensions(filePath);
+                        token.ThrowIfCancellationRequested();
+                        thumbnail = await customProvider.GenerateThumbnailAsync(filePath, thumbnailSize);
+                    }
                     token.ThrowIfCancellationRequested();
                     if (thumbnail == null) return null;
                     if (!thumbnail.IsFrozen) thumbnail = (BitmapSource)thumbnail.GetCurrentValueAsFrozen();

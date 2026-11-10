@@ -355,6 +355,96 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         WpfTestHost.Invoke(() => Assert.False(provider.Bitmap!.IsFrozen));
     }
 
+    [Fact]
+    public async Task CombinedProviderPublishesAndCachesOriginalDimensionsInOneCall()
+    {
+        CreateDatabase();
+        string path = Path.Combine(_root, "combined.cv-test-thumbnail");
+        File.WriteAllText(path, "provider fixture");
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        using var provider = new CombinedThumbnailProvider(path);
+        ThumbnailProviderFactory.RegisterProvider(provider);
+
+        object? result = await WpfTestHost.Invoke(() => LoadWithDimensionsAsync(reader, path));
+
+        Assert.NotNull(result);
+        var thumbnail = Assert.IsAssignableFrom<BitmapSource>(result.GetType().GetProperty("Thumbnail")!.GetValue(result));
+        Assert.True(thumbnail.IsFrozen);
+        Assert.Equal((4, 1), (thumbnail.PixelWidth, thumbnail.PixelHeight));
+        Assert.Equal(512, result.GetType().GetProperty("OriginalWidth")!.GetValue(result));
+        Assert.Equal(128, result.GetType().GetProperty("OriginalHeight")!.GetValue(result));
+        ThumbnailCacheEntry stored = Assert.IsType<ThumbnailCacheEntry>(database.Queryable<ThumbnailCacheEntry>().First(row => row.FilePath == path));
+        Assert.Equal((512, 128), (stored.OriginalWidth, stored.OriginalHeight));
+        Assert.NotEmpty(stored.ThumbnailData!);
+        Assert.Equal(1, provider.CombinedCalls);
+        Assert.Equal(0, provider.LegacyCalls);
+    }
+
+    [Fact]
+    public async Task CanceledCombinedProviderResultDoesNotPublishOrWriteCache()
+    {
+        CreateDatabase();
+        string path = Path.Combine(_root, "canceled-combined.cv-test-thumbnail");
+        File.WriteAllText(path, "provider fixture");
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var provider = new CombinedThumbnailProvider(path, release.Task);
+        ThumbnailProviderFactory.RegisterProvider(provider);
+
+        using var cancellation = new CancellationTokenSource();
+        TimeSpan testWait = TimeSpan.FromSeconds(10);
+        Task<object?> pending = WpfTestHost.Invoke(() => LoadWithDimensionsAsync(reader, path, cancellation.Token));
+        CancellationToken providerToken;
+        try
+        {
+            providerToken = await provider.Entered.WaitAsync(testWait);
+            cancellation.Cancel();
+        }
+        finally { release.TrySetResult(); }
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending.WaitAsync(testWait));
+        Assert.True(providerToken.IsCancellationRequested);
+        Assert.Null(reader.GetCachedInfo(path));
+    }
+
+    private sealed class CombinedThumbnailProvider(string path, Task? release = null) : IThumbnailProviderWithDimensions, IDisposable
+    {
+        private readonly TaskCompletionSource<CancellationToken> _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Task<CancellationToken> Entered => _entered.Task;
+        public int CombinedCalls { get; private set; }
+        public int LegacyCalls { get; private set; }
+        public int Order => 0;
+        public bool CanHandle(string filePath) => filePath == path;
+
+        public (int width, int height) GetImageDimensions(string filePath)
+        {
+            LegacyCalls++;
+            return (0, 0);
+        }
+
+        public Task<BitmapSource?> GenerateThumbnailAsync(string filePath, int maxSize)
+        {
+            LegacyCalls++;
+            return Task.FromResult<BitmapSource?>(null);
+        }
+
+        public async Task<(BitmapSource Thumbnail, int OriginalWidth, int OriginalHeight)?> GenerateThumbnailWithDimensionsAsync(
+            string filePath, int maxSize, CancellationToken cancellationToken)
+        {
+            CombinedCalls++;
+            _entered.TrySetResult(cancellationToken);
+            // A native decoder may still return a bitmap after cancellation.
+            if (release != null) await release;
+            var bitmap = BitmapSource.Create(4, 1, 96, 96, PixelFormats.Gray8, null, new byte[] { 11, 20, 30, 41 }, 4);
+            bitmap.Freeze();
+            return (bitmap, 512, 128);
+        }
+
+        public void Dispose() => UnregisterFixtureThumbnailProvider(this);
+    }
+
     private sealed class FixtureThumbnailProvider(string path, Task? release = null) : IThumbnailProvider, IDisposable
     {
         private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -373,11 +463,13 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
             return Bitmap;
         }
 
-        public void Dispose()
-        {
-            var providers = (List<IThumbnailProvider>)typeof(ThumbnailProviderFactory).GetField("_providers", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
-            providers.Remove(this);
-        }
+        public void Dispose() => UnregisterFixtureThumbnailProvider(this);
+    }
+
+    private static void UnregisterFixtureThumbnailProvider(IThumbnailProvider provider)
+    {
+        var providers = (List<IThumbnailProvider>)typeof(ThumbnailProviderFactory).GetField("_providers", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        providers.Remove(provider);
     }
 
     [Fact]
@@ -492,10 +584,10 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         (IReadOnlyDictionary<string, ThumbnailCacheEntry>)typeof(ThumbnailCacheManager).GetMethod("GetCachedInfos", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(reader, [paths])!;
 
-    private static async Task<object?> LoadWithDimensionsAsync(ThumbnailCacheManager reader, string source)
+    private static async Task<object?> LoadWithDimensionsAsync(ThumbnailCacheManager reader, string source, CancellationToken cancellationToken = default)
     {
         Task pending = (Task)typeof(ThumbnailCacheManager).GetMethod("GetOrCreateThumbnailWithDimensionsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(reader, [source, 120, CancellationToken.None])!;
+            .Invoke(reader, [source, 120, cancellationToken])!;
         await pending;
         return pending.GetType().GetProperty("Result")!.GetValue(pending);
     }
