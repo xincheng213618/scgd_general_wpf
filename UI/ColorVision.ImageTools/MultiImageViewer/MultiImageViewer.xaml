@@ -147,13 +147,16 @@
             </Border>
             
             <!-- 文件列表 -->
-            <ListBox x:Name="FileListBox" Grid.Row="1" 
+            <local:ThumbnailViewportListBox x:Name="FileListBox" Grid.Row="1"
                      BorderThickness="0" 
                      Background="Transparent"
                      SelectionChanged="FileListBox_SelectionChanged"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.CanContentScroll="True"
                      VirtualizingPanel.IsVirtualizing="True"
                      VirtualizingPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.CacheLength="1,1"
+                     VirtualizingPanel.CacheLengthUnit="Page"
                      ItemTemplate="{StaticResource ListItemTemplate}">
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
@@ -176,7 +179,7 @@
                         <MenuItem Header="{x:Static properties:Resources.Sol_Miv_Refresh}" Click="RefreshButton_Click"/>
                     </ContextMenu>
                 </ListBox.ContextMenu>
-            </ListBox>
+            </local:ThumbnailViewportListBox>
         </Grid>
         
         <!-- 分隔条 -->

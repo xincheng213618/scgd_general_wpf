@@ -5,6 +5,8 @@ using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -74,7 +76,8 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件列表
         /// </summary>
-        public ObservableCollection<ImageFileInfo> ImageFiles { get; } = new ObservableCollection<ImageFileInfo>();
+        public ObservableCollection<ImageFileInfo> ImageFiles => _imageFiles;
+        private readonly ImageFileCollection _imageFiles = new();
 
         /// <summary>
         /// 当前显示的文件夹路径
@@ -86,18 +89,14 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         private List<string>? _currentFileList;
 
-        /// <summary>
-        /// 用于防止并发打开图像的锁
-        /// </summary>
-        private string? _currentOpeningFile;
-        private readonly object _openImageLock = new();
         private bool _disposed;
-        // Metadata can finish after Clear, disposal or a newer load.
-        private int _loadGeneration;
+        private bool _publishingFileList;
+        private CancellationTokenSource? _fileLoad;
 
         public MultiImageViewer()
         {
             InitializeComponent();
+            ObserveThumbnailViewport();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -113,133 +112,151 @@ namespace ColorVision.Solution.MultiImageViewer
         /// 从文件夹加载图片
         /// </summary>
         /// <param name="folderPath">文件夹路径</param>
-        public async Task LoadFromFolderAsync(string folderPath)
+        public Task LoadFromFolderAsync(string folderPath)
         {
-            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+            if (string.IsNullOrWhiteSpace(folderPath))
             {
                 MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_FileNotExist, folderPath), "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return Task.CompletedTask;
             }
 
-            CurrentFolderPath = folderPath;
-            _currentFileList = null;
-
-            var files = Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(f => MultiImageViewerConfig.SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
-                .Take(Config.MaxDisplayCount)
-                .ToList();
-
-            await LoadFilesAsync(files);
+            return LoadFilesAsync(() => Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly), folderPath, null);
         }
 
         /// <summary>
         /// 从文件列表加载图片
         /// </summary>
         /// <param name="filePaths">文件路径列表</param>
-        public async Task LoadFromFilesAsync(List<string> filePaths)
-        {
-            if (filePaths == null || filePaths.Count == 0)
-                return;
-
-            CurrentFolderPath = null;
-            _currentFileList = filePaths;
-
-            var validFiles = filePaths
-                .Where(f => MultiImageViewerConfig.SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
-                .Take(Config.MaxDisplayCount)
-                .ToList();
-
-            await LoadFilesAsync(validFiles);
-        }
+        public Task LoadFromFilesAsync(List<string> filePaths)
+            => filePaths is { Count: > 0 } ? LoadFileListAsync(filePaths.ToList()) : Task.CompletedTask;
 
         /// <summary>
         /// 从文件列表加载图片
         /// </summary>
         /// <param name="filePaths">文件路径列表</param>
-        public async Task LoadFromFilesAsync(IEnumerable<string> filePaths)
+        public Task LoadFromFilesAsync(IEnumerable<string> filePaths)
         {
-            await LoadFromFilesAsync(filePaths.ToList());
+            return LoadFileListAsync(filePaths.ToList());
         }
 
-        private async Task LoadFilesAsync(List<string> files)
+        private Task LoadFileListAsync(List<string> snapshot)
+            => snapshot.Count > 0 ? LoadFilesAsync(() => snapshot, null, snapshot) : Task.CompletedTask;
+
+        private async Task LoadFilesAsync(Func<IEnumerable<string>> enumeratePaths, string? folderPath, List<string>? fileList)
         {
             if (_disposed) return;
-            int generation = ++_loadGeneration;
-
-            ImageFiles.Clear();
-            ImageView.Clear();
-            NoImageHint.Visibility = Visibility.Visible;
-            if (files.Count == 0) { UpdateFileCountText(); return; }
-
-            var metadata = await Task.Run(() =>
+            using var load = new CancellationTokenSource();
+            CancellationTokenSource? previous = _fileLoad;
+            _fileLoad = load;
+            CancellationToken token = load.Token;
+            try
             {
-                string[] existingPaths = files.Where(File.Exists).ToArray();
-                IReadOnlyDictionary<string, ThumbnailCacheEntry> entries = existingPaths.Length == 0 ? new Dictionary<string, ThumbnailCacheEntry>(StringComparer.Ordinal)
-                    : ThumbnailCacheManager.Instance.GetCachedInfos(existingPaths);
-                return (Entries: entries, QueriedPaths: existingPaths.ToHashSet(StringComparer.Ordinal));
-            });
-            if (_disposed || generation != _loadGeneration) return;
-
-            int index = 0;
-            for (int i = 0; i < files.Count; i++)
-            {
-                if (_disposed || generation != _loadGeneration) return;
-                var file = files[i];
-
-                if (file.Equals(FilePath, StringComparison.OrdinalIgnoreCase))
+                previous?.Cancel();
+                token.ThrowIfCancellationRequested();
+                int limit = Config.MaxDisplayCount;
+                var thumbnailSettings = (Config.ShowThumbnail, Config.ThumbnailSize, Config.EnableThumbnailCache);
+                List<ImageFileInfo> items;
+                try
                 {
-                    index = i;
+                    items = await Task.Run(() => PrepareFileList(enumeratePaths, limit, token), token);
                 }
-                metadata.Entries.TryGetValue(file, out ThumbnailCacheEntry? cachedInfo);
-                // A file created after prefetch still gets the public constructor's fresh lookup.
-                var fileInfo = metadata.QueriedPaths.Contains(file) ? new ImageFileInfo(file, cachedInfo) : new ImageFileInfo(file);
-                if (_disposed || generation != _loadGeneration) return;
-                ImageFiles.Add(fileInfo);
-            }
-
-            if (_disposed || generation != _loadGeneration) return;
-            UpdateFileCountText();
-            if (_disposed || generation != _loadGeneration) return;
-
-            // 异步加载缩略图
-            if (Config.ShowThumbnail)
-            {
-                await LoadThumbnailsAsync();
-            }
-
-            if (!_disposed && generation == _loadGeneration && ImageFiles.Count > 0)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
+                catch (Exception error) when (folderPath != null && error is (IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException))
                 {
-                    FileListBox.SelectedIndex = index;
-                });
+                    if (!token.IsCancellationRequested)
+                    {
+                        string message = error is DirectoryNotFoundException or ArgumentException
+                            ? string.Format(Properties.Resources.Sol_Fusion_FileNotExist, folderPath) : error.Message;
+                        MessageBox.Show(message, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    return;
+                }
+
+                token.ThrowIfCancellationRequested();
+                bool wasPublishing = _publishingFileList;
+                _publishingFileList = true;
+                try
+                {
+                    ResetThumbnailRows();
+                    token.ThrowIfCancellationRequested();
+                    ImageView.Clear();
+                    token.ThrowIfCancellationRequested();
+                    CurrentFolderPath = folderPath;
+                    _currentFileList = fileList;
+                    _thumbnailSettings = thumbnailSettings;
+                    NoImageHint.Visibility = Visibility.Visible;
+                    _imageFiles.ReplaceWith(items);
+                    token.ThrowIfCancellationRequested();
+                    UpdateFileCountText();
+                    token.ThrowIfCancellationRequested();
+                    int index = items.FindLastIndex(item => item.FilePath.Equals(FilePath, StringComparison.OrdinalIgnoreCase));
+                    FileListBox.SelectedIndex = items.Count == 0 ? -1 : Math.Max(0, index);
+                }
+                finally { _publishingFileList = wasPublishing; }
+
+                token.ThrowIfCancellationRequested();
+                if (FileListBox.SelectedItem is ImageFileInfo selected)
+                {
+                    OpenImage(selected);
+                    token.ThrowIfCancellationRequested();
+                    FileListBox.ScrollIntoView(selected);
+                }
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+            finally
+            {
+                if (ReferenceEquals(_fileLoad, load)) _fileLoad = null;
             }
         }
 
-        private async Task LoadThumbnailsAsync()
+        private static List<ImageFileInfo> PrepareFileList(Func<IEnumerable<string>> enumeratePaths, int limit, CancellationToken token)
         {
-            using var semaphore = new SemaphoreSlim(Math.Max(1, Environment.ProcessorCount / 2));
-            var thumbnailTasks = ImageFiles
-                .Where(f => f.FileExists)
-                .Select(async f =>
-                {
-                    await semaphore.WaitAsync();
-                    try
-                    {
-                        await f.LoadThumbnailAsync(Config.ThumbnailSize, Config.EnableThumbnailCache);
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                });
+            var files = new List<string>();
+            foreach (string path in enumeratePaths())
+            {
+                token.ThrowIfCancellationRequested();
+                if (!MultiImageViewerConfig.SupportedExtensions.Contains(Path.GetExtension(path).ToLowerInvariant())) continue;
+                files.Add(path);
+                if (files.Count == limit) break;
+            }
 
-            await Task.WhenAll(thumbnailTasks);
+            var existingPaths = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string path in files)
+            {
+                token.ThrowIfCancellationRequested();
+                if (File.Exists(path)) existingPaths.Add(path);
+            }
+            token.ThrowIfCancellationRequested();
+            IReadOnlyDictionary<string, ThumbnailCacheEntry>? metadata = existingPaths.Count == 0
+                ? null : ThumbnailCacheManager.Instance.GetCachedInfos(existingPaths.ToArray());
+
+            var items = new List<ImageFileInfo>(files.Count);
+            foreach (string path in files)
+            {
+                token.ThrowIfCancellationRequested();
+                ThumbnailCacheEntry? cached = null;
+                metadata?.TryGetValue(path, out cached);
+                // A path created after prefetch still receives a fresh metadata lookup.
+                items.Add(existingPaths.Contains(path) ? new ImageFileInfo(path, cached) : new ImageFileInfo(path));
+            }
+            return items;
+        }
+
+        private sealed class ImageFileCollection : ObservableCollection<ImageFileInfo>
+        {
+            public void ReplaceWith(IReadOnlyList<ImageFileInfo> items)
+            {
+                CheckReentrancy();
+                Items.Clear();
+                foreach (ImageFileInfo item in items) Items.Add(item);
+                OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+                OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
         }
 
         private void FileListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_disposed && FileListBox.SelectedItem is ImageFileInfo selectedFile)
+            if (!_disposed && !_publishingFileList && FileListBox.SelectedItem is ImageFileInfo selectedFile)
             {
                 OpenImage(selectedFile);
             }
@@ -254,16 +271,9 @@ namespace ColorVision.Solution.MultiImageViewer
             if (fileInfo.FilePath.Equals(ImageView.Config?.FilePath, StringComparison.OrdinalIgnoreCase))
                 return;
 
-            // 防止并发打开同一文件
-            lock (_openImageLock)
-            {
-                if (fileInfo.FilePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
-                    return;
-                _currentOpeningFile = fileInfo.FilePath;
-            }
-
             ImageView.OpenImage(fileInfo.FilePath);
-            NoImageHint.Visibility = Visibility.Collapsed;
+            if (!_disposed && ReferenceEquals(FileListBox.SelectedItem, fileInfo))
+                NoImageHint.Visibility = Visibility.Collapsed;
         }
 
         private void UpdateFileCountText()
@@ -356,7 +366,8 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public void Clear()
         {
-            _loadGeneration++;
+            _fileLoad?.Cancel();
+            ResetThumbnailRows();
             ImageFiles.Clear();
             ImageView.Clear();
             CurrentFolderPath = null;

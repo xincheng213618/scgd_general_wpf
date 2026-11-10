@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Solution.MultiImageViewer
 {
@@ -25,6 +24,9 @@ namespace ColorVision.Solution.MultiImageViewer
             set
             {
                 _filePath = value;
+                Thumbnail = null;
+                ImageWidth = 0;
+                ImageHeight = 0;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(FileName));
                 OnPropertyChanged(nameof(Directory));
@@ -175,16 +177,16 @@ namespace ColorVision.Solution.MultiImageViewer
         {
             try
             {
-                if (File.Exists(_filePath))
+                var fileInfo = new FileInfo(_filePath);
+                if (fileInfo.Exists)
                 {
                     FileExists = true;
-                    var fileInfo = new FileInfo(_filePath);
                     FileSize = fileInfo.Length;
                     LastModified = fileInfo.LastWriteTime;
 
                     // 尝试从缓存获取图像尺寸
                     var cached = loadCachedInfo ? ThumbnailCacheManager.Instance.GetCachedInfo(_filePath) : cachedInfo;
-                    if (cached != null)
+                    if (cached != null && cached.FileLastModified == LastModified && cached.FileSize == FileSize)
                     {
                         ImageWidth = cached.OriginalWidth;
                         ImageHeight = cached.OriginalHeight;
@@ -205,29 +207,28 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 异步加载缩略图
         /// </summary>
-        public async System.Threading.Tasks.Task LoadThumbnailAsync(int thumbnailSize = 120, bool useCache = true)
+        public Task LoadThumbnailAsync(int thumbnailSize = 120, bool useCache = true)
+            => LoadThumbnailAsync(thumbnailSize, useCache, CancellationToken.None);
+
+        internal async Task LoadThumbnailAsync(int thumbnailSize, bool useCache, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
             if (IsLoadingThumbnail) return;
 
+            string path = _filePath;
             IsLoadingThumbnail = true;
             try
             {
-                if (useCache)
+                var loaded = await ThumbnailCacheManager.LoadThumbnailAsync(path, thumbnailSize, useCache, token);
+                token.ThrowIfCancellationRequested();
+                if (loaded != null && string.Equals(path, _filePath, StringComparison.Ordinal))
                 {
-                    var loaded = await ThumbnailCacheManager.Instance.GetOrCreateThumbnailWithDimensionsAsync(_filePath, thumbnailSize);
-                    if (loaded != null)
-                    {
-                        Thumbnail = loaded.Thumbnail;
-                        ImageWidth = loaded.OriginalWidth;
-                        ImageHeight = loaded.OriginalHeight;
-                    }
-                }
-                else
-                {
-                    // 直接创建缩略图，不使用缓存
-                    await LoadThumbnailDirectAsync(thumbnailSize);
+                    Thumbnail = loaded.Thumbnail;
+                    ImageWidth = loaded.OriginalWidth;
+                    ImageHeight = loaded.OriginalHeight;
                 }
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"LoadThumbnailAsync Error: {ex.Message}");
@@ -235,33 +236,6 @@ namespace ColorVision.Solution.MultiImageViewer
             finally
             {
                 IsLoadingThumbnail = false;
-            }
-        }
-
-        private async System.Threading.Tasks.Task LoadThumbnailDirectAsync(int thumbnailSize)
-        {
-            try
-            {
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                    var frame = decoder.Frames[0];
-
-                    ImageWidth = frame.PixelWidth;
-                    ImageHeight = frame.PixelHeight;
-
-                    double scale = Math.Min((double)thumbnailSize / ImageWidth, (double)thumbnailSize / ImageHeight);
-                    scale = Math.Min(scale, 1.0);
-
-                    var thumbnail = new TransformedBitmap(frame, new ScaleTransform(scale, scale));
-                    thumbnail.Freeze();
-                    Thumbnail = thumbnail;
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"LoadThumbnailDirectAsync Error: {ex.Message}");
             }
         }
 

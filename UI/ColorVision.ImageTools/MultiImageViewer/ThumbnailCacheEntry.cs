@@ -41,6 +41,10 @@ namespace ColorVision.Solution.MultiImageViewer
         [SugarColumn(IsNullable = false)]
         public int ThumbnailHeight { get; set; }
 
+        // Old rows have no recorded request size and are replaced when a thumbnail is next requested.
+        [SugarColumn(IsNullable = true)]
+        public int? RequestedThumbnailSize { get; set; }
+
         /// <summary>
         /// 原始图像宽度
         /// </summary>

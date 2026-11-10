@@ -94,7 +94,7 @@ public partial class ThumbnailCacheManager
                     return new(false, true, 0, 0, "缩略图缓存在扫描后发生变化，请重新扫描后再清理。");
 
                 // Earlier thumbnail generation may finish later, but must not refill this cleared snapshot.
-                _cacheMaintenanceGeneration++;
+                Interlocked.Increment(ref _cacheMaintenanceGeneration);
                 using SqliteCommand delete = connection.CreateCommand();
                 delete.Transaction = transaction;
                 delete.CommandText = "DELETE FROM ThumbnailCache;";

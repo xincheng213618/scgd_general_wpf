@@ -1,8 +1,10 @@
+using ColorVision.UI;
 using ColorVision.Solution.MultiImageViewer;
 using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -50,7 +52,7 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
     public void BatchMetadataUsesBoundedQueriesAndPreservesExactPathMatching()
     {
         CreateDatabase();
-        Execute("INSERT INTO ThumbnailCache SELECT 2, 'ORIGINAL.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate FROM ThumbnailCache WHERE Id = 1;");
+        Execute("INSERT INTO ThumbnailCache SELECT 2, 'ORIGINAL.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate, RequestedThumbnailSize FROM ThumbnailCache WHERE Id = 1;");
         using var database = CreateReaderDatabase();
         ThumbnailCacheManager reader = CreateReader(database);
         List<string> queries = [];
@@ -77,12 +79,16 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         string first = Path.Combine(_root, "first.png"), removed = Path.Combine(_root, "removed.png");
         File.WriteAllText(first, "first");
         File.WriteAllText(removed, "removed");
+        File.SetLastWriteTime(first, new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Local));
+        DateTime lastModified = File.GetLastWriteTime(first);
         using (SqliteConnection connection = Open())
         using (SqliteCommand command = connection.CreateCommand())
         {
-            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $first; INSERT INTO ThumbnailCache SELECT 2, $removed, FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate FROM ThumbnailCache WHERE Id = 1;";
+            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $first, FileLastModified = $time, FileSize = $size; INSERT INTO ThumbnailCache SELECT 2, $removed, FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate, RequestedThumbnailSize FROM ThumbnailCache WHERE Id = 1;";
             command.Parameters.AddWithValue("$first", first);
             command.Parameters.AddWithValue("$removed", removed);
+            command.Parameters.AddWithValue("$time", lastModified);
+            command.Parameters.AddWithValue("$size", new FileInfo(first).Length);
             command.ExecuteNonQuery();
         }
         using var database = CreateReaderDatabase();
@@ -92,54 +98,55 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         string[] paths = [first, removed, first, first.ToUpperInvariant()];
         IReadOnlyDictionary<string, ThumbnailCacheEntry> metadata = ReadCachedInfos(reader, paths);
         Assert.Equal(1, queries);
+        Assert.Equal(1024, CreateItem(first).ImageWidth);
         File.Delete(removed);
         File.WriteAllText(first, "updated source content");
+        File.SetLastWriteTime(first, lastModified);
 
-        ImageFileInfo[] items = paths.Select(path =>
-        {
-            metadata.TryGetValue(path, out ThumbnailCacheEntry? cachedInfo);
-            return (ImageFileInfo)Activator.CreateInstance(typeof(ImageFileInfo), BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null, args: [path, cachedInfo], culture: null)!;
-        }).ToArray();
+        ImageFileInfo[] items = paths.Select(CreateItem).ToArray();
         Assert.Equal(paths, items.Select(item => item.FilePath));
         Assert.NotSame(items[0], items[2]);
-        Assert.Equal((1024, 1024), (items[0].ImageWidth, items[2].ImageWidth));
+        Assert.Equal((0, 0), (items[0].ImageWidth, items[2].ImageWidth));
         Assert.False(items[1].FileExists);
         Assert.Equal(0, items[1].ImageWidth);
         Assert.True(items[3].FileExists);
         Assert.Equal(0, items[3].ImageWidth);
         Assert.Equal(new FileInfo(first).Length, items[0].FileSize);
-        Assert.Equal(File.GetLastWriteTime(first), items[0].LastModified);
+        Assert.Equal(lastModified, items[0].LastModified);
         Assert.Equal(1, queries);
+
+        ImageFileInfo CreateItem(string path)
+        {
+            metadata.TryGetValue(path, out ThumbnailCacheEntry? cachedInfo);
+            return (ImageFileInfo)Activator.CreateInstance(typeof(ImageFileInfo), BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null, args: [path, cachedInfo], culture: null)!;
+        }
     }
 
     // The dimensions belong to the returned image, not to a later, independently queried cache row.
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ThumbnailResultKeepsOriginalDimensionsAndRegeneratesChangedSource(bool sourceChanged)
+    [InlineData("none")]
+    [InlineData("time")]
+    [InlineData("length")]
+    [InlineData("bad PNG")]
+    [InlineData("PNG dimensions")]
+    public async Task ThumbnailResultKeepsOriginalDimensionsAndRebuildsInvalidCache(string difference)
     {
         CreateDatabase();
         string source = Path.Combine(_root, "source.png");
-        byte[] png = WpfTestHost.Invoke(() =>
-        {
-            PngBitmapEncoder encoder = new();
-            encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(2, 2, 96, 96, PixelFormats.Gray8, null,
-                new byte[] { 1, 2, 3, 4 }, 2)));
-            using MemoryStream stream = new();
-            encoder.Save(stream);
-            return stream.ToArray();
-        });
+        byte[] png = EncodeGrayPng(2, 2);
         File.WriteAllBytes(source, png);
         DateTime storedTime = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Local);
-        File.SetLastWriteTime(source, sourceChanged ? storedTime.AddDays(1) : storedTime);
+        File.SetLastWriteTime(source, difference == "time" ? storedTime.AddDays(1) : storedTime);
         using (SqliteConnection connection = Open())
         using (SqliteCommand command = connection.CreateCommand())
         {
-            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $path, FileLastModified = $time, ThumbnailData = $png;";
+            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $path, FileLastModified = $time, FileSize = $size, ThumbnailData = $png, ThumbnailWidth = $width, ThumbnailHeight = 2, RequestedThumbnailSize = 120;";
             command.Parameters.AddWithValue("$path", source);
             command.Parameters.AddWithValue("$time", storedTime);
-            command.Parameters.AddWithValue("$png", png);
+            command.Parameters.AddWithValue("$size", difference == "length" ? png.LongLength + 1 : png.LongLength);
+            command.Parameters.AddWithValue("$png", difference == "bad PNG" ? new byte[] { 1, 2, 3 } : png);
+            command.Parameters.AddWithValue("$width", difference == "PNG dimensions" ? 120 : 2);
             command.ExecuteNonQuery();
         }
         using var database = CreateReaderDatabase();
@@ -148,9 +155,229 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         Assert.NotNull(result);
         var thumbnail = Assert.IsAssignableFrom<BitmapSource>(result.GetType().GetProperty("Thumbnail")!.GetValue(result));
         Assert.Equal((2, 2), (thumbnail.PixelWidth, thumbnail.PixelHeight));
-        Assert.Equal(sourceChanged ? 2 : 1024, result.GetType().GetProperty("OriginalWidth")!.GetValue(result));
-        Assert.Equal(sourceChanged ? 2 : 1024, result.GetType().GetProperty("OriginalHeight")!.GetValue(result));
+        int expectedOriginalSize = difference == "none" ? 1024 : 2;
+        Assert.Equal(expectedOriginalSize, result.GetType().GetProperty("OriginalWidth")!.GetValue(result));
+        Assert.Equal(expectedOriginalSize, result.GetType().GetProperty("OriginalHeight")!.GetValue(result));
         Assert.True(thumbnail.IsFrozen);
+        if (difference != "none")
+        {
+            ThumbnailCacheEntry stored = Assert.IsType<ThumbnailCacheEntry>(database.Queryable<ThumbnailCacheEntry>().First(row => row.FilePath == source));
+            Assert.Equal(File.GetLastWriteTime(source), stored.FileLastModified);
+            Assert.Equal(png.LongLength, stored.FileSize);
+            Assert.Equal(120, stored.RequestedThumbnailSize);
+            Assert.Equal(png[..8], stored.ThumbnailData![..8]);
+        }
+    }
+
+    [Fact]
+    public async Task ChangingRequestedThumbnailSizeRegeneratesTheCachedImage()
+    {
+        CreateDatabase();
+        string source = Path.Combine(_root, "resize.png");
+        File.WriteAllBytes(source, EncodeGrayPng(256, 64));
+        File.SetLastWriteTime(source, new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Local));
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+
+        var initial = Assert.IsAssignableFrom<BitmapSource>(await reader.GetOrCreateThumbnailAsync(source, 120));
+        Assert.Equal((120, 30), (initial.PixelWidth, initial.PixelHeight));
+        var resized = Assert.IsAssignableFrom<BitmapSource>(await reader.GetOrCreateThumbnailAsync(source, 64));
+        Assert.Equal((64, 16), (resized.PixelWidth, resized.PixelHeight));
+        ThumbnailCacheEntry stored = Assert.IsType<ThumbnailCacheEntry>(database.Queryable<ThumbnailCacheEntry>().First(row => row.FilePath == source));
+        Assert.Equal(64, stored.RequestedThumbnailSize);
+        Assert.Equal((256, 64), (stored.OriginalWidth, stored.OriginalHeight));
+    }
+
+    [Fact]
+    public async Task UnchangedSourceWithSubsecondTimestampReusesTheCachedThumbnail()
+    {
+        CreateDatabase();
+        string path = Path.Combine(_root, "fractional-timestamp.cv-test-thumbnail");
+        File.WriteAllText(path, "provider fixture");
+        File.SetLastWriteTimeUtc(path, new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc).AddTicks(1_234_567));
+        Assert.NotEqual(0, File.GetLastWriteTimeUtc(path).Ticks % TimeSpan.TicksPerSecond);
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        using var provider = new FixtureThumbnailProvider(path);
+        ThumbnailProviderFactory.RegisterProvider(provider);
+
+        Assert.NotNull(await WpfTestHost.Invoke(() => reader.GetOrCreateThumbnailAsync(path)));
+        Assert.NotNull(await WpfTestHost.Invoke(() => reader.GetOrCreateThumbnailAsync(path)));
+
+        Assert.Equal(1, provider.GenerateCount);
+    }
+
+    [Fact]
+    public async Task LegacyCacheSchemaMigratesWithoutLosingRowsAndRebuildsAnUnsizedThumbnail()
+    {
+        string source = Path.Combine(_root, "legacy.png");
+        byte[] png = EncodeGrayPng(256, 64);
+        File.WriteAllBytes(source, png);
+        DateTime storedTime = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Local);
+        File.SetLastWriteTime(source, storedTime);
+        try
+        {
+            // Keep the real CodeFirst schema and index definitions, then remove only the field absent in the old version.
+            using (OpenCacheDatabase()) { }
+            Execute("ALTER TABLE ThumbnailCache DROP COLUMN RequestedThumbnailSize;");
+            using (SqliteConnection connection = Open())
+            using (SqliteCommand command = connection.CreateCommand())
+            {
+                command.CommandText = "INSERT INTO ThumbnailCache (FilePath, FileLastModified, FileSize, ThumbnailData, ThumbnailWidth, ThumbnailHeight, OriginalWidth, OriginalHeight, CreateDate) VALUES ($path, $time, $size, $png, 256, 64, 256, 64, $time);";
+                command.Parameters.AddWithValue("$path", source);
+                command.Parameters.AddWithValue("$time", storedTime);
+                command.Parameters.AddWithValue("$size", png.LongLength);
+                command.Parameters.AddWithValue("$png", png);
+                command.ExecuteNonQuery();
+            }
+
+            using var database = OpenCacheDatabase();
+            ThumbnailCacheManager reader = CreateReader(database);
+            ThumbnailCacheEntry legacy = Assert.IsType<ThumbnailCacheEntry>(database.Queryable<ThumbnailCacheEntry>().First(row => row.FilePath == source));
+            Assert.Equal(1, legacy.Id);
+            Assert.Equal(png, legacy.ThumbnailData);
+            Assert.Null(legacy.RequestedThumbnailSize);
+
+            var rebuilt = Assert.IsAssignableFrom<BitmapSource>(await reader.GetOrCreateThumbnailAsync(source, 120));
+            Assert.Equal((120, 30), (rebuilt.PixelWidth, rebuilt.PixelHeight));
+            ThumbnailCacheEntry stored = Assert.IsType<ThumbnailCacheEntry>(database.Queryable<ThumbnailCacheEntry>().First(row => row.FilePath == source));
+            Assert.Equal(120, stored.RequestedThumbnailSize);
+            Assert.Equal(1, CountRows());
+        }
+        finally
+        {
+            using var pooledConnection = new SqliteConnection($"Data Source={DatabasePath}");
+            SqliteConnection.ClearPool(pooledConnection);
+        }
+
+        SqlSugar.SqlSugarClient OpenCacheDatabase() => (SqlSugar.SqlSugarClient)typeof(ThumbnailCacheManager)
+            .GetMethod("OpenDatabase", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [DatabasePath])!;
+    }
+
+    [Fact]
+    public async Task SourceChangedDuringGenerationDoesNotPublishOrWriteItsOldThumbnail()
+    {
+        CreateDatabase();
+        string path = Path.Combine(_root, "changing-source.cv-test-thumbnail");
+        File.WriteAllText(path, "first source");
+        DateTime storedTime = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Local);
+        File.SetLastWriteTime(path, storedTime);
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var provider = new FixtureThumbnailProvider(path, release.Task);
+        ThumbnailProviderFactory.RegisterProvider(provider);
+
+        Task<BitmapSource?> pending = WpfTestHost.Invoke(() => reader.GetOrCreateThumbnailAsync(path));
+        try
+        {
+            await provider.Entered.WaitAsync(TimeSpan.FromSeconds(10));
+            File.WriteAllText(path, "a replacement with different length");
+            File.SetLastWriteTime(path, storedTime);
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+        Assert.Null(await pending.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Null(reader.GetCachedInfo(path));
+
+        Assert.NotNull(await WpfTestHost.Invoke(() => reader.GetOrCreateThumbnailAsync(path)));
+        Assert.Equal(new FileInfo(path).Length, reader.GetCachedInfo(path)!.FileSize);
+    }
+
+    [Theory]
+    [InlineData(1024, 1, 120, 1)]
+    [InlineData(1, 1024, 1, 120)]
+    public async Task StandardThumbnailsGenerateAndLoadFromCacheWithTheUiDispatcherBlocked(int width, int height, int thumbWidth, int thumbHeight)
+    {
+        CreateDatabase();
+        string source = Path.Combine(_root, "strip.png");
+        var dispatcher = WpfTestHost.Invoke(() =>
+        {
+            byte[] pixels = Enumerable.Repeat((byte)37, width * height).ToArray();
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray8, null, pixels, width)));
+            using var output = File.Create(source);
+            encoder.Save(output);
+            return Application.Current.Dispatcher;
+        });
+        File.SetLastWriteTime(source, new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Local));
+        using var database = CreateReaderDatabase();
+        ThumbnailCacheManager reader = CreateReader(database);
+        using ManualResetEventSlim release = new();
+        TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task blocked = dispatcher.InvokeAsync(() =>
+        {
+            entered.SetResult();
+            // Safety timeout. The test releases the dispatcher as soon as generation and cache read finish.
+            if (!release.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("UI dispatcher gate was not released.");
+        }).Task;
+
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var generated = Assert.IsAssignableFrom<BitmapSource>(await reader.GetOrCreateThumbnailAsync(source).WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.Equal((thumbWidth, thumbHeight), (generated.PixelWidth, generated.PixelHeight));
+            Assert.True(generated.IsFrozen);
+            Assert.Equal((width, height), (reader.GetCachedInfo(source)!.OriginalWidth, reader.GetCachedInfo(source)!.OriginalHeight));
+
+            // The second request must decode the cached PNG even though the UI thread is still gated.
+            var cached = Assert.IsAssignableFrom<BitmapSource>(await reader.GetOrCreateThumbnailAsync(source).WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.Equal((thumbWidth, thumbHeight), (cached.PixelWidth, cached.PixelHeight));
+            Assert.True(cached.IsFrozen);
+            File.Delete(source);
+            byte[] output = new byte[thumbWidth * thumbHeight * 4];
+            generated.CopyPixels(output, thumbWidth * 4, 0);
+            Assert.Equal(new byte[] { 37, 37, 37, 255 }, output[..4]);
+        }
+        finally
+        {
+            release.Set();
+            await blocked;
+        }
+    }
+
+    [Fact]
+    public async Task DisablingCacheStillUsesTheMatchingThumbnailProvider()
+    {
+        string path = Path.Combine(_root, "fixture.cv-test-thumbnail");
+        File.WriteAllText(path, "provider fixture");
+        using var provider = new FixtureThumbnailProvider(path);
+        ThumbnailProviderFactory.RegisterProvider(provider);
+        var item = (ImageFileInfo)Activator.CreateInstance(typeof(ImageFileInfo), BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null, args: [path, null], culture: null)!;
+        await WpfTestHost.Invoke(() => item.LoadThumbnailAsync(useCache: false));
+        Assert.Equal((512, 128), (item.ImageWidth, item.ImageHeight));
+        var bitmap = Assert.IsAssignableFrom<BitmapSource>(item.Thumbnail);
+        Assert.Equal((4, 1), (bitmap.PixelWidth, bitmap.PixelHeight));
+        Assert.True(bitmap.IsFrozen);
+        WpfTestHost.Invoke(() => Assert.False(provider.Bitmap!.IsFrozen));
+    }
+
+    private sealed class FixtureThumbnailProvider(string path, Task? release = null) : IThumbnailProvider, IDisposable
+    {
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public BitmapSource? Bitmap { get; private set; }
+        public Task Entered => _entered.Task;
+        public int GenerateCount { get; private set; }
+        public int Order => 0;
+        public bool CanHandle(string filePath) => filePath == path;
+        public (int width, int height) GetImageDimensions(string filePath) => (512, 128);
+        public async Task<BitmapSource?> GenerateThumbnailAsync(string filePath, int maxSize)
+        {
+            Bitmap = new WriteableBitmap(4, 1, 96, 96, PixelFormats.Gray8, null);
+            GenerateCount++;
+            _entered.TrySetResult();
+            if (release != null) await release;
+            return Bitmap;
+        }
+
+        public void Dispose()
+        {
+            var providers = (List<IThumbnailProvider>)typeof(ThumbnailProviderFactory).GetField("_providers", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+            providers.Remove(this);
+        }
     }
 
     [Fact]
@@ -180,7 +407,7 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
     {
         CreateDatabase();
         ThumbnailCacheMaintenanceSnapshot scan = Scan(DatabasePath);
-        Execute("INSERT INTO ThumbnailCache SELECT 2, 'new.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, OriginalWidth, OriginalHeight, FileSize, CreateDate FROM ThumbnailCache WHERE Id = 1;");
+        Execute("INSERT INTO ThumbnailCache SELECT 2, 'new.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, OriginalWidth, OriginalHeight, FileSize, CreateDate, RequestedThumbnailSize FROM ThumbnailCache WHERE Id = 1;");
 
         ThumbnailCacheMaintenanceResult result = ThumbnailCacheManager.ClearCacheForMaintenance(scan);
 
@@ -268,15 +495,25 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
     private static async Task<object?> LoadWithDimensionsAsync(ThumbnailCacheManager reader, string source)
     {
         Task pending = (Task)typeof(ThumbnailCacheManager).GetMethod("GetOrCreateThumbnailWithDimensionsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(reader, [source, 120])!;
+            .Invoke(reader, [source, 120, CancellationToken.None])!;
         await pending;
         return pending.GetType().GetProperty("Result")!.GetValue(pending);
     }
 
+    private static byte[] EncodeGrayPng(int width, int height) => WpfTestHost.Invoke(() =>
+    {
+        var encoder = new PngBitmapEncoder();
+        byte[] pixels = Enumerable.Repeat((byte)37, width * height).ToArray();
+        encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray8, null, pixels, width)));
+        using var stream = new MemoryStream();
+        encoder.Save(stream);
+        return stream.ToArray();
+    });
+
     private void CreateDatabase()
     {
-        Execute("CREATE TABLE ThumbnailCache (Id INTEGER PRIMARY KEY, FilePath TEXT, FileLastModified TEXT, ThumbnailData BLOB, ThumbnailWidth INTEGER, ThumbnailHeight INTEGER, OriginalWidth INTEGER, OriginalHeight INTEGER, FileSize INTEGER, CreateDate TEXT);");
-        Execute("INSERT INTO ThumbnailCache VALUES (1, 'original.png', '2026-01-01', zeroblob(16384), 120, 120, 1024, 1024, 100000, '2026-01-01');");
+        Execute("CREATE TABLE ThumbnailCache (Id INTEGER PRIMARY KEY, FilePath TEXT, FileLastModified TEXT, ThumbnailData BLOB, ThumbnailWidth INTEGER, ThumbnailHeight INTEGER, OriginalWidth INTEGER, OriginalHeight INTEGER, FileSize INTEGER, CreateDate TEXT, RequestedThumbnailSize INTEGER NULL);");
+        Execute("INSERT INTO ThumbnailCache VALUES (1, 'original.png', '2026-01-01', zeroblob(16384), 120, 120, 1024, 1024, 100000, '2026-01-01', NULL);");
     }
 
     private SqliteConnection Open()
