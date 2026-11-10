@@ -112,10 +112,10 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 {
                     results.Add(new PostProcessExecutionResult(
                         meta.Name,
-                        string.Empty,
+                        meta.ProcessTypeFullName,
                         meta.FailurePolicy,
                         PostProcessExecutionStatus.Unavailable,
-                        "后处理器不可用。",
+                        meta.HasUnreadableConfiguration ? meta.ProcessDescription : "后处理器不可用。",
                         startedTimeUtc,
                         DateTime.UtcNow));
                     continue;

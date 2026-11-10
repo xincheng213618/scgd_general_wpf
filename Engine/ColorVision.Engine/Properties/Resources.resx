@@ -4567,4 +4567,6 @@
   <data name="Flow_PreProcess_InvalidActionConfigHint" xml:space="preserve"><value>已保存的参数无法读取。请禁用此动作，或删除后重新添加并配置。</value></data>
   <data name="Flow_PreProcess_InvalidEnabledAction" xml:space="preserve"><value>启用的前处理动作“{0}”配置无效。请禁用或重新配置后再运行。</value></data>
   <data name="Flow_PreProcess_ConfigUnavailable" xml:space="preserve"><value>无法读取前处理配置。请恢复有效配置文件，再点击“重新加载”。</value></data>
+  <data name="Flow_PostProcess_InvalidConfiguration" xml:space="preserve"><value>配置无效</value></data>
+  <data name="Flow_PostProcess_InvalidConfigurationHint" xml:space="preserve"><value>无法读取已保存的后处理参数。请编辑此项并重新配置。</value></data>
 </root>

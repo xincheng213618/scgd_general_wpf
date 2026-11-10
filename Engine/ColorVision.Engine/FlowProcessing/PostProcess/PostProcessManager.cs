@@ -45,6 +45,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
         private static PostProcessManager _instance;
         private static readonly object _locker = new();
+        private readonly string _persistFilePath;
         public static PostProcessManager GetInstance() { lock (_locker) { _instance ??= new PostProcessManager(); return _instance; } }
 
         public PostProcessConfig PostProcessConfig { get; set; }
@@ -65,8 +66,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public RelayCommand MoveUpCommand { get; set; }
         public RelayCommand MoveDownCommand { get; set; }
 
-        public PostProcessManager()
+        public PostProcessManager() : this(PersistFilePath)
         {
+        }
+
+        internal PostProcessManager(string persistFilePath)
+        {
+            _persistFilePath = Path.GetFullPath(persistFilePath);
             PostProcessConfig = PostProcessConfig.Instance;
 
             LoadProcesses();
@@ -213,7 +219,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 EngineLocalization.Get("编辑后处理项"),
                 selectedMeta.Name,
                 selectedMeta.TemplateName,
-                selectedMeta.PostProcessor,
+                selectedMeta.PostProcessor ?? Processes.FirstOrDefault(process => process.GetType().FullName == selectedMeta.ProcessTypeFullName),
                 selectedMeta.Tag,
                 selectedMeta.FailurePolicy)
             {
@@ -232,12 +238,20 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             }
 
             object? config = dialog.SelectedProcess.GetConfig();
-            selectedMeta.Name = dialog.MetaName;
-            selectedMeta.TemplateName = dialog.SelectedTemplate.Key;
-            selectedMeta.PostProcessor = dialog.SelectedProcess;
-            selectedMeta.ConfigJson = config == null ? string.Empty : JsonConvert.SerializeObject(config);
-            selectedMeta.Tag = dialog.MetaTag;
-            selectedMeta.FailurePolicy = dialog.FailurePolicy;
+            string configJson = config == null ? string.Empty : JsonConvert.SerializeObject(config);
+            selectedMeta.PropertyChanged -= Meta_PropertyChanged;
+            try
+            {
+                selectedMeta.Name = dialog.MetaName;
+                selectedMeta.TemplateName = dialog.SelectedTemplate.Key;
+                selectedMeta.ConfigJson = configJson;
+                selectedMeta.Tag = dialog.MetaTag;
+                selectedMeta.FailurePolicy = dialog.FailurePolicy;
+                // Keep a failed processor unavailable until the complete replacement is ready.
+                selectedMeta.PostProcessor = dialog.SelectedProcess;
+            }
+            finally { selectedMeta.PropertyChanged += Meta_PropertyChanged; }
+            SavePersistedMetas();
         }
 
         private bool CanMoveUp()
@@ -268,59 +282,27 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         {
             try
             {
-                if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
-                if (!File.Exists(PersistFilePath)) return;
+                Directory.CreateDirectory(Path.GetDirectoryName(_persistFilePath)!);
+                if (!File.Exists(_persistFilePath)) return;
 
-                string json = File.ReadAllText(PersistFilePath);
-                var list = JsonConvert.DeserializeObject<List<PostProcessPersist>>(json) ?? new List<PostProcessPersist>();
+                string json = File.ReadAllText(_persistFilePath);
+                var list = JsonConvert.DeserializeObject<List<PostProcessPersist?>>(json) ?? new List<PostProcessPersist?>();
                 ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged; // 暂停事件
-                foreach (var item in list)
+                try
                 {
-                    IPostProcessor proc = null;
-                    string processTypeName = item.ProcessTypeFullName;
-                    var templateProc = Processes.FirstOrDefault(p => p.GetType().FullName == processTypeName);
-                    
-                    if (templateProc != null)
+                    foreach (var item in list)
                     {
-                        // Create a new instance for each meta to have its own config
-                        proc = templateProc.CreateInstance();
-                    }
-                    else
-                    {
-                        // 尝试反射创建
-                        try
+                        if (item == null)
                         {
-                            var t = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(x => x.FullName == processTypeName && typeof(IPostProcessor).IsAssignableFrom(x));
-                            if (t != null)
-                            {
-                                proc = Activator.CreateInstance(t) as IPostProcessor;
-                                if (proc != null && !Processes.Any(p => p.GetType().FullName == proc.GetType().FullName))
-                                    Processes.Add(proc);
-                            }
+                            log.Warn("Ignored an empty postprocessor configuration entry.");
+                            continue;
                         }
-                        catch (Exception ex)
-                        {
-                            log.Warn($"Unable to instantiate process type {processTypeName}: {ex.Message}");
-                        }
+                        PostProcessMeta meta = LoadMeta(item);
+                        meta.PropertyChanged += Meta_PropertyChanged;
+                        ProcessMetas.Add(meta);
                     }
-                    
-                    PostProcessMeta meta = new PostProcessMeta() 
-                    { 
-                        Name = item.Name, 
-                        TemplateName = item.TemplateName, 
-                        PostProcessor = proc,
-                        ConfigJson = item.ConfigJson,
-                        Tag = item.Tag,
-                        FailurePolicy = item.FailurePolicy
-                    };
-                    
-                    // Apply the stored config to the batch process
-                    meta.ApplyConfig();
-                    
-                    meta.PropertyChanged += Meta_PropertyChanged;
-                    ProcessMetas.Add(meta);
                 }
-                ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged; // 恢复事件
+                finally { ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged; }
             }
             catch (Exception ex)
             {
@@ -328,22 +310,74 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             }
         }
 
+        private PostProcessMeta LoadMeta(PostProcessPersist item)
+        {
+            var meta = new PostProcessMeta
+            {
+                Name = item.Name,
+                TemplateName = item.TemplateName,
+                PersistedProcessorTypeFullName = item.ProcessTypeFullName,
+                ConfigJson = item.ConfigJson,
+                Tag = item.Tag,
+                FailurePolicy = item.FailurePolicy
+            };
+
+            IPostProcessor? prototype;
+            try
+            {
+                prototype = FindProcessorPrototype(item.ProcessTypeFullName);
+                if (prototype == null) return meta;
+                meta.PostProcessor = prototype.CreateInstance();
+            }
+            catch (Exception error)
+            {
+                log.Warn($"Unable to create postprocessor {item.ProcessTypeFullName} for {item.Name}.", error);
+                return meta;
+            }
+
+            try
+            {
+                if (ReferenceEquals(meta.PostProcessor, prototype) && !string.IsNullOrEmpty(meta.ConfigJson) && prototype.GetConfig() != null)
+                    throw new InvalidOperationException("The configured postprocessor did not create an independent instance.");
+                meta.ApplyConfig();
+            }
+            catch (Exception error)
+            {
+                meta.MarkUnreadableConfiguration();
+                log.Warn($"Unable to apply postprocessor configuration for {item.Name}.", error);
+            }
+            return meta;
+        }
+
+        private IPostProcessor? FindProcessorPrototype(string? typeName)
+        {
+            if (string.IsNullOrWhiteSpace(typeName)) return null;
+            IPostProcessor? prototype = Processes.FirstOrDefault(process => process.GetType().FullName == typeName);
+            if (prototype != null) return prototype;
+
+            Type? type = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes())
+                .FirstOrDefault(candidate => candidate.FullName == typeName && typeof(IPostProcessor).IsAssignableFrom(candidate));
+            if (type == null || Activator.CreateInstance(type) is not IPostProcessor discovered) return null;
+            Processes.Add(discovered);
+            return discovered;
+        }
+
         private void SavePersistedMetas()
         {
             try
             {
-                if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
+                Directory.CreateDirectory(Path.GetDirectoryName(_persistFilePath)!);
                 var list = ProcessMetas.Select(m => new PostProcessPersist
                 {
                     Name = m.Name,
                     TemplateName = m.TemplateName,
-                    ProcessTypeFullName = m.PostProcessor?.GetType().FullName,
+                    ProcessTypeFullName = m.PostProcessor?.GetType().FullName ?? m.PersistedProcessorTypeFullName,
                     ConfigJson = m.ConfigJson,
                     Tag = m.Tag,
                     FailurePolicy = m.FailurePolicy
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
-                File.WriteAllText(PersistFilePath, json);
+                File.WriteAllText(_persistFilePath, json);
             }
             catch (Exception ex)
             {

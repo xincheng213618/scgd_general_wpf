@@ -279,12 +279,15 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             RefreshVisibleProcesses();
         }
 
-        private static IPostProcessor CreateProcessDraft(IPostProcessor source)
+        private static IPostProcessor? CreateProcessDraft(IPostProcessor source)
         {
             IPostProcessor draft = source.CreateInstance();
             object? config = source.GetConfig();
             if (config != null)
+            {
+                if (ReferenceEquals(draft, source)) return null;
                 draft.SetConfig(JsonConvert.SerializeObject(config));
+            }
             return draft;
         }
 

@@ -49,6 +49,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             set 
             { 
                 _PostProcessor = value; 
+                if (value != null) HasUnreadableConfiguration = false;
                 _cachedMetadata = null; // Clear cache when process changes
                 OnPropertyChanged(); 
                 OnPropertyChanged(nameof(ProcessTypeName)); 
@@ -62,9 +63,17 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         private IPostProcessor _PostProcessor;
 
         private PostProcessMetadata? _cachedMetadata;
+        internal string? PersistedProcessorTypeFullName { get; init; }
+        internal bool HasUnreadableConfiguration { get; private set; }
+
+        internal void MarkUnreadableConfiguration()
+        {
+            HasUnreadableConfiguration = true;
+            PostProcessor = null!;
+        }
 
         public string ProcessTypeName => PostProcessor?.GetType().Name ?? string.Empty;
-        public string ProcessTypeFullName => PostProcessor?.GetType().FullName ?? string.Empty;
+        public string ProcessTypeFullName => PostProcessor?.GetType().FullName ?? PersistedProcessorTypeFullName ?? string.Empty;
 
         /// <summary>
         /// Gets a value indicating whether this batch process has a configurable config.
@@ -168,13 +177,17 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         /// Gets the display name from metadata (falls back to type name if no metadata).
         /// </summary>
         [JsonIgnore]
-        public string ProcessDisplayName => Metadata.DisplayName;
+        public string ProcessDisplayName => HasUnreadableConfiguration
+            ? EngineLocalization.Get("Flow_PostProcess_InvalidConfiguration")
+            : Metadata.DisplayName;
 
         /// <summary>
         /// Gets the description from metadata.
         /// </summary>
         [JsonIgnore]
-        public string ProcessDescription => Metadata.Description;
+        public string ProcessDescription => HasUnreadableConfiguration
+            ? EngineLocalization.Get("Flow_PostProcess_InvalidConfigurationHint")
+            : Metadata.Description;
 
         /// <summary>
         /// Gets the category from metadata.
