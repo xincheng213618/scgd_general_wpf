@@ -243,8 +243,11 @@ public sealed class CvFilePixelSafetyTests
         }
     }
 
-    [Fact]
-    public async Task LargeCvcieThumbnailMatchesLegacyAreaResizeWithTheUiDispatcherBlocked()
+    [Theory]
+    [InlineData("varied")]
+    [InlineData("constant")]
+    [InlineData("nonfinite")]
+    public async Task LargeCvcieThumbnailMatchesLegacyAreaResizeWithTheUiDispatcherBlocked(string input)
     {
         const int width = 311, height = 233, thumbWidth = 97, thumbHeight = 72;
         const int planePixels = width * height;
@@ -254,6 +257,13 @@ public sealed class CvFilePixelSafetyTests
         {
             int pattern = (x * 7919 + y * 7381 + x * y * 13) % 10007 - 5003;
             samples[y * width + x] = pattern * 0.03125f + (y - x) * 0.0001f;
+        }
+        if (input == "constant") Array.Fill(samples, 12.5f, 0, planePixels);
+        if (input == "nonfinite")
+        {
+            samples[7] = float.NaN;
+            samples[width + 1] = float.PositiveInfinity;
+            samples[planePixels - 3] = float.NegativeInfinity;
         }
         Array.Fill(samples, 1000f, planePixels, planePixels);
         Array.Fill(samples, -1000f, 2 * planePixels, planePixels);

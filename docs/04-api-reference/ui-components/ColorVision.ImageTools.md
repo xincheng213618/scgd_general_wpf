@@ -44,6 +44,8 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 
 视口缩略图在后台获取缓存连接、查询 SQLite 和核对文件状态，等待缓存时界面仍可响应。标准 WPF 缩略图生成和缓存 PNG 编解码也在后台执行，跨查看器最多同时生成两张标准缩略图。WPF 读取首帧并按目标尺寸缩小，每边至少一像素，结果冻结后交给界面。自定义 provider 仍从调用方线程进入，由自身决定解码线程。
 
+应用内 CVRAW/CVCIE 缩略图在后台校验并只读映射磁盘像素，映射不可用时从同一文件读取。三通道 CVCIE 校验完整 XYZ 后只使用内嵌 X。Float32 先按全图范围分块转成 8 位，再做面积缩放，保持原有舍入顺序。CVRAW 可复用已缓存的文件快照，浏览缩略图时的缓存未命中直接读盘。生成的位图在交给界面前冻结。
+
 ## 配置、清理与所有权
 
 `MultiImageViewerConfig` 是共享的 `IConfig` 活对象。默认显示缩略图且启用缓存，`ThumbnailSize=120`（限制 50–300），`MaxDisplayCount=1000`（最小 10）。属性编辑不等于配置落盘，持久化遵循宿主[配置契约](./configuration.md)。改尺寸后，刷新列表会按新尺寸重新取图。`ImageReadDelay` 和 `ListHeight` 当前只有配置声明，读取和布局沿用现有行为。
