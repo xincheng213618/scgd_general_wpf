@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-10-27T08:38:27.313348+00:00",
+  "generated_at": "2026-11-10T03:24:29.677615+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/Help/algorithm-help.css",
@@ -272,6 +272,13 @@
     "ThirdPartyNotices/Colour-Science.txt",
     "Tools/Spectrum/zadig-2.4.exe",
     "Tools/Spectrum/zadig-NOTICE.txt",
+    "UglyToad.PdfPig.Core.dll",
+    "UglyToad.PdfPig.DocumentLayoutAnalysis.dll",
+    "UglyToad.PdfPig.Fonts.dll",
+    "UglyToad.PdfPig.Package.dll",
+    "UglyToad.PdfPig.Tokenization.dll",
+    "UglyToad.PdfPig.Tokens.dll",
+    "UglyToad.PdfPig.dll",
     "WpfHexEditor.ColorPicker.dll",
     "WpfHexEditor.Core.BinaryAnalysis.dll",
     "WpfHexEditor.Core.Contracts.dll",
