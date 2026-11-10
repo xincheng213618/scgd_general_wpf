@@ -2,9 +2,9 @@
 knowledge_id: "engine.native-integration"
 knowledge_type: "guide"
 status: "current"
-summary: "native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。"
-aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","M_VideoSeek","M_VideoPlay","M_VideoClose","opencv_helper API"]
-code_paths: [".github/workflows/dotnet.yml","build.sln","Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/video_export.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/video_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
+summary: "native ABI与HImage所有权、函数族返回值，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。"
+aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","opencv_helper API"]
+code_paths: [".github/workflows/dotnet.yml","build.sln","Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
 test_paths: ["Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
 related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis","engine.opencv-helper-api","delivery.native-testing"]
 ---
@@ -13,7 +13,7 @@ related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","e
 
 本页说明当前仓库里 OpenCV/native 能力的真实边界。Engine 侧有 `cvColorVision` 这种设备 SDK / 算法 DLL 绑定层，UI/Core 侧有 `opencv_helper.dll` / `opencv_cuda.dll` 的 P/Invoke 包装，文件打开链路还包含 `.cvraw` / `.cvcie` 解析和缩略图。
 
-`Native/README.md` 是可独立阅读的英文目录/构建风险入口；[opencv_helper API 参考](../../04-api-reference/engine-components/opencv-helper-api.md)维护英文函数正文，包括校准 Context/共享缓存、POI V2、图像处理、SFR 和视频。`Native/opencv_helper/API_Documentation.md` 保留随源码使用的 ABI/资源前提与正文入口，完整参考可在文档站按函数名查询；它不是自动生成的全部导出清单。签名以对应头文件、实现和托管声明三者核对为准。ImageEditor 的 P2/FindLightBeads 调用与显示生命周期见[直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md)，不在本页复制整套算法契约。
+`Native/README.md` 是可独立阅读的英文目录/构建风险入口；[opencv_helper API 参考](../../04-api-reference/engine-components/opencv-helper-api.md)维护英文函数正文，包括校准 Context/共享缓存、POI V2、图像处理和 SFR。`Native/opencv_helper/API_Documentation.md` 保留随源码使用的 ABI/资源前提与正文入口，完整参考可在文档站按函数名查询；它不是自动生成的全部导出清单。签名以对应头文件、实现和托管声明三者核对为准。ImageEditor 的 P2/FindLightBeads 调用与显示生命周期见[直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md)，不在本页复制整套算法契约。
 
 ## 当前分层
 
@@ -43,7 +43,7 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 
 两侧共享 `opencv_videoio_ffmpeg500_64.dll`。运行时内容校验从实际 NuGet 解析结果及 C++ 属性表分别定位依赖，仅在同名文件的 SHA-256 完全一致时复用一份文件；内容不同或源文件缺失仍阻止交付。供应商 SDK 所需的 `opencv_world401.dll` 属于另一条依赖链，须继续保留。
 
-两侧通过 `HImage` 的尺寸、位深、通道、步长和像素指针交换图像，不传递 `cv::Mat` 对象、OpenCvSharp 原生对象句柄或 C++ 容器。更换 C++ 版本须单独验证 ABI、校准结果、视频及部署依赖。OpenCV 5 调整了最近邻缩放及仿射、透视、重映射插值，升级后这些算法的结果不保证与 4.x 逐像素一致，数值验收应使用实际输入及所属算法契约。
+两侧通过 `HImage` 的尺寸、位深、通道、步长和像素指针交换图像，不传递 `cv::Mat` 对象、OpenCvSharp 原生对象句柄或 C++ 容器。更换 C++ 版本须单独验证 ABI、校准结果和部署依赖。OpenCV 5 调整了最近邻缩放及仿射、透视、重映射插值，升级后这些算法的结果不保证与 4.x 逐像素一致，数值验收应使用实际输入及所属算法契约。
 
 ## 修改落点
 
@@ -86,14 +86,9 @@ CUDA 是另一条边界：Core 通过 `OpenCvCudaBinary` 无条件打包 DLL；�
 | 校准 Context | `exports/calibration_export.cpp` 的变更/执行用 `M_CALIBRATION_OK=1`；`M_CalibrationGetLastError` 返回含终止符的所需UTF-8字节数，`M_CalibrationGetItemCount` 返回数量，不能统一按1判断全部查询 |
 | POI batch | `exports/poi_export.cpp` 用 `M_POI_OK=1`；`M_CalculatePoiBatchV2` 在借用CIE输入上计算并写调用者输出数组，不转交整图内存 |
 | JSON检测 / 焦点评分 | 正JSON长度只证明分配了结果，还须解析业务成功/拒绝；`M_CalArtculation` 返回原始评分，输入准备失败、非有限结果或 guard 捕获异常返回 `-1.0`，须先排除此失败哨兵。0可为有效分数，不能套0成功或归一化阈值 |
-| 视频 | open返回正handle，position返回帧号；手动read透传 `MatToHImage` 转换/分配失败，−3既可表示已到末尾也可为分配失败；视频guard又将OpenCV/标准/未知异常映射到−2/−3/−4，代码不能唯一说明失败原因 |
 | SFR | `exports/sfr_export.cpp` 使用自身参数/图像/计算及异常码，不套common export表 |
 
 校准的只读 RAW 执行、共享缓存释放和调用者临界区，以及 POI V2 原生选项、Engine 标准测量入口的完整说明见 [API 参考](../../04-api-reference/engine-components/opencv-helper-api.md)；入口分别是 `M_CalibrationExecuteToV1`、`M_CalibrationCacheReleaseV1` 和 `M_CalculatePoiBatchV2`。缓存释放不等于磁盘文件删除或活动Context失效，不能借文档检查调用这些有状态入口。
-
-### 视频执行与回调生命周期
-
-视频 API 区分排队、解码、回调与显示完成。Seek/Play/Pause 返回不等待所有显示工作；回调中的 HImage 结构指针与像素缓冲有不同的生命周期，同一 handle 的关闭须与其它调用串行化。完整的工作线程、latest-frame 槽、回调所有权和 Close 并发限制见 [Video Processing Functions](../../04-api-reference/engine-components/opencv-helper-api.md#video-processing-functions)，不要由内部存在 mutex 推导任意并发都安全。
 
 ## 为什么仓库单独跟踪 `opencv_cuda.dll`
 

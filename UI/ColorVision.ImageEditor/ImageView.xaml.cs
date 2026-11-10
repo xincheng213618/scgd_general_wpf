@@ -20,7 +20,6 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -70,6 +69,13 @@ namespace ColorVision.ImageEditor
         }
         public IReadOnlyList<ImageViewImageItem> ImageGroupItems => _imageGroup.Items;
         public int SelectedImageIndex => _imageGroup.SelectedIndex;
+
+        public static readonly DependencyProperty ForwardUnsupportedFileDropsProperty = DependencyProperty.RegisterAttached(
+            "ForwardUnsupportedFileDrops", typeof(bool), typeof(ImageView), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+        public static bool GetForwardUnsupportedFileDrops(DependencyObject element) => (bool)element.GetValue(ForwardUnsupportedFileDropsProperty);
+
+        public static void SetForwardUnsupportedFileDrops(DependencyObject element, bool value) => element.SetValue(ForwardUnsupportedFileDropsProperty, value);
 
         private readonly ImageGroupNavigation _imageGroup;
 
@@ -195,7 +201,10 @@ namespace ColorVision.ImageEditor
                 else Dispatcher.BeginInvoke(RefreshRetiredTools);
             };
             _session = new ImageEditorSession(_document, (previous, current) => ImageDocumentRevisionAdvancedHook?.Invoke(previous, current));
-            _imageGroup = new ImageGroupNavigation(path => OpenImageCore(path));
+            _imageGroup = new ImageGroupNavigation(path =>
+            {
+                if (FindImageOpener(path) is { } opener) OpenImageCore(path, opener);
+            });
             _imageGroup.Changed += (_, _) => UpdateImageGroupNavigator();
             _imageGroup.SelectedImageChanged += (_, change) => SelectedImageChanged?.Invoke(this, change);
             InitializeComponent();
@@ -696,7 +705,15 @@ namespace ColorVision.ImageEditor
                 return;
             }
 
-            if (!_imageGroup.TryOpenGroup(images, selectedIndex)) Clear();
+            var items = images?.ToList();
+            var unsupported = items?.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.FilePath) && FindImageOpener(item.FilePath) == null);
+            if (unsupported != null)
+            {
+                ShowUnsupportedImageFormat(unsupported.FilePath);
+                return;
+            }
+
+            if (!_imageGroup.TryOpenGroup(items, selectedIndex)) Clear();
         }
 
         public void AppendImage(string? filePath, bool open = true)
@@ -705,6 +722,12 @@ namespace ColorVision.ImageEditor
             if (!Dispatcher.CheckAccess())
             {
                 Dispatcher.BeginInvoke(() => AppendImage(filePath, open));
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(filePath) && FindImageOpener(filePath) == null)
+            {
+                ShowUnsupportedImageFormat(filePath);
                 return;
             }
 
@@ -757,17 +780,18 @@ namespace ColorVision.ImageEditor
 
         private void ImageView_Drop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                var sarr = e.Data.GetData(DataFormats.FileDrop);
-                var a = sarr as string[];
-                var fn = a?.First();
-                if (File.Exists(fn))
-                {
-                    OpenImage(fn);
-                    e.Handled = true;
-                }
-            }
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } paths)
+                e.Handled = TryHandleFileDrop(paths[0]);
+        }
+
+        internal bool TryHandleFileDrop(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            if (TryOpenImage(filePath)) return true;
+            if (GetForwardUnsupportedFileDrops(this)) return false;
+
+            ShowUnsupportedImageFormat(filePath);
+            return true;
         }
 
         public void Clear()
@@ -862,26 +886,44 @@ namespace ColorVision.ImageEditor
 
         public void OpenImage(string? filePath)
         {
-            if (string.IsNullOrWhiteSpace(filePath))
-                ClearImageGroup();
-            else
-                _imageGroup.SetSingle(filePath);
-
-            OpenImageCore(filePath);
+            if (!TryOpenImage(filePath)) ShowUnsupportedImageFormat(filePath!);
         }
 
-        private void OpenImageCore(string? filePath, bool forceReload = false)
+        internal bool TryOpenImage(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                ClearImageGroup();
+                return true;
+            }
+
+            if (FindImageOpener(filePath) is not { } imageOpen) return false;
+
+            _imageGroup.SetSingle(filePath);
+            OpenImageCore(filePath, imageOpen);
+            return true;
+        }
+
+        private IImageOpen? FindImageOpener(string filePath)
+        {
+            return IEditorToolFactory.IImageOpens.GetValueOrDefault(Path.GetExtension(filePath).ToLowerInvariant());
+        }
+
+        private static void ShowUnsupportedImageFormat(string filePath)
+        {
+            WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, Path.GetExtension(filePath)));
+        }
+
+        private void OpenImageCore(string filePath, IImageOpen imageOpen, bool forceReload = false)
         {
             // 普通打开会跳过同一路径；还原原图时强制重新走对应格式的打开器。
 
-            if (filePath == null || (!forceReload && filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal)))
+            if (!forceReload && filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal))
             {
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
-            string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-            IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen);
-            long? cachedLength = imageOpen?.GetCachedFileLength(filePath);
+            long? cachedLength = imageOpen.GetCachedFileLength(filePath);
             bool fileExists = cachedLength.HasValue || File.Exists(filePath);
             ReleaseImageContent(fileExists ? imageOpen : null);
             ImageOpenCompletion = fileExists ? Task.CompletedTask : Task.FromException(new FileNotFoundException("Image file was not found.", filePath));
@@ -896,22 +938,14 @@ namespace ColorVision.ImageEditor
                     long fileSize = cachedLength ?? new FileInfo(filePath).Length;
                     Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
 
-                    if (imageOpen != null)
+                    EditorContext.IImageOpen = imageOpen;
+                    if (imageOpen is IAsyncImageOpen asyncOpen)
                     {
-                        EditorContext.IImageOpen = imageOpen;
-                        if (imageOpen is IAsyncImageOpen asyncOpen)
-                        {
-                            _staticOpenCancellation = new CancellationTokenSource();
-                            ImageOpenCompletion = OpenStaticImageAsync(asyncOpen, filePath, _staticOpenCancellation.Token);
-                        }
-                        else EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
-                        IEditorToolFactory.ApplyImageOpenTools(imageOpen);
-                        return;
+                        _staticOpenCancellation = new CancellationTokenSource();
+                        ImageOpenCompletion = OpenStaticImageAsync(asyncOpen, filePath, _staticOpenCancellation.Token);
                     }
-                    else
-                    {
-                        WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, ext));
-                    }
+                    else imageOpen.OpenImage(EditorContext, filePath);
+                    IEditorToolFactory.ApplyImageOpenTools(imageOpen);
                 }
             }
             catch(Exception ex)
@@ -962,12 +996,12 @@ namespace ColorVision.ImageEditor
             }
 
             string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (!CanRestoreOriginalImage)
+            if (filePath == null || !CanRestoreOriginalImage || FindImageOpener(filePath) is not { } opener)
             {
                 return false;
             }
 
-            OpenImageCore(filePath, forceReload: true);
+            OpenImageCore(filePath, opener, forceReload: true);
             return true;
         }
 

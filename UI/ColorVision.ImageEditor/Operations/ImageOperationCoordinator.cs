@@ -344,7 +344,7 @@ namespace ColorVision.ImageEditor.Operations
 
                 if (mutationKind == ImageDocumentMutationKind.SourcePixelsChanged)
                 {
-                    // In-place producers (video/realtime/native commit) have already updated
+                    // In-place producers (live preview or native commit) have already updated
                     // ViewBitmapSource. Publish that canonical source while invalidating the old
                     // revision so a stale preview cannot remain visible or republish later.
                     if (!preservesNewerPreview)

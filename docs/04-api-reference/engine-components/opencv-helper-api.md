@@ -2,9 +2,9 @@
 knowledge_id: "engine.opencv-helper-api"
 knowledge_type: "reference"
 status: "current"
-summary: "opencv_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。"
-aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_AnalyzeSfrV2", "斜边清晰度", "ESF", "MTF50", "MTF10", "RGB 子像素", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoSeekWithCallbacks", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
-code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/include/video_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/video_export.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/SfrAnalysis.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/SFR", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
+summary: "opencv_helper 英文 API 参考：校准/POI、图像处理、SFR、检测与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。"
+aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_AnalyzeSfrV2", "斜边清晰度", "ESF", "MTF50", "MTF10", "RGB 子像素", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
+code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/SfrAnalysis.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/SFR", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
 test_paths: ["Test/opencv_helper_test/test_sfr_analysis.cpp","Test/opencv_helper_test/test_find_luminous_area.cpp","Test/opencv_helper_test/test_calibration.cpp","Test/opencv_helper_test/test_pseudo_color.cpp","Test/opencv_helper_test/test_p2_algorithms.cpp","Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms.local-native-analysis", "algorithms.poi-routes", "algorithms.find-cross"]
 ---
@@ -31,7 +31,6 @@ Start with the [native integration guide](../../02-developer-guide/engine-develo
 - [SFR Functions](#sfr-spatial-frequency-response-functions)
 - [Focus Evaluation](#focus-evaluation-functions)
 - [Detection Functions](#detection-functions)
-- [Video Processing](#video-processing-functions)
 - [Utility Functions](#utility-functions)
 - [P2 Local Analysis](#p2-local-analysis-functions)
 - [Error Codes](#error-codes)
@@ -131,23 +130,6 @@ enum FocusAlgorithm {
     SpatialFrequency = 6       // Spatial frequency
 };
 ```
-
-### VideoInfo
-
-Video file information structure.
-
-```cpp
-#pragma pack(push, 1)
-struct VideoInfo {
-    int totalFrames;    // Total frame count
-    double fps;         // Frames per second
-    int width;          // Frame width
-    int height;         // Frame height
-};
-#pragma pack(pop)
-```
-
-Use `OpenCVMediaHelper.VideoInfo` on the managed side (`Pack = 1`). Its size is 20 bytes: `totalFrames` offset 0, `fps` offset 4, `width` offset 12 and `height` offset 16. Do not use HImage's Pack 8 for this structure.
 
 ## Calibration Context API
 
@@ -957,150 +939,6 @@ COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi,
 
 Threshold < 0 uses Otsu; MaxArea <= 0 uses 25% of the working image area. MarginRatio is clamped to 0..0.45 and shrinks each detected rectangle. A valid ROI is applied and its offset is added back to output, so KeyRegions uses full-image coordinates. Other ROIs fall back to the image. No detected keys returns -2 rather than successful empty JSON. The detector groups rows by vertical position and sorts each row by x.
 
-## Video Processing Functions
-
-### M_VideoOpen
-
-Open video file for playback.
-
-```cpp
-COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info);
-```
-
-**Returns:** Handle (positive) on success; negative on failure. Invalid input or
-an unopened source normally returns `-1`; `GuardVideoExport` also maps OpenCV,
-standard and unknown exceptions to `-2`, `-3` and `-4` respectively.
-
-Opening creates the producer/consumer workers in a paused state. A valid handle
-does not mean playback has started or a frame callback has completed.
-
----
-
-### M_VideoReadFrame
-
-Read single frame from video.
-
-```cpp
-COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage);
-```
-
-Returns `0` with an owned output buffer on success. `-1` covers invalid output or
-handle, `-2` a failed/empty read, and `-3` a known end-of-stream position. The
-result of `MatToHImage` is also propagated, including conversion/allocation
-failures (`-3` for allocation failure). The video exception guard reuses some
-of these numbers, so the code alone does not always identify a unique cause.
-Dispose a non-null owned output after use.
-
----
-
-### M_VideoSeek
-
-Queue a seek to a specific frame.
-
-```cpp
-COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex);
-COLORVISIONCORE_API int M_VideoSeekWithCallbacks(int handle, int frameIndex,
-    VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, void* userData);
-```
-
-两者返回 `0` 只表示接收请求，不证明已解码、回调或显示；无效 handle/index 返回 `-1`/`-2`，异常仍走视频 guard。`M_VideoSeek` 不登记回调，首次 Play 前没有帧接收者。新增的 `M_VideoSeekWithCallbacks` 原子登记回调和目标，保持当前播放/暂停状态；空帧回调返回 `-3`，无效参数不改变已有请求。旧 DLL 缺少此入口，托管 backend 回退旧 Seek。
-
-工作线程出队时捕获回调及 `userData`，同一快照贯穿解码、latest-frame 槽、暂停定位和结束状态。更新登记不会把旧帧标成新请求；可能已在途的旧回调仍带旧 `userData`，接收方应据此拒绝过期结果。Seek 推进内部代次，过期解码不能暂停新请求。
-
----
-
-### M_VideoGetCurrentFrame
-
-Get the capture's current CAP_PROP_POS_FRAMES value under its mutex, or a negative error. This is capture position, not acknowledgement that a callback or UI has rendered that frame.
-
-```cpp
-COLORVISIONCORE_API int M_VideoGetCurrentFrame(int handle);
-```
-
----
-
-### M_VideoSetPlaybackSpeed
-
-Set playback speed multiplier. A valid handle returns 0; non-positive speed is replaced by 1.0. The setter has no finite-value check, so callers must reject NaN/infinity. Return 0 does not confirm playback timing.
-
-```cpp
-COLORVISIONCORE_API int M_VideoSetPlaybackSpeed(int handle, double speed);
-```
-
----
-
-### M_VideoSetResizeScale
-
-Set display resize scale for performance.
-
-```cpp
-COLORVISIONCORE_API int M_VideoSetResizeScale(int handle, double scale);
-```
-
-**Scale values:** 1.0, 0.5, 0.25 and 0.125 have dedicated processing paths, but
-the native setter also accepts intermediate values. It changes non-positive
-values to 0.125 and clamps values above 1.0 to 1.0; this is not a four-value enum. Reject non-finite values in the caller; these comparisons do not reject NaN.
-
----
-
-### M_VideoPlay
-
-Start video playback with callbacks.
-
-```cpp
-// Callback types
-typedef void (__stdcall *VideoFrameCallback)(int handle, HImage* frame,
-    int currentFrame, int totalFrames, void* userData);
-typedef void (__stdcall *VideoStatusCallback)(int handle, int status, void* userData);
-
-COLORVISIONCORE_API int M_VideoPlay(int handle,
-    VideoFrameCallback frameCallback,
-    VideoStatusCallback statusCallback,
-    void* userData);
-```
-
-`InvokeFrame` 的栈上 `HImage*` 仅在回调期间借用，不可保留；独立分配的 `pData` 所有权交给接收方，须释放一次或显式转移，native 回调返回后不代为释放。生产者覆盖 latest-frame 槽，消费者取最新帧，不保证无损逐帧交付。帧回调在原生工作线程执行，暂停定位也可由生产者直接回调。回调及其 `userData` 须在仍可能执行期间保持有效，替换登记不构成旧回调完成屏障。
-
-**Status codes:** 0=Paused, 1=Playing, 2=Ended
-
----
-
-### M_VideoPause
-
-Pause video playback.
-
-```cpp
-COLORVISIONCORE_API int M_VideoPause(int handle);
-```
-
-Pause changes the playback flag; it does not wait for an already-running callback
-to finish.
-
----
-
-### M_VideoClose
-
-Close video and release resources.
-
-```cpp
-COLORVISIONCORE_API int M_VideoClose(int handle);
-```
-
-Close removes the handle, clears stored callbacks, stops workers and releases
-capture resources. `StopVideoWorkers` normally joins the workers, but detaches
-the current worker if close is called from that worker's callback. In that case
-close can return before the current callback has returned. Do not treat every
-successful close as a universal callback-completion barrier.
-
-Callers must serialize close against other operations on the same handle. An
-operation that already obtained the context can outlive handle removal, and
-`M_VideoClose` releases `cap` without the `capMutex` used by manual frame reads.
-The current implementation therefore does not establish arbitrary concurrent
-close/read safety. This is an implementation limitation, not a claim that a
-concurrency stress test passed.
-
----
-
 ## Utility Functions
 
 ### FreeResult
@@ -1218,12 +1056,7 @@ Zero means success for the zero-success image operations, not for every export.
 Calibration mutation/execution and POI batch calls use `M_CALIBRATION_OK = 1`
 and `M_POI_OK = 1`; calibration text/count queries return sizes or counts.
 JSON-producing detection exports return a positive length, which may still
-describe an algorithm rejection. Focus evaluation returns a score. Video open
-returns a positive handle, video position returns a frame index, and video
-operations use their own negative results and `GuardVideoExport` mappings.
-In particular, video read `-3` may mean end-of-stream, `MatToHImage` allocation
-failure, or a standard exception; inspect the call path/logs instead of assigning
-a DLL-wide meaning.
+describe an algorithm rejection. Focus evaluation returns a score.
 
 ### Stitching Errors
 
@@ -1255,7 +1088,6 @@ The enum is declared in `Native/include/opencv_media_export.h`. The current stit
 
 ## Thread Safety
 
-- **Video functions:** Internal mutexes protect selected state, not arbitrary lifecycle concurrency. Serialize close against other same-handle calls and observe the callback lifetime limits above; seek/pause returns do not wait for rendering or all callbacks.
 - **Image processing:** Keep input buffers alive and synchronize shared buffers/output locations. There is no blanket DLL-wide thread-safety guarantee or general "instance" lock for these free functions.
 - **SFR/P2 calculations:** Use separate output locations and independently valid input buffers. These algorithms do not expose a shared mutable context; that observation does not certify all OpenCV/runtime dependencies or concurrent lifecycle operations.
 

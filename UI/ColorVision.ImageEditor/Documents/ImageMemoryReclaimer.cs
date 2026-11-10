@@ -41,7 +41,7 @@ public static class ImageMemoryReclaimer
         _ = Task.Run(static () => GC.Collect(2, GCCollectionMode.Forced, blocking: false));
     }
 
-    /// <summary>Call only after dropping ownership, never for each incoming video frame.</summary>
+    /// <summary>Call only after dropping ownership, never for each incoming live frame.</summary>
     public static Task RequestCollection(long releasedBytes)
     {
         if (releasedBytes < MinimumReleaseBytes) return Task.CompletedTask;

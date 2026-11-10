@@ -1,45 +1,9 @@
 #include "pch.h"
 #include "common.h"
 #include <Windows.h>
-#include <opencv2/opencv.hpp>
-#include <atomic>
 #include <cstring>
-#include <exception>
 #include <string>
 #include <vector>
-
-namespace
-{
-std::atomic<InitialFrame> g_initialFrame{ nullptr };
-std::atomic<UpdateFrame> g_updateFrame{ nullptr };
-
-template <typename Func>
-int GuardCommonExport(Func func) noexcept
-{
-    try {
-        return func();
-    }
-    catch (const cv::Exception&) {
-        return -4;
-    }
-    catch (const std::exception&) {
-        return -5;
-    }
-    catch (...) {
-        return -6;
-    }
-}
-}
-
-extern "C" COLORVISIONCORE_API void SetInitialFrame(InitialFrame fn)
-{
-    g_initialFrame.store(fn, std::memory_order_release);
-}
-
-extern "C" COLORVISIONCORE_API void SetUpdateFrame(UpdateFrame fn)
-{
-    g_updateFrame.store(fn, std::memory_order_release);
-}
 
 // Optimized UTF8ToGB using RAII and std::vector for automatic memory management
 std::string UTF8ToGB(const char* str)
@@ -73,34 +37,4 @@ std::string UTF8ToGB(const char* str)
     }
 
     return std::string(multiByteBuffer.data());
-}
-
-extern "C" COLORVISIONCORE_API int ReadVideoTest(const char* filePath)
-{
-    return GuardCommonExport([&]() -> int {
-        InitialFrame callback = g_initialFrame.load(std::memory_order_acquire);
-        if (filePath == nullptr || filePath[0] == '\0' || callback == nullptr) {
-            return -1;
-        }
-
-        cv::Mat frame;
-        cv::VideoCapture cap = cv::VideoCapture(filePath);
-
-        if (!cap.isOpened()) {
-            return -2;
-        }
-
-        for (;;) {
-            cap >> frame;
-            if (frame.empty()) {
-                break;
-            }
-            const int callbackResult = callback(frame.data, frame.rows, frame.cols, frame.channels());
-            if (callbackResult != 0) {
-                return callbackResult;
-            }
-            cv::waitKey(30);
-        }
-        return 0;
-        });
 }

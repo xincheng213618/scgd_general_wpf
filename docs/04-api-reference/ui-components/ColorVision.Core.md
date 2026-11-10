@@ -5,13 +5,13 @@ status: "current"
 summary: "定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。"
 aliases: ["原生图像调用缺少DLL","ColorVision.Core","HImage","OpenCVMediaHelper","ImageCompute","NativeLogBridge","原生日志初始化","BmwSfrAnalyzer","SfrChromaticAberration"]
 code_paths: ["UI/ColorVision.Core/HImage.cs","UI/ColorVision.Core/HImageExtension.cs","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/ImageCompute.cs","UI/ColorVision.Core/NativeLogBridge.cs","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/README.md","UI/ColorVision.Core/BmwSfrAnalyzer.cs","UI/ColorVision.Core/SfrChromaticAberration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HImageAbiTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs","Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs","Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs","Test/CameraTest.Tests/ChromaticAberrationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HImageAbiTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs","Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs","Test/CameraTest.Tests/ChromaticAberrationTests.cs"]
 related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fusion","ui.image-frames"]
 ---
 
 # ColorVision.Core
 
-`UI/ColorVision.Core/` 提供原生图像/视频互操作、图像缓冲结构和 WPF 位图桥接。上层编辑工具、文档状态与结果叠加由 [ImageEditor](./ColorVision.ImageEditor.md) 等调用方负责；Core 的方法签名和返回值应按具体 native 函数核对。
+`UI/ColorVision.Core/` 提供原生图像互操作、图像缓冲结构和 WPF 位图桥接。上层编辑工具、文档状态与结果叠加由 [ImageEditor](./ColorVision.ImageEditor.md) 等调用方负责；Core 的方法签名和返回值应按具体 native 函数核对。
 
 ## 能力与责任位置
 
@@ -19,7 +19,7 @@ related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fus
 | --- | --- | --- |
 | 原生图像结构 | `HImage.cs` | `HImage` 是含非托管指针的值类型；复制结构体不会复制像素或转移释放责任 |
 | 位图转换与复制 | `HImageExtension.cs` | `ToPixelFormat`、`ToWriteableBitmap`、`ToHImage`、`UpdateWriteableBitmap` 等入口；复制、借用和释放语义需区分 |
-| helper 导出 | `OpenCVMediaHelper.cs` | 伪彩、增强、滤波、阈值、SFR、聚焦评价、视频等 P/Invoke，参数与成功条件因函数而异 |
+| helper 导出 | `OpenCVMediaHelper.cs` | 伪彩、增强、滤波、阈值、SFR、聚焦评价等 P/Invoke，参数与成功条件因函数而异 |
 | CUDA 导出包装 | `OpenCVCuda.cs` | Fusion 系列、批量调用和输出释放；托管包装在调用前尝试准备 CUDA 日志 |
 | Fusion 选择 | `ImageCompute.cs` | `UseCuda` 与 `Fusion()` 选路，不提供通用直方图、统计或滤波托管 API |
 | 源帧与读者租约 | `SourceImageFrame.cs` | 引用计数、revision 与最后读者退出后的释放，完整规则见[源图像帧](./image-frame-lifetime.md) |
@@ -103,7 +103,7 @@ Core 当前目标框架为 `net8.0-windows7.0;net10.0-windows7.0`，native 资�
 | 测试 | 覆盖范围 |
 | --- | --- |
 | `HImageAbiTests` | 托管声明的布局、大小和字段偏移，不能独自证明实际 native DLL 的 ABI |
-| `HImageExtensionCopyTests`、`VideoFrameCopyTests` | 位图复制、行填充和格式等边界；后者不等于真实视频采集或解码验收 |
+| `HImageExtensionCopyTests` | 位图复制、行填充和格式等边界 |
 | `NativeLogBridgeTests` | 默认参数、导出前缀、回调解码与隔离；另含真实 helper 日志回传调用 |
 
 运行前区分纯托管检查、加载真实 DLL 和实际设备验证。交付时还需核对包资产及上层实际打开、显示和释放结果；测试文件存在或托管构建成功，都不能证明相机、CUDA 设备和全部 native 导出已验证。

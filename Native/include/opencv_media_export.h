@@ -6,7 +6,6 @@
 
 #include "custom_structs.h"
 #include "common.h"
-#include "video_export.h"
 
 #ifdef OPENCV_EXPORTS
 #define COLORVISIONCORE_API __declspec(dllexport)

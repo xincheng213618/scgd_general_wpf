@@ -743,6 +743,77 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UnsupportedFilePreservesCurrentImageDocumentAndGroup(bool droppedOnWorkspace)
+    {
+        string imagePath = Path.Combine(Path.GetTempPath(), $"colorvision-open-{Guid.NewGuid():N}.png");
+        string unsupportedPath = Path.ChangeExtension(imagePath, ".mp4");
+        string[] groupPaths = [imagePath, Path.ChangeExtension(imagePath, ".tiff")];
+        var capability = new AttachmentCapability();
+        ImageView? view = null;
+
+        try
+        {
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                WriteEncodedImage(imagePath);
+                File.WriteAllBytes(unsupportedPath, []);
+                view = new ImageView();
+                view.RegisterImageContentProvider(new AttachmentContentProvider(capability));
+                view.OpenImages(groupPaths);
+                return view.ImageOpenCompletion;
+            });
+
+            WpfTestHost.Invoke(() =>
+            {
+                ImageView current = view!;
+                BitmapSource pixels = Assert.IsAssignableFrom<BitmapSource>(current.ViewBitmapSource);
+                var content = Assert.IsType<DecodedImageContent>(current.ImageContent);
+                Assert.Same(capability, current.ImageContentCapability);
+                var opener = Assert.IsAssignableFrom<IImageOpen>(current.EditorContext.IImageOpen);
+                Task completion = current.ImageOpenCompletion;
+                long revision = current.ImageRevision;
+                long length = current.Config.GetProperties<long>(ImageViewPropertyKeys.FileSize);
+                int changes = 0;
+                current.SelectedImageChanged += (_, _) => changes++;
+
+                if (droppedOnWorkspace)
+                {
+                    var host = new Border();
+                    ImageView.SetForwardUnsupportedFileDrops(host, true);
+                    host.Child = current;
+                    Assert.False(current.TryHandleFileDrop(unsupportedPath));
+                }
+                else
+                {
+                    Assert.False(current.TryOpenImage(unsupportedPath));
+                }
+
+                Assert.Equal(groupPaths, current.ImageGroupItems.Select(item => item.FilePath));
+                Assert.Equal(0, current.SelectedImageIndex);
+                Assert.Equal(0, changes);
+                Assert.Equal(revision, current.ImageRevision);
+                Assert.Equal(imagePath, current.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
+                Assert.Equal(length, current.Config.GetProperties<long>(ImageViewPropertyKeys.FileSize));
+                Assert.Same(opener, current.EditorContext.IImageOpen);
+                Assert.Same(completion, current.ImageOpenCompletion);
+                Assert.Same(pixels, current.ViewBitmapSource);
+                Assert.Same(content, current.ImageContent);
+                Assert.Same(capability, current.ImageContentCapability);
+                Assert.Equal(0, capability.DisposeCalls);
+            });
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            File.Delete(imagePath);
+            File.Delete(unsupportedPath);
+        }
+    }
+
     [Fact]
     public async Task RestoreOriginalImageAfterProcessingReloadsCurrentSourceThroughMenuCommand()
     {

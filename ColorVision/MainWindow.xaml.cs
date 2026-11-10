@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor;
 using ColorVision.Solution;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
@@ -280,6 +281,7 @@ namespace ColorVision
             InitRightMenuItemPanel();
 
             this.AllowDrop = true;
+            ImageView.SetForwardUnsupportedFileDrops(this, true);
             this.Drop += MainWindow_Drop;
 
             // 窗口关闭时自动保存布局

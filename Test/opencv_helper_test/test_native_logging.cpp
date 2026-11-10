@@ -1,5 +1,4 @@
 #include "../../Native/opencv_helper/native_log.h"
-#include "../../Native/include/video_export.h"
 
 #include <intrin.h>
 
@@ -295,17 +294,6 @@ bool TestRealDllCallbackContract()
         M_CALIBRATION_INVALID_ARGUMENT,
         cvnative::LogLevel::Debug,
         "M_CalibrationCreate")) {
-        return false;
-    }
-
-    if (!ExpectBoundaryLog(
-        [] {
-            VideoInfo info{};
-            return M_VideoOpen(nullptr, &info);
-        },
-        -1,
-        cvnative::LogLevel::Warn,
-        "M_VideoOpen")) {
         return false;
     }
 
