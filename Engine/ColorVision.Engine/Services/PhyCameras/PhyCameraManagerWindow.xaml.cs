@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Engine.Services.Devices.Camera.Diagnostics;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
@@ -7,7 +8,6 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
 
@@ -130,6 +130,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
             PhyCameraManager.GetInstance().RefreshEmptyCamera();
+            if (MvsDiagnosticsPaths.FindLogViewer(MvsDiagnosticsPaths.GetInstallationDirectories()) != null)
+                MvsLogButton.Visibility = Visibility.Visible;
             ApplyOnlineSorting();
             PhyCameraManager.GetInstance().PhyCameras.CollectionChanged += OnPhyCamerasCollectionChanged;
             this.Closed += (s, args) => PhyCameraManager.GetInstance().PhyCameras.CollectionChanged -= OnPhyCamerasCollectionChanged;
@@ -171,16 +173,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 StackPanelShow.Children.Add(phyCamera.GetDeviceInfo());
             }
-        }
-
-        private void ToolbarMenuButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not Button button || button.ContextMenu == null)
-                return;
-
-            button.ContextMenu.PlacementTarget = button;
-            button.ContextMenu.Placement = PlacementMode.Bottom;
-            button.ContextMenu.IsOpen = true;
         }
     }
 }

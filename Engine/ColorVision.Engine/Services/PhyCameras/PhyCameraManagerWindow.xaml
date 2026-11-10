@@ -128,34 +128,13 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="White" Margin="0,0,8,0"/>
                         <TextBlock Text="{x:Static properties:Resources.AddUncreatedCamera}" Foreground="White" FontWeight="SemiBold"/>
-                        <Border Background="#26FFFFFF" CornerRadius="9" Padding="6,1" Margin="8,0,0,0">
-                            <Border.Style>
-                                <Style TargetType="{x:Type Border}">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Count}" Value="0">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                            <TextBlock Text="{Binding Count, Mode=OneWay}" Foreground="White" FontSize="11"/>
-                        </Border>
                     </StackPanel>
                 </Button>
                 <Button Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
                 <Button Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
-                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Click="ToolbarMenuButton_Click">
-                    <Button.ContextMenu>
-                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                            <MenuItem Header="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
-                            <MenuItem Header="{x:Static properties:Resources.PhyCamera_MvsLog}" Command="{Binding OpenMVSLogViewerCommand}"/>
-                        </ContextMenu>
-                    </Button.ContextMenu>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{x:Static properties:Resources.Operation}"/>
-                        <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Margin="8,0,0,0" FontSize="11"/>
-                    </StackPanel>
-                </Button>
+                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
+                <Button x:Name="MvsLogButton" Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.PhyCamera_MvsLog}"
+                        Command="{Binding OpenMVSLogViewerCommand}" Visibility="Collapsed"/>
             </WrapPanel>
         </Grid>
 

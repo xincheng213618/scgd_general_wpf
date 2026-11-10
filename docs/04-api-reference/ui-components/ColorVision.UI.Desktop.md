@@ -78,7 +78,7 @@ Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，
 
 “当前进程内存转储”是独立的诊断来源，默认不勾选；手动选择后，由 `Feedback/Collectors/CurrentProcessDumpCollector.cs` 在打包时抓取运行中进程的完整内存快照。它不读取或修改 WER 崩溃转储配置，也不按日志天数或历史 Dump 的 100 MiB 上限筛选。快照写入临时文件后直接以最高 ZIP 压缩级别写入反馈包的 `ProcessDump/`，不会生成嵌套 ZIP；压缩率取决于内存内容。打包结束会清理临时快照，采集失败会清理未完成文件并尽量加入 `ProcessDump/collection-error.txt`，其他来源继续打包。服务器确认提交成功、上传文件流释放后，反馈窗口清理本次生成的诊断 ZIP；失败或取消上传时保留 ZIP 以便重试或离线复制，用户手动添加的原始附件不在清理列表内。回归入口为 `Test/ColorVision.UI.Tests/CrashDumpDiagnosticsTests.cs`，原生快照成功与真实提交后的清理仍需运行应用验收。
 
-物理相机管理的“操作 → MVS 日志”通过 SDK 环境变量、MVS 安装注册表信息和系统 Program Files 目录定位 LogViewer，优先 Win64、其次 Win32。启动时以查看器所在目录作为工作目录，并保留厂商程序要求的管理员权限；取消 UAC 不报告启动错误。只安装 SDK 运行库可能没有 LogViewer，找不到程序时显示提示。该入口与反馈收集共用 `MvsDiagnosticsPaths` 的安装位置发现，但收集文件不依赖成功打开查看器。
+打开物理相机管理时，通过 SDK 环境变量、MVS 安装注册表信息和系统 Program Files 目录定位 LogViewer，优先 Win64、其次 Win32。找到时，工具栏显示“MVS 日志”。启动时以查看器所在目录作为工作目录，并保留厂商程序要求的管理员权限；取消 UAC 不报告启动错误。该入口与反馈收集共用 `MvsDiagnosticsPaths` 的安装位置发现，但收集文件不依赖成功打开查看器。
 
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
 

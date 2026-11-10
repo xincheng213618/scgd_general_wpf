@@ -390,10 +390,10 @@
   </data>
 
   <data name="AddUncreatedCamera" xml:space="preserve">
-    <value>新增未建立的相機</value>
+    <value>新增相機</value>
   </data>
   <data name="LicenseImport" xml:space="preserve">
-    <value>許可證匯入</value>
+    <value>匯入許可證</value>
   </data>
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>自動曝光模板</value>
@@ -1560,10 +1560,10 @@
     <value>啟用前面板</value>
   </data>
   <data name="OpenDeviceManager" xml:space="preserve">
-    <value>開啟裝置管理員</value>
+    <value>裝置管理員</value>
   </data>
   <data name="LicenseManager" xml:space="preserve">
-    <value>License Manager</value>
+    <value>許可證管理</value>
   </data>
   <data name="CopyLicense" xml:space="preserve">
     <value>複製許可證</value>
