@@ -40,6 +40,7 @@ namespace ColorVision.Copilot
         public const int MaxCatalogEntries = 64;
         private const int MaxCandidateFiles = 256;
         private const int MaxSkillFileBytes = 262_144;
+        internal const string NotUtf8Warning = "[SKILL.md is not UTF-8; re-save it as UTF-8 or the model reads garbled text]";
         private const int MaxFrontmatterCharacters = 16_384;
         private const int MaxDescriptionCharacters = 180;
         private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(5);
@@ -365,8 +366,17 @@ namespace ColorVision.Copilot
                 if (!file.Exists || file.Length <= 0 || file.Length > MaxSkillFileBytes || (file.Attributes & FileAttributes.ReparsePoint) != 0)
                     return null;
 
-                using var stream = new FileStream(skillFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                byte[] bytes;
+                using (var stream = new FileStream(skillFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                {
+                    // An editor holding the file open must not make the skill vanish from the list.
+                    bytes = new byte[stream.Length];
+                    stream.ReadExactly(bytes);
+                }
+
+                var isUtf16 = bytes.AsSpan().StartsWith(Encoding.Unicode.Preamble) || bytes.AsSpan().StartsWith(Encoding.BigEndianUnicode.Preamble);
+                var isNotUtf8 = !isUtf16 && !System.Text.Unicode.Utf8.IsValid(bytes);
+                using var reader = new StreamReader(new MemoryStream(bytes), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
                 if (!string.Equals(reader.ReadLine()?.Trim(), "---", StringComparison.Ordinal))
                     return null;
 
@@ -394,11 +404,16 @@ namespace ColorVision.Copilot
                 if (!frontmatterClosed || name.Length == 0 || description.Length == 0)
                     return null;
 
+                // The agent framework sends SKILL.md to the model as UTF-8, so an ANSI file reaches it
+                // garbled. Show that here instead of decoding it nicely and hiding the problem.
+                if (isNotUtf8)
+                    description = NormalizeDescription(NotUtf8Warning + " " + description);
+
                 var metadata = CopilotAgentSkillMetadata.Read(Path.GetDirectoryName(skillFilePath));
                 return new CopilotAgentSkillCatalogItem(name, description)
                 {
                     DisplayName = metadata.DisplayName,
-                    ShortDescription = metadata.ShortDescription,
+                    ShortDescription = isNotUtf8 ? string.Empty : metadata.ShortDescription,
                     DefaultPrompt = metadata.DefaultPrompt,
                     Dependencies = metadata.Dependencies,
                     SkillFilePath = skillFilePath,

@@ -76,7 +76,8 @@ namespace ColorVision.Copilot
 
             return HasFlowContext(activeRequest)
                 && (ContainsAny(activeRequest.UserText, CurrentSurfaceReferenceMarkers)
-                    || ContainsAny(activeRequest.UserText, CurrentSurfaceProblemMarkers)
+                    || (ContainsAny(activeRequest.UserText, CurrentSurfaceProblemMarkers)
+                        || ContainsAny(activeRequest.UserText, FlowNodeReferenceMarkers))
                         && !ContainsAny(activeRequest.UserText, DefinitionQuestionMarkers));
         }
 

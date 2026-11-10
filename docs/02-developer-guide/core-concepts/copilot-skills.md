@@ -3,7 +3,7 @@ knowledge_id: "copilot.skills"
 knowledge_type: "topic"
 status: "current"
 summary: "Copilot 技能的项目/用户/内置发现路径、显式调用、同名选择、开关、按需加载、使用统计和 MCP 依赖配置。"
-aliases: ["技能", "内置技能", "Skill 什么时候加载", "/skills", "SKILL.md", "SKILL.json", ".agents/skills", "allow_implicit_invocation", "Skill 没有出现", "CopilotAgentSkills", "CopilotAgentSkillCatalog", "CopilotAgentSkillMetadata", "CopilotAgentSkillReference", "CopilotAgentSkillOverrideConfig", "CopilotAgentSkillUsageStore", "Skill MCP 依赖", "colorvision-flow-diagnostics", "colorvision-script-automation"]
+aliases: ["技能", "内置技能", "Skill 什么时候加载", "/skills", "SKILL.md", "SKILL.json", ".agents/skills", "allow_implicit_invocation", "Skill 没有出现","技能说明乱码", "CopilotAgentSkills", "CopilotAgentSkillCatalog", "CopilotAgentSkillMetadata", "CopilotAgentSkillReference", "CopilotAgentSkillOverrideConfig", "CopilotAgentSkillUsageStore", "Skill MCP 依赖", "colorvision-flow-diagnostics", "colorvision-script-automation"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSkills.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCatalogMonitor.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMetadata.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillSelectionPolicy.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillUsageStore.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillReference.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillCommand.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillDiagnostics.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyPolicy.cs", "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyInstaller.cs", "ColorVision/Copilot/Config/CopilotAgentSkillOverrideConfig.cs", "ColorVision/Copilot/CopilotChatViewModel.SupportCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.SkillMcpDependencies.cs", "ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs", "ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs", "ColorVision/Copilot/CopilotSettingsWindow.xaml", "ColorVision/Copilot/Skills", "ColorVision/ColorVision.csproj"]
 test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs"]
 related: ["copilot.lifecycle", "copilot.configuration", "copilot.interactions", "copilot.extensions", "copilot.tool-contracts"]
@@ -31,7 +31,7 @@ ColorVision 使用自己的配置、作用域和工具审批，技能内容不�
 
 ## 添加与调用
 
-1. 在项目或用户技能目录中创建 `SKILL.md`。`name` 使用 1–64 位小写字母、数字或连字符，`description` 说明适用任务；目录名和名称保持一致便于定位。
+1. 在项目或用户技能目录中创建 UTF-8 编码的 `SKILL.md`。Agent 框架按 UTF-8 把正文交给模型，旧记事本保存的 ANSI 文件会在 `/skills` 列表的说明前标出“not UTF-8”，需另存为 UTF-8。`name` 使用 1–64 位小写字母、数字或连字符，`description` 说明适用任务；目录名和名称保持一致便于定位。
 2. 正文写清输入、步骤、完成证据和停止条件。较长的领域参考放在该技能的 `references/`，不要把全部资料塞进说明字段。
 3. 在聊天中输入 `/skills reload`，核对列表中的名称、来源和具体路径。
 4. 使用 `$skill-name` 或 `/skill-name` 加上任务要求；有同名候选时从补全列表选择对应路径。只在普通文字中提到完整名称，不满足运行时的显式调用规则。

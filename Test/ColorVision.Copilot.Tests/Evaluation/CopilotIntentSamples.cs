@@ -63,6 +63,7 @@ internal static class CopilotIntentSamples
         S("db-01", "数据库里有多少张表", [DatabaseRead]),
         S("db-02", "查一下数据库里 OK 和 NG 各有多少条", [DatabaseRead]),
         S("db-03", "结果库里 OK 和 NG 各有多少", [DatabaseRead]),
+        S("db-19", "数据库里今天一共测了多少片", [DatabaseRead]),
         S("db-04", "这张表有多少条结果", [DatabaseRead]),
         S("db-05", "昨天的检测结果存在哪张表里，帮我查一下有几条", [DatabaseRead]),
         S("db-06", "帮我统计一下今天的不良率", [DatabaseRead]),
@@ -101,6 +102,9 @@ internal static class CopilotIntentSamples
         S("edit-19", "把这个 bug 修好，然后跑一下测试", [WorkspaceWrite, Execute], evidence: Edit | CopilotIntentEvidence.Execute),
         S("edit-20", "改完之后编译一下确认能过", [WorkspaceWrite, Execute], evidence: Edit | CopilotIntentEvidence.Execute),
         S("edit-21", "帮我修改回复解析的代码", [WorkspaceWrite], evidence: Edit),
+        S("edit-22", "把端口号改成 8080", [WorkspaceWrite], evidence: Edit),
+        S("edit-23", "这行注释删掉", [WorkspaceWrite], evidence: Edit),
+        S("edit-24", "把这个变量名换成 count", [WorkspaceWrite], evidence: Edit),
 
         // Rewriting text in the chat is not a workspace change.
         S("text-01", "帮我改一下这句话的语气", []),
@@ -113,6 +117,7 @@ internal static class CopilotIntentSamples
         S("text-08", "重新组织一下你的回答", []),
         S("text-09", "请修改回答，只保留结论", []),
         S("text-10", "please edit your answer to be shorter", []),
+        S("text-11", "把这段话改成英文", []),
 
         // Spoken read-only constraints: investigating stays possible, writing does not.
         S("ro-01", "只读审计一下这个项目的代码", [LocalSearch], forbids: [WorkspaceWrite]),
@@ -129,6 +134,7 @@ internal static class CopilotIntentSamples
         S("ro-12", "不改代码的前提下，定位一下内存泄漏在哪", [LocalSearch], forbids: [WorkspaceWrite]),
         S("ro-13", "do not modify any file, review this project", [LocalSearch], forbids: [WorkspaceWrite]),
         S("ro-14", "just look, don't change anything", [LocalSearch], forbids: [WorkspaceWrite]),
+        S("ro-15", "先别改，帮我看看这个函数为什么会空指针", [LocalSearch], forbids: [WorkspaceWrite]),
 
         // Code questions that need local evidence but no edit.
         S("read-01", "这个项目里登录逻辑在哪里实现", [LocalSearch]),
@@ -139,6 +145,7 @@ internal static class CopilotIntentSamples
         S("read-06", "帮我找找哪里用到了 MQTT", [LocalSearch]),
         S("read-07", "项目里有没有写相机重连的逻辑", [LocalSearch]),
         S("read-08", "where is the login logic implemented in this repo", [LocalSearch]),
+        S("read-09", "曝光时间默认值是在哪个文件里定义的", [LocalSearch]),
 
         // Running commands, builds and tests.
         S("run-01", "运行 dotnet test", [Execute], evidence: CopilotIntentEvidence.Execute),
@@ -153,6 +160,7 @@ internal static class CopilotIntentSamples
         S("run-10", "run the unit tests", [Execute], evidence: CopilotIntentEvidence.Execute),
         S("run-11", "怎么运行这个项目的单元测试"),
         S("run-12", "dotnet test 是干什么的"),
+        S("run-13", "帮我把测试跑一遍", [Execute], evidence: CopilotIntentEvidence.Execute),
 
         // Creating files and rolling back the agent's own changes.
         S("new-01", "新建一个 Foo.cs 文件", [WorkspaceWrite], evidence: Create),
@@ -161,6 +169,8 @@ internal static class CopilotIntentSamples
         S("new-04", "写一个脚本存到 tools 目录里", [WorkspaceWrite], evidence: Create),
         S("new-05", "create a new file named Foo.cs", [WorkspaceWrite], evidence: Create),
         S("new-06", "怎么新建一个 WPF 窗口"),
+        S("new-07", "在 Docs 目录加个 setup.md", [WorkspaceWrite], evidence: Create),
+        S("new-08", "怎么加一个配置文件", []),
         S("back-01", "回滚刚才的修改", [WorkspaceWrite], evidence: Rollback),
         S("back-02", "撤销你刚才的改动", [WorkspaceWrite], evidence: Rollback),
         S("back-03", "刚才改错了，恢复原样", [WorkspaceWrite], evidence: Rollback),
@@ -179,6 +189,8 @@ internal static class CopilotIntentSamples
         S("flow-10", "把这两个节点连起来", [FlowWrite], context: Flow),
         S("flow-11", "什么是流程节点", context: Flow),
         S("flow-12", "看看这个流程，不要改", [FlowInspect], forbids: [FlowWrite], context: Flow),
+        S("flow-13", "流程里哪个节点耗时最长", [FlowInspect], context: Flow),
+        S("flow-14", "把 POI 节点删了", [FlowWrite], context: Flow),
 
         // Run history, incidents, devices and logs.
         S("ops-01", "上一次流程跑了多久", [FlowRunHistory]),
@@ -195,6 +207,8 @@ internal static class CopilotIntentSamples
         S("ops-12", "刚才软件报错了，帮我看看日志", [RecentLog]),
         S("ops-13", "软件刚才闪退了，帮我查查原因", [RecentLog]),
         S("ops-14", "check the recent application log", [RecentLog]),
+        S("ops-15", "光谱仪连不上，看看底层日志怎么说", [RecentLog]),
+        S("ops-16", "相机初始化失败，查一下 SDK 日志", [RecentLog]),
 
         // Public web access.
         S("web-01", "搜索一下 OpenCV 5 的新特性", [WebSearch], evidence: Web),
@@ -212,6 +226,7 @@ internal static class CopilotIntentSamples
         S("git-01", "git status 是什么情况", [GitStatus]),
         S("git-02", "当前在哪个分支", [GitStatus]),
         S("git-03", "有哪些未跟踪文件", [GitStatus]),
+        S("git-09", "我改了哪些文件还没提交", [GitStatus]),
         S("git-04", "看一下当前改动", [GitDiff]),
         S("git-05", "我改了什么", [GitDiff]),
         S("git-06", "这次提交前都动了哪些文件", [GitDiff]),
@@ -225,6 +240,8 @@ internal static class CopilotIntentSamples
         S("sys-04", "RegistrationCenterService 这个 Windows 服务在运行吗", [WindowsService]),
         S("sys-05", "1883 端口有人在监听吗", [TcpPort]),
         S("sys-06", "看看 3306 端口通不通", [TcpPort]),
+        S("sys-07", "MQTT 服务是不是挂了", [WindowsService]),
+        S("sys-08", "8080 端口被谁占了", [TcpPort]),
 
         // Batch image work is still enforced from text, so questions must stay out of it.
         S("batch-01", "批量处理这些图像：应用直方图均衡并导出", evidence: CopilotIntentEvidence.BatchImage),
@@ -235,6 +252,8 @@ internal static class CopilotIntentSamples
         S("batch-06", "批量处理图片一般有哪些算法"),
         S("batch-07", "这批图片的白平衡效果怎么样"),
         S("batch-08", "怎么把这些图片做反相"),
+        S("batch-09", "把这几张图都做一下反相", evidence: CopilotIntentEvidence.BatchImage),
+        S("batch-10", "把这几张图转成灰度图"),
 
         // Concepts and small talk: no work has to be proven.
         S("talk-01", "你好"),
@@ -251,6 +270,11 @@ internal static class CopilotIntentSamples
         S("talk-12", "what is a mutex"),
         S("talk-13", "实现一个单例模式有哪些写法"),
         S("talk-14", "重构和重写有什么区别"),
+        S("talk-15", "曝光时间改成多少合适？"),
+        S("talk-16", "这个参数可以去掉吗"),
+        S("talk-17", "超时时间一般调成多少比较好"),
+        S("talk-18", "日志级别 Debug 和 Info 有什么区别"),
+        S("talk-19", "光谱仪一般多久校准一次"),
 
         // Without a workspace there is nothing to edit, so no edit can be demanded.
         S("nows-01", "帮我修改代码，修掉这个空引用", context: NoWorkspace),
@@ -258,6 +282,8 @@ internal static class CopilotIntentSamples
         S("nows-03", "写一个快速排序给我看看", context: NoWorkspace),
         S("nows-04", "数据库里 OK 和 NG 各有多少", [DatabaseRead], context: NoWorkspace),
         S("nows-05", "相机连不上了", [DeviceServices], context: NoWorkspace),
+        S("nows-06", "光谱仪连不上", [DeviceServices], context: NoWorkspace),
+        S("nows-07", "解释一下 MTF 是什么", context: NoWorkspace),
     ];
 
     private const CopilotIntentTool LocalSearch = CopilotIntentTool.LocalSearch;

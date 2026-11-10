@@ -37,6 +37,33 @@ public sealed class CopilotAgentSkillCatalogTests
             ((IDictionary<string, CopilotAgentSkillOverrideState>)request.SkillPathOverrides).Clear());
     }
 
+    // The agent framework reads SKILL.md as UTF-8 for the model, so the list must not hide an ANSI file.
+    [Fact]
+    public void AnsiSkillFileIsFlaggedInTheCatalog()
+    {
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        try
+        {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            var skillDirectory = Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "ansi-skill");
+            Directory.CreateDirectory(skillDirectory);
+            File.WriteAllBytes(Path.Combine(skillDirectory, "SKILL.md"), System.Text.Encoding.GetEncoding(936).GetBytes(CreateSkill("ansi-skill", "相机曝光检查")));
+            WriteSkill(Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "utf8-skill"), "utf8-skill", "相机曝光检查");
+
+            // An editor holding the file open for writing must not hide the skill.
+            using var editorHandle = new FileStream(Path.Combine(skillDirectory, "SKILL.md"), FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            var items = CopilotAgentSkillCatalog.Discover([], overrides: null, applicationBaseDirectory, userProfileDirectory: applicationBaseDirectory);
+            editorHandle.Dispose();
+
+            Assert.StartsWith(CopilotAgentSkillCatalog.NotUtf8Warning, Assert.Single(items, item => item.Name == "ansi-skill").EffectiveDescription, StringComparison.Ordinal);
+            Assert.Equal("相机曝光检查", Assert.Single(items, item => item.Name == "utf8-skill").EffectiveDescription);
+        }
+        finally
+        {
+            Directory.Delete(applicationBaseDirectory, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task CachedCatalogReloadsWhenSkillRootAppearsChangesAndIsDeleted()
     {

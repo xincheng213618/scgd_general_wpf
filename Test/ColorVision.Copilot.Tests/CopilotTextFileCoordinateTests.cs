@@ -215,6 +215,12 @@ public sealed class CopilotTextFileCoordinateTests : IDisposable
         var whole = CopilotGrepTextCapability.Search([_directory.FullName], "needle", null, CancellationToken.None);
         var scoped = CopilotGrepTextCapability.Search([Path.Combine(_directory.FullName, "dist")], "needle", null, CancellationToken.None);
         var files = CopilotSearchFilesCapability.Search([_directory.FullName], "*.txt", null, allowPlainSearchTerms: false, CancellationToken.None);
+        File.WriteAllText(Path.Combine(_directory.FullName, "Strings.resx"), "x");
+        var mentions = CopilotComposerReferenceCatalog.SearchWorkspaceFiles(_directory.FullName, ".");
+
+        Assert.Contains(mentions, path => path.EndsWith("kept.txt", StringComparison.Ordinal));
+        Assert.Contains(mentions, path => path.EndsWith("Strings.resx", StringComparison.Ordinal));
+        Assert.DoesNotContain(mentions, path => path.Contains("out.txt", StringComparison.Ordinal) || path.Contains(".tmp.txt", StringComparison.Ordinal));
         Assert.True(whole.ScanComplete);
         Assert.Equal("kept.txt", Path.GetFileName(Assert.Single(whole.Matches).FullPath));
         Assert.Equal("out.txt", Path.GetFileName(Assert.Single(scoped.Matches).FullPath));

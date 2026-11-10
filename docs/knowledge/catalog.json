@@ -2026,7 +2026,14 @@
         "工具输出归档",
         "SubmitCodeReviewFindings",
         "代码审查findings",
-        "CopilotCodeReviewSnapshot"
+        "CopilotCodeReviewSnapshot",
+        "Copilot 能读PDF吗",
+        "GBK 文件乱码",
+        "GrepText 正则",
+        "断网时 Copilot 能查文档吗",
+        "补丁 CRLF 换行",
+        "附件中文乱码",
+        "文档搜索无命中"
       ],
       "code_paths": [
         "ColorVision/Copilot/Agent/CopilotAnthropicThinkingBindingChatClient.cs",
@@ -2346,6 +2353,7 @@
       "status": "current",
       "summary": "Copilot 任务生命周期、恢复预算与项目指令发现的契约；技能发现和调用见独立技能主题。",
       "aliases": [
+        "AGENTS.md 太长会被截断吗",
         "Copilot 如何加载 AGENTS.md",
         "为什么不读取 config.toml",
         "CopilotAgentProjectInstructions",
@@ -2723,6 +2731,7 @@
         ".agents/skills",
         "allow_implicit_invocation",
         "Skill 没有出现",
+        "技能说明乱码",
         "CopilotAgentSkills",
         "CopilotAgentSkillCatalog",
         "CopilotAgentSkillMetadata",

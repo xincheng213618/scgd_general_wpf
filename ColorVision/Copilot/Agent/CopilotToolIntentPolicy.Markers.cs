@@ -70,6 +70,32 @@ namespace ColorVision.Copilot
             "please modify", "please edit", "edit the file", "fix this", "fix the code", "please implement", "implement a", "implement the", "implement this", "make this change", "change the code", "refactor", "replace the code", "update the file", "apply the patch", "delete file", "delete the file", "remove file", "remove the file",
         };
 
+        // Everyday imperative phrasings ("把这个文件删掉", "把函数里的空指针修掉"). Inside ColorVision the
+        // same verbs usually change app objects ("把这个名字换成新名称" renames a device or template),
+        // so they count only with a code or file target and when the request is not a question.
+        private static readonly string[] CasualWorkspaceEditMarkers =
+        {
+            "修掉", "修好", "改掉", "调成", "调到", "更新成", "更新为", "改成", "改为", "换成", "去掉这个", "去掉那个", "删掉", "一起改", "改吧", "改完",
+            "rename this", "rename the", "change it to", "remove this parameter", "remove the unused",
+        };
+
+        private static readonly string[] QuestionMarkers =
+        {
+            "怎么", "如何", "怎样", "为什么", "为何", "什么", "哪些", "几种", "吗", "？", "?", "多少", "比较好", "合适", "建议",
+            "how ", "what ", "why ", "which ",
+        };
+
+        private static readonly string[] CodeOnlyTargetMarkers =
+        {
+            "README", " bug", "注释", "变量", "编译", "comment", "variable", "compile",
+        };
+
+        // Records and flow nodes change through their own tools, not workspace patches.
+        private static readonly string[] NonFileEditTargetMarkers =
+        {
+            "流程", "节点", "记录", "flow", "node", "record",
+        };
+
         private static readonly string[] WorkspaceEditExplanationMarkers =
         {
             "如何修改", "怎么修改", "怎样修改", "如何修复", "怎么修复", "怎样修复", "如何实现", "怎么实现", "怎样实现", "如何重构", "怎么重构", "怎样重构",
@@ -86,7 +112,7 @@ namespace ColorVision.Copilot
         private static readonly string[] WorkspaceEditOptOutMarkers =
         {
             "不要修改", "不用修改", "无需修改", "只说明", "只解释", "只分析", "不要写文件",
-            "只看不改", "不要动文件", "别动文件", "不要动代码", "别动代码", "不要改代码", "别改代码", "不改代码", "别动手", "只说思路", "给个思路",
+            "只看不改", "不要动文件", "别动文件", "不要动代码", "别动代码", "不要改代码", "别改代码", "不改代码", "别动手", "只说思路", "给个思路", "先别改", "先不要改", "先不改", "暂时别改", "暂时不要改",
             "do not modify", "don't modify", "do not edit", "don't edit", "explain only", "analysis only", "read only",
             "do not change anything", "don't change anything", "without changing anything",
         };
@@ -120,15 +146,17 @@ namespace ColorVision.Copilot
         private static readonly string[] WorkspaceRollbackMarkers =
         {
             "撤销修改", "撤销刚才", "回滚修改", "回滚刚才", "回滚补丁", "还原文件", "恢复原文件",
+            "撤销你刚才", "撤销改动", "撤回改动", "撤回刚才", "恢复原样", "改回去",
             "undo the change", "undo that change", "rollback the change", "roll back the change", "revert the file",
+            "roll back the patch", "revert the change", "revert your change", "undo your change",
         };
 
         private static readonly string[] WorkspaceCreateMarkers =
         {
-            "新建文件", "创建文件", "新增文件", "添加文件", "新建类", "创建类", "新增类", "添加类",
+            "新建文件", "创建文件", "新增文件", "添加文件", "新建类", "创建类", "新增类", "添加类", "新建一个", "创建一个",
             "新建多个文件", "创建多个文件", "新增多个文件", "添加多个文件", "新建两个文件", "创建两个文件",
             "新建脚本", "创建脚本", "写一个脚本", "写个脚本", "编写脚本", "生成脚本",
-            "create a file", "create the file", "add a file", "add the file", "create a class", "add a class", "new source file",
+            "create a file", "create the file", "create a new file", "add a file", "add the file", "create a class", "add a class", "new source file",
             "create a script", "create the script", "write a script", "generate a script",
         };
 
@@ -136,6 +164,14 @@ namespace ColorVision.Copilot
         {
             "新建", "创建", "写一个", "写个", "编写", "生成",
             "create", "write", "generate", "add",
+        };
+
+        // "在这个目录下加一个 README": an everyday verb plus a file-like target, not a question.
+        private static readonly string[] CasualWorkspaceCreateMarkers = { "加一个", "新增一个", "添加一个", "加个" };
+
+        private static readonly string[] CasualWorkspaceCreateTargetMarkers =
+        {
+            "README", "文件", ".cs", ".json", ".md", ".py", ".ps1", ".bat", ".xml", ".yaml", ".txt",
         };
 
         private static readonly string[] WorkspaceCreateExplanationMarkers =
@@ -152,7 +188,7 @@ namespace ColorVision.Copilot
 
         private static readonly string[] ColloquialWorkspaceValidationMarkers =
         {
-            "跑一下测试", "跑一下单元测试", "跑单元测试", "运行单元测试", "执行单元测试", "运行 dotnet", "执行 dotnet", "跑 dotnet",
+            "跑一下测试", "跑一下单元测试", "跑单元测试", "测试跑一遍", "跑一遍测试", "测试跑一下", "运行单元测试", "执行单元测试", "运行 dotnet", "执行 dotnet", "跑 dotnet",
             "build 一下",
             "run unit tests", "run the unit tests",
         };
@@ -267,6 +303,9 @@ namespace ColorVision.Copilot
             "flow graph", "flow editor", "workflow", "flow node", "camera node", "algorithm node",
         };
 
+        // With a flow open, naming a node ("把 POI 节点删了") refers to that flow.
+        private static readonly string[] FlowNodeReferenceMarkers = { "节点", "node" };
+
         private static readonly string[] CurrentSurfaceReferenceMarkers =
         {
             "当前", "这个", "这两个", "这几个", "这些", "这里", "选中", "活动", "刚才",
@@ -297,8 +336,8 @@ namespace ColorVision.Copilot
 
         private static readonly string[] FlowMutationMarkers =
         {
-            "添加", "新增", "创建", "插入", "连接", "修改", "设置", "移动",
-            "add node", "create node", "insert node", "connect node", "set node", "update node", "move node",
+            "添加", "新增", "创建", "插入", "连接", "修改", "设置", "移动", "删除", "删掉", "删了", "移除",
+            "add node", "create node", "insert node", "connect node", "set node", "update node", "move node", "delete node", "remove node",
         };
 
         private static readonly string[] MutationExplanationMarkers =
@@ -503,7 +542,7 @@ namespace ColorVision.Copilot
 
         private static readonly string[] BatchImageAlgorithmTargetMarkers =
         {
-            "这些图片", "这些图像", "多张图片", "多张图像", "所有图片", "所有图像", "全部图片", "全部图像", "批量图片", "批量图像",
+            "这些图片", "这些图像", "这几张图", "这些图", "多张图片", "多张图像", "所有图片", "所有图像", "全部图片", "全部图像", "批量图片", "批量图像",
             "对图片", "对图像",
             "these images", "the images", "all images", "multiple images", "batch images", "batch image", " images",
         };

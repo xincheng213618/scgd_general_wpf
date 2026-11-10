@@ -325,7 +325,7 @@ namespace ColorVision.Copilot
             return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: false);
         }
 
-        private static readonly Lazy<Encoding> LegacyEncoding = new(() =>
+        internal static readonly Lazy<Encoding> LegacyEncoding = new(() =>
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             return Encoding.GetEncoding(54936, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);

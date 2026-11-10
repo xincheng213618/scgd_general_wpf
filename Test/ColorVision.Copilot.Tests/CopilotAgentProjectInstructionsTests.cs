@@ -5,6 +5,48 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentProjectInstructionsTests
 {
     [Fact]
+    public void AnsiInstructionFileIsDecodedInsteadOfGarbled()
+    {
+        string root = CreateTemporaryDirectory();
+        try
+        {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            File.WriteAllBytes(Path.Combine(root, "AGENTS.md"), System.Text.Encoding.GetEncoding(936).GetBytes("# 规则\n修改相机参数前先备份配置。"));
+
+            var documents = CopilotAgentProjectInstructions.Discover([root], activeDocumentPath: null);
+
+            CopilotProjectInstructionDocument document = Assert.Single(documents);
+            Assert.Contains("修改相机参数前先备份配置", document.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", document.Content, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InstructionFileWithinTheByteBudgetKeepsItsEnding()
+    {
+        string root = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "AGENTS.md"), new string('x', 20_000) + "\nCompletion criteria");
+
+            var documents = CopilotAgentProjectInstructions.Discover([root], activeDocumentPath: null);
+
+            CopilotProjectInstructionDocument document = Assert.Single(documents);
+            Assert.False(document.IsTruncated);
+            Assert.EndsWith("Completion criteria", document.Content, StringComparison.Ordinal);
+            Assert.Contains("Completion criteria", CopilotAgentProjectInstructions.BuildPromptBlock(documents), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void DiscoversClaudeInstructionsWhenAgentsInstructionsAreMissing()
     {
         string root = CreateTemporaryDirectory();

@@ -37,11 +37,13 @@ namespace ColorVision.Copilot
                 var searchResult = await CopilotDocsToolSupport.SearchAsync(resolvedQuery, cancellationToken);
                 if (searchResult.Hits.Count == 0)
                 {
+                    // A completed search with no match is evidence, like an empty GrepText, not a tool failure.
                     return new CopilotCapabilityResult
                     {
-                        Success = false,
+                        Success = true,
                         Summary = "No relevant snippets were found in the online documentation.",
-                        ErrorMessage = "Make the question more specific, such as a feature name, page name, menu name, device name, or module name.",
+                        Content = CopilotDocsToolSupport.BuildContextBlock(searchResult)
+                            + "\n\n[Result] No documentation matched this query. Do not cite the documentation for it; try a feature, page, menu, or device name, or say the documentation does not cover it.",
                     };
                 }
 

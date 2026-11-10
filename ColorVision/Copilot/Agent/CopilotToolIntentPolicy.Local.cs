@@ -106,7 +106,14 @@ namespace ColorVision.Copilot
 
         private static bool AsksToEditWorkspace(CopilotAgentRequest request)
         {
-            return ContainsAny(request.UserText, WorkspaceEditMarkers)
+            var asksToEdit = ContainsAny(request.UserText, WorkspaceEditMarkers)
+                || ContainsAny(request.UserText, CasualWorkspaceEditMarkers)
+                    && (ContainsAny(request.UserText, LocalArtifactMarkers) || ContainsAny(request.UserText, CodeOnlyTargetMarkers))
+                    && !ContainsAny(request.UserText, QuestionMarkers)
+                    && !ContainsAny(request.UserText, NonFileEditTargetMarkers)
+                    && !ContainsAny(request.UserText, DatabaseMarkers)
+                    && !ContainsAny(request.UserText, FlowGraphMarkers);
+            return asksToEdit
                 && !ContainsAny(request.UserText, WorkspaceEditExplanationMarkers)
                 && !RewritesConversationText(request);
         }
@@ -147,6 +154,9 @@ namespace ColorVision.Copilot
             }
 
             return ContainsAny(request.UserText, WorkspaceCreateMarkers)
+                || ContainsAny(request.UserText, CasualWorkspaceCreateMarkers)
+                    && ContainsAny(request.UserText, CasualWorkspaceCreateTargetMarkers)
+                    && !ContainsAny(request.UserText, QuestionMarkers)
                 || ContainsAny(request.UserText, ScriptCreateActionMarkers)
                     && (ContainsAny(request.UserText, ScriptRuntimeMarkers)
                         || request.UserText.Contains("脚本", StringComparison.OrdinalIgnoreCase));
