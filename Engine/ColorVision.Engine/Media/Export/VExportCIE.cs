@@ -200,7 +200,8 @@ namespace ColorVision.Engine.Media
             return File.Exists(fallback) ? fallback : null;
         }
 
-        internal static ColorVisionTiffParameters CreateTiffParameters(CVCIEFile fileInfo, string exportedChannel)
+        internal static ColorVisionTiffParameters CreateTiffParameters(CVCIEFile fileInfo, string exportedChannel,
+            IReadOnlyDictionary<string, CVFileProperty>? properties = null)
         {
             ColorVisionTiffParameters parameters = new()
             {
@@ -223,7 +224,9 @@ namespace ColorVision.Engine.Media
                 Gain = fileInfo.Gain,
                 Exposure = fileInfo.Exp == null ? [] : (float[])fileInfo.Exp.Clone(),
             };
-            if (!string.IsNullOrWhiteSpace(fileInfo.FilePath)) CameraFileMetadata.ApplyStored(parameters, fileInfo.FilePath);
+            (parameters.Acquisition, parameters.CalibrationSummary) = properties != null ? CameraFileMetadata.Read(properties)
+                : string.IsNullOrWhiteSpace(fileInfo.FilePath) ? default : CameraFileMetadata.Read(fileInfo.FilePath);
+            if (parameters.Acquisition?.NdPort is int ndPort) parameters.NdPort = ndPort;
             return parameters;
         }
 

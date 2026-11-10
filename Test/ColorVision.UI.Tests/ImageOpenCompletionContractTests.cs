@@ -7,6 +7,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
@@ -773,6 +774,85 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 Exp = [1, 1, 1], Data = Enumerable.Repeat(value, 12).ToArray(),
             };
             Assert.True(CVFileUtil.WriteCIEFile(sourcePath, raw));
+        }
+    }
+
+    [Fact]
+    public async Task OpenedCvRawProfileUsesTheSameRawAndCalibrationAsTheVisibleImage()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-profile-open-{Guid.NewGuid():N}.cvraw");
+        bool wasEnabled = CVFileReadCache.IsEnabled;
+        ImageView? view = null;
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            SaveRaw(17, 2);
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                view.IEditorToolFactory.IImageOpens[".cvraw"] = new CVRawOpen(view.EditorContext);
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            }).WaitAsync(timeout);
+
+            ImageProfileSourceOption first = CurrentProfile();
+            using var originalReader = first.Open(default);
+            Assert.Equal(17, originalReader.Read(0, 0, 0));
+            Assert.Equal(34, originalReader.Read(0, 0, 1));
+
+            SaveRaw(71, 3);
+            WpfTestHost.Invoke(() =>
+            {
+                byte[] sample = new byte[1];
+                Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource).CopyPixels(new Int32Rect(0, 0, 1, 1), sample, 1, 0);
+                Assert.Equal((byte)17, sample[0]);
+            });
+            using (var reader = first.Open(default))
+            {
+                Assert.Equal(17, reader.Read(0, 0, 0));
+                Assert.Equal(34, reader.Read(0, 0, 1));
+            }
+
+            await WpfTestHost.Invoke(() =>
+            {
+                Assert.True(view!.RestoreOriginalImage());
+                return view.ImageOpenCompletion;
+            }).WaitAsync(timeout);
+            Assert.Throws<ObjectDisposedException>(() => originalReader.Read(0, 0, 0));
+            Assert.Throws<ObjectDisposedException>(() => first.Open(default));
+            ImageProfileSourceOption reopened = CurrentProfile();
+            CVFileReadCache.Release();
+            using (var reader = reopened.Open(default))
+            {
+                Assert.Equal(71, reader.Read(0, 0, 0));
+                Assert.Equal(213, reader.Read(0, 0, 1));
+            }
+
+            WpfTestHost.Invoke(view!.Clear);
+            Assert.Throws<ObjectDisposedException>(() => reopened.Open(default));
+        }
+        finally
+        {
+            if (view != null) WpfTestHost.Invoke(view.Dispose);
+            CVFileReadCache.Release();
+            CVFileReadCache.IsEnabled = wasEnabled;
+        }
+
+        ImageProfileSourceOption CurrentProfile() => WpfTestHost.Invoke(() =>
+            Assert.Single(view!.EditorContext.ProcessingContext.ProfileMeasurementSources!));
+
+        void SaveRaw(byte sample, double scale)
+        {
+            using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 2, 8, 1);
+            Array.Fill(raw.Data, sample);
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, CVFileSaveMode.MemoryOnly));
+            RawColorTransformV1 transform = RawColorTransformV1.Create();
+            transform.Kind = 2;
+            transform.Channels = 1;
+            transform.Coefficients = [scale, 0, 0, 0, 0, 0, 0, 0, 0];
+            ColorCalibrationSnapshot.Create(transform, raw.Cols, raw.Rows, raw.Bpp, raw.Exp, "profile").Save(path, true);
         }
     }
 

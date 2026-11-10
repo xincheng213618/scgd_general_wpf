@@ -452,14 +452,23 @@ namespace ColorVision.Engine.Media
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
             meta.FileExtType = isCie ? CVType.CIE : CVType.Raw;
             meta.FilePath = filePath;
-            ColorVisionTiffParameters parameters = VExportCIE.CreateTiffParameters(meta, "Src");
+            IReadOnlyDictionary<string, CVFileProperty>? properties = null;
+            if (verifiedFile != null)
+            {
+                try { properties = CVFileMetadata.ReadFromStream(verifiedFile); }
+                catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException or System.Text.DecoderFallbackException)
+                {
+                    log.Warn($"图像参数不可用，保留原图：{filePath}", error);
+                    properties = new Dictionary<string, CVFileProperty>();
+                }
+            }
+            ColorVisionTiffParameters parameters = VExportCIE.CreateTiffParameters(meta, "Src", properties);
             if (!isCie)
             {
                 ColorCalibrationSnapshot? calibration = null;
-                try { calibration = ColorCalibrationSnapshot.Read(filePath, meta); }
+                try { calibration = properties == null ? ColorCalibrationSnapshot.Read(filePath, meta) : ColorCalibrationSnapshot.Read(properties, meta); }
                 catch (Exception ex) { log.Warn($"RAW 色度参数不可用，保留原图：{filePath}", ex); }
-                var profiles = calibration?.CanReplay == true ? CvRawProfileSource.CreateOptions(filePath) : null;
-                return new(meta, index, parameters, calibration, null, null, profiles);
+                return new(meta, index, parameters, calibration, null, null, null);
             }
 
             List<List<Point>>? pointRows = null;
@@ -515,8 +524,11 @@ namespace ColorVision.Engine.Media
                 if (snapshot?.CanReplay == true)
                 {
                     CVCIEFile raw = loadedRaw ?? CVFileUtil.OpenLocalCVFile(filePath);
-                    try { ReplaceMeasurementBuffer(new PoiMeasurementBuffer(raw, snapshot)); }
+                    PoiMeasurementBuffer buffer;
+                    try { buffer = new PoiMeasurementBuffer(raw, snapshot); }
                     finally { if (loadedRaw == null) raw.Dispose(); }
+                    ReplaceMeasurementBuffer(buffer);
+                    InstallProfileSources(buffer, snapshot);
                     _probeOptions = CvcieMouseProbeOptions.GetOrCreate(imageView);
                     ShowDateFilePath = false;
                     Points.Clear();
@@ -524,7 +536,7 @@ namespace ColorVision.Engine.Media
                     imageView.Config.SetOpenerRuntime("HasCieMeasurements", true, nameof(CVRawOpen), "RAW 与当前色度参数可按需测量");
                     imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "RAW 原始文件头");
                     imageView.Config.SetOpenerRuntime("Exp", snapshot.Exposure, nameof(CVRawOpen), "色度校正实际曝光");
-                    CvRawLayerController calibrated = CvRawLayerController.CreateCalibratedRaw(imageView, filePath, _measurementBuffer!.RawSource!, displayedLayerId, null);
+                    CvRawLayerController calibrated = CvRawLayerController.CreateCalibratedRaw(imageView, filePath, buffer.RawSource!, displayedLayerId, null);
                     imageView.SetLayerController(calibrated);
                     imageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
                     return calibrated;
@@ -1121,6 +1133,17 @@ namespace ColorVision.Engine.Media
                     CVCIEFile? associatedImage = null;
                     CvcieAssociatedSource? associatedSource = isCie && viewMetadata != null ? CvRawLayerController.PrepareAssociatedSource(requestedFilePath,
                         viewMetadata.Header, loadPixels: srgb == null, out associatedImage, cancellationToken) : null;
+                    CVCIEFile LoadRaw()
+                    {
+                        using Stream source = CVFileReadCache.OpenRead(requestedFilePath);
+                        CVCIEFile raw = rawPixels.Read(source, requestedFilePath);
+                        try
+                        {
+                            viewMetadata = ReadCvFileViewMetadata(requestedFilePath, null, source);
+                            return raw;
+                        }
+                        catch { raw.Dispose(); throw; }
+                    }
                     CVCIEFile LoadLuminance()
                     {
                         usesLuminance = true;
@@ -1128,12 +1151,12 @@ namespace ColorVision.Engine.Media
                     }
                     // A successful XYZ render validates the optional source without loading its pixels.
                     using CVCIEFile? displayFile = srgb != null ? null
-                        : isRaw ? rawPixels.Read(requestedFilePath)
+                        : isRaw ? LoadRaw()
                         : !isCie || viewMetadata == null ? CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken)
                         : associatedImage ?? LoadLuminance();
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!isCie) viewMetadata = ReadCvFileViewMetadata(requestedFilePath, pointsPath);
-                    else if (viewMetadata != null)
+                    if (!isCie && !isRaw) viewMetadata = ReadCvFileViewMetadata(requestedFilePath, pointsPath);
+                    else if (isCie && viewMetadata != null)
                     {
                         viewMetadata = viewMetadata with
                         {
@@ -1279,11 +1302,21 @@ namespace ColorVision.Engine.Media
             EditorContext.Config.SetOpenerRuntime("IsCVCIE", false, nameof(CalibratedImageCapability), "保留实际图像文件格式");
             EditorContext.Config.SetOpenerRuntime("HasCieMeasurements", true, nameof(CalibratedImageCapability), "当前内容提供校正测量数据");
             EditorContext.Config.SetImageMetadata(RawCalibrationInformationProvider.MetadataKey, snapshot, nameof(CalibratedImageCapability), "图像内嵌的实际校正参数");
-            EmbeddedProfileLifetime profileLifetime = new();
-            lock (_bufferSync) _embeddedProfileLifetime = profileLifetime;
-            EditorContext.ProcessingContext.ProfileMeasurementSources = EmbeddedImageProfileSource.CreateOptions(buffer, snapshot, profileLifetime);
+            InstallProfileSources(buffer, snapshot);
             if (buffer.RawSource != null)
                 EditorContext.ImageView.SetLayerController(CvRawLayerController.CreateCalibratedRaw(EditorContext.ImageView, path, buffer.RawSource, "composite", sourcePixels));
+        }
+
+        private void InstallProfileSources(PoiMeasurementBuffer buffer, ColorCalibrationSnapshot? snapshot)
+        {
+            EmbeddedProfileLifetime profileLifetime = new();
+            lock (_bufferSync)
+            {
+                if (!ReferenceEquals(_measurementBuffer, buffer))
+                    throw new OperationCanceledException("The profile source has been retired.");
+                _embeddedProfileLifetime = profileLifetime;
+            }
+            EditorContext.ProcessingContext.ProfileMeasurementSources = EmbeddedImageProfileSource.CreateOptions(buffer, snapshot, profileLifetime);
         }
 
         public virtual void Activate() => Volatile.Write(ref _activationVersion, EditorContext.ImageView.ContentVersion);

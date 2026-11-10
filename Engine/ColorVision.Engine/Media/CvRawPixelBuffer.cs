@@ -12,9 +12,8 @@ namespace ColorVision.Engine.Media
         private byte[]? pixels;
         private (int Width, int Height, int Bpp, int Channels) layout;
 
-        internal CVCIEFile Read(string path)
+        internal CVCIEFile Read(Stream stream, string path)
         {
-            using Stream stream = CVFileReadCache.OpenRead(path);
             int offset = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile file);
             try
             {

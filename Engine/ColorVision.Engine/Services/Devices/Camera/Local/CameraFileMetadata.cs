@@ -3,6 +3,7 @@ using ColorVision.ImageEditor.Tif;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -20,17 +21,7 @@ internal static class CameraFileMetadata
 
     internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(string path)
     {
-        try
-        {
-            var properties = CVFileMetadata.Read(path);
-            T? ReadRecord<T>(string kind) where T : class
-            {
-                if (!properties.TryGetValue(kind, out var property) || property.Version != 1) return null;
-                try { return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(property.Value)); }
-                catch (JsonException error) { Log.Warn($"Invalid optional image record: {kind}", error); return null; }
-            }
-            return (ReadRecord<ImageAcquisitionRecord>(AcquisitionKind), ReadRecord<ImageCalibrationSummary>(ProvenanceKind));
-        }
+            try { return Read(CVFileMetadata.Read(path)); }
         catch (Exception error) when (error is IOException or NotSupportedException or UnauthorizedAccessException)
         {
             Log.Warn("Optional image acquisition records are unavailable.", error);
@@ -38,10 +29,15 @@ internal static class CameraFileMetadata
         }
     }
 
-    internal static void ApplyStored(ColorVisionTiffParameters parameters, string path)
+        internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(IReadOnlyDictionary<string, CVFileProperty> properties)
     {
-        (parameters.Acquisition, parameters.CalibrationSummary) = Read(path);
-        if (parameters.Acquisition?.NdPort is int ndPort) parameters.NdPort = ndPort;
+            T? ReadRecord<T>(string kind) where T : class
+            {
+                if (!properties.TryGetValue(kind, out var property) || property.Version != 1) return null;
+                try { return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(property.Value)); }
+                catch (JsonException error) { Log.Warn($"Invalid optional image record: {kind}", error); return null; }
+            }
+            return (ReadRecord<ImageAcquisitionRecord>(AcquisitionKind), ReadRecord<ImageCalibrationSummary>(ProvenanceKind));
     }
 
     internal static ColorVisionTiffParameters CreateParameters(LocalFrameMetadata metadata,

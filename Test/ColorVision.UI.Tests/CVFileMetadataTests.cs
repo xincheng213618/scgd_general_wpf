@@ -7,6 +7,31 @@ namespace ColorVision.UI.Tests;
 public sealed class CVFileMetadataTests
 {
     [Fact]
+    public void StreamReadKeepsTheBorrowedTailAndPositionAfterAnUpdate()
+    {
+        string path = CreateFile(2, false);
+        bool wasEnabled = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            CVFileMetadata.SetProperty(path, "color", 1, [17]);
+            using Stream original = CVFileReadCache.OpenRead(path);
+            original.Position = 7;
+            CVFileMetadata.SetProperty(path, "color", 1, [71]);
+
+            Assert.Equal(new byte[] { 17 }, CVFileMetadata.ReadFromStream(original)["color"].Value);
+            Assert.Equal(7, original.Position);
+            Assert.Equal(new byte[] { 71 }, CVFileMetadata.Read(path)["color"].Value);
+        }
+        finally
+        {
+            CVFileReadCache.Release();
+            CVFileReadCache.IsEnabled = wasEnabled;
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void RelatedRecordsUpdateTogetherAndValidationFailureLeavesTheOldTail()
     {
         string path = CreateFile(1, false);

@@ -85,8 +85,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
 
         internal static ColorCalibrationSnapshot? Read(string filePath, CVCIEFile header)
+            => Read(CVFileMetadata.Read(filePath), header);
+
+        internal static ColorCalibrationSnapshot? Read(IReadOnlyDictionary<string, CVFileProperty> properties, CVCIEFile header)
         {
-            if (!CVFileMetadata.Read(filePath).TryGetValue(PropertyKind, out CVFileProperty? property) || property.Version != 1) return null;
+            if (!properties.TryGetValue(PropertyKind, out CVFileProperty? property) || property.Version != 1) return null;
             ColorCalibrationSnapshot snapshot = JsonConvert.DeserializeObject<ColorCalibrationSnapshot>(Encoding.UTF8.GetString(property.Value))
                 ?? throw new InvalidDataException("RAW 色度校正参数为空。");
             snapshot.Validate();

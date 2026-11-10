@@ -35,10 +35,20 @@ namespace ColorVision.FileIO
         public static IReadOnlyDictionary<string, CVFileProperty> Read(string filePath)
         {
             using (Stream stream = CVFileReadCache.OpenRead(filePath, populateCache: false))
+                return ReadFromStream(stream);
+        }
+
+        /// <summary>Reads the metadata from an already-open image snapshot and preserves its position.</summary>
+        public static IReadOnlyDictionary<string, CVFileProperty> ReadFromStream(Stream stream)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            long position = stream.Position;
+            try
             {
                 long pixelEnd = GetPixelEnd(stream);
                 return ReadProperties(stream, pixelEnd, false);
             }
+            finally { stream.Position = position; }
         }
 
         public static void SetProperty(string filePath, string kind, uint version, byte[] value)

@@ -78,17 +78,16 @@ internal sealed class CvRawProfileSource : IBatchedImageProfileMeasurementSource
         try
         {
             token.ThrowIfCancellationRequested();
-            int headerEnd = verifiedSource == null ? CVFileUtil.ReadCIEFileHeader(path, out CVCIEFile header)
-                : CVFileUtil.ReadCIEFileHeader(verifiedSource, out header, maximumChannels: 3);
+            int headerEnd = CVFileUtil.ReadCIEFileHeader(_stream, out CVCIEFile header, maximumChannels: 3);
             using (header)
             {
-                bool isRaw = verifiedSource == null ? header.FileExtType == CVType.Raw
-                    : string.Equals(Path.GetExtension(path), ".cvraw", StringComparison.OrdinalIgnoreCase);
+                bool isRaw = string.Equals(Path.GetExtension(path), ".cvraw", StringComparison.OrdinalIgnoreCase);
                 if (headerEnd <= 0 || !isRaw || header.Version is < 1 or > 3
                     || header.Rows <= 0 || header.Cols <= 0 || header.Channels is not (1 or 3) || header.Bpp is not (8 or 16))
                     throw new InvalidDataException("CVRAW 剖面数据头无效。");
+                header.FileExtType = CVType.Raw;
                 Width = header.Cols; Height = header.Rows; _bpp = header.Bpp; _channels = header.Channels;
-                ColorCalibrationSnapshot? snapshot = calibrated ? ColorCalibrationSnapshot.Read(path, header) : null;
+                ColorCalibrationSnapshot? snapshot = calibrated ? ColorCalibrationSnapshot.Read(CVFileMetadata.ReadFromStream(_stream), header) : null;
                 if (calibrated && snapshot?.CanReplay != true) throw new InvalidDataException("CVRAW 没有可重放的色度校正参数。");
                 _interleaved = snapshot?.InterleavedBgr ?? true;
                 _transform = snapshot?.ToNative();
