@@ -82,33 +82,6 @@ namespace ColorVision.Engine.Media
         }
         bool ShowDateFilePath;
 
-        private static string? ResolveAssociatedRawFilePath(string filePath, CVCIEFile meta)
-        {
-            if (!string.IsNullOrWhiteSpace(meta.SrcFileName))
-            {
-                if (File.Exists(meta.SrcFileName))
-                {
-                    return meta.SrcFileName;
-                }
-
-                try
-                {
-                    string relativePath = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.SrcFileName);
-                    if (File.Exists(relativePath)) return relativePath;
-                }
-                catch (ArgumentException ex)
-                {
-                    log.Warn($"CVCIE 关联原图路径无效：{filePath}", ex);
-                }
-            }
-
-            string siblingRawPath = Path.Combine(
-                Path.GetDirectoryName(filePath) ?? string.Empty,
-                Path.GetFileNameWithoutExtension(filePath) + ".cvraw");
-
-            return File.Exists(siblingRawPath) ? siblingRawPath : null;
-        }
-
         private string? GetCurrentFilePath()
         {
             return EditorContext.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath)
@@ -463,7 +436,7 @@ namespace ColorVision.Engine.Media
         }
 
         private sealed record CvFileViewMetadata(CVCIEFile Header, int HeaderEnd, ColorVisionTiffParameters Parameters, ColorCalibrationSnapshot? Calibration,
-            string? AssociatedRawPath, List<List<Point>>? PointRows, IReadOnlyList<ImageProfileSourceOption>? ProfileSources);
+            CvcieAssociatedSource? AssociatedSource, List<List<Point>>? PointRows, IReadOnlyList<ImageProfileSourceOption>? ProfileSources);
 
         private static CvFileViewMetadata? ReadCvFileViewMetadata(string filePath, string? pointsPath, Stream? verifiedFile = null)
         {
@@ -511,8 +484,7 @@ namespace ColorVision.Engine.Media
                 }
             }
 
-            return new(meta, index, parameters, null, ResolveAssociatedRawFilePath(filePath, meta), pointRows,
-                CvcieProfileSource.CreateOptions(filePath, meta.Channels));
+            return new(meta, index, parameters, null, null, pointRows, null);
         }
 
         private CvRawLayerController? InitializeCvFileView(ImageView imageView, string filePath, string displayedLayerId, bool hasRgbLayers,
@@ -596,14 +568,14 @@ namespace ColorVision.Engine.Media
             imageView.Config.SetOpenerRuntime("index", index, nameof(CVRawOpen), "CVCIE 数据块索引");
             imageView.Config.SetOpenerRuntime("Exp", meta.Exp, nameof(CVRawOpen), "当前 CVCIE 曝光数组");
 
-            if (!string.IsNullOrWhiteSpace(metadata.AssociatedRawPath))
+            if (metadata.AssociatedSource is { } associated)
             {
-                meta.SrcFileName = metadata.AssociatedRawPath;
+                meta.SrcFileName = associated.Path;
             }
 
             imageView.Config.SetOpenerRuntime("meta", meta, nameof(CVRawOpen), "CVCIE 文件头和原始缓冲元信息");
             CvRawLayerController controller = CvRawLayerController.Create(imageView, filePath, isCie: true, meta.Channels, meta.Bpp,
-                hasRgbLayers, displayedLayerId, revision);
+                hasRgbLayers, displayedLayerId, revision, metadata.AssociatedSource);
             imageView.SetLayerController(controller);
             return controller;
         }
@@ -1145,12 +1117,31 @@ namespace ColorVision.Engine.Media
                     WriteableBitmap? displayBitmap = srgb;
                     // Keep the verified selected file stable through publication, even if the display uses an associated source.
                     using FileStream? publicationRead = fileRevision?.OpenRead(requestedFilePath);
-                    // A successful XYZ render needs only metadata, not another RAW/Y payload and conversion.
+                    CvFileViewMetadata? viewMetadata = isCie ? ReadCvFileViewMetadata(requestedFilePath, pointsPath, publicationRead) : null;
+                    CVCIEFile? associatedImage = null;
+                    CvcieAssociatedSource? associatedSource = isCie && viewMetadata != null ? CvRawLayerController.PrepareAssociatedSource(requestedFilePath,
+                        viewMetadata.Header, loadPixels: srgb == null, out associatedImage, cancellationToken) : null;
+                    CVCIEFile LoadLuminance()
+                    {
+                        usesLuminance = true;
+                        return CvRawLayerController.LoadFileChannel(requestedFilePath, 1, out displayBitmap, cancellationToken);
+                    }
+                    // A successful XYZ render validates the optional source without loading its pixels.
                     using CVCIEFile? displayFile = srgb != null ? null
                         : isRaw ? rawPixels.Read(requestedFilePath)
-                        : CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken);
+                        : !isCie || viewMetadata == null ? CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken)
+                        : associatedImage ?? LoadLuminance();
                     cancellationToken.ThrowIfCancellationRequested();
-                    CvFileViewMetadata? viewMetadata = ReadCvFileViewMetadata(requestedFilePath, pointsPath, publicationRead);
+                    if (!isCie) viewMetadata = ReadCvFileViewMetadata(requestedFilePath, pointsPath);
+                    else if (viewMetadata != null)
+                    {
+                        viewMetadata = viewMetadata with
+                        {
+                            AssociatedSource = associatedSource,
+                            ProfileSources = CvcieProfileSource.CreateOptions(requestedFilePath, viewMetadata.Header.Channels,
+                                fileRevision!.Value, associatedSource),
+                        };
+                    }
                     CVCIEFile cVCIEFile = displayFile ?? viewMetadata?.Header
                         ?? throw new InvalidDataException($"CVCIE 文件头无效：{requestedFilePath}");
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
@@ -1197,7 +1188,7 @@ namespace ColorVision.Engine.Media
                         context.Config.SetImageMetadata("srcFileName", cVCIEFile.SrcFileName, nameof(CVRawOpen), "CVCIE 关联源文件名");
 
                         bool hasRgbLayers = cVCIEFile.Channels >= 3 && (srgb != null
-                            ? viewMetadata?.AssociatedRawPath != null : !usesLuminance);
+                            ? associatedSource != null : !usesLuminance);
                         CvRawLayerController? controller = InitializeCvFileView(view, requestedFilePath,
                             srgb != null ? "cie-srgb" : usesLuminance ? "cie-y" : "composite", hasRgbLayers, viewMetadata, cVCIEFile, fileRevision);
                         VerifyStagingTarget();

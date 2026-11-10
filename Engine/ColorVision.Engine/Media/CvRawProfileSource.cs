@@ -66,15 +66,25 @@ internal sealed class CvRawProfileSource : IBatchedImageProfileMeasurementSource
     }
 
     internal CvRawProfileSource(string path, bool calibrated, CancellationToken token = default)
+        : this(path, calibrated, token, verifiedSource: null) { }
+
+    internal CvRawProfileSource(FileStream verifiedSource, CancellationToken token)
+        : this(verifiedSource.Name, calibrated: false, token, verifiedSource) { }
+
+    private CvRawProfileSource(string path, bool calibrated, CancellationToken token, FileStream? verifiedSource)
     {
-        token.ThrowIfCancellationRequested();
-        _stream = CVFileReadCache.OpenRead(path, populateCache: false);
+        if (verifiedSource == null) token.ThrowIfCancellationRequested();
+        _stream = verifiedSource ?? CVFileReadCache.OpenRead(path, populateCache: false);
         try
         {
-            int headerEnd = CVFileUtil.ReadCIEFileHeader(path, out CVCIEFile header);
+            token.ThrowIfCancellationRequested();
+            int headerEnd = verifiedSource == null ? CVFileUtil.ReadCIEFileHeader(path, out CVCIEFile header)
+                : CVFileUtil.ReadCIEFileHeader(verifiedSource, out header, maximumChannels: 3);
             using (header)
             {
-                if (headerEnd <= 0 || header.FileExtType != CVType.Raw || header.Version is < 1 or > 3
+                bool isRaw = verifiedSource == null ? header.FileExtType == CVType.Raw
+                    : string.Equals(Path.GetExtension(path), ".cvraw", StringComparison.OrdinalIgnoreCase);
+                if (headerEnd <= 0 || !isRaw || header.Version is < 1 or > 3
                     || header.Rows <= 0 || header.Cols <= 0 || header.Channels is not (1 or 3) || header.Bpp is not (8 or 16))
                     throw new InvalidDataException("CVRAW 剖面数据头无效。");
                 Width = header.Cols; Height = header.Rows; _bpp = header.Bpp; _channels = header.Channels;

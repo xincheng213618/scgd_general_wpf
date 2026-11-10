@@ -55,9 +55,32 @@ public sealed class CvcieProfileSource : IImageProfileMeasurementSource
     {
         CvcieFileRevision revision = CvcieFileRevision.Capture(path);
         string? rawPath = FindAssociatedRaw(path);
-        FileInfo? rawIdentity = rawPath == null ? null : new FileInfo(rawPath);
-        long? rawLength = rawIdentity?.Length;
-        DateTime? rawModified = rawIdentity?.LastWriteTimeUtc;
+        if (rawPath == null) return BuildOptions(path, channels, revision, openRaw: null);
+
+        FileInfo rawIdentity = new(rawPath);
+        long rawLength = rawIdentity.Length;
+        DateTime rawModified = rawIdentity.LastWriteTimeUtc;
+        return BuildOptions(path, channels, revision, token =>
+        {
+            var raw = new CvRawProfileSource(rawPath, false, token);
+            try
+            {
+                FileInfo currentRaw = new(rawPath);
+                if (currentRaw.Length == rawLength && currentRaw.LastWriteTimeUtc == rawModified) return raw;
+                throw new IOException("关联 CVRAW 文件已改变，请重新打开图像后分析。");
+            }
+            catch { raw.Dispose(); throw; }
+        });
+    }
+
+    internal static IReadOnlyList<ImageProfileSourceOption> CreateOptions(string path, int channels, CvcieFileRevision revision,
+        CvcieAssociatedSource? associated)
+        => BuildOptions(path, channels, revision, associated is { SupportsRawProfile: true }
+            ? token => new CvRawProfileSource(associated.OpenRead(), token) : null);
+
+    private static IReadOnlyList<ImageProfileSourceOption> BuildOptions(string path, int channels, CvcieFileRevision revision,
+        Func<CancellationToken, CvRawProfileSource>? openRaw)
+    {
         ImageProfileSourceOption Option(string name, int[] indices, bool chromaticity = false, bool includeY = false, bool allChannels = false) => new(name, token =>
         {
             token.ThrowIfCancellationRequested();
@@ -65,23 +88,17 @@ public sealed class CvcieProfileSource : IImageProfileMeasurementSource
             IImageProfileMeasurementSource source = new CvcieProfileSource(path, indices, token, chromaticity, includeY, allChannels);
             try
             {
-                if (allChannels && rawPath != null)
+                if (allChannels && openRaw != null)
                 {
-                    var raw = new CvRawProfileSource(rawPath, false, token);
-                    try
-                    {
-                        FileInfo currentRaw = new(rawPath);
-                        if (currentRaw.Length != rawLength || currentRaw.LastWriteTimeUtc != rawModified)
-                            throw new IOException("关联 CVRAW 文件已改变，请重新打开图像后分析。");
-                        source = new CombinedProfileSource(raw, source);
-                    }
+                    var raw = openRaw(token);
+                    try { source = new CombinedProfileSource(raw, source); }
                     catch { raw.Dispose(); throw; }
                 }
                 return source;
             }
             catch { source.Dispose(); throw; }
         });
-        ImageProfileSourceOption all = Option(rawPath == null ? "CIE 全部通道" : "原始图像 / CIE 全部通道", channels == 1 ? [0] : [0, 1, 2], allChannels: true);
+        ImageProfileSourceOption all = Option(openRaw == null ? "CIE 全部通道" : "原始图像 / CIE 全部通道", channels == 1 ? [0] : [0, 1, 2], allChannels: true);
         return new[] { all }.Concat(channels == 1
             ? [Option("CIE Y", [0])]
             : [Option("CIE Y", [1]), Option("CIE x/y", [0, 1, 2], true),

@@ -614,7 +614,8 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 {
                     Assert.Equal("cie-srgb", view!.SelectedLayer?.Id);
                     var controller = (CvRawLayerController)typeof(ImageView).GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!;
-                    return controller.SelectLayerAsync(controller.Layers.Single(item => item.Id == "red"));
+                    Assert.DoesNotContain(controller.Layers, item => item.Id == "red");
+                    return controller.SelectLayerAsync(controller.Layers.Single(item => item.Id == "composite"));
                 }).WaitAsync(TimeSpan.FromSeconds(10));
             }
 
@@ -649,6 +650,129 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 Exp = [1, 1, 1], Data = Enumerable.Repeat((byte)88, rows * cols * 3).ToArray()
             };
             Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+        }
+    }
+
+    [Theory]
+    [InlineData(".cvraw", false, false)]
+    [InlineData(".cvraw", true, false)]
+    [InlineData(".cvraw", true, true)]
+    [InlineData(".tiff", true, false)]
+    [InlineData(".ppm", true, false)]
+    public async Task CvcieLayerAndProfileKeepTheAssociatedSourceSelectedAtOpen(string extension, bool trueColor, bool initiallyMissing)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-associated-revision-{Guid.NewGuid():N}.cvcie");
+        string associated = Path.ChangeExtension(path, null) + "-linked" + extension;
+        string sibling = Path.ChangeExtension(path, ".cvraw");
+        const string combinedProfileName = "原始图像 / CIE 全部通道";
+        ImageView? view = null;
+        FieldInfo controllerField = typeof(ImageView).GetField("_layerController", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        CvcieDisplayMode initialMode = WpfTestHost.Invoke(() => CvcieDisplayConfig.Current.DisplayMode);
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            if (!initiallyMissing) WriteSource(associated, 21);
+            if (extension != ".cvraw") WriteSource(sibling, 199);
+            WriteCvcieMeasurementFixture(path, firstValue: 1, sourcePath: associated);
+            await OpenAsync(clear: false).WaitAsync(timeout);
+
+            var profile = WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(trueColor ? "cie-srgb" : "composite", view!.SelectedLayer?.Id);
+                var options = view.EditorContext.ProcessingContext.ProfileMeasurementSources!;
+                return options.SingleOrDefault(option => option.Name == combinedProfileName);
+            });
+            if (extension == ".cvraw" && !initiallyMissing)
+            {
+                Assert.NotNull(profile);
+                using var source = profile.Open(CancellationToken.None);
+                Assert.Equal(21, source.Read(1, 0, 0));
+                Assert.Equal(2, source.Read(1, 0, 3));
+            }
+            else Assert.Null(profile);
+
+            await SelectLayerAsync("cie-y").WaitAsync(timeout);
+            BitmapSource before = WpfTestHost.Invoke(() => Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource));
+            DateTime originalWrite = initiallyMissing ? DateTime.UtcNow : File.GetLastWriteTimeUtc(associated);
+            WriteSource(associated, 79);
+            File.SetLastWriteTimeUtc(associated, originalWrite.AddMinutes(-5));
+            if (extension == ".cvraw") WriteSource(sibling, 199);
+
+            await SelectLayerAsync("composite").WaitAsync(timeout);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal("cie-y", view!.SelectedLayer?.Id);
+                var bitmap = Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource);
+                Assert.Equal(PixelFormats.Gray8, bitmap.Format);
+                if (!initiallyMissing) Assert.Same(before, bitmap);
+            });
+            if (profile != null)
+                Assert.ThrowsAny<IOException>(() => profile.Open(CancellationToken.None));
+
+            await OpenAsync(clear: true).WaitAsync(timeout);
+            await SelectLayerAsync("composite").WaitAsync(timeout);
+            WpfTestHost.Invoke(() =>
+            {
+                var bitmap = Assert.IsAssignableFrom<BitmapSource>(view!.ViewBitmapSource);
+                Assert.Equal(PixelFormats.Bgr24, bitmap.Format);
+                byte[] pixels = new byte[12];
+                bitmap.CopyPixels(pixels, 6, 0);
+                Assert.Equal(Enumerable.Repeat((byte)79, pixels.Length), pixels);
+            });
+        }
+        finally
+        {
+            try
+            {
+                await WpfTestHost.Invoke(() =>
+                {
+                    view?.Dispose();
+                    CvcieDisplayConfig.Current.DisplayMode = initialMode;
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                }).WaitAsync(timeout);
+            }
+            finally
+            {
+                File.Delete(path);
+                File.Delete(associated);
+                File.Delete(sibling);
+            }
+        }
+
+        Task OpenAsync(bool clear) => WpfTestHost.Invoke(() =>
+        {
+            if (view == null)
+            {
+                EnsureImageViewTestResources();
+                CvcieDisplayConfig.Current.EnableTrueColor = trueColor;
+                view = new ImageView();
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = new CVRawOpen(view.EditorContext);
+            }
+            if (clear) view.Clear();
+            view.OpenImage(path);
+            return view.ImageOpenCompletion;
+        });
+
+        Task SelectLayerAsync(string id) => WpfTestHost.Invoke(() =>
+        {
+            var controller = Assert.IsType<CvRawLayerController>(controllerField.GetValue(view));
+            return controller.SelectLayerAsync(controller.Layers.Single(layer => layer.Id == id));
+        });
+
+        static void WriteSource(string sourcePath, byte value)
+        {
+            if (!string.Equals(Path.GetExtension(sourcePath), ".cvraw", StringComparison.OrdinalIgnoreCase))
+            {
+                using var image = new OpenCvSharp.Mat(2, 2, OpenCvSharp.MatType.CV_8UC3, OpenCvSharp.Scalar.All(value));
+                Assert.True(OpenCvSharp.Cv2.ImWrite(sourcePath, image));
+                return;
+            }
+            using CVCIEFile raw = new()
+            {
+                Version = 2, FileExtType = CVType.Raw, Rows = 2, Cols = 2, Bpp = 8, Channels = 3,
+                Exp = [1, 1, 1], Data = Enumerable.Repeat(value, 12).ToArray(),
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(sourcePath, raw));
         }
     }
 
