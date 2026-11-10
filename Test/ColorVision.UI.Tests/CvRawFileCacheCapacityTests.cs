@@ -136,6 +136,40 @@ public sealed class CvRawFileCacheCapacityTests
         Assert.Equal(new byte[] { 7, 8, 9 }, CVFileMetadata.Read(files.A)["cache-test"].Value);
     }
 
+    [Fact]
+    public void FailedMetadataWriteLeavesDiskAndCachedSnapshotsUnchangedUntilRetrySucceeds()
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        const string property = "calibration";
+        byte[] previousValue = [1, 2, 3], updatedValue = [7, 8, 9, 10, 11];
+        files.ReadAndAssert(files.A);
+        CVFileMetadata.SetProperty(files.A, property, 1, previousValue);
+        byte[] previousBytes = File.ReadAllBytes(files.A);
+        using Stream previousReader = CVFileReadCache.OpenRead(files.A);
+
+        using (FileStream diskReader = File.Open(files.A, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            Assert.ThrowsAny<IOException>(() => CVFileMetadata.SetProperty(files.A, property, 2, updatedValue));
+            Assert.Equal(previousBytes, File.ReadAllBytes(files.A));
+            Assert.Equal((long)previousBytes.Length, CVFileReadCache.GetCachedLength(files.A));
+            CVFileProperty cached = CVFileMetadata.Read(files.A)[property];
+            Assert.Equal(1u, cached.Version);
+            Assert.Equal(previousValue, cached.Value);
+        }
+
+        CVFileMetadata.SetProperty(files.A, property, 2, updatedValue);
+        CVFileProperty updated = CVFileMetadata.Read(files.A)[property];
+        Assert.Equal(2u, updated.Version);
+        Assert.Equal(updatedValue, updated.Value);
+        files.ReadAndAssert(files.A);
+        using MemoryStream oldSnapshot = new();
+        previousReader.CopyTo(oldSnapshot);
+        Assert.Equal(previousBytes, oldSnapshot.ToArray());
+        previousReader.Dispose();
+        files.ReadAndAssert(files.B);
+        AssertPaths(files.B);
+    }
+
     [Theory]
     [InlineData(true, false)]
     [InlineData(false, false)]

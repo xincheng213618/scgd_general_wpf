@@ -296,22 +296,52 @@ namespace ColorVision.FileIO
             string fullPath = Path.GetFullPath(path);
             lock (WriteSync)
             {
+                CacheEntry entry;
                 FileTail tail = null;
                 lock (Sync)
                 {
                     while (HasFileLoad(fullPath)) Monitor.Wait(Sync);
-                    CacheEntry entry = IsRaw(path) && isEnabled ? FindEntry(fullPath) : null;
+                    entry = IsRaw(path) && isEnabled ? FindEntry(fullPath) : null;
                     if (entry != null)
                     {
                         using (Stream current = Borrow(entry)) tail = update(current);
-                        entry.Tail = tail;
-                        Remember(entry, fullPath, checked(tail.Offset + tail.Bytes.Length));
-                        if (entry.SaveMode == CVFileSaveMode.MemoryOnly) return;
+                        if (entry.SaveMode == CVFileSaveMode.MemoryOnly)
+                        {
+                            PublishMetadata(entry, fullPath, tail);
+                            return;
+                        }
+                        // A read miss may otherwise reuse this slot while the disk tail is being written.
+                        entry.Writers++;
                     }
                 }
-                using (FileStream file = new FileStream(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                    CVFileMetadata.ReplaceTail(file, tail ?? update(file));
+                bool written = false;
+                try
+                {
+                    using (FileStream file = new FileStream(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                        CVFileMetadata.ReplaceTail(file, tail ?? update(file));
+                    written = true;
+                }
+                finally
+                {
+                    if (entry != null)
+                    {
+                        lock (Sync)
+                        {
+                            entry.Writers--;
+                            if (entry.IsRetired) Retire(entry);
+                            else if (written) PublishMetadata(entry, fullPath, tail);
+                            Monitor.PulseAll(Sync);
+                        }
+                    }
+                }
             }
+        }
+
+        private static void PublishMetadata(CacheEntry entry, string path, FileTail tail)
+        {
+            long length = checked(tail.Offset + tail.Bytes.Length);
+            entry.Tail = tail;
+            Remember(entry, path, length);
         }
 
         private static bool IsRaw(string path) => string.Equals(Path.GetExtension(path), ".cvraw", StringComparison.OrdinalIgnoreCase);
