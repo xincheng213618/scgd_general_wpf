@@ -1092,6 +1092,12 @@ namespace ColorVision.Engine.FlowProcessing
         }
 
 
+        internal async Task DisposeWhenExecutionSettlesAsync()
+        {
+            await _executionSession.StopAndWaitForSettlementAsync();
+            Dispose();
+        }
+
         public void Dispose()
         {
             if (_disposed) return;

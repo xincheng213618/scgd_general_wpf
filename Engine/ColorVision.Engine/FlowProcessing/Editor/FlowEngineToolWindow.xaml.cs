@@ -2,8 +2,10 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
@@ -47,13 +49,31 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             Closing += (_, e) =>
             {
-                if (!_discardFailedOpen && !View.ConfirmStandaloneDocumentReplacement())
+                if (_discardFailedOpen) return;
+                if (View.IsExecutionActive)
+                {
                     e.Cancel = true;
+                    string message = EngineLocalization.Get(View.IsExecutionStopping
+                        ? "正在停止，等待当前环节结束…"
+                        : "Flow_StandaloneCloseWhileRunning");
+                    View.STNodeEditorMain.ShowAlert(message, Color.White, Color.FromArgb(230, 95, 62, 16),
+                        3500, AlertLocation.RightBottom, bRedraw: true);
+                    return;
+                }
+                if (!View.ConfirmStandaloneDocumentReplacement()) e.Cancel = true;
             };
 
-            Closed += (_, _) =>
+            Closed += async (_, _) =>
             {
-                View.Dispose();
+                try
+                {
+                    if (_discardFailedOpen) View.Dispose();
+                    else await View.DisposeWhenExecutionSettlesAsync();
+                }
+                catch (Exception error)
+                {
+                    Log.Error("Could not dispose the closed standalone flow window.", error);
+                }
             };
         }
 

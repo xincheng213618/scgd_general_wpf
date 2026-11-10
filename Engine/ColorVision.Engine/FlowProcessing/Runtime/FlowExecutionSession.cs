@@ -73,7 +73,7 @@ namespace ColorVision.Engine.FlowProcessing
                 new FlowTemplateWorkspaceController(
                     flowEngineManager,
                     view,
-                    CloseRunningFlowBeforeRefreshAsync,
+                    StopAndWaitForSettlementAsync,
                     InvalidateExecutionPresentation,
                     ResetNodeTitleProgress,
                     UnsubscribeNodeEvents,
@@ -126,11 +126,11 @@ namespace ColorVision.Engine.FlowProcessing
             _templateWorkspace.AdoptSavedCanvas(flowTemplate);
         }
 
-        private async Task CloseRunningFlowBeforeRefreshAsync()
+        internal async Task StopAndWaitForSettlementAsync()
         {
             if (_runLifecycle.IsActive)
             {
-                log.Info("流程生命周期中触发刷新，先取消并等待当前流程收尾。");
+                log.Info("请求停止并等待当前流程收尾。");
                 StopFlow();
             }
             while (_runLifecycle.IsActive)

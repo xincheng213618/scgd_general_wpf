@@ -4562,4 +4562,5 @@
   <data name="Flow_StandaloneFileSaveBusy" xml:space="preserve"><value>流程文件正在由另一个窗口保存，请稍后重试。</value></data>
   <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>磁盘上的流程文件已更改或删除。是否将当前修改保存到新的 STN 文件？</value></data>
   <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>请选择一个尚不存在的文件名。</value></data>
+  <data name="Flow_StandaloneCloseWhileRunning" xml:space="preserve"><value>请等待流程结束，或停止流程后再关闭窗口。</value></data>
 </root>

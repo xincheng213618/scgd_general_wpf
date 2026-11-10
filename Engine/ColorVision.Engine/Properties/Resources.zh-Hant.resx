@@ -8404,4 +8404,5 @@
   <data name="Flow_StandaloneFileSaveBusy" xml:space="preserve"><value>另一個視窗正在儲存此流程檔案，請稍後再試。</value></data>
   <data name="Flow_StandaloneFileCopyPrompt" xml:space="preserve"><value>磁碟上的流程檔案已變更或刪除。要將目前的變更儲存到新的 STN 檔案嗎？</value></data>
   <data name="Flow_StandaloneFileCopyTargetExists" xml:space="preserve"><value>請選擇尚不存在的檔案名稱。</value></data>
+  <data name="Flow_StandaloneCloseWhileRunning" xml:space="preserve"><value>請等待流程結束，或停止流程後再關閉視窗。</value></data>
 </root>

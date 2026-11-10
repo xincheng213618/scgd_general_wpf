@@ -452,6 +452,104 @@ public class ViewFlowDocumentBehaviorTests
     private static FlowEngineToolWindow[] GetStandaloneWindows()
         => Application.Current.Windows.OfType<FlowEngineToolWindow>().ToArray();
 
+    [Fact]
+    public void StandaloneCloseKeepsTheEditorAliveUntilTheAcceptedRunSettles()
+    {
+        bool viewDisposedOnClose = false;
+        WithStandaloneWindow(window =>
+        {
+            ViewFlow view = window.View;
+            STNodeEditor editor = view.STNodeEditorMain;
+            window.Closed += (_, _) => viewDisposedOnClose = IsViewDisposed(view);
+            var node = new STNodeHub();
+            node.Create();
+            editor.Nodes.Add(node);
+            editor.MarkSaved();
+
+            FlowRunLifecycleGate lifecycle = GetRunLifecycle(view);
+            using var cancellation = new CancellationTokenSource();
+            const string serialNumber = "standalone-close";
+            Assert.True(lifecycle.TryBegin(serialNumber, cancellation, engineIsRunning: false));
+            try
+            {
+                Assert.False(view.FlowControl.IsFlowRun);
+                Assert.True(view.IsExecutionActive);
+                window.Close();
+                Assert.True(window.IsVisible);
+                Assert.False(IsViewDisposed(view));
+                Assert.Same(node, Assert.Single(editor.Nodes.Cast<STNode>()));
+                Assert.False(cancellation.IsCancellationRequested);
+
+                Assert.True(view.StopFlowCommand.CanExecute(null));
+                view.StopFlowCommand.Execute(null);
+                Assert.True(cancellation.IsCancellationRequested);
+                Assert.True(view.IsExecutionStopping);
+
+                // Finalization can still own the view after the engine and cancellation source have retired.
+                lifecycle.DetachCancellationSource(serialNumber, cancellation);
+                window.Close();
+                Assert.True(window.IsVisible);
+                Assert.False(IsViewDisposed(view));
+                Assert.True(view.IsExecutionActive);
+            }
+            finally { lifecycle.Complete(serialNumber); }
+
+            Assert.False(view.IsExecutionActive);
+        });
+        Assert.True(viewDisposedOnClose);
+    }
+
+    [Fact]
+    public void OwnerCloseRequestsStopAndDefersDisposalUntilTheAcceptedRunSettles()
+    {
+        WithStandaloneWindow(window =>
+        {
+            ViewFlow view = window.View;
+            var owner = new Window { ShowActivated = false, Left = -10000, Top = -10000 };
+            owner.Show();
+            window.Owner = owner;
+            bool childClosingRaised = false;
+            window.Closing += (_, _) => childClosingRaised = true;
+            FlowRunLifecycleGate lifecycle = GetRunLifecycle(view);
+            using var cancellation = new CancellationTokenSource();
+            const string serialNumber = "owner-close";
+            try
+            {
+                Assert.True(lifecycle.TryBegin(serialNumber, cancellation, engineIsRunning: false));
+                owner.Close();
+
+                Assert.False(childClosingRaised);
+                Assert.False(window.IsVisible);
+                Assert.True(cancellation.IsCancellationRequested);
+                Assert.True(view.IsExecutionActive);
+                Assert.False(IsViewDisposed(view));
+            }
+            finally
+            {
+                lifecycle.Complete(serialNumber);
+                if (owner.IsVisible) owner.Close();
+            }
+
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            PumpUntil(WaitForDisposalAsync());
+            Assert.True(IsViewDisposed(view));
+
+            async Task WaitForDisposalAsync()
+            {
+                while (!IsViewDisposed(view)) await Task.Delay(10, deadline.Token);
+            }
+        });
+    }
+
+    private static bool IsViewDisposed(ViewFlow view) => (bool)GetField(view, "_disposed")!;
+
+    private static FlowRunLifecycleGate GetRunLifecycle(ViewFlow view)
+    {
+        object session = GetField(view, "_executionSession")!;
+        return (FlowRunLifecycleGate)session.GetType()
+            .GetField("_runLifecycle", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(session)!;
+    }
+
     private static object? GetField(ViewFlow view, string name)
         => typeof(ViewFlow).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view);
 
@@ -485,16 +583,21 @@ public class ViewFlowDocumentBehaviorTests
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             FlowEngineToolWindow? window = null;
+            bool windowClosed = false;
             try
             {
                 window = new FlowEngineToolWindow { ShowActivated = false, Left = -10000, Top = -10000 };
+                window.Closed += (_, _) => windowClosed = true;
                 window.Show();
                 test(window);
             }
             finally
             {
-                window?.View.STNodeEditorMain.MarkSaved();
-                window?.Close();
+                if (window != null && !windowClosed)
+                {
+                    window.View.STNodeEditorMain.MarkSaved();
+                    window.Close();
+                }
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
                 ConfigService.SetInstance(previous);
             }
