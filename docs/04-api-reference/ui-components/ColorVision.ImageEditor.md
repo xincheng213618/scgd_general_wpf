@@ -106,7 +106,7 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 `ImageView.Snapshot.cs` 保留公开输出入口，捕获由 `Output/ImageSnapshotCapture` 负责，编码由 `Output/ImageSnapshotEncoder` 负责。`ImageViewSnapshot` 携带可独立消费的冻结源或缓冲租约及绘图快照；后台编码不再持有整个视图，也不改变文档源或当前显示。
 
-普通 Save、捕获后的位图保存和后台 rendered 输出携带采集参数、相机信息及校正摘要；PNG 使用 `ColorVision` tEXt，JPEG 使用说明元数据。捕获时将参数复制为独立 JSON，后续换图、参数变化或关闭视图不影响已捕获记录。截图保持 8 位/通道渲染语义，不额外保存原图；源采集尺寸/位深与 `renderedOutput` 的输出尺寸/像素格式分别记录。截图参数固定为 `pixelRole=display`，省略 `calibration`、像素哈希、绑定布局和测量通道，重新打开只读展示这些记录，不启用测量。新增相机信息投影到 `ColorVision.Camera.*`，不覆盖参与标尺配置匹配的 EXIF `CameraModel`/`CameraManufacturer`。后台 source 分支继续只保存当前基准像素，不继承此 rendered 记录或重放资格；客户导出的文件选择、顺序、名称、压缩选项及释放契约不因此变化。
+普通 Save、捕获后的位图保存和后台 rendered 输出携带采集参数、相机信息及校正摘要。PNG 使用 `ColorVision` tEXt，JPEG 使用说明元数据。换图等待中或失败后，只要仍显示旧图，截图沿用该图的来源记录和 DPI。捕获后的记录独立于视图。截图按 8 位/通道渲染，源采集尺寸和位深与 `renderedOutput` 分开记录。截图使用 `pixelRole=display`，省略校正系数、像素哈希、绑定布局和测量通道，重开只供查看记录。采集相机信息投影到 `ColorVision.Camera.*`，标尺继续读取 EXIF `CameraModel` 和 `CameraManufacturer`。后台 source 分支仅保存基准像素。
 
 | 操作或 API | 实际输出 |
 | --- | --- |

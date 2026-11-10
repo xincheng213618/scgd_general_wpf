@@ -29,6 +29,7 @@ public sealed class ImageDocument : IDisposable
     public ImageSource? Source => _source;
     public DecodedImageContent? Content { get; internal set; }
     public ColorVisionTiffParameters? ParameterRecord { get; internal set; }
+    internal (ColorVisionTiffParameters Record, double DpiX, double DpiY)? RetainedSnapshotMetadata { get; set; }
     public IImageContentCapability? Capability => Volatile.Read(ref _capability);
     public long ContentVersion => Volatile.Read(ref _contentVersion);
     internal event Action<long>? CapabilityRetired;
@@ -100,6 +101,7 @@ public sealed class ImageDocument : IDisposable
         _dispatcher.VerifyAccess();
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         _source = source;
+        RetainedSnapshotMetadata = null;
     }
 
     public bool IsCurrent(long revision) => !IsDisposed && _frames.IsCurrent(revision);
@@ -172,6 +174,7 @@ public sealed class ImageDocument : IDisposable
         _frames.Dispose();
         RetireCapability(true);
         ParameterRecord = null;
+        RetainedSnapshotMetadata = null;
         _source = null;
         _cachedSource = null;
         Changed = null;

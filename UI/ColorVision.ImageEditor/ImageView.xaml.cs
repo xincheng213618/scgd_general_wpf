@@ -923,6 +923,7 @@ namespace ColorVision.ImageEditor
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
+            RetainDisplayedSnapshotMetadata();
             if (imageOpen is IPreparedImageOpen preparedOpen)
             {
                 OpenPreparedFile(preparedOpen, filePath);

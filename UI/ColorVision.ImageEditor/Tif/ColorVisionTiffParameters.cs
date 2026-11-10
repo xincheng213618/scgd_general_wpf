@@ -52,16 +52,18 @@ namespace ColorVision.ImageEditor.Tif
         internal ColorVisionTiffParameters ToDisplayRecord()
         {
             // Whitelist record fields: a screenshot must never inherit a transform or pixel binding.
-            ColorVisionTiffParameters record = new()
+            return new()
             {
                 SourceType = SourceType, ExportedChannel = "Snapshot", InputFileName = InputFileName,
                 AssociatedSourceFileName = AssociatedSourceFileName, FileVersion = FileVersion,
                 Rows = Rows, Cols = Cols, Bpp = Bpp, SourceChannels = SourceChannels,
-                NdPort = NdPort, Gain = Gain, Exposure = (float[])Exposure.Clone(),
-                Acquisition = Acquisition, CalibrationSummary = CalibrationSummary, PixelRole = "display"
+                NdPort = NdPort, Gain = Gain, Exposure = (float[]?)Exposure?.Clone() ?? [],
+                Acquisition = Acquisition is { } acquisition
+                    ? acquisition with { Exposure = (float[]?)acquisition.Exposure?.Clone() ?? [] } : null,
+                CalibrationSummary = CalibrationSummary is { } summary
+                    ? summary with { Sources = (ImageCalibrationSource[]?)summary.Sources?.Clone() ?? [] } : null,
+                PixelRole = "display"
             };
-            // Detach nested arrays as well as the top-level record from mutable producer state.
-            return JsonConvert.DeserializeObject<ColorVisionTiffParameters>(record.ToJson(), SerializerSettings)!;
         }
 
         public string ToJson() => JsonConvert.SerializeObject(this, SerializerSettings);
