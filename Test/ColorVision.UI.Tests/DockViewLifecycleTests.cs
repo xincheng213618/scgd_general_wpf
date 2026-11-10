@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum;
@@ -531,20 +532,22 @@ public sealed class DockViewLifecycleTests
             using var camera = new DeviceCamera(Resource("realtime"));
             var display = Assert.IsType<DisplayCamera>(camera.GetDisplayControl());
             camera.DisplayConfig.IsLocalVideoOpen = true;
-            var pipeline = typeof(DisplayCamera).GetField("_localRealtimePipeline", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(display)!;
-            var imageField = pipeline.GetType().GetField("_imageView", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var pipeline = Assert.IsType<CameraRealtimeFramePipeline>(typeof(DisplayCamera)
+                .GetField("_localRealtimePipeline", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(display));
             var manager = DockViewManager.GetInstance();
             manager.OpenView(camera.ViewRegistration);
             var previous = camera.View;
-            Assert.Same(previous.ImageView, imageField.GetValue(pipeline));
+            CameraPreviewSession previousSession = Assert.IsType<CameraPreviewSession>(pipeline.CaptureSession());
+            Assert.Same(previous.ImageView, previousSession.View);
             Assert.Single(scope.Pane.Children).Close();
             Assert.True(camera.DisplayConfig.IsLocalVideoOpen);
             Assert.Null(camera.ExistingView);
-            Assert.Null(imageField.GetValue(pipeline));
+            Assert.Null(pipeline.CaptureSession());
+            Assert.True(previousSession.IsRetired);
             manager.OpenView(camera.ViewRegistration);
             var current = camera.View;
             Assert.NotSame(previous, current);
-            Assert.Same(current.ImageView, imageField.GetValue(pipeline));
+            Assert.Same(current.ImageView, pipeline.CaptureSession()?.View);
         });
     }
 
