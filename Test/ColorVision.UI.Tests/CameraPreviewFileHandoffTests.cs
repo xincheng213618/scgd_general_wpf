@@ -234,6 +234,34 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Fact]
+    public async Task DelayedVideoStopDoesNotResetRestartedPreview()
+    {
+        byte[] samples = [71, 72, 73, 74, 75, 76];
+        Task newFrame = WpfTestHost.Invoke(() =>
+        {
+            using var processing = view.Dispatcher.DisableProcessing();
+            pipeline.Start(view);
+            Task.Run(() => pipeline.Stop(resetRealtime: true)).WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+
+            // The old stop has returned, but its UI cleanup cannot run until we leave this callback.
+            pipeline.Start(view);
+            pipeline.SubmitFrame(samples, samples.Length, 3, 2, 1, 8, 3);
+            return view.Realtime.Completion;
+        });
+
+        await newFrame.WaitAsync(TimeSpan.FromSeconds(10));
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Equal(1, pipeline.CurrentDisplayedFrameCount);
+            Assert.Equal(samples, Pixels(Assert.IsAssignableFrom<BitmapSource>(view.ViewBitmapSource)));
+            Assert.True(view.EditorContext.ProcessingContext.StreamPresentation.IsActive);
+            var visuals = Enumerable.Range(0, VisualTreeHelper.GetChildrenCount(view.ImageShow))
+                .Select(index => VisualTreeHelper.GetChild(view.ImageShow, index));
+            Assert.Single(visuals.OfType<RealtimeCameraOverlayVisual>());
+        });
+    }
+
+    [Fact]
     public async Task DisplayedFrameCountSkipsRepaintsAndSurvivesViewReattachment()
     {
         WpfTestHost.Invoke(() => pipeline.Start(view));

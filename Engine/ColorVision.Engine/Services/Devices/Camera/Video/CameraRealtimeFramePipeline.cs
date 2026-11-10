@@ -3,6 +3,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 
@@ -14,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
     {
         private readonly DefaultRealtimeCameraConfig _config = DefaultRealtimeCameraConfig.Current;
         private readonly RealtimeCameraOverlayVisual _overlayVisual;
+        private readonly Dictionary<ImageView, EventHandler> _viewSessions = new();
         private readonly object _processorGate = new();
         private readonly TimeProvider _clock;
 
@@ -27,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private long _fpsStartedAt;
         private double _lastFps;
         private double _articulation;
-        private bool _overlaysAdded;
+        private ImageView? _overlayView;
         private bool _disposed;
         private bool _configSubscribed;
         private bool _isRunning;
@@ -81,6 +83,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     Interlocked.Increment(ref _displayedFrameCount);
             };
             _frameDisplayedHandler = frameDisplayedHandler;
+            _viewSessions[imageView] = frameDisplayedHandler;
             imageView.Realtime.FrameDisplayed += frameDisplayedHandler;
             Interlocked.Increment(ref _generation);
             _imageView = imageView;
@@ -117,23 +120,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _isRunning = false;
             Interlocked.Increment(ref _generation);
             ReleaseConfigSubscription();
-            _overlayVisual.Detach();
 
             ReleaseProcessor();
 
-            if (imageView == null)
-            {
-                _overlaysAdded = false;
-                return;
-            }
+            if (imageView == null) return;
 
             void StopCore()
             {
                 imageView.Realtime.FrameDisplayed -= frameDisplayedHandler;
-                if (_overlaysAdded)
+                // The same view may already belong to a newer preview when this cleanup runs.
+                if (!_viewSessions.TryGetValue(imageView, out var owner) || !ReferenceEquals(owner, frameDisplayedHandler)) return;
+                _viewSessions.Remove(imageView);
+
+                if (ReferenceEquals(_overlayView, imageView))
                 {
+                    _overlayVisual.Detach();
                     imageView.ImageShow.RemoveOverlayVisual(_overlayVisual);
-                    _overlaysAdded = false;
+                    _overlayView = null;
                 }
 
                 if (resetRealtime)
@@ -205,10 +208,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         {
             _overlayVisual.IsRoiVisible = _showOverlayRoi && IsArticulationEnabled;
             _overlayVisual.Attach();
-            if (!_overlaysAdded)
+            if (!ReferenceEquals(_overlayView, imageView))
             {
+                _overlayView?.ImageShow.RemoveOverlayVisual(_overlayVisual);
                 imageView.ImageShow.AddOverlayVisual(_overlayVisual);
-                _overlaysAdded = true;
+                _overlayView = imageView;
             }
 
             if (!IsArticulationEnabled)
