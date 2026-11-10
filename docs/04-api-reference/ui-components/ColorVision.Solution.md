@@ -150,6 +150,8 @@ Load 遇到受支持的读取/JSON/数据异常会尝试 `.bak`；备份解析�
 
 `ProjectProviderRegistry` 扫描 `[ProjectProvider]` 的 `IProjectProvider`，并监听新程序集加载。注册按不区分大小写的 Provider Id 替换，优先级降序选择；声明文件模式与实际 `CanLoad` / `Load` 是不同门槛，插件未装或类型不匹配会产生可诊断的不可用项目，不应偷偷当普通文件夹使用。
 
+工程 Provider、模板、菜单和编辑器发现会跳过注解无法读取的扩展，并继续注册同一程序集中的其他可用类型。诊断输出给出扩展类型、注解和加载错误。
+
 - `FolderProjectProvider` 负责 `.cvproj` JSON，兼容旧文件缺失的 ProjectType，并支持自己的项目项/依赖修改和命令定义。
 - `MsBuildProjectProvider` 只读接入 `.csproj`、`.fsproj`、`.vbproj` 的 XML 字面信息，不执行完整 MSBuild import/条件求值，也不提供改写项目文件接口。只读适配器仍可提供生成/运行命令，不能把“只读解析”理解为整个模块绝不会启动进程。
 - `SolutionFeatureVisibility.ShowBuildAndDebugUI` 当前固定 false，隐藏生成/运行/调试 UI；底层能力和命令仍存在，这不是执行权限沙箱或删除了相关实现。命令提交、退出与业务成功按终端主题分别核实。

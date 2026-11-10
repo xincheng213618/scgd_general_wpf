@@ -74,14 +74,11 @@ namespace ColorVision.Solution.Explorer
             bool changed = false;
             foreach (Type type in SolutionAssemblyDiscovery.GetTypes(assembly))
             {
-                var attribute = type.GetCustomAttribute<ProjectProviderAttribute>();
-                if (attribute == null
-                    || !typeof(IProjectProvider).IsAssignableFrom(type)
-                    || type.IsAbstract
-                    || type.IsInterface)
-                {
+                if (!typeof(IProjectProvider).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface)
                     continue;
-                }
+
+                if (SolutionAssemblyDiscovery.GetExtensionAttribute<ProjectProviderAttribute>(type) is not { } attribute)
+                    continue;
 
                 try
                 {

@@ -1,4 +1,6 @@
 using ColorVision.UI;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 
 namespace ColorVision.Solution
@@ -28,6 +30,22 @@ namespace ColorVision.Solution
             catch
             {
                 return [];
+            }
+        }
+
+        public static TAttribute? GetExtensionAttribute<TAttribute>(Type type) where TAttribute : Attribute
+        {
+            try
+            {
+                return type.GetCustomAttribute<TAttribute>();
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or FileLoadException or BadImageFormatException
+                or TypeLoadException or CustomAttributeFormatException)
+            {
+                // Reflection can resolve annotations from unavailable optional dependencies,
+                // even when the extension itself is a loadable type.
+                Trace.TraceWarning("Cannot read {0} on solution extension {1}: {2}", typeof(TAttribute).Name, type.FullName, ex.Message);
+                return null;
             }
         }
 

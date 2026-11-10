@@ -180,14 +180,11 @@ namespace ColorVision.Solution.Explorer
             bool changed = false;
             foreach (Type type in SolutionAssemblyDiscovery.GetTypes(assembly))
             {
-                var attribute = type.GetCustomAttribute<SolutionMenuContributionAttribute>();
-                if (attribute == null
-                    || !typeof(ISolutionMenuContribution).IsAssignableFrom(type)
-                    || type.IsInterface
-                    || type.IsAbstract)
-                {
+                if (!typeof(ISolutionMenuContribution).IsAssignableFrom(type) || type.IsInterface || type.IsAbstract)
                     continue;
-                }
+
+                if (SolutionAssemblyDiscovery.GetExtensionAttribute<SolutionMenuContributionAttribute>(type) is not { } attribute)
+                    continue;
 
                 try
                 {

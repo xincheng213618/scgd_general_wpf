@@ -74,7 +74,7 @@ namespace ColorVision.Solution
                         if (!typeof(IEditor).IsAssignableFrom(type) || type.IsInterface || type.IsAbstract)
                             continue;
 
-                        if (type.GetCustomAttribute<EditorForExtensionAttribute>() is { } extensionAttribute)
+                        if (SolutionAssemblyDiscovery.GetExtensionAttribute<EditorForExtensionAttribute>(type) is { } extensionAttribute)
                         {
                             changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
                                 GetEditorId(type, extensionAttribute.EditorId),
@@ -88,7 +88,7 @@ namespace ColorVision.Solution
                                 GetLocalizedName(extensionAttribute.ResourceKey, extensionAttribute.Name)));
                         }
 
-                        if (type.GetCustomAttribute<GenericEditorAttribute>() is { } genericAttribute)
+                        if (SolutionAssemblyDiscovery.GetExtensionAttribute<GenericEditorAttribute>(type) is { } genericAttribute)
                         {
                             changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
                                 GetEditorId(type, genericAttribute.EditorId),
@@ -102,7 +102,7 @@ namespace ColorVision.Solution
                                 GetLocalizedName(genericAttribute.ResourceKey, genericAttribute.Name)));
                         }
 
-                        if (type.GetCustomAttribute<FolderEditorAttribute>() is { } folderAttribute)
+                        if (SolutionAssemblyDiscovery.GetExtensionAttribute<FolderEditorAttribute>(type) is { } folderAttribute)
                         {
                             changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
                                 GetEditorId(type, folderAttribute.EditorId),
@@ -276,21 +276,21 @@ namespace ColorVision.Solution
 
         public static string GetEditorName(Type type)
         {
-            if (type.GetCustomAttribute<EditorForExtensionAttribute>() is { } extensionAttribute)
+            if (SolutionAssemblyDiscovery.GetExtensionAttribute<EditorForExtensionAttribute>(type) is { } extensionAttribute)
             {
                 string? name = GetLocalizedName(extensionAttribute.ResourceKey, extensionAttribute.Name);
                 if (name != null)
                     return name;
             }
 
-            if (type.GetCustomAttribute<GenericEditorAttribute>() is { } genericAttribute)
+            if (SolutionAssemblyDiscovery.GetExtensionAttribute<GenericEditorAttribute>(type) is { } genericAttribute)
             {
                 string? name = GetLocalizedName(genericAttribute.ResourceKey, genericAttribute.Name);
                 if (name != null)
                     return name;
             }
 
-            if (type.GetCustomAttribute<FolderEditorAttribute>() is { } folderAttribute)
+            if (SolutionAssemblyDiscovery.GetExtensionAttribute<FolderEditorAttribute>(type) is { } folderAttribute)
             {
                 string? name = GetLocalizedName(folderAttribute.ResourceKey, folderAttribute.Name);
                 if (name != null)
