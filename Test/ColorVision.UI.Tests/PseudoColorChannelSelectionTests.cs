@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Layers;
@@ -8,6 +9,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
@@ -22,6 +24,72 @@ namespace ColorVision.UI.Tests;
 public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
 {
     private static readonly TimeSpan Watchdog = TimeSpan.FromSeconds(10);
+
+    [Theory]
+    [InlineData(8, "composite")]
+    [InlineData(16, "composite")]
+    [InlineData(8, "red")]
+    [InlineData(16, "red")]
+    public async Task StaticRgbAutoRangeAndDisplayMatchTheCanonicalBgrSource(int depth, string layer)
+    {
+        Fixture fixture = WpfTestHost.Invoke(() => new Fixture(rgb48: depth == 16, defaultSourceEntry: true, rgb24: depth == 8));
+        try
+        {
+            Assert.False(WpfTestHost.Invoke(() => fixture.Context.StreamPresentation.IsActive));
+            int sampleBytes = depth / 8;
+            int width = fixture.Source.PixelWidth, height = fixture.Source.PixelHeight;
+            int stride = width * 3 * sampleBytes;
+            byte[] canonical = new byte[stride * height];
+            fixture.Source.CopyPixels(canonical, stride, 0);
+            for (int pixel = 0; pixel < canonical.Length; pixel += 3 * sampleBytes)
+                for (int i = 0; i < sampleBytes; i++)
+                    (canonical[pixel + i], canonical[pixel + 2 * sampleBytes + i]) =
+                        (canonical[pixel + 2 * sampleBytes + i], canonical[pixel + i]);
+
+            int canonicalChannel = layer == "red" ? 2 : -1;
+            using HImage native = OpenCVMediaHelper.AllocateHImage(width, height, 3, depth);
+            Marshal.Copy(canonical, 0, native.pData, canonical.Length);
+            Assert.Equal(0, OpenCVMediaHelper.M_GetMinMax(native, out uint minimum, out uint maximum, canonicalChannel));
+            Assert.True(maximum > minimum);
+
+            await fixture.SelectLayerAsync(layer);
+            WpfTestHost.Invoke(() =>
+            {
+                fixture.State.IsAutoSetRange = true;
+                fixture.State.IsEnabled = true;
+            });
+            await fixture.WaitForOwnWorkAsync();
+
+            using AlgorithmImageBuffer input = new(width, height, stride,
+                depth == 16 ? AlgorithmImageFormat.Bgr48 : AlgorithmImageFormat.Bgr24, canonical);
+            using AlgorithmImageMatLease source = AlgorithmImageInterop.BorrowReadOnly(input);
+            var parameters = new PseudoColorParameters
+            {
+                Channel = canonicalChannel,
+                Colormap = (StandardPseudoColorMap)(int)WpfTestHost.Invoke(() => fixture.State.ColormapTypes),
+                UseNominalRange = false,
+                AutoRange = true,
+                Minimum = minimum,
+                Maximum = maximum,
+                DataMinimum = minimum,
+                DataMaximum = maximum
+            };
+            using var output = PseudoColorReference.Apply(source.Mat, parameters);
+            byte[] expected = new byte[width * height * 3];
+            Marshal.Copy(output.Data, expected, 0, expected.Length);
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(minimum, fixture.State.DataMin);
+                Assert.Equal(maximum, fixture.State.DataMax);
+                var display = fixture.Snapshot();
+                Assert.True(display.HasActivePreview);
+                Assert.Equal(PixelFormats.Bgr24.ToString(), display.Format);
+                Assert.Equal(expected.Select(pixel => (int)pixel), display.Pixels);
+                fixture.AssertDocumentUnchanged();
+            });
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
 
     [Theory]
     [InlineData("red", false)]
@@ -1356,7 +1424,7 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
         private readonly Guid _document;
         private int _publications;
 
-        public Fixture(bool rgb48 = false, bool defaultSourceEntry = false, bool pbgra32 = false)
+        public Fixture(bool rgb48 = false, bool defaultSourceEntry = false, bool pbgra32 = false, bool rgb24 = false)
         {
             ResourceDictionary resources = Application.Current.Resources;
             resources["TextBox.Small"] = new Style(typeof(TextBox));
@@ -1377,7 +1445,8 @@ public sealed class PseudoColorChannelSelectionTests(ITestOutputHelper output)
                 OutputFormats: new HashSet<AlgorithmImageFormat> { AlgorithmImageFormat.Bgr24 }));
             View = defaultSourceEntry ? new ImageView() : new ImageView(new AlgorithmRuntime(catalog, [Provider], new ImmediateScheduler()));
             Context = View.EditorContext.ProcessingContext;
-            Source = new WriteableBitmap(2, 2, 96, 96, rgb48 ? PixelFormats.Rgb48 : pbgra32 ? PixelFormats.Pbgra32 : PixelFormats.Bgr24, null);
+            Source = new WriteableBitmap(2, 2, 96, 96, rgb48 ? PixelFormats.Rgb48 : pbgra32 ? PixelFormats.Pbgra32
+                : rgb24 ? PixelFormats.Rgb24 : PixelFormats.Bgr24, null);
             _sourcePixels = rgb48 ? Rgb48Pixels() : pbgra32
                 ? [30, 20, 10, 85, 60, 40, 20, 85, 15, 10, 5, 85, 9, 8, 7, 85]
                 : [11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121];
