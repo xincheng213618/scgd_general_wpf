@@ -31,7 +31,7 @@ namespace ColorVision.Copilot
             var maxLines = CopilotRecentLogSupport.NormalizeToolMaxLines(toolInput.GetInt32Argument("max_lines"));
             var result = await CopilotRecentLogCapability.CaptureAsync(
                 query,
-                CopilotRecentLogMode.RecentLines,
+                CopilotRecentLogSupport.ResolveToolMode(toolInput.GetStringArgument("source")),
                 maxLines,
                 CopilotRecentLogSupport.DefaultMaxLogChars,
                 cancellationToken);

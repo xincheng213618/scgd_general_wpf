@@ -189,6 +189,12 @@ namespace ColorVision.Copilot
             new Dictionary<string, object?>
             {
                 ["query"] = new { type = "string", description = "Optional case-insensitive filter text." },
+                ["source"] = new
+                {
+                    type = "string",
+                    @enum = new[] { "app", "native" },
+                    description = "app (default): the ColorVision application log. native: the newest native SDK log (camera, spectrometer and other device DLLs), where hardware errors are recorded.",
+                },
                 ["max_lines"] = new
                 {
                     type = "integer",
@@ -534,8 +540,8 @@ namespace ColorVision.Copilot
                 _ => new CopilotGetRecentLogTool(),
                 dispatcher => (arguments, _, token) => dispatcher.GetRecentLogAsync(arguments, token),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.SurfaceCapabilityAdapter,
-                agentDescription: "Read recent ColorVision application logs for failure or exception diagnosis. Do not use this tool for Windows version, port, process, service, or other machine-state inspection.",
-                mcpDescription: "Read recent ColorVision application log lines. Optional arguments: query, max_lines.",
+                agentDescription: "Read recent ColorVision application logs for failure or exception diagnosis; use source=native for camera, spectrometer and other device SDK errors. Do not use this tool for Windows version, port, process, service, or other machine-state inspection.",
+                mcpDescription: "Read recent ColorVision application log lines. Optional arguments: query, source (app or native), max_lines.",
                 mcpMetadata: McpMetadata("search", "Call get_recent_log with { \"query\": \"error\", \"max_lines\": 200 }."),
                 presentation: LogReadPresentation);
         public static CopilotSharedCapabilityDefinition SavedTemplateContext { get; } =

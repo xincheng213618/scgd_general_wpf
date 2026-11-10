@@ -55,7 +55,7 @@ namespace ColorVision.Copilot.Mcp
                     ["max_events"] = IntegerProperty("Maximum events to return. Defaults to 50.", 1, CopilotAgentTaskEventJournal.MaxQueryLimit),
                 }), "audit", "read-only", "Call get_agent_task_events with { \"event_types\": [\"toolCompleted\", \"runStopped\"], \"max_events\": 50 }."), (arguments, scope, _) => Task.FromResult(GetAgentTaskEvents(arguments, scope))),
                 Definition(Tool("get_runtime_environment_summary", "Return a safe summary of the MCP runtime environment, workspace roots, live context, logs, and flow availability.", EmptySchema(), "status", "read-only", "Call get_runtime_environment_summary before diagnostics."), (_, _, token) => GetRuntimeEnvironmentSummaryAsync(token)),
-                Definition(Tool("get_diagnostic_bundle", "Return a size-limited redacted diagnostic bundle with server status, runtime, last error, recent log, live context, and flow summary.", Schema(new Dictionary<string, object>
+                Definition(Tool("get_diagnostic_bundle", "Return a size-limited redacted diagnostic bundle with server status, runtime, last error, recent app and native SDK logs, live context, and flow summary.", Schema(new Dictionary<string, object>
                 {
                     ["max_chars"] = IntegerProperty("Maximum characters to return. Defaults to 12000.", 1000, MaxDiagnosticBundleChars),
                 }), "status", "read-only", "Call get_diagnostic_bundle with { \"max_chars\": 12000 } before reporting diagnostics."), (arguments, scope, token) => GetDiagnosticBundleAsync(arguments, scope, token)),

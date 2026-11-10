@@ -22,6 +22,14 @@ namespace ColorVision.Copilot.Mcp
                 maxLogLines,
                 12000,
                 cancellationToken);
+            // Device failures behind a flow error (no camera, spectrometer not open) are written only
+            // by the native SDK DLLs, so their log is searched with the same keyword.
+            var nativeLogResult = await _environment.RecentLogProvider(
+                logQuery,
+                CopilotRecentLogMode.NativeRecentLines,
+                Math.Min(maxLogLines, 60),
+                6000,
+                cancellationToken);
             var liveContext = _environment.LiveContextProvider();
             var templateJson = ExtractCurrentTemplateJson();
             var matchedNode = snapshot == null ? null : FindFlowNode(snapshot, nodeQuery);
@@ -111,9 +119,16 @@ namespace ColorVision.Copilot.Mcp
             }
 
             builder.AppendLine();
+            builder.AppendLine("## Native SDK Log Clues");
+            builder.AppendLine("Source: native device SDK log (camera, spectrometer). The summary names the run it came from; an earlier run is not the current failure.");
+            builder.AppendLine(nativeLogResult.Success
+                ? RedactForDisplay(TrimLong(string.Join(Environment.NewLine, new[] { nativeLogResult.Summary, nativeLogResult.Content }.Where(value => !string.IsNullOrWhiteSpace(value))), 3000))
+                : $"- Native SDK log unavailable: {EmptyLabel(nativeLogResult.ErrorMessage ?? nativeLogResult.Summary)}");
+
+            builder.AppendLine();
             builder.AppendLine("## Diagnosis Limits and Next Checks");
             builder.AppendLine("- No root cause has been established by this tool. Status text, configuration fields and search keywords are not failure evidence.");
-            builder.AppendLine("- The flow snapshot, selected node, template editor and application log are captured separately; they may describe different operations.");
+            builder.AppendLine("- The flow snapshot, selected node, template editor, application log and native SDK log are captured separately; they may describe different operations.");
             builder.AppendLine("- Match the flow/batch, node and timestamps in the original execution records before attributing a log entry or proposing a parameter change.");
 
             builder.AppendLine();

@@ -287,6 +287,12 @@ namespace ColorVision.Copilot.Mcp
             {
                 ["max_lines"] = JsonSerializer.SerializeToElement(120),
             }, cancellationToken);
+            // Camera and spectrometer failures are recorded only in the native SDK log.
+            var recentNativeLog = await GetRecentLogAsync(new Dictionary<string, JsonElement>
+            {
+                ["source"] = JsonSerializer.SerializeToElement("native"),
+                ["max_lines"] = JsonSerializer.SerializeToElement(40),
+            }, cancellationToken);
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision MCP diagnostic bundle");
@@ -296,6 +302,7 @@ namespace ColorVision.Copilot.Mcp
             AppendDiagnosticSection(builder, "runtime_environment_summary", (await GetRuntimeEnvironmentSummaryAsync(cancellationToken)).Text);
             AppendDiagnosticSection(builder, "last_tool_error", GetLastToolError(executionScope).Text);
             AppendDiagnosticSection(builder, "recent_log", recentLog.Text);
+            AppendDiagnosticSection(builder, "recent_native_log", recentNativeLog.Text);
             AppendDiagnosticSection(builder, "live_context", GetLiveContext().Text);
             AppendDiagnosticSection(builder, "flow_summary", (await GetFlowSummaryAsync(cancellationToken)).Text);
 

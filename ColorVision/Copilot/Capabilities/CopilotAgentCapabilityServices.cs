@@ -74,12 +74,6 @@ namespace ColorVision.Copilot
     {
         public static bool HasAvailableLogFile() => CopilotRecentLogSupport.HasAvailableLogFile();
 
-        public static CopilotCapabilityResult Capture(string? query, CopilotRecentLogMode mode, int maxLines, int maxChars)
-        {
-            var snapshot = CopilotRecentLogSupport.Capture(query, mode, maxLines, maxChars);
-            return ToCapabilityResult(snapshot);
-        }
-
         public static async Task<CopilotCapabilityResult> CaptureAsync(
             string? query,
             CopilotRecentLogMode mode,

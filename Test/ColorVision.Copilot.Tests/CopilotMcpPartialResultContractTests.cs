@@ -77,6 +77,28 @@ public sealed class CopilotMcpPartialResultContractTests
         Assert.Empty(result.PartialResultMessage);
     }
 
+    // Camera and spectrometer failures exist only in the native SDK log, so the bundle carries both logs.
+    [Fact]
+    public async Task DiagnosticBundleIncludesTheNativeSdkLog()
+    {
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot(),
+            RecentLogProvider = (_, mode, _, _, _) => Task.FromResult(new CopilotCapabilityResult
+            {
+                Success = true,
+                Summary = "log",
+                Content = mode == CopilotRecentLogMode.NativeRecentLines ? "NATIVE_SPECTROMETER_ERROR" : "APP_FLOW_FAILED",
+            }),
+        });
+
+        var result = await dispatcher.CallAsync("get_diagnostic_bundle", null, CancellationToken.None);
+
+        Assert.True(result.Success, result.Text);
+        Assert.Contains("APP_FLOW_FAILED", result.Text, StringComparison.Ordinal);
+        Assert.Contains("NATIVE_SPECTROMETER_ERROR", result.Text, StringComparison.Ordinal);
+    }
+
     private static CopilotMcpToolDispatcher Dispatcher(CopilotCapabilityResult result) => new(new CopilotMcpToolEnvironment
     {
         WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot(),

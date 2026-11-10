@@ -69,9 +69,9 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 | 用途 | 工具 | 结果与边界 |
 | --- | --- | --- |
 | 服务和运行环境 | `get_server_status`、`get_enabled_tools`、`get_runtime_environment_summary` | 监听器、活动/排队运行数量、运行环境等快照，不输出 token |
-| 调用诊断 | `get_audit_log`、`get_audit_summary`、`get_last_tool_error`、`get_diagnostic_bundle` | 当前 MCP 会话的调用审计；诊断包另含应用日志、运行环境、实时上下文和流程摘要，默认最多 `12000` 字符，可设 `1000–60000`，不含 Agent journal |
+| 调用诊断 | `get_audit_log`、`get_audit_summary`、`get_last_tool_error`、`get_diagnostic_bundle` | 当前 MCP 会话的调用审计；诊断包另含应用日志和原生 SDK 日志尾部、运行环境、实时上下文和流程摘要，默认最多 `12000` 字符，可设 `1000–60000`，不含 Agent journal |
 | 应用与模板上下文 | `get_live_context`、`inspect_device_services`、`inspect_loaded_batch_results`、`get_workspace_context`、`get_active_template_context`、`get_saved_template_context`、`get_template_type_context` | 读取已发布或已加载的内存状态。批次结果仅限已打开并注册的详情页；已保存模板用精确 `template_code` / `template_name` 定位；类型查询只需 code，返回字段结构和已加载名称，不返回参数值，不主动查询数据库 |
-| 日志与产品文档 | `get_recent_log`、`search_docs`、`read_algorithm_help` | 应用日志、已发布在线文档索引或随包离线算法原文；在线索引可能联网，不等于当前源码或安装版本 |
+| 日志与产品文档 | `get_recent_log`、`search_docs`、`read_algorithm_help` | 应用日志（`source=native` 读原生 SDK `.log`；带 query 且最近行无命中时，先全文扫最新文件再搜更早文件，托管日志同理）、已发布在线文档索引或随包离线算法原文；在线索引可能联网，不等于当前源码或安装版本 |
 | 工作区文件 | `search_files`、`grep_text`、`read_allowed_file`、`list_allowed_directory` | 受允许根约束的搜索、文本读取和目录分页，见下文 |
 | 流程诊断 | `get_flow_summary`、`diagnose_flow_failure`、`list_flow_runs`、`list_flow_incidents`、`inspect_flow_incident`、`inspect_flow_run_events`、`inspect_flow_run_attempts`、`inspect_recorded_flow_template`、`inspect_flow_run_history`、`compare_recorded_flow_templates`、`get_flow_graph`、`get_flow_node_catalog`、`preview_flow_action` | 发现运行或事故并读取精确关联的证据、运行事件、留存模板、运行历史或保存差异，或读取当前流程；预览动作只返回说明，即使名称是 `select_node` / `open_node_property` 也不实际选择或打开界面 |
 | 当前图静态校验 | `validate_flow_graph` | 以 `get_flow_graph` 的精确 revision 校验完整当前画布；正常返回 `valid=false` 仍是成功交付诊断，不代表可运行、设备就绪或历史运行图有效 |
@@ -84,7 +84,7 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 | 执行批准 | `confirm_action` | 只消费相同会话、工作区和参数绑定的已批准动作 |
 | Agent 事件 | `get_agent_task_events` | 标准 HTTP 外部会话没有 Copilot conversation 绑定，返回 `agent_task_events_scope_required`；工具出现在列表中不代表可以读取进程级任务历史 |
 
-`diagnose_flow_failure` 分开呈现当前流程状态、Flow 宿主筛选出的失败相关摘录、节点／模板配置和最近应用日志，不通过关键词生成故障原因。`FailureEvidence` / `RecentFailureSummary` 也是宿主提供的文本线索，不等于结构化异常或已确认根因；`Running` 状态、`Timeout` 等配置字段及日志搜索词本身不构成故障证据。各来源独立采集，最近日志尚未按运行批次或节点关联，必须先对齐原始记录中的流程／批次、节点与时间，再提出参数调整。输出中的日志行数是请求上限；来源缺失或日志读取失败会明确报告，不能解释为流程成功。`CopilotFlowDiagnosisTests` 覆盖正常配置、真实错误摘录、旧摘要兼容和日志读取失败的区分。
+`diagnose_flow_failure` 分开呈现当前流程状态、Flow 宿主筛选出的失败相关摘录、节点／模板配置、最近应用日志和用同一关键词搜索的原生 SDK 日志（设备故障只记在这里；摘要标明来自哪次运行，更早的运行不等于本次失败），不通过关键词生成故障原因。`FailureEvidence` / `RecentFailureSummary` 也是宿主提供的文本线索，不等于结构化异常或已确认根因；`Running` 状态、`Timeout` 等配置字段及日志搜索词本身不构成故障证据。各来源独立采集，最近日志尚未按运行批次或节点关联，必须先对齐原始记录中的流程／批次、节点与时间，再提出参数调整。输出中的日志行数是请求上限；来源缺失或日志读取失败会明确报告，不能解释为流程成功。`CopilotFlowDiagnosisTests` 覆盖正常配置、真实错误摘录、旧摘要兼容和日志读取失败的区分。
 
 `inspect_device_services` 是一个已加载设备目录／精确对象只读入口。省略 `device_ref` 读取目录，`max_devices` 默认40、范围1–100，原样续传不超过4,096字符的 `cursor`；focus 须使用返回的32hex对象引用和宿主标识（作为 `expected_source_instance_id`），不能与 cursor 并用。游标绑定宿主和成员对象集合，按实际交付末行续读；名称、资源编号或当前选择不作回退。输出最多18,000字符完整 JSON，只有资源 metadata 与可信内置缓存状态，未知插件为 metadata-only unsupported。缓存状态不是在线／健康、心跳或动作完成保证；源在排队前绑定且 UI 采集前后复核，不初始化管理器、读取配置、创建界面或探测／控制设备。
 

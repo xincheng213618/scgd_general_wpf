@@ -2604,6 +2604,8 @@
         "Copilot 会话如何恢复",
         "工具失败能否重试",
         "诊断模式会自动读取日志吗",
+        "日志中文乱码",
+        "原生日志 光谱仪错误",
         "CopilotAgentSessionCheckpoint",
         "CopilotAgentTaskEventJournal",
         "GetRecentLog",

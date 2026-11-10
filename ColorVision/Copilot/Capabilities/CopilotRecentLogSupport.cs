@@ -12,6 +12,8 @@ namespace ColorVision.Copilot
     {
         RecentLines,
         FullDay,
+        /// <summary>Recent lines of the newest native log4z <c>.log</c> file (camera, spectrometer and other SDK DLLs).</summary>
+        NativeRecentLines,
     }
 
     public sealed class CopilotRecentLogSnapshot
@@ -51,6 +53,12 @@ namespace ColorVision.Copilot
         private const int MaxRetainedLogLines = 2000;
         private const int MaxFilteredLogLines = 120;
         private const int MaxLogLineCharacters = 8192;
+        private const int MaxLogLineBytes = MaxLogLineCharacters * 3;
+        // Native logs are a few hundred bytes per run and daily app logs tens of KB, so the
+        // earlier-file search is bounded by bytes read rather than file count.
+        private const int MaxSearchedLogFiles = 500;
+        private const long MaxSearchedLogBytes = 32L * 1024 * 1024;
+        private static readonly Encoding StrictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
         private const int MaxRecentLogScanBytes = 4 * 1024 * 1024;
         private const string TruncatedLineMarker = "...<line truncated>";
 
@@ -62,15 +70,6 @@ namespace ColorVision.Copilot
             ReturnSpecialDirectories = false,
         };
 
-        public static CopilotRecentLogSnapshot Capture(
-            string? query = null,
-            CopilotRecentLogMode mode = CopilotRecentLogMode.RecentLines,
-            int maxLines = DefaultMaxLogLines,
-            int maxChars = DefaultMaxLogChars)
-        {
-            return CaptureAsync(query, mode, maxLines, maxChars, CancellationToken.None).GetAwaiter().GetResult();
-        }
-
         public static async Task<CopilotRecentLogSnapshot> CaptureAsync(
             string? query = null,
             CopilotRecentLogMode mode = CopilotRecentLogMode.RecentLines,
@@ -79,9 +78,20 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken = default)
         {
             var safeMaxLines = NormalizeMaxLines(maxLines);
+            if (mode == CopilotRecentLogMode.NativeRecentLines)
+                return await CaptureNativeAsync(GetCandidateLogDirectories(), query, safeMaxLines, NormalizeMaxChars(maxChars), cancellationToken).ConfigureAwait(false);
+
             var latestLog = FindLatestLogFile(cancellationToken);
             if (latestLog == null)
                 return CreateMissingSnapshot(mode, safeMaxLines);
+
+            if (mode == CopilotRecentLogMode.RecentLines && !string.IsNullOrWhiteSpace(query))
+            {
+                var earlier = FindLogFiles(GetCandidateLogDirectories(), "*.txt", cancellationToken)
+                    .Where(file => !string.Equals(file.FullName, latestLog.FullName, StringComparison.OrdinalIgnoreCase));
+                return await CaptureWithEarlierSearchAsync([latestLog, .. earlier], query, safeMaxLines, NormalizeMaxChars(maxChars),
+                    newestPrefix: string.Empty, label: "Application log", unit: "file", cancellationToken).ConfigureAwait(false);
+            }
 
             return await CaptureFileCoreAsync(
                 latestLog.FullName,
@@ -121,6 +131,11 @@ namespace ColorVision.Copilot
             }
         }
 
+        public static CopilotRecentLogMode ResolveToolMode(string? source) =>
+            string.Equals(source?.Trim(), "native", StringComparison.OrdinalIgnoreCase)
+                ? CopilotRecentLogMode.NativeRecentLines
+                : CopilotRecentLogMode.RecentLines;
+
         public static int NormalizeToolMaxLines(int? maxLines)
         {
             return Math.Clamp(maxLines ?? DefaultMaxLogLines, 1, MaximumToolLogLines);
@@ -132,7 +147,8 @@ namespace ColorVision.Copilot
             CopilotRecentLogMode mode,
             int safeMaxLines,
             int safeMaxChars,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string summaryPrefix = "")
         {
             try
             {
@@ -171,7 +187,7 @@ namespace ColorVision.Copilot
                     Mode = mode,
                     FilePath = fullPath,
                     Content = content,
-                    Summary = BuildSummary(
+                    Summary = summaryPrefix + BuildSummary(
                         Path.GetFileName(fullPath),
                         mode,
                         safeMaxLines,
@@ -261,7 +277,118 @@ namespace ColorVision.Copilot
             }
         }
 
+        // Managed logs are UTF-8, but the native log4z logs in the same folder are written in the
+        // system ANSI code page. Each line is decoded on its own (strict UTF-8, then GB18030), so
+        // both kinds, and a file that mixes them, read correctly instead of as U+FFFD.
         private static async Task ScanLogStreamAsync(
+            FileStream stream,
+            LogScanAccumulator accumulator,
+            bool initialLineWasTruncated,
+            CancellationToken cancellationToken)
+        {
+            if (stream.Position == 0 && await StartsWithUtf16ByteOrderMarkAsync(stream, cancellationToken).ConfigureAwait(false))
+            {
+                await ScanUtf16LogStreamAsync(stream, accumulator, initialLineWasTruncated, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            var skipUtf8ByteOrderMark = stream.Position == 0;
+            var buffer = new byte[4096];
+            var line = new byte[MaxLogLineBytes];
+            var lineLength = 0;
+            var lineWasTruncated = initialLineWasTruncated;
+            var hasBytesInCurrentLine = false;
+
+            while (true)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+
+                var start = 0;
+                if (skipUtf8ByteOrderMark)
+                {
+                    skipUtf8ByteOrderMark = false;
+                    if (read >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF)
+                        start = 3;
+                }
+
+                for (var index = start; index < read; index++)
+                {
+                    var value = buffer[index];
+                    if (value == (byte)'\n')
+                    {
+                        AddDecodedLine(accumulator, line, lineLength, lineWasTruncated);
+                        lineLength = 0;
+                        lineWasTruncated = false;
+                        hasBytesInCurrentLine = false;
+                        continue;
+                    }
+
+                    hasBytesInCurrentLine = true;
+                    if (lineLength < line.Length)
+                        line[lineLength++] = value;
+                    else
+                        lineWasTruncated = true;
+                }
+            }
+
+            if (hasBytesInCurrentLine || lineWasTruncated)
+                AddDecodedLine(accumulator, line, lineLength, lineWasTruncated);
+        }
+
+        private static async Task<bool> StartsWithUtf16ByteOrderMarkAsync(FileStream stream, CancellationToken cancellationToken)
+        {
+            var prefix = new byte[2];
+            var read = await stream.ReadAsync(prefix.AsMemory(), cancellationToken).ConfigureAwait(false);
+            stream.Position = 0;
+            return read == 2 && ((prefix[0] == 0xFF && prefix[1] == 0xFE) || (prefix[0] == 0xFE && prefix[1] == 0xFF));
+        }
+
+        private static void AddDecodedLine(LogScanAccumulator accumulator, byte[] bytes, int length, bool wasTruncated)
+        {
+            if (length > 0 && bytes[length - 1] == (byte)'\r')
+                length--;
+
+            var text = DecodeLogLine(bytes.AsSpan(0, length), wasTruncated);
+            if (text.Length > MaxLogLineCharacters)
+            {
+                text = text[..MaxLogLineCharacters];
+                wasTruncated = true;
+            }
+
+            if (wasTruncated && text.Length > 0 && char.IsHighSurrogate(text[^1]))
+                text = text[..^1];
+            accumulator.AddLine(wasTruncated ? text + TruncatedLineMarker : text, wasTruncated);
+        }
+
+        private static string DecodeLogLine(ReadOnlySpan<byte> bytes, bool wasTruncated)
+        {
+            // A byte-capped line can end inside a UTF-8 sequence; trim that partial character
+            // before deciding the line is not UTF-8.
+            var trimmable = wasTruncated ? Math.Min(3, bytes.Length) : 0;
+            for (var trim = 0; trim <= trimmable; trim++)
+            {
+                try
+                {
+                    return StrictUtf8.GetString(bytes[..^trim]);
+                }
+                catch (DecoderFallbackException)
+                {
+                }
+            }
+
+            try
+            {
+                return CopilotLocalFileToolSupport.LegacyEncoding.Value.GetString(bytes);
+            }
+            catch (DecoderFallbackException)
+            {
+                return Encoding.UTF8.GetString(bytes);
+            }
+        }
+
+        private static async Task ScanUtf16LogStreamAsync(
             FileStream stream,
             LogScanAccumulator accumulator,
             bool initialLineWasTruncated,
@@ -344,6 +471,8 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             if (filteredLineCount > 0)
                 builder.Append("[Filter Keyword] ").AppendLine(query);
+            else if (!string.IsNullOrWhiteSpace(query))
+                builder.Append("[Filter Keyword] ").Append(query).AppendLine(" matched no lines; the entries below are the most recent log lines, not matches.");
 
             if (alreadyTruncated)
                 builder.AppendLine("...<older or oversized log entries omitted; showing the most recent available content.>");
@@ -398,10 +527,95 @@ namespace ColorVision.Copilot
             {
                 Success = false,
                 Mode = mode,
-                Summary = "No recent logs were found.",
+                Summary = mode == CopilotRecentLogMode.NativeRecentLines ? "No native SDK log (.log) was found." : "No recent logs were found.",
                 ErrorMessage = "No readable log files were found in the current environment.",
                 RequestedRecentLineCount = safeMaxLines,
             };
+        }
+
+        // Native DLLs write one log4z file per process run beside the managed logs. Without a keyword
+        // the newest run is shown; with one, older runs are searched newest first, because the
+        // hardware error the user asks about often happened in an earlier session.
+        internal static async Task<CopilotRecentLogSnapshot> CaptureNativeAsync(
+            IEnumerable<string> directories,
+            string? query,
+            int safeMaxLines,
+            int safeMaxChars,
+            CancellationToken cancellationToken)
+        {
+            var files = FindLogFiles(directories, "*.log", cancellationToken);
+            if (files.Count == 0)
+                return CreateMissingSnapshot(CopilotRecentLogMode.NativeRecentLines, safeMaxLines);
+
+            return await CaptureWithEarlierSearchAsync(files, query, safeMaxLines, safeMaxChars,
+                newestPrefix: "Native SDK log (newest run). ", label: "Native SDK log", unit: "run", cancellationToken).ConfigureAwait(false);
+        }
+
+        // Shows the newest file; with a keyword that it lacks, searches earlier files newest first
+        // within a byte budget and returns the first match, naming its date.
+        private static async Task<CopilotRecentLogSnapshot> CaptureWithEarlierSearchAsync(
+            IReadOnlyList<FileInfo> files,
+            string? query,
+            int safeMaxLines,
+            int safeMaxChars,
+            string newestPrefix,
+            string label,
+            string unit,
+            CancellationToken cancellationToken)
+        {
+            var newest = await CaptureFileCoreAsync(files[0].FullName, query, CopilotRecentLogMode.RecentLines, safeMaxLines, safeMaxChars, cancellationToken,
+                summaryPrefix: newestPrefix).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(query) || !newest.Success || newest.FilteredLineCount > 0)
+                return newest;
+
+            // The recent window only holds the last max_lines lines, so a keyword can still be earlier
+            // in the newest file. Scan whole files, newest first, before claiming an older match.
+            var searched = 0;
+            long bytesRead = 0;
+            foreach (var file in files.Take(MaxSearchedLogFiles))
+            {
+                bytesRead += file.Length;
+                if (bytesRead > MaxSearchedLogBytes)
+                    break;
+                searched++;
+                var prefix = searched == 1
+                    ? $"{label}: no match in the latest {safeMaxLines} lines; these matches are earlier in the newest {unit}. "
+                    : $"{label} from an earlier {unit} ({file.LastWriteTime:yyyy-MM-dd HH:mm}); the newest {unit} had no match. ";
+                var snapshot = await CaptureFileCoreAsync(file.FullName, query, CopilotRecentLogMode.FullDay, safeMaxLines, safeMaxChars, cancellationToken,
+                    summaryPrefix: prefix).ConfigureAwait(false);
+                if (snapshot.Success && snapshot.FilteredLineCount > 0)
+                    return snapshot;
+            }
+
+            return await CaptureFileCoreAsync(files[0].FullName, query, CopilotRecentLogMode.RecentLines, safeMaxLines, safeMaxChars, cancellationToken,
+                summaryPrefix: $"{label}; searched the {searched} newest {unit}s in full without a match. ").ConfigureAwait(false);
+        }
+
+        internal static IReadOnlyList<FileInfo> FindLogFiles(IEnumerable<string> directories, string pattern, CancellationToken cancellationToken)
+        {
+            var files = new List<FileInfo>();
+            foreach (var directory in directories.Where(Directory.Exists))
+            {
+                try
+                {
+                    foreach (var path in Directory.EnumerateFiles(directory, pattern, LogEnumerationOptions))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var candidate = new FileInfo(path);
+                        if (candidate.Length > 0)
+                            files.Add(candidate);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                }
+            }
+
+            return files.OrderByDescending(file => file.LastWriteTimeUtc).ToArray();
         }
 
         private static int NormalizeMaxLines(int maxLines) => Math.Clamp(maxLines, 1, MaxRetainedLogLines);
@@ -423,12 +637,12 @@ namespace ColorVision.Copilot
             if (filteredLineCount > 0)
             {
                 summary = mode == CopilotRecentLogMode.FullDay
-                    ? $"Read today's log {fileName}; keyword {query} matched {filteredLineCount} lines."
+                    ? $"Read the whole log {fileName}; keyword {query} matched {filteredLineCount} lines."
                     : $"Read recent log {fileName}; keyword {query} matched {filteredLineCount} lines.";
             }
             else if (mode == CopilotRecentLogMode.FullDay)
             {
-                summary = $"Read today's log {fileName}; total lines: {totalLineCount}.";
+                summary = $"Read the whole log {fileName}; total lines: {totalLineCount}.";
             }
             else
             {
@@ -436,6 +650,10 @@ namespace ColorVision.Copilot
                     ? $"Read recent log {fileName}; showing {displayedLineCount} of the latest {Math.Min(requestedRecentLineCount, totalLineCount)} lines."
                     : $"Read recent log {fileName}; showing {displayedLineCount} lines from a bounded tail scan.";
             }
+
+            // Without this the fallback lines read like matches and get cited as the requested event.
+            if (filteredLineCount == 0 && !string.IsNullOrWhiteSpace(query))
+                summary += $" Keyword {query} matched no lines, so these are recent lines, not matches.";
 
             if (contentWasTruncated)
                 summary += " Content was large and has been truncated.";
