@@ -2,6 +2,7 @@ using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -27,7 +28,6 @@ namespace ColorVision.Engine.Media
         private readonly EditorContext _context;
         private readonly ImageMouseInfoProvider _mouseInfoProvider;
         private readonly CvcieProbeUpdates _updates;
-        private readonly Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> _calculatePoi;
         private readonly Func<bool> _showDateFilePath;
         private readonly Func<int, int, (int pointIndex, int listIndex)> _findNearbyPoints;
         private readonly Func<CvcieMouseProbeOptions> _getOptions;
@@ -37,16 +37,14 @@ namespace ColorVision.Engine.Media
 
         public CvcieMouseMagnifierManager(
             EditorContext editorContext,
-            Func<ValueTask<bool>> prepare,
-            Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> calculatePoi,
+            Func<PoiMeasurementPoint, CancellationToken, ValueTask<CvcieProbeResult?>> calculatePoi,
             Func<bool> showDateFilePath,
             Func<int, int, (int pointIndex, int listIndex)> findNearbyPoints,
             Func<CvcieMouseProbeOptions> getOptions)
         {
             _context = editorContext;
             _mouseInfoProvider = editorContext.MouseInfoProvider;
-            _updates = new CvcieProbeUpdates(editorContext.ImageView, prepare, RenderSample);
-            _calculatePoi = calculatePoi;
+            _updates = new CvcieProbeUpdates(editorContext.ImageView, calculatePoi, RenderSample);
             _showDateFilePath = showDateFilePath;
             _findNearbyPoints = findNearbyPoints;
             _getOptions = getOptions;
@@ -88,15 +86,7 @@ namespace ColorVision.Engine.Media
 
         private void HandlePixelSampleChanged(object? sender, ImagePixelSample pixelSample)
         {
-            if (IsChecked) _updates.Update(pixelSample);
-        }
-
-        private void RenderSample(ImagePixelSample pixelSample)
-        {
-            if (!TryRenderOverlay(pixelSample))
-            {
-                DrawDefaultOverlay(pixelSample);
-            }
+            if (IsChecked) _updates.Update(pixelSample, _getOptions().CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY));
         }
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
@@ -107,20 +97,12 @@ namespace ColorVision.Engine.Media
             DrawVisualImageControl(false);
         }
 
-        private bool TryRenderOverlay(ImagePixelSample pixelSample)
+        private void RenderSample(ImagePixelSample pixelSample, PoiMeasurementPoint point, CvcieProbeResult result)
         {
-            CvcieMouseProbeOptions options = _getOptions();
-            double radius = Math.Max(1, options.Radius);
-            int rectWidth = Math.Max(1, options.RectWidth);
-            int rectHeight = Math.Max(1, options.RectHeight);
-            PoiMeasurementPoint point = options.CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY);
-            radius = point.Width / 2.0;
-            if (point.Width <= 0) return false;
-
-            (int channels, PoiMeasurementResult measurement) = _calculatePoi(point);
+            (int channels, PoiMeasurementResult measurement) = result;
             if (channels == 1)
             {
-                DrawProbeOverlay(pixelSample, $"Y:{measurement.Y:F4}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
+                DrawProbeOverlay(pixelSample, $"Y:{measurement.Y:F4}", string.Empty, point);
             }
             else
             {
@@ -128,15 +110,11 @@ namespace ColorVision.Engine.Media
                     pixelSample,
                     BuildPrimaryText(pixelSample, measurement.X, measurement.Y, measurement.Z),
                     $"x:{measurement.ChromaX:F4},y:{measurement.ChromaY:F4},u:{measurement.U:F2},v:{measurement.V:F2}",
-                    options.MagnigifierType,
-                    radius,
-                    rectWidth,
-                    rectHeight);
+                    point);
             }
-            return true;
         }
 
-        private void DrawProbeOverlay(ImagePixelSample pixelSample, string text1, string text2, MagnigifierType magnigifierType, double radius, double rectWidth, double rectHeight)
+        private void DrawProbeOverlay(ImagePixelSample pixelSample, string text1, string text2, PoiMeasurementPoint point)
         {
             Point viewPosition = pixelSample.ViewPosition;
 
@@ -147,15 +125,17 @@ namespace ColorVision.Engine.Media
 
             using DrawingContext dc = DrawVisualImage.RenderOpen();
 
-            if (magnigifierType is MagnigifierType.Circle or MagnigifierType.Ellipse)
+            if (point.Shape is PoiMeasurementShape.Circle or PoiMeasurementShape.Ellipse)
             {
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, magnigifierType == MagnigifierType.Ellipse ? rectHeight / 2 : radius);
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, magnigifierType == MagnigifierType.Ellipse ? rectHeight / 2 : radius);
+                double radiusX = point.Width / 2.0;
+                double radiusY = point.Shape == PoiMeasurementShape.Ellipse ? point.Height / 2.0 : radiusX;
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), viewPosition, radiusX, radiusY);
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), viewPosition, radiusX, radiusY);
             }
-            else if (magnigifierType == MagnigifierType.Rect)
+            else if (point.Shape == PoiMeasurementShape.Rect)
             {
-                double rectWidthValue = Math.Max(1, rectWidth);
-                double rectHeightValue = Math.Max(1, rectHeight);
+                double rectWidthValue = point.Width;
+                double rectHeightValue = point.Height;
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(viewPosition.X - rectWidthValue / 2, viewPosition.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
                 dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Rect(viewPosition.X - rectWidthValue / 2, viewPosition.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
             }
@@ -183,45 +163,6 @@ namespace ColorVision.Engine.Media
             dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 31));
             dc.DrawText(formattedTex5, new Point(x1 + 5, y1 + height + 44));
 
-            dc.Pop();
-            if (DrawVisualImage.Effect is not DropShadowEffect)
-            {
-                DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
-            }
-        }
-
-        private void DrawDefaultOverlay(ImagePixelSample pixelSample)
-        {
-            Point viewPosition = pixelSample.ViewPosition;
-            Point pixelPosition = pixelSample.PixelPosition;
-
-            if (Image.Source is not BitmapSource bitmapImage || pixelPosition.X <= 60 || pixelPosition.X >= bitmapImage.PixelWidth - 60 || pixelPosition.Y <= 45 || pixelPosition.Y >= bitmapImage.PixelHeight - 45)
-            {
-                return;
-            }
-
-            using DrawingContext dc = DrawVisualImage.RenderOpen();
-            var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * viewPosition.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * viewPosition.Y);
-            dc.PushTransform(transform);
-
-            double x1 = viewPosition.X;
-            double y1 = viewPosition.Y + 20;
-            double height = 0;
-
-            x1++;
-            y1++;
-            height -= 2;
-
-            Brush brush = Brushes.White;
-            FontFamily fontFamily = new("Arial");
-            double fontSize = 10;
-            FormattedText formattedText = new(pixelSample.ValueText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            FormattedText formattedTex1 = new(pixelSample.CoordinateText, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-            double width = Math.Max(formattedText.Width, formattedTex1.Width) + 10;
-
-            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 30));
-            dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
-            dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
             dc.Pop();
             if (DrawVisualImage.Effect is not DropShadowEffect)
             {

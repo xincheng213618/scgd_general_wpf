@@ -986,34 +986,260 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
         }
     }
 
-    [Fact]
-    public async Task CvcieProbeRendersTheLatestSampleAfterPreparation()
+    [Theory]
+    [InlineData(1, 1u)]
+    [InlineData(3, 2u)]
+    public async Task DiskCvcieProbesMatchInMemoryGeometryWithoutRetainingPixels(int channels, uint version)
     {
-        var ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var rendered = new TaskCompletionSource<ImagePixelSample>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var latest = new ImagePixelSample { PixelX = 8, PixelY = 6 };
+        const int width = 43, height = 32;
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-disk-probe-{Guid.NewGuid():N}.cvcie");
+        byte[] pixels = new byte[width * height * channels * sizeof(float)];
+        FillFixture(pixels, channels, changed: false);
         ImageView? view = null;
+        CVRawOpen? opener = null;
+        FieldInfo measurementBuffer = typeof(CalibratedImageCapability).GetField("_measurementBuffer", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        PoiMeasurementPoint[] points =
+        [
+            new(0, 0, 1, 1, PoiMeasurementShape.Point),
+            new(20, 16, 1, 1, PoiMeasurementShape.Point),
+            new(20, 16, 5, 5, PoiMeasurementShape.Circle),
+            new(20, 16, 6, 6, PoiMeasurementShape.Circle),
+            new(20, 16, 5, 7, PoiMeasurementShape.Rect),
+            new(20, 16, 6, 4, PoiMeasurementShape.Rect),
+            // Translating this ellipse's center can add a sample at X=17, Y=10 due to floating-point rounding.
+            new(20, 16, 10, 15, PoiMeasurementShape.Ellipse),
+            new(0, 0, 6, 6, PoiMeasurementShape.Circle),
+            new(width - 1, height - 1, 6, 5, PoiMeasurementShape.Rect),
+            new(width - 1, 0, 7, 4, PoiMeasurementShape.Ellipse),
+        ];
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            WriteFixture();
+            using (FileStream stream = File.OpenRead(path))
+            {
+                int headerEnd = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header);
+                using (header)
+                    Assert.NotEqual(0L, CvcieDiskPixels.Locate(stream, header, headerEnd, pixels.Length, requireExactLength: true).Offset % sizeof(float));
+            }
+            CvcieFileRevision revision = CvcieFileRevision.Capture(path);
+            await OpenAsync(clear: false).WaitAsync(timeout);
+            using var reference = new PoiMeasurementBuffer(pixels, width, height, 32, channels);
+            PoiMeasurementResult[] expected = PoiMeasurementService.Calculate(reference, points);
+            Assert.NotEqual(expected[2], expected[4]);
+            if (channels == 1) Assert.True(expected[0].Y < 0);
+            else Assert.Equal(0.000001f, expected[0].X);
+            for (int i = 0; i < points.Length; i++)
+            {
+                CvcieProbeResult result = Assert.IsType<CvcieProbeResult>(await ProbeAsync(points[i]).WaitAsync(timeout));
+                Assert.Equal(channels, result.Channels);
+                Assert.Equal(expected[i], result.Measurement);
+            }
+            Assert.Null(WpfTestHost.Invoke(() => measurementBuffer.GetValue(opener)));
+            using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+
+            FillFixture(pixels, channels, changed: true);
+            WriteFixture();
+            File.SetLastWriteTimeUtc(path, revision.LastWriteTimeUtc.AddMinutes(-5));
+            Assert.Equal(revision.Length, new FileInfo(path).Length);
+            Assert.Null(await ProbeAsync(points[1]).WaitAsync(timeout));
+            Assert.Null(WpfTestHost.Invoke(() => measurementBuffer.GetValue(opener)));
+
+            await OpenAsync(clear: true).WaitAsync(timeout);
+            var updated = Assert.IsType<CvcieProbeResult>(await ProbeAsync(points[1]).WaitAsync(timeout));
+            Assert.NotEqual(expected[1], updated.Measurement);
+            Assert.Equal(PoiMeasurementService.Calculate(reference, points[1]), updated.Measurement);
+        }
+        finally
+        {
+            try
+            {
+                Task retirement = WpfTestHost.Invoke(() =>
+                {
+                    view?.Dispose();
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                });
+                await retirement.WaitAsync(timeout);
+            }
+            finally { File.Delete(path); }
+        }
+
+        Task OpenAsync(bool clear) => WpfTestHost.Invoke(() =>
+        {
+            if (view == null)
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                opener = new CVRawOpen(view.EditorContext);
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = opener;
+            }
+            if (clear) view.Clear();
+            view.OpenImage(path);
+            return view.ImageOpenCompletion;
+        });
+
+        Task<CvcieProbeResult?> ProbeAsync(PoiMeasurementPoint point)
+            => WpfTestHost.Invoke(() => opener!.CalculateProbeAsync(point, CancellationToken.None).AsTask());
+
+        void WriteFixture()
+        {
+            using CVCIEFile file = new()
+            {
+                Version = version, FileExtType = CVType.CIE, Rows = height, Cols = width,
+                Bpp = 32, Channels = channels, Exp = Enumerable.Repeat(1f, channels).ToArray(), Data = pixels,
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+        }
+
+        static void FillFixture(byte[] data, int channels, bool changed)
+        {
+            Span<float> samples = MemoryMarshal.Cast<byte, float>(data.AsSpan());
+            for (int channel = 0; channel < channels; channel++)
+            {
+                int plane = channel * width * height;
+                for (int pixel = 0; pixel < width * height; pixel++)
+                    samples[plane + pixel] = ((pixel * (channel + 3) + channel * 37) % 163) - 41.25f + (changed ? 175 : 0);
+                samples[plane + 10 * width + 17] += 1234.5f;
+            }
+        }
+    }
+
+    [Fact]
+    public async Task DiskCvcieProbeStillMeasuresRegionsLargerThanTheCropBudget()
+    {
+        const int width = 850, height = 850, channels = 3;
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-large-probe-{Guid.NewGuid():N}.cvcie");
+        byte[] pixels = CreatePixels();
+        PoiMeasurementPoint point = new(width / 2, height / 2, width, height, PoiMeasurementShape.Rect);
+        ImageView? view = null;
+        CVRawOpen? opener = null;
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            using var fixture = new CVCIEFile
+            {
+                Version = 2, FileExtType = CVType.CIE, Rows = height, Cols = width,
+                Bpp = 32, Channels = channels, Exp = [1, 1, 1], Data = pixels,
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, fixture));
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                view = new ImageView();
+                opener = new CVRawOpen(view.EditorContext);
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = opener;
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            }).WaitAsync(timeout);
+
+            using var reference = new PoiMeasurementBuffer(pixels, width, height, 32, channels);
+            PoiMeasurementResult expected = PoiMeasurementService.Calculate(reference, point);
+            var actual = Assert.IsType<CvcieProbeResult>(await WpfTestHost.Invoke(() =>
+                opener!.CalculateProbeAsync(point, CancellationToken.None).AsTask()).WaitAsync(timeout));
+            Assert.Equal(channels, actual.Channels);
+            Assert.Equal(expected, actual.Measurement);
+            using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+        }
+        finally
+        {
+            try
+            {
+                await WpfTestHost.Invoke(() =>
+                {
+                    view?.Dispose();
+                    return view?.PendingContentRelease ?? Task.CompletedTask;
+                }).WaitAsync(timeout);
+            }
+            finally { File.Delete(path); }
+        }
+
+        static byte[] CreatePixels()
+        {
+            const int planePixels = width * height;
+            byte[] data = new byte[planePixels * channels * sizeof(float)];
+            Span<float> samples = MemoryMarshal.Cast<byte, float>(data.AsSpan());
+            for (int channel = 0; channel < channels; channel++)
+            for (int index = 0; index < planePixels; index++)
+                samples[channel * planePixels + index] = index % 191 + (index / width) * 0.125f + channel + 1;
+            return data;
+        }
+    }
+
+    [Theory]
+    [InlineData("continue")]
+    [InlineData("reset")]
+    [InlineData("replace")]
+    public async Task CvcieProbeCoalescesSamplesAndKeepsItsSlotUntilTheWorkerReturns(string transition)
+    {
+        var first = new ImagePixelSample { PixelX = 2, PixelY = 3 };
+        var skipped = new ImagePixelSample { PixelX = 5, PixelY = 4 };
+        var latest = new ImagePixelSample { PixelX = 8, PixelY = 6 };
+        PoiMeasurementPoint firstPoint = new(2, 3, 7, 7, PoiMeasurementShape.Circle);
+        PoiMeasurementPoint skippedPoint = new(5, 4, 2, 4, PoiMeasurementShape.Rect);
+        PoiMeasurementPoint latestPoint = new(8, 6, 9, 5, PoiMeasurementShape.Ellipse);
+        CvcieProbeResult firstResult = new(3, new(1, 2, 3, 4, 5, 6, 7, 8, 9));
+        CvcieProbeResult latestResult = new(1, new(0, 11, 0, 0, 0, 0, 0, 0, 0));
+        var firstWorker = new TaskCompletionSource<CvcieProbeResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var latestRendered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = new List<(PoiMeasurementPoint Point, CancellationToken Token)>();
+        var rendered = new List<(ImagePixelSample Sample, PoiMeasurementPoint Point, CvcieProbeResult Result)>();
+        ImageView? view = null;
+        CvcieProbeUpdates? updates = null;
         try
         {
             WpfTestHost.Invoke(() =>
             {
                 EnsureImageViewTestResources();
                 view = new ImageView();
-                int preparations = 0;
-                var updates = new CvcieProbeUpdates(view, () =>
+                updates = new CvcieProbeUpdates(view, (point, token) =>
                 {
-                    preparations++;
-                    return new ValueTask<bool>(ready.Task);
-                }, sample => rendered.TrySetResult(sample));
-                updates.Update(new ImagePixelSample { PixelX = 2, PixelY = 3 });
-                updates.Update(latest);
-                Assert.Equal(1, preparations);
-                Assert.False(rendered.Task.IsCompleted);
+                    started.Add((point, token));
+                    return point == firstPoint ? new(firstWorker.Task) : new(latestResult);
+                }, (sample, point, result) =>
+                {
+                    rendered.Add((sample, point, result));
+                    if (ReferenceEquals(sample, latest)) latestRendered.TrySetResult();
+                });
+                updates.Update(first, firstPoint);
+                updates.Update(skipped, skippedPoint);
+                if (transition == "reset") updates.Reset();
+                if (transition == "replace")
+                {
+                    long version = view.ContentVersion;
+                    view.Clear();
+                    Assert.NotEqual(version, view.ContentVersion);
+                }
+                updates.Update(latest, latestPoint);
+                var active = Assert.Single(started);
+                Assert.Equal(firstPoint, active.Point);
+                if (transition == "reset") Assert.True(active.Token.IsCancellationRequested);
+                Assert.Empty(rendered);
             });
-            ready.SetResult(true);
-            Assert.Same(latest, await rendered.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+
+            // This fake deliberately ignores cancellation, like an already-running synchronous native call.
+            firstWorker.SetResult(firstResult);
+            await latestRendered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(new[] { firstPoint, latestPoint }, started.Select(request => request.Point));
+                Assert.Equal((latest, latestPoint, latestResult), rendered[^1]);
+                if (transition == "continue")
+                {
+                    if (rendered.Count == 2) Assert.Equal((first, firstPoint, firstResult), rendered[0]);
+                    else Assert.Single(rendered);
+                }
+                else Assert.Single(rendered);
+            });
         }
-        finally { if (view != null) WpfTestHost.Invoke(view.Dispose); }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                updates?.Reset();
+                firstWorker.TrySetResult(null);
+                view?.Dispose();
+            });
+        }
     }
 
     [Theory]

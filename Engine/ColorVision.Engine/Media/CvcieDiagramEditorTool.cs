@@ -4,6 +4,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Cie;
 using ColorVision.ImageEditor.Draw.Special;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -14,20 +15,17 @@ namespace ColorVision.Engine.Media
     {
         private readonly EditorContext _context;
         private readonly CvcieProbeUpdates _updates;
-        private readonly Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> _calculatePoi;
         private readonly Func<CvcieMouseProbeOptions> _getProbeSettings;
         private WindowCIE? _windowCie;
         private EventHandler<ImagePixelSample>? _pixelSampleChangedHandler;
 
         public CvcieDiagramEditorTool(
             EditorContext context,
-            Func<ValueTask<bool>> prepare,
-            Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> calculatePoi,
+            Func<PoiMeasurementPoint, CancellationToken, ValueTask<CvcieProbeResult?>> calculatePoi,
             Func<CvcieMouseProbeOptions> getProbeSettings)
         {
             _context = context;
-            _updates = new CvcieProbeUpdates(context.ImageView, prepare, RenderSample);
-            _calculatePoi = calculatePoi;
+            _updates = new CvcieProbeUpdates(context.ImageView, calculatePoi, RenderSample);
             _getProbeSettings = getProbeSettings;
             Command = new RelayCommand(_ => OpenCieDiagram());
         }
@@ -48,7 +46,8 @@ namespace ColorVision.Engine.Media
             {
                 _windowCie = new WindowCIE { Owner = Application.Current.GetActiveWindow() };
 
-                _pixelSampleChangedHandler = (_, pixelSample) => _updates.Update(pixelSample);
+                _pixelSampleChangedHandler = (_, pixelSample) => _updates.Update(pixelSample,
+                    _getProbeSettings().CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY));
 
                 _context.MouseInfoProvider.PixelSampleChanged += _pixelSampleChangedHandler;
 
@@ -68,11 +67,9 @@ namespace ColorVision.Engine.Media
             _windowCie.Activate();
         }
 
-        private void RenderSample(ImagePixelSample pixelSample)
+        private void RenderSample(ImagePixelSample pixelSample, PoiMeasurementPoint point, CvcieProbeResult result)
         {
-            CvcieMouseProbeOptions probeSettings = _getProbeSettings();
-            (int channels, PoiMeasurementResult measurement) = _calculatePoi(
-                probeSettings.CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY));
+            (int channels, PoiMeasurementResult measurement) = result;
             if (channels != 3)
             {
                 _windowCie?.SetSelectedMarker(null);

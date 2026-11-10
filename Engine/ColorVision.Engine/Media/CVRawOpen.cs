@@ -49,7 +49,8 @@ namespace ColorVision.Engine.Media
         private Task _retiredReaders = Task.CompletedTask;
         private ImageView? _bufferOwner;
         private EventHandler? _bufferCleanup;
-        private Func<CancellationToken, PoiMeasurementBuffer>? _loadFileMeasurement;
+        private CvcieFileMeasurements? _fileMeasurements;
+        private CvcieFileMeasurements? _failedFileProbe;
         private Task<PoiMeasurementBuffer>? _fileMeasurementTask;
         private CancellationTokenSource? _fileMeasurementCancellation;
         public List<List<Point>> Points { get; set; } = new List<List<Point>>();
@@ -321,7 +322,7 @@ namespace ColorVision.Engine.Media
             lock (_bufferSync)
             {
                 if (_measurementBuffer != null) return new(_measurementBuffer);
-                var load = _loadFileMeasurement ?? throw new InvalidOperationException("当前图像没有可用的 CIE 测量数据。");
+                var file = _fileMeasurements ?? throw new InvalidOperationException("当前图像没有可用的 CIE 测量数据。");
                 if (_fileMeasurementTask == null)
                 {
                     var cancellation = new CancellationTokenSource();
@@ -331,7 +332,7 @@ namespace ColorVision.Engine.Media
                     {
                         try
                         {
-                            PoiMeasurementBuffer buffer = load(token);
+                            PoiMeasurementBuffer buffer = file.Load(token);
                             lock (_bufferSync)
                             {
                                 if (ReferenceEquals(_fileMeasurementCancellation, cancellation))
@@ -355,39 +356,64 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private ValueTask<bool> PrepareProbeMeasurementAsync()
+        internal ValueTask<CvcieProbeResult?> CalculateProbeAsync(PoiMeasurementPoint point, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+            CvcieFileMeasurements? file;
+            PoiMeasurementBuffer? buffer;
             lock (_bufferSync)
             {
-                if (_measurementBuffer != null) return new(true);
-                if (_loadFileMeasurement == null || _fileMeasurementTask is { IsFaulted: true }) return new(false);
-                return CompleteProbePreparationAsync(PrepareMeasurementAsync());
+                buffer = _measurementBuffer;
+                file = _fileMeasurements;
+                if (ReferenceEquals(file, _failedFileProbe)) file = null;
             }
+            if (buffer != null) return new(CalculateBufferedProbe(buffer, point));
+            return file == null ? new((CvcieProbeResult?)null) : new(CalculateFileProbeAsync(file, point, token));
+        }
 
-            async ValueTask<bool> CompleteProbePreparationAsync(ValueTask<PoiMeasurementBuffer> pending)
+        private async Task<CvcieProbeResult?> CalculateFileProbeAsync(CvcieFileMeasurements file, PoiMeasurementPoint point, CancellationToken token)
+        {
+            try
             {
-                try
+                CvcieProbeResult? result = await Task.Run(() => file.CalculateProbe(point, token), token);
+                token.ThrowIfCancellationRequested();
+                ValueTask<PoiMeasurementBuffer> pending;
+                lock (_bufferSync)
                 {
-                    PoiMeasurementBuffer buffer = await pending;
-                    return ReferenceEquals(buffer, _measurementBuffer);
+                    if (!ReferenceEquals(file, _fileMeasurements)) return null;
+                    if (result != null) return result;
+                    // Exceptionally large regions use the existing shared full-image measurement snapshot.
+                    pending = PrepareMeasurementAsync();
                 }
-                catch (Exception) { return false; } // The load logs failures once. Pointer movement must not open dialogs.
+                PoiMeasurementBuffer buffer = await pending;
+                token.ThrowIfCancellationRequested();
+                if (!ReferenceEquals(buffer, _measurementBuffer)) return null;
+                return CalculateBufferedProbe(buffer, point);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or NotSupportedException)
+            {
+                token.ThrowIfCancellationRequested();
+                lock (_bufferSync)
+                {
+                    if (!ReferenceEquals(file, _fileMeasurements) || ReferenceEquals(file, _failedFileProbe)) return null;
+                    _failedFileProbe = file;
+                }
+                log.Warn("CVCIE 探针读取失败。", error);
+                return null;
             }
         }
 
+        private static CvcieProbeResult CalculateBufferedProbe(PoiMeasurementBuffer buffer, PoiMeasurementPoint point)
+            => new(buffer.Channels, PoiMeasurementService.Calculate(buffer, point));
+
         private void RetireFileMeasurementLocked()
         {
-            _loadFileMeasurement = null;
+            _fileMeasurements = null;
+            _failedFileProbe = null;
             _fileMeasurementTask = null;
             _fileMeasurementCancellation?.Cancel();
             _fileMeasurementCancellation?.Dispose();
             _fileMeasurementCancellation = null;
-        }
-
-        private (int Channels, PoiMeasurementResult Result) CalculatePoi(PoiMeasurementPoint point)
-        {
-            (int channels, PoiMeasurementResult[] results) = CalculatePoi(new[] { point }, false);
-            return (channels, results[0]);
         }
 
         private void ReplaceMeasurementBuffer(PoiMeasurementBuffer? buffer)
@@ -536,21 +562,8 @@ namespace ColorVision.Engine.Media
             ReplaceMeasurementBuffer(null);
             lock (_bufferSync)
             {
-                _loadFileMeasurement = token =>
-                {
-                    token.ThrowIfCancellationRequested();
-                    using FileStream stream = revision.OpenRead(filePath);
-                    int currentIndex = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 3);
-                    using (header)
-                    {
-                        if (currentIndex != index || header.Version != meta.Version || header.Cols != meta.Cols
-                            || header.Rows != meta.Rows || header.Bpp != meta.Bpp || header.Channels != meta.Channels)
-                            throw new InvalidDataException($"CVCIE 文件头已改变，请重新打开图像：{filePath}");
-                        if (!CVFileUtil.ReadCIEFilePixels(stream, header, currentIndex, requireExactPayload: false, token))
-                            throw new InvalidDataException($"读取 CVCIE 数据失败：{filePath}");
-                        return new PoiMeasurementBuffer(header.Data!, header.Cols, header.Rows, header.Bpp, header.Channels);
-                    }
-                };
+                _fileMeasurements = new CvcieFileMeasurements(filePath, revision, index, meta.Version, meta.Cols,
+                    meta.Rows, meta.Bpp, meta.Channels);
             }
 
             ShowDateFilePath = false;
@@ -647,16 +660,14 @@ namespace ColorVision.Engine.Media
 
             _cvcieMouseMagnifierManager ??= new CvcieMouseMagnifierManager(
                 EditorContext,
-                PrepareProbeMeasurementAsync,
-                CalculatePoi,
+                CalculateProbeAsync,
                 () => ShowDateFilePath,
                 FindNearbyPoints,
                 () => _probeOptions ?? CvcieMouseProbeOptions.GetOrCreate(EditorContext.ImageView));
 
             _cvcieDiagramEditorTool ??= new CvcieDiagramEditorTool(
                 EditorContext,
-                PrepareProbeMeasurementAsync,
-                CalculatePoi,
+                CalculateProbeAsync,
                 () => _probeOptions ?? CvcieMouseProbeOptions.GetOrCreate(EditorContext.ImageView));
 
             yield return _cvcieMouseMagnifierManager;
