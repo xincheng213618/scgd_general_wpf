@@ -5,7 +5,6 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using log4net;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
@@ -69,7 +68,7 @@ internal static class LuxDeviceMeasurements
         };
     }
 
-    internal static async Task<(bool Succeeded, ViewResultSpectrum? Result)> MeasureFluxAsync(CancellationToken cancellationToken)
+    internal static async Task<(bool Succeeded, SpectumResultEntity? Result)> MeasureFluxAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         DeviceSpectrum spectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault()
@@ -92,7 +91,7 @@ internal static class LuxDeviceMeasurements
                 return db.Queryable<SpectumResultEntity>().Where(item => item.Id == masterId).First();
             }, cancellationToken);
         }
-        return (true, model == null ? null : new ViewResultSpectrum(model));
+        return (true, model);
     }
 
     internal static async Task<MsgReturn?> RequestFluxMeasurementAsync(bool openLocal, Func<MsgRecord> open,

@@ -173,9 +173,10 @@ public partial class ARVRWindow
                 succeeded = measured && spectrum != null;
                 if (spectrum != null)
                 {
+                    var result = new ViewResultSpectrum(spectrum);
                     BeginSave();
                     await LuxDeviceReportWriter.WriteAsync(Path.Combine(directory, Tool.SanitizeFileName($"D_{session.Request.SerialNumber}.csv")),
-                        path => SpectrumCsvExportHelper.ExportLuminousFluxMode(path, [spectrum]), _luxLifetime.Token);
+                        path => LuxFluxCsvExporter.Export(path, spectrum, result), _luxLifetime.Token);
                 }
                 session.Complete(session.Request.MeasurementResponse(measured ? spectrum?.LuminousFlux : 0));
             }
