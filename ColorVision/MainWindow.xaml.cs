@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor;
 using ColorVision.Solution;
-using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.Update;
@@ -196,6 +194,7 @@ namespace ColorVision
 
             // 初始化停靠面板管理器
             var layoutManager = new DockLayoutManager(DockingManager1);
+            _ = new WorkspaceFileDropRouter(this, DockingManager1);
             // The workspace service remains available to templates and file commands;
             // only the explorer UI and its saved tree expansion wait for first display.
             layoutManager.RegisterPanel("ProjectPanel", () => _projectPanel = new TreeViewControl(), Properties.Resources.SolutionExplorer, PanelPosition.Left);
@@ -280,10 +279,6 @@ namespace ColorVision
 
             InitRightMenuItemPanel();
 
-            this.AllowDrop = true;
-            ImageView.SetForwardUnsupportedFileDrops(this, true);
-            this.Drop += MainWindow_Drop;
-
             // 窗口关闭时自动保存布局
             this.Closing += (s, e) =>
             {
@@ -314,21 +309,6 @@ namespace ColorVision
 
             terminalPanel.IsActiveChanged += (_, _) => ActivateTerminalPanel();
             ActivateTerminalPanel();
-        }
-
-        private async void MainWindow_Drop(object sender, DragEventArgs e)
-        {
-            var b = e.Data.GetDataPresent(DataFormats.FileDrop);
-            if (b)
-            {
-                var sarr = e.Data.GetData(DataFormats.FileDrop);
-                var a = sarr as string[];
-                if (a is { Length: > 0 })
-                {
-                    e.Handled = true;
-                    await ResourceOpenService.Instance.TryOpenManyWithFeedbackAsync(a, this);
-                }
-            }
         }
 
         private void HookUpdateNotification()

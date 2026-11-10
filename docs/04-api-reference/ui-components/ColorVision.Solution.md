@@ -69,6 +69,8 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 
 `CommandInitializer` 将 `ApplicationCommands.Open` 接到普通文件选择器，将 `SolutionWorkspaceCommands.OpenWorkspace` 接到工作区列表；可配置默认键由各入口的 `IHotKey` 声明。资源树自己的 `SolutionResourceCommands.Open` 用 `Enter` 打开选中项，避免把树内打开混同于全局文件选择器。
 
+将文件拖到主窗口、文档浮窗或工具面板浮窗时，当前内容优先处理拖放。内容没有处理时，窗口将文件交给工作区的统一打开路由，路由的批量失败提示以接收拖放的窗口为父窗口。工具面板的独立窗口和从布局恢复的浮窗也适用。视频文件默认通过系统关联程序打开。
+
 | 入口 | 实际分流 | 不能混同的结果 |
 | --- | --- | --- |
 | `ResourceOpenService.Open` | 同步入口仅接受普通文件；先 `FileProcessorFactory.TryOpenFileAction`，未被处理才交给 EditorManager | 文件夹、项目、`.cvsln` 返回失败并要求异步入口；不是同步切换工作区 |
