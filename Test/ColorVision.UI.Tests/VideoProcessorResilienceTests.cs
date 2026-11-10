@@ -44,6 +44,95 @@ public sealed class VideoProcessorResilienceTests
         Assert.Equal(2, Volatile.Read(ref attempts));
     }
 
+    [Theory]
+    [InlineData(8, 1, false)]
+    [InlineData(16, 1, true)]
+    [InlineData(16, 3, false)]
+    [InlineData(8, 4, true)]
+    public async Task FocusUsesHaloAndPreservesNativeScoreWithPaddedRows(int depth, int channels, bool edge)
+    {
+        const int width = 17, height = 11;
+        int pixelBytes = channels * depth / 8;
+        int rowBytes = width * pixelBytes;
+        int stride = rowBytes + 8;
+        byte[] samples = new byte[(height - 1) * stride + rowBytes];
+        new Random(1729).NextBytes(samples);
+        RoiRect roi = edge ? new(-3, 6, 9, 9) : new(4, 3, 7, 5);
+        var request = new CameraFocusFrameRequest(FocusAlgorithm.VarianceOfLaplacian, roi);
+        using HImage original = new()
+        {
+            cols = width,
+            rows = height,
+            channels = channels,
+            depth = depth,
+            stride = stride,
+            pData = Marshal.AllocCoTaskMem(samples.Length)
+        };
+        Marshal.Copy(samples, 0, original.pData, samples.Length);
+        double expected = OpenCVMediaHelper.M_CalArtculation(original, request.FocusAlgorithm, roi);
+        Assert.True(expected > 0);
+
+        TaskCompletionSource<double> published = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        (int Width, int Height, int Stride, RoiRect Roi) observed = default;
+        var processor = new CameraFocusFrameProcessor(result => published.TrySetResult(result.Articulation), (image, local) =>
+        {
+            observed = (image.cols, image.rows, image.stride, local.Roi);
+            return new(OpenCVMediaHelper.M_CalArtculation(image, local.FocusAlgorithm, local.Roi));
+        });
+        try
+        {
+            if (edge) processor.SubmitFrame(original.pData, samples.Length, width, height, channels, depth, stride, request);
+            else processor.SubmitFrame(samples, samples.Length, width, height, channels, depth, stride, request);
+
+            double actual = await published.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+            if (channels == 4) Assert.Equal((width, height, stride, roi), observed);
+            else if (edge) Assert.Equal((7, 6, 7 * pixelBytes, new RoiRect(0, 1, 6, 5)), observed);
+            else Assert.Equal((9, 7, 9 * pixelBytes, new RoiRect(1, 1, 7, 5)), observed);
+        }
+        finally
+        {
+            processor.Dispose();
+            await processor.Retirement.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Fact]
+    public async Task FocusRejectsMalformedLayoutsBeforeTakingOwnershipOfAnotherFrame()
+    {
+        TimeSpan testWait = TimeSpan.FromSeconds(5);
+        TaskCompletionSource processingStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using ManualResetEventSlim finishProcessing = new();
+        var processor = new CameraFocusFrameProcessor(_ => { }, (_, _) =>
+        {
+            processingStarted.SetResult();
+            finishProcessing.Wait();
+            return default;
+        });
+        byte[] frame = new byte[16];
+        var request = new CameraFocusFrameRequest(FocusAlgorithm.Variance, new RoiRect(0, 0, 1, 1));
+        try
+        {
+            processor.SubmitFrame(frame, 12, 3, 2, 1, 16, 0, request);
+            await processingStarted.Task.WaitAsync(testWait);
+            processor.SubmitFrame(frame, frame.Length, 3, 2, 1, 16, -8, request);
+            processor.SubmitFrame(frame, frame.Length, 3, 2, 1, 16, 4, request);
+            processor.SubmitFrame(frame, frame.Length, 3, 2, 1, 16, 7, request);
+            processor.SubmitFrame(frame, 13, 3, 2, 1, 16, 8, request);
+            processor.SubmitFrame(frame, frame.Length, int.MaxValue, 2, int.MaxValue, int.MaxValue - 7, 0, request);
+
+            // The first callback holds the worker so an invalid frame could not have been consumed.
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            Assert.Null(typeof(CameraFocusFrameProcessor).GetField("_pendingFrame", flags)!.GetValue(processor));
+        }
+        finally
+        {
+            processor.Dispose();
+            finishProcessing.Set();
+            await processor.Retirement.WaitAsync(testWait);
+        }
+    }
+
     [Fact]
     public void CrossGuideProcessorContinuesAfterProcessingException()
     {

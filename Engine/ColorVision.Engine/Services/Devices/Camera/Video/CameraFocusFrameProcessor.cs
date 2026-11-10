@@ -72,15 +72,60 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private unsafe void SubmitFrameCore(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, CameraFocusFrameRequest request)
         {
+            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0 || stride < 0) return;
+            int sampleBytes = depth / 8;
+            long pixelBytes = (long)channels * sampleBytes;
+            if (pixelBytes > length / width) return;
+            int rowBytes = checked((int)(width * pixelBytes));
+            int sourceStride = stride == 0 ? rowBytes : stride;
+            if (sourceStride < rowBytes || sourceStride % sampleBytes != 0
+                || checked((long)(height - 1) * sourceStride + rowBytes) > length) return;
+
+            RoiRect crop = default;
+            RoiRect localRoi = default;
+            bool cropped = channels is 1 or 3 && depth is 8 or 16
+                && request.FocusAlgorithm is >= FocusAlgorithm.Variance and <= FocusAlgorithm.SpatialFrequency
+                && TryGetFocusCrop(request.Roi, width, height, out crop, out localRoi);
+            int outputStride = cropped ? checked((int)(crop.Width * pixelBytes)) : stride;
+            int outputLength = cropped ? checked(outputStride * crop.Height) : length;
+
             lock (_gate)
             {
                 if (Volatile.Read(ref _stopRequested) != 0) return;
-                EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, width, height, channels, depth, stride, length);
-                Buffer.MemoryCopy((void*)sourcePointer, (void*)_pendingFrame!.Value.pData, _pendingCapacity, length);
+                EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, cropped ? crop.Width : width,
+                    cropped ? crop.Height : height, channels, depth, outputStride, outputLength);
+                byte* destination = (byte*)_pendingFrame!.Value.pData;
+                if (cropped)
+                {
+                    byte* source = (byte*)sourcePointer + (long)crop.Y * sourceStride + crop.X * pixelBytes;
+                    for (int row = 0; row < crop.Height; row++)
+                        Buffer.MemoryCopy(source + (long)row * sourceStride, destination + (long)row * outputStride, outputStride, outputStride);
+                    request = request with { Roi = localRoi };
+                }
+                else Buffer.MemoryCopy((void*)sourcePointer, destination, _pendingCapacity, length);
                 _pendingRequest = request;
                 _hasPendingFrame = true;
                 _frameReady.Set();
             }
+        }
+
+        private static bool TryGetFocusCrop(RoiRect roi, int width, int height, out RoiRect crop, out RoiRect localRoi)
+        {
+            crop = localRoi = default;
+            int left = Math.Max(0, roi.X), top = Math.Max(0, roi.Y);
+            long right = Math.Min(width, (long)roi.X + roi.Width);
+            long bottom = Math.Min(height, (long)roi.Y + roi.Height);
+            // The native helper uses the entire frame when the requested ROI does not intersect it.
+            if (left >= right || top >= bottom) return false;
+
+            // Mono Sobel and Laplacian can read one pixel beyond the ROI from its parent Mat.
+            int x = Math.Max(0, left - 1), y = Math.Max(0, top - 1);
+            int endX = (int)Math.Min(width, right + 1), endY = (int)Math.Min(height, bottom + 1);
+            if (x == 0 && y == 0 && endX == width && endY == height) return false;
+
+            crop = new RoiRect(x, y, endX - x, endY - y);
+            localRoi = new RoiRect(left - x, top - y, (int)(right - left), (int)(bottom - top));
+            return true;
         }
 
         private void WorkerLoop()
@@ -151,6 +196,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             if (needsAllocation)
             {
                 buffer?.Dispose();
+                buffer = null;
+                capacity = 0;
                 buffer = new HImage
                 {
                     rows = height,
