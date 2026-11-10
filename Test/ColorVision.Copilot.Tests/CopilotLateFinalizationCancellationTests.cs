@@ -111,7 +111,7 @@ public sealed class CopilotLateFinalizationCancellationTests
         Assert.Equal(1, fixture.Tool.CallCount);
         Assert.False(result.Budget.TimeBudgetExhausted);
         Assert.NotNull(result.SessionCheckpoint);
-        var terminal = Assert.Single(result.TaskEventJournal.Events.Where(item => item.Type == CopilotAgentTaskEventType.RunStopped));
+        var terminal = Assert.Single(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped);
         Assert.Equal(CopilotAgentStopReason.Completed.ToString(), terminal.State);
     }
     private sealed class RunFixture : IDisposable

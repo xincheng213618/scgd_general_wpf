@@ -695,8 +695,8 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     {
         using var document = JsonDocument.Parse(payload);
         var inputItems = document.RootElement.GetProperty("input").EnumerateArray().ToArray();
-        var reasoningItem = Assert.Single(inputItems.Where(
-            item => item.GetProperty("type").GetString() == "reasoning"));
+        var reasoningItem = Assert.Single(inputItems, 
+            item => item.GetProperty("type").GetString() == "reasoning");
         Assert.True(
             reasoningItem.TryGetProperty("id", out var reasoningId),
             payload);
@@ -704,9 +704,9 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         Assert.Equal(
             "encrypted-reasoning-test",
             reasoningItem.GetProperty("encrypted_content").GetString());
-        var assistantItem = Assert.Single(inputItems.Where(
+        var assistantItem = Assert.Single(inputItems, 
             item => item.GetProperty("type").GetString() == "message"
-                && item.GetProperty("role").GetString() == "assistant"));
+                && item.GetProperty("role").GetString() == "assistant");
         Assert.True(assistantItem.TryGetProperty("id", out var assistantId), payload);
         Assert.Equal("msg_reasoning", assistantId.GetString());
         Assert.True(assistantItem.TryGetProperty("phase", out var assistantPhase));

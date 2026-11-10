@@ -585,7 +585,7 @@ public sealed class CopilotSecretRedactionTests
             Assert.False(result.Success);
             Assert.Equal("confirmation_required", result.ErrorCode);
             var entries = CopilotMcpAuditLogger.GetRecentEntries(200);
-            var toolEntry = Assert.Single(entries.Where(entry => entry.ToolName == "set_language"));
+            var toolEntry = Assert.Single(entries, entry => entry.ToolName == "set_language");
             Assert.Equal("fields=language", toolEntry.ArgumentSummary);
             Assert.Equal("confirmation_required", toolEntry.ErrorMessage);
             Assert.Equal(executionScope.WorkspaceIdentity, toolEntry.WorkspaceIdentity);

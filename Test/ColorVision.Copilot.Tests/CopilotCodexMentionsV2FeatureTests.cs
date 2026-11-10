@@ -32,8 +32,8 @@ public sealed class CopilotCodexMentionsV2FeatureTests
                 includeUnifiedReferences: false,
                 skills: [skill]);
 
-            var reference = Assert.Single(unified.Where(candidate =>
-                candidate.Kind == CopilotComposerReferenceKind.Skill));
+            var reference = Assert.Single(unified, candidate =>
+                candidate.Kind == CopilotComposerReferenceKind.Skill);
             Assert.Equal(CopilotComposerReferenceKind.Skill, reference.Kind);
             Assert.Equal("document-review", reference.AgentSkillReference?.Name);
             Assert.Empty(legacy);
