@@ -8,6 +8,7 @@ using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.POI;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Layers;
 using System.Threading;
@@ -287,6 +288,120 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
             if (view != null) WpfTestHost.Invoke(view.Dispose);
             File.Delete(path);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PendingViewPoiPreservesClickGeometryAndSkipsStalePublication(bool clear)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-view-poi-{Guid.NewGuid():N}.cvcie");
+        float[] values = Enumerable.Range(1, 12).Select(value => (float)value).ToArray();
+        using var buffer = new PoiMeasurementBuffer(MemoryMarshal.AsBytes(values.AsSpan()).ToArray(), 2, 2, 32, 3);
+        var load = new TaskCompletionSource<PoiMeasurementBuffer>(TaskCreationOptions.RunContinuationsAsynchronously);
+        FieldInfo taskField = typeof(CalibratedImageCapability).GetField("_fileMeasurementTask", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo bufferField = typeof(CalibratedImageCapability).GetField("_measurementBuffer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        ImageView? view = null;
+        CVRawOpen? opener = null;
+        Window? previousMainWindow = null;
+        HashSet<WindowCVCIE>? previousWindows = null;
+        bool previousShowString = false;
+        Task? measurement = null;
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        try
+        {
+            WriteCvcieMeasurementFixture(path, firstValue: 1);
+            await WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                previousMainWindow = Application.Current.MainWindow;
+                previousWindows = Application.Current.Windows.OfType<WindowCVCIE>().ToHashSet();
+                previousShowString = CVCIEShowConfig.Instance.IsShowString;
+                CVCIEShowConfig.Instance.IsShowString = true;
+                view = new ImageView();
+                opener = new CVRawOpen(view.EditorContext);
+                view.IEditorToolFactory.IImageOpens[".cvcie"] = opener;
+                view.OpenImage(path);
+                return view.ImageOpenCompletion;
+            }).WaitAsync(timeout);
+
+            var (changed, removed, unchanged) = WpfTestHost.Invoke(() =>
+            {
+                var moved = CreateCircle("moved", 0, 0);
+                var deleted = CreateCircle("deleted", 1, 1);
+                var kept = CreateCircle("kept", 0, 1);
+                var drawings = view!.EditorContext.DrawingVisualLists;
+                drawings.Add(moved);
+                drawings.Add(deleted);
+                drawings.Add(kept);
+                // This is the same pending disk snapshot consumed by the POI command.
+                taskField.SetValue(opener, load.Task);
+                measurement = opener!.ShowViewPoiAsync();
+                Assert.False(measurement.IsCompleted);
+                if (clear) view.Clear();
+                else
+                {
+                    moved.Attribute.Center = new Point(1, 0);
+                    drawings.Remove(deleted);
+                    bufferField.SetValue(opener, buffer);
+                }
+                return (moved, deleted, kept);
+            });
+
+            load.SetResult(buffer);
+            await measurement!.WaitAsync(timeout);
+            WpfTestHost.Invoke(() =>
+            {
+                var resultWindows = Application.Current.Windows.OfType<WindowCVCIE>().Except(previousWindows!);
+                Assert.Null(changed.Attribute.Msg);
+                Assert.Null(removed.Attribute.Msg);
+                if (clear)
+                {
+                    Assert.Empty(resultWindows);
+                    Assert.Null(unchanged.Attribute.Msg);
+                    return;
+                }
+
+                var window = Assert.Single(resultWindows);
+                Assert.Equal(new[] { "moved", "deleted", "kept" }, window.PoiResultCIExyuvDatas.Select(row => row.Point.Name));
+                Assert.Equal(new[] { (0d, 0d, 1d, 5d, 9d), (1d, 1d, 4d, 8d, 12d), (0d, 1d, 3d, 7d, 11d) },
+                    window.PoiResultCIExyuvDatas.Select(row => (row.Point.PixelX, row.Point.PixelY, row.X, row.Y, row.Z)));
+                Assert.True(unchanged.Attribute.IsMeasurementMessage);
+                Assert.False(string.IsNullOrEmpty(unchanged.Attribute.Msg));
+            });
+        }
+        finally
+        {
+            load.TrySetResult(buffer);
+            try
+            {
+                if (measurement != null) await measurement.WaitAsync(timeout);
+            }
+            finally
+            {
+                try
+                {
+                    await WpfTestHost.Invoke(() =>
+                    {
+                        if (previousWindows != null)
+                        {
+                            foreach (var window in Application.Current.Windows.OfType<WindowCVCIE>().Except(previousWindows).ToArray())
+                                window.Close();
+                            CVCIEShowConfig.Instance.IsShowString = previousShowString;
+                            Application.Current.MainWindow = previousMainWindow;
+                        }
+                        view?.Dispose();
+                        return view?.PendingContentRelease ?? Task.CompletedTask;
+                    }).WaitAsync(timeout);
+                }
+                finally { File.Delete(path); }
+            }
+        }
+
+        static DVCircleText CreateCircle(string text, int x, int y) => new(new CircleTextProperties
+        {
+            Text = text, Center = new Point(x, y), Radius = 0.5,
+        });
     }
 
     [Theory]

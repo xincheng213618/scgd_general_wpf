@@ -64,6 +64,18 @@ namespace ColorVision.Engine.Services.POI
         public int BitsPerChannel { get; }
         public int Channels { get; }
 
+        // The planar snapshot is immutable. A second wrapper keeps the array alive without
+        // sharing the lock used to borrow or dispose the view's original buffer.
+        internal PoiMeasurementBuffer? SharePlanarData()
+        {
+            if (RawSource != null) return null;
+            lock (sync)
+            {
+                byte[] current = data ?? throw new ObjectDisposedException(nameof(PoiMeasurementBuffer));
+                return new PoiMeasurementBuffer(current, Width, Height, BitsPerChannel, Channels);
+            }
+        }
+
         internal unsafe T Borrow<T>(Func<IntPtr, long, T> action)
         {
             ArgumentNullException.ThrowIfNull(action);
