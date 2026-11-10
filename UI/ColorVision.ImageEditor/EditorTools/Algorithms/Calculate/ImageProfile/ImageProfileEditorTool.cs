@@ -81,6 +81,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             IReadOnlyList<ImageProfileSourceOption>? sourceChoices = image.ProfileMeasurementSources;
             ImageProfileSourceOption[] sources = sourceChoices?.ToArray() ?? [];
             AlgorithmInput? input = null;
+            AlgorithmImageBuffer? displaySlice = null;
+            Int32Rect? sliceBounds = null;
             ImageSelectionScope scope;
             long sourceRevision;
             ImageProfileSourceOption? measurementSource;
@@ -93,16 +95,29 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 if (selectedSource < 0 || selectedSource > sources.Length)
                     throw new ArgumentOutOfRangeException(nameof(selectedSource));
                 measurementSource = selectedSource < sources.Length ? sources[selectedSource] : null;
-                if (measurementSource == null) input = ImageAlgorithmInputFactory.Acquire(image, scope);
+                if (measurementSource == null)
+                {
+                    if (ReferenceEquals(image.AlgorithmRuntime, ImageAlgorithmPlatform.Runtime))
+                        sliceBounds = ImageProfileAlgorithmProvider.GetDisplaySlice(roi, parameters, scope);
+                    if (sliceBounds is { } bounds)
+                    {
+                        (displaySlice, long revision) = ImageAlgorithmInputFactory.AcquireCurrentFrame(image, bounds);
+                        if (revision != scope.SourceRevision || !TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope))
+                            throw new InvalidOperationException("The image changed. Select the profile again.");
+                    }
+                    else input = ImageAlgorithmInputFactory.Acquire(image, scope);
+                }
                 sourceRevision = scope.SourceRevision;
             }
             catch (Exception exception)
             {
                 input?.Image.Dispose();
+                displaySlice?.Dispose();
                 AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("剖面分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
+            using AlgorithmImageBuffer? sliceLease = displaySlice;
             using CancellationTokenSource cancellation = ImageAlgorithmAnalysisSession.Begin(
                 image,
                 documentId,
@@ -139,6 +154,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                         using IImageProfileMeasurementSource source = measurementSource.Open(token);
                         return ValueTask.FromResult(provider.ExecuteMeasurement(invocation, parameters, source, scope, token, progress));
                     }, cancellation.Token);
+                }
+                else if (sliceLease != null && sliceBounds is { } bounds)
+                {
+                    ImageProfileAlgorithmProvider provider = new();
+                    result = await image.AlgorithmRuntime.Scheduler.ScheduleAsync(provider.Metadata, token =>
+                        ValueTask.FromResult(provider.ExecuteDisplaySlice(invocation, parameters, sliceLease, bounds, scope, token, progress)),
+                        cancellation.Token);
                 }
                 else result = await image.AlgorithmRuntime.Runner.RunAsync(new AlgorithmRunRequest
                 {

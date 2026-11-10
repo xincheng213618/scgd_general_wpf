@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
@@ -65,12 +66,53 @@ namespace ColorVision.ImageEditor.Algorithms
                 throw new ArgumentException("Invalid measurement channels.");
             if (!double.IsFinite(scope.DpiX) || scope.DpiX <= 0 || !double.IsFinite(scope.DpiY) || scope.DpiY <= 0)
                 throw new ArgumentException("Invalid profile DPI.");
+            return ExecuteInteractive(invocation, parameters, new ProfileRaster(source, scope), cancellationToken, progress);
+        }
+
+        // A straight horizontal or vertical pixel path needs only its sampling rows or columns.
+        // Retain the original image coordinates in ExecuteCore, including for clamp/skip/reject.
+        internal static Int32Rect? GetDisplaySlice(PolylineAlgorithmRoi path, ImageProfileParameters parameters, ImageSelectionScope scope)
+        {
+            if (path.CoordinateSpace != AlgorithmCoordinateSpace.Pixel || path.Points.Count != 2
+                || scope.PixelWidth <= 0 || scope.PixelHeight <= 0 || !path.Validate().IsValid || !parameters.Validate().IsValid)
+                return null;
+
+            AlgorithmPoint start = path.Points[0], end = path.Points[1];
+            if (start.Y == end.Y && scope.PixelHeight > 1)
+            {
+                var (first, count) = SliceAxis(start.Y, scope.PixelHeight, parameters.Interpolation);
+                return count < scope.PixelHeight ? new Int32Rect(0, first, scope.PixelWidth, count) : null;
+            }
+            if (start.X == end.X && scope.PixelWidth > 1)
+            {
+                var (first, count) = SliceAxis(start.X, scope.PixelWidth, parameters.Interpolation);
+                return count < scope.PixelWidth ? new Int32Rect(first, 0, count, scope.PixelHeight) : null;
+            }
+            return null;
+        }
+
+        private static (int First, int Count) SliceAxis(double coordinate, int size, ImageProfileInterpolation interpolation)
+        {
+            coordinate = Math.Clamp(coordinate, 0, size - 1);
+            if (interpolation == ImageProfileInterpolation.Nearest) return (NearestPixel(coordinate, size), 1);
+            int first = (int)Math.Floor(coordinate);
+            return (first, Math.Min(2, size - first));
+        }
+
+        internal AlgorithmResult ExecuteDisplaySlice(AlgorithmInvocation invocation, ImageProfileParameters parameters,
+            AlgorithmImageBuffer buffer, Int32Rect bounds, ImageSelectionScope scope, CancellationToken cancellationToken,
+            IProgress<AlgorithmProgress>? progress = null)
+            => ExecuteInteractive(invocation, parameters, new ProfileRaster(buffer, bounds, scope), cancellationToken, progress);
+
+        private AlgorithmResult ExecuteInteractive(AlgorithmInvocation invocation, ImageProfileParameters parameters,
+            ProfileRaster raster, CancellationToken cancellationToken, IProgress<AlgorithmProgress>? progress)
+        {
             ImageAlgorithmPlatform.Catalog.TryResolve(StandardAlgorithmIds.ImageProfile, out AlgorithmDescriptor? descriptor);
             AlgorithmExecutionContext context = new()
             {
                 Descriptor = descriptor!, Invocation = invocation, Parameters = parameters, Inputs = [], Progress = progress,
             };
-            return ExecuteCore(context, new ProfileRaster(source, scope), cancellationToken);
+            return ExecuteCore(context, raster, cancellationToken);
         }
 
         private AlgorithmResult ExecuteCore(AlgorithmExecutionContext context, ProfileRaster image, CancellationToken cancellationToken)
@@ -451,7 +493,7 @@ namespace ColorVision.ImageEditor.Algorithms
             if (image.Source != null) return image.Source.Read(x, y, channel);
             ReadOnlySpan<byte> data = image.Buffer!.Data.Span;
             int bytesPerChannel = image.Format.BitsPerChannel() / 8;
-            int offset = checked(y * image.Buffer!.Stride + x * image.Format.BytesPerPixel() + channel * bytesPerChannel);
+            int offset = checked((y - image.OriginY) * image.Buffer.Stride + (x - image.OriginX) * image.Format.BytesPerPixel() + channel * bytesPerChannel);
             return image.Format.BitsPerChannel() switch
             {
                 8 => data[offset],
@@ -599,11 +641,23 @@ namespace ColorVision.ImageEditor.Algorithms
             public int Height { get; }
             public double DpiX { get; }
             public double DpiY { get; }
+            public int OriginX { get; }
+            public int OriginY { get; }
             public AlgorithmImageFormat Format => Buffer?.Format ?? AlgorithmImageFormat.Gray32Float;
             public string Unit => Format.IsFloatingPoint() ? "value" : "DN";
             public ProfileRaster(AlgorithmImageBuffer buffer)
             {
                 Buffer = buffer; Width = buffer.Width; Height = buffer.Height; DpiX = buffer.DpiX; DpiY = buffer.DpiY;
+            }
+            public ProfileRaster(AlgorithmImageBuffer buffer, Int32Rect bounds, ImageSelectionScope scope)
+            {
+                Buffer = buffer;
+                Width = scope.PixelWidth;
+                Height = scope.PixelHeight;
+                DpiX = scope.DpiX;
+                DpiY = scope.DpiY;
+                OriginX = bounds.X;
+                OriginY = bounds.Y;
             }
             public ProfileRaster(IImageProfileMeasurementSource source, ImageSelectionScope scope)
             {

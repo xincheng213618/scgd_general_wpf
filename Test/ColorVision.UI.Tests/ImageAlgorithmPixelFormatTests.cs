@@ -3,6 +3,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Algorithms;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -12,6 +13,48 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageAlgorithmPixelFormatTests
 {
+    [Theory]
+    [InlineData(false, ImageProfileInterpolation.Nearest, ImageProfileBoundaryMode.Reject, 2.5, 1)]
+    [InlineData(true, ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Reject, 3.25, 2)]
+    [InlineData(false, ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Clamp, 9, 1)]
+    [InlineData(true, ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Skip, -0.25, 2)]
+    public void AxisProfileSliceMatchesFullBitmapWithOriginalCoordinates(bool vertical,
+        ImageProfileInterpolation interpolation, ImageProfileBoundaryMode boundary, double axisCoordinate, int copiedLines)
+    {
+        const int width = 9, height = 7;
+        PixelFormat format = vertical ? PixelFormats.Rgb48 : PixelFormats.Indexed8;
+        BitmapPalette? palette = vertical ? null : new BitmapPalette([Colors.Gold, Colors.Purple, Colors.Transparent]);
+        int stride = width * format.BitsPerPixel / 8;
+        byte[] pixels = Enumerable.Range(0, stride * height).Select(value => (byte)(vertical ? value : value % 3)).ToArray();
+        BitmapSource bitmap = BitmapSource.Create(width, height, 144, 120, format, palette, pixels, stride);
+        ImageSelectionScope scope = new(Guid.NewGuid(), 1, width, height, bitmap.DpiX, bitmap.DpiY);
+        PolylineAlgorithmRoi path = vertical
+            ? new([new(axisCoordinate, 0), new(axisCoordinate, height - 1)])
+            : new([new(0, axisCoordinate), new(width - 1, axisCoordinate)]);
+        ImageProfileParameters parameters = new() { Interpolation = interpolation, BoundaryMode = boundary, SampleSpacingPixels = 0.75 };
+        AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageProfile, parameters, path);
+        ImageProfileAlgorithmProvider provider = new();
+
+        Assert.True(ImageAlgorithmPlatform.Catalog.TryResolve(StandardAlgorithmIds.ImageProfile, out var descriptor));
+        using AlgorithmImageBuffer full = ImageAlgorithmInputFactory.Copy(bitmap);
+        using AlgorithmResult expected = provider.ExecuteAsync(new AlgorithmExecutionContext
+        {
+            Descriptor = descriptor!, Invocation = invocation, Parameters = parameters,
+            Inputs = [new AlgorithmInput { Name = "source", Image = full }],
+        }, default).GetAwaiter().GetResult();
+
+        Int32Rect bounds = Assert.IsType<Int32Rect>(ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope));
+        Assert.Equal(copiedLines, vertical ? bounds.Width : bounds.Height);
+        using AlgorithmImageBuffer slice = ImageAlgorithmInputFactory.Copy(bitmap, bounds);
+        using AlgorithmResult actual = provider.ExecuteDisplaySlice(invocation, parameters, slice, bounds, scope, default);
+        Assert.Equal(copiedLines * (vertical ? height : width) * full.Format.BytesPerPixel(), slice.Data.Length);
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.Failures.Select(failure => failure.Code), actual.Failures.Select(failure => failure.Code));
+        Assert.Equal(expected.Artifacts.Select(Serialize), actual.Artifacts.Select(Serialize));
+
+        static string Serialize(AlgorithmArtifact artifact) => JsonSerializer.Serialize(artifact, artifact.GetType(), AlgorithmJson.Options);
+    }
+
     [Fact]
     public void Rgb24NormalizesToCanonicalBgr24()
     {
