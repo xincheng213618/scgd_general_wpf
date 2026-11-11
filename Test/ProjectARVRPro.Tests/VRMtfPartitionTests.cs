@@ -1,6 +1,7 @@
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process;
+using ProjectARVRPro.Process.MTF;
 using ProjectARVRPro.Process.MTF.VRPartition;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -29,7 +30,7 @@ public sealed class VRMtfPartitionTests
             name = $"P_{index + 1}", mtfValue = index
         }).Reverse().ToArray();
 
-        VRMtfPartitionViewTestResult result = VRMtfPartitionCalculator.Calculate(source, config);
+        VRMtfPartitionViewTestResult result = VRMtfPartitionCalculator.Calculate(source, config, default);
 
         Assert.Equal(900, result.PointCount);
         Assert.Equal(912, result.Items.Count);
@@ -55,7 +56,7 @@ public sealed class VRMtfPartitionTests
         config.RecipeConfig.Region_A_Min.Fix = 2;
         config.RecipeConfig.Region_A_Min.B = 0.1;
         var source = Enumerable.Range(0, 25).Select(index => new MTFItem { name = $"P_{index + 1}", mtfValue = 0.5 }).ToArray();
-        var result = VRMtfPartitionCalculator.Calculate(source, config);
+        var result = VRMtfPartitionCalculator.Calculate(source, config, default);
         var configured = Find(result, "Region_A_Min");
 
         Assert.Equal(1.1, configured.Value, 10);
@@ -90,7 +91,7 @@ public sealed class VRMtfPartitionTests
     [Fact]
     public void CircleBoundariesBelongToTheInnerRegionAndOuterPointsRemainInTheGrid()
     {
-        var result = VRMtfPartitionCalculator.Calculate(Points(25), SmallGrid());
+        var result = VRMtfPartitionCalculator.Calculate(Points(25), SmallGrid(), default);
 
         Assert.Equal(1, result.RegionPointCounts["A"]);
         Assert.Equal(4, result.RegionPointCounts["B"]);
@@ -126,7 +127,7 @@ public sealed class VRMtfPartitionTests
         if (invalid == "empty-region") config.RA = 0.1;
         if (invalid == "empty-region") config.Center = 2.5;
 
-        Assert.Throws<ArgumentException>(() => VRMtfPartitionCalculator.Calculate(points, config));
+        Assert.Throws<ArgumentException>(() => VRMtfPartitionCalculator.Calculate(points, config, default));
     }
 
     [Fact]

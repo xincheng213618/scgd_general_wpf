@@ -46,7 +46,7 @@ public sealed class VRMtfPartitionProcess : ProcessWithRecipeBase<VRMtfPartition
                 throw new ArgumentException($"VR分区结果详情数量应为1，实际为{details.Count}。");
 
             var detail = new MTFDetailViewReslut(details[0]);
-            VRMtfPartitionViewTestResult result = VRMtfPartitionCalculator.Calculate(detail.MTFResult?.result, Config);
+            VRMtfPartitionViewTestResult result = VRMtfPartitionCalculator.Calculate(detail.MTFResult?.result, Config, new MtfRecipeCorrection(masters[0].Params));
             result.MTFDetailViewReslut = detail;
             ctx.Result.ViewResultJson = JsonConvert.SerializeObject(result);
             KeyedTestResultDictionary.Set(ctx.ObjectiveTestResult.DynamicTestResults, key, result.Items);

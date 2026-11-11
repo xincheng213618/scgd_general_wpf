@@ -70,6 +70,7 @@ namespace ProjectARVRPro.Process.MTF.MTF07
                     if (detail.MTFResult?.result == null)
                         continue;
 
+                    var correction = new MtfRecipeCorrection(master.Params);
                     foreach (var mtf in detail.MTFResult.result)
                     {
                         if (!Config.TryGetItemName(mtf.name, out string itemName) ||
@@ -79,7 +80,7 @@ namespace ProjectARVRPro.Process.MTF.MTF07
                             continue;
                         }
 
-                        MTF07DynamicResultBuilder.PopulateItem(item, mtf, recipe, Config.ShowConfig, Config.Unit);
+                        MTF07DynamicResultBuilder.PopulateItem(item, mtf, recipe, Config.ShowConfig, Config.Unit, correction);
                         ctx.Result.Result &= item.TestResult;
                     }
                 }

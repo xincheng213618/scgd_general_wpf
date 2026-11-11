@@ -6,7 +6,7 @@ namespace ProjectARVRPro.Process.MTF.VRPartition;
 
 internal static class VRMtfPartitionCalculator
 {
-    public static VRMtfPartitionViewTestResult Calculate(IReadOnlyList<MTFItem>? source, VRMtfPartitionProcessConfig config)
+    public static VRMtfPartitionViewTestResult Calculate(IReadOnlyList<MTFItem>? source, VRMtfPartitionProcessConfig config, MtfRecipeCorrection correction)
     {
         ArgumentNullException.ThrowIfNull(config);
         if (config.Size <= 0 || !double.IsFinite(config.Center)
@@ -60,20 +60,18 @@ internal static class VRMtfPartitionCalculator
             if (values.Count == 0)
                 throw new ArgumentException($"VR分区{regionName}没有测量点，请检查中心和半径。");
             result.RegionPointCounts[regionName] = values.Count;
-            AddMetric(result, config, regionName, "Min", values.Min());
-            AddMetric(result, config, regionName, "Max", values.Max());
-            AddMetric(result, config, regionName, "Average", values.Average());
+            AddMetric(result, config, regionName, "Min", values.Min(), correction);
+            AddMetric(result, config, regionName, "Max", values.Max(), correction);
+            AddMetric(result, config, regionName, "Average", values.Average(), correction);
         }
         return result;
     }
 
-    private static void AddMetric(VRMtfPartitionTestResult result, VRMtfPartitionProcessConfig config, string region, string statistic, double rawValue)
+    private static void AddMetric(VRMtfPartitionTestResult result, VRMtfPartitionProcessConfig config, string region, string statistic, double rawValue, MtfRecipeCorrection correction)
     {
         string name = $"Region_{region}_{statistic}";
         RecipeBase recipe = config.RecipeConfig.GetRecipe(name);
-        double value = recipe.Apply(rawValue);
-        if (!double.IsFinite(value))
-            throw new ArgumentException($"VR分区{name}修正后不是有限数值。");
+        double value = correction.Apply(rawValue, recipe, name);
         result.Items.Add(new ObjectiveTestItem
         {
             Name = name,

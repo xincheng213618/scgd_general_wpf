@@ -45,13 +45,14 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
                     if (mtfDetail.MTFResult?.resultChild == null)
                         continue;
 
+                    var correction = new MtfRecipeCorrection(master.Params);
                     foreach (var mtf in mtfDetail.MTFResult.resultChild)
                     {
                         if (string.IsNullOrWhiteSpace(mtf.name))
                             continue;
 
-                        AddItem(ctx, itemMap, BuildItem("H", mtf.name, mtf.horizontalAverage, Config.RecipeConfig.HRecipe));
-                        AddItem(ctx, itemMap, BuildItem("V", mtf.name, mtf.verticalAverage, Config.RecipeConfig.VRecipe));
+                        AddItem(ctx, itemMap, BuildItem("H", mtf.name, mtf.horizontalAverage, Config.RecipeConfig.HRecipe, correction));
+                        AddItem(ctx, itemMap, BuildItem("V", mtf.name, mtf.verticalAverage, Config.RecipeConfig.VRecipe, correction));
                     }
                 }
 
@@ -107,10 +108,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        private ObjectiveTestItem BuildItem(string axis, string pointName, double value, RecipeBase recipe)
+        private ObjectiveTestItem BuildItem(string axis, string pointName, double value, RecipeBase recipe, MtfRecipeCorrection correction)
         {
             string itemName = $"MTF_HV_{axis}_{NormalizePointName(pointName)}";
-            double fixedValue = recipe.Apply(value);
+            double fixedValue = correction.Apply(value, recipe, itemName);
             return new ObjectiveTestItem
             {
                 Name = itemName,

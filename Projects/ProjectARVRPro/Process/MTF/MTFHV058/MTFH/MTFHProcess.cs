@@ -38,12 +38,12 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                     if (details.Count == 1)
                     {
                         var mtfDetail = new MTFDetailViewReslut(details[0]);
+                        var correction = new MtfRecipeCorrection(master.Params);
                         foreach (var mtf in mtfDetail.MTFResult.result)
                         {
                             if (mtf.name == Config.Key_Center_0F)
                             {
-                                testResult.MTF_H_Center_0F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_Center_0F.Value = recipeConfig.MTF_H_Center_0F.Apply(testResult.MTF_H_Center_0F.Value);
+                                testResult.MTF_H_Center_0F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_Center_0F, nameof(testResult.MTF_H_Center_0F));
                                 testResult.MTF_H_Center_0F.TestValue = testResult.MTF_H_Center_0F.Value.ToString();
                                 testResult.MTF_H_Center_0F.LowLimit = recipeConfig.MTF_H_Center_0F.Min;
                                 testResult.MTF_H_Center_0F.UpLimit = recipeConfig.MTF_H_Center_0F.Max;
@@ -51,8 +51,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_LeftUp_0_5F)
                             {
-                                testResult.MTF_H_LeftUp_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftUp_0_5F.Value = recipeConfig.MTF_H_LeftUp_0_5F.Apply(testResult.MTF_H_LeftUp_0_5F.Value);
+                                testResult.MTF_H_LeftUp_0_5F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_LeftUp_0_5F, nameof(testResult.MTF_H_LeftUp_0_5F));
                                 testResult.MTF_H_LeftUp_0_5F.TestValue = testResult.MTF_H_LeftUp_0_5F.Value.ToString();
                                 testResult.MTF_H_LeftUp_0_5F.LowLimit = recipeConfig.MTF_H_LeftUp_0_5F.Min;
                                 testResult.MTF_H_LeftUp_0_5F.UpLimit = recipeConfig.MTF_H_LeftUp_0_5F.Max;
@@ -60,8 +59,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_RightUp_0_5F)
                             {
-                                testResult.MTF_H_RightUp_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightUp_0_5F.Value = recipeConfig.MTF_H_RightUp_0_5F.Apply(testResult.MTF_H_RightUp_0_5F.Value);
+                                testResult.MTF_H_RightUp_0_5F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_RightUp_0_5F, nameof(testResult.MTF_H_RightUp_0_5F));
                                 testResult.MTF_H_RightUp_0_5F.TestValue = testResult.MTF_H_RightUp_0_5F.Value.ToString();
                                 testResult.MTF_H_RightUp_0_5F.LowLimit = recipeConfig.MTF_H_RightUp_0_5F.Min;
                                 testResult.MTF_H_RightUp_0_5F.UpLimit = recipeConfig.MTF_H_RightUp_0_5F.Max;
@@ -69,8 +67,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_LeftDown_0_5F)
                             {
-                                testResult.MTF_H_LeftDown_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftDown_0_5F.Value = recipeConfig.MTF_H_LeftDown_0_5F.Apply(testResult.MTF_H_LeftDown_0_5F.Value);
+                                testResult.MTF_H_LeftDown_0_5F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_LeftDown_0_5F, nameof(testResult.MTF_H_LeftDown_0_5F));
                                 testResult.MTF_H_LeftDown_0_5F.TestValue = testResult.MTF_H_LeftDown_0_5F.Value.ToString();
                                 testResult.MTF_H_LeftDown_0_5F.LowLimit = recipeConfig.MTF_H_LeftDown_0_5F.Min;
                                 testResult.MTF_H_LeftDown_0_5F.UpLimit = recipeConfig.MTF_H_LeftDown_0_5F.Max;
@@ -78,8 +75,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_RightDown_0_5F)
                             {
-                                testResult.MTF_H_RightDown_0_5F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightDown_0_5F.Value = recipeConfig.MTF_H_RightDown_0_5F.Apply(testResult.MTF_H_RightDown_0_5F.Value);
+                                testResult.MTF_H_RightDown_0_5F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_RightDown_0_5F, nameof(testResult.MTF_H_RightDown_0_5F));
                                 testResult.MTF_H_RightDown_0_5F.TestValue = testResult.MTF_H_RightDown_0_5F.Value.ToString();
                                 testResult.MTF_H_RightDown_0_5F.LowLimit = recipeConfig.MTF_H_RightDown_0_5F.Min;
                                 testResult.MTF_H_RightDown_0_5F.UpLimit = recipeConfig.MTF_H_RightDown_0_5F.Max;
@@ -87,8 +83,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_LeftUp_0_8F)
                             {
-                                testResult.MTF_H_LeftUp_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftUp_0_8F.Value = recipeConfig.MTF_H_LeftUp_0_8F.Apply(testResult.MTF_H_LeftUp_0_8F.Value);
+                                testResult.MTF_H_LeftUp_0_8F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_LeftUp_0_8F, nameof(testResult.MTF_H_LeftUp_0_8F));
                                 testResult.MTF_H_LeftUp_0_8F.TestValue = testResult.MTF_H_LeftUp_0_8F.Value.ToString();
                                 testResult.MTF_H_LeftUp_0_8F.LowLimit = recipeConfig.MTF_H_LeftUp_0_8F.Min;
                                 testResult.MTF_H_LeftUp_0_8F.UpLimit = recipeConfig.MTF_H_LeftUp_0_8F.Max;
@@ -96,8 +91,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_RightUp_0_8F)
                             {
-                                testResult.MTF_H_RightUp_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightUp_0_8F.Value = recipeConfig.MTF_H_RightUp_0_8F.Apply(testResult.MTF_H_RightUp_0_8F.Value);
+                                testResult.MTF_H_RightUp_0_8F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_RightUp_0_8F, nameof(testResult.MTF_H_RightUp_0_8F));
                                 testResult.MTF_H_RightUp_0_8F.TestValue = testResult.MTF_H_RightUp_0_8F.Value.ToString();
                                 testResult.MTF_H_RightUp_0_8F.LowLimit = recipeConfig.MTF_H_RightUp_0_8F.Min;
                                 testResult.MTF_H_RightUp_0_8F.UpLimit = recipeConfig.MTF_H_RightUp_0_8F.Max;
@@ -105,8 +99,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_LeftDown_0_8F)
                             {
-                                testResult.MTF_H_LeftDown_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_LeftDown_0_8F.Value = recipeConfig.MTF_H_LeftDown_0_8F.Apply(testResult.MTF_H_LeftDown_0_8F.Value);
+                                testResult.MTF_H_LeftDown_0_8F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_LeftDown_0_8F, nameof(testResult.MTF_H_LeftDown_0_8F));
                                 testResult.MTF_H_LeftDown_0_8F.TestValue = testResult.MTF_H_LeftDown_0_8F.Value.ToString();
                                 testResult.MTF_H_LeftDown_0_8F.LowLimit = recipeConfig.MTF_H_LeftDown_0_8F.Min;
                                 testResult.MTF_H_LeftDown_0_8F.UpLimit = recipeConfig.MTF_H_LeftDown_0_8F.Max;
@@ -114,8 +107,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                             }
                             else if (mtf.name == Config.Key_RightDown_0_8F)
                             {
-                                testResult.MTF_H_RightDown_0_8F.Value = mtf.mtfValue ?? 0;
-                                testResult.MTF_H_RightDown_0_8F.Value = recipeConfig.MTF_H_RightDown_0_8F.Apply(testResult.MTF_H_RightDown_0_8F.Value);
+                                testResult.MTF_H_RightDown_0_8F.Value = correction.Apply(mtf.mtfValue ?? 0, recipeConfig.MTF_H_RightDown_0_8F, nameof(testResult.MTF_H_RightDown_0_8F));
                                 testResult.MTF_H_RightDown_0_8F.TestValue = testResult.MTF_H_RightDown_0_8F.Value.ToString();
                                 testResult.MTF_H_RightDown_0_8F.LowLimit = recipeConfig.MTF_H_RightDown_0_8F.Min;
                                 testResult.MTF_H_RightDown_0_8F.UpLimit = recipeConfig.MTF_H_RightDown_0_8F.Max;
