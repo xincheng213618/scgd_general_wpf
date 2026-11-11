@@ -176,10 +176,63 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (!CanSave)
                 return false;
 
-            textEditor.Save(_currentFileName!);
+            SaveFileAtomically(_currentFileName!);
             textEditor.Document.UndoStack.MarkAsOriginalFile();
             SetDirty(false);
             return true;
+        }
+
+        private void SaveFileAtomically(string path)
+        {
+            if (File.Exists(path))
+                path = File.ResolveLinkTarget(path, returnFinalTarget: true)?.FullName ?? path;
+
+            string temporaryPath = Path.Combine(Path.GetDirectoryName(path)!, $".__cvtext_{Guid.NewGuid():N}.tmp");
+            bool created = false;
+            try
+            {
+                using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    created = true;
+                    using var writer = new StreamWriter(stream, textEditor.Encoding ?? Encoding.UTF8);
+                    textEditor.Document.WriteTextTo(writer);
+                }
+
+                if (File.Exists(path)) ReplaceSavedFile(temporaryPath, path);
+                else File.Move(temporaryPath, path);
+                created = false;
+            }
+            finally
+            {
+                if (created) DeleteSaveArtifact(temporaryPath);
+            }
+        }
+
+        private static void ReplaceSavedFile(string temporaryPath, string path)
+        {
+            // Windows can move the old file before failing to publish the replacement.
+            string recoveryPath = Path.ChangeExtension(temporaryPath, ".bak");
+            try { File.Replace(temporaryPath, path, recoveryPath); }
+            catch (Exception saveError) when (File.Exists(recoveryPath))
+            {
+                try { File.Move(recoveryPath, path); }
+                catch (Exception recoveryError) when (recoveryError is IOException or UnauthorizedAccessException)
+                {
+                    throw new IOException($"Unable to restore the original document. It is available at {recoveryPath}",
+                        new AggregateException(saveError, recoveryError));
+                }
+                throw;
+            }
+            DeleteSaveArtifact(recoveryPath);
+        }
+
+        private static void DeleteSaveArtifact(string path)
+        {
+            try { File.Delete(path); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                log4net.LogManager.GetLogger(typeof(AvalonEditControll)).Warn($"Unable to remove a temporary text document at {path}.", error);
+            }
         }
 
         public bool TryUpdateResourcePath(string resourcePath)
