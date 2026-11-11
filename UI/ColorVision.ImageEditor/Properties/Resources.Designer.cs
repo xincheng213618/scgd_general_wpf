@@ -3844,6 +3844,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
+        ///   查找本地化的 BatchScanningFolder 字符串。
+        /// </summary>
+        public static string BatchScanningFolder {
+            get {
+                return ResourceManager.GetString("BatchScanningFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找本地化的 BatchProcessing 字符串。
         /// </summary>
         public static string BatchProcessing {

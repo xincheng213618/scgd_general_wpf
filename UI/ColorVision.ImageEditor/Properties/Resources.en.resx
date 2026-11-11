@@ -1216,6 +1216,9 @@ Double-click object: Focus</value>
   <data name="BatchWaiting" xml:space="preserve">
     <value>Waiting</value>
   </data>
+  <data name="BatchScanningFolder" xml:space="preserve">
+    <value>Scanning folder…</value>
+  </data>
   <data name="BatchProcessing" xml:space="preserve">
     <value>Processing...</value>
   </data>

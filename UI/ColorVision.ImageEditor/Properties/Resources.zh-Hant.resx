@@ -1216,6 +1216,9 @@
   <data name="BatchWaiting" xml:space="preserve">
     <value>等待處理</value>
   </data>
+  <data name="BatchScanningFolder" xml:space="preserve">
+    <value>正在掃描資料夾…</value>
+  </data>
   <data name="BatchProcessing" xml:space="preserve">
     <value>處理中...</value>
   </data>

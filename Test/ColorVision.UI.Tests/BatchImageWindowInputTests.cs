@@ -3,6 +3,7 @@ using OpenCvSharp;
 using System.Collections.Specialized;
 using System.IO;
 using System.Reflection;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
@@ -10,6 +11,100 @@ namespace ColorVision.UI.Tests;
 // The window resolves implicit styles from Application resources owned by the shared WPF host thread.
 public class BatchImageWindowInputTests
 {
+    [Fact]
+    public async Task FolderScanAddsSortedImagesFromPhysicalSubdirectories()
+    {
+        DirectoryInfo fixture = Directory.CreateTempSubdirectory("ColorVision-BatchFolder-");
+        DirectoryInfo root = fixture.CreateSubdirectory("selected");
+        DirectoryInfo child = root.CreateSubdirectory("group");
+        DirectoryInfo outside = fixture.CreateSubdirectory("outside");
+        string link = Path.Combine(root.FullName, "linked");
+        string first = Path.Combine(root.FullName, "a.PNG");
+        string nested = Path.Combine(child.FullName, "b.png");
+        string unrelated = Path.Combine(outside.FullName, "outside.png");
+        string unsupported = Path.Combine(child.FullName, "notes.txt");
+        try
+        {
+            foreach (string path in new[] { first, nested, unrelated, unsupported }) File.WriteAllText(path, "fixture");
+            try { Directory.CreateSymbolicLink(link, outside.FullName); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* The directory scan still runs without a link. */ }
+
+            await WpfTestHost.Invoke<Task>(async () =>
+            {
+                CountingLoader loader = new();
+                BatchImageProcessingWindow window = CreateWindow(loader);
+                try
+                {
+                    Assert.Equal(1, await window.AddFolderInputsAsync(root.FullName, includeSubfolders: false));
+                    Assert.Equal(1, await window.AddFolderInputsAsync(root.FullName, includeSubfolders: true));
+                    Assert.Equal(new[] { first, nested }, window.Files.Select(item => item.FilePath));
+                    Assert.All(window.Files, item => Assert.Equal(root.FullName, item.SourceRoot));
+                    Assert.Equal(0, loader.LoadCalls);
+                }
+                finally { window.Close(); }
+            });
+        }
+        finally
+        {
+            if (Directory.Exists(link)) Directory.Delete(link);
+            foreach (string path in new[] { first, nested, unrelated, unsupported }) File.Delete(path);
+            child.Delete();
+            root.Delete();
+            outside.Delete();
+            fixture.Delete();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancellingOrClosingDuringFolderScanKeepsPreviouslyAddedInputs(bool close)
+    {
+        DirectoryInfo root = Directory.CreateTempSubdirectory("ColorVision-BatchFolderCancel-");
+        string discovered = Path.Combine(root.FullName, "new.png");
+        try
+        {
+            File.WriteAllText(discovered, "fixture");
+            await WpfTestHost.Invoke<Task>(async () =>
+            {
+                BatchImageProcessingWindow window = CreateWindow(new CountingLoader());
+                bool closed = false;
+                window.Closed += (_, _) => closed = true;
+                try
+                {
+                    var existing = new BatchImageItem(Path.Combine(root.FullName, "existing.png"));
+                    window.AddPreparedInputs([existing]);
+                    var progress = (ProgressBar)window.FindName("ProgressBar");
+                    var cancel = (Button)window.FindName("CancelButton");
+                    Task<int> scan = window.AddFolderInputsAsync(root.FullName, includeSubfolders: true);
+                    Assert.False(scan.IsCompleted);
+                    Assert.True(progress.IsIndeterminate);
+                    Assert.True(cancel.IsEnabled);
+                    Assert.Throws<InvalidOperationException>(() => window.AddPreparedInputs([new BatchImageItem(discovered)]));
+
+                    if (close) window.Close();
+                    else cancel.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => scan);
+                    Assert.Equal(existing.FilePath, Assert.Single(window.Files).FilePath);
+                    Assert.Equal(close, closed);
+                    if (!close)
+                    {
+                        Assert.False(progress.IsIndeterminate);
+                        Assert.False(cancel.IsEnabled);
+                        Assert.Equal(1, await window.AddFolderInputsAsync(root.FullName, includeSubfolders: true));
+                    }
+                }
+                finally { if (!closed) window.Close(); }
+            });
+        }
+        finally
+        {
+            File.Delete(discovered);
+            root.Delete();
+        }
+    }
+
     [Fact]
     public void LargePreparedInputListPublishesOnceAndKeepsExistingSelection() => WpfTestHost.Invoke(() =>
     {

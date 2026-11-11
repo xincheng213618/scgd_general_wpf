@@ -13,10 +13,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.BatchProcessing
 {
-    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "The token source is owned only while a batch run is active and is disposed in Execute_Click.")]
+    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Each batch operation disposes its cancellation source when it finishes.")]
     public partial class BatchImageProcessingWindow : System.Windows.Window
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(BatchImageProcessingWindow));
@@ -24,7 +25,9 @@ namespace ColorVision.ImageEditor.BatchProcessing
         private readonly IReadOnlyList<BatchImageAlgorithmDefinition> _algorithms;
         private readonly BulkObservableCollection<BatchImageItem> _files = new();
         private CancellationTokenSource? _cancellationTokenSource;
+        private CancellationTokenSource? _folderScanCancellation;
         private bool _isClosed;
+        private bool IsBusy => _cancellationTokenSource != null || _folderScanCancellation != null;
 
         public BatchImageProcessingWindow()
             : this(ImageAlgorithmPlatform.Runtime)
@@ -77,10 +80,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         public int AddPreparedInputs(IReadOnlyList<BatchImageItem> items)
         {
             Dispatcher.VerifyAccess();
-            if (_isClosed || _cancellationTokenSource != null)
-            {
-                throw new InvalidOperationException("Batch inputs cannot be added while processing or after the window is closed.");
-            }
+            EnsureCanAddInputs();
             ArgumentNullException.ThrowIfNull(items);
 
             List<BatchImageItem> prepared = new(items.Count);
@@ -142,6 +142,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         private void AddFiles_Click(object sender, RoutedEventArgs e)
         {
+            if (IsBusy) return;
             using System.Windows.Forms.OpenFileDialog dialog = new()
             {
                 Multiselect = true,
@@ -153,11 +154,13 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 return;
             }
 
-            AddFiles(dialog.FileNames, null);
+            AddUniqueInputs(dialog.FileNames.Where(IsSupportedFile).OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .Select(path => new BatchImageItem(Path.GetFullPath(path))));
         }
 
-        private void AddFolder_Click(object sender, RoutedEventArgs e)
+        private async void AddFolder_Click(object sender, RoutedEventArgs e)
         {
+            if (IsBusy) return;
             using System.Windows.Forms.FolderBrowserDialog dialog = new()
             {
                 Description = Properties.Resources.BatchSelectInputFolder,
@@ -171,21 +174,80 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             try
             {
-                SearchOption searchOption = RecursiveCheckBox.IsChecked == true ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-                IEnumerable<string> files = Directory.EnumerateFiles(dialog.SelectedPath, "*", searchOption);
-                AddFiles(files, dialog.SelectedPath);
+                await AddFolderInputsAsync(dialog.SelectedPath, RecursiveCheckBox.IsChecked == true);
+            }
+            catch (OperationCanceledException)
+            {
             }
             catch (Exception ex)
             {
                 Log.Error(ex);
-                MessageBox.Show(this, ex.Message, Properties.Resources.BatchAddFolderFailed, MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!_isClosed)
+                    MessageBox.Show(this, ex.Message, Properties.Resources.BatchAddFolderFailed, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void AddFiles(IEnumerable<string> filePaths, string? sourceRoot)
+        internal async Task<int> AddFolderInputsAsync(string folderPath, bool includeSubfolders)
         {
-            AddUniqueInputs(filePaths.Where(IsSupportedFile).OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .Select(path => new BatchImageItem(Path.GetFullPath(path), sourceRoot)));
+            Dispatcher.VerifyAccess();
+            EnsureCanAddInputs();
+            string root = Path.GetFullPath(folderPath);
+            HashSet<string> extensions = _processor.SupportedExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            using var cancellation = new CancellationTokenSource();
+            _folderScanCancellation = cancellation;
+            string previousProgressText = ProgressTextBlock.Text;
+            SetBusyState(true);
+            ProgressBar.IsIndeterminate = true;
+            ProgressTextBlock.Text = Properties.Resources.BatchScanningFolder;
+            try
+            {
+                await Dispatcher.Yield(DispatcherPriority.Background);
+                BatchImageItem[] inputs = await Task.Run(
+                    () => ScanFolderInputs(root, includeSubfolders, extensions, cancellation.Token), cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                return AddUniqueInputs(inputs);
+            }
+            finally
+            {
+                _folderScanCancellation = null;
+                if (!_isClosed)
+                {
+                    ProgressBar.IsIndeterminate = false;
+                    ProgressTextBlock.Text = previousProgressText;
+                    SetBusyState(false);
+                }
+            }
+        }
+
+        private static BatchImageItem[] ScanFolderInputs(string root, bool includeSubfolders, HashSet<string> extensions, CancellationToken cancellationToken)
+        {
+            var directories = new Stack<DirectoryInfo>();
+            directories.Push(new DirectoryInfo(root));
+            var paths = new List<string>();
+            while (directories.TryPop(out DirectoryInfo? directory))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach (FileSystemInfo entry in directory.EnumerateFileSystemInfos())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (entry is DirectoryInfo child)
+                    {
+                        if (includeSubfolders && (child.Attributes & FileAttributes.ReparsePoint) == 0)
+                            directories.Push(child);
+                    }
+                    else if (extensions.Contains(entry.Extension))
+                    {
+                        paths.Add(entry.FullName);
+                    }
+                }
+            }
+            return paths.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).Select(path => new BatchImageItem(path, root)).ToArray();
+        }
+
+        private void EnsureCanAddInputs()
+        {
+            if (_isClosed || IsBusy)
+                throw new InvalidOperationException("Batch inputs cannot be added during a batch operation or after the window is closed.");
         }
 
         private int AddUniqueInputs(IEnumerable<BatchImageItem> inputs)
@@ -230,6 +292,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         private async void Execute_Click(object sender, RoutedEventArgs e)
         {
+            if (IsBusy) return;
             if (Files.Count == 0)
             {
                 MessageBox.Show(this, Properties.Resources.BatchAddImagesFirst, Properties.Resources.BatchRunTitle, MessageBoxButton.OK, MessageBoxImage.Information);
@@ -329,16 +392,21 @@ namespace ColorVision.ImageEditor.BatchProcessing
             return string.Format(Properties.Resources.BatchFileFilter, pattern);
         }
 
+        private void SetBusyState(bool isBusy)
+        {
+            SettingsPanel.IsEnabled = !isBusy;
+            AddFilesButton.IsEnabled = !isBusy;
+            AddFolderButton.IsEnabled = !isBusy;
+            RemoveButton.IsEnabled = !isBusy;
+            ClearButton.IsEnabled = !isBusy;
+            RecursiveCheckBox.IsEnabled = !isBusy;
+            ExecuteButton.IsEnabled = !isBusy;
+            CancelButton.IsEnabled = isBusy;
+        }
+
         private void SetProcessingState(bool isProcessing, int total)
         {
-            SettingsPanel.IsEnabled = !isProcessing;
-            AddFilesButton.IsEnabled = !isProcessing;
-            AddFolderButton.IsEnabled = !isProcessing;
-            RemoveButton.IsEnabled = !isProcessing;
-            ClearButton.IsEnabled = !isProcessing;
-            RecursiveCheckBox.IsEnabled = !isProcessing;
-            ExecuteButton.IsEnabled = !isProcessing;
-            CancelButton.IsEnabled = isProcessing;
+            SetBusyState(isProcessing);
             ProgressBar.Maximum = total;
             if (isProcessing)
             {
@@ -354,7 +422,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            _cancellationTokenSource?.Cancel();
+            (_cancellationTokenSource ?? _folderScanCancellation)?.Cancel();
             CancelButton.IsEnabled = false;
             ProgressTextBlock.Text = Properties.Resources.BatchCanceling;
         }
@@ -368,6 +436,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 return;
             }
 
+            _folderScanCancellation?.Cancel();
             base.OnClosing(e);
         }
 
