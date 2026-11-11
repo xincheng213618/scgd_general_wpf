@@ -101,9 +101,9 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 `ReadCVCIE` 通过 `ReadCVCIESrc` 读取 `SrcFileName`。绝对路径直接使用，相对路径先按 CVCIE 所在目录解析，缺失时再尝试当前工作目录，以兼容旧数据。
 
-关联文件有 `CVCIE` 魔数时走 `Read`；没有魔数时仅通过 `ReadFile` 装入原始文件字节并标记 Tif，**不在 FileIO 内验证或解码 TIFF**。该分支甚至没有用 Data 非空决定返回值。成功后 `ReadCVCIE` 会采用源图载体，并恢复原 `SrcFileName`、将 `FilePath` 设为传入 CVCIE 路径；路径标签和实际数据来源可能不同。
+关联文件从同一打开的快照识别并读取。普通图像字节读满后标记为 Tif，解码由消费方负责。关联文件缺失、读不到或为空时，`ReadCVCIE` 回退到内嵌数据；采用关联图时仍保留原 `SrcFileName` 和 CVCIE 的 `FilePath`。
 
-这些便捷入口不是“不抛异常”的统一封装；例如关联路径组合位于相应 reader 的捕获边界之外。`OpenLocalCVFile` 返回载体而忽略内部 bool，调用方仍须检查有效尺寸和 Data。
+`OpenLocalCVFile` 返回载体而忽略内部 bool，调用方须检查尺寸和 Data。
 
 ### 新的直接通道读取与旧切片
 
@@ -154,7 +154,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 `CVCIEFile` 不持有打开的文件流。`Dispose` 仅将自身 Data/Exp 引用置 null 并标记已释放；不会清零数组内容、清掉其它对象持有的引用、强制 GC 或建立后续方法调用门禁。
 
-`MediaHelper.ToMat` 和 `ToWriteableBitmap` 校验布局及长度，单平面需 `Channels=1`。批处理通过 `OpenLocalCVFileForDisplay` 优先读关联源，回退时校验完整 XYZ 后读首平面。多图缩略图从磁盘读取，按文件版本缓存。内嵌 XYZ 缩略图校验完整数据后读 X。整型 Mat 可固定数组，浮点转 8 位保留源样本。Conoscope 单通道仍 Clone，XYZ 真彩使用独立转换。
+`MediaHelper.ToMat` 和 `ToWriteableBitmap` 校验布局及长度。批处理优先显示可解码的关联图，否则校验内嵌 XYZ 后读首平面。多图缩略图按磁盘版本缓存，内嵌 XYZ 校验完整数据后读 X。整型 Mat 可固定数组，浮点转 8 位保留源样本。Conoscope 单通道仍 Clone，XYZ 真彩使用独立转换。
 
 项目是独立纯托管 AnyCPU 库；目标框架与 NuGet 内容以 `ColorVision.FileIO.csproj` 为准，构建平台例外见[构建入口](../../02-developer-guide/README.md)。不要把宿主 x64 规则机械套到此包。
 

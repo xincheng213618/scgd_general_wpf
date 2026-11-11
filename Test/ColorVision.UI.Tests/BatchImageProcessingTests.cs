@@ -628,6 +628,60 @@ public class BatchImageProcessingTests
         }
     }
 
+    [Theory]
+    [InlineData("locked")]
+    [InlineData("empty")]
+    [InlineData("corrupt")]
+    [InlineData("valid")]
+    public void BatchCieUsesEmbeddedPixelsWhenAssociatedImageCannotBeReadOrDecoded(string sourceState)
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-BatchCieSource-");
+        string path = Path.Combine(directory.FullName, "capture.cvcie");
+        string sourcePath = Path.Combine(directory.FullName, "source.tiff");
+        try
+        {
+            using CVCIEFile file = new()
+            {
+                Version = 2, FileExtType = CVType.CIE, Cols = 2, Rows = 1, Bpp = 8, Channels = 3,
+                SrcFileName = "source.tiff", Exp = [1, 1, 1], Gain = 1, Data = [12, 34, 56, 78, 90, 123]
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, file));
+            if (sourceState == "empty")
+                File.WriteAllBytes(sourcePath, []);
+            else if (sourceState == "corrupt")
+                File.WriteAllBytes(sourcePath, [1, 2, 3, 4, 5, 6]);
+            else
+            {
+                using Mat image = new(1, 2, MatType.CV_8UC1, new Scalar(42));
+                Assert.True(Cv2.ImWrite(sourcePath, image));
+            }
+
+            using FileStream? exclusive = sourceState == "locked"
+                ? File.Open(sourcePath, FileMode.Open, FileAccess.Read, FileShare.None)
+                : null;
+            if (sourceState is "locked" or "empty")
+            {
+                Assert.False(CVFileUtil.ReadCVCIESrc(path, out CVCIEFile associated));
+                associated.Dispose();
+                Assert.True(CVFileUtil.ReadCVCIE(path, out CVCIEFile complete));
+                using (complete) Assert.Equal(file.Data, complete.Data);
+            }
+
+            using Mat loaded = new CVRawBatchImageLoader().Load(path);
+            Assert.Equal(MatType.CV_8UC1, loaded.Type());
+            Assert.Equal(1, loaded.Rows);
+            Assert.Equal(2, loaded.Cols);
+            Assert.Equal(sourceState == "valid" ? (byte)42 : (byte)12, loaded.At<byte>(0, 0));
+            Assert.Equal(sourceState == "valid" ? (byte)42 : (byte)34, loaded.At<byte>(0, 1));
+        }
+        finally
+        {
+            File.Delete(sourcePath);
+            File.Delete(path);
+            directory.Delete();
+        }
+    }
+
     private static BatchImageAlgorithmDefinition CreateBasicAdjustmentAlgorithm(
         double exposure = 0,
         double brightness = 0,
