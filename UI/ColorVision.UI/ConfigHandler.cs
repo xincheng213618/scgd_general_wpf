@@ -308,7 +308,7 @@ namespace ColorVision.UI
 
                 if (!stateChanged)
                 {
-                    LoadDefaultConfigsCore();
+                    LoadDefaultConfigsCore(failedLoadPath: fullPath);
                     stateChanged = true;
                 }
             }

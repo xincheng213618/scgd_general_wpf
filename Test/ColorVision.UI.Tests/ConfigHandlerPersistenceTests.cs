@@ -1,4 +1,8 @@
 using ColorVision.UI.Authorizations;
+using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Repository.Hierarchy;
 using Newtonsoft.Json.Linq;
 using System.IO;
 
@@ -529,6 +533,85 @@ namespace ColorVision.UI.Tests
             Assert.Equal("older-valid-backup", restoredConfig.Value);
             Assert.Equal(["older-item"], restoredConfig.Items);
             Assert.Equal("older-second", configHandler.GetRequiredService<SecondConfig>().Value);
+        }
+
+        [Fact]
+        public void ExplicitBackupRestoreCanReplaceAReadablePrimary()
+        {
+            string path = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backups = Path.Combine(_rootDirectory, "Backup");
+            Directory.CreateDirectory(backups);
+            WriteConfig(path, "current", "current-item", "current-second");
+            WriteConfig(Path.Combine(backups, "ColorVisionConfigBackup_20260101_000000.json"), "backup", "backup-item", "backup-second");
+            var handler = new ConfigHandler { ConfigDIFileName = "ColorVisionConfig", ConfigFilePath = path, BackupFolderPath = backups };
+
+            handler.LoadDefaultConfigs();
+
+            Assert.Equal("backup", handler.GetRequiredService<FirstConfig>().Value);
+            Assert.Equal("backup", (string?)JObject.Parse(File.ReadAllText(path))[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AutomaticRecoveryKeepsAPrimaryRepairedWhileCheckingBackups(bool hasValidBackup)
+        {
+            string path = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string replacement = Path.Combine(_rootDirectory, "replacement.json");
+            string backups = Path.Combine(_rootDirectory, "Backup");
+            Directory.CreateDirectory(backups);
+            File.WriteAllText(path, "{");
+            File.WriteAllText(Path.Combine(backups, "ColorVisionConfigBackup_20260102_000000.json"), "{");
+            if (hasValidBackup)
+                WriteConfig(Path.Combine(backups, "ColorVisionConfigBackup_20260101_000000.json"), "older", "old-item", "old-second");
+            WriteConfig(replacement, "repaired", "new-item", "new-second");
+            byte[] repairedBytes = File.ReadAllBytes(replacement);
+            var handler = new ConfigHandler { ConfigDIFileName = "ColorVisionConfig", ConfigFilePath = path, BackupFolderPath = backups };
+
+            var logger = (Logger)LogManager.GetLogger(typeof(ConfigHandler).Assembly, typeof(ConfigHandler)).Logger;
+            var hierarchy = Assert.IsType<Hierarchy>(logger.Repository);
+            bool wasConfigured = hierarchy.Configured;
+            Level previousLevel = logger.Level;
+            var appender = new InvalidConfigReadAppender(() =>
+            {
+                // The second invalid read is the newer backup, after the primary lock was released.
+                using var writerLock = ConfigFileStore.AcquireLock(path);
+                File.Move(replacement, path, overwrite: true);
+            });
+            try
+            {
+                hierarchy.Configured = true;
+                logger.Level = Level.Warn;
+                logger.AddAppender(appender);
+                handler.LoadConfigs();
+            }
+            finally
+            {
+                logger.RemoveAppender(appender);
+                appender.Close();
+                logger.Level = previousLevel;
+                hierarchy.Configured = wasConfigured;
+            }
+
+            Assert.True(appender.RepairCompleted);
+            Assert.Equal(repairedBytes, File.ReadAllBytes(path));
+            Assert.Equal("repaired", handler.GetRequiredService<FirstConfig>().Value);
+            Assert.Equal("new-second", handler.GetRequiredService<SecondConfig>().Value);
+        }
+
+        private sealed class InvalidConfigReadAppender(Action repair) : AppenderSkeleton
+        {
+            private readonly int _thread = Environment.CurrentManagedThreadId;
+            private int _invalidReads;
+            public bool RepairCompleted { get; private set; }
+
+            protected override void Append(LoggingEvent loggingEvent)
+            {
+                if (Environment.CurrentManagedThreadId != _thread || loggingEvent.MessageObject is not Newtonsoft.Json.JsonReaderException
+                    || ++_invalidReads != 2) return;
+                repair();
+                RepairCompleted = true;
+            }
         }
 
         [Fact]

@@ -28,13 +28,13 @@ namespace ColorVision.UI
             }
         }
 
-        private void LoadDefaultConfigsCore()
+        private void LoadDefaultConfigsCore(string? failedLoadPath = null)
         {
             try
             {
-                if (TryRestoreLatestBackup(out JObject backupJson))
+                if (TryLoadRecoveryConfig(failedLoadPath, out JObject recoveryJson))
                 {
-                    ApplyLoadedConfig(backupJson);
+                    ApplyLoadedConfig(recoveryJson);
                     return;
                 }
             }
@@ -47,23 +47,32 @@ namespace ColorVision.UI
             Configs = CreateDefaultConfigInstances();
         }
 
-        private bool TryRestoreLatestBackup(out JObject restoredJson)
+        private bool TryLoadRecoveryConfig(string? failedLoadPath, out JObject restoredJson)
         {
             restoredJson = new JObject();
+            JObject? latestBackup = null;
             foreach (string backupFile in GetBackupFiles())
             {
-                if (!ConfigFileStore.TryRead(backupFile, out var backupJson, ex => log.Warn(ex)))
-                    continue;
-
-                string fullPath = Path.GetFullPath(ConfigFilePath);
-                using (ConfigFileStore.AcquireLock(fullPath))
-                    ConfigFileStore.Write(fullPath, backupJson);
-
-                restoredJson = backupJson;
-                return true;
+                if (ConfigFileStore.TryRead(backupFile, out var backupJson, ex => log.Warn(ex)))
+                {
+                    latestBackup = backupJson;
+                    break;
+                }
             }
 
-            return false;
+            if (latestBackup == null && failedLoadPath == null) return false;
+            string fullPath = string.IsNullOrWhiteSpace(ConfigFilePath) && failedLoadPath != null
+                ? failedLoadPath : Path.GetFullPath(ConfigFilePath);
+            using (ConfigFileStore.AcquireLock(fullPath))
+            {
+                // Another instance may have repaired the primary while backups were scanned.
+                if (failedLoadPath != null && ConfigFileStore.TryRead(fullPath, out restoredJson, _ => { }))
+                    return true;
+                if (latestBackup == null) return false;
+                ConfigFileStore.Write(fullPath, latestBackup);
+            }
+            restoredJson = latestBackup;
+            return true;
         }
 
         private ConcurrentDictionary<Type, IConfig> CreateDefaultConfigInstances()
