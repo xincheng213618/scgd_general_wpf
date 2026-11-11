@@ -291,6 +291,91 @@ public sealed class FlowTemplateWorkspaceEditingTests
     }
 
     [Fact]
+    public void ReconcileRenumberedTemplateKeepsItsCanvasAndUpdatesExecutionIdentity()
+    {
+        WithFixture(fixture =>
+        {
+            FlowParam active = fixture.A.Value;
+            active.FlowKey = "flow:active";
+            fixture.B.Value.FlowKey = "flow:other";
+            int originalId = active.Id;
+            int newId = fixture.B.Id;
+            var previous = fixture.Controller.WaitForExecutionSnapshotAsync();
+            PumpUntil(previous);
+            FlowTemplateExecutionSnapshot oldSnapshot = Assert.IsType<FlowTemplateExecutionSnapshot>(previous.Result.Snapshot);
+            fixture.MakeDirty();
+            byte[] canvas = fixture.Editor.GetCanvasData();
+
+            // The MySQL order swap publishes the exchanged IDs on the same models.
+            active.Id = newId;
+            fixture.B.Value.Id = originalId;
+            TemplateFlow.Params.Move(1, 0);
+            PumpUntil(fixture.Controller.ReconcileTemplatesAsync());
+
+            Assert.Same(active, fixture.Controller.ActiveFlowParam);
+            Assert.Equal(canvas, fixture.Editor.GetCanvasData());
+            Assert.True(fixture.Editor.IsModified);
+            Assert.Equal(0, fixture.ConfirmCalls);
+            Assert.Equal(0, fixture.CloseCalls);
+            Assert.False(fixture.Controller.IsCurrentExecutionSnapshot(oldSnapshot));
+            var current = fixture.Controller.WaitForExecutionSnapshotAsync();
+            PumpUntil(current);
+            FlowTemplateExecutionSnapshot snapshot = Assert.IsType<FlowTemplateExecutionSnapshot>(current.Result.Snapshot);
+            Assert.Equal(newId, snapshot.TemplateId);
+            Assert.Equal("flow:active", snapshot.FlowKey);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReconcileReloadedOrderDoesNotRetargetAnIdenticalDirtyCanvas(bool savedCanvasChanged)
+    {
+        WithFixture(fixture =>
+        {
+            FlowParam active = fixture.A.Value;
+            active.FlowKey = "flow:active";
+            int originalId = active.Id;
+            int newId = fixture.B.Id;
+            fixture.MakeDirty();
+            byte[] canvas = fixture.Editor.GetCanvasData();
+            var latest = new FlowParam
+            {
+                Id = newId,
+                Name = active.Name,
+                FlowKey = active.FlowKey,
+                DataBase64 = savedCanvasChanged ? fixture.C.Value.DataBase64 : active.DataBase64,
+            };
+
+            // A database reload can reuse the wrappers by row ID after the stored IDs swap.
+            fixture.A.Value = new FlowParam { Id = originalId, Name = "Other flow", FlowKey = "flow:other", DataBase64 = active.DataBase64 };
+            fixture.B.Value = latest;
+            PumpUntil(fixture.Controller.ReconcileTemplatesAsync());
+
+            Assert.Equal(canvas, fixture.Editor.GetCanvasData());
+            Assert.True(fixture.Editor.IsModified);
+            Assert.Equal(savedCanvasChanged ? 1 : 0, fixture.ConfirmCalls);
+            Assert.Equal(0, fixture.CloseCalls);
+            var current = fixture.Controller.WaitForExecutionSnapshotAsync();
+            PumpUntil(current);
+            if (savedCanvasChanged)
+            {
+                Assert.Null(fixture.Controller.ActiveFlowParam);
+                Assert.Null(fixture.Manager.SelectedFlowParam);
+                Assert.Null(fixture.DocumentBaseline);
+                Assert.Null(current.Result.Snapshot);
+                return;
+            }
+
+            Assert.Same(latest, fixture.Controller.ActiveFlowParam);
+            Assert.Same(latest, fixture.Manager.SelectedFlowParam);
+            FlowTemplateExecutionSnapshot snapshot = Assert.IsType<FlowTemplateExecutionSnapshot>(current.Result.Snapshot);
+            Assert.Equal(newId, snapshot.TemplateId);
+            Assert.Equal("flow:active", snapshot.FlowKey);
+        });
+    }
+
+    [Fact]
     public void ReconcileSameCanvasUpdatesMetadataAndStableSelectionWithoutTouchingEditingState()
     {
         WithFixture(fixture =>

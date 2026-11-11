@@ -142,11 +142,12 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         if (loaded == null || !wasListed)
             return Task.CompletedTask;
 
-        TemplateModel<FlowParam>? latest = TemplateFlow.Params.FirstOrDefault(item => item.Id == loaded.Id);
-        if (latest == null)
+        TemplateModel<FlowParam>? latest = FindLoadedTemplate(loaded);
+        bool sameCanvas = latest != null && string.Equals(loaded.DataBase64, latest.Value.DataBase64, StringComparison.Ordinal);
+        if (latest == null || (latest.Id != loaded.Id && !sameCanvas))
         {
-            // Deleting the template does not delete the unsaved canvas. Detach
-            // its save target so a canceled replacement can be saved as a new flow.
+            // A removed template or an old ID now assigned to a different flow
+            // cannot remain the save target if the user keeps the draft.
             lock (_selectionSync)
             {
                 _loadedFlowParam = null;
@@ -160,7 +161,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                 UpdateSelectedTemplateIndex(null);
             if (_workspaceState.IsPending)
                 return Task.CompletedTask;
-            TemplateModel<FlowParam>? next = TemplateFlow.Params.FirstOrDefault();
+            TemplateModel<FlowParam>? next = latest ?? TemplateFlow.Params.FirstOrDefault();
             return next == null
                 ? RefreshAsync(FlowWorkspaceReplacementMode.Confirm)
                 : SelectFlowTemplateAsync(next, allowEmptyFlow: true, FlowWorkspaceReplacementMode.Confirm);
@@ -168,22 +169,43 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
 
         // A newer user selection owns its pending refresh; closing the manager
         // must not cancel that request or interrupt a run on an unchanged graph.
-        if (!_workspaceState.IsCurrentLoaded(_refreshGate.Generation, loaded.Id)
+        long generation = _refreshGate.Generation;
+        if (_workspaceState.GetLoadedTemplateId(generation) is not int settledId
             || RequestedTemplateId != loaded.Id)
         {
             return Task.CompletedTask;
         }
-        if (!string.Equals(loaded.DataBase64, latest.Value.DataBase64, StringComparison.Ordinal))
+        if (!sameCanvas)
             return SelectFlowTemplateAsync(latest, replacementMode: FlowWorkspaceReplacementMode.Confirm);
 
         lock (_selectionSync)
         {
             _requestedTemplate = latest;
             _loadedFlowParam = latest.Value;
+            if (settledId != latest.Id)
+            {
+                // The graph is unchanged, but an execution snapshot for the old
+                // numeric ID must no longer authorize a new run.
+                long reboundGeneration = _refreshGate.Advance();
+                _workspaceState.BeginRequest(reboundGeneration, latest.Id);
+                _workspaceState.TryCompleteLoaded(reboundGeneration, latest.Id);
+            }
         }
         _flowEngineManager.SelectedFlowParam = latest.Value;
         UpdateSelectedTemplateIndex(latest);
         return Task.CompletedTask;
+    }
+
+    private static TemplateModel<FlowParam>? FindLoadedTemplate(FlowParam loaded)
+    {
+        TemplateModel<FlowParam>? byId = TemplateFlow.Params.FirstOrDefault(item => item.Id == loaded.Id);
+        if (string.IsNullOrWhiteSpace(loaded.FlowKey) || string.Equals(byId?.Value.FlowKey, loaded.FlowKey, StringComparison.Ordinal))
+            return byId;
+
+        // A legacy shared resource can appear under several templates. Without
+        // the same ID, an ambiguous FlowKey cannot identify the old document.
+        var matches = TemplateFlow.Params.Where(item => string.Equals(item.Value.FlowKey, loaded.FlowKey, StringComparison.Ordinal)).Take(2).ToArray();
+        return matches.Length == 1 ? matches[0] : null;
     }
 
     private void UpdateSelectedTemplateIndex(TemplateModel<FlowParam>? selected)
@@ -863,16 +885,16 @@ internal sealed class FlowTemplateWorkspaceState : IDisposable
         }
     }
 
-    public bool IsCurrentLoaded(
-        long generation,
-        int? templateId)
+    public bool IsCurrentLoaded(long generation, int? templateId)
+        => templateId.HasValue && GetLoadedTemplateId(generation) == templateId;
+
+    public int? GetLoadedTemplateId(long generation)
     {
         lock (_sync)
         {
-            return !_disposed
-                && _generation == generation
-                && _status == FlowTemplateWorkspaceStatus.Loaded
-                && _templateId == templateId;
+            return !_disposed && _generation == generation && _status == FlowTemplateWorkspaceStatus.Loaded
+                ? _templateId
+                : null;
         }
     }
 
