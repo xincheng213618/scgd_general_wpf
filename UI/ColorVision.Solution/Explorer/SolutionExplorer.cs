@@ -493,28 +493,7 @@ namespace ColorVision.Solution.Explorer
 
             NotifyVisualTreeChanged();
 
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                var parentNode = FindNodeByFullPath(parentPath) ?? this;
-                if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
-                {
-                    unloadedFolder.MarkChildrenChanged();
-                    return;
-                }
-
-                // Duplicate protection
-                if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
-                    return;
-
-                if (File.Exists(e.FullPath))
-                {
-                    SolutionNodeFactory.AddFileNode(parentNode, new FileInfo(e.FullPath));
-                }
-                else if (Directory.Exists(e.FullPath))
-                {
-                    SolutionNodeFactory.AddFolderNode(parentNode, new DirectoryInfo(e.FullPath));
-                }
-            });
+            Application.Current?.Dispatcher.BeginInvoke(() => AddWatchedChild(parentPath, e.FullPath));
         }
 
         private void FileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
@@ -593,6 +572,7 @@ namespace ColorVision.Solution.Explorer
 
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
+                if (_disposed) return;
                 var oldNode = FindNodeByFullPath(e.OldFullPath);
                 if (oldNode != null && oldNode is not SolutionItemNode)
                 {
@@ -601,24 +581,29 @@ namespace ColorVision.Solution.Explorer
                         disposable.Dispose();
                 }
 
-                var parentNode = FindNodeByFullPath(parentPath) ?? this;
-                if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
-                {
-                    unloadedFolder.MarkChildrenChanged();
-                    return;
-                }
-
-                if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
-                    return;
-
-                if (File.Exists(e.FullPath))
-                    SolutionNodeFactory.AddFileNode(parentNode, new FileInfo(e.FullPath));
-                else if (Directory.Exists(e.FullPath))
-                    SolutionNodeFactory.AddFolderNode(parentNode, new DirectoryInfo(e.FullPath));
-
+                AddWatchedChild(parentPath, e.FullPath);
                 if (oldPathIsSolutionItem)
                     ReconcileExplicitProjects(reloadLoadedProjects: true);
             });
+        }
+
+        private void AddWatchedChild(string parentPath, string fullPath)
+        {
+            if (_disposed) return;
+            var parentNode = PathEquals(parentPath, DirectoryInfo.FullName) ? this : FindNodeByFullPath(parentPath);
+            // A collapsed ancestor can leave the physical parent absent from the tree until expansion.
+            if (parentNode == null) return;
+            if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
+            {
+                unloadedFolder.MarkChildrenChanged();
+                return;
+            }
+            if (parentNode.VisualChildren.Any(child => PathEquals(child.FullPath, fullPath)))
+                return;
+            if (File.Exists(fullPath))
+                SolutionNodeFactory.AddFileNode(parentNode, new FileInfo(fullPath));
+            else if (Directory.Exists(fullPath))
+                SolutionNodeFactory.AddFolderNode(parentNode, new DirectoryInfo(fullPath));
         }
 
         private void FileSystemWatcher_Error(object sender, ErrorEventArgs e)

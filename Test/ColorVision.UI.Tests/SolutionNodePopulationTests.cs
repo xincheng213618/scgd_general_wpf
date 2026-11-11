@@ -425,6 +425,66 @@ public sealed class SolutionNodePopulationTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WatcherLeavesNewFilesUnderTheirUnloadedPhysicalParent(bool rename)
+    {
+        using PopulationFixture fixture = new();
+        const string folderName = "captures";
+        string nestedFolderName = Path.Combine(folderName, "lot");
+        string nestedFileName = Path.Combine(nestedFolderName, "frame.txt");
+        string nestedPath = Path.Combine(fixture.Root, nestedFileName);
+        const string oldName = "previous.txt";
+        string oldPath = Path.Combine(fixture.Root, oldName);
+        fixture.CreateDirectory(nestedFolderName);
+        var (root, folder, debounce) = WpfTestHost.Invoke(() =>
+        {
+            const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+            SolutionExplorer root = fixture.CreateRoot();
+            var debounce = new DispatcherTimer();
+            typeof(SolutionExplorer).GetField("_changedDebounceTimer", instance)!.SetValue(root, debounce);
+            var folder = new FolderNode(new DirectoryInfo(Path.Combine(fixture.Root, folderName)));
+            root.AddChild(folder);
+            if (rename)
+            {
+                fixture.WriteFile(oldName);
+                SolutionNodeFactory.AddFileNode(root, new FileInfo(oldPath));
+                File.Move(oldPath, nestedPath);
+                typeof(SolutionExplorer).GetMethod("FileSystemWatcher_Renamed", instance)!.Invoke(root,
+                    [null, new RenamedEventArgs(WatcherChangeTypes.Renamed, fixture.Root, nestedFileName, oldName)]);
+            }
+            else
+            {
+                fixture.WriteFile(nestedFileName);
+                typeof(SolutionExplorer).GetMethod("FileSystemWatcher_Created", instance)!.Invoke(root,
+                    [null, new FileSystemEventArgs(WatcherChangeTypes.Created, fixture.Root, nestedFileName)]);
+            }
+            return (root, folder, debounce);
+        });
+        try
+        {
+            await WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+            {
+                Assert.Same(folder, Assert.Single(root.VisualChildren));
+                Assert.False(folder.AreChildrenLoaded);
+            }, DispatcherPriority.Background).Task);
+
+            await WpfTestHost.Invoke(folder.EnsureChildrenLoadedAsync);
+            var nested = WpfTestHost.Invoke(() => Assert.IsType<FolderNode>(Assert.Single(folder.VisualChildren)));
+            await WpfTestHost.Invoke(nested.EnsureChildrenLoadedAsync);
+            WpfTestHost.Invoke(() => Assert.Equal(nestedPath, Assert.Single(nested.VisualChildren).FullPath));
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                debounce.Stop();
+                folder.Dispose();
+            });
+        }
+    }
+
     private sealed class RecordingNode : SolutionNode
     {
         public int AddCalls { get; private set; }
