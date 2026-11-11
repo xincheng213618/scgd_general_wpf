@@ -761,82 +761,21 @@ namespace ColorVision.FileIO
         {
             if (string.IsNullOrEmpty(filePath)) return false;
             if (fileInfo == null || writeData == null || dataLength < 0) return false;
-            if (fileInfo.Version != 2 && dataLength > int.MaxValue) return false;
+            uint version = fileInfo.Version;
+            if (version is < 1 or > 3 || (version != 2 && dataLength > int.MaxValue)) return false;
 
             try
             {
-                // Get encoding, fallback to UTF8 if GBK is not available
-                Encoding encoding;
-                try
-                {
-                    encoding = Encoding.GetEncoding("GBK");
-                }
-                catch
-                {
-                    encoding = Encoding.UTF8;
-                }
-
-                byte[] srcFileNameBytes = encoding.GetBytes(fileInfo.SrcFileName ?? string.Empty);
-                long fileLength = checked(5L + 4 + 4 + srcFileNameBytes.Length + 4 + 4 + 4L * fileInfo.Channels + 12
-                    + (fileInfo.Version == 2 ? 8 : 4) + dataLength);
+                byte[] srcFileNameBytes = Encoding1.GetBytes(fileInfo.SrcFileName ?? string.Empty);
+                long fileLength = checked(HeaderSize + sizeof(uint) + sizeof(int) + (long)srcFileNameBytes.Length
+                    + (version == 3 ? sizeof(int) : 0) + sizeof(float) + sizeof(int)
+                    + sizeof(float) * (long)fileInfo.Channels + 3 * sizeof(int)
+                    + (version == 2 ? sizeof(long) : sizeof(int)) + dataLength);
                 return CVFileReadCache.WriteFile(filePath, fileLength, fs =>
                 {
                     using (BinaryWriter bw = new BinaryWriter(fs, Encoding.UTF8, true))
                     {
-                        // Write magic header
-                        bw.Write(MagicHeader.ToCharArray());
-
-                        // Write Version
-                        bw.Write(fileInfo.Version);
-
-                        // Write source file name
-                        bw.Write(srcFileNameBytes.Length);
-                        if (srcFileNameBytes.Length > 0)
-                        {
-                            bw.Write(srcFileNameBytes);
-                        }
-
-                        // Write Gain
-                        bw.Write(fileInfo.Gain);
-
-                        // Write Channels and exposure values
-                        bw.Write((uint)fileInfo.Channels);
-                        if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
-                        {
-                            for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
-                            {
-                                bw.Write(fileInfo.Exp[i]);
-                            }
-                            // Fill remaining Channels with 0 if Exp array is shorter
-                            for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
-                            {
-                                bw.Write(0f);
-                            }
-                        }
-                        else
-                        {
-                            // No exposure Data, write zeros
-                            for (int i = 0; i < fileInfo.Channels; i++)
-                            {
-                                bw.Write(0f);
-                            }
-                        }
-
-                        // The CV file header stores width (Cols) before height (Rows).
-                        bw.Write((uint)fileInfo.Cols);
-                        bw.Write((uint)fileInfo.Rows);
-                        bw.Write((uint)fileInfo.Bpp);
-
-                        // Write Data length before allowing the caller to stream the payload.
-                        if (fileInfo.Version == 2)
-                        {
-                            bw.Write(dataLength);
-                        }
-                        else
-                        {
-                            bw.Write((int)dataLength);
-                        }
-
+                        WriteImageHeader(bw, fileInfo, version, srcFileNameBytes, dataLength);
                         bw.Flush();
                         long dataStart = fs.Position;
                         writeData(fs);
@@ -867,92 +806,18 @@ namespace ColorVision.FileIO
         {
             fileData = null;
             if (fileInfo == null) return false;
+            uint version = fileInfo.Version;
+            if (version is < 1 or > 3) return false;
 
             try
             {
-                // Get encoding, fallback to UTF8 if GBK is not available
-                Encoding encoding;
-                try
-                {
-                    encoding = Encoding.GetEncoding("GBK");
-                }
-                catch
-                {
-                    encoding = Encoding.UTF8;
-                }
-
+                byte[] srcFileNameBytes = Encoding1.GetBytes(fileInfo.SrcFileName ?? string.Empty);
+                byte[] data = fileInfo.Data;
                 using (MemoryStream ms = new MemoryStream())
                 using (BinaryWriter bw = new BinaryWriter(ms))
                 {
-                    // Write magic header
-                    bw.Write(MagicHeader.ToCharArray());
-
-                    // Write Version
-                    bw.Write(fileInfo.Version);
-
-                    // Write source file name
-                    string srcFileName = fileInfo.SrcFileName ?? string.Empty;
-                    byte[] srcFileNameBytes = encoding.GetBytes(srcFileName);
-                    bw.Write(srcFileNameBytes.Length);
-                    if (srcFileNameBytes.Length > 0)
-                    {
-                        bw.Write(srcFileNameBytes);
-                    }
-
-                    // Write Gain
-                    bw.Write(fileInfo.Gain);
-
-                    // Write Channels and exposure values
-                    bw.Write((uint)fileInfo.Channels);
-                    if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
-                    {
-                        for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
-                        {
-                            bw.Write(fileInfo.Exp[i]);
-                        }
-                        for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
-                        {
-                            bw.Write(0f);
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < fileInfo.Channels; i++)
-                        {
-                            bw.Write(0f);
-                        }
-                    }
-
-                    // The CV file header stores width (Cols) before height (Rows).
-                    bw.Write((uint)fileInfo.Cols);
-                    bw.Write((uint)fileInfo.Rows);
-                    bw.Write((uint)fileInfo.Bpp);
-
-                    // Write Data
-                    if (fileInfo.Data != null && fileInfo.Data.Length > 0)
-                    {
-                        if (fileInfo.Version == 2)
-                        {
-                            bw.Write((long)fileInfo.Data.Length);
-                        }
-                        else
-                        {
-                            bw.Write((int)fileInfo.Data.Length);
-                        }
-                        bw.Write(fileInfo.Data);
-                    }
-                    else
-                    {
-                        if (fileInfo.Version == 2)
-                        {
-                            bw.Write(0L);
-                        }
-                        else
-                        {
-                            bw.Write(0);
-                        }
-                    }
-
+                    WriteImageHeader(bw, fileInfo, version, srcFileNameBytes, data?.LongLength ?? 0);
+                    if (data != null) bw.Write(data);
                     bw.Flush();
                     fileData = ms.ToArray();
                     return true;
@@ -964,6 +829,29 @@ namespace ColorVision.FileIO
                 Debug.WriteLine($"[WriteCIEFile(byte[])] StackTrace: {ex.StackTrace}");
                 return false;
             }
+        }
+
+        private static void WriteImageHeader(BinaryWriter writer, CVCIEFile fileInfo, uint version, byte[] sourceName, long payloadLength)
+        {
+            writer.Write(MagicHeader.ToCharArray());
+            writer.Write(version);
+            writer.Write(sourceName.Length);
+            writer.Write(sourceName);
+            if (version == 3) writer.Write(fileInfo.NDPort);
+            writer.Write(fileInfo.Gain);
+            writer.Write(fileInfo.Channels);
+
+            float[] exposures = fileInfo.Exp;
+            for (int channel = 0; channel < fileInfo.Channels; channel++)
+            {
+                writer.Write(exposures != null && channel < exposures.Length ? exposures[channel] : 0f);
+            }
+
+            writer.Write(fileInfo.Cols);
+            writer.Write(fileInfo.Rows);
+            writer.Write(fileInfo.Bpp);
+            if (version == 2) writer.Write(payloadLength);
+            else writer.Write(checked((int)payloadLength));
         }
 
         /// <summary>

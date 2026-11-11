@@ -45,7 +45,7 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 
 ## 二进制布局和版本差异
 
-以下是当前托管 reader 的布局。整数/浮点由 `BinaryReader` 或 `BitConverter` 读取，在本项目 Windows 环境为小端；源文件名按 GBK 解码，长度是字节数，不是字符数。
+托管读写共用以下布局。整数和浮点均为小端，源文件名按 GBK 编码，长度以字节计。
 
 | 顺序 | v1 / v2 | v3 |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 
 Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样位数**，一个通道字节数为 `Rows * Cols * (Bpp / 8)`。`CVCIEFile.Depth` 将 8/16/32/64 分别映射到 OpenCV 深度 0/2/5/6；未知值回退 0，并非验证器。
 
-**当前 v3 读写不对称是实现缺口，不是兼容保证。** 两个 `WriteCIEFile` writer 都在写源文件名后直接写 Gain，没有写 v3 reader 所需的 NDPort；仅设置 `Version = 3` 不能得到符合该 reader 布局的 v3 文件。Writer 也不拒绝未知版本。需要改格式时先建立版本往返和旧样本回归，不要在文档中承诺所有版本无损兼容。
+`WriteCIEFile` 的磁盘、仅缓存和字节数组输出均支持 v1、v2、v3。v3 往返保留有符号 NDPort，v1、v2 沿用原有布局。其他版本在准备输出前返回 `false`。
 
 路径 reader 与字节 reader 的异常长度处理也不完全相同。例如字节入口拒绝负文件名长度；路径入口对不满足可读条件的文件名段可能直接跳过读取后继续解释后续字段。当前不能把 header 解析成功当作恶意/畸形文件的完整安全验证。
 

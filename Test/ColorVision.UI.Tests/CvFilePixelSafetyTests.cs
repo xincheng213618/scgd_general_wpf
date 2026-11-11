@@ -13,6 +13,104 @@ namespace ColorVision.UI.Tests;
 public sealed class CvFilePixelSafetyTests
 {
     [Theory]
+    [InlineData(1u)]
+    [InlineData(2u)]
+    [InlineData(3u)]
+    public void DiskCachedAndByteWritersRoundTripVersionedHeaderAndPixels(uint version)
+    {
+        string name = $"CieVersionLayout_{Guid.NewGuid():N}";
+        string diskPath = Path.Combine(Path.GetTempPath(), name + ".cvcie");
+        string cachePath = Path.Combine(Path.GetTempPath(), name + ".cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        using CVCIEFile fixture = new()
+        {
+            Version = version, NDPort = -17, SrcFileName = "原图.cvraw", Gain = 1.75f,
+            Cols = 4, Rows = 2, Channels = 3, Bpp = 8, Exp = [2, 3],
+            Data = Enumerable.Range(1, 24).Select(value => (byte)value).ToArray()
+        };
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            Assert.True(CVFileUtil.WriteCIEFile(fixture, out byte[] encoded));
+            Assert.True(CVFileUtil.WriteCIEFile(diskPath, fixture));
+            Assert.True(CVFileUtil.WriteCVRaw(cachePath, fixture, fixture.Data.Length,
+                stream => stream.Write(fixture.Data), CVFileSaveMode.MemoryOnly));
+            Assert.Equal(encoded, File.ReadAllBytes(diskPath));
+            Assert.False(File.Exists(cachePath));
+            using (Stream cache = CVFileReadCache.OpenRead(cachePath, populateCache: false))
+            {
+                Assert.Equal(encoded.LongLength, cache.Length);
+                byte[] cached = new byte[encoded.Length];
+                cache.ReadExactly(cached);
+                Assert.Equal(encoded, cached);
+            }
+
+            Assert.True(CVFileUtil.Read(encoded, out CVCIEFile fromBytes));
+            AssertImage(fromBytes);
+            Assert.True(CVFileUtil.Read(diskPath, out CVCIEFile fromDisk));
+            AssertImage(fromDisk);
+            Assert.True(CVFileUtil.Read(cachePath, out CVCIEFile fromCache));
+            AssertImage(fromCache);
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(diskPath);
+        }
+
+        void AssertImage(CVCIEFile image)
+        {
+            using (image)
+            {
+                Assert.Equal(version, image.Version);
+                Assert.Equal(version == 3 ? fixture.NDPort : 0, image.NDPort);
+                Assert.Equal(fixture.SrcFileName, image.SrcFileName);
+                Assert.Equal(fixture.Gain, image.Gain);
+                Assert.Equal((fixture.Cols, fixture.Rows, fixture.Channels, fixture.Bpp),
+                    (image.Cols, image.Rows, image.Channels, image.Bpp));
+                Assert.Equal(new float[] { 2, 3, 0 }, image.Exp);
+                Assert.Equal(fixture.Data, image.Data);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(4u)]
+    public void UnsupportedVersionLeavesExistingRawAndCacheIntact(uint version)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"CieUnsupportedVersion_{Guid.NewGuid():N}.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        using CVCIEFile fixture = new() { Version = 2, Cols = 2, Rows = 1, Channels = 1, Bpp = 8, Data = [1, 2] };
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            Assert.True(CVFileUtil.WriteCVRaw(path, fixture));
+            byte[] original = File.ReadAllBytes(path);
+            fixture.Version = version;
+            bool callbackRan = false;
+            void WriteData(Stream stream) { callbackRan = true; stream.Write(fixture.Data); }
+
+            Assert.False(CVFileUtil.WriteCVRaw(path, fixture, fixture.Data.Length, WriteData));
+            Assert.False(CVFileUtil.WriteCVRaw(path, fixture, fixture.Data.Length, WriteData, CVFileSaveMode.MemoryOnly));
+            Assert.False(callbackRan);
+            Assert.False(CVFileUtil.WriteCIEFile(fixture, out byte[] encoded));
+            Assert.Null(encoded);
+            Assert.Equal(original, File.ReadAllBytes(path));
+            Assert.Equal(original.LongLength, CVFileReadCache.GetCachedLength(path));
+            using Stream cache = CVFileReadCache.OpenRead(path, populateCache: false);
+            byte[] cached = new byte[original.Length];
+            cache.ReadExactly(cached);
+            Assert.Equal(original, cached);
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
     [InlineData(CVType.Raw)]
     [InlineData(CVType.CIE)]
     public void DisplayRejectsLargeDimensionsWithShortArrayBeforeNativeAccess(CVType fileType)
