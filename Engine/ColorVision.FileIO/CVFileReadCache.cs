@@ -111,7 +111,7 @@ namespace ColorVision.FileIO
         /// <summary>
         /// Returns a read-only file snapshot. Header-only misses do not populate the cache.
         /// A cache hit reads memory directly without opening or checking the disk file.
-        /// When every slot is borrowed, a miss is served from disk without an additional allocation.
+        /// With no reusable disk-backed slot, a miss reads disk without evicting a memory-only capture.
         /// </summary>
         public static Stream OpenRead(string filePath, bool populateCache = true)
         {
@@ -501,12 +501,13 @@ namespace ColorVision.FileIO
         private static bool HasFileLoad(string path)
             => Entries.Any(entry => entry.IsLoading && string.Equals(entry.FilePath, path, StringComparison.OrdinalIgnoreCase));
 
-        private static CacheEntry FindOldest(bool requireIdle)
+        private static CacheEntry FindOldest(bool requireIdle, bool diskBackedOnly = false)
         {
             CacheEntry oldest = null;
             foreach (CacheEntry entry in Entries)
             {
-                if (entry.IsRetired || (requireIdle && (entry.Readers != 0 || entry.Writers != 0))) continue;
+                if (entry.IsRetired || (diskBackedOnly && entry.SaveMode == CVFileSaveMode.MemoryOnly)
+                    || (requireIdle && (entry.Readers != 0 || entry.Writers != 0))) continue;
                 if (oldest == null || entry.LastAccessSequence < oldest.LastAccessSequence) oldest = entry;
             }
             return oldest;
@@ -521,7 +522,8 @@ namespace ColorVision.FileIO
                 Entries.Add(entry);
                 return entry;
             }
-            return FindOldest(requireIdle: true);
+            // A disk cache fill must never discard the only copy of an unrelated capture.
+            return FindOldest(requireIdle: true, diskBackedOnly: true);
         }
 
         private static bool HasReaders()

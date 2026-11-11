@@ -44,6 +44,44 @@ public sealed class CvRawFileCacheCapacityTests
         Assert.Equal(beforeHit.HitCount + 2, CVFileReadCache.GetSnapshot().HitCount);
     }
 
+    [Theory]
+    [InlineData("read", false)]
+    [InlineData("missing", false)]
+    [InlineData("save", false)]
+    [InlineData("read", true)]
+    public void OpportunisticDiskFillKeepsTheOnlyCopyOfAMemoryOnlyCapture(string operation, bool hasDiskEntry)
+    {
+        using CacheFiles files = new(maximumEntries: hasDiskEntry ? 2 : 1);
+        string directory = Path.GetDirectoryName(files.A)!;
+        string capturePath = Path.Combine(directory, "capture.cvraw");
+        using CVCIEFile capture = CacheFiles.CreateRaw(71);
+        Assert.True(CVFileUtil.WriteCVRaw(capturePath, capture, CVFileSaveMode.MemoryOnly));
+        CVFileMetadata.SetProperty(capturePath, "calibration", 1, [2, 3, 5]);
+        if (hasDiskEntry) files.ReadAndAssert(files.A);
+        var before = CVFileReadCache.GetSnapshot();
+
+        if (operation == "save")
+        {
+            using CVCIEFile diskImage = CacheFiles.CreateRaw(91);
+            Assert.True(CVFileUtil.WriteCVRaw(files.B, diskImage));
+            Assert.True(File.Exists(files.B));
+        }
+        else if (operation == "missing")
+        {
+            string missing = Path.Combine(directory, "missing.cvraw");
+            Assert.Throws<FileNotFoundException>(() => CVFileReadCache.OpenRead(missing).Dispose());
+        }
+        else files.ReadAndAssert(files.B);
+
+        Assert.False(File.Exists(capturePath));
+        Assert.True(CVFileUtil.ReadCVRaw(capturePath, out CVCIEFile recovered));
+        using (recovered) Assert.Equal(capture.Data, recovered.Data);
+        Assert.Equal(new byte[] { 2, 3, 5 }, CVFileMetadata.Read(capturePath)["calibration"].Value);
+        AssertPaths(hasDiskEntry ? [capturePath, files.B] : [capturePath]);
+        Assert.Equal(before.CapacityBytes, CVFileReadCache.GetSnapshot().CapacityBytes);
+        Assert.Equal(before.AllocationCount, CVFileReadCache.GetSnapshot().AllocationCount);
+    }
+
     [Fact]
     public void ShrinkingLimitKeepsBorrowedBytesValidAndFreesRetiredEntryWhenReaderReturns()
     {
