@@ -693,6 +693,35 @@ public sealed class ResultStatisticsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void RecordPageKeepsExecutionNumberAndBoundaryFromTrimmedHistoryOutsideFilters(bool readOnly)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        var store = new ResultStatisticsDataStore(database.Path, readOnly);
+        DateTime day = new(2026, 9, 19);
+        var previous = CreateRecord("  SN-A", true, day.AddDays(-1), 1_000, "previous", true);
+        previous.ResultId = 10;
+        var failed = CreateRecord("SN-A  ", false, day.AddHours(8), 1_000, "filtered", true);
+        failed.ResultId = 20;
+        var interrupted = CreateRecord("SN-A", false, day.AddHours(9), 1_000, "unfinished", false);
+        interrupted.ResultId = 30;
+        var selected = CreateRecord("SN-A", true, day.AddHours(10), 1_000, "selected", true);
+        selected.ResultId = 40;
+        database.Insert(previous, failed, interrupted, selected, CreateRecord("OTHER", true, day.AddHours(11), 1_000, "other", true));
+
+        ResultStatisticsRecordRow row = Assert.Single(store.QueryRecords(new ResultStatisticsQuery
+        {
+            From = day, ToExclusive = day.AddDays(1), SN = "SN-A", Result = true, PageSize = 1,
+        }));
+
+        Assert.Equal("selected", row.LastModel);
+        Assert.Equal(3, row.ExecutionIndex);
+        Assert.Equal(interrupted.ResultId, row.PreviousResultId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DashboardAveragesBatchFlowRuntimeWithoutPgOrPreviousExecutions(bool readOnly)
     {
         using var database = new TemporaryResultDatabase();

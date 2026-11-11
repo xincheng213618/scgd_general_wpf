@@ -788,50 +788,49 @@ namespace ProjectARVRPro
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
             int skip = checked((query.PageNumber - 1) * query.PageSize);
-            const string sql = $$"""
-                WITH RecordFlowBoundaries AS
+            const string sql = """
+                WITH PageRecords AS
                 (
-                    {{RecordFlowBoundariesSql}}
+                    SELECT "Id", "SN", "CreateTime" AS "StartTime", "UpdateTime" AS "EndTime", "TotalResult" AS "Result",
+                           "LastModel", "BatchId", "ResultId", "Msg"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "UpdateTime" >= @From
+                      AND "UpdateTime" < @ToExclusive
+                      AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                      AND (@SN IS NULL OR "SN" LIKE '%' || @SN || '%')
+                      AND (@Result IS NULL OR "TotalResult" = @Result)
+                    ORDER BY "Id" DESC
+                    LIMIT @PageSize OFFSET @Skip
                 ),
                 RankedRecords AS
                 (
-                    SELECT "Id",
-                           "SN",
-                           "CreateTime" AS "StartTime",
-                           "UpdateTime" AS "EndTime",
-                           "TotalResult" AS "Result",
-                           "LastModel",
-                           "BatchId",
-                           "ResultId",
-                           "Msg",
-                           "PreviousResultId",
-                           ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex"
-                    FROM RecordFlowBoundaries
-                    WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                    SELECT "Id", COALESCE(LAG("ResultId") OVER SerialNumberHistory, 0) AS "PreviousResultId",
+                           COUNT(CASE WHEN "IsFinalized" = 1 OR "IsFinalized" IS NULL THEN 1 END)
+                               OVER SerialNumberHistory AS "ExecutionIndex"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE TRIM("SN") IN (SELECT TRIM("SN") FROM PageRecords)
+                       OR ("SN" IS NULL AND EXISTS (SELECT 1 FROM PageRecords WHERE "SN" IS NULL))
+                    WINDOW SerialNumberHistory AS (PARTITION BY TRIM("SN") ORDER BY "Id" ROWS UNBOUNDED PRECEDING)
                 )
-                SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
-                       R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId",
-                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                SELECT P."Id", R."ExecutionIndex", P."SN", P."StartTime", P."EndTime", P."Result",
+                       P."LastModel", P."BatchId", P."ResultId", P."Msg", R."PreviousResultId",
+                       CASE WHEN P."ResultId" > R."PreviousResultId" THEN
                            (SELECT COUNT(*)
                             FROM "ARVRReuslt" AS F
-                            WHERE F."SN" = R."SN"
+                            WHERE F."SN" = P."SN"
                               AND F."Id" > R."PreviousResultId"
-                              AND F."Id" <= R."ResultId")
+                              AND F."Id" <= P."ResultId")
                            ELSE 0 END AS "FlowCount",
-                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                       CASE WHEN P."ResultId" > R."PreviousResultId" THEN
                            COALESCE((SELECT SUM(F."RunTime")
                                      FROM "ARVRReuslt" AS F
-                                     WHERE F."SN" = R."SN"
+                                     WHERE F."SN" = P."SN"
                                        AND F."Id" > R."PreviousResultId"
-                                       AND F."Id" <= R."ResultId"), 0)
+                                       AND F."Id" <= P."ResultId"), 0)
                            ELSE 0 END AS "FlowRunTimeMilliseconds"
-                FROM RankedRecords AS R
-                WHERE R."EndTime" >= @From
-                  AND R."EndTime" < @ToExclusive
-                  AND (@SN IS NULL OR R."SN" LIKE '%' || @SN || '%')
-                  AND (@Result IS NULL OR R."Result" = @Result)
-                ORDER BY R."Id" DESC
-                LIMIT @PageSize OFFSET @Skip;
+                FROM PageRecords AS P
+                JOIN RankedRecords AS R ON R."Id" = P."Id"
+                ORDER BY P."Id" DESC;
                 """;
             return db.Ado.SqlQuery<ResultStatisticsRecordRow>(
                 ReadSql(sql),
