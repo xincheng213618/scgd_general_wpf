@@ -33,6 +33,14 @@ namespace Conoscope.ApplicationServices.Capture
 
     internal static class ConoscopeCaptureWorkflow
     {
+        // The supported host range spans the removal of the disabled HDR argument.
+        private static readonly Func<MQTTCamera, double[], CalibrationParam, ParamBase, MsgRecord>? captureCamera = typeof(MQTTCamera)
+            .GetMethod(nameof(MQTTCamera.GetData), [typeof(double[]), typeof(CalibrationParam), typeof(ParamBase)])
+            ?.CreateDelegate<Func<MQTTCamera, double[], CalibrationParam, ParamBase, MsgRecord>>();
+        private static readonly Func<MQTTCamera, double[], CalibrationParam, ParamBase, ParamBase, MsgRecord>? captureLegacyCamera = typeof(MQTTCamera)
+            .GetMethod(nameof(MQTTCamera.GetData), [typeof(double[]), typeof(CalibrationParam), typeof(ParamBase), typeof(ParamBase)])
+            ?.CreateDelegate<Func<MQTTCamera, double[], CalibrationParam, ParamBase, ParamBase, MsgRecord>>();
+
         public static async Task<ConoscopeFlowCaptureResult> RunFlowAsync(TemplateModel<FlowParam> flowTemplate)
         {
             FlowControlData? result = await FlowEngineManager.GetInstance().RunFlowAsync(flowTemplate);
@@ -52,11 +60,12 @@ namespace Conoscope.ApplicationServices.Capture
             double[] exposureTimes = GetCameraExpTimes(camera);
             string exposureSummary = FormatExposureSummary(exposureTimes);
 
-            MsgRecord msgRecord = camera.DService.GetData(
-                exposureTimes,
-                calibrationParam,
-                new AutoExpTimeParam { Id = -1, Name = string.Empty },
-                new TemplateJsonParam { Id = -1, Name = string.Empty });
+            AutoExpTimeParam disabledAutoExposure = new() { Id = -1, Name = string.Empty };
+            MsgRecord msgRecord = captureCamera != null
+                ? captureCamera(camera.DService, exposureTimes, calibrationParam, disabledAutoExposure)
+                : (captureLegacyCamera ?? throw new MissingMethodException(typeof(MQTTCamera).FullName, nameof(MQTTCamera.GetData)))(
+                    camera.DService, exposureTimes, calibrationParam, disabledAutoExposure,
+                    new TemplateJsonParam { Id = -1, Name = string.Empty });
 
             MsgRecordState state = await WaitForMsgRecordAsync(msgRecord);
             string? filePath = state == MsgRecordState.Success
