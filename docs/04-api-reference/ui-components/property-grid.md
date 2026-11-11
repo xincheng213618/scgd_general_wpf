@@ -52,6 +52,8 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 ## 设置行呈现
 
+属性编辑器生成控件时按需读取当前应用主题资源。启动时缺少样式的字段，可在资源加载后重新打开面板恢复。新生成的控件使用最新的样式。
+
 `SettingsPropertyPresenter.Create` 为设置页面复用现有 PropertyEditor，保留原编辑器绑定、验证和 `PropertyVisibility`，将名称/说明放在左侧、控件放在右侧。支持属性白名单及 `Display` 本地化元数据，后者优先于旧 `DisplayName / Description`；本地化 `Display.GroupName`（没有时回退 `Category`）生成组标题。单控件的外边距和最小宽度由行容器统一处理，避免下拉框边框被固定列裁剪。
 
 `SliderPropertiesEditor` 面向具有 `RangeAttribute` 的数值设置：同一行同时生成滑块和精确文本框，二者通过原属性的双向绑定保持同步。是否使用滑块仍由属性上的 `PropertyEditorTypeAttribute` 显式声明，未提供有效范围时回退普通属性编辑器，避免把任意数值字段误设为相同区间。

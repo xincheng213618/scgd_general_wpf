@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1707,CA1852,CS8601
-using ColorVision.Themes;
 using log4net;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -113,59 +112,21 @@ namespace ColorVision.UI
             return (T)EditorRegistry.GetOrCreate(typeof(T));
         }
 
-        private static readonly Lazy<ResourceCache> Resources = new(() => new ResourceCache());
+        // Resolve only the requested resource so a partial or newly replaced theme can recover.
+        private static Application ResourceApplication => Application.Current
+            ?? throw new InvalidOperationException(Properties.Resources.ApplicationCurrentNotInitialized);
 
-        private class ResourceCache
-        {
-            public Brush GlobalTextBrush { get; set; }
-            public Brush GlobalBorderBrush { get; set; }
-            public Brush BorderBrush { get; set; }
-            public Style ButtonCommandStyle { get; set; }
-            public Style ComboBoxSmallStyle { get; set; }
-            public Style TextBoxSmallStyle { get; set; }
-            public IValueConverter Bool2VisibilityConverter { get; set; }
-            public IValueConverter Bool2VisibilityReConverter { get; set; }
-            public IValueConverter Enum2VisibilityConverter { get; set; }
-            public IValueConverter Enum2VisibilityReConverter { get; set; }
-
-            public void SetResources()
-            {
-                var app = Application.Current ?? throw new InvalidOperationException(Properties.Resources.ApplicationCurrentNotInitialized);
-
-                GlobalTextBrush = (Brush)app.FindResource("GlobalTextBrush");
-                GlobalBorderBrush = (Brush)app.FindResource("GlobalBorderBrush");
-                BorderBrush = (Brush)app.FindResource("BorderBrush");
-                ButtonCommandStyle = (Style)app.FindResource("ButtonCommand");
-                ComboBoxSmallStyle = (Style)app.FindResource("ComboBox.Small");
-                TextBoxSmallStyle = (Style)app.FindResource("TextBox.Small");
-                
-                // Required converter
-                Bool2VisibilityConverter = app.TryFindResource("bool2VisibilityConverter") as IValueConverter
-                    ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
-                
-                // Optional converters (may not be present in all themes)
-                Bool2VisibilityReConverter = app.TryFindResource("bool2VisibilityConverter1") as IValueConverter;
-                Enum2VisibilityConverter = app.TryFindResource("enum2VisibilityConverter") as IValueConverter;
-                Enum2VisibilityReConverter = app.TryFindResource("enum2VisibilityConverter1") as IValueConverter;
-            }
-
-            public ResourceCache()
-            {
-                SetResources();
-                ThemeManager.Current.CurrentUIThemeChanged += (e) => SetResources();
-            }
-        }
-
-        public static Brush GlobalTextBrush => Resources.Value.GlobalTextBrush;
-        public static Brush GlobalBorderBrush => Resources.Value.GlobalBorderBrush;
-        public static Brush BorderBrush => Resources.Value.BorderBrush;
-        public static Style ButtonCommandStyle => Resources.Value.ButtonCommandStyle;
-        public static Style ComboBoxSmallStyle => Resources.Value.ComboBoxSmallStyle;
-        public static Style TextBoxSmallStyle => Resources.Value.TextBoxSmallStyle;
-        public static IValueConverter Bool2VisibilityConverter => Resources.Value.Bool2VisibilityConverter;
-        public static IValueConverter Bool2VisibilityReConverter => Resources.Value.Bool2VisibilityReConverter;
-        public static IValueConverter Enum2VisibilityConverter => Resources.Value.Enum2VisibilityConverter;
-        public static IValueConverter Enum2VisibilityReConverter => Resources.Value.Enum2VisibilityReConverter;
+        public static Brush GlobalTextBrush => (Brush)ResourceApplication.FindResource("GlobalTextBrush");
+        public static Brush GlobalBorderBrush => (Brush)ResourceApplication.FindResource("GlobalBorderBrush");
+        public static Brush BorderBrush => (Brush)ResourceApplication.FindResource("BorderBrush");
+        public static Style ButtonCommandStyle => (Style)ResourceApplication.FindResource("ButtonCommand");
+        public static Style ComboBoxSmallStyle => (Style)ResourceApplication.FindResource("ComboBox.Small");
+        public static Style TextBoxSmallStyle => (Style)ResourceApplication.FindResource("TextBox.Small");
+        public static IValueConverter Bool2VisibilityConverter => ResourceApplication.TryFindResource("bool2VisibilityConverter") as IValueConverter
+            ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
+        public static IValueConverter? Bool2VisibilityReConverter => ResourceApplication.TryFindResource("bool2VisibilityConverter1") as IValueConverter;
+        public static IValueConverter? Enum2VisibilityConverter => ResourceApplication.TryFindResource("enum2VisibilityConverter") as IValueConverter;
+        public static IValueConverter? Enum2VisibilityReConverter => ResourceApplication.TryFindResource("enum2VisibilityConverter1") as IValueConverter;
 
 
         public static ResourceManager? GetResourceManager(object obj, ResourceManager? resourceManager = null)
