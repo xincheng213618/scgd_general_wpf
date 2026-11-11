@@ -163,6 +163,34 @@ public sealed class LuxCustomerCsvExporterTests
         Assert.DoesNotContain(rows, row => row.TestScreen == "MTF-B");
     }
 
+    [Theory]
+    [InlineData("MTF0581", "MTF0581", true)]
+    [InlineData("MTF0581", "MTF0581", false)]
+    [InlineData("VRMTFH", "MTF", true)]
+    [InlineData("VRMTFV", "MTF", true)]
+    public void Mtf058MatchesEachSnapshotByItsSourceKeyOrPosition(string key, string namedScreen, bool namedAfterUnnamed)
+    {
+        var result = new ObjectiveTestResult();
+        result.MTFHV058TestResults.Add(new());
+        result.DynamicMTFHV058TestResults[key] = new();
+
+        ProjectARVRReuslt unnamed = MtfSnapshot(namedAfterUnnamed ? 1 : 2, "{}", RawComponents(0.2));
+        ProjectARVRReuslt named = MtfSnapshot(namedAfterUnnamed ? 2 : 1, JsonConvert.SerializeObject(new { Name = key }), RawComponents(0.8));
+        IReadOnlyList<ObjectiveTestCsvRow> rows = LuxCsvProjector.CollectRows(result, LuxCsvFormat.Legacy, [unnamed, named]);
+
+        Assert.Equal(
+            [("MTF0581", "0.2"), (namedScreen, "0.8")],
+            rows.Where(row => row.TestItem == "0F_Center_H1").Select(row => (row.TestScreen, row.TestValue)));
+
+        static object RawComponents(double h1) => new
+        {
+            MTFDetailViewReslut = new { MTFResult = new { resultChild = new[]
+            {
+                new { name = "Center_0F", childRects = new[] { new { mtfValue = 0.1 }, new { mtfValue = h1 } } }
+            } } }
+        };
+    }
+
     [Fact]
     public void KeyedWhiteAndFovReplaceCompatibilityCopiesInsteadOfExportingThemTwice()
     {

@@ -60,17 +60,21 @@ internal static class LuxCsvProjector
                     if (KeyedTestResultDictionary.IsKey(key, "White")
                         && property.Name is nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) or nameof(ObjectiveTestResult.FieldOfViewTestResults))
                         continue;
-                    string outputKey = MapScreen(key);
-                    AddObject(entry.Value, outputKey, format, rows, mtfSnapshots.GetValueOrDefault((typeof(MTFHV058TestResult), outputKey)), mtfPointFormat);
+                    // Snapshot keys identify the process output even when the report aliases its screen name.
+                    LuxMtfCsvSnapshot? snapshot = mtfSnapshots.GetValueOrDefault((typeof(MTFHV058TestResult), key.Trim(), 0));
+                    AddObject(entry.Value, MapScreen(key), format, rows, snapshot, mtfPointFormat);
                 }
             }
             else if (value is IList list)
             {
                 for (int index = 0; index < list.Count; index++)
                 {
-                    string outputKey = list[index] is MTFHV048TestResult ? "MTF" : $"{screen}{index + 1}";
-                    var snapshotKey = list[index] is MTFHV048TestResult ? (typeof(MTFHV048TestResult), $"MTF048{index + 1}") : (typeof(MTFHV058TestResult), outputKey);
-                    AddObject(list[index], outputKey, format, rows, mtfSnapshots.GetValueOrDefault(snapshotKey), mtfPointFormat);
+                    object? item = list[index];
+                    bool is048 = item is MTFHV048TestResult;
+                    string outputKey = is048 ? "MTF" : $"{screen}{index + 1}";
+                    Type resultType = is048 ? typeof(MTFHV048TestResult) : typeof(MTFHV058TestResult);
+                    LuxMtfCsvSnapshot? snapshot = mtfSnapshots.GetValueOrDefault((resultType, null, index + 1));
+                    AddObject(item, outputKey, format, rows, snapshot, mtfPointFormat);
                 }
             }
             else

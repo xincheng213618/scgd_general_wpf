@@ -13,9 +13,9 @@ internal sealed record LuxMtfCsvSnapshot(object Config, JArray Points);
 
 internal static class LuxMtfCsvProjection
 {
-    internal static Dictionary<(Type ResultType, string Key), LuxMtfCsvSnapshot> ReadSnapshots(IReadOnlyList<ProjectARVRReuslt>? results)
+    internal static Dictionary<(Type ResultType, string? OutputKey, int Position), LuxMtfCsvSnapshot> ReadSnapshots(IReadOnlyList<ProjectARVRReuslt>? results)
     {
-        var snapshots = new Dictionary<(Type, string), LuxMtfCsvSnapshot>();
+        var snapshots = new Dictionary<(Type, string?, int), LuxMtfCsvSnapshot>();
         if (results == null) return snapshots;
         int unnamed058Index = 0, index048 = 0;
         foreach (var result in results.OrderBy(result => result.Id))
@@ -27,19 +27,22 @@ internal static class LuxMtfCsvProjection
             try
             {
                 object config;
-                (Type, string) key;
+                (Type, string?, int) key;
                 if (is058)
                 {
                     var typedConfig = string.IsNullOrWhiteSpace(result.ProcessConfigJson) ? new MTFHV058ProcessConfig()
                         : JsonConvert.DeserializeObject<MTFHV058ProcessConfig>(result.ProcessConfigJson) ?? new();
                     config = typedConfig;
-                    key = (typeof(MTFHV058TestResult), string.IsNullOrWhiteSpace(typedConfig.Name) ? $"MTF058{++unnamed058Index}" : typedConfig.Name.Trim());
+                    string? outputKey = typedConfig.Name?.Trim();
+                    key = string.IsNullOrEmpty(outputKey)
+                        ? (typeof(MTFHV058TestResult), null, ++unnamed058Index)
+                        : (typeof(MTFHV058TestResult), outputKey, 0);
                 }
                 else
                 {
                     config = string.IsNullOrWhiteSpace(result.ProcessConfigJson) ? new MTFHV048ProcessConfig()
                         : JsonConvert.DeserializeObject<MTFHV048ProcessConfig>(result.ProcessConfigJson) ?? new();
-                    key = (typeof(MTFHV048TestResult), $"MTF048{++index048}");
+                    key = (typeof(MTFHV048TestResult), null, ++index048);
                 }
                 snapshots.Remove(key); // A newer snapshot must never reuse older raw components.
                 var data = string.IsNullOrWhiteSpace(result.ViewResultJson) ? new JObject() : JObject.Parse(result.ViewResultJson);
