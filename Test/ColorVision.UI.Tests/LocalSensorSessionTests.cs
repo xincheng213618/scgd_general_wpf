@@ -345,6 +345,65 @@ public sealed class LocalSensorSessionTests
     }
 
     [Fact]
+    public async Task EditedSensorEndpointCannotSendCommandsThroughTheOldConnection()
+    {
+        using var original = new TcpListener(IPAddress.Loopback, 0);
+        using var replacement = new TcpListener(IPAddress.Loopback, 0);
+        original.Start();
+        replacement.Start();
+        int originalPort = ((IPEndPoint)original.LocalEndpoint).Port;
+        int replacementPort = ((IPEndPoint)replacement.LocalEndpoint).Port;
+        ColorVision.UI.IConfigService? previousConfig = null;
+        DeviceSensor? device = null;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                previousConfig = ConfigService.Instance;
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
+                device = new DeviceSensor(new() { Id = -2, Code = "sensor-endpoint-" + Guid.NewGuid(), Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSensor { IsNet = true, Addr = "127.0.0.1", Port = originalPort }) });
+            });
+            Assert.NotNull(device);
+            await device.ExecuteLocalSensorAsync("Open", null, device.SnapshotLocalSensorConfig(), default);
+            using var oldPeer = await original.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            WpfTestHost.Invoke(() => device.Config.Port = replacementPort);
+            var config = device.SnapshotLocalSensorConfig();
+            LocalSensorCommand[] commands = [new() { Request = "Q", Timeout = 0 }];
+
+            var error = await Record.ExceptionAsync(() => device.ExecuteLocalSensorAsync("ExecCmd", commands, config, default, autoConnect: true));
+            if (error == null)
+            {
+                byte[] unexpected = new byte[1];
+                await oldPeer.GetStream().ReadExactlyAsync(unexpected).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.Fail($"The previous sensor received '{(char)unexpected[0]}' after its configured endpoint changed.");
+            }
+            Assert.IsType<InvalidOperationException>(error);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => device.ExecuteLocalSensorAsync("Open", null, config, default));
+            Assert.Equal(DeviceStatusType.Opened, device.LocalSession.Status);
+            Assert.False(oldPeer.GetStream().DataAvailable);
+
+            await device.ExecuteLocalSensorAsync("Reopen", null, config, default);
+            using var newPeer = await replacement.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            await device.ExecuteLocalSensorAsync("ExecCmd", commands, config, default, autoConnect: true);
+            byte[] request = new byte[1];
+            await newPeer.GetStream().ReadExactlyAsync(request).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal((byte)'Q', request[0]);
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                if (device != null)
+                {
+                    device.Dispose();
+                    DisplayConfigManager.Instance.Configs.TryRemove(device.Code, out _);
+                }
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
+            });
+        }
+    }
+
+    [Fact]
     public async Task PartialTimeoutClosesConnectionBeforeNextCommand()
     {
         var transport = new FakeTransport { Reply = _ => "O" };

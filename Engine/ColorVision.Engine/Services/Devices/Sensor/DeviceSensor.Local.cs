@@ -100,7 +100,7 @@ public partial class DeviceSensor
                 case "ExecCmd":
                     if (commands == null) throw new ArgumentException("缺少传感器指令。");
                     if (autoConnect && !LocalSession.IsOpen) await LocalSession.OpenAsync(config, token).ConfigureAwait(false);
-                    return await LocalSession.ExecuteAsync(commands, token).ConfigureAwait(false);
+                    return await LocalSession.ExecuteAsync(commands, token, expectedConnection: config).ConfigureAwait(false);
                 default: throw new NotSupportedException($"本地传感器不支持 {operation}。");
             }
         }
