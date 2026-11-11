@@ -105,7 +105,13 @@ namespace ColorVision.Solution.Explorer
 
         private static void CopyOrMoveDirectory(string sourcePath, string targetDirectory, bool isMove)
         {
-            string destinationPath = Path.Combine(targetDirectory, Path.GetFileName(sourcePath));
+            sourcePath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(sourcePath));
+            string sourceName = Path.GetFileName(sourcePath);
+            if (string.IsNullOrEmpty(sourceName))
+                throw new IOException("无法确定源文件夹名称。");
+
+            targetDirectory = Path.GetFullPath(targetDirectory);
+            string destinationPath = Path.Combine(targetDirectory, sourceName);
             if (!isMove)
             {
                 if ((File.GetAttributes(sourcePath) & FileAttributes.ReparsePoint) != 0)
@@ -113,22 +119,7 @@ namespace ColorVision.Solution.Explorer
                 string copyDestination = GetAvailableCopyPath(destinationPath, isDirectory: true);
                 if (!IsSafeDirectoryCopyDestination(sourcePath, copyDestination))
                     throw new IOException("不能将文件夹复制到自身或其子目录中。");
-                try
-                {
-                    CopyDirectory(sourcePath, copyDestination);
-                }
-                catch
-                {
-                    try
-                    {
-                        if (Directory.Exists(copyDestination))
-                            Directory.Delete(copyDestination, recursive: true);
-                    }
-                    catch
-                    {
-                    }
-                    throw;
-                }
+                CopyAndPublishDirectory(sourcePath, targetDirectory, destinationPath, copyDestination);
                 return;
             }
 
@@ -139,6 +130,47 @@ namespace ColorVision.Solution.Explorer
             if (PathExists(destinationPath))
                 throw new IOException($"目标已存在：{destinationPath}");
             Directory.Move(sourcePath, destinationPath);
+        }
+
+        private static void CopyAndPublishDirectory(string sourcePath, string targetDirectory, string desiredPath, string destination)
+        {
+            // Stage beside the destination so the final directory can be published with one rename.
+            string stagingPath = Path.Combine(targetDirectory, $".__colorvision_copy_{Guid.NewGuid():N}");
+            if (PathExists(stagingPath))
+                throw new IOException("无法创建临时复制目录。");
+            Directory.CreateDirectory(stagingPath);
+            bool published = false;
+            try
+            {
+                CopyDirectory(sourcePath, stagingPath);
+                while (true)
+                {
+                    try
+                    {
+                        Directory.Move(stagingPath, destination);
+                        published = true;
+                        return;
+                    }
+                    catch (IOException) when (PathExists(destination))
+                    {
+                        destination = GetAvailableCopyPath(desiredPath, isDirectory: true);
+                    }
+                }
+            }
+            finally
+            {
+                if (!published)
+                {
+                    try
+                    {
+                        if (Directory.Exists(stagingPath) && (File.GetAttributes(stagingPath) & FileAttributes.ReparsePoint) == 0)
+                            Directory.Delete(stagingPath, recursive: true);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                    }
+                }
+            }
         }
 
         private static void CopyDirectory(string sourceDirectory, string destinationDirectory)

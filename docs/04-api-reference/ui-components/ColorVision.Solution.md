@@ -173,10 +173,14 @@ Load 仅在主配置缺失或已读到损坏内容时尝试 `.bak`。占用、�
 
 文件系统视图根节点禁止重命名、删除和剪切，解决方案根节点也有自己的能力限制。物理操作入口集中在 `SolutionResourceCommands`、`SolutionPhysicalItemOperations`、`SolutionClipboardFileOperations` 与 `SolutionBatchDeleteService`；虚拟组织和配置变更由 Explorer 分部处理。恢复已删除文件应检查实际回收站或备份，不能把配置撤销当作文件恢复。
 
+粘贴或拖放复制文件夹时，复制完整后才在目标目录发布，遇到同名项自动编号。复制失败只尝试清理本次临时目录。复制和移动均保留源文件夹名，路径尾部有分隔符也适用。
+
 ## 验证入口与缺口
 
 这些测试不启动主窗口、不加载用户工作区；离屏渲染不能替代当前运行窗口的实际点击验收。
 
 `Test/ColorVision.UI.Tests/MruPathServiceTests.cs` 覆盖大小写去重、别名移除、固定项顺序/容量、一次通知和 JSON 往返/坏 JSON 回退。它没有覆盖工作区异步竞争、取消后的文件写入、共享配置备份恢复、Provider 命令或事件失败后状态。
 
-尚缺直接覆盖 SolutionManager/ResourceOpenService 真实切换竞争、创建同名目录覆盖、配置自动恢复及批量物理操作的专项测试。其它测试中的隔离或反射替换不验证这些流程。补充验证应使用合成工作区与独立状态目录，分别检查返回值、内存状态及实际文件变化；涉及文件删除或项目命令的集成应在受控环境执行。
+尚缺直接覆盖 SolutionManager/ResourceOpenService 真实切换竞争、创建同名目录覆盖及配置自动恢复的专项测试。其它测试中的隔离或反射替换不验证这些流程。补充验证应使用合成工作区与独立状态目录，分别检查返回值、内存状态及实际文件变化；涉及文件删除或项目命令的集成应在受控环境执行。
+
+`SolutionClipboardFileOperationsTests` 用隔离目录验证同名编号、复制失败不发布及带尾部分隔符的移动。实际拖放、剪贴板交互和跨卷操作需单独验证。
