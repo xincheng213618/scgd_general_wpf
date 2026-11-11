@@ -21,6 +21,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -621,10 +622,11 @@ namespace ColorVision.Engine.FlowProcessing
         internal Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
             TemplateModel<FlowParam>? flowTemplate = null,
             bool reportStartupFailures = false,
-            TimeSpan? executionTimeout = null)
+            TimeSpan? executionTimeout = null,
+            CancellationToken cancellationToken = default)
         {
             return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate,
-                reportStartupFailures: reportStartupFailures, executionTimeout: executionTimeout);
+                reportStartupFailures: reportStartupFailures, executionTimeout: executionTimeout, cancellationToken: cancellationToken);
         }
 
         public void Clear()

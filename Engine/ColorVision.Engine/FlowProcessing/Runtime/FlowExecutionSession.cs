@@ -199,9 +199,12 @@ namespace ColorVision.Engine.FlowProcessing
             FlowTemplateExecutionSnapshot? executionSnapshot = null,
             TemplateModel<FlowParam>? flowTemplate = null,
             bool reportStartupFailures = false,
-            TimeSpan? executionTimeout = null)
+            TimeSpan? executionTimeout = null,
+            CancellationToken cancellationToken = default)
         {
-            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber(), executionSnapshot, flowTemplate, reportStartupFailures, executionTimeout);
+            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber(), executionSnapshot, flowTemplate, reportStartupFailures, executionTimeout, cancellationToken);
+            if (result.FinalizedResult == null)
+                cancellationToken.ThrowIfCancellationRequested();
             if (reportStartupFailures && result.StartupFailureReason is { } reason)
                 throw new InvalidOperationException(reason);
             return result.FinalizedResult;
@@ -1084,9 +1087,11 @@ namespace ColorVision.Engine.FlowProcessing
             FlowTemplateExecutionSnapshot? expectedSnapshot = null,
             TemplateModel<FlowParam>? flowTemplate = null,
             bool reportStartupFailures = false,
-            TimeSpan? executionTimeout = null)
+            TimeSpan? executionTimeout = null,
+            CancellationToken cancellationToken = default)
         {
             FlowEngineRunner.ValidateTimeouts(readinessTimeout: null, executionTimeout);
+            cancellationToken.ThrowIfCancellationRequested();
             // Reserve the entire request before selecting a template. Selection
             // otherwise refreshes the workspace and can cancel another run.
             if (Interlocked.CompareExchange(ref _pendingRunRequest, 1, 0) != 0)
@@ -1104,6 +1109,7 @@ namespace ColorVision.Engine.FlowProcessing
                 if (flowTemplate != null)
                 {
                     FlowTemplateExecutionSnapshotResult selection = await _templateWorkspace.SelectFlowTemplateAsync(flowTemplate);
+                    cancellationToken.ThrowIfCancellationRequested();
                     expectedSnapshot = selection.Snapshot;
                     if (expectedSnapshot == null)
                     {
@@ -1115,7 +1121,7 @@ namespace ColorVision.Engine.FlowProcessing
                         return default;
                     }
                 }
-                return await RunAdmittedFlowAsync(requestedSerialNumber, expectedSnapshot, reportStartupFailures, executionTimeout);
+                return await RunAdmittedFlowAsync(requestedSerialNumber, expectedSnapshot, reportStartupFailures, executionTimeout, cancellationToken);
             }
             finally
             {
@@ -1127,7 +1133,8 @@ namespace ColorVision.Engine.FlowProcessing
             string? requestedSerialNumber,
             FlowTemplateExecutionSnapshot? expectedSnapshot,
             bool reportStartupFailures,
-            TimeSpan? executionTimeout)
+            TimeSpan? executionTimeout,
+            CancellationToken cancellationToken)
         {
             FlowTemplateExecutionSnapshotResult snapshotResult;
             if (expectedSnapshot != null)
@@ -1140,6 +1147,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 snapshotResult = await _templateWorkspace.WaitForExecutionSnapshotAsync();
             }
+            cancellationToken.ThrowIfCancellationRequested();
             FlowTemplateExecutionSnapshot? executionSnapshot =
                 snapshotResult.Snapshot;
             if (executionSnapshot == null)
@@ -1194,7 +1202,9 @@ namespace ColorVision.Engine.FlowProcessing
             }
 
             string sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(requestedSerialNumber ?? CreateFlowSerialNumber());
-            using CancellationTokenSource flowRunCts = new CancellationTokenSource();
+            using CancellationTokenSource flowRunCts = cancellationToken.CanBeCanceled
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                : new CancellationTokenSource();
             if (!_runLifecycle.TryBegin(
                     sn,
                     flowRunCts,

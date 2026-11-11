@@ -69,6 +69,16 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
                 context.MergedJobDataMap.TryGetValue("SchedulerInfo", out object? value);
                 result = await RunScheduledFlowAsync(value as SchedulerInfo, cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                context.Result = new FlowJobResult
+                {
+                    Success = false,
+                    Status = nameof(FlowFinalOutcome.Canceled),
+                    Message = Resources.ExecutionCancelled
+                };
+                return;
+            }
             catch (Exception ex)
             {
                 log.Error("FlowJob 启动流程异常", ex);
@@ -113,9 +123,10 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
                     var template = FlowJobConfig.FindSavedTemplate(config.FlowKey)
                         ?? throw new InvalidOperationException(EngineLocalization.Get("任务绑定的流程模板不可用，请编辑任务并重新选择。"));
                     return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(template,
-                        reportStartupFailures: true, executionTimeout: executionTimeout);
+                        reportStartupFailures: true, executionTimeout: executionTimeout, cancellationToken: cancellationToken);
                 }
-                return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(executionTimeout: executionTimeout);
+                return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(
+                    executionTimeout: executionTimeout, cancellationToken: cancellationToken);
             }, DispatcherPriority.Normal, cancellationToken).Task.Unwrap();
         }
 

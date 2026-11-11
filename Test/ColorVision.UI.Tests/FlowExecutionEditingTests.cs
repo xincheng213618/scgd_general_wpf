@@ -847,12 +847,15 @@ public sealed class FlowExecutionEditingTests
         });
     }
 
-    [Fact]
-    public void ScheduledFlowHonorsGraphTimeoutAndStillWaitsForFinalization()
+    [Theory]
+    [InlineData(FlowFinalOutcome.TimedOut, false)]
+    [InlineData(FlowFinalOutcome.Canceled, false)]
+    [InlineData(FlowFinalOutcome.Canceled, true)]
+    public void ScheduledFlowTimeoutAndInterruptRespectTheEngineAndFinalizationBoundary(FlowFinalOutcome outcome, bool interruptBeforeEngine)
     {
-        WithFixture(fixture => PumpUntil(VerifyAsync(fixture)));
+        WithFixture(fixture => PumpUntil(VerifyAsync(fixture, outcome, interruptBeforeEngine)));
 
-        static async Task VerifyAsync(EditingFixture fixture)
+        static async Task VerifyAsync(EditingFixture fixture, FlowFinalOutcome outcome, bool interruptBeforeEngine)
         {
             var editor = fixture.Manager.View.STNodeEditorMain;
             editor.LoadAssembly(typeof(HeadlessNeverEndNode).Assembly);
@@ -890,29 +893,63 @@ public sealed class FlowExecutionEditingTests
             managerInstance.SetValue(null, fixture.Manager);
             var finalized = new TaskCompletionSource<FlowRunFinalizedData>(TaskCreationOptions.RunContinuationsAsynchronously);
             fixture.Manager.View.RunFinalized += (_, result) => finalized.TrySetResult(result);
+            var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            FlowControl control = fixture.Manager.FlowControl;
+            void ObserveStart(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == nameof(FlowControl.IsFlowRun) && control.IsFlowRun)
+                    started.TrySetResult();
+            }
+            control.PropertyChanged += ObserveStart;
             try
             {
                 var job = new SchedulerInfo
                 {
                     JobName = "timed-flow", GroupName = "test", JobType = typeof(FlowJob),
-                    Config = new FlowJobConfig { FlowKey = template.Value.FlowKey }, TimeoutSeconds = 1,
+                    Config = new FlowJobConfig { FlowKey = template.Value.FlowKey },
+                    TimeoutSeconds = outcome == FlowFinalOutcome.TimedOut ? 1 : 0,
                 };
                 Assert.True((await manager.CreateJob(job)).Success);
-                fixture.PreProcess.Release.SetResult(true);
+                if (!interruptBeforeEngine)
+                    fixture.PreProcess.Release.SetResult(true);
                 await scheduler.Start();
-                await fixture.PostProcess.Entered.Task.WaitAsync(TimeSpan.FromSeconds(8));
-                Assert.False(history.Reader.TryRead(out _));
+                if (outcome == FlowFinalOutcome.Canceled)
+                {
+                    Task interruptPoint = interruptBeforeEngine ? fixture.PreProcess.Entered.Task : started.Task;
+                    await interruptPoint.WaitAsync(TimeSpan.FromSeconds(8));
+                    Assert.True(await scheduler.Interrupt(new JobKey(job.JobName, job.GroupName)));
+                    if (interruptBeforeEngine)
+                        fixture.PreProcess.Release.SetResult(true);
+                }
 
-                fixture.PostProcess.Release.SetResult([]);
+                if (!interruptBeforeEngine)
+                {
+                    await fixture.PostProcess.Entered.Task.WaitAsync(TimeSpan.FromSeconds(8));
+                    Assert.False(control.IsFlowRun);
+                    Assert.False(history.Reader.TryRead(out _));
+                    fixture.PostProcess.Release.SetResult([]);
+                }
+
                 JobExecutionRecord record = await history.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(8));
-                FlowRunFinalizedData result = await finalized.Task.WaitAsync(TimeSpan.FromSeconds(8));
-                Assert.Equal(FlowFinalOutcome.TimedOut, result.FinalOutcome);
                 Assert.False(record.Success);
-                Assert.Contains("Flow execution timed out.", record.Message);
+                if (interruptBeforeEngine)
+                {
+                    Assert.False(started.Task.IsCompleted);
+                    Assert.False(finalized.Task.IsCompleted);
+                    Assert.False(fixture.PostProcess.Entered.Task.IsCompleted);
+                    Assert.Contains(ColorVision.Engine.Properties.Resources.ExecutionCancelled, record.Message);
+                }
+                else
+                {
+                    FlowRunFinalizedData result = await finalized.Task.WaitAsync(TimeSpan.FromSeconds(8));
+                    Assert.Equal(outcome, result.FinalOutcome);
+                    Assert.Contains(outcome == FlowFinalOutcome.TimedOut ? "Flow execution timed out." : "Flow execution was canceled.", record.Message);
+                }
                 Assert.False(fixture.Manager.View.IsExecutionActive);
             }
             finally
             {
+                control.PropertyChanged -= ObserveStart;
                 fixture.MainSession.StopFlow(updateSummary: false);
                 fixture.PreProcess.Release.TrySetResult(true);
                 fixture.PostProcess.Release.TrySetResult([]);
