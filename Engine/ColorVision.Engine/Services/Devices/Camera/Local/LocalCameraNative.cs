@@ -14,7 +14,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         bool IsOpen(IntPtr handle);
         LocalCalibrationRoi OpenedCalibrationRoi { get; }
         void PrepareMeasurement(IntPtr handle);
-        int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr);
+        int Open(IntPtr handle, string cameraId, (CameraModel Model, CameraMode Mode) cameraType, TakeImageMode mode, int bpp,
+            bool useHikMvs, int hikBayerQuality, bool hikOutputBgr);
         int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp);
         void Close(IntPtr handle);
         void DetachCallback(IntPtr handle);
@@ -49,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             try
             {
-                ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
+                ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate), CameraMode.CV_MODE);
             }
             catch (Exception error)
             {
@@ -60,12 +61,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
+        public int Open(IntPtr handle, string cameraId, (CameraModel Model, CameraMode Mode) cameraType, TakeImageMode mode, int bpp,
+            bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
         {
             try
             {
                 // The manager survives Close; reapply configuration changed since its creation.
-                int result = cvCameraCSLib.CM_SetCameraModel(handle, device.Config.CameraModel, device.Config.CameraMode);
+                int result = cvCameraCSLib.CM_SetCameraModel(handle, cameraType.Model, cameraType.Mode);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraModel", cameraId, result);
                 result = cvCameraCSLib.CM_SetCameraID(handle, cameraId);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_SetCameraID", cameraId, result);
@@ -82,8 +84,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_UpdateCfgJson", cameraId, result);
                 // CV serial control is prepared by the session only for measurement.
                 // Preserve the existing disabled-serial configuration for other modes.
-                if (device.Config.CameraMode != CameraMode.CV_MODE)
-                    ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
+                if (cameraType.Mode != CameraMode.CV_MODE)
+                    ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate), cameraType.Mode);
                 result = cvCameraCSLib.CM_Open(handle);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_Open", cameraId, result, GetCameraIds);
                 OpenedCalibrationRoi = ReadCalibrationRoi(cameraConfig);
@@ -107,10 +109,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : default;
         }
 
-        internal static void ConfigureFilterWheel(DeviceCamera device, Func<bool, string, uint, int> configurePort)
+        internal static void ConfigureFilterWheel(DeviceCamera device, Func<bool, string, uint, int> configurePort, CameraMode? cameraMode = null)
         {
             var filterWheel = device.PhyCamera?.Config.CFW ?? device.Config.CFW;
-            bool enabled = device.Config.CameraMode == CameraMode.CV_MODE && filterWheel.IsUseCFW && filterWheel.IsCOM;
+            bool enabled = (cameraMode ?? device.Config.CameraMode) == CameraMode.CV_MODE && filterWheel.IsUseCFW && filterWheel.IsCOM;
             string port = enabled ? filterWheel.SzComName?.Trim().ToUpperInvariant() ?? string.Empty : string.Empty;
             uint baudRate = 9600;
             if (enabled)

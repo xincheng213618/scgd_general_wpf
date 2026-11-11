@@ -788,6 +788,34 @@ public class LocalCameraSessionTests
         Assert.Equal("existing-code", config.CameraCode);
     }
 
+    [Theory]
+    [InlineData(CameraModel.HK_USB, CameraMode.LV_MODE)]
+    [InlineData(CameraModel.HK_CARD, CameraMode.BV_MODE)]
+    public void ChangedCameraTypeRequiresReconnectBeforeUsingTheOpenManager(CameraModel model, CameraMode mode)
+    {
+        var config = new ConfigCamera { CameraModel = CameraModel.HK_USB, CameraMode = CameraMode.BV_MODE };
+        var native = new FakeNative { SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        config.CameraModel = model;
+        config.CameraMode = mode;
+
+        Assert.Throws<InvalidOperationException>(() => session.UseOpened(_ => 42));
+        Assert.Throws<InvalidOperationException>(() => session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Throws<InvalidOperationException>(() => session.EnsureMeasurement(autoConnect: true));
+        Assert.Throws<InvalidOperationException>(() => session.SwitchMode(TakeImageMode.Live, 8));
+        Assert.Equal(1, native.Opens);
+        Assert.Equal(0, native.Switches);
+
+        session.Close(unregisterCallback: true);
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        Assert.Equal((model, mode), native.OpenedCameraType);
+        Assert.Equal(42, session.UseOpened(_ => 42));
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.SwitchMode(TakeImageMode.Live, 8));
+        Assert.Equal(2, native.Opens);
+        Assert.Equal(1, native.Switches);
+    }
+
     [Fact]
     public void FailedNativeOpenRestoresEmptyIdAndDoesNotSaveIt()
     {
@@ -1227,6 +1255,7 @@ public class LocalCameraSessionTests
         public int LastBpp;
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public string? OpenedId;
+        public (CameraModel Model, CameraMode Mode) OpenedCameraType;
         private bool opened;
 
         public IReadOnlyList<string> GetCameraIds()
@@ -1249,9 +1278,11 @@ public class LocalCameraSessionTests
         public bool OpenedUseHikMvs;
         public int OpenedHikBayerQuality;
         public bool OpenedHikOutputBgr;
-        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
+        public int Open(IntPtr handle, string cameraId, (CameraModel Model, CameraMode Mode) cameraType, TakeImageMode mode, int bpp,
+            bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
         {
             Opens++;
+            OpenedCameraType = cameraType;
             LastMode = mode;
             LastBpp = bpp;
             OpenedId = cameraId;

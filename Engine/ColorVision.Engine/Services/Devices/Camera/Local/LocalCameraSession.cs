@@ -30,6 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private readonly Func<int> getHikBayerQuality;
         private readonly Func<bool> getHikOutputBgr;
         private string? openedCameraId;
+        private (CameraModel Model, CameraMode Mode) openedCameraType;
         private int openedBpp;
         public TakeImageMode OpenedMode { get; private set; }
         internal string? OpenedCameraId => openedCameraId;
@@ -142,6 +143,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 cameraId = resolveCameraId(string.IsNullOrWhiteSpace(cameraId) ? configuredCameraId ?? string.Empty : cameraId).Trim();
                 if (IsOpen)
                 {
+                    EnsureOpenedCameraType(config);
                     if (cameraId.Length == 0 && !string.IsNullOrWhiteSpace(config.CameraCode))
                     {
                         EnsureOpenedCameraIdentity();
@@ -174,14 +176,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 bool openedSuccessfully = false;
                 try
                 {
+                    var cameraType = (Model: config.CameraModel, Mode: config.CameraMode);
                     IntPtr manager = EnsureInitialized();
-                    PrepareMeasurement(takeImageMode);
+                    PrepareMeasurement(takeImageMode, cameraType.Mode);
                     bool useHikMvs = getUseHikMvs();
                     int hikBayerQuality = getHikBayerQuality();
                     bool hikOutputBgr = getHikOutputBgr();
                     CameraPreviewColorOrder previewColorOrder = CameraRealtimeFramePipeline.ResolveHikColorOrder(
-                        config.CameraModel, config.CameraMode, useHikMvs, hikOutputBgr);
-                    int result = native.Open(manager, cameraId, takeImageMode, imageBpp, useHikMvs, hikBayerQuality, hikOutputBgr);
+                        cameraType.Model, cameraType.Mode, useHikMvs, hikOutputBgr);
+                    int result = native.Open(manager, cameraId, cameraType, takeImageMode, imageBpp, useHikMvs, hikBayerQuality, hikOutputBgr);
                     if (result == cvErrorDefine.CV_ERR_SUCCESS && !native.IsOpen(manager))
                         throw new InvalidOperationException("本地相机返回打开成功，但未建立会话。");
                     if (native.IsOpen(manager))
@@ -189,6 +192,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         RawBufferPool.Dispose();
                         RawBufferPool = new LocalCameraRawBufferPool();
                         openedCameraId = cameraId;
+                        openedCameraType = cameraType;
                         OpenedMode = takeImageMode;
                         OpenedUseHikMvs = useHikMvs;
                         OpenedHikBayerQuality = hikBayerQuality;
@@ -268,6 +272,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 int result;
                 if (IsOpen)
                 {
+                    EnsureOpenedCameraType(config);
                     EnsureOpenedCameraIdentity();
                     if (OpenedMode != TakeImageMode.Live) return;
                     result = SwitchMode(mode, (int)config.ImageBpp);
@@ -283,9 +288,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private void PrepareMeasurement(TakeImageMode mode)
+        private void PrepareMeasurement(TakeImageMode mode, CameraMode cameraMode)
         {
-            if (mode == TakeImageMode.Live || getConfig().CameraMode != CameraMode.CV_MODE || filterWheelPrepared) return;
+            if (mode == TakeImageMode.Live || cameraMode != CameraMode.CV_MODE || filterWheelPrepared) return;
             native.PrepareMeasurement(handle);
             filterWheelPrepared = true;
         }
@@ -310,6 +315,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (imageBpp is not (8 or 16)) throw new ArgumentOutOfRangeException(nameof(imageBpp));
                 if (!IsOpen) throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
                 ensureAvailable(openedCameraId);
+                EnsureOpenedCameraType(getConfig());
                 EnsureOpenedCameraIdentity();
                 if (OpenedMode == mode && openedBpp == imageBpp)
                 {
@@ -319,7 +325,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 try
                 {
                     // Keep the existing preview intact if first-time CFW preparation fails.
-                    PrepareMeasurement(mode);
+                    PrepareMeasurement(mode, openedCameraType.Mode);
                     int result;
                     // The opened session has a known preview color order only on the MVS backend.
                     if (preview is { } livePreview && OpenedPreviewColorOrder != CameraPreviewColorOrder.Unspecified)
@@ -333,8 +339,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     if (result == cvErrorDefine.CV_ERR_CAM_TYPE_NOT)
                     {
                         CloseNativeCamera("本地相机关闭失败，无法切换采集模式。");
-                        PrepareMeasurement(mode);
-                        result = native.Open(handle, openedCameraId!, mode, imageBpp, OpenedUseHikMvs, OpenedHikBayerQuality, OpenedHikOutputBgr);
+                        PrepareMeasurement(mode, openedCameraType.Mode);
+                        result = native.Open(handle, openedCameraId!, openedCameraType, mode, imageBpp, OpenedUseHikMvs, OpenedHikBayerQuality, OpenedHikOutputBgr);
                     }
                     if (result == cvErrorDefine.CV_ERR_SUCCESS && !native.IsOpen(handle))
                         throw new InvalidOperationException("本地相机返回打开成功，但未建立会话。");
@@ -641,10 +647,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
                 }
                 ensureAvailable(openedCameraId);
+                EnsureOpenedCameraType(getConfig());
                 EnsureOpenedCameraIdentity();
                 try { return operation(handle); }
                 finally { RefreshStatus(); }
             }
+        }
+
+        private void EnsureOpenedCameraType(ConfigCamera config)
+        {
+            if (openedCameraType != (config.CameraModel, config.CameraMode))
+                throw new InvalidOperationException("相机型号或成像模式已更改，请关闭本地相机后重新连接。");
         }
 
         private void EnsureOpenedCameraIdentity()
