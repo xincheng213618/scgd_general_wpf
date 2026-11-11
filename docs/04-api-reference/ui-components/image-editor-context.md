@@ -141,15 +141,13 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 | Rectangle | 拖拽后松开左键；矩形宽高均大于 1 且数值有限时完成 | session 不处理右键 |
 | Circle | 按下点为圆心，拖拽距离为半径；松开左键且包围框通过同一校验时完成 | session 不处理右键 |
 | Polygon | 逐点点击，再按完成键或右键；至少三个点，形状须非退化且不自交 | 尝试完成；无效时继续等待 |
-| Quadrilateral | 第四次点击后尝试完成；第四点无效时，下一次点击替换第四点 | 不足四点时取消；已有四点时尝试完成 |
-
-四边形的键盘完成路径也使用 `TryCompletePolygon()`，当前没有额外要求恰好四点，因此三个有效点后按完成键也可能返回结果。这是四边形交互的实现缺口；需要四点的调用方必须复核 `Points.Count`。
+| Quadrilateral | 第四次点击后尝试完成；完成键同样要求四点有效；第四点无效时，下一次点击替换第四点 | 不足四点时取消；已有四点时尝试完成 |
 
 - 位置来自 `e.GetPosition(DrawCanvas)`，是 WPF 画布坐标；此类没有统一进行原始像素换算或边界裁剪。非 96 DPI、图像变换或裁剪后不能直接把坐标当源像素 ROI，需按调用链明确转换，见 [ROI 路由](../algorithms/primitives/roi.md)。
 - 矩形/圆拖拽无效时清除本次临时形状并继续等待；无效多边形保留选点继续等待。这些情况不立即返回 `null`。
-- 绑定源失效时清理并返回 `null`。正常启动后完成/取消会解绑事件、删除临时 visual、释放鼠标捕获并恢复记录的 cursor、ActivateOn 和编辑模式。初始源为空、尺寸无效或文档已释放时，`Start` 在激活前直接返回 `null`，不更改这些交互状态，也不释放其它操作的鼠标捕获。
+- 同一画布只保留一个临时选区；新请求成功启动前，旧选区取消并返回 `null`。结束时清理临时图形和本次鼠标捕获，恢复光标、平移快捷键和编辑模式。初始源无效的请求直接返回 `null`，画布上的活动选区继续等待输入。
 - 绑定 `ImageProcessingContext` 时捕获不可变 `ImageSelectionScope`：文档身份、source revision 和 WPF 逻辑画布宽高 `CanvasWidth/CanvasHeight`。位图同时保存真实像素宽高和 DPI；非位图的 `HasPixels=false`、像素宽高为零、DPI 占位值为 96，逻辑尺寸保留小数，不能将它当作可计算的像素源。选取期间换图、源版本变化或文档释放使 session 取消；成功结果携带该 scope。单独构造无处理上下文的绘图 session 则不能提供同样的图像绑定保证。
-- 已完成结果不会在日后换图时自动消失。调用方须保留 `SelectResult.SourceScope`，使用 `ImageAlgorithmInputFactory.Acquire(context, scope)` 等入口再次核验；不能丢掉 scope 后复用旧坐标。每次调用各建 session，不保证新调用自动取消旧调用，也没有统一单活动 session 调度器。
+- 已完成结果不会在日后换图时自动消失。调用方须保留 `SelectResult.SourceScope`，使用 `ImageAlgorithmInputFactory.Acquire(context, scope)` 等入口再次核验；不能丢掉 scope 后复用旧坐标。
 
 ## 验证范围
 
@@ -157,4 +155,4 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `ImageDisplayEffectsTests` 覆盖参数捕获的基准源、启用与存活门禁，以及不可变参数和无发布副作用。`ImageGroupNavigationTests` 覆盖去重、手动暂停跟随及导航事件顺序，不证明真实按钮/打开器交互。
 
-同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现、四边形键盘完成和真实窗口行为仍需按改动补验证。
+同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。`TransientRoiSelectionTests` 使用 WPF 键盘事件验证选区替换、交互状态恢复及完成键的点数约束，真实鼠标与不同 DPI 的整链行为需在应用中验证。

@@ -55,6 +55,8 @@ namespace ColorVision.ImageEditor
 
         public IReadOnlyList<Visual> Visuals => visuals;
 
+        internal TransientRoiSelectionSession? ActiveRoiSelection { get; set; }
+
         public DrawCanvas()
         {
             AddVisualChild(imageVisual);
