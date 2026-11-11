@@ -319,6 +319,7 @@ namespace ColorVision.Solution.Workspace
             private readonly bool _titleFollowsResource;
             private FileSystemWatcher? _resourceWatcher;
             private DispatcherTimer? _externalChangeTimer;
+            private string? _externalRenameDestination;
             private ResourceFileStamp _observedResourceStamp;
             private bool _resourceMissing;
             private bool _closeApproved;
@@ -385,11 +386,15 @@ namespace ColorVision.Solution.Workspace
 
                 try
                 {
+                    if (_externalRenameDestination != null && !File.Exists(ResourcePath))
+                        throw new IOException(LocalizedText.Get("文件正在重命名或替换，请稍后再保存。"));
+
                     bool saved = Content.Save();
                     if (!saved && showError)
                         ShowSaveError(null);
                     if (saved)
                     {
+                        _externalRenameDestination = null;
                         CaptureResourceStamp();
                         _resourceMissing = false;
                         UpdateTitle();
@@ -432,6 +437,7 @@ namespace ColorVision.Solution.Workspace
                         ShowReloadError(null);
                     if (reloaded)
                     {
+                        _externalRenameDestination = null;
                         CaptureResourceStamp();
                         _resourceMissing = false;
                         UpdateTitle();
@@ -555,7 +561,7 @@ namespace ColorVision.Solution.Workspace
 
             private void ResourceWatcher_Changed(object sender, FileSystemEventArgs e)
             {
-                ScheduleExternalResourceCheck(e.FullPath);
+                ScheduleExternalResourceCheck(sender, NormalizeResourcePath(e.FullPath));
             }
 
             private void ResourceWatcher_Renamed(object sender, RenamedEventArgs e)
@@ -564,40 +570,28 @@ namespace ColorVision.Solution.Workspace
                 string normalizedNewPath = NormalizeResourcePath(e.FullPath);
                 if (!string.Equals(normalizedOldPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
                 {
-                    ScheduleExternalResourceCheck(e.FullPath);
-                    ScheduleExternalResourceCheck(e.OldFullPath);
+                    ScheduleExternalResourceCheck(sender, normalizedNewPath);
                     return;
                 }
 
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    if (_isClosed
-                        || !string.Equals(normalizedOldPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return;
-                    }
-
-                    if (File.Exists(normalizedNewPath))
-                        NotifyResourceRenamed(normalizedOldPath, normalizedNewPath);
-                    else
-                        ScheduleExternalResourceCheck(normalizedOldPath);
-                });
+                ScheduleExternalResourceCheck(sender, normalizedOldPath, normalizedNewPath);
             }
 
-            private void ScheduleExternalResourceCheck(string changedPath)
+            private void ScheduleExternalResourceCheck(object watcher, string normalizedChangedPath, string? renameDestination = null)
             {
-                string normalizedChangedPath = NormalizeResourcePath(changedPath);
                 if (!string.Equals(normalizedChangedPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
                     return;
 
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
-                    if (_isClosed
+                    if (_isClosed || !ReferenceEquals(watcher, _resourceWatcher)
                         || !string.Equals(normalizedChangedPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
                     {
                         return;
                     }
 
+                    if (renameDestination != null && !string.Equals(ResourcePath, renameDestination, StringComparison.Ordinal))
+                        _externalRenameDestination = renameDestination;
                     _externalChangeTimer ??= CreateExternalChangeTimer();
                     _externalChangeTimer.Stop();
                     _externalChangeTimer.Start();
@@ -614,8 +608,21 @@ namespace ColorVision.Solution.Workspace
             private void ExternalChangeTimer_Tick(object? sender, EventArgs e)
             {
                 _externalChangeTimer?.Stop();
+                string? renameDestination = _externalRenameDestination;
+                _externalRenameDestination = null;
                 ResourceFileStamp currentStamp = GetResourceStamp(ResourcePath);
-                if (currentStamp == _observedResourceStamp)
+                if (renameDestination != null && File.Exists(renameDestination))
+                {
+                    string originalPath = ResourcePath;
+                    if (!currentStamp.Exists || string.Equals(originalPath, renameDestination, StringComparison.OrdinalIgnoreCase))
+                    {
+                        NotifyResourceRenamed(originalPath, renameDestination);
+                        if (!string.Equals(originalPath, ResourcePath, StringComparison.Ordinal)) return;
+                    }
+
+                    // A retained backup beside a recreated original path is a replacement even when the stamps match.
+                }
+                else if (currentStamp == _observedResourceStamp)
                     return;
 
                 _observedResourceStamp = currentStamp;
@@ -646,6 +653,7 @@ namespace ColorVision.Solution.Workspace
 
             private void DisposeResourceWatcher()
             {
+                _externalRenameDestination = null;
                 if (_externalChangeTimer != null)
                 {
                     _externalChangeTimer.Stop();
