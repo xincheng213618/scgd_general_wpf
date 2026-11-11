@@ -1,6 +1,8 @@
 using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 
 namespace ProjectARVRPro.Tests;
 
@@ -41,6 +43,20 @@ public sealed class ResultJsonPayloadStorageTests
         byte[] payload = Assert.IsType<byte[]>(ResultJsonPayloadStorage.Compress(json));
 
         Assert.Equal(json, ResultJsonPayloadStorage.Decompress(payload));
+    }
+
+    [Fact]
+    public void GzipPayloadPreservesUtf8BytesAcrossEncodingBuffers()
+    {
+        const string prefix = "{\"text\":\"";
+        string json = prefix + new string('a', 4095 - prefix.Length) + "🧪" + new string('中', 4096) + "\"}";
+
+        byte[] payload = Assert.IsType<byte[]>(ResultJsonPayloadStorage.Compress(json));
+
+        using var gzip = new GZipStream(new MemoryStream(payload), CompressionMode.Decompress);
+        using var utf8 = new MemoryStream();
+        gzip.CopyTo(utf8);
+        Assert.Equal(Encoding.UTF8.GetBytes(json), utf8.ToArray());
     }
 
     [Fact]

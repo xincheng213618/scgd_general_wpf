@@ -131,8 +131,26 @@ namespace ProjectARVRPro
             using var output = new MemoryStream();
             using (var gzip = new GZipStream(output, CompressionLevel.Optimal, leaveOpen: true))
             {
-                byte[] utf8 = Encoding.UTF8.GetBytes(json);
-                gzip.Write(utf8, 0, utf8.Length);
+                Span<byte> buffer = stackalloc byte[4096];
+                ReadOnlySpan<char> remaining = json.AsSpan();
+                // UTF-8 needs at most three bytes per UTF-16 code unit.
+                if (remaining.Length <= buffer.Length / 3)
+                {
+                    int written = Encoding.UTF8.GetBytes(remaining, buffer);
+                    gzip.Write(buffer[..written]);
+                }
+                else
+                {
+                    Encoder encoder = Encoding.UTF8.GetEncoder();
+                    bool completed;
+                    do
+                    {
+                        encoder.Convert(remaining, buffer, flush: true, out int charsUsed, out int bytesUsed, out completed);
+                        gzip.Write(buffer[..bytesUsed]);
+                        remaining = remaining[charsUsed..];
+                    }
+                    while (!completed);
+                }
             }
             return output.ToArray();
         }
