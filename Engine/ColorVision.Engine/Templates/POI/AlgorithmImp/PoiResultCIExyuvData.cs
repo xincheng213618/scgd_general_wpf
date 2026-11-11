@@ -385,21 +385,26 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public PoiResultCIExyuvData(PoiPointResultModel pOIPointResultModel) : base(pOIPointResultModel)
         {
             if (pOIPointResultModel.Value != null)
-            {
+                ApplyValues(JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value));
+        }
 
-                POIResultDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value);
-                CCT = pOIDataCIExyuv.CCT;
-                Wave = pOIDataCIExyuv.Wave;
+        internal PoiResultCIExyuvData(PoiPointResultModel model, POIResultDataCIExyuv values) : base(model)
+        {
+            ApplyValues(values);
+        }
 
-                X = pOIDataCIExyuv.X;
-                Y = pOIDataCIExyuv.Y;
-                Z = pOIDataCIExyuv.Z;
-                u = pOIDataCIExyuv.u;
-                v = pOIDataCIExyuv.v;
-                x = pOIDataCIExyuv.x;
-                y = pOIDataCIExyuv.y;
-                NormalizeXyz(CVCIEShowConfig.Instance.CreateValueNormalizer());
-            }
+        private void ApplyValues(POIResultDataCIExyuv values)
+        {
+            CCT = values.CCT;
+            Wave = values.Wave;
+            X = values.X;
+            Y = values.Y;
+            Z = values.Z;
+            u = values.u;
+            v = values.v;
+            x = values.x;
+            y = values.y;
+            NormalizeXyz(CVCIEShowConfig.Instance.CreateValueNormalizer());
         }
 
         internal void NormalizeXyz(Func<double, double> normalize)

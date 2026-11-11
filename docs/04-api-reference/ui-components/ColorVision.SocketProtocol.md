@@ -132,7 +132,7 @@ Engine 内置 `FlowRunPoiSocketHandler`，通过同一 JSON 监听端口调用�
 
 一次请求等待本次流程及后处理完成后返回一条最终响应，没有提前成功响应。主会话占用、模板切换失败或启动条件不满足时拒绝执行，不排队、不重试，也不替换正在运行的流程。继续使用主程序“停止”操作取消运行；本指令不额外设置整图超时，调用方需为完整流程和后处理预留等待时间，不能将网络等待超时当作流程已停止。
 
-成功响应的 `Data` 包含 `FlowId`、`FlowName`、`BatchId`、`ExecutionSerialNumber`、`Status`、`TotalTime`（引擎返回的毫秒数）和 `Poi` 数组。每个点包含 `AlgorithmResultId`、`AlgorithmName`、`PoiId`、`Name`、`PixelX/PixelY/Width/Height`，以及 `X/Y/Z/x/y/u/v/CCT/Wave`。同一批次所有 `POI_XYZ` 算法的点位按结果主表和明细 ID 排序保留，算法与点位身份不会因为同名而合并。数值沿用 `PoiResultCIExyuvData` 的 CIE 数值归一化规则；不包含仅亮度 `POI_Y`、文件型 POI 或其它算法类型。
+成功响应的 `Data` 包含 `FlowId`、`FlowName`、`BatchId`、`ExecutionSerialNumber`、`Status`、`TotalTime`（引擎返回的毫秒数）和 `Poi` 数组。每个点包含 `AlgorithmResultId`、`AlgorithmName`、`PoiId`、`Name`、`PixelX/PixelY/Width/Height`，以及 `X/Y/Z/x/y/u/v/CCT/Wave`。同一批次所有 `POI_XYZ` 算法的点位按结果主表和明细 ID 排序保留，算法与点位身份不会因为同名而合并。每条明细必须包含大小写精确的有限 `X/Y/Z`。点位 JSON 有重复字段或 `X/Y/Z` 缺失、无效时返回 `500`，整批 `Poi` 为空。有效点沿用 `PoiResultCIExyuvData` 的 CIE 数值归一化规则；不包含仅亮度 `POI_Y`、文件型 POI 或其它算法类型。
 
 `Version/MsgID/EventName/SerialNumber` 保留请求关联值；外层 `SerialNumber` 用于请求关联，实际流程使用共享会话生成的批次编号，由 `Data.ExecutionSerialNumber` 返回。结果读取使用本次运行捕获的批次 ID，不查询“最新一次”或全局当前批次。MySQL 不可用时拒绝启动；读取失败和无点位分别报告，均不回退到历史 POI。
 

@@ -1,6 +1,7 @@
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.PostProcess;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -245,6 +246,76 @@ public sealed class FlowRunPoiSocketTests
         Assert.Throws<InvalidOperationException>(() => FlowPoiExecutionService.ReadPoiResults(db, 137));
         db.DbMaintenance.DropTable<PoiPointResultModel>();
         Assert.ThrowsAny<Exception>(() => FlowPoiExecutionService.ReadPoiResults(db, 137));
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"x\":0.3,\"Y\":20,\"Z\":30}")]
+    [InlineData("{\"X\":\"NaN\",\"Y\":20,\"Z\":30}")]
+    [InlineData("{\"X\":10,\"Y\":20,\"Z\":30,\"X\":11}")]
+    public void InvalidXyzPointFailsTheBatchResponseWithoutReturningPartialPoints(string payload)
+    {
+        CVCIEShowConfig display = CVCIEShowConfig.Instance;
+        bool previousClamp = display.ClampNonPositiveValues;
+        display.ClampNonPositiveValues = false;
+        try
+        {
+            var service = new FlowPoiExecutionService(_ => Task.FromResult(Run(FlowFinalOutcome.Succeeded)), batchId =>
+            {
+                using var db = CreateResultDatabase();
+                db.Insertable(Master(batchId, ViewResultAlgType.POI_XYZ, "POI")).ExecuteCommand();
+                PoiPointResultModel invalid = Detail(1, "invalid");
+                invalid.Value = payload;
+                db.Insertable(new[] { Detail(1, "valid"), invalid }).ExecuteCommand();
+                return FlowPoiExecutionService.ReadPoiResults(db, batchId);
+            });
+            var handler = new FlowRunPoiSocketHandler(service.RunAsync);
+
+            SocketResponse response = handler.Handle(null!, Request("{\"FlowId\":42}"));
+
+            Assert.Equal(500, response.Code);
+            FlowPoiExecutionData data = Assert.IsType<FlowPoiExecutionData>(response.Data);
+            Assert.Equal(137, data.BatchId);
+            Assert.Equal("execution-137", data.ExecutionSerialNumber);
+            Assert.Equal(nameof(FlowFinalOutcome.Succeeded), data.Status);
+            Assert.Empty(data.Poi);
+        }
+        finally
+        {
+            display.ClampNonPositiveValues = previousClamp;
+        }
+    }
+
+    [Fact]
+    public void ExplicitZeroXyzRemainsAValidPointWhenReplacementIsDisabled()
+    {
+        CVCIEShowConfig display = CVCIEShowConfig.Instance;
+        bool previousClamp = display.ClampNonPositiveValues;
+        display.ClampNonPositiveValues = false;
+        try
+        {
+            PoiPointResultModel detail = Detail(301, "explicit zero");
+            // Numeric strings were accepted by the legacy DTO and remain readable.
+            detail.Value = "{\"X\":0,\"Y\":\"0\",\"Z\":0.0}";
+            FlowPoiPoint point = FlowPoiExecutionService.CreatePoint(new AlgResultMasterModel { Id = 301 }, detail);
+
+            Assert.Equal((0d, 0d, 0d), (point.X, point.Y, point.Z));
+        }
+        finally
+        {
+            display.ClampNonPositiveValues = previousClamp;
+        }
+    }
+
+    [Fact]
+    public void ExactUppercaseZCannotBeOverwrittenByAnUnknownLowercaseField()
+    {
+        PoiPointResultModel detail = Detail(301, "exact Z");
+        detail.Value = "{\"X\":10,\"Y\":20,\"Z\":30,\"x\":0.3,\"y\":0.4,\"z\":99}";
+        FlowPoiPoint point = FlowPoiExecutionService.CreatePoint(new AlgResultMasterModel { Id = 301 }, detail);
+
+        Assert.Equal((10d, 20d, 30d), (point.X, point.Y, point.Z));
+        Assert.Equal(((double)0.3f, (double)0.4f), (point.x, point.y));
     }
 
     private static SqlSugarClient CreateResultDatabase()
