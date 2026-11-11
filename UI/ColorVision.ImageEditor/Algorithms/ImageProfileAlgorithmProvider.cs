@@ -69,34 +69,42 @@ namespace ColorVision.ImageEditor.Algorithms
             return ExecuteInteractive(invocation, parameters, new ProfileRaster(source, scope), cancellationToken, progress);
         }
 
-        // A straight horizontal or vertical pixel path needs only its sampling rows or columns.
-        // Retain the original image coordinates in ExecuteCore, including for clamp/skip/reject.
+        // Keep the sampling footprint in original pixel coordinates for clamp/skip/reject.
         internal static Int32Rect? GetDisplaySlice(PolylineAlgorithmRoi path, ImageProfileParameters parameters, ImageSelectionScope scope)
         {
-            if (path.CoordinateSpace != AlgorithmCoordinateSpace.Pixel || path.Points.Count != 2
+            if (path.CoordinateSpace != AlgorithmCoordinateSpace.Pixel || path.Points.Count > ImageProfileParameters.MaximumPathPoints
                 || scope.PixelWidth <= 0 || scope.PixelHeight <= 0 || !path.Validate().IsValid || !parameters.Validate().IsValid)
                 return null;
 
-            AlgorithmPoint start = path.Points[0], end = path.Points[1];
-            if (start.Y == end.Y && scope.PixelHeight > 1)
+            AlgorithmPoint start = path.Points[0];
+            double minX = start.X, maxX = start.X, minY = start.Y, maxY = start.Y;
+            int segmentCount = parameters.ClosePath ? path.Points.Count : path.Points.Count - 1;
+            for (int index = 1; index <= segmentCount; index++)
             {
-                var (first, count) = SliceAxis(start.Y, scope.PixelHeight, parameters.Interpolation);
-                return count < scope.PixelHeight ? new Int32Rect(0, first, scope.PixelWidth, count) : null;
+                AlgorithmPoint end = path.Points[index % path.Points.Count];
+                // Include the endpoint as evaluated by the sampler, where rounding can move it across a pixel boundary.
+                double sampledEndX = start.X + (end.X - start.X);
+                double sampledEndY = start.Y + (end.Y - start.Y);
+                if (!double.IsFinite(sampledEndX) || !double.IsFinite(sampledEndY)) return null;
+                minX = Math.Min(minX, Math.Min(end.X, sampledEndX));
+                maxX = Math.Max(maxX, Math.Max(end.X, sampledEndX));
+                minY = Math.Min(minY, Math.Min(end.Y, sampledEndY));
+                maxY = Math.Max(maxY, Math.Max(end.Y, sampledEndY));
+                start = end;
             }
-            if (start.X == end.X && scope.PixelWidth > 1)
-            {
-                var (first, count) = SliceAxis(start.X, scope.PixelWidth, parameters.Interpolation);
-                return count < scope.PixelWidth ? new Int32Rect(first, 0, count, scope.PixelHeight) : null;
-            }
-            return null;
+
+            var (x, width) = SliceAxis(minX, maxX, scope.PixelWidth, parameters.Interpolation);
+            var (y, height) = SliceAxis(minY, maxY, scope.PixelHeight, parameters.Interpolation);
+            return width == scope.PixelWidth && height == scope.PixelHeight ? null : new Int32Rect(x, y, width, height);
         }
 
-        private static (int First, int Count) SliceAxis(double coordinate, int size, ImageProfileInterpolation interpolation)
+        private static (int First, int Count) SliceAxis(double minimum, double maximum, int size, ImageProfileInterpolation interpolation)
         {
-            coordinate = Math.Clamp(coordinate, 0, size - 1);
-            if (interpolation == ImageProfileInterpolation.Nearest) return (NearestPixel(coordinate, size), 1);
-            int first = (int)Math.Floor(coordinate);
-            return (first, Math.Min(2, size - first));
+            minimum = Math.Clamp(minimum, 0, size - 1);
+            maximum = Math.Clamp(maximum, 0, size - 1);
+            int first = interpolation == ImageProfileInterpolation.Nearest ? NearestPixel(minimum, size) : (int)Math.Floor(minimum);
+            int last = interpolation == ImageProfileInterpolation.Nearest ? NearestPixel(maximum, size) : Math.Min((int)Math.Floor(maximum) + 1, size - 1);
+            return (first, last - first + 1);
         }
 
         internal AlgorithmResult ExecuteDisplaySlice(AlgorithmInvocation invocation, ImageProfileParameters parameters,

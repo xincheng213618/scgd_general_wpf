@@ -32,6 +32,39 @@ public sealed class ImageAlgorithmPixelFormatTests
             ? new([new(axisCoordinate, 0), new(axisCoordinate, height - 1)])
             : new([new(0, axisCoordinate), new(width - 1, axisCoordinate)]);
         ImageProfileParameters parameters = new() { Interpolation = interpolation, BoundaryMode = boundary, SampleSpacingPixels = 0.75 };
+        Int32Rect bounds = Assert.IsType<Int32Rect>(ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope));
+        Assert.Equal(copiedLines, vertical ? bounds.Width : bounds.Height);
+        AssertDisplaySliceMatchesFullBitmap(bitmap, scope, path, parameters, bounds);
+    }
+
+    [Theory]
+    [InlineData(ImageProfileInterpolation.Nearest, ImageProfileBoundaryMode.Reject, false, 2, 2, 3, 4)]
+    [InlineData(ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Clamp, true, 2, 0, 7, 5)]
+    [InlineData(ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Skip, true, 2, 0, 7, 5)]
+    [InlineData(ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Reject, true, 2, 0, 7, 5)]
+    public void PolylineProfileSliceMatchesFullBitmapWithOriginalCoordinates(ImageProfileInterpolation interpolation,
+        ImageProfileBoundaryMode boundary, bool crossesBoundary, int x, int y, int width, int height)
+    {
+        const int imageWidth = 12, imageHeight = 8, stride = imageWidth * 6;
+        byte[] pixels = Enumerable.Range(0, stride * imageHeight).Select(value => unchecked((byte)value)).ToArray();
+        BitmapSource bitmap = BitmapSource.Create(imageWidth, imageHeight, 144, 120, PixelFormats.Rgb48, null, pixels, stride);
+        ImageSelectionScope scope = new(Guid.NewGuid(), 1, imageWidth, imageHeight, bitmap.DpiX, bitmap.DpiY);
+        PolylineAlgorithmRoi path = crossesBoundary
+            ? new([new(5.5, 1.25), new(7.75, -1), new(2.25, 3.5)])
+            : new([new(1.5, 1.5), new(4, 3), new(2.25, 5)]);
+        ImageProfileParameters parameters = new()
+        {
+            Interpolation = interpolation, BoundaryMode = boundary, ClosePath = crossesBoundary, SampleSpacingPixels = 0.75,
+        };
+
+        Int32Rect bounds = Assert.IsType<Int32Rect>(ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope));
+        Assert.Equal(new Int32Rect(x, y, width, height), bounds);
+        AssertDisplaySliceMatchesFullBitmap(bitmap, scope, path, parameters, bounds);
+    }
+
+    private static void AssertDisplaySliceMatchesFullBitmap(BitmapSource bitmap, ImageSelectionScope scope,
+        PolylineAlgorithmRoi path, ImageProfileParameters parameters, Int32Rect bounds)
+    {
         AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageProfile, parameters, path);
         ImageProfileAlgorithmProvider provider = new();
 
@@ -43,11 +76,9 @@ public sealed class ImageAlgorithmPixelFormatTests
             Inputs = [new AlgorithmInput { Name = "source", Image = full }],
         }, default).GetAwaiter().GetResult();
 
-        Int32Rect bounds = Assert.IsType<Int32Rect>(ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope));
-        Assert.Equal(copiedLines, vertical ? bounds.Width : bounds.Height);
         using AlgorithmImageBuffer slice = ImageAlgorithmInputFactory.Copy(bitmap, bounds);
         using AlgorithmResult actual = provider.ExecuteDisplaySlice(invocation, parameters, slice, bounds, scope, default);
-        Assert.Equal(copiedLines * (vertical ? height : width) * full.Format.BytesPerPixel(), slice.Data.Length);
+        Assert.Equal(bounds.Width * bounds.Height * full.Format.BytesPerPixel(), slice.Data.Length);
         Assert.Equal(expected.Status, actual.Status);
         Assert.Equal(expected.Failures.Select(failure => failure.Code), actual.Failures.Select(failure => failure.Code));
         Assert.Equal(expected.Artifacts.Select(Serialize), actual.Artifacts.Select(Serialize));
