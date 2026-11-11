@@ -159,11 +159,12 @@ namespace ColorVision.Solution.MultiImageViewer
                 previous?.Cancel();
                 token.ThrowIfCancellationRequested();
                 int limit = Config.MaxDisplayCount;
+                string? selectionPath = preferredFilePath ?? FilePath;
                 var thumbnailSettings = (Config.ShowThumbnail, Config.ThumbnailSize, Config.EnableThumbnailCache);
                 List<ImageFileInfo> items;
                 try
                 {
-                    items = await Task.Run(() => PrepareFileList(enumeratePaths, limit, token), token);
+                    items = await Task.Run(() => PrepareFileList(enumeratePaths, limit, folderPath, selectionPath, token), token);
                 }
                 catch (Exception error) when (folderPath != null && error is (IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException))
                 {
@@ -193,7 +194,7 @@ namespace ColorVision.Solution.MultiImageViewer
                     token.ThrowIfCancellationRequested();
                     UpdateFileCountText();
                     token.ThrowIfCancellationRequested();
-                    int index = items.FindLastIndex(item => item.FilePath.Equals(preferredFilePath ?? FilePath, StringComparison.OrdinalIgnoreCase));
+                    int index = items.FindLastIndex(item => item.FilePath.Equals(selectionPath, StringComparison.OrdinalIgnoreCase));
                     FileListBox.SelectedIndex = items.Count == 0 ? -1 : Math.Max(0, index);
                 }
                 finally { _publishingFileList = wasPublishing; }
@@ -214,7 +215,8 @@ namespace ColorVision.Solution.MultiImageViewer
             }
         }
 
-        private static List<ImageFileInfo> PrepareFileList(Func<IEnumerable<string>> enumeratePaths, int limit, CancellationToken token)
+        private static List<ImageFileInfo> PrepareFileList(Func<IEnumerable<string>> enumeratePaths, int limit, string? folderPath,
+            string? selectionPath, CancellationToken token)
         {
             var items = new List<ImageFileInfo>();
             foreach (string path in enumeratePaths())
@@ -224,7 +226,30 @@ namespace ColorVision.Solution.MultiImageViewer
                 items.Add(new ImageFileInfo(path, loadCachedInfo: false));
                 if (items.Count == limit) break;
             }
+            // Keep the requested image in a capped folder without scanning the rest of the directory.
+            if (items.Count == limit && folderPath != null && !string.IsNullOrWhiteSpace(selectionPath)
+                && MultiImageViewerConfig.SupportedExtensions.Contains(Path.GetExtension(selectionPath).ToLowerInvariant())
+                && !items.Any(item => item.FilePath.Equals(selectionPath, StringComparison.OrdinalIgnoreCase))
+                && IsTopLevelFile(folderPath, selectionPath))
+            {
+                token.ThrowIfCancellationRequested();
+                var selected = new ImageFileInfo(selectionPath, loadCachedInfo: false);
+                if (selected.FileExists) items[^1] = selected;
+            }
             return items;
+        }
+
+        private static bool IsTopLevelFile(string folderPath, string filePath)
+        {
+            try
+            {
+                string folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folderPath));
+                return string.Equals(folder, Path.GetDirectoryName(Path.GetFullPath(filePath)), StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return false;
+            }
         }
 
         private static async Task LoadCachedDimensionsAsync(List<ImageFileInfo> items, CancellationToken token)

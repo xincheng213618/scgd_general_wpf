@@ -583,6 +583,41 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task MultiImageViewerKeepsTheRequestedFolderImageBeyondTheDisplayLimit()
+    {
+        using var image = new ImageFile();
+        DirectoryInfo folder = Directory.CreateTempSubdirectory("ColorVision-PreviewLimit-");
+        string[] paths = Enumerable.Range(0, 12).Select(index => Path.Combine(folder.FullName, $"image-{index:D2}.png")).ToArray();
+        var scope = WpfTestHost.Invoke(() => new MultiImageScope(showThumbnails: false));
+        try
+        {
+            foreach (string path in paths) File.Copy(image.Path, path);
+            string[] enumerated = Directory.GetFiles(folder.FullName, "*.*", SearchOption.TopDirectoryOnly);
+            string preferred = enumerated[^1];
+            await WpfTestHost.Invoke(() =>
+            {
+                MultiImageViewer.Config.MaxDisplayCount = 10;
+                scope.Viewer.FilePath = preferred;
+                return scope.Viewer.LoadFromFolderAsync(folder.FullName);
+            }).WaitAsync(TimeSpan.FromSeconds(10));
+
+            await WpfTestHost.Invoke(() => scope.View.ImageOpenCompletion).WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(preferred, scope.Viewer.GetSelectedFile()?.FilePath);
+                Assert.Equal(enumerated.Take(9).Append(preferred), scope.Viewer.ImageFiles.Select(item => item.FilePath));
+                Assert.Equal(preferred, scope.View.Config.FilePath);
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(scope.Dispose);
+            foreach (string path in paths) File.Delete(path);
+            folder.Delete();
+        }
+    }
+
+    [Fact]
     public async Task MultiImageViewerOpensInitialImageWhileThumbnailIsPending()
     {
         using var file = new ImageFile();
