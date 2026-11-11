@@ -1,6 +1,7 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
+using ColorVision.Themes;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
@@ -240,6 +241,111 @@ public sealed class DrawShapeCompatibilityTests
 
         Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.Deserialize(json));
     }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("{}")]
+    [InlineData("{\"Items\":null}")]
+    [InlineData("{\"SchemaVersion\":2,\"Items\":[]}")]
+    [InlineData("{\"CoordinateSpace\":1,\"Items\":[]}")]
+    public void IncompatibleAnnotationDocumentsAreRejected(string json)
+    {
+        Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.Deserialize(json));
+    }
+
+    [Fact]
+    public void AnnotationImportReplacesAsOneUndoableEditAndKeepsTheOverlay()
+    {
+        WithAnnotationImageView(view =>
+        {
+            DrawCanvas canvas = view.ImageShow;
+            DVCircle first = new();
+            DVRectangle second = new();
+            DrawingVisual overlay = new();
+            view.AddVisual(first);
+            canvas.AddOverlayVisual(overlay);
+            view.AddVisual(second);
+            Visual[] before = canvas.Visuals.ToArray();
+            int history = canvas.UndoStack.Count;
+
+            Assert.Equal(2, view.ImportAnnotationsFromJson(ReplacementAnnotations));
+            Visual[] imported = canvas.Visuals.ToArray();
+            Assert.DoesNotContain(first, imported);
+            Assert.DoesNotContain(second, imported);
+            Assert.Contains(overlay, imported);
+            Assert.Equal(history + 1, canvas.UndoStack.Count);
+            Assert.Equal(2, view.EditorContext.DrawEditorContext.DrawingVisualLists.Count);
+
+            canvas.Undo();
+            Assert.Equal(before, canvas.Visuals);
+            Assert.Equal(new IDrawingVisual[] { first, second }, view.EditorContext.DrawEditorContext.DrawingVisualLists);
+            Assert.Equal(history, canvas.UndoStack.Count);
+            canvas.Redo();
+            Assert.Equal(imported, canvas.Visuals);
+            Assert.Equal(history + 1, canvas.UndoStack.Count);
+        });
+    }
+
+    [Fact]
+    public void AnnotationImportFailurePreservesTheOriginalVisualsAndHistory()
+    {
+        WithAnnotationImageView(view =>
+        {
+            DrawCanvas canvas = view.ImageShow;
+            DVCircle original = new();
+            view.AddVisual(original);
+            Visual[] before = canvas.Visuals.ToArray();
+            int history = canvas.UndoStack.Count;
+
+            Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => view.ImportAnnotationsFromJson("{}"));
+            Assert.Equal(before, canvas.Visuals);
+            Assert.Equal(history, canvas.UndoStack.Count);
+
+            int additions = 0;
+            EventHandler<VisualChangedEventArgs> reject = (_, _) =>
+            {
+                if (++additions == 2) throw new InvalidOperationException("simulated attachment failure");
+            };
+            canvas.VisualsAdd += reject;
+            try
+            {
+                Assert.Throws<InvalidOperationException>(() => view.ImportAnnotationsFromJson(ReplacementAnnotations));
+            }
+            finally { canvas.VisualsAdd -= reject; }
+
+            Assert.Equal(2, additions);
+            Assert.Equal(before, canvas.Visuals);
+            Assert.Same(original, Assert.Single(view.EditorContext.DrawEditorContext.DrawingVisualLists));
+            Assert.Equal(history, canvas.UndoStack.Count);
+        });
+    }
+
+    private static void WithAnnotationImageView(Action<ImageView> test)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var resources = Application.Current.Resources.MergedDictionaries;
+            ResourceDictionary[] theme = ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase)
+                .Select(uri => new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) }).ToArray();
+            foreach (ResourceDictionary dictionary in theme) resources.Add(dictionary);
+            try
+            {
+                using ImageView view = new();
+                test(view);
+            }
+            finally
+            {
+                foreach (ResourceDictionary dictionary in theme) resources.Remove(dictionary);
+            }
+        });
+    }
+
+    private const string ReplacementAnnotations = """
+        {"Items":[
+          {"Kind":"Rectangle","Rect":{"X":10,"Y":20,"Width":30,"Height":40}},
+          {"Kind":"Circle","Center":{"X":40,"Y":50},"RadiusX":6,"RadiusY":8}
+        ]}
+        """;
 
     [Theory]
     [InlineData(typeof(CircleManager), "DrawCircleCache")]

@@ -35,7 +35,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
         public AnnotationCoordinateSpace CoordinateSpace { get; set; } = AnnotationCoordinateSpace.ImagePixels;
 
-        [JsonProperty(ItemConverterType = typeof(AnnotationItemJsonConverter))]
+        [JsonProperty(Required = Required.Always, ItemConverterType = typeof(AnnotationItemJsonConverter))]
         public List<AnnotationItem> Items { get; set; } = new();
     }
 

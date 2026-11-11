@@ -654,23 +654,21 @@ namespace ColorVision.ImageEditor
 
             try
             {
-                string json = File.ReadAllText(dialog.FileName);
-                AnnotationDocument document = AnnotationMapper.Deserialize(json);
-                IReadOnlyList<DrawingVisualBase> visuals = AnnotationMapper.ToVisuals(document);
-
-                ClearAnnotations();
-                foreach (DrawingVisualBase visual in visuals)
-                {
-                    visual.Render();
-                    ImageShow.AddVisual(visual);
-                }
-
-                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, visuals.Count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                int count = ImportAnnotationsFromJson(File.ReadAllText(dialog.FileName));
+                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportAnnotationsFailed, ex.Message), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        internal int ImportAnnotationsFromJson(string json)
+        {
+            AnnotationDocument document = AnnotationMapper.Deserialize(json);
+            IReadOnlyList<DrawingVisualBase> visuals = AnnotationMapper.ToVisuals(document);
+            _drawing.ReplaceAnnotations(visuals);
+            return visuals.Count;
         }
 
 

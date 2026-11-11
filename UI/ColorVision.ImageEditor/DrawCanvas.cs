@@ -478,25 +478,23 @@ namespace ColorVision.ImageEditor
         public void RemoveVisualCommand(Visual? visual)
         {
             int index = visuals.IndexOf(visual);
-            if (visual == null) return;
-
-            bool ownsRemovalMarker = _visualRemovalCommandTargets.Add(visual);
-            bool removed;
-            try
-            {
-                removed = TryRemoveVisual(visual);
-            }
-            finally
-            {
-                if (ownsRemovalMarker)
-                    _visualRemovalCommandTargets.Remove(visual);
-            }
-            if (!removed) return;
+            if (visual == null || !TryRemoveVisualForCommand(visual)) return;
             if (_visualCommandAdditionsInProgress.Contains(visual)) return;
 
             Action undoaction = () => InsertVisual(index, visual);
             Action redoaction = () => RemoveVisual(visual);
             AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = LocalizedText.Get("移除") });
+        }
+
+        internal bool TryRemoveVisualForCommand(Visual visual)
+        {
+            bool ownsRemovalMarker = _visualRemovalCommandTargets.Add(visual);
+            try { return TryRemoveVisual(visual); }
+            finally
+            {
+                if (ownsRemovalMarker)
+                    _visualRemovalCommandTargets.Remove(visual);
+            }
         }
 
         public void AddOverlayVisual(Visual visual)
