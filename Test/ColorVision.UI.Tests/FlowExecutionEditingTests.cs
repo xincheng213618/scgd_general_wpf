@@ -35,6 +35,9 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowExecutionEditingTests
 {
+    private static readonly Lazy<DirectoryInfo> DiagnosticsDirectory = new(() => Directory.CreateTempSubdirectory("ColorVision-FlowEditingTests-"));
+    private static readonly FieldInfo ConfigHandlerInstance = typeof(ConfigHandler).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+
     [Fact]
     public void CopilotFlowSnapshotIdentityIsStableAcrossRevisionsAndDistinctForOtherHosts()
     {
@@ -1032,13 +1035,19 @@ public sealed class FlowExecutionEditingTests
         WpfTestHost.Invoke(() =>
         {
             var previousConfig = ConfigService.Instance;
+            object? previousHandler = ConfigHandlerInstance.GetValue(null);
             var previousTemplates = TemplateFlow.Params;
-            ConfigService.SetInstance(new ConfigHandler());
-            TemplateFlow.Params = [];
+            string diagnosticsPath = DiagnosticsDirectory.Value.FullName;
+            var config = new ConfigHandler { ConfigFilePath = Path.Combine(diagnosticsPath, "config.json"), IsAutoSave = false };
+            config.GetRequiredService<FlowNodeRecordConfig>().DirectoryPath = diagnosticsPath + Path.DirectorySeparatorChar;
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
-            Application.Current.Resources.MergedDictionaries.Add(theme);
+            // Timed button telemetry also reads ConfigHandler's singleton directly.
+            ConfigHandlerInstance.SetValue(null, config);
+            ConfigService.SetInstance(config);
+            TemplateFlow.Params = [];
             try
             {
+                Application.Current.Resources.MergedDictionaries.Add(theme);
                 Assert.False(MySqlSetting.IsConnect, "This fixture must not run against a connected result database.");
                 using var fixture = new EditingFixture();
                 action(fixture);
@@ -1046,6 +1055,7 @@ public sealed class FlowExecutionEditingTests
             finally
             {
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
+                ConfigHandlerInstance.SetValue(null, previousHandler);
                 ConfigService.SetInstance(previousConfig);
                 TemplateFlow.Params = previousTemplates;
             }
@@ -1087,7 +1097,9 @@ public sealed class FlowExecutionEditingTests
     private sealed class EditingFixture : IDisposable
     {
         private static readonly FieldInfo PreProcessInstance = typeof(PreProcessManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo SessionJournal = typeof(FlowExecutionSession).GetField("_journalCoordinator", BindingFlags.Instance | BindingFlags.NonPublic)!;
         private readonly object? previousPreProcess = PreProcessInstance.GetValue(null);
+        private readonly FlowExecutionJournalCoordinator journalCoordinator = new(() => new FlowExecutionJournal());
         public FlowEngineManager Manager { get; } = new();
         public ViewFlow View { get; }
         public FlowExecutionSession Session { get; }
@@ -1111,6 +1123,9 @@ public sealed class FlowExecutionEditingTests
             View.FlowEngineControl.AttachNodeEditor(View.STNodeEditorMain);
             Session = (FlowExecutionSession)typeof(ViewFlow).GetField("_executionSession", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(View)!;
             MainSession = (FlowExecutionSession)typeof(ViewFlow).GetField("_executionSession", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Manager.View)!;
+            // The shared coordinator may already belong to another fixture's configuration.
+            SessionJournal.SetValue(Session, journalCoordinator);
+            SessionJournal.SetValue(MainSession, journalCoordinator);
             typeof(FlowExecutionSession).GetField("_runFinalizer", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(Session, new FlowRunFinalizer(PostProcess, new NoPersistence()));
             typeof(FlowExecutionSession).GetField("_runFinalizer", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -1222,6 +1237,7 @@ public sealed class FlowExecutionEditingTests
             Manager.FlowEngineControl.Dispose();
             DockViewManager.GetInstance().RemoveView(Manager.View);
             (Manager.Copilot.GetType().GetField("_copilotAgentExtensionRegistration", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Manager.Copilot) as IDisposable)?.Dispose();
+            journalCoordinator.Dispose();
             PreProcessInstance.SetValue(null, previousPreProcess);
         }
     }
