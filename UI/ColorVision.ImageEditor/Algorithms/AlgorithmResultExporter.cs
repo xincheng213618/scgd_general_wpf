@@ -193,6 +193,9 @@ namespace ColorVision.ImageEditor.Algorithms
         public static IReadOnlyList<string> ExportCsvBundle(AlgorithmResult result, string filePath, bool overwrite = false)
             => ExportCsvBundleAsync(result, filePath, overwrite, CancellationToken.None).GetAwaiter().GetResult();
 
+        internal static IEnumerable<string> GetCsvBundlePaths(AlgorithmResult result, string filePath)
+            => CreateCsvOutputs(result, filePath).Select(output => output.Path);
+
         /// <summary>
         /// Writes measurements to the selected CSV path and each Table/Geometry/StructuredData
         /// artifact to an adjacent suffixed CSV. All content is staged before any target is
@@ -207,6 +210,7 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             ArgumentNullException.ThrowIfNull(result);
             CsvOutput[] outputs = CreateCsvOutputs(result, filePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(outputs[0].Path)!);
             ValidateTargets(outputs.Select(output => output.Path).ToArray(), overwrite);
             long totalRows = Math.Max(1, outputs.Sum(output => output.EstimatedRows));
             long completedRows = 0;
@@ -249,7 +253,6 @@ namespace ColorVision.ImageEditor.Algorithms
             string directory = Path.GetDirectoryName(primary) ?? throw new ArgumentException("The export path has no directory.", nameof(filePath));
             string stem = Path.GetFileNameWithoutExtension(primary);
             if (string.IsNullOrWhiteSpace(stem)) throw new ArgumentException("The export path has no file name.", nameof(filePath));
-            Directory.CreateDirectory(directory);
 
             List<CsvOutput> outputs =
             [

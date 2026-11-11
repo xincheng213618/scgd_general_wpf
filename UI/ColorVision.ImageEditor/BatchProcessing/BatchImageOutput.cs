@@ -8,6 +8,23 @@ namespace ColorVision.ImageEditor.BatchProcessing
 {
     public static class BatchImageOutput
     {
+        internal static HashSet<string> ReserveSourcePaths(IEnumerable<BatchImageItem> items)
+        {
+            var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (BatchImageItem item in items)
+            {
+                try
+                {
+                    paths.Add(Path.GetFullPath(item.FilePath));
+                }
+                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+                {
+                    // The processing loop reports invalid paths as individual file failures.
+                }
+            }
+            return paths;
+        }
+
         public static string ResolveExtension(string sourcePath, BatchOutputFormat format)
         {
             if (format == BatchOutputFormat.SameAsSource)

@@ -151,7 +151,7 @@ JSON 保存算法 ID/版本、状态、诊断及全部七个 artifact，包括�
 
 Catalog 别名 `RoiStatistics`、`ROIStatistics`、`RoiStatisticsRectangle`、`RoiStatisticsCircle`、`RoiStatisticsPolygon` 解析到同一算法。调用方通过 `AlgorithmInvocation.Create` 传入参数和 ROI，用 Runner 执行并释放整个 `AlgorithmResult`；结构化结果中的三个表、Measurement、Geometry、Overlay 和来源数据与上述界面/导出对应。
 
-`BatchAlgorithmAnalysisProcessor` 使用保存的 Invocation 逐文件导出分析结果，ROI 不自动随图像尺寸缩放；Mat 转换默认 96 DPI。默认输出 `_analysis` 后缀的 JSON、拒绝覆盖，失败项可继续下一项，取消不撤销先前导出。它不进入只接收主图像 artifact 的批量图像处理列表。
+`BatchAlgorithmAnalysisProcessor` 使用保存的 Invocation 逐文件导出分析结果，ROI 保持原像素坐标，Mat 转换默认 96 DPI。默认输出 `_analysis` 后缀的 JSON，并拒绝覆盖已有文件。同批报告及其 CSV 伴随文件与已选输入或已完成的报告重名时，整组报告追加编号。单项失败后可继续处理，取消时保留已完成的报告。批量图像处理列表只接收主图像 artifact。
 
 `LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 复制 RAW 帧且不取得外层 lease 所有权，当前桥接为 8/16-bit、1/3/4 通道、默认 96 DPI。它是可调用 API，尚无对应生产画布节点；注册边界见[平台 Flow 说明](./image-algorithm-platform-v1.md#执行平面与兼容层)。ROI 统计未进入 Copilot 白名单；Catalog 可发现不代表现有 Copilot 工具可以提交 ROI。
 
