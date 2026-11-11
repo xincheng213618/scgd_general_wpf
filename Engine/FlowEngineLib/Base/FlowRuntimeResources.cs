@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace FlowEngineLib.Base;
@@ -89,15 +91,21 @@ public sealed class FlowRuntimeResources : IDisposable
 			return;
 		}
 
+		List<Exception> failures = null;
 		try { stopped.Cancel(); }
-		finally
+		catch (Exception error) { (failures ??= new List<Exception>()).Add(error); }
+		stopped.Dispose();
+		foreach (var item in resources)
 		{
-			stopped.Dispose();
-			foreach (var item in resources)
-			{
-				if (resources.TryRemove(item.Key, out object value)) DisposeValue(value);
-			}
+			if (!resources.TryRemove(item.Key, out object value))
+				continue;
+			try { DisposeValue(value); }
+			catch (Exception error) { (failures ??= new List<Exception>()).Add(error); }
 		}
+		if (failures is { Count: 1 })
+			ExceptionDispatchInfo.Throw(failures[0]);
+		if (failures != null)
+			throw new AggregateException(failures);
 	}
 
 	private static void DisposeValue(object value)

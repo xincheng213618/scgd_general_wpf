@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using FlowEngineLib.Start;
+using log4net;
 using Newtonsoft.Json;
 
 namespace FlowEngineLib.Base;
 
 public class CVStartCFC : CVBaseCFC
 {
+	private static readonly ILog logger = LogManager.GetLogger(typeof(CVStartCFC));
+
     [JsonIgnore] internal Repeat.FlowRepeatRegionRun RepeatRun { get; set; }
     [JsonIgnore] internal int RepeatRound { get; set; }
     [JsonIgnore]
@@ -143,7 +146,11 @@ public class CVStartCFC : CVBaseCFC
 		}
 		finally
 		{
-			RuntimeResources.Dispose();
+			try { RuntimeResources.Dispose(); }
+			catch (Exception error)
+			{
+				logger.Error($"Failed to release runtime resources for flow {SerialNumber}.", error);
+			}
 		}
 	}
 

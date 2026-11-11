@@ -523,6 +523,47 @@ public class FlowEngineControlLifecycleTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResourceCleanupFailuresStillReleaseOtherResourcesAndPublishTheRunOutcome(bool stop)
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            var results = new List<FlowEngineEventArgs>();
+            control.Finished += (_, result) => results.Add(result);
+            const string serialNumber = "SN-CLEANUP";
+            Assert.True(control.TryStartByName(start.NodeName, serialNumber));
+            CVStartCFC action = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+            var first = new ThrowingDisposableProbe();
+            var second = new ThrowingDisposableProbe();
+            action.RuntimeResources.Set("first", first);
+            action.RuntimeResources.Set("second", second);
+
+            Exception? error = Record.Exception(() =>
+            {
+                if (stop)
+                    control.StopNode(start.NodeName, serialNumber);
+                else if (action.TryDoFinishing())
+                    action.FireFinished();
+            });
+
+            Assert.Equal(2, first.DisposeCount + second.DisposeCount);
+            Assert.Null(error);
+            Assert.True(action.RuntimeResources.StopToken.IsCancellationRequested);
+            Assert.Equal(stop ? StatusTypeEnum.Canceled : StatusTypeEnum.Completed, Assert.Single(results).Status);
+            Assert.False(control.IsRunning);
+        });
+    }
+
     [Fact]
     public void StartWithoutConnectedOutputDoesNotRemainRunning()
     {
@@ -938,6 +979,17 @@ public class FlowEngineControlLifecycleTests
         public void Dispose()
         {
             IsDisposed = true;
+        }
+    }
+
+    private sealed class ThrowingDisposableProbe : IDisposable
+    {
+        public int DisposeCount { get; private set; }
+
+        public void Dispose()
+        {
+            DisposeCount++;
+            throw new InvalidOperationException("Test resource cleanup failure.");
         }
     }
 
