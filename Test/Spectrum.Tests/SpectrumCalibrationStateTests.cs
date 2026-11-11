@@ -128,6 +128,66 @@ public sealed class SpectrumCalibrationStateTests
     }
 
     [Theory]
+    [InlineData(50, 0, 1, 1, "步进")]
+    [InlineData(50, 100, 1, 0, "平均次数")]
+    [InlineData(0, 100, 1, 1, "积分时间")]
+    [InlineData(2_147_400, 100, 1, 1, "积分时间")]
+    [InlineData(50, int.MaxValue, int.MaxValue, 1, "积分时间")]
+    public async Task AdaptiveDark_InvalidSettingsDoNotReachTheShutterOrNativeTable(float start, int step, int count, int average, string error)
+    {
+        using var controller = new FakeShutterController();
+        var manager = ConnectedAdaptiveDarkManager(controller, (_, _, _, _, _) =>
+        {
+            controller.Commands.Add("native");
+            return 1;
+        });
+        manager.AutodarkParam.fTimeStart = start;
+        manager.AutodarkParam.nStepTime = step;
+        manager.AutodarkParam.nStepCount = count;
+        manager.Average = average;
+
+        int result = await manager.PerformAdaptiveDarkCalibrationAsync();
+
+        Assert.NotEqual(1, result);
+        Assert.Contains(error, manager.GetOperationErrorMessage(result));
+        Assert.Empty(controller.Commands);
+    }
+
+    [Fact]
+    public async Task AdaptiveDark_ShutterWaitCannotChangeTheRequestedNativeParameters()
+    {
+        using var controller = new FakeShutterController();
+        (float Start, int Step, int Count, int Average) nativeParameters = default;
+        var manager = ConnectedAdaptiveDarkManager(controller, (_, start, step, count, average) =>
+        {
+            nativeParameters = (start, step, count, average);
+            return 1;
+        });
+        manager.Average = 2;
+        controller.OnOpen = () =>
+        {
+            manager.AutodarkParam.fTimeStart = 1;
+            manager.AutodarkParam.nStepTime = 0;
+            manager.AutodarkParam.nStepCount = 3;
+            manager.Average = 0;
+        };
+
+        int result = await manager.PerformAdaptiveDarkCalibrationAsync();
+
+        Assert.Equal(1, result);
+        Assert.Equal((50f, 100, 1, 2), nativeParameters);
+        Assert.Equal(new[] { "a", "b" }, controller.Commands);
+    }
+
+    private static SpectrometerManager ConnectedAdaptiveDarkManager(FakeShutterController controller, Func<IntPtr, float, int, int, int, int> initialize)
+    {
+        var manager = new SpectrometerManager { ShutterController = controller, InitializeAdaptiveDark = initialize };
+        typeof(SpectrometerManager).GetProperty(nameof(SpectrometerManager.Handle))!.SetValue(manager, new IntPtr(123));
+        typeof(SpectrometerManager).GetProperty(nameof(SpectrometerManager.IsConnected))!.SetValue(manager, true);
+        return manager;
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task ShutterAutoDark_UsesConfiguredDirection(bool openForDark)
@@ -341,6 +401,7 @@ public sealed class SpectrumCalibrationStateTests
         private readonly bool blockConfirmed;
         private readonly bool restoreConfirmed;
         public List<string> Commands { get; } = [];
+        public Action? OnOpen { get; set; }
         public override global::Spectrum.Configs.ShutterConfig Config { get; } = new();
 
         public FakeShutterController(bool blockConfirmed = true, bool restoreConfirmed = true, bool openForDark = true)
@@ -354,6 +415,7 @@ public sealed class SpectrumCalibrationStateTests
         public override Task<bool> OpenShutter()
         {
             Commands.Add("a");
+            OnOpen?.Invoke();
             return Task.FromResult(Config.OpenForDark ? blockConfirmed : restoreConfirmed);
         }
 

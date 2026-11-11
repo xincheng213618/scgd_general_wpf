@@ -298,10 +298,11 @@ namespace Spectrum
 
         public const int ShutterOperationFailed = int.MinValue + 2;
         public const int FilterWheelOperationFailed = int.MinValue + 3;
+        private const int InvalidAdaptiveDarkSettings = int.MinValue + 4;
 
         public string GetOperationErrorMessage(int resultCode)
         {
-            return resultCode is CalibrationUnavailable or ShutterOperationFailed or FilterWheelOperationFailed
+            return resultCode is CalibrationUnavailable or ShutterOperationFailed or FilterWheelOperationFailed or InvalidAdaptiveDarkSettings
                 ? LastOperationError
                 : Spectrometer.GetErrorMessage(resultCode);
         }
@@ -1945,8 +1946,13 @@ namespace Spectrum
             return (operation.Entered, operation.Result);
         }
 
+        internal Func<IntPtr, float, int, int, int, int> InitializeAdaptiveDark { get; init; } = Spectrometer.CM_Emission_Init_Auto_Dark;
+
         public async Task<int> PerformAdaptiveDarkCalibrationAsync(CancellationToken cancellationToken = default)
         {
+            var settings = AutodarkParam;
+            float start = settings.fTimeStart;
+            int step = settings.nStepTime, count = settings.nStepCount, average = Average;
             var operation = await TryRunExclusiveAsync(
                 token => Task.Run(async () =>
                 {
@@ -1954,18 +1960,37 @@ namespace Spectrum
                     if (!IsConnected || Handle == IntPtr.Zero)
                         return -1;
 
+                    // The SDK samples through index count (inclusive) and needs at least two distinct times.
+                    float last = start + (long)step * count;
+                    string? validationError = null;
+                    if (step < 1)
+                        validationError = "自适应校零步进至少为 1 ms。";
+                    else if (average < 1)
+                        validationError = "自适应校零平均次数至少为 1。";
+                    else if (!IsAdaptiveDarkIntegrationTimeInRange(start) || !IsAdaptiveDarkIntegrationTimeInRange(last))
+                        validationError = "自适应校零的起始和末次积分时间须在 0.001 至 2,147,483.5 ms 范围内。";
+                    if (validationError != null)
+                    {
+                        LastOperationError = validationError;
+                        return InvalidAdaptiveDarkSettings;
+                    }
+
                     (int result, string error) = await ExecuteDarkOperationWithConfiguredControlCoreAsync(
                         requireAutomaticControl: false,
                         token,
-                        () => Spectrometer.CM_Emission_Init_Auto_Dark(
-                            Handle, AutodarkParam.fTimeStart, AutodarkParam.nStepTime,
-                            AutodarkParam.nStepCount, Average)).ConfigureAwait(false);
+                        () => InitializeAdaptiveDark(Handle, start, step, count, average)).ConfigureAwait(false);
                     LastOperationError = error;
                     return result;
                 }, CancellationToken.None),
                 cancellationToken).ConfigureAwait(false);
 
             return operation.Entered ? operation.Result : OperationBusy;
+        }
+
+        private static bool IsAdaptiveDarkIntegrationTimeInRange(float milliseconds)
+        {
+            double microseconds = milliseconds * 1000f;
+            return microseconds >= 1 && microseconds <= int.MaxValue;
         }
 
         public async Task<SpectrumMeasurementResult> MeasureAsync(CancellationToken cancellationToken = default)
