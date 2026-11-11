@@ -94,6 +94,56 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task MissingPrimary_RecoversTheBackupWithoutArmingIt()
+    {
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerInfo saved = CreateInfo();
+        saved.HasScheduleCheckpoint = true;
+        saved.Status = SchedulerStatus.Running;
+        SchedulerTaskSerializer.SaveToFile(path + ".bak", [saved]);
+        byte[] backup = File.ReadAllBytes(path + ".bak");
+
+        Assert.NotNull(_manager.LoadTaskDefinitions());
+
+        SchedulerInfo recovered = Assert.Single(_manager.TaskInfos);
+        Assert.Equal(saved.JobName, recovered.JobName);
+        Assert.Equal(SchedulerStatus.Paused, recovered.Status);
+        Assert.Equal(backup, File.ReadAllBytes(path + ".bak"));
+        Assert.Equal(saved.JobName, Assert.Single(SchedulerTaskSerializer.LoadFromFile(path)).JobName);
+        await _manager.RestoreJob(recovered);
+        Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(recovered.JobName, recovered.GroupName)));
+    }
+
+    [Theory]
+    [InlineData("{\"$values\":[")]
+    [InlineData("null")]
+    [InlineData("{\"$type\":\"Missing.TaskList, Missing.SchedulerJobs\",\"$values\":[]}")]
+    public async Task UnreadablePrimary_PreservesItAndItsBackupUntilValidReload(string invalidJson)
+    {
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerInfo previous = CreateInfo();
+        SchedulerTaskSerializer.SaveToFile(path + ".bak", [previous]);
+        File.WriteAllText(path, invalidJson);
+        byte[] backup = File.ReadAllBytes(path + ".bak");
+
+        Assert.NotNull(_manager.LoadTaskDefinitions());
+        Assert.Empty(_manager.TaskInfos);
+        var replacement = CreateInfo();
+        replacement.JobName = "replacement";
+        SchedulerOperationResult rejected = await _manager.CreateJob(replacement);
+        Assert.False(rejected.Success);
+        Assert.Empty(_manager.TaskInfos);
+        Assert.False(await _scheduler.Exists(new JobKey(replacement.JobName, replacement.GroupName)));
+        Assert.Equal(invalidJson, File.ReadAllText(path));
+        Assert.Equal(backup, File.ReadAllBytes(path + ".bak"));
+
+        File.Copy(path + ".bak", path, overwrite: true);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        Assert.Equal(previous.JobName, Assert.Single(_manager.TaskInfos).JobName);
+        Assert.True((await _manager.CreateJob(replacement)).Success);
+    }
+
+    [Fact]
     public async Task PausedManualRun_DoesNotConsumeOrResumeRemainingSchedule()
     {
         SchedulerInfo info = CreateInfo();

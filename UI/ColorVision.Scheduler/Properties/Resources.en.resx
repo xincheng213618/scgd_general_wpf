@@ -362,6 +362,15 @@
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>Failed to load task config: {0}</value>
   </data>
+  <data name="Sched_TaskFileUnreadable" xml:space="preserve">
+    <value>Could not read task definitions from “{0}”. Keep the original file and check that its job types are available. Restore a valid backup if needed, then reload.</value>
+  </data>
+  <data name="Sched_TaskBackupRequiresRestore" xml:space="preserve">
+    <value>The primary task file is missing and backup “{0}” is present. Reload or restart to restore the backup before saving changes.</value>
+  </data>
+  <data name="Sched_TaskBackupRestored" xml:space="preserve">
+    <value>The missing task file was restored from backup “{0}”. Review the recovered progress and settings before enabling its schedules.</value>
+  </data>
   <data name="Sched_RestoreWarning" xml:space="preserve">
     <value>The following tasks failed to restore: {0}</value>
   </data>

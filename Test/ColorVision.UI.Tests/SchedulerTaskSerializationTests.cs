@@ -46,6 +46,35 @@ public class SchedulerTaskSerializationTests
     }
 
     [Fact]
+    public void SaveToFile_PreservesTheBackupWhenThePrimaryIsMissingOrCorrupt()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-SchedulerSaveGuard-");
+        string path = Path.Combine(directory.FullName, "tasks.json");
+        string backupPath = path + ".bak";
+        try
+        {
+            SchedulerTaskSerializer.SaveToFile(backupPath, [new() { JobName = "recoverable" }]);
+            byte[] backup = File.ReadAllBytes(backupPath);
+
+            Assert.Throws<InvalidDataException>(() => SchedulerTaskSerializer.SaveToFile(path, []));
+            Assert.False(File.Exists(path));
+            Assert.Equal(backup, File.ReadAllBytes(backupPath));
+
+            const string corrupt = "{\"$values\":[";
+            File.WriteAllText(path, corrupt);
+            Assert.Throws<InvalidDataException>(() => SchedulerTaskSerializer.SaveToFile(path, []));
+            Assert.Equal(corrupt, File.ReadAllText(path));
+            Assert.Equal(backup, File.ReadAllBytes(backupPath));
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(backupPath);
+            directory.Delete();
+        }
+    }
+
+    [Fact]
     public void SaveToFile_ReplacesDefinitionAtomicallyAndKeepsPreviousBackup()
     {
         string temporaryDirectory = Path.Combine(

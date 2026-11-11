@@ -48,6 +48,7 @@ namespace ColorVision.Scheduler
         private StandaloneSchedulerFactory? _schedulerFactory;
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
         private readonly string ConfigFile;
+        private string? _configurationLoadError;
        
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
@@ -244,6 +245,11 @@ namespace ColorVision.Scheduler
 
         private bool TryPersistTasks(out string errorMessage)
         {
+            if (_configurationLoadError is { } loadError)
+            {
+                errorMessage = loadError;
+                return false;
+            }
             try
             {
                 _logger.Debug($"Saving {TaskInfos.Count} tasks to {ConfigFile}");
@@ -262,70 +268,66 @@ namespace ColorVision.Scheduler
 
         public void Load()
         {
+            string? notification = LoadTaskDefinitions();
+            if (notification != null)
+            {
+                string title = _configurationLoadError != null ? Properties.Resources.Sched_Error : Properties.Resources.Sched_RestoreWarningTitle;
+                MessageBox.Show(notification, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        internal string? LoadTaskDefinitions()
+        {
             try
             {
-                if (File.Exists(ConfigFile))
+                var tasks = SchedulerTaskSerializer.LoadForStartup(ConfigFile, out bool restoredBackup);
+                _configurationLoadError = null;
+                if (tasks == null) return null;
+
+                var notifications = new List<string>();
+                if (restoredBackup)
                 {
-                    var list = SchedulerTaskSerializer.LoadFromFile(ConfigFile);
-                    if (list != null)
-                    {
-                        bool definitionVersionUpgraded = false;
-                        List<string> pausedLegacyIntervalTasks = [];
-                        TaskInfos.Clear();
-                        foreach (var item in list)
-                        {
-                            bool isLegacyDefinition =
-                                item.ScheduleDefinitionVersion < SchedulerInfo.CurrentScheduleDefinitionVersion;
-                            if (isLegacyDefinition
-                                && item.Mode == JobExecutionMode.Interval
-                                && item.RepeatMode == JobRepeatMode.Forever)
-                            {
-                                // Older builds accidentally treated this combination as one
-                                // execution per day. The corrected Quartz trigger repeats at the
-                                // configured interval, so require an explicit user resume instead
-                                // of silently turning a legacy device task into a high-rate loop.
-                                item.Status = SchedulerStatus.Paused;
-                                pausedLegacyIntervalTasks.Add($"{item.JobName} ({item.GroupName})");
-                            }
+                    string message = string.Format(Properties.Resources.Sched_TaskBackupRestored, ConfigFile + ".bak");
+                    _logger.Warn(message);
+                    notifications.Add(message);
+                }
 
-                            SchedulerScheduleState.Restore(item);
-                            if (isLegacyDefinition)
-                            {
-                                item.ScheduleDefinitionVersion = SchedulerInfo.CurrentScheduleDefinitionVersion;
-                                definitionVersionUpgraded = true;
-                            }
-                            TaskInfos.Add(item);
-                        }
+                bool definitionVersionUpgraded = false;
+                List<string> pausedLegacyIntervalTasks = [];
+                foreach (var item in tasks)
+                {
+                    bool isLegacyDefinition = item.ScheduleDefinitionVersion < SchedulerInfo.CurrentScheduleDefinitionVersion;
+                    // Older Interval/Forever tasks could run daily. Require explicit resume before using their configured interval.
+                    if (isLegacyDefinition && item.Mode == JobExecutionMode.Interval && item.RepeatMode == JobRepeatMode.Forever)
+                        pausedLegacyIntervalTasks.Add($"{item.JobName} ({item.GroupName})");
 
-                        if (definitionVersionUpgraded && !TryPersistTasks(out string persistenceError))
-                        {
-                            MessageBox.Show(
-                                persistenceError,
-                                Properties.Resources.Sched_Error,
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
-                        }
-                        if (pausedLegacyIntervalTasks.Count > 0)
-                        {
-                            string taskNames = string.Join(Environment.NewLine, pausedLegacyIntervalTasks);
-                            _logger.Warn($"Paused legacy Interval/Forever tasks after schedule migration:{Environment.NewLine}{taskNames}");
-                            MessageBox.Show(
-                                string.Format(Properties.Resources.Sched_LegacyIntervalForeverPaused, taskNames),
-                                Properties.Resources.Sched_RestoreWarningTitle,
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
-                        }
-                    }
-                    else
+                    SchedulerScheduleState.Restore(item);
+                    if (isLegacyDefinition)
                     {
-                        _logger.Warn("Deserialized task list is null");
+                        item.ScheduleDefinitionVersion = SchedulerInfo.CurrentScheduleDefinitionVersion;
+                        definitionVersionUpgraded = true;
                     }
                 }
+
+                TaskInfos.Clear();
+                foreach (var item in tasks) TaskInfos.Add(item);
+
+                // Preserve the recovered backup until an ordinary task save takes place.
+                if (definitionVersionUpgraded && !restoredBackup && !TryPersistTasks(out string persistenceError))
+                    notifications.Add(persistenceError);
+                if (pausedLegacyIntervalTasks.Count > 0)
+                {
+                    string taskNames = string.Join(Environment.NewLine, pausedLegacyIntervalTasks);
+                    _logger.Warn($"Paused legacy Interval/Forever tasks after schedule migration:{Environment.NewLine}{taskNames}");
+                    notifications.Add(string.Format(Properties.Resources.Sched_LegacyIntervalForeverPaused, taskNames));
+                }
+                return notifications.Count == 0 ? null : string.Join(Environment.NewLine + Environment.NewLine, notifications);
             }
             catch (Exception ex)
             {
                 _logger.Error("Failed to load tasks", ex);
-                MessageBox.Show(string.Format(Properties.Resources.Sched_LoadFailed, ex.Message), Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Warning);
+                _configurationLoadError = string.Format(Properties.Resources.Sched_LoadFailed, ex.Message);
+                return _configurationLoadError;
             }
         }
 

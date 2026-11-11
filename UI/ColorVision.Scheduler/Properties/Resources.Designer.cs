@@ -708,6 +708,12 @@ namespace ColorVision.Scheduler.Properties {
                 return ResourceManager.GetString("Sched_LoadFailed", resourceCulture);
             }
         }
+
+        public static string Sched_TaskFileUnreadable => ResourceManager.GetString(nameof(Sched_TaskFileUnreadable), resourceCulture);
+
+        public static string Sched_TaskBackupRequiresRestore => ResourceManager.GetString(nameof(Sched_TaskBackupRequiresRestore), resourceCulture);
+
+        public static string Sched_TaskBackupRestored => ResourceManager.GetString(nameof(Sched_TaskBackupRestored), resourceCulture);
         
         /// <summary>
         ///   查找类似 更多 的本地化字符串。

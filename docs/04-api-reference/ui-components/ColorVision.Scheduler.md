@@ -66,7 +66,9 @@ Job 类型来自当次 `AssemblyService.Instance.GetImplementationTypes(typeof(I
 | `scheduler_tasks.json` | `SchedulerTaskSerializer` 保存整组 `SchedulerInfo`，含 Job 类型、配置、调度参数、本轮已触发次数、下一计划时间、完成标记及显示/统计字段 | 不是业务成功、在途执行或设备动作恰好一次的保证 |
 | `SchedulerHistory.db` | `JobExecutionRecord` 保存每次返回后的开始/结束时间、耗时、成功标记、结果与消息；启动时按 JobName/GroupName 恢复部分统计 | 不是任务定义，也不是设备实际静止或每次执行都已记录的保证 |
 
-JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载依赖对应程序集/类型可解析；没有在此序列化器配置类型白名单，因此只应把它当作可信本机状态，不接受未经核验的外来 JSON。保存先写同目录临时文件，再用 `File.Replace` 保留 `.bak`，首次保存则移动文件；这是单文件替换，不是 JSON 与 Quartz、SQLite 的跨系统事务。`LoadFromFile` 只读取主文件，没有自动加载 `.bak` 的回退，加载失败后不要用空任务列表覆盖证据。
+JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载依赖对应程序集和类型，应使用可信本机文件。保存先写同目录临时文件，再用 `File.Replace` 保留 `.bak`，首次保存则移动文件。JSON、Quartz 和 SQLite 各自提交。
+
+管理器加载时，如果主文件缺失且备份可读取，会从 `.bak` 恢复主文件并提示核对进度。恢复的计划保持暂停或已完成。已有主文件无法解析或任务类型不可用时，管理器保留主文件和备份，并拒绝保存更改。可在修复任务类型或手动恢复有效主文件后重新启动应用。序列化器的 `LoadFromFile` 读取指定文件，应用的备份恢复由管理器加载入口触发。
 
 `SchedulerScheduleState` 区分累计 `RunCount` 与本轮 `ScheduledFireCount`，用 `HasScheduleCheckpoint`、`NextScheduledFireTimeUtc` 和 `ScheduleCompleted` 保存有限计划进度。监听器在计划触发进入业务前保存已消耗次数和下一时间，业务返回后保存结果统计，不依赖任务窗口是否打开；仅执行一次只更新累计统计及上次实际执行时间。有限计划最后一次触发后保留 durable Job，可重新执行整轮，也可通过更多菜单额外执行一次。
 
@@ -134,7 +136,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 - 验证不加载用户保存任务或操作真实设备。
 - `SchedulerLifecycleTests` 使用独立 Quartz RAM scheduler、空 Job、临时 JSON 和隔离历史写入，覆盖有限计划完成后多次手动运行、重新执行完整循环并拒绝重复启动、Cron 主操作按时间登记、重启只登记无触发器任务、暂停时手动运行、继续剩余次数、保存失败回退、全部暂停/继续及编辑重新安排。
 - `SchedulerTriggerFactoryTests` 检查触发器类型、追加次数、日历间隔、Cron、延迟及非法值；其中 Quartz RAM scheduler 用例只验证替换行为，不启动真实 Job，也不覆盖 `QuartzSchedulerManager` 的 JSON 失败补偿链。
-- `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本与替换备份；不验证管理器启动时的旧 Interval/Forever 暂停迁移或坏主文件恢复。
+- `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本、替换备份和保存保护。`SchedulerLifecycleTests` 还覆盖主文件缺失时恢复备份及主文件不可读时保留原件。
 - `SchedulerHistoryQueryTests` 使用隔离临时 SQLite，验证筛选/分页统计、稳定排序与显式失败；不覆盖真实历史库初始化失败、执行监听写入或清理。
 - `ScheduledDeviceJobHelperTests` 检查相机/光谱 Job 的并发属性、零/正超时转换以及等待超时/取消；不证明设备已被停止，也没有执行真实采集。
 

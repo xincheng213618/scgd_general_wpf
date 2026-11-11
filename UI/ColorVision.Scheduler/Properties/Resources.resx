@@ -342,6 +342,15 @@
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>加载任务配置失败: {0}</value>
   </data>
+  <data name="Sched_TaskFileUnreadable" xml:space="preserve">
+    <value>无法读取任务定义“{0}”。请保留原文件，检查任务类型是否可用。需要时从有效备份恢复后重新加载。</value>
+  </data>
+  <data name="Sched_TaskBackupRequiresRestore" xml:space="preserve">
+    <value>主任务文件缺失，仍保有备份“{0}”。请重新加载或重启以恢复，再保存更改。</value>
+  </data>
+  <data name="Sched_TaskBackupRestored" xml:space="preserve">
+    <value>主任务文件缺失，已从备份“{0}”恢复。恢复的计划未启用，请核对进度和配置后再启用。</value>
+  </data>
   <data name="Sched_RestoreWarning" xml:space="preserve">
     <value>以下任务未能恢复: {0}</value>
   </data>

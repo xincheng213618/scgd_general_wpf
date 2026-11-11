@@ -362,6 +362,15 @@
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>Failed to load task config: {0}</value>
   </data>
+  <data name="Sched_TaskFileUnreadable" xml:space="preserve">
+    <value>無法讀取任務定義「{0}」。請保留原始檔案並檢查任務類型是否可用。必要時從有效備份還原，再重新載入。</value>
+  </data>
+  <data name="Sched_TaskBackupRequiresRestore" xml:space="preserve">
+    <value>主任務檔案缺失，仍保有備份「{0}」。請重新載入或重新啟動以還原，再儲存變更。</value>
+  </data>
+  <data name="Sched_TaskBackupRestored" xml:space="preserve">
+    <value>主任務檔案缺失，已從備份「{0}」還原。還原的排程尚未啟用，請核對進度和設定後再啟用。</value>
+  </data>
   <data name="Sched_RestoreWarning" xml:space="preserve">
     <value>The following tasks failed to restore: {0}</value>
   </data>
