@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private bool disposed;
         private bool identitySavePending;
         private bool filterWheelPrepared;
+        private bool requiresCloseAfterFailedOpen;
         private readonly Func<MotorConfig> getMotorConfig;
         private readonly LocalCameraMotorSession motor;
         private readonly object focusSync = new();
@@ -88,6 +89,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         internal object SyncRoot { get; } = new();
         internal LocalCameraRawBufferPool RawBufferPool { get; private set; } = new();
+        internal bool RequiresCloseAfterFailedOpen
+        {
+            get { lock (SyncRoot) return requiresCloseAfterFailedOpen; }
+        }
 
         public IntPtr Handle
         {
@@ -128,6 +133,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (SyncRoot)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                EnsureOpenRecoveryCompleted();
                 ensureAvailable(null);
                 ConfigCamera config = getConfig();
                 string? configuredCameraId = config.CameraID;
@@ -163,6 +169,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     backend.BeginLocalOpen();
                     config.CameraID = cameraId;
                 }
+                bool openedSuccessfully = false;
                 try
                 {
                     IntPtr manager = EnsureInitialized();
@@ -212,10 +219,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         try { saveConfig(); identitySavePending = false; }
                         catch (Exception ex) { log.Error("保存本地相机 CameraID 失败；当前已打开的会话仍可使用。", ex); }
                     }
+                    openedSuccessfully = result == cvErrorDefine.CV_ERR_SUCCESS;
                     return result;
                 }
                 finally
                 {
+                    // A failed setup can leave native resources open for an explicit close retry.
+                    requiresCloseAfterFailedOpen = !openedSuccessfully;
                     if (!IsOpen) config.CameraID = configuredCameraId!;
                     RefreshStatus();
                 }
@@ -250,6 +260,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (SyncRoot)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                EnsureOpenRecoveryCompleted();
                 ConfigCamera config = getConfig();
                 TakeImageMode mode = config.TakeImageMode == TakeImageMode.Live ? TakeImageMode.Measure_Normal : config.TakeImageMode;
                 int result;
@@ -277,6 +288,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             filterWheelPrepared = true;
         }
 
+        private void EnsureOpenRecoveryCompleted()
+        {
+            if (requiresCloseAfterFailedOpen)
+                throw new InvalidOperationException("本地相机打开失败且资源尚未释放，请先关闭相机后重新连接。");
+        }
+
         // Retain an MVS connection, or reopen the same legacy manager/identity.
         // Keep ownership reserved until the SDK reports the actual final state.
         internal int SwitchMode(TakeImageMode mode, int imageBpp)
@@ -284,6 +301,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (SyncRoot)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                EnsureOpenRecoveryCompleted();
                 if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
                 if (imageBpp is not (8 or 16)) throw new ArgumentOutOfRangeException(nameof(imageBpp));
                 if (!IsOpen) throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
@@ -569,7 +587,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (SyncRoot)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                if (handle == IntPtr.Zero || !native.IsOpen(handle))
+                if (requiresCloseAfterFailedOpen || handle == IntPtr.Zero || !native.IsOpen(handle))
                 {
                     return false;
                 }
@@ -593,6 +611,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (SyncRoot)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                EnsureOpenRecoveryCompleted();
                 if (handle == IntPtr.Zero || !native.IsOpen(handle))
                 {
                     RefreshStatus();
@@ -633,6 +652,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     backend.SetLocalStatus(DeviceStatusType.Opened);
                     return;
                 }
+                requiresCloseAfterFailedOpen = false;
             }
             backend.SetLocalStatus(isOpen
                 ? (OpenedMode == TakeImageMode.Live ? DeviceStatusType.LiveOpened : DeviceStatusType.Opened)

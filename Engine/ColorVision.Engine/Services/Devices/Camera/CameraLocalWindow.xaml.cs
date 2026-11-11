@@ -143,7 +143,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             bool isConnected = Device.LocalCameraSession.IsOpen;
             SynchronizeSessionMode();
-            if (isConnected && m_etakeImageMode == TakeImageMode.Live)
+            if (isConnected && m_etakeImageMode == TakeImageMode.Live && !Device.LocalCameraSession.RequiresCloseAfterFailedOpen)
             {
                 AttachLiveCallback();
             }

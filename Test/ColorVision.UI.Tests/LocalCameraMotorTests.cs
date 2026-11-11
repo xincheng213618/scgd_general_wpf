@@ -68,6 +68,64 @@ public class LocalCameraMotorTests
         Assert.Equal(0, session.UseMotor(m => m.ReadPosition()));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MotorSetupAndRollbackFailurePreservesOwnershipAndHonorsLinkage(bool linkage)
+    {
+        var camera = new LocalCameraSessionTests.FakeNative();
+        var motor = new FakeMotor { ConfigurationError = true, CloseResult = -10063 };
+        var config = Configuration();
+        config.MotorConfig.IsCameraLinkage = linkage;
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(camera, backend, config, motorNative: motor);
+        try
+        {
+            if (linkage)
+                Assert.Throws<AggregateException>(() => session.Open("camera", TakeImageMode.Measure_Normal, 16));
+            else
+                Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Measure_Normal, 16));
+
+            Assert.True(session.IsOpen);
+            Assert.True(backend.LocalOwned);
+            Assert.Equal(1, camera.Opens);
+            Assert.Equal(0, camera.Closes);
+            int measurements = 0;
+            int UseCamera() => session.UseOpened(_ => ++measurements);
+            if (linkage)
+            {
+                Assert.All(new Action[]
+                {
+                    () => session.EnsureMeasurement(autoConnect: true),
+                    () => session.Open("camera", TakeImageMode.Measure_Normal, 16),
+                    () => session.SwitchMode(TakeImageMode.Measure_Normal, 16),
+                    () => UseCamera()
+                }, operation => Assert.Contains("重新连接", Assert.Throws<InvalidOperationException>(operation).Message));
+                Assert.Equal(0, measurements);
+                Assert.False(session.UpdateCalibration("{}"));
+            }
+            else
+            {
+                session.EnsureMeasurement(autoConnect: false);
+                Assert.Equal(1, UseCamera());
+            }
+        }
+        finally
+        {
+            motor.CloseResult = cvErrorDefine.CV_ERR_SUCCESS;
+            motor.ConfigurationError = false;
+        }
+
+        session.Close(unregisterCallback: true);
+        Assert.False(backend.LocalOwned);
+        Assert.Equal(1, camera.Closes);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(2, camera.Opens);
+        session.EnsureMeasurement(autoConnect: false);
+        Assert.Equal(session.Handle, session.UseOpened(handle => handle));
+        Assert.Equal(0, session.UseMotor(m => m.ReadPosition()));
+    }
+
     [Fact]
     public void DisabledMotorNeverOpensAndChangedConnectionRequiresReopen()
     {
