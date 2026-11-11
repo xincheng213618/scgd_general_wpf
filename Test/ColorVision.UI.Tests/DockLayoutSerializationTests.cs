@@ -16,6 +16,103 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DockLayoutSerializationTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResetKeepsTheOpenEditorAndItsUnsavedContent(bool floating)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            LayoutRoot previousRoot = WorkspaceManager.layoutRoot;
+            LayoutDocumentPane previousPane = WorkspaceManager.LayoutDocumentPane;
+            var docking = CreateDockingManager(new LayoutAnchorable { Content = new Border() });
+            docking.Theme = new AvalonDockTheme(isDark: false);
+            var manager = new DockLayoutManager(docking);
+            manager.RegisterDocument("home", new Border(), "Home");
+            WorkspaceManager.layoutRoot = docking.Layout;
+            WorkspaceManager.LayoutDocumentPane = docking.Layout.Descendents().OfType<LayoutDocumentPane>().Single();
+            var draft = new UnsavedEditor();
+            string path = Path.Combine(Path.GetTempPath(), $"ColorVision-Draft-{Guid.NewGuid():N}.txt");
+            int closes = 0;
+            LayoutDocument? document = null;
+            try
+            {
+                WithShownDockWindow(docking, () =>
+                {
+                    document = EditorDocumentService.Open(path, typeof(UnsavedEditor), "Draft", () => draft, _ => closes++);
+                    LayoutRoot oldLayout = docking.Layout;
+                    if (floating)
+                    {
+                        document.Float();
+                        PumpDispatcher();
+                        Assert.Single(docking.FloatingWindows);
+                    }
+                    else
+                    {
+                        DocumentTabPinManager.ToggleCommand.Execute(document);
+                    }
+
+                    manager.ResetLayout();
+                    PumpDispatcher();
+
+                    Assert.NotSame(oldLayout, docking.Layout);
+                    Assert.Same(docking.Layout, WorkspaceManager.layoutRoot);
+                    Assert.Contains(document, WorkspaceManager.LayoutDocumentPane.Children);
+                    Assert.Same(draft, document.Content);
+                    Assert.True(draft.IsDirty);
+                    Assert.True(document.IsActive);
+                    Assert.Same(Window.GetWindow(docking), Window.GetWindow(draft));
+                    Assert.Equal(!floating, DocumentTabPinManager.IsPinned(document));
+                    if (!floating) Assert.Same(document, WorkspaceManager.LayoutDocumentPane.Children[0]);
+                    Assert.Empty(docking.FloatingWindows);
+                    Assert.Equal(0, closes);
+                    Assert.Same(document, EditorDocumentService.Open<UnsavedEditor>(path, typeof(UnsavedEditor), "Draft",
+                        () => throw new InvalidOperationException("Reset must preserve the open editor instance.")));
+                    Assert.False(EditorDocumentService.TryCloseAllDocuments(_ => MessageBoxResult.Cancel));
+                    Assert.True(EditorDocumentService.TrySaveActiveDocument());
+                    Assert.False(draft.IsDirty);
+                    document.Close();
+                    Assert.Equal(1, closes);
+                });
+            }
+            finally
+            {
+                try
+                {
+                    draft.Save();
+                    if (document != null && closes == 0)
+                    {
+                        if (!ReferenceEquals(document.Root, docking.Layout))
+                        {
+                            document.Parent?.RemoveChild(document);
+                            WorkspaceManager.LayoutDocumentPane.Children.Add(document);
+                        }
+                        document.Close();
+                    }
+                }
+                finally
+                {
+                    WorkspaceManager.layoutRoot = previousRoot;
+                    WorkspaceManager.LayoutDocumentPane = previousPane;
+                }
+            }
+        });
+    }
+
+    private sealed class UnsavedEditor : Border, IEditorDocumentContent
+    {
+        public bool IsDirty { get; private set; } = true;
+        public bool CanSave => true;
+        public event EventHandler? DocumentStateChanged;
+
+        public bool Save()
+        {
+            IsDirty = false;
+            DocumentStateChanged?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+    }
+
     [Fact]
     public void FailedLayoutSerializationPreservesThePreviousFileAndCanBeRetried()
     {

@@ -2,7 +2,7 @@
 knowledge_id: "ui.documents"
 knowledge_type: "topic"
 status: "current"
-summary: "编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。"
+summary: "编辑器注册与选择、文档身份、保存重载关闭及外部变更；重置停靠布局保留已打开的编辑器和未保存修改。"
 aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "DockContentRegistration", "DeferredDockContent", "WorkspaceManager", "DocumentTabPinManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "固定选项卡", "固定标签", "重置窗口布局", "停靠布局恢复", "关闭重开面板", "面板内容双父节点"]
 code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
 test_paths: []
@@ -120,7 +120,7 @@ XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.Xm
 
 设备结果页由 `AddViewConfig` 使用 `IDisPlayControl.PersistenceKey` 登记稳定身份，设备 Code 不变时，改显示名称或加载顺序不影响匹配；主工作流程页使用固定 `Flow` 身份。`DockViewRegistration` 可按此身份创建新的延迟视图壳，恢复左右/上下分栏、窗格尺寸比例、标签顺序及选中状态。恢复分栏不恢复图像、曲线或测量记录，也不触发采集。设备未加载或身份重复时不猜测替代视图；没有稳定身份的旧 `DockView_序号` 项仍无法可靠恢复，需要升级后重新排列一次并正常退出保存。设备页恢复及再次加载后沿用当前文档的关闭/释放责任，旧布局的关闭事件不能释放新布局中的内容。`DockViewLifecycleTests.ColdStartRestoresNestedDevicePanesByIdentityWithFreshEmptyViews` 在内存中序列化实际布局、替换视图实例及顺序后验证分栏、比例、空记录和关闭所有权，不读写用户布局文件。
 
-`ResetLayout()` 先删除现有布局文件，再按面板默认位置和 `IsDefaultVisible`、已注册文档重建布局，最后清 DockView 缓存并调用 `ShowAllViews()`。它不保留未注册动态编辑器标签，也没有调用文档保存、关闭预审或逐项 Close。重置菜单及其默认 Ctrl+Alt+Shift+R 快捷键先弹出警告，默认选择“否”；只有用户确认后才调用它，启动失败恢复的直接调用不经过该提示。确认不等于自动保存或逐文档关闭授权，仍须先保存文档，不能把重置描述为保护未保存内容、触发编辑器释放或仅改变窗口位置的动作。失败捕获后只记警告，不恢复已删除的 XML 或之前的布局，也不立即另存新布局。
+`ResetLayout()` 删除旧布局文件并按默认位置重建面板和注册文档。`EditorDocumentService` 管理的已打开标签（包括浮动标签）移到主文档窗格，保留编辑器实例、未保存修改和固定状态，重置前活动的编辑标签重新选中。菜单与 Ctrl+Alt+Shift+R 先询问是否重置，默认选择“否”。启动布局恢复失败时直接重置。编辑内容仍由用户保存，布局文件在后续正常保存时写入。
 
 面板的 Hide/Show 与文档关闭不同。`TogglePanel` 隐藏/显示已有面板；`ShowPanel` 还会激活面板。面板已从布局移除时，两者可从注册表重新加入；不代表创建全新内容实例或重启终端进程。`IsPanelVisible` 只检查是否找到面板且未隐藏，不保证该页签当前激活或内容已构造。
 
@@ -132,11 +132,11 @@ XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.Xm
 
 断言宿主及子内容引用、逻辑父子关系和工厂调用次数，并区分旧布局项的 Dispatcher 清理在重开之前或之后发生。
 
-`Test/ColorVision.UI.Tests/DockLayoutSerializationTests.cs` 用合成的 4.x XML 验证兼容读取和新版往返，并在临时目录模拟部分 XML 写入后失败，核对旧布局、临时文件清理和再次保存。
+`Test/ColorVision.UI.Tests/DockLayoutSerializationTests.cs` 用合成的 4.x XML 验证兼容读取和新版往返，在临时目录验证写入失败恢复，并用 WPF 停靠与浮动窗口验证重置后保留脏编辑器及文档身份。
 
 同一测试文件还用离屏 WPF/AvalonDock 验证工厂面板在未选中或隐藏时不创建，首次选中或显式显示后只创建一次，并在内存布局恢复、隐藏重显、关闭重开后复用宿主与子内容。此回归保护共享按需加载与单一逻辑父节点的生命周期，不以耗时阈值断言启动加速。
 
-其他用例通过实际注册内容恢复入口取得宿主，再替换内存 `LayoutRoot`；不调用 `SaveLayout` / `LoadLayout` / `ResetLayout`，不读写用户 XML 或配置。因此这些检查不覆盖完整布局文件保存恢复、带脏文档重置、默认编辑器配置落盘失败、文档关闭取消、外部文件事件或路径更新失败，不能据此推断完整生命周期已验证。
+延迟面板用例通过注册内容恢复入口取得宿主，并替换内存 `LayoutRoot`。布局用例使用隔离目录。默认编辑器配置落盘失败、外部文件事件与路径更新失败需单独验证。
 
 不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
 

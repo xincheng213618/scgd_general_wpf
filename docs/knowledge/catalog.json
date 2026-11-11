@@ -11007,7 +11007,7 @@
       "knowledge_id": "ui.documents",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。",
+      "summary": "编辑器注册与选择、文档身份、保存重载关闭及外部变更；重置停靠布局保留已打开的编辑器和未保存修改。",
       "aliases": [
         "EditorManager",
         "EditorDescriptor",

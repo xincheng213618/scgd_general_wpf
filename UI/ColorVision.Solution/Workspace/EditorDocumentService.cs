@@ -133,6 +133,8 @@ namespace ColorVision.Solution.Workspace
             return true;
         }
 
+        internal static bool IsManagedDocument(LayoutDocument document) => _sessions.ContainsKey(document);
+
         public static bool TryCloseAllDocuments()
             => TryCloseAllDocuments(ConfirmSaveBeforeClose);
 

@@ -312,20 +312,37 @@ namespace ColorVision.Solution.Workspace
                 }
 
                 defaultLayout.RootPanel = rootPanel;
+
+                // Move the live documents before AvalonDock tears down the old layout and floating windows.
+                var openEditors = _dockingManager.Layout.Descendents().OfType<LayoutDocument>()
+                    .Where(EditorDocumentService.IsManagedDocument)
+                    .ToArray();
+                LayoutDocument? activeEditor = openEditors.FirstOrDefault(document => document.IsActive);
+                foreach (LayoutDocument editor in openEditors)
+                {
+                    editor.Parent?.RemoveChild(editor);
+                    var previous = (ILayoutPreviousContainer)editor;
+                    previous.PreviousContainer = null;
+                    previous.PreviousContainerId = null;
+                    docPane.Children.Add(editor);
+                    if (DocumentTabPinManager.IsPinned(editor)) DocumentTabPinManager.MoveToFixedBoundary(editor);
+                }
+
                 _dockingManager.Layout = defaultLayout;
 
                 // 更新 WorkspaceManager 的引用
                 WorkspaceManager.layoutRoot = defaultLayout;
-                var resetDocPane = defaultLayout.Descendents()
-                    .OfType<LayoutDocumentPane>().FirstOrDefault();
-                if (resetDocPane != null)
-                    WorkspaceManager.LayoutDocumentPane = resetDocPane;
-                else
-                    log.Warn("重置后的布局中未找到 LayoutDocumentPane");
+                WorkspaceManager.LayoutDocumentPane = docPane;
 
                 // 清除旧的视图文档缓存并重新创建所有视图标签页
                 DockViewManagerHost.ClearViewDocuments();
                 UI.Views.DockViewManager.GetInstance().ShowAllViews();
+
+                if (activeEditor != null)
+                {
+                    activeEditor.IsSelected = true;
+                    activeEditor.IsActive = true;
+                }
 
                 log.Info("主窗口布局已重置");
             }
