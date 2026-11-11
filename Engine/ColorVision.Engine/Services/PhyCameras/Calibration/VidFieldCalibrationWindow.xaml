@@ -1,0 +1,74 @@
+<Window x:Class="ColorVision.Engine.Services.PhyCameras.Calibration.VidFieldCalibrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
+        Title="{engine:EngineLang Key='VID 现场校正'}" Width="760" Height="530" MinWidth="620" MinHeight="500"
+        WindowStartupLocation="CenterOwner" UseLayoutRounding="True" SnapsToDevicePixels="True"
+        Background="{DynamicResource UpdateDialog.Background}" Foreground="{DynamicResource UpdateDialog.TextPrimary}">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/UpdateDialogTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <DockPanel Margin="24">
+        <TextBlock DockPanel.Dock="Top" Text="{engine:EngineLang Key='VID 现场校正'}" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,16"/>
+        <StackPanel DockPanel.Dock="Bottom">
+            <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="CloseButton" Content="{engine:EngineLang Key='关闭'}" Click="Close_Click" MinWidth="72" Margin="0,0,8,0"/>
+                <Button x:Name="SaveButton" Content="{engine:EngineLang Key='另存映射'}" IsEnabled="False" Click="Save_Click" MinWidth="104"/>
+            </StackPanel>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,0,12">
+                <Grid x:Name="InputPanel">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Margin="0,0,16,10" VerticalAlignment="Center" Text="{engine:EngineLang Key='本地相机'}"/>
+                    <ComboBox x:Name="CameraPicker" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" DisplayMemberPath="Name"
+                              SelectionChanged="CameraChanged" AutomationProperties.Name="{engine:EngineLang Key='本地相机'}"/>
+                    <TextBlock Grid.Row="1" Margin="0,0,16,10" VerticalAlignment="Center" Text="{engine:EngineLang Key='对焦模板'}"/>
+                    <ComboBox x:Name="TemplatePicker" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" DisplayMemberPath="Key"
+                              SelectionChanged="TemplateChanged" AutomationProperties.Name="{engine:EngineLang Key='对焦模板'}"/>
+                    <TextBlock Grid.Row="2" Margin="0,0,16,10" VerticalAlignment="Center" Text="{engine:EngineLang Key='原映射文件'}"/>
+                    <DockPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Margin="8,0,0,0" Content="{engine:EngineLang Key='浏览'}" Click="Browse_Click"/>
+                        <TextBox x:Name="SourcePath" IsReadOnly="True" AutomationProperties.Name="{engine:EngineLang Key='原映射文件'}"/>
+                    </DockPanel>
+                    <TextBlock Grid.Row="3" Margin="0,0,16,0" VerticalAlignment="Center" Text="{engine:EngineLang Key='标准 VID'}"/>
+                    <DockPanel Grid.Row="3" Grid.Column="1">
+                        <ComboBox x:Name="UnitPicker" DockPanel.Dock="Right" Width="74" Margin="8,0,0,0" SelectedIndex="0"
+                                  SelectionChanged="InputChanged" AutomationProperties.Name="{engine:EngineLang Key='映射与标准值单位'}"
+                                  ToolTip="{engine:EngineLang Key='请选择原映射使用的距离单位，标准 VID 使用相同单位。'}">
+                            <ComboBoxItem Content="mm"/>
+                            <ComboBoxItem Content="m"/>
+                        </ComboBox>
+                        <TextBox x:Name="ReferenceBox" TextChanged="InputChanged" AutomationProperties.Name="{engine:EngineLang Key='标准 VID'}"/>
+                    </DockPanel>
+                </Grid>
+                <TextBlock Margin="0,5,0,0" TextWrapping="Wrap" Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                           Text="{engine:EngineLang Key='标准 VID 须与原映射使用相同的距离单位。'}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,12">
+                    <Button x:Name="MeasureButton" Content="{engine:EngineLang Key='自动对焦并读取'}" IsEnabled="False" Click="Measure_Click" MinWidth="126"/>
+                    <Button x:Name="StopButton" Content="{engine:EngineLang Key='停止对焦'}" Visibility="Collapsed" Click="Stop_Click" MinWidth="88" Margin="8,0,0,0"/>
+                </StackPanel>
+                <Border Padding="12" CornerRadius="6" Background="{DynamicResource UpdateDialog.Surface}">
+                    <StackPanel>
+                        <TextBlock Text="{engine:EngineLang Key='校正预览'}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock x:Name="PreviewText" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -336,6 +336,22 @@ public class LocalCameraMotorTests
     }
 
     [Fact]
+    public void CalibrationFocusReadsRawMotorPositionWithoutTheConfiguredVidMap()
+    {
+        var config = Configuration();
+        config.MotorConfig.VID.IsUseVID = true;
+        config.MotorConfig.VID.MappingFileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".dat");
+        using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), config, motorNative: new FakeMotor());
+        session.Open("camera", TakeImageMode.Measure_Normal, 16);
+
+        Assert.Throws<InvalidOperationException>(() => session.AutoFocus(Settings(), 10, 1));
+        var result = session.AutoFocus(Settings(), 10, 1, includeVid: false);
+
+        Assert.Null(result.VidPosition);
+        Assert.Equal(result.Position, session.UseMotor(motor => motor.ReadPosition()));
+    }
+
+    [Fact]
     public async Task ExistingMotorCommandApiUsesTheLocalSessionWithoutMqtt()
     {
         WpfTestHost.Invoke(() => { });

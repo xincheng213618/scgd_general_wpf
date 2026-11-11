@@ -177,6 +177,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
+        internal async Task<int> MeasureVidCalibrationPositionAsync(LocalAutoFocusSettings settings, CancellationToken stop)
+        {
+            if (!CameraBackend.OpensLocally) throw new InvalidOperationException("请将相机切换到本地取图模式后再校正 VID。");
+            float exposure = (float)(Config.IsExpThree ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
+            float gain = DisplayConfig.Gain;
+            CameraBackend.BeginLocalCommand();
+            try
+            {
+                return await Task.Run(() =>
+                {
+                    lock (LocalCameraSession.SyncRoot)
+                    {
+                        ObjectDisposedException.ThrowIf(IsDisposed, this);
+                        stop.ThrowIfCancellationRequested();
+                        if (LocalCameraSession.IsOpen && LocalCameraSession.OpenedMode == TakeImageMode.Live)
+                            throw new InvalidOperationException("请先停止本地预览再校正 VID。");
+                        EnsureLocalMeasurementConnected(autoConnect: true);
+                        LocalCameraSession.AutoFocus(settings, exposure, gain, stop, includeVid: false);
+                        stop.ThrowIfCancellationRequested();
+                        int position = LocalCameraSession.UseMotor(motor => motor.ReadPosition());
+                        stop.ThrowIfCancellationRequested();
+                        return position;
+                    }
+                }, stop);
+            }
+            finally { CameraBackend.EndLocalCommand(); }
+        }
+
         private void DispatchFocusView(Action<ViewCamera> update)
         {
             ViewCamera? view = ExistingView;

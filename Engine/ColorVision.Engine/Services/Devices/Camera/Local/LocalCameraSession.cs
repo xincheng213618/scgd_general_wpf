@@ -553,7 +553,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         });
 
         internal LocalAutoFocusResult AutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default,
-            Action<LocalAutoFocusFrame>? preview = null, Action<int, double?, double?>? progress = null) => UseOpened(manager =>
+            Action<LocalAutoFocusFrame>? preview = null, Action<int, double?, double?>? progress = null, bool includeVid = true) => UseOpened(manager =>
         {
             stop.ThrowIfCancellationRequested();
             if (OpenedMode == TakeImageMode.Live) throw new InvalidOperationException("请先停止本地预览再自动对焦。");
@@ -567,7 +567,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             try
             {
                 log.Info(FormattableString.Invariant($"[LocalAutoFocus] Begin Camera={OpenedCameraId} Method={settings.Method} FineOnly={settings.FineOnly} Evaluation={settings.Evaluation} Range=[{settings.Minimum},{settings.Maximum}] InitialStep={settings.InitialStep} FineStep={settings.FineStep} Reduction={settings.Reduction} StopStep={settings.StopStep} MinimumScore={settings.MinimumScore} TimeoutMs={settings.Timeout} ExposureMs={exposure} Gain={gain} Preview={preview != null}"));
-                var result = motor.AutoFocus(manager, settings, exposure, gain, cancellation.Token, preview, progress);
+                var result = motor.AutoFocus(manager, settings, exposure, gain, cancellation.Token, preview, progress, includeVid);
                 log.Info(FormattableString.Invariant($"[LocalAutoFocus] Completed Camera={OpenedCameraId} Position={result.Position} Score={result.Score} Samples={result.Samples} TotalMs={result.TotalTime}"));
                 return result;
             }

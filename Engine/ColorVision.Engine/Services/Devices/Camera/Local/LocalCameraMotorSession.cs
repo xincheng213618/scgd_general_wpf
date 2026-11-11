@@ -1,3 +1,4 @@
+using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using cvColorVision;
 using System;
@@ -186,7 +187,7 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
     }
 
     internal LocalAutoFocusResult AutoFocus(IntPtr cameraHandle, LocalAutoFocusSettings focus, float exposure, float gain, CancellationToken token,
-        Action<LocalAutoFocusFrame>? preview = null, Action<int, double?, double?>? progress = null)
+        Action<LocalAutoFocusFrame>? preview = null, Action<int, double?, double?>? progress = null, bool includeVid = true)
     {
         var settings = RequireOpen();
         focus.Validate();
@@ -194,7 +195,7 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
             throw new ArgumentException("对焦曝光须为正有限值，增益须为非负有限值。");
         token.ThrowIfCancellationRequested();
         var watch = Stopwatch.StartNew();
-        var vidMapping = ReadVidMapping(settings);
+        var vidMapping = includeVid ? ReadVidMapping(settings) : null;
         focus.Remaining(watch.ElapsedMilliseconds, token, "准备自动对焦");
         native.PrepareFocus(cameraHandle, exposure, gain);
         focus.Remaining(watch.ElapsedMilliseconds, token, "准备自动对焦");
@@ -241,19 +242,7 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
     private static double? ConvertVid(JObject? mapping, int position)
     {
         if (mapping == null) return null;
-        try
-        {
-            JToken coefficients = mapping;
-            if (mapping["VidNewVision"] is JObject split)
-            {
-                int boundary = split.Value<int?>("positionValue") ?? throw new FormatException("缺少 positionValue。");
-                coefficients = split[position > boundary ? "longSighted" : "shortSighted"] ?? throw new FormatException("缺少 VID 分段系数。");
-            }
-            double Number(string name) => coefficients.Value<double?>(name) ?? throw new FormatException($"缺少 VID 系数 {name}。");
-            double value = (position + Number("a")) / (Number("b") * position + Number("c")) + Number("d");
-            if (!double.IsFinite(value)) throw new FormatException("VID 映射结果不是有限值。");
-            return value;
-        }
+        try { return VidMappingCoefficients.Evaluate(mapping, position); }
         catch (Exception error) { throw new InvalidOperationException(VidMappingError, error); }
     }
 
