@@ -71,7 +71,9 @@ Flow 路径用返回结果的 `SerialNumber` 查询本次批次，找不到时�
 - `ApplyPreprocess` 通过 `ref` 更新 Mat，并在 `finally` 保留已替换通道；中途异常不等于整个处理已回滚。`Reload` 是同步重读 XYZ并按配置执行非正值 clamp，不是 `OpenAsync` 的分阶段过程。
 - `DataVersion` 随数据变化递增；ImageCenter 色差参考随数据版本失效，避免曲线/导出逐点重复扫描同一参考 ROI。
 
-CVCIE 仍调用 `CVFileUtil.ReadCIEFileChannel` 读取指定内嵌通道，不改走会跟随关联源文件的通用打开流程。CVRAW 通过 Engine 的 `CalibratedRawFileReader` 只读映射原始像素，以文件尾部 `colorvision.calibration.color` 快照调用原生校正逐通道还原 32 位浮点 XYZ；不依赖当前模板，不从预览 RGB 反算，不改写或另存源文件。一次加载共用同一只读文件租约和校正快照，完成或取消后释放，防止 Y 与 X/Z 来自不同版本。原生单通道计算前后检查取消；进行中的一次原生调用结束后才能响应取消。曝光信息来自校正快照。缺失、损坏、布局不匹配、不可重放或仅单通道亮度的校正拒绝用于 Conoscope；预处理和非正值 clamp 仍由 Document 按配置执行。底层格式与读取限制归 [FileIO](../../engine-components/ColorVision.FileIO.md)，此处不另维护二进制协议。
+CVCIE 仍调用 `CVFileUtil.ReadCIEFileChannel` 读取指定内嵌通道，不改走会跟随关联源文件的通用打开流程。CVRAW 通过 Engine 的 `CalibratedRawFileReader` 读取原始像素，以文件尾部 `colorvision.calibration.color` 快照调用原生校正逐通道还原 32 位浮点 XYZ；不依赖当前模板，不从预览 RGB 反算，不改写或另存源文件。一次加载共用同一像素和校正快照，完成或取消后释放，防止 Y 与 X/Z 来自不同版本。原生单通道计算前后检查取消；进行中的一次原生调用结束后才能响应取消。曝光信息来自校正快照。缺失、损坏、布局不匹配、不可重放或仅单通道亮度的校正拒绝用于 Conoscope；预处理和非正值 clamp 仍由 Document 按配置执行。底层格式与读取限制归 [FileIO](../../engine-components/ColorVision.FileIO.md)，此处不另维护二进制协议。
+
+支持轻量检查的宿主先验证 CVRAW 文件头、校正快照和像素长度，正式加载时才映射文件或复制缓存像素。旧宿主继续使用原有的打开检查。
 
 ## 视图状态、通道能力与轻量 Host
 

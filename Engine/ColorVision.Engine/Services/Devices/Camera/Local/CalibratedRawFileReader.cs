@@ -30,33 +30,21 @@ public sealed class CalibratedRawFileReader : IDisposable
     public int Height => snapshot.Height;
     public int Channels => snapshot.Channels;
 
+    /// <summary>Validates a calibrated CVRAW and returns its replayable channel count by reading its header and metadata.</summary>
+    public static int ReadReplayableChannelCount(string filePath)
+    {
+        using Stream source = CVFileReadCache.OpenRead(filePath, populateCache: false);
+        return ReadSource(source, filePath).Snapshot.Channels;
+    }
+
     public CalibratedRawFileReader(string filePath)
     {
         this.filePath = filePath;
         stream = CVFileReadCache.OpenRead(filePath, populateCache: false);
         try
         {
-            int headerEnd = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 3);
-            using (header)
-            {
-                if (headerEnd <= 0 || !string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase) || header.Version is < 1 or > 3
-                    || header.Rows <= 0 || header.Cols <= 0 || header.Channels is not (1 or 3) || header.Bpp is not (8 or 16))
-                    throw new InvalidDataException("CVRAW 数据头无效或不受支持。");
-                header.FileExtType = CVType.Raw;
-                snapshot = ColorCalibrationSnapshot.Read(CVFileMetadata.ReadFromStream(stream), header)
-                    ?? throw new InvalidDataException("CVRAW 没有色度校正参数。");
-                if (!snapshot.CanReplay) throw new InvalidDataException("CVRAW 的色度校正参数不适用于当前像素数据，无法重放。");
-                if (checked((long)Width * Height * sizeof(float)) > Array.MaxLength)
-                    throw new InvalidDataException("CVRAW 校正通道过大。");
-                transform = snapshot.ToNative();
-                stream.Position = headerEnd;
-                using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
-                long declaredBytes = header.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
-                payloadStart = stream.Position;
-                payloadBytes = checked((long)Width * Height * Channels * (snapshot.RawBpp / 8));
-                if (declaredBytes < payloadBytes || declaredBytes > stream.Length - payloadStart)
-                    throw new InvalidDataException("CVRAW 像素数据不完整。");
-            }
+            (snapshot, payloadStart, payloadBytes) = ReadSource(stream, filePath);
+            transform = snapshot.ToNative();
             if (stream is FileStream file)
             {
                 mapping = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
@@ -71,6 +59,31 @@ public sealed class CalibratedRawFileReader : IDisposable
             }
         }
         catch { stream.Dispose(); throw; }
+    }
+
+    private static (ColorCalibrationSnapshot Snapshot, long PayloadStart, long PayloadBytes) ReadSource(Stream source, string filePath)
+    {
+        int headerEnd = CVFileUtil.ReadCIEFileHeader(source, out CVCIEFile header, maximumChannels: 3);
+        using (header)
+        {
+            if (headerEnd <= 0 || !string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase) || header.Version is < 1 or > 3
+                || header.Rows <= 0 || header.Cols <= 0 || header.Channels is not (1 or 3) || header.Bpp is not (8 or 16))
+                throw new InvalidDataException("CVRAW 数据头无效或不受支持。");
+            header.FileExtType = CVType.Raw;
+            ColorCalibrationSnapshot calibration = ColorCalibrationSnapshot.Read(CVFileMetadata.ReadFromStream(source), header)
+                ?? throw new InvalidDataException("CVRAW 没有色度校正参数。");
+            if (!calibration.CanReplay) throw new InvalidDataException("CVRAW 的色度校正参数不适用于当前像素数据，无法重放。");
+            if (checked((long)calibration.Width * calibration.Height * sizeof(float)) > Array.MaxLength)
+                throw new InvalidDataException("CVRAW 校正通道过大。");
+            source.Position = headerEnd;
+            using var reader = new BinaryReader(source, System.Text.Encoding.UTF8, leaveOpen: true);
+            long declaredBytes = header.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
+            long start = source.Position;
+            long length = checked((long)calibration.Width * calibration.Height * calibration.Channels * (calibration.RawBpp / 8));
+            if (declaredBytes < length || declaredBytes > source.Length - start)
+                throw new InvalidDataException("CVRAW 像素数据不完整。");
+            return (calibration, start, length);
+        }
     }
 
     /// <summary>Reads X/Y/Z by index 0/1/2; a monochrome calibration exposes only Y at index 0.</summary>

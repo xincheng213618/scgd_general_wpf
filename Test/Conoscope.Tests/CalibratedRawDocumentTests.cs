@@ -122,6 +122,39 @@ public sealed class CalibratedRawDocumentTests
         finally { CVFileReadCache.Release(); CVFileReadCache.IsEnabled = enabled; }
     }
 
+    [Fact]
+    public void CacheOnlyEligibilityDoesNotAllocateThePixelPayload()
+    {
+        string path = TemporaryFile("cvraw");
+        bool cacheEnabled = CVFileReadCache.IsEnabled;
+        CVFileReadCache.IsEnabled = true;
+        try
+        {
+            const int width = 1024, height = 1024;
+            const int rawBytes = width * height * 3 * sizeof(ushort);
+            using CVCIEFile raw = new()
+            {
+                Version = 2, Rows = height, Cols = width, Bpp = 16, Channels = 3, Exp = [11, 22, 33],
+            };
+            byte[] zeros = new byte[width * raw.Channels * sizeof(ushort)];
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, rawBytes, stream =>
+            {
+                for (int row = 0; row < height; row++) stream.Write(zeros);
+            }, CVFileSaveMode.MemoryOnly));
+            SaveCalibration(path, raw, Transform(0, true));
+
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            bool eligible = ConoscopeDocument.CanOpenFile(path);
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            output.WriteLine($"Eligibility allocated {allocated:N0} bytes for a {rawBytes:N0}-byte cached RAW.");
+
+            Assert.True(eligible);
+            Assert.True(allocated < rawBytes, $"Eligibility allocated a complete RAW payload ({allocated:N0} bytes).");
+            Assert.Equal(0, CVFileReadCache.GetSnapshot().ActiveReaders);
+        }
+        finally { CVFileReadCache.Release(); CVFileReadCache.IsEnabled = cacheEnabled; }
+    }
+
     [Theory]
     [InlineData("missing")]
     [InlineData("not-replayable")]
@@ -130,6 +163,7 @@ public sealed class CalibratedRawDocumentTests
     [InlineData("coefficients")]
     [InlineData("version")]
     [InlineData("corrupt")]
+    [InlineData("truncated-pixels")]
     [InlineData("monochrome")]
     public async Task InvalidOrIncompleteCalibrationNeverPublishesRawRgbAsXyz(string invalid)
     {
@@ -152,6 +186,13 @@ public sealed class CalibratedRawDocumentTests
                 int value = file.ReadByte();
                 file.Position--;
                 file.WriteByte((byte)(value ^ 1));
+            }
+            if (invalid == "truncated-pixels")
+            {
+                int headerEnd = CVFileUtil.ReadCIEFileHeader(path, out CVCIEFile header);
+                using (header) Assert.True(headerEnd > 0);
+                using var file = File.Open(path, FileMode.Open, FileAccess.Write);
+                file.SetLength(headerEnd + sizeof(long) + raw.Data.Length - 1);
             }
             CVFileReadCache.Release(); // Read externally damaged disk bytes, not the valid cached snapshot.
             using var document = NewDocument();

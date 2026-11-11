@@ -48,6 +48,10 @@ namespace Conoscope
     /// </summary>
     internal sealed class ConoscopeDocument : IDisposable
     {
+        // Older supported hosts provide the reader without the metadata-only probe.
+        private static readonly Func<string, int>? readReplayableRawChannelCount = typeof(CalibratedRawFileReader)
+            .GetMethod("ReadReplayableChannelCount", [typeof(string)])?.CreateDelegate<Func<string, int>>();
+
         private readonly ILog log;
         private readonly object loadSync = new();
         private readonly SemaphoreSlim loadGate = new(1, 1);
@@ -79,9 +83,14 @@ namespace Conoscope
             if (string.IsNullOrWhiteSpace(fileName) || !(CVFileReadCache.GetCachedLength(fileName).HasValue || File.Exists(fileName))) return false;
             try
             {
-                using CalibratedRawFileReader? raw = OpenRawSource(fileName);
-                if (raw != null) return true;
-                if (!string.Equals(Path.GetExtension(fileName), ".cvcie", StringComparison.OrdinalIgnoreCase)) return false;
+                string extension = Path.GetExtension(fileName);
+                if (string.Equals(extension, ".cvraw", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (readReplayableRawChannelCount != null) return readReplayableRawChannelCount(fileName) == 3;
+                    using CalibratedRawFileReader? raw = OpenRawSource(fileName);
+                    return raw != null;
+                }
+                if (!string.Equals(extension, ".cvcie", StringComparison.OrdinalIgnoreCase)) return false;
                 int headerEnd = CVFileUtil.ReadCIEFileHeader(fileName, out CVCIEFile header);
                 using (header)
                     return headerEnd > 0 && header.Bpp == 32
