@@ -120,20 +120,20 @@ namespace ColorVision.Engine.Media
             if (calibration == null || calibration.InterleavedBgr || fileInfo.Channels != 3)
                 return CreateMatFromCVCIEFile(fileInfo);
             ValidateImageBuffer(fileInfo, fileInfo.Channels, fileInfo.Data);
-            int planeBytes = GetSingleChannelByteCount(fileInfo);
             GCHandle pin = GCHandle.Alloc(fileInfo.Data, GCHandleType.Pinned);
-            try
-            {
-                IntPtr start = pin.AddrOfPinnedObject();
-                MatType type = MatType.MakeType(fileInfo.Depth, 1);
-                using Mat red = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, start);
-                using Mat green = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, IntPtr.Add(start, planeBytes));
-                using Mat blue = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, IntPtr.Add(start, checked(planeBytes * 2)));
-                Mat output = new();
-                try { Cv2.Merge([blue, green, red], output); return output; }
-                catch { output.Dispose(); throw; }
-            }
+            try { return CreatePlanarBgrMat(fileInfo, pin.AddrOfPinnedObject(), GetSingleChannelByteCount(fileInfo)); }
             finally { pin.Free(); }
+        }
+
+        private static Mat CreatePlanarBgrMat(CVCIEFile fileInfo, IntPtr start, int planeBytes)
+        {
+            MatType type = MatType.MakeType(fileInfo.Depth, 1);
+            using Mat red = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, start);
+            using Mat green = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, IntPtr.Add(start, planeBytes));
+            using Mat blue = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, type, IntPtr.Add(start, checked(planeBytes * 2)));
+            Mat output = new();
+            try { Cv2.Merge([blue, green, red], output); return output; }
+            catch { output.Dispose(); throw; }
         }
 
         private static Mat CreateSingleChannelMat(CVCIEFile fileInfo, byte[] data)
@@ -295,6 +295,55 @@ namespace ColorVision.Engine.Media
                 return null;
             }
             finally { source?.Dispose(); }
+        }
+
+        internal static unsafe Mat ReadRawBatchExportImage(string path, CancellationToken cancellationToken,
+            out ColorVisionTiffParameters parameters)
+        {
+            using Stream input = CVFileReadCache.OpenRead(path, populateCache: false);
+            int index = ReadExportHeader(input, path, out CVCIEFile raw);
+            using var header = raw;
+            if (index <= 0 || raw.Channels <= 0) throw new InvalidDataException("无法读取 CVRAW 文件头。");
+            int planeBytes = GetSingleChannelByteCount(raw);
+            long imageBytes = (long)planeBytes * raw.Channels;
+            input.Position = index;
+            using var reader = new BinaryReader(input, Encoding.UTF8, leaveOpen: true);
+            long declaredBytes = raw.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
+            if (declaredBytes < imageBytes || declaredBytes > Array.MaxLength || declaredBytes > input.Length - input.Position)
+                throw new InvalidDataException("无法读取完整的 CVRAW 图像数据。");
+
+            var properties = ReadExportProperties(input);
+            ColorCalibrationSnapshot? calibration = ReadCalibration(properties, raw);
+            parameters = CreateTiffParameters(raw, "Src", properties);
+            parameters.PixelRole = "calibration-input";
+            if (calibration != null)
+            {
+                parameters.CalibrationSummary = calibration.ToSummary();
+                parameters.Calibration = JToken.FromObject(calibration with { InterleavedBgr = true });
+                parameters.Exposure = (float[])calibration.Exposure.Clone();
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Mat? image = new(raw.Rows, raw.Cols, MatType.MakeType(raw.Depth, raw.Channels));
+            try
+            {
+                Span<byte> pixels = new((void*)image.Data, (int)imageBytes);
+                while (!pixels.IsEmpty)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int count = Math.Min(1024 * 1024, pixels.Length);
+                    input.ReadExactly(pixels[..count]);
+                    pixels = pixels[count..];
+                }
+                cancellationToken.ThrowIfCancellationRequested();
+                if (calibration is { InterleavedBgr: false } && raw.Channels == 3)
+                    return CreatePlanarBgrMat(raw, image.Data, planeBytes);
+
+                Mat result = image;
+                image = null;
+                return result;
+            }
+            finally { image?.Dispose(); }
         }
 
         public static int SaveToTif(VExportCIE export)

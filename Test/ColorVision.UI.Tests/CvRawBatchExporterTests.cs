@@ -1,4 +1,5 @@
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Tif;
 using OpenCvSharp;
@@ -57,6 +58,62 @@ public sealed class CvRawBatchExporterTests
             }
         }
         AssertNoTemporaryFiles(folder.Path);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExportDoesNotAllocateAManagedRawFrame(bool cacheEnabled)
+    {
+        using ExportFolder folder = new();
+        string sourcePath = Path.Combine(folder.Path, "large.cvraw");
+        string outputPath = Path.ChangeExtension(sourcePath, ".tif");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = cacheEnabled;
+            const int width = 2048, height = 1024, length = width * height * sizeof(ushort);
+            using CVCIEFile raw = new() { Version = 2, Cols = width, Rows = height, Bpp = 16, Channels = 1, Data = new byte[length] };
+            Assert.True(CVFileUtil.WriteCVRaw(sourcePath, raw));
+            Assert.Equal(cacheEnabled, CVFileReadCache.GetCachedLength(sourcePath).HasValue);
+            Assert.Equal(1, CvRawBatchExporter.ExportFolder(folder.Path, 1).Exported);
+            File.Delete(outputPath);
+
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            CvRawExportResult result = CvRawBatchExporter.ExportFolder(folder.Path, 1);
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+            Assert.Equal(1, result.Exported);
+            Assert.True(allocated < length, $"Export allocated {allocated:N0} managed bytes for a {length:N0}-byte RAW frame.");
+            AssertNoTemporaryFiles(folder.Path);
+        }
+        finally { CVFileReadCache.IsEnabled = previousCache; }
+    }
+
+    [Fact]
+    public void ExportConvertsRecordedPlanarRgbToTheExpectedTiffSamples()
+    {
+        using ExportFolder folder = new();
+        string path = Path.Combine(folder.Path, "planar.cvraw");
+        using CVCIEFile raw = new()
+        {
+            Version = 2, Cols = 2, Rows = 1, Bpp = 16, Channels = 3,
+            Data = new ushort[] { 100, 101, 200, 201, 300, 301 }.SelectMany(BitConverter.GetBytes).ToArray(),
+        };
+        Assert.True(CVFileUtil.WriteCVRaw(path, raw));
+        new ColorCalibrationSnapshot
+        {
+            Width = 2, Height = 1, RawBpp = 16, Channels = 3, TransformKind = 1, InterleavedBgr = false,
+            Coefficients = [1, 0, 0, 0, 1, 0, 0, 0, 1], Exposure = [1, 1, 1],
+        }.Save(path, canReplay: true);
+
+        Assert.Equal(1, CvRawBatchExporter.ExportFolder(folder.Path, 1).Exported);
+
+        using Mat image = Cv2.ImRead(Path.ChangeExtension(path, ".tif"), ImreadModes.Unchanged);
+        Assert.Equal(MatType.CV_16UC3, image.Type());
+        byte[] actual = new byte[raw.Data.Length];
+        Marshal.Copy(image.Data, actual, 0, actual.Length);
+        Assert.Equal(new ushort[] { 300, 200, 100, 301, 201, 101 }.SelectMany(BitConverter.GetBytes), actual);
     }
 
     [Fact]
