@@ -99,7 +99,8 @@ namespace ColorVision.UI
             {
                 string backupFileName = $"{ConfigDIFileName}Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
                 string backupPath = Path.Combine(BackupFolderPath, backupFileName);
-                SaveConfigs(backupPath);
+                string? primaryPath = string.IsNullOrWhiteSpace(ConfigFilePath) ? null : Path.GetFullPath(ConfigFilePath);
+                SaveConfigSnapshot(backupPath, primaryPath);
                 CleanupOldBackups();
             }
             catch (Exception ex)

@@ -79,23 +79,24 @@ namespace ColorVision.UI
             }
         }
 
-        /// <summary>Reads the merge target for a save: a missing file is empty, an invalid one is refused.</summary>
-        public static JObject ReadForMerge(string fileName)
+        /// <summary>Reads valid JSON for a save, using a detached fallback only when the file is missing.</summary>
+        public static JObject ReadForMerge(string fileName, JObject? missingFileFallback = null)
         {
+            JObject jObject;
             if (!File.Exists(fileName))
-                return new JObject();
-
-            Exception? readException = null;
-            if (TryRead(fileName, out var jObject, ex => readException = ex))
             {
-                foreach (string sectionName in ObsoleteSectionNames)
-                    jObject.Remove(sectionName);
-                return jObject;
+                jObject = missingFileFallback == null ? new JObject() : (JObject)missingFileFallback.DeepClone();
+            }
+            else
+            {
+                Exception? readException = null;
+                if (!TryRead(fileName, out jObject, ex => readException = ex))
+                    throw new InvalidDataException($"Existing configuration file '{fileName}' is not a valid JSON object.", readException);
             }
 
-            throw new InvalidDataException(
-                $"Existing configuration file '{fileName}' is not a valid JSON object.",
-                readException);
+            foreach (string sectionName in ObsoleteSectionNames)
+                jObject.Remove(sectionName);
+            return jObject;
         }
 
         public static bool TryRead(string fileName, out JObject jObject, Action<Exception> logException)

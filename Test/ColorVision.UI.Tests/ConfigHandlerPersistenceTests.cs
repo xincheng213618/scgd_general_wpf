@@ -557,6 +557,91 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void RollingBackupRestoresUnloadedSectionsAndTheCurrentMaterializedSettings()
+        {
+            string path = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backupDirectory = Path.Combine(_rootDirectory, "Backup");
+            WriteConfig(path, "first-on-disk", "item", "initial-second");
+            var writer = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig", ConfigFilePath = path, BackupFolderPath = backupDirectory,
+            };
+            writer.LoadConfigs();
+            writer.GetRequiredService<FirstConfig>().Value = "first-in-memory";
+            Assert.Single(writer.Configs);
+            var otherWriter = new ConfigHandler { ConfigFilePath = path };
+            Assert.True(otherWriter.TrySave(new SecondConfig { Value = "newer-second" }, out string error), error);
+            const string pluginSection = "Optional.Plugin.Configuration";
+            JObject latest = JObject.Parse(File.ReadAllText(path));
+            latest[pluginSection] = new JObject { ["Enabled"] = true, ["Channels"] = new JArray("L", "R") };
+            File.WriteAllText(path, latest.ToString());
+
+            writer.BackupConfigs();
+
+            string backupPath = Assert.Single(Directory.GetFiles(backupDirectory, "*.json"));
+            JObject backup = JObject.Parse(File.ReadAllText(backupPath));
+            Assert.True(JToken.DeepEquals(latest[pluginSection], backup[pluginSection]));
+            Assert.Equal("first-on-disk", (string?)JObject.Parse(File.ReadAllText(path))[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+
+            File.WriteAllText(path, "{");
+            var restored = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig", ConfigFilePath = path, BackupFolderPath = backupDirectory,
+            };
+            restored.LoadConfigs();
+            Assert.Equal("first-in-memory", restored.GetRequiredService<FirstConfig>().Value);
+            Assert.Equal("newer-second", restored.GetRequiredService<SecondConfig>().Value);
+            Assert.True(JToken.DeepEquals(latest[pluginSection], JObject.Parse(File.ReadAllText(path))[pluginSection]));
+        }
+
+        [Fact]
+        public void RollingBackupRetainsLoadedSectionsWhenThePrimaryDisappears()
+        {
+            string path = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backupDirectory = Path.Combine(_rootDirectory, "Backup");
+            WriteConfig(path, "loaded-first", "loaded-item", "loaded-second");
+            var writer = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig", ConfigFilePath = path, BackupFolderPath = backupDirectory,
+            };
+            writer.LoadConfigs();
+            Assert.Empty(writer.Configs);
+            File.Delete(path);
+
+            writer.BackupConfigs();
+
+            string backupPath = Assert.Single(Directory.GetFiles(backupDirectory, "*.json"));
+            var backup = new ConfigHandler { ConfigFilePath = backupPath };
+            backup.LoadConfigs();
+            Assert.Equal("loaded-first", backup.GetRequiredService<FirstConfig>().Value);
+            Assert.Equal("loaded-second", backup.GetRequiredService<SecondConfig>().Value);
+            Assert.False(File.Exists(path));
+        }
+
+        [Fact]
+        public void RollingBackupDoesNotSupersedeAUsableBackupWhenThePrimaryIsInvalid()
+        {
+            string path = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backupDirectory = Path.Combine(_rootDirectory, "Backup");
+            Directory.CreateDirectory(backupDirectory);
+            string oldBackup = Path.Combine(backupDirectory, "ColorVisionConfigBackup_20260101_000000.json");
+            WriteConfig(oldBackup, "old-first", "old-item", "old-second");
+            byte[] originalBackup = File.ReadAllBytes(oldBackup);
+            File.WriteAllText(path, "{");
+            var writer = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig", ConfigFilePath = path, BackupFolderPath = backupDirectory,
+            };
+            writer.Configs[typeof(FirstConfig)] = new FirstConfig { Value = "partial" };
+
+            writer.BackupConfigs();
+
+            Assert.Equal(oldBackup, Assert.Single(Directory.GetFiles(backupDirectory, "*.json")));
+            Assert.Equal(originalBackup, File.ReadAllBytes(oldBackup));
+            Assert.Equal("{", File.ReadAllText(path));
+        }
+
+        [Fact]
         public void UnreadableSectionIsPreservedBeforeDefaultsCanOverwriteIt()
         {
             string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");

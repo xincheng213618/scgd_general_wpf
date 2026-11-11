@@ -9,6 +9,9 @@ namespace ColorVision.UI
     public partial class ConfigHandler
     {
         public void SaveConfigs(string fileName)
+            => SaveConfigSnapshot(fileName, backupSourcePath: null);
+
+        private void SaveConfigSnapshot(string fileName, string? backupSourcePath)
         {
             string fullPath = Path.GetFullPath(fileName);
             while (true)
@@ -21,8 +24,14 @@ namespace ColorVision.UI
                 var persisted = false;
                 try
                 {
+                    JObject? backupBase = null;
+                    if (backupSourcePath != null)
+                    {
+                        using var primaryLock = ConfigFileStore.AcquireLock(backupSourcePath);
+                        backupBase = ConfigFileStore.ReadForMerge(backupSourcePath, missingFileFallback: jsonObject);
+                    }
                     using var fileLock = ConfigFileStore.AcquireLock(fullPath);
-                    var jObject = ConfigFileStore.ReadForMerge(fullPath);
+                    var jObject = backupBase ?? ConfigFileStore.ReadForMerge(fullPath);
                     foreach (var property in stagedConfigs.Properties())
                         jObject[property.Name] = property.Value.DeepClone();
 
