@@ -211,18 +211,19 @@ namespace ColorVision.Engine.FlowProcessing
                 if (!flowEngine.CanStartNode(startNodeName))
                     return false;
 
+                // Service lookup can fail before the engine has a run to stop.
+                List<MQTTServiceInfo> serviceTokens = serviceTokensProvider();
                 IsFlowRun = true;
                 SerialNumber = sn;
                 activeStartNodeName = startNodeName;
 
-                List<MQTTServiceInfo> tol = serviceTokensProvider();
                 flowEngine.Finished -= FinishedAsync;
                 flowEngine.Finished += FinishedAsync;
                 FlowRuntimeActivityRegistry.MarkStarted(this, sn);
                 try
                 {
                     flowEngine.PersistResults = PersistResults;
-                    if (!flowEngine.TryStartNode(startNodeName, sn, tol))
+                    if (!flowEngine.TryStartNode(startNodeName, sn, serviceTokens))
                     {
                         FlowRuntimeActivityRegistry.MarkCompleted(this, FlowStatus.Failed, 0);
                         flowEngine.Finished -= FinishedAsync;

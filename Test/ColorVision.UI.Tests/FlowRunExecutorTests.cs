@@ -233,6 +233,33 @@ public class FlowRunExecutorTests
     }
 
     [Fact]
+    public void ServiceLookupFailureDoesNotLeaveTheFlowRunningOrBlockRetry()
+    {
+        RunInSta(() =>
+        {
+            var lookupError = new InvalidOperationException("service registry unavailable");
+            int attempts = 0;
+            using var fixture = new FlowFixture(() => ++attempts == 1 ? throw lookupError : []);
+            TestStartNode start = fixture.AddConnectedStart("Selected");
+
+            Assert.Same(lookupError, Assert.Throws<InvalidOperationException>(() => fixture.Executor.RunAsync(
+                "Selected", "SN-Unavailable", executionTimeout: null).GetAwaiter().GetResult()));
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.Null(fixture.FlowControl.SerialNumber);
+            Assert.False(fixture.Engine.IsRunning);
+            Assert.Equal(0, start.ActiveCount);
+
+            Task<FlowRunExecutionResult> retry = fixture.Executor.RunAsync("Selected", "SN-Retry", executionTimeout: null);
+            Assert.Equal(1, start.ActiveCount);
+            start.Complete("SN-Retry", StatusTypeEnum.Completed);
+            FlowRunExecutionResult result = retry.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            Assert.Equal(FlowRunTermination.EngineCompleted, result.Termination);
+            Assert.Equal("SN-Retry", result.Data.SerialNumber);
+            Assert.False(fixture.FlowControl.IsFlowRun);
+        });
+    }
+
+    [Fact]
     public void ConcurrentRunIsRejectedWithoutStealingTheActiveCompletion()
     {
         RunInSta(() =>
@@ -360,11 +387,11 @@ public class FlowRunExecutorTests
     {
         private readonly FlowNodeManager _nodeManager = new();
 
-        public FlowFixture()
+        public FlowFixture(Func<List<MQTTServiceInfo>>? serviceTokensProvider = null)
         {
             Editor = new STNodeEditor();
             Engine = new FlowEngineControl(Editor, false, _nodeManager);
-            FlowControl = new FlowControl(MQTTControl.GetInstance(), Engine, () => []);
+            FlowControl = new FlowControl(MQTTControl.GetInstance(), Engine, serviceTokensProvider ?? (() => []));
             Executor = new FlowRunExecutor(FlowControl);
         }
 
