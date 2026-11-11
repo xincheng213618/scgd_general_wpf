@@ -32,7 +32,9 @@ namespace ColorVision.Solution.Explorer
         public static SolutionFileOperationResult Execute(
             IEnumerable<string> sourcePaths,
             string targetDirectory,
-            bool isMove)
+            bool isMove,
+            Func<string, bool>? prepareMove = null,
+            Action<string, string>? notifyMove = null)
         {
             ArgumentNullException.ThrowIfNull(sourcePaths);
             List<string> sources = sourcePaths
@@ -52,21 +54,21 @@ namespace ColorVision.Solution.Explorer
 
             foreach (string sourcePath in sources)
             {
+                string? destination;
                 try
                 {
                     if (File.Exists(sourcePath))
                     {
-                        CopyOrMoveFile(sourcePath, targetDirectory, isMove);
-                        succeededCount++;
+                        destination = CopyOrMoveFile(sourcePath, targetDirectory, isMove, prepareMove);
                     }
                     else if (Directory.Exists(sourcePath))
                     {
-                        CopyOrMoveDirectory(sourcePath, targetDirectory, isMove);
-                        succeededCount++;
+                        destination = CopyOrMoveDirectory(sourcePath, targetDirectory, isMove, prepareMove);
                     }
                     else
                     {
                         failures.Add(new SolutionFileOperationFailure(sourcePath, "源文件或文件夹不存在。"));
+                        continue;
                     }
                 }
                 catch (Exception ex) when (ex is IOException
@@ -75,7 +77,10 @@ namespace ColorVision.Solution.Explorer
                     or NotSupportedException)
                 {
                     failures.Add(new SolutionFileOperationFailure(sourcePath, ex.Message));
+                    continue;
                 }
+                succeededCount++;
+                if (destination != null) notifyMove?.Invoke(sourcePath, destination);
             }
 
             return new SolutionFileOperationResult(sources.Count, succeededCount, failures);
@@ -87,23 +92,23 @@ namespace ColorVision.Solution.Explorer
                 && !IsSubPathOf(destinationPath, sourcePath);
         }
 
-        private static void CopyOrMoveFile(string sourcePath, string targetDirectory, bool isMove)
+        private static string? CopyOrMoveFile(string sourcePath, string targetDirectory, bool isMove, Func<string, bool>? prepareMove)
         {
             string destinationPath = Path.Combine(targetDirectory, Path.GetFileName(sourcePath));
             if (!isMove)
             {
                 File.Copy(sourcePath, GetAvailableCopyPath(destinationPath, isDirectory: false));
-                return;
+                return null;
             }
 
             if (IsSamePath(sourcePath, destinationPath))
                 throw new IOException("源文件已位于目标文件夹中。");
-            if (PathExists(destinationPath))
-                throw new IOException($"目标已存在：{destinationPath}");
+            PrepareMove(sourcePath, destinationPath, prepareMove);
             File.Move(sourcePath, destinationPath);
+            return destinationPath;
         }
 
-        private static void CopyOrMoveDirectory(string sourcePath, string targetDirectory, bool isMove)
+        private static string? CopyOrMoveDirectory(string sourcePath, string targetDirectory, bool isMove, Func<string, bool>? prepareMove)
         {
             sourcePath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(sourcePath));
             string sourceName = Path.GetFileName(sourcePath);
@@ -120,16 +125,24 @@ namespace ColorVision.Solution.Explorer
                 if (!IsSafeDirectoryCopyDestination(sourcePath, copyDestination))
                     throw new IOException("不能将文件夹复制到自身或其子目录中。");
                 CopyAndPublishDirectory(sourcePath, targetDirectory, destinationPath, copyDestination);
-                return;
+                return null;
             }
 
             if (IsSamePath(sourcePath, destinationPath))
                 throw new IOException("源文件夹已位于目标文件夹中。");
             if (IsSubPathOf(destinationPath, sourcePath))
                 throw new IOException("不能将文件夹移动到其子目录中。");
+            PrepareMove(sourcePath, destinationPath, prepareMove);
+            Directory.Move(sourcePath, destinationPath);
+            return destinationPath;
+        }
+
+        private static void PrepareMove(string sourcePath, string destinationPath, Func<string, bool>? prepareMove)
+        {
             if (PathExists(destinationPath))
                 throw new IOException($"目标已存在：{destinationPath}");
-            Directory.Move(sourcePath, destinationPath);
+            if (prepareMove != null && !prepareMove(sourcePath))
+                throw new IOException("相关文档尚未关闭，已取消移动。");
         }
 
         private static void CopyAndPublishDirectory(string sourcePath, string targetDirectory, string desiredPath, string destination)

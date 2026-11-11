@@ -93,6 +93,8 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 对非路径感知内容，通知只修改会话路径、ContentId 和监视器。外部重命名的通知绕过 `TryPrepareResourceRename`，服务路径与内容内部路径可能分离。
 
+资源树的剪切粘贴和拖放移动复用重命名前检查。移动成功后，路径感知文档及被移动文件夹中的文档跟随新路径，未保存内容继续保留。后续保存写入新位置。
+
 只有文档触发 Closed 后，会话才解除事件、停止并释放监视器/定时器、移出会话字典，再调用传入的 `closeContent`。服务不会对任意内容自动调用 `IDisposable.Dispose()`，释放责任取决于编辑器是否提供回调；例如 `TextEditor` 提供 Dispose，图像编辑器提供 Clear 和 Dispose。不能把从布局树移除、隐藏面板或布局重建等同于执行了这套 Closed 清理。
 
 ## 外部文件变化不是冲突锁

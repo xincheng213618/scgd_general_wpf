@@ -734,7 +734,7 @@ namespace ColorVision.Solution
         {
             Guid? cutId = isCut ? GetCutId(sourceClipboard) : null;
             paths = FilterCutRetry(paths, cutId);
-            SolutionFileOperationResult result = SolutionClipboardFileOperations.Execute(paths, targetDirectory, isCut);
+            SolutionFileOperationResult result = TransferPaths(paths, targetDirectory, isCut);
             if (cutId == null || result.SucceededCount == 0) return result;
 
             string[] remaining = result.Failures.Select(failure => failure.SourcePath).ToArray();
@@ -752,6 +752,24 @@ namespace ColorVision.Solution
                 System.Diagnostics.Debug.WriteLine(ex);
             }
             return result;
+        }
+
+        private static SolutionFileOperationResult TransferPaths(string[] paths, string targetDirectory, bool isMove)
+            => SolutionClipboardFileOperations.Execute(paths, targetDirectory, isMove,
+                EditorDocumentService.TryPrepareResourceRename, NotifyDocumentMove);
+
+        private static void NotifyDocumentMove(string sourcePath, string destinationPath)
+        {
+            try
+            {
+                EditorDocumentService.NotifyResourceRenamed(sourcePath, destinationPath);
+            }
+            catch (Exception error)
+            {
+                // The file has moved and must not become a pending clipboard retry.
+                log4net.LogManager.GetLogger(typeof(TreeViewControl)).Warn(
+                    $"Failed to update the open document after moving '{sourcePath}' to '{destinationPath}'.", error);
+            }
         }
 
         private static Guid? GetCutId(IDataObject? data)

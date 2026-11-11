@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
+using TreeViewControl = ColorVision.Solution.TreeViewControl;
 
 namespace ColorVision.UI.Tests;
 
@@ -74,7 +75,47 @@ public sealed class EditorDocumentExternalChangeTests
         });
     }
 
-    private static void WithOpenDocument(Action<string, LayoutDocument, AvalonEditControll, TextEditor> test)
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CutPasteMovesTheOpenDocumentAndItsUnsavedDraft(bool moveFolder)
+    {
+        WithOpenDocument((path, document, editor, text) =>
+        {
+            string sourceDirectory = Path.GetDirectoryName(path)!;
+            string root = moveFolder ? Path.GetDirectoryName(sourceDirectory)! : sourceDirectory;
+            string target = Directory.CreateDirectory(Path.Combine(root, "destination")).FullName;
+            string source = moveFolder ? sourceDirectory : path;
+            string destination = Path.Combine(target, Path.GetFileName(source));
+            string movedFile = moveFolder ? Path.Combine(destination, Path.GetFileName(path)) : destination;
+            text.Document.Replace(0, text.Document.TextLength, "my draft");
+            IDataObject transfer = TreeViewControl.CreatePathDataObject([source], isCut: true);
+
+            try
+            {
+                var result = TreeViewControl.PastePaths([source], target, true, transfer, () => transfer, _ => { });
+
+                Assert.True(result.IsComplete);
+                Assert.True(EditorDocumentService.TryGetFilePath(document, out string currentPath));
+                Assert.Equal(movedFile, currentPath);
+                Assert.True(editor.IsDirty);
+                Assert.Equal("original", File.ReadAllText(movedFile));
+                Assert.True(editor.Save());
+                Assert.Equal("my draft", File.ReadAllText(movedFile));
+                Assert.False(File.Exists(path));
+            }
+            finally
+            {
+                if (editor.IsDirty && !File.Exists(path))
+                {
+                    Directory.CreateDirectory(sourceDirectory);
+                    File.WriteAllText(path, "original");
+                }
+            }
+        }, nested: moveFolder);
+    }
+
+    private static void WithOpenDocument(Action<string, LayoutDocument, AvalonEditControll, TextEditor> test, bool nested = false)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -86,7 +127,8 @@ public sealed class EditorDocumentExternalChangeTests
             WorkspaceManager.layoutRoot = root;
             WorkspaceManager.LayoutDocumentPane = pane;
             DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-DocumentRename-");
-            string path = Path.Combine(directory.FullName, "source.txt");
+            string source = nested ? directory.CreateSubdirectory("working").FullName : directory.FullName;
+            string path = Path.Combine(source, "source.txt");
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             try
@@ -111,8 +153,7 @@ public sealed class EditorDocumentExternalChangeTests
                 WorkspaceManager.layoutRoot = previousRoot;
                 WorkspaceManager.LayoutDocumentPane = previousPane;
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
-                foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
-                directory.Delete();
+                directory.Delete(recursive: true);
             }
         });
     }
