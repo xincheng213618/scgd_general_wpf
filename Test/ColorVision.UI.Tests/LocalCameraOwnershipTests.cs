@@ -50,6 +50,55 @@ public class LocalCameraOwnershipTests
     }
 
     [Fact]
+    public async Task StoppingQueuedFlowCaptureDoesNotWaitForTheActiveModeSwitch()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var releaseSwitch = new ManualResetEventSlim();
+        var native = new LocalCameraSessionTests.FakeNative
+        {
+            SwitchResult = cvErrorDefine.CV_ERR_SUCCESS,
+            OnSwitch = () => { entered.SetResult(); releaseSwitch.Wait(); }
+        };
+        var backend = new CameraBackendState(true);
+        var config = new ConfigCamera { Code = "local-test", CameraID = "camera", ImageBpp = ImageBpp.bpp16 };
+        using var session = new LocalCameraSession(native, backend, config);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Live, 16));
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = config;
+        device.SysResourceModel = new SysResourceModel { Code = "local-test" };
+        typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, backend);
+        typeof(DeviceCamera).GetField("<LocalCameraSession>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, session);
+        using var activeStop = new CancellationTokenSource();
+        using var queuedStop = new CancellationTokenSource();
+        var services = new LocalCameraFlowServices();
+        Task<LocalCameraCaptureResult> active = Task.Run(() => services.Capture(new() { Device = device, Stop = activeStop.Token }));
+        Task<LocalCameraCaptureResult>? queued = null;
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            queued = Task.Run(() =>
+            {
+                started.SetResult();
+                return services.Capture(new() { Device = device, Stop = queuedStop.Token });
+            });
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            queuedStop.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.False(active.IsCompleted);
+            Assert.Equal(1, native.Switches);
+        }
+        finally
+        {
+            activeStop.Cancel();
+            queuedStop.Cancel();
+            releaseSwitch.Set();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => active.WaitAsync(TimeSpan.FromSeconds(10)));
+            if (queued != null) await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued.WaitAsync(TimeSpan.FromSeconds(10)));
+        }
+    }
+
+    [Fact]
     public void OpenThenFlowUsesOneNativeHandleAndCloseAllowsReopen()
     {
         var native = new FakeNative();

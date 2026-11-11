@@ -56,18 +56,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             (ImageChannelType.Gray_Z, 2),
         };
 
-        public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
+        public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request, bool autoConnect = false)
         {
             ArgumentNullException.ThrowIfNull(request);
-            FlowNodeTiming.Run("WaitCamera", request.Stop.CanBeCanceled ? () => CaptureLock.Wait(request.Stop) : CaptureLock.Wait);
+            // Queue before taking the session lock so a stopped capture can leave while the SDK is busy.
+            FlowNodeTiming.Run("WaitCamera", () => CaptureLock.Wait(request.Stop));
             try
             {
-                lock (request.Device.LocalCameraSession.SyncRoot)
+                DeviceCamera device = request.Device;
+                lock (device.LocalCameraSession.SyncRoot)
                 {
                     request.Stop.ThrowIfCancellationRequested();
-                    DeviceCamera device = request.Device;
                     var captureChannels = GetChannelConfigs(device, device.Config.Channel == ImageChannel.Three ? 3 : 1);
-                    device.EnsureLocalMeasurementConnected(autoConnect: false);
+                    FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(autoConnect));
+                    request.Stop.ThrowIfCancellationRequested();
                     return FlowNodeTiming.Run("CapturePipeline", () => device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle, captureChannels)));
                 }
             }

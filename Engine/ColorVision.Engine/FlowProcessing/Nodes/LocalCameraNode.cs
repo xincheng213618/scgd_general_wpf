@@ -155,7 +155,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看校正文件与图像文件缓存，并统一释放内存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        public LocalCameraNode() : this(LocalCameraFlowServices.CaptureConnected)
+        public LocalCameraNode() : this(LocalCameraCaptureService.Capture)
         {
         }
 
