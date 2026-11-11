@@ -1157,7 +1157,7 @@ namespace ColorVision.Engine.FlowProcessing
                         .Flow_NoValidFlowTemplateSelected;
                 View.ShowExecutionSummary(message);
                 log.Warn(message);
-                return default;
+                return new FlowRunCoreResult(null, null, StartupFailureReason: message);
             }
 
             string flowName = executionSnapshot.FlowName;
@@ -1166,7 +1166,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 View.ShowExecutionSummary(missingNodeReason);
                 log.Warn(missingNodeReason);
-                return default;
+                return new FlowRunCoreResult(null, null, StartupFailureReason: missingNodeReason);
             }
             FlowParam selectedFlowParam =
                 executionSnapshot.CreateFlowParam();
@@ -1227,7 +1227,7 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     unstartedBatchResult = EngineLocalization.Get("流程模板正在切换，请稍后重试。");
                     View.ShowExecutionSummary(unstartedBatchResult);
-                    return default;
+                    return new FlowRunCoreResult(null, null, StartupFailureReason: unstartedBatchResult);
                 }
                 FlowEditorOperations.ClearSelection(View.STNodeEditorMain);
                 _flowName = flowName;
@@ -1365,7 +1365,7 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     unstartedBatchResult = executionData.Message;
                     View.ShowExecutionSummary(unstartedBatchResult);
-                    return default;
+                    return new FlowRunCoreResult(null, null, StartupFailureReason: unstartedBatchResult);
                 }
 
                 if (!executionStarted)

@@ -104,7 +104,7 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 | `RunFlowAndWaitForFinalizationAsync()` | 返回最终结果，应读取 `FinalOutcome` 与 `PostProcessResults`；未进入最终化时可返回 `null`，启动异常也可能抛出 |
 | `FlowJob.Execute()` | 在 WPF Dispatcher 上执行任务绑定的已保存模板，沿主工作区的流程链等待最终化，再写入 `context.Result`。旧的未绑定任务继续运行当前主工作区流程 |
 
-`FlowJob` 将 `Succeeded` / `SucceededWithWarnings` 映射为成功，并将实际流程名、批次号和失败后处理摘要写入[任务历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md)。部分 `Projects/*` 窗口直接监听 `FlowCompleted` 后执行自己的 `Processing`、导出或协议响应，须继续核对所属项目的完成规则。
+`FlowJob` 将 `Succeeded` / `SucceededWithWarnings` 映射为成功，并将实际流程名、批次号和失败后处理摘要写入[任务历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md)。计划任务启动被拒绝时，已识别的原因直接进入历史，例如开始节点未连接或缺少节点组件。启动诊断无需操作员确认弹窗。部分 `Projects/*` 窗口直接监听 `FlowCompleted` 后执行自己的 `Processing`、导出或协议响应，须继续核对所属项目的完成规则。
 
 ## 耗时与落库状态
 

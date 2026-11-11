@@ -961,6 +961,73 @@ public sealed class FlowExecutionEditingTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ScheduledFlowHistoryReportsTheDisconnectedStartNode(bool bindTemplate)
+    {
+        WithFixture(fixture => PumpUntil(VerifyAsync(fixture, bindTemplate)));
+
+        static async Task VerifyAsync(EditingFixture fixture, bool bindTemplate)
+        {
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.LoadAssembly(typeof(CVEndNode).Assembly);
+#pragma warning disable CS0618 // The manual start keeps this workflow fixture independent of MQTT.
+            var start = new ManualFlowStartNode();
+#pragma warning restore CS0618
+            start.Create();
+            start.NodeName = "DisconnectedStart";
+            editor.Nodes.Add(start);
+            var template = new TemplateModel<FlowParam>("Disconnected flow", new FlowParam
+            {
+                Id = 713, FlowKey = "saved-flow-disconnected", DataBase64 = Convert.ToBase64String(editor.GetCanvasData())
+            });
+            TemplateFlow.Params.Add(template);
+            fixture.MainSession.AdoptSavedCanvas(template);
+            editor.MarkSaved();
+            fixture.PreProcess.Release.SetResult(true);
+
+            await using var factory = QuartzSchedulerBuilder.Create(builder =>
+            {
+                builder.ConfigureScheduler(options => options.InstanceName = $"disconnected-flow-{Guid.NewGuid():N}");
+                builder.UseDefaultThreadPool(1);
+                builder.UseInMemoryStore(_ => { });
+            }).Build();
+            var scheduler = await factory.GetScheduler();
+            string tasksFile = Path.Combine(Path.GetTempPath(), $"disconnected-flow-{Guid.NewGuid():N}.json");
+            var manager = new QuartzSchedulerManager(scheduler, tasksFile);
+            var history = Channel.CreateUnbounded<JobExecutionRecord>();
+            manager.Listener = new TaskExecutionListener(manager, record => history.Writer.TryWrite(record));
+            manager.Listener.AttachTo(scheduler.ListenerManager);
+            var managerInstance = typeof(FlowEngineManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previousManager = managerInstance.GetValue(null);
+            managerInstance.SetValue(null, fixture.Manager);
+            try
+            {
+                var job = new SchedulerInfo { JobName = "disconnected-flow", GroupName = "test", JobType = typeof(FlowJob) };
+                if (bindTemplate)
+                    job.Config = new FlowJobConfig { FlowKey = template.Value.FlowKey };
+                Assert.True((await manager.CreateJob(job)).Success);
+                await scheduler.Start();
+
+                JobExecutionRecord record = await history.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(8));
+
+                Assert.False(record.Success);
+                Assert.Contains(start.NodeName, record.Message);
+                Assert.Contains(fixture.Manager.View.logTextBox.Text, record.Message);
+                Assert.False(fixture.Manager.View.IsExecutionActive);
+                Assert.False(fixture.PostProcess.Entered.Task.IsCompleted);
+            }
+            finally
+            {
+                await scheduler.Shutdown(waitForJobsToComplete: true);
+                managerInstance.SetValue(null, previousManager);
+                File.Delete(tasksFile);
+                File.Delete(tasksFile + ".bak");
+            }
+        }
+    }
+
     [Fact]
     public void ScheduledFlowUsesSavedSelectionAndRecordsItsFinalOutcome()
     {

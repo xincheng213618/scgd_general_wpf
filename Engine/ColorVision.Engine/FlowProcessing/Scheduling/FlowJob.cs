@@ -118,15 +118,12 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
 
             return dispatcher.InvokeAsync(() =>
             {
-                if (job?.Config is FlowJobConfig config)
-                {
-                    var template = FlowJobConfig.FindSavedTemplate(config.FlowKey)
-                        ?? throw new InvalidOperationException(EngineLocalization.Get("任务绑定的流程模板不可用，请编辑任务并重新选择。"));
-                    return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(template,
-                        reportStartupFailures: true, executionTimeout: executionTimeout, cancellationToken: cancellationToken);
-                }
+                var template = job?.Config is FlowJobConfig config
+                    ? FlowJobConfig.FindSavedTemplate(config.FlowKey)
+                        ?? throw new InvalidOperationException(EngineLocalization.Get("任务绑定的流程模板不可用，请编辑任务并重新选择。"))
+                    : null;
                 return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(
-                    executionTimeout: executionTimeout, cancellationToken: cancellationToken);
+                    template, reportStartupFailures: true, executionTimeout: executionTimeout, cancellationToken: cancellationToken);
             }, DispatcherPriority.Normal, cancellationToken).Task.Unwrap();
         }
 
