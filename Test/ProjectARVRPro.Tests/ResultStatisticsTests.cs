@@ -872,6 +872,39 @@ public sealed class ResultStatisticsTests
     }
 
     [Theory]
+    [InlineData(false, 1, false)]
+    [InlineData(true, 1, false)]
+    [InlineData(true, 1, true)]
+    [InlineData(false, 7, false)]
+    [InlineData(true, 7, false)]
+    [InlineData(true, 7, true)]
+    public void CombinedStatisticsFollowRecordAdjacencyWhenCompletionTimesAreOutOfOrder(bool readOnly, int rangeDays, bool legacySchema)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        DateTime day = new(2026, 9, 19);
+        database.Insert(
+            CreateRecord("EARLIER-ID", true, day, 1_000, "unpaired", true),
+            CreateRecord("BODY_L_235935", true, day.AddSeconds(-25), 24_000, "left", true),
+            CreateRecord("BODY_R_000002", false, day.AddSeconds(2), 20_000, "right", true));
+        if (legacySchema)
+            database.DropFinalizedColumnForLegacySchema();
+        var store = new ResultStatisticsDataStore(database.Path, readOnly);
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(rangeDays), PageSize = 10 };
+
+        ResultStatisticsCombinedPage page = store.QueryCombinedRecords(query);
+        Assert.Equal(1, page.TotalCount);
+        ResultStatisticsCombinedRecordRow pair = Assert.Single(page.Rows);
+        Assert.Equal("BODY", pair.SN);
+        Assert.Equal(day.AddSeconds(22), pair.EndTime);
+
+        ResultStatisticsPeriodMode mode = rangeDays == 1 ? ResultStatisticsPeriodMode.Day : ResultStatisticsPeriodMode.Week;
+        ResultStatisticsCombinedDashboard dashboard = store.QueryCombinedDashboard(query, mode, day.AddHours(12));
+        Assert.Equal(1, dashboard.Summary.TotalCount);
+        Assert.Equal(1, dashboard.Summary.FailCount);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void CombinedStatisticsDoNotPairAcrossAnUnfinishedRecord(bool readOnly)

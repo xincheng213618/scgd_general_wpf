@@ -968,6 +968,7 @@ namespace ProjectARVRPro
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
             bool restrictHistory = query.ToExclusive - query.From <= TimeSpan.FromDays(1) && HasRecordsOutsideRange(db, query);
+            // Completion times can be out of ID order. Check the actual predecessor of each possible right side.
             const string candidateRecordsSql = """
                 InRangeRecords AS
                 (
@@ -980,28 +981,26 @@ namespace ProjectARVRPro
                 (
                     SELECT "Id", "SN" FROM InRangeRecords
                     UNION ALL
-                    SELECT B."Id", B."SN"
-                    FROM "ObjectiveTestResultRecord" AS B
-                    WHERE (B."IsFinalized" = 1 OR B."IsFinalized" IS NULL)
-                      AND B."Id" = (SELECT P."Id"
+                    SELECT L."Id", L."SN"
+                    FROM InRangeRecords AS R
+                    CROSS JOIN
+                    (
+                        SELECT "Id", "SN", "IsFinalized", "UpdateTime"
+                        FROM "ObjectiveTestResultRecord"
+                    ) AS L
+                    WHERE instr(upper(R."SN"), '_R_') > 0
+                      AND L."Id" = (SELECT P."Id"
                                     FROM "ObjectiveTestResultRecord" AS P
-                                    WHERE P."Id" < (SELECT MIN("Id") FROM InRangeRecords)
+                                    WHERE P."Id" < R."Id"
                                     ORDER BY P."Id" DESC LIMIT 1)
+                      AND (L."IsFinalized" = 1 OR L."IsFinalized" IS NULL)
+                      AND (L."UpdateTime" < @From OR L."UpdateTime" >= @ToExclusive OR L."UpdateTime" IS NULL)
                 ),
                 """;
             // Keep a superset of possible sides. The matcher still validates the full suffix and global adjacency.
             const string candidateHistoryFilter = """
                 WHERE TRIM("SN") IN (SELECT TRIM("SN") FROM CandidateRecords
                                     WHERE instr(upper("SN"), '_L_') > 0 OR instr(upper("SN"), '_R_') > 0)
-                """;
-            const string allHistoryRangeFilter = """
-                (R."EndTime" >= @From AND R."EndTime" < @ToExclusive)
-                OR R."Id" = COALESCE(
-                    (SELECT X."PreviousObjectiveId"
-                     FROM RankedRecords AS X
-                     WHERE X."EndTime" >= @From AND X."EndTime" < @ToExclusive
-                     ORDER BY X."Id"
-                     LIMIT 1), -1)
                 """;
             const string flowColumns = """
                     CASE WHEN R."ResultId" > R."PreviousResultId" THEN
@@ -1020,7 +1019,7 @@ namespace ProjectARVRPro
                         ELSE 0 END AS "FlowRunTimeMilliseconds"
                     """;
             string sql = $$"""
-                WITH {{(restrictHistory ? candidateRecordsSql : string.Empty)}}
+                WITH {{candidateRecordsSql}}
                 RecordFlowBoundaries AS
                 (
                     {{RecordFlowBoundariesSql}}
@@ -1051,7 +1050,7 @@ namespace ProjectARVRPro
                        R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId", R."PreviousObjectiveId",
                        {{flowColumns}}
                 FROM RankedRecords AS R
-                WHERE {{(restrictHistory ? "R.\"Id\" IN (SELECT \"Id\" FROM CandidateRecords)" : allHistoryRangeFilter)}}
+                WHERE R."Id" IN (SELECT "Id" FROM CandidateRecords)
                 ORDER BY R."Id";
                 """;
             List<ResultStatisticsRecordRow> candidates = db.Ado.SqlQuery<ResultStatisticsRecordRow>(
