@@ -69,6 +69,8 @@ Copilot 加节点默认保留节点构造初值；只有显式要求继承当前
 
 物理 ROI 由 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height` 定义，经 `PhyCameraCfg.ROI` 编辑。`DisplayCameraConfig.LocalVideoRoi` 按逻辑相机保存画面坐标，预览会话独立持有该 ROI 和当前翻转。主面板和本地相机窗口按当前翻转显示画面，清晰度与十字引导共用画面到原始帧的 ROI 换算。未选区域时使用整帧。
 
+本地取图生成的内存帧沿用相机成功打开时提交的物理 ROI。即时校正和流程中的后续本地校正都据此定位校正图，连接期间编辑配置不会改变已采集帧的区域。文件重新导入后仍按当前设备配置匹配 ROI。
+
 `EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐。未对齐时显示当前值和未对齐项，询问是否继续保存，默认选择“否”；选择“是”按原值继续保存，选择“否”或关闭提示则停留在配置窗口。此提示不强制调整 ROI，也不包含所有型号/坐标合法性检查，不应宣称每个保存入口都执行了它。
 
 创建与编辑物理配置的 `PhyCameraConfigEditor` 按相同规则约束可选通道：BV 可选单通道或三通道，CV 固定三通道，LV 固定单通道并隐藏通道选择。切换到 CV 模式启用 `CFW.IsUseCFW` 并选中 CFW 分类，切换到其他模式关闭该开关并返回可用分类；初次载入保留原有 CFW 开关。`PhyCamera.SaveConfig()` 保存前还会规范化 CFW：不启用时清空 `ChannelCfgs` 并关闭 `IsCOM`；绑定独立 ND 设备时清空串口名，否则清空 ND 绑定代码。这些不是只影响显示的开关。

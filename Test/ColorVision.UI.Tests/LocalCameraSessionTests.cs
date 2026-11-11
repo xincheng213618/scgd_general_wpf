@@ -1168,6 +1168,7 @@ public class LocalCameraSessionTests
         public bool IgnoreClose { get; set; }
         public Exception? CloseError { get; set; }
         public Exception? DetachError { get; set; }
+        public LocalCalibrationRoi OpenedCalibrationRoi { get; set; }
         public int Releases;
         public int Scans, Initializations, Opens, Closes, Switches;
         public int MeasurementPreparations;

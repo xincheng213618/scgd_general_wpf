@@ -147,6 +147,7 @@ public class LocalCameraOwnershipTests
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public bool FailClose;
         private bool opened;
+        public LocalCalibrationRoi OpenedCalibrationRoi => default;
         public IReadOnlyList<string> GetCameraIds() => [];
         public IntPtr Initialize() { Initializations++; return new IntPtr(42); }
         public bool IsOpen(IntPtr handle) => opened;

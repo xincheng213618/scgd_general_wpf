@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         IReadOnlyList<string> GetCameraIds();
         IntPtr Initialize();
         bool IsOpen(IntPtr handle);
+        LocalCalibrationRoi OpenedCalibrationRoi { get; }
         void PrepareMeasurement(IntPtr handle);
         int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr);
         int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp);
@@ -23,6 +24,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
     internal sealed class LocalCameraNative(DeviceCamera device) : ILocalCameraNative
     {
+        public LocalCalibrationRoi OpenedCalibrationRoi { get; private set; }
+
         public int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp) => cvCameraCSLib.CM_SwitchCaptureMode(handle, mode, bpp);
 
         public IReadOnlyList<string> GetCameraIds()
@@ -83,6 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     ConfigureFilterWheel(device, (enabled, port, baudRate) => cvCameraCSLib.CM_SetPortComParam(handle, enabled, port, baudRate));
                 result = cvCameraCSLib.CM_Open(handle);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateOpenException("CM_Open", cameraId, result, GetCameraIds);
+                OpenedCalibrationRoi = ReadCalibrationRoi(cameraConfig);
                 return result;
             }
             catch (Exception error)
@@ -94,6 +98,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 }
                 throw;
             }
+        }
+
+        internal static LocalCalibrationRoi ReadCalibrationRoi(JObject cameraConfig)
+        {
+            return cameraConfig["cameraCfg"] is JObject roi
+                ? new LocalCalibrationRoi(roi.Value<int>("ex"), roi.Value<int>("ey"), roi.Value<int>("ew"), roi.Value<int>("eh"))
+                : default;
         }
 
         internal static void ConfigureFilterWheel(DeviceCamera device, Func<bool, string, uint, int> configurePort)

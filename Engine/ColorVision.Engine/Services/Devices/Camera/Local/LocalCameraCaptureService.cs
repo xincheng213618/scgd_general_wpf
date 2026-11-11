@@ -147,6 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     Exposure = exposure,
                     DeviceCode = device.Code,
                     CalibrationTemplate = request.Calibration?.Name ?? string.Empty,
+                    CaptureCalibrationRoi = device.LocalCameraSession.OpenedCalibrationRoi,
                     CaptureTime = DateTime.Now,
                     Acquisition = new ImageAcquisitionRecord
                     {
@@ -190,7 +191,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
                         request.Calibration?.Name ?? string.Empty,
-                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, frame.Metadata.Width, frame.Metadata.Height),
+                        LocalCalibrationRoi.ResolveForFrame(frame.Metadata, cameraConfig: null),
                         allowAcceleration: request.AllowAcceleration);
                     calibrationStopwatch.Stop();
                     calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);

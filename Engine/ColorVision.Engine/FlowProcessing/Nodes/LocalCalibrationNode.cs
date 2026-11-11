@@ -186,7 +186,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
                         calibration.Name,
-                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, sourceFrame.Metadata.Width, sourceFrame.Metadata.Height),
+                        LocalCalibrationRoi.ResolveForFrame(sourceFrame.Metadata, device.PhyCamera?.Config?.CameraCfg),
                         ResolveZeroExposureFallback(action, sourceFrame),
                         AllowAcceleration);
                     outputFrame = sourceFrame;
