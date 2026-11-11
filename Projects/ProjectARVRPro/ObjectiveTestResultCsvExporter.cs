@@ -4,6 +4,7 @@ using ProjectARVRPro.Process.KeyedResults;
 using ProjectARVRPro.Process.OpticCenter;
 using System.Collections;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 
@@ -35,14 +36,8 @@ namespace ProjectARVRPro
                             string poiTestScreenName = hasMultiplePoiCollections
                                 ? $"{testScreenName}_{GetPoiGroupName(property.Name)}"
                                 : testScreenName;
-                            foreach (var item in list) 
-                            {
-                                rows.Add($"{poiTestScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
-                                rows.Add($"{poiTestScreenName},{item.Name}(Cx),{item.x},None,0,0,None");
-                                rows.Add($"{poiTestScreenName},{item.Name}(Cy),{item.y},None,0,0,None");
-                                rows.Add($"{poiTestScreenName},{item.Name}(u'),{item.u},None,0,0,None");
-                                rows.Add($"{poiTestScreenName},{item.Name}(v'),{item.v},None,0,0,None");
-                            }
+                            foreach (var item in list)
+                                AddPoiRows(poiTestScreenName, item, rows);
                         }
                     }
                     catch (Exception ex)
@@ -110,12 +105,24 @@ namespace ProjectARVRPro
         {
             string testResult = testItem.TestResult ? "pass" : "fail";
             string testItemName = string.IsNullOrWhiteSpace(testItem.Name) ? propertyName : testItem.Name;
-            return $"{testScreenName},{testItemName},{testItem.Value},{testItem.Unit},{testItem.LowLimit},{testItem.UpLimit},{testResult}";
+            return ObjectiveTestCsvRow.FormatCsvLine(testScreenName, testItemName, FormatNumber(testItem.Value), testItem.Unit,
+                FormatNumber(testItem.LowLimit), FormatNumber(testItem.UpLimit), testResult);
         }
+
+        private static void AddPoiRows(string screen, PoixyuvData point, List<string> rows)
+        {
+            rows.Add(ObjectiveTestCsvRow.FormatCsvLine(screen, $"{point.Name}(Lv)", FormatNumber(point.Y), "cd/m2", "0", "0", "None"));
+            rows.Add(ObjectiveTestCsvRow.FormatCsvLine(screen, $"{point.Name}(Cx)", FormatNumber(point.x), "None", "0", "0", "None"));
+            rows.Add(ObjectiveTestCsvRow.FormatCsvLine(screen, $"{point.Name}(Cy)", FormatNumber(point.y), "None", "0", "0", "None"));
+            rows.Add(ObjectiveTestCsvRow.FormatCsvLine(screen, $"{point.Name}(u')", FormatNumber(point.u), "None", "0", "0", "None"));
+            rows.Add(ObjectiveTestCsvRow.FormatCsvLine(screen, $"{point.Name}(v')", FormatNumber(point.v), "None", "0", "0", "None"));
+        }
+
+        private static string FormatNumber(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
         public static void ExportToCsv(ObjectiveTestResult results, string filePath)
         {
-            var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
+            var rows = new List<string> { ProjectARVRResultCsvExporter.Header };
             foreach (var prop in results.GetType().GetProperties())
             {
                 // Skip dynamic dictionaries - handled separately below
@@ -203,13 +210,7 @@ namespace ProjectARVRPro
                 {
                     string testScreenName = kvp.Key;
                     foreach (var item in kvp.Value)
-                    {
-                        rows.Add($"{testScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
-                        rows.Add($"{testScreenName},{item.Name}(Cx),{item.x},None,0,0,None");
-                        rows.Add($"{testScreenName},{item.Name}(Cy),{item.y},None,0,0,None");
-                        rows.Add($"{testScreenName},{item.Name}(u'),{item.u},None,0,0,None");
-                        rows.Add($"{testScreenName},{item.Name}(v'),{item.v},None,0,0,None");
-                    }
+                        AddPoiRows(testScreenName, item, rows);
                 }
             }
 

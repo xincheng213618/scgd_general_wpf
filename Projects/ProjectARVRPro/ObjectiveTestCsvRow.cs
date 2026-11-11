@@ -19,7 +19,17 @@ public sealed record ObjectiveTestCsvRow(
     public string MetricKey => TestScreen + ObjectiveTestResultMetricCollector.KeySeparator + TestItem;
     public string MetricHeader => $"{TestScreen}_{TestItem}";
 
-    public string ToCsvLine() => string.Join(",", TestScreen, TestItem, TestValue, Unit, LowerLimit, UpperLimit, TestResult);
+    public string ToCsvLine() => FormatCsvLine(TestScreen, TestItem, TestValue, Unit, LowerLimit, UpperLimit, TestResult);
+
+    internal static string FormatCsvLine(params string?[] fields) => string.Join(",", fields.Select(EscapeCsvField));
+
+    private static string EscapeCsvField(string? field)
+    {
+        if (field == null)
+            return string.Empty;
+
+        return field.IndexOfAny([',', '"', '\r', '\n']) < 0 ? field : $"\"{field.Replace("\"", "\"\"")}\"";
+    }
 }
 
 public static class ObjectiveTestCsvRowCollector

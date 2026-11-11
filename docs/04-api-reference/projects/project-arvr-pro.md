@@ -129,7 +129,7 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 ## 输出和兼容
 
-结果输出由 `ViewResultManager.Config` 控制，覆盖 SQLite、标准 CSV、Legacy CSV、客户报表和 Socket `ProjectARVRResult.Data`。`UseLegacyARVROutput` 会影响 CSV 和 Socket `Data`，改字段前先确认客户解析程序使用新版还是旧版。
+结果保存设置控制 SQLite、CSV 和客户报表。标准 CSV 为七列，文本按规则转义，数值用小数点。`UseLegacyARVROutput` 影响 CSV 和 Socket `ProjectARVRResult.Data`，改字段前先确认客户格式。
 
 新版嵌套畸变结果按项目结果属性名输出，光学畸变字段为 `DistortionTestResult.OpticDistortion`，新生成的测试项 `Name` 也为 `OpticDistortion`。算法原始结果中的 `Optic_Distortion` 由 Engine 在解析入口映射，项目输出不沿用该原始字段名。读取历史项目结果时仍兼容 `Optic_Distortion`，重新序列化只输出 `OpticDistortion`；两个字段同时存在且标准字段非空时以标准字段为准。
 
