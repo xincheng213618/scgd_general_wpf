@@ -1,6 +1,9 @@
+using ColorVision.Solution;
 using ColorVision.Solution.Explorer;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
 
 namespace ColorVision.UI.Tests;
 
@@ -75,6 +78,74 @@ public sealed class SolutionClipboardFileOperationsTests
         string[] destinations = Directory.GetDirectories(files.Target).OrderBy(path => path, StringComparer.Ordinal).ToArray();
         Assert.Equal(["source", "source - Copy (1)", "source - Copy (2)", "source - Copy (3)"], destinations.Select(Path.GetFileName));
         Assert.All(destinations, destination => Assert.Equal("original", File.ReadAllText(Path.Combine(destination, "data.txt"))));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RetryingAPartialCutDoesNotMoveAReplacementAtAnAlreadyMovedPath(bool clipboardBusy)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var files = new CopyFiles();
+            string first = Path.Combine(files.Source, "data.txt");
+            string second = Path.Combine(files.Source, "other.txt");
+            string firstTarget = Path.Combine(files.Target, "data.txt");
+            string secondTarget = Path.Combine(files.Target, "other.txt");
+            File.WriteAllText(second, "second");
+            File.WriteAllText(secondTarget, "collision");
+            IDataObject? clipboard = TreeViewControl.CreatePathDataObject([first, second], isCut: true);
+
+            var partial = Paste(files.Target);
+            Assert.Equal(1, partial.SucceededCount);
+            Assert.Equal(second, Assert.Single(partial.Failures).SourcePath);
+            Assert.Equal("original", File.ReadAllText(firstTarget));
+            if (!clipboardBusy)
+                Assert.Equal([second], Assert.IsType<string[]>(clipboard!.GetData(DataFormats.FileDrop)));
+            clipboardBusy = false;
+
+            File.WriteAllText(first, "new file");
+            string retryTarget = Directory.CreateDirectory(Path.Combine(files.Target, "retry")).FullName;
+            var retry = Paste(retryTarget);
+
+            Assert.True(retry.IsComplete);
+            Assert.True(File.Exists(first));
+            Assert.Equal(1, retry.RequestedCount);
+            Assert.Null(clipboard);
+            Assert.Equal("new file", File.ReadAllText(first));
+            Assert.Equal("original", File.ReadAllText(firstTarget));
+            Assert.Equal("collision", File.ReadAllText(secondTarget));
+            Assert.Equal("second", File.ReadAllText(Path.Combine(retryTarget, "other.txt")));
+
+            SolutionFileOperationResult Paste(string target)
+            {
+                IDataObject snapshot = Assert.IsAssignableFrom<IDataObject>(clipboard);
+                string[] paths = Assert.IsType<string[]>(snapshot.GetData(DataFormats.FileDrop));
+                return TreeViewControl.PastePaths(paths, target, true, snapshot, () => clipboard, value =>
+                {
+                    if (clipboardBusy) throw new ExternalException("Clipboard busy");
+                    clipboard = value;
+                });
+            }
+        });
+    }
+
+    [Fact]
+    public void FinishingACutKeepsANewerClipboardWithTheSamePaths()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var files = new CopyFiles();
+            string source = Path.Combine(files.Source, "data.txt");
+            IDataObject captured = TreeViewControl.CreatePathDataObject([source], isCut: true);
+            IDataObject replacement = TreeViewControl.CreatePathDataObject([source], isCut: true);
+            IDataObject? clipboard = replacement;
+
+            var result = TreeViewControl.PastePaths([source], files.Target, true, captured, () => clipboard, value => clipboard = value);
+
+            Assert.True(result.IsComplete);
+            Assert.Same(replacement, clipboard);
+        });
     }
 
     private sealed class CopyFiles : IDisposable

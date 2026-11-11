@@ -6,6 +6,7 @@ using ColorVision.UI;
 using ColorVision.Solution.Workspace;
 using System.Collections.Specialized;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 
@@ -14,7 +15,8 @@ namespace ColorVision.Solution
     public partial class TreeViewControl
     {
         private const string ClipboardFormat = "SolutionNodePath";
-        private bool _isCutOperation;
+        private const string ClipboardCutFormat = "ColorVision.Solution.CutId";
+        private static (Guid Id, string[] Paths)? _cutClipboardRetry;
 
         private void IniCommand()
         {
@@ -276,23 +278,17 @@ namespace ColorVision.Solution
             {
                 string[] paths = GetSelectedPaths(node => node.CanCopy);
                 if (paths.Length > 0)
-                {
                     SetClipboardPaths(paths, isCut: false);
-                    _isCutOperation = false;
-                }
             }
             else if (e.Command == ApplicationCommands.Cut)
             {
                 string[] paths = GetSelectedPaths(node => node.CanCut);
                 if (paths.Length > 0)
-                {
                     SetClipboardPaths(paths, isCut: true);
-                    _isCutOperation = true;
-                }
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                if (!TryGetClipboardPaths(out var sourcePaths, out bool isCut, out bool isInternalClipboard) || _selectionService.CommandNodes.Count == 0)
+                if (!TryGetClipboardPaths(out var sourcePaths, out bool isCut, out var sourceClipboard) || _selectionService.CommandNodes.Count == 0)
                     return;
 
                 SolutionNode targetNode = _selectionService.CommandNodes[0];
@@ -300,18 +296,15 @@ namespace ColorVision.Solution
                     || !targetNode.CanPaste)
                     return;
 
-                SolutionFileOperationResult result = SolutionClipboardFileOperations.Execute(
+                SolutionFileOperationResult result = PastePaths(
                     sourcePaths,
                     physicalContainer.PhysicalContainerPath,
-                    isCut);
+                    isCut,
+                    sourceClipboard!,
+                    Clipboard.GetDataObject,
+                    WriteClipboardData);
                 if (result.Failures.Count > 0)
                     ShowFileOperationFailures(result, isCut ? "移动失败" : "复制失败");
-
-                if (isCut && isInternalClipboard && result.IsComplete)
-                {
-                    Clipboard.Clear();
-                    _isCutOperation = false;
-                }
             }
             e.Handled = true;
         }
@@ -711,10 +704,17 @@ namespace ColorVision.Solution
 
         private static void SetClipboardPaths(string[] paths, bool isCut)
         {
-            Clipboard.SetDataObject(CreatePathDataObject(paths, isCut), copy: true);
+            WriteClipboardData(CreatePathDataObject(paths, isCut));
+            _cutClipboardRetry = null;
         }
 
-        private static DataObject CreatePathDataObject(string[] paths, bool isCut)
+        private static void WriteClipboardData(IDataObject? data)
+        {
+            if (data == null) Clipboard.Clear();
+            else Clipboard.SetDataObject(data, copy: true);
+        }
+
+        internal static DataObject CreatePathDataObject(string[] paths, bool isCut)
         {
             var dataObject = new DataObject();
             dataObject.SetData(ClipboardFormat, paths);
@@ -724,20 +724,60 @@ namespace ColorVision.Solution
             fileDropList.AddRange(paths);
             dataObject.SetFileDropList(fileDropList);
             dataObject.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(isCut ? 2 : 1)));
+            if (isCut) dataObject.SetData(ClipboardCutFormat, new MemoryStream(Guid.NewGuid().ToByteArray()), autoConvert: false);
 
             return dataObject;
         }
+
+        internal static SolutionFileOperationResult PastePaths(string[] paths, string targetDirectory, bool isCut,
+            IDataObject sourceClipboard, Func<IDataObject?> readCurrentClipboard, Action<IDataObject?> writeClipboard)
+        {
+            Guid? cutId = isCut ? GetCutId(sourceClipboard) : null;
+            paths = FilterCutRetry(paths, cutId);
+            SolutionFileOperationResult result = SolutionClipboardFileOperations.Execute(paths, targetDirectory, isCut);
+            if (cutId == null || result.SucceededCount == 0) return result;
+
+            string[] remaining = result.Failures.Select(failure => failure.SourcePath).ToArray();
+            try
+            {
+                // A new cut can contain the same paths but refers to a different operation.
+                if (GetCutId(readCurrentClipboard()) == cutId)
+                    writeClipboard(remaining.Length == 0 ? null : CreatePathDataObject(remaining, isCut: true));
+                _cutClipboardRetry = null;
+            }
+            catch (ExternalException ex)
+            {
+                // The files have moved. Keep that progress even if the system clipboard is busy.
+                _cutClipboardRetry = (cutId.Value, remaining);
+                System.Diagnostics.Debug.WriteLine(ex);
+            }
+            return result;
+        }
+
+        private static Guid? GetCutId(IDataObject? data)
+        {
+            if (data?.GetData(ClipboardCutFormat, autoConvert: false) is not MemoryStream stream)
+                return null;
+            Span<byte> id = stackalloc byte[16];
+            stream.Position = 0;
+            return stream.Read(id) == id.Length ? new Guid(id) : null;
+        }
+
+        private static string[] FilterCutRetry(string[] paths, Guid? cutId)
+            => _cutClipboardRetry is { } retry && retry.Id == cutId
+                ? paths.Intersect(retry.Paths, StringComparer.OrdinalIgnoreCase).ToArray()
+                : paths;
 
         private bool HasClipboardPaths()
         {
             return TryGetClipboardPaths(out _, out _, out _);
         }
 
-        private bool TryGetClipboardPaths(out string[] paths, out bool isCut, out bool isInternalClipboard)
+        private static bool TryGetClipboardPaths(out string[] paths, out bool isCut, out IDataObject? sourceClipboard)
         {
             paths = Array.Empty<string>();
             isCut = false;
-            isInternalClipboard = false;
+            sourceClipboard = null;
 
             try
             {
@@ -747,24 +787,26 @@ namespace ColorVision.Solution
 
                 if (dataObject.GetDataPresent(ClipboardFormat))
                 {
-                    isInternalClipboard = true;
                     var data = dataObject.GetData(ClipboardFormat);
                     if (data is string singlePath)
                         paths = new[] { singlePath };
                     else if (data is string[] pathArray)
                         paths = pathArray;
                 }
-                else if (dataObject.GetDataPresent(DataFormats.FileDrop) && dataObject.GetData(DataFormats.FileDrop) is string[] fileDropPaths)
+                if (paths.Length == 0 && dataObject.GetData(DataFormats.FileDrop) is string[] fileDropPaths)
                 {
                     paths = fileDropPaths;
                 }
-                else if (Clipboard.ContainsFileDropList())
+                if (paths.Length == 0 && Clipboard.ContainsFileDropList())
                 {
                     paths = Clipboard.GetFileDropList().Cast<string>().ToArray();
                 }
 
-                isCut = IsPreferredDropMove(dataObject) || (isInternalClipboard && _isCutOperation);
-                paths = paths.Where(path => File.Exists(path) || Directory.Exists(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                Guid? cutId = GetCutId(dataObject);
+                isCut = cutId != null || IsPreferredDropMove(dataObject);
+                paths = FilterCutRetry(paths, cutId).Where(path => File.Exists(path) || Directory.Exists(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                sourceClipboard = dataObject;
                 return paths.Length > 0;
             }
             catch
