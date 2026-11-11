@@ -16,6 +16,7 @@ namespace ColorVision.ImageEditor.Algorithms
     /// <summary>Streams host-neutral analysis artifacts to atomically replaced files.</summary>
     public static class AlgorithmResultExporter
     {
+        private const int StructuredJsonFlushBytes = 128 * 1024;
         private static readonly SearchValues<char> CsvQuoteCharacters = SearchValues.Create(",\"\r\n");
         private static readonly UTF8Encoding Utf8WithBom = new(encoderShouldEmitUTF8Identifier: true);
 
@@ -147,8 +148,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 case AlgorithmStructuredDataArtifact structured:
                     writer.WriteString("schema", structured.Schema);
                     writer.WritePropertyName("data");
-                    int visited = 0;
-                    WriteJsonElement(writer, structured.Data, cancellationToken, ref visited);
+                    await WriteJsonElementAsync(writer, structured.Data, cancellationToken).ConfigureAwait(false);
                     break;
                 case AlgorithmOverlayArtifact overlay:
                     writer.WritePropertyName("lifetime");
@@ -160,34 +160,50 @@ namespace ColorVision.ImageEditor.Algorithms
             writer.WriteEndObject();
         }
 
-        private static void WriteJsonElement(
-            Utf8JsonWriter writer,
-            JsonElement value,
-            CancellationToken cancellationToken,
-            ref int visited)
+        // Utf8JsonWriter retains pending data until flushed. Keep the traversal and synchronous
+        // buffer flushes on a worker so a large structured artifact cannot block the dispatcher.
+        private static Task WriteJsonElementAsync(Utf8JsonWriter writer, JsonElement value, CancellationToken cancellationToken)
+            => Task.Run(() => WriteJsonElement(writer, value, cancellationToken), cancellationToken);
+
+        private static void WriteJsonElement(Utf8JsonWriter writer, JsonElement value, CancellationToken cancellationToken)
         {
-            if ((++visited & 1023) == 0) cancellationToken.ThrowIfCancellationRequested();
+            FlushStructuredJsonIfNeeded(writer, cancellationToken);
             switch (value.ValueKind)
             {
                 case JsonValueKind.Object:
                     writer.WriteStartObject();
                     foreach (JsonProperty property in value.EnumerateObject())
                     {
-                        writer.WritePropertyName(property.Name);
-                        WriteJsonElement(writer, property.Value, cancellationToken, ref visited);
+                        if (property.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                        {
+                            writer.WritePropertyName(property.Name);
+                            WriteJsonElement(writer, property.Value, cancellationToken);
+                        }
+                        else
+                        {
+                            FlushStructuredJsonIfNeeded(writer, cancellationToken);
+                            property.WriteTo(writer);
+                        }
                     }
                     writer.WriteEndObject();
                     break;
                 case JsonValueKind.Array:
                     writer.WriteStartArray();
                     foreach (JsonElement item in value.EnumerateArray())
-                        WriteJsonElement(writer, item, cancellationToken, ref visited);
+                        WriteJsonElement(writer, item, cancellationToken);
                     writer.WriteEndArray();
                     break;
                 default:
                     value.WriteTo(writer);
                     break;
             }
+        }
+
+        private static void FlushStructuredJsonIfNeeded(Utf8JsonWriter writer, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (writer.BytesPending >= StructuredJsonFlushBytes)
+                writer.Flush();
         }
 
         public static IReadOnlyList<string> ExportCsvBundle(AlgorithmResult result, string filePath, bool overwrite = false)
@@ -408,11 +424,15 @@ namespace ColorVision.ImageEditor.Algorithms
             await csv.AppendAsync(",\"".AsMemory(), cancellationToken).ConfigureAwait(false);
             await csv.FlushAsync(cancellationToken).ConfigureAwait(false);
             await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-            using (CsvJsonEscapingStream escaping = new(stream))
+            using (CsvJsonEscapingBuffer escaping = new(stream, cancellationToken))
             using (Utf8JsonWriter json = new(escaping))
             {
-                artifact.Data.WriteTo(json);
-                json.Flush();
+                await Task.Run(() =>
+                {
+                    artifact.Data.WriteTo(json);
+                    json.Flush();
+                    escaping.Flush();
+                }, cancellationToken).ConfigureAwait(false);
             }
             await stream.WriteAsync("\"\r\n"u8.ToArray(), cancellationToken).ConfigureAwait(false);
             reportRows(1);
@@ -531,33 +551,57 @@ namespace ColorVision.ImageEditor.Algorithms
             }
         }
 
-        private sealed class CsvJsonEscapingStream(Stream inner) : Stream
+        // Flush between writer buffer requests and grow only for a single large token.
+        private sealed class CsvJsonEscapingBuffer(Stream stream, CancellationToken cancellationToken) : IBufferWriter<byte>, IDisposable
         {
-            public override bool CanRead => false;
-            public override bool CanSeek => false;
-            public override bool CanWrite => true;
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-            public override void Flush() => inner.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
-            public override void Write(ReadOnlySpan<byte> buffer)
+            private byte[] _buffer = ArrayPool<byte>.Shared.Rent(StructuredJsonFlushBytes);
+            private int _pending;
+
+            public void Advance(int count) => _pending += count;
+
+            public Span<byte> GetSpan(int sizeHint = 0) => GetMemory(sizeHint).Span;
+
+            public Memory<byte> GetMemory(int sizeHint = 0)
             {
-                int start = 0;
-                while (start < buffer.Length)
+                cancellationToken.ThrowIfCancellationRequested();
+                sizeHint = Math.Max(sizeHint, 1);
+                if (_buffer.Length - _pending < sizeHint)
                 {
-                    int relative = buffer[start..].IndexOf((byte)'"');
-                    if (relative < 0) break;
-                    int index = start + relative;
-                    inner.Write(buffer[start..(index + 1)]);
-                    inner.WriteByte((byte)'"');
-                    start = index + 1;
+                    Flush();
+                    if (_buffer.Length < sizeHint)
+                    {
+                        byte[] replacement = ArrayPool<byte>.Shared.Rent(sizeHint);
+                        ArrayPool<byte>.Shared.Return(_buffer);
+                        _buffer = replacement;
+                    }
                 }
-                inner.Write(buffer[start..]);
+                return _buffer.AsMemory(_pending);
             }
-            protected override void Dispose(bool disposing) => base.Dispose(disposing);
+
+            public void Flush()
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                ReadOnlySpan<byte> pending = _buffer.AsSpan(0, _pending);
+                Span<byte> escaped = stackalloc byte[16 * 1024];
+                while (!pending.IsEmpty)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int count = Math.Min(pending.Length, escaped.Length / 2);
+                    int written = 0;
+                    foreach (byte value in pending[..count])
+                    {
+                        escaped[written] = value;
+                        escaped[written + 1] = value;
+                        // Only a quote keeps its second copy.
+                        written += value == (byte)'"' ? 2 : 1;
+                    }
+                    stream.Write(escaped[..written]);
+                    pending = pending[count..];
+                }
+                _pending = 0;
+            }
+
+            public void Dispose() => ArrayPool<byte>.Shared.Return(_buffer);
         }
     }
 }

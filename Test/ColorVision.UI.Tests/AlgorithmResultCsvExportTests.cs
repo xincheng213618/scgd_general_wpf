@@ -81,6 +81,29 @@ public sealed class AlgorithmResultCsvExportTests : IDisposable
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructuredPayloadPreservesNestedValuesAcrossBufferFlushes(bool csv)
+    {
+        var sample = new { 座標 = new { x = 1.25, y = -2.5 }, labels = new[] { "中文", "quote\"", "🧪\r\n" } };
+        JsonElement expected = JsonSerializer.SerializeToElement(new { samples = Enumerable.Repeat(sample, 4096).ToArray() });
+        using AlgorithmResult result = Result(new AlgorithmStructuredDataArtifact("samples", "samples/v1", expected));
+
+        if (csv)
+        {
+            IReadOnlyList<string> paths = await AlgorithmResultExporter.ExportCsvBundleAsync(result, Path.Combine(_directory, "result.csv"));
+            using JsonDocument payload = JsonDocument.Parse(ReadRows(paths[1])[1][2]);
+            Assert.True(JsonElement.DeepEquals(expected, payload.RootElement));
+        }
+        else
+        {
+            string path = await AlgorithmResultExporter.ExportJsonAsync(result, Path.Combine(_directory, "result.json"));
+            using JsonDocument payload = JsonDocument.Parse(await File.ReadAllTextAsync(path));
+            Assert.True(JsonElement.DeepEquals(expected, payload.RootElement.GetProperty("artifacts")[0].GetProperty("data")));
+        }
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task CancellationPreservesEveryExistingTargetAndRemovesStagedFiles(bool cancelBeforeWriting)
