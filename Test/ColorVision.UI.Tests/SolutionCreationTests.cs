@@ -156,6 +156,47 @@ public sealed class SolutionCreationTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ImportCannotOverwriteAnotherSelectedSource(bool importExternalFirst)
+    {
+        DirectoryInfo destination = Directory.CreateTempSubdirectory("ColorVision-ImportDestination-");
+        DirectoryInfo outside = Directory.CreateTempSubdirectory("ColorVision-ImportSource-");
+        string selectedDestination = Path.Combine(destination.FullName, "capture.txt");
+        string externalFile = Path.Combine(outside.FullName, "capture.txt");
+        string destinationAlias = Path.Combine(destination.FullName, ".", "capture.txt");
+        string[] selected = importExternalFirst ? [externalFile, destinationAlias] : [destinationAlias, externalFile];
+        try
+        {
+            File.WriteAllText(selectedDestination, "keep selected source");
+            File.WriteAllText(externalFile, "external contents");
+
+            var result = SolutionPhysicalItemOperations.ImportFiles(selected, destination.FullName, overwrite: true);
+
+            Assert.Equal("keep selected source", File.ReadAllText(selectedDestination));
+            Assert.Equal(selectedDestination, Assert.Single(result.SuccessfulPaths));
+            Assert.Empty(result.ChangedPaths);
+            Assert.Empty(result.NewlyCreatedPaths);
+            var failure = Assert.Single(result.Failures);
+            Assert.Equal(externalFile, failure.SourcePath);
+            Assert.Contains("已选源文件", failure.Message);
+            Assert.Empty(SolutionPhysicalItemOperations.GetImportConflictPaths(selected, destination.FullName));
+
+            Assert.Equal(selectedDestination, Assert.Single(SolutionPhysicalItemOperations.GetImportConflictPaths([externalFile], destination.FullName)));
+            var replacement = SolutionPhysicalItemOperations.ImportFiles([externalFile], destination.FullName, overwrite: true);
+            Assert.True(replacement.IsComplete);
+            Assert.Equal("external contents", File.ReadAllText(selectedDestination));
+        }
+        finally
+        {
+            foreach (FileInfo file in destination.EnumerateFiles()) file.Delete();
+            foreach (FileInfo file in outside.EnumerateFiles()) file.Delete();
+            destination.Delete();
+            outside.Delete();
+        }
+    }
+
     private sealed class BrokenProjectTemplate : IProjectTemplate
     {
         public string Name => "Broken project";
