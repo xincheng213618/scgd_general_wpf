@@ -1131,8 +1131,8 @@
   <data name="文件名包含无效字符" xml:space="preserve">
     <value>文件名包含无效字符</value>
   </data>
-  <data name="文件夹不为空，是否清空文件夹" xml:space="preserve">
-    <value>文件夹不为空，是否清空文件夹</value>
+  <data name="已存在同名解决方案。请打开已有解决方案或换一个名称。" xml:space="preserve">
+    <value>已存在同名解决方案。请打开已有解决方案或换一个名称。</value>
   </data>
   <data name="文件夹路径不能为空" xml:space="preserve">
     <value>文件夹路径不能为空</value>

@@ -12356,7 +12356,7 @@
       "knowledge_id": "ui.solution",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。",
+      "summary": "工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。",
       "aliases": [
         "ColorVision.Solution",
         "SolutionManager",

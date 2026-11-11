@@ -120,6 +120,13 @@ namespace ColorVision.Solution.Explorer
             WriteContentAtomically(filePath, Serialize(config), createBackup: true);
         }
 
+        public static void Create(string filePath, SolutionConfig config)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+            ArgumentNullException.ThrowIfNull(config);
+            WriteContentAtomically(filePath, Serialize(config), createBackup: false, overwrite: false);
+        }
+
         public static string Serialize(SolutionConfig config)
         {
             Normalize(config);
@@ -333,7 +340,7 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        private static void WriteContentAtomically(string filePath, string content, bool createBackup)
+        private static void WriteContentAtomically(string filePath, string content, bool createBackup, bool overwrite = true)
         {
             string fullPath = Path.GetFullPath(filePath);
             string? directoryPath = Path.GetDirectoryName(fullPath);
@@ -357,7 +364,7 @@ namespace ColorVision.Solution.Explorer
                     stream.Flush(flushToDisk: true);
                 }
 
-                if (!File.Exists(fullPath))
+                if (!overwrite || !File.Exists(fullPath))
                 {
                     File.Move(temporaryPath, fullPath);
                     return;

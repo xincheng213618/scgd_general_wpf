@@ -115,7 +115,9 @@ namespace ColorVision.Solution
 
         private void Button_Close_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(NewCreateViewMode.Name))
+            string name = NewCreateViewMode.Name;
+            string parent = NewCreateViewMode.DirectoryPath;
+            if (string.IsNullOrWhiteSpace(name))
             {
                 Close();
                 return;
@@ -123,49 +125,38 @@ namespace ColorVision.Solution
 
 
 
-            string SolutionDirectoryPath = NewCreateViewMode.DirectoryPath + "\\" + NewCreateViewMode.Name;
-
-
-            if (SolutionDirectoryPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || NewCreateViewMode.Name.IndexOfAny(Path.GetInvalidFileNameChars())>=0)
+            if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || name.EndsWith('.') || name.EndsWith(' '))
             {
                 MessageBox.Show(LocalizedText.Get("工程名不能包含特殊字符"), "ColorVision");
                 return;
             }
-            if (!Directory.Exists(NewCreateViewMode.DirectoryPath))
+            try
             {
-                if (MessageBox.Show(LocalizedText.Get("不存在父目录，是否创建"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                string solutionPath = SolutionManager.GetNewSolutionPath(Path.Combine(parent, name));
+                if (File.Exists(solutionPath) || Directory.Exists(solutionPath))
                 {
-                    Directory.CreateDirectory(NewCreateViewMode.DirectoryPath);
-                }
-                else
-                {
-                    Close();
+                    MessageBox.Show(LocalizedText.Get("已存在同名解决方案。请打开已有解决方案或换一个名称。"), "ColorVision");
                     return;
                 }
-            }
 
-            if (Directory.Exists(SolutionDirectoryPath))
-            {
-                var result = MessageBox.Show(LocalizedText.Get("文件夹不为空，是否清空文件夹"), "ColorVision", MessageBoxButton.YesNo);
-                if (result == MessageBoxResult.Yes)
+                if (!Directory.Exists(parent))
                 {
-                    try
+                    if (MessageBox.Show(LocalizedText.Get("不存在父目录，是否创建"), "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                     {
-                        Directory.Delete(SolutionDirectoryPath, true);
+                        Close();
+                        return;
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, "ColorVision");
-                    }
+                    Directory.CreateDirectory(parent);
                 }
+
+                NewCreateViewMode.RememberLocation(parent);
+                IsCreate = true;
+                Close();
             }
-
-            Directory.CreateDirectory(SolutionDirectoryPath);
-            NewCreateViewMode.RememberLocation(NewCreateViewMode.DirectoryPath);
-
-
-            IsCreate = true;
-            Close();
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                MessageBox.Show(ex.Message, LocalizedText.Get("创建项目失败"), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

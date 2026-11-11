@@ -2,7 +2,7 @@
 knowledge_id: "ui.solution"
 knowledge_type: "topic"
 status: "current"
-summary: "工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。"
+summary: "工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及 cvsln 恢复。新建工作区保留已有文件。"
 aliases: ["ColorVision.Solution", "SolutionManager", "ResourceOpenService", "OpenSolutionAsync", "OpenWith", "OpenManyAsync", "PrivateWorkspaceService", "SolutionConfigStore", "SolutionConfigStore.Load", "SolutionCache", "MruPathService", "MruPathService.Touch", "cvsln", "cvproj", "打开文件夹工作区", "取消切换工作区", "批量打开图片和项目", "工作区文件树缓存", "解决方案备份恢复", "默认打开方式保存失败", "解决方案资源管理器", "文件系统视图", "与活动文档同步", "全部折叠", "TreeViewControl", "OpenSolutionWindow", "NewCreateWindow", "CreateSolutionAsync", "SolutionSetting", "DefaultCreatName", "SolutionConfig", "SolutionSearchService", "SolutionOperationHistory", "ProjectProviderRegistry", "创建工程", "最近工作区列表", "从解决方案中移除", "移除解决方案文件夹"]
 code_paths: ["UI/ColorVision.Solution/README.md", "UI/ColorVision.Solution/ColorVision.Solution.csproj", "UI/ColorVision.Solution/Themes/", "UI/ColorVision.Solution/SolutionManager.cs", "UI/ColorVision.Solution/SolutionManagerInitializer.cs", "UI/ColorVision.Solution/StartupResourceOpenInitializer.cs", "ColorVision/ForwardedCommandLineHandler.cs", "ColorVision/MainWindow.Setting.cs", "UI/ColorVision.Solution/OpenSolutionWindow.xaml", "UI/ColorVision.Solution/OpenSolutionWindow.xaml.cs", "UI/ColorVision.Solution/NewCreatWindow.xaml", "UI/ColorVision.Solution/NewCreatWindow.xaml.cs", "UI/ColorVision.Solution/SolutionSetting.cs", "UI/ColorVision.Solution/SolutionMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "UI/ColorVision.Solution/Editor/ResourceOpenService.cs", "UI/ColorVision.Solution/Editor/ResourcePathIdentityComparer.cs", "UI/ColorVision.Solution/Editor/CommandLineResourceOpenRequest.cs", "UI/ColorVision.Solution/Workspace/PrivateWorkspaceService.cs", "UI/ColorVision.Solution/Explorer", "UI/ColorVision.Solution/Mru", "UI/ColorVision.Solution/TreeViewControl.xaml", "UI/ColorVision.Solution/TreeViewControl.xaml.cs", "UI/ColorVision.Solution/TreeViewControl.Navigation.cs", "UI/ColorVision.Solution/TreeViewControl.ViewMode.cs", "UI/ColorVision.Solution/TreeViewControl.Search.cs", "UI/ColorVision.Solution/TreeViewControl.Command.cs", "UI/ColorVision.Solution/TreeViewControl.WorkspaceState.cs", "UI/ColorVision.Solution/SolutionFeatureVisibility.cs", "UI/ColorVision.UI/FileProcessorFactory.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/MruPathServiceTests.cs"]
@@ -40,7 +40,7 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 2. 使用准备新建的目录名。父目录不存在时，界面询问是否创建父目录。
 3. 点击“创建工程”。窗口关闭后，`SolutionManager.CreateSolutionAsync` 写入 `<项目名称>.cvsln`，再尝试切换。需要项目或文件时，在资源树支持的容器节点右键“添加”，选择“新建项目”“现有项目”“新建项”或“现有项”。
 
-**同名目录提示不是取消创建的完整保护。** 目标目录已存在时，选择清空会直接递归删除该目录；选择“否”（不清空）仍会继续，之后可能替换同名 `.cvsln`。清空异常被提示后也没有终止后续创建。这是当前创建入口的覆盖风险，已有工作区应通过打开入口访问。创建后切换失败或取消，不会撤销已经生成、替换或删除的文件。
+已有目录可以复用，目录内的文件会保留。存在同名 `.cvsln` 时提示打开已有解决方案或改名。提交文件时也检查同名占用，即使在点击创建后出现竞争写入，也保留先创建的文件。启动回退优先打开已有默认解决方案。新配置已经写入后取消切换，会保留新文件。
 
 没有可用创建位置记录时，打开新建窗口就会准备 Documents 下的 `ColorVision` 目录并记录位置。新建窗口自动建议名称，可直接修改“项目名称”。`SolutionSetting.DefaultCreatName` 保留原配置键和已有自定义值，仅用于生成新建建议名，不重命名已有工作区；不为这一低频默认值提供独立设置窗口或“更多选项”入口。
 

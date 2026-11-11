@@ -1150,8 +1150,8 @@
   <data name="文件名包含无效字符" xml:space="preserve">
     <value>The filename contains invalid characters</value>
   </data>
-  <data name="文件夹不为空，是否清空文件夹" xml:space="preserve">
-    <value>The folder is not empty. Clear it?</value>
+  <data name="已存在同名解决方案。请打开已有解决方案或换一个名称。" xml:space="preserve">
+    <value>A solution with this name already exists. Open it or choose a different name.</value>
   </data>
   <data name="文件夹路径不能为空" xml:space="preserve">
     <value>The folder path cannot be empty.</value>
