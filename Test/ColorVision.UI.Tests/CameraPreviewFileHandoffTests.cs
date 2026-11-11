@@ -32,7 +32,7 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     {
         Directory.CreateDirectory(root);
         CVFileReadCache.Release();
-        ConfigService.SetInstance(new ConfigHandler());
+        TestEnvironment.SetConfig(new ConfigHandler());
         (view, opener, pipeline) = WpfTestHost.Invoke(() =>
         {
             Application app = Application.Current;
@@ -763,7 +763,7 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     public void Dispose()
     {
         WpfTestHost.Invoke(() => { pipeline.Dispose(); view.Dispose(); });
-        ConfigService.SetInstance(previousConfig);
+        TestEnvironment.SetConfig(previousConfig);
         CVFileReadCache.Release();
         foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
         Directory.Delete(root);

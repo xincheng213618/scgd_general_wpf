@@ -31,7 +31,7 @@ public sealed class SmuResultViewTests
             Window? window = null;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 ViewSMUConfig.Instance.InsertAtBeginning = insertAtBeginning;
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
@@ -171,7 +171,7 @@ public sealed class SmuResultViewTests
             {
                 if (window != null) { window.Content = null; window.Close(); }
                 foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-                ConfigService.SetInstance(previous);
+                TestEnvironment.SetConfig(previous);
             }
         });
     }

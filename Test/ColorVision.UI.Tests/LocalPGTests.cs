@@ -322,7 +322,7 @@ public sealed class LocalPGTests
         {
             Device = WpfTestHost.Invoke(() =>
             {
-                ColorVision.UI.ConfigService.SetInstance(new ColorVision.UI.ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ColorVision.UI.ConfigHandler { IsAutoSave = false });
                 var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
                 manager.DeviceServices = [];
                 managerField.SetValue(null, manager);
@@ -337,7 +337,7 @@ public sealed class LocalPGTests
             Device.Dispose();
             DisplayConfigManager.Instance.Configs.TryRemove(Device.Code, out _);
             managerField.SetValue(null, previousManager);
-            ColorVision.UI.ConfigService.SetInstance(previousConfig);
+            TestEnvironment.SetConfig(previousConfig);
         });
     }
 }

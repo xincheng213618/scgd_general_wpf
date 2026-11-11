@@ -578,7 +578,7 @@ public sealed class LvCameraLocalForwardingTests
             CVFileReadCache.Release();
             CVFileReadCache.IsEnabled = true;
             CVFileReadCache.MaximumEntries = 1;
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             Camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
             Camera.Config = new() { Code = "lv-test" };
             Camera.Config.FileServerCfg.DataBasePath = directory;
@@ -614,7 +614,7 @@ public sealed class LvCameraLocalForwardingTests
             CVFileReadCache.MaximumEntries = maximumEntries;
             CVFileReadCache.IsEnabled = cacheEnabled;
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
-            ConfigService.SetInstance(previousConfig);
+            TestEnvironment.SetConfig(previousConfig);
         }
     }
 

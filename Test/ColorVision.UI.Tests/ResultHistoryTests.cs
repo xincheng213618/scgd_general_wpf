@@ -280,7 +280,7 @@ public sealed class ResultHistoryTests
             IConfigService previousConfig = ConfigService.Instance;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 using var device = new DeviceCamera(new SysResourceModel { Id = -2, Code = "history-offline", Value = "{}" });
                 using var camera = new ViewCamera(device, true);
                 using var algorithm = new AlgorithmView(null, true);
@@ -308,7 +308,7 @@ public sealed class ResultHistoryTests
                 Assert.Empty(camera.ViewResults);
                 Assert.Empty(algorithm.ViewResults);
             }
-            finally { ConfigService.SetInstance(previousConfig); }
+            finally { TestEnvironment.SetConfig(previousConfig); }
         });
     }
 

@@ -950,7 +950,7 @@ public sealed class DockViewLifecycleTests
             _title = _manager.ViewTitleChangedHandler;
             _showAll = _manager.ShowAllViewsHandler;
             _lastActive = _manager.LastActiveView;
-            ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+            TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
             foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
             {
                 var dictionary = new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -979,7 +979,7 @@ public sealed class DockViewLifecycleTests
             Registrations.AddRange(_registrationsBefore);
             WorkspaceManager.LayoutDocumentPane = _previousPane;
             WorkspaceManager.layoutRoot = _previousRoot;
-            ConfigService.SetInstance(_previousConfig!);
+            TestEnvironment.SetConfig(_previousConfig!);
             foreach (var dictionary in _dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
         }
     }

@@ -611,7 +611,7 @@ public class ViewFlowDocumentBehaviorTests
         WpfTestHost.Invoke(() =>
         {
             var previous = ConfigService.Instance;
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             FlowEngineToolWindow? window = null;
@@ -631,7 +631,7 @@ public class ViewFlowDocumentBehaviorTests
                     window.Close();
                 }
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
-                ConfigService.SetInstance(previous);
+                TestEnvironment.SetConfig(previous);
             }
         });
     }
@@ -642,7 +642,7 @@ public class ViewFlowDocumentBehaviorTests
         WpfTestHost.Invoke(() =>
         {
             var previous = ConfigService.Instance;
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             FlowEngineToolWindow? window = null;
@@ -666,7 +666,7 @@ public class ViewFlowDocumentBehaviorTests
             {
                 window?.Close();
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
-                ConfigService.SetInstance(previous);
+                TestEnvironment.SetConfig(previous);
             }
         });
     }

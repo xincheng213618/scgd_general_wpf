@@ -118,7 +118,7 @@ public sealed class FlowExecutionSessionProgressTests
         WpfTestHost.Invoke(() =>
         {
             var previousConfig = ConfigService.Instance;
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             Application.Current.Resources.MergedDictionaries.Add(theme);
             try
@@ -129,7 +129,7 @@ public sealed class FlowExecutionSessionProgressTests
             finally
             {
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             }
         });
     }

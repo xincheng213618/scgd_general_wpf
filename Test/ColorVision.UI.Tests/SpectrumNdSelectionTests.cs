@@ -273,7 +273,7 @@ public sealed class SpectrumNdSelectionTests
             Assert.True(File.Exists(scope.ConfigPath), "ND selection must persist without relying on process-exit saving.");
             var restored = new ConfigHandler { ConfigFilePath = scope.ConfigPath, IsAutoSave = false };
             restored.LoadConfigs();
-            ConfigService.SetInstance(restored);
+            TestEnvironment.SetConfig(restored);
             foreach ((string code, int port) in positions)
             {
                 using var device = new DeviceCfwPort(new SysResourceModel { Id = -2, Code = code, Value = value });
@@ -546,7 +546,7 @@ public sealed class SpectrumNdSelectionTests
         public TestScope()
         {
             Directory.CreateDirectory(directory);
-            ConfigService.SetInstance(new ConfigHandler { ConfigFilePath = ConfigPath, IsAutoSave = false });
+            TestEnvironment.SetConfig(new ConfigHandler { ConfigFilePath = ConfigPath, IsAutoSave = false });
             SysResourceDao.Instance = new SysResourceDao(new LocalTemplateStore(Path.Combine(directory, "resources.db")), () => false);
             foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
             {
@@ -572,7 +572,7 @@ public sealed class SpectrumNdSelectionTests
         {
             SysResourceDao.Instance = previousDao;
             PhysicalManagerField.SetValue(null, previousPhysicalManager);
-            ConfigService.SetInstance(previousConfig);
+            TestEnvironment.SetConfig(previousConfig);
             foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
             foreach (string file in Directory.EnumerateFiles(directory)) File.Delete(file);
             Directory.Delete(directory);

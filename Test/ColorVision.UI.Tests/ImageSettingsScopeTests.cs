@@ -215,7 +215,7 @@ public sealed class ImageSettingsScopeTests
     public void SavingAReplacedConfigurationDoesNotWriteADifferentObject() => Run(service =>
     {
         var source = DisplayShaderFilterDefaultConfig.Current;
-        ConfigService.SetInstance(new RecordingConfigService());
+        TestEnvironment.SetConfig(new RecordingConfigService());
         Assert.Throws<InvalidOperationException>(() => ImageSettingsPersistence.Save(source));
         Assert.Empty(service.SavedTypes);
     });
@@ -248,7 +248,7 @@ public sealed class ImageSettingsScopeTests
         IConfigService? previous = ConfigService.Instance;
         try
         {
-            ConfigService.SetInstance(new RecordingConfigService());
+            TestEnvironment.SetConfig(new RecordingConfigService());
             var resources = Application.Current.Resources;
             foreach (string key in new[] { "GlobalTextBrush", "PrimaryTextBrush" }) resources[key] = Brushes.Black;
             foreach (string key in new[] { "ButtonBorderBrush", "BorderBrush", "SecondaryTextBrush" }) resources[key] = Brushes.Gray;
@@ -264,7 +264,7 @@ public sealed class ImageSettingsScopeTests
             resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
             action((RecordingConfigService)ConfigService.Instance);
         }
-        finally { ConfigService.SetInstance(previous!); }
+        finally { TestEnvironment.SetConfig(previous!); }
     });
 
     private sealed class RecordingConfigService : IConfigService

@@ -38,7 +38,7 @@ public sealed class LocalSmuSessionTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ColorVision.UI.ConfigService.Instance;
-                ColorVision.UI.ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 previousManager = managerField.GetValue(null);
                 var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
                 manager.DeviceServices = [];
@@ -108,7 +108,7 @@ public sealed class LocalSmuSessionTests
             WpfTestHost.Invoke(() =>
             {
                 device?.Dispose(); destination?.Dispose(); managerField.SetValue(null, previousManager);
-                if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig);
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
             });
             await session.DisposeAsync();
         }

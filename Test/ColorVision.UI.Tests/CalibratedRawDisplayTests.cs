@@ -27,7 +27,7 @@ public sealed class CalibratedRawDisplayTests
         ImageView? view = null;
         try
         {
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             view = WpfTestHost.Invoke(CreateView);
             WpfTestHost.Invoke(() => CvcieDisplayConfig.Current.EnableTrueColor = true);
             await DisplayAsync(view, () => view.OpenImage(path));
@@ -64,7 +64,7 @@ public sealed class CalibratedRawDisplayTests
         finally
         {
             if (view != null) WpfTestHost.Invoke(view.Dispose);
-            ConfigService.SetInstance(previous);
+            TestEnvironment.SetConfig(previous);
             File.Delete(path);
         }
     }
@@ -91,7 +91,7 @@ public sealed class CalibratedRawDisplayTests
         ImageView? view = null;
         try
         {
-            ConfigService.SetInstance(new ConfigHandler());
+            TestEnvironment.SetConfig(new ConfigHandler());
             view = WpfTestHost.Invoke(CreateView);
             await DisplayAsync(view, () => view.OpenImage(path));
             WpfTestHost.Invoke(() =>
@@ -126,7 +126,7 @@ public sealed class CalibratedRawDisplayTests
         finally
         {
             if (view != null) WpfTestHost.Invoke(view.Dispose);
-            ConfigService.SetInstance(previous);
+            TestEnvironment.SetConfig(previous);
             File.Delete(path);
             File.Delete(plainPath);
         }

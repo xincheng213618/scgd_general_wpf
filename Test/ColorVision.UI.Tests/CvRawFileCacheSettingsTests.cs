@@ -63,7 +63,7 @@ public sealed class CvRawFileCacheSettingsTests
         IConfigService previous = ConfigService.Instance;
         bool previousEnabled = CVFileReadCache.IsEnabled;
         int previousMaximumEntries = CVFileReadCache.MaximumEntries;
-        ConfigService.SetInstance(new ConfigHandler { ConfigFilePath = path });
+        TestEnvironment.SetConfig(new ConfigHandler { ConfigFilePath = path });
         CVFileReadCache.IsEnabled = true;
         CVFileReadCache.MaximumEntries = 1;
         LocalCalibrationCacheManagerWindow? window = null;
@@ -166,7 +166,7 @@ public sealed class CvRawFileCacheSettingsTests
             CVFileReadCache.MaximumEntries = 1;
             ConfigHandler restarted = new() { ConfigFilePath = path };
             restarted.LoadConfigs();
-            ConfigService.SetInstance(restarted);
+            TestEnvironment.SetConfig(restarted);
             new CvRawFileCacheInitializer().InitializeAsync().GetAwaiter().GetResult();
             Assert.False(CvRawFileCacheConfig.Current.IsEnabled);
             Assert.False(CVFileReadCache.IsEnabled);
@@ -176,7 +176,7 @@ public sealed class CvRawFileCacheSettingsTests
         finally
         {
             if (window != null) { WaitUntilIdle(window); WpfTestHost.Invoke(() => window.Close()); }
-            ConfigService.SetInstance(previous);
+            TestEnvironment.SetConfig(previous);
             CVFileReadCache.IsEnabled = previousEnabled;
             CVFileReadCache.Release();
             CVFileReadCache.MaximumEntries = previousMaximumEntries;
@@ -193,7 +193,7 @@ public sealed class CvRawFileCacheSettingsTests
         string path = Path.Combine(root, "config.json");
         IConfigService previous = ConfigService.Instance;
         bool previousEnabled = LocalCameraRawBufferPool.IsCacheEnabled;
-        ConfigService.SetInstance(new ConfigHandler { ConfigFilePath = path });
+        TestEnvironment.SetConfig(new ConfigHandler { ConfigFilePath = path });
         LocalCalibrationCacheManagerWindow? window = null;
         try
         {
@@ -259,7 +259,7 @@ public sealed class CvRawFileCacheSettingsTests
                 LocalCameraRawBufferPool.IsCacheEnabled = !enabled;
                 ConfigHandler restarted = new() { ConfigFilePath = path };
                 restarted.LoadConfigs();
-                ConfigService.SetInstance(restarted);
+                TestEnvironment.SetConfig(restarted);
                 new CameraRawBufferCacheInitializer().InitializeAsync().GetAwaiter().GetResult();
                 Assert.Equal(enabled, CameraRawBufferCacheConfig.Current.IsEnabled);
                 Assert.Equal(enabled, LocalCameraRawBufferPool.IsCacheEnabled);
@@ -268,7 +268,7 @@ public sealed class CvRawFileCacheSettingsTests
         finally
         {
             if (window != null) { WaitUntilIdle(window); WpfTestHost.Invoke(() => window.Close()); }
-            ConfigService.SetInstance(previous);
+            TestEnvironment.SetConfig(previous);
             LocalCameraRawBufferPool.IsCacheEnabled = previousEnabled;
             foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
             Directory.Delete(root);

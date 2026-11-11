@@ -36,7 +36,7 @@ public sealed class SpectrumButtonOperationTests
             DisplaySpectrum? card = null;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
                     var dictionary = new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -178,7 +178,7 @@ public sealed class SpectrumButtonOperationTests
                     device.Dispose();
                 }
                 foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             }
         });
     }

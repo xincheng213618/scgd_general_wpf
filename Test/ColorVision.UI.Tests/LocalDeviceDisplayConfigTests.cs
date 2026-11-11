@@ -88,7 +88,7 @@ public class LocalDeviceDisplayConfigTests
             var previousConfig = ConfigService.Instance;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 foreach (var (kind, propertyName) in new[]
                 {
                     ("camera", nameof(DisplayCameraConfig.UseLocalCamera)),
@@ -122,7 +122,7 @@ public class LocalDeviceDisplayConfigTests
                     Assert.Equal(savedChoice ?? true, usesLocal);
                 }
             }
-            finally { ConfigService.SetInstance(previousConfig); }
+            finally { TestEnvironment.SetConfig(previousConfig); }
         });
     }
 

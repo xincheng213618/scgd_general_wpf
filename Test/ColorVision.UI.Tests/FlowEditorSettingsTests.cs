@@ -26,7 +26,7 @@ public sealed class FlowEditorSettingsTests
             try
             {
                 var handler = new ConfigHandler { ConfigFilePath = configPath, IsAutoSave = false };
-                ConfigService.SetInstance(handler);
+                TestEnvironment.SetConfig(handler);
                 manager.ApplyTheme(Application.Current, Theme.Light);
                 var settings = handler.GetRequiredService<FlowEditorSettings>();
                 using var view = new FlowEngineManager().View;
@@ -95,7 +95,7 @@ public sealed class FlowEditorSettingsTests
             finally
             {
                 ThemeManager.Current = previousManager;
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
                 Application.Current.Resources.MergedDictionaries.Clear();
                 foreach (ResourceDictionary resource in previousResources) Application.Current.Resources.MergedDictionaries.Add(resource);
                 foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();

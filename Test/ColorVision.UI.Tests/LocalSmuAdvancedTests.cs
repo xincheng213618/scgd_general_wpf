@@ -165,7 +165,7 @@ public sealed class LocalSmuAdvancedTests
             WpfTestHost.Invoke(()=>
             {
                 previousManager=managerField.GetValue(null);previousConfig=ConfigService.Instance;
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave=false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave=false });
                 foreach(string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 { var d=new ResourceDictionary { Source=new Uri(uri,UriKind.RelativeOrAbsolute) };dictionaries.Add(d);Application.Current.Resources.MergedDictionaries.Add(d); }
                 var manager=(ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));manager.DeviceServices=[];managerField.SetValue(null,manager);
@@ -201,7 +201,7 @@ public sealed class LocalSmuAdvancedTests
                 control?.Dispose();container?.Dispose();device?.Dispose();
                 if(device!=null)DisplayConfigManager.Instance.Configs.TryRemove(device.Code,out _);
                 managerField.SetValue(null,previousManager);foreach(var d in dictionaries)Application.Current.Resources.MergedDictionaries.Remove(d);
-                if(previousConfig!=null)ConfigService.SetInstance(previousConfig);
+                if(previousConfig!=null)TestEnvironment.SetConfig(previousConfig);
             });
             await session.DisposeAsync();
         }
@@ -236,7 +236,7 @@ public sealed class LocalSmuAdvancedTests
             DeviceSMU? device=null;LocalSmuWindow? window=null;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave=false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave=false });
                 foreach(string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 { var dictionary=new ResourceDictionary { Source=new Uri(uri,UriKind.RelativeOrAbsolute) };dictionaries.Add(dictionary);Application.Current.Resources.MergedDictionaries.Add(dictionary); }
                 var manager=(ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));manager.DeviceServices=[];managerField.SetValue(null,manager);
@@ -286,7 +286,7 @@ public sealed class LocalSmuAdvancedTests
             finally
             {
                 window?.Close();device?.Dispose();if(device!=null)DisplayConfigManager.Instance.Configs.TryRemove(device.Code,out _);
-                managerField.SetValue(null,previousManager);foreach(var dictionary in dictionaries)Application.Current.Resources.MergedDictionaries.Remove(dictionary);ConfigService.SetInstance(previousConfig);
+                managerField.SetValue(null,previousManager);foreach(var dictionary in dictionaries)Application.Current.Resources.MergedDictionaries.Remove(dictionary);TestEnvironment.SetConfig(previousConfig);
             }
         });
     }

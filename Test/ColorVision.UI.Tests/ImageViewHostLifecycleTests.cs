@@ -936,7 +936,7 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
 
         public PresentationScope()
         {
-            ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+            TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
             foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
             {
                 var dictionary = new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -948,7 +948,7 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
         public void Dispose()
         {
             Application.Current.MainWindow = _previousMainWindow;
-            ConfigService.SetInstance(_previousConfig!);
+            TestEnvironment.SetConfig(_previousConfig!);
             foreach (var dictionary in _dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
         }
     }

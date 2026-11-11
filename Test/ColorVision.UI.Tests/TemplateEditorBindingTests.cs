@@ -25,7 +25,7 @@ public sealed class TemplateEditorBindingTests
             TemplateEditorWindow? window = null;
             try
             {
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
                     ResourceDictionary dictionary = new() { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -82,7 +82,7 @@ public sealed class TemplateEditorBindingTests
                 window?.Close();
                 foreach (ResourceDictionary dictionary in dictionaries)
                     Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             }
         });
     }

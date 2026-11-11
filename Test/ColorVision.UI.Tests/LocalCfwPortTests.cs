@@ -268,7 +268,7 @@ public sealed class LocalCfwPortTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ConfigService.Instance;
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false, ConfigFilePath = Path.Combine(directory, "config.json") });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false, ConfigFilePath = Path.Combine(directory, "config.json") });
                 var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
                 manager.DeviceServices = [];
                 managerField.SetValue(null, manager);
@@ -357,7 +357,7 @@ public sealed class LocalCfwPortTests
                 device?.Dispose();
                 managerField.SetValue(null, previousManager);
                 physicalManagerField.SetValue(null, previousPhysicalManager);
-                if (previousConfig != null) ConfigService.SetInstance(previousConfig);
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
             });
             foreach (var file in Directory.EnumerateFiles(directory)) File.Delete(file);
             Directory.Delete(directory);

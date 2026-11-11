@@ -120,7 +120,7 @@ public sealed class EngineAuthorizationBoundaryTests
         IConfigService previous = ConfigService.Instance;
         try
         {
-            ConfigService.SetInstance(new MemoryConfiguration());
+            TestEnvironment.SetConfig(new MemoryConfiguration());
             ExperimentalFeaturesConfig.Instance.IsEnabled = enabled;
             bool skipValidation = ExperimentalFeaturesConfig.Instance.IsEnabled;
             DateTime now = new(2026, 10, 28, 12, 0, 0);
@@ -140,7 +140,7 @@ public sealed class EngineAuthorizationBoundaryTests
             LocalCameraLicense.EnsureAvailable(now.AddSeconds(1), skipValidation, now);
             LocalSpectrumLicense.EnsureNotExpired(now.AddSeconds(1), skipValidation, now);
         }
-        finally { ConfigService.SetInstance(previous); }
+        finally { TestEnvironment.SetConfig(previous); }
     }
 
     [Fact]

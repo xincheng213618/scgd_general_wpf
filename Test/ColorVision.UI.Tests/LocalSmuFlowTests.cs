@@ -181,7 +181,7 @@ public sealed class LocalSmuFlowTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ColorVision.UI.ConfigService.Instance;
-                ColorVision.UI.ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
                 {
                     var dictionary = new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -385,7 +385,7 @@ public sealed class LocalSmuFlowTests
                 managerField.SetValue(null, previousManager);
                 if (device != null) removedConfig = DisplayConfigManager.Instance.Configs.TryRemove(device.Code, out _);
                 foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-                if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig);
+                if (previousConfig != null) TestEnvironment.SetConfig(previousConfig);
             });
             await session.DisposeAsync();
             Assert.True(removedConfig);

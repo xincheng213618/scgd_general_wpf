@@ -102,13 +102,13 @@ public sealed class CvcieDisplaySettingsTests
             try
             {
                 RecordingConfigService service = new();
-                ConfigService.SetInstance(service);
+                TestEnvironment.SetConfig(service);
                 EnsureResources();
                 action(service);
             }
             finally
             {
-                ConfigService.SetInstance(previous!);
+                TestEnvironment.SetConfig(previous!);
             }
         });
     }

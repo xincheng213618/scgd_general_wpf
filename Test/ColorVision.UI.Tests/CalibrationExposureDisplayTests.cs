@@ -145,7 +145,7 @@ public sealed class CalibrationExposureDisplayTests
         public Scope()
         {
             Directory.CreateDirectory(_root);
-            ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+            TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
             foreach (string uri in ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase))
             {
                 ResourceDictionary dictionary = new() { Source = new Uri(uri, UriKind.RelativeOrAbsolute) };
@@ -185,7 +185,7 @@ public sealed class CalibrationExposureDisplayTests
         {
             View.Dispose(); Device.Dispose();
             foreach (var dictionary in _dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
-            ConfigService.SetInstance(_previousConfig);
+            TestEnvironment.SetConfig(_previousConfig);
             foreach (string path in Directory.EnumerateFiles(_root)) File.Delete(path);
             Directory.Delete(_root);
         }

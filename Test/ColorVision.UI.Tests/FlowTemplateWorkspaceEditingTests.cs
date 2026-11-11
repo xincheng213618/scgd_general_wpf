@@ -485,7 +485,7 @@ public sealed class FlowTemplateWorkspaceEditingTests
         {
             var previousConfig = ConfigService.Instance;
             var previousTemplates = TemplateFlow.Params;
-            ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+            TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
             TemplateFlow.Params = [];
             FlowEngineConfig.Instance.TemplateFlowParamsIndex = -1;
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
@@ -501,7 +501,7 @@ public sealed class FlowTemplateWorkspaceEditingTests
             {
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
                 TemplateFlow.Params = previousTemplates;
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
             }
         });
     }

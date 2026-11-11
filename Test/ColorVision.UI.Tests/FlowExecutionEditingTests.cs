@@ -35,7 +35,6 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowExecutionEditingTests
 {
-    private static readonly Lazy<DirectoryInfo> DiagnosticsDirectory = new(() => Directory.CreateTempSubdirectory("ColorVision-FlowEditingTests-"));
     private static readonly FieldInfo ConfigHandlerInstance = typeof(ConfigHandler).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
 
     [Fact]
@@ -1037,13 +1036,11 @@ public sealed class FlowExecutionEditingTests
             var previousConfig = ConfigService.Instance;
             object? previousHandler = ConfigHandlerInstance.GetValue(null);
             var previousTemplates = TemplateFlow.Params;
-            string diagnosticsPath = DiagnosticsDirectory.Value.FullName;
-            var config = new ConfigHandler { ConfigFilePath = Path.Combine(diagnosticsPath, "config.json"), IsAutoSave = false };
-            config.GetRequiredService<FlowNodeRecordConfig>().DirectoryPath = diagnosticsPath + Path.DirectorySeparatorChar;
+            var config = new ConfigHandler { IsAutoSave = false };
             var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
             // Timed button telemetry also reads ConfigHandler's singleton directly.
+            TestEnvironment.SetConfig(config);
             ConfigHandlerInstance.SetValue(null, config);
-            ConfigService.SetInstance(config);
             TemplateFlow.Params = [];
             try
             {
@@ -1056,7 +1053,7 @@ public sealed class FlowExecutionEditingTests
             {
                 Application.Current.Resources.MergedDictionaries.Remove(theme);
                 ConfigHandlerInstance.SetValue(null, previousHandler);
-                ConfigService.SetInstance(previousConfig);
+                TestEnvironment.SetConfig(previousConfig);
                 TemplateFlow.Params = previousTemplates;
             }
         });

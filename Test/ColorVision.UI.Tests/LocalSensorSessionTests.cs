@@ -272,7 +272,7 @@ public sealed class LocalSensorSessionTests
             WpfTestHost.Invoke(() =>
             {
                 previousConfig = ConfigService.Instance;
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 device = new DeviceSensor(new() { Id = -2, Code = "sensor-lifecycle-" + Guid.NewGuid(), Value = Newtonsoft.Json.JsonConvert.SerializeObject(new ConfigSensor { IsNet = true, Addr = "127.0.0.1", Port = port }) });
                 var originalDisplayConfig = device.DisplayConfig;
                 device.Config.Code += "-renamed";
@@ -305,7 +305,7 @@ public sealed class LocalSensorSessionTests
         }
         finally
         {
-            WpfTestHost.Invoke(() => { device?.Dispose(); if (previousConfig != null) ConfigService.SetInstance(previousConfig); });
+            WpfTestHost.Invoke(() => { device?.Dispose(); if (previousConfig != null) TestEnvironment.SetConfig(previousConfig); });
         }
     }
 

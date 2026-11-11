@@ -189,7 +189,7 @@ public sealed class LocalPoiTemplateStorageTests
             WpfTestHost.Invoke(() =>
             {
                 Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
-                ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
                 previous = TemplatePoi.Params.ToArray();
                 view = new ImageView();
                 PoiImageViewComponent.SetIsTemplateSelectorEnabled(view, false);
@@ -265,7 +265,7 @@ public sealed class LocalPoiTemplateStorageTests
             {
                 view?.Dispose();
                 TemplatePoi.Params.Clear(); foreach (var item in previous) TemplatePoi.Params.Add(item);
-                ConfigService.SetInstance(previousConfig!);
+                TestEnvironment.SetConfig(previousConfig!);
             });
         }
     }
