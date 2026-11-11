@@ -8,6 +8,63 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CvRawFileCacheCapacityTests
 {
+    [Theory]
+    [InlineData("full", 18)]
+    [InlineData("display", 18)]
+    [InlineData("channel", 6)]
+    [InlineData("legacy", 6)]
+    [InlineData("probe", 0)]
+    public void CompletePathReadBorrowsOnlyOneCacheSnapshot(string operation, int expectedLength)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        using CVCIEFile image = CacheFiles.CreateRaw(12);
+        image.Channels = 3;
+        image.Exp = [10, 20, 30];
+        image.Data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+        Assert.True(CVFileUtil.WriteCVRaw(files.A, image, CVFileSaveMode.MemoryOnly));
+        var before = CVFileReadCache.GetSnapshot();
+
+        CVCIEFile? loaded = null;
+        try
+        {
+            switch (operation)
+            {
+                case "full": Assert.True(CVFileUtil.ReadCVRaw(files.A, out loaded)); break;
+                case "display": loaded = CVFileUtil.OpenLocalCVFileForDisplay(files.A); break;
+                case "channel": Assert.True(CVFileUtil.ReadCIEFileChannel(files.A, 1, out loaded)); break;
+                case "legacy": Assert.Equal(0, CVFileUtil.ReadCVCIEXYZ(files.A, 1, out loaded)); break;
+                case "probe": Assert.False(CVFileUtil.IsCVCIEFile(files.A)); break;
+            }
+            if (expectedLength > 0)
+                Assert.Equal(expectedLength == image.Data.Length ? image.Data : image.Data[6..12], loaded!.Data);
+
+            var after = CVFileReadCache.GetSnapshot();
+            Assert.Equal(before.HitCount + 1, after.HitCount);
+            Assert.Equal(0, after.ActiveReaders);
+        }
+        finally
+        {
+            loaded?.Dispose();
+        }
+    }
+
+    [Fact]
+    public void CompleteColdReadWarmsOnceAndInvalidHeaderDoesNotEvictIt()
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        var before = CVFileReadCache.GetSnapshot();
+
+        Assert.True(CVFileUtil.ReadCVRaw(files.A, out CVCIEFile image));
+        using (image) Assert.Equal(Enumerable.Repeat((byte)11, 6), image.Data);
+        AssertPaths(files.A);
+        Assert.Equal(before.MissCount + 1, CVFileReadCache.GetSnapshot().MissCount);
+
+        File.WriteAllBytes(files.B, [67, 86, 67, 73, 69, 10, 0, 0, 0]);
+        Assert.False(CVFileUtil.ReadCVRaw(files.B, out CVCIEFile invalid));
+        invalid.Dispose();
+        AssertPaths(files.A);
+    }
+
     [Fact]
     public void SingleEntryLimitReusesBufferWhenOpeningAnotherFile()
     {
@@ -677,7 +734,7 @@ public sealed class CvRawFileCacheCapacityTests
 
     private static Stream OpenWithSource(string path, Func<Stream> openFile)
         => (Stream)typeof(CVFileReadCache).GetMethod("OpenReadCore", BindingFlags.NonPublic | BindingFlags.Static)!
-            .Invoke(null, [path, true, openFile, null])!;
+            .Invoke(null, [path, true, openFile, null, true])!;
 
     private sealed class ControlledReadStream(byte[] bytes, Action beforeCopy) : MemoryStream(bytes)
     {

@@ -84,30 +84,8 @@ namespace ColorVision.FileIO
 
         public static bool IsCVCIEFile(string filePath)
         {
-            try
-            {
-                using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
-                using (BinaryReader br = new BinaryReader(fs))
-                {
-                    if (fs.Length < HeaderSize) return false;
-                    string fileHeader = new string(br.ReadChars(HeaderSize));
-                    if (fileHeader == MagicHeader)
-                    {
-                        CVCIEFile cVCIEFile = new CVCIEFile();
-                        int index = ReadCIEFileHeader(filePath ,out CVCIEFile cvcie);
-                        if (index > 0)
-                        {
-                            return cvcie.FileExtType == CVType.CIE;
-                        }
-                    }
-                    return  false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[IsCIEFile] Exception: {ex}");
-                return false;
-            }
+            int index = ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
+            using (fileInfo) return index > 0 && fileInfo.FileExtType == CVType.CIE;
         }
 
 
@@ -435,10 +413,29 @@ namespace ColorVision.FileIO
         /// </summary>
         public static bool Read(string filePath, out CVCIEFile fileInfo)
         {
-            int index = ReadCIEFileHeader(filePath, out fileInfo);
-            if (index > 0)
-                return ReadCIEFileData(filePath, ref fileInfo, index);
-            return false;
+            fileInfo = new CVCIEFile();
+            try
+            {
+                using Stream stream = CVFileReadCache.OpenImageRead(filePath, HasReadableHeader);
+                return ReadImageSnapshot(stream, filePath, out fileInfo);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Read] Exception: {ex}");
+                return false;
+            }
+        }
+
+        private static bool ReadImageSnapshot(Stream stream, string filePath, out CVCIEFile fileInfo)
+        {
+            int index = ReadCIEFileHeader(stream, filePath, out fileInfo);
+            return index > 0 && ReadCIEFileData(stream, fileInfo, index);
+        }
+
+        private static bool HasReadableHeader(Stream stream)
+        {
+            int index = ReadCIEFileHeader(stream, out CVCIEFile fileInfo);
+            using (fileInfo) return index > 0;
         }
 
         /// <summary>
@@ -458,24 +455,36 @@ namespace ColorVision.FileIO
             int channelIndex,
             out CVCIEFile fileInfo,
             CancellationToken cancellationToken = default)
-        {
-            int dataStartIndex = ReadCIEFileHeader(filePath, out fileInfo);
-            if (dataStartIndex < 0)
-            {
-                return false;
-            }
+            => ReadEmbeddedChannel(filePath, channelIndex, out fileInfo, requireMultipleChannels: false, cancellationToken) == 0;
 
-            return ReadCIEFileChannelData(filePath, channelIndex, fileInfo, dataStartIndex, requireExactPayload: false, cancellationToken);
+        private static int ReadEmbeddedChannel(string filePath, int channelIndex, out CVCIEFile fileInfo,
+            bool requireMultipleChannels, CancellationToken cancellationToken)
+        {
+            fileInfo = new CVCIEFile();
+            try
+            {
+                using Stream stream = cancellationToken.IsCancellationRequested
+                    ? CVFileReadCache.OpenRead(filePath, populateCache: false)
+                    : CVFileReadCache.OpenImageRead(filePath, HasReadableHeader);
+                int index = ReadCIEFileHeader(stream, filePath, out fileInfo);
+                if (index < 0) return -1;
+                if (requireMultipleChannels && fileInfo.Channels <= 1) return -2;
+                return ReadCIEFileChannelData(stream, channelIndex, fileInfo, index, requireExactPayload: false, cancellationToken) ? 0 : -2;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Debug.WriteLine($"[ReadEmbeddedChannel] Exception: {ex}");
+                return -1;
+            }
         }
 
-        private static bool ReadCIEFileChannelData(string filePath, int channelIndex, CVCIEFile fileInfo,
+        private static bool ReadCIEFileChannelData(Stream stream, int channelIndex, CVCIEFile fileInfo,
             int dataStartIndex, bool requireExactPayload, CancellationToken cancellationToken)
         {
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!TryGetChannelByteCount(fileInfo, channelIndex, out long channelBytes)) return false;
-                using Stream stream = CVFileReadCache.OpenRead(filePath);
                 return ReadPayload(stream, fileInfo, dataStartIndex, channelIndex, channelBytes, requireExactPayload, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -665,26 +674,35 @@ namespace ColorVision.FileIO
 
         private static bool ReadCVCIECore(string fileName, out CVCIEFile fileInfo, bool followAssociatedSource, bool firstEmbeddedPlaneOnly)
         {
-            int startIndex = CVFileUtil.ReadCIEFileHeader(fileName, out fileInfo);
-            if (startIndex < 0) return false;
-            fileInfo.FilePath = fileName;
-
-            if (followAssociatedSource && TryReadAssociatedSource(fileName, fileInfo.SrcFileName, out CVCIEFile source))
+            fileInfo = new CVCIEFile();
+            try
             {
-                source.SrcFileName = fileInfo.SrcFileName;
-                fileInfo = source;
-                fileInfo.FilePath = fileName;
-                return true;
-            }
+                using Stream stream = CVFileReadCache.OpenImageRead(fileName, HasReadableHeader);
+                int startIndex = ReadCIEFileHeader(stream, fileName, out fileInfo);
+                if (startIndex < 0) return false;
 
-            if (firstEmbeddedPlaneOnly && fileInfo.FileExtType == CVType.CIE && fileInfo.Channels == 3)
-            {
-                if (!ReadCIEFileChannelData(fileName, 0, fileInfo, startIndex, requireExactPayload: true, CancellationToken.None))
-                    return false;
-                fileInfo.Channels = 1;
-                return true;
+                if (followAssociatedSource && TryReadAssociatedSource(fileName, fileInfo.SrcFileName, out CVCIEFile source))
+                {
+                    source.SrcFileName = fileInfo.SrcFileName;
+                    fileInfo = source;
+                    fileInfo.FilePath = fileName;
+                    return true;
+                }
+
+                if (firstEmbeddedPlaneOnly && fileInfo.FileExtType == CVType.CIE && fileInfo.Channels == 3)
+                {
+                    if (!ReadCIEFileChannelData(stream, 0, fileInfo, startIndex, requireExactPayload: true, CancellationToken.None))
+                        return false;
+                    fileInfo.Channels = 1;
+                    return true;
+                }
+                return ReadCIEFileData(stream, fileInfo, startIndex);
             }
-            return ReadCIEFileData(fileName, ref fileInfo, startIndex);
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadCVCIE] Exception: {ex}");
+                return false;
+            }
         }
 
 
@@ -710,12 +728,9 @@ namespace ColorVision.FileIO
                 if (!File.Exists(sourcePath)) sourcePath = sourceName;
                 if (!File.Exists(sourcePath)) return false;
 
-                using Stream stream = CVFileReadCache.OpenRead(sourcePath);
+                using Stream stream = CVFileReadCache.OpenImageRead(sourcePath, HasReadableHeader);
                 if (HasCieMagic(stream))
-                {
-                    int index = ReadCIEFileHeader(stream, sourcePath, out source);
-                    return index > 0 && ReadCIEFileData(stream, source, index);
-                }
+                    return ReadImageSnapshot(stream, sourcePath, out source);
 
                 long length = stream.Length;
                 if (length <= 0 || length > Array.MaxLength) return false;
@@ -738,15 +753,8 @@ namespace ColorVision.FileIO
         /// </summary>
         public static int ReadCVCIEXYZ(string fileName, int channel, out CVCIEFile fileOut)
         {
-            int index = ReadCIEFileHeader(fileName, out fileOut);
-            if (index < 0) return -1;
-            if (fileOut.Channels <= 1) return -2;
-
-            // The former Cols * Rows * Bpp / 8 expression overflowed before division
-            // for large images, returning a short array with full-size metadata.
-            // Reuse the checked byte-count and complete-channel read boundary.
-            fileOut.Dispose();
-            if (!ReadCIEFileChannel(fileName, channel, out fileOut)) return -2;
+            int status = ReadEmbeddedChannel(fileName, channel, out fileOut, requireMultipleChannels: true, CancellationToken.None);
+            if (status != 0) return status;
             fileOut.FileExtType = CVType.Raw;
             fileOut.Channels = 1;
             return 0;

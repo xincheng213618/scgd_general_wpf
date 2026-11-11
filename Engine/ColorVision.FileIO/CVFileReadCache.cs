@@ -120,7 +120,33 @@ namespace ColorVision.FileIO
             return OpenReadCore(path, populateCache, () => OpenFile(path), publication: null);
         }
 
-        private static unsafe Stream OpenReadCore(string path, bool populateCache, Func<Stream> openFile, CommittedWrite? publication)
+        internal static Stream OpenImageRead(string filePath, Func<Stream, bool> canPopulate)
+        {
+            if (!IsRaw(filePath)) return OpenFile(filePath);
+            string path = Path.GetFullPath(filePath);
+            Stream source = OpenReadCore(path, false, () => OpenFile(path), publication: null);
+            if (source is not FileStream disk || !IsEnabled) return source;
+
+            try
+            {
+                bool valid = canPopulate(disk);
+                disk.Position = 0;
+                if (!valid) return disk;
+
+                // Warm the cache from the handle already checked, without reopening the path.
+                Stream snapshot = OpenReadCore(path, true, () => disk, publication: null, countLookup: false);
+                if (!ReferenceEquals(snapshot, disk)) disk.Dispose();
+                return snapshot;
+            }
+            catch
+            {
+                disk.Dispose();
+                throw;
+            }
+        }
+
+        private static unsafe Stream OpenReadCore(string path, bool populateCache, Func<Stream> openFile, CommittedWrite? publication,
+            bool countLookup = true)
         {
             bool committedWrite = publication.HasValue;
             CacheEntry entry = null;
@@ -130,14 +156,17 @@ namespace ColorVision.FileIO
                 CacheEntry existing = isEnabled ? FindEntry(path) : null;
                 if (existing != null && !committedWrite)
                 {
-                    hits++;
-                    existing.HitCount++;
+                    if (countLookup)
+                    {
+                        hits++;
+                        existing.HitCount++;
+                    }
                     return Borrow(existing);
                 }
                 if (isEnabled)
                 {
-                    if (!committedWrite) misses++;
-                    else if (existing != null && (!populateCache || existing.Readers != 0))
+                    if (!committedWrite && countLookup) misses++;
+                    if (committedWrite && existing != null && (!populateCache || existing.Readers != 0))
                     {
                         Retire(existing);
                         existing = null;

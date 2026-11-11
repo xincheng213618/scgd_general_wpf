@@ -75,7 +75,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 `ReadCIEFileData` 依据 Version 决定 4/8 字节长度前缀；要求声明长度大于 0 且不超出文件剩余长度，再分配整个数组并分段读满。它没有按 Rows/Cols/Bpp/Channels 检查 payload 恰好等长，也允许 payload 后还有字节。OOM/读取异常通常被捕获并返回 false，但 out/ref 载体不统一清空；部分读取后 Data 仍可能存在。
 
-通用路径 header 和 data 分别以 `FileShare.Read` 打开、关闭文件，**不是同一句柄上的一致性快照**。`ReadCIEFileHeader(Stream, ...)` 保留调用方的流，可在同一句柄上继续读取长度前缀与像素。每次调用结束会释放流，但读取期间不能承诺允许其它进程写入或删除。通用 `ReadFile` 只做一次 `BinaryReader.Read`，未核对实际读取字节数，不能借它宣称所有入口都有读满保证。
+全量、显示和通道读取从同一个磁盘句柄或缓存快照解析文件头和像素。CVRAW 冷读确认头部有效后才可填充缓存，热读只借用一次。分别调用两个路径版 header/data 接口时仍会各自打开，需一致性时使用同一个流。磁盘句柄采用 `FileShare.Read`。`ReadFile` 未校验读满。
 
 `CVFileReadCache` 默认关闭，启用后共用 `MaximumEntries` 个 CVRAW 槽位（默认 1 个）。`Synchronous=0` 和旧值 `1` 同步保存，`MemoryOnly=2` 仅缓存。整图暂存成功后才替换，期间仍可读取旧快照。磁盘尾块基于锁定文件更新，时间、头及旧尾块一致才更新缓存，否则退役。仅缓存尾块直接发布，已有读取保留旧快照。
 
@@ -111,7 +111,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 它只分配目标通道数组，全部读满后才赋给 Data。保留的 `Channels` 仍是原文件通道数，例如 3；不能再用该值把返回 Data 当三通道图像，也不能直接当完整文件写回。取消在 header 读取后、每个读取块前检查；捕获 `OperationCanceledException` 时 Dispose 载体并**重新抛出**，不是返回 false，也不是异步 I/O。header 失败先返回 false，不保证预取消 token 优先于文件错误。
 
-`ReadCVCIEXYZ` 也委托 `ReadCIEFileChannel` 直接读取目标平面；成功后返回 0，并将 Channels 改为 1、类型改为 Raw。文件头失败返回 `-1`，不适用的单通道输入、无效索引或数据读取失败返回 `-2`。`OpenLocalFileChannel` 仍不传播这些状态码，消费方必须验证数据。其枚举虽含 RGB、色度等值，当前分支只实现 SRC 和 CIE XYZ 选择，不能从枚举名推断全部通道转换可用。
+`ReadCVCIEXYZ` 使用同一通道读取逻辑，成功返回 0 并设置 Channels=1、类型 Raw。文件头失败返回 `-1`，单通道输入、无效索引或像素读取失败返回 `-2`。`OpenLocalFileChannel` 只实现 SRC 和 CIE XYZ，消费方须检查数据。
 
 [Conoscope](../plugins/standard-plugins/conoscope.md) 使用新的直接通道入口，并额外要求 32 位浮点、至少三通道、Data 恰好是一个平面；Y-first 和其后的 XYZ 就绪属于 Conoscope 文档生命周期，不属于 FileIO。
 
