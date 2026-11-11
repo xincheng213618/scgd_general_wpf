@@ -24,6 +24,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public IPostProcessor? SelectedProcess => _viewModel.SelectedProcess;
         public PostProcessFailurePolicy FailurePolicy => _viewModel.FailurePolicy;
 
+        internal void RestoreTemplateBinding(string? flowKey)
+        {
+            if (flowKey != null)
+                _viewModel.SelectedTemplate = _viewModel.VisibleTemplates.FirstOrDefault(template =>
+                    string.Equals(template.Value.FlowKey, flowKey, StringComparison.Ordinal));
+        }
+
         public PostProcessMetaEditWindow(
             IEnumerable<TemplateModel<FlowParam>> templates,
             IEnumerable<IPostProcessor> processes,

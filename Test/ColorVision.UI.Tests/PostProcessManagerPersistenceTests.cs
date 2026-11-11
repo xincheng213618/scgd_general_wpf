@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.Templates;
@@ -6,11 +7,94 @@ using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using System.IO;
+using System.Reflection;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class PostProcessManagerPersistenceTests
 {
+    [Fact]
+    public async Task RequiredPostProcessFollowsTheSavedTemplateAfterRename()
+    {
+        await WpfTestHost.Invoke(async () =>
+        {
+            DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-PostProcessRename-");
+            string path = Path.Combine(directory.FullName, "PostProcessConfig.json");
+            var template = new TemplateModel<FlowParam>("Inspection", new FlowParam { FlowKey = "flow:fixture-original" });
+            var replacement = new TemplateModel<FlowParam>("INSPECTION", new FlowParam { FlowKey = "flow:fixture-replacement" });
+            FieldInfo managerInstance = typeof(PostProcessManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previousManager = managerInstance.GetValue(null);
+            try
+            {
+                File.WriteAllText(path, JsonConvert.SerializeObject(new[]
+                {
+                    new PostProcessPersist
+                    {
+                        Name = "Required archive", TemplateName = template.Key,
+                        ProcessTypeFullName = "ColorVision.Tests.MissingArchive", FailurePolicy = PostProcessFailurePolicy.Required
+                    }
+                }));
+                var manager = new PostProcessManager(path);
+                managerInstance.SetValue(null, manager);
+                FlowRunFinalizedData beforeRename = await Finalize(template);
+                Assert.Equal(FlowFinalOutcome.Failed, beforeRename.FinalOutcome);
+
+                TemplateFlow.Params.Add(template);
+                TemplateFlow.Params.Add(replacement);
+                Assert.Throws<InvalidOperationException>(() => PostProcessManager.BindLegacyTemplatesBeforeRename(template));
+                Assert.Null(Assert.Single(manager.ProcessMetas).FlowKey);
+                FlowRunFinalizedData ambiguous = await Finalize(template);
+                Assert.Equal(FlowFinalOutcome.Failed, ambiguous.FinalOutcome);
+                Assert.Equal(EngineLocalization.Get("流程名称重复，请编辑后处理项并重新选择绑定模板。"),
+                    Assert.Single(ambiguous.PostProcessResults).Message);
+                TemplateFlow.Params.Remove(replacement);
+
+                using (File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    Exception? blocked = Record.Exception(() => PostProcessManager.BindLegacyTemplatesBeforeRename(template));
+                    Assert.True(blocked is IOException or UnauthorizedAccessException, blocked?.ToString());
+                    Assert.Null(Assert.Single(manager.ProcessMetas).FlowKey);
+                    Assert.Null(ReadBinding().FlowKey);
+                }
+                PostProcessManager.BindLegacyTemplatesBeforeRename(template);
+                Assert.Equal(template.Value.FlowKey, ReadBinding().FlowKey);
+
+                template.Key = "Renamed inspection";
+                TemplateFlow.Params.Add(replacement);
+                managerInstance.SetValue(null, new PostProcessManager(path));
+                FlowRunFinalizedData afterRename = await Finalize(template);
+                Assert.Equal(FlowFinalOutcome.Failed, afterRename.FinalOutcome);
+                Assert.Equal("Required archive", Assert.Single(afterRename.PostProcessResults).Name);
+
+                TemplateFlow.Params.Remove(template);
+                FlowRunFinalizedData otherTemplate = await Finalize(replacement);
+                Assert.Equal(FlowFinalOutcome.Succeeded, otherTemplate.FinalOutcome);
+                Assert.Empty(otherTemplate.PostProcessResults);
+            }
+            finally
+            {
+                managerInstance.SetValue(null, previousManager);
+                TemplateFlow.Params.Remove(template);
+                TemplateFlow.Params.Remove(replacement);
+                File.Delete(path);
+                directory.Delete();
+            }
+
+            PostProcessPersist ReadBinding() => Assert.Single(JsonConvert.DeserializeObject<PostProcessPersist[]>(File.ReadAllText(path))!);
+        });
+
+        static Task<FlowRunFinalizedData> Finalize(TemplateModel<FlowParam> flow)
+            => new FlowRunFinalizer(new DefaultFlowPostProcessExecutor(), new NoPersistence()).FinalizeAsync(new FlowRunFinalizationRequest(
+                new FlowControlData { Status = StatusTypeEnum.Completed }, new MeasureBatchModel(), flow.Key, 0) { FlowKey = flow.Value.FlowKey },
+                journalScope: null);
+    }
+
+    private sealed class NoPersistence : IFlowRunFinalizationPersistence
+    {
+        public void ApplyRequiredPostProcessFailure(MeasureBatchModel batch, IReadOnlyList<PostProcessExecutionResult> results) { }
+        public void RecordFallbackRun(MeasureBatchModel batch, string flowName, FlowControlData result, FlowStatus status, long elapsedMilliseconds) { }
+    }
+
     [Theory]
     [InlineData(PostProcessFailurePolicy.Required, FlowFinalOutcome.Failed)]
     [InlineData(PostProcessFailurePolicy.Warning, FlowFinalOutcome.SucceededWithWarnings)]

@@ -1241,7 +1241,7 @@ public sealed class FlowExecutionEditingTests
     {
         public TaskCompletionSource<bool> Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource<IReadOnlyList<PostProcessExecutionResult>> Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public Task<IReadOnlyList<PostProcessExecutionResult>> ExecuteAsync(MeasureBatchModel batch, string flowName)
+        public Task<IReadOnlyList<PostProcessExecutionResult>> ExecuteAsync(MeasureBatchModel batch, string flowName, string? flowKey)
         {
             Entered.TrySetResult(true);
             return Release.Task;

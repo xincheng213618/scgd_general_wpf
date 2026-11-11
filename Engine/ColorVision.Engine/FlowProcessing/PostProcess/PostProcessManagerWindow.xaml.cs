@@ -203,7 +203,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             AddLabeledTextBox(stack, EngineLocalization.Get("名称:"), meta.Name, text => meta.Name = text);
 
             // Template Name (read-only)
-            AddLabeledText(stack, EngineLocalization.Get("流程模板:"), meta.TemplateName);
+            AddLabeledText(stack, EngineLocalization.Get("流程模板:"), meta.TemplateDisplayName);
 
             // Process Type (read-only)
             AddLabeledText(stack, EngineLocalization.Get("处理类:"), meta.ProcessDisplayName);

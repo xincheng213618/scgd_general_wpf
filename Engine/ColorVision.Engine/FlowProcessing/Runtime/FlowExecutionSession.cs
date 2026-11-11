@@ -208,6 +208,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private async Task<FlowRunFinalizedData?> FinalizeFlowCompletionAsync(
             FlowControlData flowControlData,
+            string? flowKey,
             FlowExecutionJournalScope? journalScope)
         {
             if (!_runLifecycle.IsActiveRun(flowControlData.SerialNumber))
@@ -307,7 +308,7 @@ namespace ColorVision.Engine.FlowProcessing
                         flowControlData,
                         completedBatch,
                         completedFlowName,
-                        _stopwatch.ElapsedMilliseconds),
+                        _stopwatch.ElapsedMilliseconds) { FlowKey = flowKey },
                     journalScope);
             FlowRuntimeActivityRegistry.UpdateFinalOutcome(
                 flowControlData.SerialNumber,
@@ -1346,6 +1347,7 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowRunFinalizedData? finalizedResult =
                     await FinalizeFlowCompletionAsync(
                         executionData,
+                        executionSnapshot.FlowKey,
                         journalScope);
                 finalizationCompleted = true;
                 return new FlowRunCoreResult(

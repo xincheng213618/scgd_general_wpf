@@ -46,6 +46,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         private static PostProcessManager _instance;
         private static readonly object _locker = new();
         private readonly string _persistFilePath;
+        private Exception? _persistedLoadError;
         public static PostProcessManager GetInstance() { lock (_locker) { _instance ??= new PostProcessManager(); return _instance; } }
 
         public PostProcessConfig PostProcessConfig { get; set; }
@@ -151,7 +152,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             // Skip persistence for UI-only display properties like ExecutionOrder
-            if (e.PropertyName == nameof(PostProcessMeta.ExecutionOrder))
+            if (e.PropertyName is nameof(PostProcessMeta.ExecutionOrder) or nameof(PostProcessMeta.TemplateDisplayName))
                 return;
             
             // 任意属性变更即持久化，避免频繁：可加节流，这里简单实现
@@ -160,6 +161,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
         public void Edit()
         {
+            BindLegacyTemplateNames();
             PostProcessManagerWindow processManagerWindow = new PostProcessManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             processManagerWindow.DataContext = this;
             processManagerWindow.ShowDialog();
@@ -189,6 +191,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             {
                 Name = dialog.MetaName,
                 TemplateName = dialog.SelectedTemplate.Key,
+                FlowKey = NormalizeFlowKey(dialog.SelectedTemplate.Value.FlowKey),
                 PostProcessor = dialog.SelectedProcess,
                 ConfigJson = config == null ? string.Empty : JsonConvert.SerializeObject(config),
                 Tag = dialog.MetaTag,
@@ -226,6 +229,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
+            dialog.RestoreTemplateBinding(selectedMeta.FlowKey);
             if (dialog.ShowDialog() != true || dialog.SelectedTemplate == null || dialog.SelectedProcess == null)
                 return;
 
@@ -243,6 +247,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             try
             {
                 selectedMeta.Name = dialog.MetaName;
+                selectedMeta.FlowKey = NormalizeFlowKey(dialog.SelectedTemplate.Value.FlowKey);
                 selectedMeta.TemplateName = dialog.SelectedTemplate.Key;
                 selectedMeta.ConfigJson = configJson;
                 selectedMeta.Tag = dialog.MetaTag;
@@ -252,6 +257,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             }
             finally { selectedMeta.PropertyChanged += Meta_PropertyChanged; }
             SavePersistedMetas();
+            NotifyAllExecutionOrders();
         }
 
         private bool CanMoveUp()
@@ -283,7 +289,11 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_persistFilePath)!);
-                if (!File.Exists(_persistFilePath)) return;
+                if (!File.Exists(_persistFilePath))
+                {
+                    _persistedLoadError = null;
+                    return;
+                }
 
                 string json = File.ReadAllText(_persistFilePath);
                 var list = JsonConvert.DeserializeObject<List<PostProcessPersist?>>(json) ?? new List<PostProcessPersist?>();
@@ -303,9 +313,12 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                     }
                 }
                 finally { ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged; }
+                _persistedLoadError = null;
+                BindLegacyTemplateNames();
             }
             catch (Exception ex)
             {
+                _persistedLoadError = ex;
                 log.Error("加载ProcessMetas失败", ex);
             }
         }
@@ -316,6 +329,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             {
                 Name = item.Name,
                 TemplateName = item.TemplateName,
+                FlowKey = NormalizeFlowKey(item.FlowKey),
                 PersistedProcessorTypeFullName = item.ProcessTypeFullName,
                 ConfigJson = item.ConfigJson,
                 Tag = item.Tag,
@@ -362,8 +376,10 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             return discovered;
         }
 
-        private void SavePersistedMetas()
+        private void SavePersistedMetas(bool throwOnFailure = false)
         {
+            string temporaryPath = $"{_persistFilePath}.{Guid.NewGuid():N}.tmp";
+            bool created = false;
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_persistFilePath)!);
@@ -371,19 +387,87 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 {
                     Name = m.Name,
                     TemplateName = m.TemplateName,
+                    FlowKey = m.FlowKey,
                     ProcessTypeFullName = m.PostProcessor?.GetType().FullName ?? m.PersistedProcessorTypeFullName,
                     ConfigJson = m.ConfigJson,
                     Tag = m.Tag,
                     FailurePolicy = m.FailurePolicy
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
-                File.WriteAllText(_persistFilePath, json);
+                using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    created = true;
+                    using var writer = new StreamWriter(stream);
+                    writer.Write(json);
+                }
+                File.Move(temporaryPath, _persistFilePath, overwrite: true);
+                _persistedLoadError = null;
             }
             catch (Exception ex)
             {
                 log.Error("保存ProcessMetas失败", ex);
+                if (created)
+                {
+                    try { File.Delete(temporaryPath); }
+                    catch (Exception cleanupError) when (cleanupError is IOException or UnauthorizedAccessException)
+                    {
+                        log.Warn("Unable to remove temporary postprocessor configuration.", cleanupError);
+                    }
+                }
+                if (throwOnFailure) throw;
             }
         }
+
+        internal static void BindLegacyTemplatesBeforeRename(TemplateModel<FlowParam> template)
+        {
+            if (_instance == null && !File.Exists(PersistFilePath)) return;
+            PostProcessManager manager = GetInstance();
+            if (manager._persistedLoadError != null && manager.ProcessMetas.Count == 0)
+                manager.LoadPersistedMetas();
+            if (manager._persistedLoadError is { } error)
+                throw new IOException(error.Message, error);
+            manager.BindLegacyTemplateNames(template);
+        }
+
+        internal List<PostProcessMeta> GetFlowPostProcesses(string flowName, string? flowKey, out bool ambiguousLegacyBinding)
+        {
+            BindLegacyTemplateNames();
+            ambiguousLegacyBinding = templateModels.Where(template =>
+                string.Equals(template.Key, flowName, StringComparison.OrdinalIgnoreCase)).Skip(1).Any();
+            return ProcessMetas.Where(meta => meta.FlowKey != null
+                ? string.Equals(meta.FlowKey, flowKey, StringComparison.Ordinal)
+                : string.Equals(meta.TemplateName, flowName, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        private void BindLegacyTemplateNames(TemplateModel<FlowParam>? renamingTemplate = null)
+        {
+            var bindings = new List<(PostProcessMeta Meta, string FlowKey)>();
+            foreach (PostProcessMeta meta in ProcessMetas)
+            {
+                if (meta.FlowKey != null || string.IsNullOrWhiteSpace(meta.TemplateName)) continue;
+                if (renamingTemplate != null && !string.Equals(meta.TemplateName, renamingTemplate.Key, StringComparison.OrdinalIgnoreCase)) continue;
+                TemplateModel<FlowParam>[] matches = templateModels.Where(template =>
+                    string.Equals(template.Key, meta.TemplateName, StringComparison.OrdinalIgnoreCase)).Take(2).ToArray();
+                if (matches.Length == 1 && NormalizeFlowKey(matches[0].Value.FlowKey) is { } flowKey
+                    && (renamingTemplate == null || string.Equals(renamingTemplate.Value.FlowKey, flowKey, StringComparison.Ordinal)))
+                    bindings.Add((meta, flowKey));
+                else if (renamingTemplate != null)
+                    throw new InvalidOperationException(EngineLocalization.Get("请先修复流程的后处理绑定，再修改流程名称。"));
+            }
+
+            if (bindings.Count == 0) return;
+            foreach (var (meta, flowKey) in bindings) meta.FlowKey = flowKey;
+            try { SavePersistedMetas(throwOnFailure: true); }
+            catch
+            {
+                foreach (var (meta, _) in bindings) meta.FlowKey = null;
+                if (renamingTemplate != null) throw;
+                return;
+            }
+            NotifyAllExecutionOrders();
+        }
+
+        private static string? NormalizeFlowKey(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
         public void GenStepBar(HandyControl.Controls.StepBar stepBar)
         {

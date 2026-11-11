@@ -1,4 +1,5 @@
 using ColorVision.Engine.Templates.Browser;
+using ColorVision.Engine.FlowProcessing.PostProcess;
 
 namespace ColorVision.Engine.Templates.Flow;
 
@@ -10,5 +11,6 @@ public sealed class FlowTemplateManagerWindow : TemplateBrowserWindow
 
     internal FlowTemplateManagerWindow(TemplateFlow template, int selectedIndex, FlowTemplateCoverService coverService)
         : base(template, selectedIndex, new TemplateBrowserOptions(Properties.Resources.Flow, true,
-            item => template.Save((TemplateModel<FlowParam>)item)), coverService) { }
+            item => template.Save((TemplateModel<FlowParam>)item),
+            item => PostProcessManager.BindLegacyTemplatesBeforeRename((TemplateModel<FlowParam>)item)), coverService) { }
 }

@@ -193,7 +193,8 @@ public sealed class FlowRunFinalizerTests
         public Task<IReadOnlyList<PostProcessExecutionResult>>
             ExecuteAsync(
                 MeasureBatchModel batch,
-                string flowName)
+                string flowName,
+                string? flowKey)
         {
             return Task.FromResult(results);
         }
@@ -205,7 +206,8 @@ public sealed class FlowRunFinalizerTests
         public Task<IReadOnlyList<PostProcessExecutionResult>>
             ExecuteAsync(
                 MeasureBatchModel batch,
-                string flowName)
+                string flowName,
+                string? flowKey)
         {
             throw new InvalidOperationException("dispatch failed");
         }
@@ -224,7 +226,8 @@ public sealed class FlowRunFinalizerTests
         public Task<IReadOnlyList<PostProcessExecutionResult>>
             ExecuteAsync(
                 MeasureBatchModel batch,
-                string flowName)
+                string flowName,
+                string? flowKey)
         {
             calls.Add("post-process");
             return Task.FromResult<IReadOnlyList<PostProcessExecutionResult>>(

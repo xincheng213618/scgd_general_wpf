@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
@@ -14,8 +15,23 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        public string TemplateName { get => _TemplateName; set { _TemplateName = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExecutionOrder)); } }
+        public string TemplateName
+        {
+            get => _TemplateName;
+            set
+            {
+                _TemplateName = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TemplateDisplayName));
+                OnPropertyChanged(nameof(ExecutionOrder));
+            }
+        }
         private string _TemplateName;
+        internal string? FlowKey { get; set; }
+
+        [JsonIgnore]
+        public string TemplateDisplayName => FlowKey == null ? TemplateName : TemplateFlow.Params.FirstOrDefault(template =>
+            string.Equals(template.Value.FlowKey, FlowKey, System.StringComparison.Ordinal))?.Key ?? TemplateName;
 
         /// <summary>
         /// Gets or sets user-defined tag/label for this batch process.
@@ -126,7 +142,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
         /// <summary>
         /// Gets the execution order of this process within its flow template.
-        /// This shows the order in which processes with the same TemplateName will be executed.
+        /// This shows the order in which processes bound to the same template will be executed.
         /// </summary>
         [JsonIgnore]
         public string ExecutionOrder
@@ -138,7 +154,9 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                     return string.Empty;
 
                 var sameTemplateItems = manager.ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, TemplateName, System.StringComparison.OrdinalIgnoreCase))
+                    .Where(meta => FlowKey == null
+                        ? meta.FlowKey == null && string.Equals(meta.TemplateName, TemplateName, System.StringComparison.OrdinalIgnoreCase)
+                        : string.Equals(meta.FlowKey, FlowKey, System.StringComparison.Ordinal))
                     .ToList();
 
                 if (sameTemplateItems.Count <= 1)

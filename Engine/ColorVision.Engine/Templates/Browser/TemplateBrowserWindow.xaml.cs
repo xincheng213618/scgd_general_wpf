@@ -597,7 +597,18 @@ public partial class TemplateBrowserWindow : Window
         if (sender is ContextMenu { PlacementTarget: FrameworkElement { DataContext: TemplateBase item } } && !TemplateList.SelectedItems.Contains(item)) TemplateList.SelectedItem = item;
     }
 
-    private void BeginRename() { if (Selected is { } item) { renamed.Add(item); item.IsEditMode = true; StatusText.Text = EngineResources.TemplateBrowserUnsavedNames; UpdateStatus(); } }
+    private void BeginRename()
+    {
+        if (Selected is not { } item) return;
+        TryAction(() =>
+        {
+            options.BeforeRename?.Invoke(item);
+            renamed.Add(item);
+            item.IsEditMode = true;
+            StatusText.Text = EngineResources.TemplateBrowserUnsavedNames;
+            UpdateStatus();
+        }, EngineResources.TemplateBrowserSaveFailed);
+    }
     private void RenameBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if (sender is TextBox { IsVisible: true } box) { box.Focus(); box.SelectAll(); }

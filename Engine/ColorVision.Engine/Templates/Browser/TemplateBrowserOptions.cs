@@ -5,4 +5,5 @@ namespace ColorVision.Engine.Templates.Browser;
 internal sealed record TemplateBrowserOptions(
     string Label,
     bool HasCovers,
-    Action<TemplateBase> SaveName);
+    Action<TemplateBase> SaveName,
+    Action<TemplateBase>? BeforeRename = null);
