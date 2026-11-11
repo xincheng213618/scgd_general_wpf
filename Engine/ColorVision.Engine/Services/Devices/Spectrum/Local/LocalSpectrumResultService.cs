@@ -36,7 +36,7 @@ internal static class LocalSpectrumResultService
         model.CreateDate = capture.CapturedAt;
         model.IntTime = capture.IntegralTime;
         model.NDPort = capture.NDPort;
-        model.iAveNum = parameters.NumberOfAverage;
+        model.iAveNum = capture.EffectiveAverageCount ?? parameters.NumberOfAverage;
         model.AutoIntegration = parameters.AutoIntegration;
         model.AutoInitDark = parameters.AutoInitDark;
         model.SelfAdaptionInitDark = parameters.SelfAdaptionInitDark;

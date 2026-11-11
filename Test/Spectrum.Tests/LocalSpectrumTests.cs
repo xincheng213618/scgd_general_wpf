@@ -128,6 +128,31 @@ public sealed class LocalSpectrumTests
         Assert.True(session.IsOpen);
     }
 
+    [Theory]
+    [InlineData(25f, 30f, 2)]
+    [InlineData(4f, 10f / 3f, 18)]
+    public void SynchronizedCaptureUsesTheSameEffectiveTimingForDarkAndLight(float requestedTime, float effectiveTime, int effectiveAverage)
+    {
+        using var files = new CalibrationFiles();
+        files.Config.GetDataConfig.IsSyncFrequencyEnabled = true;
+        files.Config.GetDataConfig.Syncfreq = 100;
+        files.Config.GetDataConfig.SyncfreqFactor = 3;
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        var parameters = new LocalSpectrumParameters { IntegralTime = requestedTime, NumberOfAverage = 2, AutoInitDark = true };
+
+        var result = session.Capture(parameters, files.Config);
+
+        Assert.Equal(effectiveTime, native.DarkTime);
+        Assert.Equal(effectiveAverage, native.DarkAverage);
+        Assert.Equal((effectiveTime, effectiveAverage), native.CaptureTiming);
+        Assert.Equal(effectiveTime, result.IntegralTime);
+        Assert.Equal(effectiveAverage, LocalSpectrumResultService.CreateModel(result, parameters).iAveNum);
+        Assert.Equal(requestedTime, parameters.IntegralTime);
+        Assert.Equal(2, parameters.NumberOfAverage);
+    }
+
     [Fact]
     public void SdkFaultReportsRestartInstructionAndReleasesTheWrapperHandle()
     {
@@ -799,6 +824,8 @@ public sealed class LocalSpectrumTests
     {
         public int InitCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls, DarkCode = 1;
         public float DarkTime;
+        public int DarkAverage;
+        public (float Time, int Average) CaptureTiming;
         public float DarkValue;
         public float[] LastCaptureDark = [];
         public bool LastDarkAdaptive;
@@ -827,11 +854,12 @@ public sealed class LocalSpectrumTests
         public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c, CancellationToken cancellationToken)
         { Calls.Add("auto"); OnAutoTime?.Invoke(cancellationToken); time = AutoTimes?.Dequeue() ?? 240; return AutoTimeCode; }
         public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive)
-        { Calls.Add("dark"); DarkCalls++; DarkTime = time; LastDarkAdaptive = adaptive; Array.Fill(data, DarkValue); return DarkCode; }
+        { Calls.Add("dark"); DarkCalls++; DarkTime = time; DarkAverage = avg; LastDarkAdaptive = adaptive; Array.Fill(data, DarkValue); return DarkCode; }
         public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) { Calls.Add("init-adaptive"); return 1; }
         public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, EngineSettings settings, float[] dark)
         {
             CaptureSmoothing = (settings.SmoothingMethod, settings.FilterBW);
+            CaptureTiming = (p.IntegralTime, p.NumberOfAverage);
             LastCaptureDark = dark.ToArray();
             Calls.Add("capture"); CaptureCalls++;
             OnCapture?.Invoke();

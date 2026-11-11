@@ -44,6 +44,45 @@ public sealed class LocalSpectrumParameters
         if (Eqe && (!double.IsFinite(AFactor) || AFactor <= 0 || !float.IsFinite(Voltage) || !float.IsFinite(Current) || Current <= 0))
             throw new InvalidOperationException("EQE 系数和电流必须大于 0，电压必须为有限值。");
     }
+
+    internal LocalSpectrumParameters WithSyncFrequencyTiming(GetDataConfig settings)
+    {
+        if (!settings.IsSyncFrequencyEnabled) return this;
+
+        double period = 1000.0 / settings.Syncfreq;
+        int factor = settings.SyncfreqFactor;
+        if (!double.IsFinite(period) || period <= 0 || factor < 1)
+            throw new InvalidOperationException("同步频率和系数必须大于 0，且频率须为有限值。");
+
+        // Match CM_Emission_GetDataSyncfreq so both native acquisitions use the same timing.
+        float time;
+        int average = NumberOfAverage;
+        if (IntegralTime >= period)
+        {
+            time = (float)(Math.Round(IntegralTime / period, MidpointRounding.AwayFromZero) * period);
+        }
+        else
+        {
+            double ratio = period / IntegralTime;
+            if (ratio >= int.MaxValue)
+                throw new InvalidOperationException("同步频率计算的平均次数超出范围。");
+            int samplesPerPeriod = (int)ratio + 1;
+            long samples = (long)samplesPerPeriod * average;
+            if (samples > int.MaxValue / factor)
+                throw new InvalidOperationException("同步频率计算的平均次数超出范围。");
+            average = (int)(samples * factor);
+            time = (float)(period / samplesPerPeriod);
+        }
+
+        double microseconds = time * 1000f;
+        if (!double.IsFinite(microseconds) || microseconds < 1 || microseconds > int.MaxValue)
+            throw new InvalidOperationException("同步频率计算的积分时间超出原生微秒范围。");
+
+        var effective = (LocalSpectrumParameters)MemberwiseClone();
+        effective.IntegralTime = time;
+        effective.NumberOfAverage = average;
+        return effective;
+    }
 }
 
 public sealed class LocalSpectrumCapture
@@ -56,6 +95,7 @@ public sealed class LocalSpectrumCapture
     public COLOR_PARA_EQE? EqeData { get; init; }
     public string? AcquisitionParametersJson { get; set; }
     public int? NDPort { get; internal set; }
+    internal int? EffectiveAverageCount { get; set; }
     internal LocalSpectrumNd.Calibration? NdCalibration { get; set; }
 }
 
@@ -99,7 +139,6 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
         float time = p.IntegralTime;
         if (p.Eqe)
         {
-            if (settings.IsSyncFrequencyEnabled) throw new NotSupportedException("本地 EQE 采集暂不支持同步频率模式。");
             COLOR_PARA_EQE eqe = new() { fPL = new float[4001] };
             LocalSpectrumSession.Check(Spectrometer.CM_Emission_GetDataEQE(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, p.AFactor, p.Voltage, p.Current, ref eqe), "EQE 采集");
             // Common color fields have the same names, but the native EQE ABI is a different structure.
@@ -107,9 +146,7 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
             return new() { IntegralTime = time, Data = SpectrumColorRendering.Apply(data), EqeData = eqe };
         }
         COLOR_PARA result = new() { fPL = new float[10000], fRi = new float[15] };
-        int code = settings.IsSyncFrequencyEnabled
-            ? Spectrometer.CM_Emission_GetDataSyncfreq(h, (TRIGGER_MODE)0, settings.Syncfreq, settings.SyncfreqFactor, ref time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result)
-            : Spectrometer.CM_Emission_GetData(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result);
+        int code = Spectrometer.CM_Emission_GetData(h, (TRIGGER_MODE)0, time, p.NumberOfAverage, settings.FilterBW, dark, 0, 0, settings.SetWL1, settings.SetWL2, ref result);
         LocalSpectrumSession.Check(code, "光谱采集");
         return new() { IntegralTime = time, Data = SpectrumColorRendering.Apply(result) };
     }
@@ -194,7 +231,9 @@ internal sealed class LocalSpectrumSession : IDisposable
                 SetWL1 = configured.SetWL1,
                 SetWL2 = configured.SetWL2
             };
+            if (parameters.Eqe && settings.IsSyncFrequencyEnabled) throw new NotSupportedException("本地 EQE 采集暂不支持同步频率模式。");
             SpectrumSmoothing.Validate(settings.SmoothingMethod, settings.FilterBW);
+            var effective = parameters.AutoIntegration ? parameters : parameters.WithSyncFrequencyTiming(settings);
             bool withNd = parameters.IsWithND && config.NDConfig.IsNDPort;
             using var ndOperation = config.NDConfig.IsNDPort ? nd.Acquire(config.NDConfig) : null;
             int? ndPort = ndOperation?.GetPort();
@@ -225,12 +264,14 @@ internal sealed class LocalSpectrumSession : IDisposable
                 }
                 parameters.IntegralTime = time;
                 parameters.Validate();
+                effective = parameters.WithSyncFrequencyTiming(settings);
             }
             cancellationToken.ThrowIfCancellationRequested();
             if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
-                DarkCore(parameters, config, parameters.SelfAdaptionInitDark, ndOperation);
+                DarkCore(effective, config, settings.FilterBW, parameters.SelfAdaptionInitDark, ndOperation);
             cancellationToken.ThrowIfCancellationRequested();
-            var result = native.Capture(handle, parameters, settings, dark);
+            var result = native.Capture(handle, effective, settings, dark);
+            result.EffectiveAverageCount = effective.NumberOfAverage;
             result.NDPort = ndPort;
             result.NdCalibration = calibration;
             result.AcquisitionParametersJson = JsonConvert.SerializeObject(new
@@ -247,19 +288,21 @@ internal sealed class LocalSpectrumSession : IDisposable
         lock (gate)
         {
             EnsureOpen(c);
+            p.Validate();
+            var settings = c.GetDataConfig;
+            var effective = p.WithSyncFrequencyTiming(settings);
+            int filterWidth = settings.FilterBW;
             using var ndOperation = !adaptive && c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig) : null;
-            DarkCore(p, c, adaptive, ndOperation);
+            DarkCore(effective, c, filterWidth, adaptive, ndOperation);
         }
     }
 
-    private void DarkCore(LocalSpectrumParameters p, ConfigSpectrum c, bool adaptive, ILocalSpectrumNdOperation? ndOperation)
+    private void DarkCore(LocalSpectrumParameters p, ConfigSpectrum c, int filterWidth, bool adaptive, ILocalSpectrumNdOperation? ndOperation)
     {
-        EnsureOpen(c);
-        p.Validate();
         if (adaptive && !adaptiveDarkInitialized) throw new InvalidOperationException("请先完成自适应校零初始化，再使用自适应暗校正。");
         using var lightPathOperation = !adaptive && c.IsShutterEnable && !SharesNdShutter(c) ? shutter.AcquireOperation(c.ShutterCfg) : null;
         var buffer = new float[10000];
-        void AcquireDark() => Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, c.GetDataConfig.FilterBW, buffer, adaptive), "光谱校零");
+        void AcquireDark() => Check(native.Dark(handle, p.IntegralTime, p.NumberOfAverage, filterWidth, buffer, adaptive), "光谱校零");
         if (adaptive) AcquireDark();
         else WithDarkPath(c, ndOperation, AcquireDark);
         dark = buffer;
