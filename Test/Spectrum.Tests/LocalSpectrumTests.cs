@@ -1153,9 +1153,9 @@ public sealed class LocalSpectrumTests
         internal int OpenCalls { get; private set; }
         internal int CloseCalls { get; private set; }
         public IntPtr Open(LocalCfwPortConnection config) { OpenCalls++; return (IntPtr)456; }
-        public int Close(IntPtr handle) { CloseCalls++; return 0; }
-        public int SetPort(IntPtr handle, int port) => 0;
-        public int GetPort(IntPtr handle, ref int port) { port = 0; return 0; }
+        public int Close(IntPtr handle) { CloseCalls++; return cvErrorDefine.CV_ERR_SUCCESS; }
+        public int SetPort(IntPtr handle, int port) => cvErrorDefine.CV_ERR_SUCCESS;
+        public int GetPort(IntPtr handle, ref int port) { port = 0; return cvErrorDefine.CV_ERR_SUCCESS; }
     }
 
     private sealed class FakeFilterWheel(List<string> calls, ShutterConfig config) : ILocalSpectrumFilterWheelOperation

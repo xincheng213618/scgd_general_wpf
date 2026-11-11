@@ -13,6 +13,7 @@ using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -151,9 +152,9 @@ public sealed class SpectrumNdSelectionTests
         internal int Opens, Port;
         internal bool WrongRead;
         public IntPtr Open(LocalCfwPortConnection config) { Opens++; return new IntPtr(1234); }
-        public int Close(IntPtr handle) => 0;
-        public int SetPort(IntPtr handle, int port) { Port = port; return 0; }
-        public int GetPort(IntPtr handle, ref int port) { port = WrongRead ? Port + 1 : Port; return 0; }
+        public int Close(IntPtr handle) => cvErrorDefine.CV_ERR_SUCCESS;
+        public int SetPort(IntPtr handle, int port) { Port = port; return cvErrorDefine.CV_ERR_SUCCESS; }
+        public int GetPort(IntPtr handle, ref int port) { port = WrongRead ? Port + 1 : Port; return cvErrorDefine.CV_ERR_SUCCESS; }
     }
 
     [Theory]

@@ -25,6 +25,7 @@ internal sealed record LocalCfwPortConnection(string PortName, int BaudRate, int
 internal interface ILocalCfwPortNative
 {
     IntPtr Open(LocalCfwPortConnection config);
+    // Preserve cvCamera return codes, including CV_ERR_SUCCESS (1).
     int Close(IntPtr handle);
     int SetPort(IntPtr handle, int port);
     int GetPort(IntPtr handle, ref int port);
@@ -103,20 +104,23 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
         SetStatus(DeviceStatusType.Busy);
         try
         {
-            int code = 0, actual = -1;
+            int code = cvErrorDefine.CV_ERR_SUCCESS, actual = -1;
             for (int attempt = 0; ; attempt++)
             {
                 token.ThrowIfCancellationRequested();
-                code = operation == "SetPort" ? native.SetPort(handle, port!.Value) : 0;
-                if (code == 0)
+                code = operation == "SetPort" ? native.SetPort(handle, port!.Value) : cvErrorDefine.CV_ERR_SUCCESS;
+                if (code == cvErrorDefine.CV_ERR_SUCCESS)
                 {
-                    if (config.Delay != 0 && token.WaitHandle.WaitOne(config.Delay)) token.ThrowIfCancellationRequested();
+                    if (config.Delay != 0) token.WaitHandle.WaitOne(config.Delay);
+                    token.ThrowIfCancellationRequested();
                     actual = -1;
                     code = native.GetPort(handle, ref actual);
-                    if (code == 0 && actual >= 0 && actual < config.Ports && (operation != "SetPort" || actual == port)) return actual;
+                    token.ThrowIfCancellationRequested();
+                    if (code == cvErrorDefine.CV_ERR_SUCCESS && actual >= 0 && actual < config.Ports && (operation != "SetPort" || actual == port)) return actual;
                 }
                 if (attempt >= config.RetryCount) break;
             }
+            token.ThrowIfCancellationRequested();
             throw new InvalidOperationException($"滤色轮{(operation == "SetPort" ? "定位" : "读位")}失败，SDK 返回 {code}，实际孔位 {actual}，目标孔位 {port?.ToString() ?? "读取"}。");
         }
         finally { SetStatus(DeviceStatusType.Opened); }
@@ -169,7 +173,7 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
             try
             {
                 int code = native.Close(handle);
-                if (code != 0) throw new InvalidOperationException($"释放滤色轮失败，SDK 返回 {code}。");
+                if (code != cvErrorDefine.CV_ERR_SUCCESS) throw new InvalidOperationException($"释放滤色轮失败，SDK 返回 {code}。");
                 handle = IntPtr.Zero;
             }
             catch { quarantined = true; throw; } // Retain ownership when release cannot be confirmed.
