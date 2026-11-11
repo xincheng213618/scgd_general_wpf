@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -437,26 +436,32 @@ namespace ColorVision.Engine.Templates.Flow
             sfd.FileName = $"{Code}.zip";
             if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(tempDirectory);
-            try
-            {
-                foreach (var template in targets)
-                {
-                    string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(template.Key)}.stn");
-                    byte[] fileBytes = Convert.FromBase64String(template.Value.DataBase64);
-                    File.WriteAllBytes(filePath, fileBytes);
-                }
+            ExportBatch(sfd.FileName, targets);
+        }
 
-                using var zipToOpen = new FileStream(sfd.FileName, FileMode.Create);
-                using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create);
-                foreach (string filePath in Directory.GetFiles(tempDirectory))
-                    archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
-            }
-            finally
+        internal static void ExportBatch(string destination, IReadOnlyList<TemplateModel<FlowParam>> targets)
+        {
+            string[] names = targets.Select(template => Tool.SanitizeFileName(template.Key)).ToArray();
+            var reservedNames = names.Select(name => $"{name}.stn").ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var writtenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            FlowPackageHelper.WriteArchiveAtomically(destination, archive =>
             {
-                Directory.Delete(tempDirectory, true);
-            }
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    string name = names[i];
+                    string entryName = $"{name}.stn";
+                    if (!writtenNames.Add(entryName))
+                    {
+                        int suffix = 2;
+                        do { entryName = $"{name} ({suffix++}).stn"; }
+                        while (!reservedNames.Add(entryName));
+                    }
+
+                    byte[] fileBytes = Convert.FromBase64String(targets[i].Value.DataBase64);
+                    using var entry = archive.CreateEntry(entryName).Open();
+                    entry.Write(fileBytes);
+                }
+            });
         }
 
         public override bool Import()

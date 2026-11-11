@@ -166,12 +166,60 @@ namespace ColorVision.Engine.Templates.Flow
             ValidateStndV1Payload(stnData);
             ValidateExportSource(manifest);
 
+            WriteArchiveAtomically(outputPath, archive =>
+            {
+                // STN remains an opaque, byte-for-byte compatible payload.
+                var stnEntry = archive.CreateEntry("flow.stn");
+                using (var stream = stnEntry.Open())
+                {
+                    stream.Write(stnData, 0, stnData.Length);
+                }
+
+                FlowPackageManifest exportManifest =
+                    WriteTemplatePayloads(
+                        archive,
+                        stnEntry,
+                        manifest,
+                        flowName,
+                        stnData);
+
+                // Write the manifest last so an incomplete archive is
+                // never mistaken for a complete package.
+                var manifestEntry = archive.CreateEntry(
+                    "manifest.json",
+                    CompressionLevel.Optimal);
+                using var manifestStream = manifestEntry.Open();
+                using var writer = new StreamWriter(
+                    manifestStream,
+                    new UTF8Encoding(
+                        encoderShouldEmitUTF8Identifier: false));
+                var json = JsonConvert.SerializeObject(
+                    exportManifest,
+                    Formatting.Indented,
+                    new JsonSerializerSettings
+                    {
+                        NullValueHandling =
+                            NullValueHandling.Ignore,
+                    });
+                if (Encoding.UTF8.GetByteCount(json)
+                    > MaxManifestBytes)
+                {
+                    throw new InvalidDataException(
+                        "cvflow 清单超过允许大小。");
+                }
+                writer.Write(json);
+            });
+        }
+
+        internal static void WriteArchiveAtomically(string outputPath, Action<ZipArchive> writeEntries)
+        {
             string fullOutputPath = Path.GetFullPath(outputPath);
             string outputDirectory = Path.GetDirectoryName(fullOutputPath)
-                ?? throw new InvalidOperationException("无法确定 cvflow 输出目录。");
+                ?? throw new InvalidOperationException("无法确定流程导出目录。");
             string temporaryPath = Path.Combine(
                 outputDirectory,
                 $".{Path.GetFileName(fullOutputPath)}.{Guid.NewGuid():N}.tmp");
+            bool ownsTemporary = false;
             try
             {
                 using (var zipToOpen = new FileStream(
@@ -179,60 +227,21 @@ namespace ColorVision.Engine.Templates.Flow
                     FileMode.CreateNew,
                     FileAccess.ReadWrite,
                     FileShare.None))
-                using (var archive = new ZipArchive(
-                    zipToOpen,
-                    ZipArchiveMode.Create))
                 {
-                    // STN remains an opaque, byte-for-byte compatible payload.
-                    var stnEntry = archive.CreateEntry("flow.stn");
-                    using (var stream = stnEntry.Open())
-                    {
-                        stream.Write(stnData, 0, stnData.Length);
-                    }
-
-                    FlowPackageManifest exportManifest =
-                        WriteTemplatePayloads(
-                            archive,
-                            stnEntry,
-                            manifest,
-                            flowName,
-                            stnData);
-
-                    // Write the manifest last so an incomplete archive is
-                    // never mistaken for a complete package.
-                    var manifestEntry = archive.CreateEntry(
-                        "manifest.json",
-                        CompressionLevel.Optimal);
-                    using var manifestStream = manifestEntry.Open();
-                    using var writer = new StreamWriter(
-                        manifestStream,
-                        new UTF8Encoding(
-                            encoderShouldEmitUTF8Identifier: false));
-                    var json = JsonConvert.SerializeObject(
-                        exportManifest,
-                        Formatting.Indented,
-                        new JsonSerializerSettings
-                        {
-                            NullValueHandling =
-                                NullValueHandling.Ignore,
-                        });
-                    if (Encoding.UTF8.GetByteCount(json)
-                        > MaxManifestBytes)
-                    {
-                        throw new InvalidDataException(
-                            "cvflow 清单超过允许大小。");
-                    }
-                    writer.Write(json);
+                    ownsTemporary = true;
+                    using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create);
+                    writeEntries(archive);
                 }
 
                 File.Move(
                     temporaryPath,
                     fullOutputPath,
                     overwrite: true);
+                ownsTemporary = false;
             }
             finally
             {
-                if (File.Exists(temporaryPath))
+                if (ownsTemporary && File.Exists(temporaryPath))
                     File.Delete(temporaryPath);
             }
         }
