@@ -162,6 +162,82 @@ public sealed class EngineSpectrumResultTests
     }
 
     [Theory]
+    [InlineData(false, 2f)]
+    [InlineData(true, 2f)]
+    [InlineData(false, 0.1f)]
+    [InlineData(true, 0.1f)]
+    public void StandardCsvKeepsSpectralSamplesAtTheirMeasuredWavelength(bool fluxMode, float interval)
+    {
+        var previousConfig = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        string path = Path.Combine(Path.GetTempPath(), $"engine-spectrum-grid-{Guid.NewGuid():N}.csv");
+        try
+        {
+            var result = new ViewResultSpectrum(new COLOR_PARA
+            {
+                fSpect1 = 500f, fSpect2 = 504f, fInterval = interval, fPlambda = 2f,
+                fPL = Enumerable.Range(0, (int)Math.Round(4d / interval) + 1)
+                    .Select(index => index == 0 ? -0.5f : index * interval).ToArray()
+            });
+            if (fluxMode) SpectrumCsvExportHelper.ExportLuminousFluxMode(path, [result]);
+            else SpectrumCsvExportHelper.ExportLuminanceMode(path, [result]);
+
+            string[] lines = File.ReadAllLines(path);
+            string[] headers = lines[0].Split(',');
+            string[] values = lines[1].Split(',');
+            Assert.Equal(headers.Length, values.Length);
+            string Read(string header) => values[Array.IndexOf(headers, header)];
+
+            Assert.Equal(string.Empty, Read("380"));
+            Assert.Equal(string.Empty, Read("sp499"));
+            Assert.Equal("-1", Read("500"));
+            Assert.Equal("0", Read("sp500"));
+            Assert.Equal(interval == 2f ? string.Empty : "2", Read("501"));
+            Assert.Equal(interval == 2f ? string.Empty : "1", Read("sp501"));
+            Assert.Equal("4", Read("502"));
+            Assert.Equal("2", Read("sp502"));
+            Assert.Equal("8", Read("504"));
+            Assert.Equal("4", Read("sp504"));
+            Assert.Equal(string.Empty, Read("505"));
+        }
+        finally
+        {
+            ConfigService.SetInstance(previousConfig);
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void StandardCsvIgnoresSamplesPastTheDeclaredEndWavelength()
+    {
+        var previousConfig = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        string path = Path.Combine(Path.GetTempPath(), $"engine-spectrum-end-{Guid.NewGuid():N}.csv");
+        try
+        {
+            var result = new ViewResultSpectrum(new COLOR_PARA
+            {
+                fSpect1 = 500f, fSpect2 = 502.75f, fInterval = 1f, fPlambda = 2f,
+                fPL = [1f, 2f, 3f, 100f, 200f]
+            });
+            SpectrumCsvExportHelper.ExportLuminousFluxMode(path, [result]);
+
+            string[] lines = File.ReadAllLines(path);
+            string[] headers = lines[0].Split(',');
+            string[] values = lines[1].Split(',');
+            Assert.Equal("6", values[Array.IndexOf(headers, "502")]);
+            Assert.Equal("3", values[Array.IndexOf(headers, "sp502")]);
+            Assert.Equal(string.Empty, values[Array.IndexOf(headers, "503")]);
+            Assert.Equal(string.Empty, values[Array.IndexOf(headers, "sp503")]);
+        }
+        finally
+        {
+            ConfigService.SetInstance(previousConfig);
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData(0f)]
     public void MissingOrZeroFluxIsNotReplacedWithLuminance(float? flux)

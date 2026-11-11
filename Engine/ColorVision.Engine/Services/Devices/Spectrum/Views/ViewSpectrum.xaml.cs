@@ -670,7 +670,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 };
 
                 AddRenderingValues(row, result, includeRa: false);
-                AddSpectrumValues(row, result.SpectralDatas);
+                AddSpectrumValues(row, result);
                 AppendCsvLine(csvBuilder, row);
             }
 
@@ -726,7 +726,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 };
 
                 AddRenderingValues(row, result, includeRa: true);
-                AddSpectrumValues(row, result.SpectralDatas);
+                AddSpectrumValues(row, result);
                 AppendCsvLine(csvBuilder, row);
             }
 
@@ -774,22 +774,41 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
         }
 
-        private static void AddSpectrumValues(List<string> row, IList<SpectralData> spectralDatas)
+        private static void AddSpectrumValues(List<string> row, ViewResultSpectrum result)
         {
-            int spectralCount = spectralDatas?.Count ?? 0;
-            IList<SpectralData> safeSpectralDatas = spectralDatas ?? new List<SpectralData>();
-
-            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
+            var relativeValues = new string[EndWavelength - StartWavelength + 1];
+            for (int column = 0; column < relativeValues.Length; column++)
             {
-                int index = wl - StartWavelength;
-                row.Add(index < spectralCount ? safeSpectralDatas[index].AbsoluteSpectrum.ToString(CultureInfo.InvariantCulture) : string.Empty);
+                float? sample = ReadMeasuredSample(result, StartWavelength + column);
+                if (sample is float value)
+                {
+                    row.Add(((double)(value * result.fPlambda)).ToString(CultureInfo.InvariantCulture));
+                    relativeValues[column] = ((double)(value > 0 ? value : 0)).ToString(CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    row.Add(string.Empty);
+                    relativeValues[column] = string.Empty;
+                }
             }
+            row.AddRange(relativeValues);
+        }
 
-            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
-            {
-                int index = wl - StartWavelength;
-                row.Add(index < spectralCount ? safeSpectralDatas[index].RelativeSpectrum.ToString(CultureInfo.InvariantCulture) : string.Empty);
-            }
+        private static float? ReadMeasuredSample(ViewResultSpectrum result, int wavelength)
+        {
+            const double wavelengthTolerance = 0.001;
+            if (result.fPL is not { Length: > 0 } samples || !float.IsFinite(result.fSpect1)
+                || !float.IsFinite(result.fInterval) || result.fInterval <= 0)
+                return null;
+            if (float.IsFinite(result.fSpect2) && result.fSpect2 >= result.fSpect1
+                && wavelength > (double)result.fSpect2 + wavelengthTolerance)
+                return null;
+
+            double index = Math.Round((wavelength - (double)result.fSpect1) / result.fInterval);
+            // Allow rounding of the stored float grid without filling unmeasured wavelength columns.
+            if (index < 0 || index >= samples.Length || Math.Abs(result.fSpect1 + index * result.fInterval - wavelength) > wavelengthTolerance)
+                return null;
+            return samples[(int)index];
         }
 
         private static void AppendCsvLine(StringBuilder csvBuilder, List<string> values)
