@@ -37,6 +37,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
     internal static class LocalCameraCaptureService
     {
+        internal delegate int RawFrameCapture(IntPtr handle, string captureJson, ref uint width, ref uint height,
+            ref uint sourceBpp, ref uint destinationBpp, ref uint channels, IntPtr raw, IntPtr cie);
+
         private static readonly SemaphoreSlim CaptureLock = new(1, 1);
         private static readonly (ImageChannelType ChannelType, int CfwPort)[] DefaultChannelOrder =
         {
@@ -169,29 +172,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 using (LocalFlowFrameLease lease = frame.Acquire())
                 {
                     Stopwatch captureStopwatch = Stopwatch.StartNew();
-                    uint destinationBpp = 32;
                     // CM_GetFrame is retained for its CFW and averaging acquisition pipeline.
                     // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
                     // calibration items; all calibration runs once below on these buffers.
                     using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
-                    int captureResult = cvCameraCSLib.CM_GetFrame(
-                        cameraHandle,
-                        captureJson,
-                        ref width,
-                        ref height,
-                        ref sourceBpp,
-                        ref destinationBpp,
-                        ref channels,
-                        lease.RawPointer,
-                        IntPtr.Zero);
+                    CaptureRawFrame(cameraHandle, captureJson, lease, cvCameraCSLib.CM_GetFrame);
                     captureStopwatch.Stop();
                     captureTimeMs = ToMilliseconds(captureStopwatch.ElapsedMilliseconds);
-                    if (captureResult != cvErrorDefine.CV_ERR_SUCCESS)
-                    {
-                        throw CreateNativeException("本地相机取图失败", captureResult);
-                    }
                     captureStage?.Complete();
-
                 }
 
                 if (calibrationFiles.Count > 0)
@@ -237,6 +225,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 frame?.Dispose();
                 throw;
+            }
+        }
+
+        internal static void CaptureRawFrame(IntPtr cameraHandle, string captureJson, LocalFlowFrameLease lease, RawFrameCapture capture)
+        {
+            LocalFrameMetadata metadata = lease.Metadata;
+            uint width = checked((uint)metadata.Width), height = checked((uint)metadata.Height);
+            uint sourceBpp = checked((uint)metadata.SourceBpp), channels = checked((uint)metadata.Channels);
+            uint destinationBpp = 32;
+            int result = capture(cameraHandle, captureJson, ref width, ref height, ref sourceBpp, ref destinationBpp, ref channels, lease.RawPointer, IntPtr.Zero);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机取图失败", result);
+            if (width != metadata.Width || height != metadata.Height || sourceBpp != metadata.SourceBpp || channels != metadata.Channels)
+            {
+                throw new InvalidOperationException($"本地相机返回的图像格式发生变化。预期 {metadata.Width}×{metadata.Height}、{metadata.SourceBpp} 位、{metadata.Channels} 通道，实际 {width}×{height}、{sourceBpp} 位、{channels} 通道。请重新连接相机。");
             }
         }
 

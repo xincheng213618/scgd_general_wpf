@@ -14,12 +14,48 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using FilterWheelChannel = ColorVision.Engine.Services.PhyCameras.Configs.ChannelCfg;
 
 namespace ColorVision.UI.Tests;
 
 public class CameraCaptureSettingsTests
 {
+    [Theory]
+    [InlineData(4, 2, 16, 3, true)]
+    [InlineData(3, 2, 16, 3, false)]
+    [InlineData(4, 1, 16, 3, false)]
+    [InlineData(4, 2, 8, 3, false)]
+    [InlineData(4, 2, 16, 1, false)]
+    public void RawCaptureChecksTheFormatReportedByTheCompletedCapture(int actualWidth, int actualHeight, int actualBpp, int actualChannels, bool matches)
+    {
+        var handle = new IntPtr(42);
+        using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 4, Height = 2, SourceBpp = 16, Channels = 3 }, 48, 0);
+        using LocalFlowFrameLease lease = frame.Acquire();
+        Marshal.WriteByte(lease.RawPointer, lease.RawLength - 1, 99);
+        int Capture(IntPtr nativeHandle, string captureJson, ref uint width, ref uint height, ref uint sourceBpp,
+            ref uint destinationBpp, ref uint channels, IntPtr raw, IntPtr cie)
+        {
+            Assert.Equal(handle, nativeHandle);
+            Assert.Equal("{}", captureJson);
+            Assert.Equal((4u, 2u, 16u, 3u), (width, height, sourceBpp, channels));
+            Assert.Equal(IntPtr.Zero, cie);
+            byte[] payload = Enumerable.Repeat((byte)42, actualWidth * actualHeight * (actualBpp / 8) * actualChannels).ToArray();
+            Marshal.Copy(payload, 0, raw, payload.Length);
+            width = (uint)actualWidth;
+            height = (uint)actualHeight;
+            sourceBpp = (uint)actualBpp;
+            channels = (uint)actualChannels;
+            return cvErrorDefine.CV_ERR_SUCCESS;
+        }
+
+        Exception? error = Record.Exception(() => LocalCameraCaptureService.CaptureRawFrame(handle, "{}", lease, Capture));
+        Assert.Equal(42, Marshal.ReadByte(lease.RawPointer));
+        Assert.Equal(matches ? 42 : 99, Marshal.ReadByte(lease.RawPointer, lease.RawLength - 1));
+        if (matches) Assert.Null(error);
+        else Assert.Contains("图像格式发生变化", Assert.IsType<InvalidOperationException>(error).Message);
+    }
+
     [Fact]
     public void V1AndV2ExposureTemplatesReachNativeConfigurationWithoutLosingV2Options()
     {
