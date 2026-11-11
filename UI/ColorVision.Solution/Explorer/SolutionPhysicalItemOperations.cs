@@ -38,11 +38,14 @@ namespace ColorVision.Solution.Explorer
             INewItemTemplate template,
             string targetDirectory,
             string fileName,
-            bool overwrite)
+            bool overwrite,
+            bool asSolutionItem = false)
         {
             ArgumentNullException.ThrowIfNull(template);
             if (!TryGetTargetPath(targetDirectory, fileName, out string targetPath, out string errorMessage))
                 return Failure(fileName, errorMessage);
+            if ((asSolutionItem || overwrite) && !TryValidateSolutionItemFileType(targetPath, out errorMessage))
+                return Failure(targetPath, errorMessage);
             if (Directory.Exists(targetPath))
                 return Failure(targetPath, "同名文件夹已经存在。");
 
@@ -307,6 +310,19 @@ namespace ColorVision.Solution.Explorer
         {
             return SolutionManager.IsSolutionFilePath(path)
                 || ProjectProviderRegistry.IsSupportedProjectFilePath(path);
+        }
+
+        internal static bool TryValidateSolutionItemFileType(string path, out string errorMessage)
+        {
+            // Win32 normalizes trailing dots and spaces in ordinary file paths.
+            string normalizedPath = path.TrimEnd(' ', '.');
+            if (IsSolutionMetadataFile(normalizedPath))
+            {
+                errorMessage = $"“{Path.GetFileName(normalizedPath)}”是解决方案或项目文件，请使用对应的打开/添加命令。";
+                return false;
+            }
+            errorMessage = string.Empty;
+            return true;
         }
 
         private static SolutionPhysicalItemResult Success(

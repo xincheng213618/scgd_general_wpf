@@ -13,6 +13,7 @@ namespace ColorVision.Solution.Explorer
         {
             var window = new AddNewItemWindow(DirectoryInfo.FullName)
             {
+                AddAsSolutionItem = true,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -29,7 +30,8 @@ namespace ColorVision.Solution.Explorer
                     window.SelectedTemplate,
                     DirectoryInfo.FullName,
                     window.NewFileName,
-                    window.OverwriteExisting);
+                    window.OverwriteExisting,
+                    asSolutionItem: true);
                 if (!createResult.IsComplete)
                 {
                     MessageBox.Show(

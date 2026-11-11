@@ -103,6 +103,59 @@ public sealed class SolutionCreationTests
         }
     }
 
+    [Theory]
+    [InlineData("Workspace.cvsln", "Workspace.cvsln")]
+    [InlineData("Workspace.cvsln...", "Workspace.cvsln")]
+    [InlineData("Camera.cvproj", "Camera.cvproj")]
+    [InlineData("Application.CSPROJ", "Application.CSPROJ")]
+    public void CreatingAnItemCannotOverwriteWorkspaceOrProjectMetadata(string requestedName, string existingName)
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-NewItem-");
+        string existingPath = Path.Combine(directory.FullName, existingName);
+        byte[] original = [0xEF, 0xBB, 0xBF, (byte)'{', (byte)'}'];
+        try
+        {
+            File.WriteAllBytes(existingPath, original);
+            var result = SolutionPhysicalItemOperations.CreateFromTemplate(new TextFileTemplate(), directory.FullName, requestedName, overwrite: true);
+
+            Assert.Equal(original, File.ReadAllBytes(existingPath));
+            Assert.False(result.IsComplete);
+            Assert.Contains("解决方案或项目文件", Assert.Single(result.Failures).Message);
+            Assert.Equal(existingPath, Assert.Single(Directory.GetFiles(directory.FullName)));
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+    }
+
+    [Fact]
+    public void CreatingASolutionItemRejectsNewMetadataAndStillAllowsOrdinaryOverwrite()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-NewSolutionItem-");
+        try
+        {
+            var template = new TextFileTemplate();
+            var invalid = SolutionPhysicalItemOperations.CreateFromTemplate(template, directory.FullName, "New.cvproj",
+                overwrite: false, asSolutionItem: true);
+            Assert.False(invalid.IsComplete);
+            Assert.Empty(directory.EnumerateFiles());
+
+            string textPath = Path.Combine(directory.FullName, "Notes.txt");
+            File.WriteAllText(textPath, "previous text");
+            var valid = SolutionPhysicalItemOperations.CreateFromTemplate(template, directory.FullName, "Notes.txt",
+                overwrite: true, asSolutionItem: true);
+            Assert.True(valid.IsComplete);
+            Assert.Equal(template.GetDefaultContent("Notes.txt"), File.ReadAllText(textPath));
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+    }
+
     private sealed class BrokenProjectTemplate : IProjectTemplate
     {
         public string Name => "Broken project";

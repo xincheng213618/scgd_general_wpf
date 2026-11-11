@@ -523,12 +523,8 @@ namespace ColorVision.Solution.Explorer
                     errorMessage = $"解决方案项文件不存在：{fullPath}";
                     return false;
                 }
-                if (SolutionManager.IsSolutionFilePath(fullPath)
-                    || ProjectProviderRegistry.IsSupportedProjectFilePath(fullPath))
-                {
-                    errorMessage = $"“{Path.GetFileName(fullPath)}”是解决方案或项目文件，请使用对应的打开/添加命令。";
+                if (!SolutionPhysicalItemOperations.TryValidateSolutionItemFileType(fullPath, out errorMessage))
                     return false;
-                }
                 fullPaths.Add(fullPath);
             }
             if (fullPaths.Count == 0)
