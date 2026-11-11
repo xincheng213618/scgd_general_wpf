@@ -40,7 +40,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal int OpenedBpp => openedBpp;
         private IntPtr handle;
         private string? loadedCalibrationJson;
-        private Action? stopPreview;
+        private sealed record PreviewRegistration(Func<IntPtr, int> Register, Action Stop);
+        private PreviewRegistration? preview;
         private Action? retiringPreviewOwner;
         private bool retiredPreviewDetached;
         private bool disposed;
@@ -297,9 +298,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     // Keep the existing preview intact if first-time CFW preparation fails.
                     PrepareMeasurement(mode);
-                    DetachPreviewCore();
-                    CompletePreviewRetirement();
-                    int result = native.SwitchMode(handle, mode, imageBpp);
+                    int result;
+                    // The opened session has a known preview color order only on the MVS backend.
+                    if (preview is { } livePreview && OpenedPreviewColorOrder != CameraPreviewColorOrder.Unspecified)
+                        result = SwitchMvsModeWithPreview(mode, imageBpp, livePreview);
+                    else
+                    {
+                        DetachPreviewCore();
+                        CompletePreviewRetirement();
+                        result = native.SwitchMode(handle, mode, imageBpp);
+                    }
                     if (result == cvErrorDefine.CV_ERR_CAM_TYPE_NOT)
                     {
                         native.Close(handle);
@@ -326,6 +334,50 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
+        private int SwitchMvsModeWithPreview(TakeImageMode mode, int imageBpp, PreviewRegistration registration)
+        {
+            bool detached = false;
+            bool resumed = false;
+            try
+            {
+                // Join the native preview first. The old view can retain its queue until the SDK
+                // commits a new mode or restores the old one. The session lock excludes other owners.
+                native.DetachCallback(handle);
+                detached = true;
+                int result = native.SwitchMode(handle, mode, imageBpp);
+                if (result != cvErrorDefine.CV_ERR_SUCCESS && result != cvErrorDefine.CV_ERR_CAM_TYPE_NOT && IsOpen)
+                {
+                    // Callback registration replaces the native thread's most recent MVS diagnostic.
+                    log.Warn(LocalCameraCaptureService.CreateNativeException("切换本地相机模式失败", result).Message);
+                    try
+                    {
+                        detached = false;
+                        int restart = registration.Register(handle);
+                        if (restart != cvErrorDefine.CV_ERR_SUCCESS)
+                            throw LocalCameraCaptureService.CreateNativeException("恢复本地相机视频失败", restart);
+                        resumed = true;
+                    }
+                    catch (Exception error)
+                    {
+                        log.Warn("恢复切换前的本地视频失败。", error);
+                        try { native.DetachCallback(handle); detached = true; }
+                        catch (Exception cleanup) { log.Warn("清理未能恢复的视频回调失败。", cleanup); }
+                    }
+                }
+                return result;
+            }
+            finally
+            {
+                if (!resumed)
+                {
+                    preview = null;
+                    if (!detached) retiringPreviewOwner = registration.Stop;
+                    try { registration.Stop(); }
+                    catch (Exception error) { log.Warn("停止切换前的本地视频失败。", error); }
+                }
+            }
+        }
+
         // A session has one preview owner. Stop its managed queue before detaching
         // the native callback, so late video frames cannot overwrite a measurement.
         internal void RegisterPreview(Func<IntPtr, int> register, Action onStopped)
@@ -346,15 +398,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     catch (Exception ex) { log.Warn("清理失败的视频回调失败。", ex); }
                     throw failure;
                 }
-                stopPreview = onStopped;
+                preview = new PreviewRegistration(register, onStopped);
                 return 0;
             });
         }
 
         private void DetachPreviewCore()
         {
-            Action? stopped = stopPreview;
-            stopPreview = null;
+            Action? stopped = preview?.Stop;
+            preview = null;
             if (stopped == null && (retiredPreviewDetached || (retiringPreviewOwner == null && OpenedMode != TakeImageMode.Live))) return;
             try { stopped?.Invoke(); }
             finally
@@ -377,13 +429,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (SyncRoot)
             {
-                if (stopPreview != owner || OpenedMode != TakeImageMode.Live) return false;
+                if (preview?.Stop != owner || OpenedMode != TakeImageMode.Live) return false;
                 UseOpened(manager =>
                 {
                     // CM_SetCallBack replaces the native callback and restarts the worker.
                     int result = register(manager);
                     if (result != cvErrorDefine.CV_ERR_SUCCESS)
                         throw LocalCameraCaptureService.CreateNativeException("恢复本地相机视频失败", result);
+                    preview = new PreviewRegistration(register, owner);
                     return result;
                 });
                 return true;
@@ -493,7 +546,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (SyncRoot)
             {
-                if (stopPreview != owner && retiringPreviewOwner != owner) return;
+                if (preview?.Stop != owner && retiringPreviewOwner != owner) return;
                 if (closeCamera) Close(unregisterCallback: true);
                 else if (IsOpen)
                 {
@@ -502,8 +555,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 }
                 else
                 {
-                    Action? stopped = stopPreview;
-                    stopPreview = null;
+                    Action? stopped = preview?.Stop;
+                    preview = null;
                     CompletePreviewRetirement();
                     stopped?.Invoke();
                 }

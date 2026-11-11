@@ -397,6 +397,40 @@ public class LocalCameraSessionTests
         Assert.Throws<InvalidOperationException>(backend.EnsureServiceAvailable);
     }
 
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void MvsFailedSwitchRestoresThePreviousPreviewOnlyWhenItCanResume(bool rollbackKeepsCameraOpen, bool previewCanResume)
+    {
+        const int switchFailure = -10048;
+        var native = new FakeNative { SwitchResult = switchFailure };
+        var config = new ConfigCamera { CameraModel = CameraModel.HK_USB, CameraMode = CameraMode.BV_MODE };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        if (!rollbackKeepsCameraOpen) native.OnSwitch = () => native.Close(session.Handle);
+        int registrations = 0, stops = 0;
+        Action owner = () => stops++;
+        session.RegisterPreview(_ => ++registrations == 1 || previewCanResume ? cvErrorDefine.CV_ERR_SUCCESS : -10009, owner);
+        native.Events.Clear();
+
+        Assert.Equal(switchFailure, session.SwitchMode(TakeImageMode.Measure_Normal, 16));
+
+        Assert.Equal(rollbackKeepsCameraOpen ? 2 : 1, registrations);
+        Assert.Equal(previewCanResume ? 0 : 1, stops);
+        Assert.Equal(rollbackKeepsCameraOpen, session.IsOpen);
+        Assert.Equal(TakeImageMode.Live, session.OpenedMode);
+        Assert.Equal(TakeImageMode.Live, config.TakeImageMode);
+        Assert.Equal(8, session.OpenedBpp);
+        Assert.Equal(1, native.Opens);
+        Assert.Equal(previewCanResume, session.TryRestartPreview(owner, _ => cvErrorDefine.CV_ERR_SUCCESS));
+        if (previewCanResume)
+        {
+            session.StopPreview(owner, closeCamera: false);
+            Assert.Equal(1, stops);
+        }
+    }
+
     [Fact]
     public void LegacySwitchKeepsThePreferencesOfTheActualOpenSession()
     {
