@@ -24,43 +24,65 @@ namespace ColorVision.Solution.Explorer
         public static SolutionConfigLoadResult Load(string filePath)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+            string fullPath = Path.GetFullPath(filePath);
+            string content;
             try
             {
-                string json = File.ReadAllText(filePath);
-                SolutionConfig config = DeserializeAndMigrate(json, out int sourceVersion);
-                return new SolutionConfigLoadResult(config, sourceVersion, false, null, json);
+                content = File.ReadAllText(fullPath);
             }
-            catch (Exception primaryException) when (CanRecoverFromBackup(primaryException))
+            catch (FileNotFoundException error)
             {
-                string backupPath = GetBackupPath(filePath);
-                if (!File.Exists(backupPath))
-                {
-                    throw new InvalidDataException(
-                        $"解决方案配置“{filePath}”无法读取，且没有可用备份。",
-                        primaryException);
-                }
+                return RecoverFromBackup(fullPath, observedPrimary: null, error);
+            }
 
-                try
+            try { return ReadPrimary(content); }
+            catch (Exception error) when (error is JsonException or InvalidDataException)
+            {
+                return RecoverFromBackup(fullPath, content, error);
+            }
+        }
+
+        private static SolutionConfigLoadResult ReadPrimary(string content)
+        {
+            SolutionConfig config = DeserializeAndMigrate(content, out int sourceVersion);
+            return new SolutionConfigLoadResult(config, sourceVersion, false, null, content);
+        }
+
+        internal static SolutionConfigLoadResult RecoverFromBackup(string filePath, string? observedPrimary, Exception primaryError)
+        {
+            string backupPath = GetBackupPath(filePath);
+            if (!File.Exists(backupPath))
+                throw new InvalidDataException($"解决方案配置“{filePath}”无法读取，且没有可用备份。", primaryError);
+
+            try
+            {
+                SolutionConfig config = DeserializeAndMigrate(File.ReadAllText(backupPath), out int sourceVersion);
+                string recovered = Serialize(config);
+                if (observedPrimary == null)
                 {
-                    string backupJson = File.ReadAllText(backupPath);
-                    SolutionConfig config = DeserializeAndMigrate(backupJson, out int sourceVersion);
-                    string? corruptCopyPath = TryArchiveCorruptPrimary(filePath);
-                    string recoveredContent = Serialize(config);
-                    WriteContentAtomically(filePath, recoveredContent, createBackup: false);
-                    return new SolutionConfigLoadResult(config, sourceVersion, true, corruptCopyPath, recoveredContent);
+                    try
+                    {
+                        WriteContentAtomically(filePath, recovered, overwrite: false);
+                        return new SolutionConfigLoadResult(config, sourceVersion, true, null, recovered);
+                    }
+                    catch (IOException) when (File.Exists(filePath)) { }
                 }
-                catch (Exception backupException) when (backupException is IOException
-                    or UnauthorizedAccessException
-                    or JsonException
-                    or InvalidDataException
-                    or ArgumentException
-                    or NotSupportedException)
+                else
                 {
-                    throw new InvalidDataException(
-                        $"解决方案配置“{filePath}”及其备份都无法读取。",
-                        new AggregateException(primaryException, backupException));
+                    string archivePath = $"{filePath}.corrupt-{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}";
+                    if (WriteContentAtomically(filePath, recovered, backupPath: archivePath, expectedDiskContent: observedPrimary))
+                        return new SolutionConfigLoadResult(config, sourceVersion, true, archivePath, recovered);
                 }
             }
+            catch (Exception recoveryError) when (recoveryError is IOException or UnauthorizedAccessException
+                or JsonException or InvalidDataException or ArgumentException or NotSupportedException)
+            {
+                throw new InvalidDataException($"无法从备份恢复解决方案配置“{filePath}”。",
+                    new AggregateException(primaryError, recoveryError));
+            }
+
+            // A different writer supplied a new primary. Read it once without starting another repair.
+            return ReadPrimary(File.ReadAllText(filePath));
         }
 
         public static SolutionConfig DeserializeAndMigrate(string json, out int sourceSchemaVersion)
@@ -120,17 +142,17 @@ namespace ColorVision.Solution.Explorer
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             ArgumentNullException.ThrowIfNull(config);
             string content = Serialize(config);
-            WriteContentAtomically(filePath, content, createBackup: true);
+            WriteContentAtomically(filePath, content, backupPath: GetBackupPath(filePath));
             return content;
         }
 
         internal static bool TrySaveCurrent(string filePath, string content, string expectedDiskContent)
-            => WriteContentAtomically(filePath, content, createBackup: true, expectedDiskContent: expectedDiskContent);
+            => WriteContentAtomically(filePath, content, backupPath: GetBackupPath(filePath), expectedDiskContent: expectedDiskContent);
 
         internal static string SaveConflictCopy(string filePath, string content)
         {
             string path = $"{filePath}.conflict-{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}";
-            WriteContentAtomically(path, content, createBackup: false, overwrite: false);
+            WriteContentAtomically(path, content, overwrite: false);
             return path;
         }
 
@@ -138,7 +160,7 @@ namespace ColorVision.Solution.Explorer
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             ArgumentNullException.ThrowIfNull(config);
-            WriteContentAtomically(filePath, Serialize(config), createBackup: false, overwrite: false);
+            WriteContentAtomically(filePath, Serialize(config), overwrite: false);
         }
 
         public static string Serialize(SolutionConfig config)
@@ -309,14 +331,6 @@ namespace ColorVision.Solution.Explorer
             EnsureProperty(root, nameof(SolutionConfig.ProjectConfigurations), new JObject());
         }
 
-        private static bool CanRecoverFromBackup(Exception exception)
-        {
-            return exception is IOException
-                or UnauthorizedAccessException
-                or JsonException
-                or InvalidDataException;
-        }
-
         private static JToken? GetValue(JObject root, string name) =>
             root.GetValue(name, StringComparison.OrdinalIgnoreCase);
 
@@ -338,23 +352,7 @@ namespace ColorVision.Solution.Explorer
                 existing.Value = value;
         }
 
-        private static string? TryArchiveCorruptPrimary(string filePath)
-        {
-            if (!File.Exists(filePath))
-                return null;
-            string archivePath = $"{filePath}.corrupt-{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}";
-            try
-            {
-                File.Copy(filePath, archivePath, overwrite: false);
-                return archivePath;
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                return null;
-            }
-        }
-
-        private static bool WriteContentAtomically(string filePath, string content, bool createBackup, bool overwrite = true,
+        private static bool WriteContentAtomically(string filePath, string content, string? backupPath = null, bool overwrite = true,
             string? expectedDiskContent = null)
         {
             string fullPath = Path.GetFullPath(filePath);
@@ -392,13 +390,12 @@ namespace ColorVision.Solution.Explorer
                     File.Move(temporaryPath, fullPath);
                     return true;
                 }
-                if (!createBackup)
+                if (backupPath == null)
                 {
                     File.Move(temporaryPath, fullPath, overwrite: true);
                     return true;
                 }
 
-                string backupPath = GetBackupPath(fullPath);
                 try
                 {
                     File.Replace(temporaryPath, fullPath, backupPath, ignoreMetadataErrors: true);
