@@ -1,5 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.FileIO;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal static class LocalFrameFileService
     {
+        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger(typeof(LocalFrameFileService));
         private const int CopyBufferSize = 1024 * 1024;
         private static readonly object CapturePathSync = new();
         private static readonly HashSet<string> CapturePaths = new(StringComparer.OrdinalIgnoreCase);
@@ -159,16 +161,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             using BinaryReader reader = new(stream, Encoding.UTF8, leaveOpen: true);
             stream.Position = dataOffset;
             long dataLength = fileInfo.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
-            if (dataLength <= 0 || dataLength > int.MaxValue || stream.Position + dataLength > stream.Length)
-            {
+            if (dataLength <= 0 || dataLength > int.MaxValue || dataLength > stream.Length - stream.Position
+                || fileInfo.Cols <= 0 || fileInfo.Rows <= 0 || fileInfo.Channels is <= 0 or > 16
+                || fileInfo.Bpp is not (8 or 16 or 32 or 64))
                 throw new InvalidDataException($"图像文件数据长度无效：{dataLength}");
-            }
+            int bytesPerPixel = fileInfo.Channels * (fileInfo.Bpp / 8);
+            if (dataLength % bytesPerPixel != 0 || dataLength / bytesPerPixel != (long)fileInfo.Cols * fileInfo.Rows)
+                throw new InvalidDataException("图像文件数据长度与像素布局不匹配。");
 
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
             fileInfo.FileExtType = isCie ? CVType.CIE : CVType.Raw;
-            var properties = isCie ? null : CVFileMetadata.ReadFromStream(stream);
-            ColorCalibrationSnapshot? snapshot = properties == null ? null : ColorCalibrationSnapshot.Read(properties, fileInfo);
-            var records = properties == null ? CameraFileMetadata.Read(stream) : CameraFileMetadata.Read(properties);
+            var properties = CameraFileMetadata.ReadOptionalProperties(stream);
+            ColorCalibrationSnapshot? snapshot = null;
+            if (!isCie && properties != null)
+            {
+                try { snapshot = ColorCalibrationSnapshot.Read(properties, fileInfo); }
+                catch (Exception error) when (error is InvalidDataException or JsonException or OverflowException)
+                {
+                    Log.Warn($"RAW 色度校正参数不可用，保留原图：{filePath}", error);
+                }
+            }
+            var records = CameraFileMetadata.Read(properties);
             LocalFrameMetadata metadata = new()
             {
                 Width = fileInfo.Cols,

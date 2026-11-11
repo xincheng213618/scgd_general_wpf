@@ -1,6 +1,7 @@
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Tif;
 using OpenCvSharp;
 using System.IO;
 using System.Reflection;
@@ -191,6 +192,68 @@ public sealed class CvFilePixelSafetyTests
             }
             finally { File.Delete(path); }
         });
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void FlowImageImportKeepsPixelsWhenOptionalRecordsAreCorrupt(bool cie, bool calibrationOnly)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"FlowOptionalRecords_{Guid.NewGuid():N}.{(cie ? "cvcie" : "cvraw")}");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = false;
+            using CVCIEFile image = new()
+            {
+                Version = 2, Cols = 3, Rows = 2, Channels = 1, Bpp = cie ? 32 : 16,
+                Data = Enumerable.Range(0, cie ? 24 : 12).Select(value => (byte)value).ToArray(),
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(path, image));
+            CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new ImageAcquisitionRecord { NdPort = 17 });
+            if (calibrationOnly)
+                CVFileMetadata.SetProperty(path, ColorCalibrationSnapshot.PropertyKind, 1, "{invalid"u8.ToArray());
+            else
+            {
+                using FileStream file = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                long checksumByte = file.Length - 1;
+                file.Position = checksumByte;
+                byte corrupted = (byte)(file.ReadByte() ^ 0xff);
+                file.Position = checksumByte;
+                file.WriteByte(corrupted);
+            }
+            byte[] original = File.ReadAllBytes(path);
+
+            using LocalFlowFrame frame = LocalFrameFileService.Load(path);
+            using LocalFlowFrameLease lease = frame.Acquire();
+
+            Assert.Null(frame.ColorCalibration);
+            Assert.Equal(calibrationOnly ? 17 : (int?)null, frame.Metadata.Acquisition?.NdPort);
+            Assert.Equal(image.Data, cie ? lease.CopyCieToArray() : lease.CopyRawToArray());
+            Assert.Equal(original, File.ReadAllBytes(path));
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData("cvraw")]
+    [InlineData("cvcie")]
+    public void FlowImageImportRejectsAnIncompleteDeclaredPixelLayout(string extension)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"FlowIncompletePixels_{Guid.NewGuid():N}.{extension}");
+        try
+        {
+            using CVCIEFile image = new() { Version = 1, Cols = 3, Rows = 2, Channels = 1, Bpp = 32, Data = new byte[20] };
+            Assert.True(CVFileUtil.WriteCIEFile(path, image));
+
+            Assert.Throws<InvalidDataException>(() => LocalFrameFileService.Load(path).Dispose());
+        }
+        finally { File.Delete(path); }
     }
 
     [Theory]

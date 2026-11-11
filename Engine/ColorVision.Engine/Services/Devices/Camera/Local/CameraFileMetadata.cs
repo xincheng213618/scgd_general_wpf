@@ -20,23 +20,24 @@ internal static class CameraFileMetadata
         => CVFileMetadata.SetProperty(path, kind, 1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record)));
 
     internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(string path)
-        => ReadOptional(() => CVFileMetadata.Read(path));
+        => Read(ReadOptionalProperties(() => CVFileMetadata.Read(path)));
 
-    internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(Stream stream)
-        => ReadOptional(() => CVFileMetadata.ReadFromStream(stream));
+    internal static IReadOnlyDictionary<string, CVFileProperty>? ReadOptionalProperties(Stream stream)
+        => ReadOptionalProperties(() => CVFileMetadata.ReadFromStream(stream));
 
-    private static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) ReadOptional(Func<IReadOnlyDictionary<string, CVFileProperty>> read)
+    private static IReadOnlyDictionary<string, CVFileProperty>? ReadOptionalProperties(Func<IReadOnlyDictionary<string, CVFileProperty>> read)
     {
-        try { return Read(read()); }
-        catch (Exception error) when (error is IOException or NotSupportedException or UnauthorizedAccessException)
+        try { return read(); }
+        catch (Exception error) when (error is IOException or InvalidDataException or DecoderFallbackException or NotSupportedException or UnauthorizedAccessException)
         {
             Log.Warn("Optional image acquisition records are unavailable.", error);
-            return default;
+            return null;
         }
     }
 
-        internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(IReadOnlyDictionary<string, CVFileProperty> properties)
+    internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(IReadOnlyDictionary<string, CVFileProperty>? properties)
     {
+        if (properties == null) return default;
             T? ReadRecord<T>(string kind) where T : class
             {
                 if (!properties.TryGetValue(kind, out var property) || property.Version != 1) return null;
