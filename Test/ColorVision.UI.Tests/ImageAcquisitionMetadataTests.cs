@@ -113,6 +113,7 @@ public sealed class ImageAcquisitionMetadataTests
             var acquisition = new ImageAcquisitionRecord
             {
                 OpticalCenter = new(1.25, 0),
+                SensorRoi = new(2, 3, 3, 2),
                 Camera = new() { DeviceName = "相机一", DeviceCode = "DEV.Camera.1", CameraId = "CAM-123", Model = "HK_USB" },
                 CapturedUtc = new DateTime(2026, 10, 23, 0, 1, 2, DateTimeKind.Utc),
                 Width = 3, Height = 2, BitsPerChannel = 16, Channels = 3,
@@ -137,6 +138,7 @@ public sealed class ImageAcquisitionMetadataTests
             using LocalFlowFrame reopened = LocalFrameFileService.Load(path);
             Assert.Equal("CAM-123", reopened.Metadata.Acquisition!.Camera!.CameraId);
             Assert.Equal(acquisition.OpticalCenter, reopened.Metadata.Acquisition.OpticalCenter);
+            Assert.Equal(acquisition.SensorRoi, reopened.Metadata.Acquisition.SensorRoi);
             Assert.Equal(acquisition.CapturedUtc, reopened.Metadata.Acquisition.CapturedUtc);
             Assert.Equal(4, reopened.Metadata.Acquisition.NdPort);
             Assert.Equal(new float[] { 10, 20, 30 }, reopened.Metadata.Acquisition.Exposure);
@@ -162,6 +164,7 @@ public sealed class ImageAcquisitionMetadataTests
                 Assert.True(ColorVisionTiffParameters.TryRead(pixels.Metadata as BitmapMetadata, out var exported));
                 Assert.Equal("CAM-123", exported!.Acquisition!.Camera!.CameraId);
                 Assert.Equal(acquisition.OpticalCenter, exported.Acquisition.OpticalCenter);
+                Assert.Equal(acquisition.SensorRoi, exported.Acquisition.SensorRoi);
                 var config = new ImageViewConfig();
                 Opentif.ApplyColorVisionMetadata(config, exported);
                 Assert.Equal(1.25, config.GetProperties<double>("ColorVision.Camera.OpticalCenterX"));

@@ -147,11 +147,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     Exposure = exposure,
                     DeviceCode = device.Code,
                     CalibrationTemplate = request.Calibration?.Name ?? string.Empty,
-                    CaptureCalibrationRoi = device.LocalCameraSession.OpenedCalibrationRoi,
                     CaptureTime = DateTime.Now,
                     Acquisition = new ImageAcquisitionRecord
                     {
                         OpticalCenter = device.PhyCamera?.OpticalCenter,
+                        SensorRoi = device.LocalCameraSession.OpenedCalibrationRoi.ToAcquisitionRoi(),
                         Camera = new ImageCameraInformation
                         {
                             DeviceName = device.Config.Name, DeviceCode = device.Code,

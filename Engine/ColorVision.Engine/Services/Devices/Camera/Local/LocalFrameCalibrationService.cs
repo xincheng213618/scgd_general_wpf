@@ -23,9 +23,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
 
         internal static LocalCalibrationRoi ResolveForFrame(LocalFrameMetadata metadata, PhyCameraCfg? cameraConfig)
-            => metadata.CaptureCalibrationRoi is LocalCalibrationRoi captured
-                ? captured.ForImage(metadata.Width, metadata.Height)
+            => metadata.Acquisition?.SensorRoi is ImageSensorRoi captured
+                ? new LocalCalibrationRoi(captured.X, captured.Y, captured.Width, captured.Height).ForImage(metadata.Width, metadata.Height)
                 : Resolve(cameraConfig, metadata.Width, metadata.Height);
+
+        internal ImageSensorRoi ToAcquisitionRoi()
+            => IsConfigured ? new(X, Y, Width, Height) : new(0, 0, 0, 0);
 
         private LocalCalibrationRoi ForImage(int imageWidth, int imageHeight)
         {

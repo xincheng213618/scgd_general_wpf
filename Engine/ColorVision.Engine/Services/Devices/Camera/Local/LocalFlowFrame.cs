@@ -32,8 +32,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         /// <summary>Whether all sensor-coordinate transforms have completed.</summary>
         public bool IsMirrorReady { get; init; }
         public ImageAcquisitionRecord? Acquisition { get; init; }
-        // Null means the acquisition ROI is unknown. A default value records a full-frame capture.
-        internal LocalCalibrationRoi? CaptureCalibrationRoi { get; init; }
     }
 
     /// <summary>
@@ -100,7 +98,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 CalibrationTemplate = calibrationTemplate,
                 CaptureTime = source.CaptureTime,
                 Acquisition = source.Acquisition,
-                CaptureCalibrationRoi = source.CaptureCalibrationRoi,
                 PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
                 FlipMode = source.FlipMode,
                 IsMirrorReady = true
