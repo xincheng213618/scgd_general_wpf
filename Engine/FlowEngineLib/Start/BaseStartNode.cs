@@ -228,10 +228,25 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			startActions.Add(action.SerialNumber, action);
 			Running = true;
 		}
-		Repeat.FlowRepeatRegion.ResetStates(this);
-		SetOptionText(m_op_start, action.SerialNumber);
-		m_op_start.TransferData(action);
-		return true;
+		try
+		{
+			Repeat.FlowRepeatRegion.ResetStates(this);
+			SetOptionText(m_op_start, action.SerialNumber);
+			m_op_start.TransferData(action);
+			return true;
+		}
+		catch
+		{
+			try
+			{
+				action.TryDoFinishing(() => action.SetActionType(ActionTypeEnum.Fail));
+			}
+			catch (Exception error)
+			{
+				logger.Error($"Failed to clean up flow startup for {action.SerialNumber}.", error);
+			}
+			throw;
+		}
 	}
 
 	protected virtual void DoStartTransferData(CVStartCFC action)

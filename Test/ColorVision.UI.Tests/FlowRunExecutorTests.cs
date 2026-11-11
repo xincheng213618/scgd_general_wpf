@@ -6,6 +6,7 @@ using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System.Globalization;
+using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Windows.Threading;
 
@@ -259,6 +260,55 @@ public class FlowRunExecutorTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StartupDispatchFailureReleasesTheRunAndPreservesTheOriginalException(bool cleanupThrows)
+    {
+        RunInSta(() =>
+        {
+            using var fixture = new FlowFixture();
+            TestStartNode start = fixture.AddStart("Selected");
+            StartSinkNode sink = fixture.Connect(start);
+            using var resource = new MemoryStream();
+            var startupError = new InvalidOperationException("downstream startup failed");
+            bool failStartup = true;
+            int rejectedTransfers = 0;
+            sink.Input.DataTransfer += (_, args) =>
+            {
+                if (args.TargetOption.Data is not CVStartCFC action)
+                    return;
+                if (action.IsRunning && failStartup)
+                {
+                    action.RuntimeResources.Set("probe", resource);
+                    throw startupError;
+                }
+                if (action.FlowStatus == StatusTypeEnum.Failed)
+                {
+                    rejectedTransfers++;
+                    if (cleanupThrows)
+                        throw new InvalidOperationException("downstream cleanup failed");
+                }
+            };
+            const string serial = "SN-DISPATCH-RETRY";
+
+            Assert.Same(startupError, Assert.Throws<InvalidOperationException>(() => fixture.Executor.RunAsync(
+                "Selected", serial, executionTimeout: null).GetAwaiter().GetResult()));
+
+            Assert.False(fixture.Engine.IsRunning);
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.Null(fixture.FlowControl.SerialNumber);
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(resource.CanRead);
+            Assert.Equal(1, rejectedTransfers);
+
+            failStartup = false;
+            Task<FlowRunExecutionResult> retry = fixture.Executor.RunAsync("Selected", serial, executionTimeout: null);
+            start.Complete(serial, StatusTypeEnum.Completed);
+            Assert.Equal(FlowRunTermination.EngineCompleted, retry.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult().Termination);
+        });
+    }
+
     [Fact]
     public void ConcurrentRunIsRejectedWithoutStealingTheActiveCompletion()
     {
@@ -418,12 +468,13 @@ public class FlowRunExecutorTests
             return start;
         }
 
-        public void Connect(TestStartNode start)
+        public StartSinkNode Connect(TestStartNode start)
         {
             var sink = new StartSinkNode();
             sink.Create();
             Editor.Nodes.Add(sink);
             Assert.Equal(ConnectionStatus.Connected, start.StartOutput.ConnectOption(sink.Input));
+            return sink;
         }
 
         public void Dispose()
