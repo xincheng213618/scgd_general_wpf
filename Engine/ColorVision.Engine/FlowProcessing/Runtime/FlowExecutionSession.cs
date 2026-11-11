@@ -483,7 +483,11 @@ namespace ColorVision.Engine.FlowProcessing
             public long Generation { get; }
         }
 
-        private readonly ConcurrentDictionary<string, ConcurrentQueue<PendingNodeExecution>> _pendingNodeExecutions = new ConcurrentDictionary<string, ConcurrentQueue<PendingNodeExecution>>();
+        private readonly record struct NodeExecutionKey(string? SerialNumber, string NodeId, string MessageId);
+
+        // Enqueue, take and bucket removal share this lock so a concurrent start cannot append to a retired queue.
+        private readonly object _pendingNodeExecutionsSync = new();
+        private readonly Dictionary<NodeExecutionKey, Queue<PendingNodeExecution>> _pendingNodeExecutions = new();
         private readonly ConcurrentDictionary<string, string> _runningNodeNames = new ConcurrentDictionary<string, string>();
         private readonly ConcurrentDictionary<string, int> _runningNodeCounts = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<string, long> _nodeExpectedDurations = new ConcurrentDictionary<string, long>();
@@ -662,8 +666,8 @@ namespace ColorVision.Engine.FlowProcessing
             if (sender is CVCommonNode algorithmNode)
             {
                 MeasureBatchModel? nodeBatch = CurrentBatch;
-                string writeKey = GetNodeExecutionKey(algorithmNode, e.RecvMsgId, e.SerialNumber);
-                if (!TryTakePendingNodeExecution(writeKey, algorithmNode, e.SerialNumber, out PendingNodeExecution? execution))
+                NodeExecutionKey writeKey = GetNodeExecutionKey(algorithmNode, e.RecvMsgId, e.SerialNumber);
+                if (!TryTakePendingNodeExecution(writeKey, out PendingNodeExecution? execution))
                     return;
 
                 long generation = execution.Generation;
@@ -905,7 +909,7 @@ namespace ColorVision.Engine.FlowProcessing
 
             if (sender is CVCommonNode algorithmNode)
             {
-                string writeKey = GetNodeExecutionKey(algorithmNode, e.SendMsgId, e.SerialNumber);
+                NodeExecutionKey writeKey = GetNodeExecutionKey(algorithmNode, e.SendMsgId, e.SerialNumber);
                 string invocationId = Guid.NewGuid().ToString("N");
                 LastNode = algorithmNode;
                 long generation = Volatile.Read(ref _executionGeneration);
@@ -958,46 +962,60 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowNodeRecordDataBaseHelper.TrackPendingWrite(
                     execution.StartWriteTask);
                 _pendingNodeExecutionDrain.Begin(generation);
-                _pendingNodeExecutions
-                    .GetOrAdd(writeKey, _ => new ConcurrentQueue<PendingNodeExecution>())
-                    .Enqueue(execution);
+                lock (_pendingNodeExecutionsSync)
+                {
+                    if (!_pendingNodeExecutions.TryGetValue(writeKey, out Queue<PendingNodeExecution>? queue))
+                    {
+                        queue = new Queue<PendingNodeExecution>();
+                        _pendingNodeExecutions.Add(writeKey, queue);
+                    }
+                    queue.Enqueue(execution);
+                }
             }
         }
 
         private bool TryTakePendingNodeExecution(
-            string writeKey,
-            CVCommonNode node,
-            string? serialNumber,
+            NodeExecutionKey writeKey,
             out PendingNodeExecution? execution)
         {
-            if (_pendingNodeExecutions.TryGetValue(writeKey, out ConcurrentQueue<PendingNodeExecution>? exactQueue)
-                && exactQueue.TryDequeue(out execution))
+            lock (_pendingNodeExecutionsSync)
             {
-                return true;
-            }
-
-            string prefix = $"{serialNumber}|{node.NodeID}|";
-            foreach (KeyValuePair<string, ConcurrentQueue<PendingNodeExecution>> item in _pendingNodeExecutions
-                         .Where(item => item.Key.StartsWith(prefix, StringComparison.Ordinal))
-                         .OrderBy(item => item.Value.TryPeek(out PendingNodeExecution? pending)
-                             ? pending.Record.StartTime
-                             : DateTime.MaxValue))
-            {
-                if (item.Value.TryDequeue(out execution))
+                if (_pendingNodeExecutions.TryGetValue(writeKey, out Queue<PendingNodeExecution>? exactQueue))
+                {
+                    execution = TakePendingNodeExecution(writeKey, exactQueue);
                     return true;
-            }
+                }
 
-            execution = null;
-            return false;
+                NodeExecutionKey oldestKey = default;
+                Queue<PendingNodeExecution>? oldestQueue = null;
+                DateTime oldestStart = DateTime.MaxValue;
+                foreach (var (key, queue) in _pendingNodeExecutions)
+                {
+                    if (key.SerialNumber != writeKey.SerialNumber || key.NodeId != writeKey.NodeId)
+                        continue;
+                    DateTime start = queue.Peek().Record.StartTime;
+                    if (oldestQueue != null && start >= oldestStart)
+                        continue;
+                    oldestKey = key;
+                    oldestQueue = queue;
+                    oldestStart = start;
+                }
+                execution = oldestQueue == null ? null : TakePendingNodeExecution(oldestKey, oldestQueue);
+                return execution != null;
+            }
         }
 
-        private static string GetNodeExecutionKey(
+        private PendingNodeExecution TakePendingNodeExecution(NodeExecutionKey key, Queue<PendingNodeExecution> queue)
+        {
+            PendingNodeExecution execution = queue.Dequeue();
+            if (queue.Count == 0) _pendingNodeExecutions.Remove(key);
+            return execution;
+        }
+
+        private static NodeExecutionKey GetNodeExecutionKey(
             CVCommonNode node,
             string? messageId,
-            string? serialNumber)
-        {
-            return $"{serialNumber}|{node.NodeID}|{messageId}";
-        }
+            string? serialNumber) => new(serialNumber, node.NodeID, messageId ?? string.Empty);
 
 
         private string _flowName = string.Empty;
@@ -1229,7 +1247,7 @@ namespace ColorVision.Engine.FlowProcessing
                 if (!View.IsStandalone)
                     FlowEngineManager.BatchProgress = 0;
 
-                _pendingNodeExecutions.Clear();
+                lock (_pendingNodeExecutionsSync) _pendingNodeExecutions.Clear();
                 _runningNodeNames.Clear();
                 _runningNodeCounts.Clear();
                 AttachExecutionNodeEvents();
