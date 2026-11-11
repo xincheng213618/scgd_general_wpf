@@ -174,6 +174,58 @@ public sealed class LocalCfwPortTests
         finally { release.Set(); }
     }
 
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 0)]
+    [InlineData(false, -1)]
+    public async Task CanceledNativeOpenCleansUpBeforePublishingTheConnection(bool autoConnect, int closeCode)
+    {
+        using var release = new ManualResetEventSlim();
+        using var cancellation = new CancellationTokenSource();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var native = new FakeNative { CloseCode = closeCode, OnOpen = () => { entered.TrySetResult(); release.Wait(); } };
+        await using var session = new LocalCfwPortSession(native);
+        await using var competing = new LocalCfwPortSession(new FakeNative());
+        var statuses = new List<DeviceStatusType>();
+        session.StatusChanged += statuses.Add;
+        var config = Connection();
+        Task<int?> open = autoConnect
+            ? session.ExecuteAsync("SetPort", config, 3, autoConnect: true, token: cancellation.Token)
+            : session.ExecuteAsync("Open", config, token: cancellation.Token);
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            cancellation.Cancel();
+            Assert.False(open.IsCompleted);
+            Assert.Equal(0, native.Closes);
+            Assert.Throws<InvalidOperationException>(() => LocalCfwPortSession.EnsureNotLocallyOwned(config.PortName));
+
+            release.Set();
+            if (closeCode == 0)
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => open);
+                Assert.Equal(DeviceStatusType.Closed, session.Status);
+                Assert.Null(session.Endpoint);
+                await competing.ExecuteAsync("Open", config);
+            }
+            else
+            {
+                var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => open);
+                Assert.Contains("释放滤色轮失败", failure.Message);
+                Assert.Equal(config.PortName, session.Endpoint);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => competing.ExecuteAsync("Open", config));
+            }
+            Assert.DoesNotContain(DeviceStatusType.Opened, statuses);
+            Assert.Equal(1, native.Closes);
+            Assert.Equal(0, native.Sets);
+        }
+        finally
+        {
+            release.Set();
+            native.CloseCode = 0;
+        }
+    }
+
     [Fact]
     public async Task DisposeDrainsNativeCommandAndRejectsQueuedWork()
     {
@@ -430,9 +482,9 @@ public sealed class LocalCfwPortTests
         public int Opens, Closes, Sets, Reads, Port, CloseCode, GetCode;
         public int? ReadOverride;
         public bool FailOpen;
-        public Action? OnSet;
+        public Action? OnOpen, OnSet;
         public LocalCfwPortConnection? Connection;
-        public IntPtr Open(LocalCfwPortConnection config) { Opens++; Connection = config; return FailOpen ? IntPtr.Zero : new IntPtr(17); }
+        public IntPtr Open(LocalCfwPortConnection config) { Opens++; Connection = config; OnOpen?.Invoke(); return FailOpen ? IntPtr.Zero : new IntPtr(17); }
         public int Close(IntPtr handle) { Closes++; return CloseCode; }
         public int SetPort(IntPtr handle, int port) { Sets++; OnSet?.Invoke(); Port = port; return 0; }
         public int GetPort(IntPtr handle, ref int port) { Reads++; port = ReadOverride ?? Port; return GetCode; }

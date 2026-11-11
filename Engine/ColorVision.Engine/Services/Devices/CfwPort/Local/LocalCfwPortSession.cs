@@ -82,7 +82,7 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
             token.ThrowIfCancellationRequested();
             // Cancellation must never free a handle while a blocking SDK call still uses it.
             int? result = await Task.Run(() => ExecuteCore(operation, config, port, autoConnect, token), CancellationToken.None).ConfigureAwait(false);
-            token.ThrowIfCancellationRequested();
+            if (operation != "Open") token.ThrowIfCancellationRequested();
             return result;
         }
         finally { gate.Release(); }
@@ -95,7 +95,7 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
         if (operation is not ("Open" or "SetPort" or "GetPort")) throw new NotSupportedException($"本地滤色轮不支持 {operation}。");
         config.Validate();
         if (operation == "SetPort" && (!port.HasValue || port < 0 || port >= config.Ports)) throw new ArgumentOutOfRangeException(nameof(port), "滤色轮孔位超出配置范围。");
-        if (operation == "Open" || (autoConnect && handle == IntPtr.Zero)) OpenCore(config);
+        if (operation == "Open" || (autoConnect && handle == IntPtr.Zero)) OpenCore(config, token);
         if (operation == "Open") return null;
         if (handle == IntPtr.Zero) throw new InvalidOperationException("请先连接本地滤色轮。");
         if (connection != config) throw new InvalidOperationException("滤色轮配置已改变，请关闭连接后重新连接。");
@@ -122,8 +122,9 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
         finally { SetStatus(DeviceStatusType.Opened); }
     }
 
-    private void OpenCore(LocalCfwPortConnection config)
+    private void OpenCore(LocalCfwPortConnection config, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         if (handle != IntPtr.Zero)
         {
             if (connection == config) return;
@@ -139,9 +140,9 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
         SetStatus(DeviceStatusType.Opening);
         try
         {
+            token.ThrowIfCancellationRequested();
             handle = native.Open(config);
             if (handle == IntPtr.Zero) throw new InvalidOperationException($"无法打开滤色轮 {config.PortName}（{config.BaudRate} baud），请检查串口、接线及服务占用。");
-            SetStatus(DeviceStatusType.Opened);
         }
         catch
         {
@@ -150,6 +151,14 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
             SetStatus(DeviceStatusType.Closed);
             throw;
         }
+
+        // Close outside the failed-open cleanup so an unconfirmed release keeps the serial reservation.
+        if (token.IsCancellationRequested)
+        {
+            CloseCore();
+            token.ThrowIfCancellationRequested();
+        }
+        SetStatus(DeviceStatusType.Opened);
     }
 
     private void CloseCore()
