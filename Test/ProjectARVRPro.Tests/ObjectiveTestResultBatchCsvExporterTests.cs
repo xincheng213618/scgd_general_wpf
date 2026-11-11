@@ -111,6 +111,45 @@ public class ObjectiveTestResultBatchCsvExporterTests
         }
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{invalid json")]
+    public void ExportToCsv_UsesFirstRecordWithMetricsWhenInitialRecordOnlyHasMetadata(string initialJson)
+    {
+        DateTime start = new(2026, 8, 9, 8, 0, 0, DateTimeKind.Local);
+        string path = CreateTempPath();
+        try
+        {
+            var records = new[]
+            {
+                new ObjectiveTestResultRecord
+                {
+                    SN = "SN-1",
+                    CreateTime = start,
+                    UpdateTime = start.AddSeconds(2),
+                    ObjectiveTestResultJson = initialJson
+                },
+                CreateRecord("SN-2", start.AddMinutes(1), CreateDynamicResult(("B", "0"), ("A", "4.125"))),
+                CreateRecord("SN-3", start.AddMinutes(2), CreateDynamicResult(("A", "next"), ("C", "ignored")))
+            };
+
+            ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, path);
+
+            Assert.Equal(
+                [
+                    "SN,开始时间,结束时间,Screen_B,Screen_A",
+                    "SN-1,2026-08-09 08:00:00.000,2026-08-09 08:00:02.000,,",
+                    "SN-2,2026-08-09 08:01:00.000,2026-08-09 08:01:02.000,0,4.125",
+                    "SN-3,2026-08-09 08:02:00.000,2026-08-09 08:02:02.000,,next"
+                ],
+                File.ReadAllLines(path, Encoding.UTF8));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void ExportToCsv_WritesUtf8BomAndRfc4180Escaping()
     {
