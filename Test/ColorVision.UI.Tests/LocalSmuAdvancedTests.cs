@@ -114,6 +114,52 @@ public sealed class LocalSmuAdvancedTests
     }
 
     [Fact]
+    public async Task FailedChannelSelectionLeavesTheSessionReadyAndKeepsExistingOutput()
+    {
+        var native = new FakeNative();
+        await using var session = new LocalSmuSession(native);
+        var connection = Connection();
+        await session.OpenAsync(connection);
+        await session.CaptureAdvancedAsync(connection, new() { Channel = Channel.A, CloseOutput = false }, true);
+        native.RejectedChannel = Channel.B;
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAdvancedAsync(
+            connection, new() { Channel = Channel.B, CloseOutput = false }, true));
+        Assert.Contains("选择源表通道", failure.Message);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
+        Assert.Equal(1, native.Captures);
+        Assert.Empty(native.ClosedChannels);
+
+        native.RejectedChannel = null;
+        await session.CaptureAdvancedAsync(connection, new() { Channel = Channel.B, CloseOutput = false }, true);
+        Assert.Equal(2, native.Captures);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
+        await session.CloseAsync();
+        Assert.Equal(new[] { Channel.A, Channel.B }, native.ClosedChannels.OrderBy(channel => channel));
+    }
+
+    [Fact]
+    public async Task CaptureAndOutputCleanupFailuresAreBothReported()
+    {
+        var native = new FakeNative { Fail = true, FailCloseOutput = true };
+        await using var session = new LocalSmuSession(native);
+        var connection = Connection();
+        await session.OpenAsync(connection);
+        try
+        {
+            var failure = await Assert.ThrowsAsync<AggregateException>(() => session.CaptureAdvancedAsync(connection, new(), true));
+            Assert.Equal(2, failure.InnerExceptions.Count);
+            Assert.Contains("synthetic capture failure", failure.InnerExceptions[0].Message);
+            Assert.Contains("关闭源表输出", failure.InnerExceptions[1].Message);
+            Assert.Equal(DeviceStatusType.Unknown, session.Status);
+        }
+        finally
+        {
+            native.FailCloseOutput = false;
+        }
+    }
+
+    [Fact]
     public async Task HighImpedanceCloseDoesNotRunMeasurementAndRestoresLegacyReadBoundary()
     {
         var native=new FakeNative();await using var session=new LocalSmuSession(native);
@@ -299,6 +345,8 @@ public sealed class LocalSmuAdvancedTests
     private sealed class FakeNative : ILocalSmuNative
     {
         internal int Family=4,Captures,Opens,Closes;internal bool Block,Fail,RequestedCloseOutput;internal double Source;internal SmuOffMode OffMode;
+        internal Channel? RejectedChannel;
+        internal bool FailCloseOutput;
         internal List<Channel>ClosedChannels=[];private Channel channel;
         internal readonly List<double> AppliedNplc = [];
         internal TaskCompletionSource Started=new(TaskCreationOptions.RunContinuationsAsynchronously),Release=new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -309,7 +357,13 @@ public sealed class LocalSmuAdvancedTests
         public int SetWiring(int h,bool wire,bool front)=>1;
         public int SetDelay(int h,double delay)=>1;
         public int SetNplc(int h,double nplc,Pss_Type type){AppliedNplc.Add(nplc);return 1;}
-        public int SetChannel(int h,bool a){channel=a?Channel.A:Channel.B;return 1;}
+        public int SetChannel(int h, bool a)
+        {
+            Channel selected = a ? Channel.A : Channel.B;
+            if (selected == RejectedChannel) return -1;
+            channel = selected;
+            return 1;
+        }
         public int SetSource(int h,bool voltage)=>1;
         public void ExecuteAdvanced(int h,LocalSmuSettings s,double[] sources,double[] limits,double[] v,double[] i,double[] r,int[] status)
         {
@@ -320,7 +374,12 @@ public sealed class LocalSmuAdvancedTests
         public int Measure(int h,LocalSmuParameters p,bool step,ref double v,ref double i)=>throw new NotSupportedException();
         public int Read(int h,ref double v,ref double i)=>throw new NotSupportedException();
         public int Sweep(int h,LocalSmuParameters p,double[]v,double[]i)=>throw new NotSupportedException();
-        public int CloseOutput(int h){ClosedChannels.Add(channel);return 1;}
+        public int CloseOutput(int h)
+        {
+            if (FailCloseOutput) return -1;
+            ClosedChannels.Add(channel);
+            return 1;
+        }
         public int Close(int h){Closes++;return 1;}
     }
 }

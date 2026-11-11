@@ -211,8 +211,8 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             EnsureConnection(config, reconnect: true);
             if (LocalFamily == 0) throw new NotSupportedException("当前 DLL 或仪器命令集不支持本地高级源表功能；请核对实际型号并更新 DLL。");
             settings.ValidateFamily(LocalFamily);
-            SetStatus(DeviceStatusType.Busy);
             SelectChannel(settings.Channel);
+            SetStatus(DeviceStatusType.Busy);
             outputChannels.Add(settings.Channel);
             long generation = ++nextGeneration;
             outputGenerations[settings.Channel] = generation;
@@ -239,10 +239,14 @@ internal sealed class LocalSmuSession : IAsyncDisposable
                     measured ? r.Select(value => double.IsFinite(value) && Math.Abs(value) < 1e36 ? (double?)value : null).ToArray() : [],
                     measured ? status : [], settings.Waveform == SmuWaveform.DC ? "DC" : LocalFamily == 1 ? "2400-SDM-Approximate" : LocalFamily == 2 ? "2430-Pulse" : "2600-Timer") };
             }
-            catch
+            catch (Exception failure)
             {
                 try { CloseChannel(settings.Channel); }
-                catch { SetStatus(DeviceStatusType.Unknown); throw; }
+                catch (Exception cleanup)
+                {
+                    SetStatus(DeviceStatusType.Unknown);
+                    throw new AggregateException("本地源表高级操作失败，关闭输出也失败。", failure, cleanup);
+                }
                 throw;
             }
             finally { if (Status == DeviceStatusType.Busy) SetStatus(DeviceStatusType.Opened); }
