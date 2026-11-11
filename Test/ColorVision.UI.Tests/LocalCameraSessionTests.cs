@@ -195,6 +195,39 @@ public class LocalCameraSessionTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void FailedCameraCloseReleasesTheFilterWheelIfTheCameraConnectionIsGone(bool cameraStaysOpen, bool filterWheelReleaseFails)
+    {
+        var handle = new IntPtr(42);
+        var cleanupError = new InvalidOperationException("simulated filter wheel release failure");
+        bool isOpen = true;
+        var events = new List<string>();
+        Exception? error = Record.Exception(() => LocalCameraNative.CloseCamera(handle, _ => isOpen, closingHandle =>
+        {
+            Assert.Equal(handle, closingHandle);
+            events.Add("close camera");
+            isOpen = cameraStaysOpen;
+            return -10009;
+        }, managerHandle =>
+        {
+            Assert.Equal(handle, managerHandle);
+            events.Add("release filter wheel");
+            if (filterWheelReleaseFails) throw cleanupError;
+        }));
+
+        Assert.Equal(cameraStaysOpen ? new[] { "close camera" } : new[] { "close camera", "release filter wheel" }, events);
+        if (filterWheelReleaseFails)
+        {
+            var combined = Assert.IsType<AggregateException>(error);
+            Assert.Contains("关闭本地相机失败", combined.InnerExceptions[0].Message);
+            Assert.Same(cleanupError, combined.InnerExceptions[1]);
+        }
+        else Assert.Contains("关闭本地相机失败", Assert.IsType<InvalidOperationException>(error).Message);
+    }
+
+    [Theory]
     [InlineData("COM0", 9600)]
     [InlineData("COM7", 0)]
     public void InvalidSerialFilterWheelSettingsAreRejectedBeforeCallingNativeCode(string port, int baudRate)

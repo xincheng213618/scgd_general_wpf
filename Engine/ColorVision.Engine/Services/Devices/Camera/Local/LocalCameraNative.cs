@@ -143,14 +143,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             return new InvalidOperationException($"{detail}{Environment.NewLine}{failure.Message}", failure);
         }
-        public void Close(IntPtr handle)
+        public void Close(IntPtr handle) => CloseCamera(handle, cvCameraCSLib.CM_IsOpen, cvCameraCSLib.CM_Close, ReleaseFilterWheel);
+
+        internal static void CloseCamera(IntPtr handle, Func<IntPtr, bool> isOpen, Func<IntPtr, int> closeCamera, Action<IntPtr> releaseFilterWheel)
         {
-            if (IsOpen(handle))
+            int result = isOpen(handle) ? closeCamera(handle) : cvErrorDefine.CV_ERR_SUCCESS;
+            if (result == cvErrorDefine.CV_ERR_SUCCESS)
             {
-                int result = cvCameraCSLib.CM_Close(handle);
-                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("关闭本地相机失败", result);
+                releaseFilterWheel(handle);
+                return;
             }
-            ReleaseFilterWheel(handle);
+
+            var failure = LocalCameraCaptureService.CreateNativeException("关闭本地相机失败", result);
+            // The SDK can invalidate the camera connection while still reporting a close error.
+            // The filter wheel belongs to the surviving manager and needs its own release.
+            if (!isOpen(handle))
+            {
+                try { releaseFilterWheel(handle); }
+                catch (Exception cleanup) { throw new AggregateException(failure, cleanup); }
+            }
+            throw failure;
         }
         public void DetachCallback(IntPtr handle)
         {
