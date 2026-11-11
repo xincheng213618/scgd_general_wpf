@@ -1,8 +1,10 @@
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.IO.Compression;
@@ -13,6 +15,109 @@ namespace ColorVision.UI.Tests;
 
 public class FlowPackageCompatibilityTests
 {
+    [Fact]
+    public void CancelingPreparedFlowPackageLeavesAssociatedTemplatesUntouched()
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.True(flow.HasCreateTemplateSource);
+            Assert.IsType<FlowParam>(flow.CreateDefault());
+            flow.ClearCreateTemplateSource();
+
+            Assert.False(flow.HasCreateTemplateSource);
+            Assert.Equal(0, associated.CreateCount);
+        });
+    }
+
+    [Fact]
+    public void ConfirmedFlowPackageCreatesAssociationsBeforeSavingTheFlow()
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.Equal(0, associated.CreateCount);
+            Assert.False(flow.TryCreateTemplate("Imported flow", out string message));
+            Assert.Contains("Simulated flow storage failure", message);
+            Assert.Equal(1, associated.CreateCount);
+            Assert.Contains("Package camera", associated.GetTemplateNames());
+        });
+    }
+
+    [Theory]
+    [InlineData("", null)]
+    [InlineData("Existing flow", "Existing flow")]
+    public void InvalidOrDuplicateFlowNameLeavesAssociatedTemplatesUntouched(string requestedName, string? existingName)
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.False(flow.TryCreateTemplate(requestedName, out _));
+            Assert.Equal(0, associated.CreateCount);
+        }, existingName);
+    }
+
+    [Fact]
+    public void ReplacingPreparedFlowPackageDoesNotImportItsAssociatedTemplates()
+    {
+        WithPreparedFlowPackage((flow, associated) =>
+        {
+            Assert.True(flow.ApplyCreatePreset("flow-camera-capture"));
+            Assert.False(flow.TryCreateTemplate("Other flow", out _));
+            Assert.Equal(0, associated.CreateCount);
+        });
+    }
+
+    private static void WithPreparedFlowPackage(Action<TemplateFlow, FakeAssociatedTemplate> test, string? existingName = null)
+    {
+        StaTest.Run(() =>
+        {
+            string path = Path.Combine(Path.GetTempPath(), $"colorvision-staged-flow-{Guid.NewGuid():N}.cvflow");
+            string databasePath = path + ".db";
+            var registrations = TemplateControl.ITemplateNames.ToArray();
+            var previousFlows = TemplateFlow.Params;
+            try
+            {
+                TemplateFlow.Params = [];
+                using (var db = new SqlSugarClient(new ConnectionConfig
+                {
+                    ConnectionString = $"Data Source={databasePath};Pooling=False",
+                    DbType = SqlSugar.DbType.Sqlite,
+                    IsAutoCloseConnection = true,
+                }))
+                {
+                    db.CodeFirst.InitTables<ModMasterModel>();
+                    if (existingName != null)
+                        db.Insertable(new ModMasterModel { Name = existingName, Pid = 11, TenantId = 0, IsDelete = false }).ExecuteCommand();
+                }
+                var associated = new FakeAssociatedTemplate();
+                const string templateCode = "test-staged-flow-associated";
+                TemplateControl.ITemplateNames.Add(templateCode, associated);
+                FlowPackageTemplate dependency = PackageTemplate("Package camera", exposure: 80);
+                dependency.TemplateCode = templateCode;
+                var manifest = new FlowPackageManifest { Templates = [dependency] };
+                FlowPackageHelper.ExportFlowPackage(path, "Packaged flow", CreateTemplateReferenceFlow(dependency.TemplateName), manifest);
+
+                int openCalls = 0;
+                var flow = new TemplateFlow(new LocalFlowTemplateStorage(new LocalTemplateStore(databasePath)),
+                    () => true, () => ++openCalls == 1 ? new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={databasePath};Mode=ReadOnly;Pooling=False",
+                        DbType = SqlSugar.DbType.Sqlite,
+                        IsAutoCloseConnection = true,
+                    }) : throw new InvalidOperationException("Simulated flow storage failure"));
+                Assert.True(flow.ImportFile(path));
+                test(flow, associated);
+            }
+            finally
+            {
+                File.Delete(path);
+                File.Delete(databasePath);
+                TemplateFlow.Params = previousFlows;
+                TemplateControl.ITemplateNames.Clear();
+                foreach (var registration in registrations)
+                    TemplateControl.ITemplateNames.Add(registration.Key, registration.Value);
+            }
+        });
+    }
+
     [Fact]
     public void TemplateExtractionAndReplacementAcceptVersionOne()
     {

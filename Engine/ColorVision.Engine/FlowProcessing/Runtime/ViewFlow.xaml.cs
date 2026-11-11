@@ -373,7 +373,11 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
 
             string importName = templateFlow.ImportName ?? $"Imported_{DateTime.Now:yyyyMMdd_HHmmss}";
-            templateFlow.Create(importName);
+            if (!templateFlow.TryCreateTemplate(importName, out string error))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), error, "ColorVision");
+                return;
+            }
             Refresh();
         }
 
