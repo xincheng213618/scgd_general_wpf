@@ -2,6 +2,7 @@ using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace ColorVision.ImageEditor.BatchProcessing
 {
@@ -58,7 +59,12 @@ namespace ColorVision.ImageEditor.BatchProcessing
         }
 
         public static void Save(Mat image, string filePath, bool overwrite = true)
+            => EncodeAndPublish(image, filePath, overwrite, validateOutputPath: null, resolveCollision: null, CancellationToken.None);
+
+        internal static void EncodeAndPublish(Mat image, string filePath, bool overwrite, Action<string>? validateOutputPath,
+            Func<string>? resolveCollision, CancellationToken cancellationToken)
         {
+            ValidateDestination();
             string fullPath = Path.GetFullPath(filePath);
             string? directory = Path.GetDirectoryName(fullPath);
             if (!string.IsNullOrWhiteSpace(directory))
@@ -99,7 +105,20 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     throw new IOException(string.Format(Properties.Resources.BatchImageSaveFailed, fullPath));
                 }
 
-                File.Move(temporaryPath, fullPath, overwrite);
+                while (true)
+                {
+                    ValidateDestination();
+                    try
+                    {
+                        File.Move(temporaryPath, fullPath, overwrite);
+                        return;
+                    }
+                    catch (IOException) when (!overwrite && resolveCollision != null && File.Exists(fullPath))
+                    {
+                        filePath = resolveCollision();
+                        fullPath = Path.GetFullPath(filePath);
+                    }
+                }
             }
             finally
             {
@@ -116,6 +135,13 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
                 convertedChannels?.Dispose();
                 convertedDepth?.Dispose();
+            }
+
+            void ValidateDestination()
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                validateOutputPath?.Invoke(filePath);
+                cancellationToken.ThrowIfCancellationRequested();
             }
         }
 

@@ -24,7 +24,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         public bool AvoidOverwrite { get; init; } = true;
 
-        /// <summary>Checks each resolved destination immediately before saving; throw to reject that file.</summary>
+        /// <summary>Checks the destination before staging and each publication attempt; throw to reject that file.</summary>
         public Action<string>? ValidateOutputPath { get; init; }
     }
 
@@ -167,28 +167,28 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
                     void SaveOutput(Mat result)
                     {
-                        while (true)
+                        BatchImageOutput.EncodeAndPublish(result, outputPath, overwrite: !request.AvoidOverwrite,
+                            request.ValidateOutputPath != null ? ValidateDestination : null,
+                            request.AvoidOverwrite ? ResolveCollision : null, cancellationToken);
+
+                        void ValidateDestination(string path)
                         {
-                            cancellationToken.ThrowIfCancellationRequested();
                             validatingOutputPath = true;
-                            request.ValidateOutputPath?.Invoke(outputPath);
+                            request.ValidateOutputPath!(path);
                             validatingOutputPath = false;
-                            try
-                            {
-                                BatchImageOutput.Save(result, outputPath, overwrite: !request.AvoidOverwrite);
-                                return;
-                            }
-                            catch (IOException) when (request.AvoidOverwrite && File.Exists(outputPath))
-                            {
-                                outputPath = BatchImageOutput.CreateOutputPath(
-                                    item,
-                                    request.OutputDirectory,
-                                    request.Suffix,
-                                    request.OutputFormat,
-                                    request.PreserveFolderStructure,
-                                    avoidOverwrite: true,
-                                    reservedPaths);
-                            }
+                        }
+
+                        string ResolveCollision()
+                        {
+                            outputPath = BatchImageOutput.CreateOutputPath(
+                                item,
+                                request.OutputDirectory,
+                                request.Suffix,
+                                request.OutputFormat,
+                                request.PreserveFolderStructure,
+                                avoidOverwrite: true,
+                                reservedPaths);
+                            return outputPath;
                         }
                     }
 

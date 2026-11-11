@@ -152,7 +152,7 @@ public class BatchImageProcessingTests
             BatchImageOutput.Save(source, sourcePath);
             BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
                 .Single(entry => entry.Descriptor?.Id == StandardAlgorithmIds.ImagingCorrection);
-            string? collision = null;
+            var publicationAttempts = new List<(string Destination, string Staged)>();
             var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
 
             var run = processor.Process(new BatchImageProcessingRequest
@@ -162,16 +162,21 @@ public class BatchImageProcessingTests
                 Suffix = "_corrected",
                 ValidateOutputPath = path =>
                 {
-                    if (collision != null) return;
-                    collision = path;
-                    File.WriteAllBytes(path, [1, 2, 3]);
+                    string? staged = Directory.EnumerateFiles(directory, ".__colorvision_*.tmp.png").SingleOrDefault();
+                    if (staged == null) return;
+                    publicationAttempts.Add((path, staged));
+                    if (publicationAttempts.Count <= 2)
+                        File.WriteAllBytes(path, [1, 2, 3]);
                 },
             });
 
             BatchImageFileResult result = Assert.Single(run.Files);
             Assert.True(result.Success, result.ErrorMessage);
-            Assert.Equal(Path.Combine(directory, "source_corrected_2.png"), result.OutputPath);
-            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(collision!));
+            Assert.Equal(Path.Combine(directory, "source_corrected_3.png"), result.OutputPath);
+            Assert.Equal(3, publicationAttempts.Count);
+            Assert.Single(publicationAttempts.Select(attempt => attempt.Staged).Distinct());
+            Assert.All(publicationAttempts.Take(2), attempt => Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(attempt.Destination)));
+            Assert.Empty(Directory.EnumerateFiles(directory, ".__colorvision_*.tmp.png"));
             using Mat pixels = Cv2.ImRead(result.OutputPath, ImreadModes.Unchanged);
             AssertMatsEqual(source, pixels);
         }
@@ -408,6 +413,55 @@ public class BatchImageProcessingTests
             {
                 Directory.Delete(directory, recursive: true);
             }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CancellationDuringOutputValidationKeepsCompletedFilesAndPreventsPublication(bool afterEncoding)
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-BatchCancelSave-");
+        string first = Path.Combine(directory.FullName, "first.png");
+        string second = Path.Combine(directory.FullName, "second.png");
+        string firstOutput = Path.Combine(directory.FullName, "first_result.png");
+        string secondOutput = Path.Combine(directory.FullName, "second_result.png");
+        try
+        {
+            using Mat source = new(2, 3, MatType.CV_8UC1, new Scalar(42));
+            BatchImageOutput.Save(source, first);
+            BatchImageOutput.Save(source, second);
+            byte[] previousBytes = [7, 11, 13];
+            if (afterEncoding) File.WriteAllBytes(secondOutput, previousBytes);
+
+            using var stop = new CancellationTokenSource();
+            var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
+            BatchImageRunResult run = processor.Process(new BatchImageProcessingRequest
+            {
+                Items = [new BatchImageItem(first), new BatchImageItem(second)],
+                Algorithm = BatchImageAlgorithms.CreateAll()[0],
+                Suffix = "_result",
+                AvoidOverwrite = !afterEncoding,
+                ValidateOutputPath = path =>
+                {
+                    if (path == secondOutput && (!afterEncoding || Directory.EnumerateFiles(directory.FullName, ".__colorvision_*.tmp.png").Any()))
+                        stop.Cancel();
+                }
+            }, cancellationToken: stop.Token);
+
+            Assert.True(run.Cancelled);
+            Assert.Equal(1, run.Succeeded);
+            Assert.True(run.Files[1].Cancelled);
+            using Mat saved = Cv2.ImRead(firstOutput, ImreadModes.Unchanged);
+            AssertMatsEqual(source, saved);
+            if (afterEncoding) Assert.Equal(previousBytes, File.ReadAllBytes(secondOutput));
+            else Assert.False(File.Exists(secondOutput));
+            Assert.Empty(directory.EnumerateFiles(".__colorvision_*.tmp.png"));
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
         }
     }
 
