@@ -390,9 +390,24 @@ namespace ColorVision.Scheduler
         {
             // Each task uses the same checked resume path and persistence
             // compensation as the individual button. Never rearm running jobs.
+            var errors = new List<string>();
             foreach (var item in TaskInfos.ToArray())
-                if (item.Status == SchedulerStatus.Paused && !item.ScheduleCompleted)
+            {
+                if (item.Status != SchedulerStatus.Paused || item.ScheduleCompleted)
+                    continue;
+
+                try
+                {
                     await ResumeJob(item.JobName, item.GroupName);
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{item.JobName} ({item.GroupName}) {ex.Message}");
+                }
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
         }
 
         public async Task Start()

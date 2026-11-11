@@ -512,6 +512,34 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ResumeAll_ResumesOtherSavedTasksWhenACronScheduleHasExpired()
+    {
+        SchedulerInfo expired = CreateInfo();
+        expired.JobName = "expired-cron";
+        expired.Mode = JobExecutionMode.Cron;
+        expired.CronExpression = "0 0 0 1 1 ? 2000";
+        SchedulerInfo pending = CreateInfo();
+        pending.IsDelayed = true;
+        pending.Delay = TimeSpan.FromHours(1);
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerTaskSerializer.SaveToFile(path, [expired, pending]);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        foreach (SchedulerInfo task in _manager.TaskInfos)
+            await _manager.RestoreJob(task);
+        await _scheduler.Start();
+
+        Exception? failure = await Record.ExceptionAsync(_manager.ResumeAll);
+
+        Assert.Equal(SchedulerStatus.Ready, _manager.TaskInfos.Single(task => task.JobName == pending.JobName).Status);
+        Assert.Contains(expired.JobName, Assert.IsType<InvalidOperationException>(failure).Message);
+        Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(new TriggerKey($"{pending.JobName}-trigger", pending.GroupName)));
+        Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(expired.JobName, expired.GroupName)));
+        var saved = SchedulerTaskSerializer.LoadFromFile(path);
+        Assert.Equal(SchedulerStatus.Paused, saved.Single(task => task.JobName == expired.JobName).Status);
+        Assert.Equal(SchedulerStatus.Ready, saved.Single(task => task.JobName == pending.JobName).Status);
+    }
+
+    [Fact]
     public async Task EditCompletedTask_StartsANewScheduleAndKeepsHistoricalStatistics()
     {
         SchedulerInfo original = CreateInfo();
