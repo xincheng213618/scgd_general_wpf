@@ -8,7 +8,7 @@ using System.Text;
 namespace ColorVision.Engine.Media
 {
     /// <summary>
-    /// Adds or replaces the TIFF ImageDescription tag without decoding or re-encoding pixel data.
+    /// Adds or replaces the ImageDescription tag in a staged TIFF without re-encoding pixels.
     /// </summary>
     internal static class TiffImageDescriptionWriter
     {
@@ -41,9 +41,8 @@ namespace ColorVision.Engine.Media
             ulong newDirectoryOffset = AlignOffset(checked((ulong)stream.Length), layout.Alignment);
             PadTo(stream, newDirectoryOffset);
             WriteDirectory(stream, layout, entries, directory.NextDirectoryOffset);
-            stream.Flush(flushToDisk: true);
-
             WriteFirstDirectoryOffset(stream, layout, newDirectoryOffset);
+            // The caller publishes the staged TIFF after both changes have been flushed.
             stream.Flush(flushToDisk: true);
         }
 
