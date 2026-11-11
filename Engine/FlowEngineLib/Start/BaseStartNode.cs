@@ -264,9 +264,10 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			}
 			if (action.IsStop)
 			{
-				cVStartCFC.SetActionType(action.GetActionType());
-				cVStartCFC.EndTime = DateTime.Now;
-				RemoveStartAction(cVStartCFC);
+				if (cVStartCFC.TryDoFinishing(() => cVStartCFC.SetActionType(action.GetActionType())))
+				{
+					cVStartCFC.FireFinished();
+				}
 			}
 			else if (cVStartCFC.GetActionType() != action.GetActionType())
 			{

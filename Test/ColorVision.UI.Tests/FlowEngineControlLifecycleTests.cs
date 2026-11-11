@@ -483,6 +483,47 @@ public class FlowEngineControlLifecycleTests
     }
 
     [Fact]
+    public void StoppingAnActiveFlowReleasesResourcesAndRejectsLateCompletionAfterSameSerialRestart()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(editor, false, new FlowNodeManager());
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            var results = new List<FlowEngineEventArgs>();
+            control.Finished += (_, result) => results.Add(result);
+            const string serialNumber = "SN-REUSED";
+
+            Assert.True(control.TryStartByName(start.NodeName, serialNumber));
+            CVStartCFC first = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+            var lateBranch = new CVStartCFC(first);
+            var resource = new DisposableProbe();
+            first.RuntimeResources.Set("resource", resource);
+
+            control.StopNode(start.NodeName, serialNumber);
+
+            Assert.True(first.RuntimeResources.StopToken.IsCancellationRequested);
+            Assert.True(resource.IsDisposed);
+            Assert.Equal(StatusTypeEnum.Canceled, Assert.Single(results).Status);
+            Assert.False(control.IsRunning);
+            Assert.True(control.TryStartByName(start.NodeName, serialNumber));
+            CVStartCFC next = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+
+            Assert.False(lateBranch.TryDoFinishing());
+            Assert.Same(next, start.GetCFC(serialNumber));
+            Assert.True(control.IsRunning);
+            Assert.True(next.TryDoFinishing());
+            next.FireFinished();
+            Assert.Equal(new[] { StatusTypeEnum.Canceled, StatusTypeEnum.Completed }, results.Select(result => result.Status));
+        });
+    }
+
+    [Fact]
     public void StartWithoutConnectedOutputDoesNotRemainRunning()
     {
         StaTest.Run(() =>
