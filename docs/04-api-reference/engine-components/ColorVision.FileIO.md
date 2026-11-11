@@ -25,7 +25,7 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 | 校正文件异常、手动生成的 XYZ 含无效值 | `CVRawManualCieCalculator` 的输入/结果校验；有限但错误的标定仍需业务校准证据 |
 | 只想读内嵌 Y，避免加载全部 XYZ | `ReadCIEFileChannel(path, 1, ...)`，不是通用打开或旧的全量切片接口 |
 | RAW 不另存 CVCIE，但要保留当时的色度参数和测量能力 | `CVFileMetadata`、`ColorCalibrationSnapshot`、`RawColorMeasurementSource`；见下文的动态参数契约 |
-| 大小写改名后类型变了 | 路径 header 使用大小写敏感的完整路径 `Contains`；不同便捷入口推断方式不一致 |
+| 确认专有图像类型 | 标准文件后缀忽略大小写，优先于旧名称推断 |
 | 写入返回 true，但再次读取失败 | 写入不验证完整格式；尤其检查 Version=3 的 `NDPort` 缺失和零长 Data |
 | 同步写入失败 | 保存先在同目录暂存并校验，替换异常时检查同目录的 `.bak` |
 | Explorer 缩略图异常 | [ShellExtension](./ColorVision.ShellExtension.md)，其 provider 会覆盖解析出的类型 |
@@ -39,9 +39,8 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 
 两种 header 入口的类型与路径语义不同：
 
-- 路径入口用完整 `filePath.Contains(".cvraw")`、然后 `Contains(".cvsrc")` 推断 Raw/Src，否则 CIE。这不是严格后缀验证，也不忽略大小写；路径中的目录名也可能影响结果。`FilePath` 在成功解析时赋值。
+- 路径 header 和打开入口优先识别 `.cvraw`、`.cvcie`、`.cvsrc`，忽略大小写及目录名。其他名称保留各入口的旧推断规则。`FilePath` 在成功解析时赋值。
 - 字节数组入口不设置 `FileExtType` 或 `FilePath`。类型保留枚举默认值 Raw，不是按魔数识别出 CIE；知道格式的调用方需要自行赋值。
-- `OpenLocalFileChannel` 的便捷入口先将后缀转小写；`OpenLocalCVFile` 的后缀判断仍大小写敏感。两者再调用 reader，不能假设所有入口有一致的扩展名规则。
 
 ## 二进制布局和版本差异
 
@@ -258,6 +257,6 @@ CVCIE 首次打开和切换图层时，达到 8 MiB 的冻结显示图在后台�
 - `Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs`：32/64 位灰度范围、常量黑图、输入不变、有限极值、非法数据与取消。
 - `Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs`：8/16 位 BGR 输入到连续 XYZ、负矩阵系数保留、曝光/增益回退兼容、输入长度和维度校验，以及校正导入/计算的非有限数和输出溢出拒绝。
 - `Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs`：IP 端点与异常、原始负值和元数据保留、无效替换清除旧值、来源待核对、重复光谱 ID、文件指纹与副本保护、六项编辑与原值恢复、模板首点/尺寸/形状校验、POI 右键菜单，以及窗口输入变化 / 失败后的保存门禁；不替代真机采集、真实数据库历史选择或相机过曝检测。
-- 测试未覆盖 v3 完整往返、所有大小写入口、关联源替换和底层文件系统在部分替换后的恢复。
+- `BatchImageProcessingTests` 验证标准后缀大小写及目录名冲突时的像素读取。底层文件系统部分替换后的恢复仍需环境验证。
 
 修改 FileIO 时先用 `knowledge.mjs impact "Engine/ColorVision.FileIO/CVFileUtil.cs"` 找消费方主题，按变更补合成文件回归。只读理解协议不需要启动主程序、加载真实测量样本或执行 Explorer 注册脚本。

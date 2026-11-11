@@ -516,19 +516,21 @@ public class BatchImageProcessingTests
     }
 
     [Theory]
-    [InlineData("sample.cvraw")]
-    [InlineData("sample.cvcie")]
-    public void ColorVisionLoaderReadsARealSerializedFile(string fileName)
+    [InlineData("sample.cvraw", true)]
+    [InlineData("sample.CVRAW", true)]
+    [InlineData("sample.cvcie", false)]
+    [InlineData("capture.cvraw/sample.cvcie", false)]
+    public void ColorVisionLoaderReadsARealSerializedFile(string fileName, bool raw)
     {
         string directory = Path.Combine(Path.GetTempPath(), $"colorvision-batch-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(directory);
         string filePath = Path.Combine(directory, fileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
         try
         {
             using CVCIEFile file = new()
             {
                 Version = 1,
-                FileExtType = fileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase) ? CVType.Raw : CVType.CIE,
+                FileExtType = raw ? CVType.Raw : CVType.CIE,
                 Rows = 2,
                 Cols = 3,
                 Bpp = 8,
@@ -545,7 +547,11 @@ public class BatchImageProcessingTests
             Assert.False(loaded.Empty());
             Assert.Equal(2, loaded.Rows);
             Assert.Equal(3, loaded.Cols);
-            Assert.Equal((byte)0, Marshal.ReadByte(loaded.Data));
+            Assert.Equal(raw ? MatType.CV_8UC3 : MatType.CV_8UC1, loaded.Type());
+            byte[] expected = raw ? file.Data : file.Data[..(file.Rows * file.Cols)];
+            byte[] actual = new byte[expected.Length];
+            Marshal.Copy(loaded.Data, actual, 0, actual.Length);
+            Assert.Equal(expected, actual);
             Cv2.BitwiseNot(loaded, loaded);
             Assert.Equal((byte)255, Marshal.ReadByte(loaded.Data));
             using Mat reloaded = loader.Load(filePath);
@@ -560,7 +566,7 @@ public class BatchImageProcessingTests
     [Theory]
     [InlineData("sample.cvcie", true, true)]
     [InlineData("sample.cvcie", false, false)]
-    [InlineData("sample.CVCIE", true, false)]
+    [InlineData("sample.CVCIE", true, true)]
     public void BatchCiePreservesSourceSelectionAndReadsOnlyTheDisplayedPlane(string fileName, bool hasAssociatedSource, bool usesAssociatedSource)
     {
         string directory = Path.Combine(Path.GetTempPath(), $"colorvision-batch-{Guid.NewGuid():N}");

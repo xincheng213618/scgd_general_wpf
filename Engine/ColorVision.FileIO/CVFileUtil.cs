@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
@@ -129,7 +128,10 @@ namespace ColorVision.FileIO
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
                 {
                     int index = ReadCIEFileHeader(fs, out cvcie);
-                    cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+                    CVType type = GetKnownFileType(Path.GetExtension(filePath.AsSpan()));
+                    if (type == CVType.None)
+                        type = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+                    cvcie.FileExtType = type;
                     if (index > 0) cvcie.FilePath = filePath;
                     return index;
                 }
@@ -539,8 +541,11 @@ namespace ColorVision.FileIO
         /// </summary>
         public static CVCIEFile OpenLocalFileChannel(string fileName, CVImageChannelType channelType)
         {
-            string ext = Path.GetExtension(fileName)?.ToLower(CultureInfo.CurrentCulture);
-            CVType fileExtType = ext.Contains(".cvraw") ? CVType.Raw : ext.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+            ReadOnlySpan<char> extension = Path.GetExtension(fileName.AsSpan());
+            CVType fileExtType = GetKnownFileType(extension);
+            if (fileExtType == CVType.None)
+                fileExtType = extension.Contains(".cvraw", StringComparison.OrdinalIgnoreCase) ? CVType.Raw
+                    : extension.Contains(".cvsrc", StringComparison.OrdinalIgnoreCase) ? CVType.Src : CVType.CIE;
             return OpenLocalFileChannel(fileName, fileExtType, channelType);
         }
 
@@ -597,10 +602,20 @@ namespace ColorVision.FileIO
 
         private static CVType GetLocalFileType(string fileName)
         {
-            string extension = Path.GetExtension(fileName);
-            if (extension.Contains("cvraw")) return CVType.Raw;
-            if (extension.Contains("cvcie")) return CVType.CIE;
+            ReadOnlySpan<char> extension = Path.GetExtension(fileName.AsSpan());
+            CVType type = GetKnownFileType(extension);
+            if (type != CVType.None) return type;
+            if (extension.Contains("cvraw", StringComparison.Ordinal)) return CVType.Raw;
+            if (extension.Contains("cvcie", StringComparison.Ordinal)) return CVType.CIE;
             return CVType.Src;
+        }
+
+        private static CVType GetKnownFileType(ReadOnlySpan<char> extension)
+        {
+            if (extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase)) return CVType.Raw;
+            if (extension.Equals(".cvcie", StringComparison.OrdinalIgnoreCase)) return CVType.CIE;
+            if (extension.Equals(".cvsrc", StringComparison.OrdinalIgnoreCase)) return CVType.Src;
+            return CVType.None;
         }
 
         /// <summary>
