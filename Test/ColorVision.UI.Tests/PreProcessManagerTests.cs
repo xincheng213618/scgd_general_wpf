@@ -1,3 +1,4 @@
+using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.UI;
 using Newtonsoft.Json;
@@ -176,6 +177,8 @@ public sealed class PreProcessManagerTests
         var manager = WpfTestHost.Invoke(() => config.Load());
 
         Assert.False(await WpfTestHost.Invoke(() => manager.ExecuteAsync("Flow", "SN")));
+        Assert.Equal(EngineLocalization.Get("Flow_PreProcess_ConfigUnavailable"),
+            await WpfTestHost.Invoke(() => manager.ExecuteWithFailureReasonAsync("Flow", "SN", null)));
         Assert.Empty(manager.Processes);
     }
 

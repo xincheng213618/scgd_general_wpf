@@ -50,7 +50,8 @@ namespace ColorVision.Engine.FlowProcessing
 
         private readonly record struct FlowRunCoreResult(
             FlowControlData? EngineResult,
-            FlowRunFinalizedData? FinalizedResult);
+            FlowRunFinalizedData? FinalizedResult,
+            string? StartupFailureReason = null);
 
         private MeasureBatchModel? CurrentBatch
         {
@@ -200,6 +201,8 @@ namespace ColorVision.Engine.FlowProcessing
             bool reportStartupFailures = false)
         {
             FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber(), executionSnapshot, flowTemplate, reportStartupFailures);
+            if (reportStartupFailures && result.StartupFailureReason is { } reason)
+                throw new InvalidOperationException(reason);
             return result.FinalizedResult;
         }
 
@@ -374,9 +377,9 @@ namespace ColorVision.Engine.FlowProcessing
                 UnsubscribeNodeEvents(node);
         }
 
-        private async Task<bool> PreProcessing(string flowName, string serialNumber)
+        private Task<string?> PreProcessing(string flowName, string serialNumber)
         {
-            return await PreProcessManager.GetInstance().ExecuteAsync(
+            return PreProcessManager.GetInstance().ExecuteWithFailureReasonAsync(
                 flowName,
                 serialNumber,
                 new ObservableCollection<CVBaseServerNode>(
@@ -1258,10 +1261,10 @@ namespace ColorVision.Engine.FlowProcessing
                     message: "流程前处理已开始。");
 
                 Stopwatch preProcessStopwatch = Stopwatch.StartNew();
-                bool preresult;
+                string? preProcessFailure;
                 try
                 {
-                    preresult = await PreProcessing(flowName, sn);
+                    preProcessFailure = await PreProcessing(flowName, sn);
                 }
                 catch (Exception ex)
                 {
@@ -1283,13 +1286,11 @@ namespace ColorVision.Engine.FlowProcessing
                 journalScope?.TryAppendEvent(
                     "pre-process-completed",
                     "PreProcessCompleted",
-                    code: preresult ? "Succeeded" : "Failed",
-                    message: preresult
-                        ? $"流程前处理已完成，耗时 {preProcessElapsedMs}ms。"
-                        : $"流程前处理失败，耗时 {preProcessElapsedMs}ms。",
+                    code: preProcessFailure == null ? "Succeeded" : "Failed",
+                    message: preProcessFailure ?? $"流程前处理已完成，耗时 {preProcessElapsedMs}ms。",
                     dataJson: System.Text.Json.JsonSerializer.Serialize(
                         new { elapsedMs = preProcessElapsedMs }));
-                if (preresult)
+                if (preProcessFailure == null)
                     log.InfoFormat("FlowPreProcessTiming FlowName={0} SerialNumber={1} Status=Completed ElapsedMs={2}", _flowName, sn, preProcessElapsedMs);
                 else
                     log.Warn($"流程前处理失败，耗时 {preProcessElapsedMs}ms。");
@@ -1301,12 +1302,11 @@ namespace ColorVision.Engine.FlowProcessing
                         CreateCanceledFlowData(startNodeName, sn, unstartedBatchResult),
                         null);
                 }
-                if (!preresult)
+                if (preProcessFailure != null)
                 {
-                    unstartedBatchResult = ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled;
-                    View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled);
-                    log.Warn("预处理失败，流程取消执行");
-                    return default;
+                    unstartedBatchResult = preProcessFailure;
+                    View.ShowExecutionSummary(preProcessFailure);
+                    return new FlowRunCoreResult(null, null, StartupFailureReason: preProcessFailure);
                 }
 
                 journalScope?.TryAppendEvent(

@@ -550,27 +550,43 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         public List<IPreProcessor> GetEnabledProcesses(string flowName)
         {
             // Retain the flowName parameter for existing callers; preprocessing is shared by all flows.
-            return GetEnabledActions().Select(a => a.Process).ToList();
+            string? rejection = CheckExecutionConfiguration(out List<PreProcessAction> actions);
+            if (rejection != null)
+                throw new InvalidOperationException(rejection);
+            return actions.Select(action => action.Process).ToList();
         }
 
-        private List<PreProcessAction> GetEnabledActions()
+        private string? CheckExecutionConfiguration(out List<PreProcessAction> actions)
         {
             if (!IsConfigurationAvailable)
-                throw new InvalidOperationException(EngineLocalization.Get("Flow_PreProcess_ConfigUnavailable"));
-            List<PreProcessAction> enabled = Processes.Where(action => action.IsEnabled).ToList();
-            if (enabled.Find(action => action.HasInvalidConfiguration) is { } invalid)
-                throw new InvalidOperationException(string.Format(EngineLocalization.Get("Flow_PreProcess_InvalidEnabledAction"), invalid.DisplayName));
-            return enabled;
+            {
+                actions = [];
+                return EngineLocalization.Get("Flow_PreProcess_ConfigUnavailable");
+            }
+            actions = Processes.Where(action => action.IsEnabled).ToList();
+            if (actions.Find(action => action.HasInvalidConfiguration) is { } invalid)
+                return string.Format(EngineLocalization.Get("Flow_PreProcess_InvalidEnabledAction"), invalid.DisplayName);
+            return null;
         }
 
         public async Task<bool> ExecuteAsync(string flowName, string serialNumber, ObservableCollection<CVBaseServerNode>? serverNodes = null)
+            => await ExecuteWithFailureReasonAsync(flowName, serialNumber, serverNodes) == null;
+
+        // A null reason means all enabled actions completed successfully.
+        internal async Task<string?> ExecuteWithFailureReasonAsync(
+            string flowName, string serialNumber, ObservableCollection<CVBaseServerNode>? serverNodes)
         {
             try
             {
-                var matchingActions = GetEnabledActions();
+                string? rejection = CheckExecutionConfiguration(out List<PreProcessAction> matchingActions);
+                if (rejection != null)
+                {
+                    log.Error(rejection);
+                    return rejection;
+                }
                 if (matchingActions.Count == 0)
                 {
-                    return true;
+                    return null;
                 }
 
                 log.Debug($"匹配到 {matchingActions.Count} 个已启用的预处理动作 {flowName}");
@@ -587,37 +603,36 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                     var actionTiming = System.Diagnostics.Stopwatch.StartNew();
                     try
                     {
-                        bool success = await action.Process.PreProcess(ctx);
-                        if (!success)
+                        if (await action.Process.PreProcess(ctx))
                         {
-                            log.Warn($"预处理动作 {action.DisplayName} 执行返回失败，Flow={flowName}，SN={serialNumber}，耗时 {actionTiming.Elapsed.TotalMilliseconds:F3}ms");
-                            return false;
-                        }
-                        if (actionTiming.ElapsedMilliseconds >= 100 || log.IsDebugEnabled)
-                        {
-                            string timingJson = JsonConvert.SerializeObject(new
+                            if (actionTiming.ElapsedMilliseconds >= 100 || log.IsDebugEnabled)
                             {
-                                Event = "PreProcessTiming", FlowName = flowName, SerialNumber = serialNumber,
-                                Action = action.DisplayName, ProcessType = action.Process.GetType().FullName,
-                                ElapsedMs = Math.Round(actionTiming.Elapsed.TotalMilliseconds, 3), Status = "Completed",
-                            });
-                            if (actionTiming.ElapsedMilliseconds >= 100) log.Info(timingJson);
-                            else log.Debug(timingJson);
+                                string timingJson = JsonConvert.SerializeObject(new
+                                {
+                                    Event = "PreProcessTiming", FlowName = flowName, SerialNumber = serialNumber,
+                                    Action = action.DisplayName, ProcessType = action.Process.GetType().FullName,
+                                    ElapsedMs = Math.Round(actionTiming.Elapsed.TotalMilliseconds, 3), Status = "Completed",
+                                });
+                                if (actionTiming.ElapsedMilliseconds >= 100) log.Info(timingJson);
+                                else log.Debug(timingJson);
+                            }
+                            continue;
                         }
+                        log.Warn($"预处理动作 {action.DisplayName} 执行返回失败，Flow={flowName}，SN={serialNumber}，耗时 {actionTiming.Elapsed.TotalMilliseconds:F3}ms");
                     }
                     catch (Exception ex)
                     {
                         log.Error($"预处理动作 {action.DisplayName} 执行异常，Flow={flowName}，SN={serialNumber}，耗时 {actionTiming.Elapsed.TotalMilliseconds:F3}ms", ex);
-                        return false;
                     }
+                    return $"{Properties.Resources.Flow_PreprocessFailedCancelled} ({action.DisplayName})";
                 }
 
-                return true;
+                return null;
             }
             catch (Exception ex)
             {
                 log.Error("匹配/执行预处理出错", ex);
-                return false;
+                return Properties.Resources.Flow_PreprocessFailedCancelled;
             }
         }
 

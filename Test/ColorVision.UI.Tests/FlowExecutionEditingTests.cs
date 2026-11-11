@@ -286,6 +286,8 @@ public sealed class FlowExecutionEditingTests
                 Assert.Equal(FlowFinalOutcome.Failed, journal.CompletedRun?.FinalOutcome);
                 var ended = Assert.Single(journal.Events, item => item.EventType == "RunEndedBeforeFinalization");
                 Assert.Equal(nameof(FlowStatus.Failed), ended.Code);
+                Assert.Contains(PreProcessManager.GetProcessDisplayName(fixture.PreProcess), ended.Message);
+                Assert.Equal(ended.Message, fixture.View.logTextBox.Text);
             }
         });
     }
@@ -929,6 +931,22 @@ public sealed class FlowExecutionEditingTests
                 Assert.DoesNotContain(templateB.Key, record.Message);
                 Assert.Contains(Engine.Properties.Resources.BatchNumber, record.Message);
                 Assert.Contains("归档失败", record.Message);
+
+                var preProcessManager = PreProcessManager.GetInstance();
+                var invalidAction = new PreProcessAction(fixture.PreProcess)
+                {
+                    ActionName = "Fixture unreadable configuration",
+                    IsEnabled = true,
+                    HasInvalidConfiguration = true,
+                };
+                preProcessManager.Processes.Add(invalidAction);
+                await scheduler.TriggerJob(new JobKey(savedTask.JobName, savedTask.GroupName));
+                var rejected = await history.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
+                Assert.False(rejected.Success);
+                string rejection = string.Format(EngineLocalization.Get("Flow_PreProcess_InvalidEnabledAction"), invalidAction.ActionName);
+                Assert.Contains(rejection, rejected.Message);
+                Assert.Equal(rejection, fixture.Manager.View.logTextBox.Text);
+                preProcessManager.Processes.Remove(invalidAction);
 
                 TemplateFlow.Params.Remove(templateA);
                 fixture.CreateMainGraph(templateB);
