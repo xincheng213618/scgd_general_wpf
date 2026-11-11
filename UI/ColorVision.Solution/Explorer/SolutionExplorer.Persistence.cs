@@ -160,10 +160,16 @@ namespace ColorVision.Solution.Explorer
         {
             if (Config == null)
                 return;
+            CommitConfig(Config);
+        }
+
+        private void CommitConfig(SolutionConfig config)
+        {
             lock (_configSaveSync)
             {
-                string content = SolutionConfigStore.Save(ConfigFileInfo.FullName, Config);
+                string content = SolutionConfigStore.Save(ConfigFileInfo.FullName, config);
                 _savedConfig = new(content, content);
+                Config = config;
             }
         }
 

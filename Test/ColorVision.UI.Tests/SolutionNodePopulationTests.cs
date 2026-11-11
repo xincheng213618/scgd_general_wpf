@@ -329,6 +329,40 @@ public sealed class SolutionNodePopulationTests
     }
 
     [Fact]
+    public void FailedSolutionItemRegistrationKeepsTheWorkspaceUnchangedAndCanBeRetried()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using PopulationFixture fixture = new();
+            string source = fixture.WriteFile("Notes.txt");
+            SolutionConfigStore.Save(fixture.SolutionPath, new SolutionConfig());
+            using var root = new SolutionExplorer(new SolutionEnvironments { SolutionPath = fixture.SolutionPath });
+            SolutionConfig original = root.Config;
+            string originalConfig = SolutionConfigStore.Serialize(original);
+            byte[] originalFile = File.ReadAllBytes(fixture.SolutionPath);
+            bool registered = false;
+            string error = string.Empty;
+            Exception? escaped;
+            using (File.Open(fixture.SolutionPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                escaped = Record.Exception(() => registered = root.RegisterSolutionItems([source], null, out error));
+
+            Assert.Equal(originalConfig, SolutionConfigStore.Serialize(root.Config));
+            Assert.Same(original, root.Config);
+            Assert.Null(escaped);
+            Assert.False(registered);
+            Assert.Contains("保存解决方案", error);
+            Assert.Equal(originalFile, File.ReadAllBytes(fixture.SolutionPath));
+            Assert.False(root.OperationHistory.CanUndo);
+
+            Assert.True(root.RegisterSolutionItems([source], null, out error), error);
+            Assert.Single(root.Config.SolutionItems);
+            Assert.Single(SolutionConfigStore.Load(fixture.SolutionPath).Config.SolutionItems);
+            Assert.True(root.OperationHistory.CanUndo);
+            Assert.True(File.Exists(source));
+        });
+    }
+
+    [Fact]
     public async Task StartupCommandRequeryUsesDiscoverySnapshotAndReloadsChangedProject()
     {
         using PopulationFixture fixture = new();
