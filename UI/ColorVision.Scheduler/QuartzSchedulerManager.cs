@@ -628,52 +628,49 @@ namespace ColorVision.Scheduler
             {
                 _logger.Info($"Resuming job: {jobName}({groupName})");
                 JobKey jobKey = new JobKey(jobName, groupName);
-                if (await Scheduler.Exists(jobKey))
+                SchedulerInfo info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName)
+                    ?? throw new InvalidOperationException(Properties.Resources.Sched_TaskNotFound);
+                if (info.ScheduleCompleted)
+                    throw new InvalidOperationException(Properties.Resources.Sched_ScheduleFinished);
+                if (info.Status != SchedulerStatus.Paused)
+                    return;
+
+                SchedulerTriggerBuildResult triggerResult = SchedulerScheduleState.BuildRemaining(info);
+                if (!triggerResult.Success)
+                    throw new InvalidOperationException(triggerResult.ErrorMessage);
+                SchedulerStatus previousStatus = info.Status;
+                await using SchedulerStandbyLease standbyScope =
+                    await SchedulerStandbyLease.AcquireAsync(Scheduler);
+                IJobDetail? originalJob = await Scheduler.GetJobDetail(jobKey);
+                IReadOnlyCollection<ITrigger> originalTriggers = originalJob == null
+                    ? Array.Empty<ITrigger>()
+                    : await Scheduler.GetTriggersOfJob(jobKey);
+                bool previousCheckpoint = info.HasScheduleCheckpoint;
+                DateTimeOffset? previousNext = info.NextScheduledFireTimeUtc;
+                string previousNextDisplay = info.NextFireTime;
+                try
                 {
-                    SchedulerInfo? info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
-                    if (info?.ScheduleCompleted == true)
-                        throw new InvalidOperationException(Properties.Resources.Sched_ScheduleFinished);
-                    if (info == null || info.Status != SchedulerStatus.Paused)
-                        return;
-                    SchedulerTriggerBuildResult triggerResult = SchedulerScheduleState.BuildRemaining(info);
-                    if (!triggerResult.Success)
-                        throw new InvalidOperationException(triggerResult.ErrorMessage);
-                    SchedulerStatus previousStatus = info.Status;
-                    await using SchedulerStandbyLease standbyScope =
-                        await SchedulerStandbyLease.AcquireAsync(Scheduler);
-                    IJobDetail? originalJob = await Scheduler.GetJobDetail(jobKey);
-                    IReadOnlyCollection<ITrigger> originalTriggers = await Scheduler.GetTriggersOfJob(jobKey);
-                    bool previousCheckpoint = info.HasScheduleCheckpoint;
-                    DateTimeOffset? previousNext = info.NextScheduledFireTimeUtc;
-                    string previousNextDisplay = info.NextFireTime;
-                    try
-                    {
-                        ITrigger trigger = triggerResult.Trigger!;
-                        await Scheduler.ScheduleJob(BuildJobDetail(info), [trigger], ScheduleJobOptions.Replacing);
-                        await Scheduler.ResumeJob(jobKey);
-                        info.HasScheduleCheckpoint = true;
-                        info.NextScheduledFireTimeUtc = trigger.NextFireTimeUtc;
-                        UpdateNextFireTime(info, trigger);
-                        info.Status = SchedulerStatus.Ready;
-                        if (!TryPersistTasks(out string persistenceError))
-                            throw new InvalidOperationException(persistenceError);
-                        info.ScheduleAdmissionError = null;
-                    }
-                    catch
-                    {
-                        info.Status = previousStatus;
-                        info.HasScheduleCheckpoint = previousCheckpoint;
-                        info.NextScheduledFireTimeUtc = previousNext;
-                        info.NextFireTime = previousNextDisplay;
-                        await TryRestorePreviousJob(Scheduler, jobKey, originalJob, originalTriggers, true);
-                        throw;
-                    }
-                    _logger.Info($"Job resumed: {jobName}({groupName})");
+                    ITrigger trigger = triggerResult.Trigger!;
+                    await Scheduler.ScheduleJob(BuildJobDetail(info), [trigger], ScheduleJobOptions.Replacing);
+                    await Scheduler.ResumeJob(jobKey);
+                    info.HasScheduleCheckpoint = true;
+                    info.NextScheduledFireTimeUtc = trigger.NextFireTimeUtc;
+                    UpdateNextFireTime(info, trigger);
+                    info.Status = SchedulerStatus.Ready;
+                    if (!TryPersistTasks(out string persistenceError))
+                        throw new InvalidOperationException(persistenceError);
+                    info.ScheduleAdmissionError = null;
                 }
-                else
+                catch
                 {
-                    _logger.Warn($"Job not found: {jobName}({groupName})");
+                    info.Status = previousStatus;
+                    info.HasScheduleCheckpoint = previousCheckpoint;
+                    info.NextScheduledFireTimeUtc = previousNext;
+                    info.NextFireTime = previousNextDisplay;
+                    await TryRestorePreviousJob(Scheduler, jobKey, originalJob, originalTriggers, true);
+                    throw;
                 }
+                _logger.Info($"Job resumed: {jobName}({groupName})");
             }
             catch (Exception ex)
             {

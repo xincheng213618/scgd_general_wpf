@@ -327,6 +327,56 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(info.JobName, info.GroupName)));
     }
 
+    [Fact]
+    public async Task ExecuteReportsTheValidationErrorWhenASavedTaskCouldNotBeRegistered()
+    {
+        SchedulerInfo invalid = CreateInfo();
+        invalid.Mode = JobExecutionMode.Interval;
+        invalid.Interval = TimeSpan.Zero;
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerTaskSerializer.SaveToFile(path, [invalid]);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        SchedulerInfo task = Assert.Single(_manager.TaskInfos);
+        var restoreError = await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.RestoreJob(task));
+        await _scheduler.Start();
+
+        var executeError = await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteJob(task.JobName, task.GroupName));
+
+        Assert.Equal(restoreError.Message, executeError.Message);
+        var batchError = await Assert.ThrowsAsync<InvalidOperationException>(_manager.ResumeAll);
+        Assert.Contains(task.JobName, batchError.Message);
+        Assert.Contains(restoreError.Message, batchError.Message);
+        Assert.Equal(SchedulerStatus.Paused, task.Status);
+        Assert.False(await _scheduler.Exists(new JobKey(task.JobName, task.GroupName)));
+    }
+
+    [Fact]
+    public async Task ExecuteRestoresAnUnregisteredSavedTaskAndRollsBackOnSaveFailure()
+    {
+        SchedulerInfo saved = CreateInfo();
+        saved.IsDelayed = true;
+        saved.Delay = TimeSpan.FromHours(1);
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerTaskSerializer.SaveToFile(path, [saved]);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        SchedulerInfo task = Assert.Single(_manager.TaskInfos);
+        var key = new JobKey(task.JobName, task.GroupName);
+        await _scheduler.Start();
+
+        using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteJob(task.JobName, task.GroupName));
+            Assert.Equal(SchedulerStatus.Paused, task.Status);
+            Assert.False(await _scheduler.Exists(key));
+        }
+
+        await _manager.ExecuteJob(task.JobName, task.GroupName);
+
+        Assert.Single(await _scheduler.GetTriggersOfJob(key));
+        Assert.Equal(SchedulerStatus.Ready, task.Status);
+        Assert.Equal(SchedulerStatus.Ready, Assert.Single(SchedulerTaskSerializer.LoadFromFile(path)).Status);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
