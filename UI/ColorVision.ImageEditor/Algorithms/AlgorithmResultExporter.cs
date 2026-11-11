@@ -1,4 +1,5 @@
 using ColorVision.Algorithms;
+using ColorVision.ImageEditor.Output;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -209,14 +210,14 @@ namespace ColorVision.ImageEditor.Algorithms
             ValidateTargets(outputs.Select(output => output.Path).ToArray(), overwrite);
             long totalRows = Math.Max(1, outputs.Sum(output => output.EstimatedRows));
             long completedRows = 0;
-            List<StagedFile> staged = [];
+            List<StagedFilePublication.Entry> staged = [];
             try
             {
                 foreach (CsvOutput output in outputs)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     string temporary = TemporaryFor(output.Path);
-                    staged.Add(new StagedFile(temporary, output.Path));
+                    staged.Add(new StagedFilePublication.Entry(temporary, output.Path));
                     await WriteCsvOutputAsync(
                         result,
                         output,
@@ -232,13 +233,13 @@ namespace ColorVision.ImageEditor.Algorithms
                         }).ConfigureAwait(false);
                 }
                 cancellationToken.ThrowIfCancellationRequested();
-                CommitStaged(staged, overwrite);
+                StagedFilePublication.Commit(staged, overwrite, cancellationToken);
                 progress?.Report(new AlgorithmProgress(1, "export-csv", "complete"));
                 return outputs.Select(output => output.Path).ToArray();
             }
             finally
             {
-                foreach (StagedFile file in staged) TryDelete(file.Temporary);
+                foreach (StagedFilePublication.Entry file in staged) TryDelete(file.Temporary);
             }
         }
 
@@ -432,44 +433,6 @@ namespace ColorVision.ImageEditor.Algorithms
             _ => value.GetRawText(),
         };
 
-        private static void CommitStaged(IReadOnlyList<StagedFile> staged, bool overwrite)
-        {
-            List<CommittedFile> committed = [];
-            try
-            {
-                foreach (StagedFile file in staged)
-                {
-                    string? backup = null;
-                    if (overwrite && File.Exists(file.Target))
-                    {
-                        backup = $"{file.Target}.{Guid.NewGuid():N}.bak";
-                        File.Move(file.Target, backup);
-                    }
-                    try
-                    {
-                        File.Move(file.Temporary, file.Target, overwrite: false);
-                        committed.Add(new CommittedFile(file.Target, backup));
-                    }
-                    catch
-                    {
-                        if (backup != null && File.Exists(backup)) File.Move(backup, file.Target);
-                        throw;
-                    }
-                }
-                foreach (CommittedFile file in committed)
-                    if (file.Backup != null) TryDelete(file.Backup);
-            }
-            catch
-            {
-                foreach (CommittedFile file in committed.AsEnumerable().Reverse())
-                {
-                    TryDelete(file.Target);
-                    if (file.Backup != null && File.Exists(file.Backup)) File.Move(file.Backup, file.Target);
-                }
-                throw;
-            }
-        }
-
         private static string Adjacent(string directory, string stem, string artifactName)
             => Path.Combine(directory, $"{stem}_{Sanitize(artifactName)}.csv");
 
@@ -503,9 +466,6 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private sealed record CsvOutput(string Path, CsvOutputKind Kind, AlgorithmArtifact? Artifact, string DisplayName, long EstimatedRows);
 
-        private sealed record StagedFile(string Temporary, string Target);
-
-        private sealed record CommittedFile(string Target, string? Backup);
 
         private sealed class CsvFieldBuffer(StreamWriter writer)
         {
