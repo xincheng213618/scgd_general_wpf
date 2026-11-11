@@ -1711,13 +1711,9 @@ namespace ProjectARVRPro
                 {
                     Dictionary<int, ObjectiveTestResultRecord> recordsById = _statisticsStore.GetRecords(ids)
                         .ToDictionary(record => record.Id);
-                    List<ObjectiveTestResultRecord> records = selectedRows
-                        .Where(row => recordsById.ContainsKey(row.Id))
-                        .Select(row => recordsById[row.Id])
-                        .ToList();
-                    Dictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId = selectedRows
-                        .Where(row => recordsById.ContainsKey(row.Id))
-                        .ToDictionary(row => row.Id, row => _statisticsStore.QueryFlowDetailsForExport(row));
+                    ResultStatisticsRecordRow[] rows = selectedRows.Where(row => recordsById.ContainsKey(row.Id)).ToArray();
+                    List<ObjectiveTestResultRecord> records = rows.Select(row => recordsById[row.Id]).ToList();
+                    var flowResultsByRecordId = _statisticsStore.QueryFlowDetailsForBatchExport(rows);
                     ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, flowResultsByRecordId, fileName);
                     return records;
                 });

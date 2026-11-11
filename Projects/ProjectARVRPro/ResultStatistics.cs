@@ -934,6 +934,11 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
+            return QueryFlowDetails(db, record);
+        }
+
+        private List<ProjectARVRReuslt> QueryFlowDetails(SqlSugarClient db, ResultStatisticsRecordRow record)
+        {
             string sn = record.SN;
             if (record.ResultId > record.PreviousResultId)
             {
@@ -1090,6 +1095,69 @@ namespace ProjectARVRPro
             using SqlSugarClient db = CreateClient();
             ResultJsonPayloadStorage.LoadViewResultJsons(db, results, _readOnlyDatabase);
             return results;
+        }
+
+        internal IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> QueryFlowDetailsForBatchExport(
+            IReadOnlyList<ResultStatisticsRecordRow> records)
+        {
+            var idsByRecord = records.ToDictionary(record => record.Id, _ => new List<int>());
+            if (idsByRecord.Count == 0)
+                return new Dictionary<int, IReadOnlyList<ProjectARVRReuslt>>();
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            var resultsById = new Dictionary<int, ProjectARVRReuslt>();
+            var ranged = new List<ResultStatisticsRecordRow>();
+            foreach (ResultStatisticsRecordRow record in records)
+            {
+                if (string.IsNullOrWhiteSpace(record.SN))
+                    continue;
+                if (record.ResultId > record.PreviousResultId)
+                {
+                    ranged.Add(record);
+                    continue;
+                }
+                // Legacy rows without a usable ID range retain the same time-based ownership rules.
+                foreach (ProjectARVRReuslt result in QueryFlowDetails(db, record))
+                {
+                    resultsById.TryAdd(result.Id, result);
+                    idsByRecord[record.Id].Add(result.Id);
+                }
+            }
+
+            // Four parameters per request. Stay below SQLite's legacy 999-variable limit.
+            foreach (ResultStatisticsRecordRow[] chunk in ranged.Chunk(200))
+            {
+                var parameters = new List<SugarParameter>(chunk.Length * 4);
+                string[] ranges = new string[chunk.Length];
+                for (int index = 0; index < chunk.Length; index++)
+                {
+                    ResultStatisticsRecordRow row = chunk[index];
+                    ranges[index] = $"(@record{index}, @sn{index}, @first{index}, @last{index})";
+                    parameters.Add(new($"@record{index}", row.Id));
+                    parameters.Add(new($"@sn{index}", row.SN));
+                    parameters.Add(new($"@first{index}", Math.Max(0, row.PreviousResultId)));
+                    parameters.Add(new($"@last{index}", row.ResultId));
+                }
+                using var reader = db.Ado.GetDataReader($$"""
+                    WITH Requested(RecordId, SN, FirstId, LastId) AS (VALUES {{string.Join(", ", ranges)}})
+                    SELECT R.RecordId, F.Id
+                    FROM Requested AS R CROSS JOIN "ARVRReuslt" AS F
+                    WHERE F.SN = R.SN AND F.Id > R.FirstId AND F.Id <= R.LastId
+                    ORDER BY R.RecordId, F.Id;
+                    """, parameters.ToArray());
+                while (reader.Read())
+                    idsByRecord[reader.GetInt32(0)].Add(reader.GetInt32(1));
+            }
+
+            foreach (int[] ids in idsByRecord.Values.SelectMany(ids => ids).Distinct().Where(id => !resultsById.ContainsKey(id)).Chunk(500))
+            {
+                foreach (ProjectARVRReuslt result in Query<ProjectARVRReuslt>(db).Where(item => ids.Contains(item.Id)).ToList())
+                    resultsById.Add(result.Id, result);
+            }
+            ResultJsonPayloadStorage.LoadViewResultJsons(db, resultsById.Values, _readOnlyDatabase);
+            return idsByRecord.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ProjectARVRReuslt>)pair.Value
+                .Where(resultsById.ContainsKey).Select(id => resultsById[id]).ToArray());
         }
 
         public IReadOnlyList<FlowExecutionRecordRow> QueryFlowExecutions(FlowExecutionQuery query)

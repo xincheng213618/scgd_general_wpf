@@ -286,14 +286,33 @@ public sealed class OfflineDataSourceTests
         Assert.Null(flows[2].ViewResultJson);
         Assert.Equal("末条🧪", flows[^1].ViewResultJson);
 
-        var legacyFlow = Assert.Single(store.QueryFlowDetailsForExport(new ResultStatisticsRecordRow
+        var legacyRow = new ResultStatisticsRecordRow
         {
+            Id = 502,
             SN = "legacyZero",
             StartTime = Day.AddHours(11),
             EndTime = Day.AddHours(13),
-        }));
+        };
+        var legacyFlow = Assert.Single(store.QueryFlowDetailsForExport(legacyRow));
         Assert.Equal(0, legacyFlow.Id);
         Assert.Equal("旧库零 ID 载荷", legacyFlow.ViewResultJson);
+
+        var requests = Enumerable.Range(1, 501)
+            .Select(id => new ResultStatisticsRecordRow { Id = id, SN = "sameSN", PreviousResultId = id - 1, ResultId = id })
+            .Concat([legacyRow, new() { Id = 503, SN = "anotherSN", ResultId = 1 }, new() { Id = 504, SN = "sameSN", ResultId = 2 }])
+            .ToArray();
+        var batch = store.QueryFlowDetailsForBatchExport(requests);
+        Assert.Equal(requests.Length, batch.Count);
+        foreach (var flow in flows)
+        {
+            var item = Assert.Single(batch[flow.Id]);
+            Assert.Equal(flow.Id, item.Id);
+            Assert.Equal(flow.ViewResultJson, item.ViewResultJson);
+        }
+        Assert.Equal(legacyFlow.ViewResultJson, Assert.Single(batch[502]).ViewResultJson);
+        Assert.Empty(batch[503]);
+        Assert.Equal(new[] { 1, 2 }, batch[504].Select(item => item.Id));
+        Assert.Equal(new[] { "首条", "legacy" }, batch[504].Select(item => item.ViewResultJson));
         Assert.Equal(hash, Hash(path));
     }
 
