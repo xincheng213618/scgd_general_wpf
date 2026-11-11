@@ -721,6 +721,38 @@ public sealed class ExportCieTests
         }
     }
 
+    [Fact]
+    public void CvcieExportDoesNotAllocateAManagedMeasurementPlane()
+    {
+        string root = Directory.CreateTempSubdirectory("colorvision-export-allocation-").FullName;
+        string sourcePath = Path.Combine(root, "sample.cvcie");
+        string outputPath = Path.Combine(root, "measurement.tiff");
+        try
+        {
+            const int rows = 512;
+            const int cols = 512;
+            const int planeBytes = rows * cols * sizeof(float);
+            WriteCieFixture(sourcePath, rows, cols, channels: 1);
+            var export = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = root, Name = "measurement", IsExportSrc = false,
+            };
+
+            VExportCIE.SaveToTifOrThrow(export);
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            VExportCIE.SaveToTifOrThrow(export);
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+            Assert.True(allocated < planeBytes, $"Export allocated {allocated:N0} managed bytes for a {planeBytes:N0}-byte plane.");
+        }
+        finally
+        {
+            File.Delete(outputPath);
+            File.Delete(sourcePath);
+            Directory.Delete(root);
+        }
+    }
+
     // Preserve both selected-plane bounds and the existing complete-payload metadata validation.
     [Theory]
     [InlineData(32, 1)]

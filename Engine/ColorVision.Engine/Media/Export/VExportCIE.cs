@@ -438,14 +438,15 @@ namespace ColorVision.Engine.Media
                             throw new InvalidDataException($"CIE data length is insufficient for the complete image: {fileName}");
 
                         properties = ReadExportProperties(input);
-                        byte[] plane = GC.AllocateUninitializedArray<byte>(planeBytes);
+                        using Mat channelImage = new(cvcie.Rows, cvcie.Cols, MatType.MakeType(cvcie.Depth, 1));
+                        Span<byte> plane;
+                        unsafe { plane = new Span<byte>((void*)channelImage.Data, planeBytes); }
                         for (int channel = 0; channel < cvcie.Channels; channel++)
                         {
                             string channelName = cvcie.Channels == 1 ? "Y" : channel == 0 ? "X" : channel == 1 ? "Y" : "Z";
                             bool selected = channelName == "X" ? exportX : channelName == "Y" ? exportY : exportZ;
                             if (!selected) continue;
                             pixels.ReadExactly(plane, (long)channel * planeBytes, CancellationToken.None);
-                            using Mat channelImage = CreateSingleChannelMat(cvcie, plane);
                             SaveImage(channelImage, "_" + channelName, cvcie, channelName);
                         }
                     }
