@@ -845,6 +845,37 @@ public sealed class ResultStatisticsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void CombinedStatisticsDoNotPairAcrossAnUnfinishedRecord(bool readOnly)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        var store = new ResultStatisticsDataStore(database.Path, readOnly);
+        DateTime day = new(2026, 9, 19);
+        DateTime noon = day.AddHours(12);
+        database.Insert(
+            CreateRecord("CROSS_L_235935", true, day.AddSeconds(-25), 24_000, "left", true),
+            CreateRecord("CROSS-INTERRUPTED", false, day.AddSeconds(-1), 500, "unfinished", false),
+            CreateRecord("CROSS_R_000002", true, day.AddSeconds(2), 20_000, "right", true),
+            CreateRecord("DAY_L_120000", true, noon, 20_000, "left", true),
+            CreateRecord("DAY-INTERRUPTED", false, noon.AddSeconds(25), 500, "unfinished", false),
+            CreateRecord("DAY_R_120030", true, noon.AddSeconds(30), 20_000, "right", true),
+            CreateRecord("PAIR_L_120100", true, noon.AddMinutes(1), 20_000, "left"),
+            CreateRecord("PAIR_R_120130", false, noon.AddMinutes(1.5), 20_000, "right", true));
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 10 };
+
+        ResultStatisticsCombinedPage page = store.QueryCombinedRecords(query);
+        ResultStatisticsCombinedRecordRow pair = Assert.Single(page.Rows);
+        Assert.Equal("PAIR", pair.SN);
+        Assert.False(pair.Result);
+        ResultStatisticsCombinedDashboard dashboard = store.QueryCombinedDashboard(query, ResultStatisticsPeriodMode.Day, noon);
+        Assert.Equal(1, dashboard.Summary.TotalCount);
+        Assert.Equal(0, dashboard.Summary.PassCount);
+        Assert.Equal(1, dashboard.Summary.FailCount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void SameSerialNumberRerunDoesNotInheritFlowsFromUnfinishedBatch(bool readOnly)
     {
         using var database = new TemporaryResultDatabase();

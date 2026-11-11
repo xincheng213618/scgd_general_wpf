@@ -979,8 +979,12 @@ namespace ProjectARVRPro
                            "Msg",
                            "PreviousResultId",
                            ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex",
-                           COALESCE(LAG("Id") OVER (ORDER BY "Id"), 0) AS "PreviousObjectiveId"
-                    FROM RecordFlowBoundaries
+                           COALESCE((SELECT P."Id"
+                                     FROM "ObjectiveTestResultRecord" AS P
+                                     WHERE P."Id" < B."Id"
+                                     ORDER BY P."Id" DESC
+                                     LIMIT 1), 0) AS "PreviousObjectiveId"
+                    FROM RecordFlowBoundaries AS B
                     WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
                 )
                 SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
