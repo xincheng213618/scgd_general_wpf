@@ -306,6 +306,36 @@ public class LocalCameraMotorTests
     }
 
     [Fact]
+    public void AutoFocusUsesOneVidMappingWhenTheCalibrationFileIsReplaced()
+    {
+        string path = Path.GetTempFileName();
+        var config = Configuration();
+        config.MotorConfig.VID.IsUseVID = true;
+        config.MotorConfig.VID.MappingFileName = path;
+        try
+        {
+            File.WriteAllText(path, """{"a":0,"b":0,"c":1,"d":10}""");
+            using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), config, motorNative: new FakeMotor());
+            session.Open("camera", TakeImageMode.Measure_Normal, 16);
+
+            var updates = new List<(int Position, double? Vid)>();
+            var result = session.AutoFocus(Settings(), 10, 1, progress: (position, vid, _) =>
+            {
+                if (updates.Count == 0)
+                    File.WriteAllText(path, """{"a":0,"b":0,"c":1,"d":1000}""");
+                updates.Add((position, vid));
+            });
+
+            Assert.True(updates.Count > 1);
+            Assert.All(updates, update => Assert.Equal(update.Position + 10, update.Vid));
+            Assert.Equal(result.Position + 10, result.VidPosition);
+            var nextRun = session.AutoFocus(Settings(), 10, 1);
+            Assert.Equal(nextRun.Position + 1000, nextRun.VidPosition);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task ExistingMotorCommandApiUsesTheLocalSessionWithoutMqtt()
     {
         WpfTestHost.Invoke(() => { });

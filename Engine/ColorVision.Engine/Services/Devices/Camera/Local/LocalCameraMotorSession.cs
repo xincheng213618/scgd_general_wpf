@@ -103,6 +103,7 @@ internal sealed class LocalCameraMotorNative : ILocalCameraMotorNative
 // All instance operations run under the owning LocalCameraSession.SyncRoot.
 internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
 {
+    private const string VidMappingError = "读取电机 VID 映射失败，请检查映射文件和系数。";
     private static readonly object ownersSync = new();
     private static readonly Dictionary<string, LocalCameraMotorSession> owners = new(StringComparer.OrdinalIgnoreCase);
     private IntPtr handle;
@@ -193,6 +194,8 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
             throw new ArgumentException("对焦曝光须为正有限值，增益须为非负有限值。");
         token.ThrowIfCancellationRequested();
         var watch = Stopwatch.StartNew();
+        var vidMapping = ReadVidMapping(settings);
+        focus.Remaining(watch.ElapsedMilliseconds, token, "准备自动对焦");
         native.PrepareFocus(cameraHandle, exposure, gain);
         focus.Remaining(watch.ElapsedMilliseconds, token, "准备自动对焦");
         int? initialPosition = focus.FineOnly || focus.Method == FindFuncModel.FindDichotomy ? ReadPosition() : null;
@@ -203,7 +206,7 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
                 string operation = $"自动对焦移动电机至 {position}";
                 CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds, operation, token);
             }
-            double? vid = progress == null ? null : ConvertVid(position);
+            double? vid = progress == null ? null : ConvertVid(vidMapping, position);
             progress?.Invoke(position, vid, null);
             focus.Remaining(watch.ElapsedMilliseconds, token, "自动对焦取图评价");
             CheckFocusOperation(native.EvaluateFocus(cameraHandle, focus.Evaluation, out double value, preview), focus, watch.ElapsedMilliseconds, "自动对焦取图评价", token);
@@ -213,9 +216,9 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         {
             CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds,
                 $"移动至最佳对焦位置 {position}", token);
-            progress?.Invoke(position, ConvertVid(position), null);
+            progress?.Invoke(position, ConvertVid(vidMapping, position), null);
         }, token, () => watch.ElapsedMilliseconds, initialPosition);
-        double? finalVid = ConvertVid(result.Position);
+        double? finalVid = ConvertVid(vidMapping, result.Position);
         progress?.Invoke(result.Position, finalVid, result.Score);
         return result with { VidPosition = finalVid };
     }
@@ -226,15 +229,22 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         Check(code, operation);
     }
 
-    internal double? ConvertVid(int position)
+    internal double? ConvertVid(int position) => ConvertVid(ReadVidMapping(RequireOpen()), position);
+
+    private static JObject? ReadVidMapping(LocalMotorSettings settings)
     {
-        var settings = RequireOpen();
         if (!settings.UseVid) return null;
+        try { return JObject.Parse(File.ReadAllText(settings.VidFile)); }
+        catch (Exception error) { throw new InvalidOperationException(VidMappingError, error); }
+    }
+
+    private static double? ConvertVid(JObject? mapping, int position)
+    {
+        if (mapping == null) return null;
         try
         {
-            var root = JObject.Parse(File.ReadAllText(settings.VidFile));
-            JToken coefficients = root;
-            if (root["VidNewVision"] is JObject split)
+            JToken coefficients = mapping;
+            if (mapping["VidNewVision"] is JObject split)
             {
                 int boundary = split.Value<int?>("positionValue") ?? throw new FormatException("缺少 positionValue。");
                 coefficients = split[position > boundary ? "longSighted" : "shortSighted"] ?? throw new FormatException("缺少 VID 分段系数。");
@@ -244,7 +254,7 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
             if (!double.IsFinite(value)) throw new FormatException("VID 映射结果不是有限值。");
             return value;
         }
-        catch (Exception error) { throw new InvalidOperationException("读取电机 VID 映射失败，请检查映射文件和系数。", error); }
+        catch (Exception error) { throw new InvalidOperationException(VidMappingError, error); }
     }
 
     internal void Close()
