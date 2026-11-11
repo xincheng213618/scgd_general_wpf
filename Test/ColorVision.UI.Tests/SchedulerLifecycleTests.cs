@@ -100,6 +100,35 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ResultInspectionFailureStillCompletesAndRecordsTheJob(bool statusThrows)
+    {
+        var completion = new CompletionObservation(_manager.Listener);
+        _scheduler.ListenerManager.RemoveJobListener(_manager.Listener.Name);
+        _scheduler.ListenerManager.AddJobListener(completion);
+        _scheduler.Context[nameof(ThrowingResultJob)] = statusThrows;
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(ThrowingResultJob);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+
+        Assert.Null(await completion.Error.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.True(_executions.Reader.TryRead(out JobExecutionRecord? record));
+        Assert.NotNull(record);
+        Assert.Equal(!statusThrows, record.Success);
+        Assert.Contains(statusThrows ? "status unavailable" : "summary unavailable", record.Message);
+        Assert.Equal(SchedulerStatus.Completed, info.Status);
+        Assert.Equal(1, info.RunCount);
+        Assert.Equal(statusThrows ? 1 : 0, info.FailureCount);
+        Assert.Equal(statusThrows ? 0 : 1, info.SuccessCount);
+
+        SchedulerInfo persisted = Assert.Single(SchedulerTaskSerializer.LoadFromFile(Path.Combine(_directory, "tasks.json")));
+        Assert.Equal(info.RunCount, persisted.RunCount);
+        Assert.Equal(record.Message, persisted.LastExecutionMessage);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task Restore_RegistersNoAutomaticTriggerAndKeepsManualRunAvailable(bool completed)
@@ -598,6 +627,47 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         {
             Vetoed.TrySetResult(false);
             return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class CompletionObservation(TaskExecutionListener listener) : IJobListener
+    {
+        public string Name => listener.Name;
+        internal TaskCompletionSource<Exception?> Error { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ValueTask JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
+            => listener.JobToBeExecuted(context, cancellationToken);
+
+        public ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
+            => listener.JobExecutionVetoed(context, cancellationToken);
+
+        public async ValueTask JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await listener.JobWasExecuted(context, jobException, cancellationToken);
+                Error.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                Error.TrySetResult(ex);
+                throw;
+            }
+        }
+    }
+
+    public sealed class ThrowingResultJob : IJob
+    {
+        public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            context.Result = new ThrowingResult((bool)context.Scheduler.Context[nameof(ThrowingResultJob)]!);
+            return ValueTask.CompletedTask;
+        }
+
+        private sealed class ThrowingResult(bool statusThrows)
+        {
+            public bool Success => statusThrows ? throw new InvalidOperationException("status unavailable") : true;
+            public override string ToString() => throw new InvalidOperationException("summary unavailable");
         }
     }
 

@@ -120,7 +120,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载�
 
 ## 执行结果、历史查询与清理
 
-`JobWasExecuted` 以 Quartz 返回的 `JobExecutionException` 和 `context.Result` 判定结果：有异常即失败；没有异常时，仅反射检查结果对象的公开 `bool Success`，值为 false 才判失败。null、普通字符串或没有该属性的对象默认按成功统计。因此“工具方法返回/没有异常”要由 Job 自己正确映射业务失败，Scheduler 不会替它核实设备结果。
+`JobWasExecuted` 将 Quartz 返回的 `JobExecutionException`、结果对象的公开 `bool Success=false` 或该属性读取异常记为失败。null、普通字符串或没有该属性的对象默认按成功统计。结果文本格式化异常会记录原因并保留已判定的状态。Job 负责映射业务结果。
 
 监听器通过管理器的变更门更新并保存显示/统计，再把历史写入排到串行 `_historyWriteTail` 并等待该次写入尝试结束，最后通知订阅者；订阅者异常被隔离。数据库初始化、插入和统计恢复的异常会记录日志但可能被捕获，历史没有记录不能证明任务没执行。SQLite 只在返回后插入终态记录，进程崩溃时的在途业务没有历史开始记录可供补账；JSON 的计划消耗记录仅用于避免重排本轮次数。
 

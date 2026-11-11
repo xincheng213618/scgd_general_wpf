@@ -114,13 +114,10 @@ namespace ColorVision.Scheduler
             }
 
             long executionTimeMs = Math.Max(0, (long)context.JobRunTime.TotalMilliseconds);
-            bool success = jobException == null && !IsJobResultFailure(context.Result);
+            (bool success, string executionMessage) = ReadExecutionResult(context.Result, jobException);
             string executionResult = success
                 ? Properties.Resources.Sched_ExecSuccess
                 : Properties.Resources.Sched_ExecFail;
-            string executionMessage = jobException != null
-                ? jobException.InnerException?.Message ?? jobException.Message
-                : context.Result?.ToString() ?? string.Empty;
             var executionRecord = new JobExecutionRecord
             {
                 JobName = jobKey.Name,
@@ -139,7 +136,7 @@ namespace ColorVision.Scheduler
             }
             else if (!success)
             {
-                _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {context.Result}");
+                _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {executionMessage}");
             }
             else
             {
@@ -259,24 +256,35 @@ namespace ColorVision.Scheduler
             }
         }
 
-        /// <summary>
-        /// 判断 Job 返回的结果是否表示失败。
-        /// 约定：如果 context.Result 是一个含 Success 属性的对象且 Success == false，则视为失败。
-        /// </summary>
-        private static bool IsJobResultFailure(object? result)
+        private static (bool Success, string Message) ReadExecutionResult(object? result, JobExecutionException? jobException)
         {
+            if (jobException != null)
+                return (false, jobException.InnerException?.Message ?? jobException.Message);
             if (result == null)
+                return (true, string.Empty);
+
+            bool success;
+            try
             {
-                return false;
+                // Read the optional result contract without depending on a specific job type.
+                var successProperty = result.GetType().GetProperty("Success");
+                success = successProperty?.PropertyType != typeof(bool) || (bool)successProperty.GetValue(result)!;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to read the job result's success state.", ex);
+                return (false, ex.GetBaseException().Message);
             }
 
-            // 通过反射检查是否有 bool Success 属性（避免 Scheduler 层直接引用 Engine 层类型）
-            var successProp = result.GetType().GetProperty("Success");
-            if (successProp != null && successProp.PropertyType == typeof(bool))
+            try
             {
-                return !(bool)successProp.GetValue(result)!;
+                return (success, result.ToString() ?? string.Empty);
             }
-            return false;
+            catch (Exception ex)
+            {
+                _logger.Warn("Failed to format the job result.", ex);
+                return (success, ex.GetBaseException().Message);
+            }
         }
 
         private sealed record ExecutionState(JobKey JobKey, DateTime StartTime);
