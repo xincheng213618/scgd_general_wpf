@@ -13,6 +13,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -436,6 +437,37 @@ public class ViewFlowDocumentBehaviorTests
             {
                 foreach (FlowEngineToolWindow window in GetStandaloneWindows().Except(previous))
                     window.Close();
+                File.Delete(path);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void StandaloneFileOpensAcrossOwnerWindowInitializationStates(bool useShownOwner, bool createHandle)
+    {
+        WithStandaloneWindow(shown =>
+        {
+            Window owner = useShownOwner ? shown : new Window();
+            if (createHandle) new WindowInteropHelper(owner).EnsureHandle();
+            string path = Path.Combine(Path.GetTempPath(), $"flow-open-owner-{Guid.NewGuid():N}.stn");
+            FlowEngineToolWindow[] previous = GetStandaloneWindows();
+            try
+            {
+                File.WriteAllBytes(path, CreateCanvas("Opened during startup"));
+                FlowEngineToolWindow.ShowFile(path, owner);
+
+                FlowEngineToolWindow opened = Assert.Single(GetStandaloneWindows().Except(previous));
+                Assert.True(opened.IsVisible);
+                Assert.Equal("Opened during startup", Assert.Single(opened.View.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
+                Assert.Same(useShownOwner || createHandle ? owner : null, opened.Owner);
+            }
+            finally
+            {
+                foreach (FlowEngineToolWindow window in GetStandaloneWindows().Except(previous)) window.Close();
+                if (!useShownOwner) owner.Close();
                 File.Delete(path);
             }
         });

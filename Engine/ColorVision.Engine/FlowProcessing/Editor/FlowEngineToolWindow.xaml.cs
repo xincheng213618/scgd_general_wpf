@@ -7,6 +7,7 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
 {
@@ -88,7 +89,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             try
             {
                 window.View.LoadStandaloneFile(filePath);
-                if (owner != null) window.Owner = owner;
+                if (owner != null && new WindowInteropHelper(owner).Handle != IntPtr.Zero) window.Owner = owner;
                 window.Show();
             }
             catch (Exception error)
