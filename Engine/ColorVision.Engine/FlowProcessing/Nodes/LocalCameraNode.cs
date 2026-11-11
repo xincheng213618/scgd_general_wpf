@@ -118,7 +118,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看校正文件与图像文件缓存，并统一释放内存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        public LocalCameraNode() : this(CaptureCamera)
+        public LocalCameraNode() : this(LocalCameraFlowServices.CaptureConnected)
         {
         }
 
@@ -128,12 +128,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             OpenLocalCameraManagerCommand = new RelayCommand(_ => OpenLocalCameraManager());
             OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
-        }
-
-        private static LocalCameraCaptureResult CaptureCamera(LocalCameraCaptureRequest request, bool autoConnect)
-        {
-            FlowNodeTiming.Run("ConnectCamera", () => request.Device.EnsureLocalMeasurementConnected(autoConnect));
-            return LocalCameraCaptureService.Capture(request);
         }
 
         protected override string GetCompactSummaryValue() => $"{ExpTime:0.###} ms";
@@ -189,7 +183,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 IsAutoExposure = parameters.IsAutoExp,
                 AutoExposureConfiguration = parameters.AutoExposureConfiguration,
                 SaveFiles = false,
-                AllowAcceleration = true
+                AllowAcceleration = true,
+                Stop = stopToken
             }, parameters.AutoConnect);
 
             LocalFlowFrame frame = capture.Frame;

@@ -23,14 +23,16 @@ internal interface ILocalCameraFlowServices
 
 internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
 {
-    public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
+    public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request) => CaptureConnected(request, autoConnect: true);
+
+    internal static LocalCameraCaptureResult CaptureConnected(LocalCameraCaptureRequest request, bool autoConnect)
     {
         FlowNodeTiming.Run("ConnectCamera", () =>
         {
             lock (request.Device.LocalCameraSession.SyncRoot)
             {
                 request.Stop.ThrowIfCancellationRequested();
-                request.Device.EnsureLocalMeasurementConnected(autoConnect: true);
+                request.Device.EnsureLocalMeasurementConnected(autoConnect);
             }
         });
         return LocalCameraCaptureService.Capture(request);

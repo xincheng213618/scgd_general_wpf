@@ -130,12 +130,14 @@ public sealed class LocalCameraRepeatParameterTests
             scope.Device.Config.FileServerCfg.DataBasePath = output;
             using var enteredCapture = new ManualResetEventSlim();
             using var releaseCapture = new ManualResetEventSlim();
+            CancellationToken captureStop = default;
             using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
             {
                 Width = 2, Height = 1, SourceBpp = 8, Channels = 1, Exposure = [100f]
             }, 2, 0);
             var node = new LocalCameraNode((request, autoConnect) =>
             {
+                captureStop = request.Stop;
                 enteredCapture.Set();
                 releaseCapture.Wait();
                 return new LocalCameraCaptureResult { Frame = frame };
@@ -167,6 +169,7 @@ public sealed class LocalCameraRepeatParameterTests
                 Assert.True(enteredCapture.Wait(TimeSpan.FromSeconds(10)));
                 control.StopNode(start.NodeName, serialNumber);
                 Assert.Equal(StatusTypeEnum.Canceled, finished.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult().Status);
+                Assert.True(captureStop.IsCancellationRequested);
                 releaseCapture.Set();
                 Assert.True(SpinWait.SpinUntil(() =>
                 {
