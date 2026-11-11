@@ -33,7 +33,7 @@ related: ["ui.solution", "ui.configuration", "ui.image-editor", "ui.text-editor"
 
 `IsVisibleInOpenWith` 只在 `GetFileEditorDescriptors` / `GetFolderEditorDescriptors` 的 `visibleOnly:true` 查询中过滤；默认解析和按 ID 打开不使用这个过滤。隐藏候选不等于禁止使用，也不等于清除已保存默认项。打开路由中的选择窗口和“始终使用”处理由 `ResourceOpenService` 负责。
 
-`TrySetDefaultEditor` / `TrySetDefaultFolderEditor` 先修改 `EditorManagerConfig`，调用 `ConfigService.Instance.Save<EditorManagerConfig>()`，未抛错才更新管理器的默认项缓存。抛错时恢复该配置字段并返回失败，不回滚已经打开的资源。当前 `ConfigHandler.Save<T>()` 又会丢弃内部 `TrySave` 的布尔失败结果，所以某些磁盘保存失败仍可能让这里返回成功并留下内存默认项；不能用成功返回或 `DefaultEditorUpdated=true` 证明默认选择已经落盘。配置存储的失败语义见[配置持久化](./configuration.md)。管理器只首次加载配置到自身缓存，没有订阅配置重载通知；外部改配置后也不能推断此缓存已刷新。
+`TrySetDefaultEditor` / `TrySetDefaultFolderEditor` 先修改 `EditorManagerConfig`。主应用使用 `ConfigHandler.TrySave` 确认落盘后才更新默认项缓存。保存失败时恢复配置字段并返回错误，已打开的资源保持打开。其他 `IConfigService` 继续按其 `Save<T>()` 契约保存。配置存储语义见[配置持久化](./configuration.md)。管理器只首次加载配置到缓存，配置重载不会刷新此缓存。
 
 选定描述符后，管理器只尝试这个编辑器。创建返回空、返回不符合声明类型的实例或 `Open` 抛错都会失败，不再尝试下一个候选。仅当 `CreateEditor` 已成功返回实例，且该实例实现 `IDisposable` 时，外层异常路径才会尝试释放；工厂返回错误类型在 `CreateEditor` 内即抛错，外层没有取得该实例，不会替它释放。`IEditor.Open(path)` 返回 `void`，管理器的成功只表示调用正常返回，不证明异步载入完成、产生了标签页或执行过保存。比如 `SystemEditor` 交给系统打开，不创建本服务管理的文档。
 
@@ -136,7 +136,7 @@ XML 序列化使用 AvalonDock 5.x 独立包中的 `AvalonDock.Serializer.Xml.Xm
 
 同一测试文件还用离屏 WPF/AvalonDock 验证工厂面板在未选中或隐藏时不创建，首次选中或显式显示后只创建一次，并在内存布局恢复、隐藏重显、关闭重开后复用宿主与子内容。此回归保护共享按需加载与单一逻辑父节点的生命周期，不以耗时阈值断言启动加速。
 
-延迟面板用例通过注册内容恢复入口取得宿主，并替换内存 `LayoutRoot`。布局用例使用隔离目录。默认编辑器配置落盘失败、外部文件事件与路径更新失败需单独验证。
+延迟面板用例通过注册内容恢复入口取得宿主，并替换内存 `LayoutRoot`。布局用例使用隔离目录。`EditorDefaultPersistenceTests` 使用独占锁定的配置文件验证文件和文件夹默认项保存失败。外部文件事件与路径更新失败需单独验证。
 
 不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
 

@@ -400,14 +400,15 @@ namespace ColorVision.Solution
 
             try
             {
-                EditorManagerConfig config = EditorManagerConfig.Instance;
+                IConfigService configService = ConfigService.Instance;
+                EditorManagerConfig config = configService.GetRequiredService<EditorManagerConfig>();
                 lock (_syncRoot)
                 {
                     bool hadPreviousValue = config.DefaultEditors.TryGetValue(normalizedExtension, out string? previousValue);
                     config.DefaultEditors[normalizedExtension] = descriptor.Id;
                     try
                     {
-                        ConfigService.Instance.Save<EditorManagerConfig>();
+                        PersistDefaults(configService, config);
                     }
                     catch
                     {
@@ -441,14 +442,15 @@ namespace ColorVision.Solution
 
             try
             {
-                EditorManagerConfig config = EditorManagerConfig.Instance;
+                IConfigService configService = ConfigService.Instance;
+                EditorManagerConfig config = configService.GetRequiredService<EditorManagerConfig>();
                 lock (_syncRoot)
                 {
                     string? previousValue = config.DefaultFolderEditor;
                     config.DefaultFolderEditor = descriptor.Id;
                     try
                     {
-                        ConfigService.Instance.Save<EditorManagerConfig>();
+                        PersistDefaults(configService, config);
                     }
                     catch
                     {
@@ -464,6 +466,19 @@ namespace ColorVision.Solution
             {
                 errorMessage = $"保存默认文件夹编辑器失败：{ex.Message}";
                 return false;
+            }
+        }
+
+        private static void PersistDefaults(IConfigService service, EditorManagerConfig config)
+        {
+            if (service is ConfigHandler handler)
+            {
+                if (!handler.TrySave(config, out string error))
+                    throw new IOException(error);
+            }
+            else
+            {
+                service.Save<EditorManagerConfig>();
             }
         }
 

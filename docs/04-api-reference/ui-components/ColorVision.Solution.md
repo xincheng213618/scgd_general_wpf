@@ -82,7 +82,7 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 
 `Classify` 先判断目录，再检查文件存在，随后判断 `.cvsln` 和 Provider 声明的项目模式，其余归为普通文件。未知项目格式可以出现在文本/Hex 编辑器中，不等于有项目 Provider 支持。内置 `.sln` 导入和 VC++ 项目 Provider 当前不存在。
 
-`OpenWith(..., setAsDefault: true)` 先打开，成功后才保存默认选择；因此可以返回 `Succeeded=true`、`DefaultEditorUpdated=false` 并带错误信息。不能把默认方式保存失败描述成“资源没打开”或自动关闭已经打开的文档。反过来，`DefaultEditorUpdated=true` 也不是磁盘提交证明：当前默认项保存调用的 void 配置包装会丢弃部分失败结果。具体内存、异常回退和落盘缺口见文档生命周期主题。
+`OpenWith(..., setAsDefault: true)` 先打开，成功后才保存默认选择。主应用配置保存失败时返回 `Succeeded=true`、`DefaultEditorUpdated=false` 和错误信息，已打开的文档保持打开。默认项缓存仅在保存成功后更新，其他配置提供者的行为见文档生命周期主题。
 
 批量路径去掉空字符串，按绝对路径、去掉结尾目录分隔符、不区分大小写去重，保留第一个传入字符串用于实际打开和报告。这不是解析链接、硬链接或文件系统对象的真实身份。`IsComplete` 要求非零请求且全部成功；空集合不是全部成功。批量取消在项目前检查，可能抛出取消异常并留下之前已打开项，也可能在末项得到取消失败结果；没有批量事务。
 
