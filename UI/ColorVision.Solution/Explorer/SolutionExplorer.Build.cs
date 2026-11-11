@@ -801,7 +801,11 @@ namespace ColorVision.Solution.Explorer
                     startupProject.ProjectFile.FullName);
                 try
                 {
-                    SaveConfig();
+                    if (!TrySaveAutomaticConfig(preserveConflict: false))
+                    {
+                        Config.StartupProject = previousReference;
+                        Logger.Warn($"磁盘上的解决方案配置已更改或移除，跳过自动设置启动项目：{ConfigFileInfo.FullName}");
+                    }
                 }
                 catch
                 {

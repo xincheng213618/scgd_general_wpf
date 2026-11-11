@@ -134,7 +134,9 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 
 ### cvsln 版本、保存与恢复
 
-`SolutionConfigStore.CurrentSchemaVersion` 当前为 4，按 v0→v1 项目模式/配置、v1→v2 虚拟文件夹、v2→v3 解决方案项、v3→v4 平台逐步迁移。正常 Load 在内存迁移/规范化，不因旧版本本身立即落盘；后续 Save 才写当前结构。Explorer 还注册 ProcessExit 保存，退出时可能写入；Dispose 会解除该订阅，不能把正常 Load 的局部行为扩大成工作区整个生命周期只读。未来版本抛 `NotSupportedException`，不当作损坏文件自动回退旧备份。
+`SolutionConfigStore.CurrentSchemaVersion` 当前为 4，按 v0→v1 项目模式/配置、v1→v2 虚拟文件夹、v2→v3 解决方案项、v3→v4 平台逐步迁移。正常 Load 在内存迁移和规范化，后续 Save 才写当前结构。未来版本抛 `NotSupportedException`，不当作损坏文件自动回退旧备份。
+
+Explorer 自动选启动项目和退出保存前，核对磁盘配置是否仍为本次加载或上次保存的内容。内容已更改或移除时跳过自动选项。退出时未改动的配置直接跳过，有本地改动且磁盘已更改时，保留磁盘文件并将本地草稿另存为同目录的 `.cvsln.conflict-*`，日志记录位置。释放 Explorer 时解除退出订阅。
 
 Save 先规范化传入配置，再写同目录临时文件、Flush 到磁盘；已有主文件使用 `File.Replace` 留 `.bak`，平台不支持 Replace 时回退复制备份再覆盖移动。它是单个配置文件的提交，不是配置、项目文件、文档和内存的跨资源事务。
 

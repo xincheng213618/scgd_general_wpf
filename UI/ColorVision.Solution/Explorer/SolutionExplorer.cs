@@ -195,7 +195,7 @@ namespace ColorVision.Solution.Explorer
             {
                 try
                 {
-                    SaveConfig();
+                    SaveConfigOnExit();
                 }
                 catch (Exception ex) when (ex is IOException
                     or UnauthorizedAccessException
@@ -266,6 +266,7 @@ namespace ColorVision.Solution.Explorer
                 Config = loadResult.Config;
                 Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
                 Config.ActivePlatform = NormalizePlatformName(Config.ActivePlatform);
+                _savedConfig = new(loadResult.DiskContent, SolutionConfigStore.Serialize(Config));
                 if (loadResult.RecoveredFromBackup)
                 {
                     string archiveMessage = string.IsNullOrWhiteSpace(loadResult.CorruptCopyPath)

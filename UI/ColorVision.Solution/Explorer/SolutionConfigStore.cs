@@ -10,7 +10,8 @@ namespace ColorVision.Solution.Explorer
         SolutionConfig Config,
         int SourceSchemaVersion,
         bool RecoveredFromBackup,
-        string? CorruptCopyPath);
+        string? CorruptCopyPath,
+        string DiskContent);
 
     /// <summary>
     /// Owns the durable .cvsln boundary: schema migration, normalization,
@@ -27,7 +28,7 @@ namespace ColorVision.Solution.Explorer
             {
                 string json = File.ReadAllText(filePath);
                 SolutionConfig config = DeserializeAndMigrate(json, out int sourceVersion);
-                return new SolutionConfigLoadResult(config, sourceVersion, false, null);
+                return new SolutionConfigLoadResult(config, sourceVersion, false, null, json);
             }
             catch (Exception primaryException) when (CanRecoverFromBackup(primaryException))
             {
@@ -44,8 +45,9 @@ namespace ColorVision.Solution.Explorer
                     string backupJson = File.ReadAllText(backupPath);
                     SolutionConfig config = DeserializeAndMigrate(backupJson, out int sourceVersion);
                     string? corruptCopyPath = TryArchiveCorruptPrimary(filePath);
-                    WriteContentAtomically(filePath, Serialize(config), createBackup: false);
-                    return new SolutionConfigLoadResult(config, sourceVersion, true, corruptCopyPath);
+                    string recoveredContent = Serialize(config);
+                    WriteContentAtomically(filePath, recoveredContent, createBackup: false);
+                    return new SolutionConfigLoadResult(config, sourceVersion, true, corruptCopyPath, recoveredContent);
                 }
                 catch (Exception backupException) when (backupException is IOException
                     or UnauthorizedAccessException
@@ -113,11 +115,23 @@ namespace ColorVision.Solution.Explorer
             return config;
         }
 
-        public static void Save(string filePath, SolutionConfig config)
+        public static string Save(string filePath, SolutionConfig config)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             ArgumentNullException.ThrowIfNull(config);
-            WriteContentAtomically(filePath, Serialize(config), createBackup: true);
+            string content = Serialize(config);
+            WriteContentAtomically(filePath, content, createBackup: true);
+            return content;
+        }
+
+        internal static bool TrySaveCurrent(string filePath, string content, string expectedDiskContent)
+            => WriteContentAtomically(filePath, content, createBackup: true, expectedDiskContent: expectedDiskContent);
+
+        internal static string SaveConflictCopy(string filePath, string content)
+        {
+            string path = $"{filePath}.conflict-{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}";
+            WriteContentAtomically(path, content, createBackup: false, overwrite: false);
+            return path;
         }
 
         public static void Create(string filePath, SolutionConfig config)
@@ -340,7 +354,8 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        private static void WriteContentAtomically(string filePath, string content, bool createBackup, bool overwrite = true)
+        private static bool WriteContentAtomically(string filePath, string content, bool createBackup, bool overwrite = true,
+            string? expectedDiskContent = null)
         {
             string fullPath = Path.GetFullPath(filePath);
             string? directoryPath = Path.GetDirectoryName(fullPath);
@@ -364,15 +379,23 @@ namespace ColorVision.Solution.Explorer
                     stream.Flush(flushToDisk: true);
                 }
 
-                if (!overwrite || !File.Exists(fullPath))
+                using FileStream? original = expectedDiskContent == null ? null
+                    : File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+                if (original != null)
+                {
+                    using var reader = new StreamReader(original, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
+                    if (!string.Equals(expectedDiskContent, reader.ReadToEnd(), StringComparison.Ordinal)) return false;
+                }
+
+                if (!overwrite || (original == null && !File.Exists(fullPath)))
                 {
                     File.Move(temporaryPath, fullPath);
-                    return;
+                    return true;
                 }
                 if (!createBackup)
                 {
                     File.Move(temporaryPath, fullPath, overwrite: true);
-                    return;
+                    return true;
                 }
 
                 string backupPath = GetBackupPath(fullPath);
@@ -385,6 +408,11 @@ namespace ColorVision.Solution.Explorer
                     File.Copy(fullPath, backupPath, overwrite: true);
                     File.Move(temporaryPath, fullPath, overwrite: true);
                 }
+                return true;
+            }
+            catch (FileNotFoundException) when (expectedDiskContent != null)
+            {
+                return false;
             }
             finally
             {

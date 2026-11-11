@@ -258,9 +258,10 @@ public sealed class SolutionNodePopulationTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void OpeningWorkspaceSelectsStartupProjectDiscoveredInALaterBatch(bool lockConfigWhileLoading)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void OpeningWorkspaceSelectsStartupProjectDiscoveredInALaterBatch(bool lockConfigWhileLoading, bool externalEdit)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -277,17 +278,53 @@ public sealed class SolutionNodePopulationTests
             using var root = new SolutionExplorer(new SolutionEnvironments { SolutionPath = fixture.SolutionPath });
             Assert.DoesNotContain(root.VisualChildren, node => node.FullPath == lateFolder);
 
+            if (externalEdit)
+                SolutionConfigStore.Save(fixture.SolutionPath, new SolutionConfig { StartupProject = "external.cvproj" });
             using FileStream? configLock = lockConfigWhileLoading
                 ? new FileStream(fixture.SolutionPath, FileMode.Open, FileAccess.Read, FileShare.Read)
                 : null;
             context.Drain();
 
             ProjectNode project = Assert.Single(root.VisualChildren.OfType<ProjectNode>());
-            string expected = lockConfigWhileLoading ? string.Empty : Path.GetRelativePath(fixture.Root, projectPath);
+            bool autoSaved = !lockConfigWhileLoading && !externalEdit;
+            string expected = autoSaved ? Path.GetRelativePath(fixture.Root, projectPath) : string.Empty;
             Assert.Equal(expected, root.Config.StartupProject);
-            Assert.Equal(expected, SolutionConfigStore.Load(fixture.SolutionPath).Config.StartupProject);
-            Assert.Equal(!lockConfigWhileLoading, project.IsStartupProject);
+            Assert.Equal(externalEdit ? "external.cvproj" : expected, SolutionConfigStore.Load(fixture.SolutionPath).Config.StartupProject);
+            Assert.Equal(autoSaved, project.IsStartupProject);
             Assert.False(root.OperationHistory.CanUndo);
+        });
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public void WorkspaceExitKeepsExternalChangesAndPreservesTheLocalDraft(bool localEdit, bool externalEdit)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using PopulationFixture fixture = new();
+            SolutionConfigStore.Save(fixture.SolutionPath, new SolutionConfig { StartupProject = "opened.cvproj" });
+            using var root = new SolutionExplorer(new SolutionEnvironments { SolutionPath = fixture.SolutionPath });
+            if (externalEdit)
+                SolutionConfigStore.Save(fixture.SolutionPath, new SolutionConfig { StartupProject = "external.cvproj" });
+            byte[] beforeExit = File.ReadAllBytes(fixture.SolutionPath);
+            if (localEdit) root.Config.StartupProject = "unsaved.cvproj";
+
+            var handler = (EventHandler)typeof(SolutionExplorer)
+                .GetField("_processExitHandler", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(root)!;
+            handler(null, EventArgs.Empty);
+
+            string[] drafts = Directory.GetFiles(fixture.Root, "*.cvsln.conflict-*");
+            if (externalEdit)
+                Assert.Equal(beforeExit, File.ReadAllBytes(fixture.SolutionPath));
+            else
+                Assert.Equal("unsaved.cvproj", SolutionConfigStore.Load(fixture.SolutionPath).Config.StartupProject);
+
+            if (localEdit && externalEdit)
+                Assert.Equal("unsaved.cvproj", SolutionConfigStore.Load(Assert.Single(drafts)).Config.StartupProject);
+            else
+                Assert.Empty(drafts);
         });
     }
 
