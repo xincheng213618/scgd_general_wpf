@@ -598,6 +598,14 @@ namespace ProjectARVRPro
 
     public sealed class ResultStatisticsDataStore
     {
+        // Unfinished batches still delimit ownership of the flow rows they already saved.
+        private const string RecordFlowBoundariesSql = """
+            SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
+                   "LastModel", "BatchId", "Msg", "IsFinalized",
+                   COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId"
+            FROM "ObjectiveTestResultRecord"
+            """;
+
         private static readonly Lazy<ResultStatisticsDataStore> LazyInstance = new(() => new ResultStatisticsDataStore());
         private readonly string? _databasePath;
         private readonly ReadOnlySqliteDatabase? _readOnlyDatabase;
@@ -684,12 +692,9 @@ namespace ProjectARVRPro
                 if (query.Result.HasValue)
                     optionalFilter += " AND \"TotalResult\" = @Result";
                 string summarySql = $$"""
-                    WITH RankedRecords AS
+                    WITH RecordFlowBoundaries AS
                     (
-                        SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
-                               COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId"
-                        FROM "ObjectiveTestResultRecord"
-                        WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                        {{RecordFlowBoundariesSql}}
                     ),
                     TimedRecords AS
                     (
@@ -699,9 +704,10 @@ namespace ProjectARVRPro
                                 WHERE F."SN" = R."SN"
                                   AND F."Id" > R."PreviousResultId"
                                   AND F."Id" <= R."ResultId") AS "FlowRunTimeMilliseconds"
-                        FROM RankedRecords AS R
+                        FROM RecordFlowBoundaries AS R
                         WHERE "UpdateTime" >= @From
                           AND "UpdateTime" < @ToExclusive
+                          AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
                           {{optionalFilter}}
                     )
                     SELECT COUNT(*) AS "TotalCount",
@@ -782,8 +788,12 @@ namespace ProjectARVRPro
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
             int skip = checked((query.PageNumber - 1) * query.PageSize);
-            const string sql = """
-                WITH RankedRecords AS
+            const string sql = $$"""
+                WITH RecordFlowBoundaries AS
+                (
+                    {{RecordFlowBoundariesSql}}
+                ),
+                RankedRecords AS
                 (
                     SELECT "Id",
                            "SN",
@@ -794,9 +804,9 @@ namespace ProjectARVRPro
                            "BatchId",
                            "ResultId",
                            "Msg",
-                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
+                           "PreviousResultId",
                            ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex"
-                    FROM "ObjectiveTestResultRecord"
+                    FROM RecordFlowBoundaries
                     WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
                 )
                 SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
@@ -952,7 +962,11 @@ namespace ProjectARVRPro
                         ELSE 0 END AS "FlowRunTimeMilliseconds"
                     """;
             string sql = $$"""
-                WITH RankedRecords AS
+                WITH RecordFlowBoundaries AS
+                (
+                    {{RecordFlowBoundariesSql}}
+                ),
+                RankedRecords AS
                 (
                     SELECT "Id",
                            "SN",
@@ -963,10 +977,10 @@ namespace ProjectARVRPro
                            "BatchId",
                            "ResultId",
                            "Msg",
-                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
+                           "PreviousResultId",
                            ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex",
                            COALESCE(LAG("Id") OVER (ORDER BY "Id"), 0) AS "PreviousObjectiveId"
-                    FROM "ObjectiveTestResultRecord"
+                    FROM RecordFlowBoundaries
                     WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
                 )
                 SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",

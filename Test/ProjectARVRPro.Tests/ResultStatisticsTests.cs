@@ -842,6 +842,50 @@ public sealed class ResultStatisticsTests
         Assert.Empty(passOnly.Rows);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SameSerialNumberRerunDoesNotInheritFlowsFromUnfinishedBatch(bool readOnly)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        var store = new ResultStatisticsDataStore(database.Path, readOnly);
+        DateTime day = new(2026, 9, 19);
+        const string leftSn = "BODY_L_120000";
+        const string rightSn = "BODY_R_120030";
+        int interruptedId = InsertBatch(leftSn, day.AddHours(11), 9_000, false);
+        int leftId = InsertBatch(leftSn, day.AddHours(12), 2_000, true);
+        int rightId = InsertBatch(rightSn, day.AddHours(12).AddSeconds(30), 3_000, true);
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 10 };
+
+        var rows = store.QueryRecords(query);
+        Assert.Equal(2, rows.Count);
+        ResultStatisticsRecordRow left = Assert.Single(rows, row => row.SN == leftSn);
+        Assert.Equal(interruptedId, left.PreviousResultId);
+        Assert.Equal(1, left.ExecutionIndex);
+        Assert.Equal(1, left.FlowCount);
+        Assert.Equal(2_000, left.FlowRunTimeMilliseconds);
+        Assert.Equal(leftId, Assert.Single(store.QueryFlowDetailsForExport(left)).Id);
+
+        ResultStatisticsDashboard dashboard = store.QueryDashboard(query, ResultStatisticsPeriodMode.Day, day.AddHours(13));
+        Assert.Equal(2, dashboard.Summary.TotalCount);
+        Assert.Equal(2_500, dashboard.Summary.AverageFlowRunTimeMilliseconds);
+
+        ResultStatisticsCombinedRecordRow combined = Assert.Single(store.QueryCombinedRecords(query).Rows);
+        Assert.Equal(2, combined.FlowCount);
+        Assert.Equal(5_000, combined.FlowRunTimeMilliseconds);
+        Assert.Equal([leftId, rightId], store.QueryFlowDetails(combined).Select(row => row.Id));
+
+        int InsertBatch(string sn, DateTime start, long runtime, bool isFinalized)
+        {
+            int resultId = database.InsertFlow(new() { SN = sn, CreateTime = start.AddSeconds(1), RunTime = runtime }).Id;
+            ObjectiveTestResultRecord record = CreateRecord(sn, true, start, 20_000, "flow", isFinalized);
+            record.ResultId = resultId;
+            database.Insert(record);
+            return resultId;
+        }
+    }
+
     [Fact]
     public void DayQueriesIncludeMidnightAndExcludeNextMidnightAcrossAllThreePages()
     {
