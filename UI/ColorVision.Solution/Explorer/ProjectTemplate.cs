@@ -275,9 +275,10 @@ namespace ColorVision.Solution.Explorer
 
                 var directory = new DirectoryInfo(projectPath);
                 if (!ProjectProviderRegistry.TryLoadProject(directory, out ProjectDefinition? project, out string loadError)
-                    || project == null)
+                    || project == null
+                    || !string.IsNullOrWhiteSpace(project.LoadError))
                 {
-                    errorMessage = $"模板没有创建可加载的项目：{loadError}";
+                    errorMessage = $"模板没有创建可加载的项目：{project?.LoadError ?? loadError}";
                     return false;
                 }
                 if (!string.IsNullOrWhiteSpace(template.ProjectProviderId)

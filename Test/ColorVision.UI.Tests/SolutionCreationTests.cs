@@ -76,4 +76,43 @@ public sealed class SolutionCreationTests
             parent.Delete();
         }
     }
+
+    [Fact]
+    public void NewProjectRejectsATemplateThatProducesAnUnloadableProject()
+    {
+        DirectoryInfo parent = Directory.CreateTempSubdirectory("ColorVision-NewProject-");
+        string projectPath = Path.Combine(parent.FullName, "Sample");
+        string descriptorPath = Path.Combine(projectPath, "Sample.cvproj");
+        try
+        {
+            var template = new BrokenProjectTemplate();
+            Assert.False(ProjectTemplateRegistry.TryCreateFromTemplate(template, parent.FullName, "Sample", out var project, out string error));
+            Assert.Null(project);
+            Assert.Contains("模板没有创建可加载的项目", error);
+            Assert.Contains("MissingRoot", error);
+            Assert.Empty(parent.EnumerateFileSystemInfos());
+        }
+        finally
+        {
+            if (Directory.Exists(projectPath))
+            {
+                File.Delete(descriptorPath);
+                Directory.Delete(projectPath);
+            }
+            parent.Delete();
+        }
+    }
+
+    private sealed class BrokenProjectTemplate : IProjectTemplate
+    {
+        public string Name => "Broken project";
+        public string Category => "Test";
+        public string Description => "Creates a descriptor with a missing root directory.";
+        public int Order => 0;
+        public System.Windows.Media.ImageSource? Icon => null;
+        public string ProjectProviderId => FolderProjectProvider.ProviderId;
+
+        public void CreateProject(string projectDir, string projectName) =>
+            FolderProjectProvider.CreateProjectFile(Path.Combine(projectDir, projectName + ".cvproj"), projectName, rootPath: "MissingRoot");
+    }
 }
