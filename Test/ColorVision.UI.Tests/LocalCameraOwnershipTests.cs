@@ -21,11 +21,7 @@ public class LocalCameraOwnershipTests
         var backend = new CameraBackendState(true);
         var config = new ConfigCamera { Code = "local-test", TakeImageMode = initialMode };
         using var session = new LocalCameraSession(native, backend, config);
-        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
-        device.Config = config;
-        device.SysResourceModel = new SysResourceModel { Code = "local-test" };
-        typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, backend);
-        typeof(DeviceCamera).GetField("<LocalCameraSession>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, session);
+        var device = CreateDevice(config, backend, session);
         var mqtt = (MQTTCamera)RuntimeHelpers.GetUninitializedObject(typeof(MQTTCamera));
         mqtt.Device = device;
         // A publish would dereference its absent MQTT client. Only the local facade can succeed.
@@ -63,11 +59,7 @@ public class LocalCameraOwnershipTests
         var config = new ConfigCamera { Code = "local-test", CameraID = "camera", ImageBpp = ImageBpp.bpp16 };
         using var session = new LocalCameraSession(native, backend, config);
         Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Live, 16));
-        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
-        device.Config = config;
-        device.SysResourceModel = new SysResourceModel { Code = "local-test" };
-        typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, backend);
-        typeof(DeviceCamera).GetField("<LocalCameraSession>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, session);
+        var device = CreateDevice(config, backend, session);
         using var activeStop = new CancellationTokenSource();
         using var queuedStop = new CancellationTokenSource();
         var services = new LocalCameraFlowServices();
@@ -94,6 +86,79 @@ public class LocalCameraOwnershipTests
             queuedStop.Cancel();
             releaseSwitch.Set();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => active.WaitAsync(TimeSpan.FromSeconds(10)));
+            if (queued != null) await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued.WaitAsync(TimeSpan.FromSeconds(10)));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ManualCameraOperationDoesNotBlockCaptureCancellationOrOtherCameras(bool captureOtherCamera)
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var releaseManualOperation = new ManualResetEventSlim();
+        using var queuedStop = new CancellationTokenSource();
+        var config = new ConfigCamera { Code = "local-test", CameraID = "camera", ImageBpp = ImageBpp.bpp16 };
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(new FakeNative(), backend, config);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Measure_Normal, 16));
+        var device = CreateDevice(config, backend, session);
+        Task<bool> manual = Task.Run(() => session.UseOpened(_ =>
+        {
+            entered.SetResult();
+            releaseManualOperation.Wait();
+            return true;
+        }));
+        Task<LocalCameraCaptureResult>? queued = null;
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var worker = new TaskCompletionSource<Thread>(TaskCreationOptions.RunContinuationsAsynchronously);
+            queued = Task.Factory.StartNew(() =>
+            {
+                worker.SetResult(Thread.CurrentThread);
+                return LocalCameraCaptureService.Capture(new() { Device = device, Stop = queuedStop.Token }, autoConnect: true);
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Thread captureThread = await worker.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(SpinWait.SpinUntil(() => (captureThread.ThreadState & ThreadState.WaitSleepJoin) != 0, TimeSpan.FromSeconds(10)));
+            Assert.False(queued.IsCompleted);
+
+            if (captureOtherCamera)
+            {
+                using var otherStop = new CancellationTokenSource();
+                var otherNative = new LocalCameraSessionTests.FakeNative
+                {
+                    SwitchResult = cvErrorDefine.CV_ERR_SUCCESS,
+                    OnSwitch = otherStop.Cancel
+                };
+                var otherConfig = new ConfigCamera { Code = "other-test", CameraID = "other-camera", ImageBpp = ImageBpp.bpp16 };
+                var otherBackend = new CameraBackendState(true);
+                using var otherSession = new LocalCameraSession(otherNative, otherBackend, otherConfig);
+                Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, otherSession.Open("other-camera", TakeImageMode.Live, 16));
+                var otherDevice = CreateDevice(otherConfig, otherBackend, otherSession);
+                Task<LocalCameraCaptureResult> otherCapture = Task.Run(() =>
+                    LocalCameraCaptureService.Capture(new() { Device = otherDevice, Stop = otherStop.Token }, autoConnect: true));
+                try
+                {
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => otherCapture.WaitAsync(TimeSpan.FromSeconds(10)));
+                    Assert.Equal(1, otherNative.Switches);
+                    Assert.False(queued.IsCompleted);
+                }
+                finally
+                {
+                    otherStop.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => otherCapture.WaitAsync(TimeSpan.FromSeconds(10)));
+                }
+            }
+            queuedStop.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.False(manual.IsCompleted);
+        }
+        finally
+        {
+            queuedStop.Cancel();
+            releaseManualOperation.Set();
+            Assert.True(await manual.WaitAsync(TimeSpan.FromSeconds(10)));
             if (queued != null) await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued.WaitAsync(TimeSpan.FromSeconds(10)));
         }
     }
@@ -188,6 +253,16 @@ public class LocalCameraOwnershipTests
         session.Dispose();
         Assert.Equal(1, native.Releases);
         Assert.Throws<ObjectDisposedException>(() => session.Open("camera", TakeImageMode.Measure_Normal, 16));
+    }
+
+    private static DeviceCamera CreateDevice(ConfigCamera config, CameraBackendState backend, LocalCameraSession session)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = config;
+        device.SysResourceModel = new SysResourceModel { Code = config.Code };
+        typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, backend);
+        typeof(DeviceCamera).GetField("<LocalCameraSession>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, session);
+        return device;
     }
 
     private sealed class FakeNative : ILocalCameraNative

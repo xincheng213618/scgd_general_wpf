@@ -59,24 +59,42 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request, bool autoConnect = false)
         {
             ArgumentNullException.ThrowIfNull(request);
-            // Queue before taking the session lock so a stopped capture can leave while the SDK is busy.
-            FlowNodeTiming.Run("WaitCamera", () => CaptureLock.Wait(request.Stop));
-            try
+            DeviceCamera device = request.Device;
+            object sessionLock = device.LocalCameraSession.SyncRoot;
+            while (true)
             {
-                DeviceCamera device = request.Device;
-                lock (device.LocalCameraSession.SyncRoot)
+                FlowNodeTiming.Run("WaitCamera", () => CaptureLock.Wait(request.Stop));
+                bool sessionEntered = false;
+                try
                 {
-                    request.Stop.ThrowIfCancellationRequested();
-                    var captureChannels = GetChannelConfigs(device, device.Config.Channel == ImageChannel.Three ? 3 : 1);
-                    FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(autoConnect));
-                    request.Stop.ThrowIfCancellationRequested();
-                    return FlowNodeTiming.Run("CapturePipeline", () => device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle, captureChannels)));
+                    Monitor.TryEnter(sessionLock, ref sessionEntered);
+                    if (sessionEntered)
+                    {
+                        request.Stop.ThrowIfCancellationRequested();
+                        var captureChannels = GetChannelConfigs(device, device.Config.Channel == ImageChannel.Three ? 3 : 1);
+                        FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(autoConnect));
+                        request.Stop.ThrowIfCancellationRequested();
+                        return FlowNodeTiming.Run("CapturePipeline", () => device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle, captureChannels)));
+                    }
                 }
+                finally
+                {
+                    if (sessionEntered) Monitor.Exit(sessionLock);
+                    CaptureLock.Release();
+                }
+
+                // A manual operation owns only the session. Wait for it without blocking other cameras.
+                FlowNodeTiming.Run("WaitCameraSession", () => WaitForSession(sessionLock, request.Stop));
             }
-            finally
-            {
-                CaptureLock.Release();
-            }
+        }
+
+        private static void WaitForSession(object sessionLock, CancellationToken stop)
+        {
+            stop.ThrowIfCancellationRequested();
+            // A Monitor cannot wait on a token, so check for cancellation between timed waits.
+            int timeout = stop.CanBeCanceled ? 50 : Timeout.Infinite;
+            while (!Monitor.TryEnter(sessionLock, timeout)) stop.ThrowIfCancellationRequested();
+            Monitor.Exit(sessionLock);
         }
 
         private static LocalCameraCaptureResult CaptureCore(LocalCameraCaptureRequest request, IntPtr cameraHandle,
