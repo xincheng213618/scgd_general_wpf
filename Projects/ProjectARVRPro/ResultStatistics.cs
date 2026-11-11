@@ -691,10 +691,39 @@ namespace ProjectARVRPro
                     optionalFilter += " AND \"SN\" LIKE '%' || @SN || '%'";
                 if (query.Result.HasValue)
                     optionalFilter += " AND \"TotalResult\" = @Result";
-                string summarySql = $$"""
-                    WITH RecordFlowBoundaries AS
+                string resultFilter = $$"""
+                    "UpdateTime" >= @From AND "UpdateTime" < @ToExclusive
+                    AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                    {{optionalFilter}}
+                    """;
+                // Wider periods can select most of the database, making a separate SN set more expensive.
+                const string outsideRangeSql = """
+                    SELECT EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" < @From)
+                        OR EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" >= @ToExclusive);
+                    """;
+                bool restrictHistory = query.ToExclusive - query.From <= TimeSpan.FromDays(1)
+                    && (optionalFilter.Length > 0 || db.Ado.GetInt(ReadSql(outsideRangeSql),
+                        new SugarParameter("@From", query.From), new SugarParameter("@ToExclusive", query.ToExclusive)) != 0);
+                string selectedSerialNumbers = restrictHistory ? $$"""
+                    SelectedSerialNumbers AS
                     (
-                        {{RecordFlowBoundariesSql}}
+                        SELECT DISTINCT TRIM("SN") AS "NormalizedSerialNumber"
+                        FROM "ObjectiveTestResultRecord"
+                        WHERE {{resultFilter}}
+                    ),
+                    """ : string.Empty;
+                const string selectedHistoryFilter = """
+                    WHERE TRIM("SN") IN (SELECT "NormalizedSerialNumber" FROM SelectedSerialNumbers)
+                       OR ("SN" IS NULL AND EXISTS (SELECT 1 FROM SelectedSerialNumbers WHERE "NormalizedSerialNumber" IS NULL))
+                    """;
+                string summarySql = $$"""
+                    WITH {{selectedSerialNumbers}}
+                    RecordFlowBoundaries AS
+                    (
+                        SELECT "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult", "IsFinalized",
+                               COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId"
+                        FROM "ObjectiveTestResultRecord"
+                        {{(restrictHistory ? selectedHistoryFilter : string.Empty)}}
                     ),
                     TimedRecords AS
                     (
@@ -705,10 +734,7 @@ namespace ProjectARVRPro
                                   AND F."Id" > R."PreviousResultId"
                                   AND F."Id" <= R."ResultId") AS "FlowRunTimeMilliseconds"
                         FROM RecordFlowBoundaries AS R
-                        WHERE "UpdateTime" >= @From
-                          AND "UpdateTime" < @ToExclusive
-                          AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
-                          {{optionalFilter}}
+                        WHERE {{resultFilter}}
                     )
                     SELECT COUNT(*) AS "TotalCount",
                            COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
@@ -735,10 +761,7 @@ namespace ProjectARVRPro
                                COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
                                COALESCE(AVG({{cycleTimeExpression}}), 0.0) AS "AverageCtMilliseconds"
                         FROM "ObjectiveTestResultRecord"
-                        WHERE "UpdateTime" >= @From
-                          AND "UpdateTime" < @ToExclusive
-                          AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
-                          {{optionalFilter}}
+                        WHERE {{resultFilter}}
                         GROUP BY {{bucketExpression}}
                         ORDER BY {{bucketExpression}};
                         """;

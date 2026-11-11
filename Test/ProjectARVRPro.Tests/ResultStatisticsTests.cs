@@ -729,7 +729,7 @@ public sealed class ResultStatisticsTests
         ResultStatisticsDataStore store = new(database.Path, readOnly);
         DateTime day = new(2026, 9, 19);
         ProjectARVRReuslt previous = database.InsertFlow(new() { SN = "SN-A", CreateTime = day.AddSeconds(-20), RunTime = 5_000 });
-        ObjectiveTestResultRecord previousRecord = CreateRecord("SN-A", true, day.AddSeconds(-30), 10_000, "previous", true);
+        ObjectiveTestResultRecord previousRecord = CreateRecord("  SN-A  ", true, day.AddSeconds(-30), 10_000, "previous", true);
         previousRecord.ResultId = previous.Id;
         database.Insert(previousRecord);
         database.InsertFlow(new() { SN = "SN-A", CreateTime = day.AddSeconds(8), RunTime = 1_000 });
