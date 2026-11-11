@@ -97,7 +97,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载�
 
 `CreateTask` 提交新建/编辑时检查 `SchedulerOperationResult.Success`，失败不关闭窗口。编辑路径先克隆定义；`UpdateJob` 使用原任务名/分组定位旧任务，校验新定义和身份冲突，并拒绝更新当前正在执行的原 JobKey。
 
-创建、更新和删除等路径用 `SchedulerStandbyLease` 暂停新的触发分派，记录/替换 Quartz 定义和内存列表后保存 JSON，再按原状态恢复 scheduler。保存失败会尝试移除新 Job 或恢复原定义、触发器和暂停意图；补偿本身可能失败，部分路径仅写日志，不能声称失败返回必然完全回滚。Standby 不等待已有 Job 结束，操作成功也只证明相应调度修改完成，不证明业务任务执行成功。
+创建、更新和删除等路径用 `SchedulerStandbyLease` 暂停新的触发分派，记录/替换 Quartz 定义和内存列表后保存 JSON，再按原状态恢复 scheduler。保存失败会尝试移除新 Job 或恢复原定义和暂停意图，恢复触发器时保留下次触发时间和已触发次数。已经耗尽的触发器不重新启用。补偿异常见日志。Standby 不等待已有 Job 结束，调度修改成功后仍须按 Job 历史核对业务执行结果。
 
 同身份编辑会在替换前合并最新运行统计，防止编辑期间完成的执行被旧副本覆盖。改任务名或分组则被视为新统计身份，列表计数归零；旧 SQLite 历史仍保留在旧键下。删除任务不删除历史。直接修改 `SchedulerInfo` 属性、调用 `SaveTasks` 或 `LoadTasks` 不能替代 `CreateJob/UpdateJob` 的 Quartz 注册流程。
 

@@ -267,6 +267,41 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedRemovalSave_RestoresNextFireAndRemainingRepetitions(bool paused)
+    {
+        SchedulerInfo info = CreateInfo();
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 2;
+        info.Interval = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+        await NextExecution();
+        await _scheduler.Standby();
+        if (paused) await _manager.StopJob(info.JobName, info.GroupName);
+
+        var key = new JobKey(info.JobName, info.GroupName);
+        ISimpleTrigger original = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(await _scheduler.GetTriggersOfJob(key)));
+        DateTimeOffset next = Assert.IsType<DateTimeOffset>(original.NextFireTimeUtc);
+        Assert.Equal(info.NextScheduledFireTimeUtc, next);
+        Assert.Equal(1, info.ScheduledFireCount);
+        Assert.Equal(1, original.TimesTriggered);
+
+        string path = Path.Combine(_directory, "tasks.json");
+        byte[] saved = File.ReadAllBytes(path);
+        using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.RemoveJob(info.JobName, info.GroupName));
+
+        Assert.Same(info, Assert.Single(_manager.TaskInfos));
+        Assert.Equal(saved, File.ReadAllBytes(path));
+        ISimpleTrigger restored = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(await _scheduler.GetTriggersOfJob(key)));
+        Assert.Equal(next, restored.NextFireTimeUtc);
+        Assert.Equal(2, restored.RepeatCount + 1 - restored.TimesTriggered);
+        Assert.Equal(paused ? TriggerState.Paused : TriggerState.Normal, await _scheduler.GetTriggerState(restored.Key));
+    }
+
+    [Theory]
     [InlineData(JobRepeatMode.Once)]
     [InlineData(JobRepeatMode.Multiple)]
     public async Task ScheduledFireWithUnsavedCheckpoint_IsVetoedAndCanResume(JobRepeatMode repeatMode)

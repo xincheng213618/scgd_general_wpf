@@ -1137,16 +1137,15 @@ namespace ColorVision.Scheduler
                 if (updatedJobKey != originalJob.Key)
                     await scheduler.DeleteJob(updatedJobKey);
 
-                if (originalTriggers.Count > 0)
-                {
-                    await scheduler.ScheduleJob(originalJob, originalTriggers, ScheduleJobOptions.Replacing);
-                }
-                else
-                {
-                    foreach (ITrigger trigger in await scheduler.GetTriggersOfJob(originalJob.Key))
+                ITrigger[] pending = originalTriggers.Where(trigger => trigger.NextFireTimeUtc.HasValue).ToArray();
+                var previousKeys = pending.Select(trigger => trigger.Key).ToHashSet();
+                foreach (ITrigger trigger in await scheduler.GetTriggersOfJob(originalJob.Key))
+                    if (!previousKeys.Contains(trigger.Key))
                         await scheduler.UnscheduleJob(trigger.Key);
-                    await scheduler.AddJob(originalJob, AddJobOptions.ReplacingAndStoringNonDurable);
-                }
+
+                await scheduler.AddJob(originalJob, AddJobOptions.ReplacingAndStoringNonDurable);
+                foreach (ITrigger trigger in pending)
+                    await RestoreTrigger(scheduler, originalJob.Key, trigger, wasPaused);
 
                 if (wasPaused)
                     await scheduler.PauseJob(originalJob.Key);
@@ -1157,6 +1156,36 @@ namespace ColorVision.Scheduler
             {
                 _logger.Error($"Failed to restore previous Quartz schedule: {originalJob?.Key}", rollbackException);
                 return false;
+            }
+        }
+
+        private static async Task RestoreTrigger(IScheduler scheduler, JobKey jobKey, ITrigger trigger, bool wasPaused)
+        {
+            bool missing = !await scheduler.Exists(trigger.Key);
+            if (missing)
+            {
+                // RescheduleJob preserves the supplied fire times, whereas
+                // registering a trigger recomputes its first fire.
+                ITrigger placeholder = TriggerBuilder.Create()
+                    .WithIdentity(trigger.Key)
+                    .ForJob(jobKey)
+                    .StartAt(trigger.NextFireTimeUtc!.Value)
+                    .Build();
+                await scheduler.ScheduleJob(placeholder, new ScheduleJobOptions { PauseReason = "Restoring a saved trigger" });
+            }
+
+            try
+            {
+                if (await scheduler.RescheduleJob(trigger.Key, trigger) == null)
+                    throw new InvalidOperationException($"Could not restore Quartz trigger '{trigger.Key}'.");
+                if (missing && !wasPaused)
+                    await scheduler.ResumeTrigger(trigger.Key);
+            }
+            catch
+            {
+                if (missing)
+                    await scheduler.UnscheduleJob(trigger.Key);
+                throw;
             }
         }
 
