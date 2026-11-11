@@ -290,21 +290,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         internal void ShowLocalResult(MeasureResultImgModel? model, LocalCameraPreview preview, bool forceDisplay, bool focusFrame)
         {
             if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
+            bool keepVideo = Device.DisplayConfig.IsLocalVideoOpen;
+            if (keepVideo && model == null) return;
             EnsureInitialized();
             localPreview = preview;
             localPreviewResultId = model?.Id ?? -1;
+            bool showPreview = !keepVideo && (forceDisplay || Config.AutoRefreshView);
             updatingLocalSelection = true;
             try
             {
                 if (model != null)
                 {
                     ShowResult(model);
-                    if (forceDisplay || Config.AutoRefreshView)
+                    if (showPreview)
                         listView1.SelectedItem = ViewResults.FirstOrDefault(item => item.Id == model.Id);
                 }
             }
             finally { updatingLocalSelection = false; }
-            if (forceDisplay || Config.AutoRefreshView)
+            if (showPreview)
             {
                 if (!focusFrame) FocusChart.ClearCompletedAutoFocus();
                 preview.Show(ImageView);
@@ -317,25 +320,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed || !Device.ViewRegistration.IsVisible) return;
             EnsureInitialized();
 
-            ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);
-            if (previous != null)
+            bool keepVideo = Device.DisplayConfig.IsLocalVideoOpen;
+            bool previousSelectionUpdate = updatingLocalSelection;
+            updatingLocalSelection = previousSelectionUpdate || keepVideo;
+            try
             {
-                if (previous.FileUrl == (model.FileUrl ?? string.Empty)) return;
-                ViewResults.Remove(previous);
-            }
-            ViewResultImage result = new(model);
-            if (Config.InsertAtBeginning)
-                ViewResults.Insert(0, result);
-            else
-                ViewResults.Add(result);
+                ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);
+                if (previous != null)
+                {
+                    if (previous.FileUrl == (model.FileUrl ?? string.Empty)) return;
+                    ViewResults.Remove(previous);
+                }
+                ViewResultImage result = new(model);
+                if (Config.InsertAtBeginning)
+                    ViewResults.Insert(0, result);
+                else
+                    ViewResults.Add(result);
 
-
-            // A delayed persisted notification for an older capture must not replace the latest snapshot.
-            if (Config.AutoRefreshView && model.Id >= localPreviewResultId && _viewResults.ContainsId(model.Id))
-            {
-                listView1.SelectedItem = result;
-                listView1.ScrollIntoView(result);
+                // A delayed persisted notification for an older capture must not replace the latest snapshot.
+                if (!keepVideo && Config.AutoRefreshView && model.Id >= localPreviewResultId && _viewResults.ContainsId(model.Id))
+                {
+                    listView1.SelectedItem = result;
+                    listView1.ScrollIntoView(result);
+                }
             }
+            finally { updatingLocalSelection = previousSelectionUpdate; }
         }
         private void Search_Click(object sender, RoutedEventArgs e)
         {

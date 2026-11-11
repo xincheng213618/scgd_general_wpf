@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum;
@@ -520,6 +521,48 @@ public sealed class DockViewLifecycleTests
             Assert.NotSame(previous, current);
             Assert.Null(previous.ImageView.ViewBitmapSource);
             Assert.Equal(4, Assert.IsAssignableFrom<BitmapSource>(current.ImageView.ViewBitmapSource).PixelWidth);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LateCameraResultsKeepTheRunningVideoAndRemainInHistory(bool persistedOnly)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var camera = new DeviceCamera(Resource("video-with-delayed-result"));
+            using var pipeline = new CameraRealtimeFramePipeline();
+            DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+            var view = camera.View;
+            ViewCameraConfig.Instance.AutoRefreshView = true;
+            var results = Assert.IsType<ListView>(view.FindName("listView1"));
+            view.ShowResult(new MeasureResultImgModel { Id = 10 });
+            Assert.Equal(10, Assert.IsType<ViewResultImage>(results.SelectedItem).Id);
+            using var captured = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 2, Height = 1, SourceBpp = 8, Channels = 1 }, 2, 0);
+
+            pipeline.Start(view.ImageView, showOverlayRoi: false, showOverlayMetrics: false);
+            camera.DisplayConfig.IsLocalVideoOpen = true;
+            view.ImageView.SetImageSource(new WriteableBitmap(4, 1, 96, 96, PixelFormats.Gray8, null));
+            var live = Assert.IsAssignableFrom<BitmapSource>(view.ImageView.ViewBitmapSource);
+            Assert.Equal(4, live.PixelWidth);
+
+            var result = new MeasureResultImgModel { Id = 11 };
+            if (persistedOnly) view.ShowResult(result);
+            else
+            {
+                camera.PublishLocalPreview(captured, result, forceDisplay: true);
+                Pump();
+            }
+            Assert.Same(live, view.ImageView.ViewBitmapSource);
+            Assert.Equal(10, Assert.IsType<ViewResultImage>(results.SelectedItem).Id);
+            Assert.Equal(new[] { 10, 11 }, view.ViewResults.Select(item => item.Id).Order());
+
+            camera.DisplayConfig.IsLocalVideoOpen = false;
+            pipeline.Stop(resetRealtime: true);
+            results.SelectedItem = view.ViewResults.Single(item => item.Id == 11);
+            if (!persistedOnly) Assert.Equal(2, Assert.IsAssignableFrom<BitmapSource>(view.ImageView.ViewBitmapSource).PixelWidth);
         });
     }
 
