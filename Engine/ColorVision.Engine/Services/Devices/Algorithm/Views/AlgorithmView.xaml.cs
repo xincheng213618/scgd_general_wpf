@@ -9,9 +9,11 @@ using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -210,32 +212,37 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 dialog.RestoreDirectory = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-                using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8); 
-                if (listView1.View is GridView gridView1)
-                {
-                    string headers = "";
-                    foreach (var item in gridView1.Columns)
-                    {
-                        headers += item.Header.ToString() + ",";
-                    }
-                    file.WriteLine(headers);
-                }
-                string value = "";
-                foreach (var item in ViewResults)
-                {
-                    value += item.Id + ","
-                        + item.Batch + ","
-                        + item.POITemplateName + ","
-                        + item.FilePath + ","
-                        + item.CreateTime + ","
-                        + item.ResultType + ","
-                        + item.TotalTime + ","
-                        + item.ResultDesc + ","
-                        + Environment.NewLine;
-                }
-                file.WriteLine(value);
+                using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8);
+                WriteHistoryCsv(file, ViewResults);
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
                 ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine( Path.GetDirectoryName(dialog.FileName),Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+            }
+        }
+
+        internal static void WriteHistoryCsv(TextWriter writer, IEnumerable<ViewResultAlg> results)
+        {
+            (string Header, Func<ViewResultAlg, string?> Value)[] columns =
+            [
+                (Properties.Resources.SerialNumber1, static result => result.Id.ToString(CultureInfo.InvariantCulture)),
+                (Properties.Resources.CreateTime, static result => result.CreateTime?.ToString(CultureInfo.CurrentCulture)),
+                ("ResultType", static result => result.ResultType.ToString()),
+                ("ResultDesc", static result => result.ResultDesc),
+                (Properties.Resources.File, static result => result.FilePath),
+                (Properties.Resources.Template, static result => result.POITemplateName),
+                ("img_result", static result => result.ResultImagFile),
+                (Properties.Resources.Duration, static result => result.TotalTime.ToString(CultureInfo.InvariantCulture)),
+                (Properties.Resources.BatchNumber, static result => result.Batch)
+            ];
+
+            using var csv = new CsvHelper.CsvWriter(writer, CultureInfo.InvariantCulture, leaveOpen: true);
+            foreach (var column in columns)
+                csv.WriteField(column.Header);
+            csv.NextRecord();
+            foreach (var result in results)
+            {
+                foreach (var column in columns)
+                    csv.WriteField(column.Value(result));
+                csv.NextRecord();
             }
         }
 

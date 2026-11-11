@@ -118,7 +118,7 @@ Copilot 的 `InspectLoadedBatchResults`／`inspect_loaded_batch_results` 只读�
 | 工具栏保存图标 | 要求有选中项，但 CSV 导出的是当前 `ViewResults` 全部主记录；追加写入并再次写表头，同时尝试将当前 `ImageShow.Source` 保存为同名 PNG，不包含独立画布叠图 |
 | 结果行右键 **导出** | `ViewResultAlg.Export` 只接受 CIE 文件并打开 `ExportCVCIE`；不是主表 CSV、客户 MES 或所有结果明细的通用导出 |
 
-保存数据列的可用性只检查是否匹配 handler；基类 `SideSave` 是空实现，所以按钮可用、方法返回都不证明文件已生成。多条保存按顺序调用，没有逐项异常隔离或整批回滚。工具栏 CSV 则使用固定主字段顺序、直接拼接逗号和换行，未做字段转义；显示列经过调整时，表头与固定字段顺序也可能不一致。CSV 与 PNG 不是一个保存事务。
+保存数据列的可用性只检查是否匹配 handler；基类 `SideSave` 是空实现，所以按钮可用、方法返回都不证明文件已生成。多条保存按顺序调用，没有逐项异常隔离或整批回滚。工具栏 CSV 保留默认主表列名和顺序，显示列调整不影响导出。逗号、引号和换行保留在对应字段内。CSV 与 PNG 分别保存。
 
 ## 统一算法 overlay 是另一条链
 

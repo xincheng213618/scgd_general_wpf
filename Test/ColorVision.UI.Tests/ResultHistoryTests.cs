@@ -6,9 +6,12 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Database;
+using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.Specialized;
+using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
@@ -17,6 +20,43 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ResultHistoryTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AlgorithmHistoryCsvKeepsValuesUnderTheirHeaders(bool quotedFields)
+    {
+        var result = new ViewResultAlg
+        {
+            Id = 17,
+            CreateTime = new DateTime(2026, 1, 20, 13, 42, 51),
+            ResultType = ViewResultAlgType.POI_XYZ,
+            ResultDesc = quotedFields ? "亮度,\"通过\"\r\n第二行" : "通过",
+            FilePath = quotedFields ? @"D:\captures\left,right.cvcie" : @"D:\captures\left.cvcie",
+            POITemplateName = "Standard POI",
+            ResultImagFile = @"D:\captures\result.png",
+            TotalTime = 357,
+            Batch = quotedFields ? "LOT-1,2" : "LOT-1"
+        };
+        using var output = new StringWriter(CultureInfo.InvariantCulture);
+        AlgorithmView.WriteHistoryCsv(output, [result]);
+        using var parser = new TextFieldParser(new StringReader(output.ToString())) { HasFieldsEnclosedInQuotes = true };
+        parser.SetDelimiters(",");
+
+        string[] headers = Assert.IsType<string[]>(parser.ReadFields());
+        string[] values = Assert.IsType<string[]>(parser.ReadFields());
+        Assert.Equal(result.CreateTime?.ToString(), values[1]);
+        Assert.Equal([
+            ColorVision.Engine.Properties.Resources.SerialNumber1, ColorVision.Engine.Properties.Resources.CreateTime,
+            "ResultType", "ResultDesc", ColorVision.Engine.Properties.Resources.File, ColorVision.Engine.Properties.Resources.Template,
+            "img_result", ColorVision.Engine.Properties.Resources.Duration, ColorVision.Engine.Properties.Resources.BatchNumber
+        ], headers);
+        Assert.Equal([
+            "17", result.CreateTime?.ToString(), "POI_XYZ", result.ResultDesc, result.FilePath,
+            result.POITemplateName, result.ResultImagFile, "357", result.Batch
+        ], values);
+        Assert.True(parser.EndOfData);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
