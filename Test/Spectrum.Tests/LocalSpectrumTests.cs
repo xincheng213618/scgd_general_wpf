@@ -716,23 +716,62 @@ public sealed class LocalSpectrumTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void NdAutoIntegrationStopsOnCancellationOrRevisitedHole(bool cancel)
+    public void NdAutoIntegrationRestoresInitialHoleOnCancellationOrNonconvergence(bool cancel)
     {
         using var files = new CalibrationFiles();
         ConfigureNd(files.Config, files.Config);
         var wheel = new FakeNd();
         using var stopped = new CancellationTokenSource();
-        var native = new FakeNative { AutoTimes = new([1, 500]), OnAutoTime = _ => { if (cancel) stopped.Cancel(); } };
+        var native = new FakeNative { AutoTimes = new([1, 500]), OnAutoTime = _ => { if (cancel && wheel.Port == 1) stopped.Cancel(); } };
         using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
         session.Open(files.Config);
         var parameters = new LocalSpectrumParameters { IsWithND = true, AutoIntegration = true, AutoInitDark = true };
         if (cancel) Assert.Throws<OperationCanceledException>(() => session.Capture(parameters, files.Config, stopped.Token));
         else Assert.Contains("收敛", Assert.Throws<InvalidOperationException>(() => session.Capture(parameters, files.Config)).Message);
-        Assert.Equal(cancel ? Array.Empty<int>() : [1], wheel.Moves);
+        Assert.Equal(new[] { 1, 0 }, wheel.Moves);
+        Assert.Equal(0, wheel.Port);
         Assert.Equal(0, native.DarkCalls);
         Assert.Equal(0, native.CaptureCalls);
         Assert.Equal(100, parameters.IntegralTime);
         Assert.True(wheel.Disposed);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NdAutoIntegrationRestoresInitialHoleIfFinalCaptureFails(bool restoreFails)
+    {
+        using var files = new CalibrationFiles();
+        ConfigureNd(files.Config, files.Config);
+        files.Config.NDConfig.EnableResetND = true;
+        var wheel = new FakeNd { Port = 1 };
+        var native = new FakeNative { AutoTimes = new([100]), CaptureFails = true, DarkValue = 40 };
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(files.Config);
+        session.Dark(new(), files.Config);
+        wheel.Moves.Clear();
+        wheel.FailRestore = restoreFails;
+        native.DarkValue = 7;
+
+        var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { IsWithND = true, AutoIntegration = true, AutoInitDark = true }, files.Config));
+
+        Assert.Equal(new[] { 0, 4, 0, 1 }, wheel.Moves);
+        Assert.Equal(restoreFails ? 0 : 1, wheel.Port);
+        Assert.Equal(1, native.CaptureCalls);
+        Assert.Equal(7, native.LastCaptureDark[0]);
+        if (restoreFails)
+        {
+            Assert.Contains("恢复初始孔位 1 失败", error.Message);
+            Assert.Collection(Assert.IsType<AggregateException>(error.InnerException).InnerExceptions,
+                capture => Assert.Equal("Native failure", capture.Message), restore => Assert.Equal("restore failed", restore.Message));
+        }
+        else
+        {
+            Assert.Equal("Native failure", error.Message);
+            native.CaptureFails = false;
+            Assert.Equal(1, session.Capture(new(), files.Config).NDPort);
+            Assert.Equal(40, native.LastCaptureDark[0]);
+        }
     }
 
     [Fact]

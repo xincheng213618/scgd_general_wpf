@@ -251,37 +251,59 @@ internal sealed class LocalSpectrumSession : IDisposable
             }
             Check(native.LoadWavelength(handle, wave), "加载波长校正");
             Check(native.LoadMagnitude(handle, magnitude), "加载幅度校正");
-            if (parameters.AutoIntegration)
+            int? initialNdPort = ndPort;
+            float[] initialDark = dark;
+            bool ndMoveAttempted = false;
+            try
             {
-                float time = withNd ? FindNdAutoTime(ndOperation!, config, cancellationToken) : FindAutoTime(config, cancellationToken);
-                if (withNd)
+                if (parameters.AutoIntegration)
                 {
-                    ndPort = ndOperation!.GetPort();
-                    calibration = LocalSpectrumNd.ResolveCalibration(config, ndPort.Value);
-                    wave = calibration.WavelengthFile;
-                    magnitude = calibration.MagnitudeFile;
-                    Check(native.LoadWavelength(handle, wave), "加载 ND 波长校正");
-                    Check(native.LoadMagnitude(handle, magnitude), "加载 ND 幅度校正");
+                    float time = withNd
+                        ? FindNdAutoTime(ndOperation!, initialNdPort!.Value, config, cancellationToken, ref ndMoveAttempted)
+                        : FindAutoTime(config, cancellationToken);
+                    if (withNd)
+                    {
+                        ndPort = ndOperation!.GetPort();
+                        calibration = LocalSpectrumNd.ResolveCalibration(config, ndPort.Value);
+                        wave = calibration.WavelengthFile;
+                        magnitude = calibration.MagnitudeFile;
+                        Check(native.LoadWavelength(handle, wave), "加载 ND 波长校正");
+                        Check(native.LoadMagnitude(handle, magnitude), "加载 ND 幅度校正");
+                    }
+                    parameters.IntegralTime = time;
+                    parameters.Validate();
+                    effective = parameters.WithSyncFrequencyTiming(settings);
                 }
-                parameters.IntegralTime = time;
-                parameters.Validate();
-                effective = parameters.WithSyncFrequencyTiming(settings);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
+                    DarkCore(effective, config, settings.FilterBW, parameters.SelfAdaptionInitDark, ndOperation);
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = native.Capture(handle, effective, settings, dark);
+                result.EffectiveAverageCount = effective.NumberOfAverage;
+                result.UsedSyncFrequency = settings.IsSyncFrequencyEnabled;
+                result.NDPort = ndPort;
+                result.NdCalibration = calibration;
+                result.AcquisitionParametersJson = JsonConvert.SerializeObject(new
+                {
+                    Parameters = parameters, Acquisition = settings,
+                    config.SN, NDPort = ndPort, WavelengthFile = wave, MagnitudeFile = magnitude
+                });
+                return result;
             }
-            cancellationToken.ThrowIfCancellationRequested();
-            if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
-                DarkCore(effective, config, settings.FilterBW, parameters.SelfAdaptionInitDark, ndOperation);
-            cancellationToken.ThrowIfCancellationRequested();
-            var result = native.Capture(handle, effective, settings, dark);
-            result.EffectiveAverageCount = effective.NumberOfAverage;
-            result.UsedSyncFrequency = settings.IsSyncFrequencyEnabled;
-            result.NDPort = ndPort;
-            result.NdCalibration = calibration;
-            result.AcquisitionParametersJson = JsonConvert.SerializeObject(new
+            catch (Exception failure) when (ndMoveAttempted && initialNdPort is int port)
             {
-                Parameters = parameters, Acquisition = settings,
-                config.SN, NDPort = ndPort, WavelengthFile = wave, MagnitudeFile = magnitude
-            });
-            return result;
+                dark = initialDark;
+                try
+                {
+                    if (ndOperation!.SetPort(port) != port)
+                        throw new InvalidOperationException("ND 未确认到达初始孔位。");
+                }
+                catch (Exception restoreFailure)
+                {
+                    throw new InvalidOperationException($"ND 自动积分后恢复初始孔位 {port} 失败，请检查光路。", new AggregateException(failure, restoreFailure));
+                }
+                throw;
+            }
         }
     }
 
@@ -358,7 +380,7 @@ internal sealed class LocalSpectrumSession : IDisposable
         return time;
     }
 
-    private float FindNdAutoTime(ILocalSpectrumNdOperation operation, ConfigSpectrum config, CancellationToken token)
+    private float FindNdAutoTime(ILocalSpectrumNdOperation operation, int current, ConfigSpectrum config, CancellationToken token, ref bool moveAttempted)
     {
         NDConfig settings = config.NDConfig;
         if (!double.IsFinite(settings.NDMinExpTime) || !double.IsFinite(settings.NDMaxExpTime)
@@ -369,7 +391,12 @@ internal sealed class LocalSpectrumSession : IDisposable
         int[] ports = settings.NDRate.Select((rate, port) => (rate, port)).OrderBy(item => item.rate).Select(item => item.port).ToArray();
         // Validate every candidate before moving any hardware; a missing file must not cause an uncalibrated capture.
         foreach (int candidate in ports) LocalSpectrumNd.ResolveCalibration(config, candidate);
-        int current = settings.EnableResetND ? operation.SetPort(ports[0]) : operation.GetPort();
+        if (settings.EnableResetND && current != ports[0])
+        {
+            token.ThrowIfCancellationRequested();
+            moveAttempted = true;
+            current = operation.SetPort(ports[0]);
+        }
         var visited = new System.Collections.Generic.HashSet<int>();
         while (visited.Add(current))
         {
@@ -381,6 +408,8 @@ internal sealed class LocalSpectrumSession : IDisposable
             if (next < 0 || next >= ports.Length || visited.Contains(ports[next]))
                 throw new InvalidOperationException("ND 自动积分无法在配置的孔位及积分范围内收敛，请检查光路和 ND 参数。");
             token.ThrowIfCancellationRequested();
+            // A command without confirmed readback may still have moved the wheel.
+            moveAttempted = true;
             current = operation.SetPort(ports[next]);
         }
         throw new InvalidOperationException("ND 自动积分无法收敛。");
