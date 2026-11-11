@@ -1,5 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
@@ -11,6 +13,35 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowHeadlessExecutionServiceTests
 {
+    [Fact]
+    public Task SavedFlowBindingRejectsTwoTemplatesSharingTheSameKey()
+    {
+        return WpfTestHost.Invoke(async () =>
+        {
+            string flowKey = $"flow:{Guid.NewGuid():N}";
+            string savedCanvas = Convert.ToBase64String(CreateCanvas(new CVEndNode()));
+            var first = new TemplateModel<FlowParam>("First", new FlowParam { Id = 4101, FlowKey = flowKey, DataBase64 = savedCanvas });
+            var second = new TemplateModel<FlowParam>("Second", new FlowParam { Id = 4102, FlowKey = flowKey, DataBase64 = savedCanvas });
+            TemplateFlow.Params.Add(first);
+            TemplateFlow.Params.Add(second);
+            try
+            {
+                var failure = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    FlowExecutionCoordinator.Instance.RunSavedFlowHeadlessAsync(flowKey, "HeadlessStart", "SN-AMBIGUOUS"));
+                Assert.Contains(flowKey, failure.Message);
+
+                TemplateFlow.Params.Remove(second);
+                var unique = await FlowExecutionCoordinator.Instance.RunSavedFlowHeadlessAsync(flowKey, "HeadlessStart", "SN-UNIQUE");
+                Assert.True(unique.Succeeded);
+            }
+            finally
+            {
+                TemplateFlow.Params.Remove(first);
+                TemplateFlow.Params.Remove(second);
+            }
+        });
+    }
+
     [Theory]
     [InlineData(true, "readinessTimeout")]
     [InlineData(false, "executionTimeout")]

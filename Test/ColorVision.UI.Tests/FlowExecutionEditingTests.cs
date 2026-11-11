@@ -1119,6 +1119,22 @@ public sealed class FlowExecutionEditingTests
                 Assert.Contains(Engine.Properties.Resources.BatchNumber, record.Message);
                 Assert.Contains("归档失败", record.Message);
 
+                fixture.CreateMainGraph(templateB);
+                var duplicate = new TemplateModel<FlowParam>("同标识的巡检模板", new FlowParam
+                {
+                    Id = 712, FlowKey = templateA.Value.FlowKey, DataBase64 = templateA.Value.DataBase64
+                });
+                TemplateFlow.Params.Insert(0, duplicate);
+                await scheduler.TriggerJob(new JobKey(savedTask.JobName, savedTask.GroupName));
+                var ambiguous = await history.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
+                Assert.False(ambiguous.Success);
+                Assert.Same(templateB.Value, fixture.Manager.SelectedFlowParam);
+                Assert.Contains(templateA.Value.FlowKey!, ambiguous.Message);
+                Assert.DoesNotContain(duplicate.Key, ambiguous.Message);
+                Assert.DoesNotContain(templateA, FlowJobConfig.SavedTemplates);
+                Assert.DoesNotContain(duplicate, FlowJobConfig.SavedTemplates);
+                TemplateFlow.Params.Remove(duplicate);
+
                 var preProcessManager = PreProcessManager.GetInstance();
                 var invalidAction = new PreProcessAction(fixture.PreProcess)
                 {

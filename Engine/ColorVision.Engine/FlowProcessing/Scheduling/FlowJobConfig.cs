@@ -27,20 +27,16 @@ public sealed class FlowJobConfig : JobConfigBase, IValidatableObject, IJobNameS
     }
     private string? _flowKey;
 
-    string? IJobNameSuggestion.SuggestedJobName => FindSavedTemplate(FlowKey)?.Key;
+    string? IJobNameSuggestion.SuggestedJobName => SavedFlowTemplateBinding.Find(FlowKey, out _)?.Key;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (FindSavedTemplate(FlowKey) == null)
-            yield return new ValidationResult(Resources.Flow_NoValidFlowTemplateSelected, [nameof(FlowKey)]);
+        if (SavedFlowTemplateBinding.Find(FlowKey, out bool ambiguous) == null)
+            yield return new ValidationResult(ambiguous ? SavedFlowTemplateBinding.AmbiguousMessage(FlowKey)
+                : Resources.Flow_NoValidFlowTemplateSelected, [nameof(FlowKey)]);
     }
 
-    internal static IEnumerable<TemplateModel<FlowParam>> SavedTemplates => TemplateFlow.Params.Where(template =>
-        !string.IsNullOrWhiteSpace(template.Value.FlowKey) && !string.IsNullOrWhiteSpace(template.Value.DataBase64));
-
-    internal static TemplateModel<FlowParam>? FindSavedTemplate(string? flowKey) => string.IsNullOrWhiteSpace(flowKey)
-        ? null
-        : SavedTemplates.FirstOrDefault(template => string.Equals(template.Value.FlowKey, flowKey, StringComparison.Ordinal));
+    internal static IEnumerable<TemplateModel<FlowParam>> SavedTemplates => SavedFlowTemplateBinding.SelectableTemplates;
 }
 
 public sealed class FlowJobTemplateEditor : IPropertyEditor
