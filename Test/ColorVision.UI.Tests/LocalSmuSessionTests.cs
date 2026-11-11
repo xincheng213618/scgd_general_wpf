@@ -3,6 +3,7 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Local;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.UI;
 using cvColorVision;
 using Newtonsoft.Json.Linq;
@@ -19,6 +20,74 @@ public sealed class LocalSmuSessionTests
 {
     private static LocalSmuConnection Config() => new(false, "synthetic-" + Guid.NewGuid(), Pss_Type.Keithley_2600, 10, true, false);
     private static LocalSmuParameters Point(Channel channel = Channel.A) => new() { Channel = channel, MeasureValue = 5, LimitValue = 10 };
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task LateResultCannotRestoreClosedReadingsOrReplaceANewerCapture(bool replaceWithNewerCapture, bool closeNewerOutput)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? previousManager = managerField.GetValue(null);
+        var previousConfig = ColorVision.UI.ConfigService.Instance;
+        DeviceSMU? device = null;
+        DeviceSpectrum? spectrum = null;
+        var published = new List<LocalSmuCapture>();
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
+                var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+                manager.DeviceServices = [];
+                managerField.SetValue(null, manager);
+                device = new DeviceSMU(new() { Id = -2, Code = "delayed-smu-" + Guid.NewGuid(), Value = "{}" }, session);
+                spectrum = new DeviceSpectrum(new() { Id = -3, Code = "delayed-spectrum-" + Guid.NewGuid(), Value = "{}" });
+                manager.DeviceServices.Add(device);
+                manager.DeviceServices.Add(spectrum);
+                device.LocalResultAvailable += published.Add;
+                spectrum.DisplayConfig.V = 7;
+                spectrum.DisplayConfig.I = 8;
+            });
+            await session.OpenAsync(config);
+            var old = await session.CaptureAsync(config, Point(), false, false, true);
+            await session.CloseOutputAsync(Channel.A);
+            LocalSmuCapture? newer = null;
+            if (replaceWithNewerCapture)
+            {
+                sdk.PointVoltage = 6;
+                sdk.PointCurrentAmps = .034;
+                newer = await session.CaptureAsync(config, Point() with { IsCloseOutput = closeNewerOutput }, false, false, true);
+            }
+
+            WpfTestHost.Invoke(() =>
+            {
+                if (newer != null) device!.PublishLocalSmu(newer, 0);
+                device!.ClearLocalSmuReadings(Channel.A, all: false);
+                device.PublishLocalSmu(old, 0);
+                bool showReading = replaceWithNewerCapture && !closeNewerOutput;
+                Assert.Equal(showReading ? 6d : null, device.DisplayConfig.V);
+                Assert.Equal(showReading ? 34d : null, device.DisplayConfig.I);
+                Assert.Equal(replaceWithNewerCapture ? 6d : 7d, spectrum!.DisplayConfig.V);
+                Assert.Equal(replaceWithNewerCapture ? 34d : 8d, spectrum.DisplayConfig.I);
+                if (newer == null) Assert.Empty(published);
+                else Assert.Same(newer, Assert.Single(published));
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                device?.Dispose();
+                spectrum?.Dispose();
+                managerField.SetValue(null, previousManager);
+                TestEnvironment.SetConfig(previousConfig);
+            });
+        }
+    }
 
     [Theory]
     [InlineData(false)]
@@ -855,6 +924,7 @@ public sealed class LocalSmuSessionTests
         internal int SweepCapabilities, SweepCode = 1, ListCode = 1, Sweeps, Lists, PointMeasurements;
         internal bool BlockCapture;
         internal double LastSource, LastLimit;
+        internal double PointVoltage = 5, PointCurrentAmps = .012;
         internal LocalSmuParameters? ScanParameters;
         internal double[]? ListSourceValues;
         internal LocalSmuConnection? OpenedConnection;
@@ -891,7 +961,7 @@ public sealed class LocalSmuSessionTests
             PointMeasurements++;
             Events.Add("measure:" + channel); Capture();
             LastSource = p.NativeSource(p.MeasureValue); LastLimit = p.NativeLimit;
-            v = 5; i = 0.012; return MeasureCode;
+            v = PointVoltage; i = PointCurrentAmps; return MeasureCode;
         }
         public int Read(int h, ref double v, ref double i) { Reads++; v = 5; i = 0.012; return 1; }
         public int Sweep(int h, LocalSmuParameters p, double[] v, double[] i)
