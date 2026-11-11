@@ -115,6 +115,48 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StaleManager_CannotOverwriteAnotherManagersSavedDefinitions(bool existingFile)
+    {
+        string path = Path.Combine(_directory, "tasks.json");
+        if (existingFile)
+            SchedulerTaskSerializer.SaveToFile(path, [CreateInfo()]);
+        var staleManager = new QuartzSchedulerManager(_scheduler, path);
+        Assert.Null(_manager.LoadTaskDefinitions());
+        Assert.Null(staleManager.LoadTaskDefinitions());
+
+        SchedulerInfo savedByFirst = CreateInfo();
+        savedByFirst.JobName = "saved-by-first";
+        Assert.True((await _manager.CreateJob(savedByFirst)).Success);
+        byte[] primary = File.ReadAllBytes(path);
+        byte[]? backup = existingFile ? File.ReadAllBytes(path + ".bak") : null;
+
+        SchedulerInfo staleAddition = CreateInfo();
+        staleAddition.JobName = "stale-addition";
+        SchedulerOperationResult result = await staleManager.CreateJob(staleAddition);
+
+        Assert.False(result.Success);
+        Assert.Equal(SchedulerOperationError.PersistenceFailure, result.Error);
+        Assert.DoesNotContain(staleAddition, staleManager.TaskInfos);
+        Assert.False(await _scheduler.Exists(new JobKey(staleAddition.JobName, staleAddition.GroupName)));
+        Assert.Equal(primary, File.ReadAllBytes(path));
+        if (backup == null)
+        {
+            Assert.False(File.Exists(path + ".bak"));
+            return;
+        }
+
+        Assert.Equal(backup, File.ReadAllBytes(path + ".bak"));
+        File.Delete(path);
+        File.Delete(path + ".bak");
+        Assert.Null(staleManager.LoadTaskDefinitions());
+        Assert.Single(staleManager.TaskInfos);
+        Assert.False((await staleManager.CreateJob(staleAddition)).Success);
+        Assert.False(File.Exists(path));
+    }
+
+    [Theory]
     [InlineData("{\"$values\":[")]
     [InlineData("null")]
     [InlineData("{\"$type\":\"Missing.TaskList, Missing.SchedulerJobs\",\"$values\":[]}")]

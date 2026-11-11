@@ -3,6 +3,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
 
 namespace ColorVision.Scheduler
 {
@@ -31,45 +34,94 @@ namespace ColorVision.Scheduler
         }
 
         public static void SaveToFile(string filePath, ObservableCollection<SchedulerInfo> tasks)
+            => SaveToFile(filePath, tasks, checkRevision: false, loadedRevision: null);
+
+        internal static string SaveLoadedFile(string filePath, ObservableCollection<SchedulerInfo> tasks, string? loadedRevision)
+            => SaveToFile(filePath, tasks, checkRevision: true, loadedRevision);
+
+        private static string SaveToFile(string filePath, ObservableCollection<SchedulerInfo> tasks, bool checkRevision, string? loadedRevision)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             ArgumentNullException.ThrowIfNull(tasks);
 
             string fullPath = Path.GetFullPath(filePath);
-            string? existing = ReadExistingText(fullPath);
-            if (existing != null)
-                ValidateDocument(fullPath, existing);
-            else if (ReadExistingText(fullPath + ".bak") != null)
-                throw new InvalidDataException(string.Format(Resources.Sched_TaskBackupRequiresRestore, fullPath + ".bak"));
+            return WithFileLock(fullPath, () =>
+            {
+                // Block ordinary writes to the checked file until it is replaced.
+                using FileStream? primary = OpenExistingFile(fullPath);
+                string? existing = ReadText(primary);
+                string? currentRevision = existing == null ? null : ComputeRevision(existing);
+                if (checkRevision && !string.Equals(loadedRevision, currentRevision, StringComparison.Ordinal))
+                    throw new IOException(string.Format(Resources.Sched_TaskFileChanged, fullPath));
+                if (existing != null)
+                    ValidateDocument(fullPath, existing);
+                else if (ReadExistingText(fullPath + ".bak") != null)
+                    throw new InvalidDataException(string.Format(Resources.Sched_TaskBackupRequiresRestore, fullPath + ".bak"));
 
-            WriteAtomically(fullPath, Serialize(tasks), replace: existing != null);
+                string contents = Serialize(tasks);
+                WriteAtomically(fullPath, contents, replace: existing != null);
+                return ComputeRevision(contents);
+            });
         }
 
-        internal static ObservableCollection<SchedulerInfo>? LoadForStartup(string filePath, out bool restoredBackup)
+        internal static (ObservableCollection<SchedulerInfo>? Tasks, string? Revision, bool RestoredBackup) LoadForStartup(string filePath)
         {
             string fullPath = Path.GetFullPath(filePath);
-            restoredBackup = false;
-            string? primary = ReadExistingText(fullPath);
-            if (primary != null)
-                return ReadDefinitions(fullPath, primary);
+            return WithFileLock<(ObservableCollection<SchedulerInfo>?, string?, bool)>(fullPath, () =>
+            {
+                string? primary = ReadExistingText(fullPath);
+                if (primary != null)
+                    return (ReadDefinitions(fullPath, primary), ComputeRevision(primary), false);
 
-            string backupPath = fullPath + ".bak";
-            string? backup = ReadExistingText(backupPath);
-            if (backup == null) return null;
+                string backupPath = fullPath + ".bak";
+                string? backup = ReadExistingText(backupPath);
+                if (backup == null) return default;
 
-            var tasks = ReadDefinitions(backupPath, backup);
-            // Another instance may have already restored or written the primary.
-            // Creating without overwrite protects that file and the original backup.
-            WriteAtomically(fullPath, backup, replace: false);
-            restoredBackup = true;
-            return tasks;
+                var tasks = ReadDefinitions(backupPath, backup);
+                // Creating without overwrite protects any primary written by an external tool.
+                WriteAtomically(fullPath, backup, replace: false);
+                return (tasks, ComputeRevision(backup), true);
+            });
+        }
+
+        private static T WithFileLock<T>(string fullPath, Func<T> operation)
+        {
+            // The loaded revision and atomic replacement share a lock across app instances.
+            using var mutex = new Mutex(false, @"Local\ColorVision.Scheduler.Definitions." + ComputeRevision(fullPath.ToUpperInvariant()));
+            try
+            {
+                if (!mutex.WaitOne(TimeSpan.FromSeconds(2)))
+                    throw new IOException(string.Format(Resources.Sched_TaskFileBusy, fullPath));
+            }
+            catch (AbandonedMutexException)
+            {
+                // Ownership transferred. The existing file is still checked below.
+            }
+            try { return operation(); }
+            finally { mutex.ReleaseMutex(); }
         }
 
         private static string? ReadExistingText(string path)
         {
-            try { return File.ReadAllText(path); }
+            using FileStream? stream = OpenExistingFile(path);
+            return ReadText(stream);
+        }
+
+        private static FileStream? OpenExistingFile(string path)
+        {
+            try { return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete); }
             catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return null; }
         }
+
+        private static string? ReadText(FileStream? stream)
+        {
+            if (stream == null) return null;
+            using var reader = new StreamReader(stream, leaveOpen: true);
+            return reader.ReadToEnd();
+        }
+
+        private static string ComputeRevision(string contents)
+            => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(contents)));
 
         private static ObservableCollection<SchedulerInfo> ReadDefinitions(string path, string json)
         {

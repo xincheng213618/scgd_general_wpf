@@ -49,6 +49,7 @@ namespace ColorVision.Scheduler
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
         private readonly string ConfigFile;
         private string? _configurationLoadError;
+        private string? _configurationRevision;
        
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
@@ -253,7 +254,7 @@ namespace ColorVision.Scheduler
             try
             {
                 _logger.Debug($"Saving {TaskInfos.Count} tasks to {ConfigFile}");
-                SchedulerTaskSerializer.SaveToFile(ConfigFile, TaskInfos);
+                _configurationRevision = SchedulerTaskSerializer.SaveLoadedFile(ConfigFile, TaskInfos, _configurationRevision);
                 _logger.Info("Tasks saved successfully");
                 errorMessage = string.Empty;
                 return true;
@@ -280,9 +281,12 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                var tasks = SchedulerTaskSerializer.LoadForStartup(ConfigFile, out bool restoredBackup);
+                var (tasks, revision, restoredBackup) = SchedulerTaskSerializer.LoadForStartup(ConfigFile);
                 _configurationLoadError = null;
+                // A missing-file reload leaves the current tasks in memory. Keep their
+                // revision so they cannot recreate a file that was removed externally.
                 if (tasks == null) return null;
+                _configurationRevision = revision;
 
                 var notifications = new List<string>();
                 if (restoredBackup)

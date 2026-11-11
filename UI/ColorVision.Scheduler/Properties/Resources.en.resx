@@ -365,6 +365,12 @@
   <data name="Sched_TaskFileUnreadable" xml:space="preserve">
     <value>Could not read task definitions from “{0}”. Keep the original file and check that its job types are available. Restore a valid backup if needed, then reload.</value>
   </data>
+  <data name="Sched_TaskFileChanged" xml:space="preserve">
+    <value>Task definitions in “{0}” changed after loading. Restart ColorVision to load the current definitions, then try again.</value>
+  </data>
+  <data name="Sched_TaskFileBusy" xml:space="preserve">
+    <value>Another instance is reading or writing the task definitions in “{0}”. Try again shortly.</value>
+  </data>
   <data name="Sched_TaskBackupRequiresRestore" xml:space="preserve">
     <value>The primary task file is missing and backup “{0}” is present. Reload or restart to restore the backup before saving changes.</value>
   </data>

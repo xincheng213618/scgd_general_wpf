@@ -345,6 +345,12 @@
   <data name="Sched_TaskFileUnreadable" xml:space="preserve">
     <value>无法读取任务定义“{0}”。请保留原文件，检查任务类型是否可用。需要时从有效备份恢复后重新加载。</value>
   </data>
+  <data name="Sched_TaskFileChanged" xml:space="preserve">
+    <value>任务定义“{0}”在加载后发生变化。请重启 ColorVision 载入当前定义后重试。</value>
+  </data>
+  <data name="Sched_TaskFileBusy" xml:space="preserve">
+    <value>另一实例正在读写任务定义“{0}”，请稍后重试。</value>
+  </data>
   <data name="Sched_TaskBackupRequiresRestore" xml:space="preserve">
     <value>主任务文件缺失，仍保有备份“{0}”。请重新加载或重启以恢复，再保存更改。</value>
   </data>

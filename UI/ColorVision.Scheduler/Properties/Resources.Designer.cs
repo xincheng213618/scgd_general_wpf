@@ -711,6 +711,10 @@ namespace ColorVision.Scheduler.Properties {
 
         public static string Sched_TaskFileUnreadable => ResourceManager.GetString(nameof(Sched_TaskFileUnreadable), resourceCulture);
 
+        public static string Sched_TaskFileChanged => ResourceManager.GetString(nameof(Sched_TaskFileChanged), resourceCulture);
+
+        public static string Sched_TaskFileBusy => ResourceManager.GetString(nameof(Sched_TaskFileBusy), resourceCulture);
+
         public static string Sched_TaskBackupRequiresRestore => ResourceManager.GetString(nameof(Sched_TaskBackupRequiresRestore), resourceCulture);
 
         public static string Sched_TaskBackupRestored => ResourceManager.GetString(nameof(Sched_TaskBackupRestored), resourceCulture);
