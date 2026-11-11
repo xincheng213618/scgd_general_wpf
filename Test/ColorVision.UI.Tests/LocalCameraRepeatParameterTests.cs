@@ -4,8 +4,10 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -112,6 +114,65 @@ public sealed class LocalCameraRepeatParameterTests
             Assert.Equal(2, node.Gain);
             Assert.Equal(new double[] { 125, 250 }, node.RepeatParameterValues[nameof(LocalCameraNode.ExpTime)]);
             Assert.Equal(new double[] { 2, 3 }, node.RepeatParameterValues[nameof(LocalCameraNode.AvgCount)]);
+        });
+    }
+
+    [Theory]
+    [InlineData(LocalCameraFocusMode.FocusDisabled)]
+    [InlineData(LocalCameraFocusMode.FineFocus)]
+    [InlineData(LocalCameraFocusMode.FullFocus)]
+    public void CaptureUsesTheSavedFocusModeAndAnImmutableTemplateSnapshot(LocalCameraFocusMode mode)
+    {
+        StaTest.Run(() =>
+        {
+            using var scope = new CameraScope();
+            bool enabled = mode != LocalCameraFocusMode.FocusDisabled;
+            var template = new TemplateModel<AutoFocusParam>("capture-focus-" + Guid.NewGuid(), new AutoFocusParam());
+            TemplateAutoFocus.Params.Add(template);
+            try
+            {
+                var requestReady = new TaskCompletionSource<LocalCameraCaptureRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var saved = new LocalCameraNode { FocusMode = mode, AutoFocusTemplateName = template.Key };
+                saved.Create();
+                var node = new LocalCameraNode((request, _) =>
+                {
+                    requestReady.SetResult(request);
+                    throw new OperationCanceledException();
+                });
+                node.Create();
+                Assert.False(node.ShowFocusMode);
+                scope.Device.Config.MotorConfig.IsUseMotor = enabled;
+                node.OnLoadNode(STNodeSavedState.Parse(saved.GetSaveData()).Properties);
+                Assert.Equal(mode, node.FocusMode);
+                Assert.Equal(template.Key, node.AutoFocusTemplateName);
+                Assert.Equal(enabled, node.ShowFocusMode);
+                Assert.Equal(enabled, node.ShowAutoFocusTemplate);
+
+                var action = new CVStartCFC("camera-focus-mode") { PersistResults = false };
+                using var resources = action.RuntimeResources;
+                JObject? payload = null;
+                node.nodeRunEvent += (_, args) =>
+                {
+                    payload = JObject.Parse(args.SendPayload);
+                    node.FocusMode = LocalCameraFocusMode.FocusDisabled;
+                    template.Value.MaxPosition += 1000;
+                };
+                int maximum = template.Value.MaxPosition;
+                node.GetAllInputOptions().Single().ReceiveData(action);
+                var request = requestReady.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+                Assert.NotNull(payload);
+                Assert.Equal((int)mode, payload.Value<int>(nameof(LocalCameraNode.FocusMode)));
+                Assert.Equal(enabled ? template.Key : null, payload.Value<string>(nameof(LocalCameraNode.AutoFocusTemplateName)));
+                Assert.Equal(resources.StopToken, request.Stop);
+                if (enabled)
+                {
+                    Assert.NotNull(request.AutoFocus);
+                    Assert.Equal(maximum, request.AutoFocus.Maximum);
+                    Assert.Equal(mode == LocalCameraFocusMode.FineFocus, request.AutoFocus.FineOnly);
+                }
+                else Assert.Null(request.AutoFocus);
+            }
+            finally { TemplateAutoFocus.Params.Remove(template); }
         });
     }
 

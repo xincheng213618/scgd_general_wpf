@@ -21,6 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
         public bool IsAutoExposure { get; init; }
         public string? AutoExposureConfiguration { get; init; }
+        public LocalAutoFocusSettings? AutoFocus { get; init; }
         public bool SaveFiles { get; init; }
         public bool AllowAcceleration { get; init; }
         public CancellationToken Stop { get; init; }
@@ -114,6 +115,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
                 if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration, captureChannels));
                 else FlowNodeTiming.Skip("AutoExposure");
+                if (request.AutoFocus is { } focus)
+                {
+                    float focusExposure = device.Config.IsExpThree ? cameraParameters.ExpTimeR : cameraParameters.ExpTime;
+                    FlowNodeTiming.Run("AutoFocus", () => device.LocalCameraSession.AutoFocus(focus, focusExposure, cameraParameters.Gain, request.Stop, includeVid: false));
+                    request.Stop.ThrowIfCancellationRequested();
+                }
                 string captureJson = BuildRawCaptureJson(device, cameraParameters, captureChannels);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
                 uint sourceInfoResult;
