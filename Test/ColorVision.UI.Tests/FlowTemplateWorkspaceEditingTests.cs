@@ -8,6 +8,7 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using ST.Library.UI.NodeEditor;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
@@ -16,6 +17,38 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowTemplateWorkspaceEditingTests
 {
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void WorkspaceDeletesOnlyTheConfirmedFlowWhenOtherTemplatesAreMarked(int markedCount)
+    {
+        string path = Path.Combine(Path.GetTempPath(), "ColorVision-workspace-delete-tests", Guid.NewGuid().ToString("N"), "local.db");
+        var storage = new LocalFlowTemplateStorage(new LocalTemplateStore(path));
+        WithFixture(fixture =>
+        {
+            foreach (var template in new[] { fixture.A, fixture.B, fixture.C })
+                storage.Save(new FlowParam { Name = template.Key, DataBase64 = template.Value.DataBase64 });
+
+            fixture.Manager.CreateFlowTemplate().Load();
+            TemplateModel<FlowParam> confirmed = TemplateFlow.Params.Single(template => template.Key == "A");
+            var load = fixture.View.SelectFlowTemplateAsync(confirmed, replacementMode: FlowWorkspaceReplacementMode.AlreadyConfirmed);
+            PumpUntil(load);
+            Assert.NotNull(load.Result.Snapshot);
+            var marked = TemplateFlow.Params.Where(template => template != confirmed).Take(markedCount).ToArray();
+            foreach (var template in marked) template.IsSelected = true;
+
+            PumpUntil(fixture.View.DeleteFlowAsync(name =>
+            {
+                Assert.Equal("A", name);
+                return true;
+            }));
+
+            Assert.Equal(new[] { "B", "C" }, storage.Load().Select(flow => flow.Name));
+            Assert.All(marked, template => Assert.True(template.IsSelected));
+        }, associateInitialTemplate: false, createFlowTemplate: () => new TemplateFlow(storage, () => false,
+            () => throw new InvalidOperationException("This workflow test must not open MySQL.")));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -479,7 +512,7 @@ public sealed class FlowTemplateWorkspaceEditingTests
         });
     }
 
-    private static void WithFixture(Action<WorkspaceFixture> test, bool associateInitialTemplate = true)
+    private static void WithFixture(Action<WorkspaceFixture> test, bool associateInitialTemplate = true, Func<TemplateFlow>? createFlowTemplate = null)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -494,7 +527,7 @@ public sealed class FlowTemplateWorkspaceEditingTests
             {
                 Assert.False(MySqlSetting.IsConnect);
                 Assert.Null(ReadField(MqttRCService.GetInstance(), "Token"));
-                using var fixture = new WorkspaceFixture(associateInitialTemplate);
+                using var fixture = new WorkspaceFixture(associateInitialTemplate, createFlowTemplate);
                 test(fixture);
             }
             finally
@@ -538,10 +571,10 @@ public sealed class FlowTemplateWorkspaceEditingTests
         public long RequestGeneration => (long)ReadField(ReadField(Controller, "_refreshGate")!, "_generation")!;
         public CancellationTokenSource? PendingRefresh => (CancellationTokenSource?)ReadField(Controller, "_refreshCts");
 
-        public WorkspaceFixture(bool associateInitialTemplate)
+        public WorkspaceFixture(bool associateInitialTemplate, Func<TemplateFlow>? createFlowTemplate)
         {
             foreach (var template in new[] { A, B, C }) TemplateFlow.Params.Add(template);
-            Manager = new FlowEngineManager();
+            Manager = new FlowEngineManager(createFlowTemplate);
             var session = (FlowExecutionSession)ReadField(View, "_executionSession")!;
             ((FlowTemplateWorkspaceController)ReadField(session, "_templateWorkspace")!).Dispose();
             Controller = new FlowTemplateWorkspaceController(Manager, View,

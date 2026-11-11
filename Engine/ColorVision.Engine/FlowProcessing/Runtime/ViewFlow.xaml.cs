@@ -323,40 +323,45 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void DeleteFlow()
         {
-            if (!CanEditFlow) return;
-            var flowParam = GetActiveFlowParam();
-            if (flowParam == null) return;
+            _ = DeleteFlowAsync(name => MessageBox.Show(Application.Current.GetActiveWindow(),
+                string.Format(Properties.Resources.Flow_ConfirmDeleteFlow, name), "ColorVision",
+                MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK);
+        }
 
-            if (MessageBox.Show(Application.Current.GetActiveWindow(),
-                string.Format(Properties.Resources.Flow_ConfirmDeleteFlow, flowParam.Name), "ColorVision",
-                MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK || !CanEditFlow)
-                return;
+        internal Task DeleteFlowAsync(Func<string, bool> confirmDelete)
+        {
+            if (!CanEditFlow) return Task.CompletedTask;
+            var flowParam = GetActiveFlowParam();
+            if (flowParam == null) return Task.CompletedTask;
+            int id = flowParam.Id;
+            string? flowKey = flowParam.FlowKey;
+
+            if (!confirmDelete(flowParam.Name) || !CanEditFlow)
+                return Task.CompletedTask;
 
             var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
-            int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
-            if (index >= 0)
-            {
-                templateFlow.Delete(index);
-            }
+            var target = templateFlow.FindSavedTemplate(id, flowKey);
+            if (target != null) templateFlow.DeleteTemplate(target);
             if (_isStandalone)
+            {
                 Refresh();
-            else
-                _ = ReconcileTemplatesAsync();
+                return Task.CompletedTask;
+            }
+            return ReconcileTemplatesAsync();
         }
 
         public void ExportFlow()
         {
             var flowParam = GetActiveFlowParam();
             if (flowParam == null) return;
+            int id = flowParam.Id;
+            string? flowKey = flowParam.FlowKey;
 
             var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
-            int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
-            if (index >= 0)
-            {
-                templateFlow.Export(index);
-            }
+            var target = templateFlow.FindSavedTemplate(id, flowKey);
+            if (target != null) TemplateFlow.ExportTemplate(target);
         }
 
         public void ImportFlow()

@@ -161,44 +161,41 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void Delete(int index)
         {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+            foreach (var template in GetManagementTargets(index)) DeleteTemplate(template);
+        }
 
-            void DeleteSingle(int id)
+        internal TemplateModel<FlowParam>? FindSavedTemplate(int id, string? flowKey)
+            => TemplateParams.FirstOrDefault(template => template.Id == id && string.Equals(template.Value.FlowKey, flowKey, StringComparison.Ordinal));
+
+        internal void DeleteTemplate(TemplateModel<FlowParam> template)
+        {
+            FlowParam value = template.Value;
+            int id = value.Id;
+            if (LocalFlowTemplateStorage.IsLocalId(id))
             {
-                if (LocalFlowTemplateStorage.IsLocalId(id))
-                {
-                    var value = TemplateParams.First(item => item.Id == id).Value;
-                    (value.LocalStorage ?? localStorage).Delete(id);
-                    return;
-                }
+                (value.LocalStorage ?? localStorage).Delete(id);
+            }
+            else
+            {
                 if (!isMySqlConnected()) throw new InvalidOperationException("MySQL 未连接，不能删除服务器流程。");
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
-                int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
+                Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
 
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 foreach (ModDetailModel model in de)
                 {
                     if (int.TryParse(model.ValueA, out int resourceId))
-                        ret = Db.Deleteable<SysResourceModel>().Where(x => x.Id == resourceId).ExecuteCommand();
+                        Db.Deleteable<SysResourceModel>().Where(x => x.Id == resourceId).ExecuteCommand();
                 }
             }
+            TemplateParams.Remove(template);
+        }
 
-            if (selectedCount <= 1)
-            {
-                int id = TemplateParams[index].Value.Id;
-                DeleteSingle(id);
-                TemplateParams.RemoveAt(index);
-            }
-            else
-            {
-                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
-                {
-                    DeleteSingle(item.Id);
-                    TemplateParams.Remove(item);
-                }
-            }
+        private TemplateModel<FlowParam>[] GetManagementTargets(int index)
+        {
+            var selected = TemplateParams.Where(template => template.IsSelected).ToArray();
+            return selected.Length == 0 ? [TemplateParams[index]] : selected;
         }
 
         public override void Save()
@@ -353,76 +350,69 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
 
-        public override void Export(int index)
+        internal static void ExportTemplate(TemplateModel<FlowParam> template)
         {
-            int selectedCount = TemplateParams.Count(item => item.IsSelected);
-            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+            string name = template.Key;
+            string dataBase64 = template.Value.DataBase64;
+            using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+            bool isLocal = LocalFlowTemplateStorage.IsLocalId(template.Id);
+            sfd.DefaultExt = isLocal ? "stn" : "cvflow";
+            sfd.Filter = isLocal ? "STN files (*.stn)|*.stn" : ColorVision.Engine.Properties.Resources.Flow_ExportFlowFilter;
+            sfd.AddExtension = true;
+            sfd.RestoreDirectory = true;
+            sfd.Title = ColorVision.Engine.Properties.Resources.Flow_ExportFlow;
+            sfd.FileName = Tool.SanitizeFileName(name);
+            if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            if (selectedCount <= 1)
+            byte[] fileBytes = Convert.FromBase64String(dataBase64);
+            if (sfd.FileName.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
             {
-                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
-                bool isLocal = LocalFlowTemplateStorage.IsLocalId(TemplateParams[index].Id);
-                sfd.DefaultExt = isLocal ? "stn" : "cvflow";
-                sfd.Filter = isLocal ? "STN files (*.stn)|*.stn" : ColorVision.Engine.Properties.Resources.Flow_ExportFlowFilter;
-                sfd.AddExtension = true;
-                sfd.RestoreDirectory = true;
-                sfd.Title = ColorVision.Engine.Properties.Resources.Flow_ExportFlow;
-                sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
-                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-                byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
-
-                if (sfd.FileName.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
-                {
-                    // 导出流程包 (STN + 关联模板)
-                    var manifest = FlowPackageHelper.CollectTemplatesForExport(TemplateParams[index].Key, fileBytes);
-                    FlowPackageHelper.ExportFlowPackage(sfd.FileName, TemplateParams[index].Key, fileBytes, manifest);
-                }
-                else
-                {
-                    File.WriteAllBytes(sfd.FileName, fileBytes);
-                }
+                var manifest = FlowPackageHelper.CollectTemplatesForExport(name, fileBytes);
+                FlowPackageHelper.ExportFlowPackage(sfd.FileName, name, fileBytes, manifest);
             }
             else
             {
-                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
-                sfd.DefaultExt = "zip";
-                sfd.Filter = "*.zip|*.zip";
-                sfd.AddExtension = true;
-                sfd.RestoreDirectory = true;
-                sfd.Title = ColorVision.Engine.Properties.Resources.Export;
-                sfd.FileName = $"{Code}.zip";
-                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                File.WriteAllBytes(sfd.FileName, fileBytes);
+            }
+        }
 
-                string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                Directory.CreateDirectory(tempDirectory);
-                try
-                {
-                    // 导出所有模板文件到临时目录
-                    foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
-                    {
-                        string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.stn");
-                        byte[] fileBytes = Convert.FromBase64String(kvp.Value.DataBase64);
-                        File.WriteAllBytes(filePath, fileBytes);
-                    }
+        public override void Export(int index)
+        {
+            var targets = GetManagementTargets(index);
+            if (targets.Length == 1)
+            {
+                ExportTemplate(targets[0]);
+                return;
+            }
 
-                    // 创建压缩文件
-                    using (FileStream zipToOpen = new FileStream(sfd.FileName, FileMode.Create))
-                    {
-                        using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
-                        {
-                            foreach (string filePath in Directory.GetFiles(tempDirectory))
-                            {
-                                archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
-                            }
-                        }
-                    }
-                }
-                finally
+            using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+            sfd.DefaultExt = "zip";
+            sfd.Filter = "*.zip|*.zip";
+            sfd.AddExtension = true;
+            sfd.RestoreDirectory = true;
+            sfd.Title = ColorVision.Engine.Properties.Resources.Export;
+            sfd.FileName = $"{Code}.zip";
+            if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempDirectory);
+            try
+            {
+                foreach (var template in targets)
                 {
-                    // 清理临时目录
-                    Directory.Delete(tempDirectory, true);
+                    string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(template.Key)}.stn");
+                    byte[] fileBytes = Convert.FromBase64String(template.Value.DataBase64);
+                    File.WriteAllBytes(filePath, fileBytes);
                 }
+
+                using var zipToOpen = new FileStream(sfd.FileName, FileMode.Create);
+                using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create);
+                foreach (string filePath in Directory.GetFiles(tempDirectory))
+                    archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+            }
+            finally
+            {
+                Directory.Delete(tempDirectory, true);
             }
         }
 
