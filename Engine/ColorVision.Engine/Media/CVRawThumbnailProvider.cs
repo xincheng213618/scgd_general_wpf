@@ -24,8 +24,6 @@ namespace ColorVision.Engine.Media
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawThumbnailProvider));
         // Bound mapped pages and native conversion buffers across every browser and direct caller.
         private static readonly SemaphoreSlim DecodeSlots = new(2, 2);
-        private const int FloatChunkSamples = 64 * 1024;
-        private const double DoubleMachineEpsilon = 2.2204460492503131e-16;
 
         // Cache the supported extensions from the attribute for CanHandle consistency
         private static readonly string[] SupportedExtensions;
@@ -182,7 +180,7 @@ namespace ColorVision.Engine.Media
         private static BitmapSource ResizeToBitmap(Mat source, Size size, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            using Mat? bytes = source.Depth() == MatType.CV_32F ? ConvertFloatToBytes(source, cancellationToken) : null;
+            using Mat? bytes = source.Depth() == MatType.CV_32F ? MediaHelper.ConvertFloatToDisplayBytes(source, cancellationToken) : null;
             cancellationToken.ThrowIfCancellationRequested();
             using Mat thumbnail = new();
             Cv2.Resize(bytes ?? source, thumbnail, size, 0, 0, InterpolationFlags.Area);
@@ -193,37 +191,5 @@ namespace ColorVision.Engine.Media
             return bitmap;
         }
 
-        private static Mat ConvertFloatToBytes(Mat source, CancellationToken cancellationToken)
-        {
-            using Mat samples = source.Reshape(1, 1);
-            Cv2.MinMaxLoc(samples, out double min, out double max);
-            cancellationToken.ThrowIfCancellationRequested();
-            // Match OpenCV's CV_32F NORM_MINMAX scale and shift, then retain its separate rounding to 8-bit before Area resize.
-            float scale = (float)(255 * (max - min > DoubleMachineEpsilon ? 1 / (max - min) : 0));
-            float shift = 0f - (float)(min * scale);
-            Mat bytes = new(source.Rows, source.Cols, MatType.MakeType(MatType.CV_8U, source.Channels()));
-            try
-            {
-                using Mat normalized = new();
-                int sampleCount = samples.Cols;
-                IntPtr output = bytes.Data;
-                for (int start = 0; start < sampleCount;)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    int count = Math.Min(FloatChunkSamples, sampleCount - start);
-                    using Mat block = samples.ColRange(start, start + count);
-                    using Mat destination = Mat.FromPixelData(1, count, MatType.CV_8UC1, IntPtr.Add(output, start));
-                    block.ConvertTo(normalized, MatType.CV_32F, scale, shift);
-                    normalized.ConvertTo(destination, MatType.CV_8U);
-                    start += count;
-                }
-                return bytes;
-            }
-            catch
-            {
-                bytes.Dispose();
-                throw;
-            }
-        }
     }
 }

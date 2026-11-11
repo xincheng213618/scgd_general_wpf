@@ -136,11 +136,9 @@ namespace ColorVision.Engine.Media
                     }
                     if (fileInfo.Bpp is 32 or 64)
                     {
-                        // The converted Mat owns its output. Release the original pixel pin on return.
                         using Mat floatingPixels = src;
-                        src = new Mat();
-                        Cv2.Normalize(floatingPixels, floatingPixels, 0, 255, NormTypes.MinMax);
-                        floatingPixels.ConvertTo(src, MatType.CV_8U);
+                        src = null;
+                        src = ConvertFloatToDisplayBytes(floatingPixels, CancellationToken.None);
                     }
                 }
 
@@ -159,6 +157,45 @@ namespace ColorVision.Engine.Media
                 if (showErrors)
                     MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.OpenFileFailed + $":{ex.Message} ", "ColorVision");
                 return null;
+            }
+        }
+
+        internal static Mat ConvertFloatToDisplayBytes(Mat source, CancellationToken cancellationToken)
+        {
+            const int chunkSamples = 64 * 1024;
+            const double doubleMachineEpsilon = 2.2204460492503131e-16;
+            using Mat samples = source.Reshape(1, 1);
+            Cv2.MinMaxLoc(samples, out double min, out double max);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Match OpenCV NORM_MINMAX at the input depth before the separate rounding to bytes.
+            MatType depth = source.Depth();
+            double scale = 255 * (max - min > doubleMachineEpsilon ? 1 / (max - min) : 0);
+            if (depth == MatType.CV_32F) scale = (float)scale;
+            double shift = depth == MatType.CV_32F ? 0f - (float)(min * scale) : 0d - min * scale;
+            Mat bytes = new(source.Rows, source.Cols, MatType.MakeType(MatType.CV_8U, source.Channels()));
+            try
+            {
+                // Work in bounded blocks so the source samples stay unchanged without a full float copy.
+                using Mat normalized = new();
+                int sampleCount = samples.Cols;
+                IntPtr output = bytes.Data;
+                for (int start = 0; start < sampleCount;)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int count = Math.Min(chunkSamples, sampleCount - start);
+                    using Mat block = samples.ColRange(start, start + count);
+                    using Mat destination = Mat.FromPixelData(1, count, MatType.CV_8UC1, IntPtr.Add(output, start));
+                    block.ConvertTo(normalized, depth, scale, shift);
+                    normalized.ConvertTo(destination, MatType.CV_8U);
+                    start += count;
+                }
+                return bytes;
+            }
+            catch
+            {
+                bytes.Dispose();
+                throw;
             }
         }
 

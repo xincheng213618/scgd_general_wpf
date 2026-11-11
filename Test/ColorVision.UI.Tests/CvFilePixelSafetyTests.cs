@@ -13,6 +13,50 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CvFilePixelSafetyTests
 {
+    [Theory]
+    [InlineData(CVType.Raw, 32, 3)]
+    [InlineData(CVType.Raw, 64, 4)]
+    [InlineData(CVType.Src, 64, 1)]
+    [InlineData(CVType.CIE, 32, 3)]
+    [InlineData(CVType.CIE, 64, 3)]
+    public void FloatDisplayPreservesSourceSamplesAndTheOpenCvByteOutput(CVType fileType, int bpp, int channels)
+    {
+        const int rows = 197, cols = 349;
+        int sampleCount = rows * cols * channels;
+        byte[] samples = new byte[sampleCount * (bpp / 8)];
+        if (bpp == 32)
+        {
+            Span<float> values = MemoryMarshal.Cast<byte, float>(samples.AsSpan());
+            for (int i = 0; i < values.Length; i++) values[i] = (i % 521 - 260) * 0.03125f;
+        }
+        else
+        {
+            Span<double> values = MemoryMarshal.Cast<byte, double>(samples.AsSpan());
+            for (int i = 0; i < values.Length; i++) values[i] = (i % 521 - 260) * 0.03125d;
+        }
+
+        using CVCIEFile file = new()
+        {
+            FileExtType = fileType, Rows = rows, Cols = cols, Bpp = bpp, Channels = channels,
+            Data = (byte[])samples.Clone(),
+        };
+        int displayChannels = fileType == CVType.CIE ? 1 : channels;
+        using Mat floating = Mat.FromPixelData(rows, cols, MatType.MakeType(file.Depth, displayChannels), (byte[])samples.Clone());
+        using Mat expected = new();
+        Cv2.Normalize(floating, floating, 0, 255, NormTypes.MinMax);
+        floating.ConvertTo(expected, MatType.CV_8U);
+
+        using Mat actual = file.ToMat(showErrors: false);
+
+        Assert.Equal(expected.Type(), actual.Type());
+        byte[] expectedPixels = new byte[rows * cols * displayChannels];
+        byte[] actualPixels = new byte[expectedPixels.Length];
+        Marshal.Copy(expected.Data, expectedPixels, 0, expectedPixels.Length);
+        Marshal.Copy(actual.Data, actualPixels, 0, actualPixels.Length);
+        Assert.Equal(expectedPixels, actualPixels);
+        Assert.Equal(samples, file.Data);
+    }
+
     [Fact]
     public void AssociatedTiffReusesTheValidatedDecodeForDisplay()
     {

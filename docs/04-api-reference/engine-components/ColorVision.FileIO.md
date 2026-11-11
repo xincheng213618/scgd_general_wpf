@@ -155,7 +155,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 `CVCIEFile` 不持有打开的文件流。`Dispose` 仅将自身 Data/Exp 引用置 null 并标记已释放；不会清零数组内容、清掉其它对象持有的引用、强制 GC 或建立后续方法调用门禁。
 
-`MediaHelper.ToMat` 和 `ToWriteableBitmap` 校验布局及长度，单平面需 `Channels=1`。批处理通过 `OpenLocalCVFileForDisplay` 优先读关联源，回退时校验完整 XYZ 后读首平面。多图缩略图从磁盘读取，按文件版本缓存。内嵌 XYZ 缩略图校验完整数据后读 X。整型 Mat 可固定像素数组，浮点转 8 位后释放输入数组。Conoscope 单通道仍 Clone，XYZ 真彩使用独立转换。
+`MediaHelper.ToMat` 和 `ToWriteableBitmap` 校验布局及长度，单平面需 `Channels=1`。批处理通过 `OpenLocalCVFileForDisplay` 优先读关联源，回退时校验完整 XYZ 后读首平面。多图缩略图从磁盘读取，按文件版本缓存。内嵌 XYZ 缩略图校验完整数据后读 X。整型 Mat 可固定数组，浮点转 8 位保留源样本。Conoscope 单通道仍 Clone，XYZ 真彩使用独立转换。
 
 项目是独立纯托管 AnyCPU 库；目标框架与 NuGet 内容以 `ColorVision.FileIO.csproj` 为准，构建平台例外见[构建入口](../../02-developer-guide/README.md)。不要把宿主 x64 规则机械套到此包。
 
