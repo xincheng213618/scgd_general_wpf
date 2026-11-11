@@ -147,7 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 AttachLiveCallback();
             }
-            UpdateConnectionState(isConnected);
+            UpdateConnectionState(isConnected || Device.CameraBackend.LocalOwned);
             UpdateCalibrationTemplateOptions();
             SelectNodeCalibrationTemplate();
             _isInitializingNodeSettings = false;
@@ -211,6 +211,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             _isConnected = isConnected;
             bool busy = _isCapturing || Device.CameraBackend.IsCommandRunning;
+            bool awaitingClose = isConnected && Device.CameraBackend.Status == DeviceStatusType.Unknown;
             bool canConfigure = !isConnected && !_isRefreshingCameraIds && !busy;
 
             btn_Connect.IsEnabled = canConfigure;
@@ -221,16 +222,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cb_CM_TYPE.IsEnabled = canConfigure;
             cb_CM_MODE.IsEnabled = canConfigure;
             cb_CM_ID.IsEnabled = canConfigure && string.IsNullOrWhiteSpace(Device.Config.CameraCode);
-            cb_get_mode.IsEnabled = !busy && !_isRefreshingCameraIds;
+            cb_get_mode.IsEnabled = !busy && !_isRefreshingCameraIds && !awaitingClose;
             bool usesMvs = m_eCameraMdl is CameraModel.HK_USB or CameraModel.HK_CARD && m_eCameraMode != CameraMode.CV_MODE
                 && (isConnected ? Device.LocalCameraSession.OpenedUseHikMvs : Device.DisplayConfig.UseHikMvs);
             for (int index = (int)TakeImageMode.Measure_Fast; index <= (int)TakeImageMode.Measure_FastEx; index++)
                 ((ComboBoxItem)cb_get_mode.Items[index]).IsEnabled = !usesMvs;
             cb_bpp.IsEnabled = canConfigure;
 
-            bool canCapture = isConnected && !busy;
+            bool canCapture = isConnected && !busy && !awaitingClose;
             btn_Meas.IsEnabled = canCapture;
-            btn_CalAutoExp.IsEnabled = isConnected && !busy;
+            btn_CalAutoExp.IsEnabled = canCapture;
             HikCaptureTestButton.IsEnabled = canConfigure;
         }
 

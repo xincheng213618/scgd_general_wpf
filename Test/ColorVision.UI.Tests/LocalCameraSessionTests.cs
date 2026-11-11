@@ -5,6 +5,8 @@ using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Controls;
+using ColorVision.Engine.Services;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json.Linq;
 using FlowEngineLib.Algorithm;
@@ -1139,6 +1141,50 @@ public class LocalCameraSessionTests
         Assert.Throws<ObjectDisposedException>(() => pool.Rent(16));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedFilterWheelReleaseKeepsTheClosedCameraAvailableForCleanupRetry(bool previewing)
+    {
+        var failure = new InvalidOperationException("simulated filter wheel release failure");
+        var native = new FakeNative { CloseError = failure, DisconnectBeforeCloseError = true, SwitchResult = cvErrorDefine.CV_ERR_SUCCESS };
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(native, backend, new ConfigCamera { CameraMode = CameraMode.CV_MODE });
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        int previewStops = 0;
+        Action owner = () => previewStops++;
+        if (previewing)
+        {
+            session.SwitchMode(TakeImageMode.Live, 8);
+            session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, owner);
+        }
+
+        void Close()
+        {
+            if (previewing) session.StopPreview(owner, closeCamera: true);
+            else session.Close(unregisterCallback: true);
+        }
+
+        try { Assert.Same(failure, Assert.Throws<InvalidOperationException>(Close)); }
+        finally { native.CloseError = null; }
+        Assert.False(session.IsOpen);
+        Assert.True(backend.LocalOwned, "The filter wheel is still owned after the camera disconnects.");
+        Assert.Equal(DeviceStatusType.Unknown, backend.Status);
+        var panel = CameraPanelState.Create(backend, previewing: false, operating: false);
+        Assert.True(panel.Connected);
+        Assert.False(panel.Busy);
+        Assert.False(panel.CanPreview);
+        Assert.False(panel.CanCapture);
+        Assert.Throws<InvalidOperationException>(() => session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(1, native.Opens);
+
+        Close();
+        Assert.Equal(2, native.Closes);
+        Assert.Equal(previewing ? 1 : 0, previewStops);
+        Assert.False(backend.LocalOwned);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+    }
+
     [Fact]
     public void DisposeReleasesTheManagerWhenNativeCloseReportsAnError()
     {
@@ -1166,6 +1212,7 @@ public class LocalCameraSessionTests
         public IReadOnlyList<string> CameraIds { get; init; } = [];
         public bool FailDiscovery { get; init; }
         public bool IgnoreClose { get; set; }
+        public bool DisconnectBeforeCloseError { get; init; }
         public Exception? CloseError { get; set; }
         public Exception? DetachError { get; set; }
         public LocalCalibrationRoi OpenedCalibrationRoi { get; set; }
@@ -1217,7 +1264,11 @@ public class LocalCameraSessionTests
         public void Close(IntPtr handle)
         {
             Closes++;
-            if (CloseError != null) throw CloseError;
+            if (CloseError != null)
+            {
+                if (DisconnectBeforeCloseError) opened = false;
+                throw CloseError;
+            }
             if (!IgnoreClose) opened = false;
         }
         public void DetachCallback(IntPtr handle)
