@@ -114,10 +114,11 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         continue;
                     }
 
+                    cancellationToken.ThrowIfCancellationRequested();
                     string outputPath = CreateOutputPath(item, request);
                     IReadOnlyList<string> outputPaths = request.ExportFormat == BatchAnalysisExportFormat.Json
-                        ? [AlgorithmResultExporter.ExportJson(result, outputPath, overwrite: !request.AvoidOverwrite)]
-                        : AlgorithmResultExporter.ExportCsvBundle(result, outputPath, overwrite: !request.AvoidOverwrite);
+                        ? [await AlgorithmResultExporter.ExportJsonAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken)]
+                        : await AlgorithmResultExporter.ExportCsvBundleAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken);
                     files.Add(new BatchAlgorithmAnalysisFileResult(item.FilePath, outputPaths, result.Status));
                     progress?.Report(new BatchImageProgress
                     {
