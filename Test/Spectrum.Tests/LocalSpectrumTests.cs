@@ -134,6 +134,76 @@ public sealed class LocalSpectrumTests
     }
 
     [Theory]
+    [InlineData(0.0005f, false)]
+    [InlineData(2_147_483.75f, false)]
+    [InlineData(0.0005f, true)]
+    [InlineData(2_147_483.75f, true)]
+    public void UnrepresentableCaptureTimeIsRejectedBeforeCallingNative(float time, bool eqe)
+    {
+        using var files = new CalibrationFiles();
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+
+        Assert.Contains("积分时间", Assert.Throws<InvalidOperationException>(() =>
+            session.Capture(new() { IntegralTime = time, Eqe = eqe, Current = 1, AutoInitDark = true }, files.Config)).Message);
+        Assert.Empty(native.Calls);
+    }
+
+    [Theory]
+    [InlineData(0.0005f)]
+    [InlineData(2_147_483.75f)]
+    public void UnrepresentableManualDarkTimeIsRejectedBeforeCallingNative(float time)
+    {
+        using var files = new CalibrationFiles();
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+
+        Assert.Contains("积分时间", Assert.Throws<InvalidOperationException>(() =>
+            session.Dark(new() { IntegralTime = time }, files.Config)).Message);
+        Assert.Empty(native.Calls);
+    }
+
+    [Theory]
+    [InlineData(0.0005f, null)]
+    [InlineData(2_147_483.75f, null)]
+    [InlineData(0.0005f, 0)]
+    [InlineData(2_147_483.75f, 1)]
+    public void UnrepresentableAutoExposureResultDoesNotChangeTheRequestOrMoveNd(float time, int? ndPort)
+    {
+        using var files = new CalibrationFiles();
+        if (ndPort.HasValue) ConfigureNd(files.Config, files.Config);
+        var wheel = new FakeNd { Port = ndPort ?? 0 };
+        var native = new FakeNative { AutoTimes = new([time, 100]) };
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(files.Config);
+        var parameters = new LocalSpectrumParameters { IntegralTime = 25, AutoIntegration = true, AutoInitDark = true, IsWithND = ndPort.HasValue };
+
+        Assert.Contains("积分时间", Assert.Throws<InvalidOperationException>(() => session.Capture(parameters, files.Config)).Message);
+        Assert.Equal(25, parameters.IntegralTime);
+        Assert.Empty(wheel.Moves);
+        Assert.Equal(0, native.DarkCalls);
+        Assert.Equal(0, native.CaptureCalls);
+    }
+
+    [Theory]
+    [InlineData(0.001f)]
+    [InlineData(2_147_483.5f)]
+    public void RepresentableIntegrationTimeBoundariesReachDarkAndCapture(float time)
+    {
+        using var files = new CalibrationFiles();
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+
+        session.Capture(new() { IntegralTime = time, AutoInitDark = true }, files.Config);
+
+        Assert.Equal(time, native.DarkTime);
+        Assert.Equal((time, 1), native.CaptureTiming);
+    }
+
+    [Theory]
     [InlineData(25f, 30f, 2)]
     [InlineData(4f, 10f / 3f, 18)]
     public void SynchronizedCaptureUsesTheSameEffectiveTimingForDarkAndLight(float requestedTime, float effectiveTime, int effectiveAverage)

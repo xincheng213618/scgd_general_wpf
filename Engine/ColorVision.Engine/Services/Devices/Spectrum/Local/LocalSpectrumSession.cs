@@ -14,6 +14,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Local;
 
 public sealed class LocalSpectrumParameters
 {
+    internal const double MinimumIntegralTime = 0.001;
+    internal const double MaximumIntegralTime = 2_147_483.5;
+
     public float IntegralTime { get; set; } = 100;
     public int NumberOfAverage { get; set; } = 1;
     public bool AutoIntegration { get; set; }
@@ -39,10 +42,24 @@ public sealed class LocalSpectrumParameters
 
     public void Validate()
     {
-        if (!float.IsFinite(IntegralTime) || IntegralTime <= 0 || NumberOfAverage < 1)
-            throw new InvalidOperationException("积分时间必须大于 0，平均次数至少为 1。");
+        ValidateIntegralTime(IntegralTime);
+        if (NumberOfAverage < 1)
+            throw new InvalidOperationException("平均次数至少为 1。");
         if (Eqe && (!double.IsFinite(AFactor) || AFactor <= 0 || !float.IsFinite(Voltage) || !float.IsFinite(Current) || Current <= 0))
             throw new InvalidOperationException("EQE 系数和电流必须大于 0，电压必须为有限值。");
+    }
+
+    internal static void ValidateIntegralTime(float time)
+    {
+        if (!IsRepresentableIntegralTime(time))
+            throw new InvalidOperationException($"积分时间必须在 {MinimumIntegralTime:0.###} 至 {MaximumIntegralTime:0.###} ms 范围内。");
+    }
+
+    private static bool IsRepresentableIntegralTime(float time)
+    {
+        // The SDK multiplies single-precision milliseconds by 1000 before converting to signed int.
+        double microseconds = time * 1000f;
+        return microseconds >= 1 && microseconds <= int.MaxValue;
     }
 
     internal LocalSpectrumParameters WithSyncFrequencyTiming(GetDataConfig settings)
@@ -74,8 +91,7 @@ public sealed class LocalSpectrumParameters
             time = (float)(period / samplesPerPeriod);
         }
 
-        double microseconds = time * 1000f;
-        if (!double.IsFinite(microseconds) || microseconds < 1 || microseconds > int.MaxValue)
+        if (!IsRepresentableIntegralTime(time))
             throw new InvalidOperationException("同步频率计算的积分时间超出原生微秒范围。");
 
         var effective = (LocalSpectrumParameters)MemberwiseClone();
@@ -377,6 +393,7 @@ internal sealed class LocalSpectrumSession : IDisposable
         if (code == Spectrometer.AutoExposureCancelledErrorCode) throw new OperationCanceledException("光谱仪自动曝光已停止。", token);
         Check(code, "自动积分");
         token.ThrowIfCancellationRequested();
+        LocalSpectrumParameters.ValidateIntegralTime(time);
         return time;
     }
 

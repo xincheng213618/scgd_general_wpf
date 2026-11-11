@@ -16,8 +16,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes;
 [STNode("Flow_LocalDevices", "本地光谱采集", CategoryOrder = 9900, NodeOrder = 80)]
 public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParameterNode
 {
-    // Native acquisition converts float milliseconds to signed integer microseconds.
-    private const double MaximumIntegralTime = 2_147_483.5;
     private sealed record ExecutionParameters(DeviceSpectrum Device, string DeviceCode, LocalSpectrumParameters Capture, bool AutoConnect, int ZIndex, string NodeId);
     private float integralTime = 100;
     private int average = 1;
@@ -89,7 +87,7 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
         string? syncReason = syncFrequency ? "同步频率模式会调整实际积分时间和平均次数，请先在光谱仪设置中关闭同步频率。" : null;
         return
         [
-            new(nameof(IntegralTime), "积分时间", "ms", IntegralTime, minimum: 0.001, maximum: MaximumIntegralTime,
+            new(nameof(IntegralTime), "积分时间", "ms", IntegralTime, minimum: LocalSpectrumParameters.MinimumIntegralTime, maximum: LocalSpectrumParameters.MaximumIntegralTime,
                 unavailableReason: syncReason ?? (AutoIntegration ? "自动积分已启用，请先关闭自动积分后设置逐轮积分时间。" : null)),
             new(nameof(NumberOfAverage), "平均次数", "次", NumberOfAverage, isInteger: true, minimum: 1, maximum: int.MaxValue, unavailableReason: syncReason)
         ];
@@ -121,8 +119,6 @@ public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase, IRepeatParamete
             parameters.ApplySmuData(smu);
         }
         parameters.Validate();
-        if (parameters.IntegralTime > MaximumIntegralTime)
-            throw new InvalidOperationException($"积分时间不能超过 {MaximumIntegralTime:0.###} ms。");
         return new ExecutionParameters(FindDevice(), DeviceCode, parameters, AutoConnect, ZIndex, NodeID);
     }
 
