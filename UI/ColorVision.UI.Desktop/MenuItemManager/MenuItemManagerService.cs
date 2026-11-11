@@ -1,6 +1,7 @@
 using ColorVision.UI.Menus;
 using log4net;
 using System.Collections.ObjectModel;
+using System.IO;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
@@ -120,7 +121,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 if (changed)
                     menuManager.RebuildAllMenus();
 
-                ConfigHandler.GetInstance().Save<MenuItemManagerConfig>();
+                if (!ConfigHandler.GetInstance().TrySave(config, out string error))
+                    throw new IOException(error);
                 return changed;
             }
             catch

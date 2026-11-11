@@ -133,9 +133,9 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 没有有效自定义覆盖时，`ApplyConfigToMenuManager` 只清理残留的运行时覆盖表，不为构造覆盖表而枚举实时菜单。这个快速分支不代表调用方后续重建菜单也不会枚举或实例化条目。
 
-`CommitEditingSnapshot` 的顺序为：校验草稿 → 生成稀疏覆盖并更新活配置/运行时表 → 有变化时重建注册菜单 → 调用 `ConfigHandler.Save<MenuItemManagerConfig>()`。返回 bool 表示运行时覆盖表是否变化，false 不是保存失败；Apply 窗口也不根据这个 bool 判断落盘。
+`CommitEditingSnapshot` 校验草稿并生成稀疏覆盖，更新活配置和运行时表，有变化时重建注册菜单，再用 `ConfigHandler.TrySave` 确认落盘。正常返回的 bool 表示运行时覆盖表是否变化。
 
-**当前保存结果存在缺口：** `Save<T>()` 内部丢弃 `TrySave` 的 bool 和错误信息。序列化/写盘失败被底层转成失败返回时，不会触发 Commit 的异常回退；运行时菜单可能已变化，窗口仍能显示应用成功。因此 Commit 正常返回或 Apply 成功弹窗都不能证明文件保存成功。若有异常实际传播，Commit 会尝试恢复旧 Overrides 和运行时表并重建，再重抛；这也不是对所有窗口、副作用和文件的一次原子事务。底层返回值和文件提交归[配置持久化](./configuration.md)，此处记录现存调用链缺口，未修复产品实现。
+写盘或应用失败时尝试恢复旧 Overrides 和运行时表，必要时重建菜单。窗口显示错误并保留草稿供重试。各窗口重建可能产生独立副作用，文件提交语义见[配置持久化](./configuration.md)。
 
 ## 菜单未按预期显示时
 
