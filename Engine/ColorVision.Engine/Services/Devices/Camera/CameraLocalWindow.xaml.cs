@@ -430,12 +430,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
+            try { Device.LocalCameraSession.StopPreview(StopLivePreview, closeCamera: false); }
+            catch (Exception ex)
+            {
+                e.Cancel = true;
+                CaptureStatusText.Text = ex.Message;
+                log.Error("停止本地相机管理窗口的预览失败。", ex);
+                return;
+            }
+
+            _localRealtimePipeline.Stop(resetRealtime: true);
             SynchronizeSessionMode();
             UpdateCurrentConfigFromUi(GetSelectedCameraId());
             UpdateNodeSettingsFromWindow();
-            _localRealtimePipeline.Stop(resetRealtime: true);
-            Device.LocalCameraSession.StopPreview(StopLivePreview, closeCamera: false);
-
             SaveLocalPreferences();
             SaveDisplayConfig();
         }
@@ -1246,7 +1253,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _disposed = true;
-            Device.LocalCameraSession.StopPreview(StopLivePreview, closeCamera: false);
+            try { Device.LocalCameraSession.StopPreview(StopLivePreview, closeCamera: false); }
+            catch (Exception ex) { log.Error("释放本地相机管理窗口的预览失败。", ex); }
             Device.CameraBackend.Changed -= Backend_Changed;
             Device.DisplayConfig.PropertyChanged -= CaptureSettings_PropertyChanged;
             Device.Config.PropertyChanged -= CaptureSettings_PropertyChanged;

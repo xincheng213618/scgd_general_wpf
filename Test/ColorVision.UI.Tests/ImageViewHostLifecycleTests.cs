@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Impl.SolutionImpl;
 using ColorVision.Engine.Media;
@@ -12,6 +13,7 @@ using ColorVision.Solution.MultiImageViewer;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using cvColorVision;
 using FlowEngineLib.Algorithm;
 using Newtonsoft.Json.Linq;
 using System.Collections.Specialized;
@@ -108,6 +110,84 @@ public sealed class ImageViewHostLifecycleTests(ITestOutputHelper output)
                 window.Closing -= cancel;
                 window.Close();
                 view.Dispose();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CameraWindowRecoversWhenNativePreviewDetachFails(bool closeWindow)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new PresentationScope();
+            string directory = Directory.CreateTempSubdirectory("ColorVision-camera-preview-close-").FullName;
+            SysResourceDao previousDao = SysResourceDao.Instance;
+            SysResourceDao.Instance = new SysResourceDao(new LocalTemplateStore(Path.Combine(directory, "camera.db")), () => false);
+            try
+            {
+                var native = new LocalCameraSessionTests.FakeNative();
+                var resource = Resource("camera-preview-close");
+                resource.Id = 0;
+                SysResourceDao.Instance.Save(resource, local: true);
+                using var device = new DeviceCamera(resource);
+                var session = new LocalCameraSession(native, device.CameraBackend, device.Config);
+                device.LocalCameraSession.Dispose();
+                typeof(DeviceCamera).GetField("<LocalCameraSession>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, session);
+                Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("offline-camera", TakeImageMode.Live, 8));
+                var window = new CameraLocalWindow(device);
+                RemoveHandler(window, "Window_Loaded", typeof(RoutedEventHandler));
+                Action owner = typeof(CameraLocalWindow).GetMethod("StopLivePreview", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .CreateDelegate<Action>(window);
+                session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, owner);
+                native.Events.Clear();
+                ImageView view = Preview(window);
+                bool closeThrew = false;
+                try
+                {
+                    PlaceOffscreen(window);
+                    window.Show();
+                    PumpDispatcher();
+                    SetPixels(view);
+                    native.DetachError = new InvalidOperationException("simulated preview detach failure");
+
+                    if (closeWindow)
+                    {
+                        Exception? closeError = Record.Exception(window.Close);
+                        closeThrew = closeError != null;
+                        Assert.Null(closeError);
+                        Assert.True(window.IsVisible);
+                        Assert.NotNull(view.ViewBitmapSource);
+                        Assert.Contains(native.DetachError.Message, Assert.IsType<TextBlock>(window.FindName("CaptureStatusText")).Text);
+                        native.DetachError = null;
+                        window.Close();
+                        Assert.False(window.IsVisible);
+                    }
+                    else
+                    {
+                        window.Dispose();
+                        window.Dispose();
+                    }
+
+                    AssertDisposed(view);
+                    Assert.Equal(closeWindow ? new[] { "detach", "detach" } : new[] { "detach" }, native.Events);
+                    Assert.True(session.IsOpen);
+                    Assert.Equal(0, native.Closes);
+                }
+                finally
+                {
+                    native.DetachError = null;
+                    if (closeThrew) window.Dispose();
+                    else window.Close();
+                    view.Dispose();
+                }
+            }
+            finally
+            {
+                SysResourceDao.Instance = previousDao;
+                foreach (string file in Directory.EnumerateFiles(directory)) File.Delete(file);
+                Directory.Delete(directory);
             }
         });
     }
