@@ -108,7 +108,7 @@ internal sealed class FlowAnalysisDataSource
         return FlowNodeComparisonHistory.ForRuns(record.NodeId, runs, records, messages);
     }
     internal FlowRunRecord? GetFlowRun(int batchId, string? serialNumber) => Read<FlowRunRecord>(
-        q => q.Where(x => x.BatchId == batchId).WhereIF(!string.IsNullOrWhiteSpace(serialNumber), x => x.SerialNumber == serialNumber).OrderByDescending(x => x.StartedTimeUtc).Take(1),
+        q => FlowNodeRecordDataBaseHelper.SelectFlowRun(q, batchId, serialNumber),
         () => One(FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber))).FirstOrDefault();
     internal List<FlowExecutionEvent> GetExecutionEvents(int runId) => Read<FlowExecutionEvent>(
         q => q.Where(x => x.RunRecordId == runId).OrderBy(x => x.SequenceNo), () => FlowNodeRecordDataBaseHelper.GetExecutionEvents(runId));

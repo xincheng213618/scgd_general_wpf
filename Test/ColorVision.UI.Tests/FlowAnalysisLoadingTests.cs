@@ -1,5 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Themes;
+using ColorVision.UI;
 using SqlSugar;
 using System.IO;
 using System.Reflection;
@@ -94,6 +95,55 @@ public sealed class FlowAnalysisLoadingTests : IDisposable
                 Assert.True(((Button)window.FindName("NextSameFlowRunButton")).IsEnabled);
             }
         });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JournalLookupKeepsReusedBatchSerialsSeparate(bool offline)
+    {
+        string path = ConfigService.Instance.GetRequiredService<FlowNodeRecordConfig>().SqliteDbPath;
+        string tempDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath())) + Path.DirectorySeparatorChar;
+        Assert.StartsWith(tempDirectory, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase);
+        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = $"Data Source={path};Pooling=False", DbType = DbType.Sqlite, IsAutoCloseConnection = true });
+        FlowDiagnosticsMaintenanceGate.RunExclusive(() => FlowDiagnosticsSchemaMigrator.EnsureSchema(db));
+        const int batchId = int.MaxValue - 763;
+        string prefix = Guid.NewGuid().ToString("N");
+        DateTime started = new(2026, 10, 3, 8, 0, 0);
+        var inserted = new List<int>();
+        try
+        {
+            InsertRun("same", started);
+            int matching = InsertRun("same", started);
+            int blank = InsertRun("\t\u3000", started.AddMinutes(1));
+            InsertRun("other", started.AddMinutes(2));
+            var source = new FlowAnalysisDataSource(offline ? path : null);
+
+            Assert.Null(source.GetFlowRun(batchId, "missing"));
+            Assert.Null(source.GetFlowRun(batchId, "SAME"));
+            Assert.Equal(blank, source.GetFlowRun(batchId, null)?.Id);
+            Assert.Equal(blank, source.GetFlowRun(batchId, "")?.Id);
+            Assert.Equal(matching, source.GetFlowRun(batchId, "same")?.Id);
+        }
+        finally
+        {
+            db.Deleteable<FlowRunRecord>().Where(run => inserted.Contains(run.Id)).ExecuteCommand();
+        }
+
+        int InsertRun(string serial, DateTime timestamp)
+        {
+            int id = db.Insertable(new FlowRunRecord
+            {
+                BatchId = batchId,
+                SerialNumber = serial,
+                TemplateId = 1,
+                RunKey = prefix + inserted.Count,
+                StartedTimeUtc = timestamp,
+                CompletedTime = timestamp.AddSeconds(1),
+            }).ExecuteReturnIdentity();
+            inserted.Add(id);
+            return id;
+        }
     }
 
     [Fact]

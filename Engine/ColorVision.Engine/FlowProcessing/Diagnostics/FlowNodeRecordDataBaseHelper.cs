@@ -618,27 +618,25 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             try
             {
                 using var db = CreateReadDb();
-                if (!string.IsNullOrWhiteSpace(serialNumber))
-                {
-                    FlowRunRecord? exact = db.Queryable<FlowRunRecord>()
-                        .Where(item => item.BatchId == batchId)
-                        .Where(item => item.SerialNumber == serialNumber)
-                        .OrderByDescending(item => item.StartedTimeUtc)
-                        .First();
-                    if (exact != null)
-                        return exact;
-                }
-
-                return db.Queryable<FlowRunRecord>()
-                    .Where(item => item.BatchId == batchId)
-                    .OrderByDescending(item => item.StartedTimeUtc)
-                    .First();
+                return SelectFlowRun(db.Queryable<FlowRunRecord>(), batchId, serialNumber).First();
             }
             catch (Exception ex)
             {
                 log.Error("查询流程运行 journal 失败", ex);
                 return null;
             }
+        }
+
+        internal static ISugarQueryable<FlowRunRecord> SelectFlowRun(ISugarQueryable<FlowRunRecord> runs, int batchId, string? serialNumber)
+        {
+            var query = runs.Where(item => item.BatchId == batchId);
+            // Analysis displays missing and whitespace-only serials as one group.
+            if (string.IsNullOrWhiteSpace(serialNumber))
+                query = query.Where($"coalesce({FlowRunIdentitySql.TrimmedKey("serial_number")}, '') = ''");
+            else
+                query = query.Where("serial_number COLLATE BINARY = @runSerialNumber", new { runSerialNumber = serialNumber });
+
+            return query.OrderByDescending(item => item.StartedTimeUtc).OrderByDescending(item => item.Id).Take(1);
         }
 
         internal static List<FlowRunRecord> GetFlowRuns(
