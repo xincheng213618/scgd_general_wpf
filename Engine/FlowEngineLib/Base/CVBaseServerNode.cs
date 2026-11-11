@@ -527,7 +527,7 @@ public class CVBaseServerNode : CVDeviceNode
 		};
 	}
 
-	private void PublishNodeRun(FlowEngineNodeRunEventArgs args)
+	protected void PublishNodeRun(FlowEngineNodeRunEventArgs args)
 	{
 		Delegate[] handlers =
 			base.nodeRunEvent?.GetInvocationList()
@@ -548,7 +548,7 @@ public class CVBaseServerNode : CVDeviceNode
 		}
 	}
 
-	private void PublishNodeEnd(FlowEngineNodeEndEventArgs args)
+	protected void PublishNodeEnd(FlowEngineNodeEndEventArgs args)
 	{
 		Delegate[] handlers =
 			base.nodeEndEvent?.GetInvocationList()
