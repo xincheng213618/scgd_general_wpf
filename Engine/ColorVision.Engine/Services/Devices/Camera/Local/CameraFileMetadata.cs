@@ -20,8 +20,14 @@ internal static class CameraFileMetadata
         => CVFileMetadata.SetProperty(path, kind, 1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record)));
 
     internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(string path)
+        => ReadOptional(() => CVFileMetadata.Read(path));
+
+    internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(Stream stream)
+        => ReadOptional(() => CVFileMetadata.ReadFromStream(stream));
+
+    private static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) ReadOptional(Func<IReadOnlyDictionary<string, CVFileProperty>> read)
     {
-            try { return Read(CVFileMetadata.Read(path)); }
+        try { return Read(read()); }
         catch (Exception error) when (error is IOException or NotSupportedException or UnauthorizedAccessException)
         {
             Log.Warn("Optional image acquisition records are unavailable.", error);

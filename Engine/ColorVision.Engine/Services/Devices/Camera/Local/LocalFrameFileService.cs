@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -25,19 +26,41 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             string fullPath = Path.GetFullPath(filePath);
             if (!CVFileReadCache.GetCachedLength(fullPath).HasValue && !File.Exists(fullPath)) throw new FileNotFoundException("图像文件不存在。", fullPath);
 
+            using Stream source = CVFileReadCache.OpenRead(fullPath, populateCache: false);
             int dataOffset;
             CVCIEFile fileInfo;
             using (var stage = FlowNodeTiming.Measure("ReadImageHeader"))
             {
-                dataOffset = CVFileUtil.ReadCIEFileHeader(fullPath, out fileInfo);
+                dataOffset = CVFileUtil.ReadCIEFileHeader(source, out fileInfo);
                 stage?.Complete();
             }
-            if (dataOffset > 0)
+            using (fileInfo)
             {
-                return FlowNodeTiming.Run("ReadImageData", () => LoadColorVisionFile(fullPath, fileInfo, dataOffset, exposureOverride, gainOverride));
-            }
+                DateTime captureTime = source is FileStream disk ? File.GetLastWriteTime(disk.SafeFileHandle) : DateTime.Now;
+                if (dataOffset > 0)
+                {
+                    return FlowNodeTiming.Run("ReadImageData", () =>
+                    {
+                        // Preserve cold CVRAW caching without caching non-ColorVision files during format detection.
+                        if (source is not FileStream || !CVFileReadCache.IsEnabled || !string.Equals(Path.GetExtension(fullPath), ".cvraw", StringComparison.OrdinalIgnoreCase))
+                            return LoadColorVisionFile(fullPath, source, fileInfo, dataOffset, captureTime, exposureOverride, gainOverride);
 
-            return FlowNodeTiming.Run("DecodeImage", () => LoadBitmap(fullPath, exposureOverride, gainOverride));
+                        using Stream cached = CVFileReadCache.OpenRead(fullPath);
+                        if (cached is FileStream)
+                            return LoadColorVisionFile(fullPath, source, fileInfo, dataOffset, captureTime, exposureOverride, gainOverride);
+                        // Another writer may have published a memory-only snapshot since the disk probe.
+                        int cachedOffset = CVFileUtil.ReadCIEFileHeader(cached, out CVCIEFile cachedHeader);
+                        using (cachedHeader)
+                        {
+                            if (cachedOffset <= 0) throw new InvalidDataException("图像文件头无效。");
+                            return LoadColorVisionFile(fullPath, cached, cachedHeader, cachedOffset, captureTime, exposureOverride, gainOverride);
+                        }
+                    });
+                }
+
+                source.Position = 0;
+                return FlowNodeTiming.Run("DecodeImage", () => LoadBitmap(fullPath, source, captureTime, exposureOverride, gainOverride));
+            }
         }
 
         public static string CreateCapturePath(string basePath, string deviceCode, LocalFrameMetadata? metadata = null)
@@ -126,14 +149,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private static LocalFlowFrame LoadColorVisionFile(
             string filePath,
+            Stream stream,
             CVCIEFile fileInfo,
             int dataOffset,
+            DateTime captureTime,
             float[]? exposureOverride,
             float? gainOverride)
         {
-            DateTime captureTime = CVFileReadCache.GetCachedLength(filePath).HasValue ? DateTime.Now : File.GetLastWriteTime(filePath);
-            using Stream stream = CVFileReadCache.OpenRead(filePath);
-            using BinaryReader reader = new(stream);
+            using BinaryReader reader = new(stream, Encoding.UTF8, leaveOpen: true);
             stream.Position = dataOffset;
             long dataLength = fileInfo.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
             if (dataLength <= 0 || dataLength > int.MaxValue || stream.Position + dataLength > stream.Length)
@@ -143,8 +166,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
             fileInfo.FileExtType = isCie ? CVType.CIE : CVType.Raw;
-            ColorCalibrationSnapshot? snapshot = isCie ? null : ColorCalibrationSnapshot.Read(filePath, fileInfo);
-            var records = CameraFileMetadata.Read(filePath);
+            var properties = isCie ? null : CVFileMetadata.ReadFromStream(stream);
+            ColorCalibrationSnapshot? snapshot = properties == null ? null : ColorCalibrationSnapshot.Read(properties, fileInfo);
+            var records = properties == null ? CameraFileMetadata.Read(stream) : CameraFileMetadata.Read(properties);
             LocalFrameMetadata metadata = new()
             {
                 Width = fileInfo.Cols,
@@ -181,9 +205,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private static LocalFlowFrame LoadBitmap(string filePath, float[]? exposureOverride, float? gainOverride)
+        private static LocalFlowFrame LoadBitmap(string filePath, Stream stream, DateTime captureTime, float[]? exposureOverride, float? gainOverride)
         {
-            using FileStream stream = File.OpenRead(filePath);
             BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
             BitmapSource source = decoder.Frames[0];
 
@@ -244,7 +267,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Gain = gainOverride ?? 1,
                 Exposure = CloneExposure(exposureOverride),
                 SourceFilePath = filePath,
-                CaptureTime = File.GetLastWriteTime(filePath),
+                CaptureTime = captureTime,
                 PrimaryBufferKind = LocalFrameBufferKind.CvRaw
             };
             LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, length, 0);
@@ -264,18 +287,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static float[] CloneExposure(float[]? exposure)
             => exposure == null || exposure.Length == 0 ? Array.Empty<float>() : (float[])exposure.Clone();
 
-        private static void CopyStreamToPointer(Stream stream, IntPtr destination, int length)
+        private static unsafe void CopyStreamToPointer(Stream stream, IntPtr destination, int length)
         {
-            byte[] buffer = new byte[Math.Min(CopyBufferSize, length)];
-            int offset = 0;
-            while (offset < length)
+            Span<byte> pixels = new(destination.ToPointer(), length);
+            while (pixels.Length > CopyBufferSize)
             {
-                int requested = Math.Min(buffer.Length, length - offset);
-                int read = stream.Read(buffer, 0, requested);
-                if (read <= 0) throw new EndOfStreamException("读取图像数据时提前到达文件尾。");
-                Marshal.Copy(buffer, 0, IntPtr.Add(destination, offset), read);
-                offset += read;
+                stream.ReadExactly(pixels[..CopyBufferSize]);
+                pixels = pixels[CopyBufferSize..];
             }
+            stream.ReadExactly(pixels);
         }
 
         private static unsafe void WriteUnmanagedBuffer(Stream stream, IntPtr source, int length)

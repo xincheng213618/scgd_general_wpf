@@ -17,6 +17,50 @@ namespace ColorVision.UI.Tests;
 /// <summary>Protects persisted acquisition provenance independently of measurement and legacy payload readers.</summary>
 public sealed class ImageAcquisitionMetadataTests
 {
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous, false)]
+    [InlineData(CVFileSaveMode.Synchronous, true)]
+    [InlineData(CVFileSaveMode.MemoryOnly, true)]
+    public void LocalFlowLoadBorrowsOneRawSnapshotForPixelsAndRecords(CVFileSaveMode saveMode, bool initiallyCached)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-flow-snapshot-{Guid.NewGuid():N}.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = initiallyCached;
+            const int width = 1025, height = 513;
+            using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(width, height, 16, 1);
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, saveMode));
+            new ColorCalibrationSnapshot
+            {
+                Width = width, Height = height, RawBpp = 16, Channels = 1, TransformKind = 2,
+                Coefficients = [2, 0, 0, 0, 0, 0, 0, 0, 0], Exposure = [1, 1, 1], Template = "snapshot"
+            }.Save(path, canReplay: true);
+            CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new ImageAcquisitionRecord { NdPort = 17 });
+            CVFileReadCache.IsEnabled = true;
+            Assert.Equal(initiallyCached, CVFileReadCache.GetCachedLength(path).HasValue);
+            long before = CVFileReadCache.GetSnapshot().HitCount;
+
+            using LocalFlowFrame frame = LocalFrameFileService.Load(path);
+
+            Assert.Equal(initiallyCached ? 1 : 0, CVFileReadCache.GetSnapshot().HitCount - before);
+            Assert.NotNull(CVFileReadCache.GetCachedLength(path));
+            Assert.Equal("snapshot", frame.ColorCalibration?.Template);
+            Assert.Equal(17, frame.Metadata.Acquisition?.NdPort);
+            using LocalFlowFrameLease lease = frame.Acquire();
+            Assert.Equal(raw.Data.Length, lease.RawLength);
+            byte[] actual = new byte[lease.RawLength];
+            Marshal.Copy(lease.RawPointer, actual, 0, actual.Length);
+            Assert.Equal(raw.Data, actual);
+            Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void BasicCalibrationProvenanceBelongsToSavedOutputAndDoesNotRelabelUnmodifiedInput()
     {
