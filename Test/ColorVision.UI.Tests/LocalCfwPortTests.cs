@@ -105,6 +105,49 @@ public sealed class LocalCfwPortTests
     }
 
     [Fact]
+    public async Task StatusObserverFailureCannotReleaseAnOpenFilterWheelReservation()
+    {
+        var config = Connection();
+        var native = new FakeNative();
+        var competingNative = new FakeNative();
+        await using var session = new LocalCfwPortSession(native);
+        await using var competing = new LocalCfwPortSession(competingNative);
+        var observed = new List<DeviceStatusType>();
+        bool failAllActiveStatuses = false;
+        void FailingObserver(DeviceStatusType status)
+        {
+            if (status == DeviceStatusType.Opened || (failAllActiveStatuses && status != DeviceStatusType.Closed))
+                throw new InvalidOperationException("simulated status observer failure");
+        }
+
+        session.StatusChanged += FailingObserver;
+        session.StatusChanged += observed.Add;
+        try
+        {
+            await session.ExecuteAsync("Open", config);
+            Assert.Equal(DeviceStatusType.Opened, session.Status);
+            Assert.Equal(config.PortName, session.Endpoint);
+            Assert.Equal(1, native.Opens);
+            Assert.Throws<InvalidOperationException>(() => LocalCfwPortSession.EnsureNotLocallyOwned(config.PortName));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => competing.ExecuteAsync("Open", config));
+            Assert.Equal(0, competingNative.Opens);
+
+            failAllActiveStatuses = true;
+            Assert.Equal(3, await session.ExecuteAsync("SetPort", config, 3));
+            await session.ExecuteAsync("Close", config);
+            Assert.Equal(new[] { DeviceStatusType.Opening, DeviceStatusType.Opened, DeviceStatusType.Busy, DeviceStatusType.Opened,
+                DeviceStatusType.Closing, DeviceStatusType.Closed }, observed);
+            Assert.Equal(1, native.Closes);
+            await competing.ExecuteAsync("Open", config);
+            Assert.Equal(1, competingNative.Opens);
+        }
+        finally
+        {
+            session.StatusChanged -= FailingObserver;
+        }
+    }
+
+    [Fact]
     public async Task CancellationAndCloseWaitForBlockingNativeCommand()
     {
         using var release = new ManualResetEventSlim();

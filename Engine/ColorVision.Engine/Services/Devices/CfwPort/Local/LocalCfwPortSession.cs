@@ -62,7 +62,15 @@ internal sealed class LocalCfwPortSession(ILocalCfwPortNative? native = null) : 
     internal DeviceStatusType Status => status;
     internal string? Endpoint => connection?.PortName;
 
-    private void SetStatus(DeviceStatusType value) { status = value; StatusChanged?.Invoke(value); }
+    private void SetStatus(DeviceStatusType value)
+    {
+        status = value;
+        foreach (var handler in StatusChanged?.GetInvocationList() ?? Array.Empty<Delegate>())
+        {
+            try { ((Action<DeviceStatusType>)handler)(value); }
+            catch (Exception error) { MQTTServiceBase.log.Error("本地滤色轮状态订阅失败。", error); }
+        }
+    }
 
     internal async Task<int?> ExecuteAsync(string operation, LocalCfwPortConnection config, int? port = null, bool autoConnect = false, CancellationToken token = default)
     {
