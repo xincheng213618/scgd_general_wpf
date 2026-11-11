@@ -403,9 +403,12 @@ namespace ColorVision.Solution
                 IReadOnlyList<SolutionNode> failedNodes = DeleteNodesByOwningSolution(nodes);
                 if (failedNodes.Count > 0)
                 {
+                    string failedNames = string.Join(Environment.NewLine, failedNodes.Take(5).Select(node => $"• {node.Name}"));
+                    if (failedNodes.Count > 5)
+                        failedNames += $"{Environment.NewLine}• …";
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
-                        LocalizedText.Format($"有 {failedNodes.Count} 项未能删除或移除，请查看前面的错误信息。"),
+                        LocalizedText.Format($"有 {failedNodes.Count} 项未能删除或移除。{Environment.NewLine}{Environment.NewLine}{failedNames}"),
                         "ColorVision",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
