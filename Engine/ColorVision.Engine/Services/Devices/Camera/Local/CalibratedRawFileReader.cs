@@ -36,15 +36,14 @@ public sealed class CalibratedRawFileReader : IDisposable
         stream = CVFileReadCache.OpenRead(filePath, populateCache: false);
         try
         {
-            int headerEnd = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile header);
+            int headerEnd = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 3);
             using (header)
             {
                 if (headerEnd <= 0 || !string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase) || header.Version is < 1 or > 3
                     || header.Rows <= 0 || header.Cols <= 0 || header.Channels is not (1 or 3) || header.Bpp is not (8 or 16))
                     throw new InvalidDataException("CVRAW 数据头无效或不受支持。");
-                // The legacy header reader infers type using a case-sensitive substring.
                 header.FileExtType = CVType.Raw;
-                snapshot = ColorCalibrationSnapshot.Read(filePath, header)
+                snapshot = ColorCalibrationSnapshot.Read(CVFileMetadata.ReadFromStream(stream), header)
                     ?? throw new InvalidDataException("CVRAW 没有色度校正参数。");
                 if (!snapshot.CanReplay) throw new InvalidDataException("CVRAW 的色度校正参数不适用于当前像素数据，无法重放。");
                 if (checked((long)Width * Height * sizeof(float)) > Array.MaxLength)

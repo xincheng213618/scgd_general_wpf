@@ -137,13 +137,28 @@ public sealed class CvRawProfileTests
             transform.Coefficients = [1, 0, 0, 0, 1, 0, 0, 0, 1];
             Assert.True(CVFileUtil.WriteCVRaw(path, raw, CVFileSaveMode.MemoryOnly));
             ColorCalibrationSnapshot.Create(transform, 3, 2, 16, raw.Exp, "memory").Save(path, true);
+            CVFileReadCacheSnapshot before = CVFileReadCache.GetSnapshot();
             using var channelReader = new CalibratedRawFileReader(path);
+            CVFileReadCacheSnapshot opened = CVFileReadCache.GetSnapshot();
+            Assert.Equal(1, opened.HitCount - before.HitCount);
+            Assert.Equal(before.ActiveReaders, opened.ActiveReaders);
             using var profile = new CvRawProfileSource(path, true);
+
+            using CVCIEFile replacement = RawColorCalibrationTests.CreateRaw(3, 2, 16, 3);
+            Array.Clear(replacement.Data);
+            for (int offset = 0; offset < replacement.Data.Length; offset += sizeof(ushort)) replacement.Data[offset] = 7;
+            transform.Coefficients[4] = 3;
+            Assert.True(CVFileUtil.WriteCVRaw(path, replacement, CVFileSaveMode.MemoryOnly));
+            ColorCalibrationSnapshot.Create(transform, 3, 2, 16, replacement.Exp, "replacement").Save(path, true);
+            using var replacementReader = new CalibratedRawFileReader(path);
             CVFileReadCache.Release();
             using CVCIEFile y = channelReader.ReadChannel(1);
             float[] values = new float[6];
             Buffer.BlockCopy(y.Data, 0, values, 0, y.Data.Length);
+            Assert.Equal((float)BitConverter.ToUInt16(raw.Data, sizeof(ushort)), values[0]);
             for (int x = 0; x < 3; x++) Assert.Equal(values[x], profile.Read(x, 0, 4));
+            using CVCIEFile replacementY = replacementReader.ReadChannel(1);
+            Assert.Equal(21f, BitConverter.ToSingle(replacementY.Data, 0));
             Assert.False(File.Exists(path));
         }
         finally { CVFileReadCache.Release(); CVFileReadCache.IsEnabled = enabled; }
