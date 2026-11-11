@@ -1086,7 +1086,7 @@ namespace ColorVision.Engine.FlowProcessing
             bool reportStartupFailures = false,
             TimeSpan? executionTimeout = null)
         {
-            FlowRunExecutor.ValidateExecutionTimeout(executionTimeout);
+            FlowEngineRunner.ValidateTimeouts(readinessTimeout: null, executionTimeout);
             // Reserve the entire request before selecting a template. Selection
             // otherwise refreshes the workspace and can cancel another run.
             if (Interlocked.CompareExchange(ref _pendingRunRequest, 1, 0) != 0)

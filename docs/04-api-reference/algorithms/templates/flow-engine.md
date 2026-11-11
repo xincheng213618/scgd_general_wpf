@@ -33,7 +33,7 @@ related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui
 
 无界面请求默认向节点传递 `PersistResults=false`，已保存流程和独立 Quartz 任务也采用此默认值。调用方已为请求的实际执行 SN 准备独立 MySQL 批次时，可在裸请求上显式设置 `PersistResults=true`。MySQL 未连接时，此请求会在图启动前返回 `StartRejected`。该标记由节点执行，节点仍可能按各自配置写文件、调用设备或服务。
 
-readiness timeout 必须为正值且不接受无限等待；execution timeout 可为正值或 `Timeout.InfiniteTimeSpan`。传入非法参数会在请求构造时抛出异常，不会进入结构化运行结果。
+有限超时必须大于零且最多为 4,294,967,294 ms。仅 execution timeout 接受 `Timeout.InfiniteTimeSpan`。请求构造和直接运行 `FlowRuntimeHost` 都会在启动图前拒绝非法值。
 
 `RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求不共享可变节点实例。若图中有 `CVBaseServerNode` 但未提供任何服务快照，明确返回 `StartRejected`。提供了非空快照也不证明每个设备在线或绑定成功。宿主本身不创建编辑器；具体节点的构造、加载和执行仍需满足其自身的 UI、服务和设备依赖。
 

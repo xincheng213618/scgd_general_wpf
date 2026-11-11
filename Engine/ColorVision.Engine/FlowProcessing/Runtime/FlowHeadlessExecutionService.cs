@@ -48,14 +48,7 @@ public sealed class FlowHeadlessExecutionRequest
         }
         ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
         ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
-        ValidateTimeout(
-            readinessTimeout,
-            nameof(readinessTimeout),
-            allowInfinite: false);
-        ValidateTimeout(
-            executionTimeout,
-            nameof(executionTimeout),
-            allowInfinite: true);
+        FlowEngineRunner.ValidateTimeouts(readinessTimeout, executionTimeout);
 
         _stnSnapshot = (byte[])stnSnapshot.Clone();
         _services = CloneServices(services);
@@ -99,21 +92,6 @@ public sealed class FlowHeadlessExecutionRequest
     internal MQTTServiceInfo[] CreateServices()
     {
         return CloneServices(_services);
-    }
-
-    private static void ValidateTimeout(
-        TimeSpan? timeout,
-        string parameterName,
-        bool allowInfinite)
-    {
-        if (timeout.HasValue
-            && ((!allowInfinite
-                    && timeout.Value == Timeout.InfiniteTimeSpan)
-                || (timeout.Value != Timeout.InfiniteTimeSpan
-                    && timeout.Value <= TimeSpan.Zero)))
-        {
-            throw new ArgumentOutOfRangeException(parameterName);
-        }
     }
 
     private static MQTTServiceInfo[] CloneServices(

@@ -62,6 +62,43 @@ public sealed class FlowRuntimeHostTests
     }
 
     [Fact]
+    public void OversizedExecutionTimeoutIsRejectedBeforeStartingTheGraph()
+    {
+        RunInSta(async () =>
+        {
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new HeadlessNeverEndNode()));
+            var start = Assert.Single(host.Nodes.OfType<HeadlessTestStartNode>());
+            var terminal = Assert.Single(host.Nodes.OfType<HeadlessNeverEndNode>());
+
+            var failure = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => host.RunAsync(
+                "HeadlessStart", "SN-INVALID-EXECUTION-TIMEOUT", executionTimeout: TimeSpan.FromMilliseconds(uint.MaxValue)));
+
+            Assert.False(start.Running);
+            Assert.Equal(0, terminal.StartedCount);
+            Assert.Equal("executionTimeout", failure.ParamName);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Fact]
+    public void OversizedReadinessTimeoutIsRejectedEvenWithALocalStartNode()
+    {
+        RunInSta(async () =>
+        {
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(CreateCanvas(new CVEndNode()));
+
+            var failure = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => host.RunAsync(
+                "HeadlessStart", "SN-INVALID-READINESS-TIMEOUT", readinessTimeout: TimeSpan.FromMilliseconds(uint.MaxValue),
+                executionTimeout: LifecycleTestTimeout));
+
+            Assert.Equal("readinessTimeout", failure.ParamName);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    [Fact]
     public void DisposalCanBeRepeatedAfterCleanup()
     {
         RunInSta(async () =>

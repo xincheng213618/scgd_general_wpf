@@ -12,6 +12,20 @@ namespace ColorVision.UI.Tests;
 public sealed class FlowHeadlessExecutionServiceTests
 {
     [Theory]
+    [InlineData(true, "readinessTimeout")]
+    [InlineData(false, "executionTimeout")]
+    public void RequestRejectsTimeoutsOutsideTheTimerRange(bool forReadiness, string parameter)
+    {
+        TimeSpan unsupported = TimeSpan.FromMilliseconds(uint.MaxValue);
+        var failure = Assert.Throws<ArgumentOutOfRangeException>(() => new FlowHeadlessExecutionRequest(
+            [1], "HeadlessStart", "SN-TIMEOUT-RANGE",
+            readinessTimeout: forReadiness ? unsupported : null,
+            executionTimeout: forReadiness ? null : unsupported));
+
+        Assert.Equal(parameter, failure.ParamName);
+    }
+
+    [Theory]
     [InlineData("SN-IMMUTABLE", "SN-IMMUTABLE")]
     [InlineData("SN?IMMUTABLE", "SN_IMMUTABLE")]
     public void RequestOwnsImmutableStnSnapshot(string requestedSerialNumber, string executionSerialNumber)

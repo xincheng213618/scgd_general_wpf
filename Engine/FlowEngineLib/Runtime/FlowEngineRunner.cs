@@ -24,12 +24,29 @@ public sealed record FlowEngineRunResult(
 /// </summary>
 public sealed class FlowEngineRunner
 {
+    private static readonly TimeSpan MaximumFiniteTimeout = TimeSpan.FromMilliseconds(uint.MaxValue - 1);
     private readonly FlowEngineControl _control;
     private int _isRunning;
 
     public FlowEngineRunner(FlowEngineControl control)
     {
         _control = control ?? throw new ArgumentNullException(nameof(control));
+    }
+
+    /// <summary>Validates optional flow timeouts before a caller prepares or starts a graph.</summary>
+    public static void ValidateTimeouts(TimeSpan? readinessTimeout, TimeSpan? executionTimeout)
+    {
+        ValidateTimeout(readinessTimeout, nameof(readinessTimeout), allowInfinite: false);
+        ValidateTimeout(executionTimeout, nameof(executionTimeout), allowInfinite: true);
+    }
+
+    private static void ValidateTimeout(TimeSpan? timeout, string parameterName, bool allowInfinite)
+    {
+        if (timeout is not TimeSpan value || (allowInfinite && value == Timeout.InfiniteTimeSpan))
+            return;
+        if (value <= TimeSpan.Zero || value > MaximumFiniteTimeout)
+            throw new ArgumentOutOfRangeException(parameterName, value,
+                $"Finite flow timeout must be positive and at most {MaximumFiniteTimeout.TotalMilliseconds:0} ms.");
     }
 
     public async Task<FlowEngineRunResult> RunAsync(
@@ -41,18 +58,8 @@ public sealed class FlowEngineRunner
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
         ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
+        ValidateTimeouts(readinessTimeout, executionTimeout);
         serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(
-            readinessTimeout,
-            TimeSpan.Zero);
-        if (executionTimeout.HasValue
-            && executionTimeout.Value != Timeout.InfiniteTimeSpan)
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(
-                executionTimeout.Value,
-                TimeSpan.Zero,
-                nameof(executionTimeout));
-        }
         if (Interlocked.CompareExchange(ref _isRunning, 1, 0) != 0)
         {
             return CreateResult(
