@@ -58,6 +58,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             public bool IsAutoExp => AutoExposureConfiguration != null;
         }
         private const int CameraMasterResultType = 100;
+        private readonly Func<LocalCameraCaptureRequest, bool, LocalCameraCaptureResult> captureCamera;
         private string _CalibTempName = string.Empty;
         private float _ExpTime = 100;
         private float _Gain;
@@ -117,11 +118,22 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看校正文件与图像文件缓存，并统一释放内存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        public LocalCameraNode() : base("相机取图", "Camera", "GetData")
+        public LocalCameraNode() : this(CaptureCamera)
         {
+        }
+
+        internal LocalCameraNode(Func<LocalCameraCaptureRequest, bool, LocalCameraCaptureResult> captureCamera) : base("相机取图", "Camera", "GetData")
+        {
+            this.captureCamera = captureCamera;
             OpenLocalCameraManagerCommand = new RelayCommand(_ => OpenLocalCameraManager());
             OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
+        }
+
+        private static LocalCameraCaptureResult CaptureCamera(LocalCameraCaptureRequest request, bool autoConnect)
+        {
+            FlowNodeTiming.Run("ConnectCamera", () => request.Device.EnsureLocalMeasurementConnected(autoConnect));
+            return LocalCameraCaptureService.Capture(request);
         }
 
         protected override string GetCompactSummaryValue() => $"{ExpTime:0.###} ms";
@@ -163,12 +175,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
+            var stopToken = action.RuntimeResources.StopToken;
             CameraExecutionParameters parameters = GetExecutionParameters<CameraExecutionParameters>(action);
             DeviceCamera device = parameters.Device;
             CameraRunParam cameraParameters = parameters.CameraParameters;
             CalibrationParam? calibration = parameters.Calibration;
-            FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(parameters.AutoConnect));
-            LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
+            LocalCameraCaptureResult capture = captureCamera(new LocalCameraCaptureRequest
             {
                 Device = device,
                 CameraParameters = cameraParameters,
@@ -178,22 +190,27 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 AutoExposureConfiguration = parameters.AutoExposureConfiguration,
                 SaveFiles = false,
                 AllowAcceleration = true
-            });
+            }, parameters.AutoConnect);
 
             LocalFlowFrame frame = capture.Frame;
             try
             {
+                // A native capture may finish after the workflow has stopped.
+                stopToken.ThrowIfCancellationRequested();
                 frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata);
                 Stopwatch saveTimer = Stopwatch.StartNew();
                 LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, parameters.SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly);
                 int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
+                stopToken.ThrowIfCancellationRequested();
                 MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, parameters.IsAutoExp));
+                stopToken.ThrowIfCancellationRequested();
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
-                action.MasterValue(null, masterId, CameraMasterResultType);
                 action.SetCurrentFrame(frame);
                 LocalFlowFrame currentFrame = frame;
                 frame = null!;
+                stopToken.ThrowIfCancellationRequested();
+                action.MasterValue(null, masterId, CameraMasterResultType);
                 FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, device.Code, OperatorCode, action.SerialNumber, NodeID, ZIndex, new ResultReference(masterId, CameraMasterResultType), persistedResult)));
                 LocalCameraNodeResultData result = new()
                 {

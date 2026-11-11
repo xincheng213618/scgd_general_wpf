@@ -3,10 +3,17 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.Results;
+using ColorVision.FileIO;
+using FlowEngineLib;
 using FlowEngineLib.Base;
+using FlowEngineLib.End;
 using FlowEngineLib.Repeat;
 using Newtonsoft.Json.Linq;
+using ST.Library.UI.NodeEditor;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -108,18 +115,94 @@ public sealed class LocalCameraRepeatParameterTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StoppingDuringDedicatedCaptureDiscardsTheLateFrameBeforeSaving(bool saveFiles)
+    {
+        StaTest.Run(() =>
+        {
+            const string serialNumber = "stopped-local-camera";
+            string tempParent = Path.GetFullPath(Path.GetTempPath());
+            string output = Path.GetFullPath(Path.Combine(tempParent, $"cv-stopped-camera-{Guid.NewGuid():N}"));
+            string outputPrefix = Path.TrimEndingDirectorySeparator(output) + Path.DirectorySeparatorChar;
+            using var scope = new CameraScope();
+            scope.Device.Config.FileServerCfg.DataBasePath = output;
+            using var enteredCapture = new ManualResetEventSlim();
+            using var releaseCapture = new ManualResetEventSlim();
+            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 2, Height = 1, SourceBpp = 8, Channels = 1, Exposure = [100f]
+            }, 2, 0);
+            var node = new LocalCameraNode((request, autoConnect) =>
+            {
+                enteredCapture.Set();
+                releaseCapture.Wait();
+                return new LocalCameraCaptureResult { Frame = frame };
+            }) { SaveFiles = saveFiles };
+            using var editor = new STNodeEditor();
+            using var control = new FlowEngineControl(editor, false, new FlowNodeManager()) { PersistResults = false };
+            var start = new RuntimeTestStartNode();
+            var end = new CVEndNode();
+            foreach (STNode graphNode in new STNode[] { start, node, end })
+            {
+                graphNode.Create();
+                editor.Nodes.Add(graphNode);
+            }
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(node.GetAllInputOptions().Single()));
+            Assert.Equal(ConnectionStatus.Connected, node.GetAllOutputOptions().Single().ConnectOption(end.m_in_start));
+            var finished = new TaskCompletionSource<FlowEngineEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+            control.Finished += (_, result) => finished.TrySetResult(result);
+            int published = 0;
+            using var subscription = ResultMessageBus.Default.Subscribe(message =>
+            {
+                if (message.SerialNumber == serialNumber) Interlocked.Increment(ref published);
+            });
+
+            bool previousCache = CVFileReadCache.IsEnabled;
+            CVFileReadCache.IsEnabled = true;
+            try
+            {
+                Assert.True(control.TryStartNode(start.NodeName, serialNumber));
+                Assert.True(enteredCapture.Wait(TimeSpan.FromSeconds(10)));
+                control.StopNode(start.NodeName, serialNumber);
+                Assert.Equal(StatusTypeEnum.Canceled, finished.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult().Status);
+                releaseCapture.Set();
+                Assert.True(SpinWait.SpinUntil(() =>
+                {
+                    try { using var lease = frame.Acquire(); return false; }
+                    catch (ObjectDisposedException) { return true; }
+                }, TimeSpan.FromSeconds(10)));
+
+                Assert.False(Directory.Exists(output));
+                Assert.DoesNotContain(CVFileReadCache.GetSnapshot().Entries, entry => entry.FilePath.StartsWith(outputPrefix, StringComparison.OrdinalIgnoreCase));
+                Assert.Empty(frame.CvRawFilePath);
+                Assert.Equal(0, Volatile.Read(ref published));
+            }
+            finally
+            {
+                releaseCapture.Set();
+                CVFileReadCache.Release();
+                CVFileReadCache.IsEnabled = previousCache;
+                Assert.StartsWith(Path.TrimEndingDirectorySeparator(tempParent) + Path.DirectorySeparatorChar, output, StringComparison.OrdinalIgnoreCase);
+                if (Directory.Exists(output)) Directory.Delete(output, recursive: true);
+            }
+        });
+    }
+
     private sealed class CameraScope : IDisposable
     {
         private static readonly FieldInfo ManagerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
         private readonly ServiceManager? previousManager = ServiceManager.Current;
+        internal DeviceCamera Device { get; }
 
         internal CameraScope()
         {
-            var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
-            device.Config = new ConfigCamera();
-            device.SysResourceModel = new SysResourceModel { Code = "LOCAL.CAMERA.REPEAT.TEST" };
+            Device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+            Device.Config = new ConfigCamera();
+            Device.SysResourceModel = new SysResourceModel { Code = "LOCAL.CAMERA.REPEAT.TEST" };
             var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
-            manager.DeviceServices = [device];
+            manager.DeviceServices = [Device];
             // Request preparation resolves this manager through GetInstance; avoid registering a test manager globally.
             typeof(ServiceManager).GetField("_copilotAgentExtensionRegistration", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(manager, this);
             ManagerField.SetValue(null, manager);
