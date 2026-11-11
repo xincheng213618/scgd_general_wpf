@@ -241,6 +241,37 @@ public sealed class LocalSensorSessionTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => session.ExecuteAsync([new() { Request = "Q" }]));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LateOpenSuccessCannotKeepTheEndpointAfterCancellationOrTimeout(bool timeout)
+    {
+        var config = Config();
+        if (timeout) config.ConnectTimeout = 10;
+        var transport = new FakeTransport { BlockOpen = true, CompleteOpenOnCancellation = true };
+        using var session = new LocalSensorSession(_ => transport);
+        var observed = new List<DeviceStatusType>();
+        session.StatusChanged += observed.Add;
+        using var stop = new CancellationTokenSource();
+        Task open = session.OpenAsync(config, stop.Token);
+        await transport.OpenStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        if (timeout) await Assert.ThrowsAsync<TimeoutException>(() => open.WaitAsync(TimeSpan.FromSeconds(5)));
+        else
+        {
+            stop.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => open.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
+        Assert.DoesNotContain(DeviceStatusType.Opened, observed);
+        Assert.Equal(DeviceStatusType.Closed, session.Status);
+        Assert.Null(session.EndpointIdentity);
+        Assert.True(transport.Disposed);
+        config.ConnectTimeout = 3000;
+        using var replacement = new LocalSensorSession(_ => new FakeTransport());
+        await replacement.OpenAsync(config);
+        Assert.True(replacement.IsOpen);
+    }
+
     [Fact]
     public async Task LaterCloseCancelsReopenWaitingForOldConnection()
     {
@@ -573,6 +604,7 @@ public sealed class LocalSensorSessionTests
     {
         private readonly Channel<byte[]> received = Channel.CreateUnbounded<byte[]>();
         public bool BlockOpen { get; init; }
+        public bool CompleteOpenOnCancellation { get; init; }
         public TaskCompletionSource? OpeningUnwind { get; init; }
         public Func<int, string>? Reply { get; init; }
         public Func<int, byte[][]>? ReplyChunks { get; init; }
@@ -589,6 +621,7 @@ public sealed class LocalSensorSessionTests
             if (BlockOpen)
             {
                 try { await Task.Delay(Timeout.Infinite, token); }
+                catch (OperationCanceledException) when (CompleteOpenOnCancellation) { }
                 finally { if (OpeningUnwind != null) await OpeningUnwind.Task; }
             }
         }

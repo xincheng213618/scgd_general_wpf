@@ -76,6 +76,7 @@ internal sealed class LocalSensorSession : IDisposable
             lock (sync)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                token.ThrowIfCancellationRequested();
                 if (requested != generation || requestedClose != closeRequests) throw new OperationCanceledException("传感器打开请求已被关闭操作取消。");
                 if (status == DeviceStatusType.Closing) throw new InvalidOperationException("传感器正在关闭，请等待关闭完成。");
                 if (transport != null)
@@ -99,14 +100,18 @@ internal sealed class LocalSensorSession : IDisposable
             Diagnostics.AddLog(EndpointKey(config), "连接中", $"正在打开连接，连接超时 {config.ConnectTimeout} ms。");
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token, lifetimeToken);
             deadline.CancelAfter(config.ConnectTimeout);
-            try { await candidate.OpenAsync(config, deadline.Token).ConfigureAwait(false); }
+            try
+            {
+                await candidate.OpenAsync(config, deadline.Token).ConfigureAwait(false);
+                lock (sync)
+                {
+                    if (generation != version || lifetime.IsCancellationRequested) throw new OperationCanceledException("传感器连接已关闭。");
+                    deadline.Token.ThrowIfCancellationRequested();
+                    status = DeviceStatusType.Opened;
+                }
+            }
             catch (Exception) when (deadline.IsCancellationRequested && !token.IsCancellationRequested && !lifetime.IsCancellationRequested)
             { throw new TimeoutException("本地传感器连接超时。"); }
-            lock (sync)
-            {
-                if (generation != version || lifetime.IsCancellationRequested) throw new OperationCanceledException("传感器连接已关闭。");
-                status = DeviceStatusType.Opened;
-            }
             Notify();
             Diagnostics.AddLog(EndpointKey(config), "连接成功", "本地连接已打开。");
             _ = ReadLoopAsync(candidate, version, lifetimeToken);
