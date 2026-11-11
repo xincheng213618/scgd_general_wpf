@@ -592,6 +592,45 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ResumeAllDoesNotRearmAPausedTaskWhileItsPreviousExecutionIsActive()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finish = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _scheduler.Context[nameof(StatusProbeJob)] = (started, finish);
+        SchedulerInfo active = CreateInfo();
+        active.JobType = typeof(StatusProbeJob);
+        active.RepeatMode = JobRepeatMode.Multiple;
+        active.RepeatCount = 1;
+        active.Interval = TimeSpan.FromHours(1);
+        SchedulerInfo pending = CreateInfo();
+        pending.JobName = "pending-job";
+        pending.IsDelayed = true;
+        pending.Delay = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(active)).Success);
+        Assert.True((await _manager.CreateJob(pending)).Success);
+
+        try
+        {
+            await _scheduler.Start();
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await _manager.PauseAll();
+
+            Exception? error = await Record.ExceptionAsync(_manager.ResumeAll);
+
+            Assert.Equal(SchedulerStatus.Paused, active.Status);
+            var failure = Assert.IsType<InvalidOperationException>(error);
+            Assert.Contains(active.JobName, failure.Message);
+            Assert.Contains(Resources.Sched_AlreadyActive, failure.Message);
+            Assert.Equal(TriggerState.Paused, await _scheduler.GetTriggerState(new TriggerKey($"{active.JobName}-trigger", active.GroupName)));
+            Assert.Equal(SchedulerStatus.Ready, pending.Status);
+            Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(new TriggerKey($"{pending.JobName}-trigger", pending.GroupName)));
+        }
+        finally { finish.TrySetResult(); }
+
+        await NextExecution();
+    }
+
+    [Fact]
     public async Task ResumeAll_ResumesOtherSavedTasksWhenACronScheduleHasExpired()
     {
         SchedulerInfo expired = CreateInfo();

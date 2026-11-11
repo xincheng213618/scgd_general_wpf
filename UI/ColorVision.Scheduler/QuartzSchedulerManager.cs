@@ -641,6 +641,9 @@ namespace ColorVision.Scheduler
                 SchedulerStatus previousStatus = info.Status;
                 await using SchedulerStandbyLease standbyScope =
                     await SchedulerStandbyLease.AcquireAsync(Scheduler);
+                // Quartz still lists vetoed firings while their cleanup runs.
+                if (Listener?.HasActiveExecution(jobKey) == true)
+                    throw new InvalidOperationException(Properties.Resources.Sched_AlreadyActive);
                 IJobDetail? originalJob = await Scheduler.GetJobDetail(jobKey);
                 IReadOnlyCollection<ITrigger> originalTriggers = originalJob == null
                     ? Array.Empty<ITrigger>()

@@ -179,7 +179,7 @@ namespace ColorVision.Scheduler
             RaiseJobExecuted(context);
         }
 
-        private bool HasActiveExecution(JobKey jobKey)
+        internal bool HasActiveExecution(JobKey jobKey)
         {
             return _activeExecutions.Values.Any(execution => execution.JobKey.Equals(jobKey));
         }
