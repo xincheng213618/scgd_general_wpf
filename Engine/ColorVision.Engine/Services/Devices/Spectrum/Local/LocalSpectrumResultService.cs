@@ -18,18 +18,21 @@ internal static class LocalSpectrumResultService
 {
     internal static SpectumResultEntity CreateModel(LocalSpectrumCapture capture, LocalSpectrumParameters parameters)
     {
-        JObject data = JObject.FromObject(capture.Data);
-        data[nameof(SpectumResultEntity.fPL)] = JsonConvert.SerializeObject(capture.Data.fPL);
-        data[nameof(SpectumResultEntity.fRi)] = JsonConvert.SerializeObject(capture.Data.fRi);
+        // Write the array columns directly instead of creating a JSON token for every sample.
+        var scalarData = capture.Data;
+        scalarData.fPL = null!;
+        scalarData.fRi = null!;
+        JObject data = JObject.FromObject(scalarData);
+        data.Remove(nameof(SpectumResultEntity.fPL));
+        data.Remove(nameof(SpectumResultEntity.fRi));
         // SQL numeric columns cannot store NaN/Infinity; retain the original values in the JSON archive.
         var storageData = (JObject)data.DeepClone();
         foreach (var field in storageData.Properties())
             if (field.Value.Type == JTokenType.Float && !double.IsFinite(field.Value.Value<double>())) field.Value = JValue.CreateNull();
         var model = storageData.ToObject<SpectumResultEntity>()!;
-        if (capture.Data.fRi == null || Array.Exists(capture.Data.fRi, value => !float.IsFinite(value)))
-            model.fRi = null;
-        data.Remove(nameof(SpectumResultEntity.fPL));
-        data.Remove(nameof(SpectumResultEntity.fRi));
+        model.fPL = JsonConvert.SerializeObject(capture.Data.fPL);
+        if (capture.Data.fRi is { } indices && Array.TrueForAll(indices, float.IsFinite))
+            model.fRi = JsonConvert.SerializeObject(indices);
         data[nameof(Views.cieData.AcquisitionParametersJson)] = capture.AcquisitionParametersJson;
         model.CieDataEx = data.ToString(Formatting.None);
         model.DeviceCode = capture.DeviceCode;
