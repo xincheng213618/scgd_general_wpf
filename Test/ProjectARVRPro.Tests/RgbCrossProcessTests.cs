@@ -265,8 +265,13 @@ public sealed class RgbCrossProcessTests
         try
         {
             ColorVision.ImageEditor.Algorithms.AlgorithmResultExporter.ExportJson(result, path);
-            var parsed = RgbCrossResultParser.Parse(File.ReadAllText(path));
+            string exportedJson = File.ReadAllText(path);
+            var parsed = RgbCrossResultParser.Parse(exportedJson);
+            Assert.Equal(result.AlgorithmVersion.ToString(), parsed.AlgorithmVersion);
             Assert.Equal(9, parsed.Points.Count); Assert.All(parsed.Points, p => Assert.True(p.Valid));
+            var unknownVersion = JObject.Parse(exportedJson);
+            unknownVersion["algorithmVersion"] = "99.0.0";
+            Assert.Equal("不支持的十字算法版本。", Assert.Throws<InvalidDataException>(() => RgbCrossResultParser.Parse(unknownVersion.ToString())).Message);
             File.Delete(path);
             ColorVision.ImageEditor.Algorithms.RgbCrossMeasurementExporter.Export(result, path);
             parsed = RgbCrossResultParser.Parse(File.ReadAllText(path));

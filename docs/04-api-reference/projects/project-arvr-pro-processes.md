@@ -114,7 +114,9 @@ W255 和按 Key 亮色度的 **显示配置** 提供独立的 **亮度均匀性�
 
 Process 的“输出Key”默认 `RgbCross`，用于 CSV 分组和 `ObjectiveTestResult.DynamicRgbCrossResults` 字典的 Key。不同画面配置不同 Key，可并存十字测量、几何与判定状态；相同 Key 本次执行替换对应项，失败时写入 DATA_ERROR，避免残留旧成功结果。输出 Key 存入当前结果快照，修改配置不重命名历史导出。使用单独类型的字典保留空测量和 MEASURED/INVALID 状态，不把未判定数据压成普通布尔 PASS。
 
-该类型接受算法 ID 为 `colorvision.display.rgb-cross-registration`、算法版本 `1.1.0` / `1.2.0` / `1.3.0` 的通用 artifact JSON，读取 `RGB-cross-separation` 与 `rgb-cross-regions`。现场验证脚本的 `measurements.json` 不属于该格式。生产节点与 ImageView 的“导出十字 JSON”使用 `colorvision.rgb-cross-measurement` v1 对接格式，只输出测量、绘图数据与有效性；通用导出保持兼容。算法 `1.4.0` / `1.5.0` 的通用导出读取其中的结构化测量结果，并核对执行标识；新生产 JSON 使用 `1.2.0`，必须提供 `grid.rows/columns`、`referenceChannel: "G"` 和每点 `comparisons.R-G/B-G`；四条带符号的对应边缘偏移及其绝对最大值须与通道几何一致。继续接受原 3×3 `1.0.0` 和可变布局 `1.1.0`，旧结果从通道几何推导 R-G、B-G，不把三通道极差当成任一通道对。结果快照保存布局，判定按配置点数检查完整性。客户判定授权由交付/宿主承担，不由 JSON 的 `capabilityProfile` 字符串授予权限。
+通用 artifact JSON 的算法 ID 为 `colorvision.display.rgb-cross-registration`。算法版本 `1.1.0` / `1.2.0` / `1.3.0` 读取 `RGB-cross-separation` 与 `rgb-cross-regions`，`1.4.0` / `1.5.0` / `1.6.0` / `1.6.2` 读取结构化测量并核对算法版本与执行标识。其他算法版本及现场验证脚本的 `measurements.json` 不接受。
+
+生产节点与 ImageView 的“导出十字 JSON”使用 `colorvision.rgb-cross-measurement` 对接格式，只输出测量、绘图数据与有效性。当前 schema `1.2.0` 要求 `grid.rows/columns`、`referenceChannel` 为 `G`，以及每点 `comparisons.R-G/B-G`，四条带符号的对应边缘偏移及其绝对最大值须与通道几何一致。继续接受原 3×3 `1.0.0` 和可变布局 `1.1.0`，旧结果从通道几何推导 R-G、B-G，三通道极差有独立口径。结果快照保存布局，判定按配置点数检查完整性。客户判定授权由交付和宿主承担，JSON 的 `capabilityProfile` 仅标识测量能力。
 
 独立实现方也可使用精简 JSON：根字段 `width/height/points`，默认九点 `id=1..9`，其他布局需增加 `grid: {rows, columns}` 并连续编号到全部点数，各点 `R/G/B` 通道含 `horizontal/vertical` 的 `[x,y,width,height]` 矩形，`separation` 为最大对应边缘差。无效通道为 `null`，点位分离为 `null` 且必须给出 `reason`。此格式不要求提供宿主项目、数据库或算法实现元数据；解析后沿用相同几何校验、判定和渲染，保留原格式兼容。
 
