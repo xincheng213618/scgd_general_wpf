@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.CfwPort.Local;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using cvColorVision;
@@ -627,6 +628,38 @@ public sealed class LocalSpectrumTests
     }
 
     [Fact]
+    public void CloseStillReleasesTheDirectNdWheelWhenShutterDisposalFails()
+    {
+        var config = Config();
+        config.IsShutterEnable = true;
+        config.NDConfig.IsNDPort = true;
+        config.NDConfig.IsBingNDDevice = false;
+        config.NDConfig.SzComName = "COM48125";
+        config.NDConfig.BaudRate = 9600;
+
+        var failure = new IOException("shutter disposal failed");
+        var shutterPort = new FakeShutterPort([]) { DisposeFailure = failure };
+        var shutter = new LocalSpectrumShutter(_ => shutterPort);
+        var spectrum = new FakeNative();
+        var wheel = new FakeDirectNdNative();
+        using var session = new LocalSpectrumSession(spectrum, shutter: shutter, nd: new(directSession: new(wheel)));
+        session.Open(config);
+        session.ControlShutter("ShutterConnect", config);
+        Assert.Equal(1, wheel.OpenCalls);
+
+        Assert.Same(failure, Assert.Throws<IOException>(session.Close));
+
+        Assert.Equal(1, spectrum.CloseCalls);
+        Assert.Equal(1, spectrum.ReleaseCalls);
+        Assert.Equal(1, wheel.CloseCalls);
+        LocalCfwPortSession.EnsureNotLocallyOwned(config.NDConfig.SzComName);
+        Assert.False(session.IsOpen);
+        Assert.False(session.IsQuarantined);
+        session.Open(config);
+        Assert.Equal(2, wheel.OpenCalls);
+    }
+
+    [Fact]
     public void ShutterTimeoutAndStaleOppositeReplyCannotConfirmCommand()
     {
         var config = new ShutterConfig { DelayTime = 1, OpenCmd = "OPEN", CloseCmd = "CLOSE" };
@@ -1029,6 +1062,7 @@ public sealed class LocalSpectrumTests
     {
         public bool IsOpen { get; private set; }
         public bool Disposed;
+        public Exception? DisposeFailure;
         public int DiscardCalls;
         public List<string> Commands = [];
         public Queue<string> Pending = new();
@@ -1042,7 +1076,22 @@ public sealed class LocalSpectrumTests
             foreach (string response in Reply(command)) Pending.Enqueue(response);
         }
         public string ReadExisting() => Pending.TryDequeue(out string? value) ? value : string.Empty;
-        public void Dispose() { Disposed = true; IsOpen = false; }
+        public void Dispose()
+        {
+            Disposed = true;
+            IsOpen = false;
+            if (DisposeFailure is { } failure) throw failure;
+        }
+    }
+
+    private sealed class FakeDirectNdNative : ILocalCfwPortNative
+    {
+        internal int OpenCalls { get; private set; }
+        internal int CloseCalls { get; private set; }
+        public IntPtr Open(LocalCfwPortConnection config) { OpenCalls++; return (IntPtr)456; }
+        public int Close(IntPtr handle) { CloseCalls++; return 0; }
+        public int SetPort(IntPtr handle, int port) => 0;
+        public int GetPort(IntPtr handle, ref int port) { port = 0; return 0; }
     }
 
     private sealed class FakeFilterWheel(List<string> calls, ShutterConfig config) : ILocalSpectrumFilterWheelOperation

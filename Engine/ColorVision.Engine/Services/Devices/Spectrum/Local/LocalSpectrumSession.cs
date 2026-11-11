@@ -225,7 +225,12 @@ internal sealed class LocalSpectrumSession : IDisposable
                     operation.GetPort();
                 }
             }
-            catch { Close(); throw; }
+            catch (Exception failure)
+            {
+                try { Close(); }
+                catch (Exception cleanup) { throw new AggregateException("打开光谱仪失败，清理连接时也遇到错误。", failure, cleanup); }
+                throw;
+            }
         }
     }
 
@@ -509,31 +514,34 @@ internal sealed class LocalSpectrumSession : IDisposable
         lock (gate)
         {
             if (quarantined) throw new InvalidOperationException("光谱仪释放失败，请重启程序。");
-            try
+            List<Exception> failures = [];
+            if (handle != IntPtr.Zero)
             {
-                if (handle != IntPtr.Zero)
+                Attempt(() => Check(native.Close(handle), "关闭光谱仪"));
+                Attempt(() => Check(native.Release(handle), "释放光谱仪"));
+                if (failures.Count != 0)
                 {
-                    try { Check(native.Close(handle), "关闭光谱仪"); }
-                    finally { Check(native.Release(handle), "释放光谱仪"); }
+                    quarantined = true;
+                    lease?.Quarantine();
+                    lock (QuarantinedSessions) QuarantinedSessions.Add(this);
                 }
             }
-            catch
+
+            handle = IntPtr.Zero;
+            openedConfig = null;
+            dark = new float[10000];
+            adaptiveDarkInitialized = false;
+            lease?.Dispose();
+            if (!quarantined) lease = null;
+            Attempt(shutter.Disconnect);
+            Attempt(nd.Disconnect);
+            if (failures.Count == 1) ExceptionDispatchInfo.Capture(failures[0]).Throw();
+            if (failures.Count > 1) throw new AggregateException("断开光谱仪时遇到多项错误。", failures);
+
+            void Attempt(Action release)
             {
-                quarantined = true;
-                lease?.Quarantine();
-                lock (QuarantinedSessions) QuarantinedSessions.Add(this);
-                throw;
-            }
-            finally
-            {
-                handle = IntPtr.Zero;
-                openedConfig = null;
-                dark = new float[10000];
-                adaptiveDarkInitialized = false;
-                lease?.Dispose();
-                if (!quarantined) lease = null;
-                shutter.Disconnect();
-                nd.Disconnect();
+                try { release(); }
+                catch (Exception failure) { failures.Add(failure); }
             }
         }
     }
