@@ -127,6 +127,49 @@ public sealed class FlowExecutionJournalTests
     }
 
     [Fact]
+    public void TerminalRunMarksAttemptsWithNoRecordedEndAndRejectsNewAttempts()
+    {
+        WithJournal((db, journal) =>
+        {
+            FlowTemplateSnapshot snapshot = FlowTemplateSnapshotFactory.Create(42, [83, 84, 78, 68, 1]);
+            FlowRunRecord run = BeginRun(journal, snapshot, "run-terminal-with-open-attempt");
+            FlowRunRecord otherRun = BeginRun(journal, snapshot, "run-still-active");
+            FlowNodeAttempt missingEnd = journal.BeginAttempt(CreateAttempt(run.Id, "missing-end"));
+            FlowNodeAttempt observed = journal.BeginAttempt(CreateAttempt(run.Id, "observed"));
+            FlowNodeAttempt other = journal.BeginAttempt(CreateAttempt(otherRun.Id, "other"));
+            FlowNodeAttempt completed = journal.CompleteAttempt(observed.Id, "Succeeded");
+
+            journal.CompleteRun(run.Id, FlowStatus.Failed, 1234, finalOutcome: FlowFinalOutcome.Failed);
+
+            FlowNodeAttempt interrupted = db.Queryable<FlowNodeAttempt>().InSingle(missingEnd.Id);
+            Assert.Equal("Interrupted", interrupted.Outcome);
+            Assert.Equal("NodeEndNotRecorded", interrupted.ErrorCode);
+            Assert.Null(interrupted.CompletedTimeUtc);
+            FlowNodeAttempt persistedCompleted = db.Queryable<FlowNodeAttempt>().InSingle(observed.Id);
+            Assert.Equal(completed.CompletedTimeUtc, persistedCompleted.CompletedTimeUtc);
+            Assert.Equal("Succeeded", persistedCompleted.Outcome);
+            Assert.Null(db.Queryable<FlowNodeAttempt>().InSingle(other.Id).Outcome);
+
+            Assert.Equal(missingEnd.Id, journal.BeginAttempt(CreateAttempt(run.Id, "missing-end")).Id);
+            Assert.Throws<InvalidOperationException>(() => journal.BeginAttempt(CreateAttempt(run.Id, "late-start")));
+
+            FlowNodeAttempt lateEnd = journal.CompleteAttempt(missingEnd.Id, "Canceled");
+            Assert.Equal("Canceled", lateEnd.Outcome);
+            Assert.NotNull(lateEnd.CompletedTimeUtc);
+            Assert.Null(lateEnd.ErrorCode);
+            journal.CompleteRun(run.Id, FlowStatus.Failed, 1234, finalOutcome: FlowFinalOutcome.Failed);
+            Assert.Equal("Canceled", db.Queryable<FlowNodeAttempt>().InSingle(missingEnd.Id).Outcome);
+        });
+
+        static FlowNodeAttempt CreateAttempt(int runId, string invocationId) => new()
+        {
+            RunRecordId = runId,
+            NodeId = "node-a",
+            InvocationId = invocationId,
+        };
+    }
+
+    [Fact]
     public void AttemptsAndIncidentsUseStableIdempotencyKeys()
     {
         WithJournal((db, journal) =>

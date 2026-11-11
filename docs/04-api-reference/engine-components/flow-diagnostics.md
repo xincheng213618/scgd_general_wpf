@@ -218,9 +218,7 @@ journal 会校验重复键对应的内容，不是拿相同键就能覆盖旧事
 
 `FlowRunFinalizer` 先确定业务结果，再由 journal 固定 `(Status, ElapsedMs, FinalOutcome)` 并停止心跳。两次写入都失败时，运行退出前再补写同一终态一次。尚无终态请求的运行会记录 `RunEndedBeforeFinalization` 及提前退出的状态。收到业务结果后仍须单独核对 SQLite 终态。
 
-终态请求阻止 scope 接受新的普通事件和节点尝试。已通过检查的并发调用仍可写入。`Dispose()` 只释放心跳计时器。
-
-底层 `CompleteRun` 重复收到同一终态会返回原记录并保留第一次完成时间；结果三元组冲突则拒绝。不要为了让界面状态变绿，把仍待核对的记录改成成功。
+`CompleteRun` 将缺少结束事件的尝试标为 `Interrupted`（`NodeEndNotRecorded`），耗时未知。在途的结束记录仍可补齐。终态请求阻止 scope 接受新事件和尝试，运行结束后重复调用 ID 仍返回原记录。重试同一终态保留首次完成时间，结果三元组冲突则拒绝。
 
 ## 哪些遗留运行会被恢复
 
