@@ -596,13 +596,13 @@ public sealed class ResultStatisticsTests
     [Fact]
     public void SnSuggestionFilterPrioritizesPrefixMatchesAndCapsTheDropdown()
     {
-        string[] suggestions = ["ZZ-AB", "AB-20", "ab-10", "AB-30", "AB-20", "unrelated"];
+        var suggestions = new ResultStatisticsSuggestions(["ZZ-AB", " AB-20 ", "ab-10", "AB-30", "ab-20", "unrelated", "  "]);
 
-        IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(suggestions, "ab", 3);
-
-        Assert.Equal(["ab-10", "AB-20", "AB-30"], matches);
-        Assert.Equal(2, ResultStatisticsSuggestionFilter.Filter(suggestions, string.Empty, 2).Count);
-        Assert.Empty(ResultStatisticsSuggestionFilter.Filter(suggestions, "ab", 0));
+        Assert.Equal(["ab-10", "AB-20", "AB-30"], suggestions.Filter("ab", 3));
+        Assert.Equal(["ab-10", "AB-20", "AB-30", "ZZ-AB"], suggestions.Filter(" ab ", 4));
+        Assert.Equal(["ZZ-AB", "AB-20"], suggestions.Filter(string.Empty, 2));
+        Assert.Empty(suggestions.Filter("ab", 0));
+        Assert.Empty(suggestions.Filter("missing", 20));
     }
 
     [Fact]
@@ -1320,6 +1320,11 @@ public sealed class ResultStatisticsTests
         Assert.Equal(2, summaries[1].TotalCount);
         Assert.Equal(1, summaries[1].PassCount);
         Assert.Equal(1, summaries[1].FailCount);
+        Assert.Equal(["SN-B", "SN-A"], store.QuerySnSuggestions());
+        Assert.Equal(["SN-B", "SN-A"], new ResultStatisticsDataStore(database.Path, readOnly: true).QuerySnSuggestions());
+
+        database.DropFinalizedColumnForLegacySchema();
+        Assert.Equal(["SN-C", "SN-B", "SN-A"], new ResultStatisticsDataStore(database.Path, readOnly: true).QuerySnSuggestions());
     }
 
     [Fact]

@@ -572,28 +572,51 @@ namespace ProjectARVRPro
             double MaximumCtMilliseconds);
     }
 
-    internal static class ResultStatisticsSuggestionFilter
+    internal sealed class ResultStatisticsSuggestions
     {
-        public static IReadOnlyList<string> Filter(IEnumerable<string> suggestions, string? text, int limit)
+        private readonly string[] _recent;
+        private readonly string[] _alphabetical;
+
+        public int Count => _recent.Length;
+
+        public ResultStatisticsSuggestions(IEnumerable<string> suggestions)
         {
             ArgumentNullException.ThrowIfNull(suggestions);
-            if (limit <= 0)
-                return [];
-
-            string filter = text?.Trim() ?? string.Empty;
-            IEnumerable<string> candidates = suggestions
+            _recent = suggestions
                 .Where(item => !string.IsNullOrWhiteSpace(item))
                 .Select(item => item.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-            if (filter.Length == 0)
-                return candidates.Take(limit).ToList();
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            _alphabetical = (string[])_recent.Clone();
+            Array.Sort(_alphabetical, StringComparer.OrdinalIgnoreCase);
+        }
 
-            return candidates
-                .Where(item => item.Contains(filter, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(item => item.StartsWith(filter, StringComparison.OrdinalIgnoreCase))
-                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
-                .Take(limit)
-                .ToList();
+        public IReadOnlyList<string> Filter(string? text, int limit)
+        {
+            if (limit <= 0)
+                return [];
+            string filter = text?.Trim() ?? string.Empty;
+            if (filter.Length == 0)
+                return _recent.Take(limit).ToArray();
+
+            var matches = new List<string>();
+            var substringMatches = new List<string>();
+            foreach (string item in _alphabetical)
+            {
+                if (item.StartsWith(filter, StringComparison.OrdinalIgnoreCase))
+                {
+                    matches.Add(item);
+                    if (matches.Count == limit)
+                        return matches;
+                }
+                else if (substringMatches.Count < limit && item.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                {
+                    substringMatches.Add(item);
+                }
+            }
+
+            matches.AddRange(substringMatches.Take(limit - matches.Count));
+            return matches;
         }
     }
 
@@ -1200,6 +1223,20 @@ namespace ProjectARVRPro
             return db.Ado.SqlQuery<FlowExecutionNameRow>(sql)
                 .Select(item => item.Model)
                 .ToList();
+        }
+
+        internal IReadOnlyList<string> QuerySnSuggestions()
+        {
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            const string sql = """
+                SELECT TRIM("SN") AS "SN"
+                FROM "ObjectiveTestResultRecord"
+                WHERE TRIM("SN") <> '' AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                GROUP BY TRIM("SN")
+                ORDER BY MAX("UpdateTime") DESC;
+                """;
+            return db.Ado.SqlQuery<string>(ReadSql(sql));
         }
 
         public IReadOnlyList<ResultStatisticsSnSummary> QuerySnSummaries()
