@@ -24,6 +24,24 @@ public sealed class LocalFlowTemplateStorage
 
     public IReadOnlyList<FlowParam> Load() => documents.List(Kind).Select(Decode).ToList();
 
+    internal (IReadOnlyList<FlowParam> Available, IReadOnlyList<UnavailableLocalFlowTemplate> Unavailable) LoadAvailable()
+    {
+        var available = new List<FlowParam>();
+        var unavailable = new List<UnavailableLocalFlowTemplate>();
+        foreach (LocalTemplateDocument document in documents.List(Kind))
+        {
+            try
+            {
+                available.Add(Decode(document));
+            }
+            catch (Exception error) when (error is InvalidDataException or JsonException or FormatException)
+            {
+                unavailable.Add(new UnavailableLocalFlowTemplate(ConvertId(document.Id), document.Name, error));
+            }
+        }
+        return (available, unavailable);
+    }
+
     public FlowParam Read(int id)
     {
         if (!IsLocalId(id)) throw new ArgumentOutOfRangeException(nameof(id));
@@ -104,3 +122,5 @@ public sealed class LocalFlowTemplateStorage
 
     private sealed record FlowDocument(string FlowKey, string DataBase64);
 }
+
+internal sealed record UnavailableLocalFlowTemplate(int Id, string Name, Exception Error);

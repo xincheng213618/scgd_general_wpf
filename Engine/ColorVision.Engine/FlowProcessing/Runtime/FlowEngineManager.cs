@@ -149,6 +149,9 @@ public sealed class FlowEngineManager : ViewModelBase
         ContextMenu = new ContextMenu();
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Flow_AskAiAnalyzeCurrentFlow, Command = AskCopilotFlowCommand });
+        // The picker can bind its saved index before the workspace loads the remembered ID.
+        if (TemplateFlow.IsUnavailableLocalTemplate(Config.LastSelectFlow))
+            Config.TemplateFlowParamsIndex = -1;
         DisplayFlow = new DisplayFlow(this);
     }
 

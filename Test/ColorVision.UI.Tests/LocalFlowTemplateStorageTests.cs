@@ -228,6 +228,56 @@ public sealed class LocalFlowTemplateStorageTests
         Assert.Equal("本地", Assert.Single(storage.Load()).Name);
     }
 
+    [Theory]
+    [InlineData(false, 99, "{}")]
+    [InlineData(true, 1, "invalid json")]
+    [InlineData(false, 1, "{\"FlowKey\":\"local-flow:93fa3c71f235441faf6fe1c842f4c366\",\"DataBase64\":\"invalid!\"}")]
+    public void InvalidLocalRowDoesNotHideOtherTemplates(bool mysqlConnected, int version, string payload)
+    {
+        WithTemplates((storage, path) =>
+        {
+            var documents = new LocalTemplateStore(path);
+            var first = new FlowParam { Name = "流程一", DataBase64 = Convert.ToBase64String(CreateCanvas("开始一")) };
+            var damaged = new FlowParam { Name = "已损坏", DataBase64 = Convert.ToBase64String(CreateCanvas("开始二")) };
+            var last = new FlowParam { Name = "流程三", DataBase64 = Convert.ToBase64String(CreateCanvas("开始三")) };
+            storage.Save(first);
+            storage.Save(damaged);
+            storage.Save(last);
+
+            var templates = new TemplateFlow(storage, () => mysqlConnected,
+                () => throw new IOException("Unavailable MySQL"));
+            templates.Load();
+            TemplateModel<FlowParam> original = TemplateFlow.Params[0];
+            int documentId = -damaged.Id - 1;
+            LocalTemplateDocument originalDocument = documents.Read("flow", documentId);
+            documents.Save("flow", documentId, damaged.Name, version, payload);
+
+            templates.Load();
+            Assert.Equal(new[] { first.Id, last.Id }, TemplateFlow.Params.Select(item => item.Id));
+            Assert.Same(original, TemplateFlow.Params[0]);
+            Assert.Equal(last.DataBase64, TemplateFlow.Params[1].Value.DataBase64);
+            var issue = Assert.Single(TemplateFlow.UnavailableLocalTemplates);
+            Assert.Equal(damaged.Id, issue.Id);
+            Assert.Equal(damaged.Name, issue.Name);
+            Assert.NotNull(Record.Exception(() => storage.Read(damaged.Id)));
+            Assert.True(templates.ExitsTemplateName(damaged.Name));
+            Assert.Throws<InvalidOperationException>(() => templates.Create(damaged.Name));
+            Assert.Throws<InvalidOperationException>(() => templates.AddFlowParam(damaged.Name));
+            original.Key = damaged.Name;
+            Assert.Throws<InvalidOperationException>(() => templates.Save(original));
+            Assert.Equal(first.Name, original.Key);
+            var stored = documents.Read("flow", documentId);
+            Assert.Equal(version, stored.SchemaVersion);
+            Assert.Equal(payload, stored.Payload);
+
+            documents.Save("flow", documentId, damaged.Name, originalDocument.SchemaVersion, originalDocument.Payload);
+            templates.Load();
+            Assert.Empty(TemplateFlow.UnavailableLocalTemplates);
+            Assert.Equal(new[] { first.Id, damaged.Id, last.Id }, TemplateFlow.Params.Select(item => item.Id));
+            Assert.Equal(damaged.FlowKey, TemplateFlow.Params[1].Value.FlowKey);
+        });
+    }
+
     private static byte[] CreateCanvas(string name)
     {
         using var editor = new STNodeEditor();

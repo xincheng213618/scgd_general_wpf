@@ -597,7 +597,97 @@ public sealed class FlowTemplateWorkspaceEditingTests
         });
     }
 
-    private static void WithFixture(Action<WorkspaceFixture> test, bool associateInitialTemplate = true, Func<TemplateFlow>? createFlowTemplate = null)
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnavailableLocalSelectionDoesNotImplicitlySwitchToAnotherFlow(bool alreadyLoaded)
+    {
+        string path = Path.Combine(Path.GetTempPath(), "ColorVision-workspace-unavailable-tests", Guid.NewGuid().ToString("N"), "local.db");
+        var documents = new LocalTemplateStore(path);
+        var storage = new LocalFlowTemplateStorage(documents);
+        WithFixture(fixture =>
+        {
+            var damaged = new FlowParam { Name = "Damaged flow", DataBase64 = fixture.A.Value.DataBase64 };
+            var healthy = new FlowParam { Name = "Healthy flow", DataBase64 = fixture.B.Value.DataBase64 };
+            storage.Save(damaged);
+            storage.Save(healthy);
+            TemplateFlow templates = fixture.Manager.CreateFlowTemplate();
+            templates.Load();
+
+            FlowTemplateExecutionSnapshot? previous = null;
+            if (alreadyLoaded)
+            {
+                var load = fixture.Controller.SelectFlowTemplateAsync(
+                    TemplateFlow.Params[0], allowEmptyFlow: true, replacementMode: FlowWorkspaceReplacementMode.AlreadyConfirmed);
+                PumpUntil(load);
+                previous = Assert.IsType<FlowTemplateExecutionSnapshot>(load.Result.Snapshot);
+            }
+
+            FlowEngineConfig.Instance.LastSelectFlow = damaged.Id;
+            documents.Save("flow", -damaged.Id - 1, damaged.Name, 99, "{}");
+            templates.Load();
+            var available = Assert.Single(TemplateFlow.Params);
+            Assert.Equal(healthy.Id, available.Id);
+
+            if (alreadyLoaded)
+            {
+                Assert.False(fixture.Controller.IsCurrentExecutionSnapshot(previous!));
+                PumpUntil(fixture.Controller.ReconcileTemplatesAsync());
+            }
+            else
+            {
+                fixture.Controller.InitializeSelection();
+            }
+
+            Assert.Null(fixture.Manager.SelectedFlowParam);
+            Assert.Equal(-1, fixture.Manager.TemplateFlowParamsIndex);
+            Assert.Equal(damaged.Id, FlowEngineConfig.Instance.LastSelectFlow);
+            var failed = fixture.Controller.WaitForExecutionSnapshotAsync();
+            PumpUntil(failed);
+            Assert.Null(failed.Result.Snapshot);
+            Assert.False(string.IsNullOrWhiteSpace(failed.Result.FailureReason));
+
+            var explicitSelection = fixture.Controller.SelectFlowTemplateAsync(
+                available, allowEmptyFlow: true, replacementMode: FlowWorkspaceReplacementMode.AlreadyConfirmed);
+            PumpUntil(explicitSelection);
+            Assert.Equal(healthy.Id, explicitSelection.Result.Snapshot!.TemplateId);
+        }, associateInitialTemplate: false, createFlowTemplate: () => new TemplateFlow(storage, () => false,
+            () => throw new InvalidOperationException("This workflow test must not open MySQL.")));
+    }
+
+    [Fact]
+    public void PersistedComboIndexDoesNotSelectAnotherFlowWhenRememberedLocalTemplateIsUnavailable()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "ColorVision-workspace-unavailable-tests", Guid.NewGuid().ToString("N"), "local.db");
+        var documents = new LocalTemplateStore(path);
+        var storage = new LocalFlowTemplateStorage(documents);
+        var damaged = new FlowParam { Name = "Damaged flow" };
+        var healthy = new FlowParam { Name = "Healthy flow" };
+        storage.Save(damaged);
+        storage.Save(healthy);
+        documents.Save("flow", -damaged.Id - 1, damaged.Name, 99, "{}");
+        TemplateFlow CreateTemplate() => new(storage, () => false,
+            () => throw new InvalidOperationException("This workflow test must not open MySQL."));
+        WithFixture(fixture =>
+        {
+            Assert.Equal(healthy.Id, Assert.Single(TemplateFlow.Params).Id);
+            var picker = Assert.IsAssignableFrom<System.Windows.Controls.ComboBox>(
+                fixture.Manager.DisplayFlow.FindName("ComboBoxFlow"));
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+            Assert.Null(picker.SelectedItem);
+            Assert.Equal(damaged.Id, FlowEngineConfig.Instance.LastSelectFlow);
+            Assert.Equal(-1, fixture.Manager.TemplateFlowParamsIndex);
+            Assert.Null(fixture.Manager.SelectedFlowParam);
+        }, associateInitialTemplate: false, createFlowTemplate: CreateTemplate, prepareBeforeManager: () =>
+        {
+            CreateTemplate().Load();
+            FlowEngineConfig.Instance.LastSelectFlow = damaged.Id;
+            FlowEngineConfig.Instance.TemplateFlowParamsIndex = 0;
+        });
+    }
+
+    private static void WithFixture(Action<WorkspaceFixture> test, bool associateInitialTemplate = true,
+        Func<TemplateFlow>? createFlowTemplate = null, Action? prepareBeforeManager = null)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -612,7 +702,7 @@ public sealed class FlowTemplateWorkspaceEditingTests
             {
                 Assert.False(MySqlSetting.IsConnect);
                 Assert.Null(ReadField(MqttRCService.GetInstance(), "Token"));
-                using var fixture = new WorkspaceFixture(associateInitialTemplate, createFlowTemplate);
+                using var fixture = new WorkspaceFixture(associateInitialTemplate, createFlowTemplate, prepareBeforeManager);
                 test(fixture);
             }
             finally
@@ -656,9 +746,10 @@ public sealed class FlowTemplateWorkspaceEditingTests
         public long RequestGeneration => (long)ReadField(ReadField(Controller, "_refreshGate")!, "_generation")!;
         public CancellationTokenSource? PendingRefresh => (CancellationTokenSource?)ReadField(Controller, "_refreshCts");
 
-        public WorkspaceFixture(bool associateInitialTemplate, Func<TemplateFlow>? createFlowTemplate)
+        public WorkspaceFixture(bool associateInitialTemplate, Func<TemplateFlow>? createFlowTemplate, Action? prepareBeforeManager)
         {
             foreach (var template in new[] { A, B, C }) TemplateFlow.Params.Add(template);
+            prepareBeforeManager?.Invoke();
             Manager = new FlowEngineManager(createFlowTemplate);
             var session = (FlowExecutionSession)ReadField(View, "_executionSession")!;
             ((FlowTemplateWorkspaceController)ReadField(session, "_templateWorkspace")!).Dispose();

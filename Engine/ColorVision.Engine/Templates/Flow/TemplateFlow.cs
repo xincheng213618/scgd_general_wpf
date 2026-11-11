@@ -42,7 +42,19 @@ namespace ColorVision.Engine.Templates.Flow
 
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateFlow));
 
-        public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
+        private static ObservableCollection<TemplateModel<FlowParam>> parameters = [];
+        public static ObservableCollection<TemplateModel<FlowParam>> Params
+        {
+            get => parameters;
+            set
+            {
+                parameters = value;
+                UnavailableLocalTemplates = [];
+            }
+        }
+
+        internal static IReadOnlyList<UnavailableLocalFlowTemplate> UnavailableLocalTemplates { get; private set; } = [];
+        internal static bool IsUnavailableLocalTemplate(int id) => UnavailableLocalTemplates.Any(template => template.Id == id);
 
         public static FlowParam? GetParamOrDefault(int index) => Params.ElementAtOrDefault(index)?.Value;
 
@@ -76,7 +88,8 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public override bool ExitsTemplateName(string templateName)
         {
-            return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
+            return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase))
+                || IsUnavailableLocalName(templateName);
         }
 
         public override void Load() => ApplyValues(ReadValues());
@@ -85,33 +98,39 @@ namespace ColorVision.Engine.Templates.Flow
         {
             // Only detached parameters and storage reads run on the worker. Collection
             // publication, bindings and template registration stay on the UI thread.
-            IReadOnlyList<FlowParam> values = await Task.Run(ReadValues).ConfigureAwait(false);
-            await Application.Current.Dispatcher.InvokeAsync(() => ApplyValues(values));
+            FlowTemplateLoadResult result = await Task.Run(ReadValues).ConfigureAwait(false);
+            await Application.Current.Dispatcher.InvokeAsync(() => ApplyValues(result));
         }
 
-        private IReadOnlyList<FlowParam> ReadValues()
+        private FlowTemplateLoadResult ReadValues()
         {
             IReadOnlyList<FlowParam> values;
-            localReadMode = !isMySqlConnected();
-            if (!localReadMode)
+            IReadOnlyList<UnavailableLocalFlowTemplate> unavailable = [];
+            bool isLocal = !isMySqlConnected();
+            if (!isLocal)
             {
                 try { values = LoadMySql(); }
                 catch (Exception ex)
                 {
                     log.Warn("MySQL flow templates unavailable; using local flow templates.", ex);
-                    localReadMode = true;
-                    values = localStorage.Load();
+                    isLocal = true;
+                    (values, unavailable) = localStorage.LoadAvailable();
                 }
             }
-            else values = localStorage.Load();
+            else (values, unavailable) = localStorage.LoadAvailable();
 
             foreach (FlowParam value in values)
                 TryAttachCatalogRevision(value);
-            return values;
+            foreach (UnavailableLocalFlowTemplate item in unavailable)
+                log.Warn($"Local flow template '{item.Name}' ({item.Id}) could not be loaded.", item.Error);
+            return new FlowTemplateLoadResult(values, unavailable, isLocal);
         }
 
-        private void ApplyValues(IReadOnlyList<FlowParam> values)
+        private void ApplyValues(FlowTemplateLoadResult result)
         {
+            localReadMode = result.IsLocal;
+            UnavailableLocalTemplates = result.Unavailable;
+            IReadOnlyList<FlowParam> values = result.Values;
             var ids = values.Select(value => value.Id).ToHashSet();
             foreach (var removed in TemplateParams.Where(item => !ids.Contains(item.Id)).ToList()) TemplateParams.Remove(removed);
             for (int index = 0; index < values.Count; index++)
@@ -131,6 +150,11 @@ namespace ColorVision.Engine.Templates.Flow
             Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
+
+        private sealed record FlowTemplateLoadResult(
+            IReadOnlyList<FlowParam> Values,
+            IReadOnlyList<UnavailableLocalFlowTemplate> Unavailable,
+            bool IsLocal);
 
         private IReadOnlyList<FlowParam> LoadMySql()
         {
@@ -208,13 +232,31 @@ namespace ColorVision.Engine.Templates.Flow
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    Save2DB(item.Value);
+                    Save(item);
                 }
             }
             SaveIndex.Clear();
         }
 
-        public override void Save(TemplateModel<FlowParam> item) => Save2DB(item.Value);
+        public override void Save(TemplateModel<FlowParam> item)
+        {
+            if (LocalFlowTemplateStorage.IsLocalId(item.Id) && IsUnavailableLocalName(item.Key))
+            {
+                string attemptedName = item.Key;
+                item.Key = (item.Value.LocalStorage ?? localStorage).Read(item.Id).Name;
+                ThrowIfUnavailableLocalName(attemptedName);
+            }
+            Save2DB(item.Value);
+        }
+
+        private static bool IsUnavailableLocalName(string name)
+            => UnavailableLocalTemplates.Any(item => item.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        private static void ThrowIfUnavailableLocalName(string name)
+        {
+            if (IsUnavailableLocalName(name))
+                throw new InvalidOperationException(LocalizedText.Format($"名称 {name} 已被无法读取的本地流程占用。"));
+        }
 
         public static void Save2DB(
             FlowParam flowParam,
@@ -538,6 +580,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (UseLocalStorage)
             {
                 if (package != null) throw new NotSupportedException("关联模板包仍需在服务模式下导入。");
+                ThrowIfUnavailableLocalName(templateName);
                 var local = new FlowParam { Id = -1, Name = templateName, DataBase64 = ImportTemp?.DataBase64 ?? string.Empty };
                 localStorage.Save(local);
                 TemplateParams.Add(new TemplateModel<FlowParam>(templateName, local));
@@ -594,6 +637,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (UseLocalStorage)
             {
+                ThrowIfUnavailableLocalName(templateName);
                 var local = new FlowParam { Id = -1, Name = templateName };
                 localStorage.Save(local);
                 return local;

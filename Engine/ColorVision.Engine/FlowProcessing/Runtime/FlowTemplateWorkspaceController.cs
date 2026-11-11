@@ -61,11 +61,16 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
 
     public void InitializeSelection()
     {
+        int lastSelectedId = FlowEngineConfig.Instance.LastSelectFlow;
+        if (TemplateFlow.IsUnavailableLocalTemplate(lastSelectedId))
+        {
+            MarkUnavailableSelection(lastSelectedId);
+            return;
+        }
+
         TemplateModel<FlowParam>? selectedTemplate =
             TemplateFlow.Params.FirstOrDefault(
-                item =>
-                    item.Id
-                    == FlowEngineConfig.Instance.LastSelectFlow)
+                item => item.Id == lastSelectedId)
             ?? TemplateFlow.Params.FirstOrDefault();
         if (selectedTemplate == null)
             return;
@@ -144,6 +149,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
 
         TemplateModel<FlowParam>? latest = FindLoadedTemplate(loaded);
         bool sameCanvas = latest != null && string.Equals(loaded.DataBase64, latest.Value.DataBase64, StringComparison.Ordinal);
+        bool unavailable = TemplateFlow.IsUnavailableLocalTemplate(loaded.Id);
         if (latest == null || (latest.Id != loaded.Id && !sameCanvas))
         {
             // A removed template or an old ID now assigned to a different flow
@@ -157,10 +163,15 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             }
             _flowEngineManager.SelectedFlowParam = null;
             _view.SetDocumentBaseline(null);
-            if (RequestedTemplateId == null)
+            if (RequestedTemplateId == null && !unavailable)
                 UpdateSelectedTemplateIndex(null);
             if (_workspaceState.IsPending)
                 return Task.CompletedTask;
+            if (unavailable)
+            {
+                MarkUnavailableSelection(loaded.Id);
+                return Task.CompletedTask;
+            }
             TemplateModel<FlowParam>? next = latest ?? TemplateFlow.Params.FirstOrDefault();
             return next == null
                 ? RefreshAsync(FlowWorkspaceReplacementMode.Confirm)
@@ -208,7 +219,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         return matches.Length == 1 ? matches[0] : null;
     }
 
-    private void UpdateSelectedTemplateIndex(TemplateModel<FlowParam>? selected)
+    private void UpdateSelectedTemplateIndex(TemplateModel<FlowParam>? selected, bool rememberSelection = true)
     {
         int index = selected == null ? -1 : FlowTemplateSelectionRules.ResolveTemplateIndex(
             TemplateFlow.Params.Select(item => item.Id), selected.Id);
@@ -218,13 +229,25 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         {
             if (_flowEngineManager.TemplateFlowParamsIndex != index)
                 _flowEngineManager.TemplateFlowParamsIndex = index;
-            FlowEngineConfig.Instance.LastSelectFlow = selected?.Id ?? 0;
+            if (rememberSelection)
+                FlowEngineConfig.Instance.LastSelectFlow = selected?.Id ?? 0;
         }
         finally
         {
             _suppressSelectionRefresh = wasSuppressed;
         }
     }
+
+    private void MarkUnavailableSelection(int templateId)
+    {
+        long generation = _refreshGate.Advance();
+        _workspaceState.BeginRequest(generation, templateId);
+        _workspaceState.TryCompleteFailed(generation, UnavailableTemplateMessage());
+        UpdateSelectedTemplateIndex(null, rememberSelection: false);
+    }
+
+    private static string UnavailableTemplateMessage()
+        => EngineLocalization.Get("所选本地流程无法读取，请在流程模板管理器中核对后重新选择。");
 
     public bool IsConfirmingDocumentReplacement { get; private set; }
 
@@ -444,7 +467,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         TemplateModel<FlowParam>? requestedTemplate;
         lock (_selectionSync)
             requestedTemplate = _requestedTemplate;
-        if (requestedTemplate != null)
+        if (requestedTemplate != null && !TemplateFlow.IsUnavailableLocalTemplate(requestedTemplate.Id))
         {
             return TemplateFlow.Params.FirstOrDefault(
                     item => item.Id == requestedTemplate.Id)
@@ -500,6 +523,9 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                         "流程工作区状态不一致，请刷新后重试。");
                 }
 
+                if (TemplateFlow.IsUnavailableLocalTemplate(_loadedFlowParam.Id))
+                    return FlowTemplateExecutionSnapshotResult.Failed(UnavailableTemplateMessage());
+
                 return FlowTemplateExecutionSnapshotResult.Loaded(
                     FlowTemplateExecutionSnapshot.Create(
                         settlement.Generation,
@@ -513,9 +539,10 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         return _view.IsStandalone
-            || _workspaceState.IsCurrentLoaded(
+            || (!TemplateFlow.IsUnavailableLocalTemplate(snapshot.TemplateId)
+                && _workspaceState.IsCurrentLoaded(
                 snapshot.Generation,
-                snapshot.TemplateId);
+                snapshot.TemplateId));
     }
 
     public FlowParam? ActiveFlowParam
