@@ -1029,8 +1029,7 @@ namespace ProjectARVRPro
                 return results;
 
             using SqlSugarClient db = CreateClient();
-            if (_readOnlyDatabase == null) ResultJsonPayloadStorage.LoadViewResultJsons(db, results);
-            else foreach (ProjectARVRReuslt result in results) result.ViewResultJson = ReadFlowPayload(db, result.Id);
+            ResultJsonPayloadStorage.LoadViewResultJsons(db, results, _readOnlyDatabase);
             return results;
         }
 
@@ -1133,8 +1132,7 @@ namespace ProjectARVRPro
             List<ObjectiveTestResultRecord> records = Query<ObjectiveTestResultRecord>(db)
                 .Where(item => recordIds.Contains(item.Id))
                 .ToList();
-            if (_readOnlyDatabase == null) ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records);
-            else foreach (ObjectiveTestResultRecord record in records) record.ObjectiveTestResultJson = ReadObjectivePayload(db, record.Id);
+            ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records, _readOnlyDatabase);
             foreach (ObjectiveTestResultRecord record in records.Where(item => item.ObjectiveTestResultJson == null))
                 record.ObjectiveTestResultJson = string.Empty;
             return records;

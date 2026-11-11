@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using SqlSugar;
 using System.Data;
 using System.IO;
@@ -61,64 +62,47 @@ namespace ProjectARVRPro
             return LoadPayload(db, ObjectiveResultTableName, ObjectiveResultColumnName, id);
         }
 
-        public static void LoadObjectiveTestResultJsons(SqlSugarClient db, IEnumerable<ObjectiveTestResultRecord> records)
+        public static void LoadObjectiveTestResultJsons(SqlSugarClient db, IEnumerable<ObjectiveTestResultRecord> records, ReadOnlySqliteDatabase? offline = null) =>
+            LoadPayloads(db, records, record => record.Id, (record, json) => record.ObjectiveTestResultJson = json,
+                ObjectiveResultTableName, ObjectiveResultColumnName, nameof(ObjectiveTestResultRecord.ObjectiveTestResultJson), offline);
+
+        public static void LoadViewResultJsons(SqlSugarClient db, IEnumerable<ProjectARVRReuslt> results, ReadOnlySqliteDatabase? offline = null) =>
+            LoadPayloads(db, results, result => result.Id, (result, json) => result.ViewResultJson = json,
+                ViewResultTableName, ViewResultColumnName, nameof(ProjectARVRReuslt.ViewResultJson), offline);
+
+        private static void LoadPayloads<T>(SqlSugarClient db, IEnumerable<T> records, Func<T, int> getId, Action<T, string?> assign,
+            string tableName, string gzipColumn, string legacyColumn, ReadOnlySqliteDatabase? offline) where T : class
         {
             ArgumentNullException.ThrowIfNull(db);
             ArgumentNullException.ThrowIfNull(records);
 
-            Dictionary<int, ObjectiveTestResultRecord> recordsById = records
-                .Where(item => item.Id > 0)
-                .GroupBy(item => item.Id)
-                .ToDictionary(group => group.Key, group => group.First());
+            var recordsById = new Dictionary<int, T>();
+            foreach (T record in records)
+            {
+                int id = getId(record);
+                if (offline != null || id > 0)
+                    recordsById.TryAdd(id, record);
+            }
             if (recordsById.Count == 0)
                 return;
 
+            string gzip = offline == null || offline.HasColumn(tableName, gzipColumn) ? $"\"{gzipColumn}\"" : "NULL";
+            string legacy = offline?.HasColumn(tableName, legacyColumn) == true ? $"\"{legacyColumn}\"" : "NULL";
             foreach (int[] ids in recordsById.Keys.Chunk(500))
             {
                 SugarParameter[] parameters = ids
                     .Select((id, index) => new SugarParameter($"@id{index}", id))
                     .ToArray();
                 string parameterList = string.Join(", ", parameters.Select(item => item.ParameterName));
-                DataTable table = db.Ado.GetDataTable(
-                    $"SELECT \"Id\", \"{ObjectiveResultColumnName}\" FROM \"{ObjectiveResultTableName}\" WHERE \"Id\" IN ({parameterList});",
+                using var reader = db.Ado.GetDataReader(
+                    $"SELECT \"Id\", {gzip}, {legacy} FROM \"{tableName}\" WHERE \"Id\" IN ({parameterList});",
                     parameters);
 
-                foreach (DataRow row in table.Rows)
+                while (reader.Read())
                 {
-                    int id = Convert.ToInt32(row["Id"]);
-                    if (recordsById.TryGetValue(id, out ObjectiveTestResultRecord? record))
-                        record.ObjectiveTestResultJson = Decompress(ReadBytes(row[ObjectiveResultColumnName]));
-                }
-            }
-        }
-
-        public static void LoadViewResultJsons(SqlSugarClient db, IEnumerable<ProjectARVRReuslt> results)
-        {
-            ArgumentNullException.ThrowIfNull(db);
-            ArgumentNullException.ThrowIfNull(results);
-
-            Dictionary<int, ProjectARVRReuslt> resultsById = results
-                .Where(item => item.Id > 0)
-                .GroupBy(item => item.Id)
-                .ToDictionary(group => group.Key, group => group.First());
-            if (resultsById.Count == 0)
-                return;
-
-            foreach (int[] ids in resultsById.Keys.Chunk(500))
-            {
-                SugarParameter[] parameters = ids
-                    .Select((id, index) => new SugarParameter($"@id{index}", id))
-                    .ToArray();
-                string parameterList = string.Join(", ", parameters.Select(item => item.ParameterName));
-                DataTable table = db.Ado.GetDataTable(
-                    $"SELECT \"Id\", \"{ViewResultColumnName}\" FROM \"{ViewResultTableName}\" WHERE \"Id\" IN ({parameterList});",
-                    parameters);
-
-                foreach (DataRow row in table.Rows)
-                {
-                    int id = Convert.ToInt32(row["Id"]);
-                    if (resultsById.TryGetValue(id, out ProjectARVRReuslt? result))
-                        result.ViewResultJson = Decompress(ReadBytes(row[ViewResultColumnName]));
+                    string? json = Decompress(ReadBytes(reader.GetValue(1)), detectEncodingFromByteOrderMarks: offline != null)
+                        ?? (reader.IsDBNull(2) ? null : reader.GetString(2));
+                    assign(recordsById[reader.GetInt32(0)], json);
                 }
             }
         }
@@ -155,14 +139,14 @@ namespace ProjectARVRPro
             return output.ToArray();
         }
 
-        internal static string? Decompress(byte[]? payload)
+        internal static string? Decompress(byte[]? payload, bool detectEncodingFromByteOrderMarks = false)
         {
             if (payload == null || payload.Length == 0)
                 return null;
 
             using var input = new MemoryStream(payload, writable: false);
             using var gzip = new GZipStream(input, CompressionMode.Decompress);
-            using var reader = new StreamReader(gzip, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
+            using var reader = new StreamReader(gzip, Encoding.UTF8, detectEncodingFromByteOrderMarks);
             return reader.ReadToEnd();
         }
 

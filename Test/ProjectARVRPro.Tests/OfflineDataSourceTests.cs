@@ -241,6 +241,63 @@ public sealed class OfflineDataSourceTests
     }
 
     [Fact]
+    public void BulkReadOnlyResultsKeepCompressedAndLegacyPayloadsAcrossQueryBatches()
+    {
+        using var fixture = new Files();
+        string path = fixture.CreateProject("legacy");
+        using (var db = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, """
+                ALTER TABLE ObjectiveTestResultRecord ADD COLUMN ObjectiveTestResultJsonGzip BLOB;
+                ALTER TABLE ARVRReuslt ADD COLUMN ViewResultJsonGzip BLOB;
+                WITH RECURSIVE ids(Id) AS (SELECT 3 UNION ALL SELECT Id + 1 FROM ids WHERE Id < 501)
+                INSERT INTO ObjectiveTestResultRecord(Id, SN, ResultId, BatchId, CreateTime, UpdateTime, TotalResult, ObjectiveTestResultJson)
+                SELECT Id, 'sameSN', Id, Id, '2026-09-16 12:00:00', '2026-09-16 12:01:00', 1, CASE WHEN Id <> 3 THEN 'legacy' END FROM ids;
+                WITH RECURSIVE ids(Id) AS (SELECT 3 UNION ALL SELECT Id + 1 FROM ids WHERE Id < 501)
+                INSERT INTO ARVRReuslt(Id, SN, BatchId, Model, CreateTime, RunTime, ViewResultJson, Result)
+                SELECT Id, 'sameSN', Id, 'PG', '2026-09-16 12:00:00', 1000, CASE WHEN Id <> 3 THEN 'legacy' END, 1 FROM ids;
+                INSERT INTO ARVRReuslt(Id, SN, BatchId, Model, CreateTime, RunTime, ViewResultJson, Result)
+                VALUES (0, 'legacyZero', 0, 'PG', '2026-09-16 12:00:00', 1000, '旧库零 ID 载荷', 1);
+                """);
+            using var update = db.CreateCommand();
+            update.CommandText = """
+                UPDATE ObjectiveTestResultRecord SET ObjectiveTestResultJsonGzip = CASE Id WHEN 1 THEN @first WHEN 2 THEN X'' WHEN 501 THEN @last END;
+                UPDATE ARVRReuslt SET ViewResultJsonGzip = CASE Id WHEN 1 THEN @first WHEN 2 THEN X'' WHEN 501 THEN @last END;
+                """;
+            update.Parameters.AddWithValue("@first", Compress("首条"));
+            update.Parameters.AddWithValue("@last", Compress("末条🧪"));
+            update.ExecuteNonQuery();
+        }
+
+        var store = new ResultStatisticsDataStore(path, readOnly: true);
+        string hash = Hash(path);
+        var objectives = store.GetRecords(Enumerable.Range(1, 501)).ToDictionary(item => item.Id);
+        Assert.Equal(501, objectives.Count);
+        Assert.Equal("首条", objectives[1].ObjectiveTestResultJson);
+        Assert.Equal("legacy", objectives[2].ObjectiveTestResultJson);
+        Assert.Equal(string.Empty, objectives[3].ObjectiveTestResultJson);
+        Assert.Equal("末条🧪", objectives[501].ObjectiveTestResultJson);
+
+        var flows = store.QueryFlowDetailsForExport(new ResultStatisticsRecordRow { SN = "sameSN", ResultId = 501 });
+        Assert.Equal(501, flows.Count);
+        Assert.Equal("首条", flows[0].ViewResultJson);
+        Assert.Equal("legacy", flows[1].ViewResultJson);
+        Assert.Null(flows[2].ViewResultJson);
+        Assert.Equal("末条🧪", flows[^1].ViewResultJson);
+
+        var legacyFlow = Assert.Single(store.QueryFlowDetailsForExport(new ResultStatisticsRecordRow
+        {
+            SN = "legacyZero",
+            StartTime = Day.AddHours(11),
+            EndTime = Day.AddHours(13),
+        }));
+        Assert.Equal(0, legacyFlow.Id);
+        Assert.Equal("旧库零 ID 载荷", legacyFlow.ViewResultJson);
+        Assert.Equal(hash, Hash(path));
+    }
+
+    [Fact]
     public void ReadOnlyConnectionRejectsWritesAndMissingFileDoesNotCreateDatabase()
     {
         using var fixture = new Files();
