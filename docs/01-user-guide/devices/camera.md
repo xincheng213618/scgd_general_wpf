@@ -180,6 +180,7 @@ L/BV 和 CV 节点在所选设备走本地取图时显示“保存文件”，�
 - 根目录取 `Device.Config.FileServerCfg.DataBasePath`，为空时使用“文档”下的 `ColorVision`。
 - 路径为 `<DeviceCode>/Data/yyyy-MM-dd/yyyyMMdd_HHmmss_fff.cvraw`；执行了校正时在扩展名前追加 `_<校正模板名>`，同名才追加 `_2`、`_3`。色度参数保存在 CVRAW 尾部，旧文件名和旧服务 `.cvcie` 保留读取兼容。
 - `LocalCameraNode` 先保存文件再写数据库；相机服务节点的本地转发先写数据库再保存图像，保存失败不撤销已写记录。
+- 流程未连接 MySQL 时，LV、CV 和通用相机节点的本地转发仍按节点设置保存图像，并将内存帧交给下游节点。
 
 因此应分别确认采集、文件和数据库结果，不能仅凭文件存在判断节点成功。格式见[CVRAW/CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md)。
 

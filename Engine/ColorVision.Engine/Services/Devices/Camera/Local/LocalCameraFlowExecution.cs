@@ -35,7 +35,10 @@ internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
     public void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MeasureResultImgModel model)
     {
         request.Device.PublishLocalPreview(capture.Frame, model, forceDisplay: false);
-        ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, model.Id, 100);
+        if (action.PersistResults)
+            ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, model.Id, 100);
+        else
+            ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, request.Device.Code, "GetData", action.SerialNumber, nodeId, zIndex, new ResultReference(model.Id, 100), model));
     }
 }
 
@@ -195,7 +198,7 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
         LocalFlowFrame frame = capture.Frame;
         frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata);
         MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
-        if (model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
+        if (action.PersistResults && model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
         Stopwatch saveTimer = Stopwatch.StartNew();
         LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, saveMode);
         int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));

@@ -3,8 +3,10 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
+using ColorVision.UI.Views;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -84,6 +86,64 @@ public sealed class LvCameraLocalForwardingTests
             Assert.False(request.SaveFiles); // Persistence must precede the file/cache publication.
         }
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
+    });
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void OfflineLocalCameraForwardsTheFrameAndPublishesItsInMemoryResult(bool cv, bool saveFiles) => Run(async () =>
+    {
+        using var scope = new CaptureScope(localOpen: true, preferLocal: true);
+        DockViewRegistration view = WpfTestHost.Invoke(() => new DockViewRegistration(
+            () => throw new InvalidOperationException("The hidden camera view must not be created."), "offline camera", isVisible: false));
+        try
+        {
+            typeof(DeviceCamera).GetField("_view", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(scope.Camera, view);
+            CVBaseServerNode node;
+            if (cv)
+            {
+                var cameraNode = scope.CreateCvNode();
+                cameraNode.SaveFiles = saveFiles;
+                node = cameraNode;
+            }
+            else
+            {
+                var cameraNode = scope.CreateNode();
+                cameraNode.SaveFiles = saveFiles;
+                node = cameraNode;
+            }
+
+            using var graph = new Graph(node);
+            graph.Control.PersistResults = false;
+            ConcurrentQueue<ResultMessage> notifications = new();
+            using var subscription = ResultMessageBus.Default.Subscribe(message =>
+            {
+                if (message.SerialNumber == Graph.Serial && message.NodeId == node.NodeID) notifications.Enqueue(message);
+            });
+            byte[] pixels = cv ? [11, 22, 11, 22, 11, 22] : [11, 22];
+            graph.End.Inspect = action =>
+            {
+                Assert.False(action.PersistResults);
+                Assert.Equal(0, action.Data["MasterId"]);
+                Assert.Equal(100, action.Data["MasterResultType"]);
+                Assert.True(action.TryAcquireCurrentFrame(out var lease));
+                using (lease!) Assert.Equal(pixels, lease!.CopyRawToArray());
+            };
+
+            FlowEngineEventArgs finished = await graph.StartAsync();
+            Assert.True(finished.Status == StatusTypeEnum.Completed, finished.Message);
+            await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(0, graph.Start.PublishCount);
+            ResultMessage message = Assert.Single(notifications);
+            Assert.Equal(0, message.Data.MasterId);
+            Assert.Equal(100, message.Data.MasterResultType);
+            var model = Assert.IsType<MeasureResultImgModel>(message.Attachment);
+            string path = Assert.IsType<string>(model.FileUrl);
+            Assert.Equal(saveFiles, File.Exists(path));
+            Assert.True(CVFileUtil.Read(path, out CVCIEFile raw));
+            using (raw) Assert.Equal(pixels, raw.Data);
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); }
     });
 
     [Theory]
@@ -568,6 +628,7 @@ public sealed class LvCameraLocalForwardingTests
 
     private sealed class FakeServices : ILocalCameraFlowServices
     {
+        private readonly LocalCameraFlowServices localServices = new();
         public bool FailCapture, FailSave, BlockCapture;
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -600,9 +661,13 @@ public sealed class LvCameraLocalForwardingTests
             Assert.Null(CVFileReadCache.GetCachedLength(capture.Frame.CvRawFilePath));
             if (FailSave) throw new InvalidOperationException("save failed");
             Saved.Add((action.SerialNumber, zIndex));
+            if (!action.PersistResults) return localServices.Save(action, zIndex, request, capture);
             return new MeasureResultImgModel { Id = 100 + Saved.Count, ZIndex = zIndex, BatchId = 55 };
         }
         public void Publish(CVStartCFC action, string nodeId, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture, MeasureResultImgModel model)
-            => PublishedNodeIds.Add(nodeId);
+        {
+            if (!action.PersistResults) localServices.Publish(action, nodeId, zIndex, request, capture, model);
+            PublishedNodeIds.Add(nodeId);
+        }
     }
 }
