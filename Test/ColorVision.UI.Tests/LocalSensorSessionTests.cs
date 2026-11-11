@@ -174,6 +174,41 @@ public sealed class LocalSensorSessionTests
         Assert.True(exchange.Matches(bytes));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FragmentedResponseKeepsEveryByteAtTheSizeLimit(bool fixedLength)
+    {
+        byte[] response = new byte[LocalSensorSession.MaxResponseBytes];
+        for (int index = 0; index < response.Length; index++)
+            response[index] = (byte)('A' + index % 26);
+        var command = new LocalSensorCommand
+        {
+            Request = "Q",
+            Response = fixedLength ? Encoding.ASCII.GetString(response) : string.Empty,
+            Timeout = 1000
+        };
+        var exchange = new LocalSensorSession.Exchange(command);
+        const int chunkSize = 4096;
+        for (int offset = 0; offset < response.Length; offset += chunkSize)
+        {
+            Assert.False(exchange.Completion.Task.IsCompleted);
+            exchange.Receive(response.AsSpan(offset, chunkSize));
+        }
+
+        if (fixedLength)
+        {
+            Assert.True(exchange.Completion.Task.IsCompletedSuccessfully);
+            Assert.Equal(response, await exchange.Completion.Task);
+        }
+        else
+        {
+            Assert.False(exchange.Completion.Task.IsCompleted);
+            Assert.Equal(response, exchange.Bytes);
+            Assert.Throws<IOException>(() => exchange.Receive([0x00]));
+        }
+    }
+
     [Fact]
     public async Task Utf8AndHexMatchBytesAcrossCharacterBoundaries()
     {

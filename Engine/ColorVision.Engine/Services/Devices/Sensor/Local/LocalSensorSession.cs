@@ -342,15 +342,19 @@ internal sealed class LocalSensorSession : IDisposable
             {
                 if (Completion.Task.IsCompleted || command.Timeout <= 0) return;
                 if (received.Count + bytes.Length > MaxResponseBytes) throw new IOException("传感器回包超过 1048576 字节限制。");
-                received.AddRange(bytes.ToArray());
+                received.AddRange(bytes);
                 if (parser != null)
                 {
                     if (parser.Receive(bytes) is { } response) Completion.TrySetResult(response);
                     return;
                 }
-                byte[] buffer = Bytes;
                 int length = expected.Length;
-                if (length > 0 && buffer.Length >= length) Completion.TrySetResult(buffer[..length]);
+                if (length > 0 && received.Count >= length)
+                {
+                    byte[] response = new byte[length];
+                    received.CopyTo(0, response, 0, length);
+                    Completion.TrySetResult(response);
+                }
             }
         }
 
