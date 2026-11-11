@@ -281,6 +281,54 @@ public sealed class CvRawFileCacheCapacityTests
     }
 
     [Theory]
+    [InlineData(".cvcie", true, true)]
+    [InlineData(".cvcie", false, false)]
+    [InlineData(".cvsrc", true, false)]
+    [InlineData(".cvsrc", false, true)]
+    public void FailedSynchronousImageSaveNeverPublishesAnIncompleteNonRawFile(string extension, bool replaceExisting, bool callbackThrows)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        files.ReadAndAssert(files.A);
+        string directory = Path.GetDirectoryName(files.A)!;
+        string path = Path.ChangeExtension(files.B, extension);
+        using CVCIEFile original = CacheFiles.CreateRaw(31);
+        if (extension == ".cvcie")
+        {
+            original.Version = 2;
+            original.Bpp = 32;
+            original.Channels = 3;
+            original.Exp = [10, 20, 30];
+            original.Data = new byte[3 * 2 * 3 * sizeof(float)];
+        }
+        byte[]? before = null;
+        if (replaceExisting)
+        {
+            Assert.True(CVFileUtil.WriteCIEFile(path, original));
+            CVFileMetadata.SetProperty(path, "calibration", 1, [2, 3, 5]);
+            before = File.ReadAllBytes(path);
+        }
+        string[] previousFiles = Directory.EnumerateFiles(directory).Order().ToArray();
+        byte[] replacement = Enumerable.Repeat((byte)97, original.Data.Length).ToArray();
+
+        Assert.False(CVFileUtil.WriteCIEFile(path, original, replacement.Length, stream =>
+        {
+            stream.WriteByte(replacement[0]);
+            if (callbackThrows) throw new IOException("Simulated payload write failure.");
+        }));
+
+        if (before == null) Assert.False(File.Exists(path));
+        else Assert.Equal(before, File.ReadAllBytes(path));
+        Assert.Equal(previousFiles, Directory.EnumerateFiles(directory).Order());
+        AssertPaths(files.A);
+
+        Assert.True(CVFileUtil.WriteCIEFile(path, original, replacement.Length, stream => stream.Write(replacement)));
+        Assert.True(CVFileUtil.Read(path, out CVCIEFile saved));
+        using (saved) Assert.Equal(replacement, saved.Data);
+        Assert.Equal(new[] { files.A, files.B, files.C, path }.Order(), Directory.EnumerateFiles(directory).Order());
+        AssertPaths(files.A);
+    }
+
+    [Theory]
     [InlineData(true, false, false)]
     [InlineData(true, false, true)]
     [InlineData(true, true, false)]

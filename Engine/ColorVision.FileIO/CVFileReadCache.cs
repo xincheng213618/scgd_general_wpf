@@ -225,17 +225,17 @@ namespace ColorVision.FileIO
             if ((int)saveMode == 1) saveMode = CVFileSaveMode.Synchronous;
             if (saveMode != CVFileSaveMode.Synchronous && saveMode != CVFileSaveMode.MemoryOnly)
                 throw new ArgumentOutOfRangeException(nameof(saveMode));
+            string fullPath = Path.GetFullPath(path);
             if (!IsRaw(path))
             {
                 if (saveMode != CVFileSaveMode.Synchronous) throw new NotSupportedException("Memory-only saving requires CVRAW.");
-                using (Stream file = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None)) write(file);
+                WriteSynchronous(fullPath, fileLength, write, updateRawCache: false);
                 return true;
             }
-            string fullPath = Path.GetFullPath(path);
             lock (WriteSync)
             {
                 if (saveMode == CVFileSaveMode.MemoryOnly) WriteMemoryOnly(fullPath, fileLength, write);
-                else WriteSynchronous(fullPath, fileLength, write);
+                else WriteSynchronous(fullPath, fileLength, write, updateRawCache: true);
             }
             return true;
         }
@@ -278,18 +278,21 @@ namespace ColorVision.FileIO
             }
         }
 
-        private static void WriteSynchronous(string path, long fileLength, Action<Stream> write)
+        private static void WriteSynchronous(string path, long fileLength, Action<Stream> write, bool updateRawCache)
         {
             string temporary = Path.Combine(Path.GetDirectoryName(path), ".__colorvision_" + Guid.NewGuid().ToString("N") + ".tmp");
-            bool registered;
-            bool populateCache;
-            long generation;
-            lock (Sync)
+            bool registered = false;
+            bool populateCache = false;
+            long generation = 0;
+            if (updateRawCache)
             {
-                while (HasFileLoad(path)) Monitor.Wait(Sync);
-                registered = PendingDiskWrites.Add(path);
-                populateCache = isEnabled && fileLength > 0 && fileLength <= int.MaxValue;
-                generation = cacheGeneration;
+                lock (Sync)
+                {
+                    while (HasFileLoad(path)) Monitor.Wait(Sync);
+                    registered = PendingDiskWrites.Add(path);
+                    populateCache = isEnabled && fileLength > 0 && fileLength <= int.MaxValue;
+                    generation = cacheGeneration;
+                }
             }
             bool ownsTemporary = false;
             bool committed = false;
@@ -302,23 +305,25 @@ namespace ColorVision.FileIO
                     ownsTemporary = true;
                     write(file);
                     if (file.Position != fileLength || file.Length != fileLength)
-                        throw new InvalidDataException("CVRAW writer did not write its declared length.");
+                        throw new InvalidDataException("ColorVision image writer did not write its declared length.");
                 }
 
                 // Keep an exact read-only view without an open file handle blocking File.Replace.
                 DateTime? lastWriteTimeUtc = null;
                 using (Stream saved = populateCache ? TryMapStagedFile(temporary, fileLength, out lastWriteTimeUtc) : null)
                 {
-                    Func<Stream> openSaved = () => saved;
                     if (replaceExisting)
                     {
-                        if (!CanReplaceExistingFile(path)) throw new FileNotFoundException("The CVRAW replacement target was removed.", path);
+                        if (!CanReplaceExistingFile(path)) throw new FileNotFoundException("The image replacement target was removed.", path);
                         backup = Path.ChangeExtension(temporary, ".bak");
                         ReplaceFile(temporary, path, backup);
                     }
                     else File.Move(temporary, path);
                     committed = true;
-                    using (OpenReadCore(path, saved != null, openSaved, new CommittedWrite(generation, lastWriteTimeUtc))) { }
+                    if (updateRawCache)
+                    {
+                        using (OpenReadCore(path, saved != null, () => saved, new CommittedWrite(generation, lastWriteTimeUtc))) { }
+                    }
                 }
             }
             catch (Exception ex) when (committed && (ex is IOException || ex is UnauthorizedAccessException || ex is OutOfMemoryException))
@@ -350,7 +355,7 @@ namespace ColorVision.FileIO
             catch (FileNotFoundException) { return false; }
             const FileAttributes protectedAttributes = FileAttributes.ReadOnly | FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint;
             if ((attributes & protectedAttributes) != 0)
-                throw new UnauthorizedAccessException("A protected file or link cannot be replaced by a synchronous CVRAW save.");
+                throw new UnauthorizedAccessException("A protected file or link cannot be replaced by a synchronous image save.");
             // Replacing a directory entry can succeed even when the existing file is not writable.
             using (new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None)) { }
             return true;
@@ -367,7 +372,7 @@ namespace ColorVision.FileIO
                     try { File.Move(backup, path); }
                     catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
                     {
-                        Trace.TraceWarning($"CVRAW original retained at '{backup}': {ex.Message}");
+                        Trace.TraceWarning($"ColorVision image original retained at '{backup}': {ex.Message}");
                     }
                 }
                 throw;

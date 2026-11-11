@@ -27,7 +27,7 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 | RAW 不另存 CVCIE，但要保留当时的色度参数和测量能力 | `CVFileMetadata`、`ColorCalibrationSnapshot`、`RawColorMeasurementSource`；见下文的动态参数契约 |
 | 大小写改名后类型变了 | 路径 header 使用大小写敏感的完整路径 `Contains`；不同便捷入口推断方式不一致 |
 | 写入返回 true，但再次读取失败 | 写入不验证完整格式；尤其检查 Version=3 的 `NDPort` 缺失和零长 Data |
-| 非 CVRAW 写失败后旧文件丢失或残缺 | 路径 writer 直接 `FileMode.Create`；CVRAW 同步保存先在同目录暂存 |
+| 同步写入失败 | 保存先在同目录暂存并校验，替换异常时检查同目录的 `.bak` |
 | Explorer 缩略图异常 | [ShellExtension](./ColorVision.ShellExtension.md)，其 provider 会覆盖解析出的类型 |
 | 显示或导出后的像素值变化 | `Engine/.../Media/MediaHelper.cs`、导出入口与[图像编辑器](../ui-components/ColorVision.ImageEditor.md)，不是文件解析本身 |
 
@@ -145,7 +145,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 ## 同步写入的提交与验证边界
 
-`WriteCIEFile` 是 CVRAW 共用的底层 writer。CVRAW 同步保存需要在目标目录创建、重命名和删除暂存文件的权限。Windows 覆盖沿用目标的 DACL，并拒绝只读、隐藏、系统或重解析点目标。临时文件完整写入后才替换目标，失败时旧缓存不变。如果系统已移走旧文件才报错，writer 尝试恢复原路径；恢复受阻时，可从同目录的 `.bak` 备份取回旧数据。非 CVRAW 路径仍直接截断目标。`WriteCVRaw` 不校验扩展名、版本或尺寸，也不创建父目录。同步返回表示文件提交完成，掉电持久性由存储系统决定。
+`WriteCIEFile` 同步保存要求目标目录允许创建、重命名和删除暂存文件。Windows 覆盖保留目标 DACL，拒绝只读、隐藏、系统或重解析点目标。暂存文件完整后才提交，失败保留旧文件和缓存。替换异常时尝试恢复原路径，恢复受阻可检查同目录的 `.bak`。仅 CVRAW 使用缓存。调用方创建父目录并提供正确尺寸，掉电持久性由存储系统决定。
 
 两个 writer 都按 GBK 编码源文件名，代码中有 UTF-8 回退；reader 固定 GBK，不能据此承诺编码自动识别。写出 Exp 不足的通道补 0、多余曝光截断；写出 Cols 再 Rows；仅 Version=2 使用 64 位数据长度。`FilePath`、`FileExtType` 不进入二进制格式，NDPort 当前也未写出。
 
