@@ -1,14 +1,20 @@
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.ImageEditor.Realtime;
+using cvColorVision;
 using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using FilterWheelChannel = ColorVision.Engine.Services.PhyCameras.Configs.ChannelCfg;
 
 namespace ColorVision.UI.Tests;
 
@@ -55,6 +61,70 @@ public class CameraCaptureSettingsTests
         Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.BuildConfiguration("{}", defaults));
         settings["expTimeCfg"]!["minExpTime"] = 0;
         Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.BuildConfiguration(settings.ToString(), defaults));
+    }
+
+    [Theory]
+    [InlineData(ImageChannelType.Gray_X, ImageChannelType.Gray_Z)]
+    [InlineData(ImageChannelType.Gray_Y, ImageChannelType.Gray_N)]
+    public void ThreeChannelCaptureRejectsRoutesWithoutOneOfEachXyzChannel(ImageChannelType second, ImageChannelType third)
+    {
+        var device = CreateCaptureDevice(CameraMode.CV_MODE, ImageChannelType.Gray_X, second, third);
+
+        var error = Assert.Throws<InvalidOperationException>(() => LocalCameraCaptureService.GetChannelConfigs(device, 3));
+        Assert.Contains("X、Y、Z", error.Message);
+    }
+
+    [Fact]
+    public void ThreeChannelCapturePreservesConfiguredPortOrderAndPackedColorUsesItsOwnRoute()
+    {
+        var device = CreateCaptureDevice(CameraMode.CV_MODE, ImageChannelType.Gray_Z, ImageChannelType.Gray_X, ImageChannelType.Gray_Y);
+        (ImageChannelType, int)[] expected = [(ImageChannelType.Gray_Z, 5), (ImageChannelType.Gray_X, 4), (ImageChannelType.Gray_Y, 3)];
+
+        var channels = LocalCameraCaptureService.GetChannelConfigs(device, 3);
+        Assert.Equal(expected, channels);
+        device.Config.CFW.ChannelCfgs.Clear();
+        var autoExposure = (JArray)JObject.Parse(LocalCameraAutoExposure.BuildChannelConfiguration(device, channels))["channelCfg"]!;
+        Assert.Equal(expected, autoExposure.Select(channel => ((ImageChannelType)channel.Value<int>("chtype"), channel.Value<int>("cfwport"))));
+
+        var parameters = new CameraRunParam { ExpTimeR = 11, ExpTimeG = 22, ExpTimeB = 33, AvgCount = 2 };
+        string json = (string)typeof(LocalCameraCaptureService).GetMethod("BuildRawCaptureJson", BindingFlags.Static | BindingFlags.NonPublic)!
+            .Invoke(null, [device, parameters, channels])!;
+        var request = JObject.Parse(json);
+        var nativeChannels = (JArray)request["channels"]!;
+        Assert.Equal(expected, nativeChannels.Select(channel => ((ImageChannelType)channel.Value<int>("channelType"), channel.Value<int>("cfwport"))));
+        Assert.Equal(new float[] { 33, 11, 22 }, nativeChannels.Select(channel => channel.Value<float>("exp")));
+        Assert.Equal(2, request.Value<int>("measureCount"));
+        Assert.False(request.Value<bool>("autoExpFlag"));
+
+        device.Config.CameraMode = CameraMode.BV_MODE;
+        Assert.Equal([(ImageChannelType.Gray_X, 0), (ImageChannelType.Gray_Y, 1), (ImageChannelType.Gray_Z, 2)],
+            LocalCameraCaptureService.GetChannelConfigs(device, 3));
+    }
+
+    [Fact]
+    public void LegacyEmptyRoutesAndSingleChannelCaptureKeepTheirExistingMapping()
+    {
+        var device = CreateCaptureDevice(CameraMode.CV_MODE);
+        Assert.Equal([(ImageChannelType.Gray_Y, 0), (ImageChannelType.Gray_X, 1), (ImageChannelType.Gray_Z, 2)],
+            LocalCameraCaptureService.GetChannelConfigs(device, 3));
+
+        device = CreateCaptureDevice(CameraMode.LV_MODE, ImageChannelType.Gray_N);
+        Assert.Equal([(ImageChannelType.Gray_N, 5)], LocalCameraCaptureService.GetChannelConfigs(device, 1));
+    }
+
+    private static DeviceCamera CreateCaptureDevice(CameraMode mode, params ImageChannelType[] channels)
+    {
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera
+        {
+            CameraMode = mode,
+            TakeImageMode = TakeImageMode.Measure_Normal,
+            CFW = new CFWPORT
+            {
+                ChannelCfgs = channels.Select((channel, index) => new FilterWheelChannel { Chtype = channel, Cfwport = 5 - index }).ToList()
+            }
+        };
+        return device;
     }
 
     [Fact]

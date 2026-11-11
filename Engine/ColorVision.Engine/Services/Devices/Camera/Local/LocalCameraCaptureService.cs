@@ -59,8 +59,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 lock (request.Device.LocalCameraSession.SyncRoot)
                 {
-                    request.Device.EnsureLocalMeasurementConnected(autoConnect: false);
-                    return FlowNodeTiming.Run("CapturePipeline", () => request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle)));
+                    DeviceCamera device = request.Device;
+                    var captureChannels = GetChannelConfigs(device, device.Config.Channel == ImageChannel.Three ? 3 : 1);
+                    device.EnsureLocalMeasurementConnected(autoConnect: false);
+                    return FlowNodeTiming.Run("CapturePipeline", () => device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle, captureChannels)));
                 }
             }
             finally
@@ -69,7 +71,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private static LocalCameraCaptureResult CaptureCore(LocalCameraCaptureRequest request, IntPtr cameraHandle)
+        private static LocalCameraCaptureResult CaptureCore(LocalCameraCaptureRequest request, IntPtr cameraHandle,
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> captureChannels)
         {
             LocalFrameMirrorService.ValidateFlipMode(request.FlipMode);
             DeviceCamera device = request.Device;
@@ -103,9 +106,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置曝光失败", exposureResult);
                 }
 
-                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration));
+                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration, captureChannels));
                 else FlowNodeTiming.Skip("AutoExposure");
-                string captureJson = BuildRawCaptureJson(device, cameraParameters, false);
+                string captureJson = BuildRawCaptureJson(device, cameraParameters, captureChannels);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
                 uint sourceInfoResult;
                 using (var sourceInfoStage = FlowNodeTiming.Measure("GetSourceFrameInfo"))
@@ -250,9 +253,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             };
         }
 
-        private static string BuildRawCaptureJson(DeviceCamera device, CameraRunParam cameraParameters, bool isAutoExposure)
+        private static string BuildRawCaptureJson(DeviceCamera device, CameraRunParam cameraParameters,
+            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channels)
         {
-            int channelCount = device.Config.Channel == ImageChannel.Three ? 3 : 1;
+            int channelCount = channels.Count;
             GetFrameParam param = new()
             {
                 channelCount = channelCount,
@@ -265,13 +269,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 startBurst = 1,
                 endBurst = 3,
                 posBurst = 0,
-                autoExpFlag = isAutoExposure
+                autoExpFlag = false
             };
             // Keep packed color RAW in the SDK; null selects legacy split/merge
             // even when there are no calibration items. Other camera modes retain their existing path.
             if (channelCount == 3 && device.Config.CameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
                 param.calibrationlist = new List<CalibrationItem>();
-            IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channels = GetChannelConfigs(device, channelCount);
             float[] exposures = GetExposureValues(device, cameraParameters, channelCount);
             for (int index = 0; index < channelCount; index++)
             {
@@ -294,7 +297,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 return ColorFrameChannelOrder;
             }
 
-            List<(ImageChannelType, int)> result = new(channelCount);
+            List<(ImageChannelType ChannelType, int CfwPort)> result = new(channelCount);
             if (device.Config.CFW.ChannelCfgs != null)
             {
                 foreach (var channel in device.Config.CFW.ChannelCfgs.Take(channelCount)) result.Add((channel.Chtype, channel.Cfwport));
@@ -304,6 +307,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 foreach (var channel in device.PhyCamera.Config.CFW.ChannelCfgs.Take(channelCount - result.Count)) result.Add((channel.Chtype, channel.Cfwport));
             }
             while (result.Count < channelCount) result.Add(DefaultChannelOrder[Math.Min(result.Count, DefaultChannelOrder.Length - 1)]);
+
+            // CM_GetFrame can return capture success even when the native RAW copy skips a route missing X, Y or Z.
+            if (channelCount == 3 && (result.Select(channel => channel.ChannelType).Distinct().Count() != 3
+                || result.Any(channel => channel.ChannelType is not (ImageChannelType.Gray_X or ImageChannelType.Gray_Y or ImageChannelType.Gray_Z))))
+                throw new InvalidOperationException("本地三通道取图需要各一个 X、Y、Z 通道，请检查滤轮通道配置。");
             return result;
         }
 
