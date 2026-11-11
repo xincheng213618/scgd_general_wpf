@@ -130,7 +130,8 @@ public partial class DeviceSpectrum
     {
         if (localDisposed) return;
         if (result.NDPort.HasValue) ApplyLocalNdState(result.NDPort.Value, result.NdCalibration);
-        DisplayConfig.IntTime = result.IntegralTime;
+        // Feeding back a synchronized duration can quantize it again on the next request.
+        if (!result.UsedSyncFrequency) DisplayConfig.IntTime = result.IntegralTime;
         PresentResult(() => CreateLocalSpectrumView(result));
         LocalResultAvailable?.Invoke(result, continuous);
     }

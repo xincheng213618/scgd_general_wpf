@@ -96,6 +96,7 @@ public sealed class LocalSpectrumCapture
     public string? AcquisitionParametersJson { get; set; }
     public int? NDPort { get; internal set; }
     internal int? EffectiveAverageCount { get; set; }
+    internal bool UsedSyncFrequency { get; set; }
     internal LocalSpectrumNd.Calibration? NdCalibration { get; set; }
 }
 
@@ -272,6 +273,7 @@ internal sealed class LocalSpectrumSession : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             var result = native.Capture(handle, effective, settings, dark);
             result.EffectiveAverageCount = effective.NumberOfAverage;
+            result.UsedSyncFrequency = settings.IsSyncFrequencyEnabled;
             result.NDPort = ndPort;
             result.NdCalibration = calibration;
             result.AcquisitionParametersJson = JsonConvert.SerializeObject(new

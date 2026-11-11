@@ -3,9 +3,14 @@ using ColorVision.Engine;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.UI;
+using ColorVision.UI.Views;
 using cvColorVision;
 using EngineSettings = ColorVision.Engine.Services.Devices.Spectrum.Configs.GetDataConfig;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Spectrum.Tests;
@@ -151,6 +156,49 @@ public sealed class LocalSpectrumTests
         Assert.Equal(effectiveAverage, LocalSpectrumResultService.CreateModel(result, parameters).iAveNum);
         Assert.Equal(requestedTime, parameters.IntegralTime);
         Assert.Equal(2, parameters.NumberOfAverage);
+    }
+
+    [Theory]
+    [InlineData(true, 10f / 3f, 18, 4f)]
+    [InlineData(false, 240f, 2, 240f)]
+    public void PublishingLocalResultKeepsSynchronizedRequestTiming(bool synchronized, float actualTime, int actualAverage, float nextRequestTime)
+    {
+        using var files = new CalibrationFiles();
+        files.Config.Code = "TEST-SPECTRUM-TIMING";
+        files.Config.GetDataConfig.IsSyncFrequencyEnabled = synchronized;
+        files.Config.GetDataConfig.Syncfreq = 100;
+        files.Config.GetDataConfig.SyncfreqFactor = 3;
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+
+        var previous = ConfigService.Instance;
+        ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
+        try
+        {
+            // Use the actual result and request paths without constructing the runtime device services or UI.
+            var device = (DeviceSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSpectrum));
+            device.Config = files.Config;
+            var view = new DockViewRegistration(() => throw new InvalidOperationException(), "Spectrum", isVisible: false);
+            typeof(DeviceSpectrum).GetField("_view", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(device, view);
+            var display = typeof(DeviceSpectrum).GetMethod("DisplayLocalSpectrum", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .CreateDelegate<Action<LocalSpectrumCapture, bool>>(device);
+            device.DisplayConfig.IntTime = 4;
+            device.DisplayConfig.AveNum = 2;
+            device.DisplayConfig.IsAutoIntTime = !synchronized;
+
+            var first = session.Capture(device.BuildLocalSpectrumParameters(), files.Config);
+            display(first, false);
+            var nextRequest = device.BuildLocalSpectrumParameters();
+            var second = session.Capture(nextRequest, files.Config);
+
+            Assert.Equal(actualTime, first.IntegralTime);
+            Assert.Equal(actualTime, DeviceSpectrum.CreateLocalSpectrumView(first).IntTime);
+            Assert.Equal(actualTime, second.IntegralTime);
+            Assert.Equal((actualTime, actualAverage), native.CaptureTiming);
+            Assert.Equal(nextRequestTime, device.DisplayConfig.IntTime);
+        }
+        finally { ConfigService.SetInstance(previous); }
     }
 
     [Fact]
