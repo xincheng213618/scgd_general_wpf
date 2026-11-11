@@ -108,6 +108,57 @@ public class BatchImageProcessingTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BatchOutputProtectsSourceFilesWhenEitherDirectoryUsesALink(bool sourceUsesLink)
+    {
+        DirectoryInfo root = Directory.CreateTempSubdirectory("ColorVision-BatchOutputLink-");
+        DirectoryInfo actual = root.CreateSubdirectory("actual");
+        DirectoryInfo nested = actual.CreateSubdirectory("nested");
+        string link = Path.Combine(root.FullName, "alias");
+        string realFirst = Path.Combine(nested.FullName, "capture.png");
+        string realSecond = Path.Combine(nested.FullName, "capture_processed.png");
+        try
+        {
+            try { Directory.CreateSymbolicLink(link, actual.FullName); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return; }
+            using Mat first = Mat.FromArray(new byte[,] { { 10, 20 } });
+            using Mat second = Mat.FromArray(new byte[,] { { 30, 40 } });
+            BatchImageOutput.Save(first, realFirst);
+            BatchImageOutput.Save(second, realSecond);
+            byte[] original = File.ReadAllBytes(realSecond);
+            string linkedDirectory = Path.Combine(link, nested.Name);
+            string inputDirectory = sourceUsesLink ? linkedDirectory : nested.FullName;
+            string outputDirectory = sourceUsesLink ? nested.FullName : linkedDirectory;
+
+            var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
+            BatchImageRunResult result = processor.Process(new BatchImageProcessingRequest
+            {
+                Items = [new BatchImageItem(Path.Combine(inputDirectory, Path.GetFileName(realFirst))),
+                    new BatchImageItem(Path.Combine(inputDirectory, Path.GetFileName(realSecond)))],
+                Algorithm = BatchImageAlgorithms.CreateAll()[0],
+                OutputDirectory = outputDirectory,
+                Suffix = "_processed",
+                AvoidOverwrite = false,
+            });
+
+            Assert.Equal(original, File.ReadAllBytes(realSecond));
+            Assert.All(result.Files, item => Assert.True(item.Success, item.ErrorMessage));
+            Assert.Equal(Path.Combine(outputDirectory, "capture_processed_2.png"), result.Files[0].OutputPath);
+            using Mat output = Cv2.ImRead(result.Files[0].OutputPath, ImreadModes.Unchanged);
+            AssertMatsEqual(first, output);
+        }
+        finally
+        {
+            if (Directory.Exists(link)) Directory.Delete(link);
+            foreach (FileInfo file in nested.EnumerateFiles()) file.Delete();
+            nested.Delete();
+            actual.Delete();
+            root.Delete();
+        }
+    }
+
     [Fact]
     public void EveryCatalogAlgorithmProcessesAnEightBitColorImage()
     {

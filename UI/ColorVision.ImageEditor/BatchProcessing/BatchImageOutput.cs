@@ -8,23 +8,6 @@ namespace ColorVision.ImageEditor.BatchProcessing
 {
     public static class BatchImageOutput
     {
-        internal static HashSet<string> ReserveSourcePaths(IEnumerable<BatchImageItem> items)
-        {
-            var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (BatchImageItem item in items)
-            {
-                try
-                {
-                    paths.Add(Path.GetFullPath(item.FilePath));
-                }
-                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-                {
-                    // The processing loop reports invalid paths as individual file failures.
-                }
-            }
-            return paths;
-        }
-
         public static string ResolveExtension(string sourcePath, BatchOutputFormat format)
         {
             if (format == BatchOutputFormat.SameAsSource)
@@ -53,7 +36,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             bool avoidOverwrite,
             ISet<string> reservedPaths)
             => CreateOutputPath(item, outputDirectory, suffix, format, preserveFolderStructure, avoidOverwrite,
-                reservedPaths, nextUnreservedNumbers: null);
+                new BatchOutputReservations(reservedPaths), nextUnreservedNumbers: null);
 
         internal static string CreateOutputPath(
             BatchImageItem item,
@@ -62,7 +45,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             BatchOutputFormat format,
             bool preserveFolderStructure,
             bool avoidOverwrite,
-            ISet<string> reservedPaths,
+            BatchOutputReservations reservations,
             Dictionary<string, int>? nextUnreservedNumbers)
         {
             string directory = ResolveOutputDirectory(item, outputDirectory, preserveFolderStructure);
@@ -70,15 +53,16 @@ namespace ColorVision.ImageEditor.BatchProcessing
             string baseName = Path.GetFileNameWithoutExtension(item.FilePath) + suffix;
             string outputPath = Path.Combine(directory, baseName + extension);
             string fullOutputPath = Path.GetFullPath(outputPath);
+            string outputKey = reservations.Resolve(fullOutputPath);
 
-            if (fullOutputPath.Equals(Path.GetFullPath(item.FilePath), StringComparison.OrdinalIgnoreCase))
+            if (outputKey.Equals(reservations.Resolve(Path.GetFullPath(item.FilePath)), StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(Properties.Resources.BatchCannotOverwriteSource);
             }
 
             if (IsReserved() || avoidOverwrite && File.Exists(fullOutputPath))
             {
-                string unnumberedPath = fullOutputPath;
+                string unnumberedPath = outputKey;
                 int nextUnreserved = nextUnreservedNumbers?.GetValueOrDefault(unnumberedPath, 2) ?? 2;
                 for (int index = nextUnreserved; ; index++)
                 {
@@ -95,11 +79,11 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 if (nextUnreserved > 2 && nextUnreservedNumbers != null)
                     nextUnreservedNumbers[unnumberedPath] = nextUnreserved;
             }
-            reservedPaths.Add(fullOutputPath);
+            reservations.Add(fullOutputPath);
 
             return outputPath;
 
-            bool IsReserved() => reservedPaths.Contains(fullOutputPath) || reservedPaths.Contains(outputPath);
+            bool IsReserved() => reservations.Contains(fullOutputPath, outputPath);
         }
 
         public static void Save(Mat image, string filePath, bool overwrite = true)

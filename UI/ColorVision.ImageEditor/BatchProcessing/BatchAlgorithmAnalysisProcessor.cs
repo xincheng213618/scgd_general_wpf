@@ -72,7 +72,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 throw new ArgumentException("The output suffix contains invalid file-name characters.", nameof(request));
 
             List<BatchAlgorithmAnalysisFileResult> files = new(request.Items.Count);
-            HashSet<string> reservedPaths = BatchImageOutput.ReserveSourcePaths(request.Items);
+            var reservations = new BatchOutputReservations(request.Items, !request.AvoidOverwrite, cancellationToken);
             for (int index = 0; index < request.Items.Count; index++)
             {
                 BatchImageItem item = request.Items[index];
@@ -116,11 +116,11 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     }
 
                     cancellationToken.ThrowIfCancellationRequested();
-                    string outputPath = CreateOutputPath(item, request, result, reservedPaths, cancellationToken);
+                    string outputPath = CreateOutputPath(item, request, result, reservations, cancellationToken);
                     IReadOnlyList<string> outputPaths = request.ExportFormat == BatchAnalysisExportFormat.Json
                         ? [await AlgorithmResultExporter.ExportJsonAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken)]
                         : await AlgorithmResultExporter.ExportCsvBundleAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken);
-                    reservedPaths.UnionWith(outputPaths);
+                    foreach (string path in outputPaths) reservations.Add(path);
                     files.Add(new BatchAlgorithmAnalysisFileResult(item.FilePath, outputPaths, result.Status));
                     progress?.Report(new BatchImageProgress
                     {
@@ -165,7 +165,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             };
 
         private static string CreateOutputPath(BatchImageItem item, BatchAlgorithmAnalysisRequest request,
-            AlgorithmResult result, HashSet<string> reservedPaths, CancellationToken cancellationToken)
+            AlgorithmResult result, BatchOutputReservations reservations, CancellationToken cancellationToken)
         {
             string directory = request.OutputDirectory ?? Path.GetDirectoryName(item.FilePath)!;
             if (request.PreserveFolderStructure
@@ -183,8 +183,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
             for (int number = 2; ; number++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                bool collision = exportJson ? reservedPaths.Contains(path)
-                    : AlgorithmResultExporter.GetCsvBundlePaths(result, path).Any(reservedPaths.Contains);
+                bool collision = exportJson ? reservations.Contains(path)
+                    : AlgorithmResultExporter.GetCsvBundlePaths(result, path).Any(target => reservations.Contains(target));
                 if (!collision) return path;
                 path = Path.Combine(directory, $"{stem}_{number}{extension}");
             }

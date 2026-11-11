@@ -55,26 +55,34 @@ public sealed class BatchAlgorithmAnalysisTests
     }
 
     [Theory]
-    [InlineData(BatchAnalysisExportFormat.Json, "other/sample.fixture", "sample.json", "sample_2.json")]
-    [InlineData(BatchAnalysisExportFormat.CsvBundle, "sample_samples.fixture", "sample.csv", "sample_samples_2.csv")]
-    [InlineData(BatchAnalysisExportFormat.CsvBundle, "sample_samples.csv", "sample_2.csv", "sample_samples_2.csv")]
+    [InlineData(BatchAnalysisExportFormat.Json, "other/sample.fixture", "sample.json", "sample_2.json", false)]
+    [InlineData(BatchAnalysisExportFormat.CsvBundle, "sample_samples.fixture", "sample.csv", "sample_samples_2.csv", false)]
+    [InlineData(BatchAnalysisExportFormat.CsvBundle, "sample_samples.csv", "sample_2.csv", "sample_samples_2.csv", false)]
+    [InlineData(BatchAnalysisExportFormat.CsvBundle, "sample_samples.csv", "sample_2.csv", "sample_samples_2.csv", true)]
     public async Task BatchKeepsDistinctReportsAndProtectsSelectedSources(BatchAnalysisExportFormat format,
-        string secondSourceName, string firstReportName, string secondReportName)
+        string secondSourceName, string firstReportName, string secondReportName, bool outputUsesLink)
     {
         using var scheduler = new AlgorithmExecutionScheduler(cpuConcurrency: 1);
         var processor = CreateProcessor(scheduler, static () => { });
-        string directory = Directory.CreateTempSubdirectory("ColorVision-BatchAnalysisPaths-").FullName;
+        DirectoryInfo root = Directory.CreateTempSubdirectory("ColorVision-BatchAnalysisPaths-");
+        string directory = root.CreateSubdirectory("actual").FullName;
+        string link = Path.Combine(root.FullName, "alias");
         string firstSource = Path.Combine(directory, "sample.fixture");
         string secondSource = Path.Combine(directory, secondSourceName);
         bool secondSourceIsCsv = Path.GetExtension(secondSource) == ".csv";
         try
         {
+            if (outputUsesLink)
+            {
+                try { Directory.CreateSymbolicLink(link, directory); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return; }
+            }
             if (secondSourceIsCsv) File.WriteAllText(secondSource, "selected source contents");
             BatchAlgorithmAnalysisResult result = await processor.ProcessAsync(new BatchAlgorithmAnalysisRequest
             {
                 Items = [new BatchImageItem(firstSource), new BatchImageItem(secondSource)],
                 Invocation = AlgorithmInvocation.Create(AnalysisId, new NoAlgorithmParameters()),
-                OutputDirectory = directory,
+                OutputDirectory = outputUsesLink ? link : directory,
                 PreserveFolderStructure = false,
                 Suffix = string.Empty,
                 ExportFormat = format,
@@ -91,8 +99,10 @@ public sealed class BatchAlgorithmAnalysisTests
         }
         finally
         {
+            if (Directory.Exists(link)) Directory.Delete(link);
             foreach (string path in Directory.EnumerateFiles(directory)) File.Delete(path);
             Directory.Delete(directory);
+            root.Delete();
         }
     }
 

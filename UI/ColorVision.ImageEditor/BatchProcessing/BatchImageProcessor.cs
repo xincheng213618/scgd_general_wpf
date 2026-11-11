@@ -112,7 +112,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
 
             var results = new List<BatchImageFileResult>(request.Items.Count);
-            var reservedPaths = BatchImageOutput.ReserveSourcePaths(request.Items);
+            var reservations = new BatchOutputReservations(request.Items, !request.AvoidOverwrite, cancellationToken);
             var nextUnreservedNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             using AlgorithmReferenceImageLoader.BatchCache? references = request.Items.Count > 1
                 && request.Algorithm.Descriptor?.Id == StandardAlgorithmIds.ImagingCorrection
@@ -148,7 +148,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         request.OutputFormat,
                         request.PreserveFolderStructure,
                         request.AvoidOverwrite,
-                        reservedPaths,
+                        reservations,
                         nextUnreservedNumbers);
 
                     using Mat source = loader.Load(item.FilePath);
@@ -178,7 +178,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                                 request.OutputFormat,
                                 request.PreserveFolderStructure,
                                 avoidOverwrite: true,
-                                reservedPaths,
+                                reservations,
                                 nextUnreservedNumbers);
                             return outputPath;
                         }
