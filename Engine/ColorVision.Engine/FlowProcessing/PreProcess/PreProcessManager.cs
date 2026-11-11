@@ -11,6 +11,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
@@ -574,10 +575,12 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         // A null reason means all enabled actions completed successfully.
         internal async Task<string?> ExecuteWithFailureReasonAsync(
-            string flowName, string serialNumber, ObservableCollection<CVBaseServerNode>? serverNodes)
+            string flowName, string serialNumber, ObservableCollection<CVBaseServerNode>? serverNodes,
+            CancellationToken cancellationToken = default)
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string? rejection = CheckExecutionConfiguration(out List<PreProcessAction> matchingActions);
                 if (rejection != null)
                 {
@@ -599,11 +602,14 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                 foreach (var action in matchingActions)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     log.Debug($"执行预处理动作 {action.DisplayName}");
                     var actionTiming = System.Diagnostics.Stopwatch.StartNew();
                     try
                     {
-                        if (await action.Process.PreProcess(ctx))
+                        bool succeeded = await action.Process.PreProcess(ctx);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (succeeded)
                         {
                             if (actionTiming.ElapsedMilliseconds >= 100 || log.IsDebugEnabled)
                             {
@@ -622,6 +628,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                     }
                     catch (Exception ex)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         log.Error($"预处理动作 {action.DisplayName} 执行异常，Flow={flowName}，SN={serialNumber}，耗时 {actionTiming.Elapsed.TotalMilliseconds:F3}ms", ex);
                     }
                     return $"{Properties.Resources.Flow_PreprocessFailedCancelled} ({action.DisplayName})";
@@ -629,7 +636,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
                 log.Error("匹配/执行预处理出错", ex);
                 return Properties.Resources.Flow_PreprocessFailedCancelled;

@@ -382,13 +382,14 @@ namespace ColorVision.Engine.FlowProcessing
                 UnsubscribeNodeEvents(node);
         }
 
-        private Task<string?> PreProcessing(string flowName, string serialNumber)
+        private Task<string?> PreProcessing(string flowName, string serialNumber, CancellationToken cancellationToken)
         {
             return PreProcessManager.GetInstance().ExecuteWithFailureReasonAsync(
                 flowName,
                 serialNumber,
                 new ObservableCollection<CVBaseServerNode>(
-                    View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>()));
+                    View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>()),
+                cancellationToken);
         }
         
         private long _lastFlowTime;
@@ -1297,20 +1298,24 @@ namespace ColorVision.Engine.FlowProcessing
                 string? preProcessFailure;
                 try
                 {
-                    preProcessFailure = await PreProcessing(flowName, sn);
+                    preProcessFailure = await PreProcessing(flowName, sn, flowRunCts.Token);
                 }
                 catch (Exception ex)
                 {
                     preProcessStopwatch.Stop();
                     long elapsedMs = preProcessStopwatch.ElapsedMilliseconds;
+                    bool canceled = ex is OperationCanceledException && flowRunCts.IsCancellationRequested;
                     journalScope?.TryAppendEvent(
                         "pre-process-completed",
                         "PreProcessCompleted",
-                        code: "ThrewException",
-                        message: $"流程前处理异常，耗时 {elapsedMs}ms。",
+                        code: canceled ? "Canceled" : "ThrewException",
+                        message: canceled
+                            ? ColorVision.Engine.Properties.Resources.ExecutionCancelled
+                            : $"流程前处理异常，耗时 {elapsedMs}ms。",
                         dataJson: System.Text.Json.JsonSerializer.Serialize(
                             new { elapsedMs }));
-                    log.Error($"流程前处理异常，耗时 {elapsedMs}ms。", ex);
+                    if (!canceled)
+                        log.Error($"流程前处理异常，耗时 {elapsedMs}ms。", ex);
                     throw;
                 }
                 preProcessStopwatch.Stop();

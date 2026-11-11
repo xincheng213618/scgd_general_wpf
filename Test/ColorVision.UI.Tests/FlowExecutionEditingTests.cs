@@ -302,6 +302,9 @@ public sealed class FlowExecutionEditingTests
         WithFixture(fixture =>
         {
             fixture.View.STNodeEditorMain.EnableEdit = originallyEditable;
+            var nextAction = new ControlledPreProcess();
+            nextAction.Release.SetResult(true);
+            PreProcessManager.GetInstance().Processes.Add(new PreProcessAction(nextAction) { IsEnabled = true });
             Task<FlowRunFinalizedData?> run = fixture.Session.RunFlowAndWaitForFinalizationAsync();
             fixture.Run = run;
             PumpUntil(Task.WhenAny(fixture.PreProcess.Entered.Task, run));
@@ -318,6 +321,7 @@ public sealed class FlowExecutionEditingTests
             fixture.PreProcess.Release.SetResult(true);
             PumpUntil(run);
 
+            Assert.False(nextAction.Entered.Task.IsCompleted);
             Assert.Null(run.Result);
             Assert.False(fixture.Sink.Started.Task.IsCompleted);
             Assert.False(fixture.PostProcess.Entered.Task.IsCompleted);
