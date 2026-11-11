@@ -73,6 +73,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             List<BatchAlgorithmAnalysisFileResult> files = new(request.Items.Count);
             var reservations = new BatchOutputReservations(request.Items, !request.AvoidOverwrite, cancellationToken);
+            var nextUnreservedNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             for (int index = 0; index < request.Items.Count; index++)
             {
                 BatchImageItem item = request.Items[index];
@@ -116,7 +117,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     }
 
                     cancellationToken.ThrowIfCancellationRequested();
-                    string outputPath = CreateOutputPath(item, request, result, reservations, cancellationToken);
+                    string outputPath = CreateOutputPath(item, request, result, reservations, nextUnreservedNumbers, cancellationToken);
                     IReadOnlyList<string> outputPaths = request.ExportFormat == BatchAnalysisExportFormat.Json
                         ? [await AlgorithmResultExporter.ExportJsonAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken)]
                         : await AlgorithmResultExporter.ExportCsvBundleAsync(result, outputPath, overwrite: !request.AvoidOverwrite, cancellationToken);
@@ -165,7 +166,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
             };
 
         private static string CreateOutputPath(BatchImageItem item, BatchAlgorithmAnalysisRequest request,
-            AlgorithmResult result, BatchOutputReservations reservations, CancellationToken cancellationToken)
+            AlgorithmResult result, BatchOutputReservations reservations, Dictionary<string, int> nextUnreservedNumbers,
+            CancellationToken cancellationToken)
         {
             string directory = request.OutputDirectory ?? Path.GetDirectoryName(item.FilePath)!;
             if (request.PreserveFolderStructure
@@ -180,14 +182,29 @@ namespace ColorVision.ImageEditor.BatchProcessing
             bool exportJson = request.ExportFormat == BatchAnalysisExportFormat.Json;
             string extension = exportJson ? ".json" : ".csv";
             string path = Path.Combine(directory, stem + extension);
-            for (int number = 2; ; number++)
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!reservations.Contains(path) && !HasCompanionCollision(path))
+                return path;
+
+            string key = reservations.Resolve(path);
+            int firstUnreserved = nextUnreservedNumbers.GetValueOrDefault(key, 2);
+            for (int number = firstUnreserved; ; number++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                bool collision = exportJson ? reservations.Contains(path)
-                    : AlgorithmResultExporter.GetCsvBundlePaths(result, path).Any(target => reservations.Contains(target));
-                if (!collision) return path;
                 path = Path.Combine(directory, $"{stem}_{number}{extension}");
+                if (reservations.Contains(path))
+                {
+                    if (number == firstUnreserved) firstUnreserved++;
+                    continue;
+                }
+                // A collision with a companion report may leave this number available to a different result.
+                if (HasCompanionCollision(path)) continue;
+                nextUnreservedNumbers[key] = firstUnreserved;
+                return path;
             }
+
+            bool HasCompanionCollision(string candidate) => !exportJson
+                && AlgorithmResultExporter.GetCsvBundlePaths(result, candidate).Any(target => reservations.Contains(target));
         }
     }
 }

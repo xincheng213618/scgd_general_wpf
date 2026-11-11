@@ -106,14 +106,53 @@ public sealed class BatchAlgorithmAnalysisTests
         }
     }
 
-    private static BatchAlgorithmAnalysisProcessor CreateProcessor(AlgorithmExecutionScheduler scheduler, Action onReadRow)
+    [Fact]
+    public async Task CsvBatchReusesAnEarlierNumberWhenItsCompanionNameChanges()
+    {
+        using var scheduler = new AlgorithmExecutionScheduler(cpuConcurrency: 1);
+        var processor = CreateProcessor(scheduler, static () => { }, source =>
+            Path.GetFileName(Path.GetDirectoryName(source)) == "alternate" ? "other" : "samples");
+        DirectoryInfo folder = Directory.CreateTempSubdirectory("ColorVision-AnalysisNumberGap-");
+        string selectedSource = Path.Combine(folder.FullName, "sample_2_samples.csv");
+        try
+        {
+            File.WriteAllText(selectedSource, "selected source contents");
+            BatchImageItem[] items = [new(Path.Combine(folder.FullName, "sample.fixture")),
+                new(Path.Combine(folder.FullName, "second", "sample.fixture")),
+                new(Path.Combine(folder.FullName, "alternate", "sample.fixture")), new(selectedSource)];
+            BatchAlgorithmAnalysisResult result = await processor.ProcessAsync(new BatchAlgorithmAnalysisRequest
+            {
+                Items = items,
+                Invocation = AlgorithmInvocation.Create(AnalysisId, new NoAlgorithmParameters()),
+                OutputDirectory = folder.FullName,
+                PreserveFolderStructure = false,
+                Suffix = string.Empty,
+                ExportFormat = BatchAnalysisExportFormat.CsvBundle,
+                AvoidOverwrite = false,
+            });
+
+            Assert.Equal(items.Length, result.Succeeded);
+            Assert.Equal("sample.csv", Path.GetFileName(result.Files[0].OutputPaths[0]));
+            Assert.Equal("sample_3.csv", Path.GetFileName(result.Files[1].OutputPaths[0]));
+            Assert.Equal("sample_2.csv", Path.GetFileName(result.Files[2].OutputPaths[0]));
+            Assert.Equal("selected source contents", File.ReadAllText(selectedSource));
+        }
+        finally
+        {
+            foreach (FileInfo file in folder.EnumerateFiles()) file.Delete();
+            folder.Delete();
+        }
+    }
+
+    private static BatchAlgorithmAnalysisProcessor CreateProcessor(AlgorithmExecutionScheduler scheduler, Action onReadRow,
+        Func<string?, string>? tableName = null)
     {
         var catalog = new AlgorithmCatalog();
         catalog.Register(new AlgorithmDescriptor(AnalysisId, new AlgorithmVersion(1, 0, 0), "Test", "Test",
             "Produces a table for batch export.", typeof(NoAlgorithmParameters),
             new AlgorithmParameterSchema(1, [], AlgorithmJson.ToElement(new NoAlgorithmParameters())),
             Formats, Capabilities));
-        var runtime = new AlgorithmRuntime(catalog, [new TableProvider(onReadRow)], scheduler);
+        var runtime = new AlgorithmRuntime(catalog, [new TableProvider(onReadRow, tableName)], scheduler);
         return new BatchAlgorithmAnalysisProcessor([new GrayImageLoader()], runtime);
     }
 
@@ -123,7 +162,7 @@ public sealed class BatchAlgorithmAnalysisTests
         public Mat Load(string filePath) => new(1, 1, MatType.CV_8UC1, Scalar.All(42));
     }
 
-    private sealed class TableProvider(Action onReadRow) : IImageAlgorithmProvider
+    private sealed class TableProvider(Action onReadRow, Func<string?, string>? tableName) : IImageAlgorithmProvider
     {
         public AlgorithmProviderMetadata Metadata { get; } = new("batch-table", "Batch table", AlgorithmProviderKind.Cpu,
             AlgorithmExecutionPlane.Local, 1, Capabilities, Formats);
@@ -138,7 +177,8 @@ public sealed class BatchAlgorithmAnalysisTests
             => ValueTask.FromResult(new AlgorithmResult
             {
                 Status = AlgorithmResultStatus.Succeeded,
-                Artifacts = [new AlgorithmTableArtifact("samples", [new("Value", "number")], new ObservedRows(onReadRow))],
+                Artifacts = [new AlgorithmTableArtifact(tableName?.Invoke(context.Inputs[0].SourceUri) ?? "samples",
+                    [new("Value", "number")], new ObservedRows(onReadRow))],
             });
     }
 
