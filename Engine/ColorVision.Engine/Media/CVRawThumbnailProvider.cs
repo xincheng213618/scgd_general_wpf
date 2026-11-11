@@ -44,6 +44,10 @@ namespace ColorVision.Engine.Media
         /// </summary>
         public int Order => 10;
 
+        // Earlier CVRAW thumbnails could contain process-cache pixels stamped with disk metadata.
+        public int GetCacheVersion(string filePath)
+            => string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+
         /// <summary>
         /// Checks if the file has a supported extension (.cvraw or .cvcie).
         /// Uses the extensions from the FileExtensionAttribute for consistency.

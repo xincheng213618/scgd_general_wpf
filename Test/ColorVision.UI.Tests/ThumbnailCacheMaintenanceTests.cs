@@ -1,3 +1,5 @@
+using ColorVision.Engine.Media;
+using ColorVision.FileIO;
 using ColorVision.UI;
 using ColorVision.Solution.MultiImageViewer;
 using Microsoft.Data.Sqlite;
@@ -52,7 +54,7 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
     public void BatchMetadataUsesBoundedQueriesAndPreservesExactPathMatching()
     {
         CreateDatabase();
-        Execute("INSERT INTO ThumbnailCache SELECT 2, 'ORIGINAL.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate, RequestedThumbnailSize FROM ThumbnailCache WHERE Id = 1;");
+        Execute("INSERT INTO ThumbnailCache SELECT 2, 'ORIGINAL.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate, RequestedThumbnailSize, ProviderCacheVersion FROM ThumbnailCache WHERE Id = 1;");
         using var database = CreateReaderDatabase();
         ThumbnailCacheManager reader = CreateReader(database);
         List<string> queries = [];
@@ -84,7 +86,7 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         using (SqliteConnection connection = Open())
         using (SqliteCommand command = connection.CreateCommand())
         {
-            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $first, FileLastModified = $time, FileSize = $size; INSERT INTO ThumbnailCache SELECT 2, $removed, FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate, RequestedThumbnailSize FROM ThumbnailCache WHERE Id = 1;";
+            command.CommandText = "UPDATE ThumbnailCache SET FilePath = $first, FileLastModified = $time, FileSize = $size; INSERT INTO ThumbnailCache SELECT 2, $removed, FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, 640, 480, FileSize, CreateDate, RequestedThumbnailSize, ProviderCacheVersion FROM ThumbnailCache WHERE Id = 1;";
             command.Parameters.AddWithValue("$first", first);
             command.Parameters.AddWithValue("$removed", removed);
             command.Parameters.AddWithValue("$time", lastModified);
@@ -252,9 +254,80 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
             using var pooledConnection = new SqliteConnection($"Data Source={DatabasePath}");
             SqliteConnection.ClearPool(pooledConnection);
         }
+    }
 
-        SqlSugar.SqlSugarClient OpenCacheDatabase() => (SqlSugar.SqlSugarClient)typeof(ThumbnailCacheManager)
-            .GetMethod("OpenDatabase", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [DatabasePath])!;
+    [Fact]
+    public async Task LegacyRawThumbnailsRebuildOnDemandAndUnchangedProviderRowsStillHit()
+    {
+        string rawPath = Path.Combine(_root, "requested.CVRAW");
+        string otherRawPath = Path.Combine(_root, "unrequested.cvraw");
+        string pngPath = Path.Combine(_root, "unchanged.png");
+        string ciePath = Path.Combine(_root, "unchanged.cvcie");
+        using CVCIEFile raw = new() { Version = 2, Cols = 3, Rows = 2, Channels = 1, Bpp = 8, Data = [81, 82, 83, 84, 85, 86] };
+        Assert.True(CVFileUtil.WriteCVRaw(rawPath, raw));
+        Assert.True(CVFileUtil.WriteCVRaw(otherRawPath, raw));
+        Assert.True(CVFileUtil.WriteCIEFile(ciePath, raw));
+        File.WriteAllBytes(pngPath, EncodeGrayPng(4, 1));
+        DateTime sourceTime = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Local);
+        string[] paths = [rawPath, otherRawPath, pngPath, ciePath];
+        foreach (string path in paths) File.SetLastWriteTime(path, sourceTime);
+        byte[] legacyPng = EncodeGrayPng(2, 2);
+
+        var provider = new CVRawThumbnailProvider();
+        ThumbnailProviderFactory.RegisterProvider(provider);
+        try
+        {
+            using (OpenCacheDatabase()) { }
+            Execute("ALTER TABLE ThumbnailCache DROP COLUMN ProviderCacheVersion;");
+            foreach (string path in paths) InsertLegacyRow(path);
+
+            using var database = OpenCacheDatabase();
+            ThumbnailCacheManager reader = CreateReader(database);
+            Assert.Null(reader.GetCachedInfo(rawPath));
+            Assert.Equal(new[] { ciePath, pngPath }, ReadCachedInfos(reader, paths).Keys.Order());
+
+            foreach (string path in new[] { pngPath, ciePath })
+            {
+                var legacy = Assert.IsAssignableFrom<BitmapSource>(await reader.GetOrCreateThumbnailAsync(path));
+                Assert.Equal((2, 2), (legacy.PixelWidth, legacy.PixelHeight));
+            }
+            var rebuilt = Assert.IsAssignableFrom<BitmapSource>(await reader.GetOrCreateThumbnailAsync(rawPath));
+            Assert.Equal((3, 2), (rebuilt.PixelWidth, rebuilt.PixelHeight));
+            byte[] pixels = new byte[6];
+            rebuilt.CopyPixels(pixels, 3, 0);
+            Assert.Equal(raw.Data, pixels);
+
+            ThumbnailCacheEntry updated = Assert.IsType<ThumbnailCacheEntry>(reader.GetCachedInfo(rawPath));
+            Assert.Equal((3, 2), (updated.OriginalWidth, updated.OriginalHeight));
+            Assert.Equal(1, updated.ProviderCacheVersion);
+            Assert.Equal(4, CountRows());
+            Assert.Null(reader.GetCachedInfo(otherRawPath));
+            foreach (string path in new[] { otherRawPath, pngPath, ciePath })
+            {
+                ThumbnailCacheEntry untouched = Assert.IsType<ThumbnailCacheEntry>(database.Queryable<ThumbnailCacheEntry>().First(row => row.FilePath == path));
+                Assert.Null(untouched.ProviderCacheVersion);
+                Assert.Equal(legacyPng, untouched.ThumbnailData);
+            }
+        }
+        finally
+        {
+            UnregisterFixtureThumbnailProvider(provider);
+            using var pooledConnection = new SqliteConnection($"Data Source={DatabasePath}");
+            SqliteConnection.ClearPool(pooledConnection);
+        }
+
+        void InsertLegacyRow(string path)
+        {
+            var source = new FileInfo(path);
+            using SqliteConnection connection = Open();
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "INSERT INTO ThumbnailCache (FilePath, FileLastModified, FileSize, ThumbnailData, ThumbnailWidth, ThumbnailHeight, OriginalWidth, OriginalHeight, CreateDate, RequestedThumbnailSize) VALUES ($path, $time, $size, $png, 2, 2, 2, 2, $time, 120);";
+            command.Parameters.AddWithValue("$path", path);
+            command.Parameters.AddWithValue("$time", source.LastWriteTime);
+            command.Parameters.AddWithValue("$size", source.Length);
+            command.Parameters.AddWithValue("$png", legacyPng);
+            command.ExecuteNonQuery();
+        }
     }
 
     [Fact]
@@ -502,7 +575,7 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
     {
         CreateDatabase();
         ThumbnailCacheMaintenanceSnapshot scan = Scan(DatabasePath);
-        Execute("INSERT INTO ThumbnailCache SELECT 2, 'new.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, OriginalWidth, OriginalHeight, FileSize, CreateDate, RequestedThumbnailSize FROM ThumbnailCache WHERE Id = 1;");
+        Execute("INSERT INTO ThumbnailCache SELECT 2, 'new.png', FileLastModified, ThumbnailData, ThumbnailWidth, ThumbnailHeight, OriginalWidth, OriginalHeight, FileSize, CreateDate, RequestedThumbnailSize, ProviderCacheVersion FROM ThumbnailCache WHERE Id = 1;");
 
         ThumbnailCacheMaintenanceResult result = ThumbnailCacheManager.ClearCacheForMaintenance(scan);
 
@@ -575,6 +648,9 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
         ConnectionString = $"Data Source={DatabasePath};Pooling=False", DbType = SqlSugar.DbType.Sqlite, IsAutoCloseConnection = true
     });
 
+    private SqlSugar.SqlSugarClient OpenCacheDatabase() => (SqlSugar.SqlSugarClient)typeof(ThumbnailCacheManager)
+        .GetMethod("OpenDatabase", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [DatabasePath])!;
+
     private static ThumbnailCacheManager CreateReader(SqlSugar.SqlSugarClient database)
     {
         // Avoid the singleton constructor: this fixture owns only its temporary database.
@@ -607,8 +683,8 @@ public sealed class ThumbnailCacheMaintenanceTests : IDisposable
 
     private void CreateDatabase()
     {
-        Execute("CREATE TABLE ThumbnailCache (Id INTEGER PRIMARY KEY, FilePath TEXT, FileLastModified TEXT, ThumbnailData BLOB, ThumbnailWidth INTEGER, ThumbnailHeight INTEGER, OriginalWidth INTEGER, OriginalHeight INTEGER, FileSize INTEGER, CreateDate TEXT, RequestedThumbnailSize INTEGER NULL);");
-        Execute("INSERT INTO ThumbnailCache VALUES (1, 'original.png', '2026-01-01', zeroblob(16384), 120, 120, 1024, 1024, 100000, '2026-01-01', NULL);");
+        Execute("CREATE TABLE ThumbnailCache (Id INTEGER PRIMARY KEY, FilePath TEXT, FileLastModified TEXT, ThumbnailData BLOB, ThumbnailWidth INTEGER, ThumbnailHeight INTEGER, OriginalWidth INTEGER, OriginalHeight INTEGER, FileSize INTEGER, CreateDate TEXT, RequestedThumbnailSize INTEGER NULL, ProviderCacheVersion INTEGER NULL);");
+        Execute("INSERT INTO ThumbnailCache VALUES (1, 'original.png', '2026-01-01', zeroblob(16384), 120, 120, 1024, 1024, 100000, '2026-01-01', NULL, NULL);");
     }
 
     private SqliteConnection Open()

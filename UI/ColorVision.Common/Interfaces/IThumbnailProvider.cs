@@ -16,6 +16,9 @@ namespace ColorVision.UI
         /// </summary>
         int Order { get; }
 
+        /// <summary>Returns the persisted thumbnail format revision for this path. Zero accepts older cache rows.</summary>
+        int GetCacheVersion(string filePath) => 0;
+
         /// <summary>
         /// Checks if this provider can handle the specified file.
         /// </summary>

@@ -45,6 +45,10 @@ namespace ColorVision.Solution.MultiImageViewer
         [SugarColumn(IsNullable = true)]
         public int? RequestedThumbnailSize { get; set; }
 
+        // Rows written before providers could version their output use revision zero.
+        [SugarColumn(IsNullable = true)]
+        public int? ProviderCacheVersion { get; set; }
+
         /// <summary>
         /// 原始图像宽度
         /// </summary>

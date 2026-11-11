@@ -37,7 +37,7 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 
 `ThumbnailCacheManager.Instance` 延迟创建 `%APPDATA%/ColorVision/Cache/ThumbnailCache.db` 和 `ThumbnailCache` 表，存 PNG 缩略图、原尺寸、文件大小和修改时间。它不同于 Explorer 的系统缩略图缓存，也不同于 Solution 工作区缓存。
 
-- 缓存命中要求路径、文件修改时间、大小和请求的缩略图尺寸一致。旧库记录保留，缺少请求尺寸的 PNG 在下次使用该文件时按需重建。源文件同时保留相同修改时间和大小时，仍可能命中已有缩略图。
+- 缓存命中要求路径、文件修改时间、大小、请求尺寸和生成器版本一致。旧库保留原有记录，缺少请求尺寸的 PNG 在下次使用时重建。旧 CVRAW 条目的缩略图和尺寸按新生成器版本刷新，其他旧格式仍可命中。源文件同时保留相同修改时间和大小时，仍可能命中已有缩略图。
 - PNG 无法解码或像素尺寸与记录不符时，从源图重建。数据库不可用时仍可显示新生成的缩略图。生成时检测到源文件变化则放弃当次结果。
 - 文件列表和首张图的打开无需等待 SQLite。缓存尺寸在后台补齐，记录的修改时间和文件大小须与源文件匹配。关闭 `EnableThumbnailCache` 或 `ShowThumbnail` 后仍可补齐已有记录的尺寸。
 - 新建缩略图时统一通过 `ThumbnailProviderFactory` 查自定义 provider，否则走 WPF 解码。关闭缓存仍沿用相同格式分流。`.cvraw/.cvcie` 的 `CVRawThumbnailProvider` 由 Engine 提供，要求宿主发现该实现。已选择的 provider 生成失败会返回空缩略图。
