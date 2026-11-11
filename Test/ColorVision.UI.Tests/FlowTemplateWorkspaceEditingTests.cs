@@ -526,6 +526,64 @@ public sealed class FlowTemplateWorkspaceEditingTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PendingSelectionCannotSwitchToAnotherFlowReusingItsId(bool targetRemainsAvailable)
+    {
+        WithFixture(fixture =>
+        {
+            fixture.B.Value.FlowKey = "flow:requested";
+            fixture.C.Value.FlowKey = "flow:other";
+            FlowParam requested = fixture.B.Value;
+            FlowParam previous = fixture.A.Value;
+            var releaseClose = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            fixture.Close = () => releaseClose.Task;
+            var selection = fixture.Controller.SelectFlowTemplateAsync(fixture.B);
+            Assert.False(selection.IsCompleted);
+
+            // TemplateFlow.ApplyValues reuses the wrapper at a numeric ID.
+            int oldId = requested.Id;
+            int newId = fixture.C.Id;
+            fixture.B.Value = new FlowParam
+            {
+                Id = oldId, Name = fixture.C.Key, FlowKey = fixture.C.Value.FlowKey,
+                DataBase64 = fixture.C.Value.DataBase64
+            };
+            TemplateFlow.Params.Remove(fixture.C);
+            if (targetRemainsAvailable)
+            {
+                TemplateFlow.Params.Add(new TemplateModel<FlowParam>(requested.Name, new FlowParam
+                {
+                    Id = newId, Name = requested.Name, FlowKey = requested.FlowKey,
+                    DataBase64 = requested.DataBase64
+                }));
+            }
+
+            releaseClose.SetResult();
+            PumpUntil(selection);
+            var current = fixture.Controller.WaitForExecutionSnapshotAsync();
+            PumpUntil(current);
+            if (targetRemainsAvailable)
+            {
+                Assert.Equal(requested.FlowKey, selection.Result.Snapshot!.FlowKey);
+                Assert.Equal(newId, current.Result.Snapshot!.TemplateId);
+                Assert.Equal(newId, fixture.Controller.RequestedTemplateId);
+                Assert.Equal(newId, FlowEngineConfig.Instance.LastSelectFlow);
+                Assert.Equal("B node", Assert.Single(fixture.Editor.Nodes.Cast<STNode>()).Title);
+            }
+            else
+            {
+                Assert.Null(selection.Result.Snapshot);
+                Assert.Null(current.Result.Snapshot);
+                Assert.Same(previous, fixture.Controller.ActiveFlowParam);
+                Assert.Equal(previous.Id, fixture.Controller.RequestedTemplateId);
+                Assert.Equal(previous.Id, FlowEngineConfig.Instance.LastSelectFlow);
+                Assert.Equal("A node", Assert.Single(fixture.Editor.Nodes.Cast<STNode>()).Title);
+            }
+        });
+    }
+
     [Fact]
     public void ReconcileDeletedLastTemplateKeepsCanceledDirtyDraftWithoutDeletedSaveIdentity()
     {
