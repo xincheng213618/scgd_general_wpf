@@ -368,10 +368,26 @@ internal sealed class LocalSpectrumSession : IDisposable
         lock (gate)
         {
             EnsureOpen(c);
+            var configured = c.SelfAdaptionInitDark;
+            var settings = new SelfAdaptionInitDark
+            {
+                BeginIntegralTime = configured.BeginIntegralTime,
+                StepTime = configured.StepTime,
+                StepCount = configured.StepCount,
+                NumberOfAverage = configured.NumberOfAverage,
+            };
+            // The SDK clears its existing table before sampling and requires at least two distinct times to read it.
+            if (settings.StepCount < 1) throw new InvalidOperationException("自适应校零步数至少为 1。");
+            if (settings.StepTime < 1) throw new InvalidOperationException("自适应校零积分间隔至少为 1 ms。");
+            if (settings.NumberOfAverage < 1) throw new InvalidOperationException("自适应校零平均次数至少为 1。");
+            LocalSpectrumParameters.ValidateIntegralTime(settings.BeginIntegralTime);
+            float lastTime = settings.BeginIntegralTime + (long)settings.StepCount * settings.StepTime;
+            LocalSpectrumParameters.ValidateIntegralTime(lastTime);
+
             adaptiveDarkInitialized = false;
             using var ndOperation = c.NDConfig.IsNDPort ? nd.Acquire(c.NDConfig) : null;
             using var lightPathOperation = c.IsShutterEnable && !SharesNdShutter(c) ? shutter.AcquireOperation(c.ShutterCfg) : null;
-            WithDarkPath(c, ndOperation, () => Check(native.InitAutoDark(handle, c.SelfAdaptionInitDark), "自适应校零"));
+            WithDarkPath(c, ndOperation, () => Check(native.InitAutoDark(handle, settings), "自适应校零"));
             adaptiveDarkInitialized = true;
         }
     }

@@ -710,6 +710,64 @@ public sealed class LocalSpectrumTests
         Assert.All(native.LastCaptureDark, value => Assert.Equal(123, value));
     }
 
+    [Theory]
+    [InlineData(100, 100, 0, 1, "步数")]
+    [InlineData(100, 0, 1, 1, "间隔")]
+    [InlineData(100, 100, 1, 0, "平均次数")]
+    [InlineData(0, 100, 1, 1, "积分时间")]
+    [InlineData(2_147_400, 100, 1, 1, "积分时间")]
+    [InlineData(100, int.MaxValue, int.MaxValue, 1, "积分时间")]
+    public void InvalidAdaptiveDarkSettingsPreserveExistingCalibrationAndLeaveShutterAlone(float start, int step, int count, int average, string message)
+    {
+        using var files = new CalibrationFiles();
+        files.Config.IsShutterEnable = true;
+        var native = new FakeNative { DarkValue = 123 };
+        using var session = new LocalSpectrumSession(native, shutter: new(_ => new FakeShutterPort(native.Calls), waitForSettle: _ => { }));
+        session.Open(files.Config);
+        session.InitAutoDark(files.Config);
+        native.Calls.Clear();
+
+        var settings = files.Config.SelfAdaptionInitDark;
+        settings.BeginIntegralTime = start;
+        settings.StepTime = step;
+        settings.StepCount = count;
+        settings.NumberOfAverage = average;
+
+        var error = Assert.Throws<InvalidOperationException>(() => session.InitAutoDark(files.Config));
+        Assert.Contains(message, error.Message);
+        Assert.Empty(native.Calls);
+        session.Capture(new() { SelfAdaptionInitDark = true }, files.Config);
+        Assert.True(native.LastDarkAdaptive);
+        Assert.Equal(123, native.LastCaptureDark[0]);
+    }
+
+    [Fact]
+    public void AdaptiveDarkInitializationUsesTheSettingsValidatedBeforeWaitingForTheShutter()
+    {
+        using var files = new CalibrationFiles();
+        files.Config.IsShutterEnable = true;
+        var settings = files.Config.SelfAdaptionInitDark;
+        settings.BeginIntegralTime = 120;
+        settings.StepTime = 30;
+        settings.StepCount = 3;
+        settings.NumberOfAverage = 2;
+
+        var native = new FakeNative();
+        var shutter = new LocalSpectrumShutter(_ => new FakeShutterPort(native.Calls), waitForSettle: _ =>
+        {
+            settings.BeginIntegralTime = 0;
+            settings.StepTime = 0;
+            settings.StepCount = 0;
+            settings.NumberOfAverage = 0;
+        });
+        using var session = new LocalSpectrumSession(native, shutter: shutter);
+        session.Open(files.Config);
+        session.InitAutoDark(files.Config);
+
+        Assert.Equal(0, settings.StepCount);
+        Assert.Equal((120f, 30, 3, 2), native.AdaptiveDarkSettings);
+    }
+
     [Fact]
     public void ShutterRequiresOpenSpectrumAndEnabledConfiguration()
     {
@@ -1045,7 +1103,13 @@ public sealed class LocalSpectrumTests
         { Calls.Add("auto"); OnAutoTime?.Invoke(cancellationToken); time = AutoTimes?.Dequeue() ?? 240; return AutoTimeCode; }
         public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive)
         { Calls.Add("dark"); DarkCalls++; DarkTime = time; DarkAverage = avg; LastDarkAdaptive = adaptive; Array.Fill(data, DarkValue); return DarkCode; }
-        public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) { Calls.Add("init-adaptive"); return 1; }
+        public (float Start, int Step, int Count, int Average) AdaptiveDarkSettings;
+        public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c)
+        {
+            Calls.Add("init-adaptive");
+            AdaptiveDarkSettings = (c.BeginIntegralTime, c.StepTime, c.StepCount, c.NumberOfAverage);
+            return 1;
+        }
         public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, EngineSettings settings, float[] dark)
         {
             CaptureSmoothing = (settings.SmoothingMethod, settings.FilterBW);
