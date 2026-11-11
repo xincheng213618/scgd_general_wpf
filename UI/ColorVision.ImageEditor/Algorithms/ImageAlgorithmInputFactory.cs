@@ -16,14 +16,16 @@ namespace ColorVision.ImageEditor.Algorithms
     internal static class ImageAlgorithmInputFactory
     {
         public static AlgorithmInput Acquire(ImageProcessingContext image, string name = "source")
+            => CreateInput(AcquireCurrentFrame(image), name);
+
+        private static AlgorithmInput CreateInput((AlgorithmImageBuffer Image, long Revision) frame, string name)
         {
-            (AlgorithmImageBuffer buffer, long revision) = AcquireCurrentFrame(image);
             return new AlgorithmInput
             {
                 Name = name,
-                Image = buffer,
+                Image = frame.Image,
                 Ownership = AlgorithmInputOwnership.Transferred,
-                SourceRevision = revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                SourceRevision = frame.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ColorSpace = "encoded-device-values",
             };
         }
@@ -58,6 +60,20 @@ namespace ColorVision.ImageEditor.Algorithms
             }
 
             input.Image.Dispose();
+            throw new InvalidOperationException("The image changed while the ROI was being selected. Select the ROI again on the current image.");
+        }
+
+        internal static AlgorithmInput AcquireRegion(ImageProcessingContext image, ImageSelectionScope scope, Int32Rect region)
+        {
+            if (TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope))
+            {
+                var frame = AcquireCurrentFrame(image, region);
+                if (frame.Revision == scope.SourceRevision && TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope))
+                    return CreateInput(frame, "source");
+
+                frame.Image.Dispose();
+            }
+
             throw new InvalidOperationException("The image changed while the ROI was being selected. Select the ROI again on the current image.");
         }
 

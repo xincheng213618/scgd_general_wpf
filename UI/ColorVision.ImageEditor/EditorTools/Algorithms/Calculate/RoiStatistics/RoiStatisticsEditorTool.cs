@@ -55,10 +55,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             windowOwner ??= AlgorithmAnalysisWindowOwner.Capture();
             AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.RoiStatistics, parameters, roi);
             Guid documentId = image.DocumentInstanceId;
+            AlgorithmRuntime runtime = image.AlgorithmRuntime;
+            AlgorithmRunner runner = runtime.Runner;
             AlgorithmInput input;
             try
             {
-                input = ImageAlgorithmInputFactory.Acquire(image, expectedScope);
+                ImageSelectionScope? source = expectedScope ?? TransientRoiSelectionSession.CaptureSourceScope(image);
+                if (ReferenceEquals(runtime, ImageAlgorithmPlatform.Runtime) && source != null
+                    && RoiStatisticsAlgorithmProvider.GetDisplayRegion(roi, source) is { } region)
+                {
+                    runner = RoiStatisticsAlgorithmProvider.CreateDisplayRegionRunner(runtime, region, source);
+                    Int32Rect bounds = new(region.MinimumX, region.MinimumY,
+                        region.MaximumXExclusive - region.MinimumX, region.MaximumYExclusive - region.MinimumY);
+                    input = ImageAlgorithmInputFactory.AcquireRegion(image, source, bounds);
+                }
+                else input = ImageAlgorithmInputFactory.Acquire(image, expectedScope);
             }
             catch (Exception exception)
             {
@@ -100,7 +111,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             try
             {
                 Progress<AlgorithmProgress> progress = new(value => progressWindow.Report(value));
-                result = await image.AlgorithmRuntime.Runner.RunAsync(new AlgorithmRunRequest
+                result = await runner.RunAsync(new AlgorithmRunRequest
                 {
                     Invocation = invocation,
                     Inputs = [input],

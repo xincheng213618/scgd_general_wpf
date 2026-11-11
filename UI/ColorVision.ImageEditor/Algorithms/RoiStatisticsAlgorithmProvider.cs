@@ -16,6 +16,7 @@ namespace ColorVision.ImageEditor.Algorithms
         private const string ResultSchema = "colorvision.analysis.roi-statistics/v1";
         internal const long MaximumExactFloatingValueBytes = 16L * 1024 * 1024;
         private static readonly IReadOnlySet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
+        private (AlgorithmPixelRoi Roi, ImageSelectionScope Source)? DisplayRegion { get; init; }
 
         public AlgorithmProviderMetadata Metadata { get; } = new(
             "colorvision.roi-statistics.cpu",
@@ -43,6 +44,22 @@ namespace ColorVision.ImageEditor.Algorithms
             return supported;
         }
 
+        internal static AlgorithmPixelRoi? GetDisplayRegion(AlgorithmRoi roi, ImageSelectionScope source)
+        {
+            if (source.PixelWidth <= 0 || source.PixelHeight <= 0 || !roi.Validate().IsValid
+                || roi is not (RectangleAlgorithmRoi or CircleAlgorithmRoi or PolygonAlgorithmRoi))
+                return null;
+
+            AlgorithmPixelRoi region = AlgorithmPixelRoi.Create(roi, source.PixelWidth, source.PixelHeight, source.DpiX, source.DpiY);
+            if (region.IsEmpty || (region.MinimumX == 0 && region.MinimumY == 0
+                && region.MaximumXExclusive == source.PixelWidth && region.MaximumYExclusive == source.PixelHeight))
+                return null;
+            return region;
+        }
+
+        internal static AlgorithmRunner CreateDisplayRegionRunner(AlgorithmRuntime runtime, AlgorithmPixelRoi region, ImageSelectionScope source)
+            => new(runtime.Catalog, [new RoiStatisticsAlgorithmProvider { DisplayRegion = (region, source) }], runtime.Scheduler);
+
         public ValueTask<AlgorithmResult> ExecuteAsync(AlgorithmExecutionContext context, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -55,9 +72,14 @@ namespace ColorVision.ImageEditor.Algorithms
 
             AlgorithmImageBuffer image = context.Inputs[0].Image;
             RoiStatisticsParameters parameters = (RoiStatisticsParameters)context.Parameters;
-            AlgorithmPixelRoi roi = AlgorithmPixelRoi.Create(context.Invocation.Roi, image);
+            AlgorithmPixelRoi roi = DisplayRegion?.Roi ?? AlgorithmPixelRoi.Create(context.Invocation.Roi, image);
             if (roi.IsEmpty)
                 return ValueTask.FromResult(Failure(context, "roi_empty_after_clip", "The ROI does not contain any image pixel centers after clipping.", "roi"));
+
+            int originX = DisplayRegion?.Roi.MinimumX ?? 0;
+            int originY = DisplayRegion?.Roi.MinimumY ?? 0;
+            int sourceWidth = DisplayRegion?.Source.PixelWidth ?? image.Width;
+            int sourceHeight = DisplayRegion?.Source.PixelHeight ?? image.Height;
 
             int channelCount = image.Format.Channels();
             long? preflightPixelCount = null;
@@ -81,7 +103,7 @@ namespace ColorVision.ImageEditor.Algorithms
             ChannelAccumulator[] channels = Enumerable.Range(0, channelCount)
                 .Select(index => new ChannelAccumulator(index, ChannelName(image.Format, index), image.Format, floatingCapacity))
                 .ToArray();
-            long includedPixels = Scan(image, roi, channels, cancellationToken, context.Progress);
+            long includedPixels = Scan(image, roi, originX, originY, channels, cancellationToken, context.Progress);
             if (includedPixels == 0)
                 return ValueTask.FromResult(Failure(context, "roi_empty_after_clip", "The ROI does not contain any image pixel centers after clipping.", "roi"));
 
@@ -92,13 +114,15 @@ namespace ColorVision.ImageEditor.Algorithms
             if (parameters.DetectBadPixelCandidates && parameters.MaximumBadPixelCandidates > 0)
             {
                 context.Progress?.Report(new AlgorithmProgress(0.55, "roi.bad-pixels", "Detecting local outlier candidates"));
-                badPixels = DetectBadPixels(image, roi, channels, parameters, cancellationToken, context.Progress);
+                badPixels = DetectBadPixels(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress);
             }
 
             context.Progress?.Report(new AlgorithmProgress(0.82, "roi.artifacts", "Building structured result artifacts"));
             IReadOnlyList<AlgorithmArtifact> artifacts = BuildArtifacts(
                 context,
                 image,
+                sourceWidth,
+                sourceHeight,
                 roi,
                 channels,
                 includedPixels,
@@ -171,6 +195,8 @@ namespace ColorVision.ImageEditor.Algorithms
         private static long Scan(
             AlgorithmImageBuffer image,
             AlgorithmPixelRoi roi,
+            int originX,
+            int originY,
             ChannelAccumulator[] channels,
             CancellationToken cancellationToken,
             IProgress<AlgorithmProgress>? progress)
@@ -192,7 +218,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 {
                     if (!roi.Contains(x, y)) continue;
                     included++;
-                    int pixelOffset = y * stride + x * pixelBytes;
+                    int pixelOffset = (y - originY) * stride + (x - originX) * pixelBytes;
                     for (int channel = 0; channel < channels.Length; channel++)
                         channels[channel].Add(ReadValue(data, pixelOffset + channel * channelBytes, channelBytes));
                 }
@@ -203,6 +229,8 @@ namespace ColorVision.ImageEditor.Algorithms
         private static BadPixelDetectionResult DetectBadPixels(
             AlgorithmImageBuffer image,
             AlgorithmPixelRoi roi,
+            int originX,
+            int originY,
             ChannelAccumulator[] channels,
             RoiStatisticsParameters parameters,
             CancellationToken cancellationToken,
@@ -233,7 +261,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     if (((x - roi.MinimumX) & 255) == 0) cancellationToken.ThrowIfCancellationRequested();
                     if (!roi.Contains(x, y)) continue;
                     bool pixelIsCandidate = false;
-                    int pixelOffset = y * stride + x * pixelBytes;
+                    int pixelOffset = (y - originY) * stride + (x - originX) * pixelBytes;
                     for (int channelIndex = 0; channelIndex < channels.Length; channelIndex++)
                     {
                         int channelOffset = channelIndex * channelBytes;
@@ -245,13 +273,13 @@ namespace ColorVision.ImageEditor.Algorithms
                         {
                             int neighborY = y + offsetY;
                             if (neighborY < roi.MinimumY || neighborY >= roi.MaximumYExclusive) continue;
-                            int neighborRowOffset = neighborY * stride + channelOffset;
+                            int neighborRowOffset = (neighborY - originY) * stride + channelOffset;
                             for (int offsetX = -radius; offsetX <= radius; offsetX++)
                             {
                                 if (offsetX == 0 && offsetY == 0) continue;
                                 int neighborX = x + offsetX;
                                 if (neighborX < roi.MinimumX || neighborX >= roi.MaximumXExclusive || !roi.Contains(neighborX, neighborY)) continue;
-                                double neighbor = ReadValue(data, neighborRowOffset + neighborX * pixelBytes, channelBytes);
+                                double neighbor = ReadValue(data, neighborRowOffset + (neighborX - originX) * pixelBytes, channelBytes);
                                 if (!double.IsFinite(neighbor)) continue;
                                 neighbors[count++] = neighbor;
                                 hasDistantNeighbor |= Math.Abs(value - neighbor) > minimumDeviation;
@@ -310,6 +338,8 @@ namespace ColorVision.ImageEditor.Algorithms
         private static IReadOnlyList<AlgorithmArtifact> BuildArtifacts(
             AlgorithmExecutionContext context,
             AlgorithmImageBuffer image,
+            int sourceWidth,
+            int sourceHeight,
             AlgorithmPixelRoi roi,
             ChannelAccumulator[] channels,
             long includedPixels,
@@ -415,7 +445,7 @@ namespace ColorVision.ImageEditor.Algorithms
             JsonElement provenance = AlgorithmJson.ToElement(new
             {
                 schema = ResultSchema,
-                input = new { image.Width, image.Height, format = image.Format.ToString(), image.DpiX, image.DpiY },
+                input = new { Width = sourceWidth, Height = sourceHeight, format = image.Format.ToString(), image.DpiX, image.DpiY },
                 roi = context.Invocation.Roi,
                 roiPixelBounds = new { roi.MinimumX, roi.MinimumY, roi.MaximumXExclusive, roi.MaximumYExclusive, roi.WasClipped },
                 includedPixels,
