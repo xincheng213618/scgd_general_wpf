@@ -70,6 +70,7 @@ public sealed class LocalFlowTemplateStorage
         ArgumentNullException.ThrowIfNull(value);
         if (value.Id > 0) throw new InvalidOperationException("服务器流程不能直接保存到本地，请复制或导入为新的本地流程。");
         string hash = ValidateAndHash(value.DataBase64);
+        string savedName = value.Name;
         string flowKey;
         int id;
         if (IsLocalId(value.Id))
@@ -82,17 +83,21 @@ public sealed class LocalFlowTemplateStorage
             if (expectedHash != null && expectedHash != persisted.LoadedContentHash)
                 throw new FlowTemplateConcurrencyException(value.Name, expectedHash, persisted.LoadedContentHash!);
             flowKey = persisted.FlowKey!;
+            if (condition != null)
+                savedName = previous.Name;
             string payload = JsonConvert.SerializeObject(new FlowDocument(flowKey, value.DataBase64));
-            if (!documents.TryUpdate(Kind, previous, value.Name, 1, payload))
+            if (!documents.TryUpdate(Kind, previous, savedName, 1, payload))
                 throw new FlowTemplateConcurrencyException(value.Name, expectedHash ?? string.Empty, Read(value.Id).LoadedContentHash!);
             id = previous.Id;
         }
         else
         {
             flowKey = KeyPrefix + Guid.NewGuid().ToString("N");
-            id = documents.Save(Kind, null, value.Name, 1,
+            id = documents.Save(Kind, null, savedName, 1,
                 JsonConvert.SerializeObject(new FlowDocument(flowKey, value.DataBase64)));
         }
+        if (!string.Equals(value.Name, savedName, StringComparison.Ordinal))
+            value.Name = savedName;
         value.Id = ConvertId(id);
         value.FlowKey = flowKey;
         value.LoadedContentHash = hash;

@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Flow.Versioning;
 using FlowEngineLib.End;
 using ST.Library.UI.NodeEditor;
 using System.IO;
@@ -169,6 +170,42 @@ public sealed class LocalFlowTemplateStorageTests
             storage.Delete(value.Id);
             Assert.Throws<InvalidDataException>(() => storage.Save(second));
             Assert.Empty(storage.Load());
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SavingACanvasPreservesTheNameChangedByAnotherWindow(bool restoreVersion)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var storage = Open(NewPath());
+            var flow = new FlowParam { Name = "原名称", DataBase64 = Convert.ToBase64String(CreateCanvas("原画布")) };
+            storage.Save(flow);
+            FlowParam editor = storage.Read(flow.Id);
+            FlowParam manager = storage.Read(flow.Id);
+            manager.Name = "新名称";
+            storage.Save(manager);
+
+            byte[] replacement = CreateCanvas("新画布");
+            if (restoreVersion)
+            {
+                var revision = new FlowRevision { FlowKey = editor.FlowKey!, Revision = 1, FullSnapshot = replacement, SemanticDocument = new FlowSemanticDocument() };
+                var restore = new FlowVersionRestoreService(storage.Save);
+                Assert.True(restore.Restore(new FlowVersionRestoreRequest(editor, revision, editor.LoadedContentHash)).Succeeded);
+            }
+            else
+            {
+                editor.DataBase64 = Convert.ToBase64String(replacement);
+                storage.Save(editor, new FlowTemplateSaveCondition(editor.LoadedContentHash));
+            }
+
+            FlowParam persisted = storage.Read(flow.Id);
+            Assert.Equal(manager.Name, persisted.Name);
+            Assert.Equal(manager.Name, editor.Name);
+            Assert.Equal(replacement, Convert.FromBase64String(persisted.DataBase64));
+            Assert.Equal(flow.FlowKey, persisted.FlowKey);
         });
     }
 
