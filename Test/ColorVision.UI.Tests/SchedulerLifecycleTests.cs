@@ -99,6 +99,36 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Equal(0, resumed.RepeatCount);
     }
 
+    [Fact]
+    public async Task PauseLetsTheAlreadyAdmittedFiringRefireAndRecordItsResult()
+    {
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(RefireOnceJob);
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 1;
+        info.Interval = TimeSpan.FromHours(1);
+        _scheduler.Context[nameof(RefireOnceJob)] = (Func<Task>)(() => _manager.StopJob(info.JobName, info.GroupName));
+        var observation = new ScheduledFireObservation();
+        observation.ReleaseVeto.SetResult();
+        _scheduler.ListenerManager.AddJobListener(observation);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+
+        Assert.False(await observation.Vetoed.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+        JobExecutionRecord record = await _executions.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(record.Success, record.Message);
+        Assert.Equal("Refired", record.Message);
+        Assert.Equal(SchedulerStatus.Paused, info.Status);
+        Assert.Equal(1, info.ScheduledFireCount);
+        Assert.Equal(1, info.RunCount);
+        Assert.Equal(TriggerState.Paused, await _scheduler.GetTriggerState(new TriggerKey($"{info.JobName}-trigger", info.GroupName)));
+        SchedulerInfo saved = Assert.Single(SchedulerTaskSerializer.LoadFromFile(Path.Combine(_directory, "tasks.json")));
+        Assert.Equal(SchedulerStatus.Paused, saved.Status);
+        Assert.Equal(1, saved.ScheduledFireCount);
+        Assert.Equal(1, saved.RunCount);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -756,12 +786,15 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
 
     public sealed class RefireOnceJob : IJob
     {
-        public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
             if (context.RefireCount == 0)
+            {
+                if (context.Scheduler.Context.TryGetValue(nameof(RefireOnceJob), out object? callback) && callback is Func<Task> beforeRefire)
+                    await beforeRefire();
                 throw new JobExecutionException("Retry the same firing") { RefireImmediately = true };
+            }
             context.Result = "Refired";
-            return ValueTask.CompletedTask;
         }
     }
 

@@ -1029,11 +1029,14 @@ namespace ColorVision.Scheduler
             bool Checkpoint()
             {
                 SchedulerInfo? info = GetCurrentJobDefinition(context);
-                if (info == null || info.Status == SchedulerStatus.Paused)
+                if (info == null)
                     return false;
-                // Quartz invokes admission again when retrying the same firing.
+                // Quartz reenters admission for an already checkpointed firing.
+                // Pausing applies to subsequent firings.
                 if (context.RefireCount > 0)
                     return true;
+                if (info.Status == SchedulerStatus.Paused)
+                    return false;
 
                 var previous = (info.HasScheduleCheckpoint, info.ScheduledFireCount, info.ScheduleCompleted,
                     info.NextScheduledFireTimeUtc, info.NextFireTime, info.PreviousFireTime);

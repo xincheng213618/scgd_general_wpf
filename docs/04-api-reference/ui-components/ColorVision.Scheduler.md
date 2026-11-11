@@ -72,7 +72,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载�
 
 多个实例使用同一任务文件时，管理器拒绝从过期定义保存，保留已写入的主文件和备份。收到定义变化提示后，重启该实例载入当前定义，再重试修改。
 
-`SchedulerScheduleState` 分开记录累计 `RunCount` 和本轮进度（`HasScheduleCheckpoint`、`ScheduledFireCount`、`NextScheduledFireTimeUtc`、`ScheduleCompleted`）。自动触发先保存进度，再执行任务。同一次触发的即时重试沿用已保存的进度，不额外消耗次数。保存失败则保留原进度并暂停，状态的悬停提示显示原因，修复后可继续。仅执行一次只更新累计统计和上次实际执行时间。
+`SchedulerScheduleState` 分开记录累计 `RunCount` 和本轮进度（`HasScheduleCheckpoint`、`ScheduledFireCount`、`NextScheduledFireTimeUtc`、`ScheduleCompleted`）。自动触发先保存进度，再执行任务。暂停只拦截后续触发，同一次触发的即时重试沿用已保存的进度。保存失败则保留原进度并暂停，状态的悬停提示显示原因，修复后可继续。仅执行一次只更新累计统计和上次实际执行时间。
 
 重启不注册自动触发器。继续时只安排未完成次数，保留仍在未来的下一时间；已过期的简单重复计划从当前时间加一个间隔开始，不补跑积压触发，也不重置已经开始的延迟。编辑保存会明确建立新一轮计划，重置计划进度并保留同身份的累计历史统计。
 
