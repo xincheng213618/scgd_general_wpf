@@ -460,12 +460,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (legacyMessages.Count == 0)
                     return legacyMessages;
 
+                // Match against the message's identity so every row considers the same owners.
                 List<FlowNodeRecord> candidateRecords = runRecords
-                    .Where(candidate => candidate.BatchId == record.BatchId
-                        && IsSameRun(record, candidate)
-                        && IsSameNode(record, candidate))
-                    .OrderBy(candidate => candidate.StartTime)
-                    .ThenBy(candidate => candidate.Id)
+                    .Where(candidate => candidate.BatchId == record.BatchId)
                     .ToList();
                 if (!candidateRecords.Any(candidate => IsSameRecord(candidate, record)))
                     candidateRecords.Add(record);
@@ -528,14 +525,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return string.Equals(record.NodeName, message.NodeName, StringComparison.Ordinal);
         }
 
-        private static bool IsSameNode(FlowNodeRecord left, FlowNodeRecord right)
-        {
-            if (!string.IsNullOrWhiteSpace(left.NodeId) && !string.IsNullOrWhiteSpace(right.NodeId))
-                return string.Equals(left.NodeId, right.NodeId, StringComparison.Ordinal);
-
-            return string.Equals(left.NodeName, right.NodeName, StringComparison.Ordinal);
-        }
-
         private static bool IsSameRun(FlowNodeRecord record, FlowNodeMessage message)
         {
             if (string.IsNullOrWhiteSpace(record.SerialNumber)
@@ -547,23 +536,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return string.Equals(record.SerialNumber, message.SerialNumber, StringComparison.Ordinal);
         }
 
-        private static bool IsSameRun(FlowNodeRecord left, FlowNodeRecord right)
-        {
-            if (string.IsNullOrWhiteSpace(left.SerialNumber)
-                || string.IsNullOrWhiteSpace(right.SerialNumber))
-            {
-                return true;
-            }
-
-            return string.Equals(left.SerialNumber, right.SerialNumber, StringComparison.Ordinal);
-        }
-
         private static FlowNodeRecord? FindLegacyMessageOwner(
             FlowNodeMessage message,
             IEnumerable<FlowNodeRecord> candidates)
         {
             return candidates
-                .Where(candidate => IsWithinLegacyMatchWindow(candidate, message.SendTime))
+                .Where(candidate => IsSameRun(candidate, message) && IsSameNode(candidate, message)
+                    && IsWithinLegacyMatchWindow(candidate, message.SendTime))
                 .OrderBy(candidate => Math.Abs((message.SendTime - candidate.StartTime).Ticks))
                 .ThenBy(candidate => candidate.StartTime)
                 .ThenBy(candidate => candidate.Id)

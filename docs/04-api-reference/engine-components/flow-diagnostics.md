@@ -132,7 +132,7 @@ related: ["flow.session","flow.templates","flow.headless","operations.data","ui.
 
 消息比对的默认基准是当前执行中首条可用消息，否则取历史窗口首条有消息的记录；可手工替换，不自动筛选成功运行。消息“成功”仅来自消息状态，与 `InspectFlowRunHistory` 的确认成功参照条件分别解释，也不代表客户 PASS/FAIL。
 
-比对查询最近500条同流程运行记录并纳入当前打开运行，沿用 `FlowIdentity` 的 FlowKey、TemplateId、旧记录 FlowName 兼容规则，再按 Batch + SN 和 NodeId 收紧。旧运行缺 BatchId 时沿用完整 SN 关联，无法区分重复使用相同 SN 的旧运行；缺流程身份或节点 ID 时只显示本次执行，不用同名节点猜测跨批次关系。同一批次内节点循环执行的消息按 NodeRecordId 或旧消息时间范围关联，各次调用保留。此入口不比较模板版本或标记 JSON 字段差异，也不改变原本的运行切换与清理范围。
+比对查询最近 500 条同流程运行和当前运行，沿用 `FlowIdentity` 兼容规则，再按 Batch + SN 和 NodeId 收紧。旧运行缺 BatchId 时按完整 SN 关联，重复 SN 可能产生歧义。缺流程身份或节点 ID 时仅显示本次执行。各次节点调用的消息优先按 NodeRecordId 关联，未关联的旧消息按节点和时间范围仅归给同批次中最接近的一次调用。运行切换与清理仍按各自入口执行。
 
 ARVRPro 的现场只读窗口可将数据库路径、来源标签和完整运行标识传入 `FlowExecutionAnalysisWindow`。`FlowAnalysisDataSource` 将概览、节点历史、运行切换、事件及惰性正文读取固定到该文件；缺失的可选诊断表返回空集合，不查询本机运行库。来源标签始终显示，清理入口隐藏且处理函数拒绝写入。未传离线来源的原有入口继续使用运行库。离线未结束节点以快照中最后节点时间为显示截止点，不随查看时刻累计等待时间。
 

@@ -108,6 +108,25 @@ public sealed class FlowNodeComparisonTests : IDisposable
         Assert.Equal("—", Assert.Single(rows, row => row.Record.Id == 2).DurationText);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(" \t\u3000")]
+    public void HistoryAssignsAnUnlinkedLegacyTimeoutToOnlyTheClosestExecution(string? messageSerial)
+    {
+        FlowNodeRecord first = new() { Id = 1, BatchId = 0, SerialNumber = "first", NodeId = "fov", StartTime = _time, EndTime = _time.AddSeconds(2), ElapsedMs = 2000 };
+        FlowNodeRecord second = new() { Id = 2, BatchId = 0, SerialNumber = "second", NodeId = "fov", StartTime = _time.AddMilliseconds(500), EndTime = _time.AddSeconds(2), ElapsedMs = 1500 };
+        FlowNodeMessage timeout = new() { Id = 1, BatchId = 0, SerialNumber = messageSerial!, NodeId = "fov", SendTime = _time.AddMilliseconds(550), State = FlowMessageState.Timeout };
+
+        var history = FlowExecutionAnalysisPresentation.BuildNodeHistoryItems([first, second], [timeout], _time.AddSeconds(3));
+
+        var firstItem = Assert.Single(history, item => item.Record.Id == first.Id);
+        Assert.Equal(FlowNodeExecutionOutcome.Completed, firstItem.Outcome);
+        Assert.False(firstItem.IsTimedOut);
+        var secondItem = Assert.Single(history, item => item.Record.Id == second.Id);
+        Assert.Equal(FlowNodeExecutionOutcome.Failed, secondItem.Outcome);
+        Assert.True(secondItem.IsTimedOut);
+    }
+
     [Fact]
     public void LinkedMessagesKeepBatchAndSerialRulesAndTakePrecedenceOverLegacyMatches()
     {
