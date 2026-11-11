@@ -163,7 +163,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 `CVRawOpen` 和 `CvRawLayerController` 为 Engine 图像打开器提供 **真彩 sRGB（XYZ）** 模式。它读取 CVCIE 文件自身连续存储的 X、Y、Z 三个平面，不跟随 `SrcFileName` 来构造真彩。**FileIO 的 `ReadCVCIE`、`OpenLocalCVFile` 和文件写入语义没有因此改变**；其它直接使用这些 API 的消费方不会自动启用真彩。
 
-CVRAW 及 CVCIE 关联原图复用同尺寸、同格式的可写位图，用 `CommitSourcePixels` 提交并保留 DPI、缩放和平移。首次打开、已有位图冻结或布局不兼容时，若显示像素达到 8 MiB 且格式受支持，则后台写入独立位图，完成后用 `SetImageSource` 发布。两条路径共用像素转换，16 位 BGR/BGRA 直接写成 RGB/RGBA，原始测量和算法帧像素保持不变。源、显示和完成信号的责任见[编辑器上下文](../ui-components/image-editor-context.md)与[图像打开契约](../ui-components/ColorVision.ImageEditor.md#打开图像与完成信号)。
+CVRAW 与 CVCIE 关联原图复用兼容可写位图，通过 `CommitSourcePixels` 保留 DPI、缩放和平移。关联 TIFF 等普通图像的校验和显示共用一次解码。位图不可复用且显示像素达到 8 MiB 时，受支持格式在后台写入独立位图，再用 `SetImageSource` 发布。两条路径均将 16 位 BGR/BGRA 转为 RGB/RGBA，保留原始测量和算法像素。源、显示和完成信号见[编辑器上下文](../ui-components/image-editor-context.md)与[图像打开契约](../ui-components/ColorVision.ImageEditor.md#打开图像与完成信号)。
 
 全局持久设置位于 **图像设置 → 文件打开 → CVCIE**，配置 `CvcieDisplayConfig` 和两个显示枚举归属 `Engine/ColorVision.Engine/Media/`。Engine 的 `CvcieDisplaySettingProvider` 实现 `IImageComponent`，通过 `ImageView.RegisterSettings` 注册全局配置与保存委托；加载 Engine 后即可在文件打开页看到此组，不要求先打开 CVCIE。ImageEditor 只提供通用设置宿主与属性编辑器，FileIO 不承载显示偏好或新增 UI 依赖。点击保存或完成/关闭设置窗口时只保存发生改动的配置目标；当前图层调整不写全局默认，详见[图像设置的保存语义](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)：
 

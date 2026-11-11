@@ -13,6 +13,58 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CvFilePixelSafetyTests
 {
+    [Fact]
+    public void AssociatedTiffReusesTheValidatedDecodeForDisplay()
+    {
+        StaTest.Run(() =>
+        {
+            string prefix = Path.Combine(Path.GetTempPath(), $"CieAssociatedTiff_{Guid.NewGuid():N}");
+            string sourcePath = prefix + ".tiff", ciePath = prefix + ".cvcie";
+            const int width = 3, height = 2, stride = width * 6;
+            byte[] rgb = Enumerable.Range(1, stride * height).Select(value => (byte)value).ToArray();
+            try
+            {
+                BitmapSource input = BitmapSource.Create(width, height, 96, 96, PixelFormats.Rgb48, null, rgb, stride);
+                TiffBitmapEncoder encoder = new() { Compression = TiffCompressOption.Lzw };
+                encoder.Frames.Add(BitmapFrame.Create(input));
+                using (FileStream output = File.Create(sourcePath)) encoder.Save(output);
+                using CVCIEFile cie = new()
+                {
+                    Version = 2, Rows = height, Cols = width, Channels = 3, Bpp = 32,
+                    SrcFileName = sourcePath, Data = new byte[width * height * 3 * sizeof(float)]
+                };
+                Assert.True(CVFileUtil.WriteCIEFile(ciePath, cie));
+
+                Mat decoded;
+                using (CvcieDisplaySource prepared = CvRawLayerController.LoadSourceForDisplay(ciePath, out bool usesLuminance, out WriteableBitmap? existing))
+                {
+                    Assert.False(usesLuminance);
+                    Assert.Null(existing);
+                    Assert.Equal(CVType.Tif, prepared.File.FileExtType);
+                    Assert.Equal((width, height, 16, 3), (prepared.File.Cols, prepared.File.Rows, prepared.File.Bpp, prepared.File.Channels));
+                    decoded = Assert.IsType<Mat>(prepared.Decoded);
+                    Assert.Equal(MatType.CV_16UC3, decoded.Type());
+
+                    // Prove display consumes the validated Mat without another encoded-file decode.
+                    prepared.File.Data = null;
+                    WriteableBitmap display = CvRawLayerController.ConvertForDisplay(prepared.File, CancellationToken.None, decoded);
+                    Assert.True(display.IsFrozen);
+                    Assert.Equal(PixelFormats.Rgb48, display.Format);
+                    byte[] actual = new byte[rgb.Length];
+                    display.CopyPixels(actual, stride, 0);
+                    Assert.Equal(rgb, actual);
+                    Assert.False(decoded.IsDisposed);
+                }
+                Assert.True(decoded.IsDisposed);
+            }
+            finally
+            {
+                File.Delete(ciePath);
+                File.Delete(sourcePath);
+            }
+        });
+    }
+
     [Theory]
     [InlineData(8, 1)]
     [InlineData(16, 1)]

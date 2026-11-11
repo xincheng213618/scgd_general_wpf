@@ -658,6 +658,7 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
     [InlineData(".cvraw", false, false)]
     [InlineData(".cvraw", true, false)]
     [InlineData(".cvraw", true, true)]
+    [InlineData(".tiff", false, false)]
     [InlineData(".tiff", true, false)]
     [InlineData(".ppm", true, false)]
     public async Task CvcieLayerAndProfileKeepTheAssociatedSourceSelectedAtOpen(string extension, bool trueColor, bool initiallyMissing)
@@ -1076,9 +1077,9 @@ public sealed class ImageOpenCompletionContractTests(ITestOutputHelper output)
                 CvcieDisplayConfig.Current.EnableTrueColor = false;
                 view = new ImageView();
                 view.Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, path, nameof(ImageOpenCompletionContractTests), "gray layers");
-                using CVCIEFile source = CvRawLayerController.LoadSourceForDisplay(path, out bool usesLuminance, out WriteableBitmap? bitmap);
+                using CvcieDisplaySource source = CvRawLayerController.LoadSourceForDisplay(path, out bool usesLuminance, out WriteableBitmap? bitmap);
                 Assert.True(usesLuminance);
-                Assert.Null(source.Data);
+                Assert.Null(source.File.Data);
                 Assert.NotNull(bitmap);
                 return new CVRawOpen(view.EditorContext);
             });

@@ -1130,7 +1130,7 @@ namespace ColorVision.Engine.Media
                     // Keep the verified selected file stable through publication, even if the display uses an associated source.
                     using FileStream? publicationRead = fileRevision?.OpenRead(requestedFilePath);
                     CvFileViewMetadata? viewMetadata = isCie ? ReadCvFileViewMetadata(requestedFilePath, pointsPath, publicationRead) : null;
-                    CVCIEFile? associatedImage = null;
+                    CvcieDisplaySource? associatedImage = null;
                     CvcieAssociatedSource? associatedSource = isCie && viewMetadata != null ? CvRawLayerController.PrepareAssociatedSource(requestedFilePath,
                         viewMetadata.Header, loadPixels: srgb == null, out associatedImage, cancellationToken) : null;
                     CVCIEFile LoadRaw()
@@ -1150,10 +1150,10 @@ namespace ColorVision.Engine.Media
                         return CvRawLayerController.LoadFileChannel(requestedFilePath, 1, out displayBitmap, cancellationToken);
                     }
                     // A successful XYZ render validates the optional source without loading its pixels.
-                    using CVCIEFile? displayFile = srgb != null ? null
-                        : isRaw ? LoadRaw()
+                    using CvcieDisplaySource? displaySource = srgb != null ? null
+                        : isRaw ? new(LoadRaw())
                         : !isCie || viewMetadata == null ? CvRawLayerController.LoadSourceForDisplay(requestedFilePath, out usesLuminance, out displayBitmap, cancellationToken)
-                        : associatedImage ?? LoadLuminance();
+                        : associatedImage ?? new(LoadLuminance());
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!isCie && !isRaw) viewMetadata = ReadCvFileViewMetadata(requestedFilePath, pointsPath);
                     else if (isCie && viewMetadata != null)
@@ -1165,11 +1165,13 @@ namespace ColorVision.Engine.Media
                                 fileRevision!.Value, associatedSource),
                         };
                     }
-                    CVCIEFile cVCIEFile = displayFile ?? viewMetadata?.Header
+                    CVCIEFile cVCIEFile = displaySource?.File ?? viewMetadata?.Header
                         ?? throw new InvalidDataException($"CVCIE 文件头无效：{requestedFilePath}");
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
                         displayBitmap = MediaHelper.RenderFloatChannel(cVCIEFile, cancellationToken);
-                    using OpenCvSharp.Mat? mat = displayBitmap == null ? cVCIEFile.ToMat(showErrors: false) : null;
+                    using OpenCvSharp.Mat? loadedMat = displayBitmap == null && displaySource?.Decoded == null
+                        ? cVCIEFile.ToMat(showErrors: false) : null;
+                    OpenCvSharp.Mat? mat = displayBitmap == null ? displaySource?.Decoded ?? loadedMat : null;
                     if (displayBitmap == null && (mat == null || mat.Empty()))
                         throw new InvalidDataException("The file contains no displayable image pixels.");
                     cancellationToken.ThrowIfCancellationRequested();
