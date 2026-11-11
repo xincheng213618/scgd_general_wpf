@@ -67,6 +67,38 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.True(saved.ScheduleCompleted);
     }
 
+    [Fact]
+    public async Task ImmediateRefireConsumesOnlyTheOriginalScheduledOccurrence()
+    {
+        SchedulerInfo info = CreateInfo();
+        info.JobType = typeof(RefireOnceJob);
+        info.RepeatMode = JobRepeatMode.Multiple;
+        info.RepeatCount = 1;
+        info.Interval = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(info)).Success);
+        await _scheduler.Start();
+
+        JobExecutionRecord record = await _executions.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.True(record.Success, record.Message);
+        Assert.Equal("Refired", record.Message);
+        Assert.Equal(1, info.RunCount);
+        Assert.Equal(1, info.ScheduledFireCount);
+        Assert.False(info.ScheduleCompleted);
+
+        string path = Path.Combine(_directory, "tasks.json");
+        SchedulerInfo saved = Assert.Single(SchedulerTaskSerializer.LoadFromFile(path));
+        Assert.Equal(1, saved.ScheduledFireCount);
+        DateTimeOffset next = Assert.IsType<DateTimeOffset>(saved.NextScheduledFireTimeUtc);
+        await _scheduler.Standby();
+        await _manager.StopJob(info.JobName, info.GroupName);
+        await _manager.ResumeJob(info.JobName, info.GroupName);
+
+        ISimpleTrigger resumed = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(
+            await _scheduler.GetTriggersOfJob(new JobKey(info.JobName, info.GroupName))));
+        Assert.Equal(next, resumed.NextFireTimeUtc);
+        Assert.Equal(0, resumed.RepeatCount);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -572,6 +604,17 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
     public sealed class NoOpJob : IJob
     {
         public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default) => ValueTask.CompletedTask;
+    }
+
+    public sealed class RefireOnceJob : IJob
+    {
+        public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            if (context.RefireCount == 0)
+                throw new JobExecutionException("Retry the same firing") { RefireImmediately = true };
+            context.Result = "Refired";
+            return ValueTask.CompletedTask;
+        }
     }
 
     public sealed class StatusProbeJob : IJob
