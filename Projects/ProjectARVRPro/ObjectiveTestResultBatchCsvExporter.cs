@@ -23,6 +23,25 @@ namespace ProjectARVRPro
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
             List<ObjectiveTestResultRecord> recordList = records.ToList();
+            string destinationPath = Path.GetFullPath(filePath);
+            string stagingPath = Path.Combine(Path.GetDirectoryName(destinationPath)!, $".{Guid.NewGuid():N}.arvrbatch.tmp");
+            try
+            {
+                WriteCsv(recordList, flowResultsByRecordId, stagingPath);
+                File.Move(stagingPath, destinationPath, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(stagingPath))
+                    File.Delete(stagingPath);
+            }
+        }
+
+        private static void WriteCsv(
+            List<ObjectiveTestResultRecord> recordList,
+            IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId,
+            string filePath)
+        {
             IReadOnlyList<ObjectiveTestResultMetric> columns = recordList.Count == 0
                 ? Array.Empty<ObjectiveTestResultMetric>()
                 : CollectMetrics(recordList[0], flowResultsByRecordId);

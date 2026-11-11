@@ -119,6 +119,7 @@ public class ObjectiveTestResultBatchCsvExporterTests
         try
         {
             ObjectiveTestResult result = CreateDynamicResult(("Item,\"Q\"", "line1,\"quoted\"\r\nline2"));
+            File.WriteAllText(path, "previous export");
             ObjectiveTestResultBatchCsvExporter.ExportToCsv(
                 [CreateRecord("SN,\"1\"", start, result)],
                 path);
@@ -127,6 +128,7 @@ public class ObjectiveTestResultBatchCsvExporterTests
             Assert.True(bytes.AsSpan().StartsWith(Encoding.UTF8.Preamble));
 
             string text = File.ReadAllText(path, Encoding.UTF8);
+            Assert.DoesNotContain("previous export", text, StringComparison.Ordinal);
             Assert.Contains("\"Screen_Item,\"\"Q\"\"\"", text, StringComparison.Ordinal);
             Assert.Contains("\"SN,\"\"1\"\"\"", text, StringComparison.Ordinal);
             Assert.Contains("\"line1,\"\"quoted\"\"\r\nline2\"", text, StringComparison.Ordinal);
@@ -135,6 +137,54 @@ public class ObjectiveTestResultBatchCsvExporterTests
         finally
         {
             File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExportToCsv_DoesNotPublishPartialResultsWhenLaterRecordFails(bool hasExistingExport)
+    {
+        DateTime start = new(2026, 8, 9, 8, 0, 0, DateTimeKind.Local);
+        string directory = Path.Combine(Path.GetTempPath(), $"ProjectARVRPro_BatchCsv_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "result.csv");
+        try
+        {
+            byte[] previous = [];
+            if (hasExistingExport)
+            {
+                ObjectiveTestResultBatchCsvExporter.ExportToCsv(
+                    [CreateRecord("previous", start, CreateDynamicResult(("A", "previous-a")))], path);
+                previous = File.ReadAllBytes(path);
+            }
+
+            var records = new[]
+            {
+                CreateRecord("new", start, CreateDynamicResult(("A", "new-a"))),
+                new ObjectiveTestResultRecord
+                {
+                    SN = "broken",
+                    ObjectiveTestResultJson = """{"DynamicRgbCrossResults":{"Screen":{"Points":null}}}"""
+                }
+            };
+
+            Assert.ThrowsAny<Exception>(() => ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, path));
+
+            if (hasExistingExport)
+            {
+                Assert.Equal(previous, File.ReadAllBytes(path));
+                Assert.Equal(path, Assert.Single(Directory.GetFiles(directory)));
+            }
+            else
+            {
+                Assert.Empty(Directory.GetFiles(directory));
+            }
+        }
+        finally
+        {
+            foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
+            Directory.Delete(directory);
         }
     }
 
