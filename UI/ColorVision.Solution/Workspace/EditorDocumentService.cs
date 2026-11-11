@@ -134,10 +134,13 @@ namespace ColorVision.Solution.Workspace
         }
 
         public static bool TryCloseAllDocuments()
+            => TryCloseAllDocuments(ConfirmSaveBeforeClose);
+
+        internal static bool TryCloseAllDocuments(Func<string, MessageBoxResult> confirmSave)
         {
             return TryCloseSessions(_sessions.Values
                 .Where(session => session.Document.Parent != null)
-                .ToList(), closeDocuments: false);
+                .ToList(), closeDocuments: false, confirmSave);
         }
 
         public static bool TryCloseDocumentsForResources(IEnumerable<string> resourcePaths)
@@ -230,34 +233,39 @@ namespace ColorVision.Solution.Workspace
                 ?? editorType.Name;
         }
 
-        private static bool TryCloseSessions(IReadOnlyList<EditorDocumentSession> sessions, bool closeDocuments)
+        private static MessageBoxResult ConfirmSaveBeforeClose(string title)
+            => MessageBox.Show(
+                Application.Current?.GetActiveWindow(),
+                LocalizedText.Format($"是否保存对“{title}”的更改？"),
+                "ColorVision",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+
+        private static bool TryCloseSessions(IReadOnlyList<EditorDocumentSession> sessions, bool closeDocuments,
+            Func<string, MessageBoxResult>? confirmSave = null)
         {
-            var approvedSessions = new List<EditorDocumentSession>();
-            foreach (EditorDocumentSession session in sessions)
+            try
             {
-                if (!session.TryApproveClose())
-                {
-                    foreach (EditorDocumentSession approvedSession in approvedSessions)
-                        approvedSession.ClearCloseApproval();
-                    return false;
-                }
-                approvedSessions.Add(session);
-            }
+                foreach (EditorDocumentSession session in sessions)
+                    if (!session.TryApproveClose(confirmSave))
+                        return false;
 
-            if (!closeDocuments)
+                if (!closeDocuments)
+                    return true;
+
+                foreach (EditorDocumentSession session in sessions)
+                {
+                    session.Document.Close();
+                    if (session.Document.Parent != null)
+                        return false;
+                }
                 return true;
-
-            foreach (EditorDocumentSession session in sessions)
-            {
-                session.Document.Close();
-                if (session.Document.Parent != null)
-                {
-                    foreach (EditorDocumentSession remainingSession in sessions)
-                        remainingSession.ClearCloseApproval();
-                    return false;
-                }
             }
-            return true;
+            finally
+            {
+                foreach (EditorDocumentSession session in sessions)
+                    session.ClearCloseApproval();
+            }
         }
 
         private static bool IsSameOrDescendant(string resourcePath, string rootPath)
@@ -436,17 +444,12 @@ namespace ColorVision.Solution.Workspace
                 }
             }
 
-            public bool TryApproveClose()
+            public bool TryApproveClose(Func<string, MessageBoxResult>? confirmSave = null)
             {
                 if (Content?.IsDirty != true || _closeApproved)
                     return true;
 
-                MessageBoxResult result = MessageBox.Show(
-                    Application.Current?.GetActiveWindow(),
-                    LocalizedText.Format($"是否保存对“{_title}”的更改？"),
-                    "ColorVision",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Warning);
+                MessageBoxResult result = (confirmSave ?? ConfirmSaveBeforeClose)(_title);
                 if (result == MessageBoxResult.Cancel)
                     return false;
                 if (result == MessageBoxResult.Yes)
