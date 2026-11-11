@@ -68,7 +68,8 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                int index = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
+                using FileStream file = OpenThumbnailSource(filePath);
+                int index = CVFileUtil.ReadCIEFileHeader(file, out CVCIEFile fileInfo, maximumChannels: 4);
                 using (fileInfo)
                 {
                     if (index > 0) return (fileInfo.Cols, fileInfo.Rows);
@@ -116,8 +117,8 @@ namespace ColorVision.Engine.Media
             cancellationToken.ThrowIfCancellationRequested();
             if (!File.Exists(filePath)) return null;
             cancellationToken.ThrowIfCancellationRequested();
-            using Stream stream = CVFileReadCache.OpenRead(filePath, populateCache: false);
-            int headerEnd = CVFileUtil.ReadCIEFileHeader(stream, out CVCIEFile header, maximumChannels: 4);
+            using FileStream file = OpenThumbnailSource(filePath);
+            int headerEnd = CVFileUtil.ReadCIEFileHeader(file, out CVCIEFile header, maximumChannels: 4);
             using (header)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -137,19 +138,16 @@ namespace ColorVision.Engine.Media
                 long sourceBytes = checked(planeBytes * channels);
                 if (sourceBytes > Array.MaxLength) return null;
                 MatType type = MatType.MakeType(header.Depth, channels);
-                if (stream is FileStream file)
-                {
-                    CvcieDiskPixels pixels = CvcieDiskPixels.Locate(file, header, headerEnd, requiredBytes, requireExactLength: false);
-                    BitmapSource thumbnail = ReadDiskThumbnail(file, pixels, header.Rows, header.Cols, type, (int)sourceBytes, size, cancellationToken);
-                    return (thumbnail, header.Cols, header.Rows);
-                }
-
-                // An existing CVRAW cache entry is a borrowed stream, not a disk file that can be mapped.
-                if (!CVFileUtil.ReadCIEFilePixels(stream, header, headerEnd, requireExactPayload: false, cancellationToken)) return null;
-                using Mat source = Mat.FromPixelData(header.Rows, header.Cols, type, header.Data);
-                return (ResizeToBitmap(source, size, cancellationToken), header.Cols, header.Rows);
+                CvcieDiskPixels pixels = CvcieDiskPixels.Locate(file, header, headerEnd, requiredBytes, requireExactLength: false);
+                BitmapSource thumbnail = ReadDiskThumbnail(file, pixels, header.Rows, header.Cols, type, (int)sourceBytes, size, cancellationToken);
+                return (thumbnail, header.Cols, header.Rows);
             }
         }
+
+        // MultiImageViewer indexes thumbnails by disk metadata. A previously opened CVRAW cache
+        // entry may contain different pixels after an external rewrite of the file.
+        private static FileStream OpenThumbnailSource(string filePath)
+            => new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         private static unsafe BitmapSource ReadDiskThumbnail(FileStream file, CvcieDiskPixels pixels,
             int rows, int columns, MatType type, int sourceBytes, Size size, CancellationToken cancellationToken)

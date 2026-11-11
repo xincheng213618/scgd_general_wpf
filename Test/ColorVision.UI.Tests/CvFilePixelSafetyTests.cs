@@ -542,6 +542,43 @@ public sealed class CvFilePixelSafetyTests
     }
 
     [Fact]
+    public async Task RawThumbnailAndDimensionsUseDiskWhenTheOpenedCacheStillHasOlderPixels()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"RawThumbnailRevision_{Guid.NewGuid():N}.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            using CVCIEFile original = new() { Version = 2, Cols = 2, Rows = 2, Channels = 1, Bpp = 8, Data = [11, 12, 13, 14] };
+            Assert.True(CVFileUtil.WriteCVRaw(path, original));
+            Assert.NotNull(CVFileReadCache.GetCachedLength(path));
+            using CVCIEFile replacement = new() { Version = 2, Cols = 3, Rows = 2, Channels = 1, Bpp = 8, Data = [81, 82, 83, 84, 85, 86] };
+            Assert.True(CVFileUtil.WriteCIEFile(replacement, out byte[] encoded));
+            File.WriteAllBytes(path, encoded);
+
+            var provider = new CVRawThumbnailProvider();
+            var dimensions = provider.GetImageDimensions(path);
+            var result = await provider.GenerateThumbnailWithDimensionsAsync(path, 3, CancellationToken.None);
+            var (thumbnail, width, height) = Assert.NotNull(result);
+            Assert.Equal((3, 2), dimensions);
+            Assert.Equal((3, 2), (width, height));
+            Assert.True(thumbnail.IsFrozen);
+            Assert.Equal(PixelFormats.Gray8, thumbnail.Format);
+            byte[] pixels = new byte[6];
+            thumbnail.CopyPixels(pixels, 3, 0);
+            Assert.Equal(replacement.Data, pixels);
+
+            Assert.True(CVFileUtil.ReadCVRaw(path, out CVCIEFile opened));
+            using (opened) Assert.Equal(original.Data, opened.Data);
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task CvThumbnailDecodeSlotsAreSharedAndQueuedCancellationDoesNotConsumeASlot()
     {
         string path = Path.Combine(Path.GetTempPath(), $"CvThumbnailSlots_{Guid.NewGuid():N}.cvcie");
