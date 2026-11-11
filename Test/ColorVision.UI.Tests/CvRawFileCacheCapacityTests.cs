@@ -226,6 +226,58 @@ public sealed class CvRawFileCacheCapacityTests
     }
 
     [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(true, true, true)]
+    [InlineData(false, false, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, true, true)]
+    public void FailedMemoryOnlySavePreservesPublishedSnapshotUntilRetrySucceeds(bool samePath, bool holdReader, bool callbackThrows)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        string directory = Path.GetDirectoryName(files.A)!;
+        string previousPath = Path.Combine(directory, "previous.cvraw");
+        string targetPath = samePath ? previousPath : Path.Combine(directory, "replacement.cvraw");
+        using CVCIEFile original = CacheFiles.CreateRaw(61);
+        Assert.True(CVFileUtil.WriteCVRaw(previousPath, original, CVFileSaveMode.MemoryOnly));
+        CVFileMetadata.SetProperty(previousPath, "calibration", 1, [2, 3, 5]);
+        byte[] previous;
+        using (Stream snapshot = CVFileReadCache.OpenRead(previousPath, populateCache: false)) previous = ReadAll(snapshot);
+        using Stream? borrowed = holdReader ? CVFileReadCache.OpenRead(previousPath, populateCache: false) : null;
+        long previousCapacity = CVFileReadCache.GetSnapshot().CapacityBytes;
+
+        using CVCIEFile replacement = CacheFiles.CreateRaw(97);
+        Assert.False(CVFileUtil.WriteCVRaw(targetPath, replacement, replacement.Data.Length, stream =>
+        {
+            stream.WriteByte(97);
+            if (callbackThrows) throw new IOException("Simulated memory-only payload write failure.");
+        }, CVFileSaveMode.MemoryOnly));
+
+        AssertPaths(previousPath);
+        Assert.Equal(previousCapacity, CVFileReadCache.GetSnapshot().CapacityBytes);
+        Assert.Equal(previous.LongLength, CVFileReadCache.GetCachedLength(previousPath));
+        using (Stream current = CVFileReadCache.OpenRead(previousPath, populateCache: false)) Assert.Equal(previous, ReadAll(current));
+        Assert.Equal(new byte[] { 2, 3, 5 }, CVFileMetadata.Read(previousPath)["calibration"].Value);
+
+        Assert.True(CVFileUtil.WriteCVRaw(targetPath, replacement, CVFileSaveMode.MemoryOnly));
+        Assert.True(CVFileUtil.ReadCVRaw(targetPath, out CVCIEFile saved));
+        using (saved) Assert.Equal(replacement.Data, saved.Data);
+        Assert.Equal(targetPath, Assert.Single(CVFileReadCache.GetSnapshot().Entries, entry => !entry.IsRetired).FilePath);
+        if (borrowed != null) Assert.Equal(previous, ReadAll(borrowed));
+        Assert.False(File.Exists(previousPath));
+        Assert.False(File.Exists(targetPath));
+
+        static byte[] ReadAll(Stream stream)
+        {
+            using MemoryStream copy = new();
+            stream.CopyTo(copy);
+            return copy.ToArray();
+        }
+    }
+
+    [Theory]
     [InlineData(FileAttributes.ReadOnly)]
     [InlineData(FileAttributes.Hidden)]
     [InlineData(FileAttributes.System)]

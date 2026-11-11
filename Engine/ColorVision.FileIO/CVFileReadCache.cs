@@ -246,35 +246,33 @@ namespace ColorVision.FileIO
                 if (!isEnabled) throw new InvalidOperationException("Memory-only saving requires the CVRAW cache.");
                 if (fileLength <= 0 || fileLength > int.MaxValue)
                     throw new InvalidOperationException("The CVRAW snapshot could not be cached.");
-                CacheEntry entry = FindEntry(path);
-                if (entry != null && entry.Readers != 0)
-                {
-                    Retire(entry);
-                    entry = null;
-                }
-                entry = entry ?? GetWritableEntry();
-                if (entry == null)
-                {
-                    // Readers may still own the previous snapshot after its cache key is retired.
-                    int activeEntries = 0;
-                    foreach (CacheEntry candidate in Entries) if (!candidate.IsRetired) activeEntries++;
-                    if (activeEntries >= maximumEntries) Retire(FindOldest(requireIdle: false));
-                    entry = new CacheEntry();
-                    Entries.Add(entry);
-                }
-                ForgetFile(entry);
+
+                // A published memory-only snapshot may be the only copy. Keep all existing
+                // keys and buffers intact until the streaming writer has produced a complete image.
+                long generation = cacheGeneration;
+                CacheEntry staged = new CacheEntry();
                 try
                 {
-                    EnsureCapacity(entry, fileLength);
-                    using (Stream memory = OpenBuffer(entry, fileLength, FileAccess.Write))
+                    EnsureCapacity(staged, fileLength);
+                    using (Stream memory = OpenBuffer(staged, fileLength, FileAccess.Write))
                     {
                         write(memory);
                         if (memory.Position != fileLength) throw new InvalidDataException("CVRAW writer did not write its declared length.");
                     }
-                    entry.SaveMode = CVFileSaveMode.MemoryOnly;
-                    Remember(entry, path, fileLength);
+                    if (cacheGeneration != generation)
+                        throw new InvalidOperationException("The CVRAW cache was cleared during the save.");
+
+                    CacheEntry replaced = FindEntry(path);
+                    if (replaced == null && Entries.Count(entry => !entry.IsRetired) >= maximumEntries)
+                        replaced = FindOldest(requireIdle: true) ?? FindOldest(requireIdle: false);
+
+                    // Reserve the list entry before retiring any published data.
+                    Entries.Add(staged);
+                    if (replaced != null) Retire(replaced);
+                    staged.SaveMode = CVFileSaveMode.MemoryOnly;
+                    Remember(staged, path, fileLength);
                 }
-                catch { Retire(entry); throw; }
+                catch { Retire(staged); throw; }
             }
         }
 
