@@ -39,18 +39,20 @@ namespace ColorVision.ImageEditor.BatchProcessing
             string extension = ResolveExtension(item.FilePath, format);
             string baseName = Path.GetFileNameWithoutExtension(item.FilePath) + suffix;
             string outputPath = Path.Combine(directory, baseName + extension);
+            string fullOutputPath = Path.GetFullPath(outputPath);
 
-            if (Path.GetFullPath(outputPath).Equals(Path.GetFullPath(item.FilePath), StringComparison.OrdinalIgnoreCase))
+            if (fullOutputPath.Equals(Path.GetFullPath(item.FilePath), StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(Properties.Resources.BatchCannotOverwriteSource);
             }
 
             int index = 2;
-            while (reservedPaths.Contains(outputPath) || avoidOverwrite && File.Exists(outputPath))
+            while (reservedPaths.Contains(fullOutputPath) || reservedPaths.Contains(outputPath) || avoidOverwrite && File.Exists(fullOutputPath))
             {
                 outputPath = Path.Combine(directory, $"{baseName}_{index++}{extension}");
+                fullOutputPath = Path.GetFullPath(outputPath);
             }
-            reservedPaths.Add(outputPath);
+            reservedPaths.Add(fullOutputPath);
 
             return outputPath;
         }

@@ -70,6 +70,45 @@ public class BatchImageProcessingTests
     }
 
     [Fact]
+    public void OverwritingBatchOutputsPreservesOtherSelectedSourceFiles()
+    {
+        string directory = Directory.CreateTempSubdirectory("ColorVision-BatchSourceCollision-").FullName;
+        try
+        {
+            string firstPath = Path.Combine(directory, "capture.png");
+            string secondPath = Path.Combine(directory, "capture_processed.png");
+            string previousOutput = Path.Combine(directory, "capture_processed_2.png");
+            using Mat first = Mat.FromArray(new byte[,] { { 10, 20 } });
+            using Mat second = Mat.FromArray(new byte[,] { { 30, 40 } });
+            BatchImageOutput.Save(first, firstPath);
+            BatchImageOutput.Save(second, secondPath);
+            File.WriteAllBytes(previousOutput, [1, 2, 3]);
+            byte[] originalSecondFile = File.ReadAllBytes(secondPath);
+            var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
+
+            BatchImageRunResult run = processor.Process(new BatchImageProcessingRequest
+            {
+                Items = [new BatchImageItem(firstPath), new BatchImageItem(Path.Combine(directory, ".", "capture_processed.png"))],
+                Algorithm = BatchImageAlgorithms.CreateAll()[0],
+                Suffix = "_processed",
+                AvoidOverwrite = false,
+            });
+
+            Assert.Equal(originalSecondFile, File.ReadAllBytes(secondPath));
+            Assert.All(run.Files, result => Assert.True(result.Success, result.ErrorMessage));
+            Assert.Equal(previousOutput, run.Files[0].OutputPath);
+            using Mat firstOutput = Cv2.ImRead(previousOutput, ImreadModes.Unchanged);
+            using Mat secondOutput = Cv2.ImRead(run.Files[1].OutputPath, ImreadModes.Unchanged);
+            AssertMatsEqual(first, firstOutput);
+            AssertMatsEqual(second, secondOutput);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void EveryCatalogAlgorithmProcessesAnEightBitColorImage()
     {
         using Mat source = new(24, 32, MatType.CV_8UC3);

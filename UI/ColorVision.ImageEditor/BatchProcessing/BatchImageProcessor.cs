@@ -113,6 +113,17 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             var results = new List<BatchImageFileResult>(request.Items.Count);
             var reservedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (BatchImageItem item in request.Items)
+            {
+                try
+                {
+                    reservedPaths.Add(Path.GetFullPath(item.FilePath));
+                }
+                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+                {
+                    // The processing loop reports invalid paths as individual file failures.
+                }
+            }
             using AlgorithmReferenceImageLoader.BatchCache? references = request.Items.Count > 1
                 && request.Algorithm.Descriptor?.Id == StandardAlgorithmIds.ImagingCorrection
                 ? new AlgorithmReferenceImageLoader.BatchCache()
