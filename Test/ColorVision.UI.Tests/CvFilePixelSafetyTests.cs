@@ -1,4 +1,5 @@
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using OpenCvSharp;
 using System.IO;
@@ -12,6 +13,90 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CvFilePixelSafetyTests
 {
+    [Theory]
+    [InlineData(8, 1)]
+    [InlineData(16, 1)]
+    [InlineData(8, 3)]
+    [InlineData(16, 3)]
+    [InlineData(8, 4)]
+    public void FlowBitmapDecodePreservesTightlyPackedNativePixels(int bpp, int sourceChannels)
+    {
+        StaTest.Run(() =>
+        {
+            const int width = 3, height = 2;
+            PixelFormat format = (bpp, sourceChannels) switch
+            {
+                (8, 1) => PixelFormats.Gray8,
+                (16, 1) => PixelFormats.Gray16,
+                (8, 3) => PixelFormats.Bgr24,
+                (16, 3) => PixelFormats.Rgb48,
+                _ => PixelFormats.Bgra32
+            };
+            int sourcePixelBytes = sourceChannels * (bpp / 8);
+            int targetChannels = Math.Min(sourceChannels, 3);
+            int targetPixelBytes = targetChannels * (bpp / 8);
+            byte[] source = new byte[width * height * sourcePixelBytes];
+            byte[] expected = new byte[width * height * targetPixelBytes];
+            for (int pixel = 0; pixel < width * height; pixel++)
+            {
+                int input = pixel * sourcePixelBytes, output = pixel * targetPixelBytes;
+                for (int i = 0; i < sourcePixelBytes; i++) source[input + i] = (byte)(11 + input + i);
+                if (format == PixelFormats.Bgra32) source[input + 3] = byte.MaxValue;
+                if (format == PixelFormats.Rgb48)
+                {
+                    for (int channel = 0; channel < 3; channel++)
+                        Array.Copy(source, input + 2 * channel, expected, output + 2 * (2 - channel), 2);
+                }
+                else Array.Copy(source, input, expected, output, targetPixelBytes);
+            }
+
+            bool png = format == PixelFormats.Bgra32;
+            string path = Path.Combine(Path.GetTempPath(), $"FlowBitmapPixels_{Guid.NewGuid():N}.{(png ? "png" : "tif")}");
+            try
+            {
+                BitmapEncoder encoder = png ? new PngBitmapEncoder() : new TiffBitmapEncoder { Compression = TiffCompressOption.None };
+                BitmapSource bitmap = BitmapSource.Create(width, height, 96, 96, format, null, source, width * sourcePixelBytes);
+                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                using (FileStream output = File.Create(path)) encoder.Save(output);
+
+                using LocalFlowFrame frame = LocalFrameFileService.Load(path, [17], 1.25f);
+                using LocalFlowFrameLease lease = frame.Acquire();
+                Assert.Equal((width, height, bpp, targetChannels),
+                    (frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, frame.Metadata.Channels));
+                Assert.Equal(new float[] { 17 }, frame.Metadata.Exposure);
+                Assert.Equal(1.25f, frame.Metadata.Gain);
+                Assert.Equal(expected, lease.CopyRawToArray());
+            }
+            finally { File.Delete(path); }
+        });
+    }
+
+    [Fact]
+    public void FlowBitmapDecodeDoesNotAllocateAFrameSizedManagedBuffer()
+    {
+        StaTest.Run(() =>
+        {
+            const int width = 2049, height = 1025, stride = width * sizeof(ushort), length = stride * height;
+            string path = Path.Combine(Path.GetTempPath(), $"FlowBitmapAllocation_{Guid.NewGuid():N}.tif");
+            try
+            {
+                BitmapSource bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Gray16, null, new byte[length], stride);
+                TiffBitmapEncoder encoder = new() { Compression = TiffCompressOption.None };
+                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                using (FileStream output = File.Create(path)) encoder.Save(output);
+                using (LocalFlowFrame warmup = LocalFrameFileService.Load(path)) { }
+
+                long before = GC.GetAllocatedBytesForCurrentThread();
+                using LocalFlowFrame frame = LocalFrameFileService.Load(path);
+                long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+                using LocalFlowFrameLease lease = frame.Acquire();
+                Assert.Equal(length, lease.RawLength);
+                Assert.True(allocated < length, $"Allocated {allocated} managed bytes for a {length}-byte image.");
+            }
+            finally { File.Delete(path); }
+        });
+    }
+
     [Theory]
     [InlineData(1u)]
     [InlineData(2u)]

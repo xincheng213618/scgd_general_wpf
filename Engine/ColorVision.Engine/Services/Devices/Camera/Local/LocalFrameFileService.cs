@@ -3,8 +3,8 @@ using ColorVision.FileIO;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -245,19 +245,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 throw new NotSupportedException($"本地校正仅支持 Gray8、Gray16、24/32 位彩色或 Rgb48 图像，当前格式：{source.Format}。");
             }
 
-            int stride = checked(source.PixelWidth * sourceBpp / 8 * channels);
+            int stride = checked(source.PixelWidth * (sourceBpp / 8) * channels);
             int length = checked(stride * source.PixelHeight);
-            byte[] pixels = new byte[length];
-            FlowNodeTiming.Run("DecodePixels", () => source.CopyPixels(pixels, stride, 0));
-            if (swapRgb48)
-            {
-                for (int offset = 0; offset < pixels.Length; offset += 6)
-                {
-                    (pixels[offset], pixels[offset + 4]) = (pixels[offset + 4], pixels[offset]);
-                    (pixels[offset + 1], pixels[offset + 5]) = (pixels[offset + 5], pixels[offset + 1]);
-                }
-            }
-
             LocalFrameMetadata metadata = new()
             {
                 Width = source.PixelWidth,
@@ -274,13 +263,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             try
             {
                 using LocalFlowFrameLease lease = frame.Acquire();
-                FlowNodeTiming.Run("CopyImageBuffer", () => Marshal.Copy(pixels, 0, lease.RawPointer, pixels.Length));
+                using var stage = FlowNodeTiming.Measure("DecodePixels");
+                source.CopyPixels(Int32Rect.Empty, lease.RawPointer, length, stride);
+                if (swapRgb48) SwapRgb48ToBgr48(lease.RawPointer, length);
+                stage?.Complete();
                 return frame;
             }
             catch
             {
                 frame.Dispose();
                 throw;
+            }
+        }
+
+        private static unsafe void SwapRgb48ToBgr48(IntPtr pixels, int length)
+        {
+            Span<ushort> samples = new(pixels.ToPointer(), length / sizeof(ushort));
+            for (int i = 0; i < samples.Length; i += 3)
+            {
+                (samples[i], samples[i + 2]) = (samples[i + 2], samples[i]);
             }
         }
 
