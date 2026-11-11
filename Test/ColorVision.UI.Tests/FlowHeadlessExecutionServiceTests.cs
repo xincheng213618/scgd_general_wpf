@@ -1,8 +1,10 @@
+using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using ST.Library.UI.NodeEditor;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
@@ -196,6 +198,48 @@ public sealed class FlowHeadlessExecutionServiceTests
         });
     }
 
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    [InlineData(false, true, null)]
+    public void HeadlessPersistenceRequiresExplicitBatchOptInAndAnOnlineConnection(
+        bool connected, bool persistResults, bool? expectedNodeFlag)
+    {
+        RunInSta(async () =>
+        {
+            MySqlControl mysql = MySqlControl.GetInstance();
+            FieldInfo connectedField = typeof(MySqlControl).GetField("_IsConnect", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            bool originalConnection = mysql.IsConnect;
+            bool? observedPersistence = null;
+            // Change only the observed connection state. The probe has no database access.
+            connectedField.SetValue(mysql, connected);
+            HeadlessPersistenceProbeEndNode.Observe = persist => observedPersistence = persist;
+            try
+            {
+                byte[] canvas = CreateCanvas(new HeadlessPersistenceProbeEndNode());
+                TimeSpan timeout = TimeSpan.FromSeconds(5);
+                FlowHeadlessExecutionRequest request = persistResults
+                    ? new(canvas, "HeadlessStart", "SN-PERSISTENCE", executionTimeout: timeout) { PersistResults = true }
+                    : new(canvas, "HeadlessStart", "SN-PERSISTENCE", executionTimeout: timeout);
+                FlowHeadlessExecutionResult result = await FlowHeadlessExecutionService.Shared.RunAsync(request);
+
+                if (expectedNodeFlag.HasValue)
+                    Assert.True(result.Succeeded, result.Data.Message);
+                else
+                {
+                    Assert.False(result.Started);
+                    Assert.Equal(FlowHeadlessExecutionTermination.StartRejected, result.Termination);
+                }
+                Assert.Equal(expectedNodeFlag, observedPersistence);
+            }
+            finally
+            {
+                HeadlessPersistenceProbeEndNode.Observe = null;
+                connectedField.SetValue(mysql, originalConnection);
+            }
+        });
+    }
+
     private static byte[] CreateCanvas(STNode terminalNode)
     {
         using var editor = new STNodeEditor();
@@ -257,6 +301,16 @@ public sealed class FlowHeadlessExecutionServiceTests
     }
 }
 
+public sealed class HeadlessPersistenceProbeEndNode : CVEndNode
+{
+    internal static Action<bool>? Observe { get; set; }
+
+    protected override void DoNodeEnded(CVStartCFC startAction)
+    {
+        Observe?.Invoke(startAction.PersistResults);
+        base.DoNodeEnded(startAction);
+    }
+}
 public sealed class HeadlessObservedServerNode :
     CVBaseServerNode
 {

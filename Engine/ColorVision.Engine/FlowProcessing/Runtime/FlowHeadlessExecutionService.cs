@@ -76,6 +76,12 @@ public sealed class FlowHeadlessExecutionRequest
 
     public TimeSpan? ExecutionTimeout { get; }
 
+    /// <summary>
+    /// Allows result nodes to persist into a batch already prepared by the caller
+    /// for this request's execution serial number.
+    /// </summary>
+    public bool PersistResults { get; init; }
+
     public string ContentHash { get; }
 
     public ReadOnlyMemory<byte> StnSnapshot =>
@@ -271,7 +277,19 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
         bool loaded = false;
         try
         {
-            await using var host = new FlowRuntimeHost { PersistResults = ColorVision.Database.MySqlSetting.IsConnect };
+            cancellationToken.ThrowIfCancellationRequested();
+            if (request.PersistResults && !ColorVision.Database.MySqlSetting.IsConnect)
+            {
+                stopwatch.Stop();
+                return CreateFailure(
+                    request,
+                    FlowHeadlessExecutionTermination.StartRejected,
+                    StatusTypeEnum.Failed,
+                    "MySQL is not connected for headless result persistence.",
+                    stopwatch.ElapsedMilliseconds);
+            }
+
+            await using var host = new FlowRuntimeHost { PersistResults = request.PersistResults };
             CVCommonNode[] observedNodes = [];
             MQTTServiceInfo[] services =
                 request.CreateServices();

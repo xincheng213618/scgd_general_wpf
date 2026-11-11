@@ -31,6 +31,8 @@ related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui
 
 `FlowHeadlessExecutionRequest` 接收非空 STN、起始节点、SN、可选 MQTT 服务列表以及 readiness / execution timeout。构造时复制 STN、服务 token 和设备信息，计算 `ContentHash`；读取请求属性或创建宿主输入时再次复制，后续编辑和调用方修改不得改变正在执行的请求。`ContentHash` 是 STN 字节的 SHA-256，小写十六进制；不包含起始节点、SN、服务/设备快照或超时配置。相同哈希不能证明两次调用具有相同的执行条件，也不是请求幂等键。
 
+无界面请求默认向节点传递 `PersistResults=false`，已保存流程和独立 Quartz 任务也采用此默认值。调用方已为请求的实际执行 SN 准备独立 MySQL 批次时，可在裸请求上显式设置 `PersistResults=true`。MySQL 未连接时，此请求会在图启动前返回 `StartRejected`。该标记由节点执行，节点仍可能按各自配置写文件、调用设备或服务。
+
 readiness timeout 必须为正值且不接受无限等待；execution timeout 可为正值或 `Timeout.InfiniteTimeSpan`。传入非法参数会在请求构造时抛出异常，不会进入结构化运行结果。
 
 `RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求不共享可变节点实例。若图中有 `CVBaseServerNode` 但未提供任何服务快照，明确返回 `StartRejected`。提供了非空快照也不证明每个设备在线或绑定成功。宿主本身不创建编辑器；具体节点的构造、加载和执行仍需满足其自身的 UI、服务和设备依赖。
