@@ -243,6 +243,59 @@ public sealed class LocalPGTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancelingAnotherOpenKeepsTheOpeningConnectionsChannel(bool autoConnect)
+    {
+        using var listener = Listen();
+        using var scope = new DeviceScope(((IPEndPoint)listener.LocalEndpoint).Port);
+        var device = scope.Device;
+        var opening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void PauseOpening(DeviceStatusType status)
+        {
+            if (status != DeviceStatusType.Opening) return;
+            opening.TrySetResult();
+            release.Task.GetAwaiter().GetResult();
+        }
+
+        device.LocalSession.StatusChanged += PauseOpening;
+        var firstOpen = Task.Run(() => device.ExecuteLocalPGAsync("Open", null, device.SnapshotLocalPGConfig(), default, false));
+        try
+        {
+            await opening.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            WpfTestHost.Invoke(() => device.Config.Channel = "02");
+            using var canceled = new CancellationTokenSource();
+            canceled.Cancel();
+            var commands = new[] { new { Name = "CM_StartPG" } };
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => device.ExecuteLocalPGAsync(autoConnect ? "SetParam" : "Open",
+                autoConnect ? commands : null, device.SnapshotLocalPGConfig(), canceled.Token, autoConnect));
+
+            release.TrySetResult();
+            using var peer = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            await firstOpen.WaitAsync(TimeSpan.FromSeconds(5));
+            var next = device.ExecuteLocalPGAsync("SetParam", commands, device.SnapshotLocalPGConfig(), default, true);
+            string request = await ReadPacket(peer);
+            await peer.GetStream().WriteAsync(LocalPGProtocol.Packet(request + ",END,OK"));
+            await next.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal("PG,01,POWER,ON", request);
+
+            await device.ExecuteLocalPGAsync("Close", null, null, default, false);
+            var reconnect = device.ExecuteLocalPGAsync("SetParam", commands, device.SnapshotLocalPGConfig(), default, true);
+            using var reopenedPeer = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            string reopenedRequest = await ReadPacket(reopenedPeer);
+            await reopenedPeer.GetStream().WriteAsync(LocalPGProtocol.Packet(reopenedRequest + ",END,OK"));
+            await reconnect.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal("PG,02,POWER,ON", reopenedRequest);
+        }
+        finally
+        {
+            release.TrySetResult();
+            device.LocalSession.StatusChanged -= PauseOpening;
+        }
+    }
+
+    [Theory]
     [InlineData("cancel")]
     [InlineData("close")]
     [InlineData("ng")]

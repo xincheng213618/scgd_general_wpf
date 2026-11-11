@@ -21,6 +21,7 @@ public partial class DevicePG
     internal string LocalEndpoint => Config.IsNet ? $"tcp:{Config.Addr?.Trim().ToUpperInvariant()}:{Config.Port}" : $"serial:{Config.Addr?.Trim().ToUpperInvariant()}";
     private bool localDisposed;
     private LocalPGConnection? activeConnection;
+    private int pendingLocalOpens;
     public string LastLocalResponse { get => lastLocalResponse; private set { lastLocalResponse = value; OnPropertyChanged(); } }
     private string lastLocalResponse = string.Empty;
 
@@ -75,13 +76,19 @@ public partial class DevicePG
         ObjectDisposedException.ThrowIf(localDisposed, this);
         // Closing must always work, even after the endpoint/category has been edited.
         LocalSensorCommand[]? commands;
+        bool mayOpen;
         lock (PGBackend.Sync)
         {
             snapshot = activeConnection ?? snapshot;
             commands = operation is "SetParam" or "ExecCmd" ? snapshot!.Protocol.Build(parameters) : null;
             if (operation != "Close") LocalCommunicationOwnership.EnsureAvailable(this, true, LocalSession.EndpointIdentity ?? LocalSensorSession.EndpointKey(snapshot!.Transport));
             PGBackend.BeginLocalCommand();
-            if (operation == "Open" || (autoConnect && commands != null)) activeConnection ??= snapshot;
+            mayOpen = operation == "Open" || (autoConnect && commands != null);
+            if (mayOpen)
+            {
+                activeConnection ??= snapshot;
+                pendingLocalOpens++;
+            }
         }
         try
         {
@@ -107,7 +114,9 @@ public partial class DevicePG
         {
             lock (PGBackend.Sync)
             {
-                if (!LocalSession.IsOpen) activeConnection = null;
+                if (mayOpen) pendingLocalOpens--;
+                // A canceled waiter cannot discard the protocol reserved by another open.
+                if (pendingLocalOpens == 0 && LocalSession.Status == DeviceStatusType.Closed) activeConnection = null;
                 PGBackend.EndLocalCommand();
             }
         }
