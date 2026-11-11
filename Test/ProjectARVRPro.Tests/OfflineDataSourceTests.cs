@@ -364,7 +364,8 @@ public sealed class OfflineDataSourceTests
         Assert.Single(flowA.GetRunSummariesBySerialNumbers(["sameSN_20260916T120000"], default));
         Assert.Single(flowA.GetMessagesByRun(20, "sameSN_20260916T120000"));
         Assert.Single(flowA.GetHistoryMessagesByNodeId("node", [20]));
-        Assert.Empty(flowA.GetSameFlowRuns("sameSN_20260916T120000"));
+        var session = new FlowExecutionAnalysisSession(20, "sameSN_20260916T120000", null, null, [], [], [], Day, 0, flowA);
+        Assert.Empty(flowA.GetSameFlowRuns(session));
         Assert.Null(flowA.GetFlowRun(20, "sameSN_20260916T120000"));
         Assert.Empty(flowA.GetExecutionEvents(1));
     }
@@ -459,8 +460,9 @@ public sealed class OfflineDataSourceTests
             if (run != null)
             {
                 Assert.Equal(serial, run.SerialNumber);
-                flow.GetExecutionEvents(run.Id);
-                Assert.NotEmpty(flow.GetSameFlowRuns(serial));
+                var events = flow.GetExecutionEvents(run.Id);
+                var session = new FlowExecutionAnalysisSession(detail.BatchId, serial, null, run, nodes, messages, events, record.StartTime, 0, flow);
+                Assert.NotEmpty(flow.GetSameFlowRuns(session));
             }
             source.Statistics.LoadViewResultJson(detail);
         }
