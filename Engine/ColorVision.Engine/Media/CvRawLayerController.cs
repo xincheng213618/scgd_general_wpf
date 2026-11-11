@@ -141,9 +141,9 @@ namespace ColorVision.Engine.Media
             List<string> candidates = new();
             if (!string.IsNullOrWhiteSpace(cieHeader?.SrcFileName))
             {
-                candidates.Add(cieHeader.SrcFileName);
                 try { candidates.Add(Path.Combine(Path.GetDirectoryName(ciePath) ?? string.Empty, cieHeader.SrcFileName)); }
                 catch (ArgumentException ex) { Log.Warn($"CVCIE 关联原图路径无效：{filePath}", ex); }
+                candidates.Add(cieHeader.SrcFileName);
             }
             candidates.Add(Path.ChangeExtension(ciePath, ".cvraw"));
             foreach (string candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))

@@ -100,7 +100,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 ### 关联源文件
 
-`ReadCVCIE` 在 header 的 `SrcFileName` 非空时调用 `ReadCVCIESrc`：先按该字符串检查文件是否存在，找不到才拼接 CVCIE 所在目录。没有“只能访问同目录”的限制；绝对路径或当前工作目录可解析的相对路径也可能被使用。
+`ReadCVCIE` 通过 `ReadCVCIESrc` 读取 `SrcFileName`。绝对路径直接使用，相对路径先按 CVCIE 所在目录解析，缺失时再尝试当前工作目录，以兼容旧数据。
 
 关联文件有 `CVCIE` 魔数时走 `Read`；没有魔数时仅通过 `ReadFile` 装入原始文件字节并标记 Tif，**不在 FileIO 内验证或解码 TIFF**。该分支甚至没有用 Data 非空决定返回值。成功后 `ReadCVCIE` 会采用源图载体，并恢复原 `SrcFileName`、将 `FilePath` 设为传入 CVCIE 路径；路径标签和实际数据来源可能不同。
 
@@ -187,7 +187,7 @@ Renderer 要求正尺寸和恰好三个平面，拒绝长度不符、非有限 X
 
 X/Y/Z 切换只直接读取所选平面。32/64 位单通道由 `MediaHelper.RenderFloatChannel` 在托管代码中校验有限值并按 MinMax 输出冻结 Gray8，大图采用同样的有界分块并行，输入保持不变，不再交给 native 原位 Normalize。单通道文件的 CIE Y 取第 0 平面。文件打开也以递增请求编号和当前路径共同拒绝过期结果，防止 A→B→A 或同路径重载时旧结果覆盖新参数。
 
-`CvRawLayerController.LoadSourceForDisplay` 首开时依次尝试记录路径、相对路径及同名 `.cvraw`，按尺寸匹配以对齐画面与 POI。无匹配原图时，原图模式显示内嵌 Y 并更新图层。磁盘浮点 X/Y/Z 灰度分块读取目标平面，保留全图灰度范围和分辨率。
+`CvRawLayerController.LoadSourceForDisplay` 沿用上述路径顺序，再尝试同名 `.cvraw`，按尺寸匹配画面与 POI。无匹配原图时显示内嵌 Y。磁盘浮点 X/Y/Z 灰度分块读取，保留全图灰度范围和分辨率。
 
 真彩转换失败时记录日志，并尝试关联原图或有效 Y。所需的 CVCIE 或关联原图变化时，保留画面和实际图层，重新打开可读取新文件。
 

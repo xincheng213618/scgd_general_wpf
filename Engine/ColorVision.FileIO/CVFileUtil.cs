@@ -667,28 +667,18 @@ namespace ColorVision.FileIO
         {
             fileOut = new CVCIEFile();
             int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
-            if (index < 0) return false;
-            if (!File.Exists(cvcie.SrcFileName))
-                cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.SrcFileName);
-
-            if (File.Exists(cvcie.SrcFileName))
+            using (cvcie)
             {
-                if (IsCIEFile(cvcie.SrcFileName))
-                {
-                    fileOut.FileExtType = CVType.Raw;
-                    return Read(cvcie.SrcFileName, out fileOut);
-                }
-                else
-                {
-                    if (cvcie.SrcFileName != null)
-                    {
-                        fileOut.Data = ReadFile(cvcie.SrcFileName);
-                        fileOut.FileExtType = CVType.Tif;
-                        return true;
-                    }
-                }
+                if (index < 0 || string.IsNullOrEmpty(cvcie.SrcFileName)) return false;
+                string sourcePath = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.SrcFileName);
+                if (!File.Exists(sourcePath)) sourcePath = cvcie.SrcFileName;
+                if (!File.Exists(sourcePath)) return false;
+                if (IsCIEFile(sourcePath)) return Read(sourcePath, out fileOut);
+
+                fileOut.Data = ReadFile(sourcePath);
+                fileOut.FileExtType = CVType.Tif;
+                return true;
             }
-            return false;
         }
 
         /// <summary>

@@ -58,6 +58,66 @@ public sealed class CvFilePixelSafetyTests
         Assert.Equal(samples, file.Data);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void CvcieRelativeSourcePrefersItsOwnDirectory(bool interactive, bool hasSibling)
+    {
+        string root = Directory.CreateTempSubdirectory("ColorVision-CieSource-").FullName;
+        string workingDirectory = Directory.CreateDirectory(Path.Combine(root, "working")).FullName;
+        string imageDirectory = Directory.CreateDirectory(Path.Combine(root, "images")).FullName;
+        string previousWorkingDirectory = Environment.CurrentDirectory;
+        const string rawName = "source.cvraw";
+        string cwdRaw = Path.Combine(workingDirectory, rawName), siblingRaw = Path.Combine(imageDirectory, rawName);
+        string ciePath = Path.Combine(imageDirectory, "measurement.cvcie");
+        try
+        {
+            using CVCIEFile raw = new() { Version = 2, Cols = 3, Rows = 2, Bpp = 8, Channels = 1, Data = [8, 9, 10, 11, 12, 13] };
+            Assert.True(CVFileUtil.WriteCVRaw(cwdRaw, raw));
+            byte[] expected = raw.Data;
+            if (hasSibling)
+            {
+                raw.Data = [81, 82, 83, 84, 85, 86];
+                Assert.True(CVFileUtil.WriteCVRaw(siblingRaw, raw));
+                expected = raw.Data;
+            }
+            using CVCIEFile cie = new()
+            {
+                Version = 2, Cols = raw.Cols, Rows = raw.Rows, Bpp = 32, Channels = 3,
+                SrcFileName = rawName, Data = new byte[raw.Rows * raw.Cols * 3 * sizeof(float)],
+            };
+            Assert.True(CVFileUtil.WriteCIEFile(ciePath, cie));
+            Environment.CurrentDirectory = workingDirectory;
+
+            if (interactive)
+            {
+                using CvcieDisplaySource source = CvRawLayerController.LoadSourceForDisplay(ciePath, out bool usesLuminance, out _);
+                Assert.False(usesLuminance);
+                Assert.Equal(expected, source.File.Data);
+            }
+            else
+            {
+                using Mat pixels = new CVRawBatchImageLoader().Load(ciePath);
+                Assert.Equal(MatType.CV_8UC1, pixels.Type());
+                byte[] actual = new byte[expected.Length];
+                Marshal.Copy(pixels.Data, actual, 0, actual.Length);
+                Assert.Equal(expected, actual);
+            }
+        }
+        finally
+        {
+            Environment.CurrentDirectory = previousWorkingDirectory;
+            File.Delete(ciePath);
+            File.Delete(siblingRaw);
+            File.Delete(cwdRaw);
+            Directory.Delete(workingDirectory);
+            Directory.Delete(imageDirectory);
+            Directory.Delete(root);
+        }
+    }
+
     [Fact]
     public void AssociatedTiffReusesTheValidatedDecodeForDisplay()
     {
