@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor.BatchProcessing;
 using OpenCvSharp;
+using System.Collections.Specialized;
 using System.IO;
 using System.Reflection;
 using System.Windows.Controls;
@@ -9,6 +10,34 @@ namespace ColorVision.UI.Tests;
 // The window resolves implicit styles from Application resources owned by the shared WPF host thread.
 public class BatchImageWindowInputTests
 {
+    [Fact]
+    public void LargePreparedInputListPublishesOnceAndKeepsExistingSelection() => WpfTestHost.Invoke(() =>
+    {
+        BatchImageProcessingWindow window = CreateWindow(new CountingLoader());
+        try
+        {
+            var grid = (DataGrid)window.FindName("FilesDataGrid");
+            grid.ItemsSource = window.Files;
+            string root = Path.Combine(Path.GetTempPath(), "colorvision-prepared-inputs");
+            window.AddPreparedInputs([new BatchImageItem(Path.Combine(root, "existing.png"), root)]);
+            BatchImageItem existing = Assert.Single(window.Files);
+            grid.SelectedItem = existing;
+            var notifications = new List<NotifyCollectionChangedAction>();
+            window.Files.CollectionChanged += (_, change) => notifications.Add(change.Action);
+            BatchImageItem[] added = Enumerable.Range(0, 1024)
+                .Select(index => new BatchImageItem(Path.Combine(root, $"capture-{index}.png"), root))
+                .ToArray();
+
+            Assert.Equal(added.Length, window.AddPreparedInputs(added));
+
+            Assert.Equal(added.Length + 1, grid.Items.Count);
+            Assert.Same(existing, grid.SelectedItem);
+            Assert.Equal(NotifyCollectionChangedAction.Reset, Assert.Single(notifications));
+            Assert.Equal(added.Select(item => item.FilePath), window.Files.Skip(1).Select(item => item.FilePath));
+        }
+        finally { window.Close(); }
+    });
+
     [Fact]
     public void PreparedInputsNormalizeAndDeduplicateWithoutLoadingOrChangingSettings() => WpfTestHost.Invoke(() =>
     {

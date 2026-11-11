@@ -22,6 +22,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         private static readonly ILog Log = LogManager.GetLogger(typeof(BatchImageProcessingWindow));
         private readonly BatchImageProcessor _processor;
         private readonly IReadOnlyList<BatchImageAlgorithmDefinition> _algorithms;
+        private readonly BulkObservableCollection<BatchImageItem> _files = new();
         private CancellationTokenSource? _cancellationTokenSource;
         private bool _isClosed;
 
@@ -68,7 +69,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             UpdateFileCount();
         }
 
-        public ObservableCollection<BatchImageItem> Files { get; } = new();
+        public ObservableCollection<BatchImageItem> Files => _files;
 
         internal IReadOnlyList<BatchImageAlgorithmDefinition> Algorithms => _algorithms;
 
@@ -108,18 +109,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 prepared.Add(new BatchImageItem(fullPath, sourceRoot));
             }
 
-            HashSet<string> existing = Files.Select(item => item.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            int added = 0;
-            foreach (BatchImageItem item in prepared)
-            {
-                if (existing.Add(item.FilePath))
-                {
-                    Files.Add(item);
-                    added++;
-                }
-            }
-            UpdateFileCount();
-            return added;
+            return AddUniqueInputs(prepared);
         }
 
         private static IBatchImageLoader[] LoadImageLoaders()
@@ -182,8 +172,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             try
             {
                 SearchOption searchOption = RecursiveCheckBox.IsChecked == true ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-                IEnumerable<string> files = Directory.EnumerateFiles(dialog.SelectedPath, "*", searchOption)
-                    .Where(IsSupportedFile);
+                IEnumerable<string> files = Directory.EnumerateFiles(dialog.SelectedPath, "*", searchOption);
                 AddFiles(files, dialog.SelectedPath);
             }
             catch (Exception ex)
@@ -195,17 +184,17 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         private void AddFiles(IEnumerable<string> filePaths, string? sourceRoot)
         {
-            HashSet<string> existing = Files.Select(item => item.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            foreach (string filePath in filePaths.Where(IsSupportedFile).OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
-            {
-                string fullPath = Path.GetFullPath(filePath);
-                if (existing.Add(fullPath))
-                {
-                    Files.Add(new BatchImageItem(fullPath, sourceRoot));
-                }
-            }
+            AddUniqueInputs(filePaths.Where(IsSupportedFile).OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .Select(path => new BatchImageItem(Path.GetFullPath(path), sourceRoot)));
+        }
 
+        private int AddUniqueInputs(IEnumerable<BatchImageItem> inputs)
+        {
+            HashSet<string> existing = _files.Select(item => item.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            BatchImageItem[] added = inputs.Where(item => existing.Add(item.FilePath)).ToArray();
+            _files.AddRange(added);
             UpdateFileCount();
+            return added.Length;
         }
 
         private void RemoveSelected_Click(object sender, RoutedEventArgs e)

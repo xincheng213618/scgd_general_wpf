@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace ColorVision.ImageEditor.Draw
+namespace ColorVision.ImageEditor
 {
     internal sealed class BulkObservableCollection<T> : ObservableCollection<T>
     {
