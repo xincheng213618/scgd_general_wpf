@@ -438,6 +438,38 @@ public sealed class LocalSmuSessionTests
         finally { sdk.CloseOutputCode = 1; }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FailedOrdinaryCaptureCannotPublishAnOldReadingWithUncertainSourceSettings(bool failsDuringSetup)
+    {
+        var sdk = new FakeNative();
+        await using var session = new LocalSmuSession(sdk);
+        var config = Config();
+        await session.OpenAsync(config);
+        await session.CaptureAsync(config, Point(), false, true, true);
+
+        var nextPoint = Point(Channel.B) with { IsSourceV = false };
+        if (failsDuringSetup) sdk.NplcCode = 0;
+        else sdk.MeasureCode = 0;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.CaptureAsync(config, nextPoint, false, true, true));
+        Assert.Equal(new[] { Channel.B }, sdk.ClosedOutputs);
+        Assert.Equal(DeviceStatusType.Opened, session.Status);
+
+        var unreadable = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            session.CaptureAsync(config, Point(), false, false, false, read: true));
+        Assert.Contains("请先成功执行一次普通测量", unreadable.Message);
+        Assert.Equal(0, sdk.Reads);
+
+        sdk.NplcCode = sdk.MeasureCode = 1;
+        await session.CaptureAsync(config, nextPoint, false, true, true);
+        LocalSmuCapture read = await session.CaptureAsync(config, Point(), false, false, false, read: true);
+        Assert.Equal(Channel.B, read.Parameters.Channel);
+        Assert.False(read.Parameters.IsSourceV);
+        Assert.Equal(12, read.I);
+        Assert.Equal(1, sdk.Reads);
+    }
+
     [Fact]
     public async Task DiscardedCaptureCannotCloseNewerOutput()
     {
@@ -819,7 +851,7 @@ public sealed class LocalSmuSessionTests
     {
         internal int OpenCode, OpenFailureCode, Opens;
         internal string OpenDetail = string.Empty;
-        internal int WiringCode = 1, CloseCode = 1, MeasureCode = 1, CloseOutputCode = 1, Closes, Measurements;
+        internal int WiringCode = 1, CloseCode = 1, MeasureCode = 1, CloseOutputCode = 1, Closes, Measurements, Reads;
         internal int SweepCapabilities, SweepCode = 1, ListCode = 1, Sweeps, Lists, PointMeasurements;
         internal bool BlockCapture;
         internal double LastSource, LastLimit;
@@ -861,7 +893,7 @@ public sealed class LocalSmuSessionTests
             LastSource = p.NativeSource(p.MeasureValue); LastLimit = p.NativeLimit;
             v = 5; i = 0.012; return MeasureCode;
         }
-        public int Read(int h, ref double v, ref double i) { v = 5; i = 0.012; return 1; }
+        public int Read(int h, ref double v, ref double i) { Reads++; v = 5; i = 0.012; return 1; }
         public int Sweep(int h, LocalSmuParameters p, double[] v, double[] i)
         {
             Sweeps++; ScanParameters = p;

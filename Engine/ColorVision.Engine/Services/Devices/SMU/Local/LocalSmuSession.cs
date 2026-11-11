@@ -36,6 +36,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
     internal int SweepCapabilities { get; private set; }
     internal int LocalFamily { get; private set; }
     private bool advancedMode;
+    private bool legacyReadInvalidated;
 
     internal LocalSmuSession(ILocalSmuNative? native = null) => this.native = native ?? new LocalSmuNative();
     private void SetStatus(DeviceStatusType value) { lock (sync) status = value; StatusChanged?.Invoke(value); }
@@ -112,6 +113,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             if (!read) parameters.Validate(config.DeviceType, scan, checkLimits);
             EnsureConnection(config, reconnect: !read);
             if (read && advancedMode) throw new InvalidOperationException("当前使用本地高级模式，请从本地源表窗口执行测量；切换普通点测后可使用旧读取命令。");
+            if (read && legacyReadInvalidated) throw new InvalidOperationException("上次普通采集未完成，请先成功执行一次普通测量，再读取结果。");
             if (read && lastParameters != null) parameters = lastParameters with { IsCloseOutput = false };
             if (read && !Enum.IsDefined(parameters.Channel)) throw new ArgumentException("源表通道无效。");
             SetStatus(DeviceStatusType.Busy);
@@ -119,14 +121,14 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             LocalSmuCapture? capture = null;
             try
             {
+                // Failed setup can leave the SDK source mode and the previous reading out of sync.
+                if (!read) legacyReadInvalidated = true;
                 SelectChannel(parameters.Channel);
                 if (!read) Check(native.SetSource(handle, parameters.IsSourceV), "设置源类型");
                 if (!read) ApplyNplc(config);
                 // Apply each request's delay under the session lock; an override must not leak
                 // into a later node or a manual measurement that inherits the device setting.
                 if (!read) Check(native.SetDelay(handle, parameters.MeasureDelayMs ?? config.DelayTime), "设置源表测量延时");
-                if (!read) advancedMode = false;
-                if (!read) lastParameters = parameters;
                 if (scan) log.Info($"本地源表扫描开始：{CaptureContext(config, parameters, scan, read)}");
                 // A failing or canceled native call may already have enabled the selected output.
                 outputChannels.Add(parameters.Channel);
@@ -164,6 +166,12 @@ internal sealed class LocalSmuSession : IAsyncDisposable
             }
             finally { if (Status == DeviceStatusType.Busy) SetStatus(DeviceStatusType.Opened); }
             if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+            if (!read)
+            {
+                lastParameters = parameters;
+                advancedMode = false;
+                legacyReadInvalidated = false;
+            }
             return capture!;
             }, token, flowOwner);
     }
@@ -423,6 +431,7 @@ internal sealed class LocalSmuSession : IAsyncDisposable
         LocalFamily = 0;
         lastParameters = null;
         advancedMode = false;
+        legacyReadInvalidated = false;
         SetStatus(DeviceStatusType.Closed);
     }
 
