@@ -150,9 +150,13 @@ public sealed class FlowNodeComparisonTests : IDisposable
             var baseline = (TextBox)page.FindName("BaselineReceiveTextBox");
             var selected = (TextBox)page.FindName("SelectedReceiveTextBox");
             var search = (TextBox)page.FindName("SearchTextBox");
-            page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+            SynchronizationContext? previousContext = SynchronizationContext.Current;
+            var operations = new AsyncVoidDrainContext(previousContext ?? new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+            SynchronizationContext.SetSynchronizationContext(operations);
             try
             {
+                page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+                Assert.True(operations.ObservedOperation);
                 PumpUntil(() => baseline.Text.Contains("40") && selected.Text.Contains("40") && list.Items.Count == 2);
                 list.SelectedItem = list.Items.Cast<FlowNodeComparisonRow>().Single(row => row.BatchId == 11);
                 PumpUntil(() => selected.Text.Contains("42"));
@@ -168,8 +172,42 @@ public sealed class FlowNodeComparisonTests : IDisposable
                 Assert.Contains("42", baseline.Text);
                 Assert.False(((Button)page.FindName("BaselineButton")).IsEnabled);
             }
-            finally { page.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
+            finally
+            {
+                try
+                {
+                    page.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+                    // Unloading suppresses obsolete UI results. Wait for their database reads before fixture disposal.
+                    PumpUntil(() => !operations.HasPendingOperations);
+                }
+                finally { SynchronizationContext.SetSynchronizationContext(previousContext); }
+            }
         });
+    }
+
+    private sealed class AsyncVoidDrainContext(SynchronizationContext dispatcher) : SynchronizationContext
+    {
+        private int _pending;
+        public bool HasPendingOperations => Volatile.Read(ref _pending) != 0;
+        public bool ObservedOperation { get; private set; }
+
+        public override void OperationStarted()
+        {
+            ObservedOperation = true;
+            Interlocked.Increment(ref _pending);
+        }
+        public override void OperationCompleted() => Interlocked.Decrement(ref _pending);
+        public override SynchronizationContext CreateCopy() => this;
+        public override void Post(SendOrPostCallback callback, object? state) => dispatcher.Post(value => Invoke(callback, value), state);
+        public override void Send(SendOrPostCallback callback, object? state) => dispatcher.Send(value => Invoke(callback, value), state);
+
+        private void Invoke(SendOrPostCallback callback, object? state)
+        {
+            SynchronizationContext? previous = Current;
+            SetSynchronizationContext(this);
+            try { callback(state); }
+            finally { SetSynchronizationContext(previous); }
+        }
     }
 
     private static void PumpUntil(Func<bool> complete)

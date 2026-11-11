@@ -52,6 +52,9 @@ public sealed class DockLayoutSerializationTests
                         DocumentTabPinManager.ToggleCommand.Execute(document);
                     }
 
+                    // Floating window activation depends on the desktop foreground. Set the layout state under test explicitly.
+                    document.IsActive = true;
+                    Assert.True(document.IsActive);
                     manager.ResetLayout();
                     PumpDispatcher();
 
