@@ -159,6 +159,47 @@ public class BatchImageProcessingTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BatchOutputPreservesTheTargetOfASelectedFileLink(bool relativeTarget)
+    {
+        DirectoryInfo folder = Directory.CreateTempSubdirectory("ColorVision-BatchFileLink-");
+        string firstPath = Path.Combine(folder.FullName, "capture.png");
+        string targetPath = Path.Combine(folder.FullName, "capture_processed.png");
+        string linkedInput = Path.Combine(folder.FullName, "reference.png");
+        try
+        {
+            using Mat first = Mat.FromArray(new byte[,] { { 10, 20 } });
+            using Mat reference = Mat.FromArray(new byte[,] { { 30, 40 } });
+            BatchImageOutput.Save(first, firstPath);
+            BatchImageOutput.Save(reference, targetPath);
+            try { File.CreateSymbolicLink(linkedInput, relativeTarget ? Path.GetFileName(targetPath) : targetPath); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return; }
+            byte[] original = File.ReadAllBytes(targetPath);
+
+            var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
+            BatchImageRunResult result = processor.Process(new BatchImageProcessingRequest
+            {
+                Items = [new BatchImageItem(firstPath), new BatchImageItem(linkedInput)],
+                Algorithm = BatchImageAlgorithms.CreateAll()[0],
+                Suffix = "_processed",
+                AvoidOverwrite = false,
+            });
+
+            Assert.Equal(original, File.ReadAllBytes(targetPath));
+            Assert.All(result.Files, item => Assert.True(item.Success, item.ErrorMessage));
+            Assert.Equal(Path.Combine(folder.FullName, "capture_processed_2.png"), result.Files[0].OutputPath);
+            using Mat linkedOutput = Cv2.ImRead(result.Files[1].OutputPath, ImreadModes.Unchanged);
+            AssertMatsEqual(reference, linkedOutput);
+        }
+        finally
+        {
+            foreach (FileInfo file in folder.EnumerateFiles()) file.Delete();
+            folder.Delete();
+        }
+    }
+
     [Fact]
     public void EveryCatalogAlgorithmProcessesAnEightBitColorImage()
     {

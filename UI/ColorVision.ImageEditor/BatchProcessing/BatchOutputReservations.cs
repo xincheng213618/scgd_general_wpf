@@ -22,12 +22,35 @@ namespace ColorVision.ImageEditor.BatchProcessing
             {
                 if (cancellationToken.IsCancellationRequested)
                     break;
-                try { Add(Path.GetFullPath(item.FilePath)); }
+                try
+                {
+                    string sourcePath = Path.GetFullPath(item.FilePath);
+                    Add(sourcePath);
+                    if (allowOverwrite)
+                        ReserveLinkedSource(sourcePath);
+                }
                 catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
                 {
                     // The processing loop reports invalid paths as individual file failures.
                 }
             }
+        }
+
+        private void ReserveLinkedSource(string sourcePath)
+        {
+            var file = new FileInfo(sourcePath);
+            if (!file.Exists || (file.Attributes & FileAttributes.ReparsePoint) == 0)
+                return;
+
+            FileSystemInfo? target;
+            try { target = file.ResolveLinkTarget(returnFinalTarget: true); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                // An unreadable link remains reserved by its own path.
+                return;
+            }
+            if (target != null)
+                Add(target.FullName);
         }
 
         internal bool Contains(string fullPath, string? originalPath = null) => _paths.Contains(fullPath)
