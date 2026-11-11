@@ -639,6 +639,27 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return query.OrderByDescending(item => item.StartedTimeUtc).OrderByDescending(item => item.Id).Take(1);
         }
 
+        internal static List<FlowRunRecord> GetLegacyFlowRuns(string serialNumber)
+        {
+            if (!EnsureInitialized())
+                return [];
+            try
+            {
+                using var db = CreateReadDb();
+                return SelectLegacyFlowRuns(db.Queryable<FlowRunRecord>(), serialNumber).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询旧流程运行记录失败", ex);
+                return [];
+            }
+        }
+
+        internal static ISugarQueryable<FlowRunRecord> SelectLegacyFlowRuns(ISugarQueryable<FlowRunRecord> runs, string serialNumber)
+            => runs.Where(item => item.BatchId == null)
+                .Where("serial_number COLLATE BINARY = @runSerialNumber", new { runSerialNumber = serialNumber })
+                .Take(2);
+
         internal static List<FlowRunRecord> GetFlowRuns(
             FlowIdentity identity,
             int limit = 500)

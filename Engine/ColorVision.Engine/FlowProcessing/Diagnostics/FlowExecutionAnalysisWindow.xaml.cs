@@ -370,7 +370,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         recentRuns.Concat(session.Records.Select(record => new FlowRunNavigationSummary(
                             record.BatchId, record.SerialNumber, record.StartTime, record.Id))));
                     IReadOnlyList<FlowRunNavigationItem> sameFlowRuns = LoadFlowRunOrder(
-                        _dataSource.GetSameFlowRuns(session.SerialNumber), cancellationToken);
+                        _dataSource.GetSameFlowRuns(session), cancellationToken);
                     log.Debug($"[FlowAnalysisNavigation] batch={session.BatchId} historyMs={historyTimer.Elapsed.TotalMilliseconds:F1} allRuns={allRuns.Count} sameFlowRuns={sameFlowRuns.Count}");
                     return (AllRuns: allRuns, SameFlowRuns: sameFlowRuns);
                 }, cancellationToken);
@@ -1061,24 +1061,26 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (flowRuns == null || nodeRuns == null)
                 return Array.Empty<FlowRunNavigationItem>();
 
-            Dictionary<string, FlowRunNavigationItem> nodeRunsBySerial =
-                BuildFlowRunOrder(nodeRuns)
-                    .GroupBy(run => run.SerialNumber, StringComparer.Ordinal)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group.OrderByDescending(run => run.ExecutedTime).First(),
-                        StringComparer.Ordinal);
+            IReadOnlyList<FlowRunNavigationItem> nodeItems = BuildFlowRunOrder(nodeRuns);
+            var nodeRunsByKey = nodeItems.ToDictionary(run => (run.BatchId, run.SerialNumber));
+            var nodeRunsBySerial = nodeItems.GroupBy(run => run.SerialNumber, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.MaxBy(run => run.ExecutedTime), StringComparer.Ordinal);
+            var matched = new Dictionary<(int, string), FlowRunNavigationItem>();
+            // Prefer an explicit batch match if a legacy journal also maps to that node run.
+            foreach (FlowRunRecord run in flowRuns.OrderByDescending(run => run.BatchId.HasValue).ThenByDescending(run => run.CompletedTime))
+            {
+                if (string.IsNullOrWhiteSpace(run.SerialNumber))
+                    continue;
 
-            return flowRuns
-                .Where(run => !string.IsNullOrWhiteSpace(run.SerialNumber))
-                .GroupBy(run => NormalizeRunSerialNumber(run.SerialNumber), StringComparer.Ordinal)
-                .Select(group => group.OrderByDescending(run => run.CompletedTime).First())
-                .Where(run => nodeRunsBySerial.ContainsKey(run.SerialNumber!))
-                .Select(run =>
-                {
-                    FlowRunNavigationItem nodeRun = nodeRunsBySerial[run.SerialNumber!];
-                    return nodeRun with { ExecutedTime = run.CompletedTime };
-                })
+                FlowRunNavigationItem nodeRun;
+                bool found = run.BatchId is int batchId
+                    ? nodeRunsByKey.TryGetValue((batchId, run.SerialNumber), out nodeRun)
+                    : nodeRunsBySerial.TryGetValue(run.SerialNumber, out nodeRun);
+                if (found)
+                    matched.TryAdd((nodeRun.BatchId, nodeRun.SerialNumber), nodeRun with { ExecutedTime = run.CompletedTime });
+            }
+
+            return matched.Values
                 .OrderBy(run => run.ExecutedTime)
                 .ThenBy(run => run.BatchId)
                 .ThenBy(run => run.SerialNumber, StringComparer.Ordinal)

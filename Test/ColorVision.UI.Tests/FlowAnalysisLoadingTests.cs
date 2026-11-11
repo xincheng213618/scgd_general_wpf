@@ -55,6 +55,52 @@ public sealed class FlowAnalysisLoadingTests : IDisposable
         Assert.Equal(before, File.ReadAllBytes(path));
     }
 
+    [Fact]
+    public void SameFlowNavigationKeepsTheOpenedTemplateWhenAnotherTemplateReusesItsSerial()
+    {
+        string path = CreateDatabase();
+        using (var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = $"Data Source={path};Pooling=False", DbType = DbType.Sqlite }))
+        {
+            DateTime time = new(2026, 10, 3, 8, 2, 0);
+            db.Insertable(new FlowRunRecord { BatchId = 102, SerialNumber = "second", TemplateId = 2, FlowKey = "other-flow", RunKey = "other-run", StartedTimeUtc = time, CompletedTime = time.AddSeconds(1) }).ExecuteCommand();
+            db.Insertable(new FlowNodeRecord { BatchId = 102, SerialNumber = "second", NodeId = "node", StartTime = time }).ExecuteCommand();
+        }
+        byte[] before = File.ReadAllBytes(path);
+
+        WithWindow(path, window =>
+        {
+            window.Show();
+            PumpUntil(() => Field<FlowExecutionAnalysisSession>(window, "_session")?.BatchId == 101 && !Field<bool>(window, "_isNavigationLoading"));
+
+            Assert.Equal("flow", Field<FlowExecutionAnalysisSession>(window, "_session").Run?.FlowKey);
+            Assert.Equal(new[] { 100, 101 }, Field<IReadOnlyList<FlowRunNavigationItem>>(window, "_sameFlowRuns").Select(run => run.BatchId));
+            Assert.True(((Button)window.FindName("PreviousSameFlowRunButton")).IsEnabled);
+        });
+        Assert.Equal(before, File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public void SameFlowNavigationKeepsDistinctBatchesThatReuseTheSameSerial()
+    {
+        DateTime first = new(2026, 10, 3, 8, 0, 0);
+        DateTime second = first.AddMinutes(1);
+        var sameFlowRuns = new[]
+        {
+            new FlowRunRecord { BatchId = 101, SerialNumber = "reused", CompletedTime = first },
+            new FlowRunRecord { BatchId = 102, SerialNumber = "reused", CompletedTime = second },
+        };
+        var nodeRuns = new FlowRunNavigationSummary[]
+        {
+            new(101, "reused", first.AddSeconds(-1), 1),
+            new(102, "reused", second.AddSeconds(-1), 2),
+            new(103, "reused", second.AddMinutes(1), 3),
+        };
+
+        var navigation = FlowExecutionAnalysisWindow.BuildSameFlowRunOrder(sameFlowRuns, nodeRuns);
+
+        Assert.Equal(new[] { new FlowRunNavigationItem(101, "reused", first), new FlowRunNavigationItem(102, "reused", second) }, navigation);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
