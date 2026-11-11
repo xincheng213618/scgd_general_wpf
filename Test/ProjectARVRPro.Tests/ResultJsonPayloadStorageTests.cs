@@ -185,6 +185,24 @@ public sealed class ResultJsonPayloadStorageTests
         Assert.Equal("ok", second.IntegrityCheck);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LegacyMigrationDoesNotReusePreviouslyDeletedResultId(bool hasSurvivingRows)
+    {
+        using var database = new TemporaryPayloadDatabase();
+        database.CreateLegacySchemaWithRequiredFileName();
+        if (hasSurvivingRows)
+            database.InsertLegacyResultWithFileName(7, "keep.png", "{}", "surviving");
+        database.InsertLegacyResultWithFileName(100, "deleted.png", "{}", "deleted");
+        Assert.Equal(100, database.ExecuteScalarInt64("""DELETE FROM "ARVRReuslt" WHERE "Id" = 100 RETURNING "Id";"""));
+
+        LegacyResultJsonMigrationReport report = LegacyResultJsonMigration.Execute(database.Path);
+
+        Assert.True(report.ViewFileNameMadeNullable);
+        Assert.Equal(101, database.InsertNullFileNameRow());
+    }
+
     [Fact]
     public void LegacyMigrationVerifiesExistingCompressedPayloadBeforeClearingResidualText()
     {
