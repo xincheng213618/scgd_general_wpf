@@ -86,7 +86,8 @@
                 <DataTemplate DataType="{x:Type local:SchedulerInfo}">
                     <StackPanel>
                         <DockPanel>
-                            <Border DockPanel.Dock="Right" Style="{StaticResource CV.Tag.Border}" VerticalAlignment="Top" Margin="14,0,0,0">
+                            <Border DockPanel.Dock="Right" Style="{StaticResource CV.Tag.Border}" VerticalAlignment="Top" Margin="14,0,0,0"
+                                    ToolTip="{Binding ScheduleAdmissionError}">
                                 <TextBlock Text="{Binding Status, Converter={StaticResource SchedulerDisplay}, ConverterParameter=Status}" FontSize="12" Foreground="{DynamicResource CV.Tag.Foreground}"/>
                             </Border>
                             <TextBlock Text="{Binding JobName}" FontWeight="SemiBold" FontSize="16" TextTrimming="CharacterEllipsis" ToolTip="{Binding JobName}"/>

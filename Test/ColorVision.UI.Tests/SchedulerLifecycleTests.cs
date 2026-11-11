@@ -33,7 +33,7 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         _scheduler = await _factory.GetScheduler();
         _manager = new QuartzSchedulerManager(_scheduler, Path.Combine(_directory, "tasks.json"));
         _manager.Listener = new TaskExecutionListener(_manager, record => _executions.Writer.TryWrite(record));
-        _scheduler.ListenerManager.AddJobListener(_manager.Listener);
+        _manager.Listener.AttachTo(_scheduler.ListenerManager);
     }
 
     [Fact]
@@ -266,6 +266,74 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(info.JobName, info.GroupName)));
     }
 
+    [Theory]
+    [InlineData(JobRepeatMode.Once)]
+    [InlineData(JobRepeatMode.Multiple)]
+    public async Task ScheduledFireWithUnsavedCheckpoint_IsVetoedAndCanResume(JobRepeatMode repeatMode)
+    {
+        SchedulerInfo info = CreateInfo();
+        info.RepeatMode = repeatMode;
+        info.Interval = TimeSpan.FromHours(1);
+        var observation = new ScheduledFireObservation();
+        _scheduler.ListenerManager.AddJobListener(observation);
+        Assert.True((await _manager.CreateJob(info)).Success);
+
+        var jobKey = new JobKey(info.JobName, info.GroupName);
+        DateTimeOffset? savedNext = info.NextScheduledFireTimeUtc;
+        string? previousFire = info.PreviousFireTime;
+        string path = Path.Combine(_directory, "tasks.json");
+        byte[] saved = File.ReadAllBytes(path);
+        try
+        {
+            using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                await _scheduler.Start();
+                Assert.True(await observation.Vetoed.Task.WaitAsync(TimeSpan.FromSeconds(15)));
+                Assert.Equal(SchedulerStatus.Paused, info.Status);
+                Assert.False(info.ScheduleCompleted);
+                Assert.Equal(0, info.ScheduledFireCount);
+                Assert.Equal(0, info.RunCount);
+                Assert.Equal(savedNext, info.NextScheduledFireTimeUtc);
+                Assert.Equal(previousFire, info.PreviousFireTime);
+                Assert.False(string.IsNullOrWhiteSpace(info.ScheduleAdmissionError));
+                Assert.False(_executions.Reader.TryRead(out _));
+            }
+            Assert.Equal(saved, File.ReadAllBytes(path));
+
+            // Resume before Quartz finishes handling the veto. Its cleanup
+            // of the old fire must leave the replacement trigger alone.
+            await _manager.ResumeJob(info.JobName, info.GroupName);
+            Assert.Null(info.ScheduleAdmissionError);
+            ISimpleTrigger resumed = Assert.IsAssignableFrom<ISimpleTrigger>(
+                Assert.Single(await _scheduler.GetTriggersOfJob(jobKey)));
+            Assert.Equal(repeatMode == JobRepeatMode.Once ? 0 : info.RepeatCount, resumed.RepeatCount);
+        }
+        finally
+        {
+            observation.ReleaseVeto.TrySetResult();
+        }
+
+        if (repeatMode == JobRepeatMode.Once)
+        {
+            await NextExecution();
+            Assert.Equal(1, info.ScheduledFireCount);
+            Assert.True(info.ScheduleCompleted);
+            Assert.Equal(SchedulerStatus.Completed, info.Status);
+        }
+        else
+        {
+            // The manual run uses the same single Quartz worker, so its
+            // completion also proves the old fire's veto cleanup is done.
+            await _scheduler.TriggerJob(jobKey);
+            await NextExecution();
+            var triggerKey = new TriggerKey($"{info.JobName}-trigger", info.GroupName);
+            ISimpleTrigger resumed = Assert.IsAssignableFrom<ISimpleTrigger>(await _scheduler.GetTrigger(triggerKey));
+            Assert.Equal(info.RepeatCount, resumed.RepeatCount);
+            Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(triggerKey));
+            Assert.Equal(0, info.ScheduledFireCount);
+        }
+    }
+
     private async Task NextExecution()
     {
         // A timeout fails a hung test; correctness assertions use completed
@@ -445,6 +513,26 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Mode = JobExecutionMode.Simple,
         RepeatMode = JobRepeatMode.Once,
     };
+
+    private sealed class ScheduledFireObservation : IJobListener
+    {
+        public string Name => nameof(ScheduledFireObservation);
+        internal TaskCompletionSource<bool> Vetoed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal TaskCompletionSource ReleaseVeto { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            Vetoed.TrySetResult(true);
+            await ReleaseVeto.Task.WaitAsync(cancellationToken);
+        }
+
+        public ValueTask JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
+        {
+            Vetoed.TrySetResult(false);
+            return ValueTask.CompletedTask;
+        }
+    }
 
     public sealed class NoOpJob : IJob
     {

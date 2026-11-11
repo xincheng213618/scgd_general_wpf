@@ -884,7 +884,7 @@ public sealed class FlowExecutionEditingTests
             var manager = new QuartzSchedulerManager(scheduler, tasksFile);
             var history = Channel.CreateUnbounded<JobExecutionRecord>();
             manager.Listener = new TaskExecutionListener(manager, record => history.Writer.TryWrite(record));
-            scheduler.ListenerManager.AddJobListener(manager.Listener);
+            manager.Listener.AttachTo(scheduler.ListenerManager);
             var managerInstance = typeof(FlowEngineManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
             object? previousManager = managerInstance.GetValue(null);
             managerInstance.SetValue(null, fixture.Manager);
@@ -964,7 +964,7 @@ public sealed class FlowExecutionEditingTests
             manager.Jobs.Add(taskTypeName, typeof(FlowJob));
             var history = Channel.CreateUnbounded<JobExecutionRecord>();
             manager.Listener = new TaskExecutionListener(manager, record => history.Writer.TryWrite(record));
-            scheduler.ListenerManager.AddJobListener(manager.Listener);
+            manager.Listener.AttachTo(scheduler.ListenerManager);
             var managerInstance = typeof(FlowEngineManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
             object? previousManager = managerInstance.GetValue(null);
             managerInstance.SetValue(null, fixture.Manager);

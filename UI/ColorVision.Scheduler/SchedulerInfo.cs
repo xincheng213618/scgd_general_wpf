@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1805
 using ColorVision.Common.MVVM;
+using Newtonsoft.Json;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
@@ -135,6 +136,14 @@ namespace ColorVision.Scheduler
         public bool HasScheduleCheckpoint { get; set; }
         public long ScheduledFireCount { get; set; }
         public bool ScheduleCompleted { get; set; }
+        [JsonIgnore]
+        public string? ScheduleAdmissionError
+        {
+            get => _scheduleAdmissionError;
+            internal set { _scheduleAdmissionError = value; OnPropertyChanged(); }
+        }
+        private string? _scheduleAdmissionError;
+
         public DateTimeOffset? NextScheduledFireTimeUtc
         {
             get => _nextScheduledFireTimeUtc;

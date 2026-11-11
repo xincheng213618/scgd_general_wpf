@@ -438,7 +438,7 @@ namespace ColorVision.Scheduler
                     _ => Scheduler?.Status is Quartz.SchedulerStatus.Running or Quartz.SchedulerStatus.Standby);
 
                 Listener = new TaskExecutionListener(this);
-                Scheduler.ListenerManager.AddJobListener(Listener);
+                Listener.AttachTo(Scheduler.ListenerManager);
                 Jobs = new Dictionary<string, Type>();
 
                 _logger.Debug("Discovering job types from assemblies");
@@ -642,6 +642,7 @@ namespace ColorVision.Scheduler
                         info.Status = SchedulerStatus.Ready;
                         if (!TryPersistTasks(out string persistenceError))
                             throw new InvalidOperationException(persistenceError);
+                        info.ScheduleAdmissionError = null;
                     }
                     catch
                     {
@@ -996,10 +997,8 @@ namespace ColorVision.Scheduler
             using IDisposable mutation = await EnterMutationAsync();
             void Apply()
             {
-                SchedulerInfo? info = TaskInfos.FirstOrDefault(task =>
-                    task.JobName == context.JobDetail.Key.Name && task.GroupName == context.JobDetail.Key.Group);
-                // A removed/replaced definition must not inherit an older fire's checkpoint.
-                if (info == null || !ReferenceEquals(context.JobDetail.JobDataMap["SchedulerInfo"], info))
+                SchedulerInfo? info = GetCurrentJobDefinition(context);
+                if (info == null)
                     return;
                 update(info);
                 if (!TryPersistTasks(out string error))
@@ -1009,6 +1008,52 @@ namespace ColorVision.Scheduler
                 await dispatcher.InvokeAsync(Apply);
             else
                 Apply();
+        }
+
+        internal async Task<bool> TryCheckpointScheduledFireAsync(IJobExecutionContext context)
+        {
+            using IDisposable mutation = await EnterMutationAsync();
+            bool pauseSchedule = false;
+            bool Checkpoint()
+            {
+                SchedulerInfo? info = GetCurrentJobDefinition(context);
+                if (info == null || info.Status == SchedulerStatus.Paused)
+                    return false;
+
+                var previous = (info.HasScheduleCheckpoint, info.ScheduledFireCount, info.ScheduleCompleted,
+                    info.NextScheduledFireTimeUtc, info.NextFireTime, info.PreviousFireTime);
+                SchedulerScheduleState.RecordFire(info, context);
+                info.Status = SchedulerStatus.Running;
+                if (TryPersistTasks(out string error))
+                    return true;
+
+                // Quartz has advanced the trigger, but no business ran. Retain the
+                // saved progress so Resume can rebuild the unconsumed schedule.
+                (info.HasScheduleCheckpoint, info.ScheduledFireCount, info.ScheduleCompleted,
+                    info.NextScheduledFireTimeUtc, info.NextFireTime, info.PreviousFireTime) = previous;
+                info.ScheduleAdmissionError = error;
+                info.Status = SchedulerStatus.Paused;
+                pauseSchedule = true;
+                return false;
+            }
+
+            bool admitted = Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()
+                ? await dispatcher.InvokeAsync(Checkpoint)
+                : Checkpoint();
+            if (pauseSchedule)
+                await Scheduler.PauseJob(context.JobDetail.Key);
+            return admitted;
+        }
+
+        private SchedulerInfo? GetCurrentJobDefinition(IJobExecutionContext context)
+        {
+            if (!context.JobDetail.JobDataMap.TryGetValue("SchedulerInfo", out object? definition))
+                return null;
+
+            JobKey key = context.JobDetail.Key;
+            // A removed/replaced definition must not inherit an older fire's checkpoint.
+            return TaskInfos.FirstOrDefault(info => ReferenceEquals(info, definition)
+                && info.JobName == key.Name && info.GroupName == key.Group);
         }
 
         private static void UpdateNextFireTime(SchedulerInfo schedulerInfo, ITrigger trigger)

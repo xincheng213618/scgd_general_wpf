@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 
 namespace ColorVision.Scheduler
 {
-    public class TaskExecutionListener : IJobListener
+    public class TaskExecutionListener : IJobListener, ITriggerListener
     {
         private readonly QuartzSchedulerManager _schedulerManager;
         private static readonly ILog _logger = LogManager.GetLogger(typeof(TaskExecutionListener));
@@ -28,7 +28,39 @@ namespace ColorVision.Scheduler
 
         public event Action<IJobExecutionContext>? JobExecutedEvent;
 
+        internal void AttachTo(IListenerManager listenerManager)
+        {
+            listenerManager.AddTriggerListener(this);
+            listenerManager.AddJobListener(this);
+        }
+
         internal JobKey[] GetActiveJobKeys() => _activeExecutions.Values.Select(execution => execution.JobKey).Distinct().ToArray();
+
+        async ValueTask<bool> ITriggerListener.VetoJobExecution(ITrigger trigger, IJobExecutionContext context, CancellationToken cancellationToken)
+        {
+            if (!SchedulerScheduleState.IsScheduledFire(context)
+                || !context.JobDetail.JobDataMap.TryGetValue("SchedulerInfo", out object? definition)
+                || definition is not SchedulerInfo)
+            {
+                return false;
+            }
+
+            JobKey jobKey = context.JobDetail.Key;
+            _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
+            try
+            {
+                if (await _schedulerManager.TryCheckpointScheduledFireAsync(context))
+                    return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to admit scheduled job: {jobKey.Name}({jobKey.Group})", ex);
+            }
+
+            _activeExecutions.TryRemove(context.FireInstanceId, out _);
+            _schedulerManager.NotifyActiveExecutionsChanged();
+            return true;
+        }
 
         public async ValueTask JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
@@ -36,17 +68,18 @@ namespace ColorVision.Scheduler
             // Register the fire before awaiting the UI dispatcher. Another
             // execution of the same JobKey can finish while this callback is
             // queued, and its completion must still observe this fire as active.
-            _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
+            bool needsStartingState = _activeExecutions.TryAdd(context.FireInstanceId, new ExecutionState(jobKey, DateTime.Now));
             try
             {
-                await _schedulerManager.RecordExecutionAsync(context, taskInfo =>
+                if (needsStartingState)
                 {
-                    SchedulerScheduleState.RecordFire(taskInfo, context);
-                    if (taskInfo.Status != SchedulerStatus.Paused)
+                    await _schedulerManager.RecordExecutionAsync(context, taskInfo =>
                     {
-                        taskInfo.Status = SchedulerStatus.Running;
-                    }
-                });
+                        SchedulerScheduleState.RecordFire(taskInfo, context);
+                        if (taskInfo.Status != SchedulerStatus.Paused)
+                            taskInfo.Status = SchedulerStatus.Running;
+                    });
+                }
                 _logger.Info($"Job starting: {jobKey.Name}({jobKey.Group}), FireInstanceId: {context.FireInstanceId}");
             }
             catch (Exception ex)
@@ -62,6 +95,8 @@ namespace ColorVision.Scheduler
 
         public ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
+            if (_activeExecutions.TryRemove(context.FireInstanceId, out _))
+                _schedulerManager.NotifyActiveExecutionsChanged();
             return ValueTask.CompletedTask;
         }
 
