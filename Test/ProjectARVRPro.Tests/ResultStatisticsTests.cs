@@ -838,8 +838,8 @@ public sealed class ResultStatisticsTests
         store.InitializeSchema();
         DateTime day = new(2026, 9, 19);
         database.Insert(
-            CreateRecord("BODY_L_235935", true, day.AddSeconds(-25), 24_000, "left", true),
-            CreateRecord("BODY_R_000002", false, day.AddSeconds(2), 20_000, "right", true),
+            CreateRecord("\u00a0BODY_l_235935\t", true, day.AddSeconds(-25), 24_000, "left", true),
+            CreateRecord("BODY_r_000002\u2003", false, day.AddSeconds(2), 20_000, "right", true),
             CreateRecord("UNMATCHED_L_000100", true, day.AddMinutes(1), 20_000, "left-only", true),
             CreateRecord("OTHER", true, day.AddMinutes(2), 1_000, "interleaved", true),
             CreateRecord("UNMATCHED_R_000125", true, day.AddMinutes(2).AddSeconds(5), 20_000, "right-only", true));

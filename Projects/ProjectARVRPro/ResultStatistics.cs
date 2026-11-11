@@ -697,13 +697,8 @@ namespace ProjectARVRPro
                     {{optionalFilter}}
                     """;
                 // Wider periods can select most of the database, making a separate SN set more expensive.
-                const string outsideRangeSql = """
-                    SELECT EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" < @From)
-                        OR EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" >= @ToExclusive);
-                    """;
                 bool restrictHistory = query.ToExclusive - query.From <= TimeSpan.FromDays(1)
-                    && (optionalFilter.Length > 0 || db.Ado.GetInt(ReadSql(outsideRangeSql),
-                        new SugarParameter("@From", query.From), new SugarParameter("@ToExclusive", query.ToExclusive)) != 0);
+                    && (optionalFilter.Length > 0 || HasRecordsOutsideRange(db, query));
                 string selectedSerialNumbers = restrictHistory ? $$"""
                     SelectedSerialNumbers AS
                     (
@@ -967,6 +962,42 @@ namespace ProjectARVRPro
         {
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
+            bool restrictHistory = query.ToExclusive - query.From <= TimeSpan.FromDays(1) && HasRecordsOutsideRange(db, query);
+            const string candidateRecordsSql = """
+                InRangeRecords AS
+                (
+                    SELECT "Id", "SN"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "UpdateTime" >= @From AND "UpdateTime" < @ToExclusive
+                      AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                ),
+                CandidateRecords AS
+                (
+                    SELECT "Id", "SN" FROM InRangeRecords
+                    UNION ALL
+                    SELECT B."Id", B."SN"
+                    FROM "ObjectiveTestResultRecord" AS B
+                    WHERE (B."IsFinalized" = 1 OR B."IsFinalized" IS NULL)
+                      AND B."Id" = (SELECT P."Id"
+                                    FROM "ObjectiveTestResultRecord" AS P
+                                    WHERE P."Id" < (SELECT MIN("Id") FROM InRangeRecords)
+                                    ORDER BY P."Id" DESC LIMIT 1)
+                ),
+                """;
+            // Keep a superset of possible sides. The matcher still validates the full suffix and global adjacency.
+            const string candidateHistoryFilter = """
+                WHERE TRIM("SN") IN (SELECT TRIM("SN") FROM CandidateRecords
+                                    WHERE instr(upper("SN"), '_L_') > 0 OR instr(upper("SN"), '_R_') > 0)
+                """;
+            const string allHistoryRangeFilter = """
+                (R."EndTime" >= @From AND R."EndTime" < @ToExclusive)
+                OR R."Id" = COALESCE(
+                    (SELECT X."PreviousObjectiveId"
+                     FROM RankedRecords AS X
+                     WHERE X."EndTime" >= @From AND X."EndTime" < @ToExclusive
+                     ORDER BY X."Id"
+                     LIMIT 1), -1)
+                """;
             const string flowColumns = """
                     CASE WHEN R."ResultId" > R."PreviousResultId" THEN
                         (SELECT COUNT(*)
@@ -984,9 +1015,11 @@ namespace ProjectARVRPro
                         ELSE 0 END AS "FlowRunTimeMilliseconds"
                     """;
             string sql = $$"""
-                WITH RecordFlowBoundaries AS
+                WITH {{(restrictHistory ? candidateRecordsSql : string.Empty)}}
+                RecordFlowBoundaries AS
                 (
                     {{RecordFlowBoundariesSql}}
+                    {{(restrictHistory ? candidateHistoryFilter : string.Empty)}}
                 ),
                 RankedRecords AS
                 (
@@ -1013,13 +1046,7 @@ namespace ProjectARVRPro
                        R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId", R."PreviousObjectiveId",
                        {{flowColumns}}
                 FROM RankedRecords AS R
-                WHERE (R."EndTime" >= @From AND R."EndTime" < @ToExclusive)
-                   OR R."Id" = COALESCE(
-                       (SELECT X."PreviousObjectiveId"
-                        FROM RankedRecords AS X
-                        WHERE X."EndTime" >= @From AND X."EndTime" < @ToExclusive
-                        ORDER BY X."Id"
-                        LIMIT 1), -1)
+                WHERE {{(restrictHistory ? "R.\"Id\" IN (SELECT \"Id\" FROM CandidateRecords)" : allHistoryRangeFilter)}}
                 ORDER BY R."Id";
                 """;
             List<ResultStatisticsRecordRow> candidates = db.Ado.SqlQuery<ResultStatisticsRecordRow>(
@@ -1042,6 +1069,16 @@ namespace ProjectARVRPro
             }
 
             return pairs.ToList();
+        }
+
+        private bool HasRecordsOutsideRange(SqlSugarClient db, ResultStatisticsQuery query)
+        {
+            const string sql = """
+                SELECT EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" < @From)
+                    OR EXISTS (SELECT 1 FROM "ObjectiveTestResultRecord" WHERE "UpdateTime" >= @ToExclusive);
+                """;
+            return db.Ado.GetInt(ReadSql(sql), new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive)) != 0;
         }
 
         public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetailsForExport(ResultStatisticsRecordRow record)
