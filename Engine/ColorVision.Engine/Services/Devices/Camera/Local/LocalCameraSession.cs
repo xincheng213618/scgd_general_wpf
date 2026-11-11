@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private string? loadedCalibrationJson;
         private sealed record PreviewRegistration(Func<IntPtr, int> Register, Action Stop);
         private PreviewRegistration? preview;
-        private Action? retiringPreviewOwner;
+        private PreviewRegistration? retiringPreview;
         private bool retiredPreviewDetached;
         private bool disposed;
         private bool identitySavePending;
@@ -389,7 +389,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (!resumed)
                 {
                     preview = null;
-                    if (!detached) retiringPreviewOwner = registration.Stop;
+                    if (!detached) retiringPreview = registration;
                     try { registration.Stop(); }
                     catch (Exception error) { log.Warn("停止切换前的本地视频失败。", error); }
                 }
@@ -407,39 +407,49 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (OpenedMode != TakeImageMode.Live) throw new InvalidOperationException("本地视频需要 Live 会话。");
                 DetachPreviewCore();
                 CompletePreviewRetirement();
-                int result = register(manager);
-                if (result != cvErrorDefine.CV_ERR_SUCCESS)
+                var registration = new PreviewRegistration(register, onStopped);
+                try
                 {
-                    var failure = LocalCameraCaptureService.CreateNativeException("启动本地相机视频失败", result);
-                    onStopped();
-                    try { native.DetachCallback(manager); }
-                    catch (Exception ex) { log.Warn("清理失败的视频回调失败。", ex); }
-                    throw failure;
+                    int result = register(manager);
+                    if (result != cvErrorDefine.CV_ERR_SUCCESS)
+                        throw LocalCameraCaptureService.CreateNativeException("启动本地相机视频失败", result);
                 }
-                preview = new PreviewRegistration(register, onStopped);
+                catch
+                {
+                    // The SDK may install the callback before reporting a startup failure.
+                    preview = registration;
+                    try
+                    {
+                        DetachPreviewCore();
+                        CompletePreviewRetirement();
+                    }
+                    catch (Exception ex) { log.Warn("清理失败的视频回调失败。", ex); }
+                    throw;
+                }
+                preview = registration;
                 return 0;
             });
         }
 
         private void DetachPreviewCore()
         {
-            Action? stopped = preview?.Stop;
+            PreviewRegistration? registration = preview;
             preview = null;
-            if (stopped == null && (retiredPreviewDetached || (retiringPreviewOwner == null && OpenedMode != TakeImageMode.Live))) return;
-            try { stopped?.Invoke(); }
+            if (registration == null && (retiredPreviewDetached || (retiringPreview == null && OpenedMode != TakeImageMode.Live))) return;
+            try { registration?.Stop(); }
             finally
             {
                 // Retire the managed callback once, while keeping its owner eligible to retry
                 // native detach or the subsequent camera close if either operation fails.
-                if (stopped != null) retiringPreviewOwner = stopped;
+                if (registration != null) retiringPreview = registration;
                 native.DetachCallback(handle);
-                retiredPreviewDetached = retiringPreviewOwner != null;
+                retiredPreviewDetached = retiringPreview != null;
             }
         }
 
         private void CompletePreviewRetirement()
         {
-            retiringPreviewOwner = null;
+            retiringPreview = null;
             retiredPreviewDetached = false;
         }
 
@@ -564,7 +574,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (SyncRoot)
             {
-                if (preview?.Stop != owner && retiringPreviewOwner != owner) return;
+                if (preview?.Stop != owner && retiringPreview?.Stop != owner) return;
                 if (closeCamera) Close(unregisterCallback: true);
                 else if (IsOpen)
                 {

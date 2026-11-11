@@ -492,6 +492,57 @@ public class LocalCameraSessionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void FailedPreviewStartupRetainsItsOwnerUntilNativeDetachCanBeRetried(bool registrationThrows)
+    {
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        int previousStops = 0, failedStops = 0;
+        Action previousOwner = () => previousStops++;
+        Action failedOwner = () => failedStops++;
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, previousOwner);
+        native.Events.Clear();
+
+        var startError = new InvalidOperationException("simulated preview registration failure");
+        InvalidOperationException failure;
+        try
+        {
+            failure = Assert.Throws<InvalidOperationException>(() => session.RegisterPreview(_ =>
+            {
+                native.Events.Add("register");
+                native.DetachError = new InvalidOperationException("simulated native cleanup failure");
+                if (registrationThrows) throw startError;
+                return -10009;
+            }, failedOwner));
+        }
+        finally { native.DetachError = null; }
+
+        if (registrationThrows) Assert.Same(startError, failure);
+        else Assert.Contains("启动本地相机视频失败", failure.Message);
+        Assert.Equal(1, previousStops);
+        Assert.Equal(1, failedStops);
+        Assert.Equal(new[] { "detach", "register", "detach" }, native.Events);
+        Assert.False(session.TryRestartPreview(failedOwner, _ => throw new Xunit.Sdk.XunitException("Failed startup must not restart preview.")));
+
+        native.Events.Clear();
+        session.StopPreview(previousOwner, closeCamera: true);
+        Assert.Empty(native.Events);
+        Assert.True(session.IsOpen);
+
+        session.StopPreview(failedOwner, closeCamera: false);
+        Assert.Equal(new[] { "detach" }, native.Events);
+        Assert.Equal(1, failedStops);
+        Assert.True(session.IsOpen);
+
+        native.Events.Clear();
+        session.StopPreview(failedOwner, closeCamera: true);
+        Assert.Empty(native.Events);
+        Assert.True(session.IsOpen);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void PreviewOwnerCanRetryFailedNativeDetachWithoutStoppingTheReplacement(bool closeCamera)
     {
         var native = new FakeNative();
