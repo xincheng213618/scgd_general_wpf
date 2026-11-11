@@ -117,16 +117,16 @@ namespace ColorVision.FileIO
         {
             if (!IsRaw(filePath)) return OpenFile(filePath);
             string path = Path.GetFullPath(filePath);
-            return OpenReadCore(path, populateCache, () => OpenFile(path), committedWriteGeneration: null);
+            return OpenReadCore(path, populateCache, () => OpenFile(path), publication: null);
         }
 
-        private static unsafe Stream OpenReadCore(string path, bool populateCache, Func<Stream> openFile, long? committedWriteGeneration)
+        private static unsafe Stream OpenReadCore(string path, bool populateCache, Func<Stream> openFile, CommittedWrite? publication)
         {
-            bool committedWrite = committedWriteGeneration.HasValue;
+            bool committedWrite = publication.HasValue;
             CacheEntry entry = null;
             lock (Sync)
             {
-                if (committedWrite && committedWriteGeneration != cacheGeneration) populateCache = false;
+                if (publication is { } published && published.Generation != cacheGeneration) populateCache = false;
                 CacheEntry existing = isEnabled ? FindEntry(path) : null;
                 if (existing != null && !committedWrite)
                 {
@@ -171,11 +171,13 @@ namespace ColorVision.FileIO
                     file.CopyTo(destination);
                     if (destination.Position != length) throw new EndOfStreamException("Incomplete CVRAW cache snapshot.");
                 }
+                DateTime? lastWriteTimeUtc = file is FileStream disk ? TryGetLastWriteTimeUtc(disk) : publication?.LastWriteTimeUtc;
                 file.Dispose();
                 file = null;
                 lock (Sync)
                 {
                     entry.Length = length;
+                    entry.DiskLastWriteTimeUtc = lastWriteTimeUtc;
                     if (!entry.IsRetired && FindEntry(path) == null) Remember(entry, path, length);
                     else Retire(entry);
                     Stream result = Borrow(entry);
@@ -304,7 +306,8 @@ namespace ColorVision.FileIO
                 }
 
                 // Keep an exact read-only view without an open file handle blocking File.Replace.
-                using (Stream saved = populateCache ? TryMapStagedFile(temporary, fileLength) : null)
+                DateTime? lastWriteTimeUtc = null;
+                using (Stream saved = populateCache ? TryMapStagedFile(temporary, fileLength, out lastWriteTimeUtc) : null)
                 {
                     Func<Stream> openSaved = () => saved;
                     if (replaceExisting)
@@ -315,7 +318,7 @@ namespace ColorVision.FileIO
                     }
                     else File.Move(temporary, path);
                     committed = true;
-                    using (OpenReadCore(path, saved != null, openSaved, generation)) { }
+                    using (OpenReadCore(path, saved != null, openSaved, new CommittedWrite(generation, lastWriteTimeUtc))) { }
                 }
             }
             catch (Exception ex) when (committed && (ex is IOException || ex is UnauthorizedAccessException || ex is OutOfMemoryException))
@@ -380,17 +383,30 @@ namespace ColorVision.FileIO
             }
         }
 
-        private static Stream TryMapStagedFile(string path, long length)
+        private static Stream TryMapStagedFile(string path, long length, out DateTime? lastWriteTimeUtc)
         {
+            lastWriteTimeUtc = null;
             try
             {
                 using (FileStream file = OpenFile(path))
                 using (MemoryMappedFile map = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true))
+                {
+                    lastWriteTimeUtc = TryGetLastWriteTimeUtc(file);
                     return map.CreateViewStream(0, length, MemoryMappedFileAccess.Read);
+                }
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is OutOfMemoryException)
             {
                 Debug.WriteLine("CVRAW cache unavailable: " + ex.Message);
+                return null;
+            }
+        }
+
+        private static DateTime? TryGetLastWriteTimeUtc(FileStream file)
+        {
+            try { return File.GetLastWriteTimeUtc(file.SafeFileHandle); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
                 return null;
             }
         }
@@ -403,27 +419,37 @@ namespace ColorVision.FileIO
             {
                 CacheEntry entry;
                 FileTail tail = null;
+                Stream cached = null;
                 lock (Sync)
                 {
                     while (HasFileLoad(fullPath)) Monitor.Wait(Sync);
                     entry = IsRaw(path) && isEnabled ? FindEntry(fullPath) : null;
                     if (entry != null)
                     {
-                        using (Stream current = Borrow(entry)) tail = update(current);
                         if (entry.SaveMode == CVFileSaveMode.MemoryOnly)
                         {
-                            PublishMetadata(entry, fullPath, tail);
+                            using (Stream current = Borrow(entry)) PublishMetadata(entry, fullPath, update(current));
                             return;
                         }
                         // A read miss may otherwise reuse this slot while the disk tail is being written.
+                        cached = Borrow(entry);
                         entry.Writers++;
                     }
                 }
                 bool written = false;
+                DateTime? updatedCacheTimestamp = null;
                 try
                 {
+                    using (cached)
                     using (FileStream file = new FileStream(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                        CVFileMetadata.ReplaceTail(file, tail ?? update(file));
+                    {
+                        // A cached layout may predate an external replacement of the disk file.
+                        tail = update(file);
+                        DateTime? diskTimestamp = cached == null ? null : TryGetLastWriteTimeUtc(file);
+                        bool sameTimestamp = diskTimestamp.HasValue && diskTimestamp == entry.DiskLastWriteTimeUtc;
+                        if (CVFileMetadata.ReplaceTail(file, tail, sameTimestamp ? cached : null))
+                            updatedCacheTimestamp = TryGetLastWriteTimeUtc(file);
+                    }
                     written = true;
                 }
                 finally
@@ -433,8 +459,12 @@ namespace ColorVision.FileIO
                         lock (Sync)
                         {
                             entry.Writers--;
-                            if (entry.IsRetired) Retire(entry);
-                            else if (written) PublishMetadata(entry, fullPath, tail);
+                            if (entry.IsRetired || (written && !updatedCacheTimestamp.HasValue)) Retire(entry);
+                            else if (written)
+                            {
+                                entry.DiskLastWriteTimeUtc = updatedCacheTimestamp;
+                                PublishMetadata(entry, fullPath, tail);
+                            }
                             Monitor.PulseAll(Sync);
                         }
                     }
@@ -510,6 +540,7 @@ namespace ColorVision.FileIO
             entry.FilePath = null;
             entry.Length = 0;
             entry.Tail = null;
+            entry.DiskLastWriteTimeUtc = null;
             entry.SaveMode = CVFileSaveMode.Synchronous;
             entry.HitCount = 0;
             entry.LastAccessSequence = ++accessSequence;
@@ -575,6 +606,7 @@ namespace ColorVision.FileIO
             internal int Readers;
             internal int Writers;
             internal FileTail Tail;
+            internal DateTime? DiskLastWriteTimeUtc;
             internal CVFileSaveMode SaveMode;
             internal long HitCount;
             internal long AllocationCount;
@@ -583,9 +615,12 @@ namespace ColorVision.FileIO
             internal bool IsLoading;
         }
 
+        private readonly record struct CommittedWrite(long Generation, DateTime? LastWriteTimeUtc);
+
         internal sealed class FileTail
         {
-            internal FileTail(long offset, byte[] bytes) { Offset = offset; Bytes = bytes; }
+            internal FileTail(long pixelStart, long offset, byte[] bytes) { PixelStart = pixelStart; Offset = offset; Bytes = bytes; }
+            internal long PixelStart { get; }
             internal long Offset { get; }
             internal byte[] Bytes { get; }
         }

@@ -173,6 +173,61 @@ public sealed class CvRawFileCacheCapacityTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void MetadataUpdateUsesTheCurrentDiskFileAfterExternalReplacement(bool resize, bool changeMetadata)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        const string previousKind = "old-only", updatedKind = "updated";
+        string replacementKind = changeMetadata ? "new-only" : previousKind;
+        files.ReadAndAssert(files.A);
+        CVFileMetadata.SetProperty(files.A, previousKind, 3, [1, 2, 3]);
+        DateTime previousWriteTime = File.GetLastWriteTimeUtc(files.A);
+        byte[] previous = File.ReadAllBytes(files.A);
+        using Stream previousReader = CVFileReadCache.OpenRead(files.A, populateCache: false);
+
+        string replacementPath = Path.ChangeExtension(files.A, ".cvcie");
+        using CVCIEFile replacement = CacheFiles.CreateRaw(97);
+        if (resize)
+        {
+            replacement.Cols = 5;
+            replacement.Data = Enumerable.Repeat((byte)97, 10).ToArray();
+        }
+        Assert.True(CVFileUtil.WriteCIEFile(replacementPath, replacement));
+        byte[] headerAndPixels = File.ReadAllBytes(replacementPath);
+        uint replacementVersion = changeMetadata ? 5u : 3u;
+        byte[] replacementValue = changeMetadata ? [4, 5, 6] : [1, 2, 3];
+        CVFileMetadata.SetProperty(replacementPath, replacementKind, replacementVersion, replacementValue);
+        // Exercise the header and tail comparisons even when an external writer preserves the timestamp.
+        DateTime replacementWriteTime = changeMetadata ? previousWriteTime : previousWriteTime.AddMinutes(1);
+        File.SetLastWriteTimeUtc(replacementPath, replacementWriteTime);
+        if (!resize) Assert.Equal(previous.LongLength, new FileInfo(replacementPath).Length);
+        File.Move(replacementPath, files.A, overwrite: true);
+        Assert.Equal(replacementWriteTime, File.GetLastWriteTimeUtc(files.A));
+
+        CVFileMetadata.SetProperty(files.A, updatedKind, 7, [8, 9]);
+        byte[] updated = File.ReadAllBytes(files.A);
+        Assert.Equal(headerAndPixels, updated[..headerAndPixels.Length]);
+        using (FileStream disk = File.OpenRead(files.A))
+        {
+            var properties = CVFileMetadata.ReadFromStream(disk);
+            Assert.Equal(new[] { replacementKind, updatedKind }, properties.Keys.Order());
+            Assert.Equal(replacementVersion, properties[replacementKind].Version);
+            Assert.Equal(replacementValue, properties[replacementKind].Value);
+            Assert.Equal(7u, properties[updatedKind].Version);
+            Assert.Equal(new byte[] { 8, 9 }, properties[updatedKind].Value);
+        }
+
+        using MemoryStream oldSnapshot = new();
+        previousReader.CopyTo(oldSnapshot);
+        Assert.Equal(previous, oldSnapshot.ToArray());
+        Assert.Null(CVFileReadCache.GetCachedLength(files.A));
+        previousReader.Dispose();
+        files.ReadAndAssert(files.A);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void FailedSynchronousSavePreservesThePreviouslyPublishedSnapshot(bool previousMemoryOnly)
