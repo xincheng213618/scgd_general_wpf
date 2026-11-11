@@ -66,10 +66,8 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
 
             try
             {
-                if (context.MergedJobDataMap.TryGetValue("SchedulerInfo", out object? value) && value is SchedulerInfo { Config: FlowJobConfig config })
-                    result = await RunConfiguredFlowAsync(config.FlowKey, cancellationToken);
-                else
-                    result = await FlowExecutionCoordinator.Instance.RunSelectedFlowAndWaitForFinalizationAsync();
+                context.MergedJobDataMap.TryGetValue("SchedulerInfo", out object? value);
+                result = await RunScheduledFlowAsync(value as SchedulerInfo, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -102,16 +100,22 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
                 $"FlowJob 流程最终完成: {result.FinalOutcome}, 耗时: {result.EngineResult.TotalTime}ms, 成功: {jobResult.Success}");
         }
 
-        private static Task<FlowRunFinalizedData?> RunConfiguredFlowAsync(string? flowKey, CancellationToken cancellationToken)
+        private static Task<FlowRunFinalizedData?> RunScheduledFlowAsync(SchedulerInfo? job, CancellationToken cancellationToken)
         {
             Dispatcher dispatcher = Application.Current?.Dispatcher
                 ?? throw new InvalidOperationException("The WPF application is not available.");
+            TimeSpan? executionTimeout = job is { TimeoutSeconds: > 0 } ? TimeSpan.FromSeconds(job.TimeoutSeconds) : null;
 
             return dispatcher.InvokeAsync(() =>
             {
-                var template = FlowJobConfig.FindSavedTemplate(flowKey)
-                    ?? throw new InvalidOperationException(EngineLocalization.Get("任务绑定的流程模板不可用，请编辑任务并重新选择。"));
-                return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(template, reportStartupFailures: true);
+                if (job?.Config is FlowJobConfig config)
+                {
+                    var template = FlowJobConfig.FindSavedTemplate(config.FlowKey)
+                        ?? throw new InvalidOperationException(EngineLocalization.Get("任务绑定的流程模板不可用，请编辑任务并重新选择。"));
+                    return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(template,
+                        reportStartupFailures: true, executionTimeout: executionTimeout);
+                }
+                return FlowEngineManager.GetInstance().View.RunFlowAndWaitForFinalizationAsync(executionTimeout: executionTimeout);
             }, DispatcherPriority.Normal, cancellationToken).Task.Unwrap();
         }
 

@@ -109,7 +109,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`。加载�
 | --- | --- |
 | `StopJob` / `PauseAll` | 暂停后续触发并保存状态。全部暂停会尝试每个任务，再统一保存。保存失败时已暂停的任务保持暂停并提示错误，可再次执行暂停以保存。已开始的 Job 继续执行 |
 | `ResumeJob` / `ResumeAll` | 重建剩余触发并保存 Ready 意图；完成计划不会重新安排。全部操作逐任务执行，失败时已成功处理的其他任务保留结果 |
-| `TimeoutSeconds` | 通用模型和触发器只保存/校验该值，没有统一包裹每个 Job 的超时执行器；是否生效取决于具体 Job |
+| `TimeoutSeconds` | 执行流程任务按此值限制引擎运行时间，0 表示无限等待，最大 4,294,967 秒。超时请求停止引擎，并等待原有后处理与归档。前处理、启动就绪和后处理使用各自的等待规则。其他 Job 自行解释该值 |
 | `Shutdown` | 调用无布尔参数的 Quartz `Shutdown()` 后释放其独立 factory，等价于不等待在途 Job 完成；同一已关闭 scheduler 不能通过 StartCommand 重启 |
 | 关闭任务/历史窗口 | 解除窗口事件与 Copilot 上下文，不关闭进程级 scheduler，也不取消 Job |
 

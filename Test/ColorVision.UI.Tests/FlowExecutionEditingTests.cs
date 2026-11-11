@@ -848,6 +848,83 @@ public sealed class FlowExecutionEditingTests
     }
 
     [Fact]
+    public void ScheduledFlowHonorsGraphTimeoutAndStillWaitsForFinalization()
+    {
+        WithFixture(fixture => PumpUntil(VerifyAsync(fixture)));
+
+        static async Task VerifyAsync(EditingFixture fixture)
+        {
+            var editor = fixture.Manager.View.STNodeEditorMain;
+            editor.LoadAssembly(typeof(HeadlessNeverEndNode).Assembly);
+#pragma warning disable CS0618 // The manual start keeps this workflow fixture independent of MQTT.
+            var start = new ManualFlowStartNode();
+#pragma warning restore CS0618
+            var sink = new HeadlessNeverEndNode();
+            start.Create();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(Assert.Single(sink.GetAllInputOptions())));
+            var template = new TemplateModel<FlowParam>("Timed flow", new FlowParam
+            {
+                Id = 712, FlowKey = "saved-flow-timeout", DataBase64 = Convert.ToBase64String(editor.GetCanvasData())
+            });
+            TemplateFlow.Params.Add(template);
+            fixture.MainSession.AdoptSavedCanvas(template);
+            editor.MarkSaved();
+
+            await using var factory = QuartzSchedulerBuilder.Create(builder =>
+            {
+                builder.ConfigureScheduler(options => options.InstanceName = $"scheduled-timeout-{Guid.NewGuid():N}");
+                builder.UseDefaultThreadPool(1);
+                builder.UseInMemoryStore(_ => { });
+            }).Build();
+            var scheduler = await factory.GetScheduler();
+            string tasksFile = Path.Combine(Path.GetTempPath(), $"scheduled-timeout-{Guid.NewGuid():N}.json");
+            var manager = new QuartzSchedulerManager(scheduler, tasksFile);
+            var history = Channel.CreateUnbounded<JobExecutionRecord>();
+            manager.Listener = new TaskExecutionListener(manager, record => history.Writer.TryWrite(record));
+            scheduler.ListenerManager.AddJobListener(manager.Listener);
+            var managerInstance = typeof(FlowEngineManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+            object? previousManager = managerInstance.GetValue(null);
+            managerInstance.SetValue(null, fixture.Manager);
+            var finalized = new TaskCompletionSource<FlowRunFinalizedData>(TaskCreationOptions.RunContinuationsAsynchronously);
+            fixture.Manager.View.RunFinalized += (_, result) => finalized.TrySetResult(result);
+            try
+            {
+                var job = new SchedulerInfo
+                {
+                    JobName = "timed-flow", GroupName = "test", JobType = typeof(FlowJob),
+                    Config = new FlowJobConfig { FlowKey = template.Value.FlowKey }, TimeoutSeconds = 1,
+                };
+                Assert.True((await manager.CreateJob(job)).Success);
+                fixture.PreProcess.Release.SetResult(true);
+                await scheduler.Start();
+                await fixture.PostProcess.Entered.Task.WaitAsync(TimeSpan.FromSeconds(8));
+                Assert.False(history.Reader.TryRead(out _));
+
+                fixture.PostProcess.Release.SetResult([]);
+                JobExecutionRecord record = await history.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(8));
+                FlowRunFinalizedData result = await finalized.Task.WaitAsync(TimeSpan.FromSeconds(8));
+                Assert.Equal(FlowFinalOutcome.TimedOut, result.FinalOutcome);
+                Assert.False(record.Success);
+                Assert.Contains("Flow execution timed out.", record.Message);
+                Assert.False(fixture.Manager.View.IsExecutionActive);
+            }
+            finally
+            {
+                fixture.MainSession.StopFlow(updateSummary: false);
+                fixture.PreProcess.Release.TrySetResult(true);
+                fixture.PostProcess.Release.TrySetResult([]);
+                await scheduler.Shutdown(waitForJobsToComplete: true);
+                managerInstance.SetValue(null, previousManager);
+                File.Delete(tasksFile);
+                File.Delete(tasksFile + ".bak");
+            }
+        }
+    }
+
+    [Fact]
     public void ScheduledFlowUsesSavedSelectionAndRecordsItsFinalOutcome()
     {
         WithFixture(fixture => PumpUntil(VerifyAsync(fixture)));

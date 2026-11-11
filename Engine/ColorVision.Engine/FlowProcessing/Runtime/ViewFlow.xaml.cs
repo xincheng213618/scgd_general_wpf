@@ -620,9 +620,11 @@ namespace ColorVision.Engine.FlowProcessing
 
         internal Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
             TemplateModel<FlowParam>? flowTemplate = null,
-            bool reportStartupFailures = false)
+            bool reportStartupFailures = false,
+            TimeSpan? executionTimeout = null)
         {
-            return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate, reportStartupFailures: reportStartupFailures);
+            return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate,
+                reportStartupFailures: reportStartupFailures, executionTimeout: executionTimeout);
         }
 
         public void Clear()

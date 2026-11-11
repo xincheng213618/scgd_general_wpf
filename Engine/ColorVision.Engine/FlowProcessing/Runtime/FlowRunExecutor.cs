@@ -25,12 +25,23 @@ namespace ColorVision.Engine.FlowProcessing
     /// </summary>
     internal sealed class FlowRunExecutor
     {
+        private static readonly TimeSpan MaximumExecutionTimeout = TimeSpan.FromMilliseconds(uint.MaxValue - 1);
         private readonly FlowControl _flowControl;
         private int _isRunning;
 
         public FlowRunExecutor(FlowControl flowControl)
         {
             _flowControl = flowControl ?? throw new ArgumentNullException(nameof(flowControl));
+        }
+
+        internal static void ValidateExecutionTimeout(TimeSpan? executionTimeout)
+        {
+            if (executionTimeout is TimeSpan timeout && timeout != Timeout.InfiniteTimeSpan
+                && (timeout <= TimeSpan.Zero || timeout > MaximumExecutionTimeout))
+            {
+                throw new ArgumentOutOfRangeException(nameof(executionTimeout), executionTimeout,
+                    $"Execution timeout must be positive, infinite, or null. The maximum finite timeout is {MaximumExecutionTimeout.TotalMilliseconds} ms.");
+            }
         }
 
         public async Task<FlowRunExecutionResult> RunAsync(
@@ -42,15 +53,7 @@ namespace ColorVision.Engine.FlowProcessing
             ArgumentException.ThrowIfNullOrWhiteSpace(startNodeName);
             ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
             serialNumber = ColorVision.Common.Utilities.Tool.SanitizeFileName(serialNumber);
-            if (executionTimeout.HasValue
-                && executionTimeout.Value != Timeout.InfiniteTimeSpan
-                && executionTimeout.Value <= TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(executionTimeout),
-                    executionTimeout,
-                    "Execution timeout must be positive, infinite, or null.");
-            }
+            ValidateExecutionTimeout(executionTimeout);
 
             if (Interlocked.CompareExchange(ref _isRunning, 1, 0) != 0)
             {

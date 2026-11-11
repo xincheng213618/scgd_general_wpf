@@ -178,6 +178,23 @@ public class FlowRunExecutorTests
     }
 
     [Fact]
+    public void UnsupportedExecutionTimeoutIsRejectedBeforeTheGraphStarts()
+    {
+        RunInSta(() =>
+        {
+            using var fixture = new FlowFixture();
+            TestStartNode start = fixture.AddConnectedStart("Selected");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => fixture.Executor.RunAsync(
+                "Selected", "SN-Oversized", TimeSpan.FromSeconds(4_294_968)).GetAwaiter().GetResult());
+
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(fixture.FlowControl.IsFlowRun);
+            Assert.False(fixture.Engine.IsRunning);
+        });
+    }
+
+    [Fact]
     public void RejectedStartDoesNotLeakIntoTheNextRun()
     {
         RunInSta(() =>

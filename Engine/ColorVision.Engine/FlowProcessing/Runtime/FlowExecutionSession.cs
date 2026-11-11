@@ -198,9 +198,10 @@ namespace ColorVision.Engine.FlowProcessing
         public async Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
             FlowTemplateExecutionSnapshot? executionSnapshot = null,
             TemplateModel<FlowParam>? flowTemplate = null,
-            bool reportStartupFailures = false)
+            bool reportStartupFailures = false,
+            TimeSpan? executionTimeout = null)
         {
-            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber(), executionSnapshot, flowTemplate, reportStartupFailures);
+            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber(), executionSnapshot, flowTemplate, reportStartupFailures, executionTimeout);
             if (reportStartupFailures && result.StartupFailureReason is { } reason)
                 throw new InvalidOperationException(reason);
             return result.FinalizedResult;
@@ -1082,8 +1083,10 @@ namespace ColorVision.Engine.FlowProcessing
             string? requestedSerialNumber = null,
             FlowTemplateExecutionSnapshot? expectedSnapshot = null,
             TemplateModel<FlowParam>? flowTemplate = null,
-            bool reportStartupFailures = false)
+            bool reportStartupFailures = false,
+            TimeSpan? executionTimeout = null)
         {
+            FlowRunExecutor.ValidateExecutionTimeout(executionTimeout);
             // Reserve the entire request before selecting a template. Selection
             // otherwise refreshes the workspace and can cancel another run.
             if (Interlocked.CompareExchange(ref _pendingRunRequest, 1, 0) != 0)
@@ -1112,7 +1115,7 @@ namespace ColorVision.Engine.FlowProcessing
                         return default;
                     }
                 }
-                return await RunAdmittedFlowAsync(requestedSerialNumber, expectedSnapshot, reportStartupFailures);
+                return await RunAdmittedFlowAsync(requestedSerialNumber, expectedSnapshot, reportStartupFailures, executionTimeout);
             }
             finally
             {
@@ -1123,7 +1126,8 @@ namespace ColorVision.Engine.FlowProcessing
         private async Task<FlowRunCoreResult> RunAdmittedFlowAsync(
             string? requestedSerialNumber,
             FlowTemplateExecutionSnapshot? expectedSnapshot,
-            bool reportStartupFailures)
+            bool reportStartupFailures,
+            TimeSpan? executionTimeout)
         {
             FlowTemplateExecutionSnapshotResult snapshotResult;
             if (expectedSnapshot != null)
@@ -1339,7 +1343,7 @@ namespace ColorVision.Engine.FlowProcessing
                     await _flowRunExecutor.RunAsync(
                         startNodeName,
                         sn,
-                        executionTimeout: null,
+                        executionTimeout,
                         flowRunCts.Token);
                 executionStarted = execution.Started;
                 executionData = execution.Data;
