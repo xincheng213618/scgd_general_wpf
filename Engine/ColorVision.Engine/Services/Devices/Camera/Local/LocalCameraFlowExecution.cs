@@ -25,7 +25,14 @@ internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
 {
     public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
     {
-        FlowNodeTiming.Run("ConnectCamera", () => request.Device.EnsureLocalMeasurementConnected(autoConnect: true));
+        FlowNodeTiming.Run("ConnectCamera", () =>
+        {
+            lock (request.Device.LocalCameraSession.SyncRoot)
+            {
+                request.Stop.ThrowIfCancellationRequested();
+                request.Device.EnsureLocalMeasurementConnected(autoConnect: true);
+            }
+        });
         return LocalCameraCaptureService.Capture(request);
     }
 
@@ -45,7 +52,7 @@ internal sealed class LocalCameraFlowServices : ILocalCameraFlowServices
 internal sealed class LocalCameraFlowExecution : FlowLocalExecution
 {
     private readonly DeviceCamera device;
-    private readonly LocalCameraCaptureRequest captureRequest;
+    private LocalCameraCaptureRequest captureRequest;
     private readonly ILocalCameraFlowServices services;
     private readonly string serialNumber;
     private readonly string nodeId;
@@ -173,10 +180,17 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
         return cameraParameters;
     }
 
+    public override void Bind(CVStartCFC action) => captureRequest = captureRequest with { Stop = action.RuntimeResources.StopToken };
+
     public override void Execute()
     {
         using var activation = timing.Activate();
-        try { capture = services.Capture(captureRequest); }
+        try
+        {
+            captureRequest.Stop.ThrowIfCancellationRequested();
+            capture = services.Capture(captureRequest);
+            captureRequest.Stop.ThrowIfCancellationRequested();
+        }
         finally { ReleaseCommand(); }
     }
 

@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
-    internal sealed class LocalCameraCaptureRequest
+    internal sealed record LocalCameraCaptureRequest
     {
         public required DeviceCamera Device { get; init; }
         public CameraRunParam? CameraParameters { get; init; }
@@ -180,8 +180,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
                     // calibration items; all calibration runs once below on these buffers.
                     using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
-                    request.Stop.ThrowIfCancellationRequested();
-                    CaptureRawFrame(cameraHandle, captureJson, lease, cvCameraCSLib.CM_GetFrame);
+                    CaptureRawFrame(cameraHandle, captureJson, lease, cvCameraCSLib.CM_GetFrame, request.Stop);
                     captureStopwatch.Stop();
                     captureTimeMs = ToMilliseconds(captureStopwatch.ElapsedMilliseconds);
                     captureStage?.Complete();
@@ -202,6 +201,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 }
                 else FlowNodeTiming.Skip("Calibration");
 
+                request.Stop.ThrowIfCancellationRequested();
                 if (request.SaveFiles)
                 {
                     Stopwatch saveStopwatch = Stopwatch.StartNew();
@@ -233,13 +233,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        internal static void CaptureRawFrame(IntPtr cameraHandle, string captureJson, LocalFlowFrameLease lease, RawFrameCapture capture)
+        internal static void CaptureRawFrame(IntPtr cameraHandle, string captureJson, LocalFlowFrameLease lease, RawFrameCapture capture, CancellationToken stop = default)
         {
             LocalFrameMetadata metadata = lease.Metadata;
             uint width = checked((uint)metadata.Width), height = checked((uint)metadata.Height);
             uint sourceBpp = checked((uint)metadata.SourceBpp), channels = checked((uint)metadata.Channels);
             uint destinationBpp = 32;
+            stop.ThrowIfCancellationRequested();
             int result = capture(cameraHandle, captureJson, ref width, ref height, ref sourceBpp, ref destinationBpp, ref channels, lease.RawPointer, IntPtr.Zero);
+            stop.ThrowIfCancellationRequested();
             if (result != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机取图失败", result);
             if (width != metadata.Width || height != metadata.Height || sourceBpp != metadata.SourceBpp || channels != metadata.Channels)
             {

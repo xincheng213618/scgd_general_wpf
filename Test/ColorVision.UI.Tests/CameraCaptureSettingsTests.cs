@@ -57,6 +57,26 @@ public class CameraCaptureSettingsTests
     }
 
     [Fact]
+    public void StopDuringRawCaptureDiscardsTheNativeResultBeforeFurtherProcessing()
+    {
+        using var stop = new CancellationTokenSource();
+        using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 1, Height = 1, SourceBpp = 8, Channels = 1 }, 1, 0);
+        using LocalFlowFrameLease lease = frame.Acquire();
+        int Capture(IntPtr handle, string captureJson, ref uint width, ref uint height, ref uint sourceBpp,
+            ref uint destinationBpp, ref uint channels, IntPtr raw, IntPtr cie)
+        {
+            Marshal.WriteByte(raw, 42);
+            stop.Cancel();
+            return cvErrorDefine.CV_ERR_SUCCESS;
+        }
+
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            LocalCameraCaptureService.CaptureRawFrame(new IntPtr(42), "{}", lease, Capture, stop.Token));
+        Assert.Equal(stop.Token, error.CancellationToken);
+        Assert.Equal(42, Marshal.ReadByte(lease.RawPointer));
+    }
+
+    [Fact]
     public void V1AndV2ExposureTemplatesReachNativeConfigurationWithoutLosingV2Options()
     {
         var v1 = new AutoExpTimeParam { Id = 8, autoExpSaturation = 83, autoExpTimeBegin = 17, minExpTime = 0.5, maxExpTime = 1200 };

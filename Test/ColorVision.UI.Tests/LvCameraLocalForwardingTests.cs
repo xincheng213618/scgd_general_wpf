@@ -421,6 +421,8 @@ public sealed class LvCameraLocalForwardingTests
         Assert.Equal(StatusTypeEnum.Canceled, (await completion).Status);
         scope.Services.Release.TrySetResult();
         await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(Assert.Single(scope.Services.Requests).Stop.IsCancellationRequested,
+            "The ordinary camera capture must receive the stopped flow's token.");
         Assert.Equal(0, graph.Start.PublishCount);
         Assert.Empty(scope.Services.Saved);
         Assert.Empty(scope.Services.PublishedNodeIds);
@@ -621,6 +623,7 @@ public sealed class LvCameraLocalForwardingTests
     private sealed class TrackedExecution(FlowLocalExecution inner, Action disposed) : FlowLocalExecution
     {
         public override bool UseNodeTimeout => inner.UseNodeTimeout;
+        public override void Bind(CVStartCFC action) => inner.Bind(action);
         public override void Execute() => inner.Execute();
         public override object Complete(CVStartCFC action) => inner.Complete(action);
         public override void Dispose() { inner.Dispose(); disposed(); }
