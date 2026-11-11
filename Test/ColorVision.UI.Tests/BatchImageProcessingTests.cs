@@ -187,6 +187,42 @@ public class BatchImageProcessingTests
     }
 
     [Fact]
+    public void BatchCanReuseANumberFreedBetweenItemsWithoutOverwritingItsOwnOutputs()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-BatchNumbering-");
+        string sourcePath = Path.Combine(directory.FullName, "capture.png");
+        string baseOutput = Path.Combine(directory.FullName, "capture_processed.png");
+        string numberedOutput = Path.Combine(directory.FullName, "capture_processed_2.png");
+        try
+        {
+            using Mat source = Mat.FromArray(new byte[,] { { 10, 20 } });
+            BatchImageOutput.Save(source, sourcePath);
+            File.WriteAllBytes(numberedOutput, [1, 2, 3]);
+            var processor = new BatchImageProcessor([new StandardBatchImageLoader()]);
+
+            BatchImageRunResult run = processor.Process(new BatchImageProcessingRequest
+            {
+                Items = Enumerable.Repeat(new BatchImageItem(sourcePath), 4).ToArray(),
+                Algorithm = BatchImageAlgorithms.CreateAll()[0],
+                Suffix = "_processed",
+            }, progress =>
+            {
+                if (progress.Completed == 2 && progress.OutputPath != null)
+                    File.Delete(numberedOutput);
+            });
+
+            Assert.All(run.Files, result => Assert.True(result.Success, result.ErrorMessage));
+            Assert.Equal([baseOutput, Path.Combine(directory.FullName, "capture_processed_3.png"), numberedOutput,
+                Path.Combine(directory.FullName, "capture_processed_4.png")], run.Files.Select(result => result.OutputPath));
+        }
+        finally
+        {
+            foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+            directory.Delete();
+        }
+    }
+
+    [Fact]
     public void EveryCatalogAlgorithmProcessesASixteenBitColorImage()
     {
         using Mat source = new(24, 32, MatType.CV_16UC3);

@@ -52,6 +52,18 @@ namespace ColorVision.ImageEditor.BatchProcessing
             bool preserveFolderStructure,
             bool avoidOverwrite,
             ISet<string> reservedPaths)
+            => CreateOutputPath(item, outputDirectory, suffix, format, preserveFolderStructure, avoidOverwrite,
+                reservedPaths, nextUnreservedNumbers: null);
+
+        internal static string CreateOutputPath(
+            BatchImageItem item,
+            string? outputDirectory,
+            string suffix,
+            BatchOutputFormat format,
+            bool preserveFolderStructure,
+            bool avoidOverwrite,
+            ISet<string> reservedPaths,
+            Dictionary<string, int>? nextUnreservedNumbers)
         {
             string directory = ResolveOutputDirectory(item, outputDirectory, preserveFolderStructure);
             string extension = ResolveExtension(item.FilePath, format);
@@ -64,15 +76,30 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 throw new InvalidOperationException(Properties.Resources.BatchCannotOverwriteSource);
             }
 
-            int index = 2;
-            while (reservedPaths.Contains(fullOutputPath) || reservedPaths.Contains(outputPath) || avoidOverwrite && File.Exists(fullOutputPath))
+            if (IsReserved() || avoidOverwrite && File.Exists(fullOutputPath))
             {
-                outputPath = Path.Combine(directory, $"{baseName}_{index++}{extension}");
-                fullOutputPath = Path.GetFullPath(outputPath);
+                string unnumberedPath = fullOutputPath;
+                int nextUnreserved = nextUnreservedNumbers?.GetValueOrDefault(unnumberedPath, 2) ?? 2;
+                for (int index = nextUnreserved; ; index++)
+                {
+                    outputPath = Path.Combine(directory, $"{baseName}_{index}{extension}");
+                    fullOutputPath = Path.GetFullPath(outputPath);
+                    bool reserved = IsReserved();
+                    bool existsOnDisk = !reserved && avoidOverwrite && File.Exists(fullOutputPath);
+                    // Only batch reservations are permanent. An existing file can disappear between items.
+                    if (index == nextUnreserved && !existsOnDisk)
+                        nextUnreserved++;
+                    if (!reserved && !existsOnDisk)
+                        break;
+                }
+                if (nextUnreserved > 2 && nextUnreservedNumbers != null)
+                    nextUnreservedNumbers[unnumberedPath] = nextUnreserved;
             }
             reservedPaths.Add(fullOutputPath);
 
             return outputPath;
+
+            bool IsReserved() => reservedPaths.Contains(fullOutputPath) || reservedPaths.Contains(outputPath);
         }
 
         public static void Save(Mat image, string filePath, bool overwrite = true)
