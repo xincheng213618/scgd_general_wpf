@@ -359,6 +359,9 @@
   <data name="Sched_SaveFailed" xml:space="preserve">
     <value>Failed to save task config: {0}</value>
   </data>
+  <data name="Sched_PauseSaveFailed" xml:space="preserve">
+    <value>Paused tasks remain paused in this instance. {0}</value>
+  </data>
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>Failed to load task config: {0}</value>
   </data>

@@ -339,6 +339,9 @@
   <data name="Sched_SaveFailed" xml:space="preserve">
     <value>保存任务配置失败: {0}</value>
   </data>
+  <data name="Sched_PauseSaveFailed" xml:space="preserve">
+    <value>已暂停的任务在当前实例中保持暂停。{0}</value>
+  </data>
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>加载任务配置失败: {0}</value>
   </data>

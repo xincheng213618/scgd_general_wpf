@@ -359,6 +359,9 @@
   <data name="Sched_SaveFailed" xml:space="preserve">
     <value>Failed to save task config: {0}</value>
   </data>
+  <data name="Sched_PauseSaveFailed" xml:space="preserve">
+    <value>已暫停的任務在目前的執行個體中保持暫停。{0}</value>
+  </data>
   <data name="Sched_LoadFailed" xml:space="preserve">
     <value>Failed to load task config: {0}</value>
   </data>

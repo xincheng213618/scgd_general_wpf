@@ -212,6 +212,44 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Equal(2, info.RunCount);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedPauseSave_LeavesRequestedSchedulesPaused(bool pauseAll)
+    {
+        SchedulerInfo first = CreateInfo();
+        first.IsDelayed = true;
+        first.Delay = TimeSpan.FromHours(1);
+        SchedulerInfo second = CreateInfo();
+        second.JobName = "second-job";
+        second.IsDelayed = true;
+        second.Delay = TimeSpan.FromHours(1);
+        Assert.True((await _manager.CreateJob(first)).Success);
+        Assert.True((await _manager.CreateJob(second)).Success);
+        await _scheduler.Start();
+        var firstTrigger = new TriggerKey($"{first.JobName}-trigger", first.GroupName);
+        var secondTrigger = new TriggerKey($"{second.JobName}-trigger", second.GroupName);
+        Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(firstTrigger));
+        Assert.Equal(TriggerState.Normal, await _scheduler.GetTriggerState(secondTrigger));
+        string path = Path.Combine(_directory, "tasks.json");
+        Task Pause() => pauseAll ? _manager.PauseAll() : _manager.StopJob(first.JobName, first.GroupName);
+
+        using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(Pause);
+            Assert.Equal(TriggerState.Paused, await _scheduler.GetTriggerState(firstTrigger));
+            Assert.Equal(pauseAll ? TriggerState.Paused : TriggerState.Normal, await _scheduler.GetTriggerState(secondTrigger));
+            Assert.Equal(SchedulerStatus.Paused, first.Status);
+            Assert.Equal(pauseAll ? SchedulerStatus.Paused : SchedulerStatus.Ready, second.Status);
+        }
+
+        Assert.All(SchedulerTaskSerializer.LoadFromFile(path), task => Assert.Equal(SchedulerStatus.Ready, task.Status));
+        await Pause();
+        var saved = SchedulerTaskSerializer.LoadFromFile(path);
+        Assert.Equal(SchedulerStatus.Paused, saved.Single(task => task.JobName == first.JobName).Status);
+        Assert.Equal(pauseAll ? SchedulerStatus.Paused : SchedulerStatus.Ready, saved.Single(task => task.JobName == second.JobName).Status);
+    }
+
     [Fact]
     public async Task FailedResumeSave_RestoresPausedJobWithoutLeavingATrigger()
     {

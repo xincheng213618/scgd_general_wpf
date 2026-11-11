@@ -364,9 +364,26 @@ namespace ColorVision.Scheduler
 
         public async Task PauseAll()
         {
+            using IDisposable mutation = await EnterMutationAsync();
+            var errors = new List<string>();
+            bool save = false;
             foreach (var item in TaskInfos.ToArray())
-                if (item.Status is not SchedulerStatus.Paused and not SchedulerStatus.Completed)
-                    await StopJob(item.JobName, item.GroupName);
+            {
+                try
+                {
+                    if (await PauseJobCore(item.JobName, item.GroupName, item)) save = true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed to pause job: {item.JobName}({item.GroupName})", ex);
+                    errors.Add($"{item.JobName} ({item.GroupName}) {ex.Message}");
+                }
+            }
+
+            if (save && !TryPersistTasks(out string persistenceError))
+                errors.Add(string.Format(Properties.Resources.Sched_PauseSaveFailed, persistenceError));
+            if (errors.Count > 0)
+                throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
         }
 
         public async Task ResumeAll()
@@ -476,38 +493,32 @@ namespace ColorVision.Scheduler
             using IDisposable mutation = await EnterMutationAsync();
             try
             {
-                _logger.Info($"Stopping job: {jobName}({groupName})");
-                JobKey jobKey = new JobKey(jobName, groupName);
-                if (await Scheduler.Exists(jobKey))
-                {
-                    SchedulerInfo? info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
-                    if (info?.Status == SchedulerStatus.Completed)
-                        return;
-                    SchedulerStatus previousStatus = info?.Status ?? SchedulerStatus.Ready;
-                    await Scheduler.PauseJob(jobKey);
-                    if (info != null)
-                    {
-                        info.Status = SchedulerStatus.Paused;
-                        if (!TryPersistTasks(out string persistenceError))
-                        {
-                            info.Status = previousStatus;
-                            if (previousStatus != SchedulerStatus.Paused)
-                                await Scheduler.ResumeJob(jobKey);
-                            throw new InvalidOperationException(persistenceError);
-                        }
-                    }
-                    _logger.Info($"Job stopped: {jobName}({groupName})");
-                }
-                else
-                {
-                    _logger.Warn($"Job not found: {jobName}({groupName})");
-                }
+                SchedulerInfo? info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
+                if (await PauseJobCore(jobName, groupName, info) && !TryPersistTasks(out string persistenceError))
+                    throw new InvalidOperationException(string.Format(Properties.Resources.Sched_PauseSaveFailed, persistenceError));
             }
             catch (Exception ex)
             {
                 _logger.Error($"Failed to stop job: {jobName}({groupName})", ex);
                 throw;
             }
+        }
+
+        private async Task<bool> PauseJobCore(string jobName, string groupName, SchedulerInfo? info)
+        {
+            if (info?.Status == SchedulerStatus.Completed) return false;
+
+            var jobKey = new JobKey(jobName, groupName);
+            if (!await Scheduler.Exists(jobKey))
+            {
+                _logger.Warn($"Job not found: {jobName}({groupName})");
+                return false;
+            }
+
+            await Scheduler.PauseJob(jobKey);
+            if (info != null) info.Status = SchedulerStatus.Paused;
+            _logger.Info($"Job paused: {jobName}({groupName})");
+            return info != null;
         }
 
         public async Task RemoveJob(string jobName, string groupName)

@@ -1069,6 +1069,8 @@ namespace ColorVision.Scheduler.Properties {
                 return ResourceManager.GetString("Sched_SaveFailed", resourceCulture);
             }
         }
+
+        public static string Sched_PauseSaveFailed => ResourceManager.GetString(nameof(Sched_PauseSaveFailed), resourceCulture);
         
         /// <summary>
         ///   查找类似 执行计划 的本地化字符串。
