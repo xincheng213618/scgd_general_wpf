@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using SqlSugar;
 using ColorVision.Database;
 using System.Globalization;
@@ -680,9 +681,9 @@ namespace ProjectARVRPro
             InitializeSchema();
 
             using SqlSugarClient db = CreateClient();
-            // SqlSugar's default SQLite transaction requests a write lock. Offline readers need a deferred read snapshot.
-            if (_readOnlyDatabase == null) db.Ado.BeginTran();
-            else db.Ado.ExecuteCommand("BEGIN DEFERRED");
+            // Share a read snapshot across the summary and trend without reserving SQLite's writer lock.
+            db.Ado.Open();
+            db.Ado.Transaction = ((SqliteConnection)db.Ado.Connection).BeginTransaction(deferred: true);
             try
             {
                 const string cycleTimeExpression = "CASE WHEN julianday(\"UpdateTime\") >= julianday(\"CreateTime\") THEN (julianday(\"UpdateTime\") - julianday(\"CreateTime\")) * 86400000.0 ELSE 0.0 END";
@@ -782,14 +783,12 @@ namespace ProjectARVRPro
                 }
 
                 ResultStatistics summary = CreateStatistics(aggregate);
-                if (_readOnlyDatabase == null) db.Ado.CommitTran();
-                else db.Ado.ExecuteCommand("COMMIT");
+                db.Ado.CommitTran();
                 return new ResultStatisticsDashboard { Summary = summary, Trend = trend };
             }
             catch
             {
-                if (_readOnlyDatabase == null) db.Ado.RollbackTran();
-                else db.Ado.ExecuteCommand("ROLLBACK");
+                db.Ado.RollbackTran();
                 throw;
             }
         }

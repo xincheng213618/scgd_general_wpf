@@ -719,6 +719,34 @@ public sealed class ResultStatisticsTests
         Assert.Equal(interrupted.ResultId, row.PreviousResultId);
     }
 
+    [Fact]
+    public void LiveDashboardReadsCommittedStatisticsWhileAResultWriterHoldsTheWriteTransaction()
+    {
+        using var database = new TemporaryResultDatabase();
+        var store = new ResultStatisticsDataStore(database.Path);
+        store.InitializeSchema();
+        DateTime day = new(2026, 9, 19);
+        database.Insert(CreateRecord("SN-A", true, day.AddHours(8), 1_000, "finished", true));
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), Result = true };
+
+        using var writer = new SqliteConnection($"Data Source={database.Path};Pooling=False");
+        writer.Open();
+        using SqliteTransaction pending = writer.BeginTransaction();
+        using SqliteCommand command = writer.CreateCommand();
+        command.Transaction = pending;
+        command.CommandText = "UPDATE ObjectiveTestResultRecord SET TotalResult = 0;";
+        Assert.Equal(1, command.ExecuteNonQuery());
+
+        ResultStatisticsDashboard duringWrite = store.QueryDashboard(query, ResultStatisticsPeriodMode.Day, day.AddHours(10));
+        Assert.Equal(1, duringWrite.Summary.PassCount);
+        Assert.Single(duringWrite.Trend);
+
+        pending.Commit();
+        ResultStatisticsDashboard afterCommit = store.QueryDashboard(query, ResultStatisticsPeriodMode.Day, day.AddHours(10));
+        Assert.Equal(0, afterCommit.Summary.TotalCount);
+        Assert.Empty(afterCommit.Trend);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
