@@ -117,7 +117,7 @@ flowchart TD
 
 `Finished` 携带 `FlowEngineEventArgs`，字段包括 `StartNodeName`、`SerialNumber`、`Status`、`TotalTime`、`Message` 与错误节点信息；调用方按 `Status` 判断执行结果，按 `StartNodeName` 识别开始节点。
 
-节点完成通知尚未发布时，流程完成通知可延后。多个 `CVStartCFC` 副本共享延后计数，但通知保留真正结束流程的副本；最后释放延后计数的上游副本不能覆盖终态和错误信息。
+节点完成通知尚未发布时，流程完成通知可延后。`CVStartCFC` 副本共享延后计数，通知采用实际结束流程的副本。开始节点向各订阅者分别传递同一终态，记录单个订阅者的异常后继续通知引擎和其余订阅者。
 
 流程结束时，`BaseStartNode.DoFinishing` 沿开始端口传递终态，供沿途节点释放运行记录；宿主后处理属于后续阶段。单次停止取消 `StopToken` 并释放运行资源，已停止的分支无法再次完成流程。资源释放失败时继续尝试其余资源，将异常写入日志，并发布已确定的终态。`CVBaseServerNode` 收到 `Completed` 时只清理并转发状态。`IgnoreErrors` 用于上游出错后的收尾，保留本节点自身的失败状态。
 

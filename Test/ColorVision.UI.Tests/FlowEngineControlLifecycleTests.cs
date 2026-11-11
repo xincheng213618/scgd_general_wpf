@@ -564,6 +564,57 @@ public class FlowEngineControlLifecycleTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AStartNodeSubscriberCannotSuppressEngineCompletionOrBlockTheNextRun(bool stop)
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var control = new InspectableFlowEngineControl(false, new FlowNodeManager());
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            start.Finished += (_, result) =>
+            {
+                result.SerialNumber = "CHANGED-BY-SUBSCRIBER";
+                result.Status = StatusTypeEnum.Failed;
+                throw new InvalidOperationException("Start node subscriber failed.");
+            };
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            control.AttachNodeEditor(editor);
+            var nodeResults = new List<FlowStartEventArgs>();
+            var engineResults = new List<FlowEngineEventArgs>();
+            start.Finished += (_, result) => nodeResults.Add(result);
+            control.Finished += (_, result) => engineResults.Add(result);
+
+            const string serial = "SN-OBSERVER";
+            Assert.True(control.TryStartByName(start.NodeName, serial));
+            CVStartCFC action = Assert.IsType<CVStartCFC>(start.GetCFC(serial));
+            Exception? error = Record.Exception(() =>
+            {
+                if (stop)
+                    control.StopNode(start.NodeName, serial);
+                else if (action.TryDoFinishing())
+                    action.FireFinished();
+            });
+
+            StatusTypeEnum expected = stop ? StatusTypeEnum.Canceled : StatusTypeEnum.Completed;
+            FlowEngineEventArgs engineResult = Assert.Single(engineResults);
+            FlowStartEventArgs nodeResult = Assert.Single(nodeResults);
+            Assert.Equal(expected, engineResult.Status);
+            Assert.Equal(expected, nodeResult.Status);
+            Assert.Equal(serial, engineResult.SerialNumber);
+            Assert.Equal(serial, nodeResult.SerialNumber);
+            Assert.Null(error);
+            Assert.False(control.IsRunning);
+            Assert.True(control.TryStartByName(start.NodeName, serial));
+        });
+    }
+
     [Fact]
     public void StartWithoutConnectedOutputDoesNotRemainRunning()
     {

@@ -520,6 +520,10 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			logger.WarnFormat("Fire Flow Finished ignored because start action is null");
 			return;
 		}
+		FlowStartEventHandler finished = Finished;
+		if (finished == null)
+			return;
+
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
 		string message = string.Empty;
 		string errorNodeName = string.Empty;
@@ -539,15 +543,19 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 				message = flowStatus.ToString();
 			}
 		}
-		this.Finished?.Invoke(
-			this,
-			new FlowStartEventArgs(
-				startAction.SerialNumber,
-				flowStatus,
-				(long)startAction.GetTotalTime().TotalMilliseconds,
-				message,
-				errorNodeName,
-				errorNodeId));
+		string serialNumber = startAction.SerialNumber;
+		long totalTime = (long)startAction.GetTotalTime().TotalMilliseconds;
+		foreach (FlowStartEventHandler handler in finished.GetInvocationList())
+		{
+			try
+			{
+				handler(this, new FlowStartEventArgs(serialNumber, flowStatus, totalTime, message, errorNodeName, errorNodeId));
+			}
+			catch (Exception error)
+			{
+				logger.Error($"Start node completion subscriber failed for flow {serialNumber}.", error);
+			}
+		}
 	}
 
 	private static string GetDataString(Dictionary<string, object> data, string key)
