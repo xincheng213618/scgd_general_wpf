@@ -1322,6 +1322,9 @@
   <data name="重新加载将放弃当前未保存的更改，是否继续？" xml:space="preserve">
     <value>重新加载将放弃当前未保存的更改，是否继续？</value>
   </data>
+  <data name="文件在磁盘上已更改。请先复制未保存的修改，再重新加载文件并合并。" xml:space="preserve">
+    <value>文件在磁盘上已更改。请先复制未保存的修改，再重新加载文件并合并。</value>
+  </data>
   <data name="错误" xml:space="preserve">
     <value>错误</value>
   </data>

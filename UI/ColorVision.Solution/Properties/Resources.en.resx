@@ -1341,6 +1341,9 @@
   <data name="重新加载将放弃当前未保存的更改，是否继续？" xml:space="preserve">
     <value>Reloading discards unsaved changes. Continue?</value>
   </data>
+  <data name="文件在磁盘上已更改。请先复制未保存的修改，再重新加载文件并合并。" xml:space="preserve">
+    <value>The file has changed on disk. Copy your unsaved edits, then reload the file and merge your changes.</value>
+  </data>
   <data name="错误" xml:space="preserve">
     <value>Error</value>
   </data>

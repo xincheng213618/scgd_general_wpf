@@ -8,6 +8,54 @@ namespace ColorVision.UI.Tests;
 
 public sealed class TextEditorSaveTests
 {
+    [Fact]
+    public void SavePreservesAnExternalEditWithTheSameLengthAndWriteTime()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DirectoryInfo directory = Directory.CreateTempSubdirectory("ColorVision-TextConflict-");
+            string path = Path.Combine(directory.FullName, "source.txt");
+            const string original = "original";
+            const string external = "external";
+            const string draft = "my draft";
+            var theme = new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) };
+            Application.Current.Resources.MergedDictionaries.Add(theme);
+            try
+            {
+                File.WriteAllText(path, original);
+                DateTime stamp = File.GetLastWriteTimeUtc(path);
+                using AvalonEditControll editor = new(path);
+                TextEditor text = Assert.IsType<TextEditor>(editor.FindName("textEditor"));
+                text.Document.Replace(0, text.Document.TextLength, draft);
+                File.WriteAllText(path, external);
+                File.SetLastWriteTimeUtc(path, stamp);
+                Assert.Equal(stamp, File.GetLastWriteTimeUtc(path));
+
+                Assert.Throws<IOException>(() => editor.Save());
+                Assert.Equal(external, File.ReadAllText(path));
+                Assert.Equal(draft, text.Text);
+                Assert.True(editor.IsDirty);
+                Assert.Single(directory.EnumerateFiles());
+
+                Assert.True(editor.ReloadFromDisk());
+                Assert.Equal(external, text.Text);
+                text.Document.Insert(text.Document.TextLength, " with revision");
+                Assert.True(editor.Save());
+                text.Document.Insert(text.Document.TextLength, " and follow-up");
+                Assert.True(editor.Save());
+                Assert.Equal("external with revision and follow-up", File.ReadAllText(path));
+                Assert.False(editor.IsDirty);
+                Assert.Single(directory.EnumerateFiles());
+            }
+            finally
+            {
+                Application.Current.Resources.MergedDictionaries.Remove(theme);
+                foreach (FileInfo file in directory.EnumerateFiles()) file.Delete();
+                directory.Delete();
+            }
+        });
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
