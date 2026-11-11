@@ -89,6 +89,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Description("默认开启。主面板本地取图及 L/BV 节点本地转发保存 CVRAW，包含已执行的色度校正参数。关闭后仍显示图像并保存结果记录。")]
         public bool SaveLocalCaptureFiles { get; set; } = true;
 
+        [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocusChart_AutoSave")]
+        [LocalizedDescription("CameraFocusChart_AutoSaveHint")]
+        public bool SaveLocalAutoFocusChart { get; set; }
+
+        [Category("AcquisitionDisplay"), LocalizedDisplayName("CameraFocusChart_SaveDirectory")]
+        [LocalizedDescription("CameraFocusChart_SaveDirectoryHint"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        public string LocalAutoFocusChartDirectory { get; set; } = string.Empty;
+
         public double TakePictureDelay { get; set; }
         public int CalibrationTemplateIndex { get; set; } = 0;
         public int ExpTimeParamTemplateIndex { get; set; }
@@ -296,6 +304,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private readonly CrossGuideOverlayVisual _crossGuideOverlayVisual;
         private bool _isOpeningLocalVideo;
         private MsgRecord? _panelOperation;
+        private CancellationTokenSource? _panelAutoFocusCancellation;
         private Configs.ConfigCamera? _panelConfig;
         private DVRectangleText? _localVideoRoiVisual;
         private bool _isSyncingLocalVideoRoi;
@@ -363,8 +372,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.ReadFilterButton.Click += GetNDport_Click;
             Capture.ChangeFilterButton.Click += NDport_Click;
             Capture.AutoFocusButton.Click += AutoFocus_Click;
+            Capture.FineFocusButton.Click += (sender, _) => StartAutoFocus(sender, fineOnly: true);
             Capture.EditFocusButton.Click += EditAutoFocus;
             Capture.MoveButton.Click += Move_Click;
+            Capture.JogLeftButton.Click += JogMotor_Click;
+            Capture.JogRightButton.Click += JogMotor_Click;
             Capture.ApertureButton.Click += Move1_Click;
             Capture.HomeButton.Click += GoHome_Click;
             Capture.ReadPositionButton.Click += GetPosition_Click;
@@ -1001,10 +1013,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Actions.ButtonOffline.Visibility = Visible(showProblem && status == DeviceStatusType.OffLine);
             Capture.Visibility = Visible(state.ShowParameters);
             Capture.IsEnabled = !state.Busy;
+            StopAutoFocusButton.Visibility = Visible(_panelAutoFocusCancellation != null);
+            if (_panelAutoFocusCancellation != null)
+            {
+                StopAutoFocusButton.IsEnabled = _panelOperation?.IsSend == true && !_panelAutoFocusCancellation.IsCancellationRequested;
+                StopAutoFocusButton.Content = EngineLocalization.Get(_panelAutoFocusCancellation.IsCancellationRequested
+                    ? "CameraPanel_AutoFocusStopping" : "CameraPanel_StopAutoFocus");
+            }
             Capture.AutoExposureButton.IsEnabled = state.CanCapture;
             Capture.AutoExposureButton.Visibility = Visible(_autoExpTimeTemplateOptions.Count > 0);
             Capture.AutoExposureButton.ToolTip = Device.RoutesLocally ? null : EngineLocalization.Get("独立自曝沿用相机当前增益；拍前自曝使用本次取图增益");
             Capture.CaptureOnlyPanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
+            Capture.FineFocusButton.Visibility = Visible(Device.RoutesLocally);
             Capture.AveragePanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             bool calibrationGain = DisplayCameraConfig.IsGainControlledByCalibrationGroup;
             Capture.GainPanel.IsEnabled = previewing || !calibrationGain;
@@ -1037,9 +1057,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Dispatcher.BeginInvoke(() =>
             {
                 if (!ReferenceEquals(_panelOperation, sender)) return;
+                bool canceledByUser = state == MsgRecordState.Fail && _panelAutoFocusCancellation?.IsCancellationRequested == true
+                    && sender is MsgRecord canceled && canceled.MsgReturn.Code == DeviceCamera.LocalAutoFocusCanceledCode;
+                _panelAutoFocusCancellation = null;
                 _panelOperation = null;
                 RefreshPanelState();
-                if (!IsDisposed && state == MsgRecordState.Fail && sender is MsgRecord failed
+                if (!IsDisposed && !canceledByUser && state == MsgRecordState.Fail && sender is MsgRecord failed
                     && failed.MsgSend.EventName is "Move" or "MoveDiaphragm" or "GoHome" or "GetPosition" or "AutoFocus")
                     MessageBox.Show(Application.Current.GetActiveWindow(), failed.MsgReturn.Message, "ColorVision");
             });
@@ -1466,17 +1489,46 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        private void AutoFocus_Click(object sender, RoutedEventArgs e)
+        private void AutoFocus_Click(object sender, RoutedEventArgs e) => StartAutoFocus(sender);
+
+        private void StartAutoFocus(object sender, bool fineOnly = false)
         {
+            if (IsDisposed || _panelOperation != null || _isOpeningLocalVideo || (fineOnly && !Device.CameraBackend.OpensLocally)) return;
             if (!CameraTemplateSelection.TryResolveRequired(Capture.ComboxAutoFocus.SelectedItem, out AutoFocusParam param))
             {
                 ShowRequiredTemplateMessage(Properties.Resources.AutoFocusTemplate);
                 return;
             }
-            MsgRecord msgRecord = DService.AutoFocus(param);
+            MsgRecord msgRecord;
+            if (Device.CameraBackend.OpensLocally)
+            {
+                var cancellation = new CancellationTokenSource();
+                try { msgRecord = Device.AutoFocusLocally(param, cancellation.Token, fineOnly); }
+                catch { cancellation.Dispose(); throw; }
+                _panelAutoFocusCancellation = cancellation;
+                msgRecord.MsgRecordStateChanged += DisposeCancellation;
+                DisposeCancellation(null, msgRecord.MsgRecordState);
+
+                void DisposeCancellation(object? _, MsgRecordState state)
+                {
+                    if (state is MsgRecordState.Initial or MsgRecordState.Sended) return;
+                    msgRecord.MsgRecordStateChanged -= DisposeCancellation;
+                    Dispatcher.BeginInvoke(cancellation.Dispose);
+                }
+            }
+            else
+            {
+                msgRecord = DService.AutoFocus(param);
+            }
             TrackPanelOperation(msgRecord);
             ServicesHelper.SendCommand(sender, msgRecord);
+        }
 
+        private void StopLocalAutoFocus_Click(object sender, RoutedEventArgs e)
+        {
+            if (_panelOperation?.IsSend != true || _panelAutoFocusCancellation is not { IsCancellationRequested: false } cancellation) return;
+            cancellation.Cancel();
+            RefreshPanelState();
         }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
@@ -1563,6 +1615,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
+        private void JogMotor_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsDisposed || !Capture.IsEnabled || _panelOperation != null || _isOpeningLocalVideo) return;
+            if (!int.TryParse(Capture.JogStepBox.Text, out int step) || step <= 0)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("CameraPanel_MotorJogStepHint"), "ColorVision");
+                Capture.JogStepBox.Focus();
+                Capture.JogStepBox.SelectAll();
+                return;
+            }
+
+            int offset = ReferenceEquals(sender, Capture.JogLeftButton) ? -step : step;
+            TrackPanelOperation(DService.Move(offset, IsbAbs: false));
+        }
+
         private void GoHome_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord record = DService.GoHome();
@@ -1580,11 +1647,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void Move1_Click(object sender, RoutedEventArgs e)
         {
             if (double.TryParse(Capture.TextDiaphragm.Text, out double pos))
-            {
-                MsgRecord record = DService.MoveDiaphragm(pos);
-                TrackPanelOperation(record);
-                ServicesHelper.SendCommand(sender, record);
-            }
+                TrackPanelOperation(DService.MoveDiaphragm(pos));
         }
 
         private async void Close_Click(object sender, RoutedEventArgs e)
@@ -1733,6 +1796,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.PropertyChanged -= CameraPanel_PropertyChanged;
             if (_panelConfig != null) _panelConfig.PropertyChanged -= CameraPanel_PropertyChanged;
             _panelConfig = null;
+            if (_panelOperation?.IsSend == true) _panelAutoFocusCancellation?.Cancel();
+            _panelAutoFocusCancellation = null;
             if (_panelOperation != null) _panelOperation.MsgRecordStateChanged -= PanelOperation_StateChanged;
             _panelOperation = null;
             PhyCameraManager.GetInstance().Loaded -= PhyCameraManager_Loaded;

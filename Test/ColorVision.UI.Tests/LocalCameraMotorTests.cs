@@ -242,6 +242,21 @@ public class LocalCameraMotorTests
     }
 
     [Fact]
+    public void StopRequestedAfterTheMotorMoveSkipsTheNextCapture()
+    {
+        int evaluations = 0;
+        var native = new FakeMotor { OnSample = () => evaluations++ };
+        using var session = new LocalCameraSession(new LocalCameraSessionTests.FakeNative(), new CameraBackendState(true), Configuration(), motorNative: native);
+        session.Open("camera", TakeImageMode.Measure_Normal, 16);
+        using var stop = new CancellationTokenSource();
+        Assert.Throws<OperationCanceledException>(() =>
+            session.AutoFocus(Settings(), 10, 1, stop.Token, progress: (_, _, _) => stop.Cancel()));
+        Assert.Equal(1, native.Moves);
+        Assert.Equal(0, evaluations);
+        Assert.True(session.IsOpen);
+    }
+
+    [Fact]
     public void TemplateSnapshotUsesItsOwnRangeAndDoesNotChangeWhenTemplateIsEdited()
     {
         var config = Configuration();
@@ -324,6 +339,10 @@ public class LocalCameraMotorTests
         }
 
         Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.Move(150))).MsgRecordState);
+        Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.Move(-20, IsbAbs: false))).MsgRecordState);
+        Assert.Equal(130, native.Position);
+        Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.Move(10, IsbAbs: false))).MsgRecordState);
+        Assert.Equal(140, native.Position);
         Assert.Equal(MsgRecordState.Success, (await Execute(mqtt.GetPosition)).MsgRecordState);
         Assert.Equal(MsgRecordState.Success, (await Execute(mqtt.GoHome)).MsgRecordState);
         Assert.Equal(MsgRecordState.Success, (await Execute(() => mqtt.MoveDiaphragm(2.8))).MsgRecordState);

@@ -7367,9 +7367,16 @@
   <data name="CameraFocusChart_Show" xml:space="preserve"><value>曲線</value></data>
   <data name="CameraFocusChart_Hide" xml:space="preserve"><value>隱藏曲線</value></data>
   <data name="CameraFocusChart_AutoFocus" xml:space="preserve"><value>自動對焦曲線</value></data>
+  <data name="CameraPanel_FineFocus" xml:space="preserve"><value>微對焦</value></data>
+  <data name="CameraPanel_FineFocusHint" xml:space="preserve"><value>從目前位置開始，僅在附近細搜</value></data>
+  <data name="CameraPanel_FineFocusOutsideRange" xml:space="preserve"><value>電機目前位置不在對焦範本的搜尋範圍內。請先移動到焦點附近，再開始微對焦。</value></data>
   <data name="CameraFocusChart_Video" xml:space="preserve"><value>視訊清晰度趨勢</value></data>
   <data name="CameraFocusChart_Waiting" xml:space="preserve"><value>等待取樣…</value></data>
   <data name="CameraFocusChart_Failed" xml:space="preserve"><value>對焦未完成</value></data>
+  <data name="CameraPanel_StopAutoFocus" xml:space="preserve"><value>停止對焦</value></data>
+  <data name="CameraPanel_StopAutoFocusHint" xml:space="preserve"><value>等待目前移動或取圖結束，停止後續對焦動作。</value></data>
+  <data name="CameraPanel_AutoFocusStopping" xml:space="preserve"><value>正在停止…</value></data>
+  <data name="CameraPanel_AutoFocusStopped" xml:space="preserve"><value>已停止對焦</value></data>
   <data name="CameraFocusChart_EnableCalculation" xml:space="preserve"><value>請啟用「計算清晰度」以顯示趨勢</value></data>
   <data name="CameraFocusChart_Sample" xml:space="preserve"><value>位置 {0}　評價值 {1:G6}</value></data>
   <data name="CameraFocusChart_Best" xml:space="preserve"><value>最佳位置 {0}　評價值 {1:G6}</value></data>
@@ -7379,6 +7386,10 @@
   <data name="CameraFocusChart_Seconds" xml:space="preserve"><value>時間（秒）</value></data>
   <data name="CameraFocusChart_Position" xml:space="preserve"><value>馬達位置</value></data>
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>評價值</value></data>
+  <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>自動儲存對焦曲線</value></data>
+  <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>從相機面板執行本機自動對焦成功後，將對焦曲線儲存為 PNG。</value></data>
+  <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>對焦曲線儲存資料夾</value></data>
+  <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>留空時使用「文件\ColorVision\AutoFocus」。曲線依裝置與日期歸檔。</value></data>
   <data name="CameraPanel_StartPreview" xml:space="preserve"><value>視訊模式</value></data>
   <data name="CameraPanel_StopPreview" xml:space="preserve"><value>關閉視訊</value></data>
   <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>停止連續畫面；本地相機保留連接</value></data>
@@ -7386,6 +7397,15 @@
   <data name="CameraPanel_PreviewRecoveryFailed" xml:space="preserve"><value>視訊自動恢復失敗，預覽已停止。可重新開啟視訊。</value></data>
   <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>請先斷開服務相機，再開始本地預覽</value></data>
   <data name="CameraPanel_Averages" xml:space="preserve"><value>平均</value></data>
+  <data name="CameraPanel_MotorJogLeft" xml:space="preserve"><value>向左寸動</value></data>
+  <data name="CameraPanel_MotorJogRight" xml:space="preserve"><value>向右寸動</value></data>
+  <data name="CameraPanel_MotorJogStep" xml:space="preserve"><value>步長</value></data>
+  <data name="CameraPanel_MotorJogStepHint" xml:space="preserve"><value>請輸入正整數步長（馬達位置單位）。</value></data>
+  <data name="CameraPanel_MotorAperture" xml:space="preserve"><value>光圈</value></data>
+  <data name="CameraPanel_MotorSetAperture" xml:space="preserve"><value>設定</value></data>
+  <data name="CameraPanel_MotorHome" xml:space="preserve"><value>回原點</value></data>
+  <data name="CameraPanel_MotorReadPosition" xml:space="preserve"><value>讀取</value></data>
+  <data name="CameraPanel_MotorPosition" xml:space="preserve"><value>位置</value></data>
   <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>自曝 ND</value></data>
   <data name="CameraPanel_NDHint" xml:space="preserve"><value>僅服務模式支援 ND 自動切換；本地自動曝光前請取消勾選</value></data>
   <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>預覽設定</value></data>

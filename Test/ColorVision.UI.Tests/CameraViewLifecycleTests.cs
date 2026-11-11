@@ -5,11 +5,13 @@ using ScottPlot.Plottables;
 using ScottPlot.WPF;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
@@ -85,6 +87,42 @@ public sealed class CameraViewLifecycleTests
         Assert.Equal(Visibility.Visible, host.Visibility);
         Assert.Equal(initialMetrics, readout.Text);
         chart.EndVideo();
+    });
+
+    [Fact]
+    public void CompletedFocusCurveExportsWhileHiddenAndKeepsExistingFile() => StaTest.Run(() =>
+    {
+        var chart = new CameraFocusChart();
+        var panel = (Border)chart.FindName("ChartPanel");
+        var hide = (Button)chart.FindName("HideChartButton");
+        var samples = new SortedDictionary<int, double> { [100] = 3, [200] = 5, [300] = 4 };
+        var best = new LocalAutoFocusResult(200, 5, 3, 300) { VidPosition = 42 };
+        chart.BeginAutoFocus("Variance");
+        hide.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        foreach (var sample in samples) chart.AddAutoFocusSample(sample.Key, sample.Value);
+        chart.CompleteAutoFocus(best);
+
+        DirectoryInfo output = Directory.CreateTempSubdirectory("ColorVision-AutoFocus-");
+        try
+        {
+            var time = new DateTime(2026, 11, 11, 16, 30, 15, 123);
+            string path = CameraFocusCurve.SavePng(output.FullName, "VID100", "Variance", samples, best, time);
+            string duplicate = CameraFocusCurve.SavePng(output.FullName, "VID100", "Variance", samples, best, time);
+            string day = Path.Combine(output.FullName, "VID100", "2026-11-11");
+            Assert.Equal(Path.Combine(day, "20261111_163015_123.png"), path);
+            Assert.Equal(Path.Combine(day, "20261111_163015_123_2.png"), duplicate);
+            Assert.Equal(2, Directory.GetFiles(day).Length);
+            using var stream = File.OpenRead(path);
+            var decoder = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+            BitmapFrame frame = Assert.Single(decoder.Frames);
+            Assert.Equal(1120, frame.PixelWidth);
+            Assert.Equal(660, frame.PixelHeight);
+            Assert.Equal(Visibility.Collapsed, panel.Visibility);
+        }
+        finally
+        {
+            output.Delete(recursive: true);
+        }
     });
 
     [Fact]

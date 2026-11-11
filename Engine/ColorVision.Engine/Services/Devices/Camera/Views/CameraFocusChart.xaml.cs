@@ -68,8 +68,7 @@ public partial class CameraFocusChart : UserControl
         Reset();
         mode = ChartMode.AutoFocus;
         focusRunning = true;
-        string title = EngineLocalization.Get("CameraFocusChart_AutoFocus");
-        ChartTitle.Text = string.IsNullOrEmpty(evaluation) ? title : $"{title} · {evaluation}";
+        ChartTitle.Text = CameraFocusCurve.Title(evaluation);
         ChartReadout.Text = EngineLocalization.Get("CameraFocusChart_Waiting");
         RefreshMotorVid(openWhenEntering: false);
         SetOpen(true);
@@ -88,18 +87,16 @@ public partial class CameraFocusChart : UserControl
         if (mode != ChartMode.AutoFocus || !focusRunning) return;
         focusRunning = false;
         bestFocus = result;
-        ChartReadout.Text = result.VidPosition is double vid
-            ? FormatReadout("CameraFocusChart_BestWithVid", result.Position, result.Score, vid)
-            : FormatReadout("CameraFocusChart_Best", result.Position, result.Score);
+        ChartReadout.Text = CameraFocusCurve.BestReadout(result);
         RefreshMotorVid(openWhenEntering: false);
         ScheduleRedraw();
     }
 
-    internal void FailAutoFocus()
+    internal void EndAutoFocus(bool canceled)
     {
         if (mode != ChartMode.AutoFocus || !focusRunning) return;
         focusRunning = false;
-        ChartReadout.Text = EngineLocalization.Get("CameraFocusChart_Failed");
+        ChartReadout.Text = EngineLocalization.Get(canceled ? "CameraPanel_AutoFocusStopped" : "CameraFocusChart_Failed");
     }
 
     internal void ClearCompletedAutoFocus()
@@ -274,29 +271,14 @@ public partial class CameraFocusChart : UserControl
         if (axisMode != mode)
         {
             axisMode = mode;
-            string xLabel = EngineLocalization.Get(mode == ChartMode.Video ? "CameraFocusChart_Seconds" : "CameraFocusChart_Position");
-            string yLabel = EngineLocalization.Get("CameraFocusChart_Score");
-            chart.XLabel(xLabel);
-            chart.YLabel(yLabel);
-            chart.Axes.Bottom.Label.FontName = Fonts.Detect(xLabel);
-            chart.Axes.Left.Label.FontName = Fonts.Detect(yLabel);
-            chart.Axes.Bottom.Label.FontSize = chart.Axes.Left.Label.FontSize = 12;
+            CameraFocusCurve.ConfigureAxes(chart, video: mode == ChartMode.Video);
         }
 
         chart.Clear();
         Coordinates[] samples = mode == ChartMode.Video
             ? videoSamples.ToArray()
             : focusSamples.Select(sample => new Coordinates(sample.Key, sample.Value)).ToArray();
-        if (samples.Length != 0)
-        {
-            var curve = chart.Add.Scatter(samples);
-            curve.Color = ScottPlot.Color.FromHex("#3196CE");
-            curve.MarkerSize = mode == ChartMode.AutoFocus || samples.Length == 1 ? 4 : 0;
-        }
-        if (bestFocus != null)
-            chart.Add.Marker(bestFocus.Position, bestFocus.Score, MarkerShape.FilledCircle, 9, Colors.Orange);
-
-        chart.Axes.AutoScale();
+        CameraFocusCurve.AddSamples(chart, samples, showMarkers: mode == ChartMode.AutoFocus, bestFocus);
         if (mode == ChartMode.Video && samples.Length != 0)
         {
             double latest = samples[^1].X;

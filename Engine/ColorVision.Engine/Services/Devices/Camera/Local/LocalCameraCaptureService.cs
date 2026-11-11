@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public string? AutoExposureConfiguration { get; init; }
         public bool SaveFiles { get; init; }
         public bool AllowAcceleration { get; init; }
+        public CancellationToken Stop { get; init; }
     }
 
     internal sealed class LocalCameraCaptureResult
@@ -57,11 +58,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            FlowNodeTiming.Run("WaitCamera", CaptureLock.Wait);
+            FlowNodeTiming.Run("WaitCamera", request.Stop.CanBeCanceled ? () => CaptureLock.Wait(request.Stop) : CaptureLock.Wait);
             try
             {
                 lock (request.Device.LocalCameraSession.SyncRoot)
                 {
+                    request.Stop.ThrowIfCancellationRequested();
                     DeviceCamera device = request.Device;
                     var captureChannels = GetChannelConfigs(device, device.Config.Channel == ImageChannel.Three ? 3 : 1);
                     device.EnsureLocalMeasurementConnected(autoConnect: false);
@@ -77,6 +79,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static LocalCameraCaptureResult CaptureCore(LocalCameraCaptureRequest request, IntPtr cameraHandle,
             IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> captureChannels)
         {
+            request.Stop.ThrowIfCancellationRequested();
             LocalFrameMirrorService.ValidateFlipMode(request.FlipMode);
             DeviceCamera device = request.Device;
             if (device.LocalCameraSession.OpenedMode == TakeImageMode.Live)
@@ -177,6 +180,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
                     // calibration items; all calibration runs once below on these buffers.
                     using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
+                    request.Stop.ThrowIfCancellationRequested();
                     CaptureRawFrame(cameraHandle, captureJson, lease, cvCameraCSLib.CM_GetFrame);
                     captureStopwatch.Stop();
                     captureTimeMs = ToMilliseconds(captureStopwatch.ElapsedMilliseconds);

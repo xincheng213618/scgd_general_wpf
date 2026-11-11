@@ -6414,9 +6414,16 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraFocusChart_Show" xml:space="preserve"><value>Curve</value></data>
   <data name="CameraFocusChart_Hide" xml:space="preserve"><value>Hide curve</value></data>
   <data name="CameraFocusChart_AutoFocus" xml:space="preserve"><value>Autofocus curve</value></data>
+  <data name="CameraPanel_FineFocus" xml:space="preserve"><value>Fine focus</value></data>
+  <data name="CameraPanel_FineFocusHint" xml:space="preserve"><value>Refine focus around the current position</value></data>
+  <data name="CameraPanel_FineFocusOutsideRange" xml:space="preserve"><value>The current motor position is outside the template's search range. Move near the focus point before starting fine focus.</value></data>
   <data name="CameraFocusChart_Video" xml:space="preserve"><value>Video sharpness trend</value></data>
   <data name="CameraFocusChart_Waiting" xml:space="preserve"><value>Waiting for samples…</value></data>
   <data name="CameraFocusChart_Failed" xml:space="preserve"><value>Autofocus did not complete</value></data>
+  <data name="CameraPanel_StopAutoFocus" xml:space="preserve"><value>Stop focus</value></data>
+  <data name="CameraPanel_StopAutoFocusHint" xml:space="preserve"><value>Stop the search after the current move or capture finishes.</value></data>
+  <data name="CameraPanel_AutoFocusStopping" xml:space="preserve"><value>Stopping…</value></data>
+  <data name="CameraPanel_AutoFocusStopped" xml:space="preserve"><value>Autofocus stopped</value></data>
   <data name="CameraFocusChart_EnableCalculation" xml:space="preserve"><value>Enable sharpness calculation to show the trend</value></data>
   <data name="CameraFocusChart_Sample" xml:space="preserve"><value>Position {0} · Score {1:G6}</value></data>
   <data name="CameraFocusChart_Best" xml:space="preserve"><value>Best position {0} · Score {1:G6}</value></data>
@@ -6426,6 +6433,10 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraFocusChart_Seconds" xml:space="preserve"><value>Time (s)</value></data>
   <data name="CameraFocusChart_Position" xml:space="preserve"><value>Motor position</value></data>
   <data name="CameraFocusChart_Score" xml:space="preserve"><value>Score</value></data>
+  <data name="CameraFocusChart_AutoSave" xml:space="preserve"><value>Save autofocus curves automatically</value></data>
+  <data name="CameraFocusChart_AutoSaveHint" xml:space="preserve"><value>Saves a PNG after successful local autofocus from the camera panel.</value></data>
+  <data name="CameraFocusChart_SaveDirectory" xml:space="preserve"><value>Autofocus curve folder</value></data>
+  <data name="CameraFocusChart_SaveDirectoryHint" xml:space="preserve"><value>Leave blank to use Documents\ColorVision\AutoFocus. Curves are grouped by device and date.</value></data>
   <data name="CameraPanel_StartPreview" xml:space="preserve"><value>Video</value></data>
   <data name="CameraPanel_StopPreview" xml:space="preserve"><value>Stop video</value></data>
   <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>Stop preview; keep the local camera connected</value></data>
@@ -6433,6 +6444,15 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraPanel_PreviewRecoveryFailed" xml:space="preserve"><value>Video recovery failed and preview stopped. Start video to try again.</value></data>
   <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>Disconnect the service camera before starting local preview</value></data>
   <data name="CameraPanel_Averages" xml:space="preserve"><value>Avg.</value></data>
+  <data name="CameraPanel_MotorJogLeft" xml:space="preserve"><value>Jog left</value></data>
+  <data name="CameraPanel_MotorJogRight" xml:space="preserve"><value>Jog right</value></data>
+  <data name="CameraPanel_MotorJogStep" xml:space="preserve"><value>Step</value></data>
+  <data name="CameraPanel_MotorJogStepHint" xml:space="preserve"><value>Enter a positive integer step in motor position units.</value></data>
+  <data name="CameraPanel_MotorAperture" xml:space="preserve"><value>Iris</value></data>
+  <data name="CameraPanel_MotorSetAperture" xml:space="preserve"><value>Set</value></data>
+  <data name="CameraPanel_MotorHome" xml:space="preserve"><value>Home</value></data>
+  <data name="CameraPanel_MotorReadPosition" xml:space="preserve"><value>Read</value></data>
+  <data name="CameraPanel_MotorPosition" xml:space="preserve"><value>Position</value></data>
   <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>AE + ND</value></data>
   <data name="CameraPanel_NDHint" xml:space="preserve"><value>Automatic ND switching requires the service; uncheck before local auto exposure</value></data>
   <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>Preview settings</value></data>

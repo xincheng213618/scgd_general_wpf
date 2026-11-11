@@ -194,13 +194,18 @@ internal sealed class LocalCameraMotorSession(ILocalCameraMotorNative native)
         token.ThrowIfCancellationRequested();
         var watch = Stopwatch.StartNew();
         native.PrepareFocus(cameraHandle, exposure, gain);
-        int? initialPosition = focus.Method == FindFuncModel.FindDichotomy ? ReadPosition() : null;
+        focus.Remaining(watch.ElapsedMilliseconds, token, "准备自动对焦");
+        int? initialPosition = focus.FineOnly || focus.Method == FindFuncModel.FindDichotomy ? ReadPosition() : null;
         var result = LocalAutoFocusSearch.Run(focus, (position, remaining) =>
         {
-            string operation = $"自动对焦移动电机至 {position}";
-            CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds, operation, token);
+            if (!focus.FineOnly || position != initialPosition)
+            {
+                string operation = $"自动对焦移动电机至 {position}";
+                CheckFocusOperation(native.Move(handle, position, Math.Min(settings.Timeout, remaining)), focus, watch.ElapsedMilliseconds, operation, token);
+            }
             double? vid = progress == null ? null : ConvertVid(position);
             progress?.Invoke(position, vid, null);
+            focus.Remaining(watch.ElapsedMilliseconds, token, "自动对焦取图评价");
             CheckFocusOperation(native.EvaluateFocus(cameraHandle, focus.Evaluation, out double value, preview), focus, watch.ElapsedMilliseconds, "自动对焦取图评价", token);
             progress?.Invoke(position, vid, value);
             return value;

@@ -25,6 +25,12 @@
         <DockPanel Margin="0,0,5,0">
             <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}"/>
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
+            <Button x:Name="StopAutoFocusButton" DockPanel.Dock="Right" Margin="3,0" Padding="5,1"
+                    Visibility="Collapsed" Click="StopLocalAutoFocus_Click"
+                    Content="{engine:EngineLang CameraPanel_StopAutoFocus}"
+                    ToolTip="{engine:EngineLang CameraPanel_StopAutoFocusHint}"
+                    ToolTipService.ShowOnDisabled="True"
+                    AutomationProperties.Name="{Binding Content, RelativeSource={RelativeSource Self}}"/>
             <ToggleButton x:Name="DisplayHeaderToggle" Content="{Binding Config.Name}" FontSize="15" IsChecked="True" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}"/>
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">

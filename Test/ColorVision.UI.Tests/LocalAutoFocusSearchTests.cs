@@ -45,6 +45,58 @@ public class LocalAutoFocusSearchTests
     }
 
     [Theory]
+    [InlineData(480, 380, 580, 463)]
+    [InlineData(950, 850, 1000, 973)]
+    public void FineFocusSamplesOnlyTheNeighborhoodOfTheCurrentPosition(int current, int minimum, int maximum, int peak)
+    {
+        var sampled = new List<int>();
+        int? finalPosition = null;
+        var settings = LocalCameraMotorTests.Settings() with { FineOnly = true };
+        var result = LocalAutoFocusSearch.Run(settings, (position, _) =>
+        {
+            sampled.Add(position);
+            return 1000000 - Math.Pow(position - peak, 2);
+        }, (position, _) => finalPosition = position, initialPosition: current);
+
+        Assert.Equal(current, sampled[0]);
+        Assert.All(sampled, position => Assert.InRange(position, minimum, maximum));
+        Assert.InRange(Math.Abs(result.Position - peak), 0, 1);
+        Assert.Equal(result.Position, finalPosition);
+    }
+
+    [Theory]
+    [InlineData(108900)]
+    [InlineData(109100)]
+    public void FineFocusNearThePeakProbesNeighborsAndConfirmsTheFitWithoutSweeping(int peak)
+    {
+        const int current = 109000;
+        var settings = LocalCameraMotorTests.Settings() with
+        {
+            FineOnly = true, Minimum = 80000, Maximum = 180000, InitialStep = 5000, FineStep = 5000,
+            Reduction = 0.3, StopStep = 200
+        };
+        var sampled = new List<int>();
+        var result = LocalAutoFocusSearch.Run(settings, (position, _) =>
+        {
+            sampled.Add(position);
+            return 100000000 - Math.Pow(position - peak, 2);
+        }, (_, _) => { }, initialPosition: current);
+
+        Assert.Equal([current, current + 1500, current - 1500, peak, peak - 200, peak + 200], sampled);
+        Assert.Equal(peak, result.Position);
+    }
+
+    [Fact]
+    public void FineFocusOutsideTheTemplateRangeDoesNotMoveOrSample()
+    {
+        var settings = LocalCameraMotorTests.Settings() with { FineOnly = true };
+        Assert.Throws<InvalidOperationException>(() => LocalAutoFocusSearch.Run(settings,
+            (_, _) => throw new Xunit.Sdk.XunitException("Sample started outside the template range."),
+            (_, _) => throw new Xunit.Sdk.XunitException("Move started outside the template range."),
+            initialPosition: 1001));
+    }
+
+    [Theory]
     [InlineData("parabola")]
     [InlineData("gaussian")]
     [InlineData("asymmetric")]

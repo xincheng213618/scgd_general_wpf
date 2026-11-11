@@ -12,6 +12,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local;
 internal sealed record LocalAutoFocusSettings(EvaFunc Evaluation, FindFuncModel Method, int Minimum, int Maximum,
     int InitialStep, double FineStep, double Reduction, int StopStep, double MinimumScore, int Timeout)
 {
+    internal bool FineOnly { get; init; }
+
     internal static LocalAutoFocusSettings FromTemplate(AutoFocusParam template, MotorConfig motor)
     {
         ArgumentNullException.ThrowIfNull(template);
@@ -91,7 +93,7 @@ internal static class LocalAutoFocusSearch
             return a < 0 && double.IsFinite(offset) && offset >= left && offset <= right
                 ? (int)Math.Clamp(Math.Round(bestPosition + offset), settings.Minimum, settings.Maximum) : null;
         }
-        bool ConfirmInterpolatedPeak()
+        bool ConfirmInterpolatedPeak(int minimum, int maximum)
         {
             int? candidate = InterpolatedPeak();
             if (!candidate.HasValue) return false;
@@ -100,8 +102,8 @@ internal static class LocalAutoFocusSearch
             // A fitted position must be measured and bracketed at the requested
             // stopping resolution. A poor fit keeps the complete fine scan.
             if (score < coarseScore || bestPosition != candidate.Value) return false;
-            int left = (int)Math.Max(settings.Minimum, (long)candidate.Value - settings.StopStep);
-            int right = (int)Math.Min(settings.Maximum, (long)candidate.Value + settings.StopStep);
+            int left = (int)Math.Max(minimum, (long)candidate.Value - settings.StopStep);
+            int right = (int)Math.Min(maximum, (long)candidate.Value + settings.StopStep);
             double leftScore = Sample(left), rightScore = Sample(right);
             return score > leftScore && score > rightScore;
         }
@@ -116,7 +118,53 @@ internal static class LocalAutoFocusSearch
             }
         }
 
-        if (settings.Method == FindFuncModel.FindDichotomy)
+        int FirstFineStep() => (int)Math.Clamp(Math.Floor(settings.FineStep * settings.Reduction), settings.StopStep, settings.InitialStep - 1d);
+
+        void RefinePeak(int center)
+        {
+            int minimum = (int)Math.Max(settings.Minimum, (long)center - settings.InitialStep);
+            int maximum = (int)Math.Min(settings.Maximum, (long)center + settings.InitialStep);
+            Scan(minimum, maximum, FirstFineStep());
+            int? candidate = InterpolatedPeak();
+            if (candidate.HasValue) Sample(candidate.Value);
+        }
+
+        void ClimbNearby(int start)
+        {
+            int minimum = (int)Math.Max(settings.Minimum, (long)start - settings.InitialStep);
+            int maximum = (int)Math.Min(settings.Maximum, (long)start + settings.InitialStep);
+            int step = FirstFineStep(), direction = 1;
+            Sample(start);
+            while (true)
+            {
+                int center = bestPosition;
+                Sample((int)Math.Clamp((long)center + direction * (long)step, minimum, maximum));
+                if (bestPosition != center) continue;
+
+                Sample((int)Math.Clamp((long)center - direction * (long)step, minimum, maximum));
+                if (bestPosition != center)
+                {
+                    direction = -direction;
+                    continue;
+                }
+
+                if (ConfirmInterpolatedPeak(minimum, maximum) || step == settings.StopStep) break;
+                step = Math.Max(settings.StopStep, Math.Min(step - 1, (int)Math.Floor(step * settings.Reduction)));
+            }
+        }
+
+        if (settings.FineOnly)
+        {
+            if (initialPosition is not int current || current < settings.Minimum || current > settings.Maximum)
+                throw new InvalidOperationException(EngineLocalization.Get("CameraPanel_FineFocusOutsideRange"));
+            ClimbNearby(current);
+        }
+        else if (settings.Method == FindFuncModel.FindMaxDiff)
+        {
+            Scan(settings.Minimum, settings.Maximum, settings.InitialStep);
+            if (!ConfirmInterpolatedPeak(settings.Minimum, settings.Maximum)) RefinePeak(bestPosition);
+        }
+        else if (settings.Method == FindFuncModel.FindDichotomy)
         {
             int current = Math.Clamp(initialPosition ?? settings.Minimum, settings.Minimum, settings.Maximum);
             int direction = current == settings.Maximum ? -1 : 1, step = settings.InitialStep;
@@ -138,18 +186,10 @@ internal static class LocalAutoFocusSearch
             {
                 Scan(minimum, maximum, step);
                 if (step <= settings.StopStep) break;
-                if (settings.Method == FindFuncModel.FindMaxDiff && ConfirmInterpolatedPeak()) break;
                 minimum = (int)Math.Max(settings.Minimum, (long)bestPosition - step);
                 maximum = (int)Math.Min(settings.Maximum, (long)bestPosition + step);
                 step = Math.Max(settings.StopStep, Math.Min(step - 1, (int)Math.Max(1, Math.Floor(fineStep * settings.Reduction))));
                 fineStep *= settings.Reduction;
-                if (settings.Method == FindFuncModel.FindMaxDiff)
-                {
-                    Scan(minimum, maximum, step);
-                    int? candidate = InterpolatedPeak();
-                    if (candidate.HasValue) Sample(candidate.Value);
-                    break;
-                }
             }
         }
         if (bestScore <= settings.MinimumScore) throw new InvalidOperationException($"自动对焦未达到最低评价值 {settings.MinimumScore}，最高评价值为 {bestScore}。");

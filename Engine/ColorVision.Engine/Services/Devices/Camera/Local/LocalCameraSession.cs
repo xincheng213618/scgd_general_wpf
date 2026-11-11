@@ -549,11 +549,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             try
             {
-                log.Info(FormattableString.Invariant($"[LocalAutoFocus] Begin Camera={OpenedCameraId} Method={settings.Method} Evaluation={settings.Evaluation} Range=[{settings.Minimum},{settings.Maximum}] InitialStep={settings.InitialStep} FineStep={settings.FineStep} Reduction={settings.Reduction} StopStep={settings.StopStep} MinimumScore={settings.MinimumScore} TimeoutMs={settings.Timeout} ExposureMs={exposure} Gain={gain} Preview={preview != null}"));
+                log.Info(FormattableString.Invariant($"[LocalAutoFocus] Begin Camera={OpenedCameraId} Method={settings.Method} FineOnly={settings.FineOnly} Evaluation={settings.Evaluation} Range=[{settings.Minimum},{settings.Maximum}] InitialStep={settings.InitialStep} FineStep={settings.FineStep} Reduction={settings.Reduction} StopStep={settings.StopStep} MinimumScore={settings.MinimumScore} TimeoutMs={settings.Timeout} ExposureMs={exposure} Gain={gain} Preview={preview != null}"));
                 var result = motor.AutoFocus(manager, settings, exposure, gain, cancellation.Token, preview, progress);
                 log.Info(FormattableString.Invariant($"[LocalAutoFocus] Completed Camera={OpenedCameraId} Position={result.Position} Score={result.Score} Samples={result.Samples} TotalMs={result.TotalTime}"));
                 return result;
             }
+            catch (OperationCanceledException) { log.Info($"[LocalAutoFocus] Stopped Camera={OpenedCameraId}"); throw; }
             catch (Exception error) { log.Error($"[LocalAutoFocus] Failed Camera={OpenedCameraId}", error); throw; }
             finally { lock (focusSync) focusCancellation = null; }
         });
