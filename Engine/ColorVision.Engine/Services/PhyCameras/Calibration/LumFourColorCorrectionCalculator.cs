@@ -10,6 +10,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
     {
         MatlabRgbw,
         SinglePoint,
+        Luminance,
     }
 
     public readonly record struct ColorCorrectionYxy(double Y, double CieX, double CieY);
@@ -38,6 +39,17 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
     public static class LumFourColorCorrectionCalculator
     {
+        internal static double CorrectLuminance(double sourceCoefficient, double cameraY, double referenceY)
+        {
+            if (!double.IsFinite(cameraY) || cameraY <= 0 || !double.IsFinite(referenceY) || referenceY <= 0)
+                throw new InvalidOperationException(EngineLocalization.Get("相机 Y 和光谱 Y 必须是大于 0 的有限数值。"));
+
+            double corrected = sourceCoefficient * (referenceY / cameraY);
+            if (!double.IsFinite(corrected) || corrected <= 0)
+                throw new InvalidOperationException(EngineLocalization.Get("修正后的亮度系数必须是大于 0 的有限数值。"));
+            return corrected;
+        }
+
         public static CVRawManualCieConfig CorrectSinglePoint(CVRawManualCieConfig source, ColorCorrectionMeasurement measurement)
         {
             ArgumentNullException.ThrowIfNull(source);

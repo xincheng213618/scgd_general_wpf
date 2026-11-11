@@ -6016,6 +6016,42 @@
   <data name="单点修正" xml:space="preserve">
     <value>單點修正</value>
   </data>
+  <data name="单通道亮度修正" xml:space="preserve">
+    <value>單通道亮度修正</value>
+  </data>
+  <data name="选择原单通道亮度校正文件" xml:space="preserve">
+    <value>選擇原單通道亮度校正檔案</value>
+  </data>
+  <data name="单通道亮度校正文件" xml:space="preserve">
+    <value>單通道亮度校正檔案</value>
+  </data>
+  <data name="请核对相机 Y 使用原亮度校正文件测得，且与光谱 Y 为同一测量点。" xml:space="preserve">
+    <value>請核對相機 Y 使用原亮度校正檔案測得，且與光譜 Y 為同一測量點。</value>
+  </data>
+  <data name="相机 Y 和光谱 Y 必须是大于 0 的有限数值。" xml:space="preserve">
+    <value>相機 Y 和光譜 Y 必須是大於 0 的有限數值。</value>
+  </data>
+  <data name="修正后的亮度系数必须是大于 0 的有限数值。" xml:space="preserve">
+    <value>修正後的亮度係數必須是大於 0 的有限數值。</value>
+  </data>
+  <data name="单通道亮度校正文件须为无重复字段的 JSON。" xml:space="preserve">
+    <value>單通道亮度校正檔案須為無重複欄位的 JSON。</value>
+  </data>
+  <data name="请选择单通道亮度校正文件，当前文件包含色度校正矩阵。" xml:space="preserve">
+    <value>請選擇單通道亮度校正檔案，目前檔案包含色度校正矩陣。</value>
+  </data>
+  <data name="原亮度系数 a 必须是大于 0 的有限数值。" xml:space="preserve">
+    <value>原亮度係數 a 必須是大於 0 的有限數值。</value>
+  </data>
+  <data name="粘贴列数超出表格：请按相机 Y、光谱 Y 排列，可在首列带目标名称。" xml:space="preserve">
+    <value>貼上的欄數超出表格：請按相機 Y、光譜 Y 排列，可在首欄附上目標名稱。</value>
+  </data>
+  <data name="粘贴行数超出当前模式，请核对起始单元格。" xml:space="preserve">
+    <value>貼上的列數超出目前模式，請核對起始儲存格。</value>
+  </data>
+  <data name="已粘贴，请核对测量来源。" xml:space="preserve">
+    <value>已貼上，請核對測量來源。</value>
+  </data>
   <data name="原校正文件" xml:space="preserve">
     <value>原校正文件</value>
   </data>

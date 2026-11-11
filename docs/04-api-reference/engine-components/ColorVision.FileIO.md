@@ -220,7 +220,7 @@ CVCIE 首次打开和切换图层时，达到 8 MiB 的冻结显示图在后台�
 
 - 单点修正分别用原 3×3 矩阵反解相机与参考 XYZ 的 RGB 响应，再按两个响应的逐通道比例缩放原矩阵的 R/G/B 三列。
 - RGBW 修正先反解四个画面的相机 RGB 响应，以四组参考 x/y、z/y 形成八个色度方程，并用 W 的参考 Y 形成唯一亮度方程，求得新的九个矩阵系数。这与当前 MATLAB 算法一致；R/G/B 的参考 Y 不参与方程，W 的参考 Y 决定整体亮度尺度。
-- `LumFourColorCalibrationSession.SetMode` 使用 `LumFourColorCorrectionMode`，单点建立一组，RGBW 建立四组数据；`IsComplete` 同时检查组数和各组有效性。两个窗口显示“单点”和“RGBW 四色”，切换时清除测量数据与旧结果，未知模式值拒绝。从采集窗口打开手工窗口时带入当前模式。
+- 采集会话支持单点与 RGBW，打开手工窗口时带入当前模式。手工窗口还支持单通道亮度修正，复用文件指纹和备份校验。切换模式会清空测量数据和旧结果。
 - `LumFourColorSourceSnapshot.SaveCopy` 使用原文档的 `SerializeCorrection` 按原格式另存，默认文件名带 `_Corrected`；另存禁止覆盖原文件并复核内容指纹，不自动安装到校正模板。历史 `_PythonRGB_XYZ` 文件属于未与原矩阵合成的独立 XYZ→XYZ 变换，不是本入口输出的完整校正系数；不能据其 `a…i` 外观认定可用于原文件替换。
 - `LumFourColorCalibrationWorkflowWindow` 显示“用户校正”，可从相机属性的“校准与校正”分组、校正文件管理及“应用与工具”进入。`DeviceCamera.UserCalibrationCommand` 使用现有命令元数据分组并通过 `ShowWindow(camera: this)` 带入当前相机，复用已有窗口时忙碌状态不允许切换上下文。单点采集一组相机 POI 与光谱仪数据，RGBW 按相同过程完成四组；相机侧与光谱侧的采集顺序不限。侧栏显示相机、光谱各一行 Y/x/y 六个输入框；图像来源、POI、曝光、XYZ、光谱结果 ID 与完整相对光谱放入默认折叠的“测量详情”。
 - `LumFourColorRecentImages` 与 POI 导图使用同一 `MeasureResultImgModel` 拍摄记录表，独立连接按当前逻辑相机 `DeviceCode` 查询最近 100 条（时间、ID 倒序）；列表刷新不默认选中，不改变现有测量。“导入最新图像”明确取第一条，导入前清除旧相机数据，查询或文件加载失败不复用旧数据、不自动跳到更早记录。仅使用记录自身的 `FileUrl` / `RawFile`，优先 CVCIE 路径，不猜测同目录替代文件。导入复核设备归属、拍摄成功、文件存在及三通道浮点 CVCIE，或带可重放三通道色度参数的 CVRAW；无可重放参数的 RAW/普通预览图拒绝。读取在后台执行，从旧 CVCIE 加载内嵌 XYZ，或从 CVRAW 重放参数生成浮点 XYZ，再应用当前 POI 模板或手动画点；不访问真实相机、不修改记录，文件的校正来源仍待核对。

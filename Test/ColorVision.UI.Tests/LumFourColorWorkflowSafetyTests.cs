@@ -16,6 +16,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.FileIO;
+using Newtonsoft.Json.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -653,6 +654,75 @@ public sealed class LumFourColorWorkflowSafetyTests
             }
             finally { window.Close(); }
         });
+    }
+
+    [Fact]
+    public void ManualLuminanceModeUsesTwoColumnsAndOnlyReplacesCoefficientA()
+    {
+        string directory = Directory.CreateTempSubdirectory("lum-manual-").FullName;
+        string path = Path.Combine(directory, "source.dat");
+        const string original = """{"a":2,"bpp":16,"Texp_x":12.5,"b":0,"device":{"capturedAt":"2026-01-01T12:00:00+08:00"}}""";
+        try
+        {
+            WriteSource(path);
+            WithTheme(() =>
+            {
+                var window = new LumFourColorCorrectionWindow(path);
+                try
+                {
+                    Control<RadioButton>(window, "LuminanceMode").IsChecked = true;
+                    Render(window, 1076, 576, "manual-luminance");
+                    var grid = Control<DataGrid>(window, "MeasurementsGrid");
+                    var visibleColumns = grid.Columns.Where(column => column.Visibility == Visibility.Visible).ToArray();
+                    Assert.Equal(3, visibleColumns.Length);
+                    var row = Assert.IsType<CorrectionMeasurementRow>(Assert.Single(grid.Items));
+                    var confirm = Control<CheckBox>(window, "ManualDataConfirmed");
+                    var save = Control<Button>(window, "SaveButton");
+                    var replace = Control<Button>(window, "ReplaceButton");
+                    var preview = Control<TextBox>(window, "ResultPreview");
+                    window.PasteMeasurements("相机 Y\t光谱 Y\n90\t120");
+                    grid.CurrentCell = new DataGridCellInfo(row, visibleColumns[2]);
+                    window.PasteMeasurements("135");
+                    Assert.Equal("90", row.CameraY);
+                    Assert.Equal("135", row.ReferenceY);
+                    Assert.Empty(row.CameraX);
+                    Assert.EndsWith("单点\t90\t135", LumFourColorMeasurementClipboard.CopyAll([row], luminanceOnly: true));
+
+                    confirm.IsChecked = true;
+                    Click(window, "CalculateButton");
+                    Assert.False(replace.IsEnabled);
+                    File.WriteAllText(path, original);
+                    row.CameraY = "0";
+                    confirm.IsChecked = true;
+                    Click(window, "CalculateButton");
+                    Assert.False(replace.IsEnabled);
+
+                    row.CameraY = "90";
+                    confirm.IsChecked = true;
+                    Click(window, "CalculateButton");
+                    Assert.Equal("a = 3", preview.Text);
+                    Assert.True(save.IsEnabled);
+                    Assert.True(replace.IsEnabled);
+
+                    int restarts = 0;
+                    Task replacement = window.ReplaceCurrentAsync(() => { restarts++; return Task.CompletedTask; });
+                    Assert.True(replacement.IsCompletedSuccessfully);
+                    Assert.Equal(1, restarts);
+                    Assert.Equal(original, File.ReadAllText(Assert.Single(Directory.GetFiles(directory, "*_backup.dat"))));
+                    JObject expected = JObject.Parse(original);
+                    expected["a"] = 3.0;
+                    Assert.True(JToken.DeepEquals(expected, JObject.Parse(File.ReadAllText(path))));
+                    Assert.False(confirm.IsChecked);
+                    Assert.False(replace.IsEnabled);
+                    Assert.Empty(preview.Text);
+
+                    Control<RadioButton>(window, "SinglePointMode").IsChecked = true;
+                    Assert.Equal(7, grid.Columns.Count(column => column.Visibility == Visibility.Visible));
+                }
+                finally { window.Close(); }
+            });
+        }
+        finally { Directory.Delete(directory, true); }
     }
 
     [Fact]

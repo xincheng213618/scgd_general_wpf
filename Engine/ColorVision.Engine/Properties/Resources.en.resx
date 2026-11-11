@@ -5063,6 +5063,42 @@ Only license records will be removed. Device settings, exported files and record
   <data name="单点修正" xml:space="preserve">
     <value>Single-point Correction</value>
   </data>
+  <data name="单通道亮度修正" xml:space="preserve">
+    <value>Single-channel Luminance Correction</value>
+  </data>
+  <data name="选择原单通道亮度校正文件" xml:space="preserve">
+    <value>Select Original Single-channel Luminance Calibration File</value>
+  </data>
+  <data name="单通道亮度校正文件" xml:space="preserve">
+    <value>Single-channel Luminance Calibration Files</value>
+  </data>
+  <data name="请核对相机 Y 使用原亮度校正文件测得，且与光谱 Y 为同一测量点。" xml:space="preserve">
+    <value>Verify that camera Y was measured using the original luminance calibration file at the same point as reference Y.</value>
+  </data>
+  <data name="相机 Y 和光谱 Y 必须是大于 0 的有限数值。" xml:space="preserve">
+    <value>Camera Y and reference Y must be finite numbers greater than zero.</value>
+  </data>
+  <data name="修正后的亮度系数必须是大于 0 的有限数值。" xml:space="preserve">
+    <value>The corrected luminance coefficient must be a finite number greater than zero.</value>
+  </data>
+  <data name="单通道亮度校正文件须为无重复字段的 JSON。" xml:space="preserve">
+    <value>The single-channel luminance calibration file must be JSON without duplicate fields.</value>
+  </data>
+  <data name="请选择单通道亮度校正文件，当前文件包含色度校正矩阵。" xml:space="preserve">
+    <value>Select a single-channel luminance calibration file. The current file contains a color correction matrix.</value>
+  </data>
+  <data name="原亮度系数 a 必须是大于 0 的有限数值。" xml:space="preserve">
+    <value>The original luminance coefficient a must be a finite number greater than zero.</value>
+  </data>
+  <data name="粘贴列数超出表格：请按相机 Y、光谱 Y 排列，可在首列带目标名称。" xml:space="preserve">
+    <value>The pasted columns exceed the grid. Use camera Y and reference Y in order, with an optional target column first.</value>
+  </data>
+  <data name="粘贴行数超出当前模式，请核对起始单元格。" xml:space="preserve">
+    <value>The pasted rows exceed the current mode. Check the starting cell.</value>
+  </data>
+  <data name="已粘贴，请核对测量来源。" xml:space="preserve">
+    <value>Pasted. Verify the measurement sources.</value>
+  </data>
   <data name="原校正文件" xml:space="preserve">
     <value>Original Calibration File</value>
   </data>

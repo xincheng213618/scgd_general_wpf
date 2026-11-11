@@ -24,18 +24,42 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         public CVRawManualCieConfig Config { get; }
         public CalibrationType CalibrationType { get; }
-        public string FormatDescription => CalibrationType == CalibrationType.LumMultiColor ? "多色文件（Gain / pa）" : "四色文件（a…i）";
+        public string FormatDescription => CalibrationType switch
+        {
+            CalibrationType.Luminance => "亮度文件（a）",
+            CalibrationType.LumMultiColor => "多色文件（Gain / pa）",
+            _ => "四色文件（a…i）",
+        };
 
-        public static LumFourColorCalibrationFile Load(string path)
+        public static LumFourColorCalibrationFile Load(string path, bool luminanceOnly = false)
         {
             JObject root;
             try
             {
-                root = JObject.Parse(File.ReadAllText(path), new JsonLoadSettings { DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error });
+                string json = File.ReadAllText(path);
+                root = luminanceOnly
+                    ? Editing.CalibrationJsonDocument.ParseObject(json)
+                    : JObject.Parse(json, new JsonLoadSettings { DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error });
             }
             catch (JsonException ex)
             {
+                if (luminanceOnly)
+                    throw new InvalidOperationException(EngineLocalization.Get("单通道亮度校正文件须为无重复字段的 JSON。"), ex);
                 throw new InvalidOperationException("校正文件须为 a…i 或 Gain/pa 格式的 JSON，且不能包含重复字段。旧版非 JSON 文本暂不支持。", ex);
+            }
+
+            if (luminanceOnly)
+            {
+                if (root.ContainsKey("pa") || MatrixKeys.All(root.ContainsKey))
+                    throw new InvalidOperationException(EngineLocalization.Get("请选择单通道亮度校正文件，当前文件包含色度校正矩阵。"));
+
+                // The luminance and one-color formats can share the same keys. The operator confirms the resource slot.
+                JToken? value = root["a"];
+                if (value?.Type is not (JTokenType.Integer or JTokenType.Float)
+                    || !double.IsFinite(value.Value<double>()) || value.Value<double>() <= 0)
+                    throw new InvalidOperationException(EngineLocalization.Get("原亮度系数 a 必须是大于 0 的有限数值。"));
+
+                return new LumFourColorCalibrationFile(root, new CVRawManualCieConfig { A = value.Value<double>() }, CalibrationType.Luminance);
             }
 
             if (root.ContainsKey("pa"))
@@ -72,11 +96,19 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         public string SerializeCorrection(CVRawManualCieConfig corrected)
         {
             ArgumentNullException.ThrowIfNull(corrected);
+            JObject output = (JObject)source.DeepClone();
+            if (CalibrationType == CalibrationType.Luminance)
+            {
+                if (!double.IsFinite(corrected.A) || corrected.A <= 0)
+                    throw new InvalidOperationException(EngineLocalization.Get("修正后的亮度系数必须是大于 0 的有限数值。"));
+                output["a"] = corrected.A;
+                return output.ToString(Formatting.Indented);
+            }
+
             double[] matrix = [corrected.A, corrected.B, corrected.C, corrected.D, corrected.E, corrected.F, corrected.G, corrected.H, corrected.I];
             if (matrix.Any(value => !double.IsFinite(value)))
                 throw new InvalidOperationException("修正矩阵必须是有限数值。");
 
-            JObject output = (JObject)source.DeepClone();
             if (CalibrationType == CalibrationType.LumMultiColor)
                 output["pa"] = new JArray(matrix);
             else

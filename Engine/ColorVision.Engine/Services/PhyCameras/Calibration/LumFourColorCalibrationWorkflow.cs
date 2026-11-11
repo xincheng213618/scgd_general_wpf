@@ -504,7 +504,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         public void SetMode(LumFourColorCorrectionMode mode)
         {
-            if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+            if (mode is not (LumFourColorCorrectionMode.SinglePoint or LumFourColorCorrectionMode.MatlabRgbw))
+                throw new ArgumentOutOfRangeException(nameof(mode));
             Mode = mode;
             Samples.Clear();
             if (IsSinglePoint)
