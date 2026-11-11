@@ -94,8 +94,9 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
             cancellationToken.ThrowIfCancellationRequested();
             previousServiceCatalog =
                 _serviceResolver.Replace(nextServiceCatalog);
+            // Connection handlers capture topics while the graph is being loaded.
             using (_serviceResolver.EnterLoadScope())
-                _control.Load(snapshot, waitReady: false);
+                _control.Load(snapshot, waitReady: false, reuseLoadedCanvas: false);
             if (serviceSnapshot.Length > 0)
                 _nodeManager.UpdateDevice(serviceSnapshot.ToList());
             ContentHash = Convert.ToHexString(

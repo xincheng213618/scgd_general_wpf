@@ -764,6 +764,11 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void Load(byte[] rawData, bool waitReady)
 	{
+		Load(rawData, waitReady, reuseLoadedCanvas: true);
+	}
+
+	internal void Load(byte[] rawData, bool waitReady, bool reuseLoadedCanvas)
+	{
 		IFlowGraphHost host = GetGraphHost();
 		if (rawData != null)
 		{
@@ -772,7 +777,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			bool alreadyLoaded;
 			lock (stateLock)
 			{
-				alreadyLoaded = loadedCanvas.ContainsKey(text);
+				alreadyLoaded = reuseLoadedCanvas && loadedCanvas.ContainsKey(text);
 			}
 			if (alreadyLoaded)
 			{

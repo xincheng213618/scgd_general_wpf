@@ -351,6 +351,35 @@ public sealed class FlowRuntimeHostTests
         });
     }
 
+    [Fact]
+    public void ReloadingTheSameCanvasRebindsConnectionsToTheNewServiceSnapshot()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new HeadlessServiceProbeNode());
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(canvas, [CreateService("first/send", "first/receive", "first-token")]);
+            string? originalHash = host.ContentHash;
+            HeadlessServiceProbeNode firstNode = Assert.Single(host.Nodes.OfType<HeadlessServiceProbeNode>());
+            Assert.Equal("first/receive", firstNode.ConnectedReceiveTopic);
+
+            await host.LoadAsync(canvas, [CreateService("second/send", "second/receive", "second-token")]);
+
+            HeadlessServiceProbeNode secondNode = Assert.Single(host.Nodes.OfType<HeadlessServiceProbeNode>());
+            Assert.Equal("second/receive", secondNode.GetRecvTopic());
+            Assert.Equal("second/receive", secondNode.ConnectedReceiveTopic);
+            Assert.Equal("second/send", secondNode.GetSendTopic());
+            Assert.Equal("second-token", secondNode.ResolvedToken);
+            Assert.Equal(originalHash, host.ContentHash);
+
+            await host.LoadAsync(canvas);
+
+            HeadlessServiceProbeNode unmappedNode = Assert.Single(host.Nodes.OfType<HeadlessServiceProbeNode>());
+            Assert.Equal(unmappedNode.DefaultSubscribeTopic, unmappedNode.ConnectedReceiveTopic);
+            Assert.Equal(string.Empty, unmappedNode.ResolvedToken);
+        });
+    }
+
     private static MQTTServiceInfo CreateService(
         string publishTopic,
         string subscribeTopic,
