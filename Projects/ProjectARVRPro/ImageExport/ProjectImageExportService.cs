@@ -18,10 +18,11 @@ internal sealed class ProjectImageExportAttempt : IDisposable
     public string? RenderedStagingFileName { get; }
     public string? SourceStagingFileName { get; }
 
-    public ProjectImageExportAttempt(string? renderedFileName, string? sourceFileName)
+    public ProjectImageExportAttempt(string? renderedFileName, string? sourceFileName, string? inputFileName = null)
     {
-        this.renderedFileName = NormalizeTargetFileName(renderedFileName);
-        this.sourceFileName = NormalizeTargetFileName(sourceFileName);
+        string? inputPath = NormalizeTargetFileName(inputFileName);
+        this.renderedFileName = ResolveExportPath(NormalizeTargetFileName(renderedFileName), "_result", inputPath, otherExportPath: null);
+        this.sourceFileName = ResolveExportPath(NormalizeTargetFileName(sourceFileName), "_source", inputPath, this.renderedFileName);
         RenderedStagingFileName = CreateUniqueStagingFileName(this.renderedFileName);
         SourceStagingFileName = CreateUniqueStagingFileName(this.sourceFileName);
     }
@@ -68,6 +69,18 @@ internal sealed class ProjectImageExportAttempt : IDisposable
 
     private static string? NormalizeTargetFileName(string? fileName) =>
         string.IsNullOrWhiteSpace(fileName) ? null : Path.GetFullPath(fileName);
+
+    private static string? ResolveExportPath(string? path, string suffix, string? inputPath, string? otherExportPath)
+    {
+        if (path == null) return null;
+        while (string.Equals(path, inputPath, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(path, otherExportPath, StringComparison.OrdinalIgnoreCase))
+        {
+            string extension = Path.GetExtension(path);
+            path = path[..(path.Length - extension.Length)] + suffix + extension;
+        }
+        return path;
+    }
 
     private static string? CreateUniqueStagingFileName(string? targetFileName)
     {

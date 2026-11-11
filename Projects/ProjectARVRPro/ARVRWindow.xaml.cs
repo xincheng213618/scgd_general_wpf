@@ -2484,6 +2484,7 @@ namespace ProjectARVRPro
 
                 _ = ExportImagesAsync(
                     snapshot,
+                    ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath),
                     saveResultImage,
                     saveSourceImage,
                     resultFormat,
@@ -2520,6 +2521,7 @@ namespace ProjectARVRPro
 
         private async Task ExportImagesAsync(
             ImageViewSnapshot? snapshot,
+            string? inputFileName,
             bool saveResultImage,
             bool saveSourceImage,
             ResultImageFormat resultFormat,
@@ -2593,7 +2595,7 @@ namespace ProjectARVRPro
                 storageWrite = ResultStorageSpaceManager.Instance.BeginWrite(
                     outputRoot, autoCleanupEnabled, minimumFreeSpaceGB, outputDirectory);
                 await storageWrite.EnsureSpaceAsync().ConfigureAwait(false);
-                exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
+                exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath, inputFileName);
                 ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
                     ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
                     ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression),
