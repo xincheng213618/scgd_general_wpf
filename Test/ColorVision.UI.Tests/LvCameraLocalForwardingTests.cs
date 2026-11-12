@@ -83,7 +83,7 @@ public sealed class LvCameraLocalForwardingTests
             Assert.Equal(17, request.CameraParameters.Gain);
             Assert.Equal(3, request.CameraParameters.AvgCount);
             Assert.Equal(CVImageFlipMode.Y, request.FlipMode);
-            Assert.False(request.SaveFiles); // Persistence must precede the file/cache publication.
+            Assert.False(request.SaveFiles); // The node saves the image only after accepting the capture result.
         }
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
     });
@@ -403,8 +403,29 @@ public sealed class LvCameraLocalForwardingTests
         Assert.Single(graph.Ends);
         Assert.Empty(scope.Services.PublishedNodeIds);
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
+        if (failSave) Assert.True(File.Exists(Assert.Single(scope.Services.Frames).CvRawFilePath));
         scope.Backend.BeginLocalCommand();
         scope.Backend.EndLocalCommand();
+    });
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void LocalImageSaveFailureDoesNotPersistOrPublishAResult(bool saveFiles) => Run(async () =>
+    {
+        using var scope = new CaptureScope(localOpen: true, preferLocal: true);
+        if (saveFiles) scope.BlockFileSaves();
+        else CVFileReadCache.IsEnabled = false;
+        LVCameraNode node = scope.CreateNode();
+        node.SaveFiles = saveFiles;
+        using var graph = new Graph(node);
+
+        Assert.Equal(StatusTypeEnum.Failed, (await graph.StartAsync()).Status);
+        await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Empty(scope.Services.Saved);
+        Assert.Empty(scope.Services.PublishedNodeIds);
+        Assert.Throws<ObjectDisposedException>(() => Assert.Single(scope.Services.Frames).Acquire());
     });
 
     [Fact]
@@ -609,6 +630,14 @@ public sealed class LvCameraLocalForwardingTests
             });
         }
 
+        public void BlockFileSaves()
+        {
+            Directory.CreateDirectory(directory);
+            string blockedPath = Path.Combine(directory, "not-a-directory");
+            File.WriteAllText(blockedPath, string.Empty);
+            Camera.Config.FileServerCfg.DataBasePath = blockedPath;
+        }
+
         public void Dispose()
         {
             Services.Release.TrySetResult();
@@ -659,9 +688,9 @@ public sealed class LvCameraLocalForwardingTests
         }
         public MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture)
         {
-            Assert.False(string.IsNullOrWhiteSpace(capture.Frame.CvRawFilePath));
-            Assert.False(File.Exists(capture.Frame.CvRawFilePath));
-            Assert.Null(CVFileReadCache.GetCachedLength(capture.Frame.CvRawFilePath));
+            string path = capture.Frame.CvRawFilePath;
+            Assert.True(CVFileUtil.Read(path, out CVCIEFile raw));
+            using (raw) Assert.Equal(11, raw.Data[0]);
             if (FailSave) throw new InvalidOperationException("save failed");
             Saved.Add((action.SerialNumber, zIndex));
             if (!action.PersistResults) return localServices.Save(action, zIndex, request, capture);

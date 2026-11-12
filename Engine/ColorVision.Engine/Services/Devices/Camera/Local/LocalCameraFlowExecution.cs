@@ -200,11 +200,12 @@ internal sealed class LocalCameraFlowExecution : FlowLocalExecution
             throw new InvalidOperationException("本地取图结果与当前流程批次不匹配。");
         LocalFlowFrame frame = capture.Frame;
         frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata);
-        MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
-        if (action.PersistResults && model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
         Stopwatch saveTimer = Stopwatch.StartNew();
         LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, saveMode);
         int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
+        captureRequest.Stop.ThrowIfCancellationRequested();
+        MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
+        if (action.PersistResults && model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
         frame.MasterId = model.Id;
         action.SetCurrentFrame(frame);
         frameTransferred = true;
