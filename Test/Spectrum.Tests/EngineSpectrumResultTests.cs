@@ -1,3 +1,5 @@
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
@@ -14,6 +16,53 @@ namespace Spectrum.Tests;
 [Collection("LocalSpectrumDriver")]
 public sealed class EngineSpectrumResultTests
 {
+    [Theory]
+    [InlineData("GetDataAuto", false)]
+    [InlineData("EQE.GetDataAuto", true)]
+    public void ContinuousServiceResultFollowsTheNotificationWhenAnotherMeasurementHasArrived(string eventName, bool eqe)
+    {
+        using var db = CreateSpectrumDatabase();
+        int notifiedId = db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.A", IntTime = 12, DataType = eqe }).ExecuteReturnIdentity();
+        db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.A", IntTime = 24, DataType = eqe }).ExecuteReturnIdentity();
+        db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.B", IntTime = 85, DataType = !eqe }).ExecuteReturnIdentity();
+        var notification = JsonConvert.DeserializeObject<MsgReturn>($$$"""
+            {"EventName":"{{{eventName}}}","Code":102,"DeviceCode":"SPECTRUM.A","data":{"MasterId":{{{notifiedId}}} }}
+            """)!;
+
+        var result = MQTTSpectrum.ReadServiceContinuousResult(db, (JObject)notification.Data);
+
+        Assert.NotNull(result);
+        Assert.Equal(notifiedId, result.Id);
+        Assert.Equal("SPECTRUM.A", result.DeviceCode);
+        Assert.Equal(12f, result.IntTime);
+        Assert.Equal(eqe, result.DataType);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("{}")]
+    [InlineData("{\"MasterId\":0}")]
+    [InlineData("{\"MasterId\":-1}")]
+    [InlineData("{\"MasterId\":123456}")]
+    public void ContinuousServiceNotificationWithoutAMatchingResultDoesNotSubstituteHistory(string? data)
+    {
+        using var db = CreateSpectrumDatabase();
+        db.Insertable(new SpectumResultEntity { DeviceCode = "SPECTRUM.A", IntTime = 40 }).ExecuteReturnIdentity();
+
+        Assert.Null(MQTTSpectrum.ReadServiceContinuousResult(db, data == null ? null : JObject.Parse(data)));
+    }
+
+    private static SqlSugarClient CreateSpectrumDatabase()
+    {
+        var db = new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite,
+            IsAutoCloseConnection = false, InitKeyType = InitKeyType.Attribute
+        });
+        db.CodeFirst.InitTables<SpectumResultEntity>();
+        return db;
+    }
+
     // Undefined SDK metrics must not become bare NaN/Infinity literals in an ORM INSERT.
     [Theory]
     [InlineData(float.NaN)]

@@ -100,6 +100,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
+        internal static SpectumResultEntity? ReadServiceContinuousResult(ISqlSugarClient db, JObject? notificationData)
+        {
+            if (notificationData?["MasterId"] is not JValue { Type: JTokenType.Integer or JTokenType.String } identity
+                || !int.TryParse(identity.Value?.ToString(), out int resultId) || resultId <= 0) return null;
+
+            // Other devices and subsequent samples can write before this notification is handled.
+            return db.Queryable<SpectumResultEntity>().First(result => result.Id == resultId);
+        }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
@@ -160,38 +168,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                         else if (msg.EventName == "GetDataAuto" || msg.EventName == "EQE.GetDataAuto")
                         {
-                            if (FlowEngineManager.GetInstance().ServiceVersion > new Version(4, 0, 3, 0))
+                            if (FlowEngineManager.GetInstance().ServiceVersion > new Version(4, 0, 1, 104))
                             {
                                 using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                                SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().OrderByDescending(x => x.Id).First();
+                                var model = ReadServiceContinuousResult(DB, msg.Data as JObject);
 
-                                log.Info($"{model.Id}");
                                 if (model != null)
                                 {
+                                    log.Info($"GetDataAuto MasterId:{model.Id}");
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         Device.PresentResult(() => new ViewResultSpectrum(model));
                                         Device.DisplayConfig.IntTime = model.IntTime ?? 0;
                                     });
-                                }
-                            }
-                            else if (FlowEngineManager.GetInstance().ServiceVersion > new Version(4, 0, 1, 104))
-                            {
-                                if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
-                                {
-                                    int masterId = msg.Data?.MasterId;
-                                    using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                                    SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
-
-                                    log.Info($"GetData MasterId:{masterId} ");
-                                    if (model != null)
-                                    {
-                                        Application.Current.Dispatcher.Invoke(() =>
-                                        {
-                                            Device.PresentResult(() => new ViewResultSpectrum(model));
-                                            Device.DisplayConfig.IntTime = model.IntTime ?? 0;
-                                        });
-                                    }
                                 }
                             }
                             else
