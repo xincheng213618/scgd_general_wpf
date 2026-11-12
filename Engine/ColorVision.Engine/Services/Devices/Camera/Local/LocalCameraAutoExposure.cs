@@ -31,12 +31,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (value?.Type is not (JTokenType.Integer or JTokenType.Float) || !double.IsFinite(value.Value<double>()))
                     throw new InvalidOperationException($"自动曝光参数 {name} 无效。");
             }
-            if (settings["autoExpFlag"]?.Type != JTokenType.Boolean
-                || settings.Value<double>("minExpTime") <= 0
-                || settings.Value<double>("maxExpTime") < settings.Value<double>("minExpTime")
-                || settings.Value<double>("autoExpTimeBegin") <= 0)
+            double minimum = settings.Value<double>("minExpTime");
+            double maximum = settings.Value<double>("maxExpTime");
+            double beginning = settings.Value<double>("autoExpTimeBegin");
+            if (settings["autoExpFlag"]?.Type != JTokenType.Boolean || maximum < minimum
+                || !IsNativeExposure(minimum) || !IsNativeExposure(maximum) || !IsNativeExposure(beginning))
                 throw new InvalidOperationException("自动曝光参数的开关或曝光范围无效。");
+
+            // The SDK reads a float and raises the minimum exposure to one sync period.
+            float syncFrequency = (float)settings.Value<double>("autoExpSyncFreq");
+            if (!float.IsFinite(syncFrequency) || syncFrequency == 0)
+                throw new InvalidOperationException("自动曝光同步频率无效，停用同步请设为 -1。");
+            if (syncFrequency > 0)
+            {
+                float syncPeriod = 1000f / syncFrequency;
+                if (!float.IsFinite(syncPeriod) || syncPeriod > (float)maximum)
+                    throw new InvalidOperationException("自动曝光同步频率对应的单周期长于最大曝光时间。");
+            }
+
             return new JObject { ["expTimeCfg"] = settings.DeepClone() }.ToString(Formatting.None);
+
+            static bool IsNativeExposure(double exposure) => (float)exposure is > 0 and <= float.MaxValue;
         }
 
         internal static void Measure(DeviceCamera device, IntPtr handle, CameraRunParam parameters, string? configuration = null,

@@ -120,6 +120,49 @@ public class CameraCaptureSettingsTests
     }
 
     [Theory]
+    [InlineData(0, 100)]
+    [InlineData(1e-300, 100)]
+    [InlineData(1e300, 100)]
+    [InlineData(50, 10)]
+    public void AutoExposureRejectsSyncFrequencyThatCannotFitTheNativeExposureRange(double frequency, float maximum)
+    {
+        var settings = JObject.FromObject(new PhyExpTimeCfg { MaxExpTime = maximum });
+        settings["autoExpSyncFreq"] = frequency;
+
+        var error = Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.NormalizeConfiguration(settings));
+
+        Assert.Contains("同步频率", error.Message);
+    }
+
+    [Theory]
+    [InlineData(-1, 10)]
+    [InlineData(50, 20)]
+    public void AutoExposureKeepsDisabledSyncAndAcceptsAPeriodAtTheExposureLimit(double frequency, float maximum)
+    {
+        var settings = JObject.FromObject(new PhyExpTimeCfg { MaxExpTime = maximum });
+        settings["autoExpSyncFreq"] = frequency;
+
+        var normalized = JObject.Parse(LocalCameraAutoExposure.NormalizeConfiguration(settings));
+
+        Assert.Equal(frequency, normalized["expTimeCfg"]!.Value<double>("autoExpSyncFreq"));
+    }
+
+    [Theory]
+    [InlineData("minExpTime", 1e-300)]
+    [InlineData("maxExpTime", 1e300)]
+    [InlineData("autoExpTimeBegin", 1e-300)]
+    [InlineData("autoExpTimeBegin", 1e300)]
+    public void AutoExposureRejectsTimesThatCannotBeRepresentedByTheSdk(string name, double milliseconds)
+    {
+        var settings = JObject.FromObject(new PhyExpTimeCfg());
+        settings[name] = milliseconds;
+
+        var error = Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.NormalizeConfiguration(settings));
+
+        Assert.Contains("曝光范围", error.Message);
+    }
+
+    [Theory]
     [InlineData(ImageChannelType.Gray_X, ImageChannelType.Gray_Z)]
     [InlineData(ImageChannelType.Gray_Y, ImageChannelType.Gray_N)]
     public void ThreeChannelCaptureRejectsRoutesWithoutOneOfEachXyzChannel(ImageChannelType second, ImageChannelType third)
