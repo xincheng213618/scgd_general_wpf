@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor.Output;
 using System;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -59,6 +60,7 @@ namespace ColorVision.ImageEditor
         private SnapshotImageBufferLease? imageBuffer;
 
         internal DrawingGroup Scene { get; }
+        internal Size SceneSize { get; }
         internal BitmapSource? FrozenSource { get; }
         internal string? RenderedParametersJson { get; set; }
         public int PixelWidth { get; }
@@ -73,9 +75,11 @@ namespace ColorVision.ImageEditor
             double dpiX,
             double dpiY,
             BitmapSource? frozenSource = null,
-            SnapshotImageBufferLease? imageBuffer = null)
+            SnapshotImageBufferLease? imageBuffer = null,
+            Size? sceneSize = null)
         {
             Scene = scene;
+            SceneSize = sceneSize ?? new Size(pixelWidth * 96.0 / dpiX, pixelHeight * 96.0 / dpiY);
             PixelWidth = pixelWidth;
             PixelHeight = pixelHeight;
             DpiX = dpiX;
@@ -110,7 +114,8 @@ namespace ColorVision.ImageEditor
             int pixelWidth,
             int pixelHeight,
             double dpiX,
-            double dpiY)
+            double dpiY,
+            Size sceneSize)
         {
             if (!overlays.IsFrozen)
                 overlays.Freeze();
@@ -121,7 +126,8 @@ namespace ColorVision.ImageEditor
                 dpiX,
                 dpiY,
                 null,
-                imageBuffer);
+                imageBuffer,
+                sceneSize);
         }
 
         internal static ImageViewSnapshot Create(
@@ -130,7 +136,8 @@ namespace ColorVision.ImageEditor
             int pixelWidth,
             int pixelHeight,
             double dpiX,
-            double dpiY)
+            double dpiY,
+            Size sceneSize)
         {
             if (!overlays.IsFrozen)
                 overlays.Freeze();
@@ -142,7 +149,8 @@ namespace ColorVision.ImageEditor
                 pixelHeight,
                 dpiX,
                 dpiY,
-                frozenSource);
+                frozenSource,
+                sceneSize: sceneSize);
         }
 
         internal SnapshotImageBufferLease? TakeImageBuffer()

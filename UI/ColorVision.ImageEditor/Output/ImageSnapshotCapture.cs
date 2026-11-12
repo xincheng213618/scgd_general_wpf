@@ -26,9 +26,9 @@ namespace ColorVision.ImageEditor.Output
             surface.Dispatcher.VerifyAccess();
             commitDrawingEdits();
             surface.UpdateLayout();
-            int pixelWidth = GetRenderPixelLength(surface.ActualWidth, surface.RenderSize.Width);
-            int pixelHeight = GetRenderPixelLength(surface.ActualHeight, surface.RenderSize.Height);
-            if (pixelWidth <= 0 || pixelHeight <= 0)
+            double width = GetRenderLength(surface.ActualWidth, surface.RenderSize.Width);
+            double height = GetRenderLength(surface.ActualHeight, surface.RenderSize.Height);
+            if (width <= 0 || height <= 0)
             {
                 log.WarnFormat(
                     "Skip capturing ImageView because render size is invalid. Actual={0}x{1}, RenderSize={2}x{3}, Source={4}",
@@ -43,6 +43,8 @@ namespace ColorVision.ImageEditor.Output
             dpiX = GetPositiveDpi(dpiX);
             dpiY = GetPositiveDpi(dpiY);
 
+            int pixelWidth = checked((int)Math.Ceiling(width * dpiX / 96));
+            int pixelHeight = checked((int)Math.Ceiling(height * dpiY / 96));
             RenderTargetBitmap renderTargetBitmap = new(pixelWidth, pixelHeight, dpiX, dpiY, PixelFormats.Pbgra32);
             renderTargetBitmap.Render(surface);
             renderTargetBitmap.Freeze();
@@ -115,6 +117,9 @@ namespace ColorVision.ImageEditor.Output
 
                 dpiX = GetPositiveDpi(dpiX);
                 dpiY = GetPositiveDpi(dpiY);
+                Size sceneSize = new(
+                    GetRenderLength(surface.ActualWidth, surface.RenderSize.Width, source.Width),
+                    GetRenderLength(surface.ActualHeight, surface.RenderSize.Height, source.Height));
                 if (imageBuffer != null)
                 {
                     ImageViewSnapshot snapshot = ImageViewSnapshot.Create(
@@ -123,7 +128,8 @@ namespace ColorVision.ImageEditor.Output
                         source.PixelWidth,
                         source.PixelHeight,
                         dpiX,
-                        dpiY);
+                        dpiY,
+                        sceneSize);
                     imageBuffer = null;
                     return snapshot;
                 }
@@ -134,7 +140,8 @@ namespace ColorVision.ImageEditor.Output
                     source.PixelWidth,
                     source.PixelHeight,
                     dpiX,
-                    dpiY);
+                    dpiY,
+                    sceneSize);
             }
             catch (Exception ex)
             {
@@ -178,13 +185,13 @@ namespace ColorVision.ImageEditor.Output
             return drawing;
         }
 
-        private static int GetRenderPixelLength(params double[] values)
+        private static double GetRenderLength(params double[] values)
         {
             foreach (double value in values)
             {
                 if (IsPositiveFinite(value))
                 {
-                    return Math.Max(1, (int)Math.Ceiling(value));
+                    return value;
                 }
             }
 

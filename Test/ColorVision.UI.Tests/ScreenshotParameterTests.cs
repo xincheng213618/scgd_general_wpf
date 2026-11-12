@@ -16,6 +16,87 @@ namespace ColorVision.UI.Tests;
 /// <summary>Screenshot records describe capture provenance, never replayable source samples.</summary>
 public sealed class ScreenshotParameterTests
 {
+    [Theory]
+    [InlineData(192, 48, 1)]
+    [InlineData(48, 192, 2)]
+    public async Task BackgroundScreenshotPreservesImageEdgesAndOverlayAlignmentAtNonDefaultDpi(double dpiX, double dpiY, int divisor)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-shot-dpi-{Guid.NewGuid():N}.png");
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await PublishDpiFixture(view, dpiX, dpiY);
+            var snapshot = WpfTestHost.Invoke(() => Assert.IsType<ImageViewSnapshot>(view.CaptureSnapshotForBackgroundSave()));
+            await ImageView.SaveSnapshotWithOptionsAsync(snapshot, path, new() { ScaleDivisor = divisor });
+            WpfTestHost.Invoke(() =>
+            {
+                using var stream = File.OpenRead(path);
+                BitmapSource frame = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
+                AssertDpiFixture(frame, divisor, dpiX, dpiY, fromPng: true);
+            });
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task ImmediateScreenshotUsesPhysicalPixelDimensionsAtNonDefaultDpi()
+    {
+        ImageView view = WpfTestHost.Invoke(CreateView);
+        try
+        {
+            await PublishDpiFixture(view, 192, 48);
+            WpfTestHost.Invoke(() => AssertDpiFixture(Assert.IsAssignableFrom<BitmapSource>(view.CaptureSnapshot()), 1, 192, 48, fromPng: false));
+        }
+        finally { WpfTestHost.Invoke(view.Dispose); }
+    }
+
+    private static Task PublishDpiFixture(ImageView view, double dpiX, double dpiY) => WpfTestHost.Invoke(async () =>
+    {
+        byte[] pixels = new byte[8 * 8 * 4];
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                int index = (y * 8 + x) * 4;
+                pixels[index + (x < 4 ? 2 : 0)] = 255;
+                pixels[index + 3] = 255;
+            }
+        }
+        BitmapSource source = BitmapSource.Create(8, 8, dpiX, dpiY, PixelFormats.Bgra32, null, pixels, 32);
+        source.Freeze();
+        view.Config.FilePath = "dpi-fixture.png";
+        await view.PublishDecodedImageContentAsync(new(source, null, "dpi-fixture.png"), source);
+        view.ImageShow.Measure(new Size(source.Width, source.Height));
+        view.ImageShow.Arrange(new Rect(0, 0, source.Width, source.Height));
+        var marker = new DrawingVisual();
+        using (DrawingContext drawing = marker.RenderOpen())
+            drawing.DrawRectangle(Brushes.Lime, null, new Rect(4 * 96 / dpiX, 4 * 96 / dpiY, 2 * 96 / dpiX, 2 * 96 / dpiY));
+        view.ImageShow.AddVisual(marker);
+    });
+
+    private static void AssertDpiFixture(BitmapSource frame, int divisor, double dpiX, double dpiY, bool fromPng)
+    {
+        int size = 8 / divisor;
+        Assert.Equal((size, size), (frame.PixelWidth, frame.PixelHeight));
+        double dpiTolerance = fromPng ? 0.02 : 0.0; // PNG stores resolution as integer pixels per metre.
+        Assert.InRange(frame.DpiX, dpiX - dpiTolerance, dpiX + dpiTolerance);
+        Assert.InRange(frame.DpiY, dpiY - dpiTolerance, dpiY + dpiTolerance);
+        BitmapSource converted = new FormatConvertedBitmap(frame, PixelFormats.Bgra32, null, 0);
+        byte[] pixels = new byte[size * size * 4];
+        converted.CopyPixels(pixels, size * 4, 0);
+
+        Assert.Equal(Colors.Red, Read(0, size - 1));
+        Assert.Equal(Colors.Blue, Read(size - 1, 0));
+        Assert.Equal(Colors.Blue, Read(size - 1, size - 1));
+        Assert.Equal(Colors.Lime, Read(4 / divisor, 4 / divisor));
+
+        Color Read(int x, int y)
+        {
+            int index = (y * size + x) * 4;
+            return Color.FromArgb(pixels[index + 3], pixels[index + 2], pixels[index + 1], pixels[index]);
+        }
+    }
+
     [Fact]
     public async Task NativeCvRawOpenUsesPersistedCameraAndCalibrationSummaryForScreenshot()
     {
