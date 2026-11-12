@@ -69,7 +69,7 @@ LUX 命令、回包、流程匹配、设备测量和并发限制统一见 [LUX T
 
 `Ctrl+F` 聚焦左侧搜索框，`Esc` 清空搜索。搜索匹配分类、属性名称、代码名和说明，同时筛选内容和目录。原图格式按打开设置时源图的 BMP 支持能力提供选项。
 
-“图像保存”按通道显示命名开关，旧配置沿用原命名。标记图默认 `{FlowName}`，原图默认 `{FlowName}_source`。兼容 ProjectLUX 时，开启标记图命名并选 PNG，例如 `White51_Test.png`。模板支持固定文字、`{FlowName}`（实际流程模板名）和 `{SN}`，扩展名取自图像格式，日期和 SN 目录照常生成。关闭保存时保留命名设置。遇到本次输入图时，标记图追加 `_result`，原图追加 `_source`。两张导出图重名时原图继续追加 `_source`。重测可覆盖上次导出，自动清理沿用既有命名规则。
+“图像保存”按通道配置命名，旧配置沿用原命名。标记图默认 `{FlowName}`，原图默认 `{FlowName}_source`。兼容 ProjectLUX 可选 PNG，例如 `White51_Test.png`。模板支持固定文字、`{FlowName}`（流程模板名）和 `{SN}`。扩展名取自图像格式，关闭保存时保留命名设置。遇到本次输入图（含目录联接或符号链接指向的同一位置）时，标记图追加 `_result`，原图追加 `_source`；两张导出图重名时原图继续追加 `_source`。重测可覆盖上次导出，自动清理沿用既有命名规则。
 
 `ProjectSettingsSession` 将开关和下拉选择逐项自动保存，文字、数字及目录在失焦或结束输入时校验并保存。关闭会提交最后一个有效输入。无效输入就地标红，持久化失败恢复该项的运行值并提供重试。关闭时需确认是否放弃未保存项。“恢复默认设置”经确认后一次保存，失败时恢复运行值。自动保存保留未编辑项、雷鸟连接参数和文本目录，运行中的后台导出继续使用已捕获的设置。两种配置的序列化身份和属性名保持兼容。验证入口为 `Test/ProjectARVRPro.Tests/ProjectSettingsSessionTests.cs`、`ProjectSettingsWindowTests.cs` 和 `ProjectImageExportServiceTests.cs`。
 

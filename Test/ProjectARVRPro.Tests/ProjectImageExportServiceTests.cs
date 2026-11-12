@@ -92,6 +92,73 @@ public sealed class ProjectImageExportServiceTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PublishingImageExportsPreservesInputWhenAnAncestorIsAJunction(bool useLinkedInput)
+    {
+        string root = Directory.CreateTempSubdirectory("ProjectARVRPro_ImageExport_").FullName;
+        string captureDirectory = Path.Combine(root, "captures");
+        string realDirectory = Directory.CreateDirectory(Path.Combine(captureDirectory, "SN42")).FullName;
+        string junction = Path.Combine(root, "alias");
+        string linkedDirectory = Path.Combine(junction, "SN42");
+        string physicalInput = Path.Combine(realDirectory, "input.png");
+        try
+        {
+            File.WriteAllBytes(physicalInput, [1, 2, 3]);
+            ResultStorageSpaceManagerTests.CreateJunction(junction, captureDirectory);
+            string input = useLinkedInput ? Path.Combine(linkedDirectory, "input.png") : physicalInput;
+            string output = useLinkedInput ? realDirectory : linkedDirectory;
+            string requested = Path.Combine(output, "input.png");
+            using var attempt = new ProjectImageExportAttempt(requested, requested, input);
+            File.WriteAllBytes(attempt.RenderedStagingFileName!, [4, 5]);
+            File.WriteAllBytes(attempt.SourceStagingFileName!, [6, 7]);
+
+            ProjectImageExportAttemptResult result = attempt.CommitSuccessfulChannels();
+
+            Assert.Equal<byte>([1, 2, 3], File.ReadAllBytes(physicalInput));
+            Assert.Equal(Path.Combine(output, "input_result.png"), result.RenderedFileName);
+            Assert.Equal(Path.Combine(output, "input_source.png"), result.SourceFileName);
+            Assert.Equal<byte>([4, 5], File.ReadAllBytes(result.RenderedFileName!));
+            Assert.Equal<byte>([6, 7], File.ReadAllBytes(result.SourceFileName!));
+        }
+        finally
+        {
+            if (Directory.Exists(junction)) Directory.Delete(junction);
+            foreach (string file in Directory.GetFiles(realDirectory)) File.Delete(file);
+            Directory.Delete(realDirectory);
+            Directory.Delete(captureDirectory);
+            Directory.Delete(root);
+        }
+    }
+
+    [Fact]
+    public void PublishingImageExportsPreservesTheInputLinkTargetWhenFileLinksAreAvailable()
+    {
+        string directory = Directory.CreateTempSubdirectory("ProjectARVRPro_ImageExport_").FullName;
+        string target = Path.Combine(directory, "capture.png");
+        string input = Path.Combine(directory, "selected.png");
+        try
+        {
+            File.WriteAllBytes(target, [1, 2, 3]);
+            try { File.CreateSymbolicLink(input, Path.GetFileName(target)); }
+            catch (Exception error) when (error is UnauthorizedAccessException or IOException) { return; }
+
+            using var attempt = new ProjectImageExportAttempt(target, null, input);
+            File.WriteAllBytes(attempt.RenderedStagingFileName!, [4, 5]);
+            ProjectImageExportAttemptResult result = attempt.CommitSuccessfulChannels();
+
+            Assert.Equal<byte>([1, 2, 3], File.ReadAllBytes(input));
+            Assert.Equal(Path.Combine(directory, "capture_result.png"), result.RenderedFileName);
+            Assert.Equal<byte>([4, 5], File.ReadAllBytes(result.RenderedFileName!));
+        }
+        finally
+        {
+            foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
+            Directory.Delete(directory);
+        }
+    }
+
     [Fact]
     public void Extensions_AreDerivedFromTheStronglyTypedExportLane()
     {

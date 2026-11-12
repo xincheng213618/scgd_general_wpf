@@ -256,7 +256,7 @@ public sealed class ResultStorageSpaceManagerTests
         finally { Directory.Delete(link); }
     }
 
-    private static void CreateJunction(string link, string target)
+    internal static void CreateJunction(string link, string target)
     {
         var start = new ProcessStartInfo("pwsh") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         start.ArgumentList.Add("-NoProfile");

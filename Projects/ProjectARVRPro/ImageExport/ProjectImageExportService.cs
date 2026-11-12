@@ -73,13 +73,46 @@ internal sealed class ProjectImageExportAttempt : IDisposable
     private static string? ResolveExportPath(string? path, string suffix, string? inputPath, string? otherExportPath)
     {
         if (path == null) return null;
-        while (string.Equals(path, inputPath, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(path, otherExportPath, StringComparison.OrdinalIgnoreCase))
+        while (MatchesInputFile(path, inputPath) || IsSameFileEntry(path, otherExportPath))
         {
             string extension = Path.GetExtension(path);
             path = path[..(path.Length - extension.Length)] + suffix + extension;
         }
         return path;
+    }
+
+    private static bool MatchesInputFile(string path, string? inputPath)
+    {
+        if (inputPath == null) return false;
+        if (IsSameFileEntry(path, inputPath)) return true;
+        if (!File.Exists(path)) return false;
+
+        // Replacing a file link's target also replaces the pixels reachable from the input path.
+        var input = new FileInfo(inputPath);
+        return input.Exists && (input.Attributes & FileAttributes.ReparsePoint) != 0
+            && input.ResolveLinkTarget(returnFinalTarget: true) is FileSystemInfo target
+            && IsSameFileEntry(path, target.FullName);
+    }
+
+    private static bool IsSameFileEntry(string path, string? otherPath)
+    {
+        if (otherPath == null) return false;
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        return comparer.Equals(path, otherPath)
+            || (comparer.Equals(Path.GetFileName(path), Path.GetFileName(otherPath))
+                && comparer.Equals(ResolveDirectory(Path.GetDirectoryName(path)!), ResolveDirectory(Path.GetDirectoryName(otherPath)!)));
+    }
+
+    private static string ResolveDirectory(string directory)
+    {
+        if (Path.GetDirectoryName(directory) is not string parent) return directory;
+        // Resolve ancestors before the last segment, including ordinary directories beneath a junction.
+        string resolved = Path.Combine(ResolveDirectory(parent), Path.GetFileName(directory));
+        var info = new DirectoryInfo(resolved);
+        return info.Exists && (info.Attributes & FileAttributes.ReparsePoint) != 0
+            && info.ResolveLinkTarget(returnFinalTarget: true) is FileSystemInfo target
+            ? ResolveDirectory(Path.TrimEndingDirectorySeparator(target.FullName))
+            : resolved;
     }
 
     private static string? CreateUniqueStagingFileName(string? targetFileName)
