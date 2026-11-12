@@ -119,10 +119,10 @@ namespace ColorVision.ImageEditor.Output
                 || format == PixelFormats.Indexed8;
         }
 
-        private static void SaveEncoderAtomically(
+        internal static void SaveEncoderAtomically(
             BitmapEncoder encoder,
             string fileName,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
             string? directory = Path.GetDirectoryName(fileName);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))

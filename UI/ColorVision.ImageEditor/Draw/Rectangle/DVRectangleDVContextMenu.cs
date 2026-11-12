@@ -1,5 +1,6 @@
 using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 #pragma warning disable CS8625,CS8602,CS8604,CS8600,CS0103,CS0067
+using ColorVision.ImageEditor.Output;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -139,7 +140,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private static void EncodeAndSave(BitmapSource bitmap, string path)
+        internal static void EncodeAndSave(BitmapSource bitmap, string path)
         {
             string ext = Path.GetExtension(path).ToLowerInvariant();
             BitmapEncoder encoder = ext switch
@@ -150,8 +151,7 @@ namespace ColorVision.ImageEditor.Draw
                 _ => new PngBitmapEncoder(),
             };
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
-            using FileStream fs = new(path, FileMode.Create, FileAccess.Write);
-            encoder.Save(fs);
+            ImageSnapshotEncoder.SaveEncoderAtomically(encoder, path);
         }
     }
 }

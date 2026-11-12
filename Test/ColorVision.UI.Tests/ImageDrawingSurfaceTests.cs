@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -116,6 +117,34 @@ public sealed class ImageDrawingSurfaceTests
                 .SelectMany(row => original.AsSpan(row * 8 + pixelX, pixelWidth).ToArray())];
             Assert.Equal(expected, pixels);
             Assert.Empty(canvas.Visuals);
+        });
+    }
+
+    [Fact]
+    public void FailedRectangleCropEncodingPreservesExistingImage()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            string directory = Directory.CreateTempSubdirectory("ColorVision-crop-save-").FullName;
+            string path = Path.Combine(directory, "crop.jpg");
+            try
+            {
+                BitmapSource valid = BitmapSource.Create(4, 4, 96, 96, PixelFormats.Gray8, null, new byte[16], 4);
+                BitmapSource oversized = BitmapSource.Create(1, 65536, 96, 96, PixelFormats.Gray8, null, new byte[65536], 1);
+                DVRectangleDVContextMenu.EncodeAndSave(valid, path);
+                byte[] original = File.ReadAllBytes(path);
+                Assert.NotEmpty(original);
+
+                Assert.NotNull(Record.Exception(() => DVRectangleDVContextMenu.EncodeAndSave(oversized, path)));
+
+                Assert.Equal(original, File.ReadAllBytes(path));
+                Assert.Equal([path], Directory.GetFiles(directory));
+            }
+            finally
+            {
+                foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
+                Directory.Delete(directory);
+            }
         });
     }
 
