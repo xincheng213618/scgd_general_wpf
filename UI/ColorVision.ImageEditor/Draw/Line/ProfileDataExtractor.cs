@@ -14,7 +14,8 @@ namespace ColorVision.ImageEditor.Draw.Line
     public static class ProfileDataExtractor
     {
         public static bool IsMultiChannelFormat(PixelFormat format)
-            => format == PixelFormats.Bgr24
+            => format == PixelFormats.Indexed8
+                || format == PixelFormats.Bgr24
                 || format == PixelFormats.Rgb24
                 || format == PixelFormats.Bgr32
                 || format == PixelFormats.Bgra32
