@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。"
 aliases: ["用户校正", "导入最新图像", "最近拍摄图像", "校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration", "校正文件编辑", "校正文件创建", "CalibrationJsonDocument", "CalibrationBinaryDocument", "CalibrationMapCreation", "CalibrationColorCreation"]
-code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Editing", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Creation", "Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CalibrationExposureDisplayTests.cs", "Test/ColorVision.UI.Tests/CalibrationDocumentEditorTests.cs", "Test/ColorVision.UI.Tests/CalibrationBinaryDocumentTests.cs", "Test/ColorVision.UI.Tests/CalibrationMapCreationTests.cs", "Test/ColorVision.UI.Tests/CalibrationColorCreationTests.cs", "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Editing", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/VidFieldCalibration.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/VidFieldCalibrationWindow.xaml.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Creation", "Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CalibrationExposureDisplayTests.cs", "Test/ColorVision.UI.Tests/VidFieldCalibrationTests.cs", "Test/ColorVision.UI.Tests/CalibrationDocumentEditorTests.cs", "Test/ColorVision.UI.Tests/CalibrationBinaryDocumentTests.cs", "Test/ColorVision.UI.Tests/CalibrationMapCreationTests.cs", "Test/ColorVision.UI.Tests/CalibrationColorCreationTests.cs", "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","flow.session"]
 ---
 
@@ -90,9 +90,17 @@ NaN/Infinity、零 CIE y、XYZ 换算溢出、采集/导入中的非法峰值 AD
 
 ## VID 现场校正
 
-在“应用与工具”打开“VID 现场校正”。选择启用电机的本地相机和对焦模板，确认原 VID 映射文件，再按原映射的距离单位（mm 或 m）填写同一光学基准面的标准 VID。点击“自动对焦并读取”后，工具从电机读取实际到位位置，再用所选映射计算原 VID。停止会等待当前设备调用返回。
+在“应用与工具”打开“VID 现场校正”。选择启用电机的本地相机和对焦模板，确认原 VID 映射文件，再按原映射的距离单位（mm 或 m）填写同一光学基准面的标准 VID。点击“自动对焦并添加测点”后，工具按“重复对焦”次数（默认 3）执行自动对焦，每次从电机读取实际到位位置，取中位数作为测点位置。列表显示各次位置的离散范围及其屈光度差。停止会等待当前设备调用返回，未完成的测点不会加入。更换同单位的映射文件时保留测点并重新计算，清空测点后可切换单位。切换相机会清空测点。
 
-预览显示原 VID、标准 VID、读数偏差、屈光度修正量及新映射在测量点的读数。工具按标准距离与原距离的倒数差修正。新映射在模板范围内经过无穷远时，预览会提示复测附近位置。另存输出 V4 兼容 JSON 映射，保留原有分段及其他字段。确认复测结果后，可将新文件配置到目标相机电机的 VID 映射，关闭相机后重新连接。
+工具支持三种修正模型，都保持 V4 系数形式：
+
+| 模型 | 含义 | 适用情形 |
+| --- | --- | --- |
+| 屈光度偏移 | `1/VID' = 1/VID + k`，即 `1/(1/d ± N)` | 加装镜片或存在屈光度偏差 |
+| 距离偏移 | `VID' = VID + k` | 标准值的测量基准面与映射不同 |
+| 电机位置偏移 | `VID'(p) = VID(p + k)` | 电机零点或镜头/传感器装配位置变化；分段分界随之平移 |
+
+单个测点时，三种模型在该点都能准确得到标准值，“自动”选择屈光度偏移。近、中、远两个以上标准距离各加一个测点后，屈光度和距离模型按最小二乘取平均偏移，电机位置模型按屈光度残差拟合。“自动”选择残差 RMS 最小的模型，相同时依次优先屈光度、距离、电机位置。也可以手动指定模型。预览显示每个测点的原 VID、校正 VID、屈光度残差，以及各模型的残差 RMS。新映射在模板范围内经过无穷远时，预览会提示复测附近位置。另存输出 V4 兼容 JSON 映射，保留原有分段及其他字段。确认复测结果后，可将新文件配置到目标相机电机的 VID 映射，关闭相机后重新连接。
 
 ## 文件、曝光与后端选择
 

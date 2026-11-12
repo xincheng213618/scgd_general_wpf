@@ -21,15 +21,16 @@ public sealed class VidFieldCalibrationTests
     {
         var original = new JObject { ["a"] = 1000, ["b"] = 0, ["c"] = 1000.0 / scale, ["d"] = 0, ["serial"] = "test" };
         double reference = 1.8 * scale;
-        var result = VidFieldCalibration.Preview(original.ToString(), 1000, 0, 3000, reference, millimeters);
+        var result = VidFieldCalibration.Preview(original.ToString(), [new(1000, reference)], 0, 3000, millimeters);
         var exported = JObject.Parse(result.Json);
 
-        Assert.Equal(2.0 * scale, result.Measured, 8);
-        Assert.Equal(reference, result.Corrected, 8);
-        Assert.Equal(1 / 1.8 - 1 / 2.0, result.OffsetDiopters, 12);
+        Assert.Equal(VidCorrectionModel.Diopter, result.Model);
+        Assert.Equal(2.0 * scale, result.Points[0].Measured, 8);
+        Assert.Equal(reference, result.Points[0].Corrected, 8);
+        Assert.Equal(1 / 1.8 - 1 / 2.0, result.Parameter, 12);
         Assert.Equal("test", exported.Value<string>("serial"));
         Assert.All(new[] { "a", "b", "c", "d" }, key => Assert.Equal(JTokenType.Float, exported[key]!.Type));
-        Assert.Equal(scale / (1 / 2.9 + result.OffsetDiopters), VidMappingCoefficients.Evaluate(exported, 1900), 8);
+        Assert.Equal(scale / (1 / 2.9 + result.Parameter), VidMappingCoefficients.Evaluate(exported, 1900), 8);
     }
 
     [Fact]
@@ -40,7 +41,7 @@ public sealed class VidFieldCalibrationTests
                 "shortSighted":{"a":1000,"b":0,"c":1,"d":0},
                 "longSighted":{"a":1000,"b":0.0001,"c":2,"d":500,"label":"far"}}}
             """;
-        var result = VidFieldCalibration.Preview(json, 1000, 800, 2000, 1800, millimeters: true);
+        var result = VidFieldCalibration.Preview(json, [new(1000, 1800)], 800, 2000, millimeters: true);
         var original = JObject.Parse(json);
         var exported = JObject.Parse(result.Json);
         Assert.Equal(1000, exported["VidNewVision"]!.Value<int>("positionValue"));
@@ -48,17 +49,64 @@ public sealed class VidFieldCalibrationTests
         foreach (int position in new[] { 800, 1000, 1001, 2000 })
         {
             double before = VidMappingCoefficients.Evaluate(original, position);
-            Assert.Equal(1000 / (1000 / before + result.OffsetDiopters), VidMappingCoefficients.Evaluate(exported, position), 8);
+            Assert.Equal(1000 / (1000 / before + result.Parameter), VidMappingCoefficients.Evaluate(exported, position), 8);
         }
+    }
+
+    // Each model is recovered from exact references at points on both sides of a discontinuous split,
+    // and the exported map reproduces them; a position shift also moves the split boundary.
+    [Theory]
+    [InlineData(nameof(VidCorrectionModel.Diopter), 0.1)]
+    [InlineData(nameof(VidCorrectionModel.Distance), 50)]
+    [InlineData(nameof(VidCorrectionModel.Position), 120.5)]
+    public void MultiplePointsSelectTheModelThatExplainsThem(string model, double parameter)
+    {
+        var truth = Enum.Parse<VidCorrectionModel>(model);
+        const string json = """
+            {"VidNewVision":{"positionValue":1500,
+                "shortSighted":{"a":1000,"b":0.0002,"c":1,"d":0},
+                "longSighted":{"a":1000,"b":0.0002,"c":1,"d":30}}}
+            """;
+        var original = JObject.Parse(json);
+        double Reference(int position) => truth switch
+        {
+            VidCorrectionModel.Diopter => 1 / (1 / VidMappingCoefficients.Evaluate(original, position) + parameter / 1000),
+            VidCorrectionModel.Distance => VidMappingCoefficients.Evaluate(original, position) + parameter,
+            _ => VidMappingCoefficients.Evaluate(original, position + parameter),
+        };
+        VidCalibrationPoint[] points = [.. new[] { 900, 1400, 1700, 2300 }.Select(position => new VidCalibrationPoint(position, Reference(position)))];
+
+        var result = VidFieldCalibration.Preview(json, points, 800, 2500, millimeters: true);
+        var exported = JObject.Parse(result.Json);
+
+        Assert.Equal(truth, result.Model);
+        Assert.Equal(parameter, result.Parameter, 6);
+        Assert.All(result.Fits, fit => Assert.True(fit.Model == truth ? fit.RmsDiopters < 1e-9 : fit.RmsDiopters > 1e-4, $"{fit.Model}: {fit.RmsDiopters}"));
+        foreach (var point in points)
+            Assert.Equal(point.Reference, VidMappingCoefficients.Evaluate(exported, point.Position), 6);
+        Assert.Equal(truth == VidCorrectionModel.Position ? 1379 : 1500, exported["VidNewVision"]!.Value<int>("positionValue"));
+    }
+
+    [Fact]
+    public void RejectsAModelWithANonFiniteResidualAtAMeasurementPoint()
+    {
+        const string json = """{"a":0,"b":0,"c":1,"d":0}""";
+        VidCalibrationPoint[] points = [new(1, -1), new(3, 3)];
+
+        Assert.Throws<FormatException>(() => VidFieldCalibration.Preview(json, points, 1, 3,
+            millimeters: false, model: VidCorrectionModel.Distance));
+        var result = VidFieldCalibration.Preview(json, points, 1, 3, millimeters: false);
+        Assert.NotNull(result.Fits.Single(fit => fit.Model == VidCorrectionModel.Distance).Error);
+        Assert.All(result.Points, point => Assert.True(double.IsFinite(point.ResidualDiopters)));
     }
 
     [Fact]
     public void PreviewFlagsAnInfinityPointInTheTemplateRange()
     {
         const string json = """{"a":0,"b":0,"c":1,"d":0}""";
-        var result = VidFieldCalibration.Preview(json, 1000, 100, 3000, 2000, millimeters: true);
+        var result = VidFieldCalibration.Preview(json, [new(1000, 2000)], 100, 3000, millimeters: true);
         Assert.True(result.HasInfinityInRange);
-        Assert.Equal(2000, result.Corrected, 8);
+        Assert.Equal(2000, result.Points[0].Corrected, 8);
     }
 
     [Fact]
@@ -83,7 +131,7 @@ public sealed class VidFieldCalibrationTests
             Authorization.Instance = new Authorization { PermissionMode = PermissionMode.Administrator };
             File.WriteAllText(source, json, Encoding.Unicode);
             var original = CalibrationJsonFileStore.Load(source);
-            var result = VidFieldCalibration.Preview(original.Json, 1000, 800, 2000, 1800, millimeters: true);
+            var result = VidFieldCalibration.Preview(original.Json, [new(1000, 1800)], 800, 2000, millimeters: true);
             result.SaveAs(file, original);
             Assert.Equal(original.Hash, CalibrationJsonFileStore.Load(source).Hash);
             Assert.Throws<IOException>(() => result.SaveAs(source, original));
