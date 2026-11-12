@@ -35,9 +35,15 @@ namespace ColorVision.Common.Utilities
             int[] channel2 = new int[256];
             int[] channel3 = new int[256];
             PixelFormat format = bitmapSource.Format;
+            if (bitmapSource.Palette != null)
+            {
+                bitmapSource = new FormatConvertedBitmap(bitmapSource, PixelFormats.Bgr24, null, 0);
+                format = bitmapSource.Format;
+            }
             bool isGray = format == PixelFormats.Gray8 || format == PixelFormats.Gray16;
-            bool isRgb48 = format == PixelFormats.Rgb48;
-            if (!isGray && !isRgb48 && format != PixelFormats.Bgr24 && format != PixelFormats.Bgra32 && format != PixelFormats.Bgr32)
+            bool isWideRgb = format == PixelFormats.Rgb48 || format == PixelFormats.Rgba64;
+            bool isRgb24 = format == PixelFormats.Rgb24;
+            if (!isGray && !isWideRgb && !isRgb24 && format != PixelFormats.Bgr24 && format != PixelFormats.Bgra32 && format != PixelFormats.Bgr32)
                 return (channel1, channel2, channel3);
 
             int width = bitmapSource.PixelWidth;
@@ -68,10 +74,10 @@ namespace ColorVision.Common.Utilities
                             channel3[pixel & 255]++;
                         }
                     }
-                    else if (isRgb48)
+                    else if (isWideRgb)
                     {
                         // Each little-endian 16-bit channel uses its high byte as the bin index.
-                        for (int i = 0; i < length; i += 6)
+                        for (int i = 0; i < length; i += pixelBytes)
                         {
                             channel1[pixelData[i + 1]]++;
                             channel2[pixelData[i + 3]]++;
@@ -80,11 +86,13 @@ namespace ColorVision.Common.Utilities
                     }
                     else
                     {
+                        int redOffset = isRgb24 ? 0 : 2;
+                        int blueOffset = isRgb24 ? 2 : 0;
                         for (int i = 0; i < length; i += 3)
                         {
-                            channel1[pixelData[i + 2]]++;
+                            channel1[pixelData[i + redOffset]]++;
                             channel2[pixelData[i + 1]]++;
-                            channel3[pixelData[i]]++;
+                            channel3[pixelData[i + blueOffset]]++;
                         }
                     }
                     top += rowCount;

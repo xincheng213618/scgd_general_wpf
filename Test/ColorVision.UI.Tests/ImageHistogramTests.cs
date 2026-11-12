@@ -6,6 +6,43 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageHistogramTests
 {
+    [Theory]
+    [InlineData("Rgb24")]
+    [InlineData("Rgba64")]
+    [InlineData("Indexed8")]
+    public void CountsDisplayedColorChannelsForAdditionalImageFormats(string formatName)
+    {
+        StaTest.Run(() =>
+        {
+            BitmapPalette? palette = null;
+            PixelFormat format;
+            byte[] pixels;
+            switch (formatName)
+            {
+                case "Rgb24":
+                    format = PixelFormats.Rgb24;
+                    pixels = [11, 22, 33, 44, 55, 66];
+                    break;
+                case "Rgba64":
+                    format = PixelFormats.Rgba64;
+                    pixels = [1, 11, 2, 22, 3, 33, 255, 255, 4, 44, 5, 55, 6, 66, 255, 255];
+                    break;
+                default:
+                    format = PixelFormats.Indexed8;
+                    palette = new BitmapPalette([Color.FromRgb(11, 22, 33), Color.FromRgb(44, 55, 66)]);
+                    pixels = [1, 0];
+                    break;
+            }
+            BitmapSource source = BitmapSource.Create(2, 1, 96, 96, format, palette, pixels, pixels.Length);
+
+            var (red, green, blue) = ImageUtils.RenderHistogram(source);
+
+            Assert.Equal([11, 44], OccupiedBins(red));
+            Assert.Equal([22, 55], OccupiedBins(green));
+            Assert.Equal([33, 66], OccupiedBins(blue));
+        });
+    }
+
     [Fact]
     public void Rgb48CountsHighBytesInRgbOrderIncludingFinalPartialChunk()
     {
@@ -41,4 +78,6 @@ public sealed class ImageHistogramTests
             Assert.Equal(width * height, blue.Sum());
         });
     }
+
+    private static int[] OccupiedBins(int[] histogram) => [.. histogram.SelectMany((count, bin) => Enumerable.Repeat(bin, count))];
 }

@@ -23,7 +23,7 @@ namespace ColorVision.ImageEditor.EditorTools.Histogram
             HistogramChartWindow window;
             
             // Detect single-channel vs multi-channel
-            if (bitmapSource.Format.Masks.Count == 1)
+            if (bitmapSource.Palette == null && bitmapSource.Format.Masks.Count == 1)
             {
                 // Single-channel (grayscale)
                 window = new HistogramChartWindow(redHistogram);
