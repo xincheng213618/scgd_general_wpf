@@ -14,7 +14,7 @@ public sealed class ImageFileContextMenuTests
         string path = Path.GetTempFileName();
         try
         {
-            StaTest.Run(() =>
+            WpfTestHost.Invoke(() =>
             {
                 ImageViewConfig config = new();
                 DrawEditorContext drawing = new(new DrawCanvas(), new Zoombox());
