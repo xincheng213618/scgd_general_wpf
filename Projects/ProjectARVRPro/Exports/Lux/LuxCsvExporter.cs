@@ -23,7 +23,7 @@ public sealed class LuxCsvExporter(LuxCsvFormat format) : ITestResultCustomExpor
         var lines = new List<string> { ProjectARVRResultCsvExporter.Header };
         foreach (ObjectiveTestCsvRow row in LuxCsvProjector.CollectRows(context.Result, format, context.FlowResults, context.LuxMtfFormat, context.LuxLuminanceUniformityFormat))
             lines.Add(string.Join(",", new[] { row.TestScreen, row.TestItem, row.TestValue, row.Unit, row.LowerLimit, row.UpperLimit, row.TestResult }.Select(Escape)));
-        File.WriteAllLines(path, lines);
+        AtomicCsvFile.Write(path, stagingPath => File.WriteAllLines(stagingPath, lines));
         return path;
     }
 

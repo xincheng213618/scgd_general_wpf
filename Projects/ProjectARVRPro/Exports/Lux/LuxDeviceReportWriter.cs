@@ -18,8 +18,7 @@ internal static class LuxDeviceReportWriter
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            cancellationToken.ThrowIfCancellationRequested();
-            write(path);
+            AtomicCsvFile.Write(path, write, cancellationToken);
             log.Info($"LUX 结果保存完成: Path={path}, ElapsedMs={elapsed.ElapsedMilliseconds}");
         }
         catch (Exception ex)

@@ -122,8 +122,8 @@ public partial class ARVRWindow
                     {
                         string directory = ViewResultManager.Config.CsvSavePath;
                         Directory.CreateDirectory(directory);
-                        ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult,
-                            Path.Combine(directory, Tool.SanitizeFileName($"C_{session.Request.SerialNumber}.csv")));
+                        string path = Path.Combine(directory, Tool.SanitizeFileName($"C_{session.Request.SerialNumber}.csv"));
+                        AtomicCsvFile.Write(path, stagingPath => ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, stagingPath));
                     }
                 }
                 catch (Exception ex) { log.Error("LUX CSV 导出失败", ex); }
