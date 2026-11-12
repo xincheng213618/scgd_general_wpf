@@ -2,6 +2,7 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Logical;
 using FlowEngineLib.Node.OLED;
 using FlowEngineLib.Repeat;
 using Newtonsoft.Json;
@@ -15,6 +16,83 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowRepeatJoinIntegrationTests
 {
+    [Theory]
+    [InlineData(false, "pending")]
+    [InlineData(true, "pending")]
+    [InlineData(false, "terminal")]
+    [InlineData(true, "terminal")]
+    [InlineData(false, "running")]
+    [InlineData(true, "running")]
+    [InlineData(false, "reentrant")]
+    [InlineData(true, "reentrant")]
+    public void SameSerialRetryJoinsOnlyItsOwnBranchInputs(bool merge, string lateDelivery) => StaTest.Run(() =>
+    {
+        const string serialNumber = "same-serial-join";
+        using var container = new CVNodeContainer();
+        var start = new RuntimeTestStartNode();
+        var branches = new ControlledBranchNode();
+        STNode join = merge ? new InputMergeNode() : new LogicalANDNode();
+        var end = new RecordingEndNode();
+        foreach (STNode node in new[] { start, branches, join, end }) { node.Create(); container.Nodes.Add(node); }
+        Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(branches.Input, false));
+        Assert.Equal(ConnectionStatus.Connected, branches.First.ConnectOption(join.GetAllInputOptions().Last(), false));
+        Assert.Equal(ConnectionStatus.Connected, branches.Second.ConnectOption(join.GetAllInputOptions().Last(), false));
+        Assert.Equal(ConnectionStatus.Connected, join.GetAllOutputOptions().Single().ConnectOption(end.m_in_start, false));
+        using var control = new FlowEngineControl(container, false, new FlowNodeManager()) { PersistResults = false };
+
+        Assert.True(control.TryStartNode(start.NodeName, serialNumber));
+        var retired = new CVStartCFC(start.GetCFC(serialNumber));
+        retired.MasterValue(null!, 101, 100);
+        if (lateDelivery == "reentrant")
+        {
+            control.Finished += (_, args) =>
+            {
+                if (args.Status != StatusTypeEnum.Canceled || !control.TryStartNode(start.NodeName, serialNumber)) return;
+                var first = new CVStartCFC(start.GetCFC(serialNumber));
+                first.MasterValue(null!, 201, 100);
+                branches.First.TransferData(first);
+            };
+            retired.SetStatusType(StatusTypeEnum.Canceled);
+            branches.Second.TransferData(retired);
+        }
+        else
+        {
+            if (lateDelivery == "pending") branches.First.TransferData(retired);
+            control.StopNode(start.NodeName, serialNumber);
+            Assert.True(control.TryStartNode(start.NodeName, serialNumber));
+        }
+        Assert.True(retired.RuntimeResources.IsDisposed);
+
+        var active = Assert.IsType<CVStartCFC>(start.GetCFC(serialNumber));
+        Assert.NotSame(retired.RuntimeResources, active.RuntimeResources);
+        var left = new CVStartCFC(active);
+        var right = new CVStartCFC(active);
+        left.MasterValue(null!, 201, 100);
+        right.MasterValue(null!, 202, 100);
+        if (lateDelivery == "pending")
+        {
+            branches.Second.TransferData(right);
+            Assert.Equal(0, end.SuccessfulOutputs);
+            branches.First.TransferData(left);
+        }
+        else
+        {
+            if (lateDelivery != "reentrant")
+            {
+                branches.First.TransferData(left);
+                if (lateDelivery == "terminal") retired.SetStatusType(StatusTypeEnum.Canceled);
+                branches.Second.TransferData(retired);
+                Assert.Equal(0, end.SuccessfulOutputs);
+            }
+            branches.Second.TransferData(right);
+        }
+
+        Assert.Equal(1, end.SuccessfulOutputs);
+        if (merge) Assert.Equal("[201,202]", end.FinalMasterValue);
+        else Assert.Equal(201, end.FinalMasterId);
+        Assert.Null(start.GetCFC(serialNumber));
+    });
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -186,6 +264,20 @@ public sealed class FlowRepeatJoinIntegrationTests
         Assert.Equal(1, graph.Camera.Calls);
         Assert.Equal(1, graph.Roi.Calls);
         Assert.Equal(0, graph.End.SuccessfulOutputs);
+    }
+
+    private sealed class ControlledBranchNode : STNode
+    {
+        internal STNodeOption Input { get; private set; } = null!;
+        internal STNodeOption First { get; private set; } = null!;
+        internal STNodeOption Second { get; private set; } = null!;
+
+        protected override void OnCreate()
+        {
+            Input = InputOptions.Add("IN", typeof(CVStartCFC), true);
+            First = OutputOptions.Add("A", typeof(CVStartCFC), false);
+            Second = OutputOptions.Add("B", typeof(CVStartCFC), false);
+        }
     }
 
     private sealed class JoinGraph : IDisposable
@@ -390,12 +482,14 @@ public sealed class FlowRepeatJoinIntegrationTests
     private sealed class RecordingEndNode : CVEndNode
     {
         internal int SuccessfulOutputs, FinalMasterId;
+        internal string? FinalMasterValue;
         protected override void DoNodeEnded(CVStartCFC action)
         {
             if (action.IsRunning)
             {
                 Interlocked.Increment(ref SuccessfulOutputs);
                 FinalMasterId = Convert.ToInt32(action.Data["MasterId"]);
+                FinalMasterValue = action.Data.GetValueOrDefault("MasterValue") as string;
             }
             base.DoNodeEnded(action);
         }

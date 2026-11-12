@@ -12,6 +12,7 @@ namespace FlowEngineLib.Logical;
 public class InputMergeNode : STNodeInHub
 {
 	public static readonly ILog logger = LogManager.GetLogger(typeof(InputMergeNode));
+	private readonly BranchJoinInputs joinInputs = new();
 
 	private MergePathType _PathType;
 
@@ -65,7 +66,6 @@ public class InputMergeNode : STNodeInHub
 	{
 		if (e.Status == ConnectionStatus.Connected && e.TargetOption.Data != null)
 		{
-			bool allInputsRunning = true;
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
 				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
@@ -77,52 +77,15 @@ public class InputMergeNode : STNodeInHub
 				else if (ShouldEndFlowImmediately(cVStartCFC))
 				{
 					FinishFlow(cVStartCFC);
-					clearData();
+					joinInputs.ClearRun(InputOptions, cVStartCFC);
 					DoResultOutTransferData(cVStartCFC);
 				}
 				else
 				{
-					CVStartCFC data = new CVStartCFC(cVStartCFC);
-					sender.Data = data;
-					int num = 0;
-					List<MergeAlgorithmPreStepParam> list = new List<MergeAlgorithmPreStepParam>();
-					StatusTypeEnum statusType = StatusTypeEnum.Runing;
-					for (int i = 0; i < base.InputOptionsCount; i++)
+					CVStartCFC[] inputs = joinInputs.Collect(InputOptions, sender, cVStartCFC);
+					if (inputs != null && !cVStartCFC.HasFinished)
 					{
-						STNodeOption sTNodeOption = base.InputOptions[i];
-						if (sTNodeOption.DataType == typeof(CVStartCFC) && sTNodeOption.Data != null)
-						{
-							CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
-							if (!cVStartCFC.IsSameFlow(cVStartCFC2))
-							{
-								sTNodeOption.Data = null;
-								continue;
-							}
-							cVStartCFC2.NormalizeStopStatus();
-							if (!cVStartCFC2.IsRunning)
-							{
-								statusType = cVStartCFC2.FlowStatus;
-								allInputsRunning = false;
-							}
-							MergeAlgorithmPreStepParam mergeAlgorithmPreStepParam = new MergeAlgorithmPreStepParam(i);
-							getPreStepParam(cVStartCFC2, mergeAlgorithmPreStepParam);
-							list.Add(mergeAlgorithmPreStepParam);
-							num++;
-						}
-					}
-					logger.DebugFormat("{0}/{1} - {2}", num, base.InputOptionsCount - 1, JsonConvert.SerializeObject(cVStartCFC));
-					if (num == base.InputOptionsCount - 1)
-					{
-						clearData();
-						if (allInputsRunning)
-						{
-							setNextStepParam(cVStartCFC, list);
-						}
-						else
-						{
-							cVStartCFC.SetStatusType(statusType);
-							FinishFlow(cVStartCFC);
-						}
+						CompleteJoin(cVStartCFC, inputs);
 						DoResultOutTransferData(cVStartCFC);
 					}
 				}
@@ -133,6 +96,29 @@ public class InputMergeNode : STNodeInHub
 			DoResultOutTransferData(null);
 		}
 		setDisplayData();
+	}
+
+	private void CompleteJoin(CVStartCFC action, CVStartCFC[] inputs)
+	{
+		StatusTypeEnum status = StatusTypeEnum.Runing;
+		var values = new List<MergeAlgorithmPreStepParam>();
+		for (int index = 0; index < inputs.Length; index++)
+		{
+			CVStartCFC input = inputs[index];
+			if (input == null) continue;
+			input.NormalizeStopStatus();
+			if (!input.IsRunning) status = input.FlowStatus;
+			var value = new MergeAlgorithmPreStepParam(index);
+			getPreStepParam(input, value);
+			values.Add(value);
+		}
+		if (status == StatusTypeEnum.Runing)
+			setNextStepParam(action, values);
+		else
+		{
+			action.SetStatusType(status);
+			FinishFlow(action);
+		}
 	}
 
 	private static bool ShouldEndFlowImmediately(CVStartCFC start)
@@ -258,15 +244,4 @@ public class InputMergeNode : STNodeInHub
 		}
 	}
 
-	private void clearData()
-	{
-		for (int i = 0; i < base.InputOptionsCount; i++)
-		{
-			STNodeOption sTNodeOption = base.InputOptions[i];
-			if (sTNodeOption.DataType == typeof(CVStartCFC))
-			{
-				sTNodeOption.Data = null;
-			}
-		}
-	}
 }

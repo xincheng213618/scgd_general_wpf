@@ -11,15 +11,13 @@ namespace FlowEngineLib.Logical;
 public class LogicalANDNode : STNodeInHub
 {
 	public static readonly ILog logger = LogManager.GetLogger(typeof(LogicalANDNode));
+	private readonly BranchJoinInputs joinInputs = new();
 
 	private STNodeOption m_op_result;
-
-	private int masterId;
 
 	public LogicalANDNode()
 		: base(bSingle: true, "逻辑与")
 	{
-		masterId = -1;
 	}
 
 	protected override void OnCreate()
@@ -105,7 +103,6 @@ public class LogicalANDNode : STNodeInHub
 	{
 		if (e.Status == ConnectionStatus.Connected && e.TargetOption.Data != null)
 		{
-			bool allInputsRunning = true;
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
 				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
@@ -118,55 +115,14 @@ public class LogicalANDNode : STNodeInHub
 				{
 					EnsureStopData(cVStartCFC);
 					FinishFlow(cVStartCFC);
-					clearData();
+					joinInputs.ClearRun(InputOptions, cVStartCFC);
 					DoResultOutTransferData(cVStartCFC);
 				}
 				else
 				{
-					CVStartCFC data = new CVStartCFC(cVStartCFC);
-					sender.Data = data;
-					int num = 0;
-					masterId = -1;
-					StatusTypeEnum statusType = StatusTypeEnum.Runing;
-					CVStartCFC stoppedInput = null;
-					for (int i = 0; i < base.InputOptionsCount; i++)
-					{
-						STNodeOption sTNodeOption = base.InputOptions[i];
-						if (sTNodeOption.DataType == typeof(CVStartCFC) && sTNodeOption.Data != null)
-						{
-							CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
-							if (!cVStartCFC.IsSameFlow(cVStartCFC2))
-							{
-								sTNodeOption.Data = null;
-								continue;
-							}
-							cVStartCFC2.NormalizeStopStatus();
-							if (!cVStartCFC2.IsRunning)
-							{
-								statusType = cVStartCFC2.FlowStatus;
-								allInputsRunning = false;
-								stoppedInput ??= cVStartCFC2;
-							}
-							num++;
-							if (cVStartCFC.IsRunning && masterId < 0 && cVStartCFC2.Data.ContainsKey("MasterId"))
-							{
-								masterId = Convert.ToInt32(cVStartCFC2.Data["MasterId"]);
-							}
-						}
-					}
-					logger.DebugFormat("{0}[{1}/{2}] - {3}/MasterId={4}", base.Title, num, base.InputOptionsCount - 1, JsonConvert.SerializeObject(cVStartCFC), masterId);
-					if (num == base.InputOptionsCount - 1)
-					{
-						clearData();
-						if (!allInputsRunning)
-						{
-							CopyStopData(stoppedInput, cVStartCFC);
-							cVStartCFC.SetStatusType(statusType);
-							EnsureStopData(cVStartCFC);
-							FinishFlow(cVStartCFC);
-						}
-						DoResultOutTransferData(cVStartCFC);
-					}
+					CVStartCFC[] inputs = joinInputs.Collect(InputOptions, sender, cVStartCFC);
+					if (inputs != null && !cVStartCFC.HasFinished)
+						CompleteJoin(cVStartCFC, inputs);
 				}
 			}
 		}
@@ -175,6 +131,33 @@ public class LogicalANDNode : STNodeInHub
 			DoResultOutTransferData(null);
 		}
 		setDisplayData();
+	}
+
+	private void CompleteJoin(CVStartCFC action, CVStartCFC[] inputs)
+	{
+		int masterId = -1;
+		StatusTypeEnum status = StatusTypeEnum.Runing;
+		CVStartCFC stoppedInput = null;
+		foreach (CVStartCFC input in inputs)
+		{
+			if (input == null) continue;
+			input.NormalizeStopStatus();
+			if (!input.IsRunning)
+			{
+				status = input.FlowStatus;
+				stoppedInput ??= input;
+			}
+			if (action.IsRunning && masterId < 0 && input.Data.TryGetValue("MasterId", out object value))
+				masterId = Convert.ToInt32(value);
+		}
+		if (stoppedInput != null)
+		{
+			CopyStopData(stoppedInput, action);
+			action.SetStatusType(status);
+			EnsureStopData(action);
+			FinishFlow(action);
+		}
+		DoResultOutTransferData(action, masterId);
 	}
 
 	private static bool ShouldEndFlowImmediately(CVStartCFC start)
@@ -231,7 +214,7 @@ public class LogicalANDNode : STNodeInHub
 		}
 	}
 
-	private void DoResultOutTransferData(CVStartCFC data)
+	private void DoResultOutTransferData(CVStartCFC data, int masterId = -1)
 	{
 		if (data != null && data.IsRunning)
 		{
@@ -277,15 +260,4 @@ public class LogicalANDNode : STNodeInHub
 		}
 	}
 
-	private void clearData()
-	{
-		for (int i = 0; i < base.InputOptionsCount; i++)
-		{
-			STNodeOption sTNodeOption = base.InputOptions[i];
-			if (sTNodeOption.DataType == typeof(CVStartCFC))
-			{
-				sTNodeOption.Data = null;
-			}
-		}
-	}
 }

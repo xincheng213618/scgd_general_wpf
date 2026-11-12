@@ -121,6 +121,8 @@ flowchart TD
 
 流程结束时，`BaseStartNode.DoFinishing` 沿开始端口传递终态，供沿途节点释放运行记录；宿主后处理属于后续阶段。单次停止取消 `StopToken` 并释放运行资源，已停止的分支无法再次完成流程。资源释放失败时继续尝试其余资源，将异常写入日志，并发布已确定的终态。`CVBaseServerNode` 收到 `Completed` 时只清理并转发状态。`IgnoreErrors` 用于上游出错后的收尾，保留本节点自身的失败状态。
 
+“逻辑与”和“组合”只汇合同一次运行的分支。同 SN 重新测量时，旧分支的结果和停止信号不会参与或清空新运行的待汇合输入。
+
 共享会话的 `RunFinalized`、后处理失败策略及项目兼容链见[执行会话](../../01-user-guide/workflow/execution.md)；隔离运行的状态映射见[无界面执行](../algorithms/templates/flow-engine.md)。它们不是 FlowEngineLib 内核自动附带的业务阶段。
 
 ## 宿主边界

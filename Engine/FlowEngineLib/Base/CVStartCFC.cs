@@ -21,7 +21,7 @@ public class CVStartCFC : CVBaseCFC
 	{
 		public readonly object Lock = new object();
 
-		public bool IsFinished;
+		public volatile bool IsFinished;
 
 		public StatusTypeEnum? Status;
 
@@ -62,6 +62,7 @@ public class CVStartCFC : CVBaseCFC
 	}
 
 	internal void TrackCompletion() => finishState.TrackedCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+	internal bool HasFinished => finishState.IsFinished;
 	internal TaskCompletionSource<FlowStartEventArgs> TrackedCompletion => finishState.TrackedCompletion;
 	internal FlowStartEventArgs TrackedTerminalResult
 	{
