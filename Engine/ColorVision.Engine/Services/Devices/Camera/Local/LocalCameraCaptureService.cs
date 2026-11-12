@@ -125,16 +125,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int saveTimeMs = 0;
             try
             {
-                int gainResult = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
-                if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置增益失败", gainResult);
-                if (!device.Config.IsExpThree)
+                if (request.IsAutoExposure)
                 {
-                    int exposureResult = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
-                    if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置曝光失败", exposureResult);
+                    FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration, captureChannels));
                 }
-
-                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration, captureChannels));
-                else FlowNodeTiming.Skip("AutoExposure");
+                else
+                {
+                    int gainResult = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
+                    if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置增益失败", gainResult);
+                    if (!device.Config.IsExpThree)
+                    {
+                        int exposureResult = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
+                        if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置曝光失败", exposureResult);
+                    }
+                    FlowNodeTiming.Skip("AutoExposure");
+                }
                 if (request.AutoFocus is { } focus)
                 {
                     float focusExposure = device.Config.IsExpThree ? cameraParameters.ExpTimeR : cameraParameters.ExpTime;
