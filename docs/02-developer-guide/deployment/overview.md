@@ -3,8 +3,8 @@ knowledge_id: "delivery.deployment"
 knowledge_type: "index"
 status: "current"
 summary: "区分完整安装器、主程序更新、插件项目包和独立在线下载工具；ColorVisionSetup以Framework 4.8单文件查询并下载最新版，实际安装仍由完整安装包负责。"
-aliases: ["部署","交付制品","安装器","完整安装包","源码构建输出","增量更新包","项目包交付","启动恢复入口","Advanced Installer","ColorVision.aip","ColorVisionSetup","CombinedUpdateCoordinator","StartupRecoveryWindow"]
-code_paths: ["ColorVision/ColorVision.csproj","Scripts/release.bat","Scripts/build.py","ColorVision/Update/CombinedUpdateCoordinator.cs","ColorVision/Recovery/StartupRecoveryWindow.xaml.cs","src/ColorVisionSetup"]
+aliases: ["部署","交付制品","安装器","完整安装包","源码构建输出","增量更新包","项目包交付","启动恢复入口","Advanced Installer","ColorVision.aip","ColorVisionSetup","CombinedUpdateCoordinator","StartupRecoveryWindow","更新跳板","堡垒机","内网更新","断网更新","ColorVisionUpdateRelay","portproxy"]
+code_paths: ["ColorVision/ColorVision.csproj","Scripts/release.bat","Scripts/build.py","ColorVision/Update/CombinedUpdateCoordinator.cs","ColorVision/Recovery/StartupRecoveryWindow.xaml.cs","src/ColorVisionSetup","src/ColorVisionUpdateRelay","Scripts/build_update_relay.ps1"]
 test_paths: ["src/ColorVisionSetup/Tests/Program.cs"]
 related: ["delivery.installation","delivery.prerequisites","delivery.update","delivery.scripts","plugins.getting-started","operations.first-run","delivery.backend","delivery.web-deployment"]
 ---
@@ -61,6 +61,18 @@ pwsh -NoProfile -File .\Scripts\build_setup.ps1
 `src/ColorVisionSetup/Tests/ColorVisionSetup.Tests.csproj` 是同框架控制台验证程序，无 NuGet 或主程序运行依赖。用 Visual Studio MSBuild 以 Release/x64 构建后运行；可传入一个已有的官方完整安装 EXE 路径，验证真实签名、版本不符、篡改拒绝及最终交接前文件锁。测试不会启动该安装包。无参数时跳过真实签名制品验证，不应将其报告为完整校验通过。
 
 需另外在目标电脑验证无 .NET 10 时单 EXE 启动、DPI/键盘操作、在线下载、UAC 取消和安装器交接；开发机测试和界面预览不等于这些现场验收。
+
+## 内网更新跳板
+
+客户机器只能经堡垒机访问、不能连外网时，`ColorVisionUpdateRelay.exe` 让它们经内网一台跳板机使用原有在线更新，主程序无需改动。可行的前提是主程序检查更新、下载增量包和插件、插件市场与反馈都只连 `MarketplaceConfig.DefaultServiceBaseUrl` 这一个固定地址；以后新增其他地址，要同步核对这个方案是否仍然适用。
+
+1. 在一台既能访问该地址、又能被客户机访问的电脑上，打开“跳板机”页，点击“开启转发”。工具会启用 Windows 端口转发（依赖 IP Helper 服务）和同名入站防火墙规则 `ColorVision Update Relay`，然后在本机验证能否查到最新版本。
+2. 记下工具顶部显示的跳板机 IP。在每台客户机的“客户机”页填写该 IP，点击“设置跳板”。工具只在 hosts 中写入或替换一行带 `# ColorVision update relay` 标记的映射，原有的同域名手动映射会被注释停用，并在同目录保留 `hosts.colorvision-relay.bak` 备份。
+3. “移除设置”和“移除转发”分别撤销上述改动，并恢复被停用的映射；IP Helper 服务保持原有状态。
+
+工具需要管理员权限，运行环境与在线下载工具相同（.NET Framework 4.8）。同一台电脑不能同时做跳板机和客户机，否则请求会转发给自己，工具会拒绝这种设置。传输仍然是明文 HTTP；只有完整安装包有发行签名校验，增量包和插件包只检查包结构，开通前要告知客户安全人员。跳板机或网络完全隔离时，只能拷贝完整安装包和 `.cvxp` 离线安装。
+
+本地构建：`pwsh -NoProfile -File .\Scripts\build_update_relay.ps1`，输出单个 `.artifacts/ColorVisionUpdateRelay/package/ColorVisionUpdateRelay.exe`，未做 Authenticode 签名，也不上传。hosts 读写与本机查询可以在没有管理员权限时验证；端口转发、防火墙和跨机器更新需要在目标网络中验收。
 
 ## 验证边界
 

@@ -4014,7 +4014,13 @@
         "ColorVision.aip",
         "ColorVisionSetup",
         "CombinedUpdateCoordinator",
-        "StartupRecoveryWindow"
+        "StartupRecoveryWindow",
+        "更新跳板",
+        "堡垒机",
+        "内网更新",
+        "断网更新",
+        "ColorVisionUpdateRelay",
+        "portproxy"
       ],
       "code_paths": [
         "ColorVision/ColorVision.csproj",
@@ -4022,7 +4028,9 @@
         "Scripts/build.py",
         "ColorVision/Update/CombinedUpdateCoordinator.cs",
         "ColorVision/Recovery/StartupRecoveryWindow.xaml.cs",
-        "src/ColorVisionSetup"
+        "src/ColorVisionSetup",
+        "src/ColorVisionUpdateRelay",
+        "Scripts/build_update_relay.ps1"
       ],
       "test_paths": [
         "src/ColorVisionSetup/Tests/Program.cs"
@@ -4042,7 +4050,8 @@
         "ColorVision/Recovery",
         "ColorVision/Update",
         "Scripts",
-        "src/ColorVisionSetup"
+        "src/ColorVisionSetup",
+        "src/ColorVisionUpdateRelay"
       ],
       "domain": "delivery",
       "title": "桌面交付制品与责任路由",
