@@ -18,6 +18,49 @@ namespace ColorVision.UI.Tests;
 public sealed class ImageAcquisitionMetadataTests
 {
     [Theory]
+    [InlineData(CVFileSaveMode.Synchronous)]
+    [InlineData(CVFileSaveMode.MemoryOnly)]
+    public void RejectedCaptureMetadataDoesNotReplaceThePreviousRawImage(CVFileSaveMode saveMode)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"cv-capture-replace-{Guid.NewGuid():N}.cvraw");
+        bool previousCache = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 2, 16, 1);
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, saveMode));
+            CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new ImageAcquisitionRecord { NdPort = 17 });
+            byte[] original = ReadBytes(path);
+            using LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 3, Height = 2, SourceBpp = 16, Channels = 1, Exposure = [2],
+                Acquisition = new ImageAcquisitionRecord { NdPort = 18 }
+            }, raw.Data.Length, 0);
+            using (LocalFlowFrameLease lease = frame.Acquire()) Marshal.Copy(raw.Data, 0, lease.RawPointer, raw.Data.Length);
+            frame.ColorCalibration = new ColorCalibrationSnapshot { Width = 3, Height = 2, RawBpp = 16, Channels = 1, TransformKind = 2 };
+
+            Assert.Throws<InvalidDataException>(() => LocalFrameFileService.SaveCapture(frame, path, saveMode));
+
+            Assert.Equal(original, ReadBytes(path));
+            if (saveMode == CVFileSaveMode.Synchronous) Assert.Equal(original, File.ReadAllBytes(path));
+            Assert.Empty(frame.CvRawFilePath);
+        }
+        finally
+        {
+            CVFileReadCache.IsEnabled = previousCache;
+            File.Delete(path);
+        }
+
+        static byte[] ReadBytes(string path)
+        {
+            using Stream stream = CVFileReadCache.OpenRead(path);
+            using MemoryStream bytes = new();
+            stream.CopyTo(bytes);
+            return bytes.ToArray();
+        }
+    }
+
+    [Theory]
     [InlineData(CVFileSaveMode.Synchronous, false)]
     [InlineData(CVFileSaveMode.Synchronous, true)]
     [InlineData(CVFileSaveMode.MemoryOnly, true)]

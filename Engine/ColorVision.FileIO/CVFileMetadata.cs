@@ -187,13 +187,22 @@ namespace ColorVision.FileIO
             return result;
         }
 
-        private static byte[] Serialize(Dictionary<string, CVFileProperty> properties, long pixelEnd)
+        internal static byte[] CreateInitialTail(IReadOnlyDictionary<string, CVFileProperty> properties, CVCIEFile header, long payloadLength, long pixelEnd)
+        {
+            if (properties == null || properties.Count == 0) return Array.Empty<byte>();
+            ValidatePixelLayout(header.Cols, header.Rows, header.Bpp, header.Channels, payloadLength);
+            return Serialize(properties, pixelEnd);
+        }
+
+        private static byte[] Serialize(IReadOnlyDictionary<string, CVFileProperty> properties, long pixelEnd)
         {
             using (var memory = new MemoryStream())
             using (var writer = new BinaryWriter(memory, Utf8, true))
             {
                 foreach (var entry in properties.OrderBy(item => item.Key, StringComparer.Ordinal))
                 {
+                    if (string.IsNullOrWhiteSpace(entry.Key) || entry.Value == null || entry.Value.Value.Length > MaximumMetadataBytes)
+                        throw new ArgumentException("Invalid metadata property.");
                     byte[] kind = Utf8.GetBytes(entry.Key);
                     if (kind.Length == 0 || kind.Length > 4096) throw new ArgumentException("Metadata kind is too long.");
                     writer.Write(kind.Length);
@@ -234,11 +243,18 @@ namespace ColorVision.FileIO
                 for (int i = 0; i < channels; i++) reader.ReadSingle();
                 int width = reader.ReadInt32(), height = reader.ReadInt32(), bpp = reader.ReadInt32();
                 long length = version == 2 ? reader.ReadInt64() : reader.ReadInt32();
-                if (width <= 0 || height <= 0 || (bpp != 8 && bpp != 16 && bpp != 32 && bpp != 64)
-                    || length != checked((long)width * height * channels * (bpp / 8)) || length > stream.Length - stream.Position)
+                ValidatePixelLayout(width, height, bpp, channels, length);
+                if (length > stream.Length - stream.Position)
                     throw new InvalidDataException("Invalid ColorVision pixel payload.");
                 return (stream.Position, checked(stream.Position + length));
             }
+        }
+
+        private static void ValidatePixelLayout(int width, int height, int bpp, int channels, long length)
+        {
+            if (width <= 0 || height <= 0 || channels is <= 0 or > 16 || bpp is not (8 or 16 or 32 or 64)
+                || length != checked((long)width * height * channels * (bpp / 8)))
+                throw new InvalidDataException("Invalid ColorVision pixel payload.");
         }
 
         private static byte[] ReadExactly(Stream stream, int length)

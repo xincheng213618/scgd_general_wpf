@@ -75,13 +75,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
 
         internal void Save(string filePath, bool canReplay)
+            => CVFileMetadata.SetProperties(filePath, CreateProperties(canReplay));
+
+        internal Dictionary<string, CVFileProperty> CreateProperties(bool canReplay)
         {
             Validate();
-            CVFileMetadata.SetProperties(filePath, new Dictionary<string, CVFileProperty>
+            return new Dictionary<string, CVFileProperty>
             {
-                [PropertyKind] = new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this with { CanReplay = canReplay }))),
-                [CameraFileMetadata.ProvenanceKind] = new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ToSummary())))
-            });
+                [PropertyKind] = CameraFileMetadata.CreateProperty(this with { CanReplay = canReplay }),
+                [CameraFileMetadata.ProvenanceKind] = CameraFileMetadata.CreateProperty(ToSummary())
+            };
         }
 
         internal static ColorCalibrationSnapshot? Read(string filePath, CVCIEFile header)

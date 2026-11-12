@@ -19,6 +19,9 @@ internal static class CameraFileMetadata
     internal static void Save<T>(string path, string kind, T record)
         => CVFileMetadata.SetProperty(path, kind, 1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record)));
 
+    internal static CVFileProperty CreateProperty<T>(T record)
+        => new(1, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record)));
+
     internal static (ImageAcquisitionRecord? Acquisition, ImageCalibrationSummary? Provenance) Read(string path)
         => Read(ReadOptionalProperties(() => CVFileMetadata.Read(path)));
 

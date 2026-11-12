@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
@@ -808,6 +809,15 @@ namespace ColorVision.FileIO
             long dataLength,
             Action<Stream> writeData,
             CVFileSaveMode saveMode)
+            => WriteCIEFile(filePath, fileInfo, dataLength, writeData, saveMode, null);
+
+        private static bool WriteCIEFile(
+            string filePath,
+            CVCIEFile fileInfo,
+            long dataLength,
+            Action<Stream> writeData,
+            CVFileSaveMode saveMode,
+            IReadOnlyDictionary<string, CVFileProperty> properties)
         {
             if (string.IsNullOrEmpty(filePath)) return false;
             if (fileInfo == null || writeData == null || dataLength < 0) return false;
@@ -817,11 +827,12 @@ namespace ColorVision.FileIO
             try
             {
                 byte[] srcFileNameBytes = Encoding1.GetBytes(fileInfo.SrcFileName ?? string.Empty);
-                long fileLength = checked(HeaderSize + sizeof(uint) + sizeof(int) + (long)srcFileNameBytes.Length
+                long pixelEnd = checked(HeaderSize + sizeof(uint) + sizeof(int) + (long)srcFileNameBytes.Length
                     + (version == 3 ? sizeof(int) : 0) + sizeof(float) + sizeof(int)
                     + sizeof(float) * (long)fileInfo.Channels + 3 * sizeof(int)
                     + (version == 2 ? sizeof(long) : sizeof(int)) + dataLength);
-                return CVFileReadCache.WriteFile(filePath, fileLength, fs =>
+                byte[] metadata = CVFileMetadata.CreateInitialTail(properties, fileInfo, dataLength, pixelEnd);
+                return CVFileReadCache.WriteFile(filePath, checked(pixelEnd + metadata.Length), fs =>
                 {
                     using (BinaryWriter bw = new BinaryWriter(fs, Encoding.UTF8, true))
                     {
@@ -835,6 +846,7 @@ namespace ColorVision.FileIO
                             throw new InvalidDataException(
                                 $"The CVCIE payload writer produced {fs.Position - dataStart} bytes; expected {dataLength} bytes.");
                         }
+                        bw.Write(metadata);
                     }
                 }, saveMode);
             }
@@ -933,6 +945,16 @@ namespace ColorVision.FileIO
         {
             return WriteCIEFile(filePath, fileInfo, dataLength, writeData, saveMode);
         }
+
+        /// <summary>Publishes a complete CVRAW snapshot with its initial properties in a single save.</summary>
+        public static bool WriteCVRaw(
+            string filePath,
+            CVCIEFile fileInfo,
+            long dataLength,
+            Action<Stream> writeData,
+            CVFileSaveMode saveMode,
+            IReadOnlyDictionary<string, CVFileProperty> properties)
+            => WriteCIEFile(filePath, fileInfo, dataLength, writeData, saveMode, properties);
 
         /// <summary>
         /// Writes image Data to a file in CVCIE format with specified parameters.

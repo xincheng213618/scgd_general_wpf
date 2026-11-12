@@ -128,23 +128,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     SrcFileName = string.Empty,
                     Data = Array.Empty<byte>()
                 };
+                Dictionary<string, CVFileProperty> properties = lease.ColorCalibration?.CreateProperties(canReplay: true) ?? new();
+                if (lease.Metadata.Acquisition != null)
+                    properties.Add(CameraFileMetadata.AcquisitionKind, CameraFileMetadata.CreateProperty(lease.Metadata.Acquisition));
+                if (lease.ColorCalibration == null && lease.CalibrationProvenance != null)
+                    properties.Add(CameraFileMetadata.ProvenanceKind, CameraFileMetadata.CreateProperty(lease.CalibrationProvenance));
                 FlowNodeTiming.Run("WriteRawFile", () =>
                 {
                     if (!CVFileUtil.WriteCVRaw(
                         rawPath,
                         rawFile,
                         lease.RawLength,
-                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength), saveMode))
+                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength), saveMode, properties))
                     {
                         throw new IOException($"保存 CVRAW 失败：{rawPath}");
                     }
                 });
                 frame.CvRawFilePath = rawPath;
-                if (lease.Metadata.Acquisition != null)
-                    CameraFileMetadata.Save(rawPath, CameraFileMetadata.AcquisitionKind, lease.Metadata.Acquisition);
-                frame.ColorCalibration?.Save(rawPath, canReplay: true);
-                if (frame.ColorCalibration == null && frame.CalibrationProvenance != null)
-                    CameraFileMetadata.Save(rawPath, CameraFileMetadata.ProvenanceKind, frame.CalibrationProvenance);
             }
             saveStage?.Complete();
         }
