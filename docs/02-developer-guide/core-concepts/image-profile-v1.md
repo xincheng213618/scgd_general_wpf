@@ -174,16 +174,16 @@ ImageView、Batch 与本地 Flow adapter 复用同一 Provider，但参数、格
 
 ### 旧 ProfileDataExtractor 与图表窗口
 
-`ProfileDataExtractor.ExtractAlongPath` 保留默认 `totalSteps=500` 和同步返回 `ProfileData` 的接口，内部调用同一 Runner，但使用兼容参数：间距为 `路径长度/(totalSteps-1)`，Nearest、Skip、IncludeAlpha=false、IncludeLuminance=true。它不使用新窗口的 Bilinear/Reject 默认行为，闭合或越界路径的实际数量也不保证等于 totalSteps。
+`ProfileDataExtractor.ExtractAlongPath` 保留默认 `totalSteps=500` 和同步返回 `ProfileData` 的接口。默认运行时只复制路径所需的区域，复用标准采样核心；传入自定义运行时则由其 Runner 接收完整图像。兼容参数使用 `路径长度/(totalSteps-1)` 作为间距，采用 Nearest、Skip，并输出亮度曲线。闭合或越界路径的实际样本数可能少于 totalSteps。
 
 点数不足、退化路径、无法映射的位图格式或 Runner 失败会返回空的单通道数据，调用方无法从该返回值取得原始诊断。默认 500 步下，1 px 路径的间距约 0.002，小于合法下限 0.01，因此可能得到空结果。需要明确控制参数和错误时使用 Invocation/Runner。
 
-另有 Indexed8 兼容缺口：公共输入工厂将调色板展开为 BGRA，但旧 Extractor 的多通道判断不包含 Indexed8，成功分析后仍尝试读取不存在的 Gray 列，可能抛出异常。不能把新 ImageView 支持某种格式等同于旧返回模型也支持它。
+Indexed8 按调色板返回 RGB 和 Rec.601 亮度曲线。
 
 工厂创建的线/多边形菜单优先使用上下文构造，进入 `ImageProfileResultWindow`；仅用 DrawCanvas 的旧菜单构造仍走 Extractor 和 `ProfileChartWindow`。旧窗口 X 轴为样本序号，提供 `Save Chart as Image...`、`Save Data as CSV...` 和通道显示开关；旧 CSV 只含序号与曲线值，按当前区域设置格式化，直接写目标并可覆盖文件，不包含统一结果的坐标、距离、Status 和诊断。
 
 ## 验证范围
 
-`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、闭合和 Skip；未覆盖 Indexed8 返回模型和默认 500 步的极短路径。
+`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、Indexed8、闭合和 Skip；默认 500 步的极短路径仍需验证。
 
 这验证共享选择器，不证明“任意折线”入口已支持这些路径。现有用例也不能替代完整鼠标流程、预览遗漏尖峰、导出关闭/提交竞态和极短路径容差的验证。交付门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。

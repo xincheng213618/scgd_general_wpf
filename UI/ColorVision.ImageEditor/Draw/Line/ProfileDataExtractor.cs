@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -44,9 +45,6 @@ namespace ColorVision.ImageEditor.Draw.Line
             double totalLength = Length(pixelPoints, closePath);
             if (totalLength <= 0) return ProfileData.CreateSingleChannel([]);
 
-            AlgorithmImageBuffer input;
-            try { input = ImageAlgorithmInputFactory.Copy(bitmap); }
-            catch (NotSupportedException) { return ProfileData.CreateSingleChannel([]); }
             ImageProfileParameters parameters = new()
             {
                 SampleSpacingPixels = totalLength / (totalSteps - 1),
@@ -57,16 +55,17 @@ namespace ColorVision.ImageEditor.Draw.Line
                 IncludeAlpha = false,
                 MaximumSamples = Math.Max(totalSteps + 1, 2),
             };
-            AlgorithmInvocation invocation = AlgorithmInvocation.Create(
-                StandardAlgorithmIds.ImageProfile,
-                parameters,
-                new PolylineAlgorithmRoi(pixelPoints));
-            using AlgorithmResult result = runtime.Runner.RunAsync(new AlgorithmRunRequest
-            {
-                Invocation = invocation,
-                Inputs = [new AlgorithmInput { Name = "source", Image = input, Ownership = AlgorithmInputOwnership.Transferred }],
-                RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
-            }).AsTask().GetAwaiter().GetResult();
+            PolylineAlgorithmRoi path = new(pixelPoints);
+            AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageProfile, parameters, path);
+            ImageSelectionScope scope = new(Guid.Empty, 0, bitmap.PixelWidth, bitmap.PixelHeight, bitmap.DpiX, bitmap.DpiY);
+            Int32Rect? slice = ReferenceEquals(runtime, ImageAlgorithmPlatform.Runtime)
+                ? ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope) : null;
+
+            AlgorithmImageBuffer input;
+            try { input = ImageAlgorithmInputFactory.Copy(bitmap, slice); }
+            catch (NotSupportedException) { return ProfileData.CreateSingleChannel([]); }
+            using AlgorithmImageBuffer inputLease = input;
+            using AlgorithmResult result = RunProfile(runtime, invocation, parameters, input, scope, slice).AsTask().GetAwaiter().GetResult();
             if (result.Status != AlgorithmResultStatus.Succeeded) return ProfileData.CreateSingleChannel([]);
 
             AlgorithmTableArtifact table = result.GetArtifact<AlgorithmTableArtifact>("image-profile-samples")!;
@@ -77,6 +76,23 @@ namespace ColorVision.ImageEditor.Draw.Line
                 table.Rows.Select(row => Read(row, "G")).ToList(),
                 table.Rows.Select(row => Read(row, "B")).ToList(),
                 table.Rows.Select(row => Read(row, "Luminance")).ToList());
+        }
+
+        private static ValueTask<AlgorithmResult> RunProfile(AlgorithmRuntime runtime, AlgorithmInvocation invocation,
+            ImageProfileParameters parameters, AlgorithmImageBuffer input, ImageSelectionScope scope, Int32Rect? slice)
+        {
+            if (slice is { } bounds)
+            {
+                ImageProfileAlgorithmProvider provider = new();
+                return runtime.Scheduler.ScheduleAsync(provider.Metadata, token =>
+                    ValueTask.FromResult(provider.ExecuteDisplaySlice(invocation, parameters, input, bounds, scope, token)), default);
+            }
+            return runtime.Runner.RunAsync(new AlgorithmRunRequest
+            {
+                Invocation = invocation,
+                Inputs = [new AlgorithmInput { Name = "source", Image = input }],
+                RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
+            });
         }
 
         private static double Read(IReadOnlyDictionary<string, JsonElement> row, string name)
